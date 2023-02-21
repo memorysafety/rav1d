@@ -7,3 +7,6 @@ tags
 /tests/dav1d-test-data
 *.snap
 /tools/output/xxhash.h
+
+# Rust
+target/
