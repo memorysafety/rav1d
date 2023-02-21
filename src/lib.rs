@@ -34,11 +34,6 @@ extern "C" {
         out: *mut Dav1dPicture,
         in_0: *const Dav1dPicture,
     );
-    fn dav1d_apply_grain_8bpc(
-        dsp: *const Dav1dFilmGrainDSPContext,
-        out: *mut Dav1dPicture,
-        in_0: *const Dav1dPicture,
-    );
     fn dav1d_data_props_unref_internal(props: *mut Dav1dDataProps);
     fn dav1d_picture_unref_internal(p: *mut Dav1dPicture);
     fn dav1d_data_create_internal(buf: *mut Dav1dData, sz: size_t) -> *mut uint8_t;
@@ -2231,7 +2226,7 @@ unsafe extern "C" fn init_internal() {
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_version() -> *const libc::c_char {
-    return b"1.0.0-115-g8ad3f0e\0" as *const u8 as *const libc::c_char;
+    return b"1.0.0-116-ge219a79\0" as *const u8 as *const libc::c_char;
 }
 #[no_mangle]
 #[cold]
@@ -3377,14 +3372,6 @@ pub unsafe extern "C" fn dav1d_apply_grain(
             dav1d_task_delayed_fg(c, out, in_0);
         } else {
             match (*out).p.bpc {
-                8 => {
-                    dav1d_apply_grain_8bpc(
-                        &mut (*((*c).dsp).as_mut_ptr().offset(0 as libc::c_int as isize))
-                            .fg,
-                        out,
-                        in_0,
-                    );
-                }
                 10 | 12 => {
                     dav1d_apply_grain_16bpc(
                         &mut (*((*c).dsp)
