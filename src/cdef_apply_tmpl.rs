@@ -1202,9 +1202,6 @@ pub struct MsacContext {
     pub rng: libc::c_uint,
     pub cnt: libc::c_int,
     pub allow_update_cdf: libc::c_int,
-    pub symbol_adapt16: Option::<
-        unsafe extern "C" fn(*mut MsacContext, *mut uint16_t, size_t) -> libc::c_uint,
-    >,
 }
 pub type ec_win = size_t;
 #[derive(Copy, Clone)]

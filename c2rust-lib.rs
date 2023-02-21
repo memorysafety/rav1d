@@ -50,9 +50,6 @@ pub mod tables;
 pub mod thread_task;
 pub mod warpmv;
 pub mod wedge;
-pub mod x86 {
-pub mod cpu;
-} // mod x86
 } // mod src
 pub mod tools {
 pub mod dav1d_cli_parse;

@@ -8,29 +8,6 @@ extern "C" {
     ) -> libc::c_int;
     fn abs(_: libc::c_int) -> libc::c_int;
     static dav1d_block_dimensions: [[uint8_t; 4]; 22];
-    fn dav1d_splat_mv_avx512icl(
-        rr: *mut *mut refmvs_block,
-        rmv: *const refmvs_block,
-        bx4: libc::c_int,
-        bw4: libc::c_int,
-        bh4: libc::c_int,
-    );
-    static mut dav1d_cpu_flags_mask: libc::c_uint;
-    static mut dav1d_cpu_flags: libc::c_uint;
-    fn dav1d_splat_mv_avx2(
-        rr: *mut *mut refmvs_block,
-        rmv: *const refmvs_block,
-        bx4: libc::c_int,
-        bw4: libc::c_int,
-        bh4: libc::c_int,
-    );
-    fn dav1d_splat_mv_sse2(
-        rr: *mut *mut refmvs_block,
-        rmv: *const refmvs_block,
-        bx4: libc::c_int,
-        bw4: libc::c_int,
-        bh4: libc::c_int,
-    );
 }
 pub type size_t = libc::c_ulong;
 pub type __int8_t = libc::c_schar;
@@ -569,13 +546,6 @@ pub type splat_mv_fn = Option::<
 pub struct Dav1dRefmvsDSPContext {
     pub splat_mv: splat_mv_fn,
 }
-pub const DAV1D_X86_CPU_FLAG_AVX512ICL: CpuFlags = 16;
-pub const DAV1D_X86_CPU_FLAG_SSE2: CpuFlags = 1;
-pub const DAV1D_X86_CPU_FLAG_AVX2: CpuFlags = 8;
-pub type CpuFlags = libc::c_uint;
-pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
-pub const DAV1D_X86_CPU_FLAG_SSE41: CpuFlags = 4;
-pub const DAV1D_X86_CPU_FLAG_SSSE3: CpuFlags = 2;
 #[inline]
 unsafe extern "C" fn imax(a: libc::c_int, b: libc::c_int) -> libc::c_int {
     return if a > b { a } else { b };
@@ -610,19 +580,6 @@ unsafe extern "C" fn get_poc_diff(
     return (diff & mask - 1 as libc::c_int) - (diff & mask);
 }
 #[inline]
-unsafe extern "C" fn fix_int_mv_precision(mv: *mut mv) {
-    (*mv)
-        .c2rust_unnamed
-        .x = (((*mv).c2rust_unnamed.x as libc::c_int
-        - ((*mv).c2rust_unnamed.x as libc::c_int >> 15 as libc::c_int)
-        + 3 as libc::c_int) as libc::c_uint & !(7 as libc::c_uint)) as int16_t;
-    (*mv)
-        .c2rust_unnamed
-        .y = (((*mv).c2rust_unnamed.y as libc::c_int
-        - ((*mv).c2rust_unnamed.y as libc::c_int >> 15 as libc::c_int)
-        + 3 as libc::c_int) as libc::c_uint & !(7 as libc::c_uint)) as int16_t;
-}
-#[inline]
 unsafe extern "C" fn fix_mv_precision(hdr: *const Dav1dFrameHeader, mv: *mut mv) {
     if (*hdr).force_integer_mv != 0 {
         fix_int_mv_precision(mv);
@@ -638,6 +595,19 @@ unsafe extern "C" fn fix_mv_precision(hdr: *const Dav1dFrameHeader, mv: *mut mv)
             - ((*mv).c2rust_unnamed.y as libc::c_int >> 15 as libc::c_int))
             as libc::c_uint & !(1 as libc::c_uint)) as int16_t;
     }
+}
+#[inline]
+unsafe extern "C" fn fix_int_mv_precision(mv: *mut mv) {
+    (*mv)
+        .c2rust_unnamed
+        .x = (((*mv).c2rust_unnamed.x as libc::c_int
+        - ((*mv).c2rust_unnamed.x as libc::c_int >> 15 as libc::c_int)
+        + 3 as libc::c_int) as libc::c_uint & !(7 as libc::c_uint)) as int16_t;
+    (*mv)
+        .c2rust_unnamed
+        .y = (((*mv).c2rust_unnamed.y as libc::c_int
+        - ((*mv).c2rust_unnamed.y as libc::c_int >> 15 as libc::c_int)
+        + 3 as libc::c_int) as libc::c_uint & !(7 as libc::c_uint)) as int16_t;
 }
 #[inline]
 unsafe extern "C" fn get_gmv_2d(
@@ -2600,58 +2570,6 @@ unsafe extern "C" fn splat_mv_c(
         }
     };
 }
-#[inline(always)]
-unsafe extern "C" fn dav1d_get_cpu_flags() -> libc::c_uint {
-    let mut flags: libc::c_uint = dav1d_cpu_flags & dav1d_cpu_flags_mask;
-    flags |= DAV1D_X86_CPU_FLAG_SSE2 as libc::c_int as libc::c_uint;
-    return flags;
-}
-#[inline(always)]
-unsafe extern "C" fn refmvs_dsp_init_x86(c: *mut Dav1dRefmvsDSPContext) {
-    let flags: libc::c_uint = dav1d_get_cpu_flags();
-    if flags & DAV1D_X86_CPU_FLAG_SSE2 as libc::c_int as libc::c_uint == 0 {
-        return;
-    }
-    (*c)
-        .splat_mv = Some(
-        dav1d_splat_mv_sse2
-            as unsafe extern "C" fn(
-                *mut *mut refmvs_block,
-                *const refmvs_block,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    if flags & DAV1D_X86_CPU_FLAG_AVX2 as libc::c_int as libc::c_uint == 0 {
-        return;
-    }
-    (*c)
-        .splat_mv = Some(
-        dav1d_splat_mv_avx2
-            as unsafe extern "C" fn(
-                *mut *mut refmvs_block,
-                *const refmvs_block,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    if flags & DAV1D_X86_CPU_FLAG_AVX512ICL as libc::c_int as libc::c_uint == 0 {
-        return;
-    }
-    (*c)
-        .splat_mv = Some(
-        dav1d_splat_mv_avx512icl
-            as unsafe extern "C" fn(
-                *mut *mut refmvs_block,
-                *const refmvs_block,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-}
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_refmvs_dsp_init(c: *mut Dav1dRefmvsDSPContext) {
@@ -2666,5 +2584,4 @@ pub unsafe extern "C" fn dav1d_refmvs_dsp_init(c: *mut Dav1dRefmvsDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    refmvs_dsp_init_x86(c);
 }

@@ -1,25 +1,4 @@
 use ::libc;
-extern "C" {
-    fn dav1d_msac_decode_bool_sse2(s: *mut MsacContext, f: libc::c_uint) -> libc::c_uint;
-    fn dav1d_msac_decode_bool_equi_sse2(s: *mut MsacContext) -> libc::c_uint;
-    fn dav1d_msac_decode_symbol_adapt16_avx2(
-        s: *mut MsacContext,
-        cdf: *mut uint16_t,
-        n_symbols: size_t,
-    ) -> libc::c_uint;
-    fn dav1d_msac_decode_symbol_adapt16_sse2(
-        s: *mut MsacContext,
-        cdf: *mut uint16_t,
-        n_symbols: size_t,
-    ) -> libc::c_uint;
-    fn dav1d_msac_decode_symbol_adapt4_sse2(
-        s: *mut MsacContext,
-        cdf: *mut uint16_t,
-        n_symbols: size_t,
-    ) -> libc::c_uint;
-    static mut dav1d_cpu_flags_mask: libc::c_uint;
-    static mut dav1d_cpu_flags: libc::c_uint;
-}
 pub type __uint8_t = libc::c_uchar;
 pub type __uint16_t = libc::c_ushort;
 pub type uint8_t = __uint8_t;
@@ -35,17 +14,7 @@ pub struct MsacContext {
     pub rng: libc::c_uint,
     pub cnt: libc::c_int,
     pub allow_update_cdf: libc::c_int,
-    pub symbol_adapt16: Option::<
-        unsafe extern "C" fn(*mut MsacContext, *mut uint16_t, size_t) -> libc::c_uint,
-    >,
 }
-pub type CpuFlags = libc::c_uint;
-pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
-pub const DAV1D_X86_CPU_FLAG_AVX512ICL: CpuFlags = 16;
-pub const DAV1D_X86_CPU_FLAG_AVX2: CpuFlags = 8;
-pub const DAV1D_X86_CPU_FLAG_SSE41: CpuFlags = 4;
-pub const DAV1D_X86_CPU_FLAG_SSSE3: CpuFlags = 2;
-pub const DAV1D_X86_CPU_FLAG_SSE2: CpuFlags = 1;
 #[inline]
 unsafe extern "C" fn clz(mask: libc::c_uint) -> libc::c_int {
     return mask.leading_zeros() as i32;
@@ -75,41 +44,9 @@ unsafe extern "C" fn dav1d_msac_decode_bools(
         if !(fresh0 != 0) {
             break;
         }
-        v = v << 1 as libc::c_int | dav1d_msac_decode_bool_equi_sse2(s);
+        v = v << 1 as libc::c_int | dav1d_msac_decode_bool_equi_c(s);
     }
     return v;
-}
-#[inline(always)]
-unsafe extern "C" fn msac_init_x86(s: *mut MsacContext) {
-    let flags: libc::c_uint = dav1d_get_cpu_flags();
-    if flags & DAV1D_X86_CPU_FLAG_SSE2 as libc::c_int as libc::c_uint != 0 {
-        (*s)
-            .symbol_adapt16 = Some(
-            dav1d_msac_decode_symbol_adapt16_sse2
-                as unsafe extern "C" fn(
-                    *mut MsacContext,
-                    *mut uint16_t,
-                    size_t,
-                ) -> libc::c_uint,
-        );
-    }
-    if flags & DAV1D_X86_CPU_FLAG_AVX2 as libc::c_int as libc::c_uint != 0 {
-        (*s)
-            .symbol_adapt16 = Some(
-            dav1d_msac_decode_symbol_adapt16_avx2
-                as unsafe extern "C" fn(
-                    *mut MsacContext,
-                    *mut uint16_t,
-                    size_t,
-                ) -> libc::c_uint,
-        );
-    }
-}
-#[inline(always)]
-unsafe extern "C" fn dav1d_get_cpu_flags() -> libc::c_uint {
-    let mut flags: libc::c_uint = dav1d_cpu_flags & dav1d_cpu_flags_mask;
-    flags |= DAV1D_X86_CPU_FLAG_SSE2 as libc::c_int as libc::c_uint;
-    return flags;
 }
 #[inline]
 unsafe extern "C" fn ctx_refill(s: *mut MsacContext) {
@@ -221,11 +158,11 @@ pub unsafe extern "C" fn dav1d_msac_decode_subexp(
         unreachable!();
     }
     let mut a: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    if dav1d_msac_decode_bool_equi_sse2(s) != 0 {
-        if dav1d_msac_decode_bool_equi_sse2(s) != 0 {
+    if dav1d_msac_decode_bool_equi_c(s) != 0 {
+        if dav1d_msac_decode_bool_equi_c(s) != 0 {
             k = k
                 .wrapping_add(
-                    (dav1d_msac_decode_bool_equi_sse2(s))
+                    (dav1d_msac_decode_bool_equi_c(s))
                         .wrapping_add(1 as libc::c_int as libc::c_uint),
                 );
         }
@@ -331,7 +268,7 @@ pub unsafe extern "C" fn dav1d_msac_decode_bool_adapt_c(
     s: *mut MsacContext,
     cdf: *mut uint16_t,
 ) -> libc::c_uint {
-    let bit: libc::c_uint = dav1d_msac_decode_bool_sse2(s, *cdf as libc::c_uint);
+    let bit: libc::c_uint = dav1d_msac_decode_bool_c(s, *cdf as libc::c_uint);
     if (*s).allow_update_cdf != 0 {
         let count: libc::c_uint = *cdf.offset(1 as libc::c_int as isize) as libc::c_uint;
         let rate: libc::c_int = (4 as libc::c_int as libc::c_uint)
@@ -364,21 +301,17 @@ pub unsafe extern "C" fn dav1d_msac_decode_hi_tok_c(
     s: *mut MsacContext,
     cdf: *mut uint16_t,
 ) -> libc::c_uint {
-    let mut tok_br: libc::c_uint = dav1d_msac_decode_symbol_adapt4_sse2(
+    let mut tok_br: libc::c_uint = dav1d_msac_decode_symbol_adapt_c(
         s,
         cdf,
         3 as libc::c_int as size_t,
     );
     let mut tok: libc::c_uint = (3 as libc::c_int as libc::c_uint).wrapping_add(tok_br);
     if tok_br == 3 as libc::c_int as libc::c_uint {
-        tok_br = dav1d_msac_decode_symbol_adapt4_sse2(
-            s,
-            cdf,
-            3 as libc::c_int as size_t,
-        );
+        tok_br = dav1d_msac_decode_symbol_adapt_c(s, cdf, 3 as libc::c_int as size_t);
         tok = (6 as libc::c_int as libc::c_uint).wrapping_add(tok_br);
         if tok_br == 3 as libc::c_int as libc::c_uint {
-            tok_br = dav1d_msac_decode_symbol_adapt4_sse2(
+            tok_br = dav1d_msac_decode_symbol_adapt_c(
                 s,
                 cdf,
                 3 as libc::c_int as size_t,
@@ -387,7 +320,7 @@ pub unsafe extern "C" fn dav1d_msac_decode_hi_tok_c(
             if tok_br == 3 as libc::c_int as libc::c_uint {
                 tok = (12 as libc::c_int as libc::c_uint)
                     .wrapping_add(
-                        dav1d_msac_decode_symbol_adapt4_sse2(
+                        dav1d_msac_decode_symbol_adapt_c(
                             s,
                             cdf,
                             3 as libc::c_int as size_t,
@@ -416,14 +349,4 @@ pub unsafe extern "C" fn dav1d_msac_init(
     (*s).cnt = -(15 as libc::c_int);
     (*s).allow_update_cdf = (disable_cdf_update_flag == 0) as libc::c_int;
     ctx_refill(s);
-    (*s)
-        .symbol_adapt16 = Some(
-        dav1d_msac_decode_symbol_adapt_c
-            as unsafe extern "C" fn(
-                *mut MsacContext,
-                *mut uint16_t,
-                size_t,
-            ) -> libc::c_uint,
-    );
-    msac_init_x86(s);
 }

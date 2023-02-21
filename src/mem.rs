@@ -1,12 +1,5 @@
 use ::libc;
 extern "C" {
-    fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
-    fn free(_: *mut libc::c_void);
-    fn posix_memalign(
-        __memptr: *mut *mut libc::c_void,
-        __alignment: size_t,
-        __size: size_t,
-    ) -> libc::c_int;
     fn pthread_mutex_init(
         __mutex: *mut pthread_mutex_t,
         __mutexattr: *const pthread_mutexattr_t,
@@ -14,6 +7,13 @@ extern "C" {
     fn pthread_mutex_destroy(__mutex: *mut pthread_mutex_t) -> libc::c_int;
     fn pthread_mutex_lock(__mutex: *mut pthread_mutex_t) -> libc::c_int;
     fn pthread_mutex_unlock(__mutex: *mut pthread_mutex_t) -> libc::c_int;
+    fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
+    fn free(_: *mut libc::c_void);
+    fn posix_memalign(
+        __memptr: *mut *mut libc::c_void,
+        __alignment: size_t,
+        __size: size_t,
+    ) -> libc::c_int;
 }
 pub type __uint8_t = libc::c_uchar;
 pub type uint8_t = __uint8_t;
@@ -133,16 +133,16 @@ pub unsafe extern "C" fn dav1d_mem_pool_pop(
         data = (*buf).data as *mut uint8_t;
         if (buf as uintptr_t).wrapping_sub(data as uintptr_t) != size {
             dav1d_free_aligned(data as *mut libc::c_void);
-            current_block_20 = 9032322547367813010;
+            current_block_20 = 5350950662582111547;
         } else {
             current_block_20 = 2370887241019905314;
         }
     } else {
         pthread_mutex_unlock(&mut (*pool).lock);
-        current_block_20 = 9032322547367813010;
+        current_block_20 = 5350950662582111547;
     }
     match current_block_20 {
-        9032322547367813010 => {
+        5350950662582111547 => {
             data = dav1d_alloc_aligned(
                 size
                     .wrapping_add(

@@ -96,3690 +96,6 @@ extern "C" {
         max: libc::c_int,
     );
     fn dav1d_inv_wht4_1d_c(c: *mut int32_t, stride: ptrdiff_t);
-    fn dav1d_inv_txfm_add_adst_adst_8x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_dct_16x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_32x32_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_32x32_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_32x16_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_32x16_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_32x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_32x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_16x32_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_16x32_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_dct_16x16_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_flipadst_16x16_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_adst_16x16_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_dct_16x16_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_flipadst_16x16_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_adst_16x16_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_dct_16x16_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_identity_16x16_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_flipadst_16x16_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_adst_16x16_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_16x16_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_16x16_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_flipadst_16x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_adst_16x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_identity_16x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_identity_16x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_flipadst_16x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_adst_16x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_dct_16x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_flipadst_16x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_adst_16x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_dct_16x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_identity_16x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_flipadst_16x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_adst_16x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_16x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_16x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_8x32_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_8x32_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_flipadst_8x16_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_adst_8x16_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_identity_8x16_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_identity_8x16_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_dct_8x16_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_flipadst_8x16_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_adst_8x16_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_dct_8x16_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_flipadst_8x16_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_adst_8x16_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_dct_8x16_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_identity_8x16_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_flipadst_8x16_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_adst_8x16_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_8x16_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_8x16_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_flipadst_8x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_adst_8x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_identity_8x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_identity_8x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_dct_8x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_flipadst_8x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_adst_8x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_dct_8x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_flipadst_8x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_dct_8x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_identity_8x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_flipadst_8x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_adst_8x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_8x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_8x8_10bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_wht_wht_4x4_16bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_adst_8x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_flipadst_8x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_adst_8x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_8x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_8x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_flipadst_4x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_adst_4x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_identity_4x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_identity_4x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_dct_4x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_flipadst_4x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_adst_4x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_flipadst_8x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_adst_8x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_dct_8x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_flipadst_8x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_dct_8x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_dct_8x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_flipadst_8x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_identity_8x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_flipadst_16x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_identity_16x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_4x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_4x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_adst_4x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_flipadst_4x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_identity_4x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_dct_4x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_adst_4x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_flipadst_4x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_dct_4x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_adst_4x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_flipadst_4x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_dct_4x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_identity_4x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_identity_4x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_adst_4x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_flipadst_4x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_dct_4x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_4x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_4x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_adst_4x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_flipadst_4x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_identity_4x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_dct_4x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_adst_4x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_flipadst_4x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_dct_4x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_adst_4x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_flipadst_4x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_dct_4x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_identity_4x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_identity_4x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_adst_4x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_flipadst_4x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_4x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_4x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_adst_4x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_flipadst_4x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_identity_4x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_dct_4x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_adst_4x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_flipadst_4x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_identity_8x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_adst_16x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_flipadst_16x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_dct_16x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_adst_16x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_flipadst_16x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_dct_16x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_identity_16x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_identity_16x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_adst_16x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_flipadst_16x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_16x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_16x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_adst_16x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_flipadst_16x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_identity_16x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_dct_16x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_adst_16x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_flipadst_16x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_dct_16x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_adst_16x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_flipadst_16x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_dct_16x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_identity_16x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_identity_16x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_adst_16x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_flipadst_16x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_16x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_16x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_adst_16x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_flipadst_16x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_identity_16x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_dct_16x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_adst_16x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_flipadst_16x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_dct_16x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_adst_16x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_flipadst_16x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_dct_16x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_16x32_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_16x32_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_16x64_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_32x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_32x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_32x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_32x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_32x32_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_32x32_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_32x64_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_64x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_64x32_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_64x64_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_adst_16x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_16x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_16x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_8x32_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_8x32_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_flipadst_8x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_adst_8x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_identity_8x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_identity_8x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_dct_8x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_flipadst_8x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_adst_8x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_dct_8x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_flipadst_8x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_adst_8x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_dct_8x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_identity_8x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_flipadst_8x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_adst_8x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_8x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_8x16_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_flipadst_8x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_adst_8x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_identity_8x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_identity_8x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_dct_8x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_flipadst_8x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_adst_8x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_dct_8x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_flipadst_8x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_adst_8x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_dct_8x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_identity_8x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_dct_16x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_adst_8x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_8x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_8x8_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_flipadst_8x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_adst_8x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_identity_8x4_10bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_dct_8x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_dct_4x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_32x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_32x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_dct_16x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_flipadst_16x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_adst_16x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_dct_16x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_flipadst_16x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_adst_16x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_dct_16x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_identity_16x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_flipadst_16x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_adst_16x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_16x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_16x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_flipadst_16x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_adst_16x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_identity_16x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_identity_16x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_dct_16x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_flipadst_16x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_adst_16x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_dct_16x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_flipadst_16x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_adst_16x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_dct_16x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_identity_16x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_flipadst_16x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_adst_16x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_16x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_16x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_flipadst_16x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_adst_16x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_identity_16x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_identity_16x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_dct_16x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_flipadst_16x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_adst_16x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_dct_16x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_flipadst_16x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_adst_16x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_dct_16x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_identity_16x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_flipadst_16x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_adst_16x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_16x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_16x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_8x32_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_8x32_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_flipadst_8x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_adst_8x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_identity_8x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_identity_8x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_adst_8x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_dct_8x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_flipadst_8x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_adst_8x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_dct_8x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_identity_8x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_flipadst_8x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_adst_8x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_8x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_8x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_flipadst_8x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_adst_8x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_identity_8x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_identity_8x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_dct_8x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_flipadst_8x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_adst_8x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_dct_8x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_flipadst_8x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_adst_8x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_dct_8x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_identity_8x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_flipadst_8x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_adst_8x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_8x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_8x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_flipadst_8x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_adst_8x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_identity_8x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_flipadst_8x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_dct_8x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_flipadst_8x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_adst_8x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_dct_8x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_flipadst_8x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_adst_8x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_dct_8x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_identity_8x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_flipadst_8x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_adst_8x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_8x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_8x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_flipadst_4x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_adst_4x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_identity_4x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_identity_4x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_dct_4x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_flipadst_4x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_adst_4x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_dct_4x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_flipadst_4x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_adst_4x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_dct_4x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_identity_4x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_flipadst_4x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_adst_4x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_4x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_4x16_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_flipadst_4x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_adst_4x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_identity_4x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_identity_4x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_dct_4x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_flipadst_4x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_adst_4x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_identity_8x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_4x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_4x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_adst_4x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_flipadst_4x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_identity_4x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_dct_4x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_adst_4x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_flipadst_4x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_dct_4x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_adst_4x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_flipadst_4x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_dct_4x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_identity_4x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_identity_4x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_adst_4x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_flipadst_4x4_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_4x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_4x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_adst_4x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_flipadst_4x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_identity_4x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_dct_4x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_adst_4x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_flipadst_4x8_12bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_adst_8x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_flipadst_16x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_dct_16x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_adst_16x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_flipadst_16x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_dct_16x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_identity_16x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_identity_16x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_adst_16x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_flipadst_16x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_16x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_16x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_adst_16x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_flipadst_16x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_identity_16x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_dct_16x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_adst_16x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_flipadst_16x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_dct_16x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_adst_16x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_flipadst_16x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_dct_16x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_identity_16x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_identity_16x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_adst_16x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_flipadst_16x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_16x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_16x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_adst_16x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_flipadst_16x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_identity_16x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_dct_16x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_adst_16x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_flipadst_16x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_dct_16x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_adst_16x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_flipadst_16x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_dct_16x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_8x32_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_8x32_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_32x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_32x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_16x32_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_64x64_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_32x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_32x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_32x32_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_32x32_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_16x64_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_32x64_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_64x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_64x32_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_identity_8x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_identity_8x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_flipadst_8x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_8x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_8x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_adst_8x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_flipadst_8x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_identity_8x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_dct_8x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_adst_8x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_16x32_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_dct_8x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_adst_8x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_flipadst_8x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_dct_8x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_identity_8x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_identity_8x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_adst_8x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_flipadst_8x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_16x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_16x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_adst_16x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_flipadst_16x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_identity_16x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_dct_16x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_dct_8x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_dct_8x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_flipadst_8x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_adst_8x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_flipadst_8x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_adst_8x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_dct_8x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_identity_8x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_flipadst_8x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_adst_8x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_8x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_8x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_flipadst_8x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_adst_8x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_identity_8x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_identity_8x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_dct_8x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_flipadst_8x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_adst_8x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_dct_8x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_flipadst_8x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_adst_8x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_dct_8x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_identity_8x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_flipadst_8x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_adst_8x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_8x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_8x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_flipadst_4x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_adst_4x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_identity_4x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_identity_4x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_dct_4x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_flipadst_4x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_adst_4x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_dct_4x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_flipadst_4x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_adst_4x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_dct_4x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_identity_4x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_flipadst_4x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_adst_4x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_4x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_4x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_flipadst_4x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_adst_4x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_identity_4x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_identity_4x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_dct_4x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_flipadst_4x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_adst_4x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_dct_4x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_flipadst_4x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_adst_4x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_dct_4x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_identity_4x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_flipadst_4x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_adst_4x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_flipadst_8x16_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_4x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_flipadst_4x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_adst_4x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_identity_4x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_identity_4x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_dct_4x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_flipadst_4x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_adst_4x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_flipadst_dct_4x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_flipadst_4x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_adst_4x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_dct_4x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_identity_4x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_flipadst_4x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_adst_4x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_4x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_dct_dct_4x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_wht_wht_4x4_16bpc_sse2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_identity_identity_4x8_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_inv_txfm_add_adst_adst_16x4_16bpc_sse4(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        coeff: *mut coef,
-        eob: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    static mut dav1d_cpu_flags: libc::c_uint;
-    static mut dav1d_cpu_flags_mask: libc::c_uint;
 }
 pub type ptrdiff_t = libc::c_long;
 pub type __uint16_t = libc::c_ushort;
@@ -3845,16 +161,9 @@ pub type itxfm_fn = Option::<
 pub struct Dav1dInvTxfmDSPContext {
     pub itxfm_add: [[itxfm_fn; 17]; 19],
 }
-pub const DAV1D_X86_CPU_FLAG_AVX512ICL: CpuFlags = 16;
-pub const DAV1D_X86_CPU_FLAG_SSE2: CpuFlags = 1;
-pub const DAV1D_X86_CPU_FLAG_AVX2: CpuFlags = 8;
-pub const DAV1D_X86_CPU_FLAG_SSE41: CpuFlags = 4;
-pub const DAV1D_X86_CPU_FLAG_SSSE3: CpuFlags = 2;
 pub type itx_1d_fn = Option::<
     unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
 >;
-pub type CpuFlags = libc::c_uint;
-pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
 #[inline]
 unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
     return if a < b { a } else { b };
@@ -4017,6 +326,43 @@ unsafe extern "C" fn inv_txfm_add_c(
         dst = dst.offset(PXSTRIDE(stride) as isize);
     }
 }
+unsafe extern "C" fn inv_txfm_add_dct_dct_4x4_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        4 as libc::c_int,
+        4 as libc::c_int,
+        0 as libc::c_int,
+        Some(
+            dav1d_inv_dct4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_dct4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        1 as libc::c_int,
+        bitdepth_max,
+    );
+}
 unsafe extern "C" fn inv_txfm_add_identity_identity_4x4_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
@@ -4054,6 +400,228 @@ unsafe extern "C" fn inv_txfm_add_identity_identity_4x4_c(
         bitdepth_max,
     );
 }
+unsafe extern "C" fn inv_txfm_add_dct_flipadst_4x4_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        4 as libc::c_int,
+        4 as libc::c_int,
+        0 as libc::c_int,
+        Some(
+            dav1d_inv_dct4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_flipadst4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_flipadst_flipadst_4x4_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        4 as libc::c_int,
+        4 as libc::c_int,
+        0 as libc::c_int,
+        Some(
+            dav1d_inv_flipadst4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_flipadst4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_dct_identity_4x4_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        4 as libc::c_int,
+        4 as libc::c_int,
+        0 as libc::c_int,
+        Some(
+            dav1d_inv_dct4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_identity4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_identity_dct_4x4_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        4 as libc::c_int,
+        4 as libc::c_int,
+        0 as libc::c_int,
+        Some(
+            dav1d_inv_identity4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_dct4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_flipadst_identity_4x4_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        4 as libc::c_int,
+        4 as libc::c_int,
+        0 as libc::c_int,
+        Some(
+            dav1d_inv_flipadst4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_identity4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_identity_flipadst_4x4_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        4 as libc::c_int,
+        4 as libc::c_int,
+        0 as libc::c_int,
+        Some(
+            dav1d_inv_identity4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_flipadst4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
 unsafe extern "C" fn inv_txfm_add_adst_identity_4x4_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
@@ -4080,6 +648,43 @@ unsafe extern "C" fn inv_txfm_add_adst_identity_4x4_c(
         ),
         Some(
             dav1d_inv_identity4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_identity_adst_4x4_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        4 as libc::c_int,
+        4 as libc::c_int,
+        0 as libc::c_int,
+        Some(
+            dav1d_inv_identity4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_adst4_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -4313,7 +918,7 @@ unsafe extern "C" fn inv_txfm_add_flipadst_dct_4x4_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_dct_flipadst_4x4_c(
+unsafe extern "C" fn inv_txfm_add_identity_dct_4x8_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     coeff: *mut coef,
@@ -4326,81 +931,7 @@ unsafe extern "C" fn inv_txfm_add_dct_flipadst_4x4_c(
         coeff,
         eob,
         4 as libc::c_int,
-        4 as libc::c_int,
-        0 as libc::c_int,
-        Some(
-            dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_flipadst_flipadst_4x4_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        4 as libc::c_int,
-        4 as libc::c_int,
-        0 as libc::c_int,
-        Some(
-            dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_identity_adst_4x4_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        4 as libc::c_int,
-        4 as libc::c_int,
+        8 as libc::c_int,
         0 as libc::c_int,
         Some(
             dav1d_inv_identity4_1d_c
@@ -4412,7 +943,7 @@ unsafe extern "C" fn inv_txfm_add_identity_adst_4x4_c(
                 ) -> (),
         ),
         Some(
-            dav1d_inv_adst4_1d_c
+            dav1d_inv_dct8_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -4421,191 +952,6 @@ unsafe extern "C" fn inv_txfm_add_identity_adst_4x4_c(
                 ) -> (),
         ),
         0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_dct_identity_4x4_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        4 as libc::c_int,
-        4 as libc::c_int,
-        0 as libc::c_int,
-        Some(
-            dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_identity_dct_4x4_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        4 as libc::c_int,
-        4 as libc::c_int,
-        0 as libc::c_int,
-        Some(
-            dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_flipadst_identity_4x4_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        4 as libc::c_int,
-        4 as libc::c_int,
-        0 as libc::c_int,
-        Some(
-            dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_identity_flipadst_4x4_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        4 as libc::c_int,
-        4 as libc::c_int,
-        0 as libc::c_int,
-        Some(
-            dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_dct_dct_4x4_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        4 as libc::c_int,
-        4 as libc::c_int,
-        0 as libc::c_int,
-        Some(
-            dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        1 as libc::c_int,
         bitdepth_max,
     );
 }
@@ -4643,80 +989,6 @@ unsafe extern "C" fn inv_txfm_add_dct_dct_4x8_c(
                 ) -> (),
         ),
         1 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_identity_flipadst_4x8_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        4 as libc::c_int,
-        8 as libc::c_int,
-        0 as libc::c_int,
-        Some(
-            dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_adst_adst_4x8_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        4 as libc::c_int,
-        8 as libc::c_int,
-        0 as libc::c_int,
-        Some(
-            dav1d_inv_adst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
         bitdepth_max,
     );
 }
@@ -4942,43 +1214,6 @@ unsafe extern "C" fn inv_txfm_add_dct_identity_4x8_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_identity_dct_4x8_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        4 as libc::c_int,
-        8 as libc::c_int,
-        0 as libc::c_int,
-        Some(
-            dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
 unsafe extern "C" fn inv_txfm_add_flipadst_identity_4x8_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
@@ -5005,6 +1240,43 @@ unsafe extern "C" fn inv_txfm_add_flipadst_identity_4x8_c(
         ),
         Some(
             dav1d_inv_identity8_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_identity_flipadst_4x8_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        4 as libc::c_int,
+        8 as libc::c_int,
+        0 as libc::c_int,
+        Some(
+            dav1d_inv_identity4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_flipadst8_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -5090,6 +1362,43 @@ unsafe extern "C" fn inv_txfm_add_identity_adst_4x8_c(
         bitdepth_max,
     );
 }
+unsafe extern "C" fn inv_txfm_add_identity_identity_4x8_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        4 as libc::c_int,
+        8 as libc::c_int,
+        0 as libc::c_int,
+        Some(
+            dav1d_inv_identity4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_identity8_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
 unsafe extern "C" fn inv_txfm_add_adst_dct_4x8_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
@@ -5164,7 +1473,7 @@ unsafe extern "C" fn inv_txfm_add_dct_adst_4x8_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_identity_identity_4x8_c(
+unsafe extern "C" fn inv_txfm_add_adst_adst_4x8_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     coeff: *mut coef,
@@ -5180,7 +1489,7 @@ unsafe extern "C" fn inv_txfm_add_identity_identity_4x8_c(
         8 as libc::c_int,
         0 as libc::c_int,
         Some(
-            dav1d_inv_identity4_1d_c
+            dav1d_inv_adst4_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -5189,7 +1498,7 @@ unsafe extern "C" fn inv_txfm_add_identity_identity_4x8_c(
                 ) -> (),
         ),
         Some(
-            dav1d_inv_identity8_1d_c
+            dav1d_inv_adst8_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -5201,7 +1510,7 @@ unsafe extern "C" fn inv_txfm_add_identity_identity_4x8_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_identity_adst_4x16_c(
+unsafe extern "C" fn inv_txfm_add_dct_adst_4x16_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     coeff: *mut coef,
@@ -5217,7 +1526,7 @@ unsafe extern "C" fn inv_txfm_add_identity_adst_4x16_c(
         16 as libc::c_int,
         1 as libc::c_int,
         Some(
-            dav1d_inv_identity4_1d_c
+            dav1d_inv_dct4_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -5238,7 +1547,44 @@ unsafe extern "C" fn inv_txfm_add_identity_adst_4x16_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_adst_identity_4x16_c(
+unsafe extern "C" fn inv_txfm_add_flipadst_adst_4x16_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        4 as libc::c_int,
+        16 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_flipadst4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_adst16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_adst_flipadst_4x16_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     coeff: *mut coef,
@@ -5263,7 +1609,7 @@ unsafe extern "C" fn inv_txfm_add_adst_identity_4x16_c(
                 ) -> (),
         ),
         Some(
-            dav1d_inv_identity16_1d_c
+            dav1d_inv_flipadst16_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -5275,7 +1621,7 @@ unsafe extern "C" fn inv_txfm_add_adst_identity_4x16_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_identity_identity_4x16_c(
+unsafe extern "C" fn inv_txfm_add_flipadst_dct_4x16_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     coeff: *mut coef,
@@ -5291,7 +1637,7 @@ unsafe extern "C" fn inv_txfm_add_identity_identity_4x16_c(
         16 as libc::c_int,
         1 as libc::c_int,
         Some(
-            dav1d_inv_identity4_1d_c
+            dav1d_inv_flipadst4_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -5300,7 +1646,44 @@ unsafe extern "C" fn inv_txfm_add_identity_identity_4x16_c(
                 ) -> (),
         ),
         Some(
-            dav1d_inv_identity16_1d_c
+            dav1d_inv_dct16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_dct_flipadst_4x16_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        4 as libc::c_int,
+        16 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_dct4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_flipadst16_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -5349,7 +1732,7 @@ unsafe extern "C" fn inv_txfm_add_dct_dct_4x16_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_identity_flipadst_4x16_c(
+unsafe extern "C" fn inv_txfm_add_flipadst_flipadst_4x16_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     coeff: *mut coef,
@@ -5365,7 +1748,7 @@ unsafe extern "C" fn inv_txfm_add_identity_flipadst_4x16_c(
         16 as libc::c_int,
         1 as libc::c_int,
         Some(
-            dav1d_inv_identity4_1d_c
+            dav1d_inv_flipadst4_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -5386,7 +1769,7 @@ unsafe extern "C" fn inv_txfm_add_identity_flipadst_4x16_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_flipadst_identity_4x16_c(
+unsafe extern "C" fn inv_txfm_add_adst_adst_4x16_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     coeff: *mut coef,
@@ -5402,7 +1785,44 @@ unsafe extern "C" fn inv_txfm_add_flipadst_identity_4x16_c(
         16 as libc::c_int,
         1 as libc::c_int,
         Some(
-            dav1d_inv_flipadst4_1d_c
+            dav1d_inv_adst4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_adst16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_dct_identity_4x16_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        4 as libc::c_int,
+        16 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_dct4_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -5497,7 +1917,7 @@ unsafe extern "C" fn inv_txfm_add_identity_dct_4x16_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_dct_identity_4x16_c(
+unsafe extern "C" fn inv_txfm_add_flipadst_identity_4x16_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     coeff: *mut coef,
@@ -5513,7 +1933,7 @@ unsafe extern "C" fn inv_txfm_add_dct_identity_4x16_c(
         16 as libc::c_int,
         1 as libc::c_int,
         Some(
-            dav1d_inv_dct4_1d_c
+            dav1d_inv_flipadst4_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -5534,7 +1954,7 @@ unsafe extern "C" fn inv_txfm_add_dct_identity_4x16_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_flipadst_flipadst_4x16_c(
+unsafe extern "C" fn inv_txfm_add_identity_identity_4x16_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     coeff: *mut coef,
@@ -5550,7 +1970,44 @@ unsafe extern "C" fn inv_txfm_add_flipadst_flipadst_4x16_c(
         16 as libc::c_int,
         1 as libc::c_int,
         Some(
-            dav1d_inv_flipadst4_1d_c
+            dav1d_inv_identity4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_identity16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_identity_flipadst_4x16_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        4 as libc::c_int,
+        16 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_identity4_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -5571,81 +2028,7 @@ unsafe extern "C" fn inv_txfm_add_flipadst_flipadst_4x16_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_dct_flipadst_4x16_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        4 as libc::c_int,
-        16 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_flipadst_dct_4x16_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        4 as libc::c_int,
-        16 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_adst_flipadst_4x16_c(
+unsafe extern "C" fn inv_txfm_add_adst_identity_4x16_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     coeff: *mut coef,
@@ -5670,7 +2053,7 @@ unsafe extern "C" fn inv_txfm_add_adst_flipadst_4x16_c(
                 ) -> (),
         ),
         Some(
-            dav1d_inv_flipadst16_1d_c
+            dav1d_inv_identity16_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -5682,7 +2065,7 @@ unsafe extern "C" fn inv_txfm_add_adst_flipadst_4x16_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_flipadst_adst_4x16_c(
+unsafe extern "C" fn inv_txfm_add_identity_adst_4x16_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     coeff: *mut coef,
@@ -5698,7 +2081,7 @@ unsafe extern "C" fn inv_txfm_add_flipadst_adst_4x16_c(
         16 as libc::c_int,
         1 as libc::c_int,
         Some(
-            dav1d_inv_flipadst4_1d_c
+            dav1d_inv_identity4_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -5719,81 +2102,7 @@ unsafe extern "C" fn inv_txfm_add_flipadst_adst_4x16_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_adst_adst_4x16_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        4 as libc::c_int,
-        16 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_adst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_adst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_dct_adst_4x16_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        4 as libc::c_int,
-        16 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_adst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_dct_flipadst_8x4_c(
+unsafe extern "C" fn inv_txfm_add_flipadst_adst_8x4_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     coeff: *mut coef,
@@ -5809,7 +2118,7 @@ unsafe extern "C" fn inv_txfm_add_dct_flipadst_8x4_c(
         4 as libc::c_int,
         0 as libc::c_int,
         Some(
-            dav1d_inv_dct8_1d_c
+            dav1d_inv_flipadst8_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -5818,7 +2127,7 @@ unsafe extern "C" fn inv_txfm_add_dct_flipadst_8x4_c(
                 ) -> (),
         ),
         Some(
-            dav1d_inv_flipadst4_1d_c
+            dav1d_inv_adst4_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -5830,7 +2139,7 @@ unsafe extern "C" fn inv_txfm_add_dct_flipadst_8x4_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_identity_dct_8x4_c(
+unsafe extern "C" fn inv_txfm_add_identity_adst_8x4_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     coeff: *mut coef,
@@ -5855,7 +2164,7 @@ unsafe extern "C" fn inv_txfm_add_identity_dct_8x4_c(
                 ) -> (),
         ),
         Some(
-            dav1d_inv_dct4_1d_c
+            dav1d_inv_adst4_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -5864,6 +2173,43 @@ unsafe extern "C" fn inv_txfm_add_identity_dct_8x4_c(
                 ) -> (),
         ),
         0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_dct_dct_8x4_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        8 as libc::c_int,
+        4 as libc::c_int,
+        0 as libc::c_int,
+        Some(
+            dav1d_inv_dct8_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_dct4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        1 as libc::c_int,
         bitdepth_max,
     );
 }
@@ -6015,43 +2361,6 @@ unsafe extern "C" fn inv_txfm_add_adst_adst_8x4_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_flipadst_adst_8x4_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        8 as libc::c_int,
-        4 as libc::c_int,
-        0 as libc::c_int,
-        Some(
-            dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_adst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
 unsafe extern "C" fn inv_txfm_add_adst_flipadst_8x4_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
@@ -6126,6 +2435,43 @@ unsafe extern "C" fn inv_txfm_add_flipadst_dct_8x4_c(
         bitdepth_max,
     );
 }
+unsafe extern "C" fn inv_txfm_add_dct_flipadst_8x4_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        8 as libc::c_int,
+        4 as libc::c_int,
+        0 as libc::c_int,
+        Some(
+            dav1d_inv_dct8_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_flipadst4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
 unsafe extern "C" fn inv_txfm_add_flipadst_flipadst_8x4_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
@@ -6189,6 +2535,43 @@ unsafe extern "C" fn inv_txfm_add_dct_identity_8x4_c(
         ),
         Some(
             dav1d_inv_identity4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_identity_dct_8x4_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        8 as libc::c_int,
+        4 as libc::c_int,
+        0 as libc::c_int,
+        Some(
+            dav1d_inv_identity8_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_dct4_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -6311,7 +2694,7 @@ unsafe extern "C" fn inv_txfm_add_adst_identity_8x4_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_identity_adst_8x4_c(
+unsafe extern "C" fn inv_txfm_add_identity_flipadst_8x8_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     coeff: *mut coef,
@@ -6324,8 +2707,8 @@ unsafe extern "C" fn inv_txfm_add_identity_adst_8x4_c(
         coeff,
         eob,
         8 as libc::c_int,
-        4 as libc::c_int,
-        0 as libc::c_int,
+        8 as libc::c_int,
+        1 as libc::c_int,
         Some(
             dav1d_inv_identity8_1d_c
                 as unsafe extern "C" fn(
@@ -6336,7 +2719,7 @@ unsafe extern "C" fn inv_txfm_add_identity_adst_8x4_c(
                 ) -> (),
         ),
         Some(
-            dav1d_inv_adst4_1d_c
+            dav1d_inv_flipadst8_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -6348,7 +2731,7 @@ unsafe extern "C" fn inv_txfm_add_identity_adst_8x4_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_dct_dct_8x4_c(
+unsafe extern "C" fn inv_txfm_add_dct_dct_8x8_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     coeff: *mut coef,
@@ -6361,8 +2744,8 @@ unsafe extern "C" fn inv_txfm_add_dct_dct_8x4_c(
         coeff,
         eob,
         8 as libc::c_int,
-        4 as libc::c_int,
-        0 as libc::c_int,
+        8 as libc::c_int,
+        1 as libc::c_int,
         Some(
             dav1d_inv_dct8_1d_c
                 as unsafe extern "C" fn(
@@ -6373,7 +2756,7 @@ unsafe extern "C" fn inv_txfm_add_dct_dct_8x4_c(
                 ) -> (),
         ),
         Some(
-            dav1d_inv_dct4_1d_c
+            dav1d_inv_dct8_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -6422,7 +2805,44 @@ unsafe extern "C" fn inv_txfm_add_identity_identity_8x8_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_dct_dct_8x8_c(
+unsafe extern "C" fn inv_txfm_add_adst_dct_8x8_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        8 as libc::c_int,
+        8 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_adst8_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_dct8_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_dct_adst_8x8_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     coeff: *mut coef,
@@ -6447,6 +2867,154 @@ unsafe extern "C" fn inv_txfm_add_dct_dct_8x8_c(
                 ) -> (),
         ),
         Some(
+            dav1d_inv_adst8_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_adst_adst_8x8_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        8 as libc::c_int,
+        8 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_adst8_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_adst8_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_flipadst_adst_8x8_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        8 as libc::c_int,
+        8 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_flipadst8_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_adst8_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_adst_flipadst_8x8_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        8 as libc::c_int,
+        8 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_adst8_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_flipadst8_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_flipadst_dct_8x8_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        8 as libc::c_int,
+        8 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_flipadst8_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
             dav1d_inv_dct8_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
@@ -6455,7 +3023,44 @@ unsafe extern "C" fn inv_txfm_add_dct_dct_8x8_c(
                     libc::c_int,
                 ) -> (),
         ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_dct_flipadst_8x8_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        8 as libc::c_int,
+        8 as libc::c_int,
         1 as libc::c_int,
+        Some(
+            dav1d_inv_dct8_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_flipadst8_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
         bitdepth_max,
     );
 }
@@ -6533,7 +3138,7 @@ unsafe extern "C" fn inv_txfm_add_adst_identity_8x8_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_identity_flipadst_8x8_c(
+unsafe extern "C" fn inv_txfm_add_flipadst_flipadst_8x8_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     coeff: *mut coef,
@@ -6549,7 +3154,7 @@ unsafe extern "C" fn inv_txfm_add_identity_flipadst_8x8_c(
         8 as libc::c_int,
         1 as libc::c_int,
         Some(
-            dav1d_inv_identity8_1d_c
+            dav1d_inv_flipadst8_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -6596,43 +3201,6 @@ unsafe extern "C" fn inv_txfm_add_flipadst_identity_8x8_c(
         ),
         Some(
             dav1d_inv_identity8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_adst_dct_8x8_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        8 as libc::c_int,
-        8 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_dct8_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -6718,7 +3286,7 @@ unsafe extern "C" fn inv_txfm_add_dct_identity_8x8_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_flipadst_flipadst_8x8_c(
+unsafe extern "C" fn inv_txfm_add_dct_flipadst_8x16_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     coeff: *mut coef,
@@ -6731,380 +3299,10 @@ unsafe extern "C" fn inv_txfm_add_flipadst_flipadst_8x8_c(
         coeff,
         eob,
         8 as libc::c_int,
-        8 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_dct_flipadst_8x8_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        8 as libc::c_int,
-        8 as libc::c_int,
+        16 as libc::c_int,
         1 as libc::c_int,
         Some(
             dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_flipadst_dct_8x8_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        8 as libc::c_int,
-        8 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_adst_flipadst_8x8_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        8 as libc::c_int,
-        8 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_flipadst_adst_8x8_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        8 as libc::c_int,
-        8 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_adst_adst_8x8_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        8 as libc::c_int,
-        8 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_dct_adst_8x8_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        8 as libc::c_int,
-        8 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_adst_identity_8x16_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        8 as libc::c_int,
-        16 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_identity16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_adst_dct_8x16_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        8 as libc::c_int,
-        16 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_identity_adst_8x16_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        8 as libc::c_int,
-        16 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_identity8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_adst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_identity_flipadst_8x16_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        8 as libc::c_int,
-        16 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_identity8_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -7162,7 +3360,7 @@ unsafe extern "C" fn inv_txfm_add_dct_dct_8x16_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_identity_dct_8x16_c(
+unsafe extern "C" fn inv_txfm_add_identity_identity_8x16_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     coeff: *mut coef,
@@ -7187,43 +3385,6 @@ unsafe extern "C" fn inv_txfm_add_identity_dct_8x16_c(
                 ) -> (),
         ),
         Some(
-            dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_dct_identity_8x16_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        8 as libc::c_int,
-        16 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
             dav1d_inv_identity16_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
@@ -7236,155 +3397,7 @@ unsafe extern "C" fn inv_txfm_add_dct_identity_8x16_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_flipadst_identity_8x16_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        8 as libc::c_int,
-        16 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_identity16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_flipadst_flipadst_8x16_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        8 as libc::c_int,
-        16 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_dct_flipadst_8x16_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        8 as libc::c_int,
-        16 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_flipadst_dct_8x16_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        8 as libc::c_int,
-        16 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_adst_flipadst_8x16_c(
+unsafe extern "C" fn inv_txfm_add_adst_dct_8x16_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     coeff: *mut coef,
@@ -7409,7 +3422,7 @@ unsafe extern "C" fn inv_txfm_add_adst_flipadst_8x16_c(
                 ) -> (),
         ),
         Some(
-            dav1d_inv_flipadst16_1d_c
+            dav1d_inv_dct16_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -7421,7 +3434,7 @@ unsafe extern "C" fn inv_txfm_add_adst_flipadst_8x16_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_flipadst_adst_8x16_c(
+unsafe extern "C" fn inv_txfm_add_dct_adst_8x16_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     coeff: *mut coef,
@@ -7437,7 +3450,7 @@ unsafe extern "C" fn inv_txfm_add_flipadst_adst_8x16_c(
         16 as libc::c_int,
         1 as libc::c_int,
         Some(
-            dav1d_inv_flipadst8_1d_c
+            dav1d_inv_dct8_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -7495,7 +3508,192 @@ unsafe extern "C" fn inv_txfm_add_adst_adst_8x16_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_identity_identity_8x16_c(
+unsafe extern "C" fn inv_txfm_add_flipadst_adst_8x16_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        8 as libc::c_int,
+        16 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_flipadst8_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_adst16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_adst_flipadst_8x16_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        8 as libc::c_int,
+        16 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_adst8_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_flipadst16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_flipadst_dct_8x16_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        8 as libc::c_int,
+        16 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_flipadst8_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_dct16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_flipadst_flipadst_8x16_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        8 as libc::c_int,
+        16 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_flipadst8_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_flipadst16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_dct_identity_8x16_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        8 as libc::c_int,
+        16 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_dct8_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_identity16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_identity_dct_8x16_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     coeff: *mut coef,
@@ -7520,7 +3718,7 @@ unsafe extern "C" fn inv_txfm_add_identity_identity_8x16_c(
                 ) -> (),
         ),
         Some(
-            dav1d_inv_identity16_1d_c
+            dav1d_inv_dct16_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -7532,7 +3730,7 @@ unsafe extern "C" fn inv_txfm_add_identity_identity_8x16_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_dct_adst_8x16_c(
+unsafe extern "C" fn inv_txfm_add_flipadst_identity_8x16_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     coeff: *mut coef,
@@ -7548,7 +3746,118 @@ unsafe extern "C" fn inv_txfm_add_dct_adst_8x16_c(
         16 as libc::c_int,
         1 as libc::c_int,
         Some(
-            dav1d_inv_dct8_1d_c
+            dav1d_inv_flipadst8_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_identity16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_identity_flipadst_8x16_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        8 as libc::c_int,
+        16 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_identity8_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_flipadst16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_adst_identity_8x16_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        8 as libc::c_int,
+        16 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_adst8_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_identity16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_identity_adst_8x16_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        8 as libc::c_int,
+        16 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_identity8_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -7643,6 +3952,265 @@ unsafe extern "C" fn inv_txfm_add_identity_identity_8x32_c(
         bitdepth_max,
     );
 }
+unsafe extern "C" fn inv_txfm_add_flipadst_identity_16x4_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        16 as libc::c_int,
+        4 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_flipadst16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_identity4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_identity_adst_16x4_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        16 as libc::c_int,
+        4 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_identity16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_adst4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_adst_flipadst_16x4_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        16 as libc::c_int,
+        4 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_adst16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_flipadst4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_dct_dct_16x4_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        16 as libc::c_int,
+        4 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_dct16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_dct4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        1 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_identity_identity_16x4_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        16 as libc::c_int,
+        4 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_identity16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_identity4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_adst_dct_16x4_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        16 as libc::c_int,
+        4 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_adst16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_dct4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_dct_adst_16x4_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        16 as libc::c_int,
+        4 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_dct16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_adst4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
 unsafe extern "C" fn inv_txfm_add_adst_adst_16x4_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
@@ -7660,6 +4228,228 @@ unsafe extern "C" fn inv_txfm_add_adst_adst_16x4_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_adst16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_adst4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_flipadst_dct_16x4_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        16 as libc::c_int,
+        4 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_flipadst16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_dct4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_dct_flipadst_16x4_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        16 as libc::c_int,
+        4 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_dct16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_flipadst4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_flipadst_flipadst_16x4_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        16 as libc::c_int,
+        4 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_flipadst16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_flipadst4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_dct_identity_16x4_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        16 as libc::c_int,
+        4 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_dct16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_identity4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_identity_dct_16x4_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        16 as libc::c_int,
+        4 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_identity16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_dct4_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_flipadst_adst_16x4_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        16 as libc::c_int,
+        4 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_flipadst16_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -7754,598 +4544,6 @@ unsafe extern "C" fn inv_txfm_add_adst_identity_16x4_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_identity_adst_16x4_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        16 as libc::c_int,
-        4 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_identity16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_adst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_dct_dct_16x4_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        16 as libc::c_int,
-        4 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        1 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_flipadst_identity_16x4_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        16 as libc::c_int,
-        4 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_identity_dct_16x4_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        16 as libc::c_int,
-        4 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_identity16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_dct_identity_16x4_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        16 as libc::c_int,
-        4 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_flipadst_flipadst_16x4_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        16 as libc::c_int,
-        4 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_dct_flipadst_16x4_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        16 as libc::c_int,
-        4 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_flipadst_dct_16x4_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        16 as libc::c_int,
-        4 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_adst_flipadst_16x4_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        16 as libc::c_int,
-        4 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_adst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_flipadst_adst_16x4_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        16 as libc::c_int,
-        4 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_adst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_dct_adst_16x4_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        16 as libc::c_int,
-        4 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_adst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_adst_dct_16x4_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        16 as libc::c_int,
-        4 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_adst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_identity_identity_16x4_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        16 as libc::c_int,
-        4 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_identity16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_identity_flipadst_16x8_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        16 as libc::c_int,
-        8 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_identity16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_flipadst_flipadst_16x8_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        16 as libc::c_int,
-        8 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_identity_dct_16x8_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        16 as libc::c_int,
-        8 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_identity16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
 unsafe extern "C" fn inv_txfm_add_flipadst_identity_16x8_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
@@ -8363,43 +4561,6 @@ unsafe extern "C" fn inv_txfm_add_flipadst_identity_16x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_identity8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_adst_identity_16x8_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        16 as libc::c_int,
-        8 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_adst16_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -8454,43 +4615,6 @@ unsafe extern "C" fn inv_txfm_add_identity_adst_16x8_c(
                 ) -> (),
         ),
         0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_dct_dct_16x8_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        16 as libc::c_int,
-        8 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        1 as libc::c_int,
         bitdepth_max,
     );
 }
@@ -8631,43 +4755,6 @@ unsafe extern "C" fn inv_txfm_add_adst_adst_16x8_c(
         ),
         Some(
             dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_dct_identity_16x8_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        16 as libc::c_int,
-        8 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_identity8_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -8827,7 +4914,7 @@ unsafe extern "C" fn inv_txfm_add_dct_flipadst_16x8_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_flipadst_adst_16x16_c(
+unsafe extern "C" fn inv_txfm_add_flipadst_flipadst_16x8_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     coeff: *mut coef,
@@ -8840,8 +4927,8 @@ unsafe extern "C" fn inv_txfm_add_flipadst_adst_16x16_c(
         coeff,
         eob,
         16 as libc::c_int,
-        16 as libc::c_int,
-        2 as libc::c_int,
+        8 as libc::c_int,
+        1 as libc::c_int,
         Some(
             dav1d_inv_flipadst16_1d_c
                 as unsafe extern "C" fn(
@@ -8852,7 +4939,192 @@ unsafe extern "C" fn inv_txfm_add_flipadst_adst_16x16_c(
                 ) -> (),
         ),
         Some(
+            dav1d_inv_flipadst8_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_dct_identity_16x8_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        16 as libc::c_int,
+        8 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_dct16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_identity8_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_identity_dct_16x8_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        16 as libc::c_int,
+        8 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_identity16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_dct8_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_dct_dct_16x8_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        16 as libc::c_int,
+        8 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_dct16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_dct8_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        1 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_identity_flipadst_16x8_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        16 as libc::c_int,
+        8 as libc::c_int,
+        1 as libc::c_int,
+        Some(
+            dav1d_inv_identity16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_flipadst8_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_adst_identity_16x8_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        16 as libc::c_int,
+        8 as libc::c_int,
+        1 as libc::c_int,
+        Some(
             dav1d_inv_adst16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_identity8_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -8901,43 +5173,6 @@ unsafe extern "C" fn inv_txfm_add_adst_adst_16x16_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_dct_identity_16x16_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        16 as libc::c_int,
-        16 as libc::c_int,
-        2 as libc::c_int,
-        Some(
-            dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_identity16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
 unsafe extern "C" fn inv_txfm_add_identity_dct_16x16_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
@@ -8964,80 +5199,6 @@ unsafe extern "C" fn inv_txfm_add_identity_dct_16x16_c(
         ),
         Some(
             dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_dct_dct_16x16_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        16 as libc::c_int,
-        16 as libc::c_int,
-        2 as libc::c_int,
-        Some(
-            dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        1 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_dct_flipadst_16x16_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        16 as libc::c_int,
-        16 as libc::c_int,
-        2 as libc::c_int,
-        Some(
-            dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_flipadst16_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -9086,80 +5247,6 @@ unsafe extern "C" fn inv_txfm_add_identity_identity_16x16_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_flipadst_dct_16x16_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        16 as libc::c_int,
-        16 as libc::c_int,
-        2 as libc::c_int,
-        Some(
-            dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
-unsafe extern "C" fn inv_txfm_add_flipadst_flipadst_16x16_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        16 as libc::c_int,
-        16 as libc::c_int,
-        2 as libc::c_int,
-        Some(
-            dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
 unsafe extern "C" fn inv_txfm_add_adst_dct_16x16_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
@@ -9186,6 +5273,117 @@ unsafe extern "C" fn inv_txfm_add_adst_dct_16x16_c(
         ),
         Some(
             dav1d_inv_dct16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_dct_adst_16x16_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        16 as libc::c_int,
+        16 as libc::c_int,
+        2 as libc::c_int,
+        Some(
+            dav1d_inv_dct16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_adst16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_dct_dct_16x16_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        16 as libc::c_int,
+        16 as libc::c_int,
+        2 as libc::c_int,
+        Some(
+            dav1d_inv_dct16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_dct16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        1 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_flipadst_adst_16x16_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        16 as libc::c_int,
+        16 as libc::c_int,
+        2 as libc::c_int,
+        Some(
+            dav1d_inv_flipadst16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_adst16_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -9234,7 +5432,44 @@ unsafe extern "C" fn inv_txfm_add_adst_flipadst_16x16_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_dct_adst_16x16_c(
+unsafe extern "C" fn inv_txfm_add_flipadst_dct_16x16_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        16 as libc::c_int,
+        16 as libc::c_int,
+        2 as libc::c_int,
+        Some(
+            dav1d_inv_flipadst16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_dct16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_dct_flipadst_16x16_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     coeff: *mut coef,
@@ -9259,7 +5494,81 @@ unsafe extern "C" fn inv_txfm_add_dct_adst_16x16_c(
                 ) -> (),
         ),
         Some(
-            dav1d_inv_adst16_1d_c
+            dav1d_inv_flipadst16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_flipadst_flipadst_16x16_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        16 as libc::c_int,
+        16 as libc::c_int,
+        2 as libc::c_int,
+        Some(
+            dav1d_inv_flipadst16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_flipadst16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_dct_identity_16x16_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        16 as libc::c_int,
+        16 as libc::c_int,
+        2 as libc::c_int,
+        Some(
+            dav1d_inv_dct16_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_identity16_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -9456,43 +5765,6 @@ unsafe extern "C" fn inv_txfm_add_identity_identity_32x8_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_identity_identity_32x16_c(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    eob: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    inv_txfm_add_c(
-        dst,
-        stride,
-        coeff,
-        eob,
-        32 as libc::c_int,
-        16 as libc::c_int,
-        1 as libc::c_int,
-        Some(
-            dav1d_inv_identity32_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        Some(
-            dav1d_inv_identity16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        ),
-        0 as libc::c_int,
-        bitdepth_max,
-    );
-}
 unsafe extern "C" fn inv_txfm_add_dct_dct_32x16_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
@@ -9530,7 +5802,7 @@ unsafe extern "C" fn inv_txfm_add_dct_dct_32x16_c(
         bitdepth_max,
     );
 }
-unsafe extern "C" fn inv_txfm_add_identity_identity_32x32_c(
+unsafe extern "C" fn inv_txfm_add_identity_identity_32x16_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     coeff: *mut coef,
@@ -9543,8 +5815,8 @@ unsafe extern "C" fn inv_txfm_add_identity_identity_32x32_c(
         coeff,
         eob,
         32 as libc::c_int,
-        32 as libc::c_int,
-        2 as libc::c_int,
+        16 as libc::c_int,
+        1 as libc::c_int,
         Some(
             dav1d_inv_identity32_1d_c
                 as unsafe extern "C" fn(
@@ -9555,7 +5827,7 @@ unsafe extern "C" fn inv_txfm_add_identity_identity_32x32_c(
                 ) -> (),
         ),
         Some(
-            dav1d_inv_identity32_1d_c
+            dav1d_inv_identity16_1d_c
                 as unsafe extern "C" fn(
                     *mut int32_t,
                     ptrdiff_t,
@@ -9601,6 +5873,43 @@ unsafe extern "C" fn inv_txfm_add_dct_dct_32x32_c(
                 ) -> (),
         ),
         1 as libc::c_int,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn inv_txfm_add_identity_identity_32x32_c(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    coeff: *mut coef,
+    eob: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    inv_txfm_add_c(
+        dst,
+        stride,
+        coeff,
+        eob,
+        32 as libc::c_int,
+        32 as libc::c_int,
+        2 as libc::c_int,
+        Some(
+            dav1d_inv_identity32_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        Some(
+            dav1d_inv_identity32_1d_c
+                as unsafe extern "C" fn(
+                    *mut int32_t,
+                    ptrdiff_t,
+                    libc::c_int,
+                    libc::c_int,
+                ) -> (),
+        ),
+        0 as libc::c_int,
         bitdepth_max,
     );
 }
@@ -9811,6876 +6120,6 @@ unsafe extern "C" fn inv_txfm_add_wht_wht_4x4_c(
         y_0 += 1;
         dst = dst.offset(PXSTRIDE(stride) as isize);
     }
-}
-#[inline(always)]
-unsafe extern "C" fn itx_dsp_init_x86(c: *mut Dav1dInvTxfmDSPContext, bpc: libc::c_int) {
-    let flags: libc::c_uint = dav1d_get_cpu_flags();
-    if flags & DAV1D_X86_CPU_FLAG_SSE2 as libc::c_int as libc::c_uint == 0 {
-        return;
-    }
-    (*c)
-        .itxfm_add[TX_4X4 as libc::c_int
-        as usize][WHT_WHT as libc::c_int
-        as usize] = Some(
-        dav1d_inv_txfm_add_wht_wht_4x4_16bpc_sse2
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *mut coef,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    if flags & DAV1D_X86_CPU_FLAG_SSSE3 as libc::c_int as libc::c_uint == 0 {
-        return;
-    }
-    if flags & DAV1D_X86_CPU_FLAG_SSE41 as libc::c_int as libc::c_uint == 0 {
-        return;
-    }
-    if bpc == 10 as libc::c_int {
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_4x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_4x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][ADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_adst_4x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][FLIPADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_flipadst_4x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][H_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_identity_4x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][DCT_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_dct_4x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][ADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_adst_4x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][FLIPADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_flipadst_4x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][DCT_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_dct_4x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][ADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_adst_4x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][FLIPADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_flipadst_4x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][V_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_dct_4x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][H_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_identity_4x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][H_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_identity_4x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][V_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_adst_4x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][V_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_flipadst_4x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_4x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_4x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][ADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_adst_4x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][FLIPADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_flipadst_4x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][H_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_identity_4x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][DCT_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_dct_4x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][ADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_adst_4x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][FLIPADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_flipadst_4x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][DCT_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_dct_4x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][ADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_adst_4x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][FLIPADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_flipadst_4x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][V_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_dct_4x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][H_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_identity_4x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][H_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_identity_4x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][V_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_adst_4x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][V_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_flipadst_4x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_4x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_4x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][ADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_adst_4x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][FLIPADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_flipadst_4x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][H_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_identity_4x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][DCT_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_dct_4x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][ADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_adst_4x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][FLIPADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_flipadst_4x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][DCT_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_dct_4x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][ADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_adst_4x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][FLIPADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_flipadst_4x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][V_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_dct_4x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][H_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_identity_4x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][H_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_identity_4x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][V_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_adst_4x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][V_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_flipadst_4x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_8x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_8x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][ADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_adst_8x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][FLIPADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_flipadst_8x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][H_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_identity_8x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][DCT_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_dct_8x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][ADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_adst_8x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][FLIPADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_flipadst_8x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][DCT_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_dct_8x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][ADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_adst_8x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][FLIPADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_flipadst_8x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][V_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_dct_8x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][H_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_identity_8x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][H_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_identity_8x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][V_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_adst_8x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][V_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_flipadst_8x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_8x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_8x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][ADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_adst_8x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][FLIPADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_flipadst_8x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][H_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_identity_8x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][DCT_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_dct_8x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][ADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_adst_8x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][FLIPADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_flipadst_8x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][DCT_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_dct_8x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][ADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_adst_8x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][FLIPADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_flipadst_8x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][V_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_dct_8x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][H_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_identity_8x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][H_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_identity_8x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][V_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_adst_8x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][V_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_flipadst_8x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_8x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_8x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][ADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_adst_8x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][FLIPADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_flipadst_8x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][H_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_identity_8x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][DCT_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_dct_8x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][ADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_adst_8x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][FLIPADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_flipadst_8x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][DCT_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_dct_8x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][ADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_adst_8x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][FLIPADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_flipadst_8x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][V_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_dct_8x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][H_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_identity_8x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][H_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_identity_8x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][V_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_adst_8x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][V_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_flipadst_8x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_16x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_16x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][ADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_adst_16x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][FLIPADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_flipadst_16x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][H_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_identity_16x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][DCT_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_dct_16x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][ADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_adst_16x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][FLIPADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_flipadst_16x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][DCT_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_dct_16x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][ADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_adst_16x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][FLIPADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_flipadst_16x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][V_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_dct_16x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][H_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_identity_16x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][H_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_identity_16x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][V_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_adst_16x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][V_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_flipadst_16x4_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_16x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_16x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][ADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_adst_16x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][FLIPADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_flipadst_16x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][H_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_identity_16x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][DCT_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_dct_16x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][ADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_adst_16x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][FLIPADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_flipadst_16x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][DCT_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_dct_16x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][ADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_adst_16x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][FLIPADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_flipadst_16x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][V_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_dct_16x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][H_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_identity_16x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][H_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_identity_16x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][V_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_adst_16x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][V_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_flipadst_16x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_16x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_16x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][ADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_adst_16x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][FLIPADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_flipadst_16x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][H_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_identity_16x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][DCT_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_dct_16x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][ADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_adst_16x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][FLIPADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_flipadst_16x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][DCT_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_dct_16x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][ADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_adst_16x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][FLIPADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_flipadst_16x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][V_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_dct_16x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X32 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_8x32_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X32 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_8x32_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_32X8 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_32x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_32X8 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_32x8_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X32 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_16x32_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X32 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_16x32_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_32X16 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_32x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_32X16 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_32x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_32X32 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_32x32_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_32X32 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_32x32_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X64 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_16x64_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_32X64 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_32x64_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_64X16 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_64x16_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_64X32 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_64x32_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_64X64 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_64x64_16bpc_sse4
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-    }
-    if flags & DAV1D_X86_CPU_FLAG_AVX2 as libc::c_int as libc::c_uint == 0 {
-        return;
-    }
-    (*c)
-        .itxfm_add[TX_4X4 as libc::c_int
-        as usize][WHT_WHT as libc::c_int
-        as usize] = Some(
-        dav1d_inv_txfm_add_wht_wht_4x4_16bpc_avx2
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *mut coef,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    if bpc == 10 as libc::c_int {
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_4x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_4x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][ADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_adst_4x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][FLIPADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_flipadst_4x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][H_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_identity_4x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][DCT_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_dct_4x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][ADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_adst_4x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][FLIPADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_flipadst_4x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][DCT_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_dct_4x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][ADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_adst_4x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][FLIPADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_flipadst_4x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][V_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_dct_4x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][H_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_identity_4x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][H_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_identity_4x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][V_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_adst_4x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][V_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_flipadst_4x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_4x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_4x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][ADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_adst_4x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][FLIPADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_flipadst_4x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][H_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_identity_4x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][DCT_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_dct_4x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][ADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_adst_4x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][FLIPADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_flipadst_4x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][DCT_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_dct_4x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][ADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_adst_4x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][FLIPADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_flipadst_4x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][V_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_dct_4x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][H_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_identity_4x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][H_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_identity_4x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][V_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_adst_4x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][V_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_flipadst_4x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_4x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_4x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][ADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_adst_4x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][FLIPADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_flipadst_4x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][H_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_identity_4x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][DCT_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_dct_4x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][ADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_adst_4x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][FLIPADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_flipadst_4x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][DCT_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_dct_4x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][ADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_adst_4x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][FLIPADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_flipadst_4x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][V_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_dct_4x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][H_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_identity_4x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][H_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_identity_4x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][V_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_adst_4x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][V_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_flipadst_4x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_8x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_8x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][ADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_adst_8x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][FLIPADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_flipadst_8x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][H_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_identity_8x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][DCT_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_dct_8x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][ADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_adst_8x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][FLIPADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_flipadst_8x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][DCT_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_dct_8x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][ADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_adst_8x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][FLIPADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_flipadst_8x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][V_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_dct_8x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][H_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_identity_8x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][H_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_identity_8x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][V_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_adst_8x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][V_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_flipadst_8x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_8x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_8x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][ADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_adst_8x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][FLIPADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_flipadst_8x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][H_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_identity_8x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][DCT_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_dct_8x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][ADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_adst_8x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][FLIPADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_flipadst_8x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][DCT_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_dct_8x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][ADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_adst_8x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][FLIPADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_flipadst_8x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][V_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_dct_8x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][H_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_identity_8x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][H_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_identity_8x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][V_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_adst_8x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][V_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_flipadst_8x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_8x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_8x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][ADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_adst_8x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][FLIPADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_flipadst_8x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][H_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_identity_8x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][DCT_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_dct_8x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][ADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_adst_8x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][FLIPADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_flipadst_8x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][DCT_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_dct_8x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][ADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_adst_8x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][FLIPADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_flipadst_8x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][V_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_dct_8x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][H_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_identity_8x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][H_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_identity_8x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][V_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_adst_8x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][V_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_flipadst_8x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X32 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_8x32_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X32 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_8x32_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_16x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_16x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][ADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_adst_16x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][FLIPADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_flipadst_16x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][H_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_identity_16x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][DCT_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_dct_16x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][ADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_adst_16x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][FLIPADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_flipadst_16x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][DCT_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_dct_16x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][ADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_adst_16x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][FLIPADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_flipadst_16x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][V_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_dct_16x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][H_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_identity_16x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][H_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_identity_16x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][V_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_adst_16x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][V_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_flipadst_16x4_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_16x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_16x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][ADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_adst_16x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][FLIPADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_flipadst_16x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][H_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_identity_16x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][DCT_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_dct_16x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][ADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_adst_16x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][FLIPADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_flipadst_16x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][DCT_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_dct_16x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][ADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_adst_16x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][FLIPADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_flipadst_16x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][V_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_dct_16x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][H_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_identity_16x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][H_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_identity_16x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][V_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_adst_16x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][V_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_flipadst_16x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_16x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_16x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][ADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_adst_16x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][FLIPADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_flipadst_16x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][H_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_identity_16x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][DCT_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_dct_16x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][ADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_adst_16x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][FLIPADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_flipadst_16x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][DCT_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_dct_16x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][ADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_adst_16x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][FLIPADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_flipadst_16x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][V_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_dct_16x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X32 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_16x32_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X32 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_16x32_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X64 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_16x64_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_32X8 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_32x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_32X8 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_32x8_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_32X16 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_32x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_32X16 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_32x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_32X32 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_32x32_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_32X32 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_32x32_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_32X64 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_32x64_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_64X16 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_64x16_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_64X32 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_64x32_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_64X64 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_64x64_10bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-    } else {
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_4x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_4x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][ADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_adst_4x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][FLIPADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_flipadst_4x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][H_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_identity_4x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][DCT_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_dct_4x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][ADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_adst_4x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][FLIPADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_flipadst_4x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][DCT_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_dct_4x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][ADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_adst_4x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][FLIPADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_flipadst_4x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][V_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_dct_4x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][H_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_identity_4x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][H_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_identity_4x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][V_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_adst_4x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_4X4 as libc::c_int
-            as usize][V_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_flipadst_4x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_4x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_4x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][ADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_adst_4x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][FLIPADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_flipadst_4x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][H_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_identity_4x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][DCT_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_dct_4x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][ADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_adst_4x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][FLIPADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_flipadst_4x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][DCT_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_dct_4x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][ADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_adst_4x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][FLIPADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_flipadst_4x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][V_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_dct_4x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][H_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_identity_4x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][H_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_identity_4x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][V_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_adst_4x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X8 as libc::c_int
-            as usize][V_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_flipadst_4x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_4x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_4x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][ADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_adst_4x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][FLIPADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_flipadst_4x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][H_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_identity_4x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][DCT_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_dct_4x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][ADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_adst_4x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][FLIPADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_flipadst_4x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][DCT_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_dct_4x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][ADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_adst_4x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][FLIPADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_flipadst_4x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][V_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_dct_4x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][H_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_identity_4x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][H_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_identity_4x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][V_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_adst_4x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_4X16 as libc::c_int
-            as usize][V_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_flipadst_4x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_8x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_8x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][ADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_adst_8x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][FLIPADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_flipadst_8x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][H_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_identity_8x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][DCT_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_dct_8x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][ADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_adst_8x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][FLIPADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_flipadst_8x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][DCT_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_dct_8x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][ADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_adst_8x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][FLIPADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_flipadst_8x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][V_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_dct_8x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][H_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_identity_8x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][H_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_identity_8x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][V_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_adst_8x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X4 as libc::c_int
-            as usize][V_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_flipadst_8x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_8x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_8x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][ADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_adst_8x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][FLIPADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_flipadst_8x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][H_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_identity_8x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][DCT_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_dct_8x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][ADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_adst_8x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][FLIPADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_flipadst_8x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][DCT_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_dct_8x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][ADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_adst_8x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][FLIPADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_flipadst_8x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][V_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_dct_8x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][H_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_identity_8x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][H_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_identity_8x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][V_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_adst_8x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][V_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_flipadst_8x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_8x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_8x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][ADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_adst_8x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][FLIPADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_flipadst_8x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][H_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_identity_8x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][DCT_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_dct_8x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][ADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_adst_8x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][FLIPADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_flipadst_8x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][DCT_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_dct_8x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][ADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_adst_8x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][FLIPADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_flipadst_8x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][V_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_dct_8x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][H_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_identity_8x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][H_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_identity_8x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][V_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_adst_8x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][V_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_flipadst_8x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X32 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_8x32_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X32 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_8x32_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_16x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_16x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][ADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_adst_16x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][FLIPADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_flipadst_16x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][H_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_identity_16x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][DCT_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_dct_16x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][ADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_adst_16x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][FLIPADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_flipadst_16x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][DCT_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_dct_16x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][ADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_adst_16x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][FLIPADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_flipadst_16x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][V_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_dct_16x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][H_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_identity_16x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][H_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_identity_16x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][V_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_adst_16x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X4 as libc::c_int
-            as usize][V_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_flipadst_16x4_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_16x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_16x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][ADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_adst_16x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][FLIPADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_flipadst_16x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][H_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_identity_16x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][DCT_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_dct_16x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][ADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_adst_16x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][FLIPADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_flipadst_16x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][DCT_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_dct_16x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][ADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_adst_16x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][FLIPADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_flipadst_16x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][V_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_dct_16x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][H_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_identity_16x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][H_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_identity_16x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][V_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_adst_16x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][V_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_flipadst_16x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_16x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_16x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][ADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_adst_16x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][FLIPADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_flipadst_16x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][H_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_identity_16x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][DCT_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_dct_16x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][ADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_adst_16x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][FLIPADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_flipadst_16x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][DCT_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_dct_16x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][ADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_adst_16x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][FLIPADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_flipadst_16x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][V_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_dct_16x16_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_32X8 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_32x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_32X8 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_32x8_12bpc_avx2
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-    }
-    if flags & DAV1D_X86_CPU_FLAG_AVX512ICL as libc::c_int as libc::c_uint == 0 {
-        return;
-    }
-    if bpc == 10 as libc::c_int {
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_8x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_8x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][ADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_adst_8x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][FLIPADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_flipadst_8x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][H_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_identity_8x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][DCT_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_dct_8x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][ADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_adst_8x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][FLIPADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_flipadst_8x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][DCT_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_dct_8x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][ADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_adst_8x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][FLIPADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_flipadst_8x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][V_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_dct_8x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][H_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_identity_8x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][H_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_identity_8x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][V_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_adst_8x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_8X8 as libc::c_int
-            as usize][V_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_flipadst_8x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_8x16_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_8x16_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][ADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_adst_8x16_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][FLIPADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_flipadst_8x16_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][H_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_identity_8x16_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][DCT_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_dct_8x16_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][ADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_adst_8x16_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][FLIPADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_flipadst_8x16_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][DCT_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_dct_8x16_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][ADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_adst_8x16_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][FLIPADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_flipadst_8x16_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][V_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_dct_8x16_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][H_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_identity_8x16_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][H_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_identity_8x16_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][V_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_adst_8x16_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X16 as libc::c_int
-            as usize][V_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_flipadst_8x16_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X32 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_8x32_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_8X32 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_8x32_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_16x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_16x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][ADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_adst_16x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][FLIPADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_flipadst_16x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][H_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_identity_16x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][DCT_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_dct_16x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][ADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_adst_16x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][FLIPADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_flipadst_16x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][DCT_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_dct_16x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][ADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_adst_16x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][FLIPADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_flipadst_16x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][V_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_dct_16x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][H_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_identity_16x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][H_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_identity_16x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][V_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_adst_16x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X8 as libc::c_int
-            as usize][V_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_flipadst_16x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_16x16_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_16x16_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][ADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_adst_16x16_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][FLIPADST_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_flipadst_16x16_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][H_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_identity_16x16_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][DCT_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_dct_16x16_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][ADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_adst_16x16_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][FLIPADST_ADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_adst_flipadst_16x16_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][DCT_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_dct_16x16_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][ADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_adst_16x16_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][FLIPADST_FLIPADST as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_flipadst_flipadst_16x16_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_16X16 as libc::c_int
-            as usize][V_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_dct_16x16_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X32 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_16x32_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_16X32 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_16x32_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_32X8 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_32x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_32X8 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_32x8_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_32X16 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_32x16_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[RTX_32X16 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_32x16_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_32X32 as libc::c_int
-            as usize][DCT_DCT as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_dct_dct_32x32_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-        (*c)
-            .itxfm_add[TX_32X32 as libc::c_int
-            as usize][IDTX as libc::c_int
-            as usize] = Some(
-            dav1d_inv_txfm_add_identity_identity_32x32_10bpc_avx512icl
-                as unsafe extern "C" fn(
-                    *mut pixel,
-                    ptrdiff_t,
-                    *mut coef,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
-        );
-    }
-}
-#[inline(always)]
-unsafe extern "C" fn dav1d_get_cpu_flags() -> libc::c_uint {
-    let mut flags: libc::c_uint = dav1d_cpu_flags & dav1d_cpu_flags_mask;
-    flags |= DAV1D_X86_CPU_FLAG_SSE2 as libc::c_int as libc::c_uint;
-    return flags;
 }
 #[no_mangle]
 #[cold]
@@ -18716,5 +8155,4 @@ pub unsafe extern "C" fn dav1d_itx_dsp_init_16bpc(
                 libc::c_int,
             ) -> (),
     );
-    itx_dsp_init_x86(c, bpc);
 }

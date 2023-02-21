@@ -39,16 +39,10 @@ extern "C" {
         out: *mut Dav1dPicture,
         in_0: *const Dav1dPicture,
     );
-    fn dav1d_data_props_copy(dst: *mut Dav1dDataProps, src: *const Dav1dDataProps);
-    fn dav1d_thread_picture_ref(
-        dst: *mut Dav1dThreadPicture,
-        src: *const Dav1dThreadPicture,
-    );
-    fn dav1d_picture_get_event_flags(p: *const Dav1dThreadPicture) -> Dav1dEventFlags;
-    fn dav1d_picture_move_ref(dst: *mut Dav1dPicture, src: *mut Dav1dPicture);
     fn dav1d_data_props_unref_internal(props: *mut Dav1dDataProps);
     fn dav1d_picture_unref_internal(p: *mut Dav1dPicture);
     fn dav1d_data_create_internal(buf: *mut Dav1dData, sz: size_t) -> *mut uint8_t;
+    fn dav1d_data_props_copy(dst: *mut Dav1dDataProps, src: *const Dav1dDataProps);
     fn dav1d_data_wrap_internal(
         buf: *mut Dav1dData,
         ptr: *const uint8_t,
@@ -58,7 +52,12 @@ extern "C" {
         >,
         user_data: *mut libc::c_void,
     ) -> libc::c_int;
-    fn dav1d_picture_ref(dst: *mut Dav1dPicture, src: *const Dav1dPicture);
+    fn dav1d_thread_picture_ref(
+        dst: *mut Dav1dThreadPicture,
+        src: *const Dav1dThreadPicture,
+    );
+    fn dav1d_picture_get_event_flags(p: *const Dav1dThreadPicture) -> Dav1dEventFlags;
+    fn dav1d_picture_move_ref(dst: *mut Dav1dPicture, src: *mut Dav1dPicture);
     fn dav1d_data_wrap_user_data_internal(
         buf: *mut Dav1dData,
         user_data: *const uint8_t,
@@ -67,23 +66,20 @@ extern "C" {
         >,
         cookie: *mut libc::c_void,
     ) -> libc::c_int;
+    fn dav1d_picture_ref(dst: *mut Dav1dPicture, src: *const Dav1dPicture);
+    fn dav1d_data_unref_internal(buf: *mut Dav1dData);
     fn dav1d_picture_alloc_copy(
         c: *mut Dav1dContext,
         dst: *mut Dav1dPicture,
         w: libc::c_int,
         src: *const Dav1dPicture,
     ) -> libc::c_int;
-    fn dav1d_data_unref_internal(buf: *mut Dav1dData);
     fn dav1d_data_ref(dst: *mut Dav1dData, src: *const Dav1dData);
     fn dav1d_thread_picture_move_ref(
         dst: *mut Dav1dThreadPicture,
         src: *mut Dav1dThreadPicture,
     );
     fn pthread_attr_init(__attr: *mut pthread_attr_t) -> libc::c_int;
-    fn pthread_attr_setstacksize(
-        __attr: *mut pthread_attr_t,
-        __stacksize: size_t,
-    ) -> libc::c_int;
     fn __sysconf(__name: libc::c_int) -> libc::c_long;
     fn dav1d_data_props_set_defaults(props: *mut Dav1dDataProps);
     fn dav1d_mem_pool_init(pool: *mut *mut Dav1dMemPool) -> libc::c_int;
@@ -121,6 +117,10 @@ extern "C" {
         __once_control: *mut pthread_once_t,
         __init_routine: Option::<unsafe extern "C" fn() -> ()>,
     ) -> libc::c_int;
+    fn pthread_attr_setstacksize(
+        __attr: *mut pthread_attr_t,
+        __stacksize: size_t,
+    ) -> libc::c_int;
     fn pthread_mutex_init(
         __mutex: *mut pthread_mutex_t,
         __mutexattr: *const pthread_mutexattr_t,
@@ -150,12 +150,12 @@ extern "C" {
         global: libc::c_int,
     ) -> libc::c_int;
     fn dav1d_init_qm_tables();
-    fn dav1d_worker_task(data: *mut libc::c_void) -> *mut libc::c_void;
     fn dav1d_task_delayed_fg(
         c: *mut Dav1dContext,
         out: *mut Dav1dPicture,
         in_0: *const Dav1dPicture,
     );
+    fn dav1d_worker_task(data: *mut libc::c_void) -> *mut libc::c_void;
     fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retval: libc::c_int);
     fn dav1d_init_wedge_masks();
     fn dav1d_init_interintra_masks();
@@ -1793,9 +1793,6 @@ pub struct MsacContext {
     pub rng: libc::c_uint,
     pub cnt: libc::c_int,
     pub allow_update_cdf: libc::c_int,
-    pub symbol_adapt16: Option::<
-        unsafe extern "C" fn(*mut MsacContext, *mut uint16_t, size_t) -> libc::c_uint,
-    >,
 }
 pub type ec_win = size_t;
 #[derive(Copy, Clone)]
@@ -2234,7 +2231,7 @@ unsafe extern "C" fn init_internal() {
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_version() -> *const libc::c_char {
-    return b"1.0.0-113-g3b7b096\0" as *const u8 as *const libc::c_char;
+    return b"1.0.0-115-g8ad3f0e\0" as *const u8 as *const libc::c_char;
 }
 #[no_mangle]
 #[cold]
@@ -2586,9 +2583,9 @@ pub unsafe extern "C" fn dav1d_open(
                     )
             {
                 if !((*c).allocator.cookie).is_null() {
-                    current_block = 7507372500559521712;
+                    current_block = 16409883578687858768;
                 } else if dav1d_mem_pool_init(&mut (*c).picture_pool) != 0 {
-                    current_block = 7507372500559521712;
+                    current_block = 16409883578687858768;
                 } else {
                     (*c).allocator.cookie = (*c).picture_pool as *mut libc::c_void;
                     current_block = 13619784596304402172;
@@ -2610,12 +2607,12 @@ pub unsafe extern "C" fn dav1d_open(
                             ) -> (),
                     )
             {
-                current_block = 7507372500559521712;
+                current_block = 16409883578687858768;
             } else {
                 current_block = 13619784596304402172;
             }
             match current_block {
-                7507372500559521712 => {}
+                16409883578687858768 => {}
                 _ => {
                     if (::core::mem::size_of::<size_t>() as libc::c_ulong)
                         < 8 as libc::c_int as libc::c_ulong
@@ -2674,14 +2671,14 @@ pub unsafe extern "C" fn dav1d_open(
                                     0 as *const pthread_mutexattr_t,
                                 ) != 0
                                 {
-                                    current_block = 7507372500559521712;
+                                    current_block = 16409883578687858768;
                                 } else if pthread_cond_init(
                                     &mut (*c).task_thread.cond,
                                     0 as *const pthread_condattr_t,
                                 ) != 0
                                 {
                                     pthread_mutex_destroy(&mut (*c).task_thread.lock);
-                                    current_block = 7507372500559521712;
+                                    current_block = 16409883578687858768;
                                 } else if pthread_cond_init(
                                     &mut (*c).task_thread.delayed_fg.cond,
                                     0 as *const pthread_condattr_t,
@@ -2689,7 +2686,7 @@ pub unsafe extern "C" fn dav1d_open(
                                 {
                                     pthread_cond_destroy(&mut (*c).task_thread.cond);
                                     pthread_mutex_destroy(&mut (*c).task_thread.lock);
-                                    current_block = 7507372500559521712;
+                                    current_block = 16409883578687858768;
                                 } else {
                                     (*c).task_thread.cur = (*c).n_fc;
                                     *&mut (*c)
@@ -2706,7 +2703,7 @@ pub unsafe extern "C" fn dav1d_open(
                                 current_block = 1868291631715963762;
                             }
                             match current_block {
-                                7507372500559521712 => {}
+                                16409883578687858768 => {}
                                 _ => {
                                     if (*c).n_fc > 1 as libc::c_int as libc::c_uint {
                                         (*c)
@@ -2717,7 +2714,7 @@ pub unsafe extern "C" fn dav1d_open(
                                                 as libc::c_ulong,
                                         ) as *mut Dav1dThreadPicture;
                                         if ((*c).frame_thread.out_delayed).is_null() {
-                                            current_block = 7507372500559521712;
+                                            current_block = 16409883578687858768;
                                         } else {
                                             current_block = 12961834331865314435;
                                         }
@@ -2725,7 +2722,7 @@ pub unsafe extern "C" fn dav1d_open(
                                         current_block = 12961834331865314435;
                                     }
                                     match current_block {
-                                        7507372500559521712 => {}
+                                        16409883578687858768 => {}
                                         _ => {
                                             let mut n: libc::c_uint = 0 as libc::c_int as libc::c_uint;
                                             loop {
@@ -2741,7 +2738,7 @@ pub unsafe extern "C" fn dav1d_open(
                                                         0 as *const pthread_mutexattr_t,
                                                     ) != 0
                                                     {
-                                                        current_block = 7507372500559521712;
+                                                        current_block = 16409883578687858768;
                                                         break;
                                                     }
                                                     if pthread_cond_init(
@@ -2750,7 +2747,7 @@ pub unsafe extern "C" fn dav1d_open(
                                                     ) != 0
                                                     {
                                                         pthread_mutex_destroy(&mut (*f).task_thread.lock);
-                                                        current_block = 7507372500559521712;
+                                                        current_block = 16409883578687858768;
                                                         break;
                                                     } else if pthread_mutex_init(
                                                         &mut (*f).task_thread.pending_tasks.lock,
@@ -2759,7 +2756,7 @@ pub unsafe extern "C" fn dav1d_open(
                                                     {
                                                         pthread_cond_destroy(&mut (*f).task_thread.cond);
                                                         pthread_mutex_destroy(&mut (*f).task_thread.lock);
-                                                        current_block = 7507372500559521712;
+                                                        current_block = 16409883578687858768;
                                                         break;
                                                     }
                                                 }
@@ -2770,7 +2767,7 @@ pub unsafe extern "C" fn dav1d_open(
                                                 n = n.wrapping_add(1);
                                             }
                                             match current_block {
-                                                7507372500559521712 => {}
+                                                16409883578687858768 => {}
                                                 _ => {
                                                     let mut m: libc::c_uint = 0 as libc::c_int as libc::c_uint;
                                                     loop {
@@ -2797,7 +2794,7 @@ pub unsafe extern "C" fn dav1d_open(
                                                                 0 as *const pthread_mutexattr_t,
                                                             ) != 0
                                                             {
-                                                                current_block = 7507372500559521712;
+                                                                current_block = 16409883578687858768;
                                                                 break;
                                                             }
                                                             if pthread_cond_init(
@@ -2806,7 +2803,7 @@ pub unsafe extern "C" fn dav1d_open(
                                                             ) != 0
                                                             {
                                                                 pthread_mutex_destroy(&mut (*t).task_thread.td.lock);
-                                                                current_block = 7507372500559521712;
+                                                                current_block = 16409883578687858768;
                                                                 break;
                                                             } else if pthread_create(
                                                                 &mut (*t).task_thread.td.thread,
@@ -2822,7 +2819,7 @@ pub unsafe extern "C" fn dav1d_open(
                                                             {
                                                                 pthread_cond_destroy(&mut (*t).task_thread.td.cond);
                                                                 pthread_mutex_destroy(&mut (*t).task_thread.td.lock);
-                                                                current_block = 7507372500559521712;
+                                                                current_block = 16409883578687858768;
                                                                 break;
                                                             } else {
                                                                 (*t).task_thread.td.inited = 1 as libc::c_int;
@@ -2831,7 +2828,7 @@ pub unsafe extern "C" fn dav1d_open(
                                                         m = m.wrapping_add(1);
                                                     }
                                                     match current_block {
-                                                        7507372500559521712 => {}
+                                                        16409883578687858768 => {}
                                                         _ => {
                                                             dav1d_refmvs_dsp_init(&mut (*c).refmvs_dsp);
                                                             (*c)
@@ -2967,7 +2964,7 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
             0 as *mut libc::c_void,
         );
         if res < 0 as libc::c_int {
-            current_block = 333575560201110723;
+            current_block = 10647346020414903899;
         } else {
             current_block = 5399440093318478209;
         }
@@ -2976,7 +2973,7 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
     }
     loop {
         match current_block {
-            333575560201110723 => {
+            10647346020414903899 => {
                 dav1d_data_unref_internal(&mut buf);
                 break;
             }
@@ -2984,7 +2981,7 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
                 if buf.sz > 0 as libc::c_int as libc::c_ulong {
                     res = dav1d_parse_obus(c, &mut buf, 1 as libc::c_int);
                     if res < 0 as libc::c_int {
-                        current_block = 333575560201110723;
+                        current_block = 10647346020414903899;
                         continue;
                     }
                     if !(res as size_t <= buf.sz) {
@@ -2997,7 +2994,7 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
                     current_block = 5399440093318478209;
                 } else if ((*c).seq_hdr).is_null() {
                     res = -(2 as libc::c_int);
-                    current_block = 333575560201110723;
+                    current_block = 10647346020414903899;
                 } else {
                     memcpy(
                         out as *mut libc::c_void,
@@ -3005,7 +3002,7 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
                         ::core::mem::size_of::<Dav1dSequenceHeader>() as libc::c_ulong,
                     );
                     res = 0 as libc::c_int;
-                    current_block = 333575560201110723;
+                    current_block = 10647346020414903899;
                 }
             }
         }

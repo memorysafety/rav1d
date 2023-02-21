@@ -6,6 +6,7 @@ extern "C" {
         _: libc::c_ulong,
     ) -> *mut libc::c_void;
     fn realloc(_: *mut libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
+    fn abort() -> !;
     fn pthread_mutex_lock(__mutex: *mut pthread_mutex_t) -> libc::c_int;
     fn pthread_mutex_unlock(__mutex: *mut pthread_mutex_t) -> libc::c_int;
     fn pthread_cond_signal(__cond: *mut pthread_cond_t) -> libc::c_int;
@@ -19,7 +20,6 @@ extern "C" {
         dst: *mut CdfContext,
         src: *const CdfContext,
     );
-    fn abort() -> !;
     fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> libc::c_int;
     fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) -> libc::c_int;
     fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> libc::c_int;
@@ -1251,9 +1251,6 @@ pub struct MsacContext {
     pub rng: libc::c_uint,
     pub cnt: libc::c_int,
     pub allow_update_cdf: libc::c_int,
-    pub symbol_adapt16: Option::<
-        unsafe extern "C" fn(*mut MsacContext, *mut uint16_t, size_t) -> libc::c_uint,
-    >,
 }
 pub type ec_win = size_t;
 #[derive(Copy, Clone)]
@@ -2057,7 +2054,7 @@ unsafe extern "C" fn reset_task_cur(
                 return 0 as libc::c_int;
             }
             (*ttd).cur = reset_frame_idx.wrapping_sub(first);
-            current_block = 13020727328569647054;
+            current_block = 8033822862565898926;
         } else {
             current_block = 5399440093318478209;
         }
@@ -2969,7 +2966,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                 if (*t).type_0 as libc::c_uint
                                     == DAV1D_TASK_TYPE_INIT as libc::c_int as libc::c_uint
                                 {
-                                    current_block = 6993036839408949324;
+                                    current_block = 13951626279954010388;
                                     break;
                                 }
                                 if (*t).type_0 as libc::c_uint
@@ -2988,7 +2985,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                             as libc::c_int;
                                         ::core::intrinsics::atomic_or_seqcst(fresh18, fresh19)
                                             | fresh19;
-                                        current_block = 6993036839408949324;
+                                        current_block = 13951626279954010388;
                                         break;
                                     }
                                 }
@@ -3036,7 +3033,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                                     as libc::c_int,
                                             ) == 0
                                             {
-                                                current_block = 6993036839408949324;
+                                                current_block = 13951626279954010388;
                                                 continue 's_107;
                                             }
                                         } else if (*t).recon_progress != 0 {
@@ -3065,7 +3062,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                                     prog,
                                                 );
                                                 if p1_0 < (*t).sby {
-                                                    current_block = 14521423832247047499;
+                                                    current_block = 1373748322570045674;
                                                 } else {
                                                     let fresh20 = &mut (*f).task_thread.error;
                                                     let fresh21 = (p1_0
@@ -3079,7 +3076,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                                 current_block = 14832935472441733737;
                                             }
                                             match current_block {
-                                                14521423832247047499 => {}
+                                                1373748322570045674 => {}
                                                 _ => {
                                                     let mut tc_0: libc::c_int = 0 as libc::c_int;
                                                     loop {
@@ -3095,7 +3092,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                                                 as *mut atomic_int,
                                                         );
                                                         if p2 < (*t).recon_progress {
-                                                            current_block = 14521423832247047499;
+                                                            current_block = 1373748322570045674;
                                                             break;
                                                         }
                                                         let fresh22 = &mut (*f).task_thread.error;
@@ -3107,7 +3104,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                                         tc_0 += 1;
                                                     }
                                                     match current_block {
-                                                        14521423832247047499 => {}
+                                                        1373748322570045674 => {}
                                                         _ => {
                                                             if ((*t).sby + 1 as libc::c_int) < (*f).sbh {
                                                                 let mut next_t: *mut Dav1dTask = &mut *t
@@ -3126,7 +3123,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                                                 (*next_t).recon_progress = (*next_t).sby + 1 as libc::c_int;
                                                                 insert_task(f, next_t, 0 as libc::c_int);
                                                             }
-                                                            current_block = 6993036839408949324;
+                                                            current_block = 13951626279954010388;
                                                             continue 's_107;
                                                         }
                                                     }
@@ -3148,7 +3145,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                                 & (1 as libc::c_uint)
                                                     << ((*t).sby - 1 as libc::c_int & 31 as libc::c_int) != 0
                                             {
-                                                current_block = 6993036839408949324;
+                                                current_block = 13951626279954010388;
                                                 continue 's_107;
                                             }
                                         } else {
@@ -3165,7 +3162,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                                     as libc::c_int;
                                                 ::core::intrinsics::atomic_or_seqcst(fresh24, fresh25)
                                                     | fresh25;
-                                                current_block = 6993036839408949324;
+                                                current_block = 13951626279954010388;
                                                 continue 's_107;
                                             }
                                         }
@@ -3190,7 +3187,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                 if merge_pending(c) != 0 {
                                     continue 's_18;
                                 } else {
-                                    current_block = 8041622547002935614;
+                                    current_block = 2777461603309497930;
                                     break;
                                 }
                             }
@@ -3223,7 +3220,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                     }
                 }
                 match current_block {
-                    8041622547002935614 => {}
+                    2777461603309497930 => {}
                     _ => {
                         loop {
                             flush = ::core::intrinsics::atomic_load_seqcst((*c).flush);
@@ -3536,32 +3533,32 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                     {
                                         continue 's_18;
                                     } else {
-                                        current_block = 7445507753695543878;
+                                        current_block = 6008637731897673938;
                                         break;
                                     }
                                 }
                                 6 => {
-                                    current_block = 7445507753695543878;
+                                    current_block = 6008637731897673938;
                                     break;
                                 }
                                 7 => {
-                                    current_block = 14176679388036944966;
+                                    current_block = 13240214649988793380;
                                     break;
                                 }
                                 8 => {
-                                    current_block = 9304275656119448851;
+                                    current_block = 14546186248892381816;
                                     break;
                                 }
                                 9 => {
-                                    current_block = 17014196479992252067;
+                                    current_block = 6750403331223000732;
                                     break;
                                 }
                                 10 => {
-                                    current_block = 6257763102558522443;
+                                    current_block = 8542881708851390082;
                                     break;
                                 }
                                 3 => {
-                                    current_block = 5486682660322462514;
+                                    current_block = 7301429464686428633;
                                     break;
                                 }
                                 _ => {
@@ -3570,7 +3567,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                             }
                         }
                         match current_block {
-                            7445507753695543878 => {
+                            6008637731897673938 => {
                                 if ::core::intrinsics::atomic_load_seqcst(
                                     &mut (*f).task_thread.error as *mut atomic_int,
                                 ) == 0
@@ -3634,12 +3631,12 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                         }
                                     }
                                 }
-                                current_block = 14176679388036944966;
+                                current_block = 13240214649988793380;
                             }
                             _ => {}
                         }
                         match current_block {
-                            14176679388036944966 => {
+                            13240214649988793380 => {
                                 if (*(*f).seq_hdr).cdef != 0 {
                                     if ::core::intrinsics::atomic_load_seqcst(
                                         &mut (*f).task_thread.error as *mut atomic_int,
@@ -3657,12 +3654,12 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                         pthread_cond_signal(&mut (*ttd).cond);
                                     }
                                 }
-                                current_block = 9304275656119448851;
+                                current_block = 14546186248892381816;
                             }
                             _ => {}
                         }
                         match current_block {
-                            9304275656119448851 => {
+                            14546186248892381816 => {
                                 if (*(*f).frame_hdr).width[0 as libc::c_int as usize]
                                     != (*(*f).frame_hdr).width[1 as libc::c_int as usize]
                                 {
@@ -3674,12 +3671,12 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                             .expect("non-null function pointer")(f, sby);
                                     }
                                 }
-                                current_block = 17014196479992252067;
+                                current_block = 6750403331223000732;
                             }
                             _ => {}
                         }
                         match current_block {
-                            17014196479992252067 => {
+                            6750403331223000732 => {
                                 if ::core::intrinsics::atomic_load_seqcst(
                                     &mut (*f).task_thread.error as *mut atomic_int,
                                 ) == 0 && (*f).lf.restore_planes != 0
@@ -3687,12 +3684,12 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                     ((*f).bd_fn.filter_sbrow_lr)
                                         .expect("non-null function pointer")(f, sby);
                                 }
-                                current_block = 6257763102558522443;
+                                current_block = 8542881708851390082;
                             }
                             _ => {}
                         }
                         match current_block {
-                            6257763102558522443 => {}
+                            8542881708851390082 => {}
                             _ => {}
                         }
                         let uses_2pass_0: libc::c_int = ((*c).n_fc

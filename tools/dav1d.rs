@@ -989,14 +989,14 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
     let mut i_fps: libc::c_double = 0.;
     let mut frametimes: *mut FILE = 0 as *mut FILE;
     let mut version: *const libc::c_char = dav1d_version();
-    if strcmp(version, b"1.0.0-113-g3b7b096\0" as *const u8 as *const libc::c_char) != 0
+    if strcmp(version, b"1.0.0-115-g8ad3f0e\0" as *const u8 as *const libc::c_char) != 0
     {
         fprintf(
             stderr,
             b"Version mismatch (library: %s, executable: %s)\n\0" as *const u8
                 as *const libc::c_char,
             version,
-            b"1.0.0-113-g3b7b096\0" as *const u8 as *const libc::c_char,
+            b"1.0.0-115-g8ad3f0e\0" as *const u8 as *const libc::c_char,
         );
         return 1 as libc::c_int;
     }
