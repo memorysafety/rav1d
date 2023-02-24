@@ -2812,11 +2812,11 @@ unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThrea
             abort();
         }
     }
-    let fresh10 = &mut *((*ttd).delayed_fg.progress)
-        .as_mut_ptr()
-        .offset(0 as libc::c_int as isize) as *mut atomic_int;
-    let fresh11 = 1 as libc::c_int;
-    row = ::core::intrinsics::atomic_xadd_seqcst(fresh10, fresh11) + fresh11;
+    row = ::core::intrinsics::atomic_xadd_seqcst(
+        &mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(0 as libc::c_int as isize)
+            as *mut atomic_int,
+        1 as libc::c_int,
+    );
     pthread_mutex_unlock(&mut (*ttd).lock);
     progmax = (*out).p.h + 31 as libc::c_int >> 5 as libc::c_int;
     loop {
@@ -2847,17 +2847,18 @@ unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThrea
                 abort();
             }
         }
-        let fresh12 = &mut *((*ttd).delayed_fg.progress)
-            .as_mut_ptr()
-            .offset(0 as libc::c_int as isize) as *mut atomic_int;
-        let fresh13 = 1 as libc::c_int;
-        row = ::core::intrinsics::atomic_xadd_seqcst(fresh12, fresh13) + fresh13;
-        let fresh14 = &mut *((*ttd).delayed_fg.progress)
-            .as_mut_ptr()
-            .offset(1 as libc::c_int as isize) as *mut atomic_int;
-        let fresh15 = 1 as libc::c_int;
-        done = ::core::intrinsics::atomic_xadd_seqcst(fresh14, fresh15) + fresh15
-            + 1 as libc::c_int;
+        row = ::core::intrinsics::atomic_xadd_seqcst(
+            &mut *((*ttd).delayed_fg.progress)
+                .as_mut_ptr()
+                .offset(0 as libc::c_int as isize) as *mut atomic_int,
+            1 as libc::c_int,
+        );
+        done = ::core::intrinsics::atomic_xadd_seqcst(
+            &mut *((*ttd).delayed_fg.progress)
+                .as_mut_ptr()
+                .offset(1 as libc::c_int as isize) as *mut atomic_int,
+            1 as libc::c_int,
+        ) + 1 as libc::c_int;
         if row < progmax {
             continue;
         }
@@ -2865,12 +2866,11 @@ unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThrea
         (*ttd).delayed_fg.exec = 0 as libc::c_int;
         break;
     }
-    let fresh16 = &mut *((*ttd).delayed_fg.progress)
-        .as_mut_ptr()
-        .offset(1 as libc::c_int as isize) as *mut atomic_int;
-    let fresh17 = 1 as libc::c_int;
-    done = ::core::intrinsics::atomic_xadd_seqcst(fresh16, fresh17) + fresh17
-        + 1 as libc::c_int;
+    done = ::core::intrinsics::atomic_xadd_seqcst(
+        &mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(1 as libc::c_int as isize)
+            as *mut atomic_int,
+        1 as libc::c_int,
+    ) + 1 as libc::c_int;
     progmax = ::core::intrinsics::atomic_load_seqcst(
         &mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(0 as libc::c_int as isize)
             as *mut atomic_int,
