@@ -2041,9 +2041,7 @@ unsafe extern "C" fn clz(mask: libc::c_uint) -> libc::c_int {
 }
 #[inline]
 unsafe extern "C" fn dav1d_ref_inc(ref_0: *mut Dav1dRef) {
-    let fresh0 = &mut (*ref_0).ref_cnt;
-    let fresh1 = 1 as libc::c_int;
-    ::core::intrinsics::atomic_xadd_relaxed(fresh0, fresh1) + fresh1;
+    ::core::intrinsics::atomic_xadd_relaxed(&mut (*ref_0).ref_cnt, 1 as libc::c_int);
 }
 #[inline]
 unsafe extern "C" fn get_poc_diff(
@@ -5033,10 +5031,10 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                                                         &mut (*c).task_thread.first,
                                                                     );
                                                                     if first.wrapping_add(1 as libc::c_uint) < (*c).n_fc {
-                                                                        let fresh4 = &mut (*c).task_thread.first;
-                                                                        let fresh5 = 1 as libc::c_uint;
-                                                                        ::core::intrinsics::atomic_xadd_seqcst(fresh4, fresh5)
-                                                                            + fresh5;
+                                                                        ::core::intrinsics::atomic_xadd_seqcst(
+                                                                            &mut (*c).task_thread.first,
+                                                                            1 as libc::c_uint,
+                                                                        );
                                                                     } else {
                                                                         ::core::intrinsics::atomic_store_seqcst(
                                                                             &mut (*c).task_thread.first,

@@ -2009,9 +2009,7 @@ pub const NEARMV_NEARMV: CompInterPredMode = 1;
 pub const NEARESTMV_NEARESTMV: CompInterPredMode = 0;
 #[inline]
 unsafe extern "C" fn dav1d_ref_inc(ref_0: *mut Dav1dRef) {
-    let fresh0 = &mut (*ref_0).ref_cnt;
-    let fresh1 = 1 as libc::c_int;
-    ::core::intrinsics::atomic_xadd_relaxed(fresh0, fresh1) + fresh1;
+    ::core::intrinsics::atomic_xadd_relaxed(&mut (*ref_0).ref_cnt, 1 as libc::c_int);
 }
 #[inline]
 unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {

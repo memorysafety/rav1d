@@ -3098,9 +3098,10 @@ unsafe extern "C" fn drain_picture(
             &mut (*c).task_thread.first,
         );
         if first.wrapping_add(1 as libc::c_uint) < (*c).n_fc {
-            let fresh0 = &mut (*c).task_thread.first;
-            let fresh1 = 1 as libc::c_uint;
-            ::core::intrinsics::atomic_xadd_seqcst(fresh0, fresh1) + fresh1;
+            ::core::intrinsics::atomic_xadd_seqcst(
+                &mut (*c).task_thread.first,
+                1 as libc::c_uint,
+            );
         } else {
             ::core::intrinsics::atomic_store_seqcst(
                 &mut (*c).task_thread.first,

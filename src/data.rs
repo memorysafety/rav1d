@@ -107,9 +107,7 @@ pub const memory_order_acquire: memory_order = 2;
 pub const memory_order_consume: memory_order = 1;
 #[inline]
 unsafe extern "C" fn dav1d_ref_inc(ref_0: *mut Dav1dRef) {
-    let fresh0 = &mut (*ref_0).ref_cnt;
-    let fresh1 = 1 as libc::c_int;
-    ::core::intrinsics::atomic_xadd_relaxed(fresh0, fresh1) + fresh1;
+    ::core::intrinsics::atomic_xadd_relaxed(&mut (*ref_0).ref_cnt, 1 as libc::c_int);
 }
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_data_create_internal(
