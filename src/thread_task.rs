@@ -3277,8 +3277,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                                 let fresh28 = &mut (*f).task_thread.task_counter;
                                                 let fresh29 = (*(*f).frame_hdr).tiling.cols
                                                     * (*(*f).frame_hdr).tiling.rows + (*f).sbh;
-                                                ::core::intrinsics::atomic_xsub_seqcst(fresh28, fresh29)
-                                                    - fresh29;
+                                                ::core::intrinsics::atomic_xsub_seqcst(fresh28, fresh29);
                                                 ::core::intrinsics::atomic_store_seqcst(
                                                     &mut *((*f).sr_cur.progress)
                                                         .offset((p_0 - 1 as libc::c_int) as isize)
@@ -3434,7 +3433,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                             as *mut atomic_int;
                                         let fresh35 = 1 as libc::c_int;
                                         if ::core::intrinsics::atomic_xsub_seqcst(fresh34, fresh35)
-                                            - fresh35 - 1 as libc::c_int == 0 as libc::c_int
+                                            - 1 as libc::c_int == 0 as libc::c_int
                                             && ::core::intrinsics::atomic_load_seqcst(
                                                 &mut *((*f).task_thread.done)
                                                     .as_mut_ptr()
@@ -3713,7 +3712,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                             let num_tasks: libc::c_int = ::core::intrinsics::atomic_xsub_seqcst(
                                 fresh44,
                                 fresh45,
-                            ) - fresh45 - 1 as libc::c_int;
+                            ) - 1 as libc::c_int;
                             if (sby + 1 as libc::c_int) < sbh && num_tasks != 0 {
                                 reset_task_cur(c, ttd, (*t).frame_idx);
                                 continue;
@@ -3799,7 +3798,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                             let num_tasks_0: libc::c_int = ::core::intrinsics::atomic_xsub_seqcst(
                                 fresh48,
                                 fresh49,
-                            ) - fresh49 - 1 as libc::c_int;
+                            ) - 1 as libc::c_int;
                             if (sby + 1 as libc::c_int) < sbh && num_tasks_0 != 0 {
                                 reset_task_cur(c, ttd, (*t).frame_idx);
                                 continue;
