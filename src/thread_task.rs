@@ -2157,7 +2157,7 @@ unsafe extern "C" fn insert_tasks_between(
         && {
             let fresh2 = &mut (*ttd).cond_signaled as *mut atomic_int;
             let fresh3 = 1 as libc::c_int;
-            ::core::intrinsics::atomic_or_seqcst(fresh2, fresh3) | fresh3 == 0
+            ::core::intrinsics::atomic_or_seqcst(fresh2, fresh3) == 0
         }
     {
         pthread_cond_signal(&mut (*ttd).cond);
@@ -2589,7 +2589,7 @@ unsafe extern "C" fn check_tile(
         as libc::c_int;
     let fresh4 = &mut (*f).task_thread.error;
     let fresh5 = error;
-    error |= ::core::intrinsics::atomic_or_seqcst(fresh4, fresh5) | fresh5;
+    error |= ::core::intrinsics::atomic_or_seqcst(fresh4, fresh5);
     if error == 0 && frame_mt != 0 && tp == 0 {
         let p2: libc::c_int = ::core::intrinsics::atomic_load_seqcst(
             &mut *((*ts).progress).as_mut_ptr().offset(1 as libc::c_int as isize)
@@ -2601,7 +2601,7 @@ unsafe extern "C" fn check_tile(
         error = (p2 == 2147483647 as libc::c_int - 1 as libc::c_int) as libc::c_int;
         let fresh6 = &mut (*f).task_thread.error;
         let fresh7 = error;
-        error |= ::core::intrinsics::atomic_or_seqcst(fresh6, fresh7) | fresh7;
+        error |= ::core::intrinsics::atomic_or_seqcst(fresh6, fresh7);
     }
     if error == 0 && frame_mt != 0
         && (*(*f).frame_hdr).frame_type as libc::c_uint
@@ -2668,7 +2668,7 @@ unsafe extern "C" fn check_tile(
                             .wrapping_add(1 as libc::c_uint)
                             .wrapping_sub(1 as libc::c_int as libc::c_uint))
                         as libc::c_int;
-                    ::core::intrinsics::atomic_or_seqcst(fresh8, fresh9) | fresh9;
+                    ::core::intrinsics::atomic_or_seqcst(fresh8, fresh9);
                 }
                 _ => {}
             }
@@ -2945,8 +2945,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                         let fresh19 = (p1
                                             == 2147483647 as libc::c_int - 1 as libc::c_int)
                                             as libc::c_int;
-                                        ::core::intrinsics::atomic_or_seqcst(fresh18, fresh19)
-                                            | fresh19;
+                                        ::core::intrinsics::atomic_or_seqcst(fresh18, fresh19);
                                         current_block = 13951626279954010388;
                                         break;
                                     }
@@ -3030,8 +3029,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                                     let fresh21 = (p1_0
                                                         == 2147483647 as libc::c_int - 1 as libc::c_int)
                                                         as libc::c_int;
-                                                    ::core::intrinsics::atomic_or_seqcst(fresh20, fresh21)
-                                                        | fresh21;
+                                                    ::core::intrinsics::atomic_or_seqcst(fresh20, fresh21);
                                                     current_block = 14832935472441733737;
                                                 }
                                             } else {
@@ -3061,8 +3059,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                                         let fresh23 = (p2
                                                             == 2147483647 as libc::c_int - 1 as libc::c_int)
                                                             as libc::c_int;
-                                                        ::core::intrinsics::atomic_or_seqcst(fresh22, fresh23)
-                                                            | fresh23;
+                                                        ::core::intrinsics::atomic_or_seqcst(fresh22, fresh23);
                                                         tc_0 += 1;
                                                     }
                                                     match current_block {
@@ -3122,8 +3119,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                                 let fresh25 = (p1_2
                                                     == 2147483647 as libc::c_int - 1 as libc::c_int)
                                                     as libc::c_int;
-                                                ::core::intrinsics::atomic_or_seqcst(fresh24, fresh25)
-                                                    | fresh25;
+                                                ::core::intrinsics::atomic_or_seqcst(fresh24, fresh25);
                                                 current_block = 13951626279954010388;
                                                 continue 's_107;
                                             }
@@ -3191,7 +3187,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                             error_0 = ::core::intrinsics::atomic_or_seqcst(
                                 fresh26,
                                 fresh27,
-                            ) | fresh27 | flush;
+                            ) | flush;
                             (*tc).f = f;
                             sby = (*t).sby;
                             match (*t).type_0 as libc::c_uint {
@@ -3362,8 +3358,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                     };
                                     let fresh30 = &mut (*f).task_thread.error;
                                     let fresh31 = error_0;
-                                    ::core::intrinsics::atomic_or_seqcst(fresh30, fresh31)
-                                        | fresh31;
+                                    ::core::intrinsics::atomic_or_seqcst(fresh30, fresh31);
                                     if (sby + 1 as libc::c_int) << (*f).sb_shift
                                         < (*ts_0).tiling.row_end
                                     {
@@ -3379,7 +3374,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                             let fresh32 = &mut (*ttd).cond_signaled as *mut atomic_int;
                                             let fresh33 = 1 as libc::c_int;
                                             if ::core::intrinsics::atomic_or_seqcst(fresh32, fresh33)
-                                                | fresh33 == 0
+                                                == 0
                                             {
                                                 pthread_cond_signal(&mut (*ttd).cond);
                                             }
@@ -3468,7 +3463,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                         let fresh36 = &mut (*ttd).cond_signaled as *mut atomic_int;
                                         let fresh37 = 1 as libc::c_int;
                                         if ::core::intrinsics::atomic_or_seqcst(fresh36, fresh37)
-                                            | fresh37 == 0
+                                            == 0
                                         {
                                             pthread_cond_signal(&mut (*ttd).cond);
                                         }
@@ -3558,7 +3553,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                     let fresh38 = &mut (*ttd).cond_signaled as *mut atomic_int;
                                     let fresh39 = 1 as libc::c_int;
                                     if ::core::intrinsics::atomic_or_seqcst(fresh38, fresh39)
-                                        | fresh39 == 0
+                                        == 0
                                     {
                                         pthread_cond_signal(&mut (*ttd).cond);
                                     }
@@ -3570,8 +3565,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                         as *mut atomic_uint;
                                     let fresh41 = (1 as libc::c_uint)
                                         << (sby & 31 as libc::c_int);
-                                    ::core::intrinsics::atomic_or_seqcst(fresh40, fresh41)
-                                        | fresh41;
+                                    ::core::intrinsics::atomic_or_seqcst(fresh40, fresh41);
                                     if sby != 0 {
                                         let mut prog_1: libc::c_int = ::core::intrinsics::atomic_load_seqcst(
                                             &mut *((*f).frame_thread.copy_lpf_progress)
@@ -3610,7 +3604,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                     let fresh42 = &mut (*ttd).cond_signaled as *mut atomic_int;
                                     let fresh43 = 1 as libc::c_int;
                                     if ::core::intrinsics::atomic_or_seqcst(fresh42, fresh43)
-                                        | fresh43 == 0
+                                        == 0
                                     {
                                         pthread_cond_signal(&mut (*ttd).cond);
                                     }
@@ -3751,8 +3745,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                 as *mut atomic_uint;
                             let fresh47 = (1 as libc::c_uint)
                                 << (sby & 31 as libc::c_int);
-                            ::core::intrinsics::atomic_or_seqcst(fresh46, fresh47)
-                                | fresh47;
+                            ::core::intrinsics::atomic_or_seqcst(fresh46, fresh47);
                             pthread_mutex_lock(&mut (*f).task_thread.lock);
                             sby = get_frame_progress(c, f);
                             error_0 = ::core::intrinsics::atomic_load_seqcst(
