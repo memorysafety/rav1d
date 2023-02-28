@@ -145,7 +145,12 @@ if get_option('enable_tools')
     )
 endif
 
-# Include dav1d test data repository with additional tests
-if get_option('testdata_tests')
-    subdir('dav1d-test-data')
+# HACK: If we're trying to test the Rust build, override the `dav1d`
+# variable to point to `dav1d` executable produced by Cargo. This will cause
+# the Rust executable to be used for the data tests.
+if get_option('test_rust')
+    dav1d = files('../target/debug/dav1d')
 endif
+
+# Include dav1d test data repository with additional tests
+subdir('dav1d-test-data')

@@ -63,3 +63,8 @@ option('trim_dsp',
     choices: ['true', 'false', 'if-release'],
     value: 'if-release',
     description: 'Eliminate redundant DSP functions where possible')
+
+option('test_rust',
+    type: 'boolean',
+    value: true,
+    description: 'Run tests against the Rust build of dav1d')
