@@ -8,10 +8,10 @@ rav1d is currently experimental. Core functionality has been transpiled using [c
 
 Currently we use the original Meson test suite for testing the Rust port. To setup and run these tests, do the following:
 
-First, clone the test data repo into `tests/dav1d-test-data`:
+First, build the Rust project using Cargo. You'll need to do this step manually before running any tests because it is not built automatically when tests are run.
 
 ```txt
-git clone https://code.videolan.org/videolan/dav1d-test-data.git tests/dav1d-test-data
+cargo build
 ```
 
 Then create the `build` dir and run `meson setup` in it:
@@ -22,7 +22,9 @@ cd build
 meson setup ..
 ```
 
-Then you can run `meson test` to run the tests. Note that currently only the `testdata-*` suites are setup to test against the Rust executable, with only `testdata-10` and `testdata-12` suites passing currently (See [#3](https://github.com/memorysafety/rav1d/issues/3) for information about restoring 8 bitdepth support):
+Then you can run `meson test` to run the tests. Currently only the `testdata-*` suites are setup to test against the Rust executable, with only `testdata-10` and `testdata-12` suites passing currently (See [#3](https://github.com/memorysafety/rav1d/issues/3) for information about restoring 8 bitdepth support).
+
+Note that you'll have to explicitly build
 
 ```txt
 meson test --suite testdata-10 --suite testdata-12
