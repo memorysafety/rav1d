@@ -19,3 +19,8 @@ name = "dav1d"
 [dependencies]
 c2rust-bitfields= "0.3"
 libc= "0.2"
+
+[features]
+default = ["bitdepth_8", "bitdepth_16"]
+bitdepth_8 = []
+bitdepth_16 = []

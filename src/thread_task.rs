@@ -24,6 +24,15 @@ extern "C" {
     fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) -> libc::c_int;
     fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> libc::c_int;
     fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retval: libc::c_int);
+    #[cfg(feature = "bitdepth_8")]
+    fn dav1d_prep_grain_8bpc(
+        dsp: *const Dav1dFilmGrainDSPContext,
+        out: *mut Dav1dPicture,
+        in_0: *const Dav1dPicture,
+        scaling: *mut libc::c_void,
+        grain_lut: *mut libc::c_void,
+    );
+    #[cfg(feature = "bitdepth_16")]
     fn dav1d_prep_grain_16bpc(
         dsp: *const Dav1dFilmGrainDSPContext,
         out: *mut Dav1dPicture,
@@ -31,7 +40,17 @@ extern "C" {
         scaling: *mut libc::c_void,
         grain_lut: *mut libc::c_void,
     );
+    #[cfg(feature = "bitdepth_16")]
     fn dav1d_apply_grain_row_16bpc(
+        dsp: *const Dav1dFilmGrainDSPContext,
+        out: *mut Dav1dPicture,
+        in_0: *const Dav1dPicture,
+        scaling: *mut libc::c_void,
+        grain_lut: *mut libc::c_void,
+        row: libc::c_int,
+    );
+    #[cfg(feature = "bitdepth_8")]
+    fn dav1d_apply_grain_row_8bpc(
         dsp: *const Dav1dFilmGrainDSPContext,
         out: *mut Dav1dPicture,
         in_0: *const Dav1dPicture,
@@ -2784,6 +2803,19 @@ unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThrea
             }
             pthread_mutex_unlock(&mut (*ttd).lock);
             match (*out).p.bpc {
+                #[cfg(feature = "bitdepth_8")]
+                8 => {
+                    dav1d_prep_grain_8bpc(
+                        &(*((*c).dsp).as_ptr().offset(0 as libc::c_int as isize)).fg,
+                        out,
+                        in_0,
+                        ((*ttd).delayed_fg.c2rust_unnamed.c2rust_unnamed.scaling_8bpc)
+                            .as_mut_ptr() as *mut libc::c_void,
+                        ((*ttd).delayed_fg.c2rust_unnamed.c2rust_unnamed.grain_lut_8bpc)
+                            .as_mut_ptr() as *mut libc::c_void,
+                    );
+                }
+                #[cfg(feature = "bitdepth_16")]
                 10 | 12 => {
                     dav1d_prep_grain_16bpc(
                         &(*((*c).dsp).as_ptr().offset(off as isize)).fg,
@@ -2831,6 +2863,20 @@ unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThrea
             pthread_mutex_unlock(&mut (*ttd).lock);
         }
         match (*out).p.bpc {
+            #[cfg(feature = "bitdepth_8")]
+            8 => {
+                dav1d_apply_grain_row_8bpc(
+                    &(*((*c).dsp).as_ptr().offset(0 as libc::c_int as isize)).fg,
+                    out,
+                    in_0,
+                    ((*ttd).delayed_fg.c2rust_unnamed.c2rust_unnamed.scaling_8bpc)
+                        .as_mut_ptr() as *mut libc::c_void,
+                    ((*ttd).delayed_fg.c2rust_unnamed.c2rust_unnamed.grain_lut_8bpc)
+                        .as_mut_ptr() as *mut libc::c_void,
+                    row,
+                );
+            }
+            #[cfg(feature = "bitdepth_16")]
             10 | 12 => {
                 dav1d_apply_grain_row_16bpc(
                     &(*((*c).dsp).as_ptr().offset(off as isize)).fg,
@@ -2849,13 +2895,13 @@ unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThrea
         }
         row = ::core::intrinsics::atomic_xadd_seqcst(
             &mut *((*ttd).delayed_fg.progress)
-                .as_mut_ptr()
+            .as_mut_ptr()
                 .offset(0 as libc::c_int as isize) as *mut atomic_int,
             1 as libc::c_int,
         );
         done = ::core::intrinsics::atomic_xadd_seqcst(
             &mut *((*ttd).delayed_fg.progress)
-                .as_mut_ptr()
+            .as_mut_ptr()
                 .offset(1 as libc::c_int as isize) as *mut atomic_int,
             1 as libc::c_int,
         ) + 1 as libc::c_int;

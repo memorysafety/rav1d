@@ -29,7 +29,14 @@ extern "C" {
     fn fprintf(_: *mut FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
     fn dav1d_init_cpu();
     fn dav1d_num_logical_processors(c: *mut Dav1dContext) -> libc::c_int;
+    #[cfg(feature = "bitdepth_16")]
     fn dav1d_apply_grain_16bpc(
+        dsp: *const Dav1dFilmGrainDSPContext,
+        out: *mut Dav1dPicture,
+        in_0: *const Dav1dPicture,
+    );
+    #[cfg(feature = "bitdepth_8")]
+    fn dav1d_apply_grain_8bpc(
         dsp: *const Dav1dFilmGrainDSPContext,
         out: *mut Dav1dPicture,
         in_0: *const Dav1dPicture,
@@ -3373,6 +3380,16 @@ pub unsafe extern "C" fn dav1d_apply_grain(
             dav1d_task_delayed_fg(c, out, in_0);
         } else {
             match (*out).p.bpc {
+                #[cfg(feature = "bitdepth_8")]
+                8 => {
+                    dav1d_apply_grain_8bpc(
+                        &mut (*((*c).dsp).as_mut_ptr().offset(0 as libc::c_int as isize))
+                            .fg,
+                        out,
+                        in_0,
+                    );
+                }
+                #[cfg(feature = "bitdepth_16")]
                 10 | 12 => {
                     dav1d_apply_grain_16bpc(
                         &mut (*((*c).dsp)
