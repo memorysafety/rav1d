@@ -149,7 +149,7 @@ endif
 # variable to point to `dav1d` executable produced by Cargo. This will cause
 # the Rust executable to be used for the data tests.
 if get_option('test_rust')
-    dav1d = files('../target/debug/dav1d')
+    dav1d = files('../target/release/dav1d')
 endif
 
 # Include dav1d test data repository with additional tests

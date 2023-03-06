@@ -8,10 +8,10 @@ rav1d is currently experimental. Core functionality has been transpiled using [c
 
 Currently we use the original Meson test suite for testing the Rust port. To setup and run these tests, do the following:
 
-First, build the Rust project using Cargo. You'll need to do this step manually before running any tests because it is not built automatically when tests are run.
+First, build the Rust project using Cargo. You'll need to do this step manually before running any tests because it is not built automatically when tests are run. Note that you need to build with the `--release` flag, as tests are run against the release binary.
 
 ```txt
-cargo build
+cargo build --release
 ```
 
 Then create the `build` dir and run `meson setup` in it:
@@ -22,10 +22,12 @@ cd build
 meson setup ..
 ```
 
-Then you can run `meson test` to run the tests. Currently only the `testdata-*` suites are setup to test against the Rust executable, with only `testdata-10` and `testdata-12` suites passing currently (See [#3](https://github.com/memorysafety/rav1d/issues/3) for information about restoring 8 bitdepth support).
-
-Note that you'll have to explicitly build
+Then you can run `meson test` to run the tests. Currently only the `testdata-*` suites are setup to test against the Rust executable:
 
 ```txt
-meson test --suite testdata-10 --suite testdata-12
+meson test \
+  --suite testdata-8 \
+  --suite testdata-10 \
+  --suite testdata-12 \
+  --suite testdata-multi
 ```
