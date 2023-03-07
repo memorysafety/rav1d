@@ -2233,7 +2233,7 @@ unsafe extern "C" fn init_internal() {
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_version() -> *const libc::c_char {
-    return b"1.0.0-116-ge219a79\0" as *const u8 as *const libc::c_char;
+    return b"1.0.0-130-g26eca15\0" as *const u8 as *const libc::c_char;
 }
 #[no_mangle]
 #[cold]
@@ -3115,15 +3115,15 @@ unsafe extern "C" fn drain_picture(
                 0 as libc::c_int as libc::c_uint,
             );
         }
-        let fresh2 = ::core::intrinsics::atomic_cxchg_seqcst_seqcst(
+        let fresh0 = ::core::intrinsics::atomic_cxchg_seqcst_seqcst(
             &mut (*c).task_thread.reset_task_cur,
             *&mut first,
             (2147483647 as libc::c_int as libc::c_uint)
                 .wrapping_mul(2 as libc::c_uint)
                 .wrapping_add(1 as libc::c_uint),
         );
-        *&mut first = fresh2.0;
-        fresh2.1;
+        *&mut first = fresh0.0;
+        fresh0.1;
         if (*c).task_thread.cur != 0 && (*c).task_thread.cur < (*c).n_fc {
             (*c).task_thread.cur = ((*c).task_thread.cur).wrapping_sub(1);
         }
@@ -3466,24 +3466,24 @@ pub unsafe extern "C" fn dav1d_flush(c: *mut Dav1dContext) {
         }
         let mut i_1: libc::c_uint = 0 as libc::c_int as libc::c_uint;
         while i_1 < (*c).n_fc {
-            let ref mut fresh3 = (*((*c).fc).offset(i_1 as isize)).task_thread.task_head;
-            *fresh3 = 0 as *mut Dav1dTask;
-            let ref mut fresh4 = (*((*c).fc).offset(i_1 as isize)).task_thread.task_tail;
-            *fresh4 = 0 as *mut Dav1dTask;
-            let ref mut fresh5 = (*((*c).fc).offset(i_1 as isize))
+            let ref mut fresh1 = (*((*c).fc).offset(i_1 as isize)).task_thread.task_head;
+            *fresh1 = 0 as *mut Dav1dTask;
+            let ref mut fresh2 = (*((*c).fc).offset(i_1 as isize)).task_thread.task_tail;
+            *fresh2 = 0 as *mut Dav1dTask;
+            let ref mut fresh3 = (*((*c).fc).offset(i_1 as isize))
                 .task_thread
                 .task_cur_prev;
-            *fresh5 = 0 as *mut Dav1dTask;
-            let ref mut fresh6 = (*((*c).fc).offset(i_1 as isize))
+            *fresh3 = 0 as *mut Dav1dTask;
+            let ref mut fresh4 = (*((*c).fc).offset(i_1 as isize))
                 .task_thread
                 .pending_tasks
                 .head;
-            *fresh6 = 0 as *mut Dav1dTask;
-            let ref mut fresh7 = (*((*c).fc).offset(i_1 as isize))
+            *fresh4 = 0 as *mut Dav1dTask;
+            let ref mut fresh5 = (*((*c).fc).offset(i_1 as isize))
                 .task_thread
                 .pending_tasks
                 .tail;
-            *fresh7 = 0 as *mut Dav1dTask;
+            *fresh5 = 0 as *mut Dav1dTask;
             *&mut (*((*c).fc).offset(i_1 as isize))
                 .task_thread
                 .pending_tasks

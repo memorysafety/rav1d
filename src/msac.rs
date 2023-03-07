@@ -44,7 +44,7 @@ unsafe extern "C" fn dav1d_msac_decode_bools(
         if !(fresh0 != 0) {
             break;
         }
-        v = v << 1 as libc::c_int | dav1d_msac_decode_bool_equi_c(s);
+        v = v << 1 as libc::c_int | dav1d_msac_decode_bool_equi(s);
     }
     return v;
 }
@@ -158,11 +158,11 @@ pub unsafe extern "C" fn dav1d_msac_decode_subexp(
         unreachable!();
     }
     let mut a: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    if dav1d_msac_decode_bool_equi_c(s) != 0 {
-        if dav1d_msac_decode_bool_equi_c(s) != 0 {
+    if dav1d_msac_decode_bool_equi(s) != 0 {
+        if dav1d_msac_decode_bool_equi(s) != 0 {
             k = k
                 .wrapping_add(
-                    (dav1d_msac_decode_bool_equi_c(s))
+                    (dav1d_msac_decode_bool_equi(s))
                         .wrapping_add(1 as libc::c_int as libc::c_uint),
                 );
         }
@@ -268,7 +268,7 @@ pub unsafe extern "C" fn dav1d_msac_decode_bool_adapt_c(
     s: *mut MsacContext,
     cdf: *mut uint16_t,
 ) -> libc::c_uint {
-    let bit: libc::c_uint = dav1d_msac_decode_bool_c(s, *cdf as libc::c_uint);
+    let bit: libc::c_uint = dav1d_msac_decode_bool(s, *cdf as libc::c_uint);
     if (*s).allow_update_cdf != 0 {
         let count: libc::c_uint = *cdf.offset(1 as libc::c_int as isize) as libc::c_uint;
         let rate: libc::c_int = (4 as libc::c_int as libc::c_uint)
@@ -301,26 +301,22 @@ pub unsafe extern "C" fn dav1d_msac_decode_hi_tok_c(
     s: *mut MsacContext,
     cdf: *mut uint16_t,
 ) -> libc::c_uint {
-    let mut tok_br: libc::c_uint = dav1d_msac_decode_symbol_adapt_c(
+    let mut tok_br: libc::c_uint = dav1d_msac_decode_symbol_adapt4(
         s,
         cdf,
         3 as libc::c_int as size_t,
     );
     let mut tok: libc::c_uint = (3 as libc::c_int as libc::c_uint).wrapping_add(tok_br);
     if tok_br == 3 as libc::c_int as libc::c_uint {
-        tok_br = dav1d_msac_decode_symbol_adapt_c(s, cdf, 3 as libc::c_int as size_t);
+        tok_br = dav1d_msac_decode_symbol_adapt4(s, cdf, 3 as libc::c_int as size_t);
         tok = (6 as libc::c_int as libc::c_uint).wrapping_add(tok_br);
         if tok_br == 3 as libc::c_int as libc::c_uint {
-            tok_br = dav1d_msac_decode_symbol_adapt_c(
-                s,
-                cdf,
-                3 as libc::c_int as size_t,
-            );
+            tok_br = dav1d_msac_decode_symbol_adapt4(s, cdf, 3 as libc::c_int as size_t);
             tok = (9 as libc::c_int as libc::c_uint).wrapping_add(tok_br);
             if tok_br == 3 as libc::c_int as libc::c_uint {
                 tok = (12 as libc::c_int as libc::c_uint)
                     .wrapping_add(
-                        dav1d_msac_decode_symbol_adapt_c(
+                        dav1d_msac_decode_symbol_adapt4(
                             s,
                             cdf,
                             3 as libc::c_int as size_t,
@@ -349,4 +345,55 @@ pub unsafe extern "C" fn dav1d_msac_init(
     (*s).cnt = -(15 as libc::c_int);
     (*s).allow_update_cdf = (disable_cdf_update_flag == 0) as libc::c_int;
     ctx_refill(s);
+}
+#[no_mangle]
+pub unsafe extern "C" fn dav1d_msac_decode_symbol_adapt4(
+    mut s: *mut MsacContext,
+    mut cdf: *mut uint16_t,
+    mut n_symbols: size_t,
+) -> libc::c_uint {
+    return dav1d_msac_decode_symbol_adapt_c(s, cdf, n_symbols);
+}
+#[no_mangle]
+pub unsafe extern "C" fn dav1d_msac_decode_symbol_adapt8(
+    mut s: *mut MsacContext,
+    mut cdf: *mut uint16_t,
+    mut n_symbols: size_t,
+) -> libc::c_uint {
+    return dav1d_msac_decode_symbol_adapt_c(s, cdf, n_symbols);
+}
+#[no_mangle]
+pub unsafe extern "C" fn dav1d_msac_decode_symbol_adapt16(
+    mut s: *mut MsacContext,
+    mut cdf: *mut uint16_t,
+    mut n_symbols: size_t,
+) -> libc::c_uint {
+    return dav1d_msac_decode_symbol_adapt_c(s, cdf, n_symbols);
+}
+#[no_mangle]
+pub unsafe extern "C" fn dav1d_msac_decode_bool_adapt(
+    mut s: *mut MsacContext,
+    mut cdf: *mut uint16_t,
+) -> libc::c_uint {
+    return dav1d_msac_decode_bool_adapt_c(s, cdf);
+}
+#[no_mangle]
+pub unsafe extern "C" fn dav1d_msac_decode_bool_equi(
+    mut s: *mut MsacContext,
+) -> libc::c_uint {
+    return dav1d_msac_decode_bool_equi_c(s);
+}
+#[no_mangle]
+pub unsafe extern "C" fn dav1d_msac_decode_bool(
+    mut s: *mut MsacContext,
+    mut f: libc::c_uint,
+) -> libc::c_uint {
+    return dav1d_msac_decode_bool_c(s, f);
+}
+#[no_mangle]
+pub unsafe extern "C" fn dav1d_msac_decode_hi_tok(
+    mut s: *mut MsacContext,
+    mut cdf: *mut uint16_t,
+) -> libc::c_uint {
+    return dav1d_msac_decode_hi_tok_c(s, cdf);
 }
