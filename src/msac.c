@@ -206,3 +206,43 @@ void dav1d_msac_init(MsacContext *const s, const uint8_t *const data,
     msac_init_x86(s);
 #endif
 }
+
+// C2RUST:
+
+unsigned dav1d_msac_decode_symbol_adapt4(MsacContext *s, uint16_t *cdf,
+                                          size_t n_symbols)
+{
+    return dav1d_msac_decode_symbol_adapt4_impl(s, cdf, n_symbols);
+}
+
+unsigned dav1d_msac_decode_symbol_adapt8(MsacContext *s, uint16_t *cdf,
+                                          size_t n_symbols)
+{
+    return dav1d_msac_decode_symbol_adapt8_impl(s, cdf, n_symbols);
+}
+
+unsigned dav1d_msac_decode_symbol_adapt16(MsacContext *s, uint16_t *cdf,
+                                          size_t n_symbols)
+{
+    return dav1d_msac_decode_symbol_adapt16_impl(s, cdf, n_symbols);
+}
+
+unsigned dav1d_msac_decode_bool_adapt(MsacContext *s, uint16_t *cdf)
+{
+    return dav1d_msac_decode_bool_adapt_impl(s, cdf);
+}
+
+unsigned dav1d_msac_decode_bool_equi(MsacContext *s)
+{
+    return dav1d_msac_decode_bool_equi_impl(s);
+}
+
+unsigned dav1d_msac_decode_bool(MsacContext *s, unsigned f)
+{
+    return dav1d_msac_decode_bool_impl(s, f);
+}
+
+unsigned dav1d_msac_decode_hi_tok(MsacContext *s, uint16_t *cdf)
+{
+    return dav1d_msac_decode_hi_tok_impl(s, cdf);
+}
