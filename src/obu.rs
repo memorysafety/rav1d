@@ -1,4 +1,5 @@
 use ::libc;
+use crate::src::msac::MsacContext;
 extern "C" {
     fn realloc(_: *mut libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
     fn memset(
@@ -1244,16 +1245,6 @@ pub struct C2RustUnnamed_45 {
     pub row_end: libc::c_int,
     pub col: libc::c_int,
     pub row: libc::c_int,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct MsacContext {
-    pub buf_pos: *const uint8_t,
-    pub buf_end: *const uint8_t,
-    pub dif: ec_win,
-    pub rng: libc::c_uint,
-    pub cnt: libc::c_int,
-    pub allow_update_cdf: libc::c_int,
 }
 pub type ec_win = size_t;
 #[derive(Copy, Clone)]
