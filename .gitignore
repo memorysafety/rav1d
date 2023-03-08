@@ -6,6 +6,8 @@ tags
 .DS_Store
 *.snap
 /tools/output/xxhash.h
+/.vscode
+compile_commands.json
 
 # Rust
 target/
