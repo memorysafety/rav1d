@@ -1,4 +1,5 @@
 use ::libc;
+use crate::src::align::*;
 use crate::src::msac::MsacContext;
 extern "C" {
     fn memcpy(
@@ -1260,57 +1261,57 @@ pub struct CdfCoefContext {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct CdfModeContext {
-    pub y_mode: [[uint16_t; 16]; 4],
-    pub uv_mode: [[[uint16_t; 16]; 13]; 2],
-    pub wedge_idx: [[uint16_t; 16]; 9],
-    pub partition: [[[uint16_t; 16]; 4]; 5],
-    pub cfl_alpha: [[uint16_t; 16]; 6],
-    pub txtp_inter1: [[uint16_t; 16]; 2],
-    pub txtp_inter2: [uint16_t; 16],
-    pub txtp_intra1: [[[uint16_t; 8]; 13]; 2],
-    pub txtp_intra2: [[[uint16_t; 8]; 13]; 3],
-    pub cfl_sign: [uint16_t; 8],
-    pub angle_delta: [[uint16_t; 8]; 8],
-    pub filter_intra: [uint16_t; 8],
-    pub comp_inter_mode: [[uint16_t; 8]; 8],
-    pub seg_id: [[uint16_t; 8]; 3],
-    pub pal_sz: [[[uint16_t; 8]; 7]; 2],
-    pub color_map: [[[[uint16_t; 8]; 5]; 7]; 2],
-    pub filter: [[[uint16_t; 4]; 8]; 2],
-    pub txsz: [[[uint16_t; 4]; 3]; 4],
-    pub motion_mode: [[uint16_t; 4]; 22],
-    pub delta_q: [uint16_t; 4],
-    pub delta_lf: [[uint16_t; 4]; 5],
-    pub interintra_mode: [[uint16_t; 4]; 4],
-    pub restore_switchable: [uint16_t; 4],
-    pub restore_wiener: [uint16_t; 2],
-    pub restore_sgrproj: [uint16_t; 2],
-    pub interintra: [[uint16_t; 2]; 7],
-    pub interintra_wedge: [[uint16_t; 2]; 7],
-    pub txtp_inter3: [[uint16_t; 2]; 4],
-    pub use_filter_intra: [[uint16_t; 2]; 22],
-    pub newmv_mode: [[uint16_t; 2]; 6],
-    pub globalmv_mode: [[uint16_t; 2]; 2],
-    pub refmv_mode: [[uint16_t; 2]; 6],
-    pub drl_bit: [[uint16_t; 2]; 3],
-    pub intra: [[uint16_t; 2]; 4],
-    pub comp: [[uint16_t; 2]; 5],
-    pub comp_dir: [[uint16_t; 2]; 5],
-    pub jnt_comp: [[uint16_t; 2]; 6],
-    pub mask_comp: [[uint16_t; 2]; 6],
-    pub wedge_comp: [[uint16_t; 2]; 9],
-    pub ref_0: [[[uint16_t; 2]; 3]; 6],
-    pub comp_fwd_ref: [[[uint16_t; 2]; 3]; 3],
-    pub comp_bwd_ref: [[[uint16_t; 2]; 3]; 2],
-    pub comp_uni_ref: [[[uint16_t; 2]; 3]; 3],
-    pub txpart: [[[uint16_t; 2]; 3]; 7],
-    pub skip: [[uint16_t; 2]; 3],
-    pub skip_mode: [[uint16_t; 2]; 3],
-    pub seg_pred: [[uint16_t; 2]; 3],
-    pub obmc: [[uint16_t; 2]; 22],
-    pub pal_y: [[[uint16_t; 2]; 3]; 7],
-    pub pal_uv: [[uint16_t; 2]; 2],
-    pub intrabc: [uint16_t; 2],
+    pub y_mode: Align32<[[uint16_t; 16]; 4]>,
+    pub uv_mode: Align32<[[[uint16_t; 16]; 13]; 2]>,
+    pub wedge_idx: Align32<[[uint16_t; 16]; 9]>,
+    pub partition: Align32<[[[uint16_t; 16]; 4]; 5]>,
+    pub cfl_alpha: Align32<[[uint16_t; 16]; 6]>,
+    pub txtp_inter1: Align32<[[uint16_t; 16]; 2]>,
+    pub txtp_inter2: Align32<[uint16_t; 16]>,
+    pub txtp_intra1: Align16<[[[uint16_t; 8]; 13]; 2]>,
+    pub txtp_intra2: Align16<[[[uint16_t; 8]; 13]; 3]>,
+    pub cfl_sign: Align16<[uint16_t; 8]>,
+    pub angle_delta: Align16<[[uint16_t; 8]; 8]>,
+    pub filter_intra: Align16<[uint16_t; 8]>,
+    pub comp_inter_mode: Align16<[[uint16_t; 8]; 8]>,
+    pub seg_id: Align16<[[uint16_t; 8]; 3]>,
+    pub pal_sz: Align16<[[[uint16_t; 8]; 7]; 2]>,
+    pub color_map: Align16<[[[[uint16_t; 8]; 5]; 7]; 2]>,
+    pub filter: Align8<[[[uint16_t; 4]; 8]; 2]>,
+    pub txsz: Align8<[[[uint16_t; 4]; 3]; 4]>,
+    pub motion_mode: Align8<[[uint16_t; 4]; 22]>,
+    pub delta_q: Align8<[uint16_t; 4]>,
+    pub delta_lf: Align8<[[uint16_t; 4]; 5]>,
+    pub interintra_mode: Align8<[[uint16_t; 4]; 4]>,
+    pub restore_switchable: Align8<[uint16_t; 4]>,
+    pub restore_wiener: Align4<[uint16_t; 2]>,
+    pub restore_sgrproj: Align4<[uint16_t; 2]>,
+    pub interintra: Align4<[[uint16_t; 2]; 7]>,
+    pub interintra_wedge: Align4<[[uint16_t; 2]; 7]>,
+    pub txtp_inter3: Align4<[[uint16_t; 2]; 4]>,
+    pub use_filter_intra: Align4<[[uint16_t; 2]; 22]>,
+    pub newmv_mode: Align4<[[uint16_t; 2]; 6]>,
+    pub globalmv_mode: Align4<[[uint16_t; 2]; 2]>,
+    pub refmv_mode: Align4<[[uint16_t; 2]; 6]>,
+    pub drl_bit: Align4<[[uint16_t; 2]; 3]>,
+    pub intra: Align4<[[uint16_t; 2]; 4]>,
+    pub comp: Align4<[[uint16_t; 2]; 5]>,
+    pub comp_dir: Align4<[[uint16_t; 2]; 5]>,
+    pub jnt_comp: Align4<[[uint16_t; 2]; 6]>,
+    pub mask_comp: Align4<[[uint16_t; 2]; 6]>,
+    pub wedge_comp: Align4<[[uint16_t; 2]; 9]>,
+    pub ref_0: Align4<[[[uint16_t; 2]; 3]; 6]>,
+    pub comp_fwd_ref: Align4<[[[uint16_t; 2]; 3]; 3]>,
+    pub comp_bwd_ref: Align4<[[[uint16_t; 2]; 3]; 2]>,
+    pub comp_uni_ref: Align4<[[[uint16_t; 2]; 3]; 3]>,
+    pub txpart: Align4<[[[uint16_t; 2]; 3]; 7]>,
+    pub skip: Align4<[[uint16_t; 2]; 3]>,
+    pub skip_mode: Align4<[[uint16_t; 2]; 3]>,
+    pub seg_pred: Align4<[[uint16_t; 2]; 3]>,
+    pub obmc: Align4<[[uint16_t; 2]; 22]>,
+    pub pal_y: Align4<[[[uint16_t; 2]; 3]; 7]>,
+    pub pal_uv: Align4<[[uint16_t; 2]; 2]>,
+    pub intrabc: Align4<[uint16_t; 2]>,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -2006,7 +2007,7 @@ unsafe extern "C" fn dav1d_ref_inc(ref_0: *mut Dav1dRef) {
 unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
     return if a < b { a } else { b };
 }
-static mut av1_default_cdf: CdfModeContext = {
+pub fn av1_default_cdf() -> CdfModeContext {
     let mut init = CdfModeContext {
         y_mode: [
             [
@@ -2081,7 +2082,7 @@ static mut av1_default_cdf: CdfModeContext = {
                 0,
                 0,
             ],
-        ],
+        ].into(),
         uv_mode: [
             [
                 [
@@ -2555,7 +2556,7 @@ static mut av1_default_cdf: CdfModeContext = {
                     0,
                 ],
             ],
-        ],
+        ].into(),
         wedge_idx: [
             [
                 (32768 as libc::c_int - 2438 as libc::c_int) as uint16_t,
@@ -2719,7 +2720,7 @@ static mut av1_default_cdf: CdfModeContext = {
                 (32768 as libc::c_int - 31933 as libc::c_int) as uint16_t,
                 0,
             ],
-        ],
+        ].into(),
         partition: [
             [
                 [
@@ -3091,7 +3092,7 @@ static mut av1_default_cdf: CdfModeContext = {
                     0,
                 ],
             ],
-        ],
+        ].into(),
         cfl_alpha: [
             [
                 (32768 as libc::c_int - 7637 as libc::c_int) as uint16_t,
@@ -3201,7 +3202,7 @@ static mut av1_default_cdf: CdfModeContext = {
                 (32768 as libc::c_int - 32660 as libc::c_int) as uint16_t,
                 0,
             ],
-        ],
+        ].into(),
         txtp_inter1: [
             [
                 (32768 as libc::c_int - 4458 as libc::c_int) as uint16_t,
@@ -3239,7 +3240,7 @@ static mut av1_default_cdf: CdfModeContext = {
                 (32768 as libc::c_int - 30749 as libc::c_int) as uint16_t,
                 0,
             ],
-        ],
+        ].into(),
         txtp_inter2: [
             (32768 as libc::c_int - 770 as libc::c_int) as uint16_t,
             (32768 as libc::c_int - 2421 as libc::c_int) as uint16_t,
@@ -3257,7 +3258,7 @@ static mut av1_default_cdf: CdfModeContext = {
             0,
             0,
             0,
-        ],
+        ].into(),
         txtp_intra1: [
             [
                 [
@@ -3523,7 +3524,7 @@ static mut av1_default_cdf: CdfModeContext = {
                     0,
                 ],
             ],
-        ],
+        ].into(),
         txtp_intra2: [
             [
                 [
@@ -3921,7 +3922,7 @@ static mut av1_default_cdf: CdfModeContext = {
                     0,
                 ],
             ],
-        ],
+        ].into(),
         cfl_sign: [
             (32768 as libc::c_int - 1418 as libc::c_int) as uint16_t,
             (32768 as libc::c_int - 2123 as libc::c_int) as uint16_t,
@@ -3931,7 +3932,7 @@ static mut av1_default_cdf: CdfModeContext = {
             (32768 as libc::c_int - 28343 as libc::c_int) as uint16_t,
             (32768 as libc::c_int - 32294 as libc::c_int) as uint16_t,
             0,
-        ],
+        ].into(),
         angle_delta: [
             [
                 (32768 as libc::c_int - 2180 as libc::c_int) as uint16_t,
@@ -4013,7 +4014,7 @@ static mut av1_default_cdf: CdfModeContext = {
                 0,
                 0,
             ],
-        ],
+        ].into(),
         filter_intra: [
             (32768 as libc::c_int - 8949 as libc::c_int) as uint16_t,
             (32768 as libc::c_int - 12776 as libc::c_int) as uint16_t,
@@ -4023,7 +4024,7 @@ static mut av1_default_cdf: CdfModeContext = {
             0,
             0,
             0,
-        ],
+        ].into(),
         comp_inter_mode: [
             [
                 (32768 as libc::c_int - 7760 as libc::c_int) as uint16_t,
@@ -4105,7 +4106,7 @@ static mut av1_default_cdf: CdfModeContext = {
                 (32768 as libc::c_int - 29330 as libc::c_int) as uint16_t,
                 0,
             ],
-        ],
+        ].into(),
         seg_id: [
             [
                 (32768 as libc::c_int - 5622 as libc::c_int) as uint16_t,
@@ -4137,7 +4138,7 @@ static mut av1_default_cdf: CdfModeContext = {
                 (32768 as libc::c_int - 32679 as libc::c_int) as uint16_t,
                 0,
             ],
-        ],
+        ].into(),
         pal_sz: [
             [
                 [
@@ -4283,7 +4284,7 @@ static mut av1_default_cdf: CdfModeContext = {
                     0,
                 ],
             ],
-        ],
+        ].into(),
         color_map: [
             [
                 [
@@ -5017,7 +5018,7 @@ static mut av1_default_cdf: CdfModeContext = {
                     ],
                 ],
             ],
-        ],
+        ].into(),
         filter: [
             [
                 [
@@ -5119,7 +5120,7 @@ static mut av1_default_cdf: CdfModeContext = {
                     0,
                 ],
             ],
-        ],
+        ].into(),
         txsz: [
             [
                 [(32768 as libc::c_int - 19968 as libc::c_int) as uint16_t, 0, 0, 0],
@@ -5186,7 +5187,7 @@ static mut av1_default_cdf: CdfModeContext = {
                     0,
                 ],
             ],
-        ],
+        ].into(),
         motion_mode: [
             [
                 (32768 as libc::c_int - 32507 as libc::c_int) as uint16_t,
@@ -5295,13 +5296,13 @@ static mut av1_default_cdf: CdfModeContext = {
             [0; 4],
             [0; 4],
             [0; 4],
-        ],
+        ].into(),
         delta_q: [
             (32768 as libc::c_int - 28160 as libc::c_int) as uint16_t,
             (32768 as libc::c_int - 32120 as libc::c_int) as uint16_t,
             (32768 as libc::c_int - 32677 as libc::c_int) as uint16_t,
             0,
-        ],
+        ].into(),
         delta_lf: [
             [
                 (32768 as libc::c_int - 28160 as libc::c_int) as uint16_t,
@@ -5333,7 +5334,7 @@ static mut av1_default_cdf: CdfModeContext = {
                 (32768 as libc::c_int - 32677 as libc::c_int) as uint16_t,
                 0,
             ],
-        ],
+        ].into(),
         interintra_mode: [
             [
                 (32768 as libc::c_int - 8192 as libc::c_int) as uint16_t,
@@ -5359,15 +5360,15 @@ static mut av1_default_cdf: CdfModeContext = {
                 (32768 as libc::c_int - 25926 as libc::c_int) as uint16_t,
                 0,
             ],
-        ],
+        ].into(),
         restore_switchable: [
             (32768 as libc::c_int - 9413 as libc::c_int) as uint16_t,
             (32768 as libc::c_int - 22581 as libc::c_int) as uint16_t,
             0,
             0,
-        ],
-        restore_wiener: [(32768 as libc::c_int - 11570 as libc::c_int) as uint16_t, 0],
-        restore_sgrproj: [(32768 as libc::c_int - 16855 as libc::c_int) as uint16_t, 0],
+        ].into(),
+        restore_wiener: [(32768 as libc::c_int - 11570 as libc::c_int) as uint16_t, 0].into(),
+        restore_sgrproj: [(32768 as libc::c_int - 16855 as libc::c_int) as uint16_t, 0].into(),
         interintra: [
             [(32768 as libc::c_int - 16384 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 26887 as libc::c_int) as uint16_t, 0],
@@ -5376,7 +5377,7 @@ static mut av1_default_cdf: CdfModeContext = {
             [0; 2],
             [0; 2],
             [0; 2],
-        ],
+        ].into(),
         interintra_wedge: [
             [(32768 as libc::c_int - 20036 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 24957 as libc::c_int) as uint16_t, 0],
@@ -5385,13 +5386,13 @@ static mut av1_default_cdf: CdfModeContext = {
             [(32768 as libc::c_int - 29564 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 29444 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 26872 as libc::c_int) as uint16_t, 0],
-        ],
+        ].into(),
         txtp_inter3: [
             [(32768 as libc::c_int - 16384 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 4167 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 1998 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 748 as libc::c_int) as uint16_t, 0],
-        ],
+        ].into(),
         use_filter_intra: [
             [(32768 as libc::c_int - 16384 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 16384 as libc::c_int) as uint16_t, 0],
@@ -5415,7 +5416,7 @@ static mut av1_default_cdf: CdfModeContext = {
             [(32768 as libc::c_int - 12770 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 6743 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 4621 as libc::c_int) as uint16_t, 0],
-        ],
+        ].into(),
         newmv_mode: [
             [(32768 as libc::c_int - 24035 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 16630 as libc::c_int) as uint16_t, 0],
@@ -5423,11 +5424,11 @@ static mut av1_default_cdf: CdfModeContext = {
             [(32768 as libc::c_int - 8386 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 12222 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 4676 as libc::c_int) as uint16_t, 0],
-        ],
+        ].into(),
         globalmv_mode: [
             [(32768 as libc::c_int - 2175 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 1054 as libc::c_int) as uint16_t, 0],
-        ],
+        ].into(),
         refmv_mode: [
             [(32768 as libc::c_int - 23974 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 24188 as libc::c_int) as uint16_t, 0],
@@ -5435,32 +5436,32 @@ static mut av1_default_cdf: CdfModeContext = {
             [(32768 as libc::c_int - 28622 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 24312 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 19923 as libc::c_int) as uint16_t, 0],
-        ],
+        ].into(),
         drl_bit: [
             [(32768 as libc::c_int - 13104 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 24560 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 18945 as libc::c_int) as uint16_t, 0],
-        ],
+        ].into(),
         intra: [
             [(32768 as libc::c_int - 806 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 16662 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 20186 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 26538 as libc::c_int) as uint16_t, 0],
-        ],
+        ].into(),
         comp: [
             [(32768 as libc::c_int - 26828 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 24035 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 12031 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 10640 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 2901 as libc::c_int) as uint16_t, 0],
-        ],
+        ].into(),
         comp_dir: [
             [(32768 as libc::c_int - 1198 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 2070 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 9166 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 7499 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 22475 as libc::c_int) as uint16_t, 0],
-        ],
+        ].into(),
         jnt_comp: [
             [(32768 as libc::c_int - 18244 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 12865 as libc::c_int) as uint16_t, 0],
@@ -5468,7 +5469,7 @@ static mut av1_default_cdf: CdfModeContext = {
             [(32768 as libc::c_int - 13259 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 9334 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 4644 as libc::c_int) as uint16_t, 0],
-        ],
+        ].into(),
         mask_comp: [
             [(32768 as libc::c_int - 26607 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 22891 as libc::c_int) as uint16_t, 0],
@@ -5476,7 +5477,7 @@ static mut av1_default_cdf: CdfModeContext = {
             [(32768 as libc::c_int - 24594 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 19934 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 22674 as libc::c_int) as uint16_t, 0],
-        ],
+        ].into(),
         wedge_comp: [
             [(32768 as libc::c_int - 23431 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 13171 as libc::c_int) as uint16_t, 0],
@@ -5487,7 +5488,7 @@ static mut av1_default_cdf: CdfModeContext = {
             [(32768 as libc::c_int - 6172 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 11820 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 7701 as libc::c_int) as uint16_t, 0],
-        ],
+        ].into(),
         ref_0: [
             [
                 [(32768 as libc::c_int - 4897 as libc::c_int) as uint16_t, 0],
@@ -5519,7 +5520,7 @@ static mut av1_default_cdf: CdfModeContext = {
                 [(32768 as libc::c_int - 15087 as libc::c_int) as uint16_t, 0],
                 [(32768 as libc::c_int - 30304 as libc::c_int) as uint16_t, 0],
             ],
-        ],
+        ].into(),
         comp_fwd_ref: [
             [
                 [(32768 as libc::c_int - 4946 as libc::c_int) as uint16_t, 0],
@@ -5536,7 +5537,7 @@ static mut av1_default_cdf: CdfModeContext = {
                 [(32768 as libc::c_int - 15160 as libc::c_int) as uint16_t, 0],
                 [(32768 as libc::c_int - 27544 as libc::c_int) as uint16_t, 0],
             ],
-        ],
+        ].into(),
         comp_bwd_ref: [
             [
                 [(32768 as libc::c_int - 2235 as libc::c_int) as uint16_t, 0],
@@ -5548,7 +5549,7 @@ static mut av1_default_cdf: CdfModeContext = {
                 [(32768 as libc::c_int - 15175 as libc::c_int) as uint16_t, 0],
                 [(32768 as libc::c_int - 30489 as libc::c_int) as uint16_t, 0],
             ],
-        ],
+        ].into(),
         comp_uni_ref: [
             [
                 [(32768 as libc::c_int - 5284 as libc::c_int) as uint16_t, 0],
@@ -5565,7 +5566,7 @@ static mut av1_default_cdf: CdfModeContext = {
                 [(32768 as libc::c_int - 15270 as libc::c_int) as uint16_t, 0],
                 [(32768 as libc::c_int - 26710 as libc::c_int) as uint16_t, 0],
             ],
-        ],
+        ].into(),
         txpart: [
             [
                 [(32768 as libc::c_int - 28581 as libc::c_int) as uint16_t, 0],
@@ -5602,22 +5603,22 @@ static mut av1_default_cdf: CdfModeContext = {
                 [(32768 as libc::c_int - 22401 as libc::c_int) as uint16_t, 0],
                 [(32768 as libc::c_int - 16088 as libc::c_int) as uint16_t, 0],
             ],
-        ],
+        ].into(),
         skip: [
             [(32768 as libc::c_int - 31671 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 16515 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 4576 as libc::c_int) as uint16_t, 0],
-        ],
+        ].into(),
         skip_mode: [
             [(32768 as libc::c_int - 32621 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 20708 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 8127 as libc::c_int) as uint16_t, 0],
-        ],
+        ].into(),
         seg_pred: [
             [(32768 as libc::c_int - 16384 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 16384 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 16384 as libc::c_int) as uint16_t, 0],
-        ],
+        ].into(),
         obmc: [
             [(32768 as libc::c_int - 32638 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 31560 as libc::c_int) as uint16_t, 0],
@@ -5641,7 +5642,7 @@ static mut av1_default_cdf: CdfModeContext = {
             [0; 2],
             [0; 2],
             [0; 2],
-        ],
+        ].into(),
         pal_y: [
             [
                 [(32768 as libc::c_int - 31676 as libc::c_int) as uint16_t, 0],
@@ -5678,15 +5679,15 @@ static mut av1_default_cdf: CdfModeContext = {
                 [(32768 as libc::c_int - 7946 as libc::c_int) as uint16_t, 0],
                 [(32768 as libc::c_int - 129 as libc::c_int) as uint16_t, 0],
             ],
-        ],
+        ].into(),
         pal_uv: [
             [(32768 as libc::c_int - 32461 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 21488 as libc::c_int) as uint16_t, 0],
-        ],
-        intrabc: [(32768 as libc::c_int - 30531 as libc::c_int) as uint16_t, 0],
+        ].into(),
+        intrabc: [(32768 as libc::c_int - 30531 as libc::c_int) as uint16_t, 0].into(),
     };
     init
-};
+}
 static mut default_mv_component_cdf: CdfMvComponent = {
     let mut init = CdfMvComponent {
         classes: [
@@ -23724,8 +23725,8 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         i += 1;
     }
     memcpy(
-        ((*dst).m.filter_intra).as_mut_ptr() as *mut libc::c_void,
-        ((*src).m.filter_intra).as_ptr() as *const libc::c_void,
+        ((*dst).m.filter_intra).0.as_mut_ptr() as *mut libc::c_void,
+        ((*src).m.filter_intra).0.as_ptr() as *const libc::c_void,
         ::core::mem::size_of::<[uint16_t; 8]>() as libc::c_ulong,
     );
     (*dst).m.filter_intra[4 as libc::c_int as usize] = 0 as libc::c_int as uint16_t;
@@ -24144,8 +24145,8 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         j_18 += 1;
     }
     memcpy(
-        ((*dst).m.cfl_sign).as_mut_ptr() as *mut libc::c_void,
-        ((*src).m.cfl_sign).as_ptr() as *const libc::c_void,
+        ((*dst).m.cfl_sign).0.as_mut_ptr() as *mut libc::c_void,
+        ((*src).m.cfl_sign).0.as_ptr() as *const libc::c_void,
         ::core::mem::size_of::<[uint16_t; 8]>() as libc::c_ulong,
     );
     (*dst).m.cfl_sign[7 as libc::c_int as usize] = 0 as libc::c_int as uint16_t;
@@ -24173,16 +24174,16 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         as usize] = (*src).m.restore_sgrproj[0 as libc::c_int as usize];
     (*dst).m.restore_sgrproj[1 as libc::c_int as usize] = 0 as libc::c_int as uint16_t;
     memcpy(
-        ((*dst).m.restore_switchable).as_mut_ptr() as *mut libc::c_void,
-        ((*src).m.restore_switchable).as_ptr() as *const libc::c_void,
+        ((*dst).m.restore_switchable).0.as_mut_ptr() as *mut libc::c_void,
+        ((*src).m.restore_switchable).0.as_ptr() as *const libc::c_void,
         ::core::mem::size_of::<[uint16_t; 4]>() as libc::c_ulong,
     );
     (*dst)
         .m
         .restore_switchable[2 as libc::c_int as usize] = 0 as libc::c_int as uint16_t;
     memcpy(
-        ((*dst).m.delta_q).as_mut_ptr() as *mut libc::c_void,
-        ((*src).m.delta_q).as_ptr() as *const libc::c_void,
+        ((*dst).m.delta_q).0.as_mut_ptr() as *mut libc::c_void,
+        ((*src).m.delta_q).0.as_ptr() as *const libc::c_void,
         ::core::mem::size_of::<[uint16_t; 4]>() as libc::c_ulong,
     );
     (*dst).m.delta_q[3 as libc::c_int as usize] = 0 as libc::c_int as uint16_t;
@@ -24314,8 +24315,8 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         j_25 += 1;
     }
     memcpy(
-        ((*dst).m.txtp_inter2).as_mut_ptr() as *mut libc::c_void,
-        ((*src).m.txtp_inter2).as_ptr() as *const libc::c_void,
+        ((*dst).m.txtp_inter2.0).as_mut_ptr() as *mut libc::c_void,
+        ((*src).m.txtp_inter2.0).as_ptr() as *const libc::c_void,
         ::core::mem::size_of::<[uint16_t; 16]>() as libc::c_ulong,
     );
     (*dst).m.txtp_inter2[11 as libc::c_int as usize] = 0 as libc::c_int as uint16_t;
@@ -24409,25 +24410,25 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
     while i_9 < 3 as libc::c_int {
         (*dst)
             .m
-            .skip_mode[i_9
+            .skip_mode.0[i_9
             as usize][0 as libc::c_int
-            as usize] = (*src).m.skip_mode[i_9 as usize][0 as libc::c_int as usize];
+            as usize] = (*src).m.skip_mode.0[i_9 as usize][0 as libc::c_int as usize];
         (*dst)
             .m
-            .skip_mode[i_9
+            .skip_mode.0[i_9
             as usize][1 as libc::c_int as usize] = 0 as libc::c_int as uint16_t;
         i_9 += 1;
     }
     let mut j_26: libc::c_int = 0 as libc::c_int;
     while j_26 < 4 as libc::c_int {
         memcpy(
-            ((*dst).m.y_mode[j_26 as usize]).as_mut_ptr() as *mut libc::c_void,
-            ((*src).m.y_mode[j_26 as usize]).as_ptr() as *const libc::c_void,
+            ((*dst).m.y_mode.0[j_26 as usize]).as_mut_ptr() as *mut libc::c_void,
+            ((*src).m.y_mode.0[j_26 as usize]).as_ptr() as *const libc::c_void,
             ::core::mem::size_of::<[uint16_t; 16]>() as libc::c_ulong,
         );
         (*dst)
             .m
-            .y_mode[j_26
+            .y_mode.0[j_26
             as usize][(N_INTRA_PRED_MODES as libc::c_int - 1 as libc::c_int)
             as usize] = 0 as libc::c_int as uint16_t;
         j_26 += 1;
@@ -24437,15 +24438,15 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         let mut j_27: libc::c_int = 0 as libc::c_int;
         while j_27 < 8 as libc::c_int {
             memcpy(
-                ((*dst).m.filter[k_16 as usize][j_27 as usize]).as_mut_ptr()
+                ((*dst).m.filter.0[k_16 as usize][j_27 as usize]).as_mut_ptr()
                     as *mut libc::c_void,
-                ((*src).m.filter[k_16 as usize][j_27 as usize]).as_ptr()
+                ((*src).m.filter.0[k_16 as usize][j_27 as usize]).as_ptr()
                     as *const libc::c_void,
                 ::core::mem::size_of::<[uint16_t; 4]>() as libc::c_ulong,
             );
             (*dst)
                 .m
-                .filter[k_16
+                .filter.0[k_16
                 as usize][j_27
                 as usize][(DAV1D_N_SWITCHABLE_FILTERS as libc::c_int - 1 as libc::c_int)
                 as usize] = 0 as libc::c_int as uint16_t;
@@ -24457,12 +24458,12 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
     while i_10 < 6 as libc::c_int {
         (*dst)
             .m
-            .newmv_mode[i_10
+            .newmv_mode.0[i_10
             as usize][0 as libc::c_int
-            as usize] = (*src).m.newmv_mode[i_10 as usize][0 as libc::c_int as usize];
+            as usize] = (*src).m.newmv_mode.0[i_10 as usize][0 as libc::c_int as usize];
         (*dst)
             .m
-            .newmv_mode[i_10
+            .newmv_mode.0[i_10
             as usize][1 as libc::c_int as usize] = 0 as libc::c_int as uint16_t;
         i_10 += 1;
     }
@@ -24470,12 +24471,12 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
     while i_11 < 2 as libc::c_int {
         (*dst)
             .m
-            .globalmv_mode[i_11
+            .globalmv_mode.0[i_11
             as usize][0 as libc::c_int
-            as usize] = (*src).m.globalmv_mode[i_11 as usize][0 as libc::c_int as usize];
+            as usize] = (*src).m.globalmv_mode.0[i_11 as usize][0 as libc::c_int as usize];
         (*dst)
             .m
-            .globalmv_mode[i_11
+            .globalmv_mode.0[i_11
             as usize][1 as libc::c_int as usize] = 0 as libc::c_int as uint16_t;
         i_11 += 1;
     }
@@ -24483,12 +24484,12 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
     while i_12 < 6 as libc::c_int {
         (*dst)
             .m
-            .refmv_mode[i_12
+            .refmv_mode.0[i_12
             as usize][0 as libc::c_int
-            as usize] = (*src).m.refmv_mode[i_12 as usize][0 as libc::c_int as usize];
+            as usize] = (*src).m.refmv_mode.0[i_12 as usize][0 as libc::c_int as usize];
         (*dst)
             .m
-            .refmv_mode[i_12
+            .refmv_mode.0[i_12
             as usize][1 as libc::c_int as usize] = 0 as libc::c_int as uint16_t;
         i_12 += 1;
     }
@@ -24496,25 +24497,25 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
     while i_13 < 3 as libc::c_int {
         (*dst)
             .m
-            .drl_bit[i_13
+            .drl_bit.0[i_13
             as usize][0 as libc::c_int
-            as usize] = (*src).m.drl_bit[i_13 as usize][0 as libc::c_int as usize];
+            as usize] = (*src).m.drl_bit.0[i_13 as usize][0 as libc::c_int as usize];
         (*dst)
             .m
-            .drl_bit[i_13
+            .drl_bit.0[i_13
             as usize][1 as libc::c_int as usize] = 0 as libc::c_int as uint16_t;
         i_13 += 1;
     }
     let mut j_28: libc::c_int = 0 as libc::c_int;
     while j_28 < 8 as libc::c_int {
         memcpy(
-            ((*dst).m.comp_inter_mode[j_28 as usize]).as_mut_ptr() as *mut libc::c_void,
-            ((*src).m.comp_inter_mode[j_28 as usize]).as_ptr() as *const libc::c_void,
+            ((*dst).m.comp_inter_mode.0[j_28 as usize]).as_mut_ptr() as *mut libc::c_void,
+            ((*src).m.comp_inter_mode.0[j_28 as usize]).as_ptr() as *const libc::c_void,
             ::core::mem::size_of::<[uint16_t; 8]>() as libc::c_ulong,
         );
         (*dst)
             .m
-            .comp_inter_mode[j_28
+            .comp_inter_mode.0[j_28
             as usize][(N_COMP_INTER_PRED_MODES as libc::c_int - 1 as libc::c_int)
             as usize] = 0 as libc::c_int as uint16_t;
         j_28 += 1;
@@ -24523,12 +24524,12 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
     while i_14 < 4 as libc::c_int {
         (*dst)
             .m
-            .intra[i_14
+            .intra.0[i_14
             as usize][0 as libc::c_int
-            as usize] = (*src).m.intra[i_14 as usize][0 as libc::c_int as usize];
+            as usize] = (*src).m.intra.0[i_14 as usize][0 as libc::c_int as usize];
         (*dst)
             .m
-            .intra[i_14
+            .intra.0[i_14
             as usize][1 as libc::c_int as usize] = 0 as libc::c_int as uint16_t;
         i_14 += 1;
     }
@@ -24536,12 +24537,12 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
     while i_15 < 5 as libc::c_int {
         (*dst)
             .m
-            .comp[i_15
+            .comp.0[i_15
             as usize][0 as libc::c_int
-            as usize] = (*src).m.comp[i_15 as usize][0 as libc::c_int as usize];
+            as usize] = (*src).m.comp.0[i_15 as usize][0 as libc::c_int as usize];
         (*dst)
             .m
-            .comp[i_15
+            .comp.0[i_15
             as usize][1 as libc::c_int as usize] = 0 as libc::c_int as uint16_t;
         i_15 += 1;
     }
@@ -24549,12 +24550,12 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
     while i_16 < 5 as libc::c_int {
         (*dst)
             .m
-            .comp_dir[i_16
+            .comp_dir.0[i_16
             as usize][0 as libc::c_int
-            as usize] = (*src).m.comp_dir[i_16 as usize][0 as libc::c_int as usize];
+            as usize] = (*src).m.comp_dir.0[i_16 as usize][0 as libc::c_int as usize];
         (*dst)
             .m
-            .comp_dir[i_16
+            .comp_dir.0[i_16
             as usize][1 as libc::c_int as usize] = 0 as libc::c_int as uint16_t;
         i_16 += 1;
     }
@@ -24562,12 +24563,12 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
     while i_17 < 6 as libc::c_int {
         (*dst)
             .m
-            .jnt_comp[i_17
+            .jnt_comp.0[i_17
             as usize][0 as libc::c_int
-            as usize] = (*src).m.jnt_comp[i_17 as usize][0 as libc::c_int as usize];
+            as usize] = (*src).m.jnt_comp.0[i_17 as usize][0 as libc::c_int as usize];
         (*dst)
             .m
-            .jnt_comp[i_17
+            .jnt_comp.0[i_17
             as usize][1 as libc::c_int as usize] = 0 as libc::c_int as uint16_t;
         i_17 += 1;
     }
@@ -24575,12 +24576,12 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
     while i_18 < 6 as libc::c_int {
         (*dst)
             .m
-            .mask_comp[i_18
+            .mask_comp.0[i_18
             as usize][0 as libc::c_int
-            as usize] = (*src).m.mask_comp[i_18 as usize][0 as libc::c_int as usize];
+            as usize] = (*src).m.mask_comp.0[i_18 as usize][0 as libc::c_int as usize];
         (*dst)
             .m
-            .mask_comp[i_18
+            .mask_comp.0[i_18
             as usize][1 as libc::c_int as usize] = 0 as libc::c_int as uint16_t;
         i_18 += 1;
     }
@@ -24588,20 +24589,20 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
     while i_19 < 9 as libc::c_int {
         (*dst)
             .m
-            .wedge_comp[i_19
+            .wedge_comp.0[i_19
             as usize][0 as libc::c_int
-            as usize] = (*src).m.wedge_comp[i_19 as usize][0 as libc::c_int as usize];
+            as usize] = (*src).m.wedge_comp.0[i_19 as usize][0 as libc::c_int as usize];
         (*dst)
             .m
-            .wedge_comp[i_19
+            .wedge_comp.0[i_19
             as usize][1 as libc::c_int as usize] = 0 as libc::c_int as uint16_t;
         i_19 += 1;
     }
     let mut j_29: libc::c_int = 0 as libc::c_int;
     while j_29 < 9 as libc::c_int {
         memcpy(
-            ((*dst).m.wedge_idx[j_29 as usize]).as_mut_ptr() as *mut libc::c_void,
-            ((*src).m.wedge_idx[j_29 as usize]).as_ptr() as *const libc::c_void,
+            ((*dst).m.wedge_idx.0[j_29 as usize]).as_mut_ptr() as *mut libc::c_void,
+            ((*src).m.wedge_idx.0[j_29 as usize]).as_ptr() as *const libc::c_void,
             ::core::mem::size_of::<[uint16_t; 16]>() as libc::c_ulong,
         );
         (*dst)
@@ -24915,7 +24916,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_copy(
             ::core::mem::size_of::<CdfContext>() as libc::c_ulong,
         );
     } else {
-        (*dst).m = av1_default_cdf;
+        (*dst).m = av1_default_cdf();
         memcpy(
             ((*dst).kfym).as_mut_ptr() as *mut libc::c_void,
             default_kf_y_mode_cdf.as_ptr() as *const libc::c_void,
