@@ -1,0 +1,31 @@
+name: build and test
+on: [push, pull_request]
+jobs:
+  test-on-ubuntu-latest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: install prerequisites
+        run: |
+          # make sure we don't silently continue
+          set -euo pipefail
+          sudo apt-get update --quiet=2
+          sudo apt-get install --yes meson nasm
+        env:
+          DEBIAN_FRONTEND: noninteractive
+      - name: git checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - run: cargo build --release
+      - name: meson setup
+        run: (mkdir build && cd build && meson setup ..)
+      # NOTE: Currently only the testdata-* suites are setup to test against the
+      #       Rust executable
+      - name: meson test
+        run: (cd build && meson test)
+      - name: upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: meson-test-logs
+          path: |
+             ${{ github.workspace }}/build/meson-logs/testlog.txt
