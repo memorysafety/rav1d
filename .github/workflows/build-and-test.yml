@@ -24,6 +24,16 @@ jobs:
             ~/.rustup/update-hashes
             ~/.rustup/settings.toml
           key: ${{ runner.os }}-rust-toolchain-${{ hashFiles('rust-toolchain', 'rust-toolchain.toml') }}
+      - name: cache rust crates
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - run: cargo build --release
       - name: meson setup
         run: (mkdir build && cd build && meson setup ..)
