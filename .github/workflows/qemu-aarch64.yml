@@ -1,0 +1,47 @@
+name: build and test with QEMU
+on: [push, pull_request]
+jobs:
+  test-on-qemu-linux-aarch64:
+    runs-on: ubuntu-latest
+    name: test on debian-bullseye-aarch64
+    steps:
+      - name: git checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: set up qemu
+        uses: docker/setup-qemu-action@v2
+        with:
+          platforms: arm64
+      - name: docker pull
+        run: docker pull ghcr.io/immunant/rav1d/debian-bullseye-aarch64:latest
+      - name: cache rust dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: debian-bullseye-aarch64-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: cargo fetch dependencies
+        run:
+          cargo +stable fetch
+      - name: build and run tests in docker
+        run: |
+          docker run \
+            --rm \
+            -v ~/.cargo/git:/home/prossimo/.cargo/git \
+            -v ~/.cargo/registry:/home/prossimo/.cargo/registry \
+            -v $(pwd):/${{ github.workspace }} \
+            -w ${{ github.workspace }} \
+            --platform linux/arm64 \
+            ghcr.io/immunant/rav1d/debian-bullseye-aarch64:latest \
+            .github/workflows/build-and-test.sh
+      - name: upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: meson-test-logs
+          path: |
+             ${{ github.workspace }}/build/meson-logs/testlog.txt
