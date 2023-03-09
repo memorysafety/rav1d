@@ -2849,10 +2849,6 @@ unsafe extern "C" fn get_dc_sign_ctx(
     let mut mask: uint64_t = 0xc0c0c0c0c0c0c0c0 as libc::c_ulonglong as uint64_t;
     let mut mul: uint64_t = 0x101010101010101 as libc::c_ulonglong as uint64_t;
     let mut s: libc::c_int = 0;
-    asm!(
-        "/* {0} {1} */", inlateout(reg) mask, inlateout(reg) mul, options(preserves_flags, pure,
-        readonly, att_syntax)
-    );
     let mut current_block_66: u64;
     match tx {
         0 => {
