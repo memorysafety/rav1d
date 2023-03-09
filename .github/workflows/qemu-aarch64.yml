@@ -1,0 +1,29 @@
+on: [push, pull_request]
+
+jobs:
+  test-on-qemu-linux-aarch64:
+    runs-on: ubuntu-latest
+    name: test on ubuntu-latest aarch64
+    steps:
+      - uses: actions/checkout@v3
+      - uses: uraimo/run-on-arch-action@v2
+        name: Run commands
+        id: runcmd
+        with:
+          arch: aarch64
+          distro: ubuntu_latest
+
+          # Not required, but speeds up builds by storing container images in
+          # a GitHub package registry.
+          githubToken: ${{ github.token }}
+
+          install: |
+            apt-get update -q -y
+            apt-get install -q -y build-essential meson nasm curl
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+
+          run: |
+            source "$HOME/.cargo/env"
+            cargo build --release
+            (mkdir build && cd build && meson setup .. && meson test)
+
