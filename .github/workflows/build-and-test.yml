@@ -34,13 +34,8 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - run: cargo build --release
-      - name: meson setup
-        run: (mkdir build && cd build && meson setup ..)
-      # NOTE: Currently only the testdata-* suites are setup to test against the
-      #       Rust executable
-      - name: meson test
-        run: (cd build && meson test)
+      - name: build and test
+        run: .github/workflows/build-and-test.sh
       - name: upload build artifacts
         uses: actions/upload-artifact@v3
         with:
