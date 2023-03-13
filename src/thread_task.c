@@ -793,6 +793,7 @@ void *dav1d_worker_task(void *data) {
                     atomic_load(&f->task_thread.done[0]) &&
                     (!uses_2pass || atomic_load(&f->task_thread.done[1])))
                 {
+                    error = atomic_load(&f->task_thread.error);
                     dav1d_decode_frame_exit(f, error == 1 ? DAV1D_ERR(EINVAL) :
                                             error ? DAV1D_ERR(ENOMEM) : 0);
                     f->n_tile_data = 0;
@@ -889,6 +890,7 @@ void *dav1d_worker_task(void *data) {
             if (!num_tasks && atomic_load(&f->task_thread.done[0]) &&
                 atomic_load(&f->task_thread.done[1]))
             {
+                error = atomic_load(&f->task_thread.error);
                 dav1d_decode_frame_exit(f, error == 1 ? DAV1D_ERR(EINVAL) :
                                         error ? DAV1D_ERR(ENOMEM) : 0);
                 f->n_tile_data = 0;
@@ -918,6 +920,7 @@ void *dav1d_worker_task(void *data) {
         if (!num_tasks && atomic_load(&f->task_thread.done[0]) &&
             (!uses_2pass || atomic_load(&f->task_thread.done[1])))
         {
+            error = atomic_load(&f->task_thread.error);
             dav1d_decode_frame_exit(f, error == 1 ? DAV1D_ERR(EINVAL) :
                                     error ? DAV1D_ERR(ENOMEM) : 0);
             f->n_tile_data = 0;
