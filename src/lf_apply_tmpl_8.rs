@@ -1,6 +1,6 @@
 use ::libc;
 use crate::src::msac::MsacContext;
-use crate::src::cdf::CdfModeContext;
+use crate::src::cdf::{CdfModeContext, CdfMvComponent};
 extern "C" {
     fn memcpy(
         _: *mut libc::c_void,
@@ -1210,18 +1210,6 @@ pub struct CdfContext {
 pub struct CdfMvContext {
     pub comp: [CdfMvComponent; 2],
     pub joint: [uint16_t; 4],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct CdfMvComponent {
-    pub classes: [uint16_t; 16],
-    pub class0_fp: [[uint16_t; 4]; 2],
-    pub classN_fp: [uint16_t; 4],
-    pub class0_hp: [uint16_t; 2],
-    pub classN_hp: [uint16_t; 2],
-    pub class0: [uint16_t; 2],
-    pub classN: [[uint16_t; 2]; 10],
-    pub sign: [uint16_t; 2],
 }
 #[derive(Copy, Clone)]
 #[repr(C)]

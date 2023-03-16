@@ -1,6 +1,6 @@
 use ::libc;
 use crate::src::msac::MsacContext;
-use crate::src::cdf::CdfModeContext;
+use crate::src::cdf::{CdfModeContext, CdfMvComponent};
 extern "C" {
     fn memcpy(
         _: *mut libc::c_void,
@@ -1579,18 +1579,6 @@ pub struct CdfContext {
 pub struct CdfMvContext {
     pub comp: [CdfMvComponent; 2],
     pub joint: [uint16_t; 4],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct CdfMvComponent {
-    pub classes: [uint16_t; 16],
-    pub class0_fp: [[uint16_t; 4]; 2],
-    pub classN_fp: [uint16_t; 4],
-    pub class0_hp: [uint16_t; 2],
-    pub classN_hp: [uint16_t; 2],
-    pub class0: [uint16_t; 2],
-    pub classN: [[uint16_t; 2]; 10],
-    pub sign: [uint16_t; 2],
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -3452,11 +3440,11 @@ unsafe extern "C" fn read_mv_component_diff(
     let have_hp: libc::c_int = (*(*f).frame_hdr).hp;
     let sign: libc::c_int = dav1d_msac_decode_bool_adapt(
         &mut (*ts).msac,
-        ((*mv_comp).sign).as_mut_ptr(),
+        ((*mv_comp).sign.0).as_mut_ptr(),
     ) as libc::c_int;
     let cl: libc::c_int = dav1d_msac_decode_symbol_adapt16(
         &mut (*ts).msac,
-        ((*mv_comp).classes).as_mut_ptr(),
+        ((*mv_comp).classes.0).as_mut_ptr(),
         10 as libc::c_int as size_t,
     ) as libc::c_int;
     let mut up: libc::c_int = 0;
@@ -3465,7 +3453,7 @@ unsafe extern "C" fn read_mv_component_diff(
     if cl == 0 {
         up = dav1d_msac_decode_bool_adapt(
             &mut (*ts).msac,
-            ((*mv_comp).class0).as_mut_ptr(),
+            ((*mv_comp).class0.0).as_mut_ptr(),
         ) as libc::c_int;
         if have_fp != 0 {
             fp = dav1d_msac_decode_symbol_adapt4(
@@ -3476,7 +3464,7 @@ unsafe extern "C" fn read_mv_component_diff(
             hp = (if have_hp != 0 {
                 dav1d_msac_decode_bool_adapt(
                     &mut (*ts).msac,
-                    ((*mv_comp).class0_hp).as_mut_ptr(),
+                    ((*mv_comp).class0_hp.0).as_mut_ptr(),
                 )
             } else {
                 1 as libc::c_int as libc::c_uint
@@ -3499,13 +3487,13 @@ unsafe extern "C" fn read_mv_component_diff(
         if have_fp != 0 {
             fp = dav1d_msac_decode_symbol_adapt4(
                 &mut (*ts).msac,
-                ((*mv_comp).classN_fp).as_mut_ptr(),
+                ((*mv_comp).classN_fp.0).as_mut_ptr(),
                 3 as libc::c_int as size_t,
             ) as libc::c_int;
             hp = (if have_hp != 0 {
                 dav1d_msac_decode_bool_adapt(
                     &mut (*ts).msac,
-                    ((*mv_comp).classN_hp).as_mut_ptr(),
+                    ((*mv_comp).classN_hp.0).as_mut_ptr(),
                 )
             } else {
                 1 as libc::c_int as libc::c_uint

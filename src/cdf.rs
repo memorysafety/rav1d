@@ -1232,14 +1232,14 @@ pub struct CdfMvContext {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct CdfMvComponent {
-    pub classes: [uint16_t; 16],
-    pub class0_fp: [[uint16_t; 4]; 2],
-    pub classN_fp: [uint16_t; 4],
-    pub class0_hp: [uint16_t; 2],
-    pub classN_hp: [uint16_t; 2],
-    pub class0: [uint16_t; 2],
-    pub classN: [[uint16_t; 2]; 10],
-    pub sign: [uint16_t; 2],
+    pub classes: Align32<[uint16_t; 16]>,
+    pub class0_fp: Align8<[[uint16_t; 4]; 2]>,
+    pub classN_fp: Align8<[uint16_t; 4]>,
+    pub class0_hp: Align4<[uint16_t; 2]>,
+    pub classN_hp: Align4<[uint16_t; 2]>,
+    pub class0: Align4<[uint16_t; 2]>,
+    pub classN: Align4<[[uint16_t; 2]; 10]>,
+    pub sign: Align4<[uint16_t; 2]>,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -5688,7 +5688,7 @@ pub fn av1_default_cdf() -> CdfModeContext {
     };
     init
 }
-static mut default_mv_component_cdf: CdfMvComponent = {
+pub fn default_mv_component_cdf() -> CdfMvComponent {
     let mut init = CdfMvComponent {
         classes: [
             (32768 as libc::c_int - 28672 as libc::c_int) as uint16_t,
@@ -5707,7 +5707,7 @@ static mut default_mv_component_cdf: CdfMvComponent = {
             0,
             0,
             0,
-        ],
+        ].into(),
         class0_fp: [
             [
                 (32768 as libc::c_int - 16384 as libc::c_int) as uint16_t,
@@ -5721,16 +5721,16 @@ static mut default_mv_component_cdf: CdfMvComponent = {
                 (32768 as libc::c_int - 24128 as libc::c_int) as uint16_t,
                 0,
             ],
-        ],
+        ].into(),
         classN_fp: [
             (32768 as libc::c_int - 8192 as libc::c_int) as uint16_t,
             (32768 as libc::c_int - 17408 as libc::c_int) as uint16_t,
             (32768 as libc::c_int - 21248 as libc::c_int) as uint16_t,
             0,
-        ],
-        class0_hp: [(32768 as libc::c_int - 20480 as libc::c_int) as uint16_t, 0],
-        classN_hp: [(32768 as libc::c_int - 16384 as libc::c_int) as uint16_t, 0],
-        class0: [(32768 as libc::c_int - 27648 as libc::c_int) as uint16_t, 0],
+        ].into(),
+        class0_hp: [(32768 as libc::c_int - 20480 as libc::c_int) as uint16_t, 0].into(),
+        classN_hp: [(32768 as libc::c_int - 16384 as libc::c_int) as uint16_t, 0].into(),
+        class0: [(32768 as libc::c_int - 27648 as libc::c_int) as uint16_t, 0].into(),
         classN: [
             [(32768 as libc::c_int - 17408 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 17920 as libc::c_int) as uint16_t, 0],
@@ -5742,11 +5742,11 @@ static mut default_mv_component_cdf: CdfMvComponent = {
             [(32768 as libc::c_int - 29952 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 29952 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 30720 as libc::c_int) as uint16_t, 0],
-        ],
-        sign: [(32768 as libc::c_int - 16384 as libc::c_int) as uint16_t, 0],
+        ].into(),
+        sign: [(32768 as libc::c_int - 16384 as libc::c_int) as uint16_t, 0].into(),
     };
     init
-};
+}
 static mut default_mv_joint_cdf: [uint16_t; 4] = [
     (32768 as libc::c_int - 4096 as libc::c_int) as uint16_t,
     (32768 as libc::c_int - 11264 as libc::c_int) as uint16_t,
@@ -24351,9 +24351,9 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         let mut k_15: libc::c_int = 0 as libc::c_int;
         while k_15 < 2 as libc::c_int {
             memcpy(
-                ((*dst).dmv.comp[k_15 as usize].classes).as_mut_ptr()
+                ((*dst).dmv.comp[k_15 as usize].classes.0).as_mut_ptr()
                     as *mut libc::c_void,
-                ((*src).dmv.comp[k_15 as usize].classes).as_ptr() as *const libc::c_void,
+                ((*src).dmv.comp[k_15 as usize].classes.0).as_ptr() as *const libc::c_void,
                 ::core::mem::size_of::<[uint16_t; 16]>() as libc::c_ulong,
             );
             (*dst)
@@ -24787,8 +24787,8 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
     let mut k_17: libc::c_int = 0 as libc::c_int;
     while k_17 < 2 as libc::c_int {
         memcpy(
-            ((*dst).mv.comp[k_17 as usize].classes).as_mut_ptr() as *mut libc::c_void,
-            ((*src).mv.comp[k_17 as usize].classes).as_ptr() as *const libc::c_void,
+            ((*dst).mv.comp[k_17 as usize].classes.0).as_mut_ptr() as *mut libc::c_void,
+            ((*src).mv.comp[k_17 as usize].classes.0).as_ptr() as *const libc::c_void,
             ::core::mem::size_of::<[uint16_t; 16]>() as libc::c_ulong,
         );
         (*dst)
@@ -24839,8 +24839,8 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
             j_36 += 1;
         }
         memcpy(
-            ((*dst).mv.comp[k_17 as usize].classN_fp).as_mut_ptr() as *mut libc::c_void,
-            ((*src).mv.comp[k_17 as usize].classN_fp).as_ptr() as *const libc::c_void,
+            ((*dst).mv.comp[k_17 as usize].classN_fp.0).as_mut_ptr() as *mut libc::c_void,
+            ((*src).mv.comp[k_17 as usize].classN_fp.0).as_ptr() as *const libc::c_void,
             ::core::mem::size_of::<[uint16_t; 4]>() as libc::c_ulong,
         );
         (*dst)
@@ -24933,7 +24933,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_copy(
             default_mv_joint_cdf.as_ptr() as *const libc::c_void,
             ::core::mem::size_of::<[uint16_t; 4]>() as libc::c_ulong,
         );
-        (*dst).dmv.comp[1 as libc::c_int as usize] = default_mv_component_cdf;
+        (*dst).dmv.comp[1 as libc::c_int as usize] = default_mv_component_cdf();
         (*dst)
             .dmv
             .comp[0 as libc::c_int
