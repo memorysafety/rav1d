@@ -5,6 +5,12 @@ jobs:
     runs-on: ubuntu-latest
     name: test on debian-bullseye-aarch64
     steps:
+      - name: install prerequisites
+        run: |
+          # make sure we don't silently continue
+          set -euo pipefail
+          sudo apt-get update --quiet=2
+          sudo apt-get install --yes g++-aarch64-linux-gnu libc6-dev-arm64-cross
       - name: git checkout
         uses: actions/checkout@v3
         with:
@@ -13,8 +19,6 @@ jobs:
         uses: docker/setup-qemu-action@v2
         with:
           platforms: arm64
-      - name: docker pull
-        run: docker pull ghcr.io/immunant/rav1d/debian-bullseye-aarch64:latest
       - name: cache rust dependencies
         uses: actions/cache@v3
         with:
@@ -24,10 +28,24 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: debian-bullseye-aarch64-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - name: cargo fetch dependencies
-        run:
-          cargo +stable fetch
+          key: aarch64-unknown-linux-gnu-cargo-and-target-${{ hashFiles('**/Cargo.lock') }}
+      # - name: cache dav1d object files
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: build/
+      #     key: aarch64-unknown-linux-gnu-c-object-files-${{ hashFiles('**/meson.build', '**/*.c', '**/*.h') }}
+      - name: cargo build for aarch64-unknown-linux-gnu
+        run: |
+          rustup target add aarch64-unknown-linux-gnu
+          cargo build --release --target aarch64-unknown-linux-gnu
+          ln -f target/aarch64-unknown-linux-gnu/release/dav1d target/release/dav1d
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+          CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
+          CXX_aarch64_unknown_linux_gnu: aarch64-linux-gnu-g++
+          RUSTFLAGS: '-C target-feature=+crt-static'
+      - name: docker pull
+        run: docker pull ghcr.io/immunant/rav1d/debian-bullseye-aarch64:latest
       - name: build and run tests in docker
         run: |
           docker run \
@@ -38,7 +56,7 @@ jobs:
             -w ${{ github.workspace }} \
             --platform linux/arm64 \
             ghcr.io/immunant/rav1d/debian-bullseye-aarch64:latest \
-            .github/workflows/build-and-test.sh
+            .github/workflows/test.sh
       - name: upload build artifacts
         uses: actions/upload-artifact@v3
         with:

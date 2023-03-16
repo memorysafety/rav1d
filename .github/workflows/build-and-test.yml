@@ -34,8 +34,10 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - name: build and test
-        run: .github/workflows/build-and-test.sh
+      - name: cargo build
+        run: cargo build --release
+      - name: meson test
+        run: .github/workflows/test.sh
       - name: upload build artifacts
         uses: actions/upload-artifact@v3
         with:

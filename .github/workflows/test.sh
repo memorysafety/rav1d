@@ -3,11 +3,10 @@
 set -eu
 set -o pipefail
 
-cargo build --release
-mkdir build && pushd build
+mkdir -p build && pushd build
 
 meson setup ..
-meson test \
+meson test --no-rebuild \
     --suite testdata-8 \
     --suite testdata-10 \
     --suite testdata-12 \
