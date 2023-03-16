@@ -21,12 +21,9 @@ RUN addgroup --quiet --gid ${PROSSIMO_GID} prossimo && \
 USER prossimo
 
 # NOTE: sed invocation is due to https://github.com/rust-lang/rustup/issues/2700
-# TODO: are the components necessary? don't want cargo build to pull them down.
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
     sed 's#/proc/self/exe#\/bin\/sh#g' | \
-    sh -s -- -y --default-toolchain ${DEFAULT_TOOLCHAIN} --no-modify-path \
-    --component rustfmt-preview  --component rustc-dev  --component rust-src \
-    --component miri
+    sh -s -- -y --default-toolchain ${DEFAULT_TOOLCHAIN} --no-modify-path
 
 ENV PATH="~/.cargo/bin:$PATH"
 
