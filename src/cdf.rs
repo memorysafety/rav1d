@@ -1218,7 +1218,7 @@ pub type ec_win = size_t;
 #[repr(C)]
 pub struct CdfContext {
     pub m: CdfModeContext,
-    pub kfym: [[[uint16_t; 16]; 5]; 5],
+    pub kfym: Align32<[[[uint16_t; 16]; 5]; 5]>,
     pub coef: CdfCoefContext,
     pub mv: CdfMvContext,
     pub dmv: CdfMvContext,
@@ -1227,7 +1227,7 @@ pub struct CdfContext {
 #[repr(C)]
 pub struct CdfMvContext {
     pub comp: [CdfMvComponent; 2],
-    pub joint: [uint16_t; 4],
+    pub joint: Align8<[uint16_t; 4]>,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -24342,8 +24342,8 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
             as usize] = (*src).m.intrabc[0 as libc::c_int as usize];
         (*dst).m.intrabc[1 as libc::c_int as usize] = 0 as libc::c_int as uint16_t;
         memcpy(
-            ((*dst).dmv.joint).as_mut_ptr() as *mut libc::c_void,
-            ((*src).dmv.joint).as_ptr() as *const libc::c_void,
+            ((*dst).dmv.joint.0).as_mut_ptr() as *mut libc::c_void,
+            ((*src).dmv.joint.0).as_ptr() as *const libc::c_void,
             ::core::mem::size_of::<[uint16_t; 4]>() as libc::c_ulong,
         );
         (*dst)
@@ -24778,8 +24778,8 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         i_27 += 1;
     }
     memcpy(
-        ((*dst).mv.joint).as_mut_ptr() as *mut libc::c_void,
-        ((*src).mv.joint).as_ptr() as *const libc::c_void,
+        ((*dst).mv.joint.0).as_mut_ptr() as *mut libc::c_void,
+        ((*src).mv.joint.0).as_ptr() as *const libc::c_void,
         ::core::mem::size_of::<[uint16_t; 4]>() as libc::c_ulong,
     );
     (*dst)
@@ -24920,18 +24920,18 @@ pub unsafe extern "C" fn dav1d_cdf_thread_copy(
     } else {
         (*dst).m = av1_default_cdf();
         memcpy(
-            ((*dst).kfym).as_mut_ptr() as *mut libc::c_void,
+            ((*dst).kfym.0).as_mut_ptr() as *mut libc::c_void,
             default_kf_y_mode_cdf.as_ptr() as *const libc::c_void,
             ::core::mem::size_of::<[[[uint16_t; 16]; 5]; 5]>() as libc::c_ulong,
         );
         (*dst).coef = av1_default_coef_cdf()[(*src).data.qcat as usize];
         memcpy(
-            ((*dst).mv.joint).as_mut_ptr() as *mut libc::c_void,
+            ((*dst).mv.joint.0).as_mut_ptr() as *mut libc::c_void,
             default_mv_joint_cdf.as_ptr() as *const libc::c_void,
             ::core::mem::size_of::<[uint16_t; 4]>() as libc::c_ulong,
         );
         memcpy(
-            ((*dst).dmv.joint).as_mut_ptr() as *mut libc::c_void,
+            ((*dst).dmv.joint.0).as_mut_ptr() as *mut libc::c_void,
             default_mv_joint_cdf.as_ptr() as *const libc::c_void,
             ::core::mem::size_of::<[uint16_t; 4]>() as libc::c_ulong,
         );

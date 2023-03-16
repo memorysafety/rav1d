@@ -1,6 +1,6 @@
 use ::libc;
 use crate::src::msac::MsacContext;
-use crate::src::cdf::{CdfCoefContext, CdfModeContext, CdfMvComponent};
+use crate::src::cdf::{CdfContext, CdfMvComponent, CdfMvContext};
 extern "C" {
     fn memcpy(
         _: *mut libc::c_void,
@@ -1565,21 +1565,6 @@ pub struct C2RustUnnamed_45 {
     pub row: libc::c_int,
 }
 pub type ec_win = size_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct CdfContext {
-    pub m: CdfModeContext,
-    pub kfym: [[[uint16_t; 16]; 5]; 5],
-    pub coef: CdfCoefContext,
-    pub mv: CdfMvContext,
-    pub dmv: CdfMvContext,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct CdfMvContext {
-    pub comp: [CdfMvComponent; 2],
-    pub joint: [uint16_t; 4],
-}
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContext {
@@ -3498,7 +3483,7 @@ unsafe extern "C" fn read_mv_residual(
 ) {
     match dav1d_msac_decode_symbol_adapt4(
         &mut (*(*t).ts).msac,
-        ((*(*t).ts).cdf.mv.joint).as_mut_ptr(),
+        ((*(*t).ts).cdf.mv.joint.0).as_mut_ptr(),
         (N_MV_JOINTS as libc::c_int - 1 as libc::c_int) as size_t,
     ) {
         3 => {
