@@ -1,6 +1,6 @@
 use ::libc;
 use core::arch::asm;
-use crate::src::cdf::{CdfModeContext, CdfMvComponent};
+use crate::src::cdf::{CdfCoefContext, CdfModeContext, CdfMvComponent};
 use crate::src::msac::MsacContext;
 extern "C" {
     pub type _IO_wide_data;
@@ -1344,23 +1344,6 @@ pub struct CdfContext {
 pub struct CdfMvContext {
     pub comp: [CdfMvComponent; 2],
     pub joint: [uint16_t; 4],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct CdfCoefContext {
-    pub eob_bin_16: [[[uint16_t; 8]; 2]; 2],
-    pub eob_bin_32: [[[uint16_t; 8]; 2]; 2],
-    pub eob_bin_64: [[[uint16_t; 8]; 2]; 2],
-    pub eob_bin_128: [[[uint16_t; 8]; 2]; 2],
-    pub eob_bin_256: [[[uint16_t; 16]; 2]; 2],
-    pub eob_bin_512: [[uint16_t; 16]; 2],
-    pub eob_bin_1024: [[uint16_t; 16]; 2],
-    pub eob_base_tok: [[[[uint16_t; 4]; 4]; 2]; 5],
-    pub base_tok: [[[[uint16_t; 4]; 41]; 2]; 5],
-    pub br_tok: [[[[uint16_t; 4]; 21]; 2]; 4],
-    pub eob_hi_bit: [[[[uint16_t; 2]; 11]; 2]; 5],
-    pub skip: [[[uint16_t; 2]; 13]; 5],
-    pub dc_sign: [[[uint16_t; 2]; 3]; 2],
 }
 #[derive(Copy, Clone)]
 #[repr(C)]

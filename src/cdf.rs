@@ -1244,19 +1244,19 @@ pub struct CdfMvComponent {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct CdfCoefContext {
-    pub eob_bin_16: [[[uint16_t; 8]; 2]; 2],
-    pub eob_bin_32: [[[uint16_t; 8]; 2]; 2],
-    pub eob_bin_64: [[[uint16_t; 8]; 2]; 2],
-    pub eob_bin_128: [[[uint16_t; 8]; 2]; 2],
-    pub eob_bin_256: [[[uint16_t; 16]; 2]; 2],
-    pub eob_bin_512: [[uint16_t; 16]; 2],
-    pub eob_bin_1024: [[uint16_t; 16]; 2],
-    pub eob_base_tok: [[[[uint16_t; 4]; 4]; 2]; 5],
-    pub base_tok: [[[[uint16_t; 4]; 41]; 2]; 5],
-    pub br_tok: [[[[uint16_t; 4]; 21]; 2]; 4],
-    pub eob_hi_bit: [[[[uint16_t; 2]; 11]; 2]; 5],
-    pub skip: [[[uint16_t; 2]; 13]; 5],
-    pub dc_sign: [[[uint16_t; 2]; 3]; 2],
+    pub eob_bin_16: Align16<[[[uint16_t; 8]; 2]; 2]>,
+    pub eob_bin_32: Align16<[[[uint16_t; 8]; 2]; 2]>,
+    pub eob_bin_64: Align16<[[[uint16_t; 8]; 2]; 2]>,
+    pub eob_bin_128: Align16<[[[uint16_t; 8]; 2]; 2]>,
+    pub eob_bin_256: Align32<[[[uint16_t; 16]; 2]; 2]>,
+    pub eob_bin_512: Align32<[[uint16_t; 16]; 2]>,
+    pub eob_bin_1024: Align32<[[uint16_t; 16]; 2]>,
+    pub eob_base_tok: Align8<[[[[uint16_t; 4]; 4]; 2]; 5]>,
+    pub base_tok: Align8<[[[[uint16_t; 4]; 41]; 2]; 5]>,
+    pub br_tok: Align8<[[[[uint16_t; 4]; 21]; 2]; 4]>,
+    pub eob_hi_bit: Align4<[[[[uint16_t; 2]; 11]; 2]; 5]>,
+    pub skip: Align4<[[[uint16_t; 2]; 13]; 5]>,
+    pub dc_sign: Align4<[[[uint16_t; 2]; 3]; 2]>,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -6215,7 +6215,8 @@ static mut default_kf_y_mode_cdf: [[[uint16_t; 16]; 5]; 5] = [
         ],
     ],
 ];
-static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
+pub fn av1_default_coef_cdf() -> [CdfCoefContext; 4] {
+[
     {
         let mut init = CdfCoefContext {
             eob_bin_16: [
@@ -6263,7 +6264,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         0,
                     ],
                 ],
-            ],
+            ].into(),
             eob_bin_32: [
                 [
                     [
@@ -6309,7 +6310,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         0,
                     ],
                 ],
-            ],
+            ].into(),
             eob_bin_64: [
                 [
                     [
@@ -6355,7 +6356,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         0,
                     ],
                 ],
-            ],
+            ].into(),
             eob_bin_128: [
                 [
                     [
@@ -6401,7 +6402,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         0,
                     ],
                 ],
-            ],
+            ].into(),
             eob_bin_256: [
                 [
                     [
@@ -6479,7 +6480,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         0,
                     ],
                 ],
-            ],
+            ].into(),
             eob_bin_512: [
                 [
                     (32768 as libc::c_int - 641 as libc::c_int) as uint16_t,
@@ -6517,7 +6518,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                     0,
                     0,
                 ],
-            ],
+            ].into(),
             eob_bin_1024: [
                 [
                     (32768 as libc::c_int - 393 as libc::c_int) as uint16_t,
@@ -6555,7 +6556,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                     0,
                     0,
                 ],
-            ],
+            ].into(),
             eob_base_tok: [
                 [
                     [
@@ -6827,7 +6828,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         ],
                     ],
                 ],
-            ],
+            ].into(),
             base_tok: [
                 [
                     [
@@ -9319,7 +9320,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         ],
                     ],
                 ],
-            ],
+            ].into(),
             br_tok: [
                 [
                     [
@@ -10353,7 +10354,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         ],
                     ],
                 ],
-            ],
+            ].into(),
             eob_hi_bit: [
                 [
                     [
@@ -10495,7 +10496,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         [(32768 as libc::c_int - 16384 as libc::c_int) as uint16_t, 0],
                     ],
                 ],
-            ],
+            ].into(),
             skip: [
                 [
                     [(32768 as libc::c_int - 31849 as libc::c_int) as uint16_t, 0],
@@ -10572,7 +10573,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                     [(32768 as libc::c_int - 16384 as libc::c_int) as uint16_t, 0],
                     [(32768 as libc::c_int - 16384 as libc::c_int) as uint16_t, 0],
                 ],
-            ],
+            ].into(),
             dc_sign: [
                 [
                     [(32768 as libc::c_int - 16000 as libc::c_int) as uint16_t, 0],
@@ -10584,7 +10585,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                     [(32768 as libc::c_int - 12928 as libc::c_int) as uint16_t, 0],
                     [(32768 as libc::c_int - 17280 as libc::c_int) as uint16_t, 0],
                 ],
-            ],
+            ].into(),
         };
         init
     },
@@ -10635,7 +10636,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         0,
                     ],
                 ],
-            ],
+            ].into(),
             eob_bin_32: [
                 [
                     [
@@ -10681,7 +10682,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         0,
                     ],
                 ],
-            ],
+            ].into(),
             eob_bin_64: [
                 [
                     [
@@ -10727,7 +10728,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         0,
                     ],
                 ],
-            ],
+            ].into(),
             eob_bin_128: [
                 [
                     [
@@ -10773,7 +10774,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         0,
                     ],
                 ],
-            ],
+            ].into(),
             eob_bin_256: [
                 [
                     [
@@ -10851,7 +10852,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         0,
                     ],
                 ],
-            ],
+            ].into(),
             eob_bin_512: [
                 [
                     (32768 as libc::c_int - 1230 as libc::c_int) as uint16_t,
@@ -10889,7 +10890,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                     0,
                     0,
                 ],
-            ],
+            ].into(),
             eob_bin_1024: [
                 [
                     (32768 as libc::c_int - 696 as libc::c_int) as uint16_t,
@@ -10927,7 +10928,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                     0,
                     0,
                 ],
-            ],
+            ].into(),
             eob_base_tok: [
                 [
                     [
@@ -11199,7 +11200,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         ],
                     ],
                 ],
-            ],
+            ].into(),
             base_tok: [
                 [
                     [
@@ -13691,7 +13692,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         ],
                     ],
                 ],
-            ],
+            ].into(),
             br_tok: [
                 [
                     [
@@ -14725,7 +14726,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         ],
                     ],
                 ],
-            ],
+            ].into(),
             eob_hi_bit: [
                 [
                     [
@@ -14867,7 +14868,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         [(32768 as libc::c_int - 16384 as libc::c_int) as uint16_t, 0],
                     ],
                 ],
-            ],
+            ].into(),
             skip: [
                 [
                     [(32768 as libc::c_int - 30371 as libc::c_int) as uint16_t, 0],
@@ -14944,7 +14945,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                     [(32768 as libc::c_int - 16384 as libc::c_int) as uint16_t, 0],
                     [(32768 as libc::c_int - 16384 as libc::c_int) as uint16_t, 0],
                 ],
-            ],
+            ].into(),
             dc_sign: [
                 [
                     [(32768 as libc::c_int - 16000 as libc::c_int) as uint16_t, 0],
@@ -14956,7 +14957,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                     [(32768 as libc::c_int - 12928 as libc::c_int) as uint16_t, 0],
                     [(32768 as libc::c_int - 17280 as libc::c_int) as uint16_t, 0],
                 ],
-            ],
+            ].into(),
         };
         init
     },
@@ -15007,7 +15008,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         0,
                     ],
                 ],
-            ],
+            ].into(),
             eob_bin_32: [
                 [
                     [
@@ -15053,7 +15054,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         0,
                     ],
                 ],
-            ],
+            ].into(),
             eob_bin_64: [
                 [
                     [
@@ -15099,7 +15100,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         0,
                     ],
                 ],
-            ],
+            ].into(),
             eob_bin_128: [
                 [
                     [
@@ -15145,7 +15146,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         0,
                     ],
                 ],
-            ],
+            ].into(),
             eob_bin_256: [
                 [
                     [
@@ -15223,7 +15224,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         0,
                     ],
                 ],
-            ],
+            ].into(),
             eob_bin_512: [
                 [
                     (32768 as libc::c_int - 2624 as libc::c_int) as uint16_t,
@@ -15261,7 +15262,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                     0,
                     0,
                 ],
-            ],
+            ].into(),
             eob_bin_1024: [
                 [
                     (32768 as libc::c_int - 2784 as libc::c_int) as uint16_t,
@@ -15299,7 +15300,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                     0,
                     0,
                 ],
-            ],
+            ].into(),
             eob_base_tok: [
                 [
                     [
@@ -15571,7 +15572,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         ],
                     ],
                 ],
-            ],
+            ].into(),
             base_tok: [
                 [
                     [
@@ -18063,7 +18064,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         ],
                     ],
                 ],
-            ],
+            ].into(),
             br_tok: [
                 [
                     [
@@ -19097,7 +19098,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         ],
                     ],
                 ],
-            ],
+            ].into(),
             eob_hi_bit: [
                 [
                     [
@@ -19239,7 +19240,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         [(32768 as libc::c_int - 16384 as libc::c_int) as uint16_t, 0],
                     ],
                 ],
-            ],
+            ].into(),
             skip: [
                 [
                     [(32768 as libc::c_int - 29614 as libc::c_int) as uint16_t, 0],
@@ -19316,7 +19317,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                     [(32768 as libc::c_int - 16384 as libc::c_int) as uint16_t, 0],
                     [(32768 as libc::c_int - 16384 as libc::c_int) as uint16_t, 0],
                 ],
-            ],
+            ].into(),
             dc_sign: [
                 [
                     [(32768 as libc::c_int - 16000 as libc::c_int) as uint16_t, 0],
@@ -19328,7 +19329,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                     [(32768 as libc::c_int - 12928 as libc::c_int) as uint16_t, 0],
                     [(32768 as libc::c_int - 17280 as libc::c_int) as uint16_t, 0],
                 ],
-            ],
+            ].into(),
         };
         init
     },
@@ -19379,7 +19380,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         0,
                     ],
                 ],
-            ],
+            ].into(),
             eob_bin_32: [
                 [
                     [
@@ -19425,7 +19426,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         0,
                     ],
                 ],
-            ],
+            ].into(),
             eob_bin_64: [
                 [
                     [
@@ -19471,7 +19472,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         0,
                     ],
                 ],
-            ],
+            ].into(),
             eob_bin_128: [
                 [
                     [
@@ -19517,7 +19518,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         0,
                     ],
                 ],
-            ],
+            ].into(),
             eob_bin_256: [
                 [
                     [
@@ -19595,7 +19596,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         0,
                     ],
                 ],
-            ],
+            ].into(),
             eob_bin_512: [
                 [
                     (32768 as libc::c_int - 5927 as libc::c_int) as uint16_t,
@@ -19633,7 +19634,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                     0,
                     0,
                 ],
-            ],
+            ].into(),
             eob_bin_1024: [
                 [
                     (32768 as libc::c_int - 6698 as libc::c_int) as uint16_t,
@@ -19671,7 +19672,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                     0,
                     0,
                 ],
-            ],
+            ].into(),
             eob_base_tok: [
                 [
                     [
@@ -19943,7 +19944,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         ],
                     ],
                 ],
-            ],
+            ].into(),
             base_tok: [
                 [
                     [
@@ -22435,7 +22436,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         ],
                     ],
                 ],
-            ],
+            ].into(),
             br_tok: [
                 [
                     [
@@ -23469,7 +23470,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         ],
                     ],
                 ],
-            ],
+            ].into(),
             eob_hi_bit: [
                 [
                     [
@@ -23611,7 +23612,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                         [(32768 as libc::c_int - 16384 as libc::c_int) as uint16_t, 0],
                     ],
                 ],
-            ],
+            ].into(),
             skip: [
                 [
                     [(32768 as libc::c_int - 26887 as libc::c_int) as uint16_t, 0],
@@ -23688,7 +23689,7 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                     [(32768 as libc::c_int - 16384 as libc::c_int) as uint16_t, 0],
                     [(32768 as libc::c_int - 16384 as libc::c_int) as uint16_t, 0],
                 ],
-            ],
+            ].into(),
             dc_sign: [
                 [
                     [(32768 as libc::c_int - 16000 as libc::c_int) as uint16_t, 0],
@@ -23700,11 +23701,12 @@ static mut av1_default_coef_cdf: [CdfCoefContext; 4] = [
                     [(32768 as libc::c_int - 12928 as libc::c_int) as uint16_t, 0],
                     [(32768 as libc::c_int - 17280 as libc::c_int) as uint16_t, 0],
                 ],
-            ],
+            ].into(),
         };
         init
     },
-];
+]
+}
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_cdf_thread_update(
     hdr: *const Dav1dFrameHeader,
@@ -24922,7 +24924,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_copy(
             default_kf_y_mode_cdf.as_ptr() as *const libc::c_void,
             ::core::mem::size_of::<[[[uint16_t; 16]; 5]; 5]>() as libc::c_ulong,
         );
-        (*dst).coef = av1_default_coef_cdf[(*src).data.qcat as usize];
+        (*dst).coef = av1_default_coef_cdf()[(*src).data.qcat as usize];
         memcpy(
             ((*dst).mv.joint).as_mut_ptr() as *mut libc::c_void,
             default_mv_joint_cdf.as_ptr() as *const libc::c_void,
