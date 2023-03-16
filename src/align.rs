@@ -1,3 +1,11 @@
+//! Types for enforcing alignment on struct fields.
+//! 
+//! This module defines a handful of `AlignN` types, where `N` is alignment
+//! enforced by that type. These types also implement a few useful traits to
+//! make them easier to use in common cases, e.g. [`From`] and
+//! [`Index`]/[`IndexMut`] (since it's usually array fields that require
+//! specific aligment for use with SIMD instructions).
+
 use std::ops::{Index, IndexMut};
 
 #[derive(Copy, Clone)]
