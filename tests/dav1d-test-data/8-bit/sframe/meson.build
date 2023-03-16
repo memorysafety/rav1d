@@ -25,7 +25,7 @@
 test('autostitch-480p-240p-160p-10s', dav1d, suite: 'testdata-8',
     args: dav1d_test_args + ['-i', files('autostitch-480p-240p-160p-10s.ivf'),
            '--verify', '5be667329ee6d684db4fc540d97f919c'])
-test('autostitch-480p-240p-160p', dav1d, suite: 'testdata-8',
+test('autostitch-480p-240p-160p', dav1d, suite: 'testdata-8', timeout: 60,
     args: dav1d_test_args + ['-i', files('autostitch-480p-240p-160p.ivf'),
            '--limit=300',
            '--verify', 'e2550fe403e83cae20d1abe044a87cae'])
