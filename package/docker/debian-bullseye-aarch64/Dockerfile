@@ -21,9 +21,9 @@ RUN addgroup --quiet --gid ${PROSSIMO_GID} prossimo && \
 USER prossimo
 
 # NOTE: sed invocation is due to https://github.com/rust-lang/rustup/issues/2700
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
-    sed 's#/proc/self/exe#\/bin\/sh#g' | \
-    sh -s -- -y --default-toolchain ${DEFAULT_TOOLCHAIN} --no-modify-path
+# RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
+#     sed 's#/proc/self/exe#\/bin\/sh#g' | \
+#     sh -s -- -y --default-toolchain ${DEFAULT_TOOLCHAIN} --no-modify-path
 
 ENV PATH="~/.cargo/bin:$PATH"
 
