@@ -59,9 +59,7 @@ pub unsafe extern "C" fn dav1d_data_create_internal(
         );
         return 0 as *mut uint8_t;
     }
-    if sz
-        > (18446744073709551615 as libc::c_ulong)
-            .wrapping_div(2 as libc::c_int as libc::c_ulong)
+    if sz > libc::c_ulong::MAX / 2
     {
         return 0 as *mut uint8_t;
     }
@@ -274,9 +272,7 @@ pub unsafe extern "C" fn dav1d_data_props_set_defaults(props: *mut Dav1dDataProp
         0 as libc::c_int,
         ::core::mem::size_of::<Dav1dDataProps>() as libc::c_ulong,
     );
-    (*props)
-        .timestamp = -(9223372036854775807 as libc::c_long)
-        - 1 as libc::c_int as libc::c_long;
+    (*props).timestamp = libc::c_long::MIN;
     (*props).offset = -(1 as libc::c_int) as int64_t;
 }
 #[no_mangle]
