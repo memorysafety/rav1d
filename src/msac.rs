@@ -49,11 +49,6 @@ extern "C" {
         s: *mut MsacContext,
         cdf: *mut uint16_t,
     ) -> libc::c_uint;
-    fn dav1d_msac_decode_symbol_adapt16_avx2(
-        s: *mut MsacContext,
-        cdf: *mut uint16_t,
-        n_symbols: size_t,
-    ) -> libc::c_uint;
     fn dav1d_msac_decode_symbol_adapt16_neon(
         s: *mut MsacContext,
         cdf: *mut uint16_t,
