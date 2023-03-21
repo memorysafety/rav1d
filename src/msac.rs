@@ -36,6 +36,42 @@ extern "C" {
     static mut dav1d_cpu_flags_mask: libc::c_uint;
     static mut dav1d_cpu_flags: libc::c_uint;
 }
+
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+extern "C" {
+    fn dav1d_msac_decode_hi_tok_neon(
+        s: *mut MsacContext,
+        cdf: *mut uint16_t,
+    ) -> libc::c_uint;
+    fn dav1d_msac_decode_bool_neon(s: *mut MsacContext, f: libc::c_uint) -> libc::c_uint;
+    fn dav1d_msac_decode_bool_equi_neon(s: *mut MsacContext) -> libc::c_uint;
+    fn dav1d_msac_decode_bool_adapt_neon(
+        s: *mut MsacContext,
+        cdf: *mut uint16_t,
+    ) -> libc::c_uint;
+    fn dav1d_msac_decode_symbol_adapt16_avx2(
+        s: *mut MsacContext,
+        cdf: *mut uint16_t,
+        n_symbols: size_t,
+    ) -> libc::c_uint;
+    fn dav1d_msac_decode_symbol_adapt16_neon(
+        s: *mut MsacContext,
+        cdf: *mut uint16_t,
+        n_symbols: size_t,
+    ) -> libc::c_uint;
+    fn dav1d_msac_decode_symbol_adapt8_neon(
+        s: *mut MsacContext,
+        cdf: *mut uint16_t,
+        n_symbols: size_t,
+    ) -> libc::c_uint;
+    fn dav1d_msac_decode_symbol_adapt4_neon(
+        s: *mut MsacContext,
+        cdf: *mut uint16_t,
+        n_symbols: size_t,
+    ) -> libc::c_uint;
+    static mut dav1d_cpu_flags_mask: libc::c_uint;
+    static mut dav1d_cpu_flags: libc::c_uint;
+}
 pub type __uint8_t = libc::c_uchar;
 pub type __uint16_t = libc::c_ushort;
 pub type uint8_t = __uint8_t;
@@ -456,6 +492,8 @@ pub unsafe extern "C" fn dav1d_msac_decode_symbol_adapt4(
     cfg_if! {
         if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
             return dav1d_msac_decode_symbol_adapt4_sse2(s, cdf, n_symbols);
+        } else if #[cfg(all(feature = "asm", target_arch = "aarch64"))] {
+            return dav1d_msac_decode_symbol_adapt4_neon(s, cdf, n_symbols);
         } else {
             return dav1d_msac_decode_symbol_adapt_c(s, cdf, n_symbols);
         }
@@ -470,6 +508,8 @@ pub unsafe extern "C" fn dav1d_msac_decode_symbol_adapt8(
     cfg_if! {
         if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
             return dav1d_msac_decode_symbol_adapt8_sse2(s, cdf, n_symbols);
+        } else if #[cfg(all(feature = "asm", target_arch = "aarch64"))] {
+            return dav1d_msac_decode_symbol_adapt8_neon(s, cdf, n_symbols);
         } else {
             return dav1d_msac_decode_symbol_adapt_c(s, cdf, n_symbols);
         }
@@ -484,6 +524,8 @@ pub unsafe extern "C" fn dav1d_msac_decode_symbol_adapt16(
     cfg_if! {
         if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
             return ((*s).symbol_adapt16).expect("non-null function pointer")(s, cdf, n_symbols);
+        } else if #[cfg(all(feature = "asm", target_arch = "aarch64"))] {
+            return dav1d_msac_decode_symbol_adapt16_neon(s, cdf, n_symbols);
         } else {
             return dav1d_msac_decode_symbol_adapt_c(s, cdf, n_symbols);
         }
@@ -497,6 +539,8 @@ pub unsafe extern "C" fn dav1d_msac_decode_bool_adapt(
     cfg_if! {
         if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
             return dav1d_msac_decode_bool_adapt_sse2(s, cdf);
+        } else if #[cfg(all(feature = "asm", target_arch = "aarch64"))] {
+            return dav1d_msac_decode_bool_adapt_neon(s, cdf);
         } else {
             return dav1d_msac_decode_bool_adapt_c(s, cdf);
         }
@@ -509,6 +553,8 @@ pub unsafe extern "C" fn dav1d_msac_decode_bool_equi(
     cfg_if! {
         if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
             return dav1d_msac_decode_bool_equi_sse2(s);
+        } else if #[cfg(all(feature = "asm", target_arch = "aarch64"))] {
+            return dav1d_msac_decode_bool_equi_neon(s);
         } else {
             return dav1d_msac_decode_bool_equi_c(s);
         }
@@ -522,6 +568,8 @@ pub unsafe extern "C" fn dav1d_msac_decode_bool(
     cfg_if! {
         if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
             return dav1d_msac_decode_bool_sse2(s, f);
+        } else if #[cfg(all(feature = "asm", target_arch = "aarch64"))] {
+            return dav1d_msac_decode_bool_neon(s, f);
         } else {
             return dav1d_msac_decode_bool_c(s, f);
         }
@@ -535,6 +583,8 @@ pub unsafe extern "C" fn dav1d_msac_decode_hi_tok(
     cfg_if! {
         if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
             return dav1d_msac_decode_hi_tok_sse2(s, cdf);
+        } else if #[cfg(all(feature = "asm", target_arch = "aarch64"))] {
+            return dav1d_msac_decode_hi_tok_neon(s, cdf);
         } else {
             return dav1d_msac_decode_hi_tok_c(s, cdf);
         }

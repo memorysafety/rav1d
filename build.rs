@@ -67,5 +67,31 @@ fn build_nasm_files() {
 
 #[cfg(feature = "asm")]
 fn build_asm_files() {
-    todo!();
+    use std::fs::File;
+    use std::io::Write;
+    let out_dir = env::var("OUT_DIR").unwrap();
+
+    let dest_path = Path::new(&out_dir).join("config.h");
+    let mut config_file = File::create(&dest_path).unwrap();
+    if env::var("CARGO_CFG_TARGET_VENDOR").unwrap() == "apple" {
+        config_file.write(b" #define PREFIX 1\n").unwrap();
+    }
+    config_file.write(b" #define PRIVATE_PREFIX dav1d_\n").unwrap();
+    config_file.write(b" #define ARCH_AARCH64 1\n").unwrap();
+    config_file.write(b" #define ARCH_ARM 0\n").unwrap();
+    config_file.write(b" #define CONFIG_LOG 1 \n").unwrap();
+    config_file.write(b" #define HAVE_ASM 1\n").unwrap();
+    config_file.sync_all().unwrap();
+
+    let asm_files = &[
+        "src/arm/64/msac.S",
+    ];
+
+    cc::Build::new()
+        .files(asm_files)
+        .include(".")
+        .include(&out_dir)
+        .compile("rav1d-aarch64");
+
+    println!("cargo:rustc-link-lib=static=rav1d-aarch64");
 }
