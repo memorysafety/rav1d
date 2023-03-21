@@ -9,7 +9,7 @@ extern "C" {
     pub type Dav1dContext;
     pub type DemuxerContext;
     pub type MuxerContext;
-    fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
+    fn malloc(_: size_t) -> *mut libc::c_void;
     fn free(_: *mut libc::c_void);
     fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
     fn fflush(__stream: *mut libc::FILE) -> libc::c_int;
@@ -78,6 +78,7 @@ extern "C" {
         lib_settings: *mut Dav1dSettings,
     );
 }
+<<<<<<< HEAD
 
 
 
@@ -118,6 +119,125 @@ use crate::include::dav1d::headers::Dav1dWarpedMotionType;
 
 
 
+=======
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct __va_list_tag {
+    pub gp_offset: libc::c_uint,
+    pub fp_offset: libc::c_uint,
+    pub overflow_arg_area: *mut libc::c_void,
+    pub reg_save_area: *mut libc::c_void,
+}
+pub type __int8_t = libc::c_schar;
+pub type __uint8_t = libc::c_uchar;
+pub type __int16_t = libc::c_short;
+pub type __uint16_t = libc::c_ushort;
+pub type __int32_t = libc::c_int;
+pub type __uint32_t = libc::c_uint;
+pub type __int64_t = i64;
+pub type __uint64_t = u64;
+pub type __off_t = libc::c_long;
+pub type __off64_t = libc::c_long;
+pub type __time_t = libc::c_long;
+pub type __clockid_t = libc::c_int;
+pub type __syscall_slong_t = libc::c_long;
+pub type int8_t = __int8_t;
+pub type int16_t = __int16_t;
+pub type int32_t = __int32_t;
+pub type int64_t = __int64_t;
+pub type uint8_t = __uint8_t;
+pub type uint16_t = __uint16_t;
+pub type uint32_t = __uint32_t;
+pub type uint64_t = __uint64_t;
+pub type uintptr_t = usize;
+pub type size_t = usize;
+pub type clockid_t = __clockid_t;
+pub type time_t = __time_t;
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct timespec {
+    pub tv_sec: __time_t,
+    pub tv_nsec: __syscall_slong_t,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct _IO_FILE {
+    pub _flags: libc::c_int,
+    pub _IO_read_ptr: *mut libc::c_char,
+    pub _IO_read_end: *mut libc::c_char,
+    pub _IO_read_base: *mut libc::c_char,
+    pub _IO_write_base: *mut libc::c_char,
+    pub _IO_write_ptr: *mut libc::c_char,
+    pub _IO_write_end: *mut libc::c_char,
+    pub _IO_buf_base: *mut libc::c_char,
+    pub _IO_buf_end: *mut libc::c_char,
+    pub _IO_save_base: *mut libc::c_char,
+    pub _IO_backup_base: *mut libc::c_char,
+    pub _IO_save_end: *mut libc::c_char,
+    pub _markers: *mut _IO_marker,
+    pub _chain: *mut _IO_FILE,
+    pub _fileno: libc::c_int,
+    pub _flags2: libc::c_int,
+    pub _old_offset: __off_t,
+    pub _cur_column: libc::c_ushort,
+    pub _vtable_offset: libc::c_schar,
+    pub _shortbuf: [libc::c_char; 1],
+    pub _lock: *mut libc::c_void,
+    pub _offset: __off64_t,
+    pub _codecvt: *mut _IO_codecvt,
+    pub _wide_data: *mut _IO_wide_data,
+    pub _freeres_list: *mut _IO_FILE,
+    pub _freeres_buf: *mut libc::c_void,
+    pub __pad5: size_t,
+    pub _mode: libc::c_int,
+    pub _unused2: [libc::c_char; 20],
+}
+pub type _IO_lock_t = ();
+pub type FILE = _IO_FILE;
+pub type ptrdiff_t = libc::c_long;
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dUserData {
+    pub data: *const uint8_t,
+    pub ref_0: *mut Dav1dRef,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dDataProps {
+    pub timestamp: int64_t,
+    pub duration: int64_t,
+    pub offset: int64_t,
+    pub size: size_t,
+    pub user_data: Dav1dUserData,
+}
+pub type Dav1dTxfmMode = libc::c_uint;
+pub const DAV1D_N_TX_MODES: Dav1dTxfmMode = 3;
+pub const DAV1D_TX_SWITCHABLE: Dav1dTxfmMode = 2;
+pub const DAV1D_TX_LARGEST: Dav1dTxfmMode = 1;
+pub const DAV1D_TX_4X4_ONLY: Dav1dTxfmMode = 0;
+pub type Dav1dFilterMode = libc::c_uint;
+pub const DAV1D_FILTER_SWITCHABLE: Dav1dFilterMode = 4;
+pub const DAV1D_N_FILTERS: Dav1dFilterMode = 4;
+pub const DAV1D_FILTER_BILINEAR: Dav1dFilterMode = 3;
+pub const DAV1D_N_SWITCHABLE_FILTERS: Dav1dFilterMode = 3;
+pub const DAV1D_FILTER_8TAP_SHARP: Dav1dFilterMode = 2;
+pub const DAV1D_FILTER_8TAP_SMOOTH: Dav1dFilterMode = 1;
+pub const DAV1D_FILTER_8TAP_REGULAR: Dav1dFilterMode = 0;
+pub type Dav1dAdaptiveBoolean = libc::c_uint;
+pub const DAV1D_ADAPTIVE: Dav1dAdaptiveBoolean = 2;
+pub const DAV1D_ON: Dav1dAdaptiveBoolean = 1;
+pub const DAV1D_OFF: Dav1dAdaptiveBoolean = 0;
+pub type Dav1dRestorationType = libc::c_uint;
+pub const DAV1D_RESTORATION_SGRPROJ: Dav1dRestorationType = 3;
+pub const DAV1D_RESTORATION_WIENER: Dav1dRestorationType = 2;
+pub const DAV1D_RESTORATION_SWITCHABLE: Dav1dRestorationType = 1;
+pub const DAV1D_RESTORATION_NONE: Dav1dRestorationType = 0;
+pub type Dav1dWarpedMotionType = libc::c_uint;
+pub const DAV1D_WM_TYPE_AFFINE: Dav1dWarpedMotionType = 3;
+pub const DAV1D_WM_TYPE_ROT_ZOOM: Dav1dWarpedMotionType = 2;
+pub const DAV1D_WM_TYPE_TRANSLATION: Dav1dWarpedMotionType = 1;
+pub const DAV1D_WM_TYPE_IDENTITY: Dav1dWarpedMotionType = 0;
+>>>>>>> f78a70e0 (WIP: Fix types required for 32-bit builds to pass tests)
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dWarpedMotionParams {
@@ -461,8 +581,8 @@ unsafe extern "C" fn get_time_nanos() -> uint64_t {
 unsafe extern "C" fn sleep_nanos(mut d: uint64_t) {
     let ts: timespec = {
         let mut init = timespec {
-            tv_sec: d.wrapping_div(1000000000 as libc::c_int as libc::c_ulong) as time_t,
-            tv_nsec: d.wrapping_rem(1000000000 as libc::c_int as libc::c_ulong)
+            tv_sec: d.wrapping_div(1000000000 as uint64_t) as time_t,
+            tv_nsec: d.wrapping_rem(1000000000 as uint64_t)
                 as __syscall_slong_t,
         };
         init
@@ -482,12 +602,12 @@ unsafe extern "C" fn synchronize(
     let last: uint64_t = *elapsed;
     *elapsed = tcurr.wrapping_sub(tfirst);
     if realtime != 0 {
-        let deadline: uint64_t = nspf.wrapping_mul(n_out as libc::c_ulong);
+        let deadline: uint64_t = nspf.wrapping_mul(n_out as uint64_t);
         if *elapsed < deadline {
             let remaining: uint64_t = deadline.wrapping_sub(*elapsed);
-            if remaining > nspf.wrapping_mul(cache as libc::c_ulong) {
+            if remaining > nspf.wrapping_mul(cache as uint64_t) {
                 sleep_nanos(
-                    remaining.wrapping_sub(nspf.wrapping_mul(cache as libc::c_ulong)),
+                    remaining.wrapping_sub(nspf.wrapping_mul(cache as uint64_t)),
                 );
             }
             *elapsed = deadline;
@@ -608,10 +728,9 @@ unsafe extern "C" fn picture_alloc(
     (*p).stride[1 as libc::c_int as usize] = -uv_stride;
     let y_sz: size_t = (y_stride * aligned_h as libc::c_long) as size_t;
     let uv_sz: size_t = (uv_stride * (aligned_h >> ss_ver) as libc::c_long) as size_t;
-    let pic_size: size_t = y_sz
-        .wrapping_add((2 as libc::c_int as libc::c_ulong).wrapping_mul(uv_sz));
+    let pic_size: size_t = y_sz.wrapping_add(2 * uv_sz);
     let buf: *mut uint8_t = malloc(
-        pic_size.wrapping_add((64 as libc::c_int * 2 as libc::c_int) as libc::c_ulong),
+        pic_size.wrapping_add(64),
     ) as *mut uint8_t;
     if buf.is_null() {
         return -(12 as libc::c_int);
@@ -627,7 +746,7 @@ unsafe extern "C" fn picture_alloc(
         .data[1 as libc::c_int
         as usize] = (if has_chroma != 0 {
         data.offset(y_sz as isize)
-            .offset(uv_sz.wrapping_mul(1 as libc::c_int as libc::c_ulong) as isize)
+            .offset(uv_sz.wrapping_mul(1) as isize)
             .offset(-(uv_stride as isize))
     } else {
         0 as *mut uint8_t
@@ -636,7 +755,7 @@ unsafe extern "C" fn picture_alloc(
         .data[2 as libc::c_int
         as usize] = (if has_chroma != 0 {
         data.offset(y_sz as isize)
-            .offset(uv_sz.wrapping_mul(2 as libc::c_int as libc::c_ulong) as isize)
+            .offset(uv_sz.wrapping_mul(2) as isize)
             .offset(-(uv_stride as isize))
     } else {
         0 as *mut uint8_t
@@ -999,13 +1118,13 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
         if cli_settings.limit != 0 && n_out == cli_settings.limit {
             break;
         }
-        if !(data.sz > 0 as libc::c_int as libc::c_ulong
+        if !(data.sz > 0
             || input_read(in_0, &mut data) == 0)
         {
             break;
         }
     }
-    if data.sz > 0 as libc::c_int as libc::c_ulong {
+    if data.sz > 0 {
         dav1d_data_unref(&mut data);
     }
     if res == 0 as libc::c_int {

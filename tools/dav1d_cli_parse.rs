@@ -1115,18 +1115,15 @@ pub unsafe extern "C" fn parse(
             267 => {
                 let mut arg: *mut libc::c_char = optarg;
                 let mut end: *mut libc::c_char = 0 as *mut libc::c_char;
-                let mut res: uint64_t = strtoul(arg, &mut end, 0 as libc::c_int);
+                let mut res: uint64_t = strtoul(arg, &mut end, 0) as uint64_t;
                 if *end as libc::c_int == 'x' as i32 {
                     arg = end.offset(1 as libc::c_int as isize);
                     res = (res as libc::c_ulong)
-                        .wrapping_mul(strtoul(arg, &mut end, 0 as libc::c_int))
+                        .wrapping_mul(strtoul(arg, &mut end, 0))
                         as uint64_t as uint64_t;
                 }
                 if *end as libc::c_int != 0 || end == arg
-                    || res
-                        >= (2147483647 as libc::c_int as libc::c_uint)
-                            .wrapping_mul(2 as libc::c_uint)
-                            .wrapping_add(1 as libc::c_uint) as libc::c_ulong
+                    || res >= u32::MAX as uint64_t
                 {
                     error(
                         *argv.offset(0 as libc::c_int as isize),

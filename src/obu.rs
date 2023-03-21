@@ -3882,11 +3882,10 @@ pub unsafe extern "C" fn dav1d_parse_obus(
         {
             unreachable!();
         }
-        if !((*in_0).sz >= init_byte_pos as libc::c_ulong) {
+        if !((*in_0).sz >= init_byte_pos as size_t) {
             unreachable!();
         }
-        if !(len as libc::c_ulong
-            > ((*in_0).sz).wrapping_sub(init_byte_pos as libc::c_ulong))
+        if !(len as size_t > ((*in_0).sz).wrapping_sub(init_byte_pos as size_t))
         {
             if type_0 as libc::c_uint != DAV1D_OBU_SEQ_HDR as libc::c_int as libc::c_uint
                 && type_0 as libc::c_uint != DAV1D_OBU_TD as libc::c_int as libc::c_uint
@@ -3906,7 +3905,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                 1 => {
                     let mut ref_0: *mut Dav1dRef = dav1d_ref_create_using_pool(
                         (*c).seq_hdr_pool,
-                        ::core::mem::size_of::<Dav1dSequenceHeader>() as libc::c_ulong,
+                        ::core::mem::size_of::<Dav1dSequenceHeader>(),
                     );
                     if ref_0.is_null() {
                         return -(12 as libc::c_int);
@@ -4018,8 +4017,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                         match meta_type as libc::c_uint {
                             1 => {
                                 let mut ref_1: *mut Dav1dRef = dav1d_ref_create(
-                                    ::core::mem::size_of::<Dav1dContentLightLevel>()
-                                        as libc::c_ulong,
+                                    ::core::mem::size_of::<Dav1dContentLightLevel>(),
                                 );
                                 if ref_1.is_null() {
                                     return -(12 as libc::c_int);
@@ -4050,8 +4048,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                             }
                             2 => {
                                 let mut ref_2: *mut Dav1dRef = dav1d_ref_create(
-                                    ::core::mem::size_of::<Dav1dMasteringDisplay>()
-                                        as libc::c_ulong,
+                                    ::core::mem::size_of::<Dav1dMasteringDisplay>(),
                                 );
                                 if ref_2.is_null() {
                                     return -(12 as libc::c_int);
@@ -4132,11 +4129,11 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                     );
                                 } else {
                                     let mut ref_3: *mut Dav1dRef = dav1d_ref_create(
-                                        (::core::mem::size_of::<Dav1dITUTT35>() as libc::c_ulong)
+                                        (::core::mem::size_of::<Dav1dITUTT35>())
                                             .wrapping_add(
-                                                (payload_size as libc::c_ulong)
+                                                (payload_size as size_t)
                                                     .wrapping_mul(
-                                                        ::core::mem::size_of::<uint8_t>() as libc::c_ulong,
+                                                        ::core::mem::size_of::<uint8_t>(),
                                                     ),
                                             ),
                                     );
@@ -4223,7 +4220,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                     (*c)
                                         .frame_hdr_ref = dav1d_ref_create_using_pool(
                                         (*c).frame_hdr_pool,
-                                        ::core::mem::size_of::<Dav1dFrameHeader>() as libc::c_ulong,
+                                        ::core::mem::size_of::<Dav1dFrameHeader>(),
                                     );
                                     if ((*c).frame_hdr_ref).is_null() {
                                         return -(12 as libc::c_int);
@@ -4271,8 +4268,8 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                         _ => {
                                             if (*c).frame_size_limit != 0
                                                 && (*(*c).frame_hdr).width[1 as libc::c_int as usize]
-                                                    as int64_t * (*(*c).frame_hdr).height as libc::c_long
-                                                    > (*c).frame_size_limit as libc::c_long
+                                                    as int64_t * (*(*c).frame_hdr).height as int64_t
+                                                    > (*c).frame_size_limit as int64_t
                                             {
                                                 dav1d_log(
                                                     c,

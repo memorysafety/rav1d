@@ -1460,17 +1460,15 @@ unsafe extern "C" fn md5_update(
     if len == 0 {
         return;
     }
-    if (*md5).len & 63 as libc::c_int as libc::c_ulong != 0 {
+    if ((*md5).len & 63) != 0 {
         let tmp: libc::c_uint = umin(
             len,
-            (64 as libc::c_int as libc::c_ulong)
-                .wrapping_sub((*md5).len & 63 as libc::c_int as libc::c_ulong)
-                as libc::c_uint,
+            64 - ((*md5).len & 63) as libc::c_uint,
         );
         memcpy(
             &mut *((*md5).c2rust_unnamed.data)
                 .as_mut_ptr()
-                .offset(((*md5).len & 63 as libc::c_int as libc::c_ulong) as isize)
+                .offset(((*md5).len & 63) as isize)
                 as *mut uint8_t as *mut libc::c_void,
             data as *const libc::c_void,
             tmp as libc::c_ulong,
@@ -1480,7 +1478,7 @@ unsafe extern "C" fn md5_update(
         (*md5)
             .len = ((*md5).len as libc::c_ulong).wrapping_add(tmp as libc::c_ulong)
             as uint64_t as uint64_t;
-        if (*md5).len & 63 as libc::c_int as libc::c_ulong == 0 {
+        if ((*md5).len & 63) == 0 {
             md5_body(md5, ((*md5).c2rust_unnamed.data32).as_mut_ptr());
         }
     }
@@ -1557,8 +1555,7 @@ unsafe extern "C" fn md5_finish(md5: *mut MD5Context) {
         &*bit.as_ptr().offset(0 as libc::c_int as isize),
         1 as libc::c_int as libc::c_uint,
     );
-    while (*md5).len & 63 as libc::c_int as libc::c_ulong
-        != 56 as libc::c_int as libc::c_ulong
+    while ((*md5).len & 63) != 56
     {
         md5_update(
             md5,

@@ -1822,7 +1822,7 @@ unsafe extern "C" fn iclip(
 }
 #[inline]
 unsafe extern "C" fn apply_sign64(v: libc::c_int, s: int64_t) -> libc::c_int {
-    return if s < 0 as libc::c_int as libc::c_long { -v } else { v };
+    return if s < 0 { -v } else { v };
 }
 #[inline]
 unsafe extern "C" fn get_uv_inter_txtp(
@@ -2061,10 +2061,10 @@ unsafe extern "C" fn get_dc_sign_ctx(
         }
         3 => {
             let mut t_2: uint64_t = (*(a as *const uint64_t) & mask) >> 6 as libc::c_int;
-            t_2 = (t_2 as libc::c_ulong)
+            t_2 = t_2
                 .wrapping_add((*(l as *const uint64_t) & mask) >> 6 as libc::c_int)
                 as uint64_t as uint64_t;
-            t_2 = (t_2 as libc::c_ulong).wrapping_mul(mul) as uint64_t as uint64_t;
+            t_2 = t_2.wrapping_mul(mul) as uint64_t as uint64_t;
             s = (t_2 >> 56 as libc::c_int) as libc::c_int - 8 as libc::c_int
                 - 8 as libc::c_int;
             current_block_66 = 2606304779496145856;
@@ -2072,22 +2072,22 @@ unsafe extern "C" fn get_dc_sign_ctx(
         4 => {
             let mut t_3: uint64_t = (*(&*a.offset(0 as libc::c_int as isize)
                 as *const uint8_t as *const uint64_t) & mask) >> 6 as libc::c_int;
-            t_3 = (t_3 as libc::c_ulong)
+            t_3 = t_3
                 .wrapping_add(
                     (*(&*a.offset(8 as libc::c_int as isize) as *const uint8_t
                         as *const uint64_t) & mask) >> 6 as libc::c_int,
                 ) as uint64_t as uint64_t;
-            t_3 = (t_3 as libc::c_ulong)
+            t_3 = t_3
                 .wrapping_add(
                     (*(&*l.offset(0 as libc::c_int as isize) as *const uint8_t
                         as *const uint64_t) & mask) >> 6 as libc::c_int,
                 ) as uint64_t as uint64_t;
-            t_3 = (t_3 as libc::c_ulong)
+            t_3 = t_3
                 .wrapping_add(
                     (*(&*l.offset(8 as libc::c_int as isize) as *const uint8_t
                         as *const uint64_t) & mask) >> 6 as libc::c_int,
                 ) as uint64_t as uint64_t;
-            t_3 = (t_3 as libc::c_ulong).wrapping_mul(mul) as uint64_t as uint64_t;
+            t_3 = t_3.wrapping_mul(mul) as uint64_t as uint64_t;
             s = (t_3 >> 56 as libc::c_int) as libc::c_int - 16 as libc::c_int
                 - 16 as libc::c_int;
             current_block_66 = 2606304779496145856;
@@ -2139,7 +2139,7 @@ unsafe extern "C" fn get_dc_sign_ctx(
         9 => {
             let mut t_8: uint64_t = (*(a as *const uint32_t) & mask as uint32_t)
                 as uint64_t;
-            t_8 = (t_8 as libc::c_ulong).wrapping_add(*(l as *const uint64_t) & mask)
+            t_8 = t_8.wrapping_add(*(l as *const uint64_t) & mask)
                 as uint64_t as uint64_t;
             t_8 = (t_8 >> 6 as libc::c_int).wrapping_mul(mul);
             s = (t_8 >> 56 as libc::c_int) as libc::c_int - 4 as libc::c_int
@@ -2148,9 +2148,8 @@ unsafe extern "C" fn get_dc_sign_ctx(
         }
         10 => {
             let mut t_9: uint64_t = *(a as *const uint64_t) & mask;
-            t_9 = (t_9 as libc::c_ulong)
-                .wrapping_add(
-                    (*(l as *const uint32_t) & mask as uint32_t) as libc::c_ulong,
+            t_9 = t_9.wrapping_add(
+                    (*(l as *const uint32_t) & mask as uint32_t) as uint64_t,
                 ) as uint64_t as uint64_t;
             t_9 = (t_9 >> 6 as libc::c_int).wrapping_mul(mul);
             s = (t_9 >> 56 as libc::c_int) as libc::c_int - 8 as libc::c_int
@@ -2160,17 +2159,15 @@ unsafe extern "C" fn get_dc_sign_ctx(
         11 => {
             let mut t_10: uint64_t = (*(&*a.offset(0 as libc::c_int as isize)
                 as *const uint8_t as *const uint64_t) & mask) >> 6 as libc::c_int;
-            t_10 = (t_10 as libc::c_ulong)
-                .wrapping_add(
+            t_10 = t_10.wrapping_add(
                     (*(&*l.offset(0 as libc::c_int as isize) as *const uint8_t
                         as *const uint64_t) & mask) >> 6 as libc::c_int,
                 ) as uint64_t as uint64_t;
-            t_10 = (t_10 as libc::c_ulong)
-                .wrapping_add(
+            t_10 = t_10.wrapping_add(
                     (*(&*l.offset(8 as libc::c_int as isize) as *const uint8_t
                         as *const uint64_t) & mask) >> 6 as libc::c_int,
                 ) as uint64_t as uint64_t;
-            t_10 = (t_10 as libc::c_ulong).wrapping_mul(mul) as uint64_t as uint64_t;
+            t_10 = t_10.wrapping_mul(mul) as uint64_t as uint64_t;
             s = (t_10 >> 56 as libc::c_int) as libc::c_int - 8 as libc::c_int
                 - 16 as libc::c_int;
             current_block_66 = 2606304779496145856;
@@ -2178,17 +2175,16 @@ unsafe extern "C" fn get_dc_sign_ctx(
         12 => {
             let mut t_11: uint64_t = (*(&*a.offset(0 as libc::c_int as isize)
                 as *const uint8_t as *const uint64_t) & mask) >> 6 as libc::c_int;
-            t_11 = (t_11 as libc::c_ulong)
-                .wrapping_add(
+            t_11 = t_11.wrapping_add(
                     (*(&*a.offset(8 as libc::c_int as isize) as *const uint8_t
                         as *const uint64_t) & mask) >> 6 as libc::c_int,
                 ) as uint64_t as uint64_t;
-            t_11 = (t_11 as libc::c_ulong)
+            t_11 = t_11
                 .wrapping_add(
                     (*(&*l.offset(0 as libc::c_int as isize) as *const uint8_t
                         as *const uint64_t) & mask) >> 6 as libc::c_int,
                 ) as uint64_t as uint64_t;
-            t_11 = (t_11 as libc::c_ulong).wrapping_mul(mul) as uint64_t as uint64_t;
+            t_11 = t_11.wrapping_mul(mul);
             s = (t_11 >> 56 as libc::c_int) as libc::c_int - 16 as libc::c_int
                 - 8 as libc::c_int;
             current_block_66 = 2606304779496145856;
@@ -2216,8 +2212,7 @@ unsafe extern "C" fn get_dc_sign_ctx(
         15 => {
             let mut t_14: uint64_t = (*(a as *const uint16_t) as libc::c_uint
                 & mask as uint32_t) as uint64_t;
-            t_14 = (t_14 as libc::c_ulong).wrapping_add(*(l as *const uint64_t) & mask)
-                as uint64_t as uint64_t;
+            t_14 = t_14.wrapping_add(*(l as *const uint64_t) & mask);
             t_14 = (t_14 >> 6 as libc::c_int).wrapping_mul(mul);
             s = (t_14 >> 56 as libc::c_int) as libc::c_int - 2 as libc::c_int
                 - 8 as libc::c_int;
@@ -2238,8 +2233,7 @@ unsafe extern "C" fn get_dc_sign_ctx(
         17 => {
             let mut t_16: uint64_t = (*(a as *const uint32_t) & mask as uint32_t)
                 as uint64_t;
-            t_16 = (t_16 as libc::c_ulong)
-                .wrapping_add(
+            t_16 = t_16.wrapping_add(
                     *(&*l.offset(0 as libc::c_int as isize) as *const uint8_t
                         as *const uint64_t) & mask,
                 ) as uint64_t as uint64_t;
@@ -2248,7 +2242,7 @@ unsafe extern "C" fn get_dc_sign_ctx(
                     (*(&*l.offset(8 as libc::c_int as isize) as *const uint8_t
                         as *const uint64_t) & mask) >> 6 as libc::c_int,
                 );
-            t_16 = (t_16 as libc::c_ulong).wrapping_mul(mul) as uint64_t as uint64_t;
+            t_16 = t_16.wrapping_mul(mul);
             s = (t_16 >> 56 as libc::c_int) as libc::c_int - 4 as libc::c_int
                 - 16 as libc::c_int;
             current_block_66 = 2606304779496145856;
@@ -2265,7 +2259,7 @@ unsafe extern "C" fn get_dc_sign_ctx(
                     (*(&*a.offset(8 as libc::c_int as isize) as *const uint8_t
                         as *const uint64_t) & mask) >> 6 as libc::c_int,
                 );
-            t_17 = (t_17 as libc::c_ulong).wrapping_mul(mul) as uint64_t as uint64_t;
+            t_17 = t_17.wrapping_mul(mul) as uint64_t;
             s = (t_17 >> 56 as libc::c_int) as libc::c_int - 16 as libc::c_int
                 - 4 as libc::c_int;
             current_block_66 = 2606304779496145856;
@@ -5248,18 +5242,18 @@ unsafe extern "C" fn mc(
         let mut pos_y: libc::c_int = 0;
         let mut pos_x: libc::c_int = 0;
         let tmp: int64_t = orig_pos_x as int64_t
-            * (*f).svc[refidx as usize][0 as libc::c_int as usize].scale as libc::c_long
+            * (*f).svc[refidx as usize][0 as libc::c_int as usize].scale as int64_t
             + (((*f).svc[refidx as usize][0 as libc::c_int as usize].scale
-                - 0x4000 as libc::c_int) * 8 as libc::c_int) as libc::c_long;
+                - 0x4000 as libc::c_int) * 8 as libc::c_int) as int64_t;
         pos_x = apply_sign64(
             (llabs(tmp as libc::c_longlong) + 128 as libc::c_int as libc::c_longlong
                 >> 8 as libc::c_int) as libc::c_int,
             tmp,
         ) + 32 as libc::c_int;
         let tmp_0: int64_t = orig_pos_y as int64_t
-            * (*f).svc[refidx as usize][1 as libc::c_int as usize].scale as libc::c_long
+            * (*f).svc[refidx as usize][1 as libc::c_int as usize].scale as int64_t
             + (((*f).svc[refidx as usize][1 as libc::c_int as usize].scale
-                - 0x4000 as libc::c_int) * 8 as libc::c_int) as libc::c_long;
+                - 0x4000 as libc::c_int) * 8 as libc::c_int) as int64_t;
         pos_y = apply_sign64(
             (llabs(tmp_0 as libc::c_longlong) + 128 as libc::c_int as libc::c_longlong
                 >> 8 as libc::c_int) as libc::c_int,
@@ -5623,19 +5617,19 @@ unsafe extern "C" fn warp_affine(
         let src_y: libc::c_int = (*t).by * 4 as libc::c_int
             + ((y + 4 as libc::c_int) << ss_ver);
         let mat3_y: int64_t = *mat.offset(3 as libc::c_int as isize) as int64_t
-            * src_y as libc::c_long
-            + *mat.offset(0 as libc::c_int as isize) as libc::c_long;
+            * src_y as int64_t
+            + *mat.offset(0 as libc::c_int as isize) as int64_t;
         let mat5_y: int64_t = *mat.offset(5 as libc::c_int as isize) as int64_t
-            * src_y as libc::c_long
-            + *mat.offset(1 as libc::c_int as isize) as libc::c_long;
+            * src_y as int64_t
+            + *mat.offset(1 as libc::c_int as isize) as int64_t;
         let mut x: libc::c_int = 0 as libc::c_int;
         while x < *b_dim.offset(0 as libc::c_int as isize) as libc::c_int * h_mul {
             let src_x: libc::c_int = (*t).bx * 4 as libc::c_int
                 + ((x + 4 as libc::c_int) << ss_hor);
             let mvx: int64_t = *mat.offset(2 as libc::c_int as isize) as int64_t
-                * src_x as libc::c_long + mat3_y >> ss_hor;
+                * src_x as int64_t + mat3_y >> ss_hor;
             let mvy: int64_t = *mat.offset(4 as libc::c_int as isize) as int64_t
-                * src_x as libc::c_long + mat5_y >> ss_ver;
+                * src_x as int64_t + mat5_y >> ss_ver;
             let dx: libc::c_int = (mvx >> 16 as libc::c_int) as libc::c_int
                 - 4 as libc::c_int;
             let mx: libc::c_int = (mvx as libc::c_int & 0xffff as libc::c_int)

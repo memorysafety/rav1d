@@ -24563,8 +24563,8 @@ pub unsafe extern "C" fn dav1d_cdf_thread_alloc(
     (*cdf)
         .ref_0 = dav1d_ref_create_using_pool(
         (*c).cdf_pool,
-        (::core::mem::size_of::<CdfContext>() as libc::c_ulong)
-            .wrapping_add(::core::mem::size_of::<atomic_uint>() as libc::c_ulong),
+        (::core::mem::size_of::<CdfContext>())
+            .wrapping_add(::core::mem::size_of::<atomic_uint>()),
     );
     if ((*cdf).ref_0).is_null() {
         return -(12 as libc::c_int);

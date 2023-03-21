@@ -12,7 +12,7 @@ extern "C" {
     fn memset(
         _: *mut libc::c_void,
         _: libc::c_int,
-        _: libc::c_ulong,
+        _: size_t,
     ) -> *mut libc::c_void;
     fn memcmp(
         _: *const libc::c_void,
@@ -1968,7 +1968,7 @@ unsafe extern "C" fn apply_sign(v: libc::c_int, s: libc::c_int) -> libc::c_int {
 }
 #[inline]
 unsafe extern "C" fn apply_sign64(v: libc::c_int, s: int64_t) -> libc::c_int {
-    return if s < 0 as libc::c_int as libc::c_long { -v } else { v };
+    return if s < 0 { -v } else { v };
 }
 #[inline]
 unsafe extern "C" fn ulog2(v: libc::c_uint) -> libc::c_int {
@@ -1979,7 +1979,7 @@ unsafe extern "C" fn dav1d_alloc_aligned(
     mut sz: size_t,
     mut align: size_t,
 ) -> *mut libc::c_void {
-    if align & align.wrapping_sub(1 as libc::c_int as libc::c_ulong) != 0 {
+    if align & align.wrapping_sub(1) != 0 {
         unreachable!();
     }
     let mut ptr: *mut libc::c_void = 0 as *mut libc::c_void;
@@ -3410,7 +3410,7 @@ unsafe extern "C" fn find_matching_ref(
                 == -(1 as libc::c_int)
         {
             let ref mut fresh2 = *masks.offset(0 as libc::c_int as isize);
-            *fresh2 |= 1 as libc::c_int as libc::c_ulong;
+            *fresh2 |= 1;
             count = 1 as libc::c_int;
         }
         let mut aw4: libc::c_int = dav1d_block_dimensions[(*r2).bs
@@ -3434,7 +3434,7 @@ unsafe extern "C" fn find_matching_ref(
                         == -(1 as libc::c_int)
                 {
                     let ref mut fresh3 = *masks.offset(0 as libc::c_int as isize);
-                    *fresh3 |= mask as libc::c_ulong;
+                    *fresh3 |= mask as uint64_t;
                     count += 1;
                     if count >= 8 as libc::c_int {
                         return;
@@ -3459,7 +3459,7 @@ unsafe extern "C" fn find_matching_ref(
                 .ref_0[1 as libc::c_int as usize] as libc::c_int == -(1 as libc::c_int)
         {
             let ref mut fresh4 = *masks.offset(1 as libc::c_int as isize);
-            *fresh4 |= 1 as libc::c_int as libc::c_ulong;
+            *fresh4 |= 1;
             count += 1;
             if count >= 8 as libc::c_int {
                 return;
@@ -3490,7 +3490,7 @@ unsafe extern "C" fn find_matching_ref(
                         == -(1 as libc::c_int)
                 {
                     let ref mut fresh5 = *masks.offset(1 as libc::c_int as isize);
-                    *fresh5 |= mask_0 as libc::c_ulong;
+                    *fresh5 |= mask_0 as uint64_t;
                     count += 1;
                     if count >= 8 as libc::c_int {
                         return;
@@ -3666,8 +3666,8 @@ unsafe extern "C" fn derive_warpmv(
             xmask &= !(1 as libc::c_int) as libc::c_uint;
         }
     }
-    if np < 8 as libc::c_int
-        && *masks.offset(1 as libc::c_int as isize) == 1 as libc::c_int as libc::c_ulong
+    if np < 8
+        && *masks.offset(1 as libc::c_int as isize) == 1
     {
         let off_1: libc::c_int = (*t).by
             & dav1d_block_dimensions[(*(*r.offset(0 as libc::c_int as isize))
@@ -4539,7 +4539,7 @@ unsafe extern "C" fn read_pal_indices(
                             + (4 as libc::c_int * w4) as libc::c_long
                             - 1 as libc::c_int as libc::c_long) as isize,
                     ) as libc::c_int,
-                (4 as libc::c_int * (bw4 - w4)) as libc::c_ulong,
+                (4 as libc::c_int * (bw4 - w4)) as size_t,
             );
             y += 1;
         }
@@ -5206,9 +5206,9 @@ unsafe extern "C" fn mc_lowest_px(
     } else {
         let mut y: libc::c_int = (by4 * v_mul << 4 as libc::c_int)
             + mvy * ((1 as libc::c_int) << (ss_ver == 0) as libc::c_int);
-        let tmp: int64_t = y as int64_t * (*smp).scale as libc::c_long
+        let tmp: int64_t = y as int64_t * (*smp).scale as int64_t
             + (((*smp).scale - 0x4000 as libc::c_int) * 8 as libc::c_int)
-                as libc::c_long;
+                as int64_t;
         y = apply_sign64(
             (llabs(tmp as libc::c_longlong) + 128 as libc::c_int as libc::c_longlong
                 >> 8 as libc::c_int) as libc::c_int,
@@ -5243,13 +5243,13 @@ unsafe extern "C" fn affine_lowest_px(
     let src_y: libc::c_int = (*t).by * 4 as libc::c_int
         + ((y + 4 as libc::c_int) << ss_ver);
     let mat5_y: int64_t = *mat.offset(5 as libc::c_int as isize) as int64_t
-        * src_y as libc::c_long + *mat.offset(1 as libc::c_int as isize) as libc::c_long;
+        * src_y as int64_t + *mat.offset(1 as libc::c_int as isize) as int64_t;
     let mut x: libc::c_int = 0 as libc::c_int;
     while x < *b_dim.offset(0 as libc::c_int as isize) as libc::c_int * h_mul {
         let src_x: libc::c_int = (*t).bx * 4 as libc::c_int
             + ((x + 4 as libc::c_int) << ss_hor);
         let mvy: int64_t = *mat.offset(4 as libc::c_int as isize) as int64_t
-            * src_x as libc::c_long + mat5_y >> ss_ver;
+            * src_x as int64_t + mat5_y >> ss_ver;
         let dy: libc::c_int = (mvy >> 16 as libc::c_int) as libc::c_int
             - 4 as libc::c_int;
         *dst = imax(*dst, dy + 4 as libc::c_int + 8 as libc::c_int);
@@ -15924,8 +15924,8 @@ unsafe extern "C" fn decode_sb(
                         (*ts)
                             .frame_thread[p as usize]
                             .cf = (((*ts).frame_thread[p as usize].cf as uintptr_t)
-                            .wrapping_add(63 as libc::c_int as libc::c_ulong)
-                            & !(63 as libc::c_int) as libc::c_ulong)
+                            .wrapping_add(63)
+                            & !(63))
                             as *mut libc::c_void;
                     }
                 } else {
@@ -16502,18 +16502,18 @@ unsafe extern "C" fn reset_context(
     memset(
         ((*ctx).intra).as_mut_ptr() as *mut libc::c_void,
         keyframe,
-        ::core::mem::size_of::<[uint8_t; 32]>() as libc::c_ulong,
+        ::core::mem::size_of::<[uint8_t; 32]>(),
     );
     memset(
         ((*ctx).uvmode).as_mut_ptr() as *mut libc::c_void,
         DC_PRED as libc::c_int,
-        ::core::mem::size_of::<[uint8_t; 32]>() as libc::c_ulong,
+        ::core::mem::size_of::<[uint8_t; 32]>(),
     );
     if keyframe != 0 {
         memset(
             ((*ctx).mode).as_mut_ptr() as *mut libc::c_void,
             DC_PRED as libc::c_int,
-            ::core::mem::size_of::<[uint8_t; 32]>() as libc::c_ulong,
+            ::core::mem::size_of::<[uint8_t; 32]>(),
         );
     }
     if pass == 2 as libc::c_int {
@@ -16522,79 +16522,79 @@ unsafe extern "C" fn reset_context(
     memset(
         ((*ctx).partition).as_mut_ptr() as *mut libc::c_void,
         0 as libc::c_int,
-        ::core::mem::size_of::<[uint8_t; 16]>() as libc::c_ulong,
+        ::core::mem::size_of::<[uint8_t; 16]>(),
     );
     memset(
         ((*ctx).skip).as_mut_ptr() as *mut libc::c_void,
         0 as libc::c_int,
-        ::core::mem::size_of::<[uint8_t; 32]>() as libc::c_ulong,
+        ::core::mem::size_of::<[uint8_t; 32]>(),
     );
     memset(
         ((*ctx).skip_mode).as_mut_ptr() as *mut libc::c_void,
         0 as libc::c_int,
-        ::core::mem::size_of::<[uint8_t; 32]>() as libc::c_ulong,
+        ::core::mem::size_of::<[uint8_t; 32]>(),
     );
     memset(
         ((*ctx).tx_lpf_y).as_mut_ptr() as *mut libc::c_void,
         2 as libc::c_int,
-        ::core::mem::size_of::<[uint8_t; 32]>() as libc::c_ulong,
+        ::core::mem::size_of::<[uint8_t; 32]>(),
     );
     memset(
         ((*ctx).tx_lpf_uv).as_mut_ptr() as *mut libc::c_void,
         1 as libc::c_int,
-        ::core::mem::size_of::<[uint8_t; 32]>() as libc::c_ulong,
+        ::core::mem::size_of::<[uint8_t; 32]>(),
     );
     memset(
         ((*ctx).tx_intra).as_mut_ptr() as *mut libc::c_void,
         -(1 as libc::c_int),
-        ::core::mem::size_of::<[int8_t; 32]>() as libc::c_ulong,
+        ::core::mem::size_of::<[int8_t; 32]>(),
     );
     memset(
         ((*ctx).tx).as_mut_ptr() as *mut libc::c_void,
         TX_64X64 as libc::c_int,
-        ::core::mem::size_of::<[int8_t; 32]>() as libc::c_ulong,
+        ::core::mem::size_of::<[int8_t; 32]>(),
     );
     if keyframe == 0 {
         memset(
             ((*ctx).ref_0).as_mut_ptr() as *mut libc::c_void,
             -(1 as libc::c_int),
-            ::core::mem::size_of::<[[int8_t; 32]; 2]>() as libc::c_ulong,
+            ::core::mem::size_of::<[[int8_t; 32]; 2]>(),
         );
         memset(
             ((*ctx).comp_type).as_mut_ptr() as *mut libc::c_void,
             0 as libc::c_int,
-            ::core::mem::size_of::<[uint8_t; 32]>() as libc::c_ulong,
+            ::core::mem::size_of::<[uint8_t; 32]>(),
         );
         memset(
             ((*ctx).mode).as_mut_ptr() as *mut libc::c_void,
             NEARESTMV as libc::c_int,
-            ::core::mem::size_of::<[uint8_t; 32]>() as libc::c_ulong,
+            ::core::mem::size_of::<[uint8_t; 32]>(),
         );
     }
     memset(
         ((*ctx).lcoef).as_mut_ptr() as *mut libc::c_void,
         0x40 as libc::c_int,
-        ::core::mem::size_of::<[uint8_t; 32]>() as libc::c_ulong,
+        ::core::mem::size_of::<[uint8_t; 32]>(),
     );
     memset(
         ((*ctx).ccoef).as_mut_ptr() as *mut libc::c_void,
         0x40 as libc::c_int,
-        ::core::mem::size_of::<[[uint8_t; 32]; 2]>() as libc::c_ulong,
+        ::core::mem::size_of::<[[uint8_t; 32]; 2]>(),
     );
     memset(
         ((*ctx).filter).as_mut_ptr() as *mut libc::c_void,
         DAV1D_N_SWITCHABLE_FILTERS as libc::c_int,
-        ::core::mem::size_of::<[[uint8_t; 32]; 2]>() as libc::c_ulong,
+        ::core::mem::size_of::<[[uint8_t; 32]; 2]>(),
     );
     memset(
         ((*ctx).seg_pred).as_mut_ptr() as *mut libc::c_void,
         0 as libc::c_int,
-        ::core::mem::size_of::<[uint8_t; 32]>() as libc::c_ulong,
+        ::core::mem::size_of::<[uint8_t; 32]>(),
     );
     memset(
         ((*ctx).pal_sz).as_mut_ptr() as *mut libc::c_void,
         0 as libc::c_int,
-        ::core::mem::size_of::<[uint8_t; 32]>() as libc::c_ulong,
+        ::core::mem::size_of::<[uint8_t; 32]>(),
     );
 }
 static mut ss_size_mul: [[uint8_t; 2]; 4] = [
@@ -16637,9 +16637,9 @@ unsafe extern "C" fn setup_tile(
                 .offset(
                     (tile_start_off as size_t)
                         .wrapping_mul(
-                            *size_mul.offset(1 as libc::c_int as isize) as libc::c_ulong,
+                            *size_mul.offset(1) as size_t,
                         )
-                        .wrapping_div(4 as libc::c_int as libc::c_ulong) as isize,
+                        .wrapping_div(4) as isize,
                 ) as *mut uint8_t
         } else {
             0 as *mut uint8_t
@@ -16651,7 +16651,7 @@ unsafe extern "C" fn setup_tile(
                 .offset(
                     ((tile_start_off as size_t)
                         .wrapping_mul(
-                            *size_mul.offset(0 as libc::c_int as isize) as libc::c_ulong,
+                            *size_mul.offset(0) as size_t,
                         ) >> ((*(*f).seq_hdr).hbd == 0) as libc::c_int) as isize,
                 )
         } else {
@@ -16664,7 +16664,7 @@ unsafe extern "C" fn setup_tile(
     memset(
         ((*ts).last_delta_lf).as_mut_ptr() as *mut libc::c_void,
         0 as libc::c_int,
-        ::core::mem::size_of::<[int8_t; 4]>() as libc::c_ulong,
+        ::core::mem::size_of::<[int8_t; 4]>(),
     );
     dav1d_msac_init(&mut (*ts).msac, data, sz, (*(*f).frame_hdr).disable_cdf_update);
     (*ts).tiling.row = tile_row;
@@ -17076,7 +17076,7 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(
     memset(
         ((*t).pal_sz_uv[1 as libc::c_int as usize]).as_mut_ptr() as *mut libc::c_void,
         0 as libc::c_int,
-        ::core::mem::size_of::<[uint8_t; 32]>() as libc::c_ulong,
+        ::core::mem::size_of::<[uint8_t; 32]>(),
     );
     let sb128y: libc::c_int = (*t).by >> 5 as libc::c_int;
     (*t).bx = (*ts).tiling.col_start;
@@ -17346,8 +17346,8 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                         dav1d_free_aligned((*f).ts as *mut libc::c_void);
                         (*f)
                             .ts = dav1d_alloc_aligned(
-                            (::core::mem::size_of::<Dav1dTileState>() as libc::c_ulong)
-                                .wrapping_mul(n_ts as libc::c_ulong),
+                            ::core::mem::size_of::<Dav1dTileState>()
+                                .wrapping_mul(n_ts as size_t),
                             32 as libc::c_int as size_t,
                         ) as *mut Dav1dTileState;
                         if ((*f).ts).is_null() {
@@ -17493,9 +17493,9 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                                                 .frame_thread
                                                 .cf = dav1d_alloc_aligned(
                                                 (cf_sz as size_t)
-                                                    .wrapping_mul(128 as libc::c_int as libc::c_ulong)
-                                                    .wrapping_mul(128 as libc::c_int as libc::c_ulong)
-                                                    .wrapping_div(2 as libc::c_int as libc::c_ulong),
+                                                    .wrapping_mul(128)
+                                                    .wrapping_mul(128)
+                                                    .wrapping_div(2),
                                                 64 as libc::c_int as size_t,
                                             );
                                             if ((*f).frame_thread.cf).is_null() {
@@ -17506,9 +17506,9 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                                                     (*f).frame_thread.cf,
                                                     0 as libc::c_int,
                                                     (cf_sz as size_t)
-                                                        .wrapping_mul(128 as libc::c_int as libc::c_ulong)
-                                                        .wrapping_mul(128 as libc::c_int as libc::c_ulong)
-                                                        .wrapping_div(2 as libc::c_int as libc::c_ulong),
+                                                        .wrapping_mul(128)
+                                                        .wrapping_mul(128)
+                                                        .wrapping_div(2),
                                                 );
                                                 (*f).frame_thread.cf_sz = cf_sz;
                                                 current_block = 10930818133215224067;
@@ -17528,12 +17528,11 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                                                         (*f)
                                                             .frame_thread
                                                             .pal = dav1d_alloc_aligned(
-                                                            (::core::mem::size_of::<[[uint16_t; 8]; 3]>()
-                                                                as libc::c_ulong)
-                                                                .wrapping_mul(num_sb128 as libc::c_ulong)
-                                                                .wrapping_mul(16 as libc::c_int as libc::c_ulong)
-                                                                .wrapping_mul(16 as libc::c_int as libc::c_ulong),
-                                                            64 as libc::c_int as size_t,
+                                                            ::core::mem::size_of::<[[uint16_t; 8]; 3]>()
+                                                                .wrapping_mul(num_sb128 as size_t)
+                                                                .wrapping_mul(16)
+                                                                .wrapping_mul(16),
+                                                            64,
                                                         ) as *mut [[uint16_t; 8]; 3];
                                                         if ((*f).frame_thread.pal).is_null() {
                                                             (*f).frame_thread.pal_sz = 0 as libc::c_int;
@@ -17559,12 +17558,12 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                                                                 (*f)
                                                                     .frame_thread
                                                                     .pal_idx = dav1d_alloc_aligned(
-                                                                    (::core::mem::size_of::<uint8_t>() as libc::c_ulong)
-                                                                        .wrapping_mul(pal_idx_sz as libc::c_ulong)
-                                                                        .wrapping_mul(128 as libc::c_int as libc::c_ulong)
-                                                                        .wrapping_mul(128 as libc::c_int as libc::c_ulong)
-                                                                        .wrapping_div(4 as libc::c_int as libc::c_ulong),
-                                                                    64 as libc::c_int as size_t,
+                                                                    ::core::mem::size_of::<uint8_t>()
+                                                                        .wrapping_mul(pal_idx_sz as size_t)
+                                                                        .wrapping_mul(128)
+                                                                        .wrapping_mul(128)
+                                                                        .wrapping_div(4),
+                                                                    64,
                                                                 ) as *mut uint8_t;
                                                                 if ((*f).frame_thread.pal_idx).is_null() {
                                                                     (*f).frame_thread.pal_idx_sz = 0 as libc::c_int;
@@ -17627,18 +17626,18 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                                             (*f).lf.cdef_line_buf as *mut libc::c_void,
                                         );
                                         let mut alloc_sz: size_t = 64 as libc::c_int as size_t;
-                                        alloc_sz = (alloc_sz as libc::c_ulong)
+                                        alloc_sz = alloc_sz
                                             .wrapping_add(
                                                 (llabs(y_stride as libc::c_longlong) as size_t)
-                                                    .wrapping_mul(4 as libc::c_int as libc::c_ulong)
-                                                    .wrapping_mul((*f).sbh as libc::c_ulong)
+                                                    .wrapping_mul(4)
+                                                    .wrapping_mul((*f).sbh as size_t)
                                                     << need_cdef_lpf_copy,
                                             ) as size_t as size_t;
-                                        alloc_sz = (alloc_sz as libc::c_ulong)
+                                        alloc_sz = alloc_sz
                                             .wrapping_add(
                                                 (llabs(uv_stride as libc::c_longlong) as size_t)
-                                                    .wrapping_mul(8 as libc::c_int as libc::c_ulong)
-                                                    .wrapping_mul((*f).sbh as libc::c_ulong)
+                                                    .wrapping_mul(8)
+                                                    .wrapping_mul((*f).sbh as size_t)
                                                     << need_cdef_lpf_copy,
                                             ) as size_t as size_t;
                                         (*f)
@@ -17886,17 +17885,17 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                                                     (*f).lf.lr_line_buf as *mut libc::c_void,
                                                 );
                                                 let mut alloc_sz_0: size_t = 128 as libc::c_int as size_t;
-                                                alloc_sz_0 = (alloc_sz_0 as libc::c_ulong)
+                                                alloc_sz_0 = alloc_sz_0
                                                     .wrapping_add(
                                                         (llabs(y_stride as libc::c_longlong) as size_t)
-                                                            .wrapping_mul(num_lines as libc::c_ulong),
-                                                    ) as size_t as size_t;
-                                                alloc_sz_0 = (alloc_sz_0 as libc::c_ulong)
+                                                            .wrapping_mul(num_lines as size_t),
+                                                    );
+                                                alloc_sz_0 = alloc_sz_0
                                                     .wrapping_add(
                                                         (llabs(uv_stride as libc::c_longlong) as size_t)
-                                                            .wrapping_mul(num_lines as libc::c_ulong)
-                                                            .wrapping_mul(2 as libc::c_int as libc::c_ulong),
-                                                    ) as size_t as size_t;
+                                                            .wrapping_mul(num_lines as size_t)
+                                                            .wrapping_mul(2),
+                                                    );
                                                 (*f)
                                                     .lf
                                                     .lr_line_buf = dav1d_alloc_aligned(
@@ -18134,8 +18133,8 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                                                                     memset(
                                                                         (*f).lf.mask as *mut libc::c_void,
                                                                         0 as libc::c_int,
-                                                                        (::core::mem::size_of::<Av1Filter>() as libc::c_ulong)
-                                                                            .wrapping_mul(num_sb128 as libc::c_ulong),
+                                                                        (::core::mem::size_of::<Av1Filter>())
+                                                                            .wrapping_mul(num_sb128 as size_t),
                                                                     );
                                                                     ipred_edge_sz = (*f).sbh * (*f).sb128w << hbd;
                                                                     if ipred_edge_sz != (*f).ipred_edge_sz {
@@ -18275,8 +18274,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                                                                                                 memset(
                                                                                                     ((*f).qm).as_mut_ptr() as *mut libc::c_void,
                                                                                                     0 as libc::c_int,
-                                                                                                    ::core::mem::size_of::<[[*const uint8_t; 3]; 19]>()
-                                                                                                        as libc::c_ulong,
+                                                                                                    ::core::mem::size_of::<[[*const uint8_t; 3]; 19]>(),
                                                                                                 );
                                                                                             }
                                                                                             if (*(*f).frame_hdr).switchable_comp_refs != 0 {
@@ -18460,7 +18458,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(
             if j == (*((*f).tile).offset(i as isize)).end {
                 tile_sz = size;
             } else {
-                if (*(*f).frame_hdr).tiling.n_bytes as libc::c_ulong > size {
+                if (*(*f).frame_hdr).tiling.n_bytes as size_t > size {
                     current_block = 610192855792336318;
                     break 's_19;
                 }
@@ -18469,10 +18467,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(
                 while k < (*(*f).frame_hdr).tiling.n_bytes {
                     let fresh37 = data;
                     data = data.offset(1);
-                    tile_sz
-                        |= ((*fresh37 as libc::c_uint)
-                            << k.wrapping_mul(8 as libc::c_int as libc::c_uint))
-                            as libc::c_ulong;
+                    tile_sz |= ((*fresh37 as libc::c_uint) << k.wrapping_mul(8)) as size_t;
                     k = k.wrapping_add(1);
                 }
                 tile_sz = tile_sz.wrapping_add(1);
@@ -18509,7 +18504,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(
                 (*f).task_thread.update_set = 1 as libc::c_int;
             }
             data = data.offset(tile_sz as isize);
-            size = (size as libc::c_ulong).wrapping_sub(tile_sz) as size_t as size_t;
+            size = size.wrapping_sub(tile_sz) as size_t as size_t;
             j += 1;
         }
         i += 1;
@@ -18650,9 +18645,9 @@ pub unsafe extern "C" fn dav1d_decode_frame_exit(
             (*f).frame_thread.cf,
             0 as libc::c_int,
             ((*f).frame_thread.cf_sz as size_t)
-                .wrapping_mul(128 as libc::c_int as libc::c_ulong)
-                .wrapping_mul(128 as libc::c_int as libc::c_ulong)
-                .wrapping_div(2 as libc::c_int as libc::c_ulong),
+                .wrapping_mul(128)
+                .wrapping_mul(128)
+                .wrapping_div(2),
         );
     }
     let mut i: libc::c_int = 0 as libc::c_int;
@@ -19281,10 +19276,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                     memset(
                                         (*c).tile as *mut libc::c_void,
                                         0 as libc::c_int,
-                                        ((*c).n_tile_data as libc::c_ulong)
-                                            .wrapping_mul(
-                                                ::core::mem::size_of::<Dav1dTileGroup>() as libc::c_ulong,
-                                            ),
+                                        ((*c).n_tile_data as size_t).wrapping_mul(::core::mem::size_of::<Dav1dTileGroup>()),
                                     );
                                     (*f).n_tile_data = (*c).n_tile_data;
                                     (*c).n_tile_data = 0 as libc::c_int;
@@ -19405,12 +19397,11 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                                     (*f)
                                                         .mvs_ref = dav1d_ref_create_using_pool(
                                                         (*c).refmvs_pool,
-                                                        (::core::mem::size_of::<refmvs_temporal_block>()
-                                                            as libc::c_ulong)
-                                                            .wrapping_mul((*f).sb128h as libc::c_ulong)
-                                                            .wrapping_mul(16 as libc::c_int as libc::c_ulong)
+                                                        (::core::mem::size_of::<refmvs_temporal_block>())
+                                                            .wrapping_mul((*f).sb128h as size_t)
+                                                            .wrapping_mul(16)
                                                             .wrapping_mul(
-                                                                ((*f).b4_stride >> 1 as libc::c_int) as libc::c_ulong,
+                                                                ((*f).b4_stride >> 1) as size_t,
                                                             ),
                                                     );
                                                     if ((*f).mvs_ref).is_null() {
@@ -19432,7 +19423,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                                             memset(
                                                                 ((*f).refpoc).as_mut_ptr() as *mut libc::c_void,
                                                                 0 as libc::c_int,
-                                                                ::core::mem::size_of::<[libc::c_uint; 7]>() as libc::c_ulong,
+                                                                ::core::mem::size_of::<[libc::c_uint; 7]>(),
                                                             );
                                                         }
                                                         if (*(*f).frame_hdr).use_ref_frame_mvs != 0 {
@@ -19473,8 +19464,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                                             memset(
                                                                 ((*f).ref_mvs_ref).as_mut_ptr() as *mut libc::c_void,
                                                                 0 as libc::c_int,
-                                                                ::core::mem::size_of::<[*mut Dav1dRef; 7]>()
-                                                                    as libc::c_ulong,
+                                                                ::core::mem::size_of::<[*mut Dav1dRef; 7]>(),
                                                             );
                                                         }
                                                         current_block = 2704538829018177290;
@@ -19484,8 +19474,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                                     memset(
                                                         ((*f).ref_mvs_ref).as_mut_ptr() as *mut libc::c_void,
                                                         0 as libc::c_int,
-                                                        ::core::mem::size_of::<[*mut Dav1dRef; 7]>()
-                                                            as libc::c_ulong,
+                                                        ::core::mem::size_of::<[*mut Dav1dRef; 7]>(),
                                                     );
                                                     current_block = 2704538829018177290;
                                                 }
@@ -19529,10 +19518,10 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                                                 (*f)
                                                                     .cur_segmap_ref = dav1d_ref_create_using_pool(
                                                                     (*c).segmap_pool,
-                                                                    (::core::mem::size_of::<uint8_t>() as libc::c_ulong)
-                                                                        .wrapping_mul((*f).b4_stride as libc::c_ulong)
-                                                                        .wrapping_mul(32 as libc::c_int as libc::c_ulong)
-                                                                        .wrapping_mul((*f).sb128h as libc::c_ulong),
+                                                                    (::core::mem::size_of::<uint8_t>())
+                                                                        .wrapping_mul((*f).b4_stride as size_t)
+                                                                        .wrapping_mul(32)
+                                                                        .wrapping_mul((*f).sb128h as size_t),
                                                                 );
                                                                 if ((*f).cur_segmap_ref).is_null() {
                                                                     dav1d_ref_dec(&mut (*f).prev_segmap_ref);
@@ -19550,11 +19539,10 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                                                     .cur_segmap = (*(*f).prev_segmap_ref).data as *mut uint8_t;
                                                                 current_block = 10194589593280242392;
                                                             } else {
-                                                                let segmap_size: size_t = (::core::mem::size_of::<uint8_t>()
-                                                                    as libc::c_ulong)
-                                                                    .wrapping_mul((*f).b4_stride as libc::c_ulong)
-                                                                    .wrapping_mul(32 as libc::c_int as libc::c_ulong)
-                                                                    .wrapping_mul((*f).sb128h as libc::c_ulong);
+                                                                let segmap_size: size_t = (::core::mem::size_of::<uint8_t>())
+                                                                    .wrapping_mul((*f).b4_stride as size_t)
+                                                                    .wrapping_mul(32)
+                                                                    .wrapping_mul((*f).sb128h as size_t);
                                                                 (*f)
                                                                     .cur_segmap_ref = dav1d_ref_create_using_pool(
                                                                     (*c).segmap_pool,

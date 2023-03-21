@@ -26,7 +26,7 @@ extern "C" {
         _: libc::c_ulong,
     ) -> libc::c_int;
     fn strchr(_: *const libc::c_char, _: libc::c_int) -> *mut libc::c_char;
-    fn strlen(_: *const libc::c_char) -> libc::c_ulong;
+    fn strlen(_: *const libc::c_char) -> size_t;
     static null_muxer: Muxer;
     static md5_muxer: Muxer;
     static yuv_muxer: Muxer;
@@ -384,11 +384,11 @@ static mut muxers: [*const Muxer; 5] = unsafe {
 };
 unsafe extern "C" fn find_extension(f: *const libc::c_char) -> *const libc::c_char {
     let l: size_t = strlen(f);
-    if l == 0 as libc::c_int as libc::c_ulong {
+    if l == 0 {
         return 0 as *const libc::c_char;
     }
     let end: *const libc::c_char = &*f
-        .offset(l.wrapping_sub(1 as libc::c_int as libc::c_ulong) as isize)
+        .offset(l.wrapping_sub(1) as isize)
         as *const libc::c_char;
     let mut step: *const libc::c_char = end;
     while *step as libc::c_int >= 'a' as i32 && *step as libc::c_int <= 'z' as i32

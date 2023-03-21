@@ -425,9 +425,9 @@ unsafe extern "C" fn write_header(
     let fw: libc::c_uint = (*p).p.w as libc::c_uint;
     let fh: libc::c_uint = (*p).p.h as libc::c_uint;
     let mut aw: uint64_t = (fh as uint64_t)
-        .wrapping_mul((*(*p).frame_hdr).render_width as libc::c_ulong);
+        .wrapping_mul((*(*p).frame_hdr).render_width as uint64_t);
     let mut ah: uint64_t = (fw as uint64_t)
-        .wrapping_mul((*(*p).frame_hdr).render_height as libc::c_ulong);
+        .wrapping_mul((*(*p).frame_hdr).render_height as uint64_t);
     let mut gcd: uint64_t = ah;
     let mut a: uint64_t = aw;
     let mut b: uint64_t = 0;
@@ -439,8 +439,8 @@ unsafe extern "C" fn write_header(
         a = gcd;
         gcd = b;
     }
-    aw = (aw as libc::c_ulong).wrapping_div(gcd) as uint64_t as uint64_t;
-    ah = (ah as libc::c_ulong).wrapping_div(gcd) as uint64_t as uint64_t;
+    aw = aw.wrapping_div(gcd);
+    ah = ah.wrapping_div(gcd);
     fprintf(
         (*c).f,
         b"YUV4MPEG2 W%u H%u F%u:%u Ip A%lu:%lu C%s\n\0" as *const u8
