@@ -97,6 +97,9 @@ pub unsafe extern "C" fn dav1d_get_cpu_flags_x86() -> libc::c_uint {
                 }
             }
         }
+
+        // We only support >128-bit SIMD on x86-64.
+        #[cfg(target_arch = "x86_64")]
         if r.ecx & 0x18000000 as libc::c_int as libc::c_uint
             == 0x18000000 as libc::c_int as libc::c_uint
         {
@@ -131,6 +134,7 @@ pub unsafe extern "C" fn dav1d_get_cpu_flags_x86() -> libc::c_uint {
                 }
             }
         }
+
         if memcmp(
             (cpu.c2rust_unnamed.vendor).as_mut_ptr() as *const libc::c_void,
             b"AuthenticAMD\0" as *const u8 as *const libc::c_char as *const libc::c_void,

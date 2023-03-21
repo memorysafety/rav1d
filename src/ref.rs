@@ -192,9 +192,10 @@ pub unsafe extern "C" fn dav1d_ref_dec(pref: *mut *mut Dav1dRef) {
         return;
     }
     *pref = 0 as *mut Dav1dRef;
-    let fresh0 = &mut (*ref_0).ref_cnt as *mut atomic_int;
-    let fresh1 = 1 as libc::c_int;
-    if ::core::intrinsics::atomic_xsub_seqcst(fresh0, fresh1) == 1 as libc::c_int
+    if ::core::intrinsics::atomic_xsub_seqcst(
+        &mut (*ref_0).ref_cnt as *mut atomic_int,
+        1 as libc::c_int,
+    ) == 1 as libc::c_int
     {
         let free_ref: libc::c_int = (*ref_0).free_ref;
         ((*ref_0).free_callback)

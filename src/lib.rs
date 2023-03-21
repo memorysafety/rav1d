@@ -1,4 +1,6 @@
 use ::libc;
+use crate::src::cdf::CdfContext;
+use crate::src::msac::MsacContext;
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
@@ -1314,105 +1316,6 @@ pub union C2RustUnnamed_15 {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct CdfContext {
-    pub m: CdfModeContext,
-    pub kfym: [[[uint16_t; 16]; 5]; 5],
-    pub coef: CdfCoefContext,
-    pub mv: CdfMvContext,
-    pub dmv: CdfMvContext,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct CdfMvContext {
-    pub comp: [CdfMvComponent; 2],
-    pub joint: [uint16_t; 4],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct CdfMvComponent {
-    pub classes: [uint16_t; 16],
-    pub class0_fp: [[uint16_t; 4]; 2],
-    pub classN_fp: [uint16_t; 4],
-    pub class0_hp: [uint16_t; 2],
-    pub classN_hp: [uint16_t; 2],
-    pub class0: [uint16_t; 2],
-    pub classN: [[uint16_t; 2]; 10],
-    pub sign: [uint16_t; 2],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct CdfCoefContext {
-    pub eob_bin_16: [[[uint16_t; 8]; 2]; 2],
-    pub eob_bin_32: [[[uint16_t; 8]; 2]; 2],
-    pub eob_bin_64: [[[uint16_t; 8]; 2]; 2],
-    pub eob_bin_128: [[[uint16_t; 8]; 2]; 2],
-    pub eob_bin_256: [[[uint16_t; 16]; 2]; 2],
-    pub eob_bin_512: [[uint16_t; 16]; 2],
-    pub eob_bin_1024: [[uint16_t; 16]; 2],
-    pub eob_base_tok: [[[[uint16_t; 4]; 4]; 2]; 5],
-    pub base_tok: [[[[uint16_t; 4]; 41]; 2]; 5],
-    pub br_tok: [[[[uint16_t; 4]; 21]; 2]; 4],
-    pub eob_hi_bit: [[[[uint16_t; 2]; 11]; 2]; 5],
-    pub skip: [[[uint16_t; 2]; 13]; 5],
-    pub dc_sign: [[[uint16_t; 2]; 3]; 2],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct CdfModeContext {
-    pub y_mode: [[uint16_t; 16]; 4],
-    pub uv_mode: [[[uint16_t; 16]; 13]; 2],
-    pub wedge_idx: [[uint16_t; 16]; 9],
-    pub partition: [[[uint16_t; 16]; 4]; 5],
-    pub cfl_alpha: [[uint16_t; 16]; 6],
-    pub txtp_inter1: [[uint16_t; 16]; 2],
-    pub txtp_inter2: [uint16_t; 16],
-    pub txtp_intra1: [[[uint16_t; 8]; 13]; 2],
-    pub txtp_intra2: [[[uint16_t; 8]; 13]; 3],
-    pub cfl_sign: [uint16_t; 8],
-    pub angle_delta: [[uint16_t; 8]; 8],
-    pub filter_intra: [uint16_t; 8],
-    pub comp_inter_mode: [[uint16_t; 8]; 8],
-    pub seg_id: [[uint16_t; 8]; 3],
-    pub pal_sz: [[[uint16_t; 8]; 7]; 2],
-    pub color_map: [[[[uint16_t; 8]; 5]; 7]; 2],
-    pub filter: [[[uint16_t; 4]; 8]; 2],
-    pub txsz: [[[uint16_t; 4]; 3]; 4],
-    pub motion_mode: [[uint16_t; 4]; 22],
-    pub delta_q: [uint16_t; 4],
-    pub delta_lf: [[uint16_t; 4]; 5],
-    pub interintra_mode: [[uint16_t; 4]; 4],
-    pub restore_switchable: [uint16_t; 4],
-    pub restore_wiener: [uint16_t; 2],
-    pub restore_sgrproj: [uint16_t; 2],
-    pub interintra: [[uint16_t; 2]; 7],
-    pub interintra_wedge: [[uint16_t; 2]; 7],
-    pub txtp_inter3: [[uint16_t; 2]; 4],
-    pub use_filter_intra: [[uint16_t; 2]; 22],
-    pub newmv_mode: [[uint16_t; 2]; 6],
-    pub globalmv_mode: [[uint16_t; 2]; 2],
-    pub refmv_mode: [[uint16_t; 2]; 6],
-    pub drl_bit: [[uint16_t; 2]; 3],
-    pub intra: [[uint16_t; 2]; 4],
-    pub comp: [[uint16_t; 2]; 5],
-    pub comp_dir: [[uint16_t; 2]; 5],
-    pub jnt_comp: [[uint16_t; 2]; 6],
-    pub mask_comp: [[uint16_t; 2]; 6],
-    pub wedge_comp: [[uint16_t; 2]; 9],
-    pub ref_0: [[[uint16_t; 2]; 3]; 6],
-    pub comp_fwd_ref: [[[uint16_t; 2]; 3]; 3],
-    pub comp_bwd_ref: [[[uint16_t; 2]; 3]; 2],
-    pub comp_uni_ref: [[[uint16_t; 2]; 3]; 3],
-    pub txpart: [[[uint16_t; 2]; 3]; 7],
-    pub skip: [[uint16_t; 2]; 3],
-    pub skip_mode: [[uint16_t; 2]; 3],
-    pub seg_pred: [[uint16_t; 2]; 3],
-    pub obmc: [[uint16_t; 2]; 22],
-    pub pal_y: [[[uint16_t; 2]; 3]; 7],
-    pub pal_uv: [[uint16_t; 2]; 2],
-    pub intrabc: [uint16_t; 2],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
 pub struct C2RustUnnamed_16 {
     pub p: Dav1dThreadPicture,
     pub segmap: *mut Dav1dRef,
@@ -1785,16 +1688,6 @@ pub struct C2RustUnnamed_39 {
     pub row_end: libc::c_int,
     pub col: libc::c_int,
     pub row: libc::c_int,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct MsacContext {
-    pub buf_pos: *const uint8_t,
-    pub buf_end: *const uint8_t,
-    pub dif: ec_win,
-    pub rng: libc::c_uint,
-    pub cnt: libc::c_int,
-    pub allow_update_cdf: libc::c_int,
 }
 pub type ec_win = size_t;
 #[derive(Copy, Clone)]
@@ -2233,7 +2126,7 @@ unsafe extern "C" fn init_internal() {
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_version() -> *const libc::c_char {
-    return b"1.0.0-116-ge219a79\0" as *const u8 as *const libc::c_char;
+    return b"1.0.0-130-g26eca15\0" as *const u8 as *const libc::c_char;
 }
 #[no_mangle]
 #[cold]
@@ -3115,15 +3008,15 @@ unsafe extern "C" fn drain_picture(
                 0 as libc::c_int as libc::c_uint,
             );
         }
-        let fresh2 = ::core::intrinsics::atomic_cxchg_seqcst_seqcst(
+        let fresh0 = ::core::intrinsics::atomic_cxchg_seqcst_seqcst(
             &mut (*c).task_thread.reset_task_cur,
             *&mut first,
             (2147483647 as libc::c_int as libc::c_uint)
                 .wrapping_mul(2 as libc::c_uint)
                 .wrapping_add(1 as libc::c_uint),
         );
-        *&mut first = fresh2.0;
-        fresh2.1;
+        *&mut first = fresh0.0;
+        fresh0.1;
         if (*c).task_thread.cur != 0 && (*c).task_thread.cur < (*c).n_fc {
             (*c).task_thread.cur = ((*c).task_thread.cur).wrapping_sub(1);
         }
@@ -3466,24 +3359,24 @@ pub unsafe extern "C" fn dav1d_flush(c: *mut Dav1dContext) {
         }
         let mut i_1: libc::c_uint = 0 as libc::c_int as libc::c_uint;
         while i_1 < (*c).n_fc {
-            let ref mut fresh3 = (*((*c).fc).offset(i_1 as isize)).task_thread.task_head;
-            *fresh3 = 0 as *mut Dav1dTask;
-            let ref mut fresh4 = (*((*c).fc).offset(i_1 as isize)).task_thread.task_tail;
-            *fresh4 = 0 as *mut Dav1dTask;
-            let ref mut fresh5 = (*((*c).fc).offset(i_1 as isize))
+            let ref mut fresh1 = (*((*c).fc).offset(i_1 as isize)).task_thread.task_head;
+            *fresh1 = 0 as *mut Dav1dTask;
+            let ref mut fresh2 = (*((*c).fc).offset(i_1 as isize)).task_thread.task_tail;
+            *fresh2 = 0 as *mut Dav1dTask;
+            let ref mut fresh3 = (*((*c).fc).offset(i_1 as isize))
                 .task_thread
                 .task_cur_prev;
-            *fresh5 = 0 as *mut Dav1dTask;
-            let ref mut fresh6 = (*((*c).fc).offset(i_1 as isize))
+            *fresh3 = 0 as *mut Dav1dTask;
+            let ref mut fresh4 = (*((*c).fc).offset(i_1 as isize))
                 .task_thread
                 .pending_tasks
                 .head;
-            *fresh6 = 0 as *mut Dav1dTask;
-            let ref mut fresh7 = (*((*c).fc).offset(i_1 as isize))
+            *fresh4 = 0 as *mut Dav1dTask;
+            let ref mut fresh5 = (*((*c).fc).offset(i_1 as isize))
                 .task_thread
                 .pending_tasks
                 .tail;
-            *fresh7 = 0 as *mut Dav1dTask;
+            *fresh5 = 0 as *mut Dav1dTask;
             *&mut (*((*c).fc).offset(i_1 as isize))
                 .task_thread
                 .pending_tasks

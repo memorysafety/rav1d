@@ -1,4 +1,4 @@
-/build*
+/build
 /Session.vim
 [._]*.swp
 *~

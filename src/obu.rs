@@ -1,4 +1,6 @@
 use ::libc;
+use crate::src::cdf::CdfContext;
+use crate::src::msac::MsacContext;
 extern "C" {
     fn realloc(_: *mut libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
     fn memset(
@@ -1245,116 +1247,7 @@ pub struct C2RustUnnamed_45 {
     pub col: libc::c_int,
     pub row: libc::c_int,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct MsacContext {
-    pub buf_pos: *const uint8_t,
-    pub buf_end: *const uint8_t,
-    pub dif: ec_win,
-    pub rng: libc::c_uint,
-    pub cnt: libc::c_int,
-    pub allow_update_cdf: libc::c_int,
-}
 pub type ec_win = size_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct CdfContext {
-    pub m: CdfModeContext,
-    pub kfym: [[[uint16_t; 16]; 5]; 5],
-    pub coef: CdfCoefContext,
-    pub mv: CdfMvContext,
-    pub dmv: CdfMvContext,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct CdfMvContext {
-    pub comp: [CdfMvComponent; 2],
-    pub joint: [uint16_t; 4],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct CdfMvComponent {
-    pub classes: [uint16_t; 16],
-    pub class0_fp: [[uint16_t; 4]; 2],
-    pub classN_fp: [uint16_t; 4],
-    pub class0_hp: [uint16_t; 2],
-    pub classN_hp: [uint16_t; 2],
-    pub class0: [uint16_t; 2],
-    pub classN: [[uint16_t; 2]; 10],
-    pub sign: [uint16_t; 2],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct CdfCoefContext {
-    pub eob_bin_16: [[[uint16_t; 8]; 2]; 2],
-    pub eob_bin_32: [[[uint16_t; 8]; 2]; 2],
-    pub eob_bin_64: [[[uint16_t; 8]; 2]; 2],
-    pub eob_bin_128: [[[uint16_t; 8]; 2]; 2],
-    pub eob_bin_256: [[[uint16_t; 16]; 2]; 2],
-    pub eob_bin_512: [[uint16_t; 16]; 2],
-    pub eob_bin_1024: [[uint16_t; 16]; 2],
-    pub eob_base_tok: [[[[uint16_t; 4]; 4]; 2]; 5],
-    pub base_tok: [[[[uint16_t; 4]; 41]; 2]; 5],
-    pub br_tok: [[[[uint16_t; 4]; 21]; 2]; 4],
-    pub eob_hi_bit: [[[[uint16_t; 2]; 11]; 2]; 5],
-    pub skip: [[[uint16_t; 2]; 13]; 5],
-    pub dc_sign: [[[uint16_t; 2]; 3]; 2],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct CdfModeContext {
-    pub y_mode: [[uint16_t; 16]; 4],
-    pub uv_mode: [[[uint16_t; 16]; 13]; 2],
-    pub wedge_idx: [[uint16_t; 16]; 9],
-    pub partition: [[[uint16_t; 16]; 4]; 5],
-    pub cfl_alpha: [[uint16_t; 16]; 6],
-    pub txtp_inter1: [[uint16_t; 16]; 2],
-    pub txtp_inter2: [uint16_t; 16],
-    pub txtp_intra1: [[[uint16_t; 8]; 13]; 2],
-    pub txtp_intra2: [[[uint16_t; 8]; 13]; 3],
-    pub cfl_sign: [uint16_t; 8],
-    pub angle_delta: [[uint16_t; 8]; 8],
-    pub filter_intra: [uint16_t; 8],
-    pub comp_inter_mode: [[uint16_t; 8]; 8],
-    pub seg_id: [[uint16_t; 8]; 3],
-    pub pal_sz: [[[uint16_t; 8]; 7]; 2],
-    pub color_map: [[[[uint16_t; 8]; 5]; 7]; 2],
-    pub filter: [[[uint16_t; 4]; 8]; 2],
-    pub txsz: [[[uint16_t; 4]; 3]; 4],
-    pub motion_mode: [[uint16_t; 4]; 22],
-    pub delta_q: [uint16_t; 4],
-    pub delta_lf: [[uint16_t; 4]; 5],
-    pub interintra_mode: [[uint16_t; 4]; 4],
-    pub restore_switchable: [uint16_t; 4],
-    pub restore_wiener: [uint16_t; 2],
-    pub restore_sgrproj: [uint16_t; 2],
-    pub interintra: [[uint16_t; 2]; 7],
-    pub interintra_wedge: [[uint16_t; 2]; 7],
-    pub txtp_inter3: [[uint16_t; 2]; 4],
-    pub use_filter_intra: [[uint16_t; 2]; 22],
-    pub newmv_mode: [[uint16_t; 2]; 6],
-    pub globalmv_mode: [[uint16_t; 2]; 2],
-    pub refmv_mode: [[uint16_t; 2]; 6],
-    pub drl_bit: [[uint16_t; 2]; 3],
-    pub intra: [[uint16_t; 2]; 4],
-    pub comp: [[uint16_t; 2]; 5],
-    pub comp_dir: [[uint16_t; 2]; 5],
-    pub jnt_comp: [[uint16_t; 2]; 6],
-    pub mask_comp: [[uint16_t; 2]; 6],
-    pub wedge_comp: [[uint16_t; 2]; 9],
-    pub ref_0: [[[uint16_t; 2]; 3]; 6],
-    pub comp_fwd_ref: [[[uint16_t; 2]; 3]; 3],
-    pub comp_bwd_ref: [[[uint16_t; 2]; 3]; 2],
-    pub comp_uni_ref: [[[uint16_t; 2]; 3]; 3],
-    pub txpart: [[[uint16_t; 2]; 3]; 7],
-    pub skip: [[uint16_t; 2]; 3],
-    pub skip_mode: [[uint16_t; 2]; 3],
-    pub seg_pred: [[uint16_t; 2]; 3],
-    pub obmc: [[uint16_t; 2]; 22],
-    pub pal_y: [[[uint16_t; 2]; 3]; 7],
-    pub pal_uv: [[uint16_t; 2]; 2],
-    pub intrabc: [uint16_t; 2],
-}
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContext {
@@ -2105,7 +1998,7 @@ unsafe extern "C" fn parse_seq_hdr(
                     if (*hdr).equal_picture_interval != 0 {
                         let num_ticks_per_picture: libc::c_uint = dav1d_get_vlc(gb);
                         if num_ticks_per_picture == 0xffffffff as libc::c_uint {
-                            current_block = 17400737960072300055;
+                            current_block = 181392771181400725;
                         } else {
                             (*hdr)
                                 .num_ticks_per_picture = num_ticks_per_picture
@@ -2116,7 +2009,7 @@ unsafe extern "C" fn parse_seq_hdr(
                         current_block = 10048703153582371463;
                     }
                     match current_block {
-                        17400737960072300055 => {}
+                        181392771181400725 => {}
                         _ => {
                             (*hdr)
                                 .decoder_model_info_present = dav1d_get_bit(gb)
@@ -2156,7 +2049,7 @@ unsafe extern "C" fn parse_seq_hdr(
                     current_block = 4808432441040389987;
                 }
                 match current_block {
-                    17400737960072300055 => {}
+                    181392771181400725 => {}
                     _ => {
                         (*hdr)
                             .display_model_info_present = dav1d_get_bit(gb)
@@ -2185,7 +2078,7 @@ unsafe extern "C" fn parse_seq_hdr(
                                 && ((*op).idc & 0xff as libc::c_int == 0
                                     || (*op).idc & 0xf00 as libc::c_int == 0)
                             {
-                                current_block = 17400737960072300055;
+                                current_block = 181392771181400725;
                                 break;
                             }
                             (*op)
@@ -2241,7 +2134,7 @@ unsafe extern "C" fn parse_seq_hdr(
                 }
             }
             match current_block {
-                17400737960072300055 => {}
+                181392771181400725 => {}
                 _ => {
                     op_idx = if (*c).operating_point < (*hdr).num_operating_points {
                         (*c).operating_point
@@ -2379,7 +2272,7 @@ unsafe extern "C" fn parse_seq_hdr(
                             && !((*hdr).profile == 2 as libc::c_int
                                 && (*hdr).hbd == 2 as libc::c_int)
                         {
-                            current_block = 17400737960072300055;
+                            current_block = 181392771181400725;
                         } else {
                             current_block = 14141370668937312244;
                         }
@@ -2425,7 +2318,7 @@ unsafe extern "C" fn parse_seq_hdr(
                         current_block = 14141370668937312244;
                     }
                     match current_block {
-                        17400737960072300055 => {}
+                        181392771181400725 => {}
                         _ => {
                             if !((*c).strict_std_compliance != 0
                                 && (*hdr).mtrx as libc::c_uint
@@ -2620,7 +2513,7 @@ unsafe extern "C" fn parse_frame_hdr(
                 .p
                 .frame_hdr;
             if ref_frame_hdr.is_null() || (*ref_frame_hdr).frame_id != (*hdr).frame_id {
-                current_block = 13312636450699654424;
+                current_block = 17922947093064792850;
             } else {
                 current_block = 7351195479953500246;
             }
@@ -2628,7 +2521,7 @@ unsafe extern "C" fn parse_frame_hdr(
             current_block = 7351195479953500246;
         }
         match current_block {
-            13312636450699654424 => {}
+            17922947093064792850 => {}
             _ => return 0 as libc::c_int,
         }
     } else {
@@ -2773,9 +2666,9 @@ unsafe extern "C" fn parse_frame_hdr(
                     == DAV1D_FRAME_TYPE_INTRA as libc::c_int as libc::c_uint
                 && (*hdr).refresh_frame_flags == 0xff as libc::c_int
             {
-                current_block = 13312636450699654424;
+                current_block = 17922947093064792850;
             } else if read_frame_size(c, gb, 0 as libc::c_int) < 0 as libc::c_int {
-                current_block = 13312636450699654424;
+                current_block = 17922947093064792850;
             } else {
                 (*hdr)
                     .allow_intrabc = ((*hdr).allow_screen_content_tools != 0
@@ -2832,7 +2725,7 @@ unsafe extern "C" fn parse_frame_hdr(
                         break;
                     }
                     if ((*c).refs[i_2 as usize].p.p.frame_hdr).is_null() {
-                        current_block = 13312636450699654424;
+                        current_block = 17922947093064792850;
                         break;
                     }
                     shifted_frame_offset[i_2
@@ -2845,7 +2738,7 @@ unsafe extern "C" fn parse_frame_hdr(
                     i_2 += 1;
                 }
                 match current_block {
-                    13312636450699654424 => {}
+                    17922947093064792850 => {}
                     _ => {
                         let mut used_frame: [libc::c_int; 8] = [
                             0 as libc::c_int,
@@ -2961,7 +2854,7 @@ unsafe extern "C" fn parse_frame_hdr(
                 current_block = 16590946904645350046;
             }
             match current_block {
-                13312636450699654424 => {}
+                17922947093064792850 => {}
                 _ => {
                     let mut i_9: libc::c_int = 0 as libc::c_int;
                     loop {
@@ -2993,19 +2886,19 @@ unsafe extern "C" fn parse_frame_hdr(
                             if ref_frame_hdr_0.is_null()
                                 || (*ref_frame_hdr_0).frame_id != ref_frame_id
                             {
-                                current_block = 13312636450699654424;
+                                current_block = 17922947093064792850;
                                 break;
                             }
                         }
                         i_9 += 1;
                     }
                     match current_block {
-                        13312636450699654424 => {}
+                        17922947093064792850 => {}
                         _ => {
                             let use_ref: libc::c_int = ((*hdr).error_resilient_mode == 0
                                 && (*hdr).frame_size_override != 0) as libc::c_int;
                             if read_frame_size(c, gb, use_ref) < 0 as libc::c_int {
-                                current_block = 13312636450699654424;
+                                current_block = 17922947093064792850;
                             } else {
                                 (*hdr)
                                     .hp = ((*hdr).force_integer_mv == 0
@@ -3032,7 +2925,7 @@ unsafe extern "C" fn parse_frame_hdr(
             }
         }
         match current_block {
-            13312636450699654424 => {}
+            17922947093064792850 => {}
             _ => {
                 (*hdr)
                     .refresh_context = ((*seqhdr).reduced_still_picture_header == 0
@@ -3182,7 +3075,7 @@ unsafe extern "C" fn parse_frame_hdr(
                         (*hdr).tiling.log2_cols + (*hdr).tiling.log2_rows,
                     ) as libc::c_int;
                     if (*hdr).tiling.update >= (*hdr).tiling.cols * (*hdr).tiling.rows {
-                        current_block = 13312636450699654424;
+                        current_block = 17922947093064792850;
                     } else {
                         (*hdr)
                             .tiling
@@ -3196,7 +3089,7 @@ unsafe extern "C" fn parse_frame_hdr(
                     current_block = 1918110639124887667;
                 }
                 match current_block {
-                    13312636450699654424 => {}
+                    17922947093064792850 => {}
                     _ => {
                         (*hdr)
                             .quant
@@ -3360,7 +3253,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                 let pri_ref: libc::c_int = (*hdr)
                                     .refidx[(*hdr).primary_ref_frame as usize];
                                 if ((*c).refs[pri_ref as usize].p.p.frame_hdr).is_null() {
-                                    current_block = 13312636450699654424;
+                                    current_block = 17922947093064792850;
                                 } else {
                                     (*hdr)
                                         .segmentation
@@ -3390,7 +3283,7 @@ unsafe extern "C" fn parse_frame_hdr(
                             current_block = 8075351136037156718;
                         }
                         match current_block {
-                            13312636450699654424 => {}
+                            17922947093064792850 => {}
                             _ => {
                                 (*hdr)
                                     .delta
@@ -3512,7 +3405,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                         let ref_1: libc::c_int = (*hdr)
                                             .refidx[(*hdr).primary_ref_frame as usize];
                                         if ((*c).refs[ref_1 as usize].p.p.frame_hdr).is_null() {
-                                            current_block = 13312636450699654424;
+                                            current_block = 17922947093064792850;
                                         } else {
                                             (*hdr)
                                                 .loopfilter
@@ -3527,7 +3420,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                         }
                                     }
                                     match current_block {
-                                        13312636450699654424 => {}
+                                        17922947093064792850 => {}
                                         _ => {
                                             (*hdr)
                                                 .loopfilter
@@ -3566,7 +3459,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                     }
                                 }
                                 match current_block {
-                                    13312636450699654424 => {}
+                                    17922947093064792850 => {}
                                     _ => {
                                         if (*hdr).all_lossless == 0 && (*seqhdr).cdef != 0
                                             && (*hdr).allow_intrabc == 0
@@ -3740,7 +3633,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                                     .frame_hdr)
                                                     .is_null()
                                                 {
-                                                    current_block = 13312636450699654424;
+                                                    current_block = 17922947093064792850;
                                                     break;
                                                 }
                                                 let refpoc: libc::c_uint = (*(*c)
@@ -3779,7 +3672,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                                 i_16 += 1;
                                             }
                                             match current_block {
-                                                13312636450699654424 => {}
+                                                17922947093064792850 => {}
                                                 _ => {
                                                     if off_before != 0xffffffff as libc::c_uint
                                                         && off_after != -(1 as libc::c_int)
@@ -3809,7 +3702,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                                                 .frame_hdr)
                                                                 .is_null()
                                                             {
-                                                                current_block = 13312636450699654424;
+                                                                current_block = 17922947093064792850;
                                                                 break;
                                                             }
                                                             let refpoc_0: libc::c_uint = (*(*c)
@@ -3838,7 +3731,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                                             i_17 += 1;
                                                         }
                                                         match current_block {
-                                                            13312636450699654424 => {}
+                                                            17922947093064792850 => {}
                                                             _ => {
                                                                 if off_before2 != 0xffffffff as libc::c_uint {
                                                                     (*hdr)
@@ -3861,7 +3754,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                             current_block = 2126221883176060805;
                                         }
                                         match current_block {
-                                            13312636450699654424 => {}
+                                            17922947093064792850 => {}
                                             _ => {
                                                 (*hdr)
                                                     .skip_mode_enabled = (if (*hdr).skip_mode_allowed != 0 {
@@ -3912,7 +3805,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                                                 let pri_ref_0: libc::c_int = (*hdr)
                                                                     .refidx[(*hdr).primary_ref_frame as usize];
                                                                 if ((*c).refs[pri_ref_0 as usize].p.p.frame_hdr).is_null() {
-                                                                    current_block = 13312636450699654424;
+                                                                    current_block = 17922947093064792850;
                                                                     break;
                                                                 }
                                                                 ref_gmv = &mut *((*(*((*c).refs)
@@ -4019,7 +3912,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                                     current_block = 6933758620287070692;
                                                 }
                                                 match current_block {
-                                                    13312636450699654424 => {}
+                                                    17922947093064792850 => {}
                                                     _ => {
                                                         (*hdr)
                                                             .film_grain
@@ -4052,7 +3945,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                                                 if i_20 == 7 as libc::c_int
                                                                     || ((*c).refs[refidx as usize].p.p.frame_hdr).is_null()
                                                                 {
-                                                                    current_block = 13312636450699654424;
+                                                                    current_block = 17922947093064792850;
                                                                 } else {
                                                                     (*hdr)
                                                                         .film_grain
@@ -4071,7 +3964,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                                                     .num_y_points = dav1d_get_bits(gb, 4 as libc::c_int)
                                                                     as libc::c_int;
                                                                 if (*fgd).num_y_points > 14 as libc::c_int {
-                                                                    current_block = 13312636450699654424;
+                                                                    current_block = 17922947093064792850;
                                                                 } else {
                                                                     let mut i_21: libc::c_int = 0 as libc::c_int;
                                                                     loop {
@@ -4090,7 +3983,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                                                                 >= (*fgd).y_points[i_21 as usize][0 as libc::c_int as usize]
                                                                                     as libc::c_int
                                                                         {
-                                                                            current_block = 13312636450699654424;
+                                                                            current_block = 17922947093064792850;
                                                                             break;
                                                                         }
                                                                         (*fgd)
@@ -4100,7 +3993,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                                                         i_21 += 1;
                                                                     }
                                                                     match current_block {
-                                                                        13312636450699654424 => {}
+                                                                        17922947093064792850 => {}
                                                                         _ => {
                                                                             (*fgd)
                                                                                 .chroma_scaling_from_luma = ((*seqhdr).monochrome == 0
@@ -4130,7 +4023,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                                                                         as usize] = dav1d_get_bits(gb, 4 as libc::c_int)
                                                                                         as libc::c_int;
                                                                                     if (*fgd).num_uv_points[pl as usize] > 10 as libc::c_int {
-                                                                                        current_block = 13312636450699654424;
+                                                                                        current_block = 17922947093064792850;
                                                                                         break;
                                                                                     }
                                                                                     let mut i_22: libc::c_int = 0 as libc::c_int;
@@ -4150,7 +4043,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                                                                                     as usize][i_22 as usize][0 as libc::c_int as usize]
                                                                                                     as libc::c_int
                                                                                         {
-                                                                                            current_block = 13312636450699654424;
+                                                                                            current_block = 17922947093064792850;
                                                                                             break 's_1955;
                                                                                         }
                                                                                         (*fgd)
@@ -4164,7 +4057,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                                                                 }
                                                                             }
                                                                             match current_block {
-                                                                                13312636450699654424 => {}
+                                                                                17922947093064792850 => {}
                                                                                 _ => {
                                                                                     if (*seqhdr).ss_hor == 1 as libc::c_int
                                                                                         && (*seqhdr).ss_ver == 1 as libc::c_int
@@ -4173,7 +4066,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                                                                             != ((*fgd).num_uv_points[1 as libc::c_int as usize] != 0)
                                                                                                 as libc::c_int
                                                                                     {
-                                                                                        current_block = 13312636450699654424;
+                                                                                        current_block = 17922947093064792850;
                                                                                     } else {
                                                                                         (*fgd)
                                                                                             .scaling_shift = (dav1d_get_bits(gb, 2 as libc::c_int))
@@ -4269,7 +4162,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                                             current_block = 17095195114763350366;
                                                         }
                                                         match current_block {
-                                                            13312636450699654424 => {}
+                                                            17922947093064792850 => {}
                                                             _ => return 0 as libc::c_int,
                                                         }
                                                     }
@@ -4418,10 +4311,10 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                     res = parse_seq_hdr(c, &mut gb, seq_hdr);
                     if res < 0 as libc::c_int {
                         dav1d_ref_dec(&mut ref_0);
-                        current_block = 13588377604982898435;
+                        current_block = 2084488458830559219;
                     } else if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
                         dav1d_ref_dec(&mut ref_0);
-                        current_block = 13588377604982898435;
+                        current_block = 2084488458830559219;
                     } else {
                         if ((*c).seq_hdr).is_null() {
                             (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
@@ -4500,11 +4393,11 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                     if !((*c).frame_hdr).is_null() {
                         current_block = 2704538829018177290;
                     } else {
-                        current_block = 916061708005926980;
+                        current_block = 15432521118199951273;
                     }
                 }
                 6 | 3 => {
-                    current_block = 916061708005926980;
+                    current_block = 15432521118199951273;
                 }
                 4 => {
                     current_block = 919954187481050311;
@@ -4515,7 +4408,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                     let meta_type_len: libc::c_int = ((dav1d_get_bits_pos(&mut gb))
                         .wrapping_sub(init_bit_pos) >> 3 as libc::c_int) as libc::c_int;
                     if gb.error != 0 {
-                        current_block = 13588377604982898435;
+                        current_block = 2084488458830559219;
                     } else {
                         match meta_type as libc::c_uint {
                             1 => {
@@ -4542,7 +4435,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                 dav1d_bytealign_get_bits(&mut gb);
                                 if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
                                     dav1d_ref_dec(&mut ref_1);
-                                    current_block = 13588377604982898435;
+                                    current_block = 2084488458830559219;
                                 } else {
                                     dav1d_ref_dec(&mut (*c).content_light_ref);
                                     (*c).content_light = content_light;
@@ -4590,7 +4483,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                 dav1d_bytealign_get_bits(&mut gb);
                                 if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
                                     dav1d_ref_dec(&mut ref_2);
-                                    current_block = 13588377604982898435;
+                                    current_block = 2084488458830559219;
                                 } else {
                                     dav1d_ref_dec(&mut (*c).mastering_display_ref);
                                     (*c).mastering_display = mastering_display;
@@ -4712,14 +4605,14 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                 }
             }
             match current_block {
-                13588377604982898435 => {}
+                2084488458830559219 => {}
                 _ => {
                     match current_block {
-                        916061708005926980 => {
+                        15432521118199951273 => {
                             if global != 0 {
                                 current_block = 2704538829018177290;
                             } else if ((*c).seq_hdr).is_null() {
-                                current_block = 13588377604982898435;
+                                current_block = 2084488458830559219;
                             } else {
                                 if ((*c).frame_hdr_ref).is_null() {
                                     (*c)
@@ -4744,7 +4637,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                 res = parse_frame_hdr(c, &mut gb);
                                 if res < 0 as libc::c_int {
                                     (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
-                                    current_block = 13588377604982898435;
+                                    current_block = 2084488458830559219;
                                 } else {
                                     let mut n: libc::c_int = 0 as libc::c_int;
                                     while n < (*c).n_tile_data {
@@ -4761,7 +4654,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                         dav1d_get_bit(&mut gb);
                                         if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
                                             (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
-                                            current_block = 13588377604982898435;
+                                            current_block = 2084488458830559219;
                                         } else {
                                             current_block = 4216521074440650966;
                                         }
@@ -4769,7 +4662,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                         current_block = 4216521074440650966;
                                     }
                                     match current_block {
-                                        13588377604982898435 => {}
+                                        2084488458830559219 => {}
                                         _ => {
                                             if (*c).frame_size_limit != 0
                                                 && (*(*c).frame_hdr).width[1 as libc::c_int as usize]
@@ -4793,7 +4686,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                                 current_block = 2704538829018177290;
                                             } else if (*(*c).frame_hdr).show_existing_frame != 0 {
                                                 (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
-                                                current_block = 13588377604982898435;
+                                                current_block = 2084488458830559219;
                                             } else {
                                                 dav1d_bytealign_get_bits(&mut gb);
                                                 current_block = 919954187481050311;
@@ -4806,14 +4699,14 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                         _ => {}
                     }
                     match current_block {
-                        13588377604982898435 => {}
+                        2084488458830559219 => {}
                         _ => {
                             match current_block {
                                 919954187481050311 => {
                                     if global != 0 {
                                         current_block = 2704538829018177290;
                                     } else if ((*c).frame_hdr).is_null() {
-                                        current_block = 13588377604982898435;
+                                        current_block = 2084488458830559219;
                                     } else {
                                         if (*c).n_tile_data_alloc
                                             < (*c).n_tile_data + 1 as libc::c_int
@@ -4823,7 +4716,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                                     / ::core::mem::size_of::<Dav1dTileGroup>() as libc::c_ulong
                                                         as libc::c_int
                                             {
-                                                current_block = 13588377604982898435;
+                                                current_block = 2084488458830559219;
                                             } else {
                                                 let mut tile: *mut Dav1dTileGroup = realloc(
                                                     (*c).tile as *mut libc::c_void,
@@ -4833,7 +4726,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                                         ),
                                                 ) as *mut Dav1dTileGroup;
                                                 if tile.is_null() {
-                                                    current_block = 13588377604982898435;
+                                                    current_block = 2084488458830559219;
                                                 } else {
                                                     (*c).tile = tile;
                                                     memset(
@@ -4851,12 +4744,12 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                             current_block = 17711149709958600598;
                                         }
                                         match current_block {
-                                            13588377604982898435 => {}
+                                            2084488458830559219 => {}
                                             _ => {
                                                 parse_tile_hdr(c, &mut gb);
                                                 dav1d_bytealign_get_bits(&mut gb);
                                                 if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
-                                                    current_block = 13588377604982898435;
+                                                    current_block = 2084488458830559219;
                                                 } else {
                                                     let pkt_bytelen: libc::c_uint = init_byte_pos
                                                         .wrapping_add(len);
@@ -4873,11 +4766,11 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                                         &mut (*((*c).tile).offset((*c).n_tile_data as isize)).data,
                                                         in_0,
                                                     );
-                                                    let ref mut fresh2 = (*((*c).tile)
+                                                    let ref mut fresh0 = (*((*c).tile)
                                                         .offset((*c).n_tile_data as isize))
                                                         .data
                                                         .data;
-                                                    *fresh2 = (*fresh2)
+                                                    *fresh0 = (*fresh0)
                                                         .offset((bit_pos >> 3 as libc::c_int) as isize);
                                                     (*((*c).tile).offset((*c).n_tile_data as isize))
                                                         .data
@@ -4897,7 +4790,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                                         }
                                                         (*c).n_tile_data = 0 as libc::c_int;
                                                         (*c).n_tiles = 0 as libc::c_int;
-                                                        current_block = 13588377604982898435;
+                                                        current_block = 2084488458830559219;
                                                     } else {
                                                         (*c).n_tiles
                                                             += 1 as libc::c_int
@@ -4914,7 +4807,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                 _ => {}
                             }
                             match current_block {
-                                13588377604982898435 => {}
+                                2084488458830559219 => {}
                                 _ => {
                                     if !((*c).seq_hdr).is_null() && !((*c).frame_hdr).is_null()
                                     {
@@ -4926,7 +4819,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                                 .frame_hdr)
                                                 .is_null()
                                             {
-                                                current_block = 13588377604982898435;
+                                                current_block = 2084488458830559219;
                                             } else {
                                                 match (*(*c)
                                                     .refs[(*(*c).frame_hdr).existing_frame_idx as usize]
@@ -4940,7 +4833,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                                             > DAV1D_DECODEFRAMETYPE_REFERENCE as libc::c_int
                                                                 as libc::c_uint
                                                         {
-                                                            current_block = 13679153167263055587;
+                                                            current_block = 16317588828440302375;
                                                         } else {
                                                             current_block = 12969817083969514432;
                                                         }
@@ -4949,7 +4842,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                                         if (*c).decode_frame_type as libc::c_uint
                                                             > DAV1D_DECODEFRAMETYPE_INTRA as libc::c_int as libc::c_uint
                                                         {
-                                                            current_block = 13679153167263055587;
+                                                            current_block = 16317588828440302375;
                                                         } else {
                                                             current_block = 12969817083969514432;
                                                         }
@@ -4959,7 +4852,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                                     }
                                                 }
                                                 match current_block {
-                                                    13679153167263055587 => {}
+                                                    16317588828440302375 => {}
                                                     _ => {
                                                         if ((*c)
                                                             .refs[(*(*c).frame_hdr).existing_frame_idx as usize]
@@ -4968,14 +4861,14 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                                             .data[0 as libc::c_int as usize])
                                                             .is_null()
                                                         {
-                                                            current_block = 13588377604982898435;
+                                                            current_block = 2084488458830559219;
                                                         } else if (*c).strict_std_compliance != 0
                                                             && (*c)
                                                                 .refs[(*(*c).frame_hdr).existing_frame_idx as usize]
                                                                 .p
                                                                 .showable == 0
                                                         {
-                                                            current_block = 13588377604982898435;
+                                                            current_block = 2084488458830559219;
                                                         } else {
                                                             if (*c).n_fc == 1 as libc::c_int as libc::c_uint {
                                                                 dav1d_thread_picture_ref(
@@ -5001,11 +4894,11 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                                                 );
                                                             } else {
                                                                 pthread_mutex_lock(&mut (*c).task_thread.lock);
-                                                                let fresh3 = (*c).frame_thread.next;
+                                                                let fresh1 = (*c).frame_thread.next;
                                                                 (*c)
                                                                     .frame_thread
                                                                     .next = ((*c).frame_thread.next).wrapping_add(1);
-                                                                let next: libc::c_uint = fresh3;
+                                                                let next: libc::c_uint = fresh1;
                                                                 if (*c).frame_thread.next == (*c).n_fc {
                                                                     (*c).frame_thread.next = 0 as libc::c_int as libc::c_uint;
                                                                 }
@@ -5041,15 +4934,15 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                                                             0 as libc::c_int as libc::c_uint,
                                                                         );
                                                                     }
-                                                                    let fresh6 = ::core::intrinsics::atomic_cxchg_seqcst_seqcst(
+                                                                    let fresh2 = ::core::intrinsics::atomic_cxchg_seqcst_seqcst(
                                                                         &mut (*c).task_thread.reset_task_cur,
                                                                         *&mut first,
                                                                         (2147483647 as libc::c_int as libc::c_uint)
                                                                             .wrapping_mul(2 as libc::c_uint)
                                                                             .wrapping_add(1 as libc::c_uint),
                                                                     );
-                                                                    *&mut first = fresh6.0;
-                                                                    fresh6.1;
+                                                                    *&mut first = fresh2.0;
+                                                                    fresh2.1;
                                                                     if (*c).task_thread.cur != 0
                                                                         && (*c).task_thread.cur < (*c).n_fc
                                                                     {
@@ -5175,7 +5068,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                                                 as libc::c_uint
                                                             && (*(*c).frame_hdr).refresh_frame_flags == 0
                                                     {
-                                                        current_block = 13679153167263055587;
+                                                        current_block = 16317588828440302375;
                                                     } else {
                                                         current_block = 1622976744501948573;
                                                     }
@@ -5188,7 +5081,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                                                 as libc::c_uint
                                                             && (*(*c).frame_hdr).refresh_frame_flags == 0
                                                     {
-                                                        current_block = 13679153167263055587;
+                                                        current_block = 16317588828440302375;
                                                     } else {
                                                         current_block = 1622976744501948573;
                                                     }
@@ -5198,10 +5091,10 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                                 }
                                             }
                                             match current_block {
-                                                13679153167263055587 => {}
+                                                16317588828440302375 => {}
                                                 _ => {
                                                     if (*c).n_tile_data == 0 {
-                                                        current_block = 13588377604982898435;
+                                                        current_block = 2084488458830559219;
                                                     } else {
                                                         res = dav1d_submit_frame(c);
                                                         if res < 0 as libc::c_int {
@@ -5221,7 +5114,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                         }
                                         match current_block {
                                             16221891950104054966 => {}
-                                            13588377604982898435 => {}
+                                            2084488458830559219 => {}
                                             _ => {
                                                 let mut i_4: libc::c_int = 0 as libc::c_int;
                                                 while i_4 < 8 as libc::c_int {
@@ -5254,7 +5147,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                         current_block = 16221891950104054966;
                                     }
                                     match current_block {
-                                        13588377604982898435 => {}
+                                        2084488458830559219 => {}
                                         _ => return len.wrapping_add(init_byte_pos) as libc::c_int,
                                     }
                                 }
