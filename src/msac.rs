@@ -193,8 +193,7 @@ unsafe extern "C" fn ctx_norm(s: *mut MsacContext, dif: ec_win, rng: libc::c_uin
     }
     (*s).cnt -= d;
     (*s)
-        .dif = (dif.wrapping_add(1 as libc::c_int as libc::c_ulong) << d)
-        .wrapping_sub(1 as libc::c_int as libc::c_ulong);
+        .dif = (dif.wrapping_add(1) << d).wrapping_sub(1);
     (*s).rng = rng << d;
     if (*s).cnt < 0 as libc::c_int {
         ctx_refill(s);
@@ -206,9 +205,7 @@ pub unsafe extern "C" fn dav1d_msac_decode_bool_equi_c(
 ) -> libc::c_uint {
     let r: libc::c_uint = (*s).rng;
     let mut dif: ec_win = (*s).dif;
-    if !(dif
-        >> ((::core::mem::size_of::<ec_win>() as libc::c_ulong) << 3 as libc::c_int)
-            .wrapping_sub(16 as libc::c_int as libc::c_ulong) < r as libc::c_ulong)
+    if !(dif >> (::core::mem::size_of::<ec_win>() << 3).wrapping_sub(16) < r as size_t)
     {
         unreachable!();
     }
@@ -218,7 +215,7 @@ pub unsafe extern "C" fn dav1d_msac_decode_bool_equi_c(
         << ((::core::mem::size_of::<ec_win>() as libc::c_ulong) << 3 as libc::c_int)
             .wrapping_sub(16 as libc::c_int as libc::c_ulong);
     let ret: libc::c_uint = (dif >= vw) as libc::c_int as libc::c_uint;
-    dif = (dif as libc::c_ulong).wrapping_sub((ret as libc::c_ulong).wrapping_mul(vw))
+    dif = dif.wrapping_sub((ret as size_t).wrapping_mul(vw))
         as ec_win as ec_win;
     v = v
         .wrapping_add(
@@ -237,9 +234,7 @@ pub unsafe extern "C" fn dav1d_msac_decode_bool_c(
 ) -> libc::c_uint {
     let r: libc::c_uint = (*s).rng;
     let mut dif: ec_win = (*s).dif;
-    if !(dif
-        >> ((::core::mem::size_of::<ec_win>() as libc::c_ulong) << 3 as libc::c_int)
-            .wrapping_sub(16 as libc::c_int as libc::c_ulong) < r as libc::c_ulong)
+    if !(dif >> (::core::mem::size_of::<ec_win>() << 3).wrapping_sub(16) < r as size_t)
     {
         unreachable!();
     }
@@ -250,7 +245,7 @@ pub unsafe extern "C" fn dav1d_msac_decode_bool_c(
         << ((::core::mem::size_of::<ec_win>() as libc::c_ulong) << 3 as libc::c_int)
             .wrapping_sub(16 as libc::c_int as libc::c_ulong);
     let ret: libc::c_uint = (dif >= vw) as libc::c_int as libc::c_uint;
-    dif = (dif as libc::c_ulong).wrapping_sub((ret as libc::c_ulong).wrapping_mul(vw))
+    dif = (dif).wrapping_sub((ret as size_t).wrapping_mul(vw))
         as ec_win as ec_win;
     v = v
         .wrapping_add(
@@ -306,7 +301,7 @@ pub unsafe extern "C" fn dav1d_msac_decode_symbol_adapt_c(
     let mut u: libc::c_uint = 0;
     let mut v: libc::c_uint = (*s).rng;
     let mut val: libc::c_uint = -(1 as libc::c_int) as libc::c_uint;
-    if !(n_symbols <= 15 as libc::c_int as libc::c_ulong) {
+    if !(n_symbols <= 15) {
         unreachable!();
     }
     if !(*cdf.offset(n_symbols as isize) as libc::c_int <= 32 as libc::c_int) {
@@ -348,12 +343,8 @@ pub unsafe extern "C" fn dav1d_msac_decode_symbol_adapt_c(
         let count: libc::c_uint = *cdf.offset(n_symbols as isize) as libc::c_uint;
         let rate: libc::c_uint = (4 as libc::c_int as libc::c_uint)
             .wrapping_add(count >> 4 as libc::c_int)
-            .wrapping_add(
-                (n_symbols > 2 as libc::c_int as libc::c_ulong) as libc::c_int
-                    as libc::c_uint,
-            );
+            .wrapping_add((n_symbols > 2) as u32);
         let mut i: libc::c_uint = 0;
-        i = 0 as libc::c_int as libc::c_uint;
         while i < val {
             let ref mut fresh2 = *cdf.offset(i as isize);
             *fresh2 = (*fresh2 as libc::c_int
@@ -361,7 +352,7 @@ pub unsafe extern "C" fn dav1d_msac_decode_symbol_adapt_c(
                     >> rate)) as uint16_t;
             i = i.wrapping_add(1);
         }
-        while (i as libc::c_ulong) < n_symbols {
+        while (i as size_t) < n_symbols {
             let ref mut fresh3 = *cdf.offset(i as isize);
             *fresh3 = (*fresh3 as libc::c_int
                 - (*cdf.offset(i as isize) as libc::c_int >> rate)) as uint16_t;
@@ -453,9 +444,9 @@ pub unsafe extern "C" fn dav1d_msac_init(
     (*s).buf_end = data.offset(sz as isize);
     (*s)
         .dif = ((1 as libc::c_int as ec_win)
-        << ((::core::mem::size_of::<ec_win>() as libc::c_ulong) << 3 as libc::c_int)
-            .wrapping_sub(1 as libc::c_int as libc::c_ulong))
-        .wrapping_sub(1 as libc::c_int as libc::c_ulong);
+        << ((::core::mem::size_of::<ec_win>()) << 3 as libc::c_int)
+            .wrapping_sub(1))
+        .wrapping_sub(1);
     (*s).rng = 0x8000 as libc::c_int as libc::c_uint;
     (*s).cnt = -(15 as libc::c_int);
     (*s).allow_update_cdf = (disable_cdf_update_flag == 0) as libc::c_int;

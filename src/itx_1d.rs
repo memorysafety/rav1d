@@ -18,7 +18,7 @@ unsafe extern "C" fn inv_dct4_1d_internal_c(
     max: libc::c_int,
     tx64: libc::c_int,
 ) {
-    if !(stride > 0 as libc::c_int as libc::c_long) {
+    if !(stride > 0) {
         unreachable!();
     }
     let in0: libc::c_int = *c

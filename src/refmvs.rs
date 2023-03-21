@@ -638,7 +638,7 @@ unsafe extern "C" fn dav1d_alloc_aligned(
     mut sz: size_t,
     mut align: size_t,
 ) -> *mut libc::c_void {
-    if align & align.wrapping_sub(1 as libc::c_int as libc::c_ulong) != 0 {
+    if align & align.wrapping_sub(1) != 0 {
         unreachable!();
     }
     let mut ptr: *mut libc::c_void = 0 as *mut libc::c_void;
@@ -2287,11 +2287,11 @@ pub unsafe extern "C" fn dav1d_refmvs_init_frame(
             && n_frame_threads > 1 as libc::c_int) as libc::c_int;
         (*rf)
             .r = dav1d_alloc_aligned(
-            (::core::mem::size_of::<refmvs_block>() as libc::c_ulong)
-                .wrapping_mul(35 as libc::c_int as libc::c_ulong)
-                .wrapping_mul(r_stride as libc::c_ulong)
-                .wrapping_mul(n_tile_rows as libc::c_ulong)
-                .wrapping_mul((1 as libc::c_int + uses_2pass) as libc::c_ulong),
+            (::core::mem::size_of::<refmvs_block>())
+                .wrapping_mul(35 as size_t)
+                .wrapping_mul(r_stride as size_t)
+                .wrapping_mul(n_tile_rows as size_t)
+                .wrapping_mul((1 + uses_2pass) as size_t),
             64 as libc::c_int as size_t,
         ) as *mut refmvs_block;
         if ((*rf).r).is_null() {
@@ -2309,11 +2309,11 @@ pub unsafe extern "C" fn dav1d_refmvs_init_frame(
         }
         (*rf)
             .rp_proj = dav1d_alloc_aligned(
-            (::core::mem::size_of::<refmvs_temporal_block>() as libc::c_ulong)
-                .wrapping_mul(16 as libc::c_int as libc::c_ulong)
-                .wrapping_mul(rp_stride as libc::c_ulong)
-                .wrapping_mul(n_tile_rows as libc::c_ulong),
-            64 as libc::c_int as size_t,
+            (::core::mem::size_of::<refmvs_temporal_block>())
+                .wrapping_mul(16 as size_t)
+                .wrapping_mul(rp_stride as size_t)
+                .wrapping_mul(n_tile_rows as size_t),
+            64 as size_t,
         ) as *mut refmvs_temporal_block;
         if ((*rf).rp_proj).is_null() {
             return -(12 as libc::c_int);

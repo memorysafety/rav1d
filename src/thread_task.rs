@@ -7,9 +7,9 @@ extern "C" {
     fn memset(
         _: *mut libc::c_void,
         _: libc::c_int,
-        _: libc::c_ulong,
+        _: size_t,
     ) -> *mut libc::c_void;
-    fn realloc(_: *mut libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
+    fn realloc(_: *mut libc::c_void, _: size_t) -> *mut libc::c_void;
     fn abort() -> !;
     fn pthread_mutex_lock(__mutex: *mut pthread_mutex_t) -> libc::c_int;
     fn pthread_mutex_unlock(__mutex: *mut pthread_mutex_t) -> libc::c_int;
@@ -1849,8 +1849,8 @@ unsafe extern "C" fn create_filter_sbrow(
         as libc::c_int;
     let mut num_tasks: libc::c_int = (*f).sbh * (1 as libc::c_int + uses_2pass);
     if num_tasks > (*f).task_thread.num_tasks {
-        let size: size_t = (::core::mem::size_of::<Dav1dTask>() as libc::c_ulong)
-            .wrapping_mul(num_tasks as libc::c_ulong);
+        let size: size_t = (::core::mem::size_of::<Dav1dTask>())
+            .wrapping_mul(num_tasks as size_t);
         tasks = realloc((*f).task_thread.tasks as *mut libc::c_void, size)
             as *mut Dav1dTask;
         if tasks.is_null() {
@@ -1869,8 +1869,8 @@ unsafe extern "C" fn create_filter_sbrow(
         if prog_sz > (*f).frame_thread.prog_sz {
             let prog: *mut atomic_uint = realloc(
                 (*f).frame_thread.frame_progress as *mut libc::c_void,
-                ((2 as libc::c_int * prog_sz) as libc::c_ulong)
-                    .wrapping_mul(::core::mem::size_of::<atomic_uint>() as libc::c_ulong),
+                ((2 as libc::c_int * prog_sz) as size_t)
+                    .wrapping_mul(::core::mem::size_of::<atomic_uint>()),
             ) as *mut atomic_uint;
             if prog.is_null() {
                 return -(1 as libc::c_int);
@@ -1882,14 +1882,14 @@ unsafe extern "C" fn create_filter_sbrow(
         memset(
             (*f).frame_thread.frame_progress as *mut libc::c_void,
             0 as libc::c_int,
-            (prog_sz as libc::c_ulong)
-                .wrapping_mul(::core::mem::size_of::<atomic_uint>() as libc::c_ulong),
+            (prog_sz as size_t)
+                .wrapping_mul(::core::mem::size_of::<atomic_uint>()),
         );
         memset(
             (*f).frame_thread.copy_lpf_progress as *mut libc::c_void,
             0 as libc::c_int,
-            (prog_sz as libc::c_ulong)
-                .wrapping_mul(::core::mem::size_of::<atomic_uint>() as libc::c_ulong),
+            (prog_sz as size_t)
+                .wrapping_mul(::core::mem::size_of::<atomic_uint>() as size_t),
         );
         ::core::intrinsics::atomic_store_seqcst(
             &mut (*f).frame_thread.deblock_progress,
@@ -1939,8 +1939,8 @@ pub unsafe extern "C" fn dav1d_task_create_tile_sbrow(
         let mut alloc_num_tasks: libc::c_int = num_tasks
             * (1 as libc::c_int + uses_2pass);
         if alloc_num_tasks > (*f).task_thread.num_tile_tasks {
-            let size: size_t = (::core::mem::size_of::<Dav1dTask>() as libc::c_ulong)
-                .wrapping_mul(alloc_num_tasks as libc::c_ulong);
+            let size: size_t = (::core::mem::size_of::<Dav1dTask>())
+                .wrapping_mul(alloc_num_tasks as size_t);
             tasks = realloc(
                 (*f).task_thread.tile_tasks[0 as libc::c_int as usize]
                     as *mut libc::c_void,

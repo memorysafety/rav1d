@@ -65,7 +65,7 @@ unsafe extern "C" fn iclip(
 }
 #[inline]
 unsafe extern "C" fn apply_sign64(v: libc::c_int, s: int64_t) -> libc::c_int {
-    return if s < 0 as libc::c_int as libc::c_long { -v } else { v };
+    return if s < 0 { -v } else { v };
 }
 #[inline]
 unsafe extern "C" fn ulog2(v: libc::c_uint) -> libc::c_int {
@@ -388,7 +388,7 @@ pub unsafe extern "C" fn dav1d_get_shear_params(
         *mat.offset(2 as libc::c_int as isize),
     );
     let v1: int64_t = *mat.offset(4 as libc::c_int as isize) as int64_t
-        * 0x10000 as libc::c_int as libc::c_long * y as libc::c_long;
+        * 0x10000 * y as int64_t;
     let rnd: libc::c_int = (1 as libc::c_int) << shift >> 1 as libc::c_int;
     (*wm)
         .u
@@ -401,7 +401,7 @@ pub unsafe extern "C" fn dav1d_get_shear_params(
         ),
     ) as int16_t;
     let v2: int64_t = *mat.offset(3 as libc::c_int as isize) as int64_t
-        * *mat.offset(4 as libc::c_int as isize) as libc::c_long * y as libc::c_long;
+        * *mat.offset(4 as libc::c_int as isize) as int64_t * y as int64_t;
     (*wm)
         .u
         .p
@@ -433,7 +433,7 @@ unsafe extern "C" fn resolve_divisor_64(
     } else {
         (e << 8 as libc::c_int - *shift) as libc::c_longlong
     }) as int64_t;
-    if !(f <= 256 as libc::c_int as libc::c_long) {
+    if !(f <= 256) {
         unreachable!();
     }
     *shift += 14 as libc::c_int;
@@ -444,7 +444,7 @@ unsafe extern "C" fn get_mult_shift_ndiag(
     idet: libc::c_int,
     shift: libc::c_int,
 ) -> libc::c_int {
-    let v1: int64_t = px * idet as libc::c_long;
+    let v1: int64_t = px * idet as int64_t;
     let v2: libc::c_int = apply_sign64(
         (llabs(v1 as libc::c_longlong)
             + ((1 as libc::c_longlong) << shift >> 1 as libc::c_int) >> shift)
@@ -458,7 +458,7 @@ unsafe extern "C" fn get_mult_shift_diag(
     idet: libc::c_int,
     shift: libc::c_int,
 ) -> libc::c_int {
-    let v1: int64_t = px * idet as libc::c_long;
+    let v1: int64_t = px * idet as int64_t;
     let v2: libc::c_int = apply_sign64(
         (llabs(v1 as libc::c_longlong)
             + ((1 as libc::c_longlong) << shift >> 1 as libc::c_int) >> shift)
@@ -564,10 +564,10 @@ pub unsafe extern "C" fn dav1d_find_affine_int(
         i += 1;
     }
     let det: int64_t = a[0 as libc::c_int as usize][0 as libc::c_int as usize] as int64_t
-        * a[1 as libc::c_int as usize][1 as libc::c_int as usize] as libc::c_long
+        * a[1 as libc::c_int as usize][1 as libc::c_int as usize] as int64_t
         - a[0 as libc::c_int as usize][1 as libc::c_int as usize] as int64_t
-            * a[0 as libc::c_int as usize][1 as libc::c_int as usize] as libc::c_long;
-    if det == 0 as libc::c_int as libc::c_long {
+            * a[0 as libc::c_int as usize][1 as libc::c_int as usize] as int64_t;
+    if det == 0 {
         return 1 as libc::c_int;
     }
     let mut shift: libc::c_int = 0;
@@ -585,9 +585,9 @@ pub unsafe extern "C" fn dav1d_find_affine_int(
             2 as libc::c_int as isize,
         ) = get_mult_shift_diag(
         a[1 as libc::c_int as usize][1 as libc::c_int as usize] as int64_t
-            * bx[0 as libc::c_int as usize] as libc::c_long
+            * bx[0 as libc::c_int as usize] as int64_t
             - a[0 as libc::c_int as usize][1 as libc::c_int as usize] as int64_t
-                * bx[1 as libc::c_int as usize] as libc::c_long,
+                * bx[1 as libc::c_int as usize] as int64_t,
         idet,
         shift,
     );
@@ -596,9 +596,9 @@ pub unsafe extern "C" fn dav1d_find_affine_int(
             3 as libc::c_int as isize,
         ) = get_mult_shift_ndiag(
         a[0 as libc::c_int as usize][0 as libc::c_int as usize] as int64_t
-            * bx[1 as libc::c_int as usize] as libc::c_long
+            * bx[1 as libc::c_int as usize] as int64_t
             - a[0 as libc::c_int as usize][1 as libc::c_int as usize] as int64_t
-                * bx[0 as libc::c_int as usize] as libc::c_long,
+                * bx[0 as libc::c_int as usize] as int64_t,
         idet,
         shift,
     );
@@ -607,9 +607,9 @@ pub unsafe extern "C" fn dav1d_find_affine_int(
             4 as libc::c_int as isize,
         ) = get_mult_shift_ndiag(
         a[1 as libc::c_int as usize][1 as libc::c_int as usize] as int64_t
-            * by[0 as libc::c_int as usize] as libc::c_long
+            * by[0 as libc::c_int as usize] as int64_t
             - a[0 as libc::c_int as usize][1 as libc::c_int as usize] as int64_t
-                * by[1 as libc::c_int as usize] as libc::c_long,
+                * by[1 as libc::c_int as usize] as int64_t,
         idet,
         shift,
     );
@@ -618,9 +618,9 @@ pub unsafe extern "C" fn dav1d_find_affine_int(
             5 as libc::c_int as isize,
         ) = get_mult_shift_diag(
         a[0 as libc::c_int as usize][0 as libc::c_int as usize] as int64_t
-            * by[1 as libc::c_int as usize] as libc::c_long
+            * by[1 as libc::c_int as usize] as int64_t
             - a[0 as libc::c_int as usize][1 as libc::c_int as usize] as int64_t
-                * by[0 as libc::c_int as usize] as libc::c_long,
+                * by[0 as libc::c_int as usize] as int64_t,
         idet,
         shift,
     );

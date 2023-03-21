@@ -1527,12 +1527,12 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     let y_sz: size_t = (y_stride * aligned_h as libc::c_long) as size_t;
     let uv_sz: size_t = (uv_stride * (aligned_h >> ss_ver) as libc::c_long) as size_t;
     let pic_size: size_t = y_sz
-        .wrapping_add((2 as libc::c_int as libc::c_ulong).wrapping_mul(uv_sz));
+        .wrapping_add(2usize.wrapping_mul(uv_sz));
     let buf: *mut Dav1dMemPoolBuffer = dav1d_mem_pool_pop(
         cookie as *mut Dav1dMemPool,
         pic_size
-            .wrapping_add(64 as libc::c_int as libc::c_ulong)
-            .wrapping_sub(::core::mem::size_of::<Dav1dMemPoolBuffer>() as libc::c_ulong),
+            .wrapping_add(64)
+            .wrapping_sub(::core::mem::size_of::<Dav1dMemPoolBuffer>()),
     );
     if buf.is_null() {
         return -(12 as libc::c_int);
@@ -1606,7 +1606,7 @@ unsafe extern "C" fn picture_alloc_with_edges(
         unreachable!();
     }
     let mut pic_ctx: *mut pic_ctx_context = malloc(
-        extra.wrapping_add(::core::mem::size_of::<pic_ctx_context>() as libc::c_ulong),
+        extra.wrapping_add(::core::mem::size_of::<pic_ctx_context>()),
     ) as *mut pic_ctx_context;
     if pic_ctx.is_null() {
         return -(12 as libc::c_int);
@@ -1703,10 +1703,10 @@ pub unsafe extern "C" fn dav1d_thread_picture_alloc(
         &mut (*((*f).tile).offset(0 as libc::c_int as isize)).data.m,
         &mut (*c).allocator,
         if have_frame_mt != 0 {
-            (::core::mem::size_of::<atomic_int>() as libc::c_ulong)
-                .wrapping_mul(2 as libc::c_int as libc::c_ulong)
+            (::core::mem::size_of::<atomic_int>())
+                .wrapping_mul(2)
         } else {
-            0 as libc::c_int as libc::c_ulong
+            0
         },
         &mut (*p).progress as *mut *mut atomic_uint as *mut *mut libc::c_void,
     );

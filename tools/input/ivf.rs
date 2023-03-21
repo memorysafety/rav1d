@@ -98,8 +98,7 @@ unsafe extern "C" fn rl32(p: *const uint8_t) -> libc::c_uint {
             as libc::c_uint | *p.offset(0 as libc::c_int as isize) as libc::c_uint;
 }
 unsafe extern "C" fn rl64(p: *const uint8_t) -> int64_t {
-    return ((rl32(&*p.offset(4 as libc::c_int as isize)) as uint64_t)
-        << 32 as libc::c_int | rl32(p) as libc::c_ulong) as int64_t;
+    return ((rl32(&*p.offset(4)) as uint64_t) << 32 | rl32(p) as uint64_t) as int64_t;
 }
 unsafe extern "C" fn ivf_open(
     c: *mut IvfInputContext,
@@ -219,10 +218,10 @@ unsafe extern "C" fn ivf_open(
         fseeko((*c).f, sz as __off64_t, 1 as libc::c_int);
         *num_frames = (*num_frames).wrapping_add(1);
     }
-    let mut fps_num: uint64_t = (*timebase.offset(0 as libc::c_int as isize) as uint64_t)
-        .wrapping_mul(*num_frames as libc::c_ulong);
-    let mut fps_den: uint64_t = (*timebase.offset(1 as libc::c_int as isize) as uint64_t)
-        .wrapping_mul(duration as libc::c_ulong);
+    let mut fps_num: uint64_t = (*timebase.offset(0) as uint64_t)
+        .wrapping_mul(*num_frames as uint64_t);
+    let mut fps_den: uint64_t = (*timebase.offset(1) as uint64_t)
+        .wrapping_mul(duration as uint64_t);
     if fps_num != 0 && fps_den != 0 {
         let mut gcd: uint64_t = fps_num;
         let mut a: uint64_t = fps_den;
@@ -235,12 +234,9 @@ unsafe extern "C" fn ivf_open(
             a = gcd;
             gcd = b;
         }
-        fps_num = (fps_num as libc::c_ulong).wrapping_div(gcd) as uint64_t as uint64_t;
-        fps_den = (fps_den as libc::c_ulong).wrapping_div(gcd) as uint64_t as uint64_t;
-        while fps_num | fps_den
-            > (2147483647 as libc::c_int as libc::c_uint)
-                .wrapping_mul(2 as libc::c_uint)
-                .wrapping_add(1 as libc::c_uint) as libc::c_ulong
+        fps_num = fps_num.wrapping_div(gcd);
+        fps_den = fps_den.wrapping_div(gcd);
+        while fps_num | fps_den > u32::MAX as u64
         {
             fps_num >>= 1 as libc::c_int;
             fps_den >>= 1 as libc::c_int;
@@ -299,10 +295,10 @@ unsafe extern "C" fn ivf_read_header(
         if fseeko((*c).f, 8 as libc::c_int as __off64_t, 1 as libc::c_int) != 0 {
             return -(1 as libc::c_int);
         }
-        *ts = if off > 32 as libc::c_int as libc::c_long {
+        *ts = if off > 32 {
             ((*c).last_ts).wrapping_add((*c).step)
         } else {
-            0 as libc::c_int as libc::c_ulong
+            0
         };
     }
     return 0 as libc::c_int;
@@ -384,7 +380,7 @@ unsafe extern "C" fn ivf_seek(c: *mut IvfInputContext, pts: uint64_t) -> libc::c
                     }
                     return 0 as libc::c_int;
                 } else {
-                    if fseeko((*c).f, sz, 1 as libc::c_int) != 0 {
+                    if fseeko((*c).f, sz as __off64_t, 1 as libc::c_int) != 0 {
                         current_block = 679495355492430298;
                         continue;
                     }

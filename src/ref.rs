@@ -15,7 +15,6 @@ extern "C" {
         size: size_t,
     ) -> *mut Dav1dMemPoolBuffer;
 }
-
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dRef {
@@ -37,7 +36,7 @@ unsafe extern "C" fn dav1d_alloc_aligned(
     mut sz: size_t,
     mut align: size_t,
 ) -> *mut libc::c_void {
-    if align & align.wrapping_sub(1 as libc::c_int as libc::c_ulong) != 0 {
+    if align & align.wrapping_sub(1) != 0 {
         unreachable!();
     }
     let mut ptr: *mut libc::c_void = 0 as *mut libc::c_void;
@@ -62,12 +61,12 @@ unsafe extern "C" fn default_free_callback(
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_ref_create(mut size: size_t) -> *mut Dav1dRef {
     size = size
-        .wrapping_add(::core::mem::size_of::<*mut libc::c_void>() as libc::c_ulong)
-        .wrapping_sub(1 as libc::c_int as libc::c_ulong)
-        & !(::core::mem::size_of::<*mut libc::c_void>() as libc::c_ulong)
-            .wrapping_sub(1 as libc::c_int as libc::c_ulong);
+        .wrapping_add(::core::mem::size_of::<*mut libc::c_void>())
+        .wrapping_sub(1)
+        & !(::core::mem::size_of::<*mut libc::c_void>())
+            .wrapping_sub(1);
     let data: *mut uint8_t = dav1d_alloc_aligned(
-        size.wrapping_add(::core::mem::size_of::<Dav1dRef>() as libc::c_ulong),
+        size.wrapping_add(::core::mem::size_of::<Dav1dRef>()),
         64 as libc::c_int as size_t,
     ) as *mut uint8_t;
     if data.is_null() {
@@ -98,13 +97,13 @@ pub unsafe extern "C" fn dav1d_ref_create_using_pool(
     mut size: size_t,
 ) -> *mut Dav1dRef {
     size = size
-        .wrapping_add(::core::mem::size_of::<*mut libc::c_void>() as libc::c_ulong)
-        .wrapping_sub(1 as libc::c_int as libc::c_ulong)
-        & !(::core::mem::size_of::<*mut libc::c_void>() as libc::c_ulong)
-            .wrapping_sub(1 as libc::c_int as libc::c_ulong);
+        .wrapping_add(::core::mem::size_of::<*mut libc::c_void>())
+        .wrapping_sub(1)
+        & !(::core::mem::size_of::<*mut libc::c_void>())
+            .wrapping_sub(1);
     let buf: *mut Dav1dMemPoolBuffer = dav1d_mem_pool_pop(
         pool,
-        size.wrapping_add(::core::mem::size_of::<Dav1dRef>() as libc::c_ulong),
+        size.wrapping_add(::core::mem::size_of::<Dav1dRef>()),
     );
     if buf.is_null() {
         return 0 as *mut Dav1dRef;

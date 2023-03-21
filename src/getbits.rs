@@ -141,13 +141,10 @@ pub unsafe extern "C" fn dav1d_get_uleb128(c: *mut GetBits) -> libc::c_uint {
             break;
         }
     }
-    if val
-        > (2147483647 as libc::c_int as libc::c_uint)
-            .wrapping_mul(2 as libc::c_uint)
-            .wrapping_add(1 as libc::c_uint) as libc::c_ulong || more != 0
+    if val > u32::MAX as uint64_t || more != 0
     {
         (*c).error = 1 as libc::c_int;
-        return 0 as libc::c_int as libc::c_uint;
+        return 0;
     }
     return val as libc::c_uint;
 }

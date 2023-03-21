@@ -95,14 +95,10 @@ unsafe extern "C" fn leb(
             break;
         }
     }
-    if val
-        > (2147483647 as libc::c_int as libc::c_uint)
-            .wrapping_mul(2 as libc::c_uint)
-            .wrapping_add(1 as libc::c_uint) as libc::c_ulong || more != 0
-    {
-        return -(1 as libc::c_int);
+    if val > u32::MAX as uint64_t || more != 0 {
+        return -1;
     }
-    *len = val;
+    *len = val as usize;
     return i as libc::c_int;
 }
 #[inline]
@@ -154,8 +150,8 @@ unsafe extern "C" fn leb128(f: *mut libc::FILE, len: *mut size_t) -> libc::c_int
         let mut v: uint8_t = 0;
         if fread(
             &mut v as *mut uint8_t as *mut libc::c_void,
-            1 as libc::c_int as libc::c_ulong,
-            1 as libc::c_int as libc::c_ulong,
+            1,
+            1,
             f,
         ) < 1 as libc::c_int as libc::c_ulong
         {
@@ -170,14 +166,10 @@ unsafe extern "C" fn leb128(f: *mut libc::FILE, len: *mut size_t) -> libc::c_int
             break;
         }
     }
-    if val
-        > (2147483647 as libc::c_int as libc::c_uint)
-            .wrapping_mul(2 as libc::c_uint)
-            .wrapping_add(1 as libc::c_uint) as libc::c_ulong || more != 0
-    {
-        return -(1 as libc::c_int);
+    if val > u32::MAX as uint64_t || more != 0 {
+        return -1;
     }
-    *len = val;
+    *len = val as usize;
     return i as libc::c_int;
 }
 unsafe extern "C" fn section5_probe(mut data: *const uint8_t) -> libc::c_int {
@@ -194,7 +186,7 @@ unsafe extern "C" fn section5_probe(mut data: *const uint8_t) -> libc::c_int {
     );
     if ret < 0 as libc::c_int
         || type_0 as libc::c_uint != DAV1D_OBU_TD as libc::c_int as libc::c_uint
-        || obu_size > 0 as libc::c_int as libc::c_ulong
+        || obu_size > 0
     {
         return 0 as libc::c_int;
     }
@@ -250,8 +242,8 @@ unsafe extern "C" fn section5_open(
         if fread(
             &mut *byte.as_mut_ptr().offset(0 as libc::c_int as isize) as *mut uint8_t
                 as *mut libc::c_void,
-            1 as libc::c_int as libc::c_ulong,
-            1 as libc::c_int as libc::c_ulong,
+            1,
+            1,
             (*c).f,
         ) < 1 as libc::c_int as libc::c_ulong
         {
@@ -273,8 +265,8 @@ unsafe extern "C" fn section5_open(
             && fread(
                 &mut *byte.as_mut_ptr().offset(1 as libc::c_int as isize) as *mut uint8_t
                     as *mut libc::c_void,
-                1 as libc::c_int as libc::c_ulong,
-                1 as libc::c_int as libc::c_ulong,
+                1,
+                1,
                 (*c).f,
             ) < 1 as libc::c_int as libc::c_ulong
         {
@@ -301,8 +293,8 @@ unsafe extern "C" fn section5_read(
         if fread(
             &mut *byte.as_mut_ptr().offset(0 as libc::c_int as isize) as *mut uint8_t
                 as *mut libc::c_void,
-            1 as libc::c_int as libc::c_ulong,
-            1 as libc::c_int as libc::c_ulong,
+            1,
+            1,
             (*c).f,
         ) < 1 as libc::c_int as libc::c_ulong
         {
@@ -336,8 +328,8 @@ unsafe extern "C" fn section5_read(
                 && fread(
                     &mut *byte.as_mut_ptr().offset(1 as libc::c_int as isize)
                         as *mut uint8_t as *mut libc::c_void,
-                    1 as libc::c_int as libc::c_ulong,
-                    1 as libc::c_int as libc::c_ulong,
+                    1,
+                    1,
                     (*c).f,
                 ) < 1 as libc::c_int as libc::c_ulong
             {
@@ -348,11 +340,9 @@ unsafe extern "C" fn section5_read(
             if res < 0 as libc::c_int {
                 return -(1 as libc::c_int);
             }
-            total_bytes = (total_bytes as libc::c_ulong)
-                .wrapping_add(
-                    ((1 as libc::c_int + has_extension + res) as libc::c_ulong)
-                        .wrapping_add(len),
-                ) as size_t as size_t;
+            total_bytes = total_bytes.wrapping_add(
+                    ((1 as libc::c_int + has_extension + res) as size_t)
+                        .wrapping_add(len));
             fseeko((*c).f, len as __off64_t, 1 as libc::c_int);
             first = 0 as libc::c_int;
         }
@@ -365,7 +355,7 @@ unsafe extern "C" fn section5_read(
     if fread(
         ptr as *mut libc::c_void,
         total_bytes,
-        1 as libc::c_int as libc::c_ulong,
+        1,
         (*c).f,
     ) != 1 as libc::c_int as libc::c_ulong
     {

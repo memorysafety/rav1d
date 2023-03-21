@@ -44,7 +44,7 @@ unsafe extern "C" fn dav1d_alloc_aligned(
     mut sz: size_t,
     mut align: size_t,
 ) -> *mut libc::c_void {
-    if align & align.wrapping_sub(1 as libc::c_int as libc::c_ulong) != 0 {
+    if align & align.wrapping_sub(1) != 0 {
         unreachable!();
     }
     let mut ptr: *mut libc::c_void = 0 as *mut libc::c_void;
@@ -87,8 +87,7 @@ pub unsafe extern "C" fn dav1d_mem_pool_pop(
     size: size_t,
 ) -> *mut Dav1dMemPoolBuffer {
     if size
-        & (::core::mem::size_of::<*mut libc::c_void>() as libc::c_ulong)
-            .wrapping_sub(1 as libc::c_int as libc::c_ulong) != 0
+        & ::core::mem::size_of::<*mut libc::c_void>().wrapping_sub(1) != 0
     {
         unreachable!();
     }
@@ -116,9 +115,9 @@ pub unsafe extern "C" fn dav1d_mem_pool_pop(
             data = dav1d_alloc_aligned(
                 size
                     .wrapping_add(
-                        ::core::mem::size_of::<Dav1dMemPoolBuffer>() as libc::c_ulong,
+                        ::core::mem::size_of::<Dav1dMemPoolBuffer>(),
                     ),
-                64 as libc::c_int as size_t,
+                64,
             ) as *mut uint8_t;
             if data.is_null() {
                 pthread_mutex_lock(&mut (*pool).lock);
