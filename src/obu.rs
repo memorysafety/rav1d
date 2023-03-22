@@ -77,18 +77,7 @@ pub struct Dav1dUserData {
     pub data: *const uint8_t,
     pub ref_0: *mut Dav1dRef,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dRef {
-    pub data: *mut libc::c_void,
-    pub const_data: *const libc::c_void,
-    pub ref_cnt: atomic_int,
-    pub free_ref: libc::c_int,
-    pub free_callback: Option::<
-        unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> (),
-    >,
-    pub user_data: *mut libc::c_void,
-}
+use crate::src::r#ref::Dav1dRef;
 use crate::include::stdatomic::atomic_int;
 #[derive(Copy, Clone)]
 #[repr(C)]
