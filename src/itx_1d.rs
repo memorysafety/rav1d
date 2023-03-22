@@ -1,7 +1,7 @@
 use ::libc;
 use crate::include::stddef::ptrdiff_t;
-pub type __int32_t = libc::c_int;
-pub type int32_t = __int32_t;
+
+use crate::include::stdint::int32_t;
 #[inline]
 unsafe extern "C" fn iclip(
     v: libc::c_int,

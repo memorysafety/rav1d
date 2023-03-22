@@ -356,24 +356,24 @@ pub struct __va_list_tag {
     pub reg_save_area: *mut libc::c_void,
 }
 use crate::include::stddef::size_t;
-pub type __int8_t = libc::c_schar;
-pub type __uint8_t = libc::c_uchar;
-pub type __int16_t = libc::c_short;
-pub type __uint16_t = libc::c_ushort;
-pub type __int32_t = libc::c_int;
-pub type __uint32_t = libc::c_uint;
-pub type __int64_t = libc::c_long;
-pub type __uint64_t = libc::c_ulong;
-pub type int8_t = __int8_t;
-pub type int16_t = __int16_t;
-pub type int32_t = __int32_t;
-pub type int64_t = __int64_t;
-pub type uint8_t = __uint8_t;
-pub type uint16_t = __uint16_t;
-pub type uint32_t = __uint32_t;
-pub type uint64_t = __uint64_t;
-pub type intptr_t = libc::c_long;
-pub type uintptr_t = libc::c_ulong;
+
+
+
+
+
+
+
+
+use crate::include::stdint::int8_t;
+use crate::include::stdint::int16_t;
+use crate::include::stdint::int32_t;
+use crate::include::stdint::int64_t;
+use crate::include::stdint::uint8_t;
+use crate::include::stdint::uint16_t;
+use crate::include::stdint::uint32_t;
+use crate::include::stdint::uint64_t;
+use crate::include::stdint::intptr_t;
+use crate::include::stdint::uintptr_t;
 use crate::include::stddef::ptrdiff_t;
 #[derive(Copy, Clone)]
 #[repr(C)]

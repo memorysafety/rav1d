@@ -15,9 +15,9 @@ extern "C" {
         __size: size_t,
     ) -> libc::c_int;
 }
-pub type __uint8_t = libc::c_uchar;
-pub type uint8_t = __uint8_t;
-pub type uintptr_t = libc::c_ulong;
+
+use crate::include::stdint::uint8_t;
+use crate::include::stdint::uintptr_t;
 use crate::include::stddef::size_t;
 #[derive(Copy, Clone)]
 #[repr(C)]

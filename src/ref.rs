@@ -14,8 +14,8 @@ extern "C" {
     ) -> *mut Dav1dMemPoolBuffer;
 }
 use crate::include::stddef::size_t;
-pub type __uint8_t = libc::c_uchar;
-pub type uint8_t = __uint8_t;
+
+use crate::include::stdint::uint8_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dRef {

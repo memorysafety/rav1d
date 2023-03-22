@@ -18,6 +18,7 @@ extern crate c2rust_bitfields;
 extern crate libc;
 pub mod include {
 pub mod stddef;
+pub mod stdint;
 } // mod include
 pub mod src {
 pub mod align;

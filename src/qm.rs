@@ -6,8 +6,8 @@ extern "C" {
         _: libc::c_ulong,
     ) -> *mut libc::c_void;
 }
-pub type __uint8_t = libc::c_uchar;
-pub type uint8_t = __uint8_t;
+
+use crate::include::stdint::uint8_t;
 pub type TxfmSize = libc::c_uint;
 pub const N_TX_SIZES: TxfmSize = 5;
 pub const TX_64X64: TxfmSize = 4;

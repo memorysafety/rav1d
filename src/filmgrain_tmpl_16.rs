@@ -4,17 +4,17 @@ extern "C" {
 }
 use crate::include::stddef::ptrdiff_t;
 use crate::include::stddef::size_t;
-pub type __int8_t = libc::c_schar;
-pub type __uint8_t = libc::c_uchar;
-pub type __int16_t = libc::c_short;
-pub type __uint16_t = libc::c_ushort;
-pub type __uint64_t = libc::c_ulong;
-pub type int8_t = __int8_t;
-pub type int16_t = __int16_t;
-pub type uint8_t = __uint8_t;
-pub type uint16_t = __uint16_t;
-pub type uint64_t = __uint64_t;
-pub type intptr_t = libc::c_long;
+
+
+
+
+
+use crate::include::stdint::int8_t;
+use crate::include::stdint::int16_t;
+use crate::include::stdint::uint8_t;
+use crate::include::stdint::uint16_t;
+use crate::include::stdint::uint64_t;
+use crate::include::stdint::intptr_t;
 pub type pixel = uint16_t;
 pub type Dav1dPixelLayout = libc::c_uint;
 pub const DAV1D_PIXEL_LAYOUT_I444: Dav1dPixelLayout = 3;

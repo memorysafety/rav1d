@@ -31,18 +31,18 @@ extern "C" {
     fn dav1d_data_create(data: *mut Dav1dData, sz: size_t) -> *mut uint8_t;
     fn dav1d_data_unref(data: *mut Dav1dData);
 }
-pub type __uint8_t = libc::c_uchar;
-pub type __uint32_t = libc::c_uint;
-pub type __int64_t = libc::c_long;
-pub type __uint64_t = libc::c_ulong;
+
+
+
+
 pub type __off_t = libc::c_long;
 pub type __off64_t = libc::c_long;
 use crate::include::stddef::size_t;
 pub type _IO_lock_t = ();
-pub type int64_t = __int64_t;
-pub type uint8_t = __uint8_t;
-pub type uint32_t = __uint32_t;
-pub type uint64_t = __uint64_t;
+use crate::include::stdint::int64_t;
+use crate::include::stdint::uint8_t;
+use crate::include::stdint::uint32_t;
+use crate::include::stdint::uint64_t;
 use crate::include::stddef::ptrdiff_t;
 #[derive(Copy, Clone)]
 #[repr(C)]

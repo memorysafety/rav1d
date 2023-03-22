@@ -98,10 +98,10 @@ extern "C" {
     fn dav1d_inv_wht4_1d_c(c: *mut int32_t, stride: ptrdiff_t);
 }
 use crate::include::stddef::ptrdiff_t;
-pub type __uint16_t = libc::c_ushort;
-pub type __int32_t = libc::c_int;
-pub type int32_t = __int32_t;
-pub type uint16_t = __uint16_t;
+
+
+use crate::include::stdint::int32_t;
+use crate::include::stdint::uint16_t;
 pub type pixel = uint16_t;
 pub type coef = int32_t;
 pub type TxfmSize = libc::c_uint;

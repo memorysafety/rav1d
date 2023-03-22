@@ -67,10 +67,8 @@ extern "C" {
     static mut dav1d_cpu_flags_mask: libc::c_uint;
     static mut dav1d_cpu_flags: libc::c_uint;
 }
-pub type __uint8_t = libc::c_uchar;
-pub type __uint16_t = libc::c_ushort;
-pub type uint8_t = __uint8_t;
-pub type uint16_t = __uint16_t;
+use crate::include::stdint::uint8_t;
+use crate::include::stdint::uint16_t;
 use crate::include::stddef::size_t;
 pub type ec_win = size_t;
 #[derive(Copy, Clone)]

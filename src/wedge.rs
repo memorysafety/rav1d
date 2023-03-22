@@ -11,8 +11,8 @@ extern "C" {
         _: libc::c_ulong,
     ) -> *mut libc::c_void;
 }
-pub type __uint8_t = libc::c_uchar;
-pub type uint8_t = __uint8_t;
+
+use crate::include::stdint::uint8_t;
 pub type InterIntraPredMode = libc::c_uint;
 pub const N_INTER_INTRA_PRED_MODES: InterIntraPredMode = 4;
 pub const II_SMOOTH_PRED: InterIntraPredMode = 3;

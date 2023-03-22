@@ -12,8 +12,8 @@ extern "C" {
         _: libc::c_ulong,
     ) -> *mut libc::c_void;
 }
-pub type __uint8_t = libc::c_uchar;
-pub type uint8_t = __uint8_t;
+
+use crate::include::stdint::uint8_t;
 use crate::include::stddef::ptrdiff_t;
 pub type pixel = uint8_t;
 pub type IntraPredMode = libc::c_uint;

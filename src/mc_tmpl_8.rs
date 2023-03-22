@@ -16,14 +16,14 @@ extern "C" {
     static dav1d_resize_filter: [[int8_t; 8]; 64];
     static dav1d_obmc_masks: [uint8_t; 64];
 }
-pub type __int8_t = libc::c_schar;
-pub type __uint8_t = libc::c_uchar;
-pub type __int16_t = libc::c_short;
-pub type int8_t = __int8_t;
-pub type int16_t = __int16_t;
+
+
+
+use crate::include::stdint::int8_t;
+use crate::include::stdint::int16_t;
 use crate::include::stddef::ptrdiff_t;
-pub type uint8_t = __uint8_t;
-pub type intptr_t = libc::c_long;
+use crate::include::stdint::uint8_t;
+use crate::include::stdint::intptr_t;
 pub type pixel = uint8_t;
 pub type Dav1dFilterMode = libc::c_uint;
 pub const DAV1D_FILTER_SWITCHABLE: Dav1dFilterMode = 4;

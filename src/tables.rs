@@ -1,14 +1,14 @@
 use ::libc;
-pub type __int8_t = libc::c_schar;
-pub type __uint8_t = libc::c_uchar;
-pub type __int16_t = libc::c_short;
-pub type __uint16_t = libc::c_ushort;
-pub type __int32_t = libc::c_int;
-pub type int8_t = __int8_t;
-pub type int16_t = __int16_t;
-pub type int32_t = __int32_t;
-pub type uint8_t = __uint8_t;
-pub type uint16_t = __uint16_t;
+
+
+
+
+
+use crate::include::stdint::int8_t;
+use crate::include::stdint::int16_t;
+use crate::include::stdint::int32_t;
+use crate::include::stdint::uint8_t;
+use crate::include::stdint::uint16_t;
 pub type Dav1dFilterMode = libc::c_uint;
 pub const DAV1D_FILTER_SWITCHABLE: Dav1dFilterMode = 4;
 pub const DAV1D_N_FILTERS: Dav1dFilterMode = 4;

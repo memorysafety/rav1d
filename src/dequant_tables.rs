@@ -1,6 +1,6 @@
 use ::libc;
-pub type __uint16_t = libc::c_ushort;
-pub type uint16_t = __uint16_t;
+
+use crate::include::stdint::uint16_t;
 #[no_mangle]
 pub static mut dav1d_dq_tbl: [[[uint16_t; 2]; 256]; 3] = [
     [

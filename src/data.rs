@@ -20,12 +20,12 @@ extern "C" {
     ) -> *mut Dav1dRef;
     fn dav1d_ref_create(size: size_t) -> *mut Dav1dRef;
 }
-pub type __uint8_t = libc::c_uchar;
-pub type __int64_t = libc::c_long;
+
+
 pub type __off_t = libc::c_long;
 pub type __off64_t = libc::c_long;
-pub type int64_t = __int64_t;
-pub type uint8_t = __uint8_t;
+use crate::include::stdint::int64_t;
+use crate::include::stdint::uint8_t;
 use crate::include::stddef::size_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
