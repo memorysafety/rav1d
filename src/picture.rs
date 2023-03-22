@@ -110,15 +110,16 @@ pub union pthread_cond_t {
     pub __size: [libc::c_char; 48],
     pub __align: libc::c_longlong,
 }
-pub type memory_order = libc::c_uint;
-pub const memory_order_seq_cst: memory_order = 5;
-pub const memory_order_acq_rel: memory_order = 4;
-pub const memory_order_release: memory_order = 3;
-pub const memory_order_acquire: memory_order = 2;
-pub const memory_order_consume: memory_order = 1;
-pub const memory_order_relaxed: memory_order = 0;
-pub type atomic_int = libc::c_int;
-pub type atomic_uint = libc::c_uint;
+
+use crate::include::stdatomic::memory_order;
+use crate::include::stdatomic::memory_order_seq_cst;
+use crate::include::stdatomic::memory_order_acq_rel;
+use crate::include::stdatomic::memory_order_release;
+use crate::include::stdatomic::memory_order_acquire;
+use crate::include::stdatomic::memory_order_consume;
+use crate::include::stdatomic::memory_order_relaxed;
+use crate::include::stdatomic::atomic_int;
+use crate::include::stdatomic::atomic_uint;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dUserData {

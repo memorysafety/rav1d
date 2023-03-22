@@ -54,7 +54,7 @@ pub struct Dav1dRef {
     >,
     pub user_data: *mut libc::c_void,
 }
-pub type atomic_int = libc::c_int;
+use crate::include::stdatomic::atomic_int;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dDataProps {
@@ -1149,7 +1149,7 @@ pub struct CdfThreadContext {
     pub data: C2RustUnnamed_15,
     pub progress: *mut atomic_uint,
 }
-pub type atomic_uint = libc::c_uint;
+use crate::include::stdatomic::atomic_uint;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union C2RustUnnamed_15 {

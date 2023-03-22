@@ -128,8 +128,8 @@ pub type __off64_t = libc::c_long;
 pub type _IO_lock_t = ();
 pub type pixel = uint16_t;
 pub type coef = int32_t;
-pub type atomic_int = libc::c_int;
-pub type atomic_uint = libc::c_uint;
+use crate::include::stdatomic::atomic_int;
+use crate::include::stdatomic::atomic_uint;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dUserData {
