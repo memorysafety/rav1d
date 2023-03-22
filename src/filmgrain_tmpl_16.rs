@@ -2,8 +2,8 @@ use ::libc;
 extern "C" {
     static dav1d_gaussian_sequence: [int16_t; 2048];
 }
-pub type ptrdiff_t = libc::c_long;
-pub type size_t = libc::c_ulong;
+use crate::include::stddef::ptrdiff_t;
+use crate::include::stddef::size_t;
 pub type __int8_t = libc::c_schar;
 pub type __uint8_t = libc::c_uchar;
 pub type __int16_t = libc::c_short;

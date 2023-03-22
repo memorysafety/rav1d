@@ -71,7 +71,7 @@ pub type __uint8_t = libc::c_uchar;
 pub type __uint16_t = libc::c_ushort;
 pub type uint8_t = __uint8_t;
 pub type uint16_t = __uint16_t;
-pub type size_t = libc::c_ulong;
+use crate::include::stddef::size_t;
 pub type ec_win = size_t;
 #[derive(Copy, Clone)]
 #[repr(C)]

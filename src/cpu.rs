@@ -13,7 +13,7 @@ extern "C" {
         __cpuset: *mut cpu_set_t,
     ) -> libc::c_int;
 }
-pub type size_t = libc::c_ulong;
+use crate::include::stddef::size_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct cpu_set_t {

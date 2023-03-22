@@ -5,7 +5,7 @@ extern "C" {
 pub type __uint8_t = libc::c_uchar;
 pub type __uint32_t = libc::c_uint;
 pub type __uint64_t = libc::c_ulong;
-pub type ptrdiff_t = libc::c_long;
+use crate::include::stddef::ptrdiff_t;
 pub type uint8_t = __uint8_t;
 pub type uint32_t = __uint32_t;
 pub type uint64_t = __uint64_t;

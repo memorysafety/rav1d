@@ -17,7 +17,7 @@ pub struct __va_list_tag {
     pub overflow_arg_area: *mut libc::c_void,
     pub reg_save_area: *mut libc::c_void,
 }
-pub type size_t = libc::c_ulong;
+use crate::include::stddef::size_t;
 pub type __int8_t = libc::c_schar;
 pub type __uint8_t = libc::c_uchar;
 pub type __int16_t = libc::c_short;
@@ -36,7 +36,7 @@ pub type uint32_t = __uint32_t;
 pub type uint64_t = __uint64_t;
 pub type intptr_t = libc::c_long;
 pub type uintptr_t = libc::c_ulong;
-pub type ptrdiff_t = libc::c_long;
+use crate::include::stddef::ptrdiff_t;
 pub type pixel = uint8_t;
 pub type coef = int16_t;
 pub type atomic_int = libc::c_int;

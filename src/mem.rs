@@ -18,7 +18,7 @@ extern "C" {
 pub type __uint8_t = libc::c_uchar;
 pub type uint8_t = __uint8_t;
 pub type uintptr_t = libc::c_ulong;
-pub type size_t = libc::c_ulong;
+use crate::include::stddef::size_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union pthread_mutex_t {

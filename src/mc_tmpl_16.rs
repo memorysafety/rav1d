@@ -17,7 +17,7 @@ pub type __int16_t = libc::c_short;
 pub type __uint16_t = libc::c_ushort;
 pub type int8_t = __int8_t;
 pub type int16_t = __int16_t;
-pub type ptrdiff_t = libc::c_long;
+use crate::include::stddef::ptrdiff_t;
 pub type uint8_t = __uint8_t;
 pub type uint16_t = __uint16_t;
 pub type intptr_t = libc::c_long;

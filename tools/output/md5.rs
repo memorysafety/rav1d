@@ -29,7 +29,7 @@ extern "C" {
     fn strerror(_: libc::c_int) -> *mut libc::c_char;
     fn dav1d_picture_unref(p: *mut Dav1dPicture);
 }
-pub type size_t = libc::c_ulong;
+use crate::include::stddef::size_t;
 pub type __int8_t = libc::c_schar;
 pub type __uint8_t = libc::c_uchar;
 pub type __int16_t = libc::c_short;
@@ -50,7 +50,7 @@ pub type uint16_t = __uint16_t;
 pub type uint32_t = __uint32_t;
 pub type uint64_t = __uint64_t;
 pub type uintptr_t = libc::c_ulong;
-pub type ptrdiff_t = libc::c_long;
+use crate::include::stddef::ptrdiff_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dUserData {

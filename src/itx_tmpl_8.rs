@@ -97,7 +97,7 @@ extern "C" {
     );
     fn dav1d_inv_wht4_1d_c(c: *mut int32_t, stride: ptrdiff_t);
 }
-pub type ptrdiff_t = libc::c_long;
+use crate::include::stddef::ptrdiff_t;
 pub type __uint8_t = libc::c_uchar;
 pub type __int16_t = libc::c_short;
 pub type __int32_t = libc::c_int;

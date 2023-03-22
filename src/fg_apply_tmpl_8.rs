@@ -30,8 +30,8 @@ pub type uint32_t = __uint32_t;
 pub type uint64_t = __uint64_t;
 pub type intptr_t = libc::c_long;
 pub type uintptr_t = libc::c_ulong;
-pub type ptrdiff_t = libc::c_long;
-pub type size_t = libc::c_ulong;
+use crate::include::stddef::ptrdiff_t;
+use crate::include::stddef::size_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dUserData {

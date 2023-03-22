@@ -27,7 +27,7 @@ pub type uint8_t = __uint8_t;
 pub type uint16_t = __uint16_t;
 pub type uint32_t = __uint32_t;
 pub type uint64_t = __uint64_t;
-pub type ptrdiff_t = libc::c_long;
+use crate::include::stddef::ptrdiff_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union alias64 {

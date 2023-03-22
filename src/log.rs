@@ -23,7 +23,7 @@ pub struct __va_list_tag {
     pub reg_save_area: *mut libc::c_void,
 }
 pub type va_list = __builtin_va_list;
-pub type size_t = libc::c_ulong;
+use crate::include::stddef::size_t;
 pub type __int8_t = libc::c_schar;
 pub type __uint8_t = libc::c_uchar;
 pub type __int16_t = libc::c_short;
@@ -35,7 +35,7 @@ pub type __uint64_t = libc::c_ulong;
 pub type __off_t = libc::c_long;
 pub type __off64_t = libc::c_long;
 pub type _IO_lock_t = ();
-pub type ptrdiff_t = libc::c_long;
+use crate::include::stddef::ptrdiff_t;
 pub type int8_t = __int8_t;
 pub type int16_t = __int16_t;
 pub type int32_t = __int32_t;

@@ -60,7 +60,7 @@ pub type uint32_t = __uint32_t;
 pub type uint64_t = __uint64_t;
 pub type intptr_t = libc::c_long;
 pub type uintptr_t = libc::c_ulong;
-pub type size_t = libc::c_ulong;
+use crate::include::stddef::size_t;
 pub type _IO_lock_t = ();
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -119,7 +119,7 @@ pub union pthread_cond_t {
     pub __size: [libc::c_char; 48],
     pub __align: libc::c_longlong,
 }
-pub type ptrdiff_t = libc::c_long;
+use crate::include::stddef::ptrdiff_t;
 pub type memory_order = libc::c_uint;
 pub const memory_order_seq_cst: memory_order = 5;
 pub const memory_order_acq_rel: memory_order = 4;

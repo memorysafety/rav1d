@@ -13,7 +13,7 @@ extern "C" {
         size: size_t,
     ) -> *mut Dav1dMemPoolBuffer;
 }
-pub type size_t = libc::c_ulong;
+use crate::include::stddef::size_t;
 pub type __uint8_t = libc::c_uchar;
 pub type uint8_t = __uint8_t;
 #[derive(Copy, Clone)]

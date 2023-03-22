@@ -1,5 +1,5 @@
 use ::libc;
-pub type ptrdiff_t = libc::c_long;
+use crate::include::stddef::ptrdiff_t;
 pub type __int32_t = libc::c_int;
 pub type int32_t = __int32_t;
 #[inline]

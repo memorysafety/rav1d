@@ -5,7 +5,7 @@ pub type __uint64_t = libc::c_ulong;
 pub type int64_t = __int64_t;
 pub type uint8_t = __uint8_t;
 pub type uint64_t = __uint64_t;
-pub type size_t = libc::c_ulong;
+use crate::include::stddef::size_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct GetBits {

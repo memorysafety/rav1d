@@ -9,7 +9,7 @@ extern "C" {
     fn abs(_: libc::c_int) -> libc::c_int;
     static dav1d_block_dimensions: [[uint8_t; 4]; 22];
 }
-pub type size_t = libc::c_ulong;
+use crate::include::stddef::size_t;
 pub type __int8_t = libc::c_schar;
 pub type __uint8_t = libc::c_uchar;
 pub type __int16_t = libc::c_short;
@@ -20,7 +20,7 @@ pub type __uint64_t = libc::c_ulong;
 pub type int8_t = __int8_t;
 pub type int16_t = __int16_t;
 pub type int32_t = __int32_t;
-pub type ptrdiff_t = libc::c_long;
+use crate::include::stddef::ptrdiff_t;
 pub type uint8_t = __uint8_t;
 pub type uint16_t = __uint16_t;
 pub type uint32_t = __uint32_t;

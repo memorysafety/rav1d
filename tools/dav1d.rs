@@ -109,7 +109,7 @@ pub type uint16_t = __uint16_t;
 pub type uint32_t = __uint32_t;
 pub type uint64_t = __uint64_t;
 pub type uintptr_t = libc::c_ulong;
-pub type size_t = libc::c_ulong;
+use crate::include::stddef::size_t;
 pub type clockid_t = __clockid_t;
 pub type time_t = __time_t;
 #[derive(Copy, Clone)]
@@ -119,7 +119,7 @@ pub struct timespec {
     pub tv_nsec: __syscall_slong_t,
 }
 pub type _IO_lock_t = ();
-pub type ptrdiff_t = libc::c_long;
+use crate::include::stddef::ptrdiff_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dUserData {

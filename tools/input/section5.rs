@@ -25,7 +25,7 @@ extern "C" {
     fn dav1d_data_unref(data: *mut Dav1dData);
     fn dav1d_data_create(data: *mut Dav1dData, sz: size_t) -> *mut uint8_t;
 }
-pub type size_t = libc::c_ulong;
+use crate::include::stddef::size_t;
 pub type __uint8_t = libc::c_uchar;
 pub type __int64_t = libc::c_long;
 pub type __uint64_t = libc::c_ulong;

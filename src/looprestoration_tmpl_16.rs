@@ -17,7 +17,7 @@ pub type int32_t = __int32_t;
 pub type uint8_t = __uint8_t;
 pub type uint16_t = __uint16_t;
 pub type uint32_t = __uint32_t;
-pub type ptrdiff_t = libc::c_long;
+use crate::include::stddef::ptrdiff_t;
 pub type pixel = uint16_t;
 pub type coef = int32_t;
 pub type LrEdgeFlags = libc::c_uint;
