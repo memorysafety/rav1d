@@ -31,6 +31,11 @@ pub type Dav1dAdaptiveBoolean = libc::c_uint;
 pub const DAV1D_ADAPTIVE: Dav1dAdaptiveBoolean = 2;
 pub const DAV1D_ON: Dav1dAdaptiveBoolean = 1;
 pub const DAV1D_OFF: Dav1dAdaptiveBoolean = 0;
+pub type Dav1dRestorationType = libc::c_uint;
+pub const DAV1D_RESTORATION_SGRPROJ: Dav1dRestorationType = 3;
+pub const DAV1D_RESTORATION_WIENER: Dav1dRestorationType = 2;
+pub const DAV1D_RESTORATION_SWITCHABLE: Dav1dRestorationType = 1;
+pub const DAV1D_RESTORATION_NONE: Dav1dRestorationType = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContentLightLevel {
