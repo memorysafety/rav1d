@@ -6,7 +6,7 @@
 //! [`Index`]/[`IndexMut`] (since it's usually array fields that require
 //! specific aligment for use with SIMD instructions).
 
-use std::ops::{Index, IndexMut};
+use std::ops::{Deref, DerefMut, Index, IndexMut};
 
 #[derive(Copy, Clone)]
 #[repr(C, align(32))]
@@ -29,6 +29,20 @@ impl<T: Index<usize>> Index<usize> for Align32<T> {
 impl<T: IndexMut<usize>> IndexMut<usize> for Align32<T> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         &mut self.0[index]
+    }
+}
+
+impl<T> Deref for Align32<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T> DerefMut for Align32<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
@@ -56,6 +70,20 @@ impl<T: IndexMut<usize>> IndexMut<usize> for Align16<T> {
     }
 }
 
+impl<T> Deref for Align16<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T> DerefMut for Align16<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
 #[derive(Copy, Clone)]
 #[repr(C, align(8))]
 pub struct Align8<T>(pub T);
@@ -80,6 +108,20 @@ impl<T: IndexMut<usize>> IndexMut<usize> for Align8<T> {
     }
 }
 
+impl<T> Deref for Align8<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T> DerefMut for Align8<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
 #[derive(Copy, Clone)]
 #[repr(C, align(4))]
 pub struct Align4<T>(pub T);
@@ -101,5 +143,19 @@ impl<T: Index<usize>> Index<usize> for Align4<T> {
 impl<T: IndexMut<usize>> IndexMut<usize> for Align4<T> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         &mut self.0[index]
+    }
+}
+
+impl<T> Deref for Align4<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T> DerefMut for Align4<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }

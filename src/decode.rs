@@ -17439,7 +17439,7 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(
             .offset(col_sb128_start as isize)
             .offset((tile_row * (*f).sb128w) as isize);
         while (*t).bx < (*ts).tiling.col_end {
-            if ::core::intrinsics::atomic_load_acquire((*c).flush) != 0 {
+            if ::core::intrinsics::atomic_load_acq((*c).flush) != 0 {
                 return 1 as libc::c_int;
             }
             if decode_sb(t, root_bl, (*c).intra_edge.root[root_bl as usize]) != 0 {
@@ -17484,7 +17484,7 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(
         .offset((sb128y * (*f).sb128w) as isize)
         .offset(col_sb128_start as isize);
     while (*t).bx < (*ts).tiling.col_end {
-        if ::core::intrinsics::atomic_load_acquire((*c).flush) != 0 {
+        if ::core::intrinsics::atomic_load_acq((*c).flush) != 0 {
             return 1 as libc::c_int;
         }
         if root_bl as libc::c_uint == BL_128X128 as libc::c_int as libc::c_uint {
@@ -19065,7 +19065,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_exit(
     dav1d_cdf_thread_unref(&mut (*f).in_cdf);
     if !((*f).frame_hdr).is_null() && (*(*f).frame_hdr).refresh_context != 0 {
         if !((*f).out_cdf.progress).is_null() {
-            ::core::intrinsics::atomic_store_seqcst(
+            ::core::intrinsics::atomic_store(
                 (*f).out_cdf.progress,
                 (if retval == 0 as libc::c_int {
                     1 as libc::c_int
@@ -19104,7 +19104,7 @@ pub unsafe extern "C" fn dav1d_decode_frame(f: *mut Dav1dFrameContext) -> libc::
             pthread_cond_signal(&mut (*(*f).task_thread.ttd).cond);
             if res == 0 {
                 while (*f).task_thread.done[0 as libc::c_int as usize] == 0
-                    || ::core::intrinsics::atomic_load_seqcst(
+                    || ::core::intrinsics::atomic_load(
                         &mut (*f).task_thread.task_counter as *mut atomic_int,
                     ) > 0 as libc::c_int
                 {
@@ -19171,25 +19171,25 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         out_delayed = &mut *((*c).frame_thread.out_delayed).offset(next as isize)
             as *mut Dav1dThreadPicture;
         if !((*out_delayed).p.data[0 as libc::c_int as usize]).is_null()
-            || ::core::intrinsics::atomic_load_seqcst(
+            || ::core::intrinsics::atomic_load(
                 &mut (*f).task_thread.error as *mut atomic_int,
             ) != 0
         {
-            let mut first: libc::c_uint = ::core::intrinsics::atomic_load_seqcst(
+            let mut first: libc::c_uint = ::core::intrinsics::atomic_load(
                 &mut (*c).task_thread.first,
             );
             if first.wrapping_add(1 as libc::c_uint) < (*c).n_fc {
-                ::core::intrinsics::atomic_xadd_seqcst(
+                ::core::intrinsics::atomic_xadd(
                     &mut (*c).task_thread.first,
                     1 as libc::c_uint,
                 );
             } else {
-                ::core::intrinsics::atomic_store_seqcst(
+                ::core::intrinsics::atomic_store(
                     &mut (*c).task_thread.first,
                     0 as libc::c_int as libc::c_uint,
                 );
             }
-            let fresh40 = ::core::intrinsics::atomic_cxchg_seqcst_seqcst(
+            let fresh40 = ::core::intrinsics::atomic_cxchg(
                 &mut (*c).task_thread.reset_task_cur,
                 *&mut first,
                 (2147483647 as libc::c_int as libc::c_uint)
@@ -19789,7 +19789,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                                     as libc::c_int;
                                                 cols = (*(*f).frame_hdr).tiling.cols;
                                                 rows = (*(*f).frame_hdr).tiling.rows;
-                                                ::core::intrinsics::atomic_store_seqcst(
+                                                ::core::intrinsics::atomic_store(
                                                     &mut (*f).task_thread.task_counter,
                                                     cols * rows + (*f).sbh << uses_2pass,
                                                 );

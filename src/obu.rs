@@ -4916,25 +4916,25 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                                                     .offset(next as isize) as *mut Dav1dThreadPicture;
                                                                 if !((*out_delayed).p.data[0 as libc::c_int as usize])
                                                                     .is_null()
-                                                                    || ::core::intrinsics::atomic_load_seqcst(
+                                                                    || ::core::intrinsics::atomic_load(
                                                                         &mut (*f).task_thread.error as *mut atomic_int,
                                                                     ) != 0
                                                                 {
-                                                                    let mut first: libc::c_uint = ::core::intrinsics::atomic_load_seqcst(
+                                                                    let mut first: libc::c_uint = ::core::intrinsics::atomic_load(
                                                                         &mut (*c).task_thread.first,
                                                                     );
                                                                     if first.wrapping_add(1 as libc::c_uint) < (*c).n_fc {
-                                                                        ::core::intrinsics::atomic_xadd_seqcst(
+                                                                        ::core::intrinsics::atomic_xadd(
                                                                             &mut (*c).task_thread.first,
                                                                             1 as libc::c_uint,
                                                                         );
                                                                     } else {
-                                                                        ::core::intrinsics::atomic_store_seqcst(
+                                                                        ::core::intrinsics::atomic_store(
                                                                             &mut (*c).task_thread.first,
                                                                             0 as libc::c_int as libc::c_uint,
                                                                         );
                                                                     }
-                                                                    let fresh2 = ::core::intrinsics::atomic_cxchg_seqcst_seqcst(
+                                                                    let fresh2 = ::core::intrinsics::atomic_cxchg(
                                                                         &mut (*c).task_thread.reset_task_cur,
                                                                         *&mut first,
                                                                         (2147483647 as libc::c_int as libc::c_uint)

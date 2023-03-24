@@ -50,7 +50,7 @@ fn build_nasm_files() {
     nasm.flag(&config_include_arg);
     nasm.flag("-Isrc/");
     let obj = nasm.compile_objects().unwrap_or_else(|e| {
-      println!("cargo:warning={e}");
+      println!("cargo:warning={}", e);
       panic!("NASM build failed. Make sure you have nasm installed or disable the \"asm\" feature.\n\
         You can get NASM from https://nasm.us or your system's package manager.\n\nerror: {e}");
     });

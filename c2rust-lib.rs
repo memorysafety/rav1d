@@ -9,6 +9,9 @@
 #![feature(c_variadic)]
 #![feature(core_intrinsics)]
 #![feature(extern_types)]
+#![feature(ptr_offset_from)]
+#![feature(const_transmute)]
+#![feature(untagged_unions)]
 
 #[cfg(not(any(feature = "bitdepth_8", feature = "bitdepth_16")))]
 compile_error!("No bitdepths enabled. Enable one or more of the following features: `bitdepth_8`, `bitdepth_16`");

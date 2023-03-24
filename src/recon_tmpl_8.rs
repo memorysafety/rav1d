@@ -1,5 +1,4 @@
 use ::libc;
-use core::arch::asm;
 use crate::src::cdf::CdfContext;
 use crate::src::msac::MsacContext;
 extern "C" {
