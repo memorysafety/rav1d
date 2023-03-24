@@ -27,6 +27,10 @@ pub const DAV1D_N_SWITCHABLE_FILTERS: Dav1dFilterMode = 3;
 pub const DAV1D_FILTER_8TAP_SHARP: Dav1dFilterMode = 2;
 pub const DAV1D_FILTER_8TAP_SMOOTH: Dav1dFilterMode = 1;
 pub const DAV1D_FILTER_8TAP_REGULAR: Dav1dFilterMode = 0;
+pub type Dav1dAdaptiveBoolean = libc::c_uint;
+pub const DAV1D_ADAPTIVE: Dav1dAdaptiveBoolean = 2;
+pub const DAV1D_ON: Dav1dAdaptiveBoolean = 1;
+pub const DAV1D_OFF: Dav1dAdaptiveBoolean = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContentLightLevel {

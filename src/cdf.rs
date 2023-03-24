@@ -521,10 +521,10 @@ pub struct Dav1dSequenceHeaderOperatingParameterInfo {
     pub encoder_buffer_delay: libc::c_int,
     pub low_delay_mode: libc::c_int,
 }
-pub type Dav1dAdaptiveBoolean = libc::c_uint;
-pub const DAV1D_ADAPTIVE: Dav1dAdaptiveBoolean = 2;
-pub const DAV1D_ON: Dav1dAdaptiveBoolean = 1;
-pub const DAV1D_OFF: Dav1dAdaptiveBoolean = 0;
+use crate::include::dav1d::headers::Dav1dAdaptiveBoolean;
+use crate::include::dav1d::headers::DAV1D_ADAPTIVE;
+use crate::include::dav1d::headers::DAV1D_ON;
+use crate::include::dav1d::headers::DAV1D_OFF;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dSequenceHeaderOperatingPoint {
