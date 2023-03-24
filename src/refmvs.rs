@@ -61,11 +61,11 @@ extern "C" {
     );
 }
 
-pub type Dav1dTxfmMode = libc::c_uint;
-pub const DAV1D_N_TX_MODES: Dav1dTxfmMode = 3;
-pub const DAV1D_TX_SWITCHABLE: Dav1dTxfmMode = 2;
-pub const DAV1D_TX_LARGEST: Dav1dTxfmMode = 1;
-pub const DAV1D_TX_4X4_ONLY: Dav1dTxfmMode = 0;
+use crate::include::dav1d::headers::Dav1dTxfmMode;
+use crate::include::dav1d::headers::DAV1D_N_TX_MODES;
+use crate::include::dav1d::headers::DAV1D_TX_SWITCHABLE;
+use crate::include::dav1d::headers::DAV1D_TX_LARGEST;
+use crate::include::dav1d::headers::DAV1D_TX_4X4_ONLY;
 pub type Dav1dFilterMode = libc::c_uint;
 pub const DAV1D_FILTER_SWITCHABLE: Dav1dFilterMode = 4;
 pub const DAV1D_N_FILTERS: Dav1dFilterMode = 4;
