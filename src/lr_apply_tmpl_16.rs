@@ -1471,7 +1471,7 @@ unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
 }
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
-    if x & 1 as libc::c_int as libc::c_long != 0 {
+    if x & 1 != 0 {
         unreachable!();
     }
     return x >> 1 as libc::c_int;
@@ -1503,7 +1503,7 @@ unsafe extern "C" fn lr_stripe(
         .offset(
             ((have_tt
                 * (sby * ((4 as libc::c_int) << (*(*f).seq_hdr).sb128)
-                    - 4 as libc::c_int)) as libc::c_long * PXSTRIDE(stride)) as isize,
+                    - 4 as libc::c_int)) as isize * PXSTRIDE(stride)) as isize,
         )
         .offset(x as isize);
     let mut stripe_h: libc::c_int = imin(
@@ -1617,7 +1617,7 @@ unsafe extern "C" fn lr_stripe(
         );
         left = left.offset(stripe_h as isize);
         y += stripe_h;
-        p = p.offset((stripe_h as libc::c_long * PXSTRIDE(stride)) as isize);
+        p = p.offset(stripe_h as isize * PXSTRIDE(stride));
         edges = ::core::mem::transmute::<
             libc::c_uint,
             LrEdgeFlags,
@@ -1626,7 +1626,7 @@ unsafe extern "C" fn lr_stripe(
         if stripe_h == 0 as libc::c_int {
             break;
         }
-        lpf = lpf.offset((4 as libc::c_int as libc::c_long * PXSTRIDE(stride)) as isize);
+        lpf = lpf.offset(4 * PXSTRIDE(stride));
     }
 }
 unsafe extern "C" fn backup4xU(
@@ -1785,8 +1785,7 @@ pub unsafe extern "C" fn dav1d_lr_sbrow_16bpc(
             f,
             (*dst.offset(0 as libc::c_int as isize))
                 .offset(
-                    -((offset_y as libc::c_long
-                        * PXSTRIDE(*dst_stride.offset(0 as libc::c_int as isize)))
+                    -((offset_y as isize * PXSTRIDE(*dst_stride.offset(0 as libc::c_int as isize)))
                         as isize),
                 ),
             y_stripe,
@@ -1818,8 +1817,7 @@ pub unsafe extern "C" fn dav1d_lr_sbrow_16bpc(
                 f,
                 (*dst.offset(1 as libc::c_int as isize))
                     .offset(
-                        -((offset_uv as libc::c_long
-                            * PXSTRIDE(*dst_stride.offset(1 as libc::c_int as isize)))
+                        -((offset_uv as isize * PXSTRIDE(*dst_stride.offset(1 as libc::c_int as isize)))
                             as isize),
                     ),
                 y_stripe_0,
@@ -1834,8 +1832,7 @@ pub unsafe extern "C" fn dav1d_lr_sbrow_16bpc(
                 f,
                 (*dst.offset(2 as libc::c_int as isize))
                     .offset(
-                        -((offset_uv as libc::c_long
-                            * PXSTRIDE(*dst_stride.offset(1 as libc::c_int as isize)))
+                        -((offset_uv as isize * PXSTRIDE(*dst_stride.offset(1 as libc::c_int as isize)))
                             as isize),
                     ),
                 y_stripe_0,

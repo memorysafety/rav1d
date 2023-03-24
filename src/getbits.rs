@@ -100,32 +100,30 @@ pub unsafe extern "C" fn dav1d_get_bits(
     c: *mut GetBits,
     n: libc::c_int,
 ) -> libc::c_uint {
-    if !(n > 0 as libc::c_int && n <= 32 as libc::c_int) {
-        unreachable!();
-    }
+    assert!(n > 0 && n <= 32);
+    /* Unsigned cast avoids refill after eob */
     if n as libc::c_uint > (*c).bits_left as libc::c_uint {
         refill(c, n);
     }
     let state: uint64_t = (*c).state;
     (*c).bits_left -= n;
     (*c).state = state << n;
-    return (state >> 64 as libc::c_int - n) as libc::c_uint;
+    return (state as uint64_t >> 64 - n) as libc::c_uint;
 }
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_get_sbits(
     c: *mut GetBits,
     n: libc::c_int,
 ) -> libc::c_int {
-    if !(n > 0 as libc::c_int && n <= 32 as libc::c_int) {
-        unreachable!();
-    }
+    assert!(n > 0 && n <= 32);
+    /* Unsigned cast avoids refill after eob */
     if n as libc::c_uint > (*c).bits_left as libc::c_uint {
         refill(c, n);
     }
     let state: uint64_t = (*c).state;
     (*c).bits_left -= n;
     (*c).state = state << n;
-    return (state as int64_t >> 64 as libc::c_int - n) as libc::c_int;
+    return (state as int64_t >> 64 - n) as libc::c_int;
 }
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_get_uleb128(c: *mut GetBits) -> libc::c_uint {

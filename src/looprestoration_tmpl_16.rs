@@ -381,7 +381,7 @@ unsafe extern "C" fn pixel_set(dst: *mut pixel, val: libc::c_int, num: libc::c_i
 }
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
-    if x & 1 as libc::c_int as libc::c_long != 0 {
+    if x & 1 != 0 {
         unreachable!();
     }
     return x >> 1 as libc::c_int;
@@ -474,7 +474,7 @@ unsafe extern "C" fn padding(
         .offset((3 as libc::c_int * 390 as libc::c_int) as isize);
     if edges as libc::c_uint & LR_HAVE_BOTTOM as libc::c_int as libc::c_uint != 0 {
         let below_1: *const pixel = lpf
-            .offset((6 as libc::c_int as libc::c_long * PXSTRIDE(stride)) as isize);
+            .offset(6 * PXSTRIDE(stride));
         let below_2: *const pixel = below_1.offset(PXSTRIDE(stride) as isize);
         memcpy(
             dst_tl.offset((stripe_h * 390 as libc::c_int) as isize) as *mut libc::c_void,
@@ -496,7 +496,7 @@ unsafe extern "C" fn padding(
     } else {
         let src: *const pixel = p
             .offset(
-                ((stripe_h - 1 as libc::c_int) as libc::c_long * PXSTRIDE(stride))
+                ((stripe_h - 1 as libc::c_int) as isize * PXSTRIDE(stride))
                     as isize,
             );
         memcpy(
@@ -669,8 +669,7 @@ unsafe extern "C" fn wiener_c(
             }
             *p
                 .offset(
-                    (j_0 as libc::c_long * PXSTRIDE(stride) + i_0 as libc::c_long)
-                        as isize,
+                    j_0 as isize * PXSTRIDE(stride) + i_0 as isize,
                 ) = iclip(
                 sum_0 + rounding_off_v >> round_bits_v,
                 0 as libc::c_int,

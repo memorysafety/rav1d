@@ -1,7 +1,6 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use ::libc;
-
 #[inline]
 unsafe extern "C" fn iclip(
     v: libc::c_int,
@@ -22,9 +21,9 @@ unsafe extern "C" fn inv_dct4_1d_internal_c(
         unreachable!();
     }
     let in0: libc::c_int = *c
-        .offset((0 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((0 * stride) as isize);
     let in1: libc::c_int = *c
-        .offset((1 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((1 * stride) as isize);
     let mut t0: libc::c_int = 0;
     let mut t1: libc::c_int = 0;
     let mut t2: libc::c_int = 0;
@@ -36,9 +35,9 @@ unsafe extern "C" fn inv_dct4_1d_internal_c(
         t3 = in1 * 3784 as libc::c_int + 2048 as libc::c_int >> 12 as libc::c_int;
     } else {
         let in2: libc::c_int = *c
-            .offset((2 as libc::c_int as libc::c_long * stride) as isize);
+            .offset((2 * stride) as isize);
         let in3: libc::c_int = *c
-            .offset((3 as libc::c_int as libc::c_long * stride) as isize);
+            .offset((3 * stride) as isize);
         t0 = (in0 + in2) * 181 as libc::c_int + 128 as libc::c_int >> 8 as libc::c_int;
         t1 = (in0 - in2) * 181 as libc::c_int + 128 as libc::c_int >> 8 as libc::c_int;
         t2 = (in1 * 1567 as libc::c_int
@@ -50,19 +49,19 @@ unsafe extern "C" fn inv_dct4_1d_internal_c(
     }
     *c
         .offset(
-            (0 as libc::c_int as libc::c_long * stride) as isize,
+            (0 * stride) as isize,
         ) = iclip(t0 + t3, min, max);
     *c
         .offset(
-            (1 as libc::c_int as libc::c_long * stride) as isize,
+            (1 * stride) as isize,
         ) = iclip(t1 + t2, min, max);
     *c
         .offset(
-            (2 as libc::c_int as libc::c_long * stride) as isize,
+            (2 * stride) as isize,
         ) = iclip(t1 - t2, min, max);
     *c
         .offset(
-            (3 as libc::c_int as libc::c_long * stride) as isize,
+            (3 * stride) as isize,
         ) = iclip(t0 - t3, min, max);
 }
 #[no_mangle]
@@ -82,14 +81,14 @@ unsafe extern "C" fn inv_dct8_1d_internal_c(
     max: libc::c_int,
     tx64: libc::c_int,
 ) {
-    if !(stride > 0 as libc::c_int as libc::c_long) {
+    if !(stride > 0) {
         unreachable!();
     }
     inv_dct4_1d_internal_c(c, stride << 1 as libc::c_int, min, max, tx64);
     let in1: libc::c_int = *c
-        .offset((1 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((1 * stride) as isize);
     let in3: libc::c_int = *c
-        .offset((3 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((3 * stride) as isize);
     let mut t4a: libc::c_int = 0;
     let mut t5a: libc::c_int = 0;
     let mut t6a: libc::c_int = 0;
@@ -101,9 +100,9 @@ unsafe extern "C" fn inv_dct8_1d_internal_c(
         t7a = in1 * 4017 as libc::c_int + 2048 as libc::c_int >> 12 as libc::c_int;
     } else {
         let in5: libc::c_int = *c
-            .offset((5 as libc::c_int as libc::c_long * stride) as isize);
+            .offset((5 * stride) as isize);
         let in7: libc::c_int = *c
-            .offset((7 as libc::c_int as libc::c_long * stride) as isize);
+            .offset((7 * stride) as isize);
         t4a = (in1 * 799 as libc::c_int
             - in7 * (4017 as libc::c_int - 4096 as libc::c_int) + 2048 as libc::c_int
             >> 12 as libc::c_int) - in7;
@@ -123,44 +122,44 @@ unsafe extern "C" fn inv_dct8_1d_internal_c(
     let t6: libc::c_int = (t6a + t5a) * 181 as libc::c_int + 128 as libc::c_int
         >> 8 as libc::c_int;
     let t0: libc::c_int = *c
-        .offset((0 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((0 * stride) as isize);
     let t1: libc::c_int = *c
-        .offset((2 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((2 * stride) as isize);
     let t2: libc::c_int = *c
-        .offset((4 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((4 * stride) as isize);
     let t3: libc::c_int = *c
-        .offset((6 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((6 * stride) as isize);
     *c
         .offset(
-            (0 as libc::c_int as libc::c_long * stride) as isize,
+            (0 * stride) as isize,
         ) = iclip(t0 + t7, min, max);
     *c
         .offset(
-            (1 as libc::c_int as libc::c_long * stride) as isize,
+            (1 * stride) as isize,
         ) = iclip(t1 + t6, min, max);
     *c
         .offset(
-            (2 as libc::c_int as libc::c_long * stride) as isize,
+            (2 * stride) as isize,
         ) = iclip(t2 + t5, min, max);
     *c
         .offset(
-            (3 as libc::c_int as libc::c_long * stride) as isize,
+            (3 * stride) as isize,
         ) = iclip(t3 + t4, min, max);
     *c
         .offset(
-            (4 as libc::c_int as libc::c_long * stride) as isize,
+            (4 * stride) as isize,
         ) = iclip(t3 - t4, min, max);
     *c
         .offset(
-            (5 as libc::c_int as libc::c_long * stride) as isize,
+            (5 * stride) as isize,
         ) = iclip(t2 - t5, min, max);
     *c
         .offset(
-            (6 as libc::c_int as libc::c_long * stride) as isize,
+            (6 * stride) as isize,
         ) = iclip(t1 - t6, min, max);
     *c
         .offset(
-            (7 as libc::c_int as libc::c_long * stride) as isize,
+            (7 * stride) as isize,
         ) = iclip(t0 - t7, min, max);
 }
 #[no_mangle]
@@ -180,18 +179,18 @@ unsafe extern "C" fn inv_dct16_1d_internal_c(
     max: libc::c_int,
     mut tx64: libc::c_int,
 ) {
-    if !(stride > 0 as libc::c_int as libc::c_long) {
+    if !(stride > 0) {
         unreachable!();
     }
     inv_dct8_1d_internal_c(c, stride << 1 as libc::c_int, min, max, tx64);
     let in1: libc::c_int = *c
-        .offset((1 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((1 * stride) as isize);
     let in3: libc::c_int = *c
-        .offset((3 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((3 * stride) as isize);
     let in5: libc::c_int = *c
-        .offset((5 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((5 * stride) as isize);
     let in7: libc::c_int = *c
-        .offset((7 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((7 * stride) as isize);
     let mut t8a: libc::c_int = 0;
     let mut t9a: libc::c_int = 0;
     let mut t10a: libc::c_int = 0;
@@ -211,13 +210,13 @@ unsafe extern "C" fn inv_dct16_1d_internal_c(
         t15a = in1 * 4076 as libc::c_int + 2048 as libc::c_int >> 12 as libc::c_int;
     } else {
         let in9: libc::c_int = *c
-            .offset((9 as libc::c_int as libc::c_long * stride) as isize);
+            .offset((9 * stride) as isize);
         let in11: libc::c_int = *c
-            .offset((11 as libc::c_int as libc::c_long * stride) as isize);
+            .offset((11 * stride) as isize);
         let in13: libc::c_int = *c
-            .offset((13 as libc::c_int as libc::c_long * stride) as isize);
+            .offset((13 * stride) as isize);
         let in15: libc::c_int = *c
-            .offset((15 as libc::c_int as libc::c_long * stride) as isize);
+            .offset((15 * stride) as isize);
         t8a = (in1 * 401 as libc::c_int
             - in15 * (4076 as libc::c_int - 4096 as libc::c_int) + 2048 as libc::c_int
             >> 12 as libc::c_int) - in15;
@@ -270,84 +269,84 @@ unsafe extern "C" fn inv_dct16_1d_internal_c(
     t11 = (t12a - t11a) * 181 as libc::c_int + 128 as libc::c_int >> 8 as libc::c_int;
     t12 = (t12a + t11a) * 181 as libc::c_int + 128 as libc::c_int >> 8 as libc::c_int;
     let t0: libc::c_int = *c
-        .offset((0 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((0 * stride) as isize);
     let t1: libc::c_int = *c
-        .offset((2 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((2 * stride) as isize);
     let t2: libc::c_int = *c
-        .offset((4 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((4 * stride) as isize);
     let t3: libc::c_int = *c
-        .offset((6 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((6 * stride) as isize);
     let t4: libc::c_int = *c
-        .offset((8 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((8 * stride) as isize);
     let t5: libc::c_int = *c
-        .offset((10 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((10 * stride) as isize);
     let t6: libc::c_int = *c
-        .offset((12 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((12 * stride) as isize);
     let t7: libc::c_int = *c
-        .offset((14 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((14 * stride) as isize);
     *c
         .offset(
-            (0 as libc::c_int as libc::c_long * stride) as isize,
+            (0 * stride) as isize,
         ) = iclip(t0 + t15a, min, max);
     *c
         .offset(
-            (1 as libc::c_int as libc::c_long * stride) as isize,
+            (1 * stride) as isize,
         ) = iclip(t1 + t14, min, max);
     *c
         .offset(
-            (2 as libc::c_int as libc::c_long * stride) as isize,
+            (2 * stride) as isize,
         ) = iclip(t2 + t13a, min, max);
     *c
         .offset(
-            (3 as libc::c_int as libc::c_long * stride) as isize,
+            (3 * stride) as isize,
         ) = iclip(t3 + t12, min, max);
     *c
         .offset(
-            (4 as libc::c_int as libc::c_long * stride) as isize,
+            (4 * stride) as isize,
         ) = iclip(t4 + t11, min, max);
     *c
         .offset(
-            (5 as libc::c_int as libc::c_long * stride) as isize,
+            (5 * stride) as isize,
         ) = iclip(t5 + t10a, min, max);
     *c
         .offset(
-            (6 as libc::c_int as libc::c_long * stride) as isize,
+            (6 * stride) as isize,
         ) = iclip(t6 + t9, min, max);
     *c
         .offset(
-            (7 as libc::c_int as libc::c_long * stride) as isize,
+            (7 * stride) as isize,
         ) = iclip(t7 + t8a, min, max);
     *c
         .offset(
-            (8 as libc::c_int as libc::c_long * stride) as isize,
+            (8 * stride) as isize,
         ) = iclip(t7 - t8a, min, max);
     *c
         .offset(
-            (9 as libc::c_int as libc::c_long * stride) as isize,
+            (9 * stride) as isize,
         ) = iclip(t6 - t9, min, max);
     *c
         .offset(
-            (10 as libc::c_int as libc::c_long * stride) as isize,
+            (10 * stride) as isize,
         ) = iclip(t5 - t10a, min, max);
     *c
         .offset(
-            (11 as libc::c_int as libc::c_long * stride) as isize,
+            (11 * stride) as isize,
         ) = iclip(t4 - t11, min, max);
     *c
         .offset(
-            (12 as libc::c_int as libc::c_long * stride) as isize,
+            (12 * stride) as isize,
         ) = iclip(t3 - t12, min, max);
     *c
         .offset(
-            (13 as libc::c_int as libc::c_long * stride) as isize,
+            (13 * stride) as isize,
         ) = iclip(t2 - t13a, min, max);
     *c
         .offset(
-            (14 as libc::c_int as libc::c_long * stride) as isize,
+            (14 * stride) as isize,
         ) = iclip(t1 - t14, min, max);
     *c
         .offset(
-            (15 as libc::c_int as libc::c_long * stride) as isize,
+            (15 * stride) as isize,
         ) = iclip(t0 - t15a, min, max);
 }
 #[no_mangle]
@@ -367,26 +366,26 @@ unsafe extern "C" fn inv_dct32_1d_internal_c(
     max: libc::c_int,
     tx64: libc::c_int,
 ) {
-    if !(stride > 0 as libc::c_int as libc::c_long) {
+    if !(stride > 0) {
         unreachable!();
     }
     inv_dct16_1d_internal_c(c, stride << 1 as libc::c_int, min, max, tx64);
     let in1: libc::c_int = *c
-        .offset((1 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((1 * stride) as isize);
     let in3: libc::c_int = *c
-        .offset((3 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((3 * stride) as isize);
     let in5: libc::c_int = *c
-        .offset((5 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((5 * stride) as isize);
     let in7: libc::c_int = *c
-        .offset((7 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((7 * stride) as isize);
     let in9: libc::c_int = *c
-        .offset((9 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((9 * stride) as isize);
     let in11: libc::c_int = *c
-        .offset((11 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((11 * stride) as isize);
     let in13: libc::c_int = *c
-        .offset((13 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((13 * stride) as isize);
     let in15: libc::c_int = *c
-        .offset((15 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((15 * stride) as isize);
     let mut t16a: libc::c_int = 0;
     let mut t17a: libc::c_int = 0;
     let mut t18a: libc::c_int = 0;
@@ -422,21 +421,21 @@ unsafe extern "C" fn inv_dct32_1d_internal_c(
         t31a = in1 * 4091 as libc::c_int + 2048 as libc::c_int >> 12 as libc::c_int;
     } else {
         let in17: libc::c_int = *c
-            .offset((17 as libc::c_int as libc::c_long * stride) as isize);
+            .offset((17 * stride) as isize);
         let in19: libc::c_int = *c
-            .offset((19 as libc::c_int as libc::c_long * stride) as isize);
+            .offset((19 * stride) as isize);
         let in21: libc::c_int = *c
-            .offset((21 as libc::c_int as libc::c_long * stride) as isize);
+            .offset((21 * stride) as isize);
         let in23: libc::c_int = *c
-            .offset((23 as libc::c_int as libc::c_long * stride) as isize);
+            .offset((23 * stride) as isize);
         let in25: libc::c_int = *c
-            .offset((25 as libc::c_int as libc::c_long * stride) as isize);
+            .offset((25 * stride) as isize);
         let in27: libc::c_int = *c
-            .offset((27 as libc::c_int as libc::c_long * stride) as isize);
+            .offset((27 * stride) as isize);
         let in29: libc::c_int = *c
-            .offset((29 as libc::c_int as libc::c_long * stride) as isize);
+            .offset((29 * stride) as isize);
         let in31: libc::c_int = *c
-            .offset((31 as libc::c_int as libc::c_long * stride) as isize);
+            .offset((31 * stride) as isize);
         t16a = (in1 * 201 as libc::c_int
             - in31 * (4091 as libc::c_int - 4096 as libc::c_int) + 2048 as libc::c_int
             >> 12 as libc::c_int) - in31;
@@ -575,164 +574,164 @@ unsafe extern "C" fn inv_dct32_1d_internal_c(
     t23a = (t24 - t23) * 181 as libc::c_int + 128 as libc::c_int >> 8 as libc::c_int;
     t24a = (t24 + t23) * 181 as libc::c_int + 128 as libc::c_int >> 8 as libc::c_int;
     let t0: libc::c_int = *c
-        .offset((0 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((0 * stride) as isize);
     let t1: libc::c_int = *c
-        .offset((2 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((2 * stride) as isize);
     let t2: libc::c_int = *c
-        .offset((4 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((4 * stride) as isize);
     let t3: libc::c_int = *c
-        .offset((6 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((6 * stride) as isize);
     let t4: libc::c_int = *c
-        .offset((8 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((8 * stride) as isize);
     let t5: libc::c_int = *c
-        .offset((10 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((10 * stride) as isize);
     let t6: libc::c_int = *c
-        .offset((12 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((12 * stride) as isize);
     let t7: libc::c_int = *c
-        .offset((14 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((14 * stride) as isize);
     let t8: libc::c_int = *c
-        .offset((16 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((16 * stride) as isize);
     let t9: libc::c_int = *c
-        .offset((18 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((18 * stride) as isize);
     let t10: libc::c_int = *c
-        .offset((20 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((20 * stride) as isize);
     let t11: libc::c_int = *c
-        .offset((22 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((22 * stride) as isize);
     let t12: libc::c_int = *c
-        .offset((24 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((24 * stride) as isize);
     let t13: libc::c_int = *c
-        .offset((26 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((26 * stride) as isize);
     let t14: libc::c_int = *c
-        .offset((28 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((28 * stride) as isize);
     let t15: libc::c_int = *c
-        .offset((30 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((30 * stride) as isize);
     *c
         .offset(
-            (0 as libc::c_int as libc::c_long * stride) as isize,
+            (0 * stride) as isize,
         ) = iclip(t0 + t31, min, max);
     *c
         .offset(
-            (1 as libc::c_int as libc::c_long * stride) as isize,
+            (1 * stride) as isize,
         ) = iclip(t1 + t30a, min, max);
     *c
         .offset(
-            (2 as libc::c_int as libc::c_long * stride) as isize,
+            (2 * stride) as isize,
         ) = iclip(t2 + t29, min, max);
     *c
         .offset(
-            (3 as libc::c_int as libc::c_long * stride) as isize,
+            (3 * stride) as isize,
         ) = iclip(t3 + t28a, min, max);
     *c
         .offset(
-            (4 as libc::c_int as libc::c_long * stride) as isize,
+            (4 * stride) as isize,
         ) = iclip(t4 + t27, min, max);
     *c
         .offset(
-            (5 as libc::c_int as libc::c_long * stride) as isize,
+            (5 * stride) as isize,
         ) = iclip(t5 + t26a, min, max);
     *c
         .offset(
-            (6 as libc::c_int as libc::c_long * stride) as isize,
+            (6 * stride) as isize,
         ) = iclip(t6 + t25, min, max);
     *c
         .offset(
-            (7 as libc::c_int as libc::c_long * stride) as isize,
+            (7 * stride) as isize,
         ) = iclip(t7 + t24a, min, max);
     *c
         .offset(
-            (8 as libc::c_int as libc::c_long * stride) as isize,
+            (8 * stride) as isize,
         ) = iclip(t8 + t23a, min, max);
     *c
         .offset(
-            (9 as libc::c_int as libc::c_long * stride) as isize,
+            (9 * stride) as isize,
         ) = iclip(t9 + t22, min, max);
     *c
         .offset(
-            (10 as libc::c_int as libc::c_long * stride) as isize,
+            (10 * stride) as isize,
         ) = iclip(t10 + t21a, min, max);
     *c
         .offset(
-            (11 as libc::c_int as libc::c_long * stride) as isize,
+            (11 * stride) as isize,
         ) = iclip(t11 + t20, min, max);
     *c
         .offset(
-            (12 as libc::c_int as libc::c_long * stride) as isize,
+            (12 * stride) as isize,
         ) = iclip(t12 + t19a, min, max);
     *c
         .offset(
-            (13 as libc::c_int as libc::c_long * stride) as isize,
+            (13 * stride) as isize,
         ) = iclip(t13 + t18, min, max);
     *c
         .offset(
-            (14 as libc::c_int as libc::c_long * stride) as isize,
+            (14 * stride) as isize,
         ) = iclip(t14 + t17a, min, max);
     *c
         .offset(
-            (15 as libc::c_int as libc::c_long * stride) as isize,
+            (15 * stride) as isize,
         ) = iclip(t15 + t16, min, max);
     *c
         .offset(
-            (16 as libc::c_int as libc::c_long * stride) as isize,
+            (16 * stride) as isize,
         ) = iclip(t15 - t16, min, max);
     *c
         .offset(
-            (17 as libc::c_int as libc::c_long * stride) as isize,
+            (17 * stride) as isize,
         ) = iclip(t14 - t17a, min, max);
     *c
         .offset(
-            (18 as libc::c_int as libc::c_long * stride) as isize,
+            (18 * stride) as isize,
         ) = iclip(t13 - t18, min, max);
     *c
         .offset(
-            (19 as libc::c_int as libc::c_long * stride) as isize,
+            (19 * stride) as isize,
         ) = iclip(t12 - t19a, min, max);
     *c
         .offset(
-            (20 as libc::c_int as libc::c_long * stride) as isize,
+            (20 * stride) as isize,
         ) = iclip(t11 - t20, min, max);
     *c
         .offset(
-            (21 as libc::c_int as libc::c_long * stride) as isize,
+            (21 * stride) as isize,
         ) = iclip(t10 - t21a, min, max);
     *c
         .offset(
-            (22 as libc::c_int as libc::c_long * stride) as isize,
+            (22 * stride) as isize,
         ) = iclip(t9 - t22, min, max);
     *c
         .offset(
-            (23 as libc::c_int as libc::c_long * stride) as isize,
+            (23 * stride) as isize,
         ) = iclip(t8 - t23a, min, max);
     *c
         .offset(
-            (24 as libc::c_int as libc::c_long * stride) as isize,
+            (24 * stride) as isize,
         ) = iclip(t7 - t24a, min, max);
     *c
         .offset(
-            (25 as libc::c_int as libc::c_long * stride) as isize,
+            (25 * stride) as isize,
         ) = iclip(t6 - t25, min, max);
     *c
         .offset(
-            (26 as libc::c_int as libc::c_long * stride) as isize,
+            (26 * stride) as isize,
         ) = iclip(t5 - t26a, min, max);
     *c
         .offset(
-            (27 as libc::c_int as libc::c_long * stride) as isize,
+            (27 * stride) as isize,
         ) = iclip(t4 - t27, min, max);
     *c
         .offset(
-            (28 as libc::c_int as libc::c_long * stride) as isize,
+            (28 * stride) as isize,
         ) = iclip(t3 - t28a, min, max);
     *c
         .offset(
-            (29 as libc::c_int as libc::c_long * stride) as isize,
+            (29 * stride) as isize,
         ) = iclip(t2 - t29, min, max);
     *c
         .offset(
-            (30 as libc::c_int as libc::c_long * stride) as isize,
+            (30 * stride) as isize,
         ) = iclip(t1 - t30a, min, max);
     *c
         .offset(
-            (31 as libc::c_int as libc::c_long * stride) as isize,
+            (31 * stride) as isize,
         ) = iclip(t0 - t31, min, max);
 }
 #[no_mangle]
@@ -751,42 +750,42 @@ pub unsafe extern "C" fn dav1d_inv_dct64_1d_c(
     min: libc::c_int,
     max: libc::c_int,
 ) {
-    if !(stride > 0 as libc::c_int as libc::c_long) {
+    if !(stride > 0) {
         unreachable!();
     }
     inv_dct32_1d_internal_c(c, stride << 1 as libc::c_int, min, max, 1 as libc::c_int);
     let in1: libc::c_int = *c
-        .offset((1 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((1 * stride) as isize);
     let in3: libc::c_int = *c
-        .offset((3 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((3 * stride) as isize);
     let in5: libc::c_int = *c
-        .offset((5 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((5 * stride) as isize);
     let in7: libc::c_int = *c
-        .offset((7 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((7 * stride) as isize);
     let in9: libc::c_int = *c
-        .offset((9 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((9 * stride) as isize);
     let in11: libc::c_int = *c
-        .offset((11 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((11 * stride) as isize);
     let in13: libc::c_int = *c
-        .offset((13 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((13 * stride) as isize);
     let in15: libc::c_int = *c
-        .offset((15 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((15 * stride) as isize);
     let in17: libc::c_int = *c
-        .offset((17 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((17 * stride) as isize);
     let in19: libc::c_int = *c
-        .offset((19 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((19 * stride) as isize);
     let in21: libc::c_int = *c
-        .offset((21 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((21 * stride) as isize);
     let in23: libc::c_int = *c
-        .offset((23 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((23 * stride) as isize);
     let in25: libc::c_int = *c
-        .offset((25 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((25 * stride) as isize);
     let in27: libc::c_int = *c
-        .offset((27 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((27 * stride) as isize);
     let in29: libc::c_int = *c
-        .offset((29 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((29 * stride) as isize);
     let in31: libc::c_int = *c
-        .offset((31 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((31 * stride) as isize);
     let mut t32a: libc::c_int = in1 * 101 as libc::c_int + 2048 as libc::c_int
         >> 12 as libc::c_int;
     let mut t33a: libc::c_int = in31 * -(2824 as libc::c_int) + 2048 as libc::c_int
@@ -1104,324 +1103,324 @@ pub unsafe extern "C" fn dav1d_inv_dct64_1d_c(
     t54 = (t41a + t54a) * 181 as libc::c_int + 128 as libc::c_int >> 8 as libc::c_int;
     t55a = (t40 + t55) * 181 as libc::c_int + 128 as libc::c_int >> 8 as libc::c_int;
     let t0: libc::c_int = *c
-        .offset((0 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((0 * stride) as isize);
     let t1: libc::c_int = *c
-        .offset((2 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((2 * stride) as isize);
     let t2: libc::c_int = *c
-        .offset((4 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((4 * stride) as isize);
     let t3: libc::c_int = *c
-        .offset((6 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((6 * stride) as isize);
     let t4: libc::c_int = *c
-        .offset((8 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((8 * stride) as isize);
     let t5: libc::c_int = *c
-        .offset((10 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((10 * stride) as isize);
     let t6: libc::c_int = *c
-        .offset((12 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((12 * stride) as isize);
     let t7: libc::c_int = *c
-        .offset((14 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((14 * stride) as isize);
     let t8: libc::c_int = *c
-        .offset((16 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((16 * stride) as isize);
     let t9: libc::c_int = *c
-        .offset((18 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((18 * stride) as isize);
     let t10: libc::c_int = *c
-        .offset((20 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((20 * stride) as isize);
     let t11: libc::c_int = *c
-        .offset((22 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((22 * stride) as isize);
     let t12: libc::c_int = *c
-        .offset((24 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((24 * stride) as isize);
     let t13: libc::c_int = *c
-        .offset((26 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((26 * stride) as isize);
     let t14: libc::c_int = *c
-        .offset((28 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((28 * stride) as isize);
     let t15: libc::c_int = *c
-        .offset((30 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((30 * stride) as isize);
     let t16: libc::c_int = *c
-        .offset((32 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((32 * stride) as isize);
     let t17: libc::c_int = *c
-        .offset((34 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((34 * stride) as isize);
     let t18: libc::c_int = *c
-        .offset((36 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((36 * stride) as isize);
     let t19: libc::c_int = *c
-        .offset((38 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((38 * stride) as isize);
     let t20: libc::c_int = *c
-        .offset((40 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((40 * stride) as isize);
     let t21: libc::c_int = *c
-        .offset((42 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((42 * stride) as isize);
     let t22: libc::c_int = *c
-        .offset((44 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((44 * stride) as isize);
     let t23: libc::c_int = *c
-        .offset((46 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((46 * stride) as isize);
     let t24: libc::c_int = *c
-        .offset((48 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((48 * stride) as isize);
     let t25: libc::c_int = *c
-        .offset((50 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((50 * stride) as isize);
     let t26: libc::c_int = *c
-        .offset((52 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((52 * stride) as isize);
     let t27: libc::c_int = *c
-        .offset((54 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((54 * stride) as isize);
     let t28: libc::c_int = *c
-        .offset((56 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((56 * stride) as isize);
     let t29: libc::c_int = *c
-        .offset((58 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((58 * stride) as isize);
     let t30: libc::c_int = *c
-        .offset((60 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((60 * stride) as isize);
     let t31: libc::c_int = *c
-        .offset((62 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((62 * stride) as isize);
     *c
         .offset(
-            (0 as libc::c_int as libc::c_long * stride) as isize,
+            (0 * stride) as isize,
         ) = iclip(t0 + t63a, min, max);
     *c
         .offset(
-            (1 as libc::c_int as libc::c_long * stride) as isize,
+            (1 * stride) as isize,
         ) = iclip(t1 + t62, min, max);
     *c
         .offset(
-            (2 as libc::c_int as libc::c_long * stride) as isize,
+            (2 * stride) as isize,
         ) = iclip(t2 + t61a, min, max);
     *c
         .offset(
-            (3 as libc::c_int as libc::c_long * stride) as isize,
+            (3 * stride) as isize,
         ) = iclip(t3 + t60, min, max);
     *c
         .offset(
-            (4 as libc::c_int as libc::c_long * stride) as isize,
+            (4 * stride) as isize,
         ) = iclip(t4 + t59a, min, max);
     *c
         .offset(
-            (5 as libc::c_int as libc::c_long * stride) as isize,
+            (5 * stride) as isize,
         ) = iclip(t5 + t58, min, max);
     *c
         .offset(
-            (6 as libc::c_int as libc::c_long * stride) as isize,
+            (6 * stride) as isize,
         ) = iclip(t6 + t57a, min, max);
     *c
         .offset(
-            (7 as libc::c_int as libc::c_long * stride) as isize,
+            (7 * stride) as isize,
         ) = iclip(t7 + t56, min, max);
     *c
         .offset(
-            (8 as libc::c_int as libc::c_long * stride) as isize,
+            (8 * stride) as isize,
         ) = iclip(t8 + t55a, min, max);
     *c
         .offset(
-            (9 as libc::c_int as libc::c_long * stride) as isize,
+            (9 * stride) as isize,
         ) = iclip(t9 + t54, min, max);
     *c
         .offset(
-            (10 as libc::c_int as libc::c_long * stride) as isize,
+            (10 * stride) as isize,
         ) = iclip(t10 + t53a, min, max);
     *c
         .offset(
-            (11 as libc::c_int as libc::c_long * stride) as isize,
+            (11 * stride) as isize,
         ) = iclip(t11 + t52, min, max);
     *c
         .offset(
-            (12 as libc::c_int as libc::c_long * stride) as isize,
+            (12 * stride) as isize,
         ) = iclip(t12 + t51a, min, max);
     *c
         .offset(
-            (13 as libc::c_int as libc::c_long * stride) as isize,
+            (13 * stride) as isize,
         ) = iclip(t13 + t50, min, max);
     *c
         .offset(
-            (14 as libc::c_int as libc::c_long * stride) as isize,
+            (14 * stride) as isize,
         ) = iclip(t14 + t49a, min, max);
     *c
         .offset(
-            (15 as libc::c_int as libc::c_long * stride) as isize,
+            (15 * stride) as isize,
         ) = iclip(t15 + t48, min, max);
     *c
         .offset(
-            (16 as libc::c_int as libc::c_long * stride) as isize,
+            (16 * stride) as isize,
         ) = iclip(t16 + t47, min, max);
     *c
         .offset(
-            (17 as libc::c_int as libc::c_long * stride) as isize,
+            (17 * stride) as isize,
         ) = iclip(t17 + t46a, min, max);
     *c
         .offset(
-            (18 as libc::c_int as libc::c_long * stride) as isize,
+            (18 * stride) as isize,
         ) = iclip(t18 + t45, min, max);
     *c
         .offset(
-            (19 as libc::c_int as libc::c_long * stride) as isize,
+            (19 * stride) as isize,
         ) = iclip(t19 + t44a, min, max);
     *c
         .offset(
-            (20 as libc::c_int as libc::c_long * stride) as isize,
+            (20 * stride) as isize,
         ) = iclip(t20 + t43, min, max);
     *c
         .offset(
-            (21 as libc::c_int as libc::c_long * stride) as isize,
+            (21 * stride) as isize,
         ) = iclip(t21 + t42a, min, max);
     *c
         .offset(
-            (22 as libc::c_int as libc::c_long * stride) as isize,
+            (22 * stride) as isize,
         ) = iclip(t22 + t41, min, max);
     *c
         .offset(
-            (23 as libc::c_int as libc::c_long * stride) as isize,
+            (23 * stride) as isize,
         ) = iclip(t23 + t40a, min, max);
     *c
         .offset(
-            (24 as libc::c_int as libc::c_long * stride) as isize,
+            (24 * stride) as isize,
         ) = iclip(t24 + t39, min, max);
     *c
         .offset(
-            (25 as libc::c_int as libc::c_long * stride) as isize,
+            (25 * stride) as isize,
         ) = iclip(t25 + t38a, min, max);
     *c
         .offset(
-            (26 as libc::c_int as libc::c_long * stride) as isize,
+            (26 * stride) as isize,
         ) = iclip(t26 + t37, min, max);
     *c
         .offset(
-            (27 as libc::c_int as libc::c_long * stride) as isize,
+            (27 * stride) as isize,
         ) = iclip(t27 + t36a, min, max);
     *c
         .offset(
-            (28 as libc::c_int as libc::c_long * stride) as isize,
+            (28 * stride) as isize,
         ) = iclip(t28 + t35, min, max);
     *c
         .offset(
-            (29 as libc::c_int as libc::c_long * stride) as isize,
+            (29 * stride) as isize,
         ) = iclip(t29 + t34a, min, max);
     *c
         .offset(
-            (30 as libc::c_int as libc::c_long * stride) as isize,
+            (30 * stride) as isize,
         ) = iclip(t30 + t33, min, max);
     *c
         .offset(
-            (31 as libc::c_int as libc::c_long * stride) as isize,
+            (31 * stride) as isize,
         ) = iclip(t31 + t32a, min, max);
     *c
         .offset(
-            (32 as libc::c_int as libc::c_long * stride) as isize,
+            (32 * stride) as isize,
         ) = iclip(t31 - t32a, min, max);
     *c
         .offset(
-            (33 as libc::c_int as libc::c_long * stride) as isize,
+            (33 * stride) as isize,
         ) = iclip(t30 - t33, min, max);
     *c
         .offset(
-            (34 as libc::c_int as libc::c_long * stride) as isize,
+            (34 * stride) as isize,
         ) = iclip(t29 - t34a, min, max);
     *c
         .offset(
-            (35 as libc::c_int as libc::c_long * stride) as isize,
+            (35 * stride) as isize,
         ) = iclip(t28 - t35, min, max);
     *c
         .offset(
-            (36 as libc::c_int as libc::c_long * stride) as isize,
+            (36 * stride) as isize,
         ) = iclip(t27 - t36a, min, max);
     *c
         .offset(
-            (37 as libc::c_int as libc::c_long * stride) as isize,
+            (37 * stride) as isize,
         ) = iclip(t26 - t37, min, max);
     *c
         .offset(
-            (38 as libc::c_int as libc::c_long * stride) as isize,
+            (38 * stride) as isize,
         ) = iclip(t25 - t38a, min, max);
     *c
         .offset(
-            (39 as libc::c_int as libc::c_long * stride) as isize,
+            (39 * stride) as isize,
         ) = iclip(t24 - t39, min, max);
     *c
         .offset(
-            (40 as libc::c_int as libc::c_long * stride) as isize,
+            (40 * stride) as isize,
         ) = iclip(t23 - t40a, min, max);
     *c
         .offset(
-            (41 as libc::c_int as libc::c_long * stride) as isize,
+            (41 * stride) as isize,
         ) = iclip(t22 - t41, min, max);
     *c
         .offset(
-            (42 as libc::c_int as libc::c_long * stride) as isize,
+            (42 * stride) as isize,
         ) = iclip(t21 - t42a, min, max);
     *c
         .offset(
-            (43 as libc::c_int as libc::c_long * stride) as isize,
+            (43 * stride) as isize,
         ) = iclip(t20 - t43, min, max);
     *c
         .offset(
-            (44 as libc::c_int as libc::c_long * stride) as isize,
+            (44 * stride) as isize,
         ) = iclip(t19 - t44a, min, max);
     *c
         .offset(
-            (45 as libc::c_int as libc::c_long * stride) as isize,
+            (45 * stride) as isize,
         ) = iclip(t18 - t45, min, max);
     *c
         .offset(
-            (46 as libc::c_int as libc::c_long * stride) as isize,
+            (46 * stride) as isize,
         ) = iclip(t17 - t46a, min, max);
     *c
         .offset(
-            (47 as libc::c_int as libc::c_long * stride) as isize,
+            (47 * stride) as isize,
         ) = iclip(t16 - t47, min, max);
     *c
         .offset(
-            (48 as libc::c_int as libc::c_long * stride) as isize,
+            (48 * stride) as isize,
         ) = iclip(t15 - t48, min, max);
     *c
         .offset(
-            (49 as libc::c_int as libc::c_long * stride) as isize,
+            (49 * stride) as isize,
         ) = iclip(t14 - t49a, min, max);
     *c
         .offset(
-            (50 as libc::c_int as libc::c_long * stride) as isize,
+            (50 * stride) as isize,
         ) = iclip(t13 - t50, min, max);
     *c
         .offset(
-            (51 as libc::c_int as libc::c_long * stride) as isize,
+            (51 * stride) as isize,
         ) = iclip(t12 - t51a, min, max);
     *c
         .offset(
-            (52 as libc::c_int as libc::c_long * stride) as isize,
+            (52 * stride) as isize,
         ) = iclip(t11 - t52, min, max);
     *c
         .offset(
-            (53 as libc::c_int as libc::c_long * stride) as isize,
+            (53 * stride) as isize,
         ) = iclip(t10 - t53a, min, max);
     *c
         .offset(
-            (54 as libc::c_int as libc::c_long * stride) as isize,
+            (54 * stride) as isize,
         ) = iclip(t9 - t54, min, max);
     *c
         .offset(
-            (55 as libc::c_int as libc::c_long * stride) as isize,
+            (55 * stride) as isize,
         ) = iclip(t8 - t55a, min, max);
     *c
         .offset(
-            (56 as libc::c_int as libc::c_long * stride) as isize,
+            (56 * stride) as isize,
         ) = iclip(t7 - t56, min, max);
     *c
         .offset(
-            (57 as libc::c_int as libc::c_long * stride) as isize,
+            (57 * stride) as isize,
         ) = iclip(t6 - t57a, min, max);
     *c
         .offset(
-            (58 as libc::c_int as libc::c_long * stride) as isize,
+            (58 * stride) as isize,
         ) = iclip(t5 - t58, min, max);
     *c
         .offset(
-            (59 as libc::c_int as libc::c_long * stride) as isize,
+            (59 * stride) as isize,
         ) = iclip(t4 - t59a, min, max);
     *c
         .offset(
-            (60 as libc::c_int as libc::c_long * stride) as isize,
+            (60 * stride) as isize,
         ) = iclip(t3 - t60, min, max);
     *c
         .offset(
-            (61 as libc::c_int as libc::c_long * stride) as isize,
+            (61 * stride) as isize,
         ) = iclip(t2 - t61a, min, max);
     *c
         .offset(
-            (62 as libc::c_int as libc::c_long * stride) as isize,
+            (62 * stride) as isize,
         ) = iclip(t1 - t62, min, max);
     *c
         .offset(
-            (63 as libc::c_int as libc::c_long * stride) as isize,
+            (63 * stride) as isize,
         ) = iclip(t0 - t63a, min, max);
 }
 #[inline(never)]
@@ -1433,22 +1432,22 @@ unsafe extern "C" fn inv_adst4_1d_internal_c(
     out: *mut int32_t,
     out_s: ptrdiff_t,
 ) {
-    if !(in_s > 0 as libc::c_int as libc::c_long
-        && out_s != 0 as libc::c_int as libc::c_long)
+    if !(in_s > 0
+        && out_s != 0)
     {
         unreachable!();
     }
     let in0: libc::c_int = *in_0
-        .offset((0 as libc::c_int as libc::c_long * in_s) as isize);
+        .offset((0 * in_s) as isize);
     let in1: libc::c_int = *in_0
-        .offset((1 as libc::c_int as libc::c_long * in_s) as isize);
+        .offset((1 * in_s) as isize);
     let in2: libc::c_int = *in_0
-        .offset((2 as libc::c_int as libc::c_long * in_s) as isize);
+        .offset((2 * in_s) as isize);
     let in3: libc::c_int = *in_0
-        .offset((3 as libc::c_int as libc::c_long * in_s) as isize);
+        .offset((3 * in_s) as isize);
     *out
         .offset(
-            (0 as libc::c_int as libc::c_long * out_s) as isize,
+            (0 * out_s) as isize,
         ) = (1321 as libc::c_int * in0
         + (3803 as libc::c_int - 4096 as libc::c_int) * in2
         + (2482 as libc::c_int - 4096 as libc::c_int) * in3
@@ -1456,19 +1455,19 @@ unsafe extern "C" fn inv_adst4_1d_internal_c(
         >> 12 as libc::c_int) + in2 + in3 + in1;
     *out
         .offset(
-            (1 as libc::c_int as libc::c_long * out_s) as isize,
+            (1 * out_s) as isize,
         ) = ((2482 as libc::c_int - 4096 as libc::c_int) * in0
         - 1321 as libc::c_int * in2 - (3803 as libc::c_int - 4096 as libc::c_int) * in3
         + (3344 as libc::c_int - 4096 as libc::c_int) * in1 + 2048 as libc::c_int
         >> 12 as libc::c_int) + in0 - in3 + in1;
     *out
         .offset(
-            (2 as libc::c_int as libc::c_long * out_s) as isize,
+            (2 * out_s) as isize,
         ) = 209 as libc::c_int * (in0 - in2 + in3) + 128 as libc::c_int
         >> 8 as libc::c_int;
     *out
         .offset(
-            (3 as libc::c_int as libc::c_long * out_s) as isize,
+            (3 * out_s) as isize,
         ) = ((3803 as libc::c_int - 4096 as libc::c_int) * in0
         + (2482 as libc::c_int - 4096 as libc::c_int) * in2 - 1321 as libc::c_int * in3
         - (3344 as libc::c_int - 4096 as libc::c_int) * in1 + 2048 as libc::c_int
@@ -1483,27 +1482,27 @@ unsafe extern "C" fn inv_adst8_1d_internal_c(
     out: *mut int32_t,
     out_s: ptrdiff_t,
 ) {
-    if !(in_s > 0 as libc::c_int as libc::c_long
-        && out_s != 0 as libc::c_int as libc::c_long)
+    if !(in_s > 0
+        && out_s != 0)
     {
         unreachable!();
     }
     let in0: libc::c_int = *in_0
-        .offset((0 as libc::c_int as libc::c_long * in_s) as isize);
+        .offset((0 * in_s) as isize);
     let in1: libc::c_int = *in_0
-        .offset((1 as libc::c_int as libc::c_long * in_s) as isize);
+        .offset((1 * in_s) as isize);
     let in2: libc::c_int = *in_0
-        .offset((2 as libc::c_int as libc::c_long * in_s) as isize);
+        .offset((2 * in_s) as isize);
     let in3: libc::c_int = *in_0
-        .offset((3 as libc::c_int as libc::c_long * in_s) as isize);
+        .offset((3 * in_s) as isize);
     let in4: libc::c_int = *in_0
-        .offset((4 as libc::c_int as libc::c_long * in_s) as isize);
+        .offset((4 * in_s) as isize);
     let in5: libc::c_int = *in_0
-        .offset((5 as libc::c_int as libc::c_long * in_s) as isize);
+        .offset((5 * in_s) as isize);
     let in6: libc::c_int = *in_0
-        .offset((6 as libc::c_int as libc::c_long * in_s) as isize);
+        .offset((6 * in_s) as isize);
     let in7: libc::c_int = *in_0
-        .offset((7 as libc::c_int as libc::c_long * in_s) as isize);
+        .offset((7 * in_s) as isize);
     let t0a: libc::c_int = ((4076 as libc::c_int - 4096 as libc::c_int) * in7
         + 401 as libc::c_int * in0 + 2048 as libc::c_int >> 12 as libc::c_int) + in7;
     let t1a: libc::c_int = (401 as libc::c_int * in7
@@ -1541,39 +1540,39 @@ unsafe extern "C" fn inv_adst8_1d_internal_c(
         + 2048 as libc::c_int >> 12 as libc::c_int) + t6;
     *out
         .offset(
-            (0 as libc::c_int as libc::c_long * out_s) as isize,
+            (0 * out_s) as isize,
         ) = iclip(t0 + t2, min, max);
     *out
         .offset(
-            (7 as libc::c_int as libc::c_long * out_s) as isize,
+            (7 * out_s) as isize,
         ) = -iclip(t1 + t3, min, max);
     t2 = iclip(t0 - t2, min, max);
     t3 = iclip(t1 - t3, min, max);
     *out
         .offset(
-            (1 as libc::c_int as libc::c_long * out_s) as isize,
+            (1 * out_s) as isize,
         ) = -iclip(t4a + t6a, min, max);
     *out
         .offset(
-            (6 as libc::c_int as libc::c_long * out_s) as isize,
+            (6 * out_s) as isize,
         ) = iclip(t5a + t7a, min, max);
     t6 = iclip(t4a - t6a, min, max);
     t7 = iclip(t5a - t7a, min, max);
     *out
         .offset(
-            (3 as libc::c_int as libc::c_long * out_s) as isize,
+            (3 * out_s) as isize,
         ) = -((t2 + t3) * 181 as libc::c_int + 128 as libc::c_int >> 8 as libc::c_int);
     *out
         .offset(
-            (4 as libc::c_int as libc::c_long * out_s) as isize,
+            (4 * out_s) as isize,
         ) = (t2 - t3) * 181 as libc::c_int + 128 as libc::c_int >> 8 as libc::c_int;
     *out
         .offset(
-            (2 as libc::c_int as libc::c_long * out_s) as isize,
+            (2 * out_s) as isize,
         ) = (t6 + t7) * 181 as libc::c_int + 128 as libc::c_int >> 8 as libc::c_int;
     *out
         .offset(
-            (5 as libc::c_int as libc::c_long * out_s) as isize,
+            (5 * out_s) as isize,
         ) = -((t6 - t7) * 181 as libc::c_int + 128 as libc::c_int >> 8 as libc::c_int);
 }
 #[inline(never)]
@@ -1585,43 +1584,43 @@ unsafe extern "C" fn inv_adst16_1d_internal_c(
     out: *mut int32_t,
     out_s: ptrdiff_t,
 ) {
-    if !(in_s > 0 as libc::c_int as libc::c_long
-        && out_s != 0 as libc::c_int as libc::c_long)
+    if !(in_s > 0
+        && out_s != 0)
     {
         unreachable!();
     }
     let in0: libc::c_int = *in_0
-        .offset((0 as libc::c_int as libc::c_long * in_s) as isize);
+        .offset((0 * in_s) as isize);
     let in1: libc::c_int = *in_0
-        .offset((1 as libc::c_int as libc::c_long * in_s) as isize);
+        .offset((1 * in_s) as isize);
     let in2: libc::c_int = *in_0
-        .offset((2 as libc::c_int as libc::c_long * in_s) as isize);
+        .offset((2 * in_s) as isize);
     let in3: libc::c_int = *in_0
-        .offset((3 as libc::c_int as libc::c_long * in_s) as isize);
+        .offset((3 * in_s) as isize);
     let in4: libc::c_int = *in_0
-        .offset((4 as libc::c_int as libc::c_long * in_s) as isize);
+        .offset((4 * in_s) as isize);
     let in5: libc::c_int = *in_0
-        .offset((5 as libc::c_int as libc::c_long * in_s) as isize);
+        .offset((5 * in_s) as isize);
     let in6: libc::c_int = *in_0
-        .offset((6 as libc::c_int as libc::c_long * in_s) as isize);
+        .offset((6 * in_s) as isize);
     let in7: libc::c_int = *in_0
-        .offset((7 as libc::c_int as libc::c_long * in_s) as isize);
+        .offset((7 * in_s) as isize);
     let in8: libc::c_int = *in_0
-        .offset((8 as libc::c_int as libc::c_long * in_s) as isize);
+        .offset((8 * in_s) as isize);
     let in9: libc::c_int = *in_0
-        .offset((9 as libc::c_int as libc::c_long * in_s) as isize);
+        .offset((9 * in_s) as isize);
     let in10: libc::c_int = *in_0
-        .offset((10 as libc::c_int as libc::c_long * in_s) as isize);
+        .offset((10 * in_s) as isize);
     let in11: libc::c_int = *in_0
-        .offset((11 as libc::c_int as libc::c_long * in_s) as isize);
+        .offset((11 * in_s) as isize);
     let in12: libc::c_int = *in_0
-        .offset((12 as libc::c_int as libc::c_long * in_s) as isize);
+        .offset((12 * in_s) as isize);
     let in13: libc::c_int = *in_0
-        .offset((13 as libc::c_int as libc::c_long * in_s) as isize);
+        .offset((13 * in_s) as isize);
     let in14: libc::c_int = *in_0
-        .offset((14 as libc::c_int as libc::c_long * in_s) as isize);
+        .offset((14 * in_s) as isize);
     let in15: libc::c_int = *in_0
-        .offset((15 as libc::c_int as libc::c_long * in_s) as isize);
+        .offset((15 * in_s) as isize);
     let mut t0: libc::c_int = (in15 * (4091 as libc::c_int - 4096 as libc::c_int)
         + in0 * 201 as libc::c_int + 2048 as libc::c_int >> 12 as libc::c_int) + in15;
     let mut t1: libc::c_int = (in15 * 201 as libc::c_int
@@ -1731,76 +1730,76 @@ unsafe extern "C" fn inv_adst16_1d_internal_c(
         >> 12 as libc::c_int) + t14a;
     *out
         .offset(
-            (0 as libc::c_int as libc::c_long * out_s) as isize,
+            (0 * out_s) as isize,
         ) = iclip(t0 + t2, min, max);
     *out
         .offset(
-            (15 as libc::c_int as libc::c_long * out_s) as isize,
+            (15 * out_s) as isize,
         ) = -iclip(t1 + t3, min, max);
     t2a = iclip(t0 - t2, min, max);
     t3a = iclip(t1 - t3, min, max);
     *out
         .offset(
-            (3 as libc::c_int as libc::c_long * out_s) as isize,
+            (3 * out_s) as isize,
         ) = -iclip(t4a + t6a, min, max);
     *out
         .offset(
-            (12 as libc::c_int as libc::c_long * out_s) as isize,
+            (12 * out_s) as isize,
         ) = iclip(t5a + t7a, min, max);
     t6 = iclip(t4a - t6a, min, max);
     t7 = iclip(t5a - t7a, min, max);
     *out
         .offset(
-            (1 as libc::c_int as libc::c_long * out_s) as isize,
+            (1 * out_s) as isize,
         ) = -iclip(t8a + t10a, min, max);
     *out
         .offset(
-            (14 as libc::c_int as libc::c_long * out_s) as isize,
+            (14 * out_s) as isize,
         ) = iclip(t9a + t11a, min, max);
     t10 = iclip(t8a - t10a, min, max);
     t11 = iclip(t9a - t11a, min, max);
     *out
         .offset(
-            (2 as libc::c_int as libc::c_long * out_s) as isize,
+            (2 * out_s) as isize,
         ) = iclip(t12 + t14, min, max);
     *out
         .offset(
-            (13 as libc::c_int as libc::c_long * out_s) as isize,
+            (13 * out_s) as isize,
         ) = -iclip(t13 + t15, min, max);
     t14a = iclip(t12 - t14, min, max);
     t15a = iclip(t13 - t15, min, max);
     *out
         .offset(
-            (7 as libc::c_int as libc::c_long * out_s) as isize,
+            (7 * out_s) as isize,
         ) = -((t2a + t3a) * 181 as libc::c_int + 128 as libc::c_int >> 8 as libc::c_int);
     *out
         .offset(
-            (8 as libc::c_int as libc::c_long * out_s) as isize,
+            (8 * out_s) as isize,
         ) = (t2a - t3a) * 181 as libc::c_int + 128 as libc::c_int >> 8 as libc::c_int;
     *out
         .offset(
-            (4 as libc::c_int as libc::c_long * out_s) as isize,
+            (4 * out_s) as isize,
         ) = (t6 + t7) * 181 as libc::c_int + 128 as libc::c_int >> 8 as libc::c_int;
     *out
         .offset(
-            (11 as libc::c_int as libc::c_long * out_s) as isize,
+            (11 * out_s) as isize,
         ) = -((t6 - t7) * 181 as libc::c_int + 128 as libc::c_int >> 8 as libc::c_int);
     *out
         .offset(
-            (6 as libc::c_int as libc::c_long * out_s) as isize,
+            (6 * out_s) as isize,
         ) = (t10 + t11) * 181 as libc::c_int + 128 as libc::c_int >> 8 as libc::c_int;
     *out
         .offset(
-            (9 as libc::c_int as libc::c_long * out_s) as isize,
+            (9 * out_s) as isize,
         ) = -((t10 - t11) * 181 as libc::c_int + 128 as libc::c_int >> 8 as libc::c_int);
     *out
         .offset(
-            (5 as libc::c_int as libc::c_long * out_s) as isize,
+            (5 * out_s) as isize,
         ) = -((t14a + t15a) * 181 as libc::c_int + 128 as libc::c_int
         >> 8 as libc::c_int);
     *out
         .offset(
-            (10 as libc::c_int as libc::c_long * out_s) as isize,
+            (10 * out_s) as isize,
         ) = (t14a - t15a) * 181 as libc::c_int + 128 as libc::c_int >> 8 as libc::c_int;
 }
 #[no_mangle]
@@ -1817,7 +1816,7 @@ pub unsafe extern "C" fn dav1d_inv_flipadst4_1d_c(
         max,
         &mut *c
             .offset(
-                ((4 as libc::c_int - 1 as libc::c_int) as libc::c_long * stride) as isize,
+                ((4 as libc::c_int - 1 as libc::c_int) as isize * stride) as isize,
             ),
         -stride,
     );
@@ -1854,7 +1853,7 @@ pub unsafe extern "C" fn dav1d_inv_flipadst8_1d_c(
         max,
         &mut *c
             .offset(
-                ((8 as libc::c_int - 1 as libc::c_int) as libc::c_long * stride) as isize,
+                ((8 as libc::c_int - 1 as libc::c_int) as isize * stride) as isize,
             ),
         -stride,
     );
@@ -1873,8 +1872,7 @@ pub unsafe extern "C" fn dav1d_inv_flipadst16_1d_c(
         max,
         &mut *c
             .offset(
-                ((16 as libc::c_int - 1 as libc::c_int) as libc::c_long * stride)
-                    as isize,
+                (16 as libc::c_int - 1 as libc::c_int) as isize * stride,
             ),
         -stride,
     );
@@ -1895,15 +1893,15 @@ pub unsafe extern "C" fn dav1d_inv_identity4_1d_c(
     _min: libc::c_int,
     _max: libc::c_int,
 ) {
-    if !(stride > 0 as libc::c_int as libc::c_long) {
+    if !(stride > 0) {
         unreachable!();
     }
     let mut i: libc::c_int = 0 as libc::c_int;
     while i < 4 as libc::c_int {
-        let in_0: libc::c_int = *c.offset((stride * i as libc::c_long) as isize);
+        let in_0: libc::c_int = *c.offset(stride * i as isize);
         *c
             .offset(
-                (stride * i as libc::c_long) as isize,
+                stride * i as isize,
             ) = in_0
             + (in_0 * 1697 as libc::c_int + 2048 as libc::c_int >> 12 as libc::c_int);
         i += 1;
@@ -1916,12 +1914,12 @@ pub unsafe extern "C" fn dav1d_inv_identity8_1d_c(
     _min: libc::c_int,
     _max: libc::c_int,
 ) {
-    if !(stride > 0 as libc::c_int as libc::c_long) {
+    if !(stride > 0) {
         unreachable!();
     }
     let mut i: libc::c_int = 0 as libc::c_int;
     while i < 8 as libc::c_int {
-        let ref mut fresh0 = *c.offset((stride * i as libc::c_long) as isize);
+        let ref mut fresh0 = *c.offset((stride * i as isize) as isize);
         *fresh0 *= 2 as libc::c_int;
         i += 1;
     }
@@ -1933,15 +1931,15 @@ pub unsafe extern "C" fn dav1d_inv_identity16_1d_c(
     _min: libc::c_int,
     _max: libc::c_int,
 ) {
-    if !(stride > 0 as libc::c_int as libc::c_long) {
+    if !(stride > 0) {
         unreachable!();
     }
     let mut i: libc::c_int = 0 as libc::c_int;
     while i < 16 as libc::c_int {
-        let in_0: libc::c_int = *c.offset((stride * i as libc::c_long) as isize);
+        let in_0: libc::c_int = *c.offset((stride * i as isize) as isize);
         *c
             .offset(
-                (stride * i as libc::c_long) as isize,
+                (stride * i as isize) as isize,
             ) = 2 as libc::c_int * in_0
             + (in_0 * 1697 as libc::c_int + 1024 as libc::c_int >> 11 as libc::c_int);
         i += 1;
@@ -1954,36 +1952,36 @@ pub unsafe extern "C" fn dav1d_inv_identity32_1d_c(
     _min: libc::c_int,
     _max: libc::c_int,
 ) {
-    if !(stride > 0 as libc::c_int as libc::c_long) {
+    if !(stride > 0) {
         unreachable!();
     }
     let mut i: libc::c_int = 0 as libc::c_int;
     while i < 32 as libc::c_int {
-        let ref mut fresh1 = *c.offset((stride * i as libc::c_long) as isize);
+        let ref mut fresh1 = *c.offset((stride * i as isize) as isize);
         *fresh1 *= 4 as libc::c_int;
         i += 1;
     }
 }
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_wht4_1d_c(c: *mut int32_t, stride: ptrdiff_t) {
-    if !(stride > 0 as libc::c_int as libc::c_long) {
+    if !(stride > 0) {
         unreachable!();
     }
     let in0: libc::c_int = *c
-        .offset((0 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((0 * stride) as isize);
     let in1: libc::c_int = *c
-        .offset((1 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((1 * stride) as isize);
     let in2: libc::c_int = *c
-        .offset((2 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((2 * stride) as isize);
     let in3: libc::c_int = *c
-        .offset((3 as libc::c_int as libc::c_long * stride) as isize);
+        .offset((3 * stride) as isize);
     let t0: libc::c_int = in0 + in1;
     let t2: libc::c_int = in2 - in3;
     let t4: libc::c_int = t0 - t2 >> 1 as libc::c_int;
     let t3: libc::c_int = t4 - in3;
     let t1: libc::c_int = t4 - in1;
-    *c.offset((0 as libc::c_int as libc::c_long * stride) as isize) = t0 - t3;
-    *c.offset((1 as libc::c_int as libc::c_long * stride) as isize) = t3;
-    *c.offset((2 as libc::c_int as libc::c_long * stride) as isize) = t1;
-    *c.offset((3 as libc::c_int as libc::c_long * stride) as isize) = t2 + t1;
+    *c.offset((0 * stride) as isize) = t0 - t3;
+    *c.offset((1 * stride) as isize) = t3;
+    *c.offset((2 * stride) as isize) = t1;
+    *c.offset((3 * stride) as isize) = t2 + t1;
 }

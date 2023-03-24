@@ -26,7 +26,7 @@ extern "C" {
     fn memset(
         _: *mut libc::c_void,
         _: libc::c_int,
-        _: libc::c_ulong,
+        _: size_t,
     ) -> *mut libc::c_void;
     fn strcmp(_: *const libc::c_char, _: *const libc::c_char) -> libc::c_int;
     fn strerror(_: libc::c_int) -> *mut libc::c_char;
@@ -194,7 +194,7 @@ pub struct _IO_FILE {
 }
 pub type _IO_lock_t = ();
 pub type FILE = _IO_FILE;
-pub type ptrdiff_t = libc::c_long;
+pub type ptrdiff_t = isize;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dUserData {
@@ -716,18 +716,18 @@ unsafe extern "C" fn picture_alloc(
     let mut uv_stride: ptrdiff_t = if has_chroma != 0 {
         y_stride >> ss_hor
     } else {
-        0 as libc::c_int as libc::c_long
+        0
     };
-    if y_stride & 1023 as libc::c_int as libc::c_long == 0 {
-        y_stride += 64 as libc::c_int as libc::c_long;
+    if y_stride & 1023 == 0 {
+        y_stride += 64;
     }
-    if uv_stride & 1023 as libc::c_int as libc::c_long == 0 && has_chroma != 0 {
-        uv_stride += 64 as libc::c_int as libc::c_long;
+    if uv_stride & 1023 == 0 && has_chroma != 0 {
+        uv_stride += 64;
     }
     (*p).stride[0 as libc::c_int as usize] = -y_stride;
     (*p).stride[1 as libc::c_int as usize] = -uv_stride;
-    let y_sz: size_t = (y_stride * aligned_h as libc::c_long) as size_t;
-    let uv_sz: size_t = (uv_stride * (aligned_h >> ss_ver) as libc::c_long) as size_t;
+    let y_sz: size_t = (y_stride * aligned_h as isize) as size_t;
+    let uv_sz: size_t = (uv_stride * (aligned_h >> ss_ver) as isize) as size_t;
     let pic_size: size_t = y_sz.wrapping_add(2 * uv_sz);
     let buf: *mut uint8_t = malloc(
         pic_size.wrapping_add(64),
@@ -1050,7 +1050,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
         memset(
             &mut p as *mut Dav1dPicture as *mut libc::c_void,
             0 as libc::c_int,
-            ::core::mem::size_of::<Dav1dPicture>() as libc::c_ulong,
+            ::core::mem::size_of::<Dav1dPicture>(),
         );
         res = dav1d_send_data(c, &mut data);
         if res < 0 as libc::c_int {

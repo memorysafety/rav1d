@@ -248,7 +248,7 @@ unsafe extern "C" fn iclip(
 }
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
-    if x & 1 as libc::c_int as libc::c_long != 0 {
+    if x & 1 != 0 {
         unreachable!();
     }
     return x >> 1 as libc::c_int;
@@ -362,7 +362,7 @@ unsafe extern "C" fn put_8tap_c(
             let mut mid: [int16_t; 17280] = [0; 17280];
             let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
             src = src
-                .offset(-((src_stride * 3 as libc::c_int as libc::c_long) as isize));
+                .offset(-((src_stride * 3) as isize));
             loop {
                 let mut x: libc::c_int = 0 as libc::c_int;
                 while x < w {
@@ -553,50 +553,50 @@ unsafe extern "C" fn put_8tap_c(
                     *fv.offset(0 as libc::c_int as isize) as libc::c_int
                         * *src
                             .offset(
-                                (x_2 as libc::c_long
-                                    + -(3 as libc::c_int) as libc::c_long * src_stride) as isize,
+                                (x_2 as isize
+                                    + -(3 as libc::c_int) as isize * src_stride) as isize,
                             ) as libc::c_int
                         + *fv.offset(1 as libc::c_int as isize) as libc::c_int
                             * *src
                                 .offset(
-                                    (x_2 as libc::c_long
-                                        + -(2 as libc::c_int) as libc::c_long * src_stride) as isize,
+                                    (x_2 as isize
+                                        + -(2 as libc::c_int) as isize * src_stride) as isize,
                                 ) as libc::c_int
                         + *fv.offset(2 as libc::c_int as isize) as libc::c_int
                             * *src
                                 .offset(
-                                    (x_2 as libc::c_long
-                                        + -(1 as libc::c_int) as libc::c_long * src_stride) as isize,
+                                    (x_2 as isize
+                                        + -(1 as libc::c_int) as isize * src_stride) as isize,
                                 ) as libc::c_int
                         + *fv.offset(3 as libc::c_int as isize) as libc::c_int
                             * *src
                                 .offset(
-                                    (x_2 as libc::c_long
-                                        + 0 as libc::c_int as libc::c_long * src_stride) as isize,
+                                    (x_2 as isize
+                                        + 0 * src_stride) as isize,
                                 ) as libc::c_int
                         + *fv.offset(4 as libc::c_int as isize) as libc::c_int
                             * *src
                                 .offset(
-                                    (x_2 as libc::c_long
-                                        + 1 as libc::c_int as libc::c_long * src_stride) as isize,
+                                    (x_2 as isize
+                                        + 1 * src_stride) as isize,
                                 ) as libc::c_int
                         + *fv.offset(5 as libc::c_int as isize) as libc::c_int
                             * *src
                                 .offset(
-                                    (x_2 as libc::c_long
-                                        + 2 as libc::c_int as libc::c_long * src_stride) as isize,
+                                    (x_2 as isize
+                                        + 2 * src_stride) as isize,
                                 ) as libc::c_int
                         + *fv.offset(6 as libc::c_int as isize) as libc::c_int
                             * *src
                                 .offset(
-                                    (x_2 as libc::c_long
-                                        + 3 as libc::c_int as libc::c_long * src_stride) as isize,
+                                    (x_2 as isize
+                                        + 3 * src_stride) as isize,
                                 ) as libc::c_int
                         + *fv.offset(7 as libc::c_int as isize) as libc::c_int
                             * *src
                                 .offset(
-                                    (x_2 as libc::c_long
-                                        + 4 as libc::c_int as libc::c_long * src_stride) as isize,
+                                    (x_2 as isize
+                                        + 4 * src_stride) as isize,
                                 ) as libc::c_int
                         + ((1 as libc::c_int) << 6 as libc::c_int >> 1 as libc::c_int)
                         >> 6 as libc::c_int,
@@ -640,7 +640,7 @@ unsafe extern "C" fn put_8tap_scaled_c(
     let mut mid: [int16_t; 33664] = [0; 33664];
     let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
     src_stride = PXSTRIDE(src_stride);
-    src = src.offset(-((src_stride * 3 as libc::c_int as libc::c_long) as isize));
+    src = src.offset(-((src_stride * 3) as isize));
     loop {
         let mut x: libc::c_int = 0;
         let mut imx: libc::c_int = mx;
@@ -849,7 +849,7 @@ unsafe extern "C" fn prep_8tap_c(
             let mut mid: [int16_t; 17280] = [0; 17280];
             let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
             src = src
-                .offset(-((src_stride * 3 as libc::c_int as libc::c_long) as isize));
+                .offset(-((src_stride * 3) as isize));
             loop {
                 let mut x: libc::c_int = 0 as libc::c_int;
                 while x < w {
@@ -1034,53 +1034,53 @@ unsafe extern "C" fn prep_8tap_c(
                 *tmp
                     .offset(
                         x_2 as isize,
-                    ) = ((*fv.offset(0 as libc::c_int as isize) as libc::c_int
+                    ) = ((*fv.offset(0) as libc::c_int
                     * *src
                         .offset(
-                            (x_2 as libc::c_long
-                                + -(3 as libc::c_int) as libc::c_long * src_stride) as isize,
+                            (x_2 as isize
+                                + -(3 as libc::c_int) as isize * src_stride) as isize,
                         ) as libc::c_int
                     + *fv.offset(1 as libc::c_int as isize) as libc::c_int
                         * *src
                             .offset(
-                                (x_2 as libc::c_long
-                                    + -(2 as libc::c_int) as libc::c_long * src_stride) as isize,
+                                (x_2 as isize
+                                    + -(2 as libc::c_int) as isize * src_stride) as isize,
                             ) as libc::c_int
                     + *fv.offset(2 as libc::c_int as isize) as libc::c_int
                         * *src
                             .offset(
-                                (x_2 as libc::c_long
-                                    + -(1 as libc::c_int) as libc::c_long * src_stride) as isize,
+                                (x_2 as isize
+                                    + -(1 as libc::c_int) as isize * src_stride) as isize,
                             ) as libc::c_int
                     + *fv.offset(3 as libc::c_int as isize) as libc::c_int
                         * *src
                             .offset(
-                                (x_2 as libc::c_long
-                                    + 0 as libc::c_int as libc::c_long * src_stride) as isize,
+                                (x_2 as isize
+                                    + 0 * src_stride) as isize,
                             ) as libc::c_int
                     + *fv.offset(4 as libc::c_int as isize) as libc::c_int
                         * *src
                             .offset(
-                                (x_2 as libc::c_long
-                                    + 1 as libc::c_int as libc::c_long * src_stride) as isize,
+                                (x_2 as isize
+                                    + 1 * src_stride) as isize,
                             ) as libc::c_int
                     + *fv.offset(5 as libc::c_int as isize) as libc::c_int
                         * *src
                             .offset(
-                                (x_2 as libc::c_long
-                                    + 2 as libc::c_int as libc::c_long * src_stride) as isize,
+                                (x_2 as isize
+                                    + 2 * src_stride) as isize,
                             ) as libc::c_int
                     + *fv.offset(6 as libc::c_int as isize) as libc::c_int
                         * *src
                             .offset(
-                                (x_2 as libc::c_long
-                                    + 3 as libc::c_int as libc::c_long * src_stride) as isize,
+                                (x_2 as isize
+                                    + 3 * src_stride) as isize,
                             ) as libc::c_int
                     + *fv.offset(7 as libc::c_int as isize) as libc::c_int
                         * *src
                             .offset(
-                                (x_2 as libc::c_long
-                                    + 4 as libc::c_int as libc::c_long * src_stride) as isize,
+                                (x_2 as isize
+                                    + 4 * src_stride) as isize,
                             ) as libc::c_int
                     + ((1 as libc::c_int) << 6 as libc::c_int - intermediate_bits
                         >> 1 as libc::c_int) >> 6 as libc::c_int - intermediate_bits)
@@ -1119,7 +1119,7 @@ unsafe extern "C" fn prep_8tap_scaled_c(
     let mut mid: [int16_t; 33664] = [0; 33664];
     let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
     src_stride = PXSTRIDE(src_stride);
-    src = src.offset(-((src_stride * 3 as libc::c_int as libc::c_long) as isize));
+    src = src.offset(-((src_stride * 3) as isize));
     loop {
         let mut x: libc::c_int = 0;
         let mut imx: libc::c_int = mx;
@@ -2322,7 +2322,7 @@ unsafe extern "C" fn put_bilin_c(
                     ) = iclip(
                     16 as libc::c_int * *src.offset(x_2 as isize) as libc::c_int
                         + my
-                            * (*src.offset((x_2 as libc::c_long + src_stride) as isize)
+                            * (*src.offset((x_2 as isize + src_stride) as isize)
                                 as libc::c_int - *src.offset(x_2 as isize) as libc::c_int)
                         + ((1 as libc::c_int) << 4 as libc::c_int >> 1 as libc::c_int)
                         >> 4 as libc::c_int,
@@ -2519,7 +2519,7 @@ unsafe extern "C" fn prep_bilin_c(
                         x_2 as isize,
                     ) = ((16 as libc::c_int * *src.offset(x_2 as isize) as libc::c_int
                     + my
-                        * (*src.offset((x_2 as libc::c_long + src_stride) as isize)
+                        * (*src.offset((x_2 as isize + src_stride) as isize)
                             as libc::c_int - *src.offset(x_2 as isize) as libc::c_int)
                     + ((1 as libc::c_int) << 4 as libc::c_int - intermediate_bits
                         >> 1 as libc::c_int) >> 4 as libc::c_int - intermediate_bits)
@@ -3005,7 +3005,7 @@ unsafe extern "C" fn warp_affine_8x8_c(
     let mut mid: [int16_t; 120] = [0; 120];
     let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
     src = src
-        .offset(-((3 as libc::c_int as libc::c_long * PXSTRIDE(src_stride)) as isize));
+        .offset(-((3 * PXSTRIDE(src_stride)) as isize));
     let mut y: libc::c_int = 0 as libc::c_int;
     while y < 15 as libc::c_int {
         let mut x: libc::c_int = 0 as libc::c_int;
@@ -3128,7 +3128,7 @@ unsafe extern "C" fn warp_affine_8x8t_c(
     let mut mid: [int16_t; 120] = [0; 120];
     let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
     src = src
-        .offset(-((3 as libc::c_int as libc::c_long * PXSTRIDE(src_stride)) as isize));
+        .offset(-((3 * PXSTRIDE(src_stride)) as isize));
     let mut y: libc::c_int = 0 as libc::c_int;
     while y < 15 as libc::c_int {
         let mut x: libc::c_int = 0 as libc::c_int;
@@ -3245,16 +3245,16 @@ unsafe extern "C" fn emu_edge_c(
 ) {
     ref_0 = ref_0
         .offset(
-            (iclip(
+            iclip(
                 y as libc::c_int,
                 0 as libc::c_int,
                 ih as libc::c_int - 1 as libc::c_int,
-            ) as libc::c_long * PXSTRIDE(ref_stride)
+            ) as isize * PXSTRIDE(ref_stride)
                 + iclip(
                     x as libc::c_int,
                     0 as libc::c_int,
                     iw as libc::c_int - 1 as libc::c_int,
-                ) as libc::c_long) as isize,
+                ) as isize,
         );
     let left_ext: libc::c_int = iclip(
         -x as libc::c_int,
@@ -3266,7 +3266,7 @@ unsafe extern "C" fn emu_edge_c(
         0 as libc::c_int,
         bw as libc::c_int - 1 as libc::c_int,
     );
-    if !(((left_ext + right_ext) as libc::c_long) < bw) {
+    if !(((left_ext + right_ext) as isize) < bw) {
         unreachable!();
     }
     let top_ext: libc::c_int = iclip(
@@ -3279,15 +3279,13 @@ unsafe extern "C" fn emu_edge_c(
         0 as libc::c_int,
         bh as libc::c_int - 1 as libc::c_int,
     );
-    if !(((top_ext + bottom_ext) as libc::c_long) < bh) {
+    if !(((top_ext + bottom_ext) as isize) < bh) {
         unreachable!();
     }
     let mut blk: *mut pixel = dst
-        .offset((top_ext as libc::c_long * PXSTRIDE(dst_stride)) as isize);
-    let center_w: libc::c_int = (bw - left_ext as libc::c_long
-        - right_ext as libc::c_long) as libc::c_int;
-    let center_h: libc::c_int = (bh - top_ext as libc::c_long
-        - bottom_ext as libc::c_long) as libc::c_int;
+        .offset((top_ext as isize * PXSTRIDE(dst_stride)) as isize);
+    let center_w: libc::c_int = (bw - left_ext as isize - right_ext as isize) as libc::c_int;
+    let center_h: libc::c_int = (bh - top_ext as isize - bottom_ext as isize) as libc::c_int;
     let mut y_0: libc::c_int = 0 as libc::c_int;
     while y_0 < center_h {
         memcpy(
@@ -3310,7 +3308,7 @@ unsafe extern "C" fn emu_edge_c(
         blk = blk.offset(PXSTRIDE(dst_stride) as isize);
         y_0 += 1;
     }
-    blk = dst.offset((top_ext as libc::c_long * PXSTRIDE(dst_stride)) as isize);
+    blk = dst.offset((top_ext as isize * PXSTRIDE(dst_stride)) as isize);
     let mut y_1: libc::c_int = 0 as libc::c_int;
     while y_1 < top_ext {
         memcpy(
@@ -3321,7 +3319,7 @@ unsafe extern "C" fn emu_edge_c(
         dst = dst.offset(PXSTRIDE(dst_stride) as isize);
         y_1 += 1;
     }
-    dst = dst.offset((center_h as libc::c_long * PXSTRIDE(dst_stride)) as isize);
+    dst = dst.offset((center_h as isize * PXSTRIDE(dst_stride)) as isize);
     let mut y_2: libc::c_int = 0 as libc::c_int;
     while y_2 < bottom_ext {
         memcpy(
