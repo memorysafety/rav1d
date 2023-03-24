@@ -172,3 +172,8 @@ pub struct Dav1dFilmGrainData {
     pub overlap_flag: libc::c_int,
     pub clip_to_restricted_range: libc::c_int,
 }
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dFrameHeaderOperatingPoint {
+    pub buffer_removal_time: libc::c_int,
+}

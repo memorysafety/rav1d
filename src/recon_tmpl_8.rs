@@ -522,11 +522,7 @@ pub struct C2RustUnnamed_16 {
     pub width_scale_denominator: libc::c_int,
     pub enabled: libc::c_int,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFrameHeaderOperatingPoint {
-    pub buffer_removal_time: libc::c_int,
-}
+use crate::include::dav1d::headers::Dav1dFrameHeaderOperatingPoint;
 use crate::include::dav1d::headers::Dav1dFrameType;
 use crate::include::dav1d::headers::DAV1D_FRAME_TYPE_SWITCH;
 use crate::include::dav1d::headers::DAV1D_FRAME_TYPE_INTRA;
