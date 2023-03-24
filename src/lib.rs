@@ -306,14 +306,7 @@ pub struct Dav1dMasteringDisplay {
     pub max_luminance: uint32_t,
     pub min_luminance: uint32_t,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dITUTT35 {
-    pub country_code: uint8_t,
-    pub country_code_extension_byte: uint8_t,
-    pub payload_size: size_t,
-    pub payload: *mut uint8_t,
-}
+use crate::include::dav1d::headers::Dav1dITUTT35;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dSequenceHeader {

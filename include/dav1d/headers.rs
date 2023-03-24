@@ -1,7 +1,16 @@
+use crate::include::stddef::size_t;
 use crate::include::stdint::int8_t;
 use crate::include::stdint::uint64_t;
 use crate::include::stdint::uint8_t;
 
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dITUTT35 {
+    pub country_code: uint8_t,
+    pub country_code_extension_byte: uint8_t,
+    pub payload_size: size_t,
+    pub payload: *mut uint8_t,
+}
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dSegmentationData {
