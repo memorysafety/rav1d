@@ -52,21 +52,24 @@ pub const DAV1D_WM_TYPE_AFFINE: Dav1dWarpedMotionType = 3;
 pub const DAV1D_WM_TYPE_ROT_ZOOM: Dav1dWarpedMotionType = 2;
 pub const DAV1D_WM_TYPE_TRANSLATION: Dav1dWarpedMotionType = 1;
 pub const DAV1D_WM_TYPE_IDENTITY: Dav1dWarpedMotionType = 0;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dWarpedMotionParams {
     pub type_0: Dav1dWarpedMotionType,
     pub matrix: [int32_t; 6],
     pub u: C2RustUnnamed,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub union C2RustUnnamed {
     pub p: C2RustUnnamed_0,
     pub abcd: [int16_t; 4],
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct C2RustUnnamed_0 {
     pub alpha: int16_t,
     pub beta: int16_t,
@@ -136,8 +139,9 @@ pub type Dav1dChromaSamplePosition = libc::c_uint;
 pub const DAV1D_CHR_COLOCATED: Dav1dChromaSamplePosition = 2;
 pub const DAV1D_CHR_VERTICAL: Dav1dChromaSamplePosition = 1;
 pub const DAV1D_CHR_UNKNOWN: Dav1dChromaSamplePosition = 0;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dSequenceHeader {
     pub profile: libc::c_int,
     pub max_width: libc::c_int,
@@ -193,15 +197,17 @@ pub struct Dav1dSequenceHeader {
     pub film_grain_present: libc::c_int,
     pub operating_parameter_info: [Dav1dSequenceHeaderOperatingParameterInfo; 32],
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dSequenceHeaderOperatingParameterInfo {
     pub decoder_buffer_delay: libc::c_int,
     pub encoder_buffer_delay: libc::c_int,
     pub low_delay_mode: libc::c_int,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dSequenceHeaderOperatingPoint {
     pub major_level: libc::c_int,
     pub minor_level: libc::c_int,
@@ -211,8 +217,9 @@ pub struct Dav1dSequenceHeaderOperatingPoint {
     pub decoder_model_param_present: libc::c_int,
     pub display_model_param_present: libc::c_int,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dSegmentationData {
     pub delta_q: libc::c_int,
     pub delta_lf_y_v: libc::c_int,
@@ -223,21 +230,24 @@ pub struct Dav1dSegmentationData {
     pub skip: libc::c_int,
     pub globalmv: libc::c_int,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dSegmentationDataSet {
     pub d: [Dav1dSegmentationData; 8],
     pub preskip: libc::c_int,
     pub last_active_segid: libc::c_int,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dLoopfilterModeRefDeltas {
     pub mode_delta: [libc::c_int; 2],
     pub ref_delta: [libc::c_int; 8],
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dFilmGrainData {
     pub seed: libc::c_uint,
     pub num_y_points: libc::c_int,
@@ -257,8 +267,9 @@ pub struct Dav1dFilmGrainData {
     pub overlap_flag: libc::c_int,
     pub clip_to_restricted_range: libc::c_int,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dFrameHeader {
     pub film_grain: C2RustUnnamed_11,
     pub frame_type: Dav1dFrameType,
@@ -311,22 +322,25 @@ pub struct Dav1dFrameHeader {
     pub reduced_txtp_set: libc::c_int,
     pub gmv: [Dav1dWarpedMotionParams; 7],
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct C2RustUnnamed_1 {
     pub type_0: [Dav1dRestorationType; 3],
     pub unit_size: [libc::c_int; 2],
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct C2RustUnnamed_2 {
     pub damping: libc::c_int,
     pub n_bits: libc::c_int,
     pub y_strength: [libc::c_int; 8],
     pub uv_strength: [libc::c_int; 8],
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct C2RustUnnamed_3 {
     pub level_y: [libc::c_int; 2],
     pub level_u: libc::c_int,
@@ -336,27 +350,31 @@ pub struct C2RustUnnamed_3 {
     pub mode_ref_deltas: Dav1dLoopfilterModeRefDeltas,
     pub sharpness: libc::c_int,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct C2RustUnnamed_4 {
     pub q: C2RustUnnamed_6,
     pub lf: C2RustUnnamed_5,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct C2RustUnnamed_5 {
     pub present: libc::c_int,
     pub res_log2: libc::c_int,
     pub multi: libc::c_int,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct C2RustUnnamed_6 {
     pub present: libc::c_int,
     pub res_log2: libc::c_int,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct C2RustUnnamed_7 {
     pub enabled: libc::c_int,
     pub update_map: libc::c_int,
@@ -366,8 +384,9 @@ pub struct C2RustUnnamed_7 {
     pub lossless: [libc::c_int; 8],
     pub qidx: [libc::c_int; 8],
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct C2RustUnnamed_8 {
     pub yac: libc::c_int,
     pub ydc_delta: libc::c_int,
@@ -380,8 +399,9 @@ pub struct C2RustUnnamed_8 {
     pub qm_u: libc::c_int,
     pub qm_v: libc::c_int,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct C2RustUnnamed_9 {
     pub uniform: libc::c_int,
     pub n_bytes: libc::c_uint,
@@ -397,19 +417,22 @@ pub struct C2RustUnnamed_9 {
     pub row_start_sb: [uint16_t; 65],
     pub update: libc::c_int,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct C2RustUnnamed_10 {
     pub width_scale_denominator: libc::c_int,
     pub enabled: libc::c_int,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dFrameHeaderOperatingPoint {
     pub buffer_removal_time: libc::c_int,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct C2RustUnnamed_11 {
     pub data: Dav1dFilmGrainData,
     pub present: libc::c_int,
@@ -439,14 +462,16 @@ pub const BS_64x64: BlockSize = 3;
 pub const BS_64x128: BlockSize = 2;
 pub const BS_128x64: BlockSize = 1;
 pub const BS_128x128: BlockSize = 0;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub union mv {
     pub c2rust_unnamed: C2RustUnnamed_12,
     pub n: uint32_t,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct C2RustUnnamed_12 {
     pub y: int16_t,
     pub x: int16_t,
@@ -458,34 +483,39 @@ pub const EDGE_I444_LEFT_HAS_BOTTOM: EdgeFlags = 8;
 pub const EDGE_I420_TOP_HAS_RIGHT: EdgeFlags = 4;
 pub const EDGE_I422_TOP_HAS_RIGHT: EdgeFlags = 2;
 pub const EDGE_I444_TOP_HAS_RIGHT: EdgeFlags = 1;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct refmvs_temporal_block {
     pub mv: mv,
     pub ref_0: int8_t,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub union refmvs_refpair {
     pub ref_0: [int8_t; 2],
     pub pair: uint16_t,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub union refmvs_mvpair {
     pub mv: [mv; 2],
     pub n: uint64_t,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C, packed)]
+#[derive(Copy, Clone)]
 pub struct refmvs_block {
     pub mv: refmvs_mvpair,
     pub ref_0: refmvs_refpair,
     pub bs: uint8_t,
     pub mf: uint8_t,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct refmvs_frame {
     pub frm_hdr: *const Dav1dFrameHeader,
     pub iw4: libc::c_int,
@@ -511,8 +541,9 @@ pub struct refmvs_frame {
     pub n_tile_threads: libc::c_int,
     pub n_frame_threads: libc::c_int,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct refmvs_tile {
     pub rf: *const refmvs_frame,
     pub r: [*mut refmvs_block; 37],
@@ -520,14 +551,16 @@ pub struct refmvs_tile {
     pub tile_col: C2RustUnnamed_13,
     pub tile_row: C2RustUnnamed_13,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct C2RustUnnamed_13 {
     pub start: libc::c_int,
     pub end: libc::c_int,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct refmvs_candidate {
     pub mv: refmvs_mvpair,
     pub weight: libc::c_int,
@@ -541,8 +574,9 @@ pub type splat_mv_fn = Option<
         libc::c_int,
     ) -> (),
 >;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dRefmvsDSPContext {
     pub splat_mv: splat_mv_fn,
 }

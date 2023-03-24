@@ -14,8 +14,9 @@ extern "C" {
     ) -> libc::c_int;
 }
 pub type size_t = libc::c_ulong;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct cpu_set_t {
     pub __bits: [__cpu_mask; 16],
 }
@@ -30,10 +31,9 @@ pub static mut dav1d_cpu_flags_mask: libc::c_uint = !(0 as libc::c_uint);
 pub unsafe extern "C" fn dav1d_init_cpu() {
     //#[cfg(feature = "asm")]
     cfg_if! {
-        if #[cfg(target_arch = "x86_64")] {
-            dav1d_cpu_flags = dav1d_get_cpu_flags_x86();
-        }
-    }
+        if # [cfg (target_arch = "x86_64")]
+        { dav1d_cpu_flags = dav1d_get_cpu_flags_x86(); }
+    };
 }
 #[no_mangle]
 #[cold]

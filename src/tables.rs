@@ -22,21 +22,24 @@ pub const DAV1D_WM_TYPE_AFFINE: Dav1dWarpedMotionType = 3;
 pub const DAV1D_WM_TYPE_ROT_ZOOM: Dav1dWarpedMotionType = 2;
 pub const DAV1D_WM_TYPE_TRANSLATION: Dav1dWarpedMotionType = 1;
 pub const DAV1D_WM_TYPE_IDENTITY: Dav1dWarpedMotionType = 0;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dWarpedMotionParams {
     pub type_0: Dav1dWarpedMotionType,
     pub matrix: [int32_t; 6],
     pub u: C2RustUnnamed,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub union C2RustUnnamed {
     pub p: C2RustUnnamed_0,
     pub abcd: [int16_t; 4],
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct C2RustUnnamed_0 {
     pub alpha: int16_t,
     pub beta: int16_t,
@@ -170,8 +173,9 @@ pub const NEWMV: InterPredMode = 3;
 pub const GLOBALMV: InterPredMode = 2;
 pub const NEARMV: InterPredMode = 1;
 pub const NEARESTMV: InterPredMode = 0;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct TxfmInfo {
     pub w: uint8_t,
     pub h: uint8_t,

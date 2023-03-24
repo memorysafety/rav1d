@@ -6,8 +6,9 @@ pub type int64_t = __int64_t;
 pub type uint8_t = __uint8_t;
 pub type uint64_t = __uint64_t;
 pub type size_t = libc::c_ulong;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct GetBits {
     pub state: uint64_t,
     pub bits_left: libc::c_int,

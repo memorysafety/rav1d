@@ -94,8 +94,9 @@ pub type pal_pred_fn = Option<
         libc::c_int,
     ) -> (),
 >;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dIntraPredDSPContext {
     pub intra_pred: [angular_ipred_fn; 14],
     pub cfl_ac: [cfl_ac_fn; 3],

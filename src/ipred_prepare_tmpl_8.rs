@@ -40,8 +40,9 @@ pub const EDGE_I444_LEFT_HAS_BOTTOM: EdgeFlags = 8;
 pub const EDGE_I420_TOP_HAS_RIGHT: EdgeFlags = 4;
 pub const EDGE_I422_TOP_HAS_RIGHT: EdgeFlags = 2;
 pub const EDGE_I444_TOP_HAS_RIGHT: EdgeFlags = 1;
-#[derive(Copy, Clone, BitfieldStruct)]
+
 #[repr(C)]
+#[derive(Copy, Clone, BitfieldStruct)]
 pub struct C2RustUnnamed {
     #[bitfield(name = "needs_left", ty = "uint8_t", bits = "0..=0")]
     #[bitfield(name = "needs_top", ty = "uint8_t", bits = "1..=1")]

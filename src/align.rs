@@ -8,8 +8,8 @@
 
 use std::ops::{Deref, DerefMut, Index, IndexMut};
 
-#[derive(Copy, Clone)]
 #[repr(C, align(32))]
+#[derive(Copy, Clone)]
 pub struct Align32<T>(pub T);
 
 impl<T> From<T> for Align32<T> {
@@ -46,8 +46,8 @@ impl<T> DerefMut for Align32<T> {
     }
 }
 
-#[derive(Copy, Clone)]
 #[repr(C, align(16))]
+#[derive(Copy, Clone)]
 pub struct Align16<T>(pub T);
 
 impl<T> From<T> for Align16<T> {
@@ -84,8 +84,8 @@ impl<T> DerefMut for Align16<T> {
     }
 }
 
-#[derive(Copy, Clone)]
 #[repr(C, align(8))]
+#[derive(Copy, Clone)]
 pub struct Align8<T>(pub T);
 
 impl<T> From<T> for Align8<T> {
@@ -122,8 +122,8 @@ impl<T> DerefMut for Align8<T> {
     }
 }
 
-#[derive(Copy, Clone)]
 #[repr(C, align(4))]
+#[derive(Copy, Clone)]
 pub struct Align4<T>(pub T);
 
 impl<T> From<T> for Align4<T> {

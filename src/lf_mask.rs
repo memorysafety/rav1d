@@ -20,26 +20,30 @@ pub type uint16_t = __uint16_t;
 pub type uint32_t = __uint32_t;
 pub type uint64_t = __uint64_t;
 pub type ptrdiff_t = libc::c_long;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub union alias64 {
     pub u64_0: uint64_t,
     pub u8_0: [uint8_t; 8],
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub union alias32 {
     pub u32_0: uint32_t,
     pub u8_0: [uint8_t; 4],
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub union alias16 {
     pub u16_0: uint16_t,
     pub u8_0: [uint8_t; 2],
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub union alias8 {
     pub u8_0: uint8_t,
 }
@@ -66,21 +70,24 @@ pub const DAV1D_WM_TYPE_AFFINE: Dav1dWarpedMotionType = 3;
 pub const DAV1D_WM_TYPE_ROT_ZOOM: Dav1dWarpedMotionType = 2;
 pub const DAV1D_WM_TYPE_TRANSLATION: Dav1dWarpedMotionType = 1;
 pub const DAV1D_WM_TYPE_IDENTITY: Dav1dWarpedMotionType = 0;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dWarpedMotionParams {
     pub type_0: Dav1dWarpedMotionType,
     pub matrix: [int32_t; 6],
     pub u: C2RustUnnamed,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub union C2RustUnnamed {
     pub p: C2RustUnnamed_0,
     pub abcd: [int16_t; 4],
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct C2RustUnnamed_0 {
     pub alpha: int16_t,
     pub beta: int16_t,
@@ -97,8 +104,9 @@ pub const DAV1D_FRAME_TYPE_SWITCH: Dav1dFrameType = 3;
 pub const DAV1D_FRAME_TYPE_INTRA: Dav1dFrameType = 2;
 pub const DAV1D_FRAME_TYPE_INTER: Dav1dFrameType = 1;
 pub const DAV1D_FRAME_TYPE_KEY: Dav1dFrameType = 0;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dSegmentationData {
     pub delta_q: libc::c_int,
     pub delta_lf_y_v: libc::c_int,
@@ -109,21 +117,24 @@ pub struct Dav1dSegmentationData {
     pub skip: libc::c_int,
     pub globalmv: libc::c_int,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dSegmentationDataSet {
     pub d: [Dav1dSegmentationData; 8],
     pub preskip: libc::c_int,
     pub last_active_segid: libc::c_int,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dLoopfilterModeRefDeltas {
     pub mode_delta: [libc::c_int; 2],
     pub ref_delta: [libc::c_int; 8],
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dFilmGrainData {
     pub seed: libc::c_uint,
     pub num_y_points: libc::c_int,
@@ -143,8 +154,9 @@ pub struct Dav1dFilmGrainData {
     pub overlap_flag: libc::c_int,
     pub clip_to_restricted_range: libc::c_int,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dFrameHeader {
     pub film_grain: C2RustUnnamed_11,
     pub frame_type: Dav1dFrameType,
@@ -197,22 +209,25 @@ pub struct Dav1dFrameHeader {
     pub reduced_txtp_set: libc::c_int,
     pub gmv: [Dav1dWarpedMotionParams; 7],
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct C2RustUnnamed_1 {
     pub type_0: [Dav1dRestorationType; 3],
     pub unit_size: [libc::c_int; 2],
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct C2RustUnnamed_2 {
     pub damping: libc::c_int,
     pub n_bits: libc::c_int,
     pub y_strength: [libc::c_int; 8],
     pub uv_strength: [libc::c_int; 8],
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct C2RustUnnamed_3 {
     pub level_y: [libc::c_int; 2],
     pub level_u: libc::c_int,
@@ -222,27 +237,31 @@ pub struct C2RustUnnamed_3 {
     pub mode_ref_deltas: Dav1dLoopfilterModeRefDeltas,
     pub sharpness: libc::c_int,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct C2RustUnnamed_4 {
     pub q: C2RustUnnamed_6,
     pub lf: C2RustUnnamed_5,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct C2RustUnnamed_5 {
     pub present: libc::c_int,
     pub res_log2: libc::c_int,
     pub multi: libc::c_int,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct C2RustUnnamed_6 {
     pub present: libc::c_int,
     pub res_log2: libc::c_int,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct C2RustUnnamed_7 {
     pub enabled: libc::c_int,
     pub update_map: libc::c_int,
@@ -252,8 +271,9 @@ pub struct C2RustUnnamed_7 {
     pub lossless: [libc::c_int; 8],
     pub qidx: [libc::c_int; 8],
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct C2RustUnnamed_8 {
     pub yac: libc::c_int,
     pub ydc_delta: libc::c_int,
@@ -266,8 +286,9 @@ pub struct C2RustUnnamed_8 {
     pub qm_u: libc::c_int,
     pub qm_v: libc::c_int,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct C2RustUnnamed_9 {
     pub uniform: libc::c_int,
     pub n_bytes: libc::c_uint,
@@ -283,19 +304,22 @@ pub struct C2RustUnnamed_9 {
     pub row_start_sb: [uint16_t; 65],
     pub update: libc::c_int,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct C2RustUnnamed_10 {
     pub width_scale_denominator: libc::c_int,
     pub enabled: libc::c_int,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dFrameHeaderOperatingPoint {
     pub buffer_removal_time: libc::c_int,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct C2RustUnnamed_11 {
     pub data: Dav1dFilmGrainData,
     pub present: libc::c_int,
@@ -348,23 +372,26 @@ pub const BS_64x64: BlockSize = 3;
 pub const BS_64x128: BlockSize = 2;
 pub const BS_128x64: BlockSize = 1;
 pub const BS_128x128: BlockSize = 0;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Av1FilterLUT {
     pub e: [uint8_t; 64],
     pub i: [uint8_t; 64],
     pub sharp: [uint64_t; 2],
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Av1Filter {
     pub filter_y: [[[[uint16_t; 2]; 3]; 32]; 2],
     pub filter_uv: [[[[uint16_t; 2]; 2]; 32]; 2],
     pub cdef_idx: [int8_t; 4],
     pub noskip_mask: [[uint16_t; 2]; 16],
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct TxfmInfo {
     pub w: uint8_t,
     pub h: uint8_t,

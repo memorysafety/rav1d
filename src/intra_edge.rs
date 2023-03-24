@@ -6,21 +6,24 @@ pub const EDGE_I444_LEFT_HAS_BOTTOM: EdgeFlags = 8;
 pub const EDGE_I420_TOP_HAS_RIGHT: EdgeFlags = 4;
 pub const EDGE_I422_TOP_HAS_RIGHT: EdgeFlags = 2;
 pub const EDGE_I444_TOP_HAS_RIGHT: EdgeFlags = 1;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct EdgeNode {
     pub o: EdgeFlags,
     pub h: [EdgeFlags; 2],
     pub v: [EdgeFlags; 2],
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct EdgeTip {
     pub node: EdgeNode,
     pub split: [EdgeFlags; 4],
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct EdgeBranch {
     pub node: EdgeNode,
     pub tts: [EdgeFlags; 3],
@@ -31,8 +34,9 @@ pub struct EdgeBranch {
     pub v4: [EdgeFlags; 4],
     pub split: [*mut EdgeNode; 4],
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct ModeSelMem {
     pub nwc: [*mut EdgeBranch; 3],
     pub nt: *mut EdgeTip,

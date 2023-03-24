@@ -12,8 +12,9 @@ pub type uint16_t = __uint16_t;
 pub type uint32_t = __uint32_t;
 pub type uint64_t = __uint64_t;
 pub type pixel = uint16_t;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Av1FilterLUT {
     pub e: [uint8_t; 64],
     pub i: [uint8_t; 64],
@@ -31,8 +32,9 @@ pub type loopfilter_sb_fn = Option<
         libc::c_int,
     ) -> (),
 >;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dLoopFilterDSPContext {
     pub loop_filter_sb: [[loopfilter_sb_fn; 2]; 2],
 }

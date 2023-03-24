@@ -23,14 +23,16 @@ pub const LR_HAVE_TOP: LrEdgeFlags = 4;
 pub const LR_HAVE_RIGHT: LrEdgeFlags = 2;
 pub const LR_HAVE_LEFT: LrEdgeFlags = 1;
 pub type const_left_pixel_row = *const [pixel; 4];
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub union LooprestorationParams {
     pub filter: [[int16_t; 8]; 2],
     pub sgr: C2RustUnnamed,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct C2RustUnnamed {
     pub s0: uint32_t,
     pub s1: uint32_t,
@@ -49,8 +51,9 @@ pub type looprestorationfilter_fn = Option<
         LrEdgeFlags,
     ) -> (),
 >;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dLoopRestorationDSPContext {
     pub wiener: [looprestorationfilter_fn; 2],
     pub sgr: [looprestorationfilter_fn; 3],

@@ -20,35 +20,40 @@ pub const DAV1D_WM_TYPE_AFFINE: Dav1dWarpedMotionType = 3;
 pub const DAV1D_WM_TYPE_ROT_ZOOM: Dav1dWarpedMotionType = 2;
 pub const DAV1D_WM_TYPE_TRANSLATION: Dav1dWarpedMotionType = 1;
 pub const DAV1D_WM_TYPE_IDENTITY: Dav1dWarpedMotionType = 0;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dWarpedMotionParams {
     pub type_0: Dav1dWarpedMotionType,
     pub matrix: [int32_t; 6],
     pub u: C2RustUnnamed,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub union C2RustUnnamed {
     pub p: C2RustUnnamed_0,
     pub abcd: [int16_t; 4],
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct C2RustUnnamed_0 {
     pub alpha: int16_t,
     pub beta: int16_t,
     pub gamma: int16_t,
     pub delta: int16_t,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub union mv {
     pub c2rust_unnamed: C2RustUnnamed_1,
     pub n: uint32_t,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct C2RustUnnamed_1 {
     pub y: int16_t,
     pub x: int16_t,

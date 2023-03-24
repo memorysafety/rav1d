@@ -110,8 +110,9 @@ pub const ADST_DCT: TxfmType = 1;
 pub const DCT_DCT: TxfmType = 0;
 pub type itxfm_fn =
     Option<unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int, libc::c_int) -> ()>;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dInvTxfmDSPContext {
     pub itxfm_add: [[itxfm_fn; 17]; 19],
 }

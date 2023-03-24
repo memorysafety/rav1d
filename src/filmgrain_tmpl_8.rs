@@ -19,8 +19,9 @@ pub const DAV1D_PIXEL_LAYOUT_I444: Dav1dPixelLayout = 3;
 pub const DAV1D_PIXEL_LAYOUT_I422: Dav1dPixelLayout = 2;
 pub const DAV1D_PIXEL_LAYOUT_I420: Dav1dPixelLayout = 1;
 pub const DAV1D_PIXEL_LAYOUT_I400: Dav1dPixelLayout = 0;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dFilmGrainData {
     pub seed: libc::c_uint,
     pub num_y_points: libc::c_int,
@@ -81,8 +82,9 @@ pub type fguv_32x32xn_fn = Option<
         libc::c_int,
     ) -> (),
 >;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dFilmGrainDSPContext {
     pub generate_grain_y: generate_grain_y_fn,
     pub generate_grain_uv: [generate_grain_uv_fn; 3],

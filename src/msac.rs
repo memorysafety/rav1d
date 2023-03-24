@@ -36,8 +36,9 @@ pub type uint8_t = __uint8_t;
 pub type uint16_t = __uint16_t;
 pub type size_t = libc::c_ulong;
 pub type ec_win = size_t;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct MsacContext {
     pub buf_pos: *const uint8_t,
     pub buf_end: *const uint8_t,
@@ -393,12 +394,10 @@ pub unsafe extern "C" fn dav1d_msac_decode_symbol_adapt4(
     mut n_symbols: size_t,
 ) -> libc::c_uint {
     cfg_if! {
-        if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
-            return dav1d_msac_decode_symbol_adapt4_sse2(s, cdf, n_symbols);
-        } else {
-            return dav1d_msac_decode_symbol_adapt_c(s, cdf, n_symbols);
-        }
-    }
+        if # [cfg (all (feature = "asm", target_arch = "x86_64"))]
+        { return dav1d_msac_decode_symbol_adapt4_sse2(s, cdf, n_symbols); } else
+        { return dav1d_msac_decode_symbol_adapt_c (s, cdf, n_symbols) ; }
+    };
 }
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_msac_decode_symbol_adapt8(
@@ -407,12 +406,10 @@ pub unsafe extern "C" fn dav1d_msac_decode_symbol_adapt8(
     mut n_symbols: size_t,
 ) -> libc::c_uint {
     cfg_if! {
-        if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
-            return dav1d_msac_decode_symbol_adapt8_sse2(s, cdf, n_symbols);
-        } else {
-            return dav1d_msac_decode_symbol_adapt_c(s, cdf, n_symbols);
-        }
-    }
+        if # [cfg (all (feature = "asm", target_arch = "x86_64"))]
+        { return dav1d_msac_decode_symbol_adapt8_sse2(s, cdf, n_symbols); } else
+        { return dav1d_msac_decode_symbol_adapt_c (s, cdf, n_symbols) ; }
+    };
 }
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_msac_decode_symbol_adapt16(
@@ -421,12 +418,12 @@ pub unsafe extern "C" fn dav1d_msac_decode_symbol_adapt16(
     mut n_symbols: size_t,
 ) -> libc::c_uint {
     cfg_if! {
-        if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
-            return ((*s).symbol_adapt16).expect("non-null function pointer")(s, cdf, n_symbols);
-        } else {
-            return dav1d_msac_decode_symbol_adapt_c(s, cdf, n_symbols);
-        }
-    }
+        if # [cfg (all (feature = "asm", target_arch = "x86_64"))]
+        {
+            return (*s).symbol_adapt16.expect("non-null function pointer")(s, cdf,
+                                                                   n_symbols);
+        } else { return dav1d_msac_decode_symbol_adapt_c (s, cdf, n_symbols) ; }
+    };
 }
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_msac_decode_bool_adapt(
@@ -434,22 +431,18 @@ pub unsafe extern "C" fn dav1d_msac_decode_bool_adapt(
     mut cdf: *mut uint16_t,
 ) -> libc::c_uint {
     cfg_if! {
-        if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
-            return dav1d_msac_decode_bool_adapt_sse2(s, cdf);
-        } else {
-            return dav1d_msac_decode_bool_adapt_c(s, cdf);
-        }
-    }
+        if # [cfg (all (feature = "asm", target_arch = "x86_64"))]
+        { return dav1d_msac_decode_bool_adapt_sse2(s, cdf); } else
+        { return dav1d_msac_decode_bool_adapt_c (s, cdf) ; }
+    };
 }
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_msac_decode_bool_equi(mut s: *mut MsacContext) -> libc::c_uint {
     cfg_if! {
-        if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
-            return dav1d_msac_decode_bool_equi_sse2(s);
-        } else {
-            return dav1d_msac_decode_bool_equi_c(s);
-        }
-    }
+        if # [cfg (all (feature = "asm", target_arch = "x86_64"))]
+        { return dav1d_msac_decode_bool_equi_sse2(s); } else
+        { return dav1d_msac_decode_bool_equi_c (s) ; }
+    };
 }
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_msac_decode_bool(
@@ -457,12 +450,10 @@ pub unsafe extern "C" fn dav1d_msac_decode_bool(
     mut f: libc::c_uint,
 ) -> libc::c_uint {
     cfg_if! {
-        if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
-            return dav1d_msac_decode_bool_sse2(s, f);
-        } else {
-            return dav1d_msac_decode_bool_c(s, f);
-        }
-    }
+        if # [cfg (all (feature = "asm", target_arch = "x86_64"))]
+        { return dav1d_msac_decode_bool_sse2(s, f); } else
+        { return dav1d_msac_decode_bool_c (s, f) ; }
+    };
 }
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_msac_decode_hi_tok(
@@ -470,10 +461,8 @@ pub unsafe extern "C" fn dav1d_msac_decode_hi_tok(
     mut cdf: *mut uint16_t,
 ) -> libc::c_uint {
     cfg_if! {
-        if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
-            return dav1d_msac_decode_hi_tok_sse2(s, cdf);
-        } else {
-            return dav1d_msac_decode_hi_tok_c(s, cdf);
-        }
-    }
+        if # [cfg (all (feature = "asm", target_arch = "x86_64"))]
+        { return dav1d_msac_decode_hi_tok_sse2(s, cdf); } else
+        { return dav1d_msac_decode_hi_tok_c (s, cdf) ; }
+    };
 }

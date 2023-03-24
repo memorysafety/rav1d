@@ -13,8 +13,9 @@ extern "C" {
 pub type size_t = libc::c_ulong;
 pub type __uint8_t = libc::c_uchar;
 pub type uint8_t = __uint8_t;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dRef {
     pub data: *mut libc::c_void,
     pub const_data: *const libc::c_void,
@@ -24,15 +25,17 @@ pub struct Dav1dRef {
     pub user_data: *mut libc::c_void,
 }
 pub type atomic_int = libc::c_int;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct __pthread_internal_list {
     pub __prev: *mut __pthread_internal_list,
     pub __next: *mut __pthread_internal_list,
 }
 pub type __pthread_list_t = __pthread_internal_list;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct __pthread_mutex_s {
     pub __lock: libc::c_int,
     pub __count: libc::c_uint,
@@ -43,21 +46,24 @@ pub struct __pthread_mutex_s {
     pub __elision: libc::c_short,
     pub __list: __pthread_list_t,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub union pthread_mutex_t {
     pub __data: __pthread_mutex_s,
     pub __size: [libc::c_char; 40],
     pub __align: libc::c_long,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dMemPoolBuffer {
     pub data: *mut libc::c_void,
     pub next: *mut Dav1dMemPoolBuffer,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dMemPool {
     pub lock: pthread_mutex_t,
     pub buf: *mut Dav1dMemPoolBuffer,

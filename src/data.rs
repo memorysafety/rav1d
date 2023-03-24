@@ -21,14 +21,16 @@ pub type __off64_t = libc::c_long;
 pub type int64_t = __int64_t;
 pub type uint8_t = __uint8_t;
 pub type size_t = libc::c_ulong;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dUserData {
     pub data: *const uint8_t,
     pub ref_0: *mut Dav1dRef,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dRef {
     pub data: *mut libc::c_void,
     pub const_data: *const libc::c_void,
@@ -38,8 +40,9 @@ pub struct Dav1dRef {
     pub user_data: *mut libc::c_void,
 }
 pub type atomic_int = libc::c_int;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dDataProps {
     pub timestamp: int64_t,
     pub duration: int64_t,
@@ -47,16 +50,18 @@ pub struct Dav1dDataProps {
     pub size: size_t,
     pub user_data: Dav1dUserData,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dData {
     pub data: *const uint8_t,
     pub sz: size_t,
     pub ref_0: *mut Dav1dRef,
     pub m: Dav1dDataProps,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct _IO_FILE {
     pub _flags: libc::c_int,
     pub _IO_read_ptr: *mut libc::c_char,

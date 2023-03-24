@@ -193,8 +193,9 @@ pub type resize_fn = Option<
         libc::c_int,
     ) -> (),
 >;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dMCDSPContext {
     pub mc: [mc_fn; 10],
     pub mc_scaled: [mc_scaled_fn; 10],

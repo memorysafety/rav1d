@@ -31,8 +31,9 @@ pub type __int64_t = libc::c_long;
 pub type __uint64_t = libc::c_ulong;
 pub type __off_t = libc::c_long;
 pub type __off64_t = libc::c_long;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct _IO_FILE {
     pub _flags: libc::c_int,
     pub _IO_read_ptr: *mut libc::c_char,
@@ -69,14 +70,16 @@ pub type FILE = _IO_FILE;
 pub type int64_t = __int64_t;
 pub type uint8_t = __uint8_t;
 pub type uint64_t = __uint64_t;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dUserData {
     pub data: *const uint8_t,
     pub ref_0: *mut Dav1dRef,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dDataProps {
     pub timestamp: int64_t,
     pub duration: int64_t,
@@ -84,23 +87,26 @@ pub struct Dav1dDataProps {
     pub size: size_t,
     pub user_data: Dav1dUserData,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dData {
     pub data: *const uint8_t,
     pub sz: size_t,
     pub ref_0: *mut Dav1dRef,
     pub m: Dav1dDataProps,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct DemuxerContext {
     pub data: *mut DemuxerPriv,
     pub impl_0: *const Demuxer,
     pub priv_data: [uint64_t; 0],
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Demuxer {
     pub priv_data_size: libc::c_int,
     pub name: *const libc::c_char,

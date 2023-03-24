@@ -35,8 +35,9 @@ pub const BS_64x64: BlockSize = 3;
 pub const BS_64x128: BlockSize = 2;
 pub const BS_128x64: BlockSize = 1;
 pub const BS_128x128: BlockSize = 0;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct wedge_code_type {
     pub direction: uint8_t,
     pub x_offset: uint8_t,

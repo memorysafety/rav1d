@@ -26,8 +26,9 @@ pub type __int64_t = libc::c_long;
 pub type __uint64_t = libc::c_ulong;
 pub type __off_t = libc::c_long;
 pub type __off64_t = libc::c_long;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct _IO_FILE {
     pub _flags: libc::c_int,
     pub _IO_read_ptr: *mut libc::c_char,
@@ -73,14 +74,16 @@ pub const DAV1D_OBU_TILE_GRP: Dav1dObuType = 4;
 pub const DAV1D_OBU_FRAME_HDR: Dav1dObuType = 3;
 pub const DAV1D_OBU_TD: Dav1dObuType = 2;
 pub const DAV1D_OBU_SEQ_HDR: Dav1dObuType = 1;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dUserData {
     pub data: *const uint8_t,
     pub ref_0: *mut Dav1dRef,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dDataProps {
     pub timestamp: int64_t,
     pub duration: int64_t,
@@ -88,23 +91,26 @@ pub struct Dav1dDataProps {
     pub size: size_t,
     pub user_data: Dav1dUserData,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dData {
     pub data: *const uint8_t,
     pub sz: size_t,
     pub ref_0: *mut Dav1dRef,
     pub m: Dav1dDataProps,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct DemuxerPriv {
     pub f: *mut FILE,
     pub temporal_unit_size: size_t,
     pub frame_unit_size: size_t,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Demuxer {
     pub priv_data_size: libc::c_int,
     pub name: *const libc::c_char,

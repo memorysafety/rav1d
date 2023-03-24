@@ -15,22 +15,25 @@ pub const DAV1D_X86_CPU_FLAG_AVX2: CpuFlags = 8;
 pub const DAV1D_X86_CPU_FLAG_SSE41: CpuFlags = 4;
 pub const DAV1D_X86_CPU_FLAG_SSSE3: CpuFlags = 2;
 pub const DAV1D_X86_CPU_FLAG_SSE2: CpuFlags = 1;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct CpuidRegisters {
     pub eax: uint32_t,
     pub ebx: uint32_t,
     pub edx: uint32_t,
     pub ecx: uint32_t,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct C2RustUnnamed {
     pub max_leaf: uint32_t,
     pub vendor: [libc::c_char; 12],
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub union C2RustUnnamed_0 {
     pub r: CpuidRegisters,
     pub c2rust_unnamed: C2RustUnnamed,

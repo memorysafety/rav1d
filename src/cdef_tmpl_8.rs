@@ -35,8 +35,9 @@ pub type cdef_fn = Option<
 >;
 pub type cdef_dir_fn =
     Option<unsafe extern "C" fn(*const pixel, ptrdiff_t, *mut libc::c_uint) -> libc::c_int>;
-#[derive(Copy, Clone)]
+
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct Dav1dCdefDSPContext {
     pub dir: cdef_dir_fn,
     pub fb: [cdef_fn; 3],
