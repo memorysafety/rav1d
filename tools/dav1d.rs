@@ -12,19 +12,19 @@ extern "C" {
     pub type MuxerContext;
     fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
     fn free(_: *mut libc::c_void);
-    static mut stderr: *mut FILE;
-    fn fclose(__stream: *mut FILE) -> libc::c_int;
-    fn fflush(__stream: *mut FILE) -> libc::c_int;
-    fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut FILE;
-    fn fprintf(_: *mut FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
+
+    fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
+    fn fflush(__stream: *mut libc::FILE) -> libc::c_int;
+    fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut libc::FILE;
+    fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
     fn snprintf(
         _: *mut libc::c_char,
         _: libc::c_ulong,
         _: *const libc::c_char,
         _: ...
     ) -> libc::c_int;
-    fn fputs(__s: *const libc::c_char, __stream: *mut FILE) -> libc::c_int;
-    fn fileno(__stream: *mut FILE) -> libc::c_int;
+    fn fputs(__s: *const libc::c_char, __stream: *mut libc::FILE) -> libc::c_int;
+    fn fileno(__stream: *mut libc::FILE) -> libc::c_int;
     fn memset(
         _: *mut libc::c_void,
         _: libc::c_int,
@@ -717,7 +717,7 @@ unsafe extern "C" fn synchronize(
     nspf: uint64_t,
     tfirst: uint64_t,
     elapsed: *mut uint64_t,
-    frametimes: *mut FILE,
+    frametimes: *mut libc::FILE,
 ) {
     let tcurr: uint64_t = get_time_nanos();
     let last: uint64_t = *elapsed;
@@ -987,7 +987,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
     let mut tfirst: uint64_t = 0;
     let mut elapsed: uint64_t = 0;
     let mut i_fps: libc::c_double = 0.;
-    let mut frametimes: *mut FILE = 0 as *mut FILE;
+    let mut frametimes: *mut libc::FILE = 0 as *mut libc::FILE;
     let mut version: *const libc::c_char = dav1d_version();
     if strcmp(version, b"1.0.0-130-g26eca15\0" as *const u8 as *const libc::c_char) != 0
     {

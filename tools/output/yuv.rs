@@ -1,20 +1,19 @@
 use ::libc;
+use crate::{stdout,stderr};
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
     pub type _IO_marker;
     pub type Dav1dRef;
     fn __errno_location() -> *mut libc::c_int;
-    static mut stdout: *mut FILE;
-    static mut stderr: *mut FILE;
-    fn fclose(__stream: *mut FILE) -> libc::c_int;
-    fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut FILE;
-    fn fprintf(_: *mut FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
+    fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
+    fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut libc::FILE;
+    fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
     fn fwrite(
         _: *const libc::c_void,
         _: libc::c_ulong,
         _: libc::c_ulong,
-        _: *mut FILE,
+        _: *mut libc::FILE,
     ) -> libc::c_ulong;
     fn strcmp(_: *const libc::c_char, _: *const libc::c_char) -> libc::c_int;
     fn strerror(_: libc::c_int) -> *mut libc::c_char;
@@ -536,7 +535,7 @@ pub struct Dav1dPicture {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct MuxerPriv {
-    pub f: *mut FILE,
+    pub f: *mut libc::FILE,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
