@@ -19,6 +19,14 @@ pub const DAV1D_N_TX_MODES: Dav1dTxfmMode = 3;
 pub const DAV1D_TX_SWITCHABLE: Dav1dTxfmMode = 2;
 pub const DAV1D_TX_LARGEST: Dav1dTxfmMode = 1;
 pub const DAV1D_TX_4X4_ONLY: Dav1dTxfmMode = 0;
+pub type Dav1dFilterMode = libc::c_uint;
+pub const DAV1D_FILTER_SWITCHABLE: Dav1dFilterMode = 4;
+pub const DAV1D_N_FILTERS: Dav1dFilterMode = 4;
+pub const DAV1D_FILTER_BILINEAR: Dav1dFilterMode = 3;
+pub const DAV1D_N_SWITCHABLE_FILTERS: Dav1dFilterMode = 3;
+pub const DAV1D_FILTER_8TAP_SHARP: Dav1dFilterMode = 2;
+pub const DAV1D_FILTER_8TAP_SMOOTH: Dav1dFilterMode = 1;
+pub const DAV1D_FILTER_8TAP_REGULAR: Dav1dFilterMode = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContentLightLevel {
