@@ -41,6 +41,11 @@ pub const DAV1D_WM_TYPE_AFFINE: Dav1dWarpedMotionType = 3;
 pub const DAV1D_WM_TYPE_ROT_ZOOM: Dav1dWarpedMotionType = 2;
 pub const DAV1D_WM_TYPE_TRANSLATION: Dav1dWarpedMotionType = 1;
 pub const DAV1D_WM_TYPE_IDENTITY: Dav1dWarpedMotionType = 0;
+pub type Dav1dPixelLayout = libc::c_uint;
+pub const DAV1D_PIXEL_LAYOUT_I444: Dav1dPixelLayout = 3;
+pub const DAV1D_PIXEL_LAYOUT_I422: Dav1dPixelLayout = 2;
+pub const DAV1D_PIXEL_LAYOUT_I420: Dav1dPixelLayout = 1;
+pub const DAV1D_PIXEL_LAYOUT_I400: Dav1dPixelLayout = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContentLightLevel {

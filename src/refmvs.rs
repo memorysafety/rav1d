@@ -109,11 +109,11 @@ pub struct C2RustUnnamed_0 {
     pub gamma: int16_t,
     pub delta: int16_t,
 }
-pub type Dav1dPixelLayout = libc::c_uint;
-pub const DAV1D_PIXEL_LAYOUT_I444: Dav1dPixelLayout = 3;
-pub const DAV1D_PIXEL_LAYOUT_I422: Dav1dPixelLayout = 2;
-pub const DAV1D_PIXEL_LAYOUT_I420: Dav1dPixelLayout = 1;
-pub const DAV1D_PIXEL_LAYOUT_I400: Dav1dPixelLayout = 0;
+use crate::include::dav1d::headers::Dav1dPixelLayout;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I422;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
 pub type Dav1dFrameType = libc::c_uint;
 pub const DAV1D_FRAME_TYPE_SWITCH: Dav1dFrameType = 3;
 pub const DAV1D_FRAME_TYPE_INTRA: Dav1dFrameType = 2;
