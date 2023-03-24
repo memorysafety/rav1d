@@ -45,24 +45,5 @@ pub unsafe extern "C" fn dav1d_set_cpu_flags_mask(mask: libc::c_uint) {
 pub unsafe extern "C" fn dav1d_num_logical_processors(
     c: *mut Dav1dContext,
 ) -> libc::c_int {
-    let mut affinity: cpu_set_t = cpu_set_t { __bits: [0; 16] };
-    if pthread_getaffinity_np(
-        pthread_self(),
-        ::core::mem::size_of::<cpu_set_t>() as libc::c_ulong,
-        &mut affinity,
-    ) == 0
-    {
-        return __sched_cpucount(
-            ::core::mem::size_of::<cpu_set_t>() as libc::c_ulong,
-            &mut affinity,
-        );
-    }
-    if !c.is_null() {
-        dav1d_log(
-            c,
-            b"Unable to detect thread count, defaulting to single-threaded mode\n\0"
-                as *const u8 as *const libc::c_char,
-        );
-    }
-    return 1 as libc::c_int;
+    num_cpus::get() as libc::c_int
 }
