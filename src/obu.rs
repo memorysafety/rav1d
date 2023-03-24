@@ -265,14 +265,7 @@ pub struct Dav1dPicture {
     pub allocator_data: *mut libc::c_void,
 }
 use crate::include::dav1d::headers::Dav1dITUTT35;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dMasteringDisplay {
-    pub primaries: [[uint16_t; 2]; 3],
-    pub white_point: [uint16_t; 2],
-    pub max_luminance: uint32_t,
-    pub min_luminance: uint32_t,
-}
+use crate::include::dav1d::headers::Dav1dMasteringDisplay;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContentLightLevel {

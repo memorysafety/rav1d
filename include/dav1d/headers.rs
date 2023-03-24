@@ -1,8 +1,18 @@
 use crate::include::stddef::size_t;
 use crate::include::stdint::int8_t;
+use crate::include::stdint::uint16_t;
+use crate::include::stdint::uint32_t;
 use crate::include::stdint::uint64_t;
 use crate::include::stdint::uint8_t;
 
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dMasteringDisplay {
+    pub primaries: [[uint16_t; 2]; 3],
+    pub white_point: [uint16_t; 2],
+    pub max_luminance: uint32_t,
+    pub min_luminance: uint32_t,
+}
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dITUTT35 {
