@@ -1710,15 +1710,15 @@ pub struct ScalableMotionParams {
     pub scale: libc::c_int,
     pub step: libc::c_int,
 }
-pub type Dav1dObuType = libc::c_uint;
-pub const DAV1D_OBU_PADDING: Dav1dObuType = 15;
-pub const DAV1D_OBU_REDUNDANT_FRAME_HDR: Dav1dObuType = 7;
-pub const DAV1D_OBU_FRAME: Dav1dObuType = 6;
-pub const DAV1D_OBU_METADATA: Dav1dObuType = 5;
-pub const DAV1D_OBU_TILE_GRP: Dav1dObuType = 4;
-pub const DAV1D_OBU_FRAME_HDR: Dav1dObuType = 3;
-pub const DAV1D_OBU_TD: Dav1dObuType = 2;
-pub const DAV1D_OBU_SEQ_HDR: Dav1dObuType = 1;
+use crate::include::dav1d::headers::Dav1dObuType;
+use crate::include::dav1d::headers::DAV1D_OBU_PADDING;
+use crate::include::dav1d::headers::DAV1D_OBU_REDUNDANT_FRAME_HDR;
+use crate::include::dav1d::headers::DAV1D_OBU_FRAME;
+use crate::include::dav1d::headers::DAV1D_OBU_METADATA;
+use crate::include::dav1d::headers::DAV1D_OBU_TILE_GRP;
+use crate::include::dav1d::headers::DAV1D_OBU_FRAME_HDR;
+use crate::include::dav1d::headers::DAV1D_OBU_TD;
+use crate::include::dav1d::headers::DAV1D_OBU_SEQ_HDR;
 pub type ObuMetaType = libc::c_uint;
 pub const OBU_META_TIMECODE: ObuMetaType = 5;
 pub const OBU_META_ITUT_T35: ObuMetaType = 4;
