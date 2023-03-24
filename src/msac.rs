@@ -1,7 +1,7 @@
 use ::libc;
 use cfg_if::cfg_if;
 
-#[cfg(all(feature = "asm", target_arch = "x86_64"))]
+//#[cfg(all(feature = "asm", target_arch = "x86_64"))]
 extern "C" {
     fn dav1d_msac_decode_hi_tok_sse2(
         s: *mut MsacContext,
@@ -51,7 +51,7 @@ pub struct MsacContext {
     pub rng: libc::c_uint,
     pub cnt: libc::c_int,
     pub allow_update_cdf: libc::c_int,
-    #[cfg(all(feature = "asm", target_arch = "x86_64"))]
+    //#[cfg(all(feature = "asm", target_arch = "x86_64"))]
     pub symbol_adapt16: Option::<
         unsafe extern "C" fn(*mut MsacContext, *mut uint16_t, size_t) -> libc::c_uint,
     >,
@@ -60,8 +60,8 @@ pub struct MsacContext {
 unsafe extern "C" fn clz(mask: libc::c_uint) -> libc::c_int {
     return mask.leading_zeros() as i32;
 }
-cfg_if! {
-    if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
+//cfg_if! {
+//    if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
         pub type CpuFlags = libc::c_uint;
         pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
         pub const DAV1D_X86_CPU_FLAG_AVX512ICL: CpuFlags = 16;
@@ -69,8 +69,8 @@ cfg_if! {
         pub const DAV1D_X86_CPU_FLAG_SSE41: CpuFlags = 4;
         pub const DAV1D_X86_CPU_FLAG_SSSE3: CpuFlags = 2;
         pub const DAV1D_X86_CPU_FLAG_SSE2: CpuFlags = 1;
-    }
-}
+//    }
+//}
 #[inline]
 unsafe extern "C" fn inv_recenter(r: libc::c_uint, v: libc::c_uint) -> libc::c_uint {
     if v > r << 1 as libc::c_int {
@@ -101,7 +101,7 @@ unsafe extern "C" fn dav1d_msac_decode_bools(
     return v;
 }
 
-#[cfg(all(feature = "asm", target_arch = "x86_64"))]
+//#[cfg(all(feature = "asm", target_arch = "x86_64"))]
 #[inline(always)]
 unsafe extern "C" fn msac_init_x86(s: *mut MsacContext) {
     let flags: libc::c_uint = dav1d_get_cpu_flags();
@@ -128,7 +128,7 @@ unsafe extern "C" fn msac_init_x86(s: *mut MsacContext) {
         );
     }
 }
-#[cfg(all(feature = "asm", target_arch = "x86_64"))]
+//#[cfg(all(feature = "asm", target_arch = "x86_64"))]
 #[inline(always)]
 unsafe extern "C" fn dav1d_get_cpu_flags() -> libc::c_uint {
     let mut flags: libc::c_uint = dav1d_cpu_flags & dav1d_cpu_flags_mask;
@@ -433,7 +433,7 @@ pub unsafe extern "C" fn dav1d_msac_init(
     (*s).allow_update_cdf = (disable_cdf_update_flag == 0) as libc::c_int;
     ctx_refill(s);
 
-    #[cfg(all(feature = "asm", target_arch = "x86_64"))]
+    //#[cfg(all(feature = "asm", target_arch = "x86_64"))]
     {
         (*s)
             .symbol_adapt16 = Some(

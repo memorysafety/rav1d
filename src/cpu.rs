@@ -2,7 +2,7 @@ use ::libc;
 use cfg_if::cfg_if;
 extern "C" {
     pub type Dav1dContext;
-    #[cfg(target_arch = "x86_64")]
+    //#[cfg(target_arch = "x86_64")]
     fn dav1d_get_cpu_flags_x86() -> libc::c_uint;
     fn dav1d_log(c: *mut Dav1dContext, format: *const libc::c_char, _: ...);
     fn __sched_cpucount(__setsize: size_t, __setp: *const cpu_set_t) -> libc::c_int;
@@ -28,7 +28,7 @@ pub static mut dav1d_cpu_flags_mask: libc::c_uint = !(0 as libc::c_uint);
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_init_cpu() {
-    #[cfg(feature = "asm")]
+    //#[cfg(feature = "asm")]
     cfg_if! {
         if #[cfg(target_arch = "x86_64")] {
             dav1d_cpu_flags = dav1d_get_cpu_flags_x86();

@@ -18,9 +18,9 @@ extern "C" {
         _: libc::c_ulong,
     ) -> libc::c_int;
     fn printf(_: *const libc::c_char, _: ...) -> libc::c_int;
-    #[cfg(feature="bitdepth_8")]
+    //#[cfg(feature="bitdepth_8")]
     fn dav1d_cdef_dsp_init_8bpc(c: *mut Dav1dCdefDSPContext);
-    #[cfg(feature="bitdepth_16")]
+    //#[cfg(feature="bitdepth_16")]
     fn dav1d_cdef_dsp_init_16bpc(c: *mut Dav1dCdefDSPContext);
     fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
     fn free(_: *mut libc::c_void);
@@ -120,17 +120,17 @@ extern "C" {
         by4: libc::c_int,
         bx4: libc::c_int,
     );
-    #[cfg(feature="bitdepth_8")]
+    //#[cfg(feature="bitdepth_8")]
     fn dav1d_film_grain_dsp_init_8bpc(c: *mut Dav1dFilmGrainDSPContext);
-    #[cfg(feature="bitdepth_16")]
+    //#[cfg(feature="bitdepth_16")]
     fn dav1d_film_grain_dsp_init_16bpc(c: *mut Dav1dFilmGrainDSPContext);
-    #[cfg(feature="bitdepth_8")]
+    //#[cfg(feature="bitdepth_8")]
     fn dav1d_intra_pred_dsp_init_8bpc(c: *mut Dav1dIntraPredDSPContext);
-    #[cfg(feature="bitdepth_16")]
+    //#[cfg(feature="bitdepth_16")]
     fn dav1d_intra_pred_dsp_init_16bpc(c: *mut Dav1dIntraPredDSPContext);
-    #[cfg(feature="bitdepth_8")]
+    //#[cfg(feature="bitdepth_8")]
     fn dav1d_itx_dsp_init_8bpc(c: *mut Dav1dInvTxfmDSPContext, bpc: libc::c_int);
-    #[cfg(feature="bitdepth_16")]
+    //#[cfg(feature="bitdepth_16")]
     fn dav1d_itx_dsp_init_16bpc(c: *mut Dav1dInvTxfmDSPContext, bpc: libc::c_int);
     fn dav1d_create_lf_mask_intra(
         lflvl: *mut Av1Filter,
@@ -176,23 +176,23 @@ extern "C" {
         hdr: *const Dav1dFrameHeader,
         lf_delta: *const int8_t,
     );
-    #[cfg(feature="bitdepth_8")]
+    //#[cfg(feature="bitdepth_8")]
     fn dav1d_loop_filter_dsp_init_8bpc(c: *mut Dav1dLoopFilterDSPContext);
-    #[cfg(feature="bitdepth_16")]
+    //#[cfg(feature="bitdepth_16")]
     fn dav1d_loop_filter_dsp_init_16bpc(c: *mut Dav1dLoopFilterDSPContext);
-    #[cfg(feature="bitdepth_8")]
+    //#[cfg(feature="bitdepth_8")]
     fn dav1d_loop_restoration_dsp_init_8bpc(
         c: *mut Dav1dLoopRestorationDSPContext,
         bpc: libc::c_int,
     );
-    #[cfg(feature="bitdepth_16")]
+    //#[cfg(feature="bitdepth_16")]
     fn dav1d_loop_restoration_dsp_init_16bpc(
         c: *mut Dav1dLoopRestorationDSPContext,
         bpc: libc::c_int,
     );
-    #[cfg(feature="bitdepth_8")]
+    //#[cfg(feature="bitdepth_8")]
     fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext);
-    #[cfg(feature="bitdepth_16")]
+    //#[cfg(feature="bitdepth_16")]
     fn dav1d_mc_dsp_init_16bpc(c: *mut Dav1dMCDSPContext);
     fn dav1d_msac_init(
         s: *mut MsacContext,
@@ -246,73 +246,73 @@ extern "C" {
     fn dav1d_thread_picture_unref(p: *mut Dav1dThreadPicture);
     fn dav1d_picture_unref_internal(p: *mut Dav1dPicture);
     fn dav1d_picture_get_event_flags(p: *const Dav1dThreadPicture) -> Dav1dEventFlags;
-    #[cfg(feature="bitdepth_8")]
+    //#[cfg(feature="bitdepth_8")]
     fn dav1d_recon_b_intra_8bpc(
         t: *mut Dav1dTaskContext,
         bs: BlockSize,
         intra_edge_flags: EdgeFlags,
         b: *const Av1Block,
     );
-    #[cfg(feature="bitdepth_16")]
+    //#[cfg(feature="bitdepth_16")]
     fn dav1d_recon_b_intra_16bpc(
         t: *mut Dav1dTaskContext,
         bs: BlockSize,
         intra_edge_flags: EdgeFlags,
         b: *const Av1Block,
     );
-    #[cfg(feature="bitdepth_8")]
+    //#[cfg(feature="bitdepth_8")]
     fn dav1d_recon_b_inter_8bpc(
         t: *mut Dav1dTaskContext,
         bs: BlockSize,
         b: *const Av1Block,
     ) -> libc::c_int;
-    #[cfg(feature="bitdepth_16")]
+    //#[cfg(feature="bitdepth_16")]
     fn dav1d_recon_b_inter_16bpc(
         t: *mut Dav1dTaskContext,
         bs: BlockSize,
         b: *const Av1Block,
     ) -> libc::c_int;
-    #[cfg(feature="bitdepth_8")]
+    //#[cfg(feature="bitdepth_8")]
     fn dav1d_filter_sbrow_8bpc(f: *mut Dav1dFrameContext, sby: libc::c_int);
-    #[cfg(feature="bitdepth_16")]
+    //#[cfg(feature="bitdepth_16")]
     fn dav1d_filter_sbrow_16bpc(f: *mut Dav1dFrameContext, sby: libc::c_int);
-    #[cfg(feature="bitdepth_8")]
+    //#[cfg(feature="bitdepth_8")]
     fn dav1d_filter_sbrow_deblock_cols_8bpc(f: *mut Dav1dFrameContext, sby: libc::c_int);
-    #[cfg(feature="bitdepth_16")]
+    //#[cfg(feature="bitdepth_16")]
     fn dav1d_filter_sbrow_deblock_cols_16bpc(
         f: *mut Dav1dFrameContext,
         sby: libc::c_int,
     );
-    #[cfg(feature="bitdepth_8")]
+    //#[cfg(feature="bitdepth_8")]
     fn dav1d_filter_sbrow_deblock_rows_8bpc(f: *mut Dav1dFrameContext, sby: libc::c_int);
-    #[cfg(feature="bitdepth_16")]
+    //#[cfg(feature="bitdepth_16")]
     fn dav1d_filter_sbrow_deblock_rows_16bpc(
         f: *mut Dav1dFrameContext,
         sby: libc::c_int,
     );
-    #[cfg(feature="bitdepth_8")]
+    //#[cfg(feature="bitdepth_8")]
     fn dav1d_filter_sbrow_cdef_8bpc(tc: *mut Dav1dTaskContext, sby: libc::c_int);
-    #[cfg(feature="bitdepth_16")]
+    //#[cfg(feature="bitdepth_16")]
     fn dav1d_filter_sbrow_cdef_16bpc(tc: *mut Dav1dTaskContext, sby: libc::c_int);
-    #[cfg(feature="bitdepth_8")]
+    //#[cfg(feature="bitdepth_8")]
     fn dav1d_filter_sbrow_resize_8bpc(f: *mut Dav1dFrameContext, sby: libc::c_int);
-    #[cfg(feature="bitdepth_16")]
+    //#[cfg(feature="bitdepth_16")]
     fn dav1d_filter_sbrow_resize_16bpc(f: *mut Dav1dFrameContext, sby: libc::c_int);
-    #[cfg(feature="bitdepth_8")]
+    //#[cfg(feature="bitdepth_8")]
     fn dav1d_filter_sbrow_lr_8bpc(f: *mut Dav1dFrameContext, sby: libc::c_int);
-    #[cfg(feature="bitdepth_16")]
+    //#[cfg(feature="bitdepth_16")]
     fn dav1d_filter_sbrow_lr_16bpc(f: *mut Dav1dFrameContext, sby: libc::c_int);
-    #[cfg(feature="bitdepth_8")]
+    //#[cfg(feature="bitdepth_8")]
     fn dav1d_backup_ipred_edge_8bpc(t: *mut Dav1dTaskContext);
-    #[cfg(feature="bitdepth_16")]
+    //#[cfg(feature="bitdepth_16")]
     fn dav1d_backup_ipred_edge_16bpc(t: *mut Dav1dTaskContext);
-    #[cfg(feature="bitdepth_8")]
+    //#[cfg(feature="bitdepth_8")]
     fn dav1d_read_coef_blocks_8bpc(
         t: *mut Dav1dTaskContext,
         bs: BlockSize,
         b: *const Av1Block,
     );
-    #[cfg(feature="bitdepth_16")]
+    //#[cfg(feature="bitdepth_16")]
     fn dav1d_read_coef_blocks_16bpc(
         t: *mut Dav1dTaskContext,
         bs: BlockSize,
@@ -19251,7 +19251,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             .as_mut_ptr()
             .offset((*(*f).seq_hdr).hbd as isize) as *mut Dav1dDSPContext;
         match bpc {
-            #[cfg(feature="bitdepth_8")]
+            //#[cfg(feature="bitdepth_8")]
             8 => {
                 dav1d_cdef_dsp_init_8bpc(&mut (*dsp).cdef);
                 dav1d_intra_pred_dsp_init_8bpc(&mut (*dsp).ipred);
@@ -19262,7 +19262,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 dav1d_film_grain_dsp_init_8bpc(&mut (*dsp).fg);
                 current_block = 313581471991351815;
             }
-            #[cfg(feature="bitdepth_16")]
+            //#[cfg(feature="bitdepth_16")]
             10 | 12 => {
                 dav1d_cdef_dsp_init_16bpc(&mut (*dsp).cdef);
                 dav1d_intra_pred_dsp_init_16bpc(&mut (*dsp).ipred);
@@ -19290,7 +19290,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
     match current_block {
         313581471991351815 => {
             if (*(*f).seq_hdr).hbd == 0 {
-                #[cfg(feature = "bitdepth_8")]
+                //#[cfg(feature = "bitdepth_8")]
                 {
                     (*f)
                         .bd_fn
@@ -19382,7 +19382,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                     );
                 }
             } else {
-                #[cfg(feature = "bitdepth_16")]
+                //#[cfg(feature = "bitdepth_16")]
                 {
                     (*f)
                         .bd_fn

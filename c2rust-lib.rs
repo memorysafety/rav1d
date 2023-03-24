@@ -13,71 +13,71 @@
 #![feature(const_transmute)]
 #![feature(untagged_unions)]
 
-#[cfg(not(any(feature = "bitdepth_8", feature = "bitdepth_16")))]
-compile_error!("No bitdepths enabled. Enable one or more of the following features: `bitdepth_8`, `bitdepth_16`");
+//#[cfg(not(any(feature = "bitdepth_8", feature = "bitdepth_16")))]
+//compile_error!("No bitdepths enabled. Enable one or more of the following features: `bitdepth_8`, `bitdepth_16`");
 
 #[macro_use]
 extern crate c2rust_bitfields;
 extern crate libc;
 pub mod src {
 pub mod align;
-#[cfg(feature = "bitdepth_16")]
+//#[cfg(feature = "bitdepth_16")]
 pub mod cdef_apply_tmpl_16;
-#[cfg(feature = "bitdepth_8")]
+//#[cfg(feature = "bitdepth_8")]
 pub mod cdef_apply_tmpl_8;
-#[cfg(feature = "bitdepth_16")]
+//#[cfg(feature = "bitdepth_16")]
 pub mod cdef_tmpl_16;
-#[cfg(feature = "bitdepth_8")]
+//#[cfg(feature = "bitdepth_8")]
 pub mod cdef_tmpl_8;
 pub mod cdf;
 pub mod cpu;
 pub mod data;
 pub mod decode;
 pub mod dequant_tables;
-#[cfg(feature = "bitdepth_16")]
+//#[cfg(feature = "bitdepth_16")]
 pub mod fg_apply_tmpl_16;
-#[cfg(feature = "bitdepth_8")]
+//#[cfg(feature = "bitdepth_8")]
 pub mod fg_apply_tmpl_8;
-#[cfg(feature = "bitdepth_16")]
+//#[cfg(feature = "bitdepth_16")]
 pub mod filmgrain_tmpl_16;
-#[cfg(feature = "bitdepth_8")]
+//#[cfg(feature = "bitdepth_8")]
 pub mod filmgrain_tmpl_8;
 pub mod getbits;
 pub mod intra_edge;
-#[cfg(feature = "bitdepth_16")]
+//#[cfg(feature = "bitdepth_16")]
 pub mod ipred_prepare_tmpl_16;
-#[cfg(feature = "bitdepth_8")]
+//#[cfg(feature = "bitdepth_8")]
 pub mod ipred_prepare_tmpl_8;
-#[cfg(feature = "bitdepth_16")]
+//#[cfg(feature = "bitdepth_16")]
 pub mod ipred_tmpl_16;
-#[cfg(feature = "bitdepth_8")]
+//#[cfg(feature = "bitdepth_8")]
 pub mod ipred_tmpl_8;
 pub mod itx_1d;
-#[cfg(feature = "bitdepth_16")]
+//#[cfg(feature = "bitdepth_16")]
 pub mod itx_tmpl_16;
 pub mod itx_tmpl_8;
-#[cfg(feature = "bitdepth_16")]
+//#[cfg(feature = "bitdepth_16")]
 pub mod lf_apply_tmpl_16;
-#[cfg(feature = "bitdepth_8")]
+//#[cfg(feature = "bitdepth_8")]
 pub mod lf_apply_tmpl_8;
 pub mod lf_mask;
 pub mod lib;
 pub mod log;
-#[cfg(feature = "bitdepth_16")]
+//#[cfg(feature = "bitdepth_16")]
 pub mod loopfilter_tmpl_16;
-#[cfg(feature = "bitdepth_8")]
+//#[cfg(feature = "bitdepth_8")]
 pub mod loopfilter_tmpl_8;
-#[cfg(feature = "bitdepth_16")]
+//#[cfg(feature = "bitdepth_16")]
 pub mod looprestoration_tmpl_16;
-#[cfg(feature = "bitdepth_8")]
+//#[cfg(feature = "bitdepth_8")]
 pub mod looprestoration_tmpl_8;
-#[cfg(feature = "bitdepth_16")]
+//#[cfg(feature = "bitdepth_16")]
 pub mod lr_apply_tmpl_16;
-#[cfg(feature = "bitdepth_8")]
+//#[cfg(feature = "bitdepth_8")]
 pub mod lr_apply_tmpl_8;
-#[cfg(feature = "bitdepth_16")]
+//#[cfg(feature = "bitdepth_16")]
 pub mod mc_tmpl_16;
-#[cfg(feature = "bitdepth_8")]
+//#[cfg(feature = "bitdepth_8")]
 pub mod mc_tmpl_8;
 pub mod mem;
 pub mod msac;
@@ -85,9 +85,9 @@ pub mod obu;
 pub mod picture;
 pub mod qm;
 pub mod r#ref;
-#[cfg(feature = "bitdepth_16")]
+//#[cfg(feature = "bitdepth_16")]
 pub mod recon_tmpl_16;
-#[cfg(feature = "bitdepth_8")]
+//#[cfg(feature = "bitdepth_8")]
 pub mod recon_tmpl_8;
 pub mod refmvs;
 pub mod scan;
