@@ -2,6 +2,7 @@ use ::libc;
 use core::arch::asm;
 use crate::src::cdf::CdfContext;
 use crate::src::msac::MsacContext;
+use crate::{stdout,stderr};
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
@@ -16,8 +17,7 @@ extern "C" {
         _: libc::c_int,
         _: libc::c_ulong,
     ) -> *mut libc::c_void;
-    static mut stdout: *mut FILE;
-    fn fprintf(_: *mut FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
+    fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
     fn printf(_: *const libc::c_char, _: ...) -> libc::c_int;
     fn llabs(_: libc::c_longlong) -> libc::c_longlong;
     static dav1d_block_dimensions: [[uint8_t; 4]; 22];
@@ -2134,7 +2134,7 @@ unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
 }
 #[inline]
 unsafe extern "C" fn hex_fdump(
-    mut out: *mut FILE,
+    mut out: *mut libc::FILE,
     mut buf: *const pixel,
     mut stride: ptrdiff_t,
     mut w: libc::c_int,

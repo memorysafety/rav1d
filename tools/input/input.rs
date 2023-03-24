@@ -1,4 +1,5 @@
 use ::libc;
+use crate::stderr;
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
@@ -6,15 +7,14 @@ extern "C" {
     pub type Dav1dRef;
     pub type DemuxerPriv;
     fn __errno_location() -> *mut libc::c_int;
-    static mut stderr: *mut FILE;
-    fn fclose(__stream: *mut FILE) -> libc::c_int;
-    fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut FILE;
-    fn fprintf(_: *mut FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
+    fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
+    fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut libc::FILE;
+    fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
     fn fread(
         _: *mut libc::c_void,
         _: libc::c_ulong,
         _: libc::c_ulong,
-        _: *mut FILE,
+        _: *mut libc::FILE,
     ) -> libc::c_ulong;
     fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
     fn calloc(_: libc::c_ulong, _: libc::c_ulong) -> *mut libc::c_void;
@@ -180,7 +180,7 @@ pub unsafe extern "C" fn input_open(
             );
             return -(12 as libc::c_int);
         }
-        let mut f: *mut FILE = fopen(
+        let mut f: *mut libc::FILE = fopen(
             filename,
             b"rb\0" as *const u8 as *const libc::c_char,
         );

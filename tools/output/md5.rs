@@ -1,15 +1,14 @@
 use ::libc;
+use crate::{stdout,stderr};
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
     pub type _IO_marker;
     pub type Dav1dRef;
     fn __errno_location() -> *mut libc::c_int;
-    static mut stdout: *mut FILE;
-    static mut stderr: *mut FILE;
-    fn fclose(__stream: *mut FILE) -> libc::c_int;
-    fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut FILE;
-    fn fprintf(_: *mut FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
+    fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
+    fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut libc::FILE;
+    fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
     fn strtoul(
         _: *const libc::c_char,
         _: *mut *mut libc::c_char,
@@ -549,7 +548,7 @@ pub struct MuxerPriv {
     pub abcd: [uint32_t; 4],
     pub c2rust_unnamed: C2RustUnnamed_12,
     pub len: uint64_t,
-    pub f: *mut FILE,
+    pub f: *mut libc::FILE,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]

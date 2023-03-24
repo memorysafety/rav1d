@@ -1,4 +1,5 @@
 use ::libc;
+use crate::stderr;
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
@@ -6,22 +7,21 @@ extern "C" {
     pub type Dav1dRef;
     fn __errno_location() -> *mut libc::c_int;
     fn llround(_: libc::c_double) -> libc::c_longlong;
-    static mut stderr: *mut FILE;
-    fn fclose(__stream: *mut FILE) -> libc::c_int;
-    fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut FILE;
-    fn fprintf(_: *mut FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
+    fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
+    fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut libc::FILE;
+    fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
     fn fread(
         _: *mut libc::c_void,
         _: libc::c_ulong,
         _: libc::c_ulong,
-        _: *mut FILE,
+        _: *mut libc::FILE,
     ) -> libc::c_ulong;
     fn fseeko(
-        __stream: *mut FILE,
+        __stream: *mut libc::FILE,
         __off: __off64_t,
         __whence: libc::c_int,
     ) -> libc::c_int;
-    fn ftello(__stream: *mut FILE) -> __off64_t;
+    fn ftello(__stream: *mut libc::FILE) -> __off64_t;
     fn memcmp(
         _: *const libc::c_void,
         _: *const libc::c_void,
@@ -104,7 +104,7 @@ pub struct Dav1dData {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct DemuxerPriv {
-    pub f: *mut FILE,
+    pub f: *mut libc::FILE,
     pub broken: libc::c_int,
     pub timebase: libc::c_double,
     pub last_ts: uint64_t,

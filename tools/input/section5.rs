@@ -1,25 +1,25 @@
 use ::libc;
+use crate::stderr;
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
     pub type _IO_marker;
     pub type Dav1dRef;
-    static mut stderr: *mut FILE;
-    fn fclose(__stream: *mut FILE) -> libc::c_int;
-    fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut FILE;
-    fn fprintf(_: *mut FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
+    fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
+    fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut libc::FILE;
+    fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
     fn fread(
         _: *mut libc::c_void,
         _: libc::c_ulong,
         _: libc::c_ulong,
-        _: *mut FILE,
+        _: *mut libc::FILE,
     ) -> libc::c_ulong;
     fn fseeko(
-        __stream: *mut FILE,
+        __stream: *mut libc::FILE,
         __off: __off64_t,
         __whence: libc::c_int,
     ) -> libc::c_int;
-    fn feof(__stream: *mut FILE) -> libc::c_int;
+    fn feof(__stream: *mut libc::FILE) -> libc::c_int;
     fn strerror(_: libc::c_int) -> *mut libc::c_char;
     fn dav1d_data_unref(data: *mut Dav1dData);
     fn dav1d_data_create(data: *mut Dav1dData, sz: size_t) -> *mut uint8_t;
@@ -105,7 +105,7 @@ pub struct Dav1dData {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct DemuxerPriv {
-    pub f: *mut FILE,
+    pub f: *mut libc::FILE,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -207,7 +207,7 @@ unsafe extern "C" fn parse_obu_header(
     *obu_size = buf_size as size_t;
     return buf_size + 1 as libc::c_int + extension_flag;
 }
-unsafe extern "C" fn leb128(f: *mut FILE, len: *mut size_t) -> libc::c_int {
+unsafe extern "C" fn leb128(f: *mut libc::FILE, len: *mut size_t) -> libc::c_int {
     let mut val: uint64_t = 0 as libc::c_int as uint64_t;
     let mut i: libc::c_uint = 0 as libc::c_int as libc::c_uint;
     let mut more: libc::c_uint = 0;

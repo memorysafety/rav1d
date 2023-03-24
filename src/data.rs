@@ -1,4 +1,5 @@
 use ::libc;
+use crate::stderr;
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
@@ -8,8 +9,7 @@ extern "C" {
         _: libc::c_int,
         _: libc::c_ulong,
     ) -> *mut libc::c_void;
-    static mut stderr: *mut FILE;
-    fn fprintf(_: *mut FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
+    fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
     fn dav1d_ref_dec(ref_0: *mut *mut Dav1dRef);
     fn dav1d_ref_wrap(
         ptr: *const uint8_t,

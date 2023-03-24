@@ -1,6 +1,7 @@
 use ::libc;
 use crate::src::cdf::CdfContext;
 use crate::src::msac::MsacContext;
+use crate::stderr;
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
@@ -27,8 +28,7 @@ extern "C" {
         __size: size_t,
     ) -> libc::c_int;
     fn abort() -> !;
-    static mut stderr: *mut FILE;
-    fn fprintf(_: *mut FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
+    fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
     fn dav1d_init_cpu();
     fn dav1d_num_logical_processors(c: *mut Dav1dContext) -> libc::c_int;
     #[cfg(feature = "bitdepth_16")]
