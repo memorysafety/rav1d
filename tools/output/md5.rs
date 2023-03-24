@@ -148,12 +148,7 @@ pub type Dav1dChromaSamplePosition = libc::c_uint;
 pub const DAV1D_CHR_COLOCATED: Dav1dChromaSamplePosition = 2;
 pub const DAV1D_CHR_VERTICAL: Dav1dChromaSamplePosition = 1;
 pub const DAV1D_CHR_UNKNOWN: Dav1dChromaSamplePosition = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dContentLightLevel {
-    pub max_content_light_level: libc::c_int,
-    pub max_frame_average_light_level: libc::c_int,
-}
+use crate::include::dav1d::headers::Dav1dContentLightLevel;
 use crate::include::dav1d::headers::Dav1dMasteringDisplay;
 use crate::include::dav1d::headers::Dav1dITUTT35;
 #[derive(Copy, Clone)]

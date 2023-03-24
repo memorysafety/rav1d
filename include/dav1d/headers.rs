@@ -7,6 +7,12 @@ use crate::include::stdint::uint8_t;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
+pub struct Dav1dContentLightLevel {
+    pub max_content_light_level: libc::c_int,
+    pub max_frame_average_light_level: libc::c_int,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
 pub struct Dav1dMasteringDisplay {
     pub primaries: [[uint16_t; 2]; 3],
     pub white_point: [uint16_t; 2],
