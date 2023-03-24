@@ -535,11 +535,11 @@ pub struct C2RustUnnamed_16 {
 pub struct Dav1dFrameHeaderOperatingPoint {
     pub buffer_removal_time: libc::c_int,
 }
-pub type Dav1dFrameType = libc::c_uint;
-pub const DAV1D_FRAME_TYPE_SWITCH: Dav1dFrameType = 3;
-pub const DAV1D_FRAME_TYPE_INTRA: Dav1dFrameType = 2;
-pub const DAV1D_FRAME_TYPE_INTER: Dav1dFrameType = 1;
-pub const DAV1D_FRAME_TYPE_KEY: Dav1dFrameType = 0;
+use crate::include::dav1d::headers::Dav1dFrameType;
+use crate::include::dav1d::headers::DAV1D_FRAME_TYPE_SWITCH;
+use crate::include::dav1d::headers::DAV1D_FRAME_TYPE_INTRA;
+use crate::include::dav1d::headers::DAV1D_FRAME_TYPE_INTER;
+use crate::include::dav1d::headers::DAV1D_FRAME_TYPE_KEY;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct C2RustUnnamed_17 {
