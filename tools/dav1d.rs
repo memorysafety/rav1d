@@ -4,11 +4,11 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use ::c2rust_out::*;
+use crate::src::r#ref::Dav1dRef;
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
     pub type _IO_marker;
-    pub type Dav1dRef;
     pub type Dav1dContext;
     pub type DemuxerContext;
     pub type MuxerContext;
@@ -90,13 +90,6 @@ pub struct __va_list_tag {
     pub reg_save_area: *mut libc::c_void,
 }
 
-
-
-
-
-
-
-
 pub type __off_t = libc::c_long;
 pub type __off64_t = libc::c_long;
 pub type __time_t = libc::c_long;
@@ -111,12 +104,7 @@ pub struct timespec {
     pub tv_nsec: __syscall_slong_t,
 }
 pub type _IO_lock_t = ();
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dUserData {
-    pub data: *const uint8_t,
-    pub ref_0: *mut Dav1dRef,
-}
+use crate::include::dav1d::common::Dav1dUserData;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dDataProps {

@@ -28,17 +28,10 @@ extern "C" {
     static section5_demuxer: Demuxer;
 }
 
-
-
 pub type __off_t = libc::c_long;
 pub type __off64_t = libc::c_long;
 pub type _IO_lock_t = ();
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dUserData {
-    pub data: *const uint8_t,
-    pub ref_0: *mut Dav1dRef,
-}
+use crate::include::dav1d::common::Dav1dUserData;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dDataProps {
