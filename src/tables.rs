@@ -1,18 +1,14 @@
 use crate::include::stdint::*;
 use ::libc;
 
-
-
-
-
-pub type Dav1dFilterMode = libc::c_uint;
-pub const DAV1D_FILTER_SWITCHABLE: Dav1dFilterMode = 4;
-pub const DAV1D_N_FILTERS: Dav1dFilterMode = 4;
-pub const DAV1D_FILTER_BILINEAR: Dav1dFilterMode = 3;
-pub const DAV1D_N_SWITCHABLE_FILTERS: Dav1dFilterMode = 3;
-pub const DAV1D_FILTER_8TAP_SHARP: Dav1dFilterMode = 2;
-pub const DAV1D_FILTER_8TAP_SMOOTH: Dav1dFilterMode = 1;
-pub const DAV1D_FILTER_8TAP_REGULAR: Dav1dFilterMode = 0;
+use crate::include::dav1d::headers::Dav1dFilterMode;
+use crate::include::dav1d::headers::DAV1D_FILTER_SWITCHABLE;
+use crate::include::dav1d::headers::DAV1D_N_FILTERS;
+use crate::include::dav1d::headers::DAV1D_FILTER_BILINEAR;
+use crate::include::dav1d::headers::DAV1D_N_SWITCHABLE_FILTERS;
+use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SHARP;
+use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SMOOTH;
+use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
 pub type Dav1dWarpedMotionType = libc::c_uint;
 pub const DAV1D_WM_TYPE_AFFINE: Dav1dWarpedMotionType = 3;
 pub const DAV1D_WM_TYPE_ROT_ZOOM: Dav1dWarpedMotionType = 2;
