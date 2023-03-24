@@ -364,11 +364,11 @@ pub const DAV1D_WM_TYPE_AFFINE: Dav1dWarpedMotionType = 3;
 pub const DAV1D_WM_TYPE_ROT_ZOOM: Dav1dWarpedMotionType = 2;
 pub const DAV1D_WM_TYPE_TRANSLATION: Dav1dWarpedMotionType = 1;
 pub const DAV1D_WM_TYPE_IDENTITY: Dav1dWarpedMotionType = 0;
-pub type Dav1dTxfmMode = libc::c_uint;
-pub const DAV1D_N_TX_MODES: Dav1dTxfmMode = 3;
-pub const DAV1D_TX_SWITCHABLE: Dav1dTxfmMode = 2;
-pub const DAV1D_TX_LARGEST: Dav1dTxfmMode = 1;
-pub const DAV1D_TX_4X4_ONLY: Dav1dTxfmMode = 0;
+use crate::include::dav1d::headers::Dav1dTxfmMode;
+use crate::include::dav1d::headers::DAV1D_N_TX_MODES;
+use crate::include::dav1d::headers::DAV1D_TX_SWITCHABLE;
+use crate::include::dav1d::headers::DAV1D_TX_LARGEST;
+use crate::include::dav1d::headers::DAV1D_TX_4X4_ONLY;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct C2RustUnnamed_8 {
