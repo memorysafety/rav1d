@@ -15,6 +15,7 @@ extern "C" {
     static dav1d_block_dimensions: [[uint8_t; 4]; 22];
     static dav1d_txfm_dimensions: [TxfmInfo; 19];
 }
+<<<<<<< HEAD
 
 
 
@@ -22,6 +23,23 @@ extern "C" {
 
 
 
+=======
+pub type __int8_t = libc::c_schar;
+pub type __uint8_t = libc::c_uchar;
+pub type __int16_t = libc::c_short;
+pub type __uint16_t = libc::c_ushort;
+pub type __int32_t = libc::c_int;
+pub type __uint32_t = libc::c_uint;
+pub type __uint64_t = u64;
+pub type int8_t = __int8_t;
+pub type int16_t = __int16_t;
+pub type int32_t = __int32_t;
+pub type uint8_t = __uint8_t;
+pub type uint16_t = __uint16_t;
+pub type uint32_t = __uint32_t;
+pub type uint64_t = __uint64_t;
+pub type ptrdiff_t = isize;
+>>>>>>> bb10c4cd (WIP: additional fixes - incomplete)
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union alias64 {
@@ -1299,7 +1317,7 @@ pub unsafe extern "C" fn dav1d_create_lf_mask_intra(
     let by4: libc::c_int = by & 31 as libc::c_int;
     if bw4 != 0 && bh4 != 0 {
         let mut level_cache_ptr: *mut [uint8_t; 4] = level_cache
-            .offset((by as libc::c_long * b4_stride) as isize)
+            .offset(by as isize * b4_stride)
             .offset(bx as isize);
         let mut y: libc::c_int = 0 as libc::c_int;
         while y < bh4 {
@@ -1358,7 +1376,7 @@ pub unsafe extern "C" fn dav1d_create_lf_mask_intra(
     let cbx4: libc::c_int = bx4 >> ss_hor;
     let cby4: libc::c_int = by4 >> ss_ver;
     let mut level_cache_ptr_0: *mut [uint8_t; 4] = level_cache
-        .offset(((by >> ss_ver) as libc::c_long * b4_stride) as isize)
+        .offset(((by >> ss_ver) as isize * b4_stride) as isize)
         .offset((bx >> ss_hor) as isize);
     let mut y_0: libc::c_int = 0 as libc::c_int;
     while y_0 < cbh4 {
@@ -1433,7 +1451,7 @@ pub unsafe extern "C" fn dav1d_create_lf_mask_inter(
     let by4: libc::c_int = by & 31 as libc::c_int;
     if bw4 != 0 && bh4 != 0 {
         let mut level_cache_ptr: *mut [uint8_t; 4] = level_cache
-            .offset((by as libc::c_long * b4_stride) as isize)
+            .offset(by as isize * b4_stride)
             .offset(bx as isize);
         let mut y: libc::c_int = 0 as libc::c_int;
         while y < bh4 {
@@ -1494,7 +1512,7 @@ pub unsafe extern "C" fn dav1d_create_lf_mask_inter(
     let cbx4: libc::c_int = bx4 >> ss_hor;
     let cby4: libc::c_int = by4 >> ss_ver;
     let mut level_cache_ptr_0: *mut [uint8_t; 4] = level_cache
-        .offset(((by >> ss_ver) as libc::c_long * b4_stride) as isize)
+        .offset(((by >> ss_ver) as isize * b4_stride) as isize)
         .offset((bx >> ss_hor) as isize);
     let mut y_0: libc::c_int = 0 as libc::c_int;
     while y_0 < cbh4 {

@@ -289,7 +289,7 @@ unsafe extern "C" fn ulog2(v: libc::c_uint) -> libc::c_int {
 }
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
-    if x & 1 as libc::c_int as libc::c_long != 0 {
+    if x & 1 != 0 {
         unreachable!();
     }
     return x >> 1 as libc::c_int;
@@ -346,8 +346,8 @@ unsafe extern "C" fn padding(
     if edges as libc::c_uint & CDEF_HAVE_TOP as libc::c_int as libc::c_uint == 0 {
         fill(
             tmp
-                .offset(-(2 as libc::c_int as isize))
-                .offset(-((2 as libc::c_int as libc::c_long * tmp_stride) as isize)),
+                .offset(-2)
+                .offset(-((2 * tmp_stride) as isize)),
             tmp_stride,
             w + 4 as libc::c_int,
             2 as libc::c_int,
@@ -357,7 +357,7 @@ unsafe extern "C" fn padding(
     if edges as libc::c_uint & CDEF_HAVE_BOTTOM as libc::c_int as libc::c_uint == 0 {
         fill(
             tmp
-                .offset((h as libc::c_long * tmp_stride) as isize)
+                .offset((h as isize * tmp_stride) as isize)
                 .offset(-(2 as libc::c_int as isize)),
             tmp_stride,
             w + 4 as libc::c_int,
@@ -368,7 +368,7 @@ unsafe extern "C" fn padding(
     if edges as libc::c_uint & CDEF_HAVE_LEFT as libc::c_int as libc::c_uint == 0 {
         fill(
             tmp
-                .offset((y_start as libc::c_long * tmp_stride) as isize)
+                .offset((y_start as isize * tmp_stride) as isize)
                 .offset(-(2 as libc::c_int as isize)),
             tmp_stride,
             2 as libc::c_int,
@@ -379,7 +379,7 @@ unsafe extern "C" fn padding(
     if edges as libc::c_uint & CDEF_HAVE_RIGHT as libc::c_int as libc::c_uint == 0 {
         fill(
             tmp
-                .offset((y_start as libc::c_long * tmp_stride) as isize)
+                .offset((y_start as isize * tmp_stride) as isize)
                 .offset(w as isize),
             tmp_stride,
             2 as libc::c_int,
@@ -393,7 +393,7 @@ unsafe extern "C" fn padding(
         while x < x_end {
             *tmp
                 .offset(
-                    (x as libc::c_long + y as libc::c_long * tmp_stride) as isize,
+                    (x as isize + y as isize * tmp_stride) as isize,
                 ) = *top.offset(x as isize) as int16_t;
             x += 1;
         }
@@ -406,7 +406,7 @@ unsafe extern "C" fn padding(
         while x_0 < 0 as libc::c_int {
             *tmp
                 .offset(
-                    (x_0 as libc::c_long + y_0 as libc::c_long * tmp_stride) as isize,
+                    (x_0 as isize + y_0 as isize * tmp_stride) as isize,
                 ) = (*left.offset(y_0 as isize))[(2 as libc::c_int + x_0) as usize]
                 as int16_t;
             x_0 += 1;
@@ -461,8 +461,8 @@ unsafe extern "C" fn cdef_filter_block_c(
     let mut tmp_buf: [int16_t; 144] = [0; 144];
     let mut tmp: *mut int16_t = tmp_buf
         .as_mut_ptr()
-        .offset((2 as libc::c_int as libc::c_long * tmp_stride) as isize)
-        .offset(2 as libc::c_int as isize);
+        .offset((2 * tmp_stride) as isize)
+        .offset(2);
     padding(tmp, tmp_stride, dst, dst_stride, left, top, bottom, w, h, edges);
     if pri_strength != 0 {
         let bitdepth_min_8: libc::c_int = 32 as libc::c_int

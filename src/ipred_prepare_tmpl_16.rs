@@ -64,7 +64,7 @@ unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
 }
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
-    if x & 1 as libc::c_int as libc::c_long != 0 {
+    if x & 1 != 0 {
         unreachable!();
     }
     return x >> 1 as libc::c_int;
@@ -193,8 +193,7 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_16bpc(
                         (sz - 1 as libc::c_int - i) as isize,
                     ) = *dst
                     .offset(
-                        (PXSTRIDE(stride) * i as libc::c_long
-                            - 1 as libc::c_int as libc::c_long) as isize,
+                        PXSTRIDE(stride) * i as isize - 1,
                     );
                 i += 1;
             }
@@ -233,8 +232,8 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_16bpc(
                             -(i_0 + 1 as libc::c_int) as isize,
                         ) = *dst
                         .offset(
-                            ((sz + i_0) as libc::c_long * PXSTRIDE(stride)
-                                - 1 as libc::c_int as libc::c_long) as isize,
+                            ((sz + i_0) as isize * PXSTRIDE(stride)
+                                - 1 as libc::c_int as isize) as isize,
                         );
                     i_0 += 1;
                 }

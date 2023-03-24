@@ -14,7 +14,6 @@ extern "C" {
         _: libc::c_ulong,
     ) -> *mut libc::c_void;
 }
-
 pub type pixel = uint8_t;
 use crate::src::levels::IntraPredMode;
 
@@ -173,7 +172,7 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
                         (sz - 1 as libc::c_int - i) as isize,
                     ) = *dst
                     .offset(
-                        (stride * i as libc::c_long - 1 as libc::c_int as libc::c_long)
+                        (stride * i as isize - 1)
                             as isize,
                     );
                 i += 1;
@@ -213,8 +212,8 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
                             -(i_0 + 1 as libc::c_int) as isize,
                         ) = *dst
                         .offset(
-                            ((sz + i_0) as libc::c_long * stride
-                                - 1 as libc::c_int as libc::c_long) as isize,
+                            ((sz + i_0) as isize * stride
+                                - 1 ) as isize,
                         );
                     i_0 += 1;
                 }

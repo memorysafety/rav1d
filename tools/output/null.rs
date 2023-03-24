@@ -6,6 +6,7 @@ extern "C" {
     pub type MuxerPriv;
     fn dav1d_picture_unref(p: *mut Dav1dPicture);
 }
+<<<<<<< HEAD
 
 
 use crate::include::dav1d::common::Dav1dDataProps;
@@ -36,6 +37,69 @@ use crate::include::dav1d::headers::Dav1dWarpedMotionType;
 
 
 
+=======
+pub type ptrdiff_t = isize;
+pub type size_t = usize;
+pub type __int8_t = libc::c_schar;
+pub type __uint8_t = libc::c_uchar;
+pub type __int16_t = libc::c_short;
+pub type __uint16_t = libc::c_ushort;
+pub type __int32_t = libc::c_int;
+pub type __uint32_t = libc::c_uint;
+pub type __int64_t = i64;
+pub type __uint64_t = u64;
+pub type int8_t = __int8_t;
+pub type int16_t = __int16_t;
+pub type int32_t = __int32_t;
+pub type int64_t = __int64_t;
+pub type uint8_t = __uint8_t;
+pub type uint16_t = __uint16_t;
+pub type uint32_t = __uint32_t;
+pub type uint64_t = __uint64_t;
+pub type uintptr_t = usize;
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dUserData {
+    pub data: *const uint8_t,
+    pub ref_0: *mut Dav1dRef,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dDataProps {
+    pub timestamp: int64_t,
+    pub duration: int64_t,
+    pub offset: int64_t,
+    pub size: size_t,
+    pub user_data: Dav1dUserData,
+}
+pub type Dav1dTxfmMode = libc::c_uint;
+pub const DAV1D_N_TX_MODES: Dav1dTxfmMode = 3;
+pub const DAV1D_TX_SWITCHABLE: Dav1dTxfmMode = 2;
+pub const DAV1D_TX_LARGEST: Dav1dTxfmMode = 1;
+pub const DAV1D_TX_4X4_ONLY: Dav1dTxfmMode = 0;
+pub type Dav1dFilterMode = libc::c_uint;
+pub const DAV1D_FILTER_SWITCHABLE: Dav1dFilterMode = 4;
+pub const DAV1D_N_FILTERS: Dav1dFilterMode = 4;
+pub const DAV1D_FILTER_BILINEAR: Dav1dFilterMode = 3;
+pub const DAV1D_N_SWITCHABLE_FILTERS: Dav1dFilterMode = 3;
+pub const DAV1D_FILTER_8TAP_SHARP: Dav1dFilterMode = 2;
+pub const DAV1D_FILTER_8TAP_SMOOTH: Dav1dFilterMode = 1;
+pub const DAV1D_FILTER_8TAP_REGULAR: Dav1dFilterMode = 0;
+pub type Dav1dAdaptiveBoolean = libc::c_uint;
+pub const DAV1D_ADAPTIVE: Dav1dAdaptiveBoolean = 2;
+pub const DAV1D_ON: Dav1dAdaptiveBoolean = 1;
+pub const DAV1D_OFF: Dav1dAdaptiveBoolean = 0;
+pub type Dav1dRestorationType = libc::c_uint;
+pub const DAV1D_RESTORATION_SGRPROJ: Dav1dRestorationType = 3;
+pub const DAV1D_RESTORATION_WIENER: Dav1dRestorationType = 2;
+pub const DAV1D_RESTORATION_SWITCHABLE: Dav1dRestorationType = 1;
+pub const DAV1D_RESTORATION_NONE: Dav1dRestorationType = 0;
+pub type Dav1dWarpedMotionType = libc::c_uint;
+pub const DAV1D_WM_TYPE_AFFINE: Dav1dWarpedMotionType = 3;
+pub const DAV1D_WM_TYPE_ROT_ZOOM: Dav1dWarpedMotionType = 2;
+pub const DAV1D_WM_TYPE_TRANSLATION: Dav1dWarpedMotionType = 1;
+pub const DAV1D_WM_TYPE_IDENTITY: Dav1dWarpedMotionType = 0;
+>>>>>>> bb10c4cd (WIP: additional fixes - incomplete)
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dWarpedMotionParams {

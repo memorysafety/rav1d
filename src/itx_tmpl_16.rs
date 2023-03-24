@@ -4924,7 +4924,7 @@ unsafe extern "C" fn iclip(v: libc::c_int, min: libc::c_int, max: libc::c_int) -
 }
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
-    if x & 1 as libc::c_int as libc::c_long != 0 {
+    if x & 1 != 0 {
         unreachable!();
     }
     return x >> 1 as libc::c_int;

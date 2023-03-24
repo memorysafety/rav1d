@@ -2,16 +2,17 @@ use crate::include::stddef::*;
 use crate::include::stdint::*;
 use ::libc;
 use cfg_if::cfg_if;
+use ::libc::size_t;
 extern "C" {
     fn memcpy(
         _: *mut libc::c_void,
         _: *const libc::c_void,
-        _: libc::c_ulong,
+        _: size_t,
     ) -> *mut libc::c_void;
     fn memset(
         _: *mut libc::c_void,
         _: libc::c_int,
-        _: libc::c_ulong,
+        _: size_t,
     ) -> *mut libc::c_void;
     static dav1d_sgr_x_by_x: [uint8_t; 256];
 }
@@ -393,35 +394,35 @@ unsafe extern "C" fn padding(
         memcpy(
             dst_l as *mut libc::c_void,
             above_1 as *const libc::c_void,
-            unit_w as libc::c_ulong,
+            unit_w as size_t,
         );
         memcpy(
             dst_l.offset(390 as libc::c_int as isize) as *mut libc::c_void,
             above_1 as *const libc::c_void,
-            unit_w as libc::c_ulong,
+            unit_w as size_t,
         );
         memcpy(
             dst_l.offset((2 as libc::c_int * 390 as libc::c_int) as isize)
                 as *mut libc::c_void,
             above_2 as *const libc::c_void,
-            unit_w as libc::c_ulong,
+            unit_w as size_t,
         );
     } else {
         memcpy(
             dst_l as *mut libc::c_void,
             p as *const libc::c_void,
-            unit_w as libc::c_ulong,
+            unit_w as size_t,
         );
         memcpy(
             dst_l.offset(390 as libc::c_int as isize) as *mut libc::c_void,
             p as *const libc::c_void,
-            unit_w as libc::c_ulong,
+            unit_w as size_t,
         );
         memcpy(
             dst_l.offset((2 as libc::c_int * 390 as libc::c_int) as isize)
                 as *mut libc::c_void,
             p as *const libc::c_void,
-            unit_w as libc::c_ulong,
+            unit_w as size_t,
         );
         if have_left != 0 {
             memcpy(
@@ -430,7 +431,7 @@ unsafe extern "C" fn padding(
                     .as_ptr()
                     .offset(1 as libc::c_int as isize) as *const pixel
                     as *const libc::c_void,
-                3 as libc::c_int as libc::c_ulong,
+                3,
             );
             memcpy(
                 dst_l.offset(390 as libc::c_int as isize) as *mut libc::c_void,
@@ -438,7 +439,7 @@ unsafe extern "C" fn padding(
                     .as_ptr()
                     .offset(1 as libc::c_int as isize) as *const pixel
                     as *const libc::c_void,
-                3 as libc::c_int as libc::c_ulong,
+                3,
             );
             memcpy(
                 dst_l.offset((2 as libc::c_int * 390 as libc::c_int) as isize)
@@ -447,7 +448,7 @@ unsafe extern "C" fn padding(
                     .as_ptr()
                     .offset(1 as libc::c_int as isize) as *const pixel
                     as *const libc::c_void,
-                3 as libc::c_int as libc::c_ulong,
+                3,
             );
         }
     }
@@ -455,44 +456,44 @@ unsafe extern "C" fn padding(
         .offset((3 as libc::c_int * 390 as libc::c_int) as isize);
     if edges as libc::c_uint & LR_HAVE_BOTTOM as libc::c_int as libc::c_uint != 0 {
         let below_1: *const pixel = lpf
-            .offset((6 as libc::c_int as libc::c_long * stride) as isize);
+            .offset((6 * stride) as isize);
         let below_2: *const pixel = below_1.offset(stride as isize);
         memcpy(
             dst_tl.offset((stripe_h * 390 as libc::c_int) as isize) as *mut libc::c_void,
             below_1 as *const libc::c_void,
-            unit_w as libc::c_ulong,
+            unit_w as size_t,
         );
         memcpy(
             dst_tl.offset(((stripe_h + 1 as libc::c_int) * 390 as libc::c_int) as isize)
                 as *mut libc::c_void,
             below_2 as *const libc::c_void,
-            unit_w as libc::c_ulong,
+            unit_w as size_t,
         );
         memcpy(
             dst_tl.offset(((stripe_h + 2 as libc::c_int) * 390 as libc::c_int) as isize)
                 as *mut libc::c_void,
             below_2 as *const libc::c_void,
-            unit_w as libc::c_ulong,
+            unit_w as size_t,
         );
     } else {
         let src: *const pixel = p
-            .offset(((stripe_h - 1 as libc::c_int) as libc::c_long * stride) as isize);
+            .offset(((stripe_h - 1 as libc::c_int) as isize * stride) as isize);
         memcpy(
             dst_tl.offset((stripe_h * 390 as libc::c_int) as isize) as *mut libc::c_void,
             src as *const libc::c_void,
-            unit_w as libc::c_ulong,
+            unit_w as size_t,
         );
         memcpy(
             dst_tl.offset(((stripe_h + 1 as libc::c_int) * 390 as libc::c_int) as isize)
                 as *mut libc::c_void,
             src as *const libc::c_void,
-            unit_w as libc::c_ulong,
+            unit_w as size_t,
         );
         memcpy(
             dst_tl.offset(((stripe_h + 2 as libc::c_int) * 390 as libc::c_int) as isize)
                 as *mut libc::c_void,
             src as *const libc::c_void,
-            unit_w as libc::c_ulong,
+            unit_w as size_t,
         );
         if have_left != 0 {
             memcpy(
@@ -502,7 +503,7 @@ unsafe extern "C" fn padding(
                     .as_ptr()
                     .offset(1 as libc::c_int as isize) as *const pixel
                     as *const libc::c_void,
-                3 as libc::c_int as libc::c_ulong,
+                3,
             );
             memcpy(
                 dst_tl
@@ -513,7 +514,7 @@ unsafe extern "C" fn padding(
                     .as_ptr()
                     .offset(1 as libc::c_int as isize) as *const pixel
                     as *const libc::c_void,
-                3 as libc::c_int as libc::c_ulong,
+                3,
             );
             memcpy(
                 dst_tl
@@ -524,7 +525,7 @@ unsafe extern "C" fn padding(
                     .as_ptr()
                     .offset(1 as libc::c_int as isize) as *const pixel
                     as *const libc::c_void,
-                3 as libc::c_int as libc::c_ulong,
+                3,
             );
         }
     }
@@ -533,7 +534,7 @@ unsafe extern "C" fn padding(
         memcpy(
             dst_tl.offset((3 as libc::c_int * have_left) as isize) as *mut libc::c_void,
             p.offset((3 as libc::c_int * have_left) as isize) as *const libc::c_void,
-            (unit_w - 3 as libc::c_int * have_left) as libc::c_ulong,
+            (unit_w - 3 as libc::c_int * have_left) as size_t,
         );
         dst_tl = dst_tl.offset(390 as libc::c_int as isize);
         p = p.offset(stride as isize);
@@ -548,7 +549,7 @@ unsafe extern "C" fn padding(
             memset(
                 pad as *mut libc::c_void,
                 *row_last as libc::c_int,
-                3 as libc::c_int as libc::c_ulong,
+                3,
             );
             pad = pad.offset(390 as libc::c_int as isize);
             row_last = row_last.offset(390 as libc::c_int as isize);
@@ -561,7 +562,7 @@ unsafe extern "C" fn padding(
             memset(
                 dst as *mut libc::c_void,
                 *dst_l as libc::c_int,
-                3 as libc::c_int as libc::c_ulong,
+                3,
             );
             dst = dst.offset(390 as libc::c_int as isize);
             dst_l = dst_l.offset(390 as libc::c_int as isize);
@@ -575,7 +576,7 @@ unsafe extern "C" fn padding(
                 dst as *mut libc::c_void,
                 &*(*left.offset(j_2 as isize)).as_ptr().offset(1 as libc::c_int as isize)
                     as *const pixel as *const libc::c_void,
-                3 as libc::c_int as libc::c_ulong,
+                3,
             );
             dst = dst.offset(390 as libc::c_int as isize);
             j_2 += 1;
@@ -657,7 +658,7 @@ unsafe extern "C" fn wiener_c(
             }
             *p
                 .offset(
-                    (j_0 as libc::c_long * stride + i_0 as libc::c_long) as isize,
+                    (j_0 as isize * stride + i_0 as isize) as isize,
                 ) = iclip_u8(sum_0 + rounding_off_v >> round_bits_v) as pixel;
             i_0 += 1;
         }
