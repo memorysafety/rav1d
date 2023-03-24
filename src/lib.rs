@@ -634,14 +634,7 @@ pub struct Dav1dPicAllocator {
         unsafe extern "C" fn(*mut Dav1dPicture, *mut libc::c_void) -> (),
     >,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dData {
-    pub data: *const uint8_t,
-    pub sz: size_t,
-    pub ref_0: *mut Dav1dRef,
-    pub m: Dav1dDataProps,
-}
+use crate::include::dav1d::data::Dav1dData;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContext {
