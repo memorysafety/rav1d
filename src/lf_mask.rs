@@ -99,18 +99,7 @@ pub const DAV1D_FRAME_TYPE_SWITCH: Dav1dFrameType = 3;
 pub const DAV1D_FRAME_TYPE_INTRA: Dav1dFrameType = 2;
 pub const DAV1D_FRAME_TYPE_INTER: Dav1dFrameType = 1;
 pub const DAV1D_FRAME_TYPE_KEY: Dav1dFrameType = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dSegmentationData {
-    pub delta_q: libc::c_int,
-    pub delta_lf_y_v: libc::c_int,
-    pub delta_lf_y_h: libc::c_int,
-    pub delta_lf_u: libc::c_int,
-    pub delta_lf_v: libc::c_int,
-    pub ref_0: libc::c_int,
-    pub skip: libc::c_int,
-    pub globalmv: libc::c_int,
-}
+use crate::include::dav1d::headers::Dav1dSegmentationData;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dSegmentationDataSet {
