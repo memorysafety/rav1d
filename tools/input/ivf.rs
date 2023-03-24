@@ -38,15 +38,7 @@ pub type __off_t = libc::c_long;
 pub type __off64_t = libc::c_long;
 pub type _IO_lock_t = ();
 use crate::include::dav1d::common::Dav1dUserData;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dDataProps {
-    pub timestamp: int64_t,
-    pub duration: int64_t,
-    pub offset: int64_t,
-    pub size: size_t,
-    pub user_data: Dav1dUserData,
-}
+use crate::include::dav1d::common::Dav1dDataProps;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dData {
