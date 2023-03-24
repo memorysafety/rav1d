@@ -135,33 +135,27 @@ unsafe extern "C" fn leb(
     mut sz: libc::c_int,
     len: *mut size_t,
 ) -> libc::c_int {
-    let mut val: uint64_t = 0 as libc::c_int as uint64_t;
-    let mut i: libc::c_uint = 0 as libc::c_int as libc::c_uint;
+    let mut val: uint64_t = 0u64;
+    let mut i: libc::c_uint = 0u32;
     let mut more: libc::c_uint = 0;
     loop {
         let fresh0 = sz;
         sz = sz - 1;
         if fresh0 == 0 {
-            return -(1 as libc::c_int);
+            return -(1i32);
         }
         let fresh1 = ptr;
         ptr = ptr.offset(1);
         let v: libc::c_int = *fresh1 as libc::c_int;
-        more = (v & 0x80 as libc::c_int) as libc::c_uint;
-        val |= ((v & 0x7f as libc::c_int) as uint64_t)
-            << i.wrapping_mul(7 as libc::c_int as libc::c_uint);
+        more = (v & 0x80i32) as libc::c_uint;
+        val |= ((v & 0x7fi32) as uint64_t) << i.wrapping_mul(7u32);
         i = i.wrapping_add(1);
-        if !(more != 0 && i < 8 as libc::c_int as libc::c_uint) {
+        if !(more != 0 && i < 8u32) {
             break;
         }
     }
-    if val
-        > (2147483647 as libc::c_int as libc::c_uint)
-            .wrapping_mul(2 as libc::c_uint)
-            .wrapping_add(1 as libc::c_uint) as libc::c_ulong
-        || more != 0
-    {
-        return -(1 as libc::c_int);
+    if val > (2147483647u32).wrapping_mul(2u32).wrapping_add(1u32) as libc::c_ulong || more != 0 {
+        return -(1i32);
     }
     *len = val;
     return i as libc::c_int;
@@ -178,14 +172,14 @@ unsafe extern "C" fn parse_obu_header(
     let mut extension_flag: libc::c_int = 0;
     let mut has_size_flag: libc::c_int = 0;
     if buf_size == 0 {
-        return -(1 as libc::c_int);
+        return -(1i32);
     }
-    if *buf as libc::c_int & 0x80 as libc::c_int != 0 {
-        return -(1 as libc::c_int);
+    if *buf as libc::c_int & 0x80i32 != 0 {
+        return -(1i32);
     }
-    *type_0 = ((*buf as libc::c_int & 0x78 as libc::c_int) >> 3 as libc::c_int) as Dav1dObuType;
-    extension_flag = (*buf as libc::c_int & 0x4 as libc::c_int) >> 2 as libc::c_int;
-    has_size_flag = (*buf as libc::c_int & 0x2 as libc::c_int) >> 1 as libc::c_int;
+    *type_0 = ((*buf as libc::c_int & 0x78i32) >> 3i32) as Dav1dObuType;
+    extension_flag = (*buf as libc::c_int & 0x4i32) >> 2i32;
+    has_size_flag = (*buf as libc::c_int & 0x2i32) >> 1i32;
     buf = buf.offset(1);
     buf_size -= 1;
     if extension_flag != 0 {
@@ -194,90 +188,75 @@ unsafe extern "C" fn parse_obu_header(
     }
     if has_size_flag != 0 {
         ret = leb(buf, buf_size, obu_size);
-        if ret < 0 as libc::c_int {
-            return -(1 as libc::c_int);
+        if ret < 0i32 {
+            return -(1i32);
         }
-        return *obu_size as libc::c_int + ret + 1 as libc::c_int + extension_flag;
+        return *obu_size as libc::c_int + ret + 1i32 + extension_flag;
     } else {
         if allow_implicit_size == 0 {
-            return -(1 as libc::c_int);
+            return -(1i32);
         }
     }
     *obu_size = buf_size as size_t;
-    return buf_size + 1 as libc::c_int + extension_flag;
+    return buf_size + 1i32 + extension_flag;
 }
 unsafe extern "C" fn leb128(f: *mut FILE, len: *mut size_t) -> libc::c_int {
-    let mut val: uint64_t = 0 as libc::c_int as uint64_t;
-    let mut i: libc::c_uint = 0 as libc::c_int as libc::c_uint;
+    let mut val: uint64_t = 0u64;
+    let mut i: libc::c_uint = 0u32;
     let mut more: libc::c_uint = 0;
     loop {
         let mut v: uint8_t = 0;
-        if fread(
-            &mut v as *mut uint8_t as *mut libc::c_void,
-            1 as libc::c_int as libc::c_ulong,
-            1 as libc::c_int as libc::c_ulong,
-            f,
-        ) < 1 as libc::c_int as libc::c_ulong
-        {
-            return -(1 as libc::c_int);
+        if fread(&mut v as *mut uint8_t as *mut libc::c_void, 1u64, 1u64, f) < 1u64 {
+            return -(1i32);
         }
-        more = (v as libc::c_int & 0x80 as libc::c_int) as libc::c_uint;
-        val |= ((v as libc::c_int & 0x7f as libc::c_int) as uint64_t)
-            << i.wrapping_mul(7 as libc::c_int as libc::c_uint);
+        more = (v as libc::c_int & 0x80i32) as libc::c_uint;
+        val |= ((v as libc::c_int & 0x7fi32) as uint64_t) << i.wrapping_mul(7u32);
         i = i.wrapping_add(1);
-        if !(more != 0 && i < 8 as libc::c_int as libc::c_uint) {
+        if !(more != 0 && i < 8u32) {
             break;
         }
     }
-    if val
-        > (2147483647 as libc::c_int as libc::c_uint)
-            .wrapping_mul(2 as libc::c_uint)
-            .wrapping_add(1 as libc::c_uint) as libc::c_ulong
-        || more != 0
-    {
-        return -(1 as libc::c_int);
+    if val > (2147483647u32).wrapping_mul(2u32).wrapping_add(1u32) as libc::c_ulong || more != 0 {
+        return -(1i32);
     }
     *len = val;
     return i as libc::c_int;
 }
 unsafe extern "C" fn section5_probe(mut data: *const uint8_t) -> libc::c_int {
     let mut ret: libc::c_int = 0;
-    let mut cnt: libc::c_int = 0 as libc::c_int;
+    let mut cnt: libc::c_int = 0i32;
     let mut obu_size: size_t = 0;
-    let mut type_0: Dav1dObuType = 0 as Dav1dObuType;
+    let mut type_0: Dav1dObuType = 0u32;
     ret = parse_obu_header(
         data.offset(cnt as isize),
-        2048 as libc::c_int - cnt,
+        2048i32 - cnt,
         &mut obu_size,
         &mut type_0,
-        0 as libc::c_int,
+        0i32,
     );
-    if ret < 0 as libc::c_int
-        || type_0 as libc::c_uint != DAV1D_OBU_TD as libc::c_int as libc::c_uint
-        || obu_size > 0 as libc::c_int as libc::c_ulong
-    {
-        return 0 as libc::c_int;
+    if ret < 0i32 || type_0 != DAV1D_OBU_TD || obu_size > 0u64 {
+        return 0i32;
     }
     cnt += ret;
-    let mut seq: libc::c_int = 0 as libc::c_int;
-    while cnt < 2048 as libc::c_int {
+    let mut seq: libc::c_int = 0i32;
+    while cnt < 2048i32 {
         ret = parse_obu_header(
             data.offset(cnt as isize),
-            2048 as libc::c_int - cnt,
+            2048i32 - cnt,
             &mut obu_size,
             &mut type_0,
-            0 as libc::c_int,
+            0i32,
         );
-        if ret < 0 as libc::c_int {
-            return 0 as libc::c_int;
+        if ret < 0i32 {
+            return 0i32;
         }
         cnt += ret;
-        match type_0 as libc::c_uint {
+        match type_0 {
             1 => {
-                seq = 1 as libc::c_int;
+                seq = 1i32;
             }
             6 | 3 => return seq,
-            2 | 4 => return 0 as libc::c_int,
+            2 | 4 => return 0i32,
             _ => {}
         }
     }
@@ -298,143 +277,125 @@ unsafe extern "C" fn section5_open(
             file,
             strerror(*__errno_location()),
         );
-        return -(1 as libc::c_int);
+        return -(1i32);
     }
-    *fps.offset(0 as libc::c_int as isize) = 25 as libc::c_int as libc::c_uint;
-    *fps.offset(1 as libc::c_int as isize) = 1 as libc::c_int as libc::c_uint;
-    *timebase.offset(0 as libc::c_int as isize) = 25 as libc::c_int as libc::c_uint;
-    *timebase.offset(1 as libc::c_int as isize) = 1 as libc::c_int as libc::c_uint;
-    *num_frames = 0 as libc::c_int as libc::c_uint;
+    *fps.offset(0isize) = 25u32;
+    *fps.offset(1isize) = 1u32;
+    *timebase.offset(0isize) = 25u32;
+    *timebase.offset(1isize) = 1u32;
+    *num_frames = 0u32;
     loop {
         let mut byte: [uint8_t; 2] = [0; 2];
         if fread(
-            &mut *byte.as_mut_ptr().offset(0 as libc::c_int as isize) as *mut uint8_t
-                as *mut libc::c_void,
-            1 as libc::c_int as libc::c_ulong,
-            1 as libc::c_int as libc::c_ulong,
+            &mut *byte.as_mut_ptr().offset(0isize) as *mut uint8_t as *mut libc::c_void,
+            1u64,
+            1u64,
             (*c).f,
-        ) < 1 as libc::c_int as libc::c_ulong
+        ) < 1u64
         {
             break;
         }
-        let obu_type: Dav1dObuType = (byte[0 as libc::c_int as usize] as libc::c_int
-            >> 3 as libc::c_int
-            & 0xf as libc::c_int) as Dav1dObuType;
-        if obu_type as libc::c_uint == DAV1D_OBU_TD as libc::c_int as libc::c_uint {
+        let obu_type: Dav1dObuType = (byte[0usize] as libc::c_int >> 3i32 & 0xfi32) as Dav1dObuType;
+        if obu_type == DAV1D_OBU_TD {
             *num_frames = (*num_frames).wrapping_add(1);
         }
-        let has_length_field: libc::c_int =
-            byte[0 as libc::c_int as usize] as libc::c_int & 0x2 as libc::c_int;
+        let has_length_field: libc::c_int = byte[0usize] as libc::c_int & 0x2i32;
         if has_length_field == 0 {
-            return -(1 as libc::c_int);
+            return -(1i32);
         }
-        let has_extension: libc::c_int =
-            byte[0 as libc::c_int as usize] as libc::c_int & 0x4 as libc::c_int;
+        let has_extension: libc::c_int = byte[0usize] as libc::c_int & 0x4i32;
         if has_extension != 0
             && fread(
-                &mut *byte.as_mut_ptr().offset(1 as libc::c_int as isize) as *mut uint8_t
-                    as *mut libc::c_void,
-                1 as libc::c_int as libc::c_ulong,
-                1 as libc::c_int as libc::c_ulong,
+                &mut *byte.as_mut_ptr().offset(1isize) as *mut uint8_t as *mut libc::c_void,
+                1u64,
+                1u64,
                 (*c).f,
-            ) < 1 as libc::c_int as libc::c_ulong
+            ) < 1u64
         {
-            return -(1 as libc::c_int);
+            return -(1i32);
         }
         let mut len: size_t = 0;
         let res: libc::c_int = leb128((*c).f, &mut len);
-        if res < 0 as libc::c_int {
-            return -(1 as libc::c_int);
+        if res < 0i32 {
+            return -(1i32);
         }
-        fseeko((*c).f, len as __off64_t, 1 as libc::c_int);
+        fseeko((*c).f, len as __off64_t, 1i32);
     }
-    fseeko((*c).f, 0 as libc::c_int as __off64_t, 0 as libc::c_int);
-    return 0 as libc::c_int;
+    fseeko((*c).f, 0i64, 0i32);
+    return 0i32;
 }
 unsafe extern "C" fn section5_read(
     c: *mut Section5InputContext,
     data: *mut Dav1dData,
 ) -> libc::c_int {
-    let mut total_bytes: size_t = 0 as libc::c_int as size_t;
-    let mut first: libc::c_int = 1 as libc::c_int;
+    let mut total_bytes: size_t = 0u64;
+    let mut first: libc::c_int = 1i32;
     loop {
         let mut byte: [uint8_t; 2] = [0; 2];
         if fread(
-            &mut *byte.as_mut_ptr().offset(0 as libc::c_int as isize) as *mut uint8_t
-                as *mut libc::c_void,
-            1 as libc::c_int as libc::c_ulong,
-            1 as libc::c_int as libc::c_ulong,
+            &mut *byte.as_mut_ptr().offset(0isize) as *mut uint8_t as *mut libc::c_void,
+            1u64,
+            1u64,
             (*c).f,
-        ) < 1 as libc::c_int as libc::c_ulong
+        ) < 1u64
         {
             if first == 0 && feof((*c).f) != 0 {
                 break;
             }
-            return -(1 as libc::c_int);
+            return -(1i32);
         } else {
-            let obu_type: Dav1dObuType = (byte[0 as libc::c_int as usize] as libc::c_int
-                >> 3 as libc::c_int
-                & 0xf as libc::c_int) as Dav1dObuType;
+            let obu_type: Dav1dObuType =
+                (byte[0usize] as libc::c_int >> 3i32 & 0xfi32) as Dav1dObuType;
             if first != 0 {
-                if obu_type as libc::c_uint != DAV1D_OBU_TD as libc::c_int as libc::c_uint {
-                    return -(1 as libc::c_int);
+                if obu_type != DAV1D_OBU_TD {
+                    return -(1i32);
                 }
-            } else if obu_type as libc::c_uint == DAV1D_OBU_TD as libc::c_int as libc::c_uint {
-                fseeko((*c).f, -(1 as libc::c_int) as __off64_t, 1 as libc::c_int);
+            } else if obu_type == DAV1D_OBU_TD {
+                fseeko((*c).f, -1i64, 1i32);
                 break;
             }
-            let has_length_field: libc::c_int =
-                byte[0 as libc::c_int as usize] as libc::c_int & 0x2 as libc::c_int;
+            let has_length_field: libc::c_int = byte[0usize] as libc::c_int & 0x2i32;
             if has_length_field == 0 {
-                return -(1 as libc::c_int);
+                return -(1i32);
             }
-            let has_extension: libc::c_int = (byte[0 as libc::c_int as usize] as libc::c_int
-                & 0x4 as libc::c_int
-                != 0) as libc::c_int;
+            let has_extension: libc::c_int =
+                (byte[0usize] as libc::c_int & 0x4i32 != 0) as libc::c_int;
             if has_extension != 0
                 && fread(
-                    &mut *byte.as_mut_ptr().offset(1 as libc::c_int as isize) as *mut uint8_t
-                        as *mut libc::c_void,
-                    1 as libc::c_int as libc::c_ulong,
-                    1 as libc::c_int as libc::c_ulong,
+                    &mut *byte.as_mut_ptr().offset(1isize) as *mut uint8_t as *mut libc::c_void,
+                    1u64,
+                    1u64,
                     (*c).f,
-                ) < 1 as libc::c_int as libc::c_ulong
+                ) < 1u64
             {
-                return -(1 as libc::c_int);
+                return -(1i32);
             }
             let mut len: size_t = 0;
             let res: libc::c_int = leb128((*c).f, &mut len);
-            if res < 0 as libc::c_int {
-                return -(1 as libc::c_int);
+            if res < 0i32 {
+                return -(1i32);
             }
-            total_bytes = (total_bytes as libc::c_ulong).wrapping_add(
-                ((1 as libc::c_int + has_extension + res) as libc::c_ulong).wrapping_add(len),
-            ) as size_t as size_t;
-            fseeko((*c).f, len as __off64_t, 1 as libc::c_int);
-            first = 0 as libc::c_int;
+            total_bytes = (total_bytes)
+                .wrapping_add(((1i32 + has_extension + res) as libc::c_ulong).wrapping_add(len));
+            fseeko((*c).f, len as __off64_t, 1i32);
+            first = 0i32;
         }
     }
-    fseeko((*c).f, -(total_bytes as off_t), 1 as libc::c_int);
+    fseeko((*c).f, -(total_bytes as off_t), 1i32);
     let mut ptr: *mut uint8_t = dav1d_data_create(data, total_bytes);
     if ptr.is_null() {
-        return -(1 as libc::c_int);
+        return -(1i32);
     }
-    if fread(
-        ptr as *mut libc::c_void,
-        total_bytes,
-        1 as libc::c_int as libc::c_ulong,
-        (*c).f,
-    ) != 1 as libc::c_int as libc::c_ulong
-    {
+    if fread(ptr as *mut libc::c_void, total_bytes, 1u64, (*c).f) != 1u64 {
         fprintf(
             stderr,
             b"Failed to read frame data: %s\n\0" as *const u8 as *const libc::c_char,
             strerror(*__errno_location()),
         );
         dav1d_data_unref(data);
-        return -(1 as libc::c_int);
+        return -(1i32);
     }
-    return 0 as libc::c_int;
+    return 0i32;
 }
 unsafe extern "C" fn section5_close(c: *mut Section5InputContext) {
     fclose((*c).f);
@@ -443,10 +404,9 @@ unsafe extern "C" fn section5_close(c: *mut Section5InputContext) {
 pub static mut section5_demuxer: Demuxer = unsafe {
     {
         let mut init = Demuxer {
-            priv_data_size: ::core::mem::size_of::<Section5InputContext>() as libc::c_ulong
-                as libc::c_int,
+            priv_data_size: ::core::mem::size_of::<Section5InputContext>() as libc::c_int,
             name: b"section5\0" as *const u8 as *const libc::c_char,
-            probe_sz: 2048 as libc::c_int,
+            probe_sz: 2048i32,
             probe: Some(section5_probe as unsafe extern "C" fn(*const uint8_t) -> libc::c_int),
             open: Some(
                 section5_open

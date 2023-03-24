@@ -72,7 +72,7 @@ pub struct Dav1dMemPool {
 }
 #[inline]
 unsafe extern "C" fn dav1d_alloc_aligned(mut sz: size_t, mut align: size_t) -> *mut libc::c_void {
-    if align & align.wrapping_sub(1 as libc::c_int as libc::c_ulong) != 0 {
+    if align & align.wrapping_sub(1u64) != 0 {
         unreachable!();
     }
     let mut ptr: *mut libc::c_void = 0 as *mut libc::c_void;
@@ -95,12 +95,11 @@ unsafe extern "C" fn default_free_callback(data: *const uint8_t, user_data: *mut
 pub unsafe extern "C" fn dav1d_ref_create(mut size: size_t) -> *mut Dav1dRef {
     size = size
         .wrapping_add(::core::mem::size_of::<*mut libc::c_void>() as libc::c_ulong)
-        .wrapping_sub(1 as libc::c_int as libc::c_ulong)
-        & !(::core::mem::size_of::<*mut libc::c_void>() as libc::c_ulong)
-            .wrapping_sub(1 as libc::c_int as libc::c_ulong);
+        .wrapping_sub(1u64)
+        & !(::core::mem::size_of::<*mut libc::c_void>() as libc::c_ulong).wrapping_sub(1u64);
     let data: *mut uint8_t = dav1d_alloc_aligned(
         size.wrapping_add(::core::mem::size_of::<Dav1dRef>() as libc::c_ulong),
-        64 as libc::c_int as size_t,
+        64u64,
     ) as *mut uint8_t;
     if data.is_null() {
         return 0 as *mut Dav1dRef;
@@ -109,8 +108,8 @@ pub unsafe extern "C" fn dav1d_ref_create(mut size: size_t) -> *mut Dav1dRef {
     (*res).data = data as *mut libc::c_void;
     (*res).user_data = (*res).data;
     (*res).const_data = (*res).user_data;
-    *&mut (*res).ref_cnt = 1 as libc::c_int;
-    (*res).free_ref = 0 as libc::c_int;
+    *&mut (*res).ref_cnt = 1i32;
+    (*res).free_ref = 0i32;
     (*res).free_callback = Some(
         default_free_callback as unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> (),
     );
@@ -129,9 +128,8 @@ pub unsafe extern "C" fn dav1d_ref_create_using_pool(
 ) -> *mut Dav1dRef {
     size = size
         .wrapping_add(::core::mem::size_of::<*mut libc::c_void>() as libc::c_ulong)
-        .wrapping_sub(1 as libc::c_int as libc::c_ulong)
-        & !(::core::mem::size_of::<*mut libc::c_void>() as libc::c_ulong)
-            .wrapping_sub(1 as libc::c_int as libc::c_ulong);
+        .wrapping_sub(1u64)
+        & !(::core::mem::size_of::<*mut libc::c_void>() as libc::c_ulong).wrapping_sub(1u64);
     let buf: *mut Dav1dMemPoolBuffer = dav1d_mem_pool_pop(
         pool,
         size.wrapping_add(::core::mem::size_of::<Dav1dRef>() as libc::c_ulong),
@@ -139,12 +137,11 @@ pub unsafe extern "C" fn dav1d_ref_create_using_pool(
     if buf.is_null() {
         return 0 as *mut Dav1dRef;
     }
-    let res: *mut Dav1dRef =
-        &mut *(buf as *mut Dav1dRef).offset(-(1 as libc::c_int) as isize) as *mut Dav1dRef;
+    let res: *mut Dav1dRef = &mut *(buf as *mut Dav1dRef).offset(-1isize) as *mut Dav1dRef;
     (*res).data = (*buf).data;
     (*res).const_data = pool as *const libc::c_void;
-    *&mut (*res).ref_cnt = 1 as libc::c_int;
-    (*res).free_ref = 0 as libc::c_int;
+    *&mut (*res).ref_cnt = 1i32;
+    (*res).free_ref = 0i32;
     (*res).free_callback =
         Some(pool_free_callback as unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> ());
     (*res).user_data = buf as *mut libc::c_void;
@@ -163,8 +160,8 @@ pub unsafe extern "C" fn dav1d_ref_wrap(
     }
     (*res).data = 0 as *mut libc::c_void;
     (*res).const_data = ptr as *const libc::c_void;
-    *&mut (*res).ref_cnt = 1 as libc::c_int;
-    (*res).free_ref = 1 as libc::c_int;
+    *&mut (*res).ref_cnt = 1i32;
+    (*res).free_ref = 1i32;
     (*res).free_callback = free_callback;
     (*res).user_data = user_data;
     return res;
@@ -179,9 +176,7 @@ pub unsafe extern "C" fn dav1d_ref_dec(pref: *mut *mut Dav1dRef) {
         return;
     }
     *pref = 0 as *mut Dav1dRef;
-    if ::core::intrinsics::atomic_xsub(&mut (*ref_0).ref_cnt as *mut atomic_int, 1 as libc::c_int)
-        == 1 as libc::c_int
-    {
+    if ::core::intrinsics::atomic_xsub(&mut (*ref_0).ref_cnt as *mut atomic_int, 1i32) == 1i32 {
         let free_ref: libc::c_int = (*ref_0).free_ref;
         ((*ref_0).free_callback).expect("non-null function pointer")(
             (*ref_0).const_data as *const uint8_t,
@@ -194,7 +189,6 @@ pub unsafe extern "C" fn dav1d_ref_dec(pref: *mut *mut Dav1dRef) {
 }
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_ref_is_writable(ref_0: *mut Dav1dRef) -> libc::c_int {
-    return (::core::intrinsics::atomic_load(&mut (*ref_0).ref_cnt as *mut atomic_int)
-        == 1 as libc::c_int
+    return (::core::intrinsics::atomic_load(&mut (*ref_0).ref_cnt as *mut atomic_int) == 1i32
         && !((*ref_0).data).is_null()) as libc::c_int;
 }

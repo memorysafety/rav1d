@@ -610,13 +610,13 @@ unsafe extern "C" fn y4m2_open(
                 file,
                 strerror(*__errno_location()),
             );
-            return -(1 as libc::c_int);
+            return -(1i32);
         }
     }
-    (*c).first = 1 as libc::c_int;
-    (*c).fps[0 as libc::c_int as usize] = *fps.offset(0 as libc::c_int as isize);
-    (*c).fps[1 as libc::c_int as usize] = *fps.offset(1 as libc::c_int as isize);
-    return 0 as libc::c_int;
+    (*c).first = 1i32;
+    (*c).fps[0usize] = *fps.offset(0isize);
+    (*c).fps[1usize] = *fps.offset(1isize);
+    return 0i32;
 }
 unsafe extern "C" fn write_header(
     c: *mut Y4m2OutputContext,
@@ -649,20 +649,16 @@ unsafe extern "C" fn write_header(
         b"420mpeg2\0" as *const u8 as *const libc::c_char,
         b"420\0" as *const u8 as *const libc::c_char,
     ];
-    let ss_name: *const libc::c_char = if (*p).p.layout as libc::c_uint
-        == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint
-        && (*p).p.bpc == 8 as libc::c_int
-    {
-        chr_names_8bpc_i420[(if (*(*p).seq_hdr).chr as libc::c_uint
-            > 2 as libc::c_int as libc::c_uint
-        {
-            DAV1D_CHR_UNKNOWN as libc::c_int as libc::c_uint
+    let ss_name: *const libc::c_char =
+        if (*p).p.layout == DAV1D_PIXEL_LAYOUT_I420 && (*p).p.bpc == 8i32 {
+            chr_names_8bpc_i420[(if (*(*p).seq_hdr).chr > 2u32 {
+                DAV1D_CHR_UNKNOWN
+            } else {
+                (*(*p).seq_hdr).chr
+            }) as usize]
         } else {
-            (*(*p).seq_hdr).chr as libc::c_uint
-        }) as usize]
-    } else {
-        ss_names[(*p).p.layout as usize][(*(*p).seq_hdr).hbd as usize]
-    };
+            ss_names[(*p).p.layout as usize][(*(*p).seq_hdr).hbd as usize]
+        };
     let fw: libc::c_uint = (*p).p.w as libc::c_uint;
     let fh: libc::c_uint = (*p).p.h as libc::c_uint;
     let mut aw: uint64_t =
@@ -680,35 +676,35 @@ unsafe extern "C" fn write_header(
         a = gcd;
         gcd = b;
     }
-    aw = (aw as libc::c_ulong).wrapping_div(gcd) as uint64_t as uint64_t;
-    ah = (ah as libc::c_ulong).wrapping_div(gcd) as uint64_t as uint64_t;
+    aw = (aw).wrapping_div(gcd);
+    ah = (ah).wrapping_div(gcd);
     fprintf(
         (*c).f,
         b"YUV4MPEG2 W%u H%u F%u:%u Ip A%lu:%lu C%s\n\0" as *const u8 as *const libc::c_char,
         fw,
         fh,
-        (*c).fps[0 as libc::c_int as usize],
-        (*c).fps[1 as libc::c_int as usize],
+        (*c).fps[0usize],
+        (*c).fps[1usize],
         aw,
         ah,
         ss_name,
     );
-    return 0 as libc::c_int;
+    return 0i32;
 }
 unsafe extern "C" fn y4m2_write(c: *mut Y4m2OutputContext, p: *mut Dav1dPicture) -> libc::c_int {
     let mut current_block: u64;
     if (*c).first != 0 {
-        (*c).first = 0 as libc::c_int;
+        (*c).first = 0i32;
         let res: libc::c_int = write_header(c, p);
-        if res < 0 as libc::c_int {
+        if res < 0i32 {
             return res;
         }
     }
     fprintf((*c).f, b"FRAME\n\0" as *const u8 as *const libc::c_char);
     let mut ptr: *mut uint8_t = 0 as *mut uint8_t;
-    let hbd: libc::c_int = ((*p).p.bpc > 8 as libc::c_int) as libc::c_int;
-    ptr = (*p).data[0 as libc::c_int as usize] as *mut uint8_t;
-    let mut y: libc::c_int = 0 as libc::c_int;
+    let hbd: libc::c_int = ((*p).p.bpc > 8i32) as libc::c_int;
+    ptr = (*p).data[0usize] as *mut uint8_t;
+    let mut y: libc::c_int = 0i32;
     loop {
         if !(y < (*p).p.h) {
             current_block = 11812396948646013369;
@@ -717,49 +713,43 @@ unsafe extern "C" fn y4m2_write(c: *mut Y4m2OutputContext, p: *mut Dav1dPicture)
         if fwrite(
             ptr as *const libc::c_void,
             ((*p).p.w << hbd) as libc::c_ulong,
-            1 as libc::c_int as libc::c_ulong,
+            1u64,
             (*c).f,
-        ) != 1 as libc::c_int as libc::c_ulong
+        ) != 1u64
         {
             current_block = 11545648641752300099;
             break;
         }
-        ptr = ptr.offset((*p).stride[0 as libc::c_int as usize] as isize);
+        ptr = ptr.offset((*p).stride[0usize] as isize);
         y += 1;
     }
     match current_block {
         11812396948646013369 => {
-            if (*p).p.layout as libc::c_uint
-                != DAV1D_PIXEL_LAYOUT_I400 as libc::c_int as libc::c_uint
-            {
-                let ss_ver: libc::c_int = ((*p).p.layout as libc::c_uint
-                    == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint)
-                    as libc::c_int;
-                let ss_hor: libc::c_int = ((*p).p.layout as libc::c_uint
-                    != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint)
-                    as libc::c_int;
+            if (*p).p.layout != DAV1D_PIXEL_LAYOUT_I400 {
+                let ss_ver: libc::c_int = ((*p).p.layout == DAV1D_PIXEL_LAYOUT_I420) as libc::c_int;
+                let ss_hor: libc::c_int = ((*p).p.layout != DAV1D_PIXEL_LAYOUT_I444) as libc::c_int;
                 let cw: libc::c_int = (*p).p.w + ss_hor >> ss_hor;
                 let ch: libc::c_int = (*p).p.h + ss_ver >> ss_ver;
-                let mut pl: libc::c_int = 1 as libc::c_int;
+                let mut pl: libc::c_int = 1i32;
                 's_64: loop {
-                    if !(pl <= 2 as libc::c_int) {
+                    if !(pl <= 2i32) {
                         current_block = 13797916685926291137;
                         break;
                     }
                     ptr = (*p).data[pl as usize] as *mut uint8_t;
-                    let mut y_0: libc::c_int = 0 as libc::c_int;
+                    let mut y_0: libc::c_int = 0i32;
                     while y_0 < ch {
                         if fwrite(
                             ptr as *const libc::c_void,
                             (cw << hbd) as libc::c_ulong,
-                            1 as libc::c_int as libc::c_ulong,
+                            1u64,
                             (*c).f,
-                        ) != 1 as libc::c_int as libc::c_ulong
+                        ) != 1u64
                         {
                             current_block = 11545648641752300099;
                             break 's_64;
                         }
-                        ptr = ptr.offset((*p).stride[1 as libc::c_int as usize] as isize);
+                        ptr = ptr.offset((*p).stride[1usize] as isize);
                         y_0 += 1;
                     }
                     pl += 1;
@@ -771,7 +761,7 @@ unsafe extern "C" fn y4m2_write(c: *mut Y4m2OutputContext, p: *mut Dav1dPicture)
                 11545648641752300099 => {}
                 _ => {
                     dav1d_picture_unref(p);
-                    return 0 as libc::c_int;
+                    return 0i32;
                 }
             }
         }
@@ -783,7 +773,7 @@ unsafe extern "C" fn y4m2_write(c: *mut Y4m2OutputContext, p: *mut Dav1dPicture)
         b"Failed to write frame data: %s\n\0" as *const u8 as *const libc::c_char,
         strerror(*__errno_location()),
     );
-    return -(1 as libc::c_int);
+    return -(1i32);
 }
 unsafe extern "C" fn y4m2_close(c: *mut Y4m2OutputContext) {
     if (*c).f != stdout {
@@ -794,8 +784,7 @@ unsafe extern "C" fn y4m2_close(c: *mut Y4m2OutputContext) {
 pub static mut y4m2_muxer: Muxer = unsafe {
     {
         let mut init = Muxer {
-            priv_data_size: ::core::mem::size_of::<Y4m2OutputContext>() as libc::c_ulong
-                as libc::c_int,
+            priv_data_size: ::core::mem::size_of::<Y4m2OutputContext>() as libc::c_int,
             name: b"yuv4mpeg2\0" as *const u8 as *const libc::c_char,
             extension: b"y4m\0" as *const u8 as *const libc::c_char,
             write_header: Some(

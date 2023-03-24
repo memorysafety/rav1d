@@ -104,7 +104,7 @@ pub const memory_order_acquire: memory_order = 2;
 pub const memory_order_consume: memory_order = 1;
 #[inline]
 unsafe extern "C" fn dav1d_ref_inc(ref_0: *mut Dav1dRef) {
-    ::core::intrinsics::atomic_xadd_relaxed(&mut (*ref_0).ref_cnt, 1 as libc::c_int);
+    ::core::intrinsics::atomic_xadd_relaxed(&mut (*ref_0).ref_cnt, 1i32);
 }
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_data_create_internal(
@@ -123,8 +123,7 @@ pub unsafe extern "C" fn dav1d_data_create_internal(
         );
         return 0 as *mut uint8_t;
     }
-    if sz > (18446744073709551615 as libc::c_ulong).wrapping_div(2 as libc::c_int as libc::c_ulong)
-    {
+    if sz > (18446744073709551615u64).wrapping_div(2u64) {
         return 0 as *mut uint8_t;
     }
     (*buf).ref_0 = dav1d_ref_create(sz);
@@ -155,7 +154,7 @@ pub unsafe extern "C" fn dav1d_data_wrap_internal(
             ))
             .as_ptr(),
         );
-        return -(22 as libc::c_int);
+        return -(22i32);
     }
     if ptr.is_null() {
         fprintf(
@@ -167,7 +166,7 @@ pub unsafe extern "C" fn dav1d_data_wrap_internal(
             ))
             .as_ptr(),
         );
-        return -(22 as libc::c_int);
+        return -(22i32);
     }
     if free_callback.is_none() {
         fprintf(
@@ -179,17 +178,17 @@ pub unsafe extern "C" fn dav1d_data_wrap_internal(
             ))
             .as_ptr(),
         );
-        return -(22 as libc::c_int);
+        return -(22i32);
     }
     (*buf).ref_0 = dav1d_ref_wrap(ptr, free_callback, cookie);
     if ((*buf).ref_0).is_null() {
-        return -(12 as libc::c_int);
+        return -(12i32);
     }
     (*buf).data = ptr;
     (*buf).sz = sz;
     dav1d_data_props_set_defaults(&mut (*buf).m);
     (*buf).m.size = sz;
-    return 0 as libc::c_int;
+    return 0i32;
 }
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_data_wrap_user_data_internal(
@@ -208,7 +207,7 @@ pub unsafe extern "C" fn dav1d_data_wrap_user_data_internal(
             ))
             .as_ptr(),
         );
-        return -(22 as libc::c_int);
+        return -(22i32);
     }
     if free_callback.is_none() {
         fprintf(
@@ -220,14 +219,14 @@ pub unsafe extern "C" fn dav1d_data_wrap_user_data_internal(
             ))
             .as_ptr(),
         );
-        return -(22 as libc::c_int);
+        return -(22i32);
     }
     (*buf).m.user_data.ref_0 = dav1d_ref_wrap(user_data, free_callback, cookie);
     if ((*buf).m.user_data.ref_0).is_null() {
-        return -(12 as libc::c_int);
+        return -(12i32);
     }
     (*buf).m.user_data.data = user_data;
-    return 0 as libc::c_int;
+    return 0i32;
 }
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_data_ref(dst: *mut Dav1dData, src: *const Dav1dData) {
@@ -304,11 +303,11 @@ pub unsafe extern "C" fn dav1d_data_props_set_defaults(props: *mut Dav1dDataProp
     }
     memset(
         props as *mut libc::c_void,
-        0 as libc::c_int,
+        0i32,
         ::core::mem::size_of::<Dav1dDataProps>() as libc::c_ulong,
     );
-    (*props).timestamp = -(9223372036854775807 as libc::c_long) - 1 as libc::c_int as libc::c_long;
-    (*props).offset = -(1 as libc::c_int) as int64_t;
+    (*props).timestamp = -(9223372036854775807i64) - 1i64;
+    (*props).offset = -1i64;
 }
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_data_props_unref_internal(props: *mut Dav1dDataProps) {
@@ -361,7 +360,7 @@ pub unsafe extern "C" fn dav1d_data_unref_internal(buf: *mut Dav1dData) {
     }
     memset(
         buf as *mut libc::c_void,
-        0 as libc::c_int,
+        0i32,
         ::core::mem::size_of::<Dav1dData>() as libc::c_ulong,
     );
     dav1d_data_props_set_defaults(&mut (*buf).m);

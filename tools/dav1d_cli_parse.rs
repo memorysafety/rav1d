@@ -701,8 +701,8 @@ static mut long_opts: [option; 25] = [
     {
         let mut init = option {
             name: b"input\0" as *const u8 as *const libc::c_char,
-            has_arg: 1 as libc::c_int,
-            flag: 0 as *const libc::c_int as *mut libc::c_int,
+            has_arg: 1i32,
+            flag: 0 as *mut libc::c_int,
             val: 'i' as i32,
         };
         init
@@ -710,8 +710,8 @@ static mut long_opts: [option; 25] = [
     {
         let mut init = option {
             name: b"output\0" as *const u8 as *const libc::c_char,
-            has_arg: 1 as libc::c_int,
-            flag: 0 as *const libc::c_int as *mut libc::c_int,
+            has_arg: 1i32,
+            flag: 0 as *mut libc::c_int,
             val: 'o' as i32,
         };
         init
@@ -719,8 +719,8 @@ static mut long_opts: [option; 25] = [
     {
         let mut init = option {
             name: b"quiet\0" as *const u8 as *const libc::c_char,
-            has_arg: 0 as libc::c_int,
-            flag: 0 as *const libc::c_int as *mut libc::c_int,
+            has_arg: 0i32,
+            flag: 0 as *mut libc::c_int,
             val: 'q' as i32,
         };
         init
@@ -728,8 +728,8 @@ static mut long_opts: [option; 25] = [
     {
         let mut init = option {
             name: b"demuxer\0" as *const u8 as *const libc::c_char,
-            has_arg: 1 as libc::c_int,
-            flag: 0 as *const libc::c_int as *mut libc::c_int,
+            has_arg: 1i32,
+            flag: 0 as *mut libc::c_int,
             val: ARG_DEMUXER as libc::c_int,
         };
         init
@@ -737,8 +737,8 @@ static mut long_opts: [option; 25] = [
     {
         let mut init = option {
             name: b"muxer\0" as *const u8 as *const libc::c_char,
-            has_arg: 1 as libc::c_int,
-            flag: 0 as *const libc::c_int as *mut libc::c_int,
+            has_arg: 1i32,
+            flag: 0 as *mut libc::c_int,
             val: ARG_MUXER as libc::c_int,
         };
         init
@@ -746,8 +746,8 @@ static mut long_opts: [option; 25] = [
     {
         let mut init = option {
             name: b"version\0" as *const u8 as *const libc::c_char,
-            has_arg: 0 as libc::c_int,
-            flag: 0 as *const libc::c_int as *mut libc::c_int,
+            has_arg: 0i32,
+            flag: 0 as *mut libc::c_int,
             val: 'v' as i32,
         };
         init
@@ -755,8 +755,8 @@ static mut long_opts: [option; 25] = [
     {
         let mut init = option {
             name: b"frametimes\0" as *const u8 as *const libc::c_char,
-            has_arg: 1 as libc::c_int,
-            flag: 0 as *const libc::c_int as *mut libc::c_int,
+            has_arg: 1i32,
+            flag: 0 as *mut libc::c_int,
             val: ARG_FRAME_TIMES as libc::c_int,
         };
         init
@@ -764,8 +764,8 @@ static mut long_opts: [option; 25] = [
     {
         let mut init = option {
             name: b"limit\0" as *const u8 as *const libc::c_char,
-            has_arg: 1 as libc::c_int,
-            flag: 0 as *const libc::c_int as *mut libc::c_int,
+            has_arg: 1i32,
+            flag: 0 as *mut libc::c_int,
             val: 'l' as i32,
         };
         init
@@ -773,8 +773,8 @@ static mut long_opts: [option; 25] = [
     {
         let mut init = option {
             name: b"skip\0" as *const u8 as *const libc::c_char,
-            has_arg: 1 as libc::c_int,
-            flag: 0 as *const libc::c_int as *mut libc::c_int,
+            has_arg: 1i32,
+            flag: 0 as *mut libc::c_int,
             val: 's' as i32,
         };
         init
@@ -782,8 +782,8 @@ static mut long_opts: [option; 25] = [
     {
         let mut init = option {
             name: b"realtime\0" as *const u8 as *const libc::c_char,
-            has_arg: 2 as libc::c_int,
-            flag: 0 as *const libc::c_int as *mut libc::c_int,
+            has_arg: 2i32,
+            flag: 0 as *mut libc::c_int,
             val: ARG_REALTIME as libc::c_int,
         };
         init
@@ -791,8 +791,8 @@ static mut long_opts: [option; 25] = [
     {
         let mut init = option {
             name: b"realtimecache\0" as *const u8 as *const libc::c_char,
-            has_arg: 1 as libc::c_int,
-            flag: 0 as *const libc::c_int as *mut libc::c_int,
+            has_arg: 1i32,
+            flag: 0 as *mut libc::c_int,
             val: ARG_REALTIME_CACHE as libc::c_int,
         };
         init
@@ -800,8 +800,8 @@ static mut long_opts: [option; 25] = [
     {
         let mut init = option {
             name: b"threads\0" as *const u8 as *const libc::c_char,
-            has_arg: 1 as libc::c_int,
-            flag: 0 as *const libc::c_int as *mut libc::c_int,
+            has_arg: 1i32,
+            flag: 0 as *mut libc::c_int,
             val: ARG_THREADS as libc::c_int,
         };
         init
@@ -809,8 +809,8 @@ static mut long_opts: [option; 25] = [
     {
         let mut init = option {
             name: b"framedelay\0" as *const u8 as *const libc::c_char,
-            has_arg: 1 as libc::c_int,
-            flag: 0 as *const libc::c_int as *mut libc::c_int,
+            has_arg: 1i32,
+            flag: 0 as *mut libc::c_int,
             val: ARG_FRAME_DELAY as libc::c_int,
         };
         init
@@ -818,8 +818,8 @@ static mut long_opts: [option; 25] = [
     {
         let mut init = option {
             name: b"verify\0" as *const u8 as *const libc::c_char,
-            has_arg: 1 as libc::c_int,
-            flag: 0 as *const libc::c_int as *mut libc::c_int,
+            has_arg: 1i32,
+            flag: 0 as *mut libc::c_int,
             val: ARG_VERIFY as libc::c_int,
         };
         init
@@ -827,8 +827,8 @@ static mut long_opts: [option; 25] = [
     {
         let mut init = option {
             name: b"filmgrain\0" as *const u8 as *const libc::c_char,
-            has_arg: 1 as libc::c_int,
-            flag: 0 as *const libc::c_int as *mut libc::c_int,
+            has_arg: 1i32,
+            flag: 0 as *mut libc::c_int,
             val: ARG_FILM_GRAIN as libc::c_int,
         };
         init
@@ -836,8 +836,8 @@ static mut long_opts: [option; 25] = [
     {
         let mut init = option {
             name: b"oppoint\0" as *const u8 as *const libc::c_char,
-            has_arg: 1 as libc::c_int,
-            flag: 0 as *const libc::c_int as *mut libc::c_int,
+            has_arg: 1i32,
+            flag: 0 as *mut libc::c_int,
             val: ARG_OPPOINT as libc::c_int,
         };
         init
@@ -845,8 +845,8 @@ static mut long_opts: [option; 25] = [
     {
         let mut init = option {
             name: b"alllayers\0" as *const u8 as *const libc::c_char,
-            has_arg: 1 as libc::c_int,
-            flag: 0 as *const libc::c_int as *mut libc::c_int,
+            has_arg: 1i32,
+            flag: 0 as *mut libc::c_int,
             val: ARG_ALL_LAYERS as libc::c_int,
         };
         init
@@ -854,8 +854,8 @@ static mut long_opts: [option; 25] = [
     {
         let mut init = option {
             name: b"sizelimit\0" as *const u8 as *const libc::c_char,
-            has_arg: 1 as libc::c_int,
-            flag: 0 as *const libc::c_int as *mut libc::c_int,
+            has_arg: 1i32,
+            flag: 0 as *mut libc::c_int,
             val: ARG_SIZE_LIMIT as libc::c_int,
         };
         init
@@ -863,8 +863,8 @@ static mut long_opts: [option; 25] = [
     {
         let mut init = option {
             name: b"strict\0" as *const u8 as *const libc::c_char,
-            has_arg: 1 as libc::c_int,
-            flag: 0 as *const libc::c_int as *mut libc::c_int,
+            has_arg: 1i32,
+            flag: 0 as *mut libc::c_int,
             val: ARG_STRICT_STD_COMPLIANCE as libc::c_int,
         };
         init
@@ -872,8 +872,8 @@ static mut long_opts: [option; 25] = [
     {
         let mut init = option {
             name: b"cpumask\0" as *const u8 as *const libc::c_char,
-            has_arg: 1 as libc::c_int,
-            flag: 0 as *const libc::c_int as *mut libc::c_int,
+            has_arg: 1i32,
+            flag: 0 as *mut libc::c_int,
             val: ARG_CPU_MASK as libc::c_int,
         };
         init
@@ -881,8 +881,8 @@ static mut long_opts: [option; 25] = [
     {
         let mut init = option {
             name: b"negstride\0" as *const u8 as *const libc::c_char,
-            has_arg: 0 as libc::c_int,
-            flag: 0 as *const libc::c_int as *mut libc::c_int,
+            has_arg: 0i32,
+            flag: 0 as *mut libc::c_int,
             val: ARG_NEG_STRIDE as libc::c_int,
         };
         init
@@ -890,8 +890,8 @@ static mut long_opts: [option; 25] = [
     {
         let mut init = option {
             name: b"outputinvisible\0" as *const u8 as *const libc::c_char,
-            has_arg: 1 as libc::c_int,
-            flag: 0 as *const libc::c_int as *mut libc::c_int,
+            has_arg: 1i32,
+            flag: 0 as *mut libc::c_int,
             val: ARG_OUTPUT_INVISIBLE as libc::c_int,
         };
         init
@@ -899,8 +899,8 @@ static mut long_opts: [option; 25] = [
     {
         let mut init = option {
             name: b"inloopfilters\0" as *const u8 as *const libc::c_char,
-            has_arg: 1 as libc::c_int,
-            flag: 0 as *const libc::c_int as *mut libc::c_int,
+            has_arg: 1i32,
+            flag: 0 as *mut libc::c_int,
             val: ARG_INLOOP_FILTERS as libc::c_int,
         };
         init
@@ -908,8 +908,8 @@ static mut long_opts: [option; 25] = [
     {
         let mut init = option {
             name: b"decodeframetype\0" as *const u8 as *const libc::c_char,
-            has_arg: 1 as libc::c_int,
-            flag: 0 as *const libc::c_int as *mut libc::c_int,
+            has_arg: 1i32,
+            flag: 0 as *mut libc::c_int,
             val: ARG_DECODE_FRAME_TYPE as libc::c_int,
         };
         init
@@ -917,9 +917,9 @@ static mut long_opts: [option; 25] = [
     {
         let mut init = option {
             name: 0 as *const libc::c_char,
-            has_arg: 0 as libc::c_int,
-            flag: 0 as *const libc::c_int as *mut libc::c_int,
-            val: 0 as libc::c_int,
+            has_arg: 0i32,
+            flag: 0 as *mut libc::c_int,
+            val: 0i32,
         };
         init
     },
@@ -941,7 +941,7 @@ unsafe extern "C" fn usage(app: *const libc::c_char, reason: *const libc::c_char
         b"Supported options:\n --input/-i $file:     input file\n --output/-o $file:    output file (%%n, %%w or %%h will be filled in for per-frame files)\n --demuxer $name:      force demuxer type ('ivf', 'section5' or 'annexb'; default: detect from content)\n --muxer $name:        force muxer type ('md5', 'yuv', 'yuv4mpeg2' or 'null'; default: detect from extension)\n                       use 'frame' as prefix to write per-frame files; if filename contains %%n, will default to writing per-frame files\n --quiet/-q:           disable status messages\n --frametimes $file:   dump frame times to file\n --limit/-l $num:      stop decoding after $num frames\n --skip/-s $num:       skip decoding of the first $num frames\n --realtime [$fract]:  limit framerate, optional argument to override input framerate\n --realtimecache $num: set the size of the cache in realtime mode (default: 0)\n --version/-v:         print version and exit\n --threads $num:       number of threads (default: 0)\n --framedelay $num:    maximum frame delay, capped at $threads (default: 0);\n                       set to 1 for low-latency decoding\n --filmgrain $num:     enable film grain application (default: 1, except if muxer is md5 or xxh3)\n --oppoint $num:       select an operating point of a scalable AV1 bitstream (0 - 31)\n --alllayers $num:     output all spatial layers of a scalable AV1 bitstream (default: 1)\n --sizelimit $num:     stop decoding if the frame size exceeds the specified limit\n --strict $num:        whether to abort decoding on standard compliance violations\n                       that don't affect bitstream decoding (default: 1)\n --verify $md5:        verify decoded md5. implies --muxer md5, no output\n --cpumask $mask:      restrict permitted CPU instruction sets (0, 'sse2', 'ssse3', 'sse41', 'avx2' or 'avx512icl'; default: -1)\n --negstride:          use negative picture strides\n                       this is mostly meant as a developer option\n --outputinvisible $num: whether to output invisible (alt-ref) frames (default: 0)\n --inloopfilters $str: which in-loop filters to enable (none, (no)deblock, (no)cdef, (no)restoration or all; default: all)\n --decodeframetype $str: which frame types to decode (reference, intra, key or all; default: all)\n\0"
             as *const u8 as *const libc::c_char,
     );
-    exit(1 as libc::c_int);
+    exit(1i32);
 }
 unsafe extern "C" fn error(
     app: *const libc::c_char,
@@ -951,7 +951,7 @@ unsafe extern "C" fn error(
 ) {
     let mut optname: [libc::c_char; 256] = [0; 256];
     let mut n: libc::c_int = 0;
-    n = 0 as libc::c_int;
+    n = 0i32;
     while !(long_opts[n as usize].name).is_null() {
         if long_opts[n as usize].val == option {
             break;
@@ -961,7 +961,7 @@ unsafe extern "C" fn error(
     if (long_opts[n as usize].name).is_null() {
         unreachable!();
     }
-    if long_opts[n as usize].val < 256 as libc::c_int {
+    if long_opts[n as usize].val < 256i32 {
         sprintf(
             optname.as_mut_ptr(),
             b"-%c/--%s\0" as *const u8 as *const libc::c_char,
@@ -990,7 +990,7 @@ unsafe extern "C" fn parse_unsigned(
     app: *const libc::c_char,
 ) -> libc::c_uint {
     let mut end: *mut libc::c_char = 0 as *mut libc::c_char;
-    let res: libc::c_uint = strtoul(optarg_0, &mut end, 0 as libc::c_int) as libc::c_uint;
+    let res: libc::c_uint = strtoul(optarg_0, &mut end, 0i32) as libc::c_uint;
     if *end as libc::c_int != 0 || end == optarg_0 as *mut libc::c_char {
         error(
             app,
@@ -1008,12 +1008,12 @@ unsafe extern "C" fn parse_optional_fraction(
     mut value: *mut libc::c_double,
 ) -> libc::c_int {
     if optarg_0.is_null() {
-        return 0 as libc::c_int;
+        return 0i32;
     }
     let mut end: *mut libc::c_char = 0 as *mut libc::c_char;
     *value = strtod(optarg_0, &mut end);
     if *end as libc::c_int == '/' as i32 && end != optarg_0 as *mut libc::c_char {
-        let mut optarg2: *const libc::c_char = end.offset(1 as libc::c_int as isize);
+        let mut optarg2: *const libc::c_char = end.offset(1isize);
         *value /= strtod(optarg2, &mut end);
         if *end as libc::c_int != 0 || end == optarg2 as *mut libc::c_char {
             error(
@@ -1031,7 +1031,7 @@ unsafe extern "C" fn parse_optional_fraction(
             b"a fraction\0" as *const u8 as *const libc::c_char,
         );
     }
-    return 1 as libc::c_int;
+    return 1i32;
 }
 static mut cpu_mask_tbl: [EnumParseTable; 6] = [
     {
@@ -1072,7 +1072,7 @@ static mut cpu_mask_tbl: [EnumParseTable; 6] = [
     {
         let mut init = EnumParseTable {
             str_0: b"none\0" as *const u8 as *const libc::c_char,
-            val: 0 as libc::c_int,
+            val: 0i32,
         };
         init
     },
@@ -1178,13 +1178,13 @@ unsafe extern "C" fn parse_enum(
         str.as_mut_ptr(),
         b"any of \0" as *const u8 as *const libc::c_char,
     );
-    let mut n: libc::c_int = 0 as libc::c_int;
+    let mut n: libc::c_int = 0i32;
     while n < tbl_sz {
         if strcmp((*tbl.offset(n as isize)).str_0, optarg_0) == 0 {
             return (*tbl.offset(n as isize)).val as libc::c_uint;
         }
         if n != 0 {
-            if n < tbl_sz - 1 as libc::c_int {
+            if n < tbl_sz - 1i32 {
                 strcat(
                     str.as_mut_ptr(),
                     b", \0" as *const u8 as *const libc::c_char,
@@ -1201,19 +1201,10 @@ unsafe extern "C" fn parse_enum(
     }
     let mut end: *mut libc::c_char = 0 as *mut libc::c_char;
     let mut res: libc::c_uint = 0;
-    if strncmp(
-        optarg_0,
-        b"0x\0" as *const u8 as *const libc::c_char,
-        2 as libc::c_int as libc::c_ulong,
-    ) == 0
-    {
-        res = strtoul(
-            &mut *optarg_0.offset(2 as libc::c_int as isize),
-            &mut end,
-            16 as libc::c_int,
-        ) as libc::c_uint;
+    if strncmp(optarg_0, b"0x\0" as *const u8 as *const libc::c_char, 2u64) == 0 {
+        res = strtoul(&mut *optarg_0.offset(2isize), &mut end, 16i32) as libc::c_uint;
     } else {
-        res = strtoul(optarg_0, &mut end, 0 as libc::c_int) as libc::c_uint;
+        res = strtoul(optarg_0, &mut end, 0i32) as libc::c_uint;
     }
     if *end as libc::c_int != 0 || end == optarg_0 {
         strcat(
@@ -1235,12 +1226,12 @@ pub unsafe extern "C" fn parse(
     let mut o: libc::c_int = 0;
     memset(
         cli_settings as *mut libc::c_void,
-        0 as libc::c_int,
+        0i32,
         ::core::mem::size_of::<CLISettings>() as libc::c_ulong,
     );
     dav1d_default_settings(lib_settings);
-    (*lib_settings).strict_std_compliance = 1 as libc::c_int;
-    let mut grain_specified: libc::c_int = 0 as libc::c_int;
+    (*lib_settings).strict_std_compliance = 1i32;
+    let mut grain_specified: libc::c_int = 0i32;
     loop {
         o = getopt_long(
             argc,
@@ -1249,7 +1240,7 @@ pub unsafe extern "C" fn parse(
             long_opts.as_ptr(),
             0 as *mut libc::c_int,
         );
-        if !(o != -(1 as libc::c_int)) {
+        if !(o != -(1i32)) {
             break;
         }
         match o {
@@ -1260,15 +1251,13 @@ pub unsafe extern "C" fn parse(
                 (*cli_settings).inputfile = optarg;
             }
             113 => {
-                (*cli_settings).quiet = 1 as libc::c_int;
+                (*cli_settings).quiet = 1i32;
             }
             108 => {
-                (*cli_settings).limit =
-                    parse_unsigned(optarg, 'l' as i32, *argv.offset(0 as libc::c_int as isize));
+                (*cli_settings).limit = parse_unsigned(optarg, 'l' as i32, *argv.offset(0isize));
             }
             115 => {
-                (*cli_settings).skip =
-                    parse_unsigned(optarg, 's' as i32, *argv.offset(0 as libc::c_int as isize));
+                (*cli_settings).skip = parse_unsigned(optarg, 's' as i32, *argv.offset(0isize));
             }
             256 => {
                 (*cli_settings).demuxer = optarg;
@@ -1283,18 +1272,16 @@ pub unsafe extern "C" fn parse(
                 if optarg.is_null()
                     && optind < argc
                     && !(*argv.offset(optind as isize)).is_null()
-                    && *(*argv.offset(optind as isize)).offset(0 as libc::c_int as isize)
-                        as libc::c_int
-                        != '-' as i32
+                    && *(*argv.offset(optind as isize)).offset(0isize) as libc::c_int != '-' as i32
                 {
                     optarg = *argv.offset(optind as isize);
                     optind += 1;
                 }
-                (*cli_settings).realtime = (1 as libc::c_int
+                (*cli_settings).realtime = (1i32
                     + parse_optional_fraction(
                         optarg,
                         ARG_REALTIME as libc::c_int,
-                        *argv.offset(0 as libc::c_int as isize),
+                        *argv.offset(0isize),
                         &mut (*cli_settings).realtime_fps,
                     )) as C2RustUnnamed_12;
             }
@@ -1302,70 +1289,52 @@ pub unsafe extern "C" fn parse(
                 (*cli_settings).realtime_cache = parse_unsigned(
                     optarg,
                     ARG_REALTIME_CACHE as libc::c_int,
-                    *argv.offset(0 as libc::c_int as isize),
+                    *argv.offset(0isize),
                 );
             }
             262 => {
-                (*lib_settings).max_frame_delay = parse_unsigned(
-                    optarg,
-                    ARG_FRAME_DELAY as libc::c_int,
-                    *argv.offset(0 as libc::c_int as isize),
-                ) as libc::c_int;
+                (*lib_settings).max_frame_delay =
+                    parse_unsigned(optarg, ARG_FRAME_DELAY as libc::c_int, *argv.offset(0isize))
+                        as libc::c_int;
             }
             261 => {
-                (*lib_settings).n_threads = parse_unsigned(
-                    optarg,
-                    ARG_THREADS as libc::c_int,
-                    *argv.offset(0 as libc::c_int as isize),
-                ) as libc::c_int;
+                (*lib_settings).n_threads =
+                    parse_unsigned(optarg, ARG_THREADS as libc::c_int, *argv.offset(0isize))
+                        as libc::c_int;
             }
             263 => {
                 (*cli_settings).verify = optarg;
             }
             264 => {
-                (*lib_settings).apply_grain = (parse_unsigned(
-                    optarg,
-                    ARG_FILM_GRAIN as libc::c_int,
-                    *argv.offset(0 as libc::c_int as isize),
-                ) != 0) as libc::c_int;
-                grain_specified = 1 as libc::c_int;
+                (*lib_settings).apply_grain =
+                    (parse_unsigned(optarg, ARG_FILM_GRAIN as libc::c_int, *argv.offset(0isize))
+                        != 0) as libc::c_int;
+                grain_specified = 1i32;
             }
             265 => {
-                (*lib_settings).operating_point = parse_unsigned(
-                    optarg,
-                    ARG_OPPOINT as libc::c_int,
-                    *argv.offset(0 as libc::c_int as isize),
-                ) as libc::c_int;
+                (*lib_settings).operating_point =
+                    parse_unsigned(optarg, ARG_OPPOINT as libc::c_int, *argv.offset(0isize))
+                        as libc::c_int;
             }
             266 => {
-                (*lib_settings).all_layers = (parse_unsigned(
-                    optarg,
-                    ARG_ALL_LAYERS as libc::c_int,
-                    *argv.offset(0 as libc::c_int as isize),
-                ) != 0) as libc::c_int;
+                (*lib_settings).all_layers =
+                    (parse_unsigned(optarg, ARG_ALL_LAYERS as libc::c_int, *argv.offset(0isize))
+                        != 0) as libc::c_int;
             }
             267 => {
                 let mut arg: *mut libc::c_char = optarg;
                 let mut end: *mut libc::c_char = 0 as *mut libc::c_char;
-                let mut res: uint64_t = strtoul(arg, &mut end, 0 as libc::c_int);
+                let mut res: uint64_t = strtoul(arg, &mut end, 0i32);
                 if *end as libc::c_int == 'x' as i32 {
-                    arg = end.offset(1 as libc::c_int as isize);
-                    res = (res as libc::c_ulong).wrapping_mul(strtoul(
-                        arg,
-                        &mut end,
-                        0 as libc::c_int,
-                    )) as uint64_t as uint64_t;
+                    arg = end.offset(1isize);
+                    res = (res).wrapping_mul(strtoul(arg, &mut end, 0i32));
                 }
                 if *end as libc::c_int != 0
                     || end == arg
-                    || res
-                        >= (2147483647 as libc::c_int as libc::c_uint)
-                            .wrapping_mul(2 as libc::c_uint)
-                            .wrapping_add(1 as libc::c_uint)
-                            as libc::c_ulong
+                    || res >= (2147483647u32).wrapping_mul(2u32).wrapping_add(1u32) as libc::c_ulong
                 {
                     error(
-                        *argv.offset(0 as libc::c_int as isize),
+                        *argv.offset(0isize),
                         optarg,
                         ARG_SIZE_LIMIT as libc::c_int,
                         b"an integer or dimension\0" as *const u8 as *const libc::c_char,
@@ -1377,7 +1346,7 @@ pub unsafe extern "C" fn parse(
                 (*lib_settings).strict_std_compliance = parse_unsigned(
                     optarg,
                     ARG_STRICT_STD_COMPLIANCE as libc::c_int,
-                    *argv.offset(0 as libc::c_int as isize),
+                    *argv.offset(0isize),
                 ) as libc::c_int;
             }
             118 => {
@@ -1386,7 +1355,7 @@ pub unsafe extern "C" fn parse(
                     b"%s\n\0" as *const u8 as *const libc::c_char,
                     dav1d_version(),
                 );
-                exit(0 as libc::c_int);
+                exit(0i32);
             }
             269 => {
                 dav1d_set_cpu_flags_mask(parse_enum(
@@ -1396,17 +1365,17 @@ pub unsafe extern "C" fn parse(
                         .wrapping_div(::core::mem::size_of::<EnumParseTable>() as libc::c_ulong)
                         as libc::c_int,
                     ARG_CPU_MASK as libc::c_int,
-                    *argv.offset(0 as libc::c_int as isize),
+                    *argv.offset(0isize),
                 ));
             }
             270 => {
-                (*cli_settings).neg_stride = 1 as libc::c_int;
+                (*cli_settings).neg_stride = 1i32;
             }
             271 => {
                 (*lib_settings).output_invisible_frames = (parse_unsigned(
                     optarg,
                     ARG_OUTPUT_INVISIBLE as libc::c_int,
-                    *argv.offset(0 as libc::c_int as isize),
+                    *argv.offset(0isize),
                 ) != 0) as libc::c_int;
             }
             272 => {
@@ -1417,8 +1386,8 @@ pub unsafe extern "C" fn parse(
                         .wrapping_div(::core::mem::size_of::<EnumParseTable>() as libc::c_ulong)
                         as libc::c_int,
                     ARG_INLOOP_FILTERS as libc::c_int,
-                    *argv.offset(0 as libc::c_int as isize),
-                ) as Dav1dInloopFilterType;
+                    *argv.offset(0isize),
+                );
             }
             273 => {
                 (*lib_settings).decode_frame_type = parse_enum(
@@ -1428,20 +1397,17 @@ pub unsafe extern "C" fn parse(
                         .wrapping_div(::core::mem::size_of::<EnumParseTable>() as libc::c_ulong)
                         as libc::c_int,
                     ARG_DECODE_FRAME_TYPE as libc::c_int,
-                    *argv.offset(0 as libc::c_int as isize),
-                ) as Dav1dDecodeFrameType;
+                    *argv.offset(0isize),
+                );
             }
             _ => {
-                usage(
-                    *argv.offset(0 as libc::c_int as isize),
-                    0 as *const libc::c_char,
-                );
+                usage(*argv.offset(0isize), 0 as *const libc::c_char);
             }
         }
     }
     if optind < argc {
         usage(
-            *argv.offset(0 as libc::c_int as isize),
+            *argv.offset(0isize),
             b"Extra/unused arguments found, e.g. '%s'\n\0" as *const u8 as *const libc::c_char,
             *argv.offset(optind as isize),
         );
@@ -1449,7 +1415,7 @@ pub unsafe extern "C" fn parse(
     if !((*cli_settings).verify).is_null() {
         if !((*cli_settings).outputfile).is_null() {
             usage(
-                *argv.offset(0 as libc::c_int as isize),
+                *argv.offset(0isize),
                 b"Verification (--verify) requires output file (-o/--output) to not set\0"
                     as *const u8 as *const libc::c_char,
             );
@@ -1465,7 +1431,7 @@ pub unsafe extern "C" fn parse(
             ) != 0
         {
             usage(
-                *argv.offset(0 as libc::c_int as isize),
+                *argv.offset(0isize),
                 b"Verification (--verify) requires a checksum muxer (md5 or xxh3)\0" as *const u8
                     as *const libc::c_char,
             );
@@ -1486,11 +1452,11 @@ pub unsafe extern "C" fn parse(
                 b"xxh3\0" as *const u8 as *const libc::c_char,
             ) == 0)
     {
-        (*lib_settings).apply_grain = 0 as libc::c_int;
+        (*lib_settings).apply_grain = 0i32;
     }
     if ((*cli_settings).inputfile).is_null() {
         usage(
-            *argv.offset(0 as libc::c_int as isize),
+            *argv.offset(0isize),
             b"Input file (-i/--input) is required\0" as *const u8 as *const libc::c_char,
         );
     }
@@ -1502,7 +1468,7 @@ pub unsafe extern "C" fn parse(
         && ((*cli_settings).outputfile).is_null()
     {
         usage(
-            *argv.offset(0 as libc::c_int as isize),
+            *argv.offset(0isize),
             b"Output file (-o/--output) is required\0" as *const u8 as *const libc::c_char,
         );
     }

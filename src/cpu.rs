@@ -23,9 +23,9 @@ pub struct cpu_set_t {
 pub type __cpu_mask = libc::c_ulong;
 pub type pthread_t = libc::c_ulong;
 #[no_mangle]
-pub static mut dav1d_cpu_flags: libc::c_uint = 0 as libc::c_uint;
+pub static mut dav1d_cpu_flags: libc::c_uint = 0u32;
 #[no_mangle]
-pub static mut dav1d_cpu_flags_mask: libc::c_uint = !(0 as libc::c_uint);
+pub static mut dav1d_cpu_flags_mask: libc::c_uint = !(0u32);
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_init_cpu() {
@@ -62,5 +62,5 @@ pub unsafe extern "C" fn dav1d_num_logical_processors(c: *mut Dav1dContext) -> l
                 as *const libc::c_char,
         );
     }
-    return 1 as libc::c_int;
+    return 1i32;
 }

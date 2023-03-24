@@ -77,7 +77,7 @@ unsafe extern "C" fn dav1d_free_aligned(mut ptr: *mut libc::c_void) {
 }
 #[inline]
 unsafe extern "C" fn dav1d_alloc_aligned(mut sz: size_t, mut align: size_t) -> *mut libc::c_void {
-    if align & align.wrapping_sub(1 as libc::c_int as libc::c_ulong) != 0 {
+    if align & align.wrapping_sub(1u64) != 0 {
         unreachable!();
     }
     let mut ptr: *mut libc::c_void = 0 as *mut libc::c_void;
@@ -103,7 +103,7 @@ pub unsafe extern "C" fn dav1d_mem_pool_push(
         (*buf).next = (*pool).buf;
         (*pool).buf = buf;
         pthread_mutex_unlock(&mut (*pool).lock);
-        if !(ref_cnt > 0 as libc::c_int) {
+        if !(ref_cnt > 0i32) {
             unreachable!();
         }
     } else {
@@ -119,10 +119,7 @@ pub unsafe extern "C" fn dav1d_mem_pool_pop(
     pool: *mut Dav1dMemPool,
     size: size_t,
 ) -> *mut Dav1dMemPoolBuffer {
-    if size
-        & (::core::mem::size_of::<*mut libc::c_void>() as libc::c_ulong)
-            .wrapping_sub(1 as libc::c_int as libc::c_ulong)
-        != 0
+    if size & (::core::mem::size_of::<*mut libc::c_void>() as libc::c_ulong).wrapping_sub(1u64) != 0
     {
         unreachable!();
     }
@@ -149,7 +146,7 @@ pub unsafe extern "C" fn dav1d_mem_pool_pop(
         5350950662582111547 => {
             data = dav1d_alloc_aligned(
                 size.wrapping_add(::core::mem::size_of::<Dav1dMemPoolBuffer>() as libc::c_ulong),
-                64 as libc::c_int as size_t,
+                64u64,
             ) as *mut uint8_t;
             if data.is_null() {
                 pthread_mutex_lock(&mut (*pool).lock);
@@ -176,15 +173,15 @@ pub unsafe extern "C" fn dav1d_mem_pool_init(ppool: *mut *mut Dav1dMemPool) -> l
     if !pool.is_null() {
         if pthread_mutex_init(&mut (*pool).lock, 0 as *const pthread_mutexattr_t) == 0 {
             (*pool).buf = 0 as *mut Dav1dMemPoolBuffer;
-            (*pool).ref_cnt = 1 as libc::c_int;
-            (*pool).end = 0 as libc::c_int;
+            (*pool).ref_cnt = 1i32;
+            (*pool).end = 0i32;
             *ppool = pool;
-            return 0 as libc::c_int;
+            return 0i32;
         }
         free(pool as *mut libc::c_void);
     }
     *ppool = 0 as *mut Dav1dMemPool;
-    return -(12 as libc::c_int);
+    return -(12i32);
 }
 #[no_mangle]
 #[cold]
@@ -195,7 +192,7 @@ pub unsafe extern "C" fn dav1d_mem_pool_end(pool: *mut Dav1dMemPool) {
         (*pool).ref_cnt -= 1;
         let ref_cnt: libc::c_int = (*pool).ref_cnt;
         (*pool).buf = 0 as *mut Dav1dMemPoolBuffer;
-        (*pool).end = 1 as libc::c_int;
+        (*pool).end = 1i32;
         pthread_mutex_unlock(&mut (*pool).lock);
         while !buf.is_null() {
             let data: *mut libc::c_void = (*buf).data;

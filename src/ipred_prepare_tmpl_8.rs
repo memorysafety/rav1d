@@ -57,14 +57,8 @@ unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
 }
 static mut av1_mode_conv: [[[uint8_t; 2]; 2]; 13] = [
     [
-        [
-            DC_128_PRED as libc::c_int as uint8_t,
-            TOP_DC_PRED as libc::c_int as uint8_t,
-        ],
-        [
-            LEFT_DC_PRED as libc::c_int as uint8_t,
-            DC_PRED as libc::c_int as uint8_t,
-        ],
+        [DC_128_PRED as uint8_t, TOP_DC_PRED as uint8_t],
+        [LEFT_DC_PRED as uint8_t, DC_PRED as uint8_t],
     ],
     [[0; 2]; 2],
     [[0; 2]; 2],
@@ -78,26 +72,12 @@ static mut av1_mode_conv: [[[uint8_t; 2]; 2]; 13] = [
     [[0; 2]; 2],
     [[0; 2]; 2],
     [
-        [
-            DC_128_PRED as libc::c_int as uint8_t,
-            VERT_PRED as libc::c_int as uint8_t,
-        ],
-        [
-            HOR_PRED as libc::c_int as uint8_t,
-            PAETH_PRED as libc::c_int as uint8_t,
-        ],
+        [DC_128_PRED as uint8_t, VERT_PRED as uint8_t],
+        [HOR_PRED as uint8_t, PAETH_PRED as uint8_t],
     ],
 ];
-static mut av1_mode_to_angle_map: [uint8_t; 8] = [
-    90 as libc::c_int as uint8_t,
-    180 as libc::c_int as uint8_t,
-    45 as libc::c_int as uint8_t,
-    135 as libc::c_int as uint8_t,
-    113 as libc::c_int as uint8_t,
-    157 as libc::c_int as uint8_t,
-    203 as libc::c_int as uint8_t,
-    67 as libc::c_int as uint8_t,
-];
+static mut av1_mode_to_angle_map: [uint8_t; 8] =
+    [90u8, 180u8, 45u8, 135u8, 113u8, 157u8, 203u8, 67u8];
 static mut av1_intra_prediction_edges: [C2RustUnnamed; 14] = [C2RustUnnamed {
     needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
 }; 14];
@@ -120,26 +100,24 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
     filter_edge: libc::c_int,
     topleft_out: *mut pixel,
 ) -> IntraPredMode {
-    let bitdepth: libc::c_int = 8 as libc::c_int;
+    let bitdepth: libc::c_int = 8i32;
     if !(y < h && x < w) {
         unreachable!();
     }
-    match mode as libc::c_uint {
+    match mode {
         1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 => {
-            *angle = av1_mode_to_angle_map[(mode as libc::c_uint)
-                .wrapping_sub(VERT_PRED as libc::c_int as libc::c_uint)
-                as usize] as libc::c_int
-                + 3 as libc::c_int * *angle;
-            if *angle <= 90 as libc::c_int {
-                mode = (if *angle < 90 as libc::c_int && have_top != 0 {
+            *angle = av1_mode_to_angle_map[(mode).wrapping_sub(VERT_PRED) as usize] as libc::c_int
+                + 3i32 * *angle;
+            if *angle <= 90i32 {
+                mode = (if *angle < 90i32 && have_top != 0 {
                     Z1_PRED as libc::c_int
                 } else {
                     VERT_PRED as libc::c_int
                 }) as IntraPredMode;
-            } else if *angle < 180 as libc::c_int {
+            } else if *angle < 180i32 {
                 mode = Z2_PRED;
             } else {
-                mode = (if *angle > 180 as libc::c_int && have_left != 0 {
+                mode = (if *angle > 180i32 && have_left != 0 {
                     Z3_PRED as libc::c_int
                 } else {
                     HOR_PRED as libc::c_int
@@ -160,22 +138,20 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
                 && have_left == 0)
     {
         if !prefilter_toplevel_sb_edge.is_null() {
-            dst_top = &*prefilter_toplevel_sb_edge.offset((x * 4 as libc::c_int) as isize)
-                as *const pixel;
+            dst_top = &*prefilter_toplevel_sb_edge.offset((x * 4i32) as isize) as *const pixel;
         } else {
             dst_top = &*dst.offset(-stride as isize) as *const pixel;
         }
     }
     if (av1_intra_prediction_edges[mode as usize]).needs_left() != 0 {
-        let sz: libc::c_int = th << 2 as libc::c_int;
+        let sz: libc::c_int = th << 2i32;
         let left: *mut pixel = &mut *topleft_out.offset(-sz as isize) as *mut pixel;
         if have_left != 0 {
-            let px_have: libc::c_int = imin(sz, h - y << 2 as libc::c_int);
-            let mut i: libc::c_int = 0 as libc::c_int;
+            let px_have: libc::c_int = imin(sz, h - y << 2i32);
+            let mut i: libc::c_int = 0i32;
             while i < px_have {
-                *left.offset((sz - 1 as libc::c_int - i) as isize) = *dst.offset(
-                    (stride * i as libc::c_long - 1 as libc::c_int as libc::c_long) as isize,
-                );
+                *left.offset((sz - 1i32 - i) as isize) =
+                    *dst.offset((stride * i as libc::c_long - 1i64) as isize);
                 i += 1;
             }
             if px_have < sz {
@@ -191,26 +167,23 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
                 if have_top != 0 {
                     *dst_top as libc::c_int
                 } else {
-                    ((1 as libc::c_int) << bitdepth >> 1 as libc::c_int) + 1 as libc::c_int
+                    ((1i32) << bitdepth >> 1i32) + 1i32
                 },
                 sz as libc::c_ulong,
             );
         }
         if (av1_intra_prediction_edges[mode as usize]).needs_bottomleft() != 0 {
             let have_bottomleft: libc::c_int = (if have_left == 0 || y + th >= h {
-                0 as libc::c_int as libc::c_uint
+                0u32
             } else {
-                edge_flags as libc::c_uint
-                    & EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int as libc::c_uint
+                edge_flags & EDGE_I444_LEFT_HAS_BOTTOM
             }) as libc::c_int;
             if have_bottomleft != 0 {
-                let px_have_0: libc::c_int = imin(sz, h - y - th << 2 as libc::c_int);
-                let mut i_0: libc::c_int = 0 as libc::c_int;
+                let px_have_0: libc::c_int = imin(sz, h - y - th << 2i32);
+                let mut i_0: libc::c_int = 0i32;
                 while i_0 < px_have_0 {
-                    *left.offset(-(i_0 + 1 as libc::c_int) as isize) = *dst.offset(
-                        ((sz + i_0) as libc::c_long * stride - 1 as libc::c_int as libc::c_long)
-                            as isize,
-                    );
+                    *left.offset(-(i_0 + 1i32) as isize) =
+                        *dst.offset(((sz + i_0) as libc::c_long * stride - 1i64) as isize);
                     i_0 += 1;
                 }
                 if px_have_0 < sz {
@@ -223,17 +196,17 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
             } else {
                 memset(
                     left.offset(-(sz as isize)) as *mut libc::c_void,
-                    *left.offset(0 as libc::c_int as isize) as libc::c_int,
+                    *left.offset(0isize) as libc::c_int,
                     sz as libc::c_ulong,
                 );
             }
         }
     }
     if (av1_intra_prediction_edges[mode as usize]).needs_top() != 0 {
-        let sz_0: libc::c_int = tw << 2 as libc::c_int;
-        let top: *mut pixel = &mut *topleft_out.offset(1 as libc::c_int as isize) as *mut pixel;
+        let sz_0: libc::c_int = tw << 2i32;
+        let top: *mut pixel = &mut *topleft_out.offset(1isize) as *mut pixel;
         if have_top != 0 {
-            let px_have_1: libc::c_int = imin(sz_0, w - x << 2 as libc::c_int);
+            let px_have_1: libc::c_int = imin(sz_0, w - x << 2i32);
             memcpy(
                 top as *mut libc::c_void,
                 dst_top as *const libc::c_void,
@@ -242,7 +215,7 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
             if px_have_1 < sz_0 {
                 memset(
                     top.offset(px_have_1 as isize) as *mut libc::c_void,
-                    *top.offset((px_have_1 - 1 as libc::c_int) as isize) as libc::c_int,
+                    *top.offset((px_have_1 - 1i32) as isize) as libc::c_int,
                     (sz_0 - px_have_1) as libc::c_ulong,
                 );
             }
@@ -250,21 +223,21 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
             memset(
                 top as *mut libc::c_void,
                 if have_left != 0 {
-                    *dst.offset(-(1 as libc::c_int) as isize) as libc::c_int
+                    *dst.offset(-1isize) as libc::c_int
                 } else {
-                    ((1 as libc::c_int) << bitdepth >> 1 as libc::c_int) - 1 as libc::c_int
+                    ((1i32) << bitdepth >> 1i32) - 1i32
                 },
                 sz_0 as libc::c_ulong,
             );
         }
         if (av1_intra_prediction_edges[mode as usize]).needs_topright() != 0 {
             let have_topright: libc::c_int = (if have_top == 0 || x + tw >= w {
-                0 as libc::c_int as libc::c_uint
+                0u32
             } else {
-                edge_flags as libc::c_uint & EDGE_I444_TOP_HAS_RIGHT as libc::c_int as libc::c_uint
+                edge_flags & EDGE_I444_TOP_HAS_RIGHT
             }) as libc::c_int;
             if have_topright != 0 {
-                let px_have_2: libc::c_int = imin(sz_0, w - x - tw << 2 as libc::c_int);
+                let px_have_2: libc::c_int = imin(sz_0, w - x - tw << 2i32);
                 memcpy(
                     top.offset(sz_0 as isize) as *mut libc::c_void,
                     &*dst_top.offset(sz_0 as isize) as *const pixel as *const libc::c_void,
@@ -273,14 +246,14 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
                 if px_have_2 < sz_0 {
                     memset(
                         top.offset(sz_0 as isize).offset(px_have_2 as isize) as *mut libc::c_void,
-                        *top.offset((sz_0 + px_have_2 - 1 as libc::c_int) as isize) as libc::c_int,
+                        *top.offset((sz_0 + px_have_2 - 1i32) as isize) as libc::c_int,
                         (sz_0 - px_have_2) as libc::c_ulong,
                     );
                 }
             } else {
                 memset(
                     top.offset(sz_0 as isize) as *mut libc::c_void,
-                    *top.offset((sz_0 - 1 as libc::c_int) as isize) as libc::c_int,
+                    *top.offset((sz_0 - 1i32) as isize) as libc::c_int,
                     sz_0 as libc::c_ulong,
                 );
             }
@@ -289,27 +262,24 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
     if (av1_intra_prediction_edges[mode as usize]).needs_topleft() != 0 {
         if have_left != 0 {
             *topleft_out = (if have_top != 0 {
-                *dst_top.offset(-(1 as libc::c_int) as isize) as libc::c_int
+                *dst_top.offset(-1isize) as libc::c_int
             } else {
-                *dst.offset(-(1 as libc::c_int) as isize) as libc::c_int
+                *dst.offset(-1isize) as libc::c_int
             }) as pixel;
         } else {
             *topleft_out = (if have_top != 0 {
                 *dst_top as libc::c_int
             } else {
-                (1 as libc::c_int) << bitdepth >> 1 as libc::c_int
+                (1i32) << bitdepth >> 1i32
             }) as pixel;
         }
-        if mode as libc::c_uint == Z2_PRED as libc::c_int as libc::c_uint
-            && tw + th >= 6 as libc::c_int
-            && filter_edge != 0
-        {
-            *topleft_out = ((*topleft_out.offset(-(1 as libc::c_int) as isize) as libc::c_int
-                + *topleft_out.offset(1 as libc::c_int as isize) as libc::c_int)
-                * 5 as libc::c_int
-                + *topleft_out.offset(0 as libc::c_int as isize) as libc::c_int * 6 as libc::c_int
-                + 8 as libc::c_int
-                >> 4 as libc::c_int) as pixel;
+        if mode == Z2_PRED && tw + th >= 6i32 && filter_edge != 0 {
+            *topleft_out = ((*topleft_out.offset(-1isize) as libc::c_int
+                + *topleft_out.offset(1isize) as libc::c_int)
+                * 5i32
+                + *topleft_out.offset(0isize) as libc::c_int * 6i32
+                + 8i32
+                >> 4i32) as pixel;
         }
     }
     return mode;
@@ -320,8 +290,8 @@ unsafe extern "C" fn run_static_initializers() {
             let mut init = C2RustUnnamed {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
-            init.set_needs_left(1 as libc::c_int as uint8_t);
-            init.set_needs_top(1 as libc::c_int as uint8_t);
+            init.set_needs_left(1u8);
+            init.set_needs_top(1u8);
             init.set_needs_topleft(0);
             init.set_needs_topright(0);
             init.set_needs_bottomleft(0);
@@ -332,7 +302,7 @@ unsafe extern "C" fn run_static_initializers() {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
             init.set_needs_left(0);
-            init.set_needs_top(1 as libc::c_int as uint8_t);
+            init.set_needs_top(1u8);
             init.set_needs_topleft(0);
             init.set_needs_topright(0);
             init.set_needs_bottomleft(0);
@@ -342,7 +312,7 @@ unsafe extern "C" fn run_static_initializers() {
             let mut init = C2RustUnnamed {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
-            init.set_needs_left(1 as libc::c_int as uint8_t);
+            init.set_needs_left(1u8);
             init.set_needs_top(0);
             init.set_needs_topleft(0);
             init.set_needs_topright(0);
@@ -353,29 +323,7 @@ unsafe extern "C" fn run_static_initializers() {
             let mut init = C2RustUnnamed {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
-            init.set_needs_left(1 as libc::c_int as uint8_t);
-            init.set_needs_top(0);
-            init.set_needs_topleft(0);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(0);
-            init
-        },
-        {
-            let mut init = C2RustUnnamed {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(0);
-            init.set_needs_top(1 as libc::c_int as uint8_t);
-            init.set_needs_topleft(0);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(0);
-            init
-        },
-        {
-            let mut init = C2RustUnnamed {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(0 as libc::c_int as uint8_t);
+            init.set_needs_left(1u8);
             init.set_needs_top(0);
             init.set_needs_topleft(0);
             init.set_needs_topright(0);
@@ -387,19 +335,8 @@ unsafe extern "C" fn run_static_initializers() {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
             init.set_needs_left(0);
-            init.set_needs_top(1 as libc::c_int as uint8_t);
-            init.set_needs_topleft(1 as libc::c_int as uint8_t);
-            init.set_needs_topright(1 as libc::c_int as uint8_t);
-            init.set_needs_bottomleft(0);
-            init
-        },
-        {
-            let mut init = C2RustUnnamed {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(1 as libc::c_int as uint8_t);
-            init.set_needs_top(1 as libc::c_int as uint8_t);
-            init.set_needs_topleft(1 as libc::c_int as uint8_t);
+            init.set_needs_top(1u8);
+            init.set_needs_topleft(0);
             init.set_needs_topright(0);
             init.set_needs_bottomleft(0);
             init
@@ -408,19 +345,8 @@ unsafe extern "C" fn run_static_initializers() {
             let mut init = C2RustUnnamed {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
-            init.set_needs_left(1 as libc::c_int as uint8_t);
+            init.set_needs_left(0u8);
             init.set_needs_top(0);
-            init.set_needs_topleft(1 as libc::c_int as uint8_t);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(1 as libc::c_int as uint8_t);
-            init
-        },
-        {
-            let mut init = C2RustUnnamed {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(1 as libc::c_int as uint8_t);
-            init.set_needs_top(1 as libc::c_int as uint8_t);
             init.set_needs_topleft(0);
             init.set_needs_topright(0);
             init.set_needs_bottomleft(0);
@@ -430,8 +356,41 @@ unsafe extern "C" fn run_static_initializers() {
             let mut init = C2RustUnnamed {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
-            init.set_needs_left(1 as libc::c_int as uint8_t);
-            init.set_needs_top(1 as libc::c_int as uint8_t);
+            init.set_needs_left(0);
+            init.set_needs_top(1u8);
+            init.set_needs_topleft(1u8);
+            init.set_needs_topright(1u8);
+            init.set_needs_bottomleft(0);
+            init
+        },
+        {
+            let mut init = C2RustUnnamed {
+                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
+            };
+            init.set_needs_left(1u8);
+            init.set_needs_top(1u8);
+            init.set_needs_topleft(1u8);
+            init.set_needs_topright(0);
+            init.set_needs_bottomleft(0);
+            init
+        },
+        {
+            let mut init = C2RustUnnamed {
+                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
+            };
+            init.set_needs_left(1u8);
+            init.set_needs_top(0);
+            init.set_needs_topleft(1u8);
+            init.set_needs_topright(0);
+            init.set_needs_bottomleft(1u8);
+            init
+        },
+        {
+            let mut init = C2RustUnnamed {
+                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
+            };
+            init.set_needs_left(1u8);
+            init.set_needs_top(1u8);
             init.set_needs_topleft(0);
             init.set_needs_topright(0);
             init.set_needs_bottomleft(0);
@@ -441,8 +400,8 @@ unsafe extern "C" fn run_static_initializers() {
             let mut init = C2RustUnnamed {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
-            init.set_needs_left(1 as libc::c_int as uint8_t);
-            init.set_needs_top(1 as libc::c_int as uint8_t);
+            init.set_needs_left(1u8);
+            init.set_needs_top(1u8);
             init.set_needs_topleft(0);
             init.set_needs_topright(0);
             init.set_needs_bottomleft(0);
@@ -452,9 +411,9 @@ unsafe extern "C" fn run_static_initializers() {
             let mut init = C2RustUnnamed {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
-            init.set_needs_left(1 as libc::c_int as uint8_t);
-            init.set_needs_top(1 as libc::c_int as uint8_t);
-            init.set_needs_topleft(1 as libc::c_int as uint8_t);
+            init.set_needs_left(1u8);
+            init.set_needs_top(1u8);
+            init.set_needs_topleft(0);
             init.set_needs_topright(0);
             init.set_needs_bottomleft(0);
             init
@@ -463,9 +422,20 @@ unsafe extern "C" fn run_static_initializers() {
             let mut init = C2RustUnnamed {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
-            init.set_needs_left(1 as libc::c_int as uint8_t);
-            init.set_needs_top(1 as libc::c_int as uint8_t);
-            init.set_needs_topleft(1 as libc::c_int as uint8_t);
+            init.set_needs_left(1u8);
+            init.set_needs_top(1u8);
+            init.set_needs_topleft(1u8);
+            init.set_needs_topright(0);
+            init.set_needs_bottomleft(0);
+            init
+        },
+        {
+            let mut init = C2RustUnnamed {
+                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
+            };
+            init.set_needs_left(1u8);
+            init.set_needs_top(1u8);
+            init.set_needs_topleft(1u8);
             init.set_needs_topright(0);
             init.set_needs_bottomleft(0);
             init

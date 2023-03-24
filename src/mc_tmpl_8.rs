@@ -229,7 +229,7 @@ unsafe extern "C" fn iclip(v: libc::c_int, min: libc::c_int, max: libc::c_int) -
 }
 #[inline]
 unsafe extern "C" fn iclip_u8(v: libc::c_int) -> libc::c_int {
-    return iclip(v, 0 as libc::c_int, 255 as libc::c_int);
+    return iclip(v, 0i32, 255i32);
 }
 #[inline(never)]
 unsafe extern "C" fn put_c(
@@ -262,13 +262,12 @@ unsafe extern "C" fn prep_c(
     w: libc::c_int,
     mut h: libc::c_int,
 ) {
-    let intermediate_bits: libc::c_int = 4 as libc::c_int;
+    let intermediate_bits: libc::c_int = 4i32;
     loop {
-        let mut x: libc::c_int = 0 as libc::c_int;
+        let mut x: libc::c_int = 0i32;
         while x < w {
-            *tmp.offset(x as isize) = (((*src.offset(x as isize) as libc::c_int)
-                << intermediate_bits)
-                - 0 as libc::c_int) as int16_t;
+            *tmp.offset(x as isize) =
+                (((*src.offset(x as isize) as libc::c_int) << intermediate_bits) - 0i32) as int16_t;
             x += 1;
         }
         tmp = tmp.offset(w as isize);
@@ -291,127 +290,91 @@ unsafe extern "C" fn put_8tap_c(
     my: libc::c_int,
     filter_type: libc::c_int,
 ) {
-    let intermediate_bits: libc::c_int = 4 as libc::c_int;
-    let intermediate_rnd: libc::c_int = 32 as libc::c_int
-        + ((1 as libc::c_int) << 6 as libc::c_int - intermediate_bits >> 1 as libc::c_int);
+    let intermediate_bits: libc::c_int = 4i32;
+    let intermediate_rnd: libc::c_int = 32i32 + ((1i32) << 6i32 - intermediate_bits >> 1i32);
     let fh: *const int8_t = if mx == 0 {
         0 as *const int8_t
-    } else if w > 4 as libc::c_int {
-        (dav1d_mc_subpel_filters[(filter_type & 3 as libc::c_int) as usize]
-            [(mx - 1 as libc::c_int) as usize])
-            .as_ptr()
+    } else if w > 4i32 {
+        (dav1d_mc_subpel_filters[(filter_type & 3i32) as usize][(mx - 1i32) as usize]).as_ptr()
     } else {
-        (dav1d_mc_subpel_filters[(3 as libc::c_int + (filter_type & 1 as libc::c_int)) as usize]
-            [(mx - 1 as libc::c_int) as usize])
+        (dav1d_mc_subpel_filters[(3i32 + (filter_type & 1i32)) as usize][(mx - 1i32) as usize])
             .as_ptr()
     };
     let fv: *const int8_t = if my == 0 {
         0 as *const int8_t
-    } else if h > 4 as libc::c_int {
-        (dav1d_mc_subpel_filters[(filter_type >> 2 as libc::c_int) as usize]
-            [(my - 1 as libc::c_int) as usize])
-            .as_ptr()
+    } else if h > 4i32 {
+        (dav1d_mc_subpel_filters[(filter_type >> 2i32) as usize][(my - 1i32) as usize]).as_ptr()
     } else {
-        (dav1d_mc_subpel_filters
-            [(3 as libc::c_int + (filter_type >> 2 as libc::c_int & 1 as libc::c_int)) as usize]
-            [(my - 1 as libc::c_int) as usize])
+        (dav1d_mc_subpel_filters[(3i32 + (filter_type >> 2i32 & 1i32)) as usize]
+            [(my - 1i32) as usize])
             .as_ptr()
     };
     dst_stride = dst_stride;
     src_stride = src_stride;
     if !fh.is_null() {
         if !fv.is_null() {
-            let mut tmp_h: libc::c_int = h + 7 as libc::c_int;
+            let mut tmp_h: libc::c_int = h + 7i32;
             let mut mid: [int16_t; 17280] = [0; 17280];
             let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
-            src = src.offset(-((src_stride * 3 as libc::c_int as libc::c_long) as isize));
+            src = src.offset(-((src_stride * 3i64) as isize));
             loop {
-                let mut x: libc::c_int = 0 as libc::c_int;
+                let mut x: libc::c_int = 0i32;
                 while x < w {
-                    *mid_ptr.offset(x as isize) = (*fh.offset(0 as libc::c_int as isize)
-                        as libc::c_int
-                        * *src.offset((x + -(3 as libc::c_int) * 1 as libc::c_int) as isize)
-                            as libc::c_int
-                        + *fh.offset(1 as libc::c_int as isize) as libc::c_int
-                            * *src.offset((x + -(2 as libc::c_int) * 1 as libc::c_int) as isize)
-                                as libc::c_int
-                        + *fh.offset(2 as libc::c_int as isize) as libc::c_int
-                            * *src.offset((x + -(1 as libc::c_int) * 1 as libc::c_int) as isize)
-                                as libc::c_int
-                        + *fh.offset(3 as libc::c_int as isize) as libc::c_int
-                            * *src.offset((x + 0 as libc::c_int * 1 as libc::c_int) as isize)
-                                as libc::c_int
-                        + *fh.offset(4 as libc::c_int as isize) as libc::c_int
-                            * *src.offset((x + 1 as libc::c_int * 1 as libc::c_int) as isize)
-                                as libc::c_int
-                        + *fh.offset(5 as libc::c_int as isize) as libc::c_int
-                            * *src.offset((x + 2 as libc::c_int * 1 as libc::c_int) as isize)
-                                as libc::c_int
-                        + *fh.offset(6 as libc::c_int as isize) as libc::c_int
-                            * *src.offset((x + 3 as libc::c_int * 1 as libc::c_int) as isize)
-                                as libc::c_int
-                        + *fh.offset(7 as libc::c_int as isize) as libc::c_int
-                            * *src.offset((x + 4 as libc::c_int * 1 as libc::c_int) as isize)
-                                as libc::c_int
-                        + ((1 as libc::c_int) << 6 as libc::c_int - intermediate_bits
-                            >> 1 as libc::c_int)
-                        >> 6 as libc::c_int - intermediate_bits)
+                    *mid_ptr.offset(x as isize) = (*fh.offset(0isize) as libc::c_int
+                        * *src.offset((x + -(3i32) * 1i32) as isize) as libc::c_int
+                        + *fh.offset(1isize) as libc::c_int
+                            * *src.offset((x + -(2i32) * 1i32) as isize) as libc::c_int
+                        + *fh.offset(2isize) as libc::c_int
+                            * *src.offset((x + -(1i32) * 1i32) as isize) as libc::c_int
+                        + *fh.offset(3isize) as libc::c_int
+                            * *src.offset((x + 0i32 * 1i32) as isize) as libc::c_int
+                        + *fh.offset(4isize) as libc::c_int
+                            * *src.offset((x + 1i32 * 1i32) as isize) as libc::c_int
+                        + *fh.offset(5isize) as libc::c_int
+                            * *src.offset((x + 2i32 * 1i32) as isize) as libc::c_int
+                        + *fh.offset(6isize) as libc::c_int
+                            * *src.offset((x + 3i32 * 1i32) as isize) as libc::c_int
+                        + *fh.offset(7isize) as libc::c_int
+                            * *src.offset((x + 4i32 * 1i32) as isize) as libc::c_int
+                        + ((1i32) << 6i32 - intermediate_bits >> 1i32)
+                        >> 6i32 - intermediate_bits)
                         as int16_t;
                     x += 1;
                 }
-                mid_ptr = mid_ptr.offset(128 as libc::c_int as isize);
+                mid_ptr = mid_ptr.offset(128isize);
                 src = src.offset(src_stride as isize);
                 tmp_h -= 1;
                 if !(tmp_h != 0) {
                     break;
                 }
             }
-            mid_ptr = mid
-                .as_mut_ptr()
-                .offset((128 as libc::c_int * 3 as libc::c_int) as isize);
+            mid_ptr = mid.as_mut_ptr().offset((128i32 * 3i32) as isize);
             loop {
-                let mut x_0: libc::c_int = 0 as libc::c_int;
+                let mut x_0: libc::c_int = 0i32;
                 while x_0 < w {
                     *dst.offset(x_0 as isize) = iclip_u8(
-                        *fv.offset(0 as libc::c_int as isize) as libc::c_int
-                            * *mid_ptr
-                                .offset((x_0 + -(3 as libc::c_int) * 128 as libc::c_int) as isize)
-                                as libc::c_int
-                            + *fv.offset(1 as libc::c_int as isize) as libc::c_int
-                                * *mid_ptr.offset(
-                                    (x_0 + -(2 as libc::c_int) * 128 as libc::c_int) as isize,
-                                ) as libc::c_int
-                            + *fv.offset(2 as libc::c_int as isize) as libc::c_int
-                                * *mid_ptr.offset(
-                                    (x_0 + -(1 as libc::c_int) * 128 as libc::c_int) as isize,
-                                ) as libc::c_int
-                            + *fv.offset(3 as libc::c_int as isize) as libc::c_int
-                                * *mid_ptr
-                                    .offset((x_0 + 0 as libc::c_int * 128 as libc::c_int) as isize)
-                                    as libc::c_int
-                            + *fv.offset(4 as libc::c_int as isize) as libc::c_int
-                                * *mid_ptr
-                                    .offset((x_0 + 1 as libc::c_int * 128 as libc::c_int) as isize)
-                                    as libc::c_int
-                            + *fv.offset(5 as libc::c_int as isize) as libc::c_int
-                                * *mid_ptr
-                                    .offset((x_0 + 2 as libc::c_int * 128 as libc::c_int) as isize)
-                                    as libc::c_int
-                            + *fv.offset(6 as libc::c_int as isize) as libc::c_int
-                                * *mid_ptr
-                                    .offset((x_0 + 3 as libc::c_int * 128 as libc::c_int) as isize)
-                                    as libc::c_int
-                            + *fv.offset(7 as libc::c_int as isize) as libc::c_int
-                                * *mid_ptr
-                                    .offset((x_0 + 4 as libc::c_int * 128 as libc::c_int) as isize)
-                                    as libc::c_int
-                            + ((1 as libc::c_int) << 6 as libc::c_int + intermediate_bits
-                                >> 1 as libc::c_int)
-                            >> 6 as libc::c_int + intermediate_bits,
+                        *fv.offset(0isize) as libc::c_int
+                            * *mid_ptr.offset((x_0 + -(3i32) * 128i32) as isize) as libc::c_int
+                            + *fv.offset(1isize) as libc::c_int
+                                * *mid_ptr.offset((x_0 + -(2i32) * 128i32) as isize) as libc::c_int
+                            + *fv.offset(2isize) as libc::c_int
+                                * *mid_ptr.offset((x_0 + -(1i32) * 128i32) as isize) as libc::c_int
+                            + *fv.offset(3isize) as libc::c_int
+                                * *mid_ptr.offset((x_0 + 0i32 * 128i32) as isize) as libc::c_int
+                            + *fv.offset(4isize) as libc::c_int
+                                * *mid_ptr.offset((x_0 + 1i32 * 128i32) as isize) as libc::c_int
+                            + *fv.offset(5isize) as libc::c_int
+                                * *mid_ptr.offset((x_0 + 2i32 * 128i32) as isize) as libc::c_int
+                            + *fv.offset(6isize) as libc::c_int
+                                * *mid_ptr.offset((x_0 + 3i32 * 128i32) as isize) as libc::c_int
+                            + *fv.offset(7isize) as libc::c_int
+                                * *mid_ptr.offset((x_0 + 4i32 * 128i32) as isize) as libc::c_int
+                            + ((1i32) << 6i32 + intermediate_bits >> 1i32)
+                            >> 6i32 + intermediate_bits,
                     ) as pixel;
                     x_0 += 1;
                 }
-                mid_ptr = mid_ptr.offset(128 as libc::c_int as isize);
+                mid_ptr = mid_ptr.offset(128isize);
                 dst = dst.offset(dst_stride as isize);
                 h -= 1;
                 if !(h != 0) {
@@ -420,37 +383,27 @@ unsafe extern "C" fn put_8tap_c(
             }
         } else {
             loop {
-                let mut x_1: libc::c_int = 0 as libc::c_int;
+                let mut x_1: libc::c_int = 0i32;
                 while x_1 < w {
                     *dst.offset(x_1 as isize) = iclip_u8(
-                        *fh.offset(0 as libc::c_int as isize) as libc::c_int
-                            * *src.offset((x_1 + -(3 as libc::c_int) * 1 as libc::c_int) as isize)
-                                as libc::c_int
-                            + *fh.offset(1 as libc::c_int as isize) as libc::c_int
-                                * *src
-                                    .offset((x_1 + -(2 as libc::c_int) * 1 as libc::c_int) as isize)
-                                    as libc::c_int
-                            + *fh.offset(2 as libc::c_int as isize) as libc::c_int
-                                * *src
-                                    .offset((x_1 + -(1 as libc::c_int) * 1 as libc::c_int) as isize)
-                                    as libc::c_int
-                            + *fh.offset(3 as libc::c_int as isize) as libc::c_int
-                                * *src.offset((x_1 + 0 as libc::c_int * 1 as libc::c_int) as isize)
-                                    as libc::c_int
-                            + *fh.offset(4 as libc::c_int as isize) as libc::c_int
-                                * *src.offset((x_1 + 1 as libc::c_int * 1 as libc::c_int) as isize)
-                                    as libc::c_int
-                            + *fh.offset(5 as libc::c_int as isize) as libc::c_int
-                                * *src.offset((x_1 + 2 as libc::c_int * 1 as libc::c_int) as isize)
-                                    as libc::c_int
-                            + *fh.offset(6 as libc::c_int as isize) as libc::c_int
-                                * *src.offset((x_1 + 3 as libc::c_int * 1 as libc::c_int) as isize)
-                                    as libc::c_int
-                            + *fh.offset(7 as libc::c_int as isize) as libc::c_int
-                                * *src.offset((x_1 + 4 as libc::c_int * 1 as libc::c_int) as isize)
-                                    as libc::c_int
+                        *fh.offset(0isize) as libc::c_int
+                            * *src.offset((x_1 + -(3i32) * 1i32) as isize) as libc::c_int
+                            + *fh.offset(1isize) as libc::c_int
+                                * *src.offset((x_1 + -(2i32) * 1i32) as isize) as libc::c_int
+                            + *fh.offset(2isize) as libc::c_int
+                                * *src.offset((x_1 + -(1i32) * 1i32) as isize) as libc::c_int
+                            + *fh.offset(3isize) as libc::c_int
+                                * *src.offset((x_1 + 0i32 * 1i32) as isize) as libc::c_int
+                            + *fh.offset(4isize) as libc::c_int
+                                * *src.offset((x_1 + 1i32 * 1i32) as isize) as libc::c_int
+                            + *fh.offset(5isize) as libc::c_int
+                                * *src.offset((x_1 + 2i32 * 1i32) as isize) as libc::c_int
+                            + *fh.offset(6isize) as libc::c_int
+                                * *src.offset((x_1 + 3i32 * 1i32) as isize) as libc::c_int
+                            + *fh.offset(7isize) as libc::c_int
+                                * *src.offset((x_1 + 4i32 * 1i32) as isize) as libc::c_int
                             + intermediate_rnd
-                            >> 6 as libc::c_int,
+                            >> 6i32,
                     ) as pixel;
                     x_1 += 1;
                 }
@@ -464,58 +417,35 @@ unsafe extern "C" fn put_8tap_c(
         }
     } else if !fv.is_null() {
         loop {
-            let mut x_2: libc::c_int = 0 as libc::c_int;
+            let mut x_2: libc::c_int = 0i32;
             while x_2 < w {
                 *dst.offset(x_2 as isize) = iclip_u8(
-                    *fv.offset(0 as libc::c_int as isize) as libc::c_int
-                        * *src.offset(
-                            (x_2 as libc::c_long + -(3 as libc::c_int) as libc::c_long * src_stride)
-                                as isize,
-                        ) as libc::c_int
-                        + *fv.offset(1 as libc::c_int as isize) as libc::c_int
-                            * *src.offset(
-                                (x_2 as libc::c_long
-                                    + -(2 as libc::c_int) as libc::c_long * src_stride)
-                                    as isize,
-                            ) as libc::c_int
-                        + *fv.offset(2 as libc::c_int as isize) as libc::c_int
-                            * *src.offset(
-                                (x_2 as libc::c_long
-                                    + -(1 as libc::c_int) as libc::c_long * src_stride)
-                                    as isize,
-                            ) as libc::c_int
-                        + *fv.offset(3 as libc::c_int as isize) as libc::c_int
-                            * *src.offset(
-                                (x_2 as libc::c_long
-                                    + 0 as libc::c_int as libc::c_long * src_stride)
-                                    as isize,
-                            ) as libc::c_int
-                        + *fv.offset(4 as libc::c_int as isize) as libc::c_int
-                            * *src.offset(
-                                (x_2 as libc::c_long
-                                    + 1 as libc::c_int as libc::c_long * src_stride)
-                                    as isize,
-                            ) as libc::c_int
-                        + *fv.offset(5 as libc::c_int as isize) as libc::c_int
-                            * *src.offset(
-                                (x_2 as libc::c_long
-                                    + 2 as libc::c_int as libc::c_long * src_stride)
-                                    as isize,
-                            ) as libc::c_int
-                        + *fv.offset(6 as libc::c_int as isize) as libc::c_int
-                            * *src.offset(
-                                (x_2 as libc::c_long
-                                    + 3 as libc::c_int as libc::c_long * src_stride)
-                                    as isize,
-                            ) as libc::c_int
-                        + *fv.offset(7 as libc::c_int as isize) as libc::c_int
-                            * *src.offset(
-                                (x_2 as libc::c_long
-                                    + 4 as libc::c_int as libc::c_long * src_stride)
-                                    as isize,
-                            ) as libc::c_int
-                        + ((1 as libc::c_int) << 6 as libc::c_int >> 1 as libc::c_int)
-                        >> 6 as libc::c_int,
+                    *fv.offset(0isize) as libc::c_int
+                        * *src.offset((x_2 as libc::c_long + -3i64 * src_stride) as isize)
+                            as libc::c_int
+                        + *fv.offset(1isize) as libc::c_int
+                            * *src.offset((x_2 as libc::c_long + -2i64 * src_stride) as isize)
+                                as libc::c_int
+                        + *fv.offset(2isize) as libc::c_int
+                            * *src.offset((x_2 as libc::c_long + -1i64 * src_stride) as isize)
+                                as libc::c_int
+                        + *fv.offset(3isize) as libc::c_int
+                            * *src.offset((x_2 as libc::c_long + 0i64 * src_stride) as isize)
+                                as libc::c_int
+                        + *fv.offset(4isize) as libc::c_int
+                            * *src.offset((x_2 as libc::c_long + 1i64 * src_stride) as isize)
+                                as libc::c_int
+                        + *fv.offset(5isize) as libc::c_int
+                            * *src.offset((x_2 as libc::c_long + 2i64 * src_stride) as isize)
+                                as libc::c_int
+                        + *fv.offset(6isize) as libc::c_int
+                            * *src.offset((x_2 as libc::c_long + 3i64 * src_stride) as isize)
+                                as libc::c_int
+                        + *fv.offset(7isize) as libc::c_int
+                            * *src.offset((x_2 as libc::c_long + 4i64 * src_stride) as isize)
+                                as libc::c_int
+                        + ((1i32) << 6i32 >> 1i32)
+                        >> 6i32,
                 ) as pixel;
                 x_2 += 1;
             }
@@ -544,131 +474,101 @@ unsafe extern "C" fn put_8tap_scaled_c(
     dy: libc::c_int,
     filter_type: libc::c_int,
 ) {
-    let intermediate_bits: libc::c_int = 4 as libc::c_int;
-    let intermediate_rnd: libc::c_int = (1 as libc::c_int) << intermediate_bits >> 1 as libc::c_int;
-    let mut tmp_h: libc::c_int =
-        ((h - 1 as libc::c_int) * dy + my >> 10 as libc::c_int) + 8 as libc::c_int;
+    let intermediate_bits: libc::c_int = 4i32;
+    let intermediate_rnd: libc::c_int = (1i32) << intermediate_bits >> 1i32;
+    let mut tmp_h: libc::c_int = ((h - 1i32) * dy + my >> 10i32) + 8i32;
     let mut mid: [int16_t; 33664] = [0; 33664];
     let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
     src_stride = src_stride;
-    src = src.offset(-((src_stride * 3 as libc::c_int as libc::c_long) as isize));
+    src = src.offset(-((src_stride * 3i64) as isize));
     loop {
         let mut x: libc::c_int = 0;
         let mut imx: libc::c_int = mx;
-        let mut ioff: libc::c_int = 0 as libc::c_int;
-        x = 0 as libc::c_int;
+        let mut ioff: libc::c_int = 0i32;
+        x = 0i32;
         while x < w {
-            let fh: *const int8_t = if imx >> 6 as libc::c_int == 0 {
+            let fh: *const int8_t = if imx >> 6i32 == 0 {
                 0 as *const int8_t
-            } else if w > 4 as libc::c_int {
-                (dav1d_mc_subpel_filters[(filter_type & 3 as libc::c_int) as usize]
-                    [((imx >> 6 as libc::c_int) - 1 as libc::c_int) as usize])
+            } else if w > 4i32 {
+                (dav1d_mc_subpel_filters[(filter_type & 3i32) as usize]
+                    [((imx >> 6i32) - 1i32) as usize])
                     .as_ptr()
             } else {
-                (dav1d_mc_subpel_filters
-                    [(3 as libc::c_int + (filter_type & 1 as libc::c_int)) as usize]
-                    [((imx >> 6 as libc::c_int) - 1 as libc::c_int) as usize])
+                (dav1d_mc_subpel_filters[(3i32 + (filter_type & 1i32)) as usize]
+                    [((imx >> 6i32) - 1i32) as usize])
                     .as_ptr()
             };
             *mid_ptr.offset(x as isize) = (if !fh.is_null() {
-                *fh.offset(0 as libc::c_int as isize) as libc::c_int
-                    * *src.offset((ioff + -(3 as libc::c_int) * 1 as libc::c_int) as isize)
-                        as libc::c_int
-                    + *fh.offset(1 as libc::c_int as isize) as libc::c_int
-                        * *src.offset((ioff + -(2 as libc::c_int) * 1 as libc::c_int) as isize)
-                            as libc::c_int
-                    + *fh.offset(2 as libc::c_int as isize) as libc::c_int
-                        * *src.offset((ioff + -(1 as libc::c_int) * 1 as libc::c_int) as isize)
-                            as libc::c_int
-                    + *fh.offset(3 as libc::c_int as isize) as libc::c_int
-                        * *src.offset((ioff + 0 as libc::c_int * 1 as libc::c_int) as isize)
-                            as libc::c_int
-                    + *fh.offset(4 as libc::c_int as isize) as libc::c_int
-                        * *src.offset((ioff + 1 as libc::c_int * 1 as libc::c_int) as isize)
-                            as libc::c_int
-                    + *fh.offset(5 as libc::c_int as isize) as libc::c_int
-                        * *src.offset((ioff + 2 as libc::c_int * 1 as libc::c_int) as isize)
-                            as libc::c_int
-                    + *fh.offset(6 as libc::c_int as isize) as libc::c_int
-                        * *src.offset((ioff + 3 as libc::c_int * 1 as libc::c_int) as isize)
-                            as libc::c_int
-                    + *fh.offset(7 as libc::c_int as isize) as libc::c_int
-                        * *src.offset((ioff + 4 as libc::c_int * 1 as libc::c_int) as isize)
-                            as libc::c_int
-                    + ((1 as libc::c_int) << 6 as libc::c_int - intermediate_bits
-                        >> 1 as libc::c_int)
-                    >> 6 as libc::c_int - intermediate_bits
+                *fh.offset(0isize) as libc::c_int
+                    * *src.offset((ioff + -(3i32) * 1i32) as isize) as libc::c_int
+                    + *fh.offset(1isize) as libc::c_int
+                        * *src.offset((ioff + -(2i32) * 1i32) as isize) as libc::c_int
+                    + *fh.offset(2isize) as libc::c_int
+                        * *src.offset((ioff + -(1i32) * 1i32) as isize) as libc::c_int
+                    + *fh.offset(3isize) as libc::c_int
+                        * *src.offset((ioff + 0i32 * 1i32) as isize) as libc::c_int
+                    + *fh.offset(4isize) as libc::c_int
+                        * *src.offset((ioff + 1i32 * 1i32) as isize) as libc::c_int
+                    + *fh.offset(5isize) as libc::c_int
+                        * *src.offset((ioff + 2i32 * 1i32) as isize) as libc::c_int
+                    + *fh.offset(6isize) as libc::c_int
+                        * *src.offset((ioff + 3i32 * 1i32) as isize) as libc::c_int
+                    + *fh.offset(7isize) as libc::c_int
+                        * *src.offset((ioff + 4i32 * 1i32) as isize) as libc::c_int
+                    + ((1i32) << 6i32 - intermediate_bits >> 1i32)
+                    >> 6i32 - intermediate_bits
             } else {
                 (*src.offset(ioff as isize) as libc::c_int) << intermediate_bits
             }) as int16_t;
             imx += dx;
-            ioff += imx >> 10 as libc::c_int;
-            imx &= 0x3ff as libc::c_int;
+            ioff += imx >> 10i32;
+            imx &= 0x3ffi32;
             x += 1;
         }
-        mid_ptr = mid_ptr.offset(128 as libc::c_int as isize);
+        mid_ptr = mid_ptr.offset(128isize);
         src = src.offset(src_stride as isize);
         tmp_h -= 1;
         if !(tmp_h != 0) {
             break;
         }
     }
-    mid_ptr = mid
-        .as_mut_ptr()
-        .offset((128 as libc::c_int * 3 as libc::c_int) as isize);
-    let mut y: libc::c_int = 0 as libc::c_int;
+    mid_ptr = mid.as_mut_ptr().offset((128i32 * 3i32) as isize);
+    let mut y: libc::c_int = 0i32;
     while y < h {
         let mut x_0: libc::c_int = 0;
-        let fv: *const int8_t = if my >> 6 as libc::c_int == 0 {
+        let fv: *const int8_t = if my >> 6i32 == 0 {
             0 as *const int8_t
-        } else if h > 4 as libc::c_int {
-            (dav1d_mc_subpel_filters[(filter_type >> 2 as libc::c_int) as usize]
-                [((my >> 6 as libc::c_int) - 1 as libc::c_int) as usize])
+        } else if h > 4i32 {
+            (dav1d_mc_subpel_filters[(filter_type >> 2i32) as usize]
+                [((my >> 6i32) - 1i32) as usize])
                 .as_ptr()
         } else {
-            (dav1d_mc_subpel_filters[(3 as libc::c_int
-                + (filter_type >> 2 as libc::c_int & 1 as libc::c_int))
-                as usize][((my >> 6 as libc::c_int) - 1 as libc::c_int) as usize])
+            (dav1d_mc_subpel_filters[(3i32 + (filter_type >> 2i32 & 1i32)) as usize]
+                [((my >> 6i32) - 1i32) as usize])
                 .as_ptr()
         };
-        x_0 = 0 as libc::c_int;
+        x_0 = 0i32;
         while x_0 < w {
             *dst.offset(x_0 as isize) = (if !fv.is_null() {
                 iclip_u8(
-                    *fv.offset(0 as libc::c_int as isize) as libc::c_int
-                        * *mid_ptr.offset((x_0 + -(3 as libc::c_int) * 128 as libc::c_int) as isize)
-                            as libc::c_int
-                        + *fv.offset(1 as libc::c_int as isize) as libc::c_int
-                            * *mid_ptr
-                                .offset((x_0 + -(2 as libc::c_int) * 128 as libc::c_int) as isize)
-                                as libc::c_int
-                        + *fv.offset(2 as libc::c_int as isize) as libc::c_int
-                            * *mid_ptr
-                                .offset((x_0 + -(1 as libc::c_int) * 128 as libc::c_int) as isize)
-                                as libc::c_int
-                        + *fv.offset(3 as libc::c_int as isize) as libc::c_int
-                            * *mid_ptr
-                                .offset((x_0 + 0 as libc::c_int * 128 as libc::c_int) as isize)
-                                as libc::c_int
-                        + *fv.offset(4 as libc::c_int as isize) as libc::c_int
-                            * *mid_ptr
-                                .offset((x_0 + 1 as libc::c_int * 128 as libc::c_int) as isize)
-                                as libc::c_int
-                        + *fv.offset(5 as libc::c_int as isize) as libc::c_int
-                            * *mid_ptr
-                                .offset((x_0 + 2 as libc::c_int * 128 as libc::c_int) as isize)
-                                as libc::c_int
-                        + *fv.offset(6 as libc::c_int as isize) as libc::c_int
-                            * *mid_ptr
-                                .offset((x_0 + 3 as libc::c_int * 128 as libc::c_int) as isize)
-                                as libc::c_int
-                        + *fv.offset(7 as libc::c_int as isize) as libc::c_int
-                            * *mid_ptr
-                                .offset((x_0 + 4 as libc::c_int * 128 as libc::c_int) as isize)
-                                as libc::c_int
-                        + ((1 as libc::c_int) << 6 as libc::c_int + intermediate_bits
-                            >> 1 as libc::c_int)
-                        >> 6 as libc::c_int + intermediate_bits,
+                    *fv.offset(0isize) as libc::c_int
+                        * *mid_ptr.offset((x_0 + -(3i32) * 128i32) as isize) as libc::c_int
+                        + *fv.offset(1isize) as libc::c_int
+                            * *mid_ptr.offset((x_0 + -(2i32) * 128i32) as isize) as libc::c_int
+                        + *fv.offset(2isize) as libc::c_int
+                            * *mid_ptr.offset((x_0 + -(1i32) * 128i32) as isize) as libc::c_int
+                        + *fv.offset(3isize) as libc::c_int
+                            * *mid_ptr.offset((x_0 + 0i32 * 128i32) as isize) as libc::c_int
+                        + *fv.offset(4isize) as libc::c_int
+                            * *mid_ptr.offset((x_0 + 1i32 * 128i32) as isize) as libc::c_int
+                        + *fv.offset(5isize) as libc::c_int
+                            * *mid_ptr.offset((x_0 + 2i32 * 128i32) as isize) as libc::c_int
+                        + *fv.offset(6isize) as libc::c_int
+                            * *mid_ptr.offset((x_0 + 3i32 * 128i32) as isize) as libc::c_int
+                        + *fv.offset(7isize) as libc::c_int
+                            * *mid_ptr.offset((x_0 + 4i32 * 128i32) as isize) as libc::c_int
+                        + ((1i32) << 6i32 + intermediate_bits >> 1i32)
+                        >> 6i32 + intermediate_bits,
                 )
             } else {
                 iclip_u8(
@@ -679,8 +579,8 @@ unsafe extern "C" fn put_8tap_scaled_c(
             x_0 += 1;
         }
         my += dy;
-        mid_ptr = mid_ptr.offset(((my >> 10 as libc::c_int) * 128 as libc::c_int) as isize);
-        my &= 0x3ff as libc::c_int;
+        mid_ptr = mid_ptr.offset(((my >> 10i32) * 128i32) as isize);
+        my &= 0x3ffi32;
         dst = dst.offset(dst_stride as isize);
         y += 1;
     }
@@ -696,127 +596,92 @@ unsafe extern "C" fn prep_8tap_c(
     my: libc::c_int,
     filter_type: libc::c_int,
 ) {
-    let intermediate_bits: libc::c_int = 4 as libc::c_int;
+    let intermediate_bits: libc::c_int = 4i32;
     let fh: *const int8_t = if mx == 0 {
         0 as *const int8_t
-    } else if w > 4 as libc::c_int {
-        (dav1d_mc_subpel_filters[(filter_type & 3 as libc::c_int) as usize]
-            [(mx - 1 as libc::c_int) as usize])
-            .as_ptr()
+    } else if w > 4i32 {
+        (dav1d_mc_subpel_filters[(filter_type & 3i32) as usize][(mx - 1i32) as usize]).as_ptr()
     } else {
-        (dav1d_mc_subpel_filters[(3 as libc::c_int + (filter_type & 1 as libc::c_int)) as usize]
-            [(mx - 1 as libc::c_int) as usize])
+        (dav1d_mc_subpel_filters[(3i32 + (filter_type & 1i32)) as usize][(mx - 1i32) as usize])
             .as_ptr()
     };
     let fv: *const int8_t = if my == 0 {
         0 as *const int8_t
-    } else if h > 4 as libc::c_int {
-        (dav1d_mc_subpel_filters[(filter_type >> 2 as libc::c_int) as usize]
-            [(my - 1 as libc::c_int) as usize])
-            .as_ptr()
+    } else if h > 4i32 {
+        (dav1d_mc_subpel_filters[(filter_type >> 2i32) as usize][(my - 1i32) as usize]).as_ptr()
     } else {
-        (dav1d_mc_subpel_filters
-            [(3 as libc::c_int + (filter_type >> 2 as libc::c_int & 1 as libc::c_int)) as usize]
-            [(my - 1 as libc::c_int) as usize])
+        (dav1d_mc_subpel_filters[(3i32 + (filter_type >> 2i32 & 1i32)) as usize]
+            [(my - 1i32) as usize])
             .as_ptr()
     };
     src_stride = src_stride;
     if !fh.is_null() {
         if !fv.is_null() {
-            let mut tmp_h: libc::c_int = h + 7 as libc::c_int;
+            let mut tmp_h: libc::c_int = h + 7i32;
             let mut mid: [int16_t; 17280] = [0; 17280];
             let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
-            src = src.offset(-((src_stride * 3 as libc::c_int as libc::c_long) as isize));
+            src = src.offset(-((src_stride * 3i64) as isize));
             loop {
-                let mut x: libc::c_int = 0 as libc::c_int;
+                let mut x: libc::c_int = 0i32;
                 while x < w {
-                    *mid_ptr.offset(x as isize) = (*fh.offset(0 as libc::c_int as isize)
-                        as libc::c_int
-                        * *src.offset((x + -(3 as libc::c_int) * 1 as libc::c_int) as isize)
-                            as libc::c_int
-                        + *fh.offset(1 as libc::c_int as isize) as libc::c_int
-                            * *src.offset((x + -(2 as libc::c_int) * 1 as libc::c_int) as isize)
-                                as libc::c_int
-                        + *fh.offset(2 as libc::c_int as isize) as libc::c_int
-                            * *src.offset((x + -(1 as libc::c_int) * 1 as libc::c_int) as isize)
-                                as libc::c_int
-                        + *fh.offset(3 as libc::c_int as isize) as libc::c_int
-                            * *src.offset((x + 0 as libc::c_int * 1 as libc::c_int) as isize)
-                                as libc::c_int
-                        + *fh.offset(4 as libc::c_int as isize) as libc::c_int
-                            * *src.offset((x + 1 as libc::c_int * 1 as libc::c_int) as isize)
-                                as libc::c_int
-                        + *fh.offset(5 as libc::c_int as isize) as libc::c_int
-                            * *src.offset((x + 2 as libc::c_int * 1 as libc::c_int) as isize)
-                                as libc::c_int
-                        + *fh.offset(6 as libc::c_int as isize) as libc::c_int
-                            * *src.offset((x + 3 as libc::c_int * 1 as libc::c_int) as isize)
-                                as libc::c_int
-                        + *fh.offset(7 as libc::c_int as isize) as libc::c_int
-                            * *src.offset((x + 4 as libc::c_int * 1 as libc::c_int) as isize)
-                                as libc::c_int
-                        + ((1 as libc::c_int) << 6 as libc::c_int - intermediate_bits
-                            >> 1 as libc::c_int)
-                        >> 6 as libc::c_int - intermediate_bits)
+                    *mid_ptr.offset(x as isize) = (*fh.offset(0isize) as libc::c_int
+                        * *src.offset((x + -(3i32) * 1i32) as isize) as libc::c_int
+                        + *fh.offset(1isize) as libc::c_int
+                            * *src.offset((x + -(2i32) * 1i32) as isize) as libc::c_int
+                        + *fh.offset(2isize) as libc::c_int
+                            * *src.offset((x + -(1i32) * 1i32) as isize) as libc::c_int
+                        + *fh.offset(3isize) as libc::c_int
+                            * *src.offset((x + 0i32 * 1i32) as isize) as libc::c_int
+                        + *fh.offset(4isize) as libc::c_int
+                            * *src.offset((x + 1i32 * 1i32) as isize) as libc::c_int
+                        + *fh.offset(5isize) as libc::c_int
+                            * *src.offset((x + 2i32 * 1i32) as isize) as libc::c_int
+                        + *fh.offset(6isize) as libc::c_int
+                            * *src.offset((x + 3i32 * 1i32) as isize) as libc::c_int
+                        + *fh.offset(7isize) as libc::c_int
+                            * *src.offset((x + 4i32 * 1i32) as isize) as libc::c_int
+                        + ((1i32) << 6i32 - intermediate_bits >> 1i32)
+                        >> 6i32 - intermediate_bits)
                         as int16_t;
                     x += 1;
                 }
-                mid_ptr = mid_ptr.offset(128 as libc::c_int as isize);
+                mid_ptr = mid_ptr.offset(128isize);
                 src = src.offset(src_stride as isize);
                 tmp_h -= 1;
                 if !(tmp_h != 0) {
                     break;
                 }
             }
-            mid_ptr = mid
-                .as_mut_ptr()
-                .offset((128 as libc::c_int * 3 as libc::c_int) as isize);
+            mid_ptr = mid.as_mut_ptr().offset((128i32 * 3i32) as isize);
             loop {
-                let mut x_0: libc::c_int = 0 as libc::c_int;
+                let mut x_0: libc::c_int = 0i32;
                 while x_0 < w {
-                    let mut t: libc::c_int = (*fv.offset(0 as libc::c_int as isize) as libc::c_int
-                        * *mid_ptr.offset((x_0 + -(3 as libc::c_int) * 128 as libc::c_int) as isize)
-                            as libc::c_int
-                        + *fv.offset(1 as libc::c_int as isize) as libc::c_int
-                            * *mid_ptr
-                                .offset((x_0 + -(2 as libc::c_int) * 128 as libc::c_int) as isize)
-                                as libc::c_int
-                        + *fv.offset(2 as libc::c_int as isize) as libc::c_int
-                            * *mid_ptr
-                                .offset((x_0 + -(1 as libc::c_int) * 128 as libc::c_int) as isize)
-                                as libc::c_int
-                        + *fv.offset(3 as libc::c_int as isize) as libc::c_int
-                            * *mid_ptr
-                                .offset((x_0 + 0 as libc::c_int * 128 as libc::c_int) as isize)
-                                as libc::c_int
-                        + *fv.offset(4 as libc::c_int as isize) as libc::c_int
-                            * *mid_ptr
-                                .offset((x_0 + 1 as libc::c_int * 128 as libc::c_int) as isize)
-                                as libc::c_int
-                        + *fv.offset(5 as libc::c_int as isize) as libc::c_int
-                            * *mid_ptr
-                                .offset((x_0 + 2 as libc::c_int * 128 as libc::c_int) as isize)
-                                as libc::c_int
-                        + *fv.offset(6 as libc::c_int as isize) as libc::c_int
-                            * *mid_ptr
-                                .offset((x_0 + 3 as libc::c_int * 128 as libc::c_int) as isize)
-                                as libc::c_int
-                        + *fv.offset(7 as libc::c_int as isize) as libc::c_int
-                            * *mid_ptr
-                                .offset((x_0 + 4 as libc::c_int * 128 as libc::c_int) as isize)
-                                as libc::c_int
-                        + ((1 as libc::c_int) << 6 as libc::c_int >> 1 as libc::c_int)
-                        >> 6 as libc::c_int)
-                        - 0 as libc::c_int;
-                    if !(t >= -(32767 as libc::c_int) - 1 as libc::c_int
-                        && t <= 32767 as libc::c_int)
-                    {
+                    let mut t: libc::c_int = (*fv.offset(0isize) as libc::c_int
+                        * *mid_ptr.offset((x_0 + -(3i32) * 128i32) as isize) as libc::c_int
+                        + *fv.offset(1isize) as libc::c_int
+                            * *mid_ptr.offset((x_0 + -(2i32) * 128i32) as isize) as libc::c_int
+                        + *fv.offset(2isize) as libc::c_int
+                            * *mid_ptr.offset((x_0 + -(1i32) * 128i32) as isize) as libc::c_int
+                        + *fv.offset(3isize) as libc::c_int
+                            * *mid_ptr.offset((x_0 + 0i32 * 128i32) as isize) as libc::c_int
+                        + *fv.offset(4isize) as libc::c_int
+                            * *mid_ptr.offset((x_0 + 1i32 * 128i32) as isize) as libc::c_int
+                        + *fv.offset(5isize) as libc::c_int
+                            * *mid_ptr.offset((x_0 + 2i32 * 128i32) as isize) as libc::c_int
+                        + *fv.offset(6isize) as libc::c_int
+                            * *mid_ptr.offset((x_0 + 3i32 * 128i32) as isize) as libc::c_int
+                        + *fv.offset(7isize) as libc::c_int
+                            * *mid_ptr.offset((x_0 + 4i32 * 128i32) as isize) as libc::c_int
+                        + ((1i32) << 6i32 >> 1i32)
+                        >> 6i32)
+                        - 0i32;
+                    if !(t >= -(32767i32) - 1i32 && t <= 32767i32) {
                         unreachable!();
                     }
                     *tmp.offset(x_0 as isize) = t as int16_t;
                     x_0 += 1;
                 }
-                mid_ptr = mid_ptr.offset(128 as libc::c_int as isize);
+                mid_ptr = mid_ptr.offset(128isize);
                 tmp = tmp.offset(w as isize);
                 h -= 1;
                 if !(h != 0) {
@@ -825,38 +690,27 @@ unsafe extern "C" fn prep_8tap_c(
             }
         } else {
             loop {
-                let mut x_1: libc::c_int = 0 as libc::c_int;
+                let mut x_1: libc::c_int = 0i32;
                 while x_1 < w {
-                    *tmp.offset(x_1 as isize) = ((*fh.offset(0 as libc::c_int as isize)
-                        as libc::c_int
-                        * *src.offset((x_1 + -(3 as libc::c_int) * 1 as libc::c_int) as isize)
-                            as libc::c_int
-                        + *fh.offset(1 as libc::c_int as isize) as libc::c_int
-                            * *src.offset((x_1 + -(2 as libc::c_int) * 1 as libc::c_int) as isize)
-                                as libc::c_int
-                        + *fh.offset(2 as libc::c_int as isize) as libc::c_int
-                            * *src.offset((x_1 + -(1 as libc::c_int) * 1 as libc::c_int) as isize)
-                                as libc::c_int
-                        + *fh.offset(3 as libc::c_int as isize) as libc::c_int
-                            * *src.offset((x_1 + 0 as libc::c_int * 1 as libc::c_int) as isize)
-                                as libc::c_int
-                        + *fh.offset(4 as libc::c_int as isize) as libc::c_int
-                            * *src.offset((x_1 + 1 as libc::c_int * 1 as libc::c_int) as isize)
-                                as libc::c_int
-                        + *fh.offset(5 as libc::c_int as isize) as libc::c_int
-                            * *src.offset((x_1 + 2 as libc::c_int * 1 as libc::c_int) as isize)
-                                as libc::c_int
-                        + *fh.offset(6 as libc::c_int as isize) as libc::c_int
-                            * *src.offset((x_1 + 3 as libc::c_int * 1 as libc::c_int) as isize)
-                                as libc::c_int
-                        + *fh.offset(7 as libc::c_int as isize) as libc::c_int
-                            * *src.offset((x_1 + 4 as libc::c_int * 1 as libc::c_int) as isize)
-                                as libc::c_int
-                        + ((1 as libc::c_int) << 6 as libc::c_int - intermediate_bits
-                            >> 1 as libc::c_int)
-                        >> 6 as libc::c_int - intermediate_bits)
-                        - 0 as libc::c_int)
-                        as int16_t;
+                    *tmp.offset(x_1 as isize) = ((*fh.offset(0isize) as libc::c_int
+                        * *src.offset((x_1 + -(3i32) * 1i32) as isize) as libc::c_int
+                        + *fh.offset(1isize) as libc::c_int
+                            * *src.offset((x_1 + -(2i32) * 1i32) as isize) as libc::c_int
+                        + *fh.offset(2isize) as libc::c_int
+                            * *src.offset((x_1 + -(1i32) * 1i32) as isize) as libc::c_int
+                        + *fh.offset(3isize) as libc::c_int
+                            * *src.offset((x_1 + 0i32 * 1i32) as isize) as libc::c_int
+                        + *fh.offset(4isize) as libc::c_int
+                            * *src.offset((x_1 + 1i32 * 1i32) as isize) as libc::c_int
+                        + *fh.offset(5isize) as libc::c_int
+                            * *src.offset((x_1 + 2i32 * 1i32) as isize) as libc::c_int
+                        + *fh.offset(6isize) as libc::c_int
+                            * *src.offset((x_1 + 3i32 * 1i32) as isize) as libc::c_int
+                        + *fh.offset(7isize) as libc::c_int
+                            * *src.offset((x_1 + 4i32 * 1i32) as isize) as libc::c_int
+                        + ((1i32) << 6i32 - intermediate_bits >> 1i32)
+                        >> 6i32 - intermediate_bits)
+                        - 0i32) as int16_t;
                     x_1 += 1;
                 }
                 tmp = tmp.offset(w as isize);
@@ -869,52 +723,35 @@ unsafe extern "C" fn prep_8tap_c(
         }
     } else if !fv.is_null() {
         loop {
-            let mut x_2: libc::c_int = 0 as libc::c_int;
+            let mut x_2: libc::c_int = 0i32;
             while x_2 < w {
-                *tmp.offset(x_2 as isize) = ((*fv.offset(0 as libc::c_int as isize) as libc::c_int
-                    * *src.offset(
-                        (x_2 as libc::c_long + -(3 as libc::c_int) as libc::c_long * src_stride)
-                            as isize,
-                    ) as libc::c_int
-                    + *fv.offset(1 as libc::c_int as isize) as libc::c_int
-                        * *src.offset(
-                            (x_2 as libc::c_long + -(2 as libc::c_int) as libc::c_long * src_stride)
-                                as isize,
-                        ) as libc::c_int
-                    + *fv.offset(2 as libc::c_int as isize) as libc::c_int
-                        * *src.offset(
-                            (x_2 as libc::c_long + -(1 as libc::c_int) as libc::c_long * src_stride)
-                                as isize,
-                        ) as libc::c_int
-                    + *fv.offset(3 as libc::c_int as isize) as libc::c_int
-                        * *src.offset(
-                            (x_2 as libc::c_long + 0 as libc::c_int as libc::c_long * src_stride)
-                                as isize,
-                        ) as libc::c_int
-                    + *fv.offset(4 as libc::c_int as isize) as libc::c_int
-                        * *src.offset(
-                            (x_2 as libc::c_long + 1 as libc::c_int as libc::c_long * src_stride)
-                                as isize,
-                        ) as libc::c_int
-                    + *fv.offset(5 as libc::c_int as isize) as libc::c_int
-                        * *src.offset(
-                            (x_2 as libc::c_long + 2 as libc::c_int as libc::c_long * src_stride)
-                                as isize,
-                        ) as libc::c_int
-                    + *fv.offset(6 as libc::c_int as isize) as libc::c_int
-                        * *src.offset(
-                            (x_2 as libc::c_long + 3 as libc::c_int as libc::c_long * src_stride)
-                                as isize,
-                        ) as libc::c_int
-                    + *fv.offset(7 as libc::c_int as isize) as libc::c_int
-                        * *src.offset(
-                            (x_2 as libc::c_long + 4 as libc::c_int as libc::c_long * src_stride)
-                                as isize,
-                        ) as libc::c_int
-                    + ((1 as libc::c_int) << 6 as libc::c_int - intermediate_bits
-                        >> 1 as libc::c_int)
-                    >> 6 as libc::c_int - intermediate_bits)
-                    - 0 as libc::c_int) as int16_t;
+                *tmp.offset(x_2 as isize) = ((*fv.offset(0isize) as libc::c_int
+                    * *src.offset((x_2 as libc::c_long + -3i64 * src_stride) as isize)
+                        as libc::c_int
+                    + *fv.offset(1isize) as libc::c_int
+                        * *src.offset((x_2 as libc::c_long + -2i64 * src_stride) as isize)
+                            as libc::c_int
+                    + *fv.offset(2isize) as libc::c_int
+                        * *src.offset((x_2 as libc::c_long + -1i64 * src_stride) as isize)
+                            as libc::c_int
+                    + *fv.offset(3isize) as libc::c_int
+                        * *src.offset((x_2 as libc::c_long + 0i64 * src_stride) as isize)
+                            as libc::c_int
+                    + *fv.offset(4isize) as libc::c_int
+                        * *src.offset((x_2 as libc::c_long + 1i64 * src_stride) as isize)
+                            as libc::c_int
+                    + *fv.offset(5isize) as libc::c_int
+                        * *src.offset((x_2 as libc::c_long + 2i64 * src_stride) as isize)
+                            as libc::c_int
+                    + *fv.offset(6isize) as libc::c_int
+                        * *src.offset((x_2 as libc::c_long + 3i64 * src_stride) as isize)
+                            as libc::c_int
+                    + *fv.offset(7isize) as libc::c_int
+                        * *src.offset((x_2 as libc::c_long + 4i64 * src_stride) as isize)
+                            as libc::c_int
+                    + ((1i32) << 6i32 - intermediate_bits >> 1i32)
+                    >> 6i32 - intermediate_bits)
+                    - 0i32) as int16_t;
                 x_2 += 1;
             }
             tmp = tmp.offset(w as isize);
@@ -941,129 +778,107 @@ unsafe extern "C" fn prep_8tap_scaled_c(
     dy: libc::c_int,
     filter_type: libc::c_int,
 ) {
-    let intermediate_bits: libc::c_int = 4 as libc::c_int;
-    let mut tmp_h: libc::c_int =
-        ((h - 1 as libc::c_int) * dy + my >> 10 as libc::c_int) + 8 as libc::c_int;
+    let intermediate_bits: libc::c_int = 4i32;
+    let mut tmp_h: libc::c_int = ((h - 1i32) * dy + my >> 10i32) + 8i32;
     let mut mid: [int16_t; 33664] = [0; 33664];
     let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
     src_stride = src_stride;
-    src = src.offset(-((src_stride * 3 as libc::c_int as libc::c_long) as isize));
+    src = src.offset(-((src_stride * 3i64) as isize));
     loop {
         let mut x: libc::c_int = 0;
         let mut imx: libc::c_int = mx;
-        let mut ioff: libc::c_int = 0 as libc::c_int;
-        x = 0 as libc::c_int;
+        let mut ioff: libc::c_int = 0i32;
+        x = 0i32;
         while x < w {
-            let fh: *const int8_t = if imx >> 6 as libc::c_int == 0 {
+            let fh: *const int8_t = if imx >> 6i32 == 0 {
                 0 as *const int8_t
-            } else if w > 4 as libc::c_int {
-                (dav1d_mc_subpel_filters[(filter_type & 3 as libc::c_int) as usize]
-                    [((imx >> 6 as libc::c_int) - 1 as libc::c_int) as usize])
+            } else if w > 4i32 {
+                (dav1d_mc_subpel_filters[(filter_type & 3i32) as usize]
+                    [((imx >> 6i32) - 1i32) as usize])
                     .as_ptr()
             } else {
-                (dav1d_mc_subpel_filters
-                    [(3 as libc::c_int + (filter_type & 1 as libc::c_int)) as usize]
-                    [((imx >> 6 as libc::c_int) - 1 as libc::c_int) as usize])
+                (dav1d_mc_subpel_filters[(3i32 + (filter_type & 1i32)) as usize]
+                    [((imx >> 6i32) - 1i32) as usize])
                     .as_ptr()
             };
             *mid_ptr.offset(x as isize) = (if !fh.is_null() {
-                *fh.offset(0 as libc::c_int as isize) as libc::c_int
-                    * *src.offset((ioff + -(3 as libc::c_int) * 1 as libc::c_int) as isize)
-                        as libc::c_int
-                    + *fh.offset(1 as libc::c_int as isize) as libc::c_int
-                        * *src.offset((ioff + -(2 as libc::c_int) * 1 as libc::c_int) as isize)
-                            as libc::c_int
-                    + *fh.offset(2 as libc::c_int as isize) as libc::c_int
-                        * *src.offset((ioff + -(1 as libc::c_int) * 1 as libc::c_int) as isize)
-                            as libc::c_int
-                    + *fh.offset(3 as libc::c_int as isize) as libc::c_int
-                        * *src.offset((ioff + 0 as libc::c_int * 1 as libc::c_int) as isize)
-                            as libc::c_int
-                    + *fh.offset(4 as libc::c_int as isize) as libc::c_int
-                        * *src.offset((ioff + 1 as libc::c_int * 1 as libc::c_int) as isize)
-                            as libc::c_int
-                    + *fh.offset(5 as libc::c_int as isize) as libc::c_int
-                        * *src.offset((ioff + 2 as libc::c_int * 1 as libc::c_int) as isize)
-                            as libc::c_int
-                    + *fh.offset(6 as libc::c_int as isize) as libc::c_int
-                        * *src.offset((ioff + 3 as libc::c_int * 1 as libc::c_int) as isize)
-                            as libc::c_int
-                    + *fh.offset(7 as libc::c_int as isize) as libc::c_int
-                        * *src.offset((ioff + 4 as libc::c_int * 1 as libc::c_int) as isize)
-                            as libc::c_int
-                    + ((1 as libc::c_int) << 6 as libc::c_int - intermediate_bits
-                        >> 1 as libc::c_int)
-                    >> 6 as libc::c_int - intermediate_bits
+                *fh.offset(0isize) as libc::c_int
+                    * *src.offset((ioff + -(3i32) * 1i32) as isize) as libc::c_int
+                    + *fh.offset(1isize) as libc::c_int
+                        * *src.offset((ioff + -(2i32) * 1i32) as isize) as libc::c_int
+                    + *fh.offset(2isize) as libc::c_int
+                        * *src.offset((ioff + -(1i32) * 1i32) as isize) as libc::c_int
+                    + *fh.offset(3isize) as libc::c_int
+                        * *src.offset((ioff + 0i32 * 1i32) as isize) as libc::c_int
+                    + *fh.offset(4isize) as libc::c_int
+                        * *src.offset((ioff + 1i32 * 1i32) as isize) as libc::c_int
+                    + *fh.offset(5isize) as libc::c_int
+                        * *src.offset((ioff + 2i32 * 1i32) as isize) as libc::c_int
+                    + *fh.offset(6isize) as libc::c_int
+                        * *src.offset((ioff + 3i32 * 1i32) as isize) as libc::c_int
+                    + *fh.offset(7isize) as libc::c_int
+                        * *src.offset((ioff + 4i32 * 1i32) as isize) as libc::c_int
+                    + ((1i32) << 6i32 - intermediate_bits >> 1i32)
+                    >> 6i32 - intermediate_bits
             } else {
                 (*src.offset(ioff as isize) as libc::c_int) << intermediate_bits
             }) as int16_t;
             imx += dx;
-            ioff += imx >> 10 as libc::c_int;
-            imx &= 0x3ff as libc::c_int;
+            ioff += imx >> 10i32;
+            imx &= 0x3ffi32;
             x += 1;
         }
-        mid_ptr = mid_ptr.offset(128 as libc::c_int as isize);
+        mid_ptr = mid_ptr.offset(128isize);
         src = src.offset(src_stride as isize);
         tmp_h -= 1;
         if !(tmp_h != 0) {
             break;
         }
     }
-    mid_ptr = mid
-        .as_mut_ptr()
-        .offset((128 as libc::c_int * 3 as libc::c_int) as isize);
-    let mut y: libc::c_int = 0 as libc::c_int;
+    mid_ptr = mid.as_mut_ptr().offset((128i32 * 3i32) as isize);
+    let mut y: libc::c_int = 0i32;
     while y < h {
         let mut x_0: libc::c_int = 0;
-        let fv: *const int8_t = if my >> 6 as libc::c_int == 0 {
+        let fv: *const int8_t = if my >> 6i32 == 0 {
             0 as *const int8_t
-        } else if h > 4 as libc::c_int {
-            (dav1d_mc_subpel_filters[(filter_type >> 2 as libc::c_int) as usize]
-                [((my >> 6 as libc::c_int) - 1 as libc::c_int) as usize])
+        } else if h > 4i32 {
+            (dav1d_mc_subpel_filters[(filter_type >> 2i32) as usize]
+                [((my >> 6i32) - 1i32) as usize])
                 .as_ptr()
         } else {
-            (dav1d_mc_subpel_filters[(3 as libc::c_int
-                + (filter_type >> 2 as libc::c_int & 1 as libc::c_int))
-                as usize][((my >> 6 as libc::c_int) - 1 as libc::c_int) as usize])
+            (dav1d_mc_subpel_filters[(3i32 + (filter_type >> 2i32 & 1i32)) as usize]
+                [((my >> 6i32) - 1i32) as usize])
                 .as_ptr()
         };
-        x_0 = 0 as libc::c_int;
+        x_0 = 0i32;
         while x_0 < w {
             *tmp.offset(x_0 as isize) = ((if !fv.is_null() {
-                *fv.offset(0 as libc::c_int as isize) as libc::c_int
-                    * *mid_ptr.offset((x_0 + -(3 as libc::c_int) * 128 as libc::c_int) as isize)
-                        as libc::c_int
-                    + *fv.offset(1 as libc::c_int as isize) as libc::c_int
-                        * *mid_ptr.offset((x_0 + -(2 as libc::c_int) * 128 as libc::c_int) as isize)
-                            as libc::c_int
-                    + *fv.offset(2 as libc::c_int as isize) as libc::c_int
-                        * *mid_ptr.offset((x_0 + -(1 as libc::c_int) * 128 as libc::c_int) as isize)
-                            as libc::c_int
-                    + *fv.offset(3 as libc::c_int as isize) as libc::c_int
-                        * *mid_ptr.offset((x_0 + 0 as libc::c_int * 128 as libc::c_int) as isize)
-                            as libc::c_int
-                    + *fv.offset(4 as libc::c_int as isize) as libc::c_int
-                        * *mid_ptr.offset((x_0 + 1 as libc::c_int * 128 as libc::c_int) as isize)
-                            as libc::c_int
-                    + *fv.offset(5 as libc::c_int as isize) as libc::c_int
-                        * *mid_ptr.offset((x_0 + 2 as libc::c_int * 128 as libc::c_int) as isize)
-                            as libc::c_int
-                    + *fv.offset(6 as libc::c_int as isize) as libc::c_int
-                        * *mid_ptr.offset((x_0 + 3 as libc::c_int * 128 as libc::c_int) as isize)
-                            as libc::c_int
-                    + *fv.offset(7 as libc::c_int as isize) as libc::c_int
-                        * *mid_ptr.offset((x_0 + 4 as libc::c_int * 128 as libc::c_int) as isize)
-                            as libc::c_int
-                    + ((1 as libc::c_int) << 6 as libc::c_int >> 1 as libc::c_int)
-                    >> 6 as libc::c_int
+                *fv.offset(0isize) as libc::c_int
+                    * *mid_ptr.offset((x_0 + -(3i32) * 128i32) as isize) as libc::c_int
+                    + *fv.offset(1isize) as libc::c_int
+                        * *mid_ptr.offset((x_0 + -(2i32) * 128i32) as isize) as libc::c_int
+                    + *fv.offset(2isize) as libc::c_int
+                        * *mid_ptr.offset((x_0 + -(1i32) * 128i32) as isize) as libc::c_int
+                    + *fv.offset(3isize) as libc::c_int
+                        * *mid_ptr.offset((x_0 + 0i32 * 128i32) as isize) as libc::c_int
+                    + *fv.offset(4isize) as libc::c_int
+                        * *mid_ptr.offset((x_0 + 1i32 * 128i32) as isize) as libc::c_int
+                    + *fv.offset(5isize) as libc::c_int
+                        * *mid_ptr.offset((x_0 + 2i32 * 128i32) as isize) as libc::c_int
+                    + *fv.offset(6isize) as libc::c_int
+                        * *mid_ptr.offset((x_0 + 3i32 * 128i32) as isize) as libc::c_int
+                    + *fv.offset(7isize) as libc::c_int
+                        * *mid_ptr.offset((x_0 + 4i32 * 128i32) as isize) as libc::c_int
+                    + ((1i32) << 6i32 >> 1i32)
+                    >> 6i32
             } else {
                 *mid_ptr.offset(x_0 as isize) as libc::c_int
-            }) - 0 as libc::c_int) as int16_t;
+            }) - 0i32) as int16_t;
             x_0 += 1;
         }
         my += dy;
-        mid_ptr = mid_ptr.offset(((my >> 10 as libc::c_int) * 128 as libc::c_int) as isize);
-        my &= 0x3ff as libc::c_int;
+        mid_ptr = mid_ptr.offset(((my >> 10i32) * 128i32) as isize);
+        my &= 0x3ffi32;
         tmp = tmp.offset(w as isize);
         y += 1;
     }
@@ -1088,7 +903,7 @@ unsafe extern "C" fn put_8tap_regular_c(
         mx,
         my,
         DAV1D_FILTER_8TAP_REGULAR as libc::c_int
-            | (DAV1D_FILTER_8TAP_REGULAR as libc::c_int) << 2 as libc::c_int,
+            | (DAV1D_FILTER_8TAP_REGULAR as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn put_8tap_regular_scaled_c(
@@ -1115,7 +930,7 @@ unsafe extern "C" fn put_8tap_regular_scaled_c(
         dx,
         dy,
         DAV1D_FILTER_8TAP_REGULAR as libc::c_int
-            | (DAV1D_FILTER_8TAP_REGULAR as libc::c_int) << 2 as libc::c_int,
+            | (DAV1D_FILTER_8TAP_REGULAR as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn prep_8tap_regular_c(
@@ -1136,7 +951,7 @@ unsafe extern "C" fn prep_8tap_regular_c(
         mx,
         my,
         DAV1D_FILTER_8TAP_REGULAR as libc::c_int
-            | (DAV1D_FILTER_8TAP_REGULAR as libc::c_int) << 2 as libc::c_int,
+            | (DAV1D_FILTER_8TAP_REGULAR as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn prep_8tap_regular_scaled_c(
@@ -1161,7 +976,7 @@ unsafe extern "C" fn prep_8tap_regular_scaled_c(
         dx,
         dy,
         DAV1D_FILTER_8TAP_REGULAR as libc::c_int
-            | (DAV1D_FILTER_8TAP_REGULAR as libc::c_int) << 2 as libc::c_int,
+            | (DAV1D_FILTER_8TAP_REGULAR as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn prep_8tap_regular_sharp_scaled_c(
@@ -1185,8 +1000,7 @@ unsafe extern "C" fn prep_8tap_regular_sharp_scaled_c(
         my,
         dx,
         dy,
-        DAV1D_FILTER_8TAP_REGULAR as libc::c_int
-            | (DAV1D_FILTER_8TAP_SHARP as libc::c_int) << 2 as libc::c_int,
+        DAV1D_FILTER_8TAP_REGULAR as libc::c_int | (DAV1D_FILTER_8TAP_SHARP as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn prep_8tap_regular_sharp_c(
@@ -1206,8 +1020,7 @@ unsafe extern "C" fn prep_8tap_regular_sharp_c(
         h,
         mx,
         my,
-        DAV1D_FILTER_8TAP_REGULAR as libc::c_int
-            | (DAV1D_FILTER_8TAP_SHARP as libc::c_int) << 2 as libc::c_int,
+        DAV1D_FILTER_8TAP_REGULAR as libc::c_int | (DAV1D_FILTER_8TAP_SHARP as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn put_8tap_regular_sharp_scaled_c(
@@ -1233,8 +1046,7 @@ unsafe extern "C" fn put_8tap_regular_sharp_scaled_c(
         my,
         dx,
         dy,
-        DAV1D_FILTER_8TAP_REGULAR as libc::c_int
-            | (DAV1D_FILTER_8TAP_SHARP as libc::c_int) << 2 as libc::c_int,
+        DAV1D_FILTER_8TAP_REGULAR as libc::c_int | (DAV1D_FILTER_8TAP_SHARP as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn put_8tap_regular_sharp_c(
@@ -1256,8 +1068,7 @@ unsafe extern "C" fn put_8tap_regular_sharp_c(
         h,
         mx,
         my,
-        DAV1D_FILTER_8TAP_REGULAR as libc::c_int
-            | (DAV1D_FILTER_8TAP_SHARP as libc::c_int) << 2 as libc::c_int,
+        DAV1D_FILTER_8TAP_REGULAR as libc::c_int | (DAV1D_FILTER_8TAP_SHARP as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn prep_8tap_regular_smooth_scaled_c(
@@ -1282,7 +1093,7 @@ unsafe extern "C" fn prep_8tap_regular_smooth_scaled_c(
         dx,
         dy,
         DAV1D_FILTER_8TAP_REGULAR as libc::c_int
-            | (DAV1D_FILTER_8TAP_SMOOTH as libc::c_int) << 2 as libc::c_int,
+            | (DAV1D_FILTER_8TAP_SMOOTH as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn prep_8tap_regular_smooth_c(
@@ -1303,7 +1114,7 @@ unsafe extern "C" fn prep_8tap_regular_smooth_c(
         mx,
         my,
         DAV1D_FILTER_8TAP_REGULAR as libc::c_int
-            | (DAV1D_FILTER_8TAP_SMOOTH as libc::c_int) << 2 as libc::c_int,
+            | (DAV1D_FILTER_8TAP_SMOOTH as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn put_8tap_regular_smooth_scaled_c(
@@ -1330,7 +1141,7 @@ unsafe extern "C" fn put_8tap_regular_smooth_scaled_c(
         dx,
         dy,
         DAV1D_FILTER_8TAP_REGULAR as libc::c_int
-            | (DAV1D_FILTER_8TAP_SMOOTH as libc::c_int) << 2 as libc::c_int,
+            | (DAV1D_FILTER_8TAP_SMOOTH as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn put_8tap_regular_smooth_c(
@@ -1353,7 +1164,7 @@ unsafe extern "C" fn put_8tap_regular_smooth_c(
         mx,
         my,
         DAV1D_FILTER_8TAP_REGULAR as libc::c_int
-            | (DAV1D_FILTER_8TAP_SMOOTH as libc::c_int) << 2 as libc::c_int,
+            | (DAV1D_FILTER_8TAP_SMOOTH as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn put_8tap_smooth_scaled_c(
@@ -1379,8 +1190,7 @@ unsafe extern "C" fn put_8tap_smooth_scaled_c(
         my,
         dx,
         dy,
-        DAV1D_FILTER_8TAP_SMOOTH as libc::c_int
-            | (DAV1D_FILTER_8TAP_SMOOTH as libc::c_int) << 2 as libc::c_int,
+        DAV1D_FILTER_8TAP_SMOOTH as libc::c_int | (DAV1D_FILTER_8TAP_SMOOTH as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn prep_8tap_smooth_scaled_c(
@@ -1404,8 +1214,7 @@ unsafe extern "C" fn prep_8tap_smooth_scaled_c(
         my,
         dx,
         dy,
-        DAV1D_FILTER_8TAP_SMOOTH as libc::c_int
-            | (DAV1D_FILTER_8TAP_SMOOTH as libc::c_int) << 2 as libc::c_int,
+        DAV1D_FILTER_8TAP_SMOOTH as libc::c_int | (DAV1D_FILTER_8TAP_SMOOTH as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn prep_8tap_smooth_c(
@@ -1425,8 +1234,7 @@ unsafe extern "C" fn prep_8tap_smooth_c(
         h,
         mx,
         my,
-        DAV1D_FILTER_8TAP_SMOOTH as libc::c_int
-            | (DAV1D_FILTER_8TAP_SMOOTH as libc::c_int) << 2 as libc::c_int,
+        DAV1D_FILTER_8TAP_SMOOTH as libc::c_int | (DAV1D_FILTER_8TAP_SMOOTH as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn put_8tap_smooth_c(
@@ -1448,8 +1256,7 @@ unsafe extern "C" fn put_8tap_smooth_c(
         h,
         mx,
         my,
-        DAV1D_FILTER_8TAP_SMOOTH as libc::c_int
-            | (DAV1D_FILTER_8TAP_SMOOTH as libc::c_int) << 2 as libc::c_int,
+        DAV1D_FILTER_8TAP_SMOOTH as libc::c_int | (DAV1D_FILTER_8TAP_SMOOTH as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn prep_8tap_smooth_regular_scaled_c(
@@ -1474,7 +1281,7 @@ unsafe extern "C" fn prep_8tap_smooth_regular_scaled_c(
         dx,
         dy,
         DAV1D_FILTER_8TAP_SMOOTH as libc::c_int
-            | (DAV1D_FILTER_8TAP_REGULAR as libc::c_int) << 2 as libc::c_int,
+            | (DAV1D_FILTER_8TAP_REGULAR as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn put_8tap_smooth_regular_c(
@@ -1497,7 +1304,7 @@ unsafe extern "C" fn put_8tap_smooth_regular_c(
         mx,
         my,
         DAV1D_FILTER_8TAP_SMOOTH as libc::c_int
-            | (DAV1D_FILTER_8TAP_REGULAR as libc::c_int) << 2 as libc::c_int,
+            | (DAV1D_FILTER_8TAP_REGULAR as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn put_8tap_smooth_regular_scaled_c(
@@ -1524,7 +1331,7 @@ unsafe extern "C" fn put_8tap_smooth_regular_scaled_c(
         dx,
         dy,
         DAV1D_FILTER_8TAP_SMOOTH as libc::c_int
-            | (DAV1D_FILTER_8TAP_REGULAR as libc::c_int) << 2 as libc::c_int,
+            | (DAV1D_FILTER_8TAP_REGULAR as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn prep_8tap_smooth_regular_c(
@@ -1545,7 +1352,7 @@ unsafe extern "C" fn prep_8tap_smooth_regular_c(
         mx,
         my,
         DAV1D_FILTER_8TAP_SMOOTH as libc::c_int
-            | (DAV1D_FILTER_8TAP_REGULAR as libc::c_int) << 2 as libc::c_int,
+            | (DAV1D_FILTER_8TAP_REGULAR as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn prep_8tap_smooth_sharp_scaled_c(
@@ -1569,8 +1376,7 @@ unsafe extern "C" fn prep_8tap_smooth_sharp_scaled_c(
         my,
         dx,
         dy,
-        DAV1D_FILTER_8TAP_SMOOTH as libc::c_int
-            | (DAV1D_FILTER_8TAP_SHARP as libc::c_int) << 2 as libc::c_int,
+        DAV1D_FILTER_8TAP_SMOOTH as libc::c_int | (DAV1D_FILTER_8TAP_SHARP as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn put_8tap_smooth_sharp_c(
@@ -1592,8 +1398,7 @@ unsafe extern "C" fn put_8tap_smooth_sharp_c(
         h,
         mx,
         my,
-        DAV1D_FILTER_8TAP_SMOOTH as libc::c_int
-            | (DAV1D_FILTER_8TAP_SHARP as libc::c_int) << 2 as libc::c_int,
+        DAV1D_FILTER_8TAP_SMOOTH as libc::c_int | (DAV1D_FILTER_8TAP_SHARP as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn put_8tap_smooth_sharp_scaled_c(
@@ -1619,8 +1424,7 @@ unsafe extern "C" fn put_8tap_smooth_sharp_scaled_c(
         my,
         dx,
         dy,
-        DAV1D_FILTER_8TAP_SMOOTH as libc::c_int
-            | (DAV1D_FILTER_8TAP_SHARP as libc::c_int) << 2 as libc::c_int,
+        DAV1D_FILTER_8TAP_SMOOTH as libc::c_int | (DAV1D_FILTER_8TAP_SHARP as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn prep_8tap_smooth_sharp_c(
@@ -1640,8 +1444,7 @@ unsafe extern "C" fn prep_8tap_smooth_sharp_c(
         h,
         mx,
         my,
-        DAV1D_FILTER_8TAP_SMOOTH as libc::c_int
-            | (DAV1D_FILTER_8TAP_SHARP as libc::c_int) << 2 as libc::c_int,
+        DAV1D_FILTER_8TAP_SMOOTH as libc::c_int | (DAV1D_FILTER_8TAP_SHARP as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn put_8tap_sharp_c(
@@ -1663,8 +1466,7 @@ unsafe extern "C" fn put_8tap_sharp_c(
         h,
         mx,
         my,
-        DAV1D_FILTER_8TAP_SHARP as libc::c_int
-            | (DAV1D_FILTER_8TAP_SHARP as libc::c_int) << 2 as libc::c_int,
+        DAV1D_FILTER_8TAP_SHARP as libc::c_int | (DAV1D_FILTER_8TAP_SHARP as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn prep_8tap_sharp_c(
@@ -1684,8 +1486,7 @@ unsafe extern "C" fn prep_8tap_sharp_c(
         h,
         mx,
         my,
-        DAV1D_FILTER_8TAP_SHARP as libc::c_int
-            | (DAV1D_FILTER_8TAP_SHARP as libc::c_int) << 2 as libc::c_int,
+        DAV1D_FILTER_8TAP_SHARP as libc::c_int | (DAV1D_FILTER_8TAP_SHARP as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn prep_8tap_sharp_scaled_c(
@@ -1709,8 +1510,7 @@ unsafe extern "C" fn prep_8tap_sharp_scaled_c(
         my,
         dx,
         dy,
-        DAV1D_FILTER_8TAP_SHARP as libc::c_int
-            | (DAV1D_FILTER_8TAP_SHARP as libc::c_int) << 2 as libc::c_int,
+        DAV1D_FILTER_8TAP_SHARP as libc::c_int | (DAV1D_FILTER_8TAP_SHARP as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn put_8tap_sharp_scaled_c(
@@ -1736,8 +1536,7 @@ unsafe extern "C" fn put_8tap_sharp_scaled_c(
         my,
         dx,
         dy,
-        DAV1D_FILTER_8TAP_SHARP as libc::c_int
-            | (DAV1D_FILTER_8TAP_SHARP as libc::c_int) << 2 as libc::c_int,
+        DAV1D_FILTER_8TAP_SHARP as libc::c_int | (DAV1D_FILTER_8TAP_SHARP as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn put_8tap_sharp_regular_scaled_c(
@@ -1763,8 +1562,7 @@ unsafe extern "C" fn put_8tap_sharp_regular_scaled_c(
         my,
         dx,
         dy,
-        DAV1D_FILTER_8TAP_SHARP as libc::c_int
-            | (DAV1D_FILTER_8TAP_REGULAR as libc::c_int) << 2 as libc::c_int,
+        DAV1D_FILTER_8TAP_SHARP as libc::c_int | (DAV1D_FILTER_8TAP_REGULAR as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn prep_8tap_sharp_regular_scaled_c(
@@ -1788,8 +1586,7 @@ unsafe extern "C" fn prep_8tap_sharp_regular_scaled_c(
         my,
         dx,
         dy,
-        DAV1D_FILTER_8TAP_SHARP as libc::c_int
-            | (DAV1D_FILTER_8TAP_REGULAR as libc::c_int) << 2 as libc::c_int,
+        DAV1D_FILTER_8TAP_SHARP as libc::c_int | (DAV1D_FILTER_8TAP_REGULAR as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn prep_8tap_sharp_regular_c(
@@ -1809,8 +1606,7 @@ unsafe extern "C" fn prep_8tap_sharp_regular_c(
         h,
         mx,
         my,
-        DAV1D_FILTER_8TAP_SHARP as libc::c_int
-            | (DAV1D_FILTER_8TAP_REGULAR as libc::c_int) << 2 as libc::c_int,
+        DAV1D_FILTER_8TAP_SHARP as libc::c_int | (DAV1D_FILTER_8TAP_REGULAR as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn put_8tap_sharp_regular_c(
@@ -1832,8 +1628,7 @@ unsafe extern "C" fn put_8tap_sharp_regular_c(
         h,
         mx,
         my,
-        DAV1D_FILTER_8TAP_SHARP as libc::c_int
-            | (DAV1D_FILTER_8TAP_REGULAR as libc::c_int) << 2 as libc::c_int,
+        DAV1D_FILTER_8TAP_SHARP as libc::c_int | (DAV1D_FILTER_8TAP_REGULAR as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn put_8tap_sharp_smooth_c(
@@ -1855,8 +1650,7 @@ unsafe extern "C" fn put_8tap_sharp_smooth_c(
         h,
         mx,
         my,
-        DAV1D_FILTER_8TAP_SHARP as libc::c_int
-            | (DAV1D_FILTER_8TAP_SMOOTH as libc::c_int) << 2 as libc::c_int,
+        DAV1D_FILTER_8TAP_SHARP as libc::c_int | (DAV1D_FILTER_8TAP_SMOOTH as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn prep_8tap_sharp_smooth_scaled_c(
@@ -1880,8 +1674,7 @@ unsafe extern "C" fn prep_8tap_sharp_smooth_scaled_c(
         my,
         dx,
         dy,
-        DAV1D_FILTER_8TAP_SHARP as libc::c_int
-            | (DAV1D_FILTER_8TAP_SMOOTH as libc::c_int) << 2 as libc::c_int,
+        DAV1D_FILTER_8TAP_SHARP as libc::c_int | (DAV1D_FILTER_8TAP_SMOOTH as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn prep_8tap_sharp_smooth_c(
@@ -1901,8 +1694,7 @@ unsafe extern "C" fn prep_8tap_sharp_smooth_c(
         h,
         mx,
         my,
-        DAV1D_FILTER_8TAP_SHARP as libc::c_int
-            | (DAV1D_FILTER_8TAP_SMOOTH as libc::c_int) << 2 as libc::c_int,
+        DAV1D_FILTER_8TAP_SHARP as libc::c_int | (DAV1D_FILTER_8TAP_SMOOTH as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn put_8tap_sharp_smooth_scaled_c(
@@ -1928,8 +1720,7 @@ unsafe extern "C" fn put_8tap_sharp_smooth_scaled_c(
         my,
         dx,
         dy,
-        DAV1D_FILTER_8TAP_SHARP as libc::c_int
-            | (DAV1D_FILTER_8TAP_SMOOTH as libc::c_int) << 2 as libc::c_int,
+        DAV1D_FILTER_8TAP_SHARP as libc::c_int | (DAV1D_FILTER_8TAP_SMOOTH as libc::c_int) << 2i32,
     );
 }
 unsafe extern "C" fn put_bilin_c(
@@ -1942,29 +1733,27 @@ unsafe extern "C" fn put_bilin_c(
     mx: libc::c_int,
     my: libc::c_int,
 ) {
-    let intermediate_bits: libc::c_int = 4 as libc::c_int;
-    let intermediate_rnd: libc::c_int = (1 as libc::c_int) << intermediate_bits >> 1 as libc::c_int;
+    let intermediate_bits: libc::c_int = 4i32;
+    let intermediate_rnd: libc::c_int = (1i32) << intermediate_bits >> 1i32;
     dst_stride = dst_stride;
     src_stride = src_stride;
     if mx != 0 {
         if my != 0 {
             let mut mid: [int16_t; 16512] = [0; 16512];
             let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
-            let mut tmp_h: libc::c_int = h + 1 as libc::c_int;
+            let mut tmp_h: libc::c_int = h + 1i32;
             loop {
-                let mut x: libc::c_int = 0 as libc::c_int;
+                let mut x: libc::c_int = 0i32;
                 while x < w {
-                    *mid_ptr.offset(x as isize) = (16 as libc::c_int
-                        * *src.offset(x as isize) as libc::c_int
-                        + mx * (*src.offset((x + 1 as libc::c_int) as isize) as libc::c_int
+                    *mid_ptr.offset(x as isize) = (16i32 * *src.offset(x as isize) as libc::c_int
+                        + mx * (*src.offset((x + 1i32) as isize) as libc::c_int
                             - *src.offset(x as isize) as libc::c_int)
-                        + ((1 as libc::c_int) << 4 as libc::c_int - intermediate_bits
-                            >> 1 as libc::c_int)
-                        >> 4 as libc::c_int - intermediate_bits)
+                        + ((1i32) << 4i32 - intermediate_bits >> 1i32)
+                        >> 4i32 - intermediate_bits)
                         as int16_t;
                     x += 1;
                 }
-                mid_ptr = mid_ptr.offset(128 as libc::c_int as isize);
+                mid_ptr = mid_ptr.offset(128isize);
                 src = src.offset(src_stride as isize);
                 tmp_h -= 1;
                 if !(tmp_h != 0) {
@@ -1973,20 +1762,18 @@ unsafe extern "C" fn put_bilin_c(
             }
             mid_ptr = mid.as_mut_ptr();
             loop {
-                let mut x_0: libc::c_int = 0 as libc::c_int;
+                let mut x_0: libc::c_int = 0i32;
                 while x_0 < w {
                     *dst.offset(x_0 as isize) = iclip_u8(
-                        16 as libc::c_int * *mid_ptr.offset(x_0 as isize) as libc::c_int
-                            + my * (*mid_ptr.offset((x_0 + 128 as libc::c_int) as isize)
-                                as libc::c_int
+                        16i32 * *mid_ptr.offset(x_0 as isize) as libc::c_int
+                            + my * (*mid_ptr.offset((x_0 + 128i32) as isize) as libc::c_int
                                 - *mid_ptr.offset(x_0 as isize) as libc::c_int)
-                            + ((1 as libc::c_int) << 4 as libc::c_int + intermediate_bits
-                                >> 1 as libc::c_int)
-                            >> 4 as libc::c_int + intermediate_bits,
+                            + ((1i32) << 4i32 + intermediate_bits >> 1i32)
+                            >> 4i32 + intermediate_bits,
                     ) as pixel;
                     x_0 += 1;
                 }
-                mid_ptr = mid_ptr.offset(128 as libc::c_int as isize);
+                mid_ptr = mid_ptr.offset(128isize);
                 dst = dst.offset(dst_stride as isize);
                 h -= 1;
                 if !(h != 0) {
@@ -1995,15 +1782,13 @@ unsafe extern "C" fn put_bilin_c(
             }
         } else {
             loop {
-                let mut x_1: libc::c_int = 0 as libc::c_int;
+                let mut x_1: libc::c_int = 0i32;
                 while x_1 < w {
-                    let px: libc::c_int = 16 as libc::c_int
-                        * *src.offset(x_1 as isize) as libc::c_int
-                        + mx * (*src.offset((x_1 + 1 as libc::c_int) as isize) as libc::c_int
+                    let px: libc::c_int = 16i32 * *src.offset(x_1 as isize) as libc::c_int
+                        + mx * (*src.offset((x_1 + 1i32) as isize) as libc::c_int
                             - *src.offset(x_1 as isize) as libc::c_int)
-                        + ((1 as libc::c_int) << 4 as libc::c_int - intermediate_bits
-                            >> 1 as libc::c_int)
-                        >> 4 as libc::c_int - intermediate_bits;
+                        + ((1i32) << 4i32 - intermediate_bits >> 1i32)
+                        >> 4i32 - intermediate_bits;
                     *dst.offset(x_1 as isize) =
                         iclip_u8(px + intermediate_rnd >> intermediate_bits) as pixel;
                     x_1 += 1;
@@ -2018,15 +1803,15 @@ unsafe extern "C" fn put_bilin_c(
         }
     } else if my != 0 {
         loop {
-            let mut x_2: libc::c_int = 0 as libc::c_int;
+            let mut x_2: libc::c_int = 0i32;
             while x_2 < w {
                 *dst.offset(x_2 as isize) = iclip_u8(
-                    16 as libc::c_int * *src.offset(x_2 as isize) as libc::c_int
+                    16i32 * *src.offset(x_2 as isize) as libc::c_int
                         + my * (*src.offset((x_2 as libc::c_long + src_stride) as isize)
                             as libc::c_int
                             - *src.offset(x_2 as isize) as libc::c_int)
-                        + ((1 as libc::c_int) << 4 as libc::c_int >> 1 as libc::c_int)
-                        >> 4 as libc::c_int,
+                        + ((1i32) << 4i32 >> 1i32)
+                        >> 4i32,
                 ) as pixel;
                 x_2 += 1;
             }
@@ -2053,31 +1838,28 @@ unsafe extern "C" fn put_bilin_scaled_c(
     dx: libc::c_int,
     dy: libc::c_int,
 ) {
-    let intermediate_bits: libc::c_int = 4 as libc::c_int;
-    let mut tmp_h: libc::c_int =
-        ((h - 1 as libc::c_int) * dy + my >> 10 as libc::c_int) + 2 as libc::c_int;
+    let intermediate_bits: libc::c_int = 4i32;
+    let mut tmp_h: libc::c_int = ((h - 1i32) * dy + my >> 10i32) + 2i32;
     let mut mid: [int16_t; 32896] = [0; 32896];
     let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
     loop {
         let mut x: libc::c_int = 0;
         let mut imx: libc::c_int = mx;
-        let mut ioff: libc::c_int = 0 as libc::c_int;
-        x = 0 as libc::c_int;
+        let mut ioff: libc::c_int = 0i32;
+        x = 0i32;
         while x < w {
-            *mid_ptr.offset(x as isize) = (16 as libc::c_int
-                * *src.offset(ioff as isize) as libc::c_int
-                + (imx >> 6 as libc::c_int)
-                    * (*src.offset((ioff + 1 as libc::c_int) as isize) as libc::c_int
+            *mid_ptr.offset(x as isize) = (16i32 * *src.offset(ioff as isize) as libc::c_int
+                + (imx >> 6i32)
+                    * (*src.offset((ioff + 1i32) as isize) as libc::c_int
                         - *src.offset(ioff as isize) as libc::c_int)
-                + ((1 as libc::c_int) << 4 as libc::c_int - intermediate_bits >> 1 as libc::c_int)
-                >> 4 as libc::c_int - intermediate_bits)
-                as int16_t;
+                + ((1i32) << 4i32 - intermediate_bits >> 1i32)
+                >> 4i32 - intermediate_bits) as int16_t;
             imx += dx;
-            ioff += imx >> 10 as libc::c_int;
-            imx &= 0x3ff as libc::c_int;
+            ioff += imx >> 10i32;
+            imx &= 0x3ffi32;
             x += 1;
         }
-        mid_ptr = mid_ptr.offset(128 as libc::c_int as isize);
+        mid_ptr = mid_ptr.offset(128isize);
         src = src.offset(src_stride as isize);
         tmp_h -= 1;
         if !(tmp_h != 0) {
@@ -2087,22 +1869,21 @@ unsafe extern "C" fn put_bilin_scaled_c(
     mid_ptr = mid.as_mut_ptr();
     loop {
         let mut x_0: libc::c_int = 0;
-        x_0 = 0 as libc::c_int;
+        x_0 = 0i32;
         while x_0 < w {
             *dst.offset(x_0 as isize) = iclip_u8(
-                16 as libc::c_int * *mid_ptr.offset(x_0 as isize) as libc::c_int
-                    + (my >> 6 as libc::c_int)
-                        * (*mid_ptr.offset((x_0 + 128 as libc::c_int) as isize) as libc::c_int
+                16i32 * *mid_ptr.offset(x_0 as isize) as libc::c_int
+                    + (my >> 6i32)
+                        * (*mid_ptr.offset((x_0 + 128i32) as isize) as libc::c_int
                             - *mid_ptr.offset(x_0 as isize) as libc::c_int)
-                    + ((1 as libc::c_int) << 4 as libc::c_int + intermediate_bits
-                        >> 1 as libc::c_int)
-                    >> 4 as libc::c_int + intermediate_bits,
+                    + ((1i32) << 4i32 + intermediate_bits >> 1i32)
+                    >> 4i32 + intermediate_bits,
             ) as pixel;
             x_0 += 1;
         }
         my += dy;
-        mid_ptr = mid_ptr.offset(((my >> 10 as libc::c_int) * 128 as libc::c_int) as isize);
-        my &= 0x3ff as libc::c_int;
+        mid_ptr = mid_ptr.offset(((my >> 10i32) * 128i32) as isize);
+        my &= 0x3ffi32;
         dst = dst.offset(dst_stride as isize);
         h -= 1;
         if !(h != 0) {
@@ -2119,27 +1900,25 @@ unsafe extern "C" fn prep_bilin_c(
     mx: libc::c_int,
     my: libc::c_int,
 ) {
-    let intermediate_bits: libc::c_int = 4 as libc::c_int;
+    let intermediate_bits: libc::c_int = 4i32;
     src_stride = src_stride;
     if mx != 0 {
         if my != 0 {
             let mut mid: [int16_t; 16512] = [0; 16512];
             let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
-            let mut tmp_h: libc::c_int = h + 1 as libc::c_int;
+            let mut tmp_h: libc::c_int = h + 1i32;
             loop {
-                let mut x: libc::c_int = 0 as libc::c_int;
+                let mut x: libc::c_int = 0i32;
                 while x < w {
-                    *mid_ptr.offset(x as isize) = (16 as libc::c_int
-                        * *src.offset(x as isize) as libc::c_int
-                        + mx * (*src.offset((x + 1 as libc::c_int) as isize) as libc::c_int
+                    *mid_ptr.offset(x as isize) = (16i32 * *src.offset(x as isize) as libc::c_int
+                        + mx * (*src.offset((x + 1i32) as isize) as libc::c_int
                             - *src.offset(x as isize) as libc::c_int)
-                        + ((1 as libc::c_int) << 4 as libc::c_int - intermediate_bits
-                            >> 1 as libc::c_int)
-                        >> 4 as libc::c_int - intermediate_bits)
+                        + ((1i32) << 4i32 - intermediate_bits >> 1i32)
+                        >> 4i32 - intermediate_bits)
                         as int16_t;
                     x += 1;
                 }
-                mid_ptr = mid_ptr.offset(128 as libc::c_int as isize);
+                mid_ptr = mid_ptr.offset(128isize);
                 src = src.offset(src_stride as isize);
                 tmp_h -= 1;
                 if !(tmp_h != 0) {
@@ -2148,19 +1927,18 @@ unsafe extern "C" fn prep_bilin_c(
             }
             mid_ptr = mid.as_mut_ptr();
             loop {
-                let mut x_0: libc::c_int = 0 as libc::c_int;
+                let mut x_0: libc::c_int = 0i32;
                 while x_0 < w {
-                    *tmp.offset(x_0 as isize) =
-                        ((16 as libc::c_int * *mid_ptr.offset(x_0 as isize) as libc::c_int
-                            + my * (*mid_ptr.offset((x_0 + 128 as libc::c_int) as isize)
-                                as libc::c_int
-                                - *mid_ptr.offset(x_0 as isize) as libc::c_int)
-                            + ((1 as libc::c_int) << 4 as libc::c_int >> 1 as libc::c_int)
-                            >> 4 as libc::c_int)
-                            - 0 as libc::c_int) as int16_t;
+                    *tmp.offset(x_0 as isize) = ((16i32
+                        * *mid_ptr.offset(x_0 as isize) as libc::c_int
+                        + my * (*mid_ptr.offset((x_0 + 128i32) as isize) as libc::c_int
+                            - *mid_ptr.offset(x_0 as isize) as libc::c_int)
+                        + ((1i32) << 4i32 >> 1i32)
+                        >> 4i32)
+                        - 0i32) as int16_t;
                     x_0 += 1;
                 }
-                mid_ptr = mid_ptr.offset(128 as libc::c_int as isize);
+                mid_ptr = mid_ptr.offset(128isize);
                 tmp = tmp.offset(w as isize);
                 h -= 1;
                 if !(h != 0) {
@@ -2169,16 +1947,14 @@ unsafe extern "C" fn prep_bilin_c(
             }
         } else {
             loop {
-                let mut x_1: libc::c_int = 0 as libc::c_int;
+                let mut x_1: libc::c_int = 0i32;
                 while x_1 < w {
-                    *tmp.offset(x_1 as isize) =
-                        ((16 as libc::c_int * *src.offset(x_1 as isize) as libc::c_int
-                            + mx * (*src.offset((x_1 + 1 as libc::c_int) as isize) as libc::c_int
-                                - *src.offset(x_1 as isize) as libc::c_int)
-                            + ((1 as libc::c_int) << 4 as libc::c_int - intermediate_bits
-                                >> 1 as libc::c_int)
-                            >> 4 as libc::c_int - intermediate_bits)
-                            - 0 as libc::c_int) as int16_t;
+                    *tmp.offset(x_1 as isize) = ((16i32 * *src.offset(x_1 as isize) as libc::c_int
+                        + mx * (*src.offset((x_1 + 1i32) as isize) as libc::c_int
+                            - *src.offset(x_1 as isize) as libc::c_int)
+                        + ((1i32) << 4i32 - intermediate_bits >> 1i32)
+                        >> 4i32 - intermediate_bits)
+                        - 0i32) as int16_t;
                     x_1 += 1;
                 }
                 tmp = tmp.offset(w as isize);
@@ -2191,17 +1967,15 @@ unsafe extern "C" fn prep_bilin_c(
         }
     } else if my != 0 {
         loop {
-            let mut x_2: libc::c_int = 0 as libc::c_int;
+            let mut x_2: libc::c_int = 0i32;
             while x_2 < w {
-                *tmp.offset(x_2 as isize) = ((16 as libc::c_int
-                    * *src.offset(x_2 as isize) as libc::c_int
+                *tmp.offset(x_2 as isize) = ((16i32 * *src.offset(x_2 as isize) as libc::c_int
                     + my * (*src.offset((x_2 as libc::c_long + src_stride) as isize)
                         as libc::c_int
                         - *src.offset(x_2 as isize) as libc::c_int)
-                    + ((1 as libc::c_int) << 4 as libc::c_int - intermediate_bits
-                        >> 1 as libc::c_int)
-                    >> 4 as libc::c_int - intermediate_bits)
-                    - 0 as libc::c_int) as int16_t;
+                    + ((1i32) << 4i32 - intermediate_bits >> 1i32)
+                    >> 4i32 - intermediate_bits)
+                    - 0i32) as int16_t;
                 x_2 += 1;
             }
             tmp = tmp.offset(w as isize);
@@ -2226,31 +2000,28 @@ unsafe extern "C" fn prep_bilin_scaled_c(
     dx: libc::c_int,
     dy: libc::c_int,
 ) {
-    let intermediate_bits: libc::c_int = 4 as libc::c_int;
-    let mut tmp_h: libc::c_int =
-        ((h - 1 as libc::c_int) * dy + my >> 10 as libc::c_int) + 2 as libc::c_int;
+    let intermediate_bits: libc::c_int = 4i32;
+    let mut tmp_h: libc::c_int = ((h - 1i32) * dy + my >> 10i32) + 2i32;
     let mut mid: [int16_t; 32896] = [0; 32896];
     let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
     loop {
         let mut x: libc::c_int = 0;
         let mut imx: libc::c_int = mx;
-        let mut ioff: libc::c_int = 0 as libc::c_int;
-        x = 0 as libc::c_int;
+        let mut ioff: libc::c_int = 0i32;
+        x = 0i32;
         while x < w {
-            *mid_ptr.offset(x as isize) = (16 as libc::c_int
-                * *src.offset(ioff as isize) as libc::c_int
-                + (imx >> 6 as libc::c_int)
-                    * (*src.offset((ioff + 1 as libc::c_int) as isize) as libc::c_int
+            *mid_ptr.offset(x as isize) = (16i32 * *src.offset(ioff as isize) as libc::c_int
+                + (imx >> 6i32)
+                    * (*src.offset((ioff + 1i32) as isize) as libc::c_int
                         - *src.offset(ioff as isize) as libc::c_int)
-                + ((1 as libc::c_int) << 4 as libc::c_int - intermediate_bits >> 1 as libc::c_int)
-                >> 4 as libc::c_int - intermediate_bits)
-                as int16_t;
+                + ((1i32) << 4i32 - intermediate_bits >> 1i32)
+                >> 4i32 - intermediate_bits) as int16_t;
             imx += dx;
-            ioff += imx >> 10 as libc::c_int;
-            imx &= 0x3ff as libc::c_int;
+            ioff += imx >> 10i32;
+            imx &= 0x3ffi32;
             x += 1;
         }
-        mid_ptr = mid_ptr.offset(128 as libc::c_int as isize);
+        mid_ptr = mid_ptr.offset(128isize);
         src = src.offset(src_stride as isize);
         tmp_h -= 1;
         if !(tmp_h != 0) {
@@ -2260,21 +2031,20 @@ unsafe extern "C" fn prep_bilin_scaled_c(
     mid_ptr = mid.as_mut_ptr();
     loop {
         let mut x_0: libc::c_int = 0;
-        x_0 = 0 as libc::c_int;
+        x_0 = 0i32;
         while x_0 < w {
-            *tmp.offset(x_0 as isize) = ((16 as libc::c_int
-                * *mid_ptr.offset(x_0 as isize) as libc::c_int
-                + (my >> 6 as libc::c_int)
-                    * (*mid_ptr.offset((x_0 + 128 as libc::c_int) as isize) as libc::c_int
+            *tmp.offset(x_0 as isize) = ((16i32 * *mid_ptr.offset(x_0 as isize) as libc::c_int
+                + (my >> 6i32)
+                    * (*mid_ptr.offset((x_0 + 128i32) as isize) as libc::c_int
                         - *mid_ptr.offset(x_0 as isize) as libc::c_int)
-                + ((1 as libc::c_int) << 4 as libc::c_int >> 1 as libc::c_int)
-                >> 4 as libc::c_int)
-                - 0 as libc::c_int) as int16_t;
+                + ((1i32) << 4i32 >> 1i32)
+                >> 4i32)
+                - 0i32) as int16_t;
             x_0 += 1;
         }
         my += dy;
-        mid_ptr = mid_ptr.offset(((my >> 10 as libc::c_int) * 128 as libc::c_int) as isize);
-        my &= 0x3ff as libc::c_int;
+        mid_ptr = mid_ptr.offset(((my >> 10i32) * 128i32) as isize);
+        my &= 0x3ffi32;
         tmp = tmp.offset(w as isize);
         h -= 1;
         if !(h != 0) {
@@ -2290,12 +2060,11 @@ unsafe extern "C" fn avg_c(
     w: libc::c_int,
     mut h: libc::c_int,
 ) {
-    let intermediate_bits: libc::c_int = 4 as libc::c_int;
-    let sh: libc::c_int = intermediate_bits + 1 as libc::c_int;
-    let rnd: libc::c_int =
-        ((1 as libc::c_int) << intermediate_bits) + 0 as libc::c_int * 2 as libc::c_int;
+    let intermediate_bits: libc::c_int = 4i32;
+    let sh: libc::c_int = intermediate_bits + 1i32;
+    let rnd: libc::c_int = ((1i32) << intermediate_bits) + 0i32 * 2i32;
     loop {
-        let mut x: libc::c_int = 0 as libc::c_int;
+        let mut x: libc::c_int = 0i32;
         while x < w {
             *dst.offset(x as isize) = iclip_u8(
                 *tmp1.offset(x as isize) as libc::c_int
@@ -2323,16 +2092,15 @@ unsafe extern "C" fn w_avg_c(
     mut h: libc::c_int,
     weight: libc::c_int,
 ) {
-    let intermediate_bits: libc::c_int = 4 as libc::c_int;
-    let sh: libc::c_int = intermediate_bits + 4 as libc::c_int;
-    let rnd: libc::c_int =
-        ((8 as libc::c_int) << intermediate_bits) + 0 as libc::c_int * 16 as libc::c_int;
+    let intermediate_bits: libc::c_int = 4i32;
+    let sh: libc::c_int = intermediate_bits + 4i32;
+    let rnd: libc::c_int = ((8i32) << intermediate_bits) + 0i32 * 16i32;
     loop {
-        let mut x: libc::c_int = 0 as libc::c_int;
+        let mut x: libc::c_int = 0i32;
         while x < w {
             *dst.offset(x as isize) = iclip_u8(
                 *tmp1.offset(x as isize) as libc::c_int * weight
-                    + *tmp2.offset(x as isize) as libc::c_int * (16 as libc::c_int - weight)
+                    + *tmp2.offset(x as isize) as libc::c_int * (16i32 - weight)
                     + rnd
                     >> sh,
             ) as pixel;
@@ -2356,17 +2124,16 @@ unsafe extern "C" fn mask_c(
     mut h: libc::c_int,
     mut mask: *const uint8_t,
 ) {
-    let intermediate_bits: libc::c_int = 4 as libc::c_int;
-    let sh: libc::c_int = intermediate_bits + 6 as libc::c_int;
-    let rnd: libc::c_int =
-        ((32 as libc::c_int) << intermediate_bits) + 0 as libc::c_int * 64 as libc::c_int;
+    let intermediate_bits: libc::c_int = 4i32;
+    let sh: libc::c_int = intermediate_bits + 6i32;
+    let rnd: libc::c_int = ((32i32) << intermediate_bits) + 0i32 * 64i32;
     loop {
-        let mut x: libc::c_int = 0 as libc::c_int;
+        let mut x: libc::c_int = 0i32;
         while x < w {
             *dst.offset(x as isize) = iclip_u8(
                 *tmp1.offset(x as isize) as libc::c_int * *mask.offset(x as isize) as libc::c_int
                     + *tmp2.offset(x as isize) as libc::c_int
-                        * (64 as libc::c_int - *mask.offset(x as isize) as libc::c_int)
+                        * (64i32 - *mask.offset(x as isize) as libc::c_int)
                     + rnd
                     >> sh,
             ) as pixel;
@@ -2391,13 +2158,13 @@ unsafe extern "C" fn blend_c(
     mut mask: *const uint8_t,
 ) {
     loop {
-        let mut x: libc::c_int = 0 as libc::c_int;
+        let mut x: libc::c_int = 0i32;
         while x < w {
             *dst.offset(x as isize) = (*dst.offset(x as isize) as libc::c_int
-                * (64 as libc::c_int - *mask.offset(x as isize) as libc::c_int)
+                * (64i32 - *mask.offset(x as isize) as libc::c_int)
                 + *tmp.offset(x as isize) as libc::c_int * *mask.offset(x as isize) as libc::c_int
-                + 32 as libc::c_int
-                >> 6 as libc::c_int) as pixel;
+                + 32i32
+                >> 6i32) as pixel;
             x += 1;
         }
         dst = dst.offset(dst_stride as isize);
@@ -2418,13 +2185,13 @@ unsafe extern "C" fn blend_v_c(
 ) {
     let mask: *const uint8_t = &*dav1d_obmc_masks.as_ptr().offset(w as isize) as *const uint8_t;
     loop {
-        let mut x: libc::c_int = 0 as libc::c_int;
-        while x < w * 3 as libc::c_int >> 2 as libc::c_int {
+        let mut x: libc::c_int = 0i32;
+        while x < w * 3i32 >> 2i32 {
             *dst.offset(x as isize) = (*dst.offset(x as isize) as libc::c_int
-                * (64 as libc::c_int - *mask.offset(x as isize) as libc::c_int)
+                * (64i32 - *mask.offset(x as isize) as libc::c_int)
                 + *tmp.offset(x as isize) as libc::c_int * *mask.offset(x as isize) as libc::c_int
-                + 32 as libc::c_int
-                >> 6 as libc::c_int) as pixel;
+                + 32i32
+                >> 6i32) as pixel;
             x += 1;
         }
         dst = dst.offset(dst_stride as isize);
@@ -2443,18 +2210,17 @@ unsafe extern "C" fn blend_h_c(
     mut h: libc::c_int,
 ) {
     let mut mask: *const uint8_t = &*dav1d_obmc_masks.as_ptr().offset(h as isize) as *const uint8_t;
-    h = h * 3 as libc::c_int >> 2 as libc::c_int;
+    h = h * 3i32 >> 2i32;
     loop {
         let fresh0 = mask;
         mask = mask.offset(1);
         let m: libc::c_int = *fresh0 as libc::c_int;
-        let mut x: libc::c_int = 0 as libc::c_int;
+        let mut x: libc::c_int = 0i32;
         while x < w {
-            *dst.offset(x as isize) = (*dst.offset(x as isize) as libc::c_int
-                * (64 as libc::c_int - m)
+            *dst.offset(x as isize) = (*dst.offset(x as isize) as libc::c_int * (64i32 - m)
                 + *tmp.offset(x as isize) as libc::c_int * m
-                + 32 as libc::c_int
-                >> 6 as libc::c_int) as pixel;
+                + 32i32
+                >> 6i32) as pixel;
             x += 1;
         }
         dst = dst.offset(dst_stride as isize);
@@ -2477,58 +2243,53 @@ unsafe extern "C" fn w_mask_c(
     ss_hor: libc::c_int,
     ss_ver: libc::c_int,
 ) {
-    let intermediate_bits: libc::c_int = 4 as libc::c_int;
-    let bitdepth: libc::c_int = 8 as libc::c_int;
-    let sh: libc::c_int = intermediate_bits + 6 as libc::c_int;
-    let rnd: libc::c_int =
-        ((32 as libc::c_int) << intermediate_bits) + 0 as libc::c_int * 64 as libc::c_int;
-    let mask_sh: libc::c_int = bitdepth + intermediate_bits - 4 as libc::c_int;
-    let mask_rnd: libc::c_int = (1 as libc::c_int) << mask_sh - 5 as libc::c_int;
+    let intermediate_bits: libc::c_int = 4i32;
+    let bitdepth: libc::c_int = 8i32;
+    let sh: libc::c_int = intermediate_bits + 6i32;
+    let rnd: libc::c_int = ((32i32) << intermediate_bits) + 0i32 * 64i32;
+    let mask_sh: libc::c_int = bitdepth + intermediate_bits - 4i32;
+    let mask_rnd: libc::c_int = (1i32) << mask_sh - 5i32;
     loop {
-        let mut x: libc::c_int = 0 as libc::c_int;
+        let mut x: libc::c_int = 0i32;
         while x < w {
             let m: libc::c_int = imin(
-                38 as libc::c_int
+                38i32
                     + (abs(*tmp1.offset(x as isize) as libc::c_int
                         - *tmp2.offset(x as isize) as libc::c_int)
                         + mask_rnd
                         >> mask_sh),
-                64 as libc::c_int,
+                64i32,
             );
             *dst.offset(x as isize) = iclip_u8(
                 *tmp1.offset(x as isize) as libc::c_int * m
-                    + *tmp2.offset(x as isize) as libc::c_int * (64 as libc::c_int - m)
+                    + *tmp2.offset(x as isize) as libc::c_int * (64i32 - m)
                     + rnd
                     >> sh,
             ) as pixel;
             if ss_hor != 0 {
                 x += 1;
                 let n: libc::c_int = imin(
-                    38 as libc::c_int
+                    38i32
                         + (abs(*tmp1.offset(x as isize) as libc::c_int
                             - *tmp2.offset(x as isize) as libc::c_int)
                             + mask_rnd
                             >> mask_sh),
-                    64 as libc::c_int,
+                    64i32,
                 );
                 *dst.offset(x as isize) = iclip_u8(
                     *tmp1.offset(x as isize) as libc::c_int * n
-                        + *tmp2.offset(x as isize) as libc::c_int * (64 as libc::c_int - n)
+                        + *tmp2.offset(x as isize) as libc::c_int * (64i32 - n)
                         + rnd
                         >> sh,
                 ) as pixel;
                 if h & ss_ver != 0 {
-                    *mask.offset((x >> 1 as libc::c_int) as isize) =
-                        (m + n
-                            + *mask.offset((x >> 1 as libc::c_int) as isize) as libc::c_int
-                            + 2 as libc::c_int
-                            - sign
-                            >> 2 as libc::c_int) as uint8_t;
+                    *mask.offset((x >> 1i32) as isize) =
+                        (m + n + *mask.offset((x >> 1i32) as isize) as libc::c_int + 2i32 - sign
+                            >> 2i32) as uint8_t;
                 } else if ss_ver != 0 {
-                    *mask.offset((x >> 1 as libc::c_int) as isize) = (m + n) as uint8_t;
+                    *mask.offset((x >> 1i32) as isize) = (m + n) as uint8_t;
                 } else {
-                    *mask.offset((x >> 1 as libc::c_int) as isize) =
-                        (m + n + 1 as libc::c_int - sign >> 1 as libc::c_int) as uint8_t;
+                    *mask.offset((x >> 1i32) as isize) = (m + n + 1i32 - sign >> 1i32) as uint8_t;
                 }
             } else {
                 *mask.offset(x as isize) = m as uint8_t;
@@ -2538,7 +2299,7 @@ unsafe extern "C" fn w_mask_c(
         tmp1 = tmp1.offset(w as isize);
         tmp2 = tmp2.offset(w as isize);
         dst = dst.offset(dst_stride as isize);
-        if ss_ver == 0 || h & 1 as libc::c_int != 0 {
+        if ss_ver == 0 || h & 1i32 != 0 {
             mask = mask.offset((w >> ss_hor) as isize);
         }
         h -= 1;
@@ -2557,18 +2318,7 @@ unsafe extern "C" fn w_mask_444_c(
     mut mask: *mut uint8_t,
     sign: libc::c_int,
 ) {
-    w_mask_c(
-        dst,
-        dst_stride,
-        tmp1,
-        tmp2,
-        w,
-        h,
-        mask,
-        sign,
-        0 as libc::c_int,
-        0 as libc::c_int,
-    );
+    w_mask_c(dst, dst_stride, tmp1, tmp2, w, h, mask, sign, 0i32, 0i32);
 }
 unsafe extern "C" fn w_mask_422_c(
     dst: *mut pixel,
@@ -2580,18 +2330,7 @@ unsafe extern "C" fn w_mask_422_c(
     mut mask: *mut uint8_t,
     sign: libc::c_int,
 ) {
-    w_mask_c(
-        dst,
-        dst_stride,
-        tmp1,
-        tmp2,
-        w,
-        h,
-        mask,
-        sign,
-        1 as libc::c_int,
-        0 as libc::c_int,
-    );
+    w_mask_c(dst, dst_stride, tmp1, tmp2, w, h, mask, sign, 1i32, 0i32);
 }
 unsafe extern "C" fn w_mask_420_c(
     dst: *mut pixel,
@@ -2603,18 +2342,7 @@ unsafe extern "C" fn w_mask_420_c(
     mut mask: *mut uint8_t,
     sign: libc::c_int,
 ) {
-    w_mask_c(
-        dst,
-        dst_stride,
-        tmp1,
-        tmp2,
-        w,
-        h,
-        mask,
-        sign,
-        1 as libc::c_int,
-        1 as libc::c_int,
-    );
+    w_mask_c(dst, dst_stride, tmp1, tmp2, w, h, mask, sign, 1i32, 1i32);
 }
 unsafe extern "C" fn warp_affine_8x8_c(
     mut dst: *mut pixel,
@@ -2625,99 +2353,78 @@ unsafe extern "C" fn warp_affine_8x8_c(
     mut mx: libc::c_int,
     mut my: libc::c_int,
 ) {
-    let intermediate_bits: libc::c_int = 4 as libc::c_int;
+    let intermediate_bits: libc::c_int = 4i32;
     let mut mid: [int16_t; 120] = [0; 120];
     let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
-    src = src.offset(-((3 as libc::c_int as libc::c_long * src_stride) as isize));
-    let mut y: libc::c_int = 0 as libc::c_int;
-    while y < 15 as libc::c_int {
-        let mut x: libc::c_int = 0 as libc::c_int;
+    src = src.offset(-((3i64 * src_stride) as isize));
+    let mut y: libc::c_int = 0i32;
+    while y < 15i32 {
+        let mut x: libc::c_int = 0i32;
         let mut tmx: libc::c_int = mx;
-        while x < 8 as libc::c_int {
-            let filter: *const int8_t = (dav1d_mc_warp_filter
-                [(64 as libc::c_int + (tmx + 512 as libc::c_int >> 10 as libc::c_int)) as usize])
-                .as_ptr();
-            *mid_ptr.offset(x as isize) = (*filter.offset(0 as libc::c_int as isize) as libc::c_int
-                * *src.offset((x - 3 as libc::c_int * 1 as libc::c_int) as isize) as libc::c_int
-                + *filter.offset(1 as libc::c_int as isize) as libc::c_int
-                    * *src.offset((x - 2 as libc::c_int * 1 as libc::c_int) as isize)
-                        as libc::c_int
-                + *filter.offset(2 as libc::c_int as isize) as libc::c_int
-                    * *src.offset((x - 1 as libc::c_int * 1 as libc::c_int) as isize)
-                        as libc::c_int
-                + *filter.offset(3 as libc::c_int as isize) as libc::c_int
-                    * *src.offset((x + 0 as libc::c_int * 1 as libc::c_int) as isize)
-                        as libc::c_int
-                + *filter.offset(4 as libc::c_int as isize) as libc::c_int
-                    * *src.offset((x + 1 as libc::c_int * 1 as libc::c_int) as isize)
-                        as libc::c_int
-                + *filter.offset(5 as libc::c_int as isize) as libc::c_int
-                    * *src.offset((x + 2 as libc::c_int * 1 as libc::c_int) as isize)
-                        as libc::c_int
-                + *filter.offset(6 as libc::c_int as isize) as libc::c_int
-                    * *src.offset((x + 3 as libc::c_int * 1 as libc::c_int) as isize)
-                        as libc::c_int
-                + *filter.offset(7 as libc::c_int as isize) as libc::c_int
-                    * *src.offset((x + 4 as libc::c_int * 1 as libc::c_int) as isize)
-                        as libc::c_int
-                + ((1 as libc::c_int) << 7 as libc::c_int - intermediate_bits >> 1 as libc::c_int)
-                >> 7 as libc::c_int - intermediate_bits)
-                as int16_t;
+        while x < 8i32 {
+            let filter: *const int8_t =
+                (dav1d_mc_warp_filter[(64i32 + (tmx + 512i32 >> 10i32)) as usize]).as_ptr();
+            *mid_ptr.offset(x as isize) = (*filter.offset(0isize) as libc::c_int
+                * *src.offset((x - 3i32 * 1i32) as isize) as libc::c_int
+                + *filter.offset(1isize) as libc::c_int
+                    * *src.offset((x - 2i32 * 1i32) as isize) as libc::c_int
+                + *filter.offset(2isize) as libc::c_int
+                    * *src.offset((x - 1i32 * 1i32) as isize) as libc::c_int
+                + *filter.offset(3isize) as libc::c_int
+                    * *src.offset((x + 0i32 * 1i32) as isize) as libc::c_int
+                + *filter.offset(4isize) as libc::c_int
+                    * *src.offset((x + 1i32 * 1i32) as isize) as libc::c_int
+                + *filter.offset(5isize) as libc::c_int
+                    * *src.offset((x + 2i32 * 1i32) as isize) as libc::c_int
+                + *filter.offset(6isize) as libc::c_int
+                    * *src.offset((x + 3i32 * 1i32) as isize) as libc::c_int
+                + *filter.offset(7isize) as libc::c_int
+                    * *src.offset((x + 4i32 * 1i32) as isize) as libc::c_int
+                + ((1i32) << 7i32 - intermediate_bits >> 1i32)
+                >> 7i32 - intermediate_bits) as int16_t;
             x += 1;
-            tmx += *abcd.offset(0 as libc::c_int as isize) as libc::c_int;
+            tmx += *abcd.offset(0isize) as libc::c_int;
         }
         src = src.offset(src_stride as isize);
-        mid_ptr = mid_ptr.offset(8 as libc::c_int as isize);
+        mid_ptr = mid_ptr.offset(8isize);
         y += 1;
-        mx += *abcd.offset(1 as libc::c_int as isize) as libc::c_int;
+        mx += *abcd.offset(1isize) as libc::c_int;
     }
-    mid_ptr = &mut *mid
-        .as_mut_ptr()
-        .offset((3 as libc::c_int * 8 as libc::c_int) as isize) as *mut int16_t;
-    let mut y_0: libc::c_int = 0 as libc::c_int;
-    while y_0 < 8 as libc::c_int {
-        let mut x_0: libc::c_int = 0 as libc::c_int;
+    mid_ptr = &mut *mid.as_mut_ptr().offset((3i32 * 8i32) as isize) as *mut int16_t;
+    let mut y_0: libc::c_int = 0i32;
+    while y_0 < 8i32 {
+        let mut x_0: libc::c_int = 0i32;
         let mut tmy: libc::c_int = my;
-        while x_0 < 8 as libc::c_int {
-            let filter_0: *const int8_t = (dav1d_mc_warp_filter
-                [(64 as libc::c_int + (tmy + 512 as libc::c_int >> 10 as libc::c_int)) as usize])
-                .as_ptr();
+        while x_0 < 8i32 {
+            let filter_0: *const int8_t =
+                (dav1d_mc_warp_filter[(64i32 + (tmy + 512i32 >> 10i32)) as usize]).as_ptr();
             *dst.offset(x_0 as isize) = iclip_u8(
-                *filter_0.offset(0 as libc::c_int as isize) as libc::c_int
-                    * *mid_ptr.offset((x_0 - 3 as libc::c_int * 8 as libc::c_int) as isize)
-                        as libc::c_int
-                    + *filter_0.offset(1 as libc::c_int as isize) as libc::c_int
-                        * *mid_ptr.offset((x_0 - 2 as libc::c_int * 8 as libc::c_int) as isize)
-                            as libc::c_int
-                    + *filter_0.offset(2 as libc::c_int as isize) as libc::c_int
-                        * *mid_ptr.offset((x_0 - 1 as libc::c_int * 8 as libc::c_int) as isize)
-                            as libc::c_int
-                    + *filter_0.offset(3 as libc::c_int as isize) as libc::c_int
-                        * *mid_ptr.offset((x_0 + 0 as libc::c_int * 8 as libc::c_int) as isize)
-                            as libc::c_int
-                    + *filter_0.offset(4 as libc::c_int as isize) as libc::c_int
-                        * *mid_ptr.offset((x_0 + 1 as libc::c_int * 8 as libc::c_int) as isize)
-                            as libc::c_int
-                    + *filter_0.offset(5 as libc::c_int as isize) as libc::c_int
-                        * *mid_ptr.offset((x_0 + 2 as libc::c_int * 8 as libc::c_int) as isize)
-                            as libc::c_int
-                    + *filter_0.offset(6 as libc::c_int as isize) as libc::c_int
-                        * *mid_ptr.offset((x_0 + 3 as libc::c_int * 8 as libc::c_int) as isize)
-                            as libc::c_int
-                    + *filter_0.offset(7 as libc::c_int as isize) as libc::c_int
-                        * *mid_ptr.offset((x_0 + 4 as libc::c_int * 8 as libc::c_int) as isize)
-                            as libc::c_int
-                    + ((1 as libc::c_int) << 7 as libc::c_int + intermediate_bits
-                        >> 1 as libc::c_int)
-                    >> 7 as libc::c_int + intermediate_bits,
+                *filter_0.offset(0isize) as libc::c_int
+                    * *mid_ptr.offset((x_0 - 3i32 * 8i32) as isize) as libc::c_int
+                    + *filter_0.offset(1isize) as libc::c_int
+                        * *mid_ptr.offset((x_0 - 2i32 * 8i32) as isize) as libc::c_int
+                    + *filter_0.offset(2isize) as libc::c_int
+                        * *mid_ptr.offset((x_0 - 1i32 * 8i32) as isize) as libc::c_int
+                    + *filter_0.offset(3isize) as libc::c_int
+                        * *mid_ptr.offset((x_0 + 0i32 * 8i32) as isize) as libc::c_int
+                    + *filter_0.offset(4isize) as libc::c_int
+                        * *mid_ptr.offset((x_0 + 1i32 * 8i32) as isize) as libc::c_int
+                    + *filter_0.offset(5isize) as libc::c_int
+                        * *mid_ptr.offset((x_0 + 2i32 * 8i32) as isize) as libc::c_int
+                    + *filter_0.offset(6isize) as libc::c_int
+                        * *mid_ptr.offset((x_0 + 3i32 * 8i32) as isize) as libc::c_int
+                    + *filter_0.offset(7isize) as libc::c_int
+                        * *mid_ptr.offset((x_0 + 4i32 * 8i32) as isize) as libc::c_int
+                    + ((1i32) << 7i32 + intermediate_bits >> 1i32)
+                    >> 7i32 + intermediate_bits,
             ) as pixel;
             x_0 += 1;
-            tmy += *abcd.offset(2 as libc::c_int as isize) as libc::c_int;
+            tmy += *abcd.offset(2isize) as libc::c_int;
         }
-        mid_ptr = mid_ptr.offset(8 as libc::c_int as isize);
+        mid_ptr = mid_ptr.offset(8isize);
         dst = dst.offset(dst_stride as isize);
         y_0 += 1;
-        my += *abcd.offset(3 as libc::c_int as isize) as libc::c_int;
+        my += *abcd.offset(3isize) as libc::c_int;
     }
 }
 unsafe extern "C" fn warp_affine_8x8t_c(
@@ -2729,98 +2436,77 @@ unsafe extern "C" fn warp_affine_8x8t_c(
     mut mx: libc::c_int,
     mut my: libc::c_int,
 ) {
-    let intermediate_bits: libc::c_int = 4 as libc::c_int;
+    let intermediate_bits: libc::c_int = 4i32;
     let mut mid: [int16_t; 120] = [0; 120];
     let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
-    src = src.offset(-((3 as libc::c_int as libc::c_long * src_stride) as isize));
-    let mut y: libc::c_int = 0 as libc::c_int;
-    while y < 15 as libc::c_int {
-        let mut x: libc::c_int = 0 as libc::c_int;
+    src = src.offset(-((3i64 * src_stride) as isize));
+    let mut y: libc::c_int = 0i32;
+    while y < 15i32 {
+        let mut x: libc::c_int = 0i32;
         let mut tmx: libc::c_int = mx;
-        while x < 8 as libc::c_int {
-            let filter: *const int8_t = (dav1d_mc_warp_filter
-                [(64 as libc::c_int + (tmx + 512 as libc::c_int >> 10 as libc::c_int)) as usize])
-                .as_ptr();
-            *mid_ptr.offset(x as isize) = (*filter.offset(0 as libc::c_int as isize) as libc::c_int
-                * *src.offset((x - 3 as libc::c_int * 1 as libc::c_int) as isize) as libc::c_int
-                + *filter.offset(1 as libc::c_int as isize) as libc::c_int
-                    * *src.offset((x - 2 as libc::c_int * 1 as libc::c_int) as isize)
-                        as libc::c_int
-                + *filter.offset(2 as libc::c_int as isize) as libc::c_int
-                    * *src.offset((x - 1 as libc::c_int * 1 as libc::c_int) as isize)
-                        as libc::c_int
-                + *filter.offset(3 as libc::c_int as isize) as libc::c_int
-                    * *src.offset((x + 0 as libc::c_int * 1 as libc::c_int) as isize)
-                        as libc::c_int
-                + *filter.offset(4 as libc::c_int as isize) as libc::c_int
-                    * *src.offset((x + 1 as libc::c_int * 1 as libc::c_int) as isize)
-                        as libc::c_int
-                + *filter.offset(5 as libc::c_int as isize) as libc::c_int
-                    * *src.offset((x + 2 as libc::c_int * 1 as libc::c_int) as isize)
-                        as libc::c_int
-                + *filter.offset(6 as libc::c_int as isize) as libc::c_int
-                    * *src.offset((x + 3 as libc::c_int * 1 as libc::c_int) as isize)
-                        as libc::c_int
-                + *filter.offset(7 as libc::c_int as isize) as libc::c_int
-                    * *src.offset((x + 4 as libc::c_int * 1 as libc::c_int) as isize)
-                        as libc::c_int
-                + ((1 as libc::c_int) << 7 as libc::c_int - intermediate_bits >> 1 as libc::c_int)
-                >> 7 as libc::c_int - intermediate_bits)
-                as int16_t;
+        while x < 8i32 {
+            let filter: *const int8_t =
+                (dav1d_mc_warp_filter[(64i32 + (tmx + 512i32 >> 10i32)) as usize]).as_ptr();
+            *mid_ptr.offset(x as isize) = (*filter.offset(0isize) as libc::c_int
+                * *src.offset((x - 3i32 * 1i32) as isize) as libc::c_int
+                + *filter.offset(1isize) as libc::c_int
+                    * *src.offset((x - 2i32 * 1i32) as isize) as libc::c_int
+                + *filter.offset(2isize) as libc::c_int
+                    * *src.offset((x - 1i32 * 1i32) as isize) as libc::c_int
+                + *filter.offset(3isize) as libc::c_int
+                    * *src.offset((x + 0i32 * 1i32) as isize) as libc::c_int
+                + *filter.offset(4isize) as libc::c_int
+                    * *src.offset((x + 1i32 * 1i32) as isize) as libc::c_int
+                + *filter.offset(5isize) as libc::c_int
+                    * *src.offset((x + 2i32 * 1i32) as isize) as libc::c_int
+                + *filter.offset(6isize) as libc::c_int
+                    * *src.offset((x + 3i32 * 1i32) as isize) as libc::c_int
+                + *filter.offset(7isize) as libc::c_int
+                    * *src.offset((x + 4i32 * 1i32) as isize) as libc::c_int
+                + ((1i32) << 7i32 - intermediate_bits >> 1i32)
+                >> 7i32 - intermediate_bits) as int16_t;
             x += 1;
-            tmx += *abcd.offset(0 as libc::c_int as isize) as libc::c_int;
+            tmx += *abcd.offset(0isize) as libc::c_int;
         }
         src = src.offset(src_stride as isize);
-        mid_ptr = mid_ptr.offset(8 as libc::c_int as isize);
+        mid_ptr = mid_ptr.offset(8isize);
         y += 1;
-        mx += *abcd.offset(1 as libc::c_int as isize) as libc::c_int;
+        mx += *abcd.offset(1isize) as libc::c_int;
     }
-    mid_ptr = &mut *mid
-        .as_mut_ptr()
-        .offset((3 as libc::c_int * 8 as libc::c_int) as isize) as *mut int16_t;
-    let mut y_0: libc::c_int = 0 as libc::c_int;
-    while y_0 < 8 as libc::c_int {
-        let mut x_0: libc::c_int = 0 as libc::c_int;
+    mid_ptr = &mut *mid.as_mut_ptr().offset((3i32 * 8i32) as isize) as *mut int16_t;
+    let mut y_0: libc::c_int = 0i32;
+    while y_0 < 8i32 {
+        let mut x_0: libc::c_int = 0i32;
         let mut tmy: libc::c_int = my;
-        while x_0 < 8 as libc::c_int {
-            let filter_0: *const int8_t = (dav1d_mc_warp_filter
-                [(64 as libc::c_int + (tmy + 512 as libc::c_int >> 10 as libc::c_int)) as usize])
-                .as_ptr();
-            *tmp.offset(x_0 as isize) = ((*filter_0.offset(0 as libc::c_int as isize)
-                as libc::c_int
-                * *mid_ptr.offset((x_0 - 3 as libc::c_int * 8 as libc::c_int) as isize)
-                    as libc::c_int
-                + *filter_0.offset(1 as libc::c_int as isize) as libc::c_int
-                    * *mid_ptr.offset((x_0 - 2 as libc::c_int * 8 as libc::c_int) as isize)
-                        as libc::c_int
-                + *filter_0.offset(2 as libc::c_int as isize) as libc::c_int
-                    * *mid_ptr.offset((x_0 - 1 as libc::c_int * 8 as libc::c_int) as isize)
-                        as libc::c_int
-                + *filter_0.offset(3 as libc::c_int as isize) as libc::c_int
-                    * *mid_ptr.offset((x_0 + 0 as libc::c_int * 8 as libc::c_int) as isize)
-                        as libc::c_int
-                + *filter_0.offset(4 as libc::c_int as isize) as libc::c_int
-                    * *mid_ptr.offset((x_0 + 1 as libc::c_int * 8 as libc::c_int) as isize)
-                        as libc::c_int
-                + *filter_0.offset(5 as libc::c_int as isize) as libc::c_int
-                    * *mid_ptr.offset((x_0 + 2 as libc::c_int * 8 as libc::c_int) as isize)
-                        as libc::c_int
-                + *filter_0.offset(6 as libc::c_int as isize) as libc::c_int
-                    * *mid_ptr.offset((x_0 + 3 as libc::c_int * 8 as libc::c_int) as isize)
-                        as libc::c_int
-                + *filter_0.offset(7 as libc::c_int as isize) as libc::c_int
-                    * *mid_ptr.offset((x_0 + 4 as libc::c_int * 8 as libc::c_int) as isize)
-                        as libc::c_int
-                + ((1 as libc::c_int) << 7 as libc::c_int >> 1 as libc::c_int)
-                >> 7 as libc::c_int)
-                - 0 as libc::c_int) as int16_t;
+        while x_0 < 8i32 {
+            let filter_0: *const int8_t =
+                (dav1d_mc_warp_filter[(64i32 + (tmy + 512i32 >> 10i32)) as usize]).as_ptr();
+            *tmp.offset(x_0 as isize) = ((*filter_0.offset(0isize) as libc::c_int
+                * *mid_ptr.offset((x_0 - 3i32 * 8i32) as isize) as libc::c_int
+                + *filter_0.offset(1isize) as libc::c_int
+                    * *mid_ptr.offset((x_0 - 2i32 * 8i32) as isize) as libc::c_int
+                + *filter_0.offset(2isize) as libc::c_int
+                    * *mid_ptr.offset((x_0 - 1i32 * 8i32) as isize) as libc::c_int
+                + *filter_0.offset(3isize) as libc::c_int
+                    * *mid_ptr.offset((x_0 + 0i32 * 8i32) as isize) as libc::c_int
+                + *filter_0.offset(4isize) as libc::c_int
+                    * *mid_ptr.offset((x_0 + 1i32 * 8i32) as isize) as libc::c_int
+                + *filter_0.offset(5isize) as libc::c_int
+                    * *mid_ptr.offset((x_0 + 2i32 * 8i32) as isize) as libc::c_int
+                + *filter_0.offset(6isize) as libc::c_int
+                    * *mid_ptr.offset((x_0 + 3i32 * 8i32) as isize) as libc::c_int
+                + *filter_0.offset(7isize) as libc::c_int
+                    * *mid_ptr.offset((x_0 + 4i32 * 8i32) as isize) as libc::c_int
+                + ((1i32) << 7i32 >> 1i32)
+                >> 7i32)
+                - 0i32) as int16_t;
             x_0 += 1;
-            tmy += *abcd.offset(2 as libc::c_int as isize) as libc::c_int;
+            tmy += *abcd.offset(2isize) as libc::c_int;
         }
-        mid_ptr = mid_ptr.offset(8 as libc::c_int as isize);
+        mid_ptr = mid_ptr.offset(8isize);
         tmp = tmp.offset(tmp_stride as isize);
         y_0 += 1;
-        my += *abcd.offset(3 as libc::c_int as isize) as libc::c_int;
+        my += *abcd.offset(3isize) as libc::c_int;
     }
 }
 unsafe extern "C" fn emu_edge_c(
@@ -2836,41 +2522,19 @@ unsafe extern "C" fn emu_edge_c(
     ref_stride: ptrdiff_t,
 ) {
     ref_0 = ref_0.offset(
-        (iclip(
-            y as libc::c_int,
-            0 as libc::c_int,
-            ih as libc::c_int - 1 as libc::c_int,
-        ) as libc::c_long
-            * ref_stride
-            + iclip(
-                x as libc::c_int,
-                0 as libc::c_int,
-                iw as libc::c_int - 1 as libc::c_int,
-            ) as libc::c_long) as isize,
+        (iclip(y as libc::c_int, 0i32, ih as libc::c_int - 1i32) as libc::c_long * ref_stride
+            + iclip(x as libc::c_int, 0i32, iw as libc::c_int - 1i32) as libc::c_long)
+            as isize,
     );
-    let left_ext: libc::c_int = iclip(
-        -x as libc::c_int,
-        0 as libc::c_int,
-        bw as libc::c_int - 1 as libc::c_int,
-    );
-    let right_ext: libc::c_int = iclip(
-        (x + bw - iw) as libc::c_int,
-        0 as libc::c_int,
-        bw as libc::c_int - 1 as libc::c_int,
-    );
+    let left_ext: libc::c_int = iclip(-x as libc::c_int, 0i32, bw as libc::c_int - 1i32);
+    let right_ext: libc::c_int =
+        iclip((x + bw - iw) as libc::c_int, 0i32, bw as libc::c_int - 1i32);
     if !(((left_ext + right_ext) as libc::c_long) < bw) {
         unreachable!();
     }
-    let top_ext: libc::c_int = iclip(
-        -y as libc::c_int,
-        0 as libc::c_int,
-        bh as libc::c_int - 1 as libc::c_int,
-    );
-    let bottom_ext: libc::c_int = iclip(
-        (y + bh - ih) as libc::c_int,
-        0 as libc::c_int,
-        bh as libc::c_int - 1 as libc::c_int,
-    );
+    let top_ext: libc::c_int = iclip(-y as libc::c_int, 0i32, bh as libc::c_int - 1i32);
+    let bottom_ext: libc::c_int =
+        iclip((y + bh - ih) as libc::c_int, 0i32, bh as libc::c_int - 1i32);
     if !(((top_ext + bottom_ext) as libc::c_long) < bh) {
         unreachable!();
     }
@@ -2879,7 +2543,7 @@ unsafe extern "C" fn emu_edge_c(
         (bw - left_ext as libc::c_long - right_ext as libc::c_long) as libc::c_int;
     let center_h: libc::c_int =
         (bh - top_ext as libc::c_long - bottom_ext as libc::c_long) as libc::c_int;
-    let mut y_0: libc::c_int = 0 as libc::c_int;
+    let mut y_0: libc::c_int = 0i32;
     while y_0 < center_h {
         memcpy(
             blk.offset(left_ext as isize) as *mut libc::c_void,
@@ -2896,7 +2560,7 @@ unsafe extern "C" fn emu_edge_c(
         if right_ext != 0 {
             memset(
                 blk.offset(left_ext as isize).offset(center_w as isize) as *mut libc::c_void,
-                *blk.offset((left_ext + center_w - 1 as libc::c_int) as isize) as libc::c_int,
+                *blk.offset((left_ext + center_w - 1i32) as isize) as libc::c_int,
                 right_ext as libc::c_ulong,
             );
         }
@@ -2905,7 +2569,7 @@ unsafe extern "C" fn emu_edge_c(
         y_0 += 1;
     }
     blk = dst.offset((top_ext as libc::c_long * dst_stride) as isize);
-    let mut y_1: libc::c_int = 0 as libc::c_int;
+    let mut y_1: libc::c_int = 0i32;
     while y_1 < top_ext {
         memcpy(
             dst as *mut libc::c_void,
@@ -2916,7 +2580,7 @@ unsafe extern "C" fn emu_edge_c(
         y_1 += 1;
     }
     dst = dst.offset((center_h as libc::c_long * dst_stride) as isize);
-    let mut y_2: libc::c_int = 0 as libc::c_int;
+    let mut y_2: libc::c_int = 0i32;
     while y_2 < bottom_ext {
         memcpy(
             dst as *mut libc::c_void,
@@ -2940,66 +2604,40 @@ unsafe extern "C" fn resize_c(
 ) {
     loop {
         let mut mx: libc::c_int = mx0;
-        let mut src_x: libc::c_int = -(1 as libc::c_int);
-        let mut x: libc::c_int = 0 as libc::c_int;
+        let mut src_x: libc::c_int = -(1i32);
+        let mut x: libc::c_int = 0i32;
         while x < dst_w {
-            let F: *const int8_t =
-                (dav1d_resize_filter[(mx >> 8 as libc::c_int) as usize]).as_ptr();
+            let F: *const int8_t = (dav1d_resize_filter[(mx >> 8i32) as usize]).as_ptr();
             *dst.offset(x as isize) = iclip_u8(
-                -(*F.offset(0 as libc::c_int as isize) as libc::c_int
-                    * *src.offset(iclip(
-                        src_x - 3 as libc::c_int,
-                        0 as libc::c_int,
-                        src_w - 1 as libc::c_int,
-                    ) as isize) as libc::c_int
-                    + *F.offset(1 as libc::c_int as isize) as libc::c_int
-                        * *src.offset(iclip(
-                            src_x - 2 as libc::c_int,
-                            0 as libc::c_int,
-                            src_w - 1 as libc::c_int,
-                        ) as isize) as libc::c_int
-                    + *F.offset(2 as libc::c_int as isize) as libc::c_int
-                        * *src.offset(iclip(
-                            src_x - 1 as libc::c_int,
-                            0 as libc::c_int,
-                            src_w - 1 as libc::c_int,
-                        ) as isize) as libc::c_int
-                    + *F.offset(3 as libc::c_int as isize) as libc::c_int
-                        * *src.offset(iclip(
-                            src_x + 0 as libc::c_int,
-                            0 as libc::c_int,
-                            src_w - 1 as libc::c_int,
-                        ) as isize) as libc::c_int
-                    + *F.offset(4 as libc::c_int as isize) as libc::c_int
-                        * *src.offset(iclip(
-                            src_x + 1 as libc::c_int,
-                            0 as libc::c_int,
-                            src_w - 1 as libc::c_int,
-                        ) as isize) as libc::c_int
-                    + *F.offset(5 as libc::c_int as isize) as libc::c_int
-                        * *src.offset(iclip(
-                            src_x + 2 as libc::c_int,
-                            0 as libc::c_int,
-                            src_w - 1 as libc::c_int,
-                        ) as isize) as libc::c_int
-                    + *F.offset(6 as libc::c_int as isize) as libc::c_int
-                        * *src.offset(iclip(
-                            src_x + 3 as libc::c_int,
-                            0 as libc::c_int,
-                            src_w - 1 as libc::c_int,
-                        ) as isize) as libc::c_int
-                    + *F.offset(7 as libc::c_int as isize) as libc::c_int
-                        * *src.offset(iclip(
-                            src_x + 4 as libc::c_int,
-                            0 as libc::c_int,
-                            src_w - 1 as libc::c_int,
-                        ) as isize) as libc::c_int)
-                    + 64 as libc::c_int
-                    >> 7 as libc::c_int,
+                -(*F.offset(0isize) as libc::c_int
+                    * *src.offset(iclip(src_x - 3i32, 0i32, src_w - 1i32) as isize) as libc::c_int
+                    + *F.offset(1isize) as libc::c_int
+                        * *src.offset(iclip(src_x - 2i32, 0i32, src_w - 1i32) as isize)
+                            as libc::c_int
+                    + *F.offset(2isize) as libc::c_int
+                        * *src.offset(iclip(src_x - 1i32, 0i32, src_w - 1i32) as isize)
+                            as libc::c_int
+                    + *F.offset(3isize) as libc::c_int
+                        * *src.offset(iclip(src_x + 0i32, 0i32, src_w - 1i32) as isize)
+                            as libc::c_int
+                    + *F.offset(4isize) as libc::c_int
+                        * *src.offset(iclip(src_x + 1i32, 0i32, src_w - 1i32) as isize)
+                            as libc::c_int
+                    + *F.offset(5isize) as libc::c_int
+                        * *src.offset(iclip(src_x + 2i32, 0i32, src_w - 1i32) as isize)
+                            as libc::c_int
+                    + *F.offset(6isize) as libc::c_int
+                        * *src.offset(iclip(src_x + 3i32, 0i32, src_w - 1i32) as isize)
+                            as libc::c_int
+                    + *F.offset(7isize) as libc::c_int
+                        * *src.offset(iclip(src_x + 4i32, 0i32, src_w - 1i32) as isize)
+                            as libc::c_int)
+                    + 64i32
+                    >> 7i32,
             ) as pixel;
             mx += dx;
-            src_x += mx >> 14 as libc::c_int;
-            mx &= 0x3fff as libc::c_int;
+            src_x += mx >> 14i32;
+            mx &= 0x3fffi32;
             x += 1;
         }
         dst = dst.offset(dst_stride as isize);
@@ -3013,7 +2651,7 @@ unsafe extern "C" fn resize_c(
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
-    (*c).mc[FILTER_2D_8TAP_REGULAR as libc::c_int as usize] = Some(
+    (*c).mc[FILTER_2D_8TAP_REGULAR as usize] = Some(
         put_8tap_regular_c
             as unsafe extern "C" fn(
                 *mut pixel,
@@ -3026,7 +2664,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mc_scaled[FILTER_2D_8TAP_REGULAR as libc::c_int as usize] = Some(
+    (*c).mc_scaled[FILTER_2D_8TAP_REGULAR as usize] = Some(
         put_8tap_regular_scaled_c
             as unsafe extern "C" fn(
                 *mut pixel,
@@ -3041,7 +2679,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mct[FILTER_2D_8TAP_REGULAR as libc::c_int as usize] = Some(
+    (*c).mct[FILTER_2D_8TAP_REGULAR as usize] = Some(
         prep_8tap_regular_c
             as unsafe extern "C" fn(
                 *mut int16_t,
@@ -3053,7 +2691,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mct_scaled[FILTER_2D_8TAP_REGULAR as libc::c_int as usize] = Some(
+    (*c).mct_scaled[FILTER_2D_8TAP_REGULAR as usize] = Some(
         prep_8tap_regular_scaled_c
             as unsafe extern "C" fn(
                 *mut int16_t,
@@ -3067,7 +2705,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mc[FILTER_2D_8TAP_REGULAR_SMOOTH as libc::c_int as usize] = Some(
+    (*c).mc[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = Some(
         put_8tap_regular_smooth_c
             as unsafe extern "C" fn(
                 *mut pixel,
@@ -3080,7 +2718,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mc_scaled[FILTER_2D_8TAP_REGULAR_SMOOTH as libc::c_int as usize] = Some(
+    (*c).mc_scaled[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = Some(
         put_8tap_regular_smooth_scaled_c
             as unsafe extern "C" fn(
                 *mut pixel,
@@ -3095,7 +2733,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mct[FILTER_2D_8TAP_REGULAR_SMOOTH as libc::c_int as usize] = Some(
+    (*c).mct[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = Some(
         prep_8tap_regular_smooth_c
             as unsafe extern "C" fn(
                 *mut int16_t,
@@ -3107,7 +2745,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mct_scaled[FILTER_2D_8TAP_REGULAR_SMOOTH as libc::c_int as usize] = Some(
+    (*c).mct_scaled[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = Some(
         prep_8tap_regular_smooth_scaled_c
             as unsafe extern "C" fn(
                 *mut int16_t,
@@ -3121,7 +2759,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mc[FILTER_2D_8TAP_REGULAR_SHARP as libc::c_int as usize] = Some(
+    (*c).mc[FILTER_2D_8TAP_REGULAR_SHARP as usize] = Some(
         put_8tap_regular_sharp_c
             as unsafe extern "C" fn(
                 *mut pixel,
@@ -3134,7 +2772,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mc_scaled[FILTER_2D_8TAP_REGULAR_SHARP as libc::c_int as usize] = Some(
+    (*c).mc_scaled[FILTER_2D_8TAP_REGULAR_SHARP as usize] = Some(
         put_8tap_regular_sharp_scaled_c
             as unsafe extern "C" fn(
                 *mut pixel,
@@ -3149,7 +2787,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mct[FILTER_2D_8TAP_REGULAR_SHARP as libc::c_int as usize] = Some(
+    (*c).mct[FILTER_2D_8TAP_REGULAR_SHARP as usize] = Some(
         prep_8tap_regular_sharp_c
             as unsafe extern "C" fn(
                 *mut int16_t,
@@ -3161,7 +2799,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mct_scaled[FILTER_2D_8TAP_REGULAR_SHARP as libc::c_int as usize] = Some(
+    (*c).mct_scaled[FILTER_2D_8TAP_REGULAR_SHARP as usize] = Some(
         prep_8tap_regular_sharp_scaled_c
             as unsafe extern "C" fn(
                 *mut int16_t,
@@ -3175,7 +2813,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mc[FILTER_2D_8TAP_SHARP_REGULAR as libc::c_int as usize] = Some(
+    (*c).mc[FILTER_2D_8TAP_SHARP_REGULAR as usize] = Some(
         put_8tap_sharp_regular_c
             as unsafe extern "C" fn(
                 *mut pixel,
@@ -3188,7 +2826,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mc_scaled[FILTER_2D_8TAP_SHARP_REGULAR as libc::c_int as usize] = Some(
+    (*c).mc_scaled[FILTER_2D_8TAP_SHARP_REGULAR as usize] = Some(
         put_8tap_sharp_regular_scaled_c
             as unsafe extern "C" fn(
                 *mut pixel,
@@ -3203,7 +2841,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mct[FILTER_2D_8TAP_SHARP_REGULAR as libc::c_int as usize] = Some(
+    (*c).mct[FILTER_2D_8TAP_SHARP_REGULAR as usize] = Some(
         prep_8tap_sharp_regular_c
             as unsafe extern "C" fn(
                 *mut int16_t,
@@ -3215,7 +2853,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mct_scaled[FILTER_2D_8TAP_SHARP_REGULAR as libc::c_int as usize] = Some(
+    (*c).mct_scaled[FILTER_2D_8TAP_SHARP_REGULAR as usize] = Some(
         prep_8tap_sharp_regular_scaled_c
             as unsafe extern "C" fn(
                 *mut int16_t,
@@ -3229,7 +2867,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mc[FILTER_2D_8TAP_SHARP_SMOOTH as libc::c_int as usize] = Some(
+    (*c).mc[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(
         put_8tap_sharp_smooth_c
             as unsafe extern "C" fn(
                 *mut pixel,
@@ -3242,7 +2880,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mc_scaled[FILTER_2D_8TAP_SHARP_SMOOTH as libc::c_int as usize] = Some(
+    (*c).mc_scaled[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(
         put_8tap_sharp_smooth_scaled_c
             as unsafe extern "C" fn(
                 *mut pixel,
@@ -3257,7 +2895,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mct[FILTER_2D_8TAP_SHARP_SMOOTH as libc::c_int as usize] = Some(
+    (*c).mct[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(
         prep_8tap_sharp_smooth_c
             as unsafe extern "C" fn(
                 *mut int16_t,
@@ -3269,7 +2907,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mct_scaled[FILTER_2D_8TAP_SHARP_SMOOTH as libc::c_int as usize] = Some(
+    (*c).mct_scaled[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(
         prep_8tap_sharp_smooth_scaled_c
             as unsafe extern "C" fn(
                 *mut int16_t,
@@ -3283,7 +2921,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mc[FILTER_2D_8TAP_SHARP as libc::c_int as usize] = Some(
+    (*c).mc[FILTER_2D_8TAP_SHARP as usize] = Some(
         put_8tap_sharp_c
             as unsafe extern "C" fn(
                 *mut pixel,
@@ -3296,7 +2934,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mc_scaled[FILTER_2D_8TAP_SHARP as libc::c_int as usize] = Some(
+    (*c).mc_scaled[FILTER_2D_8TAP_SHARP as usize] = Some(
         put_8tap_sharp_scaled_c
             as unsafe extern "C" fn(
                 *mut pixel,
@@ -3311,7 +2949,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mct[FILTER_2D_8TAP_SHARP as libc::c_int as usize] = Some(
+    (*c).mct[FILTER_2D_8TAP_SHARP as usize] = Some(
         prep_8tap_sharp_c
             as unsafe extern "C" fn(
                 *mut int16_t,
@@ -3323,7 +2961,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mct_scaled[FILTER_2D_8TAP_SHARP as libc::c_int as usize] = Some(
+    (*c).mct_scaled[FILTER_2D_8TAP_SHARP as usize] = Some(
         prep_8tap_sharp_scaled_c
             as unsafe extern "C" fn(
                 *mut int16_t,
@@ -3337,7 +2975,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mc[FILTER_2D_8TAP_SMOOTH_REGULAR as libc::c_int as usize] = Some(
+    (*c).mc[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = Some(
         put_8tap_smooth_regular_c
             as unsafe extern "C" fn(
                 *mut pixel,
@@ -3350,7 +2988,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH_REGULAR as libc::c_int as usize] = Some(
+    (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = Some(
         put_8tap_smooth_regular_scaled_c
             as unsafe extern "C" fn(
                 *mut pixel,
@@ -3365,7 +3003,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mct[FILTER_2D_8TAP_SMOOTH_REGULAR as libc::c_int as usize] = Some(
+    (*c).mct[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = Some(
         prep_8tap_smooth_regular_c
             as unsafe extern "C" fn(
                 *mut int16_t,
@@ -3377,7 +3015,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH_REGULAR as libc::c_int as usize] = Some(
+    (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = Some(
         prep_8tap_smooth_regular_scaled_c
             as unsafe extern "C" fn(
                 *mut int16_t,
@@ -3391,7 +3029,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mc[FILTER_2D_8TAP_SMOOTH as libc::c_int as usize] = Some(
+    (*c).mc[FILTER_2D_8TAP_SMOOTH as usize] = Some(
         put_8tap_smooth_c
             as unsafe extern "C" fn(
                 *mut pixel,
@@ -3404,7 +3042,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH as libc::c_int as usize] = Some(
+    (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH as usize] = Some(
         put_8tap_smooth_scaled_c
             as unsafe extern "C" fn(
                 *mut pixel,
@@ -3419,7 +3057,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mct[FILTER_2D_8TAP_SMOOTH as libc::c_int as usize] = Some(
+    (*c).mct[FILTER_2D_8TAP_SMOOTH as usize] = Some(
         prep_8tap_smooth_c
             as unsafe extern "C" fn(
                 *mut int16_t,
@@ -3431,7 +3069,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH as libc::c_int as usize] = Some(
+    (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH as usize] = Some(
         prep_8tap_smooth_scaled_c
             as unsafe extern "C" fn(
                 *mut int16_t,
@@ -3445,7 +3083,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mc[FILTER_2D_8TAP_SMOOTH_SHARP as libc::c_int as usize] = Some(
+    (*c).mc[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(
         put_8tap_smooth_sharp_c
             as unsafe extern "C" fn(
                 *mut pixel,
@@ -3458,7 +3096,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH_SHARP as libc::c_int as usize] = Some(
+    (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(
         put_8tap_smooth_sharp_scaled_c
             as unsafe extern "C" fn(
                 *mut pixel,
@@ -3473,7 +3111,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mct[FILTER_2D_8TAP_SMOOTH_SHARP as libc::c_int as usize] = Some(
+    (*c).mct[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(
         prep_8tap_smooth_sharp_c
             as unsafe extern "C" fn(
                 *mut int16_t,
@@ -3485,7 +3123,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH_SHARP as libc::c_int as usize] = Some(
+    (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(
         prep_8tap_smooth_sharp_scaled_c
             as unsafe extern "C" fn(
                 *mut int16_t,
@@ -3499,7 +3137,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mc[FILTER_2D_BILINEAR as libc::c_int as usize] = Some(
+    (*c).mc[FILTER_2D_BILINEAR as usize] = Some(
         put_bilin_c
             as unsafe extern "C" fn(
                 *mut pixel,
@@ -3512,7 +3150,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mc_scaled[FILTER_2D_BILINEAR as libc::c_int as usize] = Some(
+    (*c).mc_scaled[FILTER_2D_BILINEAR as usize] = Some(
         put_bilin_scaled_c
             as unsafe extern "C" fn(
                 *mut pixel,
@@ -3527,7 +3165,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mct[FILTER_2D_BILINEAR as libc::c_int as usize] = Some(
+    (*c).mct[FILTER_2D_BILINEAR as usize] = Some(
         prep_bilin_c
             as unsafe extern "C" fn(
                 *mut int16_t,
@@ -3539,7 +3177,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).mct_scaled[FILTER_2D_BILINEAR as libc::c_int as usize] = Some(
+    (*c).mct_scaled[FILTER_2D_BILINEAR as usize] = Some(
         prep_bilin_scaled_c
             as unsafe extern "C" fn(
                 *mut int16_t,
@@ -3619,7 +3257,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).w_mask[0 as libc::c_int as usize] = Some(
+    (*c).w_mask[0usize] = Some(
         w_mask_444_c
             as unsafe extern "C" fn(
                 *mut pixel,
@@ -3632,7 +3270,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).w_mask[1 as libc::c_int as usize] = Some(
+    (*c).w_mask[1usize] = Some(
         w_mask_422_c
             as unsafe extern "C" fn(
                 *mut pixel,
@@ -3645,7 +3283,7 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
                 libc::c_int,
             ) -> (),
     );
-    (*c).w_mask[2 as libc::c_int as usize] = Some(
+    (*c).w_mask[2usize] = Some(
         w_mask_420_c
             as unsafe extern "C" fn(
                 *mut pixel,

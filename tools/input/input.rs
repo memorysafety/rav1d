@@ -151,7 +151,7 @@ pub unsafe extern "C" fn input_open(
     let mut res: libc::c_int = 0;
     let mut i: libc::c_int = 0;
     if !name.is_null() {
-        i = 0 as libc::c_int;
+        i = 0i32;
         while !(demuxers[i as usize]).is_null() {
             if strcmp((*demuxers[i as usize]).name, name) == 0 {
                 impl_0 = demuxers[i as usize];
@@ -166,11 +166,11 @@ pub unsafe extern "C" fn input_open(
                 b"Failed to find demuxer named \"%s\"\n\0" as *const u8 as *const libc::c_char,
                 name,
             );
-            return -(92 as libc::c_int);
+            return -(92i32);
         }
     } else {
-        let mut probe_sz: libc::c_int = 0 as libc::c_int;
-        i = 0 as libc::c_int;
+        let mut probe_sz: libc::c_int = 0i32;
+        i = 0i32;
         while !(demuxers[i as usize]).is_null() {
             probe_sz = imax(probe_sz, (*demuxers[i as usize]).probe_sz);
             i += 1;
@@ -181,7 +181,7 @@ pub unsafe extern "C" fn input_open(
                 stderr,
                 b"Failed to allocate memory\n\0" as *const u8 as *const libc::c_char,
             );
-            return -(12 as libc::c_int);
+            return -(12i32);
         }
         let mut f: *mut FILE = fopen(filename, b"rb\0" as *const u8 as *const libc::c_char);
         if f.is_null() {
@@ -194,12 +194,12 @@ pub unsafe extern "C" fn input_open(
             return if *__errno_location() != 0 {
                 -*__errno_location()
             } else {
-                -(5 as libc::c_int)
+                -(5i32)
             };
         }
         res = (fread(
             probe_data as *mut libc::c_void,
-            1 as libc::c_int as libc::c_ulong,
+            1u64,
             probe_sz as libc::c_ulong,
             f,
         ) != 0) as libc::c_int;
@@ -213,10 +213,10 @@ pub unsafe extern "C" fn input_open(
             return if *__errno_location() != 0 {
                 -*__errno_location()
             } else {
-                -(5 as libc::c_int)
+                -(5i32)
             };
         }
-        i = 0 as libc::c_int;
+        i = 0i32;
         while !(demuxers[i as usize]).is_null() {
             if ((*demuxers[i as usize]).probe).expect("non-null function pointer")(probe_data) != 0
             {
@@ -233,19 +233,19 @@ pub unsafe extern "C" fn input_open(
                 b"Failed to probe demuxer for file %s\n\0" as *const u8 as *const libc::c_char,
                 filename,
             );
-            return -(92 as libc::c_int);
+            return -(92i32);
         }
     }
     c = calloc(
-        1 as libc::c_int as libc::c_ulong,
-        (16 as libc::c_ulong).wrapping_add((*impl_0).priv_data_size as libc::c_ulong),
+        1u64,
+        (16u64).wrapping_add((*impl_0).priv_data_size as libc::c_ulong),
     ) as *mut DemuxerContext;
     if c.is_null() {
         fprintf(
             stderr,
             b"Failed to allocate memory\n\0" as *const u8 as *const libc::c_char,
         );
-        return -(12 as libc::c_int);
+        return -(12i32);
     }
     (*c).impl_0 = impl_0;
     (*c).data = ((*c).priv_data).as_mut_ptr() as *mut DemuxerPriv;
@@ -256,12 +256,12 @@ pub unsafe extern "C" fn input_open(
         num_frames,
         timebase,
     );
-    if res < 0 as libc::c_int {
+    if res < 0i32 {
         free(c as *mut libc::c_void);
         return res;
     }
     *c_out = c;
-    return 0 as libc::c_int;
+    return 0i32;
 }
 #[no_mangle]
 pub unsafe extern "C" fn input_read(ctx: *mut DemuxerContext, data: *mut Dav1dData) -> libc::c_int {
@@ -272,7 +272,7 @@ pub unsafe extern "C" fn input_seek(ctx: *mut DemuxerContext, pts: uint64_t) -> 
     return if ((*(*ctx).impl_0).seek).is_some() {
         ((*(*ctx).impl_0).seek).expect("non-null function pointer")((*ctx).data, pts)
     } else {
-        -(1 as libc::c_int)
+        -(1i32)
     };
 }
 #[no_mangle]

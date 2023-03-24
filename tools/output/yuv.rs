@@ -608,17 +608,17 @@ unsafe extern "C" fn yuv_open(
                 file,
                 strerror(*__errno_location()),
             );
-            return -(1 as libc::c_int);
+            return -(1i32);
         }
     }
-    return 0 as libc::c_int;
+    return 0i32;
 }
 unsafe extern "C" fn yuv_write(c: *mut YuvOutputContext, p: *mut Dav1dPicture) -> libc::c_int {
     let mut current_block: u64;
     let mut ptr: *mut uint8_t = 0 as *mut uint8_t;
-    let hbd: libc::c_int = ((*p).p.bpc > 8 as libc::c_int) as libc::c_int;
-    ptr = (*p).data[0 as libc::c_int as usize] as *mut uint8_t;
-    let mut y: libc::c_int = 0 as libc::c_int;
+    let hbd: libc::c_int = ((*p).p.bpc > 8i32) as libc::c_int;
+    ptr = (*p).data[0usize] as *mut uint8_t;
+    let mut y: libc::c_int = 0i32;
     loop {
         if !(y < (*p).p.h) {
             current_block = 7095457783677275021;
@@ -627,49 +627,43 @@ unsafe extern "C" fn yuv_write(c: *mut YuvOutputContext, p: *mut Dav1dPicture) -
         if fwrite(
             ptr as *const libc::c_void,
             ((*p).p.w << hbd) as libc::c_ulong,
-            1 as libc::c_int as libc::c_ulong,
+            1u64,
             (*c).f,
-        ) != 1 as libc::c_int as libc::c_ulong
+        ) != 1u64
         {
             current_block = 11680617278722171943;
             break;
         }
-        ptr = ptr.offset((*p).stride[0 as libc::c_int as usize] as isize);
+        ptr = ptr.offset((*p).stride[0usize] as isize);
         y += 1;
     }
     match current_block {
         7095457783677275021 => {
-            if (*p).p.layout as libc::c_uint
-                != DAV1D_PIXEL_LAYOUT_I400 as libc::c_int as libc::c_uint
-            {
-                let ss_ver: libc::c_int = ((*p).p.layout as libc::c_uint
-                    == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint)
-                    as libc::c_int;
-                let ss_hor: libc::c_int = ((*p).p.layout as libc::c_uint
-                    != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint)
-                    as libc::c_int;
+            if (*p).p.layout != DAV1D_PIXEL_LAYOUT_I400 {
+                let ss_ver: libc::c_int = ((*p).p.layout == DAV1D_PIXEL_LAYOUT_I420) as libc::c_int;
+                let ss_hor: libc::c_int = ((*p).p.layout != DAV1D_PIXEL_LAYOUT_I444) as libc::c_int;
                 let cw: libc::c_int = (*p).p.w + ss_hor >> ss_hor;
                 let ch: libc::c_int = (*p).p.h + ss_ver >> ss_ver;
-                let mut pl: libc::c_int = 1 as libc::c_int;
+                let mut pl: libc::c_int = 1i32;
                 's_40: loop {
-                    if !(pl <= 2 as libc::c_int) {
+                    if !(pl <= 2i32) {
                         current_block = 7976072742316086414;
                         break;
                     }
                     ptr = (*p).data[pl as usize] as *mut uint8_t;
-                    let mut y_0: libc::c_int = 0 as libc::c_int;
+                    let mut y_0: libc::c_int = 0i32;
                     while y_0 < ch {
                         if fwrite(
                             ptr as *const libc::c_void,
                             (cw << hbd) as libc::c_ulong,
-                            1 as libc::c_int as libc::c_ulong,
+                            1u64,
                             (*c).f,
-                        ) != 1 as libc::c_int as libc::c_ulong
+                        ) != 1u64
                         {
                             current_block = 11680617278722171943;
                             break 's_40;
                         }
-                        ptr = ptr.offset((*p).stride[1 as libc::c_int as usize] as isize);
+                        ptr = ptr.offset((*p).stride[1usize] as isize);
                         y_0 += 1;
                     }
                     pl += 1;
@@ -681,7 +675,7 @@ unsafe extern "C" fn yuv_write(c: *mut YuvOutputContext, p: *mut Dav1dPicture) -
                 11680617278722171943 => {}
                 _ => {
                     dav1d_picture_unref(p);
-                    return 0 as libc::c_int;
+                    return 0i32;
                 }
             }
         }
@@ -693,7 +687,7 @@ unsafe extern "C" fn yuv_write(c: *mut YuvOutputContext, p: *mut Dav1dPicture) -
         b"Failed to write frame data: %s\n\0" as *const u8 as *const libc::c_char,
         strerror(*__errno_location()),
     );
-    return -(1 as libc::c_int);
+    return -(1i32);
 }
 unsafe extern "C" fn yuv_close(c: *mut YuvOutputContext) {
     if (*c).f != stdout {
@@ -704,8 +698,7 @@ unsafe extern "C" fn yuv_close(c: *mut YuvOutputContext) {
 pub static mut yuv_muxer: Muxer = unsafe {
     {
         let mut init = Muxer {
-            priv_data_size: ::core::mem::size_of::<YuvOutputContext>() as libc::c_ulong
-                as libc::c_int,
+            priv_data_size: ::core::mem::size_of::<YuvOutputContext>() as libc::c_int,
             name: b"yuv\0" as *const u8 as *const libc::c_char,
             extension: b"yuv\0" as *const u8 as *const libc::c_char,
             write_header: Some(
