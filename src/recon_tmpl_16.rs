@@ -583,13 +583,7 @@ pub struct Dav1dSequenceHeader {
     pub film_grain_present: libc::c_int,
     pub operating_parameter_info: [Dav1dSequenceHeaderOperatingParameterInfo; 32],
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dSequenceHeaderOperatingParameterInfo {
-    pub decoder_buffer_delay: libc::c_int,
-    pub encoder_buffer_delay: libc::c_int,
-    pub low_delay_mode: libc::c_int,
-}
+use crate::include::dav1d::headers::Dav1dSequenceHeaderOperatingParameterInfo;
 use crate::include::dav1d::headers::Dav1dAdaptiveBoolean;
 use crate::include::dav1d::headers::DAV1D_ADAPTIVE;
 use crate::include::dav1d::headers::DAV1D_ON;

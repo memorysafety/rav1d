@@ -151,6 +151,13 @@ pub struct Dav1dITUTT35 {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
+pub struct Dav1dSequenceHeaderOperatingParameterInfo {
+    pub decoder_buffer_delay: libc::c_int,
+    pub encoder_buffer_delay: libc::c_int,
+    pub low_delay_mode: libc::c_int,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
 pub struct Dav1dSegmentationData {
     pub delta_q: libc::c_int,
     pub delta_lf_y_v: libc::c_int,
