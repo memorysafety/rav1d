@@ -335,27 +335,9 @@ pub struct Dav1dFrameHeader {
     pub reduced_txtp_set: libc::c_int,
     pub gmv: [Dav1dWarpedMotionParams; 7],
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dWarpedMotionParams {
-    pub type_0: Dav1dWarpedMotionType,
-    pub matrix: [int32_t; 6],
-    pub u: C2RustUnnamed_5,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union C2RustUnnamed_5 {
-    pub p: C2RustUnnamed_6,
-    pub abcd: [int16_t; 4],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_6 {
-    pub alpha: int16_t,
-    pub beta: int16_t,
-    pub gamma: int16_t,
-    pub delta: int16_t,
-}
+use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
+
+
 use crate::include::dav1d::headers::Dav1dWarpedMotionType;
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_AFFINE;
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_ROT_ZOOM;
