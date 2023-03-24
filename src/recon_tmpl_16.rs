@@ -1284,20 +1284,8 @@ pub struct Dav1dContext {
     pub logger: Dav1dLogger,
     pub picture_pool: *mut Dav1dMemPool,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dMemPool {
-    pub lock: pthread_mutex_t,
-    pub buf: *mut Dav1dMemPoolBuffer,
-    pub ref_cnt: libc::c_int,
-    pub end: libc::c_int,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dMemPoolBuffer {
-    pub data: *mut libc::c_void,
-    pub next: *mut Dav1dMemPoolBuffer,
-}
+use crate::src::mem::Dav1dMemPool;
+use crate::src::mem::Dav1dMemPoolBuffer;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dLogger {
