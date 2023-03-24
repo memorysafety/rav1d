@@ -21,6 +21,7 @@ pub mod dav1d {
 pub mod common;
 pub mod data;
 pub mod headers;
+pub mod picture;
 } // mod dav1d
 pub mod pthread;
 pub mod stdatomic;
