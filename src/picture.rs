@@ -574,10 +574,10 @@ pub struct Dav1dSequenceHeaderOperatingPoint {
     pub decoder_model_param_present: libc::c_int,
     pub display_model_param_present: libc::c_int,
 }
-pub type Dav1dChromaSamplePosition = libc::c_uint;
-pub const DAV1D_CHR_COLOCATED: Dav1dChromaSamplePosition = 2;
-pub const DAV1D_CHR_VERTICAL: Dav1dChromaSamplePosition = 1;
-pub const DAV1D_CHR_UNKNOWN: Dav1dChromaSamplePosition = 0;
+use crate::include::dav1d::headers::Dav1dChromaSamplePosition;
+use crate::include::dav1d::headers::DAV1D_CHR_COLOCATED;
+use crate::include::dav1d::headers::DAV1D_CHR_VERTICAL;
+use crate::include::dav1d::headers::DAV1D_CHR_UNKNOWN;
 use crate::include::dav1d::headers::Dav1dMatrixCoefficients;
 use crate::include::dav1d::headers::DAV1D_MC_RESERVED;
 use crate::include::dav1d::headers::DAV1D_MC_ICTCP;

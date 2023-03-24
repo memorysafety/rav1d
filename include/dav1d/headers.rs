@@ -100,6 +100,10 @@ pub const DAV1D_MC_FCC: Dav1dMatrixCoefficients = 4;
 pub const DAV1D_MC_UNKNOWN: Dav1dMatrixCoefficients = 2;
 pub const DAV1D_MC_BT709: Dav1dMatrixCoefficients = 1;
 pub const DAV1D_MC_IDENTITY: Dav1dMatrixCoefficients = 0;
+pub type Dav1dChromaSamplePosition = libc::c_uint;
+pub const DAV1D_CHR_COLOCATED: Dav1dChromaSamplePosition = 2;
+pub const DAV1D_CHR_VERTICAL: Dav1dChromaSamplePosition = 1;
+pub const DAV1D_CHR_UNKNOWN: Dav1dChromaSamplePosition = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContentLightLevel {
