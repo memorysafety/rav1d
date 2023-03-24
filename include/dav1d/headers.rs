@@ -46,6 +46,11 @@ pub const DAV1D_PIXEL_LAYOUT_I444: Dav1dPixelLayout = 3;
 pub const DAV1D_PIXEL_LAYOUT_I422: Dav1dPixelLayout = 2;
 pub const DAV1D_PIXEL_LAYOUT_I420: Dav1dPixelLayout = 1;
 pub const DAV1D_PIXEL_LAYOUT_I400: Dav1dPixelLayout = 0;
+pub type Dav1dFrameType = libc::c_uint;
+pub const DAV1D_FRAME_TYPE_SWITCH: Dav1dFrameType = 3;
+pub const DAV1D_FRAME_TYPE_INTRA: Dav1dFrameType = 2;
+pub const DAV1D_FRAME_TYPE_INTER: Dav1dFrameType = 1;
+pub const DAV1D_FRAME_TYPE_KEY: Dav1dFrameType = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContentLightLevel {
