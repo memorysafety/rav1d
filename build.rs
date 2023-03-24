@@ -58,7 +58,7 @@ fn build_nasm_files() {
     // cc is better at finding the correct archiver
     let mut cc = cc::Build::new();
     for o in obj {
-      cc.object(o);
+        cc.object(o);
     }
     cc.compile("rav1dasm");
 

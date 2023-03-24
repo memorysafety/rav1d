@@ -544,7 +544,7 @@ pub struct Muxer {
     pub priv_data_size: libc::c_int,
     pub name: *const libc::c_char,
     pub extension: *const libc::c_char,
-    pub write_header: Option::<
+    pub write_header: Option<
         unsafe extern "C" fn(
             *mut MuxerPriv,
             *const libc::c_char,
@@ -552,13 +552,10 @@ pub struct Muxer {
             *const libc::c_uint,
         ) -> libc::c_int,
     >,
-    pub write_picture: Option::<
-        unsafe extern "C" fn(*mut MuxerPriv, *mut Dav1dPicture) -> libc::c_int,
-    >,
-    pub write_trailer: Option::<unsafe extern "C" fn(*mut MuxerPriv) -> ()>,
-    pub verify: Option::<
-        unsafe extern "C" fn(*mut MuxerPriv, *const libc::c_char) -> libc::c_int,
-    >,
+    pub write_picture:
+        Option<unsafe extern "C" fn(*mut MuxerPriv, *mut Dav1dPicture) -> libc::c_int>,
+    pub write_trailer: Option<unsafe extern "C" fn(*mut MuxerPriv) -> ()>,
+    pub verify: Option<unsafe extern "C" fn(*mut MuxerPriv, *const libc::c_char) -> libc::c_int>,
 }
 pub type YuvOutputContext = MuxerPriv;
 unsafe extern "C" fn yuv_open(
@@ -583,10 +580,7 @@ unsafe extern "C" fn yuv_open(
     }
     return 0 as libc::c_int;
 }
-unsafe extern "C" fn yuv_write(
-    c: *mut YuvOutputContext,
-    p: *mut Dav1dPicture,
-) -> libc::c_int {
+unsafe extern "C" fn yuv_write(c: *mut YuvOutputContext, p: *mut Dav1dPicture) -> libc::c_int {
     let mut current_block: u64;
     let mut ptr: *mut uint8_t = 0 as *mut uint8_t;
     let hbd: libc::c_int = ((*p).p.bpc > 8 as libc::c_int) as libc::c_int;
@@ -642,8 +636,7 @@ unsafe extern "C" fn yuv_write(
                             current_block = 11680617278722171943;
                             break 's_40;
                         }
-                        ptr = ptr
-                            .offset((*p).stride[1 as libc::c_int as usize] as isize);
+                        ptr = ptr.offset((*p).stride[1 as libc::c_int as usize] as isize);
                         y_0 += 1;
                     }
                     pl += 1;
@@ -698,9 +691,7 @@ pub static mut yuv_muxer: Muxer = unsafe {
                         *mut Dav1dPicture,
                     ) -> libc::c_int,
             ),
-            write_trailer: Some(
-                yuv_close as unsafe extern "C" fn(*mut YuvOutputContext) -> (),
-            ),
+            write_trailer: Some(yuv_close as unsafe extern "C" fn(*mut YuvOutputContext) -> ()),
             verify: None,
         };
         init

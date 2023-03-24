@@ -10,21 +10,9 @@ extern "C" {
     fn fclose(__stream: *mut FILE) -> libc::c_int;
     fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut FILE;
     fn fprintf(_: *mut FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
-    fn strtoul(
-        _: *const libc::c_char,
-        _: *mut *mut libc::c_char,
-        _: libc::c_int,
-    ) -> libc::c_ulong;
-    fn memcpy(
-        _: *mut libc::c_void,
-        _: *const libc::c_void,
-        _: libc::c_ulong,
-    ) -> *mut libc::c_void;
-    fn memcmp(
-        _: *const libc::c_void,
-        _: *const libc::c_void,
-        _: libc::c_ulong,
-    ) -> libc::c_int;
+    fn strtoul(_: *const libc::c_char, _: *mut *mut libc::c_char, _: libc::c_int) -> libc::c_ulong;
+    fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
+    fn memcmp(_: *const libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> libc::c_int;
     fn strcmp(_: *const libc::c_char, _: *const libc::c_char) -> libc::c_int;
     fn strlen(_: *const libc::c_char) -> libc::c_ulong;
     fn strerror(_: libc::c_int) -> *mut libc::c_char;
@@ -563,7 +551,7 @@ pub struct Muxer {
     pub priv_data_size: libc::c_int,
     pub name: *const libc::c_char,
     pub extension: *const libc::c_char,
-    pub write_header: Option::<
+    pub write_header: Option<
         unsafe extern "C" fn(
             *mut MuxerPriv,
             *const libc::c_char,
@@ -571,13 +559,10 @@ pub struct Muxer {
             *const libc::c_uint,
         ) -> libc::c_int,
     >,
-    pub write_picture: Option::<
-        unsafe extern "C" fn(*mut MuxerPriv, *mut Dav1dPicture) -> libc::c_int,
-    >,
-    pub write_trailer: Option::<unsafe extern "C" fn(*mut MuxerPriv) -> ()>,
-    pub verify: Option::<
-        unsafe extern "C" fn(*mut MuxerPriv, *const libc::c_char) -> libc::c_int,
-    >,
+    pub write_picture:
+        Option<unsafe extern "C" fn(*mut MuxerPriv, *mut Dav1dPicture) -> libc::c_int>,
+    pub write_trailer: Option<unsafe extern "C" fn(*mut MuxerPriv) -> ()>,
+    pub verify: Option<unsafe extern "C" fn(*mut MuxerPriv, *const libc::c_char) -> libc::c_int>,
 }
 pub type MD5Context = MuxerPriv;
 #[inline]
@@ -686,981 +671,497 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
     let mut b: uint32_t = (*md5).abcd[1 as libc::c_int as usize];
     let mut c: uint32_t = (*md5).abcd[2 as libc::c_int as usize];
     let mut d: uint32_t = (*md5).abcd[3 as libc::c_int as usize];
-    a = b
-        .wrapping_add(
-            leftrotate(
-                a
-                    .wrapping_add(b & c | !b & d)
-                    .wrapping_add(k[(0 as libc::c_int + 0 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data.offset((0 as libc::c_int + 0 as libc::c_int) as isize),
-                    ),
-                7 as libc::c_int,
-            ),
-        );
-    d = a
-        .wrapping_add(
-            leftrotate(
-                d
-                    .wrapping_add(a & b | !a & c)
-                    .wrapping_add(k[(0 as libc::c_int + 1 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data.offset((0 as libc::c_int + 1 as libc::c_int) as isize),
-                    ),
-                12 as libc::c_int,
-            ),
-        );
-    c = d
-        .wrapping_add(
-            leftrotate(
-                c
-                    .wrapping_add(d & a | !d & b)
-                    .wrapping_add(k[(0 as libc::c_int + 2 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data.offset((0 as libc::c_int + 2 as libc::c_int) as isize),
-                    ),
-                17 as libc::c_int,
-            ),
-        );
-    b = c
-        .wrapping_add(
-            leftrotate(
-                b
-                    .wrapping_add(c & d | !c & a)
-                    .wrapping_add(k[(0 as libc::c_int + 3 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data.offset((0 as libc::c_int + 3 as libc::c_int) as isize),
-                    ),
-                22 as libc::c_int,
-            ),
-        );
-    a = b
-        .wrapping_add(
-            leftrotate(
-                a
-                    .wrapping_add(b & c | !b & d)
-                    .wrapping_add(k[(4 as libc::c_int + 0 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data.offset((4 as libc::c_int + 0 as libc::c_int) as isize),
-                    ),
-                7 as libc::c_int,
-            ),
-        );
-    d = a
-        .wrapping_add(
-            leftrotate(
-                d
-                    .wrapping_add(a & b | !a & c)
-                    .wrapping_add(k[(4 as libc::c_int + 1 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data.offset((4 as libc::c_int + 1 as libc::c_int) as isize),
-                    ),
-                12 as libc::c_int,
-            ),
-        );
-    c = d
-        .wrapping_add(
-            leftrotate(
-                c
-                    .wrapping_add(d & a | !d & b)
-                    .wrapping_add(k[(4 as libc::c_int + 2 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data.offset((4 as libc::c_int + 2 as libc::c_int) as isize),
-                    ),
-                17 as libc::c_int,
-            ),
-        );
-    b = c
-        .wrapping_add(
-            leftrotate(
-                b
-                    .wrapping_add(c & d | !c & a)
-                    .wrapping_add(k[(4 as libc::c_int + 3 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data.offset((4 as libc::c_int + 3 as libc::c_int) as isize),
-                    ),
-                22 as libc::c_int,
-            ),
-        );
-    a = b
-        .wrapping_add(
-            leftrotate(
-                a
-                    .wrapping_add(b & c | !b & d)
-                    .wrapping_add(k[(8 as libc::c_int + 0 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data.offset((8 as libc::c_int + 0 as libc::c_int) as isize),
-                    ),
-                7 as libc::c_int,
-            ),
-        );
-    d = a
-        .wrapping_add(
-            leftrotate(
-                d
-                    .wrapping_add(a & b | !a & c)
-                    .wrapping_add(k[(8 as libc::c_int + 1 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data.offset((8 as libc::c_int + 1 as libc::c_int) as isize),
-                    ),
-                12 as libc::c_int,
-            ),
-        );
-    c = d
-        .wrapping_add(
-            leftrotate(
-                c
-                    .wrapping_add(d & a | !d & b)
-                    .wrapping_add(k[(8 as libc::c_int + 2 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data.offset((8 as libc::c_int + 2 as libc::c_int) as isize),
-                    ),
-                17 as libc::c_int,
-            ),
-        );
-    b = c
-        .wrapping_add(
-            leftrotate(
-                b
-                    .wrapping_add(c & d | !c & a)
-                    .wrapping_add(k[(8 as libc::c_int + 3 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data.offset((8 as libc::c_int + 3 as libc::c_int) as isize),
-                    ),
-                22 as libc::c_int,
-            ),
-        );
-    a = b
-        .wrapping_add(
-            leftrotate(
-                a
-                    .wrapping_add(b & c | !b & d)
-                    .wrapping_add(k[(12 as libc::c_int + 0 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data.offset((12 as libc::c_int + 0 as libc::c_int) as isize),
-                    ),
-                7 as libc::c_int,
-            ),
-        );
-    d = a
-        .wrapping_add(
-            leftrotate(
-                d
-                    .wrapping_add(a & b | !a & c)
-                    .wrapping_add(k[(12 as libc::c_int + 1 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data.offset((12 as libc::c_int + 1 as libc::c_int) as isize),
-                    ),
-                12 as libc::c_int,
-            ),
-        );
-    c = d
-        .wrapping_add(
-            leftrotate(
-                c
-                    .wrapping_add(d & a | !d & b)
-                    .wrapping_add(k[(12 as libc::c_int + 2 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data.offset((12 as libc::c_int + 2 as libc::c_int) as isize),
-                    ),
-                17 as libc::c_int,
-            ),
-        );
-    b = c
-        .wrapping_add(
-            leftrotate(
-                b
-                    .wrapping_add(c & d | !c & a)
-                    .wrapping_add(k[(12 as libc::c_int + 3 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data.offset((12 as libc::c_int + 3 as libc::c_int) as isize),
-                    ),
-                22 as libc::c_int,
-            ),
-        );
-    a = b
-        .wrapping_add(
-            leftrotate(
-                a
-                    .wrapping_add(d & b | !d & c)
-                    .wrapping_add(k[(16 as libc::c_int + 0 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (16 as libc::c_int + 1 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                5 as libc::c_int,
-            ),
-        );
-    d = a
-        .wrapping_add(
-            leftrotate(
-                d
-                    .wrapping_add(c & a | !c & b)
-                    .wrapping_add(k[(16 as libc::c_int + 1 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (16 as libc::c_int + 6 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                9 as libc::c_int,
-            ),
-        );
-    c = d
-        .wrapping_add(
-            leftrotate(
-                c
-                    .wrapping_add(b & d | !b & a)
-                    .wrapping_add(k[(16 as libc::c_int + 2 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (16 as libc::c_int + 11 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                14 as libc::c_int,
-            ),
-        );
-    b = c
-        .wrapping_add(
-            leftrotate(
-                b
-                    .wrapping_add(a & c | !a & d)
-                    .wrapping_add(k[(16 as libc::c_int + 3 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (16 as libc::c_int + 0 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                20 as libc::c_int,
-            ),
-        );
-    a = b
-        .wrapping_add(
-            leftrotate(
-                a
-                    .wrapping_add(d & b | !d & c)
-                    .wrapping_add(k[(20 as libc::c_int + 0 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (20 as libc::c_int + 1 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                5 as libc::c_int,
-            ),
-        );
-    d = a
-        .wrapping_add(
-            leftrotate(
-                d
-                    .wrapping_add(c & a | !c & b)
-                    .wrapping_add(k[(20 as libc::c_int + 1 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (20 as libc::c_int + 6 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                9 as libc::c_int,
-            ),
-        );
-    c = d
-        .wrapping_add(
-            leftrotate(
-                c
-                    .wrapping_add(b & d | !b & a)
-                    .wrapping_add(k[(20 as libc::c_int + 2 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (20 as libc::c_int + 11 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                14 as libc::c_int,
-            ),
-        );
-    b = c
-        .wrapping_add(
-            leftrotate(
-                b
-                    .wrapping_add(a & c | !a & d)
-                    .wrapping_add(k[(20 as libc::c_int + 3 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (20 as libc::c_int + 0 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                20 as libc::c_int,
-            ),
-        );
-    a = b
-        .wrapping_add(
-            leftrotate(
-                a
-                    .wrapping_add(d & b | !d & c)
-                    .wrapping_add(k[(24 as libc::c_int + 0 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (24 as libc::c_int + 1 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                5 as libc::c_int,
-            ),
-        );
-    d = a
-        .wrapping_add(
-            leftrotate(
-                d
-                    .wrapping_add(c & a | !c & b)
-                    .wrapping_add(k[(24 as libc::c_int + 1 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (24 as libc::c_int + 6 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                9 as libc::c_int,
-            ),
-        );
-    c = d
-        .wrapping_add(
-            leftrotate(
-                c
-                    .wrapping_add(b & d | !b & a)
-                    .wrapping_add(k[(24 as libc::c_int + 2 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (24 as libc::c_int + 11 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                14 as libc::c_int,
-            ),
-        );
-    b = c
-        .wrapping_add(
-            leftrotate(
-                b
-                    .wrapping_add(a & c | !a & d)
-                    .wrapping_add(k[(24 as libc::c_int + 3 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (24 as libc::c_int + 0 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                20 as libc::c_int,
-            ),
-        );
-    a = b
-        .wrapping_add(
-            leftrotate(
-                a
-                    .wrapping_add(d & b | !d & c)
-                    .wrapping_add(k[(28 as libc::c_int + 0 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (28 as libc::c_int + 1 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                5 as libc::c_int,
-            ),
-        );
-    d = a
-        .wrapping_add(
-            leftrotate(
-                d
-                    .wrapping_add(c & a | !c & b)
-                    .wrapping_add(k[(28 as libc::c_int + 1 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (28 as libc::c_int + 6 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                9 as libc::c_int,
-            ),
-        );
-    c = d
-        .wrapping_add(
-            leftrotate(
-                c
-                    .wrapping_add(b & d | !b & a)
-                    .wrapping_add(k[(28 as libc::c_int + 2 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (28 as libc::c_int + 11 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                14 as libc::c_int,
-            ),
-        );
-    b = c
-        .wrapping_add(
-            leftrotate(
-                b
-                    .wrapping_add(a & c | !a & d)
-                    .wrapping_add(k[(28 as libc::c_int + 3 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (28 as libc::c_int + 0 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                20 as libc::c_int,
-            ),
-        );
-    a = b
-        .wrapping_add(
-            leftrotate(
-                a
-                    .wrapping_add(b ^ c ^ d)
-                    .wrapping_add(k[(32 as libc::c_int + 0 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (5 as libc::c_int - 32 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                4 as libc::c_int,
-            ),
-        );
-    d = a
-        .wrapping_add(
-            leftrotate(
-                d
-                    .wrapping_add(a ^ b ^ c)
-                    .wrapping_add(k[(32 as libc::c_int + 1 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (8 as libc::c_int - 32 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                11 as libc::c_int,
-            ),
-        );
-    c = d
-        .wrapping_add(
-            leftrotate(
-                c
-                    .wrapping_add(d ^ a ^ b)
-                    .wrapping_add(k[(32 as libc::c_int + 2 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (11 as libc::c_int - 32 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                16 as libc::c_int,
-            ),
-        );
-    b = c
-        .wrapping_add(
-            leftrotate(
-                b
-                    .wrapping_add(c ^ d ^ a)
-                    .wrapping_add(k[(32 as libc::c_int + 3 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (14 as libc::c_int - 32 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                23 as libc::c_int,
-            ),
-        );
-    a = b
-        .wrapping_add(
-            leftrotate(
-                a
-                    .wrapping_add(b ^ c ^ d)
-                    .wrapping_add(k[(36 as libc::c_int + 0 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (5 as libc::c_int - 36 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                4 as libc::c_int,
-            ),
-        );
-    d = a
-        .wrapping_add(
-            leftrotate(
-                d
-                    .wrapping_add(a ^ b ^ c)
-                    .wrapping_add(k[(36 as libc::c_int + 1 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (8 as libc::c_int - 36 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                11 as libc::c_int,
-            ),
-        );
-    c = d
-        .wrapping_add(
-            leftrotate(
-                c
-                    .wrapping_add(d ^ a ^ b)
-                    .wrapping_add(k[(36 as libc::c_int + 2 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (11 as libc::c_int - 36 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                16 as libc::c_int,
-            ),
-        );
-    b = c
-        .wrapping_add(
-            leftrotate(
-                b
-                    .wrapping_add(c ^ d ^ a)
-                    .wrapping_add(k[(36 as libc::c_int + 3 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (14 as libc::c_int - 36 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                23 as libc::c_int,
-            ),
-        );
-    a = b
-        .wrapping_add(
-            leftrotate(
-                a
-                    .wrapping_add(b ^ c ^ d)
-                    .wrapping_add(k[(40 as libc::c_int + 0 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (5 as libc::c_int - 40 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                4 as libc::c_int,
-            ),
-        );
-    d = a
-        .wrapping_add(
-            leftrotate(
-                d
-                    .wrapping_add(a ^ b ^ c)
-                    .wrapping_add(k[(40 as libc::c_int + 1 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (8 as libc::c_int - 40 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                11 as libc::c_int,
-            ),
-        );
-    c = d
-        .wrapping_add(
-            leftrotate(
-                c
-                    .wrapping_add(d ^ a ^ b)
-                    .wrapping_add(k[(40 as libc::c_int + 2 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (11 as libc::c_int - 40 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                16 as libc::c_int,
-            ),
-        );
-    b = c
-        .wrapping_add(
-            leftrotate(
-                b
-                    .wrapping_add(c ^ d ^ a)
-                    .wrapping_add(k[(40 as libc::c_int + 3 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (14 as libc::c_int - 40 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                23 as libc::c_int,
-            ),
-        );
-    a = b
-        .wrapping_add(
-            leftrotate(
-                a
-                    .wrapping_add(b ^ c ^ d)
-                    .wrapping_add(k[(44 as libc::c_int + 0 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (5 as libc::c_int - 44 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                4 as libc::c_int,
-            ),
-        );
-    d = a
-        .wrapping_add(
-            leftrotate(
-                d
-                    .wrapping_add(a ^ b ^ c)
-                    .wrapping_add(k[(44 as libc::c_int + 1 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (8 as libc::c_int - 44 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                11 as libc::c_int,
-            ),
-        );
-    c = d
-        .wrapping_add(
-            leftrotate(
-                c
-                    .wrapping_add(d ^ a ^ b)
-                    .wrapping_add(k[(44 as libc::c_int + 2 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (11 as libc::c_int - 44 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                16 as libc::c_int,
-            ),
-        );
-    b = c
-        .wrapping_add(
-            leftrotate(
-                b
-                    .wrapping_add(c ^ d ^ a)
-                    .wrapping_add(k[(44 as libc::c_int + 3 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (14 as libc::c_int - 44 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                23 as libc::c_int,
-            ),
-        );
-    a = b
-        .wrapping_add(
-            leftrotate(
-                a
-                    .wrapping_add(c ^ (b | !d))
-                    .wrapping_add(k[(48 as libc::c_int + 0 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (0 as libc::c_int - 48 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                6 as libc::c_int,
-            ),
-        );
-    d = a
-        .wrapping_add(
-            leftrotate(
-                d
-                    .wrapping_add(b ^ (a | !c))
-                    .wrapping_add(k[(48 as libc::c_int + 1 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (7 as libc::c_int - 48 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                10 as libc::c_int,
-            ),
-        );
-    c = d
-        .wrapping_add(
-            leftrotate(
-                c
-                    .wrapping_add(a ^ (d | !b))
-                    .wrapping_add(k[(48 as libc::c_int + 2 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (14 as libc::c_int - 48 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                15 as libc::c_int,
-            ),
-        );
-    b = c
-        .wrapping_add(
-            leftrotate(
-                b
-                    .wrapping_add(d ^ (c | !a))
-                    .wrapping_add(k[(48 as libc::c_int + 3 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (5 as libc::c_int - 48 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                21 as libc::c_int,
-            ),
-        );
-    a = b
-        .wrapping_add(
-            leftrotate(
-                a
-                    .wrapping_add(c ^ (b | !d))
-                    .wrapping_add(k[(52 as libc::c_int + 0 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (0 as libc::c_int - 52 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                6 as libc::c_int,
-            ),
-        );
-    d = a
-        .wrapping_add(
-            leftrotate(
-                d
-                    .wrapping_add(b ^ (a | !c))
-                    .wrapping_add(k[(52 as libc::c_int + 1 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (7 as libc::c_int - 52 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                10 as libc::c_int,
-            ),
-        );
-    c = d
-        .wrapping_add(
-            leftrotate(
-                c
-                    .wrapping_add(a ^ (d | !b))
-                    .wrapping_add(k[(52 as libc::c_int + 2 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (14 as libc::c_int - 52 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                15 as libc::c_int,
-            ),
-        );
-    b = c
-        .wrapping_add(
-            leftrotate(
-                b
-                    .wrapping_add(d ^ (c | !a))
-                    .wrapping_add(k[(52 as libc::c_int + 3 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (5 as libc::c_int - 52 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                21 as libc::c_int,
-            ),
-        );
-    a = b
-        .wrapping_add(
-            leftrotate(
-                a
-                    .wrapping_add(c ^ (b | !d))
-                    .wrapping_add(k[(56 as libc::c_int + 0 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (0 as libc::c_int - 56 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                6 as libc::c_int,
-            ),
-        );
-    d = a
-        .wrapping_add(
-            leftrotate(
-                d
-                    .wrapping_add(b ^ (a | !c))
-                    .wrapping_add(k[(56 as libc::c_int + 1 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (7 as libc::c_int - 56 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                10 as libc::c_int,
-            ),
-        );
-    c = d
-        .wrapping_add(
-            leftrotate(
-                c
-                    .wrapping_add(a ^ (d | !b))
-                    .wrapping_add(k[(56 as libc::c_int + 2 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (14 as libc::c_int - 56 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                15 as libc::c_int,
-            ),
-        );
-    b = c
-        .wrapping_add(
-            leftrotate(
-                b
-                    .wrapping_add(d ^ (c | !a))
-                    .wrapping_add(k[(56 as libc::c_int + 3 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (5 as libc::c_int - 56 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                21 as libc::c_int,
-            ),
-        );
-    a = b
-        .wrapping_add(
-            leftrotate(
-                a
-                    .wrapping_add(c ^ (b | !d))
-                    .wrapping_add(k[(60 as libc::c_int + 0 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (0 as libc::c_int - 60 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                6 as libc::c_int,
-            ),
-        );
-    d = a
-        .wrapping_add(
-            leftrotate(
-                d
-                    .wrapping_add(b ^ (a | !c))
-                    .wrapping_add(k[(60 as libc::c_int + 1 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (7 as libc::c_int - 60 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                10 as libc::c_int,
-            ),
-        );
-    c = d
-        .wrapping_add(
-            leftrotate(
-                c
-                    .wrapping_add(a ^ (d | !b))
-                    .wrapping_add(k[(60 as libc::c_int + 2 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (14 as libc::c_int - 60 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                15 as libc::c_int,
-            ),
-        );
-    b = c
-        .wrapping_add(
-            leftrotate(
-                b
-                    .wrapping_add(d ^ (c | !a))
-                    .wrapping_add(k[(60 as libc::c_int + 3 as libc::c_int) as usize])
-                    .wrapping_add(
-                        *data
-                            .offset(
-                                (5 as libc::c_int - 60 as libc::c_int & 15 as libc::c_int)
-                                    as isize,
-                            ),
-                    ),
-                21 as libc::c_int,
-            ),
-        );
-    (*md5)
-        .abcd[0 as libc::c_int
-        as usize] = ((*md5).abcd[0 as libc::c_int as usize] as libc::c_uint)
+    a = b.wrapping_add(leftrotate(
+        a.wrapping_add(b & c | !b & d)
+            .wrapping_add(k[(0 as libc::c_int + 0 as libc::c_int) as usize])
+            .wrapping_add(*data.offset((0 as libc::c_int + 0 as libc::c_int) as isize)),
+        7 as libc::c_int,
+    ));
+    d = a.wrapping_add(leftrotate(
+        d.wrapping_add(a & b | !a & c)
+            .wrapping_add(k[(0 as libc::c_int + 1 as libc::c_int) as usize])
+            .wrapping_add(*data.offset((0 as libc::c_int + 1 as libc::c_int) as isize)),
+        12 as libc::c_int,
+    ));
+    c = d.wrapping_add(leftrotate(
+        c.wrapping_add(d & a | !d & b)
+            .wrapping_add(k[(0 as libc::c_int + 2 as libc::c_int) as usize])
+            .wrapping_add(*data.offset((0 as libc::c_int + 2 as libc::c_int) as isize)),
+        17 as libc::c_int,
+    ));
+    b = c.wrapping_add(leftrotate(
+        b.wrapping_add(c & d | !c & a)
+            .wrapping_add(k[(0 as libc::c_int + 3 as libc::c_int) as usize])
+            .wrapping_add(*data.offset((0 as libc::c_int + 3 as libc::c_int) as isize)),
+        22 as libc::c_int,
+    ));
+    a = b.wrapping_add(leftrotate(
+        a.wrapping_add(b & c | !b & d)
+            .wrapping_add(k[(4 as libc::c_int + 0 as libc::c_int) as usize])
+            .wrapping_add(*data.offset((4 as libc::c_int + 0 as libc::c_int) as isize)),
+        7 as libc::c_int,
+    ));
+    d = a.wrapping_add(leftrotate(
+        d.wrapping_add(a & b | !a & c)
+            .wrapping_add(k[(4 as libc::c_int + 1 as libc::c_int) as usize])
+            .wrapping_add(*data.offset((4 as libc::c_int + 1 as libc::c_int) as isize)),
+        12 as libc::c_int,
+    ));
+    c = d.wrapping_add(leftrotate(
+        c.wrapping_add(d & a | !d & b)
+            .wrapping_add(k[(4 as libc::c_int + 2 as libc::c_int) as usize])
+            .wrapping_add(*data.offset((4 as libc::c_int + 2 as libc::c_int) as isize)),
+        17 as libc::c_int,
+    ));
+    b = c.wrapping_add(leftrotate(
+        b.wrapping_add(c & d | !c & a)
+            .wrapping_add(k[(4 as libc::c_int + 3 as libc::c_int) as usize])
+            .wrapping_add(*data.offset((4 as libc::c_int + 3 as libc::c_int) as isize)),
+        22 as libc::c_int,
+    ));
+    a = b.wrapping_add(leftrotate(
+        a.wrapping_add(b & c | !b & d)
+            .wrapping_add(k[(8 as libc::c_int + 0 as libc::c_int) as usize])
+            .wrapping_add(*data.offset((8 as libc::c_int + 0 as libc::c_int) as isize)),
+        7 as libc::c_int,
+    ));
+    d = a.wrapping_add(leftrotate(
+        d.wrapping_add(a & b | !a & c)
+            .wrapping_add(k[(8 as libc::c_int + 1 as libc::c_int) as usize])
+            .wrapping_add(*data.offset((8 as libc::c_int + 1 as libc::c_int) as isize)),
+        12 as libc::c_int,
+    ));
+    c = d.wrapping_add(leftrotate(
+        c.wrapping_add(d & a | !d & b)
+            .wrapping_add(k[(8 as libc::c_int + 2 as libc::c_int) as usize])
+            .wrapping_add(*data.offset((8 as libc::c_int + 2 as libc::c_int) as isize)),
+        17 as libc::c_int,
+    ));
+    b = c.wrapping_add(leftrotate(
+        b.wrapping_add(c & d | !c & a)
+            .wrapping_add(k[(8 as libc::c_int + 3 as libc::c_int) as usize])
+            .wrapping_add(*data.offset((8 as libc::c_int + 3 as libc::c_int) as isize)),
+        22 as libc::c_int,
+    ));
+    a = b.wrapping_add(leftrotate(
+        a.wrapping_add(b & c | !b & d)
+            .wrapping_add(k[(12 as libc::c_int + 0 as libc::c_int) as usize])
+            .wrapping_add(*data.offset((12 as libc::c_int + 0 as libc::c_int) as isize)),
+        7 as libc::c_int,
+    ));
+    d = a.wrapping_add(leftrotate(
+        d.wrapping_add(a & b | !a & c)
+            .wrapping_add(k[(12 as libc::c_int + 1 as libc::c_int) as usize])
+            .wrapping_add(*data.offset((12 as libc::c_int + 1 as libc::c_int) as isize)),
+        12 as libc::c_int,
+    ));
+    c = d.wrapping_add(leftrotate(
+        c.wrapping_add(d & a | !d & b)
+            .wrapping_add(k[(12 as libc::c_int + 2 as libc::c_int) as usize])
+            .wrapping_add(*data.offset((12 as libc::c_int + 2 as libc::c_int) as isize)),
+        17 as libc::c_int,
+    ));
+    b = c.wrapping_add(leftrotate(
+        b.wrapping_add(c & d | !c & a)
+            .wrapping_add(k[(12 as libc::c_int + 3 as libc::c_int) as usize])
+            .wrapping_add(*data.offset((12 as libc::c_int + 3 as libc::c_int) as isize)),
+        22 as libc::c_int,
+    ));
+    a = b.wrapping_add(leftrotate(
+        a.wrapping_add(d & b | !d & c)
+            .wrapping_add(k[(16 as libc::c_int + 0 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((16 as libc::c_int + 1 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        5 as libc::c_int,
+    ));
+    d = a.wrapping_add(leftrotate(
+        d.wrapping_add(c & a | !c & b)
+            .wrapping_add(k[(16 as libc::c_int + 1 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((16 as libc::c_int + 6 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        9 as libc::c_int,
+    ));
+    c = d.wrapping_add(leftrotate(
+        c.wrapping_add(b & d | !b & a)
+            .wrapping_add(k[(16 as libc::c_int + 2 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((16 as libc::c_int + 11 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        14 as libc::c_int,
+    ));
+    b = c.wrapping_add(leftrotate(
+        b.wrapping_add(a & c | !a & d)
+            .wrapping_add(k[(16 as libc::c_int + 3 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((16 as libc::c_int + 0 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        20 as libc::c_int,
+    ));
+    a = b.wrapping_add(leftrotate(
+        a.wrapping_add(d & b | !d & c)
+            .wrapping_add(k[(20 as libc::c_int + 0 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((20 as libc::c_int + 1 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        5 as libc::c_int,
+    ));
+    d = a.wrapping_add(leftrotate(
+        d.wrapping_add(c & a | !c & b)
+            .wrapping_add(k[(20 as libc::c_int + 1 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((20 as libc::c_int + 6 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        9 as libc::c_int,
+    ));
+    c = d.wrapping_add(leftrotate(
+        c.wrapping_add(b & d | !b & a)
+            .wrapping_add(k[(20 as libc::c_int + 2 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((20 as libc::c_int + 11 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        14 as libc::c_int,
+    ));
+    b = c.wrapping_add(leftrotate(
+        b.wrapping_add(a & c | !a & d)
+            .wrapping_add(k[(20 as libc::c_int + 3 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((20 as libc::c_int + 0 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        20 as libc::c_int,
+    ));
+    a = b.wrapping_add(leftrotate(
+        a.wrapping_add(d & b | !d & c)
+            .wrapping_add(k[(24 as libc::c_int + 0 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((24 as libc::c_int + 1 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        5 as libc::c_int,
+    ));
+    d = a.wrapping_add(leftrotate(
+        d.wrapping_add(c & a | !c & b)
+            .wrapping_add(k[(24 as libc::c_int + 1 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((24 as libc::c_int + 6 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        9 as libc::c_int,
+    ));
+    c = d.wrapping_add(leftrotate(
+        c.wrapping_add(b & d | !b & a)
+            .wrapping_add(k[(24 as libc::c_int + 2 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((24 as libc::c_int + 11 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        14 as libc::c_int,
+    ));
+    b = c.wrapping_add(leftrotate(
+        b.wrapping_add(a & c | !a & d)
+            .wrapping_add(k[(24 as libc::c_int + 3 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((24 as libc::c_int + 0 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        20 as libc::c_int,
+    ));
+    a = b.wrapping_add(leftrotate(
+        a.wrapping_add(d & b | !d & c)
+            .wrapping_add(k[(28 as libc::c_int + 0 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((28 as libc::c_int + 1 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        5 as libc::c_int,
+    ));
+    d = a.wrapping_add(leftrotate(
+        d.wrapping_add(c & a | !c & b)
+            .wrapping_add(k[(28 as libc::c_int + 1 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((28 as libc::c_int + 6 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        9 as libc::c_int,
+    ));
+    c = d.wrapping_add(leftrotate(
+        c.wrapping_add(b & d | !b & a)
+            .wrapping_add(k[(28 as libc::c_int + 2 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((28 as libc::c_int + 11 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        14 as libc::c_int,
+    ));
+    b = c.wrapping_add(leftrotate(
+        b.wrapping_add(a & c | !a & d)
+            .wrapping_add(k[(28 as libc::c_int + 3 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((28 as libc::c_int + 0 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        20 as libc::c_int,
+    ));
+    a = b.wrapping_add(leftrotate(
+        a.wrapping_add(b ^ c ^ d)
+            .wrapping_add(k[(32 as libc::c_int + 0 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((5 as libc::c_int - 32 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        4 as libc::c_int,
+    ));
+    d = a.wrapping_add(leftrotate(
+        d.wrapping_add(a ^ b ^ c)
+            .wrapping_add(k[(32 as libc::c_int + 1 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((8 as libc::c_int - 32 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        11 as libc::c_int,
+    ));
+    c = d.wrapping_add(leftrotate(
+        c.wrapping_add(d ^ a ^ b)
+            .wrapping_add(k[(32 as libc::c_int + 2 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((11 as libc::c_int - 32 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        16 as libc::c_int,
+    ));
+    b = c.wrapping_add(leftrotate(
+        b.wrapping_add(c ^ d ^ a)
+            .wrapping_add(k[(32 as libc::c_int + 3 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((14 as libc::c_int - 32 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        23 as libc::c_int,
+    ));
+    a = b.wrapping_add(leftrotate(
+        a.wrapping_add(b ^ c ^ d)
+            .wrapping_add(k[(36 as libc::c_int + 0 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((5 as libc::c_int - 36 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        4 as libc::c_int,
+    ));
+    d = a.wrapping_add(leftrotate(
+        d.wrapping_add(a ^ b ^ c)
+            .wrapping_add(k[(36 as libc::c_int + 1 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((8 as libc::c_int - 36 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        11 as libc::c_int,
+    ));
+    c = d.wrapping_add(leftrotate(
+        c.wrapping_add(d ^ a ^ b)
+            .wrapping_add(k[(36 as libc::c_int + 2 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((11 as libc::c_int - 36 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        16 as libc::c_int,
+    ));
+    b = c.wrapping_add(leftrotate(
+        b.wrapping_add(c ^ d ^ a)
+            .wrapping_add(k[(36 as libc::c_int + 3 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((14 as libc::c_int - 36 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        23 as libc::c_int,
+    ));
+    a = b.wrapping_add(leftrotate(
+        a.wrapping_add(b ^ c ^ d)
+            .wrapping_add(k[(40 as libc::c_int + 0 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((5 as libc::c_int - 40 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        4 as libc::c_int,
+    ));
+    d = a.wrapping_add(leftrotate(
+        d.wrapping_add(a ^ b ^ c)
+            .wrapping_add(k[(40 as libc::c_int + 1 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((8 as libc::c_int - 40 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        11 as libc::c_int,
+    ));
+    c = d.wrapping_add(leftrotate(
+        c.wrapping_add(d ^ a ^ b)
+            .wrapping_add(k[(40 as libc::c_int + 2 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((11 as libc::c_int - 40 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        16 as libc::c_int,
+    ));
+    b = c.wrapping_add(leftrotate(
+        b.wrapping_add(c ^ d ^ a)
+            .wrapping_add(k[(40 as libc::c_int + 3 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((14 as libc::c_int - 40 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        23 as libc::c_int,
+    ));
+    a = b.wrapping_add(leftrotate(
+        a.wrapping_add(b ^ c ^ d)
+            .wrapping_add(k[(44 as libc::c_int + 0 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((5 as libc::c_int - 44 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        4 as libc::c_int,
+    ));
+    d = a.wrapping_add(leftrotate(
+        d.wrapping_add(a ^ b ^ c)
+            .wrapping_add(k[(44 as libc::c_int + 1 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((8 as libc::c_int - 44 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        11 as libc::c_int,
+    ));
+    c = d.wrapping_add(leftrotate(
+        c.wrapping_add(d ^ a ^ b)
+            .wrapping_add(k[(44 as libc::c_int + 2 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((11 as libc::c_int - 44 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        16 as libc::c_int,
+    ));
+    b = c.wrapping_add(leftrotate(
+        b.wrapping_add(c ^ d ^ a)
+            .wrapping_add(k[(44 as libc::c_int + 3 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((14 as libc::c_int - 44 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        23 as libc::c_int,
+    ));
+    a = b.wrapping_add(leftrotate(
+        a.wrapping_add(c ^ (b | !d))
+            .wrapping_add(k[(48 as libc::c_int + 0 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((0 as libc::c_int - 48 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        6 as libc::c_int,
+    ));
+    d = a.wrapping_add(leftrotate(
+        d.wrapping_add(b ^ (a | !c))
+            .wrapping_add(k[(48 as libc::c_int + 1 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((7 as libc::c_int - 48 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        10 as libc::c_int,
+    ));
+    c = d.wrapping_add(leftrotate(
+        c.wrapping_add(a ^ (d | !b))
+            .wrapping_add(k[(48 as libc::c_int + 2 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((14 as libc::c_int - 48 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        15 as libc::c_int,
+    ));
+    b = c.wrapping_add(leftrotate(
+        b.wrapping_add(d ^ (c | !a))
+            .wrapping_add(k[(48 as libc::c_int + 3 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((5 as libc::c_int - 48 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        21 as libc::c_int,
+    ));
+    a = b.wrapping_add(leftrotate(
+        a.wrapping_add(c ^ (b | !d))
+            .wrapping_add(k[(52 as libc::c_int + 0 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((0 as libc::c_int - 52 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        6 as libc::c_int,
+    ));
+    d = a.wrapping_add(leftrotate(
+        d.wrapping_add(b ^ (a | !c))
+            .wrapping_add(k[(52 as libc::c_int + 1 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((7 as libc::c_int - 52 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        10 as libc::c_int,
+    ));
+    c = d.wrapping_add(leftrotate(
+        c.wrapping_add(a ^ (d | !b))
+            .wrapping_add(k[(52 as libc::c_int + 2 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((14 as libc::c_int - 52 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        15 as libc::c_int,
+    ));
+    b = c.wrapping_add(leftrotate(
+        b.wrapping_add(d ^ (c | !a))
+            .wrapping_add(k[(52 as libc::c_int + 3 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((5 as libc::c_int - 52 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        21 as libc::c_int,
+    ));
+    a = b.wrapping_add(leftrotate(
+        a.wrapping_add(c ^ (b | !d))
+            .wrapping_add(k[(56 as libc::c_int + 0 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((0 as libc::c_int - 56 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        6 as libc::c_int,
+    ));
+    d = a.wrapping_add(leftrotate(
+        d.wrapping_add(b ^ (a | !c))
+            .wrapping_add(k[(56 as libc::c_int + 1 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((7 as libc::c_int - 56 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        10 as libc::c_int,
+    ));
+    c = d.wrapping_add(leftrotate(
+        c.wrapping_add(a ^ (d | !b))
+            .wrapping_add(k[(56 as libc::c_int + 2 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((14 as libc::c_int - 56 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        15 as libc::c_int,
+    ));
+    b = c.wrapping_add(leftrotate(
+        b.wrapping_add(d ^ (c | !a))
+            .wrapping_add(k[(56 as libc::c_int + 3 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((5 as libc::c_int - 56 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        21 as libc::c_int,
+    ));
+    a = b.wrapping_add(leftrotate(
+        a.wrapping_add(c ^ (b | !d))
+            .wrapping_add(k[(60 as libc::c_int + 0 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((0 as libc::c_int - 60 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        6 as libc::c_int,
+    ));
+    d = a.wrapping_add(leftrotate(
+        d.wrapping_add(b ^ (a | !c))
+            .wrapping_add(k[(60 as libc::c_int + 1 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((7 as libc::c_int - 60 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        10 as libc::c_int,
+    ));
+    c = d.wrapping_add(leftrotate(
+        c.wrapping_add(a ^ (d | !b))
+            .wrapping_add(k[(60 as libc::c_int + 2 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((14 as libc::c_int - 60 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        15 as libc::c_int,
+    ));
+    b = c.wrapping_add(leftrotate(
+        b.wrapping_add(d ^ (c | !a))
+            .wrapping_add(k[(60 as libc::c_int + 3 as libc::c_int) as usize])
+            .wrapping_add(
+                *data.offset((5 as libc::c_int - 60 as libc::c_int & 15 as libc::c_int) as isize),
+            ),
+        21 as libc::c_int,
+    ));
+    (*md5).abcd[0 as libc::c_int as usize] = ((*md5).abcd[0 as libc::c_int as usize]
+        as libc::c_uint)
         .wrapping_add(a) as uint32_t as uint32_t;
-    (*md5)
-        .abcd[1 as libc::c_int
-        as usize] = ((*md5).abcd[1 as libc::c_int as usize] as libc::c_uint)
+    (*md5).abcd[1 as libc::c_int as usize] = ((*md5).abcd[1 as libc::c_int as usize]
+        as libc::c_uint)
         .wrapping_add(b) as uint32_t as uint32_t;
-    (*md5)
-        .abcd[2 as libc::c_int
-        as usize] = ((*md5).abcd[2 as libc::c_int as usize] as libc::c_uint)
+    (*md5).abcd[2 as libc::c_int as usize] = ((*md5).abcd[2 as libc::c_int as usize]
+        as libc::c_uint)
         .wrapping_add(c) as uint32_t as uint32_t;
-    (*md5)
-        .abcd[3 as libc::c_int
-        as usize] = ((*md5).abcd[3 as libc::c_int as usize] as libc::c_uint)
+    (*md5).abcd[3 as libc::c_int as usize] = ((*md5).abcd[3 as libc::c_int as usize]
+        as libc::c_uint)
         .wrapping_add(d) as uint32_t as uint32_t;
 }
 unsafe extern "C" fn md5_update(
@@ -1688,9 +1189,8 @@ unsafe extern "C" fn md5_update(
         );
         len = len.wrapping_sub(tmp);
         data = data.offset(tmp as isize);
-        (*md5)
-            .len = ((*md5).len as libc::c_ulong).wrapping_add(tmp as libc::c_ulong)
-            as uint64_t as uint64_t;
+        (*md5).len = ((*md5).len as libc::c_ulong).wrapping_add(tmp as libc::c_ulong) as uint64_t
+            as uint64_t;
         if (*md5).len & 63 as libc::c_int as libc::c_ulong == 0 {
             md5_body(md5, ((*md5).c2rust_unnamed.data32).as_mut_ptr());
         }
@@ -1702,9 +1202,8 @@ unsafe extern "C" fn md5_update(
             64 as libc::c_int as libc::c_ulong,
         );
         md5_body(md5, ((*md5).c2rust_unnamed.data32).as_mut_ptr());
-        (*md5)
-            .len = ((*md5).len as libc::c_ulong)
-            .wrapping_add(64 as libc::c_int as libc::c_ulong) as uint64_t as uint64_t;
+        (*md5).len = ((*md5).len as libc::c_ulong).wrapping_add(64 as libc::c_int as libc::c_ulong)
+            as uint64_t as uint64_t;
         data = data.offset(64 as libc::c_int as isize);
         len = len.wrapping_sub(64 as libc::c_int as libc::c_uint);
     }
@@ -1714,15 +1213,11 @@ unsafe extern "C" fn md5_update(
             data as *const libc::c_void,
             len as libc::c_ulong,
         );
-        (*md5)
-            .len = ((*md5).len as libc::c_ulong).wrapping_add(len as libc::c_ulong)
-            as uint64_t as uint64_t;
+        (*md5).len = ((*md5).len as libc::c_ulong).wrapping_add(len as libc::c_ulong) as uint64_t
+            as uint64_t;
     }
 }
-unsafe extern "C" fn md5_write(
-    md5: *mut MD5Context,
-    p: *mut Dav1dPicture,
-) -> libc::c_int {
+unsafe extern "C" fn md5_write(md5: *mut MD5Context, p: *mut Dav1dPicture) -> libc::c_int {
     let hbd: libc::c_int = ((*p).p.bpc > 8 as libc::c_int) as libc::c_int;
     let w: libc::c_int = (*p).p.w;
     let h: libc::c_int = (*p).p.h;
@@ -1733,13 +1228,13 @@ unsafe extern "C" fn md5_write(
         yptr = yptr.offset((*p).stride[0 as libc::c_int as usize] as isize);
         y += 1;
     }
-    if (*p).p.layout as libc::c_uint
-        != DAV1D_PIXEL_LAYOUT_I400 as libc::c_int as libc::c_uint
-    {
+    if (*p).p.layout as libc::c_uint != DAV1D_PIXEL_LAYOUT_I400 as libc::c_int as libc::c_uint {
         let ss_ver: libc::c_int = ((*p).p.layout as libc::c_uint
-            == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint) as libc::c_int;
+            == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint)
+            as libc::c_int;
         let ss_hor: libc::c_int = ((*p).p.layout as libc::c_uint
-            != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint) as libc::c_int;
+            != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint)
+            as libc::c_int;
         let cw: libc::c_int = w + ss_hor >> ss_hor;
         let ch: libc::c_int = h + ss_ver >> ss_ver;
         let mut pl: libc::c_int = 1 as libc::c_int;
@@ -1758,19 +1253,14 @@ unsafe extern "C" fn md5_write(
     return 0 as libc::c_int;
 }
 unsafe extern "C" fn md5_finish(md5: *mut MD5Context) {
-    static mut bit: [uint8_t; 2] = [
-        0x80 as libc::c_int as uint8_t,
-        0 as libc::c_int as uint8_t,
-    ];
+    static mut bit: [uint8_t; 2] = [0x80 as libc::c_int as uint8_t, 0 as libc::c_int as uint8_t];
     let len: uint64_t = (*md5).len << 3 as libc::c_int;
     md5_update(
         md5,
         &*bit.as_ptr().offset(0 as libc::c_int as isize),
         1 as libc::c_int as libc::c_uint,
     );
-    while (*md5).len & 63 as libc::c_int as libc::c_ulong
-        != 56 as libc::c_int as libc::c_ulong
-    {
+    while (*md5).len & 63 as libc::c_int as libc::c_ulong != 56 as libc::c_int as libc::c_ulong {
         md5_update(
             md5,
             &*bit.as_ptr().offset(1 as libc::c_int as isize),
@@ -1791,10 +1281,8 @@ unsafe extern "C" fn md5_close(md5: *mut MD5Context) {
             (*md5).f,
             b"%2.2x%2.2x%2.2x%2.2x\0" as *const u8 as *const libc::c_char,
             (*md5).abcd[i as usize] & 0xff as libc::c_int as libc::c_uint,
-            (*md5).abcd[i as usize] >> 8 as libc::c_int
-                & 0xff as libc::c_int as libc::c_uint,
-            (*md5).abcd[i as usize] >> 16 as libc::c_int
-                & 0xff as libc::c_int as libc::c_uint,
+            (*md5).abcd[i as usize] >> 8 as libc::c_int & 0xff as libc::c_int as libc::c_uint,
+            (*md5).abcd[i as usize] >> 16 as libc::c_int & 0xff as libc::c_int as libc::c_uint,
             (*md5).abcd[i as usize] >> 24 as libc::c_int,
         );
         i += 1;
@@ -1825,9 +1313,8 @@ unsafe extern "C" fn md5_verify(
                 2 as libc::c_int as libc::c_ulong,
             );
             md5_str = md5_str.offset(2 as libc::c_int as isize);
-            abcd[i as usize]
-                |= (strtoul(t.as_mut_ptr(), &mut ignore, 16 as libc::c_int) as uint32_t)
-                    << j;
+            abcd[i as usize] |=
+                (strtoul(t.as_mut_ptr(), &mut ignore, 16 as libc::c_int) as uint32_t) << j;
             j += 8 as libc::c_int;
         }
         i += 1;
@@ -1842,8 +1329,7 @@ unsafe extern "C" fn md5_verify(
 pub static mut md5_muxer: Muxer = unsafe {
     {
         let mut init = Muxer {
-            priv_data_size: ::core::mem::size_of::<MD5Context>() as libc::c_ulong
-                as libc::c_int,
+            priv_data_size: ::core::mem::size_of::<MD5Context>() as libc::c_ulong as libc::c_int,
             name: b"md5\0" as *const u8 as *const libc::c_char,
             extension: b"md5\0" as *const u8 as *const libc::c_char,
             write_header: Some(
@@ -1857,20 +1343,12 @@ pub static mut md5_muxer: Muxer = unsafe {
             ),
             write_picture: Some(
                 md5_write
-                    as unsafe extern "C" fn(
-                        *mut MD5Context,
-                        *mut Dav1dPicture,
-                    ) -> libc::c_int,
+                    as unsafe extern "C" fn(*mut MD5Context, *mut Dav1dPicture) -> libc::c_int,
             ),
-            write_trailer: Some(
-                md5_close as unsafe extern "C" fn(*mut MD5Context) -> (),
-            ),
+            write_trailer: Some(md5_close as unsafe extern "C" fn(*mut MD5Context) -> ()),
             verify: Some(
                 md5_verify
-                    as unsafe extern "C" fn(
-                        *mut MD5Context,
-                        *const libc::c_char,
-                    ) -> libc::c_int,
+                    as unsafe extern "C" fn(*mut MD5Context, *const libc::c_char) -> libc::c_int,
             ),
         };
         init

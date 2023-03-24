@@ -1,15 +1,7 @@
 use ::libc;
 extern "C" {
-    fn memcmp(
-        _: *const libc::c_void,
-        _: *const libc::c_void,
-        _: libc::c_ulong,
-    ) -> libc::c_int;
-    fn dav1d_cpu_cpuid(
-        regs: *mut CpuidRegisters,
-        leaf: libc::c_uint,
-        subleaf: libc::c_uint,
-    );
+    fn memcmp(_: *const libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> libc::c_int;
+    fn dav1d_cpu_cpuid(regs: *mut CpuidRegisters, leaf: libc::c_uint, subleaf: libc::c_uint);
     fn dav1d_cpu_xgetbv(xcr: libc::c_uint) -> uint64_t;
 }
 pub type __uint32_t = libc::c_uint;
@@ -72,22 +64,15 @@ pub unsafe extern "C" fn dav1d_get_cpu_flags_x86() -> libc::c_uint {
             1 as libc::c_int as libc::c_uint,
             0 as libc::c_int as libc::c_uint,
         );
-        let model: libc::c_uint = (r.eax >> 4 as libc::c_int
-            & 0xf as libc::c_int as libc::c_uint)
-            .wrapping_add(
-                r.eax >> 12 as libc::c_int & 0xf0 as libc::c_int as libc::c_uint,
-            );
-        let family: libc::c_uint = (r.eax >> 8 as libc::c_int
-            & 0xf as libc::c_int as libc::c_uint)
-            .wrapping_add(
-                r.eax >> 20 as libc::c_int & 0xff as libc::c_int as libc::c_uint,
-            );
+        let model: libc::c_uint = (r.eax >> 4 as libc::c_int & 0xf as libc::c_int as libc::c_uint)
+            .wrapping_add(r.eax >> 12 as libc::c_int & 0xf0 as libc::c_int as libc::c_uint);
+        let family: libc::c_uint = (r.eax >> 8 as libc::c_int & 0xf as libc::c_int as libc::c_uint)
+            .wrapping_add(r.eax >> 20 as libc::c_int & 0xff as libc::c_int as libc::c_uint);
         if r.edx & 0x6008000 as libc::c_int as libc::c_uint
             == 0x6008000 as libc::c_int as libc::c_uint
         {
             flags |= DAV1D_X86_CPU_FLAG_SSE2 as libc::c_int as libc::c_uint;
-            if r.ecx & 0x201 as libc::c_int as libc::c_uint
-                == 0x201 as libc::c_int as libc::c_uint
+            if r.ecx & 0x201 as libc::c_int as libc::c_uint == 0x201 as libc::c_int as libc::c_uint
             {
                 flags |= DAV1D_X86_CPU_FLAG_SSSE3 as libc::c_int as libc::c_uint;
                 if r.ecx & 0x80000 as libc::c_int as libc::c_uint
@@ -104,9 +89,7 @@ pub unsafe extern "C" fn dav1d_get_cpu_flags_x86() -> libc::c_uint {
             == 0x18000000 as libc::c_int as libc::c_uint
         {
             let xcr0: uint64_t = dav1d_cpu_xgetbv(0 as libc::c_int as libc::c_uint);
-            if xcr0 & 0x6 as libc::c_int as libc::c_ulong
-                == 0x6 as libc::c_int as libc::c_ulong
-            {
+            if xcr0 & 0x6 as libc::c_int as libc::c_ulong == 0x6 as libc::c_int as libc::c_ulong {
                 if cpu.c2rust_unnamed.max_leaf >= 7 as libc::c_int as libc::c_uint {
                     dav1d_cpu_cpuid(
                         &mut r,
@@ -120,14 +103,12 @@ pub unsafe extern "C" fn dav1d_get_cpu_flags_x86() -> libc::c_uint {
                         if xcr0 & 0xe0 as libc::c_int as libc::c_ulong
                             == 0xe0 as libc::c_int as libc::c_ulong
                         {
-                            if r.ebx & 0xd0230000 as libc::c_uint
-                                == 0xd0230000 as libc::c_uint
+                            if r.ebx & 0xd0230000 as libc::c_uint == 0xd0230000 as libc::c_uint
                                 && r.ecx & 0x5f42 as libc::c_int as libc::c_uint
                                     == 0x5f42 as libc::c_int as libc::c_uint
                             {
-                                flags
-                                    |= DAV1D_X86_CPU_FLAG_AVX512ICL as libc::c_int
-                                        as libc::c_uint;
+                                flags |=
+                                    DAV1D_X86_CPU_FLAG_AVX512ICL as libc::c_int as libc::c_uint;
                             }
                         }
                     }

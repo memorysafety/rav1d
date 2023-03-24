@@ -70,10 +70,7 @@ unsafe extern "C" fn dav1d_free_aligned(mut ptr: *mut libc::c_void) {
     free(ptr);
 }
 #[inline]
-unsafe extern "C" fn dav1d_alloc_aligned(
-    mut sz: size_t,
-    mut align: size_t,
-) -> *mut libc::c_void {
+unsafe extern "C" fn dav1d_alloc_aligned(mut sz: size_t, mut align: size_t) -> *mut libc::c_void {
     if align & align.wrapping_sub(1 as libc::c_int as libc::c_ulong) != 0 {
         unreachable!();
     }
@@ -118,7 +115,8 @@ pub unsafe extern "C" fn dav1d_mem_pool_pop(
 ) -> *mut Dav1dMemPoolBuffer {
     if size
         & (::core::mem::size_of::<*mut libc::c_void>() as libc::c_ulong)
-            .wrapping_sub(1 as libc::c_int as libc::c_ulong) != 0
+            .wrapping_sub(1 as libc::c_int as libc::c_ulong)
+        != 0
     {
         unreachable!();
     }
@@ -144,10 +142,7 @@ pub unsafe extern "C" fn dav1d_mem_pool_pop(
     match current_block_20 {
         5350950662582111547 => {
             data = dav1d_alloc_aligned(
-                size
-                    .wrapping_add(
-                        ::core::mem::size_of::<Dav1dMemPoolBuffer>() as libc::c_ulong,
-                    ),
+                size.wrapping_add(::core::mem::size_of::<Dav1dMemPoolBuffer>() as libc::c_ulong),
                 64 as libc::c_int as size_t,
             ) as *mut uint8_t;
             if data.is_null() {
@@ -169,12 +164,9 @@ pub unsafe extern "C" fn dav1d_mem_pool_pop(
 }
 #[no_mangle]
 #[cold]
-pub unsafe extern "C" fn dav1d_mem_pool_init(
-    ppool: *mut *mut Dav1dMemPool,
-) -> libc::c_int {
-    let pool: *mut Dav1dMemPool = malloc(
-        ::core::mem::size_of::<Dav1dMemPool>() as libc::c_ulong,
-    ) as *mut Dav1dMemPool;
+pub unsafe extern "C" fn dav1d_mem_pool_init(ppool: *mut *mut Dav1dMemPool) -> libc::c_int {
+    let pool: *mut Dav1dMemPool =
+        malloc(::core::mem::size_of::<Dav1dMemPool>() as libc::c_ulong) as *mut Dav1dMemPool;
     if !pool.is_null() {
         if pthread_mutex_init(&mut (*pool).lock, 0 as *const pthread_mutexattr_t) == 0 {
             (*pool).buf = 0 as *mut Dav1dMemPoolBuffer;

@@ -486,7 +486,7 @@ pub struct Muxer {
     pub priv_data_size: libc::c_int,
     pub name: *const libc::c_char,
     pub extension: *const libc::c_char,
-    pub write_header: Option::<
+    pub write_header: Option<
         unsafe extern "C" fn(
             *mut MuxerPriv,
             *const libc::c_char,
@@ -494,19 +494,13 @@ pub struct Muxer {
             *const libc::c_uint,
         ) -> libc::c_int,
     >,
-    pub write_picture: Option::<
-        unsafe extern "C" fn(*mut MuxerPriv, *mut Dav1dPicture) -> libc::c_int,
-    >,
-    pub write_trailer: Option::<unsafe extern "C" fn(*mut MuxerPriv) -> ()>,
-    pub verify: Option::<
-        unsafe extern "C" fn(*mut MuxerPriv, *const libc::c_char) -> libc::c_int,
-    >,
+    pub write_picture:
+        Option<unsafe extern "C" fn(*mut MuxerPriv, *mut Dav1dPicture) -> libc::c_int>,
+    pub write_trailer: Option<unsafe extern "C" fn(*mut MuxerPriv) -> ()>,
+    pub verify: Option<unsafe extern "C" fn(*mut MuxerPriv, *const libc::c_char) -> libc::c_int>,
 }
 pub type NullOutputContext = MuxerPriv;
-unsafe extern "C" fn null_write(
-    c: *mut NullOutputContext,
-    p: *mut Dav1dPicture,
-) -> libc::c_int {
+unsafe extern "C" fn null_write(c: *mut NullOutputContext, p: *mut Dav1dPicture) -> libc::c_int {
     dav1d_picture_unref(p);
     return 0 as libc::c_int;
 }

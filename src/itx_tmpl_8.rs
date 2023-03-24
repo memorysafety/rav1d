@@ -1,52 +1,13 @@
 use ::libc;
 extern "C" {
-    fn memset(
-        _: *mut libc::c_void,
-        _: libc::c_int,
-        _: libc::c_ulong,
-    ) -> *mut libc::c_void;
-    fn dav1d_inv_dct4_1d_c(
-        c: *mut int32_t,
-        stride: ptrdiff_t,
-        min: libc::c_int,
-        max: libc::c_int,
-    );
-    fn dav1d_inv_dct8_1d_c(
-        c: *mut int32_t,
-        stride: ptrdiff_t,
-        min: libc::c_int,
-        max: libc::c_int,
-    );
-    fn dav1d_inv_dct16_1d_c(
-        c: *mut int32_t,
-        stride: ptrdiff_t,
-        min: libc::c_int,
-        max: libc::c_int,
-    );
-    fn dav1d_inv_dct32_1d_c(
-        c: *mut int32_t,
-        stride: ptrdiff_t,
-        min: libc::c_int,
-        max: libc::c_int,
-    );
-    fn dav1d_inv_dct64_1d_c(
-        c: *mut int32_t,
-        stride: ptrdiff_t,
-        min: libc::c_int,
-        max: libc::c_int,
-    );
-    fn dav1d_inv_adst4_1d_c(
-        c: *mut int32_t,
-        stride: ptrdiff_t,
-        min: libc::c_int,
-        max: libc::c_int,
-    );
-    fn dav1d_inv_adst8_1d_c(
-        c: *mut int32_t,
-        stride: ptrdiff_t,
-        min: libc::c_int,
-        max: libc::c_int,
-    );
+    fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
+    fn dav1d_inv_dct4_1d_c(c: *mut int32_t, stride: ptrdiff_t, min: libc::c_int, max: libc::c_int);
+    fn dav1d_inv_dct8_1d_c(c: *mut int32_t, stride: ptrdiff_t, min: libc::c_int, max: libc::c_int);
+    fn dav1d_inv_dct16_1d_c(c: *mut int32_t, stride: ptrdiff_t, min: libc::c_int, max: libc::c_int);
+    fn dav1d_inv_dct32_1d_c(c: *mut int32_t, stride: ptrdiff_t, min: libc::c_int, max: libc::c_int);
+    fn dav1d_inv_dct64_1d_c(c: *mut int32_t, stride: ptrdiff_t, min: libc::c_int, max: libc::c_int);
+    fn dav1d_inv_adst4_1d_c(c: *mut int32_t, stride: ptrdiff_t, min: libc::c_int, max: libc::c_int);
+    fn dav1d_inv_adst8_1d_c(c: *mut int32_t, stride: ptrdiff_t, min: libc::c_int, max: libc::c_int);
     fn dav1d_inv_adst16_1d_c(
         c: *mut int32_t,
         stride: ptrdiff_t,
@@ -149,28 +110,28 @@ pub const ADST_ADST: TxfmType = 3;
 pub const DCT_ADST: TxfmType = 2;
 pub const ADST_DCT: TxfmType = 1;
 pub const DCT_DCT: TxfmType = 0;
-pub type itxfm_fn = Option::<
-    unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
->;
+pub type itxfm_fn =
+    Option<unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> ()>;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dInvTxfmDSPContext {
     pub itxfm_add: [[itxfm_fn; 17]; 19],
 }
-pub type itx_1d_fn = Option::<
-    unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
->;
+pub type itx_1d_fn =
+    Option<unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> ()>;
 #[inline]
 unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
     return if a < b { a } else { b };
 }
 #[inline]
-unsafe extern "C" fn iclip(
-    v: libc::c_int,
-    min: libc::c_int,
-    max: libc::c_int,
-) -> libc::c_int {
-    return if v < min { min } else if v > max { max } else { v };
+unsafe extern "C" fn iclip(v: libc::c_int, min: libc::c_int, max: libc::c_int) -> libc::c_int {
+    return if v < min {
+        min
+    } else if v > max {
+        max
+    } else {
+        v
+    };
 }
 #[inline]
 unsafe extern "C" fn iclip_u8(v: libc::c_int) -> libc::c_int {
@@ -198,28 +159,25 @@ unsafe extern "C" fn inv_txfm_add_c(
     if !(eob >= 0 as libc::c_int) {
         unreachable!();
     }
-    let is_rect2: libc::c_int = (w * 2 as libc::c_int == h || h * 2 as libc::c_int == w)
-        as libc::c_int;
+    let is_rect2: libc::c_int =
+        (w * 2 as libc::c_int == h || h * 2 as libc::c_int == w) as libc::c_int;
     let rnd: libc::c_int = (1 as libc::c_int) << shift >> 1 as libc::c_int;
     if eob < has_dconly {
-        let mut dc: libc::c_int = *coeff.offset(0 as libc::c_int as isize)
-            as libc::c_int;
+        let mut dc: libc::c_int = *coeff.offset(0 as libc::c_int as isize) as libc::c_int;
         *coeff.offset(0 as libc::c_int as isize) = 0 as libc::c_int as coef;
         if is_rect2 != 0 {
             dc = dc * 181 as libc::c_int + 128 as libc::c_int >> 8 as libc::c_int;
         }
         dc = dc * 181 as libc::c_int + 128 as libc::c_int >> 8 as libc::c_int;
         dc = dc + rnd >> shift;
-        dc = dc * 181 as libc::c_int + 128 as libc::c_int + 2048 as libc::c_int
-            >> 12 as libc::c_int;
+        dc =
+            dc * 181 as libc::c_int + 128 as libc::c_int + 2048 as libc::c_int >> 12 as libc::c_int;
         let mut y: libc::c_int = 0 as libc::c_int;
         while y < h {
             let mut x: libc::c_int = 0 as libc::c_int;
             while x < w {
-                *dst
-                    .offset(
-                        x as isize,
-                    ) = iclip_u8(*dst.offset(x as isize) as libc::c_int + dc) as pixel;
+                *dst.offset(x as isize) =
+                    iclip_u8(*dst.offset(x as isize) as libc::c_int + dc) as pixel;
                 x += 1;
             }
             y += 1;
@@ -240,27 +198,25 @@ unsafe extern "C" fn inv_txfm_add_c(
         if is_rect2 != 0 {
             let mut x_0: libc::c_int = 0 as libc::c_int;
             while x_0 < sw {
-                *c
-                    .offset(
-                        x_0 as isize,
-                    ) = *coeff.offset((y_0 + x_0 * sh) as isize) as libc::c_int
-                    * 181 as libc::c_int + 128 as libc::c_int >> 8 as libc::c_int;
+                *c.offset(x_0 as isize) = *coeff.offset((y_0 + x_0 * sh) as isize) as libc::c_int
+                    * 181 as libc::c_int
+                    + 128 as libc::c_int
+                    >> 8 as libc::c_int;
                 x_0 += 1;
             }
         } else {
             let mut x_1: libc::c_int = 0 as libc::c_int;
             while x_1 < sw {
-                *c
-                    .offset(
-                        x_1 as isize,
-                    ) = *coeff.offset((y_0 + x_1 * sh) as isize) as int32_t;
+                *c.offset(x_1 as isize) = *coeff.offset((y_0 + x_1 * sh) as isize) as int32_t;
                 x_1 += 1;
             }
         }
-        first_1d_fn
-            .expect(
-                "non-null function pointer",
-            )(c, 1 as libc::c_int as ptrdiff_t, row_clip_min, row_clip_max);
+        first_1d_fn.expect("non-null function pointer")(
+            c,
+            1 as libc::c_int as ptrdiff_t,
+            row_clip_min,
+            row_clip_max,
+        );
         y_0 += 1;
         c = c.offset(w as isize);
     }
@@ -273,20 +229,12 @@ unsafe extern "C" fn inv_txfm_add_c(
     );
     let mut i: libc::c_int = 0 as libc::c_int;
     while i < w * sh {
-        tmp[i
-            as usize] = iclip(
-            tmp[i as usize] + rnd >> shift,
-            col_clip_min,
-            col_clip_max,
-        );
+        tmp[i as usize] = iclip(tmp[i as usize] + rnd >> shift, col_clip_min, col_clip_max);
         i += 1;
     }
     let mut x_2: libc::c_int = 0 as libc::c_int;
     while x_2 < w {
-        second_1d_fn
-            .expect(
-                "non-null function pointer",
-            )(
+        second_1d_fn.expect("non-null function pointer")(
             &mut *tmp.as_mut_ptr().offset(x_2 as isize),
             w as ptrdiff_t,
             col_clip_min,
@@ -301,10 +249,7 @@ unsafe extern "C" fn inv_txfm_add_c(
         while x_3 < w {
             let fresh0 = c;
             c = c.offset(1);
-            *dst
-                .offset(
-                    x_3 as isize,
-                ) = iclip_u8(
+            *dst.offset(x_3 as isize) = iclip_u8(
                 *dst.offset(x_3 as isize) as libc::c_int
                     + (*fresh0 + 8 as libc::c_int >> 4 as libc::c_int),
             ) as pixel;
@@ -330,21 +275,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_adst_4x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -365,21 +300,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_flipadst_4x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -400,21 +325,11 @@ unsafe extern "C" fn inv_txfm_add_dct_identity_4x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -435,21 +350,11 @@ unsafe extern "C" fn inv_txfm_add_identity_dct_4x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -470,21 +375,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_identity_4x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -505,21 +400,11 @@ unsafe extern "C" fn inv_txfm_add_identity_flipadst_4x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -540,21 +425,11 @@ unsafe extern "C" fn inv_txfm_add_dct_dct_4x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         1 as libc::c_int,
     );
@@ -575,21 +450,11 @@ unsafe extern "C" fn inv_txfm_add_adst_identity_4x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_adst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -610,21 +475,11 @@ unsafe extern "C" fn inv_txfm_add_identity_adst_4x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -645,21 +500,11 @@ unsafe extern "C" fn inv_txfm_add_dct_flipadst_4x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -680,21 +525,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_dct_4x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -715,21 +550,11 @@ unsafe extern "C" fn inv_txfm_add_adst_flipadst_4x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_adst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -750,21 +575,11 @@ unsafe extern "C" fn inv_txfm_add_adst_adst_4x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_adst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -785,21 +600,11 @@ unsafe extern "C" fn inv_txfm_add_dct_adst_4x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -820,21 +625,11 @@ unsafe extern "C" fn inv_txfm_add_adst_dct_4x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_adst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -855,21 +650,11 @@ unsafe extern "C" fn inv_txfm_add_identity_identity_4x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -890,21 +675,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_adst_4x8_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -925,21 +700,11 @@ unsafe extern "C" fn inv_txfm_add_dct_dct_4x8_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         1 as libc::c_int,
     );
@@ -960,21 +725,11 @@ unsafe extern "C" fn inv_txfm_add_adst_flipadst_4x8_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_adst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -995,21 +750,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_dct_4x8_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -1030,21 +775,11 @@ unsafe extern "C" fn inv_txfm_add_dct_flipadst_4x8_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -1065,21 +800,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_flipadst_4x8_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -1100,21 +825,11 @@ unsafe extern "C" fn inv_txfm_add_dct_identity_4x8_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -1135,21 +850,11 @@ unsafe extern "C" fn inv_txfm_add_identity_dct_4x8_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -1170,21 +875,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_identity_4x8_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -1205,21 +900,11 @@ unsafe extern "C" fn inv_txfm_add_identity_flipadst_4x8_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -1240,21 +925,11 @@ unsafe extern "C" fn inv_txfm_add_adst_identity_4x8_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_adst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -1275,21 +950,11 @@ unsafe extern "C" fn inv_txfm_add_identity_adst_4x8_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -1310,21 +975,11 @@ unsafe extern "C" fn inv_txfm_add_identity_identity_4x8_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -1345,21 +1000,11 @@ unsafe extern "C" fn inv_txfm_add_adst_dct_4x8_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_adst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -1380,21 +1025,11 @@ unsafe extern "C" fn inv_txfm_add_dct_adst_4x8_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -1415,21 +1050,11 @@ unsafe extern "C" fn inv_txfm_add_adst_adst_4x8_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_adst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -1450,21 +1075,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_flipadst_4x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -1485,21 +1100,11 @@ unsafe extern "C" fn inv_txfm_add_adst_identity_4x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_adst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -1520,21 +1125,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_adst_4x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -1555,21 +1150,11 @@ unsafe extern "C" fn inv_txfm_add_adst_flipadst_4x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_adst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -1590,21 +1175,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_dct_4x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -1625,21 +1200,11 @@ unsafe extern "C" fn inv_txfm_add_dct_flipadst_4x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -1660,21 +1225,11 @@ unsafe extern "C" fn inv_txfm_add_dct_dct_4x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         1 as libc::c_int,
     );
@@ -1695,21 +1250,11 @@ unsafe extern "C" fn inv_txfm_add_identity_adst_4x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -1730,21 +1275,11 @@ unsafe extern "C" fn inv_txfm_add_dct_adst_4x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -1765,21 +1300,11 @@ unsafe extern "C" fn inv_txfm_add_dct_identity_4x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -1800,21 +1325,11 @@ unsafe extern "C" fn inv_txfm_add_identity_dct_4x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -1835,21 +1350,11 @@ unsafe extern "C" fn inv_txfm_add_adst_dct_4x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_adst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -1870,21 +1375,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_identity_4x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -1905,21 +1400,11 @@ unsafe extern "C" fn inv_txfm_add_identity_identity_4x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -1940,21 +1425,11 @@ unsafe extern "C" fn inv_txfm_add_identity_flipadst_4x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -1975,21 +1450,11 @@ unsafe extern "C" fn inv_txfm_add_adst_adst_4x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_adst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -2010,21 +1475,11 @@ unsafe extern "C" fn inv_txfm_add_adst_flipadst_8x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -2045,21 +1500,11 @@ unsafe extern "C" fn inv_txfm_add_dct_dct_8x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         1 as libc::c_int,
     );
@@ -2080,21 +1525,11 @@ unsafe extern "C" fn inv_txfm_add_identity_identity_8x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_identity8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -2115,21 +1550,11 @@ unsafe extern "C" fn inv_txfm_add_adst_dct_8x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -2150,21 +1575,11 @@ unsafe extern "C" fn inv_txfm_add_dct_adst_8x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -2185,21 +1600,11 @@ unsafe extern "C" fn inv_txfm_add_adst_adst_8x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -2220,21 +1625,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_adst_8x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -2255,21 +1650,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_dct_8x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -2290,21 +1675,11 @@ unsafe extern "C" fn inv_txfm_add_dct_flipadst_8x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -2325,21 +1700,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_flipadst_8x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -2360,21 +1725,11 @@ unsafe extern "C" fn inv_txfm_add_dct_identity_8x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -2395,21 +1750,11 @@ unsafe extern "C" fn inv_txfm_add_identity_dct_8x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_identity8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -2430,21 +1775,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_identity_8x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -2465,21 +1800,11 @@ unsafe extern "C" fn inv_txfm_add_identity_flipadst_8x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_identity8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -2500,21 +1825,11 @@ unsafe extern "C" fn inv_txfm_add_adst_identity_8x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -2535,21 +1850,11 @@ unsafe extern "C" fn inv_txfm_add_identity_adst_8x4_c(
         0 as libc::c_int,
         Some(
             dav1d_inv_identity8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -2570,21 +1875,11 @@ unsafe extern "C" fn inv_txfm_add_identity_dct_8x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_identity8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -2605,21 +1900,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_dct_8x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -2640,21 +1925,11 @@ unsafe extern "C" fn inv_txfm_add_dct_dct_8x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         1 as libc::c_int,
     );
@@ -2675,21 +1950,11 @@ unsafe extern "C" fn inv_txfm_add_identity_identity_8x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_identity8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -2710,21 +1975,11 @@ unsafe extern "C" fn inv_txfm_add_adst_dct_8x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -2745,21 +2000,11 @@ unsafe extern "C" fn inv_txfm_add_dct_adst_8x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -2780,21 +2025,11 @@ unsafe extern "C" fn inv_txfm_add_adst_adst_8x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -2815,21 +2050,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_adst_8x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -2850,21 +2075,11 @@ unsafe extern "C" fn inv_txfm_add_adst_flipadst_8x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -2885,21 +2100,11 @@ unsafe extern "C" fn inv_txfm_add_identity_adst_8x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_identity8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -2920,21 +2125,11 @@ unsafe extern "C" fn inv_txfm_add_adst_identity_8x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -2955,21 +2150,11 @@ unsafe extern "C" fn inv_txfm_add_identity_flipadst_8x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_identity8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -2990,21 +2175,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_identity_8x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -3025,21 +2200,11 @@ unsafe extern "C" fn inv_txfm_add_dct_flipadst_8x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -3060,21 +2225,11 @@ unsafe extern "C" fn inv_txfm_add_dct_identity_8x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -3095,21 +2250,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_flipadst_8x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -3130,21 +2275,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_dct_8x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -3165,21 +2300,11 @@ unsafe extern "C" fn inv_txfm_add_dct_dct_8x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         1 as libc::c_int,
     );
@@ -3200,21 +2325,11 @@ unsafe extern "C" fn inv_txfm_add_identity_identity_8x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_identity8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -3235,21 +2350,11 @@ unsafe extern "C" fn inv_txfm_add_adst_dct_8x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -3270,21 +2375,11 @@ unsafe extern "C" fn inv_txfm_add_dct_adst_8x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -3305,21 +2400,11 @@ unsafe extern "C" fn inv_txfm_add_adst_adst_8x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -3340,21 +2425,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_adst_8x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -3375,21 +2450,11 @@ unsafe extern "C" fn inv_txfm_add_adst_flipadst_8x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -3410,21 +2475,11 @@ unsafe extern "C" fn inv_txfm_add_dct_flipadst_8x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -3445,21 +2500,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_flipadst_8x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -3480,21 +2525,11 @@ unsafe extern "C" fn inv_txfm_add_dct_identity_8x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -3515,21 +2550,11 @@ unsafe extern "C" fn inv_txfm_add_identity_dct_8x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_identity8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -3550,21 +2575,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_identity_8x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -3585,21 +2600,11 @@ unsafe extern "C" fn inv_txfm_add_identity_flipadst_8x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_identity8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -3620,21 +2625,11 @@ unsafe extern "C" fn inv_txfm_add_adst_identity_8x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -3655,21 +2650,11 @@ unsafe extern "C" fn inv_txfm_add_identity_adst_8x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_identity8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -3690,21 +2675,11 @@ unsafe extern "C" fn inv_txfm_add_identity_identity_8x32_c(
         2 as libc::c_int,
         Some(
             dav1d_inv_identity8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity32_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -3725,21 +2700,11 @@ unsafe extern "C" fn inv_txfm_add_dct_dct_8x32_c(
         2 as libc::c_int,
         Some(
             dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct32_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         1 as libc::c_int,
     );
@@ -3760,21 +2725,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_flipadst_16x4_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -3795,21 +2750,11 @@ unsafe extern "C" fn inv_txfm_add_dct_dct_16x4_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         1 as libc::c_int,
     );
@@ -3830,21 +2775,11 @@ unsafe extern "C" fn inv_txfm_add_identity_identity_16x4_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_identity16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -3865,21 +2800,11 @@ unsafe extern "C" fn inv_txfm_add_adst_dct_16x4_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_adst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -3900,21 +2825,11 @@ unsafe extern "C" fn inv_txfm_add_dct_adst_16x4_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -3935,21 +2850,11 @@ unsafe extern "C" fn inv_txfm_add_adst_adst_16x4_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_adst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -3970,21 +2875,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_adst_16x4_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -4005,21 +2900,11 @@ unsafe extern "C" fn inv_txfm_add_adst_flipadst_16x4_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_adst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -4040,21 +2925,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_dct_16x4_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -4075,21 +2950,11 @@ unsafe extern "C" fn inv_txfm_add_dct_flipadst_16x4_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -4110,21 +2975,11 @@ unsafe extern "C" fn inv_txfm_add_dct_identity_16x4_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -4145,21 +3000,11 @@ unsafe extern "C" fn inv_txfm_add_identity_dct_16x4_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_identity16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -4180,21 +3025,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_identity_16x4_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -4215,21 +3050,11 @@ unsafe extern "C" fn inv_txfm_add_identity_flipadst_16x4_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_identity16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -4250,21 +3075,11 @@ unsafe extern "C" fn inv_txfm_add_adst_identity_16x4_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_adst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -4285,21 +3100,11 @@ unsafe extern "C" fn inv_txfm_add_identity_adst_16x4_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_identity16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst4_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -4320,21 +3125,11 @@ unsafe extern "C" fn inv_txfm_add_dct_dct_16x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         1 as libc::c_int,
     );
@@ -4355,21 +3150,11 @@ unsafe extern "C" fn inv_txfm_add_identity_identity_16x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_identity16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -4390,21 +3175,11 @@ unsafe extern "C" fn inv_txfm_add_adst_dct_16x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_adst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -4425,21 +3200,11 @@ unsafe extern "C" fn inv_txfm_add_dct_adst_16x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -4460,21 +3225,11 @@ unsafe extern "C" fn inv_txfm_add_adst_adst_16x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_adst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -4495,21 +3250,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_adst_16x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -4530,21 +3275,11 @@ unsafe extern "C" fn inv_txfm_add_adst_flipadst_16x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_adst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -4565,21 +3300,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_dct_16x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -4600,21 +3325,11 @@ unsafe extern "C" fn inv_txfm_add_dct_flipadst_16x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -4635,21 +3350,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_flipadst_16x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -4670,21 +3375,11 @@ unsafe extern "C" fn inv_txfm_add_dct_identity_16x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -4705,21 +3400,11 @@ unsafe extern "C" fn inv_txfm_add_identity_dct_16x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_identity16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -4740,21 +3425,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_identity_16x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -4775,21 +3450,11 @@ unsafe extern "C" fn inv_txfm_add_identity_flipadst_16x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_identity16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -4810,21 +3475,11 @@ unsafe extern "C" fn inv_txfm_add_adst_identity_16x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_adst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -4845,21 +3500,11 @@ unsafe extern "C" fn inv_txfm_add_identity_adst_16x8_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_identity16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -4880,21 +3525,11 @@ unsafe extern "C" fn inv_txfm_add_dct_dct_16x16_c(
         2 as libc::c_int,
         Some(
             dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         1 as libc::c_int,
     );
@@ -4915,21 +3550,11 @@ unsafe extern "C" fn inv_txfm_add_identity_identity_16x16_c(
         2 as libc::c_int,
         Some(
             dav1d_inv_identity16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -4950,21 +3575,11 @@ unsafe extern "C" fn inv_txfm_add_adst_dct_16x16_c(
         2 as libc::c_int,
         Some(
             dav1d_inv_adst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -4985,21 +3600,11 @@ unsafe extern "C" fn inv_txfm_add_dct_adst_16x16_c(
         2 as libc::c_int,
         Some(
             dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -5020,21 +3625,11 @@ unsafe extern "C" fn inv_txfm_add_adst_adst_16x16_c(
         2 as libc::c_int,
         Some(
             dav1d_inv_adst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -5055,21 +3650,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_adst_16x16_c(
         2 as libc::c_int,
         Some(
             dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_adst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -5090,21 +3675,11 @@ unsafe extern "C" fn inv_txfm_add_adst_flipadst_16x16_c(
         2 as libc::c_int,
         Some(
             dav1d_inv_adst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -5125,21 +3700,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_dct_16x16_c(
         2 as libc::c_int,
         Some(
             dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -5160,21 +3725,11 @@ unsafe extern "C" fn inv_txfm_add_dct_flipadst_16x16_c(
         2 as libc::c_int,
         Some(
             dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -5195,21 +3750,11 @@ unsafe extern "C" fn inv_txfm_add_flipadst_flipadst_16x16_c(
         2 as libc::c_int,
         Some(
             dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_flipadst16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -5230,21 +3775,11 @@ unsafe extern "C" fn inv_txfm_add_dct_identity_16x16_c(
         2 as libc::c_int,
         Some(
             dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -5265,21 +3800,11 @@ unsafe extern "C" fn inv_txfm_add_identity_dct_16x16_c(
         2 as libc::c_int,
         Some(
             dav1d_inv_identity16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -5300,21 +3825,11 @@ unsafe extern "C" fn inv_txfm_add_dct_dct_16x32_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct32_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         1 as libc::c_int,
     );
@@ -5335,21 +3850,11 @@ unsafe extern "C" fn inv_txfm_add_identity_identity_16x32_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_identity16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity32_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -5370,21 +3875,11 @@ unsafe extern "C" fn inv_txfm_add_dct_dct_16x64_c(
         2 as libc::c_int,
         Some(
             dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct64_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         1 as libc::c_int,
     );
@@ -5405,21 +3900,11 @@ unsafe extern "C" fn inv_txfm_add_dct_dct_32x8_c(
         2 as libc::c_int,
         Some(
             dav1d_inv_dct32_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         1 as libc::c_int,
     );
@@ -5440,21 +3925,11 @@ unsafe extern "C" fn inv_txfm_add_identity_identity_32x8_c(
         2 as libc::c_int,
         Some(
             dav1d_inv_identity32_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity8_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -5475,21 +3950,11 @@ unsafe extern "C" fn inv_txfm_add_dct_dct_32x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_dct32_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         1 as libc::c_int,
     );
@@ -5510,21 +3975,11 @@ unsafe extern "C" fn inv_txfm_add_identity_identity_32x16_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_identity32_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -5545,21 +4000,11 @@ unsafe extern "C" fn inv_txfm_add_dct_dct_32x32_c(
         2 as libc::c_int,
         Some(
             dav1d_inv_dct32_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct32_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         1 as libc::c_int,
     );
@@ -5580,21 +4025,11 @@ unsafe extern "C" fn inv_txfm_add_identity_identity_32x32_c(
         2 as libc::c_int,
         Some(
             dav1d_inv_identity32_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_identity32_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         0 as libc::c_int,
     );
@@ -5615,21 +4050,11 @@ unsafe extern "C" fn inv_txfm_add_dct_dct_32x64_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_dct32_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct64_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         1 as libc::c_int,
     );
@@ -5650,21 +4075,11 @@ unsafe extern "C" fn inv_txfm_add_dct_dct_64x16_c(
         2 as libc::c_int,
         Some(
             dav1d_inv_dct64_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct16_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         1 as libc::c_int,
     );
@@ -5685,21 +4100,11 @@ unsafe extern "C" fn inv_txfm_add_dct_dct_64x32_c(
         1 as libc::c_int,
         Some(
             dav1d_inv_dct64_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct32_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         1 as libc::c_int,
     );
@@ -5720,21 +4125,11 @@ unsafe extern "C" fn inv_txfm_add_dct_dct_64x64_c(
         2 as libc::c_int,
         Some(
             dav1d_inv_dct64_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         Some(
             dav1d_inv_dct64_1d_c
-                as unsafe extern "C" fn(
-                    *mut int32_t,
-                    ptrdiff_t,
-                    libc::c_int,
-                    libc::c_int,
-                ) -> (),
+                as unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> (),
         ),
         1 as libc::c_int,
     );
@@ -5751,10 +4146,8 @@ unsafe extern "C" fn inv_txfm_add_wht_wht_4x4_c(
     while y < 4 as libc::c_int {
         let mut x: libc::c_int = 0 as libc::c_int;
         while x < 4 as libc::c_int {
-            *c
-                .offset(
-                    x as isize,
-                ) = *coeff.offset((y + x * 4 as libc::c_int) as isize) as libc::c_int
+            *c.offset(x as isize) = *coeff.offset((y + x * 4 as libc::c_int) as isize)
+                as libc::c_int
                 >> 2 as libc::c_int;
             x += 1;
         }
@@ -5784,11 +4177,8 @@ unsafe extern "C" fn inv_txfm_add_wht_wht_4x4_c(
         while x_1 < 4 as libc::c_int {
             let fresh1 = c;
             c = c.offset(1);
-            *dst
-                .offset(
-                    x_1 as isize,
-                ) = iclip_u8(*dst.offset(x_1 as isize) as libc::c_int + *fresh1)
-                as pixel;
+            *dst.offset(x_1 as isize) =
+                iclip_u8(*dst.offset(x_1 as isize) as libc::c_int + *fresh1) as pixel;
             x_1 += 1;
         }
         y_0 += 1;
@@ -5801,1095 +4191,636 @@ pub unsafe extern "C" fn dav1d_itx_dsp_init_8bpc(
     c: *mut Dav1dInvTxfmDSPContext,
     mut bpc: libc::c_int,
 ) {
-    (*c)
-        .itxfm_add[TX_4X4 as libc::c_int
-        as usize][WHT_WHT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_4X4 as libc::c_int as usize][WHT_WHT as libc::c_int as usize] = Some(
         inv_txfm_add_wht_wht_4x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_4X4 as libc::c_int
-        as usize][DCT_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_4X4 as libc::c_int as usize][DCT_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_dct_4x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_4X4 as libc::c_int
-        as usize][IDTX as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_4X4 as libc::c_int as usize][IDTX as libc::c_int as usize] = Some(
         inv_txfm_add_identity_identity_4x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_4X4 as libc::c_int
-        as usize][DCT_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_4X4 as libc::c_int as usize][DCT_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_dct_4x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_4X4 as libc::c_int
-        as usize][ADST_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_4X4 as libc::c_int as usize][ADST_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_adst_4x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_4X4 as libc::c_int
-        as usize][ADST_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_4X4 as libc::c_int as usize][ADST_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_adst_4x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_4X4 as libc::c_int
-        as usize][ADST_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_4X4 as libc::c_int as usize][ADST_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_flipadst_adst_4x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_4X4 as libc::c_int
-        as usize][FLIPADST_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_4X4 as libc::c_int as usize][FLIPADST_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_flipadst_4x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_4X4 as libc::c_int
-        as usize][DCT_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_4X4 as libc::c_int as usize][DCT_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_flipadst_dct_4x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_4X4 as libc::c_int
-        as usize][FLIPADST_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_4X4 as libc::c_int as usize][FLIPADST_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_flipadst_4x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_4X4 as libc::c_int
-        as usize][FLIPADST_FLIPADST as libc::c_int
-        as usize] = Some(
-        inv_txfm_add_flipadst_flipadst_4x4_c
-            as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
-    );
-    (*c)
-        .itxfm_add[TX_4X4 as libc::c_int
-        as usize][H_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_4X4 as libc::c_int as usize][FLIPADST_FLIPADST as libc::c_int as usize] =
+        Some(
+            inv_txfm_add_flipadst_flipadst_4x4_c
+                as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
+        );
+    (*c).itxfm_add[TX_4X4 as libc::c_int as usize][H_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_identity_4x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_4X4 as libc::c_int
-        as usize][V_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_4X4 as libc::c_int as usize][V_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_identity_dct_4x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_4X4 as libc::c_int
-        as usize][H_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_4X4 as libc::c_int as usize][H_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_flipadst_identity_4x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_4X4 as libc::c_int
-        as usize][V_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_4X4 as libc::c_int as usize][V_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_identity_flipadst_4x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_4X4 as libc::c_int
-        as usize][H_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_4X4 as libc::c_int as usize][H_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_identity_4x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_4X4 as libc::c_int
-        as usize][V_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_4X4 as libc::c_int as usize][V_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_identity_adst_4x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_4X8 as libc::c_int
-        as usize][DCT_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_4X8 as libc::c_int as usize][DCT_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_dct_4x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_4X8 as libc::c_int
-        as usize][IDTX as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_4X8 as libc::c_int as usize][IDTX as libc::c_int as usize] = Some(
         inv_txfm_add_identity_identity_4x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_4X8 as libc::c_int
-        as usize][DCT_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_4X8 as libc::c_int as usize][DCT_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_dct_4x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_4X8 as libc::c_int
-        as usize][ADST_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_4X8 as libc::c_int as usize][ADST_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_adst_4x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_4X8 as libc::c_int
-        as usize][ADST_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_4X8 as libc::c_int as usize][ADST_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_adst_4x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_4X8 as libc::c_int
-        as usize][ADST_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_4X8 as libc::c_int as usize][ADST_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_flipadst_adst_4x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_4X8 as libc::c_int
-        as usize][FLIPADST_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_4X8 as libc::c_int as usize][FLIPADST_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_flipadst_4x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_4X8 as libc::c_int
-        as usize][DCT_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_4X8 as libc::c_int as usize][DCT_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_flipadst_dct_4x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_4X8 as libc::c_int
-        as usize][FLIPADST_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_4X8 as libc::c_int as usize][FLIPADST_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_flipadst_4x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_4X8 as libc::c_int
-        as usize][FLIPADST_FLIPADST as libc::c_int
-        as usize] = Some(
-        inv_txfm_add_flipadst_flipadst_4x8_c
-            as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
-    );
-    (*c)
-        .itxfm_add[RTX_4X8 as libc::c_int
-        as usize][H_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_4X8 as libc::c_int as usize][FLIPADST_FLIPADST as libc::c_int as usize] =
+        Some(
+            inv_txfm_add_flipadst_flipadst_4x8_c
+                as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
+        );
+    (*c).itxfm_add[RTX_4X8 as libc::c_int as usize][H_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_identity_4x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_4X8 as libc::c_int
-        as usize][V_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_4X8 as libc::c_int as usize][V_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_identity_dct_4x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_4X8 as libc::c_int
-        as usize][H_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_4X8 as libc::c_int as usize][H_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_flipadst_identity_4x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_4X8 as libc::c_int
-        as usize][V_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_4X8 as libc::c_int as usize][V_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_identity_flipadst_4x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_4X8 as libc::c_int
-        as usize][H_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_4X8 as libc::c_int as usize][H_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_identity_4x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_4X8 as libc::c_int
-        as usize][V_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_4X8 as libc::c_int as usize][V_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_identity_adst_4x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_4X16 as libc::c_int
-        as usize][DCT_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_4X16 as libc::c_int as usize][DCT_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_dct_4x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_4X16 as libc::c_int
-        as usize][IDTX as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_4X16 as libc::c_int as usize][IDTX as libc::c_int as usize] = Some(
         inv_txfm_add_identity_identity_4x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_4X16 as libc::c_int
-        as usize][DCT_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_4X16 as libc::c_int as usize][DCT_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_dct_4x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_4X16 as libc::c_int
-        as usize][ADST_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_4X16 as libc::c_int as usize][ADST_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_adst_4x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_4X16 as libc::c_int
-        as usize][ADST_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_4X16 as libc::c_int as usize][ADST_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_adst_4x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_4X16 as libc::c_int
-        as usize][ADST_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_4X16 as libc::c_int as usize][ADST_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_flipadst_adst_4x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_4X16 as libc::c_int
-        as usize][FLIPADST_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_4X16 as libc::c_int as usize][FLIPADST_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_flipadst_4x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_4X16 as libc::c_int
-        as usize][DCT_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_4X16 as libc::c_int as usize][DCT_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_flipadst_dct_4x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_4X16 as libc::c_int
-        as usize][FLIPADST_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_4X16 as libc::c_int as usize][FLIPADST_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_flipadst_4x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_4X16 as libc::c_int
-        as usize][FLIPADST_FLIPADST as libc::c_int
-        as usize] = Some(
-        inv_txfm_add_flipadst_flipadst_4x16_c
-            as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
-    );
-    (*c)
-        .itxfm_add[RTX_4X16 as libc::c_int
-        as usize][H_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_4X16 as libc::c_int as usize][FLIPADST_FLIPADST as libc::c_int as usize] =
+        Some(
+            inv_txfm_add_flipadst_flipadst_4x16_c
+                as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
+        );
+    (*c).itxfm_add[RTX_4X16 as libc::c_int as usize][H_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_identity_4x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_4X16 as libc::c_int
-        as usize][V_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_4X16 as libc::c_int as usize][V_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_identity_dct_4x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_4X16 as libc::c_int
-        as usize][H_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_4X16 as libc::c_int as usize][H_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_flipadst_identity_4x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_4X16 as libc::c_int
-        as usize][V_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_4X16 as libc::c_int as usize][V_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_identity_flipadst_4x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_4X16 as libc::c_int
-        as usize][H_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_4X16 as libc::c_int as usize][H_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_identity_4x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_4X16 as libc::c_int
-        as usize][V_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_4X16 as libc::c_int as usize][V_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_identity_adst_4x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X4 as libc::c_int
-        as usize][DCT_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X4 as libc::c_int as usize][DCT_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_dct_8x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X4 as libc::c_int
-        as usize][IDTX as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X4 as libc::c_int as usize][IDTX as libc::c_int as usize] = Some(
         inv_txfm_add_identity_identity_8x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X4 as libc::c_int
-        as usize][DCT_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X4 as libc::c_int as usize][DCT_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_dct_8x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X4 as libc::c_int
-        as usize][ADST_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X4 as libc::c_int as usize][ADST_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_adst_8x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X4 as libc::c_int
-        as usize][ADST_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X4 as libc::c_int as usize][ADST_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_adst_8x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X4 as libc::c_int
-        as usize][ADST_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X4 as libc::c_int as usize][ADST_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_flipadst_adst_8x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X4 as libc::c_int
-        as usize][FLIPADST_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X4 as libc::c_int as usize][FLIPADST_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_flipadst_8x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X4 as libc::c_int
-        as usize][DCT_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X4 as libc::c_int as usize][DCT_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_flipadst_dct_8x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X4 as libc::c_int
-        as usize][FLIPADST_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X4 as libc::c_int as usize][FLIPADST_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_flipadst_8x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X4 as libc::c_int
-        as usize][FLIPADST_FLIPADST as libc::c_int
-        as usize] = Some(
-        inv_txfm_add_flipadst_flipadst_8x4_c
-            as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
-    );
-    (*c)
-        .itxfm_add[RTX_8X4 as libc::c_int
-        as usize][H_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X4 as libc::c_int as usize][FLIPADST_FLIPADST as libc::c_int as usize] =
+        Some(
+            inv_txfm_add_flipadst_flipadst_8x4_c
+                as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
+        );
+    (*c).itxfm_add[RTX_8X4 as libc::c_int as usize][H_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_identity_8x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X4 as libc::c_int
-        as usize][V_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X4 as libc::c_int as usize][V_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_identity_dct_8x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X4 as libc::c_int
-        as usize][H_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X4 as libc::c_int as usize][H_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_flipadst_identity_8x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X4 as libc::c_int
-        as usize][V_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X4 as libc::c_int as usize][V_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_identity_flipadst_8x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X4 as libc::c_int
-        as usize][H_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X4 as libc::c_int as usize][H_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_identity_8x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X4 as libc::c_int
-        as usize][V_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X4 as libc::c_int as usize][V_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_identity_adst_8x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_8X8 as libc::c_int
-        as usize][DCT_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_8X8 as libc::c_int as usize][DCT_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_dct_8x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_8X8 as libc::c_int
-        as usize][IDTX as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_8X8 as libc::c_int as usize][IDTX as libc::c_int as usize] = Some(
         inv_txfm_add_identity_identity_8x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_8X8 as libc::c_int
-        as usize][DCT_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_8X8 as libc::c_int as usize][DCT_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_dct_8x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_8X8 as libc::c_int
-        as usize][ADST_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_8X8 as libc::c_int as usize][ADST_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_adst_8x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_8X8 as libc::c_int
-        as usize][ADST_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_8X8 as libc::c_int as usize][ADST_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_adst_8x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_8X8 as libc::c_int
-        as usize][ADST_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_8X8 as libc::c_int as usize][ADST_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_flipadst_adst_8x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_8X8 as libc::c_int
-        as usize][FLIPADST_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_8X8 as libc::c_int as usize][FLIPADST_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_flipadst_8x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_8X8 as libc::c_int
-        as usize][DCT_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_8X8 as libc::c_int as usize][DCT_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_flipadst_dct_8x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_8X8 as libc::c_int
-        as usize][FLIPADST_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_8X8 as libc::c_int as usize][FLIPADST_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_flipadst_8x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_8X8 as libc::c_int
-        as usize][FLIPADST_FLIPADST as libc::c_int
-        as usize] = Some(
-        inv_txfm_add_flipadst_flipadst_8x8_c
-            as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
-    );
-    (*c)
-        .itxfm_add[TX_8X8 as libc::c_int
-        as usize][H_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_8X8 as libc::c_int as usize][FLIPADST_FLIPADST as libc::c_int as usize] =
+        Some(
+            inv_txfm_add_flipadst_flipadst_8x8_c
+                as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
+        );
+    (*c).itxfm_add[TX_8X8 as libc::c_int as usize][H_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_identity_8x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_8X8 as libc::c_int
-        as usize][V_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_8X8 as libc::c_int as usize][V_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_identity_dct_8x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_8X8 as libc::c_int
-        as usize][H_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_8X8 as libc::c_int as usize][H_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_flipadst_identity_8x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_8X8 as libc::c_int
-        as usize][V_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_8X8 as libc::c_int as usize][V_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_identity_flipadst_8x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_8X8 as libc::c_int
-        as usize][H_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_8X8 as libc::c_int as usize][H_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_identity_8x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_8X8 as libc::c_int
-        as usize][V_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_8X8 as libc::c_int as usize][V_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_identity_adst_8x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X16 as libc::c_int
-        as usize][DCT_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X16 as libc::c_int as usize][DCT_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_dct_8x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X16 as libc::c_int
-        as usize][IDTX as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X16 as libc::c_int as usize][IDTX as libc::c_int as usize] = Some(
         inv_txfm_add_identity_identity_8x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X16 as libc::c_int
-        as usize][DCT_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X16 as libc::c_int as usize][DCT_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_dct_8x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X16 as libc::c_int
-        as usize][ADST_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X16 as libc::c_int as usize][ADST_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_adst_8x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X16 as libc::c_int
-        as usize][ADST_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X16 as libc::c_int as usize][ADST_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_adst_8x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X16 as libc::c_int
-        as usize][ADST_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X16 as libc::c_int as usize][ADST_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_flipadst_adst_8x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X16 as libc::c_int
-        as usize][FLIPADST_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X16 as libc::c_int as usize][FLIPADST_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_flipadst_8x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X16 as libc::c_int
-        as usize][DCT_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X16 as libc::c_int as usize][DCT_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_flipadst_dct_8x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X16 as libc::c_int
-        as usize][FLIPADST_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X16 as libc::c_int as usize][FLIPADST_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_flipadst_8x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X16 as libc::c_int
-        as usize][FLIPADST_FLIPADST as libc::c_int
-        as usize] = Some(
-        inv_txfm_add_flipadst_flipadst_8x16_c
-            as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
-    );
-    (*c)
-        .itxfm_add[RTX_8X16 as libc::c_int
-        as usize][H_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X16 as libc::c_int as usize][FLIPADST_FLIPADST as libc::c_int as usize] =
+        Some(
+            inv_txfm_add_flipadst_flipadst_8x16_c
+                as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
+        );
+    (*c).itxfm_add[RTX_8X16 as libc::c_int as usize][H_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_identity_8x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X16 as libc::c_int
-        as usize][V_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X16 as libc::c_int as usize][V_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_identity_dct_8x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X16 as libc::c_int
-        as usize][H_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X16 as libc::c_int as usize][H_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_flipadst_identity_8x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X16 as libc::c_int
-        as usize][V_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X16 as libc::c_int as usize][V_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_identity_flipadst_8x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X16 as libc::c_int
-        as usize][H_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X16 as libc::c_int as usize][H_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_identity_8x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X16 as libc::c_int
-        as usize][V_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X16 as libc::c_int as usize][V_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_identity_adst_8x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X32 as libc::c_int
-        as usize][DCT_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X32 as libc::c_int as usize][DCT_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_dct_8x32_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_8X32 as libc::c_int
-        as usize][IDTX as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_8X32 as libc::c_int as usize][IDTX as libc::c_int as usize] = Some(
         inv_txfm_add_identity_identity_8x32_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X4 as libc::c_int
-        as usize][DCT_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X4 as libc::c_int as usize][DCT_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_dct_16x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X4 as libc::c_int
-        as usize][IDTX as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X4 as libc::c_int as usize][IDTX as libc::c_int as usize] = Some(
         inv_txfm_add_identity_identity_16x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X4 as libc::c_int
-        as usize][DCT_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X4 as libc::c_int as usize][DCT_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_dct_16x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X4 as libc::c_int
-        as usize][ADST_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X4 as libc::c_int as usize][ADST_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_adst_16x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X4 as libc::c_int
-        as usize][ADST_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X4 as libc::c_int as usize][ADST_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_adst_16x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X4 as libc::c_int
-        as usize][ADST_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X4 as libc::c_int as usize][ADST_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_flipadst_adst_16x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X4 as libc::c_int
-        as usize][FLIPADST_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X4 as libc::c_int as usize][FLIPADST_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_flipadst_16x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X4 as libc::c_int
-        as usize][DCT_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X4 as libc::c_int as usize][DCT_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_flipadst_dct_16x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X4 as libc::c_int
-        as usize][FLIPADST_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X4 as libc::c_int as usize][FLIPADST_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_flipadst_16x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X4 as libc::c_int
-        as usize][FLIPADST_FLIPADST as libc::c_int
-        as usize] = Some(
-        inv_txfm_add_flipadst_flipadst_16x4_c
-            as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
-    );
-    (*c)
-        .itxfm_add[RTX_16X4 as libc::c_int
-        as usize][H_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X4 as libc::c_int as usize][FLIPADST_FLIPADST as libc::c_int as usize] =
+        Some(
+            inv_txfm_add_flipadst_flipadst_16x4_c
+                as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
+        );
+    (*c).itxfm_add[RTX_16X4 as libc::c_int as usize][H_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_identity_16x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X4 as libc::c_int
-        as usize][V_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X4 as libc::c_int as usize][V_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_identity_dct_16x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X4 as libc::c_int
-        as usize][H_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X4 as libc::c_int as usize][H_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_flipadst_identity_16x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X4 as libc::c_int
-        as usize][V_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X4 as libc::c_int as usize][V_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_identity_flipadst_16x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X4 as libc::c_int
-        as usize][H_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X4 as libc::c_int as usize][H_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_identity_16x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X4 as libc::c_int
-        as usize][V_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X4 as libc::c_int as usize][V_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_identity_adst_16x4_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X8 as libc::c_int
-        as usize][DCT_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X8 as libc::c_int as usize][DCT_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_dct_16x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X8 as libc::c_int
-        as usize][IDTX as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X8 as libc::c_int as usize][IDTX as libc::c_int as usize] = Some(
         inv_txfm_add_identity_identity_16x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X8 as libc::c_int
-        as usize][DCT_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X8 as libc::c_int as usize][DCT_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_dct_16x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X8 as libc::c_int
-        as usize][ADST_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X8 as libc::c_int as usize][ADST_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_adst_16x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X8 as libc::c_int
-        as usize][ADST_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X8 as libc::c_int as usize][ADST_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_adst_16x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X8 as libc::c_int
-        as usize][ADST_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X8 as libc::c_int as usize][ADST_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_flipadst_adst_16x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X8 as libc::c_int
-        as usize][FLIPADST_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X8 as libc::c_int as usize][FLIPADST_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_flipadst_16x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X8 as libc::c_int
-        as usize][DCT_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X8 as libc::c_int as usize][DCT_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_flipadst_dct_16x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X8 as libc::c_int
-        as usize][FLIPADST_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X8 as libc::c_int as usize][FLIPADST_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_flipadst_16x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X8 as libc::c_int
-        as usize][FLIPADST_FLIPADST as libc::c_int
-        as usize] = Some(
-        inv_txfm_add_flipadst_flipadst_16x8_c
-            as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
-    );
-    (*c)
-        .itxfm_add[RTX_16X8 as libc::c_int
-        as usize][H_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X8 as libc::c_int as usize][FLIPADST_FLIPADST as libc::c_int as usize] =
+        Some(
+            inv_txfm_add_flipadst_flipadst_16x8_c
+                as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
+        );
+    (*c).itxfm_add[RTX_16X8 as libc::c_int as usize][H_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_identity_16x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X8 as libc::c_int
-        as usize][V_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X8 as libc::c_int as usize][V_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_identity_dct_16x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X8 as libc::c_int
-        as usize][H_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X8 as libc::c_int as usize][H_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_flipadst_identity_16x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X8 as libc::c_int
-        as usize][V_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X8 as libc::c_int as usize][V_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_identity_flipadst_16x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X8 as libc::c_int
-        as usize][H_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X8 as libc::c_int as usize][H_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_identity_16x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X8 as libc::c_int
-        as usize][V_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X8 as libc::c_int as usize][V_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_identity_adst_16x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_16X16 as libc::c_int
-        as usize][DCT_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_16X16 as libc::c_int as usize][DCT_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_dct_16x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_16X16 as libc::c_int
-        as usize][IDTX as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_16X16 as libc::c_int as usize][IDTX as libc::c_int as usize] = Some(
         inv_txfm_add_identity_identity_16x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_16X16 as libc::c_int
-        as usize][DCT_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_16X16 as libc::c_int as usize][DCT_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_dct_16x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_16X16 as libc::c_int
-        as usize][ADST_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_16X16 as libc::c_int as usize][ADST_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_adst_16x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_16X16 as libc::c_int
-        as usize][ADST_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_16X16 as libc::c_int as usize][ADST_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_adst_16x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_16X16 as libc::c_int
-        as usize][ADST_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_16X16 as libc::c_int as usize][ADST_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_flipadst_adst_16x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_16X16 as libc::c_int
-        as usize][FLIPADST_ADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_16X16 as libc::c_int as usize][FLIPADST_ADST as libc::c_int as usize] = Some(
         inv_txfm_add_adst_flipadst_16x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_16X16 as libc::c_int
-        as usize][DCT_FLIPADST as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_16X16 as libc::c_int as usize][DCT_FLIPADST as libc::c_int as usize] = Some(
         inv_txfm_add_flipadst_dct_16x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_16X16 as libc::c_int
-        as usize][FLIPADST_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_16X16 as libc::c_int as usize][FLIPADST_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_flipadst_16x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_16X16 as libc::c_int
-        as usize][FLIPADST_FLIPADST as libc::c_int
-        as usize] = Some(
-        inv_txfm_add_flipadst_flipadst_16x16_c
-            as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
-    );
-    (*c)
-        .itxfm_add[TX_16X16 as libc::c_int
-        as usize][H_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_16X16 as libc::c_int as usize][FLIPADST_FLIPADST as libc::c_int as usize] =
+        Some(
+            inv_txfm_add_flipadst_flipadst_16x16_c
+                as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
+        );
+    (*c).itxfm_add[TX_16X16 as libc::c_int as usize][H_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_identity_16x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_16X16 as libc::c_int
-        as usize][V_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_16X16 as libc::c_int as usize][V_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_identity_dct_16x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X32 as libc::c_int
-        as usize][DCT_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X32 as libc::c_int as usize][DCT_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_dct_16x32_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X32 as libc::c_int
-        as usize][IDTX as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X32 as libc::c_int as usize][IDTX as libc::c_int as usize] = Some(
         inv_txfm_add_identity_identity_16x32_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_16X64 as libc::c_int
-        as usize][DCT_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_16X64 as libc::c_int as usize][DCT_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_dct_16x64_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_32X8 as libc::c_int
-        as usize][DCT_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_32X8 as libc::c_int as usize][DCT_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_dct_32x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_32X8 as libc::c_int
-        as usize][IDTX as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_32X8 as libc::c_int as usize][IDTX as libc::c_int as usize] = Some(
         inv_txfm_add_identity_identity_32x8_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_32X16 as libc::c_int
-        as usize][DCT_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_32X16 as libc::c_int as usize][DCT_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_dct_32x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_32X16 as libc::c_int
-        as usize][IDTX as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_32X16 as libc::c_int as usize][IDTX as libc::c_int as usize] = Some(
         inv_txfm_add_identity_identity_32x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_32X32 as libc::c_int
-        as usize][DCT_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_32X32 as libc::c_int as usize][DCT_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_dct_32x32_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_32X32 as libc::c_int
-        as usize][IDTX as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_32X32 as libc::c_int as usize][IDTX as libc::c_int as usize] = Some(
         inv_txfm_add_identity_identity_32x32_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_32X64 as libc::c_int
-        as usize][DCT_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_32X64 as libc::c_int as usize][DCT_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_dct_32x64_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_64X16 as libc::c_int
-        as usize][DCT_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_64X16 as libc::c_int as usize][DCT_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_dct_64x16_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[RTX_64X32 as libc::c_int
-        as usize][DCT_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[RTX_64X32 as libc::c_int as usize][DCT_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_dct_64x32_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );
-    (*c)
-        .itxfm_add[TX_64X64 as libc::c_int
-        as usize][DCT_DCT as libc::c_int
-        as usize] = Some(
+    (*c).itxfm_add[TX_64X64 as libc::c_int as usize][DCT_DCT as libc::c_int as usize] = Some(
         inv_txfm_add_dct_dct_64x64_c
             as unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> (),
     );

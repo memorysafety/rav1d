@@ -1,12 +1,8 @@
-use ::libc;
 use crate::src::cdf::CdfContext;
 use crate::src::msac::MsacContext;
+use ::libc;
 extern "C" {
-    fn memcpy(
-        _: *mut libc::c_void,
-        _: *const libc::c_void,
-        _: libc::c_ulong,
-    ) -> *mut libc::c_void;
+    fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
     static dav1d_sgr_params: [[uint16_t; 2]; 16];
 }
 #[derive(Copy, Clone)]
@@ -54,9 +50,7 @@ pub struct Dav1dRef {
     pub const_data: *const libc::c_void,
     pub ref_cnt: atomic_int,
     pub free_ref: libc::c_int,
-    pub free_callback: Option::<
-        unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> (),
-    >,
+    pub free_callback: Option<unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> ()>,
     pub user_data: *mut libc::c_void,
 }
 #[derive(Copy, Clone)]
@@ -978,17 +972,14 @@ pub struct C2RustUnnamed_28 {
     pub filter_sbrow: filter_sbrow_fn,
     pub filter_sbrow_deblock_cols: filter_sbrow_fn,
     pub filter_sbrow_deblock_rows: filter_sbrow_fn,
-    pub filter_sbrow_cdef: Option::<
-        unsafe extern "C" fn(*mut Dav1dTaskContext, libc::c_int) -> (),
-    >,
+    pub filter_sbrow_cdef: Option<unsafe extern "C" fn(*mut Dav1dTaskContext, libc::c_int) -> ()>,
     pub filter_sbrow_resize: filter_sbrow_fn,
     pub filter_sbrow_lr: filter_sbrow_fn,
     pub backup_ipred_edge: backup_ipred_edge_fn,
     pub read_coef_blocks: read_coef_blocks_fn,
 }
-pub type read_coef_blocks_fn = Option::<
-    unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> (),
->;
+pub type read_coef_blocks_fn =
+    Option<unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> ()>;
 pub type BlockSize = libc::c_uint;
 pub const N_BS_SIZES: BlockSize = 22;
 pub const BS_4x4: BlockSize = 21;
@@ -1272,12 +1263,8 @@ pub struct Dav1dMemPoolBuffer {
 #[repr(C)]
 pub struct Dav1dLogger {
     pub cookie: *mut libc::c_void,
-    pub callback: Option::<
-        unsafe extern "C" fn(
-            *mut libc::c_void,
-            *const libc::c_char,
-            ::core::ffi::VaList,
-        ) -> (),
+    pub callback: Option<
+        unsafe extern "C" fn(*mut libc::c_void, *const libc::c_char, ::core::ffi::VaList) -> (),
     >,
 }
 pub type Dav1dEventFlags = libc::c_uint;
@@ -1302,12 +1289,10 @@ pub const DAV1D_INLOOPFILTER_NONE: Dav1dInloopFilterType = 0;
 #[repr(C)]
 pub struct Dav1dPicAllocator {
     pub cookie: *mut libc::c_void,
-    pub alloc_picture_callback: Option::<
-        unsafe extern "C" fn(*mut Dav1dPicture, *mut libc::c_void) -> libc::c_int,
-    >,
-    pub release_picture_callback: Option::<
-        unsafe extern "C" fn(*mut Dav1dPicture, *mut libc::c_void) -> (),
-    >,
+    pub alloc_picture_callback:
+        Option<unsafe extern "C" fn(*mut Dav1dPicture, *mut libc::c_void) -> libc::c_int>,
+    pub release_picture_callback:
+        Option<unsafe extern "C" fn(*mut Dav1dPicture, *mut libc::c_void) -> ()>,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -1355,7 +1340,7 @@ pub struct EdgeBranch {
 pub struct Dav1dRefmvsDSPContext {
     pub splat_mv: splat_mv_fn,
 }
-pub type splat_mv_fn = Option::<
+pub type splat_mv_fn = Option<
     unsafe extern "C" fn(
         *mut *mut refmvs_block,
         *const refmvs_block,
@@ -1381,7 +1366,7 @@ pub struct Dav1dLoopRestorationDSPContext {
     pub wiener: [looprestorationfilter_fn; 2],
     pub sgr: [looprestorationfilter_fn; 3],
 }
-pub type looprestorationfilter_fn = Option::<
+pub type looprestorationfilter_fn = Option<
     unsafe extern "C" fn(
         *mut pixel,
         ptrdiff_t,
@@ -1420,7 +1405,7 @@ pub struct Dav1dCdefDSPContext {
     pub dir: cdef_dir_fn,
     pub fb: [cdef_fn; 3],
 }
-pub type cdef_fn = Option::<
+pub type cdef_fn = Option<
     unsafe extern "C" fn(
         *mut pixel,
         ptrdiff_t,
@@ -1441,20 +1426,15 @@ pub const CDEF_HAVE_TOP: CdefEdgeFlags = 4;
 pub const CDEF_HAVE_RIGHT: CdefEdgeFlags = 2;
 pub const CDEF_HAVE_LEFT: CdefEdgeFlags = 1;
 pub type const_left_pixel_row_2px = *const [pixel; 2];
-pub type cdef_dir_fn = Option::<
-    unsafe extern "C" fn(
-        *const pixel,
-        ptrdiff_t,
-        *mut libc::c_uint,
-        libc::c_int,
-    ) -> libc::c_int,
+pub type cdef_dir_fn = Option<
+    unsafe extern "C" fn(*const pixel, ptrdiff_t, *mut libc::c_uint, libc::c_int) -> libc::c_int,
 >;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dLoopFilterDSPContext {
     pub loop_filter_sb: [[loopfilter_sb_fn; 2]; 2],
 }
-pub type loopfilter_sb_fn = Option::<
+pub type loopfilter_sb_fn = Option<
     unsafe extern "C" fn(
         *mut pixel,
         ptrdiff_t,
@@ -1471,15 +1451,8 @@ pub type loopfilter_sb_fn = Option::<
 pub struct Dav1dInvTxfmDSPContext {
     pub itxfm_add: [[itxfm_fn; 17]; 19],
 }
-pub type itxfm_fn = Option::<
-    unsafe extern "C" fn(
-        *mut pixel,
-        ptrdiff_t,
-        *mut coef,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
+pub type itxfm_fn =
+    Option<unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int, libc::c_int) -> ()>;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dMCDSPContext {
@@ -1499,7 +1472,7 @@ pub struct Dav1dMCDSPContext {
     pub emu_edge: emu_edge_fn,
     pub resize: resize_fn,
 }
-pub type resize_fn = Option::<
+pub type resize_fn = Option<
     unsafe extern "C" fn(
         *mut pixel,
         ptrdiff_t,
@@ -1513,7 +1486,7 @@ pub type resize_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type emu_edge_fn = Option::<
+pub type emu_edge_fn = Option<
     unsafe extern "C" fn(
         intptr_t,
         intptr_t,
@@ -1527,7 +1500,7 @@ pub type emu_edge_fn = Option::<
         ptrdiff_t,
     ) -> (),
 >;
-pub type warp8x8t_fn = Option::<
+pub type warp8x8t_fn = Option<
     unsafe extern "C" fn(
         *mut int16_t,
         ptrdiff_t,
@@ -1539,7 +1512,7 @@ pub type warp8x8t_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type warp8x8_fn = Option::<
+pub type warp8x8_fn = Option<
     unsafe extern "C" fn(
         *mut pixel,
         ptrdiff_t,
@@ -1551,16 +1524,10 @@ pub type warp8x8_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type blend_dir_fn = Option::<
-    unsafe extern "C" fn(
-        *mut pixel,
-        ptrdiff_t,
-        *const pixel,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
+pub type blend_dir_fn = Option<
+    unsafe extern "C" fn(*mut pixel, ptrdiff_t, *const pixel, libc::c_int, libc::c_int) -> (),
 >;
-pub type blend_fn = Option::<
+pub type blend_fn = Option<
     unsafe extern "C" fn(
         *mut pixel,
         ptrdiff_t,
@@ -1570,7 +1537,7 @@ pub type blend_fn = Option::<
         *const uint8_t,
     ) -> (),
 >;
-pub type w_mask_fn = Option::<
+pub type w_mask_fn = Option<
     unsafe extern "C" fn(
         *mut pixel,
         ptrdiff_t,
@@ -1583,7 +1550,7 @@ pub type w_mask_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type mask_fn = Option::<
+pub type mask_fn = Option<
     unsafe extern "C" fn(
         *mut pixel,
         ptrdiff_t,
@@ -1595,7 +1562,7 @@ pub type mask_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type w_avg_fn = Option::<
+pub type w_avg_fn = Option<
     unsafe extern "C" fn(
         *mut pixel,
         ptrdiff_t,
@@ -1607,7 +1574,7 @@ pub type w_avg_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type avg_fn = Option::<
+pub type avg_fn = Option<
     unsafe extern "C" fn(
         *mut pixel,
         ptrdiff_t,
@@ -1618,7 +1585,7 @@ pub type avg_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type mct_scaled_fn = Option::<
+pub type mct_scaled_fn = Option<
     unsafe extern "C" fn(
         *mut int16_t,
         *const pixel,
@@ -1632,7 +1599,7 @@ pub type mct_scaled_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type mct_fn = Option::<
+pub type mct_fn = Option<
     unsafe extern "C" fn(
         *mut int16_t,
         *const pixel,
@@ -1644,7 +1611,7 @@ pub type mct_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type mc_scaled_fn = Option::<
+pub type mc_scaled_fn = Option<
     unsafe extern "C" fn(
         *mut pixel,
         ptrdiff_t,
@@ -1659,7 +1626,7 @@ pub type mc_scaled_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type mc_fn = Option::<
+pub type mc_fn = Option<
     unsafe extern "C" fn(
         *mut pixel,
         ptrdiff_t,
@@ -1680,7 +1647,7 @@ pub struct Dav1dIntraPredDSPContext {
     pub cfl_pred: [cfl_pred_fn; 6],
     pub pal_pred: pal_pred_fn,
 }
-pub type pal_pred_fn = Option::<
+pub type pal_pred_fn = Option<
     unsafe extern "C" fn(
         *mut pixel,
         ptrdiff_t,
@@ -1690,7 +1657,7 @@ pub type pal_pred_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type cfl_pred_fn = Option::<
+pub type cfl_pred_fn = Option<
     unsafe extern "C" fn(
         *mut pixel,
         ptrdiff_t,
@@ -1702,7 +1669,7 @@ pub type cfl_pred_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type cfl_ac_fn = Option::<
+pub type cfl_ac_fn = Option<
     unsafe extern "C" fn(
         *mut int16_t,
         *const pixel,
@@ -1713,7 +1680,7 @@ pub type cfl_ac_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type angular_ipred_fn = Option::<
+pub type angular_ipred_fn = Option<
     unsafe extern "C" fn(
         *mut pixel,
         ptrdiff_t,
@@ -1734,7 +1701,7 @@ pub struct Dav1dFilmGrainDSPContext {
     pub fgy_32x32xn: fgy_32x32xn_fn,
     pub fguv_32x32xn: [fguv_32x32xn_fn; 3],
 }
-pub type fguv_32x32xn_fn = Option::<
+pub type fguv_32x32xn_fn = Option<
     unsafe extern "C" fn(
         *mut pixel,
         *const pixel,
@@ -1753,7 +1720,7 @@ pub type fguv_32x32xn_fn = Option::<
     ) -> (),
 >;
 pub type entry = int16_t;
-pub type fgy_32x32xn_fn = Option::<
+pub type fgy_32x32xn_fn = Option<
     unsafe extern "C" fn(
         *mut pixel,
         *const pixel,
@@ -1767,7 +1734,7 @@ pub type fgy_32x32xn_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type generate_grain_uv_fn = Option::<
+pub type generate_grain_uv_fn = Option<
     unsafe extern "C" fn(
         *mut [entry; 82],
         *const [entry; 82],
@@ -1776,9 +1743,8 @@ pub type generate_grain_uv_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type generate_grain_y_fn = Option::<
-    unsafe extern "C" fn(*mut [entry; 82], *const Dav1dFilmGrainData, libc::c_int) -> (),
->;
+pub type generate_grain_y_fn =
+    Option<unsafe extern "C" fn(*mut [entry; 82], *const Dav1dFilmGrainData, libc::c_int) -> ()>;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct CdfThreadContext {
@@ -1822,26 +1788,12 @@ pub struct Dav1dTileGroup {
     pub start: libc::c_int,
     pub end: libc::c_int,
 }
-pub type backup_ipred_edge_fn = Option::<
-    unsafe extern "C" fn(*mut Dav1dTaskContext) -> (),
->;
-pub type filter_sbrow_fn = Option::<
-    unsafe extern "C" fn(*mut Dav1dFrameContext, libc::c_int) -> (),
->;
-pub type recon_b_inter_fn = Option::<
-    unsafe extern "C" fn(
-        *mut Dav1dTaskContext,
-        BlockSize,
-        *const Av1Block,
-    ) -> libc::c_int,
->;
-pub type recon_b_intra_fn = Option::<
-    unsafe extern "C" fn(
-        *mut Dav1dTaskContext,
-        BlockSize,
-        EdgeFlags,
-        *const Av1Block,
-    ) -> (),
+pub type backup_ipred_edge_fn = Option<unsafe extern "C" fn(*mut Dav1dTaskContext) -> ()>;
+pub type filter_sbrow_fn = Option<unsafe extern "C" fn(*mut Dav1dFrameContext, libc::c_int) -> ()>;
+pub type recon_b_inter_fn =
+    Option<unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> libc::c_int>;
+pub type recon_b_intra_fn = Option<
+    unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, EdgeFlags, *const Av1Block) -> (),
 >;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -1882,16 +1834,18 @@ unsafe extern "C" fn lr_stripe(
         & ((*f).sr_cur.p.p.layout as libc::c_uint
             == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint) as libc::c_int;
     let stride: ptrdiff_t = (*f).sr_cur.p.stride[chroma as usize];
-    let sby: libc::c_int = y
-        + (if y != 0 { (8 as libc::c_int) << ss_ver } else { 0 as libc::c_int })
-        >> 6 as libc::c_int - ss_ver + (*(*f).seq_hdr).sb128;
-    let have_tt: libc::c_int = ((*(*f).c).n_tc > 1 as libc::c_int as libc::c_uint)
-        as libc::c_int;
+    let sby: libc::c_int =
+        y + (if y != 0 {
+            (8 as libc::c_int) << ss_ver
+        } else {
+            0 as libc::c_int
+        }) >> 6 as libc::c_int - ss_ver + (*(*f).seq_hdr).sb128;
+    let have_tt: libc::c_int = ((*(*f).c).n_tc > 1 as libc::c_int as libc::c_uint) as libc::c_int;
     let mut lpf: *const pixel = ((*f).lf.lr_lpf_line[plane as usize])
         .offset(
-            ((have_tt
-                * (sby * ((4 as libc::c_int) << (*(*f).seq_hdr).sb128)
-                    - 4 as libc::c_int)) as libc::c_long * PXSTRIDE(stride)) as isize,
+            ((have_tt * (sby * ((4 as libc::c_int) << (*(*f).seq_hdr).sb128) - 4 as libc::c_int))
+                as libc::c_long
+                * PXSTRIDE(stride)) as isize,
         )
         .offset(x as isize);
     let mut stripe_h: libc::c_int = imin(
@@ -1904,95 +1858,73 @@ unsafe extern "C" fn lr_stripe(
     };
     if (*lr).type_0 as libc::c_int == DAV1D_RESTORATION_WIENER as libc::c_int {
         let filter: *mut [int16_t; 8] = (params.filter).as_mut_ptr();
-        let ref mut fresh0 = (*filter
-            .offset(0 as libc::c_int as isize))[6 as libc::c_int as usize];
+        let ref mut fresh0 = (*filter.offset(0 as libc::c_int as isize))[6 as libc::c_int as usize];
         *fresh0 = (*lr).filter_h[0 as libc::c_int as usize] as int16_t;
         (*filter.offset(0 as libc::c_int as isize))[0 as libc::c_int as usize] = *fresh0;
-        let ref mut fresh1 = (*filter
-            .offset(0 as libc::c_int as isize))[5 as libc::c_int as usize];
+        let ref mut fresh1 = (*filter.offset(0 as libc::c_int as isize))[5 as libc::c_int as usize];
         *fresh1 = (*lr).filter_h[1 as libc::c_int as usize] as int16_t;
         (*filter.offset(0 as libc::c_int as isize))[1 as libc::c_int as usize] = *fresh1;
-        let ref mut fresh2 = (*filter
-            .offset(0 as libc::c_int as isize))[4 as libc::c_int as usize];
+        let ref mut fresh2 = (*filter.offset(0 as libc::c_int as isize))[4 as libc::c_int as usize];
         *fresh2 = (*lr).filter_h[2 as libc::c_int as usize] as int16_t;
         (*filter.offset(0 as libc::c_int as isize))[2 as libc::c_int as usize] = *fresh2;
-        (*filter
-            .offset(
-                0 as libc::c_int as isize,
-            ))[3 as libc::c_int
-            as usize] = (-((*filter
-            .offset(0 as libc::c_int as isize))[0 as libc::c_int as usize] as libc::c_int
-            + (*filter.offset(0 as libc::c_int as isize))[1 as libc::c_int as usize]
+        (*filter.offset(0 as libc::c_int as isize))[3 as libc::c_int as usize] =
+            (-((*filter.offset(0 as libc::c_int as isize))[0 as libc::c_int as usize]
                 as libc::c_int
-            + (*filter.offset(0 as libc::c_int as isize))[2 as libc::c_int as usize]
-                as libc::c_int) * 2 as libc::c_int) as int16_t;
-        let ref mut fresh3 = (*filter
-            .offset(0 as libc::c_int as isize))[3 as libc::c_int as usize];
+                + (*filter.offset(0 as libc::c_int as isize))[1 as libc::c_int as usize]
+                    as libc::c_int
+                + (*filter.offset(0 as libc::c_int as isize))[2 as libc::c_int as usize]
+                    as libc::c_int)
+                * 2 as libc::c_int) as int16_t;
+        let ref mut fresh3 = (*filter.offset(0 as libc::c_int as isize))[3 as libc::c_int as usize];
         *fresh3 = (*fresh3 as libc::c_int + 128 as libc::c_int) as int16_t;
-        let ref mut fresh4 = (*filter
-            .offset(1 as libc::c_int as isize))[6 as libc::c_int as usize];
+        let ref mut fresh4 = (*filter.offset(1 as libc::c_int as isize))[6 as libc::c_int as usize];
         *fresh4 = (*lr).filter_v[0 as libc::c_int as usize] as int16_t;
         (*filter.offset(1 as libc::c_int as isize))[0 as libc::c_int as usize] = *fresh4;
-        let ref mut fresh5 = (*filter
-            .offset(1 as libc::c_int as isize))[5 as libc::c_int as usize];
+        let ref mut fresh5 = (*filter.offset(1 as libc::c_int as isize))[5 as libc::c_int as usize];
         *fresh5 = (*lr).filter_v[1 as libc::c_int as usize] as int16_t;
         (*filter.offset(1 as libc::c_int as isize))[1 as libc::c_int as usize] = *fresh5;
-        let ref mut fresh6 = (*filter
-            .offset(1 as libc::c_int as isize))[4 as libc::c_int as usize];
+        let ref mut fresh6 = (*filter.offset(1 as libc::c_int as isize))[4 as libc::c_int as usize];
         *fresh6 = (*lr).filter_v[2 as libc::c_int as usize] as int16_t;
         (*filter.offset(1 as libc::c_int as isize))[2 as libc::c_int as usize] = *fresh6;
-        (*filter
-            .offset(
-                1 as libc::c_int as isize,
-            ))[3 as libc::c_int
-            as usize] = (128 as libc::c_int
-            - ((*filter.offset(1 as libc::c_int as isize))[0 as libc::c_int as usize]
-                as libc::c_int
-                + (*filter.offset(1 as libc::c_int as isize))[1 as libc::c_int as usize]
+        (*filter.offset(1 as libc::c_int as isize))[3 as libc::c_int as usize] =
+            (128 as libc::c_int
+                - ((*filter.offset(1 as libc::c_int as isize))[0 as libc::c_int as usize]
                     as libc::c_int
-                + (*filter.offset(1 as libc::c_int as isize))[2 as libc::c_int as usize]
-                    as libc::c_int) * 2 as libc::c_int) as int16_t;
-        lr_fn = (*dsp)
-            .lr
-            .wiener[((*filter
-            .offset(0 as libc::c_int as isize))[0 as libc::c_int as usize] as libc::c_int
-            | (*filter.offset(1 as libc::c_int as isize))[0 as libc::c_int as usize]
-                as libc::c_int == 0) as libc::c_int as usize];
+                    + (*filter.offset(1 as libc::c_int as isize))[1 as libc::c_int as usize]
+                        as libc::c_int
+                    + (*filter.offset(1 as libc::c_int as isize))[2 as libc::c_int as usize]
+                        as libc::c_int)
+                    * 2 as libc::c_int) as int16_t;
+        lr_fn = (*dsp).lr.wiener[((*filter.offset(0 as libc::c_int as isize))
+            [0 as libc::c_int as usize] as libc::c_int
+            | (*filter.offset(1 as libc::c_int as isize))[0 as libc::c_int as usize] as libc::c_int
+            == 0) as libc::c_int as usize];
     } else {
         if !((*lr).type_0 as libc::c_int == DAV1D_RESTORATION_SGRPROJ as libc::c_int) {
             unreachable!();
         }
-        let sgr_params: *const uint16_t = (dav1d_sgr_params[(*lr).sgr_idx as usize])
-            .as_ptr();
+        let sgr_params: *const uint16_t = (dav1d_sgr_params[(*lr).sgr_idx as usize]).as_ptr();
         params.sgr.s0 = *sgr_params.offset(0 as libc::c_int as isize) as uint32_t;
         params.sgr.s1 = *sgr_params.offset(1 as libc::c_int as isize) as uint32_t;
         params.sgr.w0 = (*lr).sgr_weights[0 as libc::c_int as usize] as int16_t;
-        params
-            .sgr
-            .w1 = (128 as libc::c_int
+        params.sgr.w1 = (128 as libc::c_int
             - ((*lr).sgr_weights[0 as libc::c_int as usize] as libc::c_int
                 + (*lr).sgr_weights[1 as libc::c_int as usize] as libc::c_int))
             as int16_t;
-        lr_fn = (*dsp)
-            .lr
-            .sgr[((*sgr_params.offset(0 as libc::c_int as isize) != 0) as libc::c_int
+        lr_fn = (*dsp).lr.sgr[((*sgr_params.offset(0 as libc::c_int as isize) != 0) as libc::c_int
             + (*sgr_params.offset(1 as libc::c_int as isize) != 0) as libc::c_int
-                * 2 as libc::c_int - 1 as libc::c_int) as usize];
+                * 2 as libc::c_int
+            - 1 as libc::c_int) as usize];
     }
     while y + stripe_h <= row_h {
-        edges = ::core::mem::transmute::<
-            libc::c_uint,
-            LrEdgeFlags,
-        >(
+        edges = ::core::mem::transmute::<libc::c_uint, LrEdgeFlags>(
             edges as libc::c_uint
-                ^ (-((sby + 1 as libc::c_int != (*f).sbh || y + stripe_h != row_h)
-                    as libc::c_int) as libc::c_uint ^ edges as libc::c_uint)
+                ^ (-((sby + 1 as libc::c_int != (*f).sbh || y + stripe_h != row_h) as libc::c_int)
+                    as libc::c_uint
+                    ^ edges as libc::c_uint)
                     & LR_HAVE_BOTTOM as libc::c_int as libc::c_uint,
         );
-        lr_fn
-            .expect(
-                "non-null function pointer",
-            )(
+        lr_fn.expect("non-null function pointer")(
             p,
             stride,
             left,
@@ -2006,10 +1938,9 @@ unsafe extern "C" fn lr_stripe(
         left = left.offset(stripe_h as isize);
         y += stripe_h;
         p = p.offset((stripe_h as libc::c_long * PXSTRIDE(stride)) as isize);
-        edges = ::core::mem::transmute::<
-            libc::c_uint,
-            LrEdgeFlags,
-        >(edges as libc::c_uint | LR_HAVE_TOP as libc::c_int as libc::c_uint);
+        edges = ::core::mem::transmute::<libc::c_uint, LrEdgeFlags>(
+            edges as libc::c_uint | LR_HAVE_TOP as libc::c_int as libc::c_uint,
+        );
         stripe_h = imin(64 as libc::c_int >> ss_ver, row_h - y);
         if stripe_h == 0 as libc::c_int {
             break;
@@ -2051,9 +1982,8 @@ unsafe extern "C" fn lr_sbrow(
         & ((*f).sr_cur.p.p.layout as libc::c_uint
             != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint) as libc::c_int;
     let p_stride: ptrdiff_t = (*f).sr_cur.p.stride[chroma as usize];
-    let unit_size_log2: libc::c_int = (*(*f).frame_hdr)
-        .restoration
-        .unit_size[(plane != 0) as libc::c_int as usize];
+    let unit_size_log2: libc::c_int =
+        (*(*f).frame_hdr).restoration.unit_size[(plane != 0) as libc::c_int as usize];
     let unit_size: libc::c_int = (1 as libc::c_int) << unit_size_log2;
     let half_unit_size: libc::c_int = unit_size >> 1 as libc::c_int;
     let max_unit_size: libc::c_int = unit_size + half_unit_size;
@@ -2072,36 +2002,35 @@ unsafe extern "C" fn lr_sbrow(
     }
     aligned_unit_pos <<= ss_ver;
     let sb_idx: libc::c_int = (aligned_unit_pos >> 7 as libc::c_int) * (*f).sr_sb128w;
-    let unit_idx: libc::c_int = (aligned_unit_pos >> 6 as libc::c_int & 1 as libc::c_int)
-        << 1 as libc::c_int;
-    lr[0 as libc::c_int
-        as usize] = &mut *(*((*((*f).lf.lr_mask).offset(sb_idx as isize)).lr)
+    let unit_idx: libc::c_int =
+        (aligned_unit_pos >> 6 as libc::c_int & 1 as libc::c_int) << 1 as libc::c_int;
+    lr[0 as libc::c_int as usize] = &mut *(*((*((*f).lf.lr_mask).offset(sb_idx as isize)).lr)
         .as_mut_ptr()
         .offset(plane as isize))
-        .as_mut_ptr()
-        .offset(unit_idx as isize) as *mut Av1RestorationUnit;
-    let mut restore: libc::c_int = ((*lr[0 as libc::c_int as usize]).type_0
-        as libc::c_int != DAV1D_RESTORATION_NONE as libc::c_int) as libc::c_int;
+    .as_mut_ptr()
+    .offset(unit_idx as isize) as *mut Av1RestorationUnit;
+    let mut restore: libc::c_int = ((*lr[0 as libc::c_int as usize]).type_0 as libc::c_int
+        != DAV1D_RESTORATION_NONE as libc::c_int) as libc::c_int;
     let mut x: libc::c_int = 0 as libc::c_int;
     let mut bit: libc::c_int = 0 as libc::c_int;
     while x + max_unit_size <= w {
         let next_x: libc::c_int = x + unit_size;
-        let next_u_idx: libc::c_int = unit_idx
-            + (next_x >> shift_hor - 1 as libc::c_int & 1 as libc::c_int);
-        lr[(bit == 0) as libc::c_int
-            as usize] = &mut *(*((*((*f).lf.lr_mask)
-            .offset((sb_idx + (next_x >> shift_hor)) as isize))
-            .lr)
-            .as_mut_ptr()
-            .offset(plane as isize))
+        let next_u_idx: libc::c_int =
+            unit_idx + (next_x >> shift_hor - 1 as libc::c_int & 1 as libc::c_int);
+        lr[(bit == 0) as libc::c_int as usize] =
+            &mut *(*((*((*f).lf.lr_mask).offset((sb_idx + (next_x >> shift_hor)) as isize)).lr)
+                .as_mut_ptr()
+                .offset(plane as isize))
             .as_mut_ptr()
             .offset(next_u_idx as isize) as *mut Av1RestorationUnit;
-        let restore_next: libc::c_int = ((*lr[(bit == 0) as libc::c_int as usize]).type_0
-            as libc::c_int != DAV1D_RESTORATION_NONE as libc::c_int) as libc::c_int;
+        let restore_next: libc::c_int =
+            ((*lr[(bit == 0) as libc::c_int as usize]).type_0 as libc::c_int
+                != DAV1D_RESTORATION_NONE as libc::c_int) as libc::c_int;
         if restore_next != 0 {
             backup4xU(
                 (pre_lr_border[bit as usize]).as_mut_ptr(),
-                p.offset(unit_size as isize).offset(-(4 as libc::c_int as isize)),
+                p.offset(unit_size as isize)
+                    .offset(-(4 as libc::c_int as isize)),
                 p_stride,
                 row_h - y,
             );
@@ -2124,23 +2053,20 @@ unsafe extern "C" fn lr_sbrow(
         x = next_x;
         restore = restore_next;
         p = p.offset(unit_size as isize);
-        edges = ::core::mem::transmute::<
-            libc::c_uint,
-            LrEdgeFlags,
-        >(edges as libc::c_uint | LR_HAVE_LEFT as libc::c_int as libc::c_uint);
+        edges = ::core::mem::transmute::<libc::c_uint, LrEdgeFlags>(
+            edges as libc::c_uint | LR_HAVE_LEFT as libc::c_int as libc::c_uint,
+        );
         bit ^= 1 as libc::c_int;
     }
     if restore != 0 {
-        edges = ::core::mem::transmute::<
-            libc::c_uint,
-            LrEdgeFlags,
-        >(edges as libc::c_uint & !(LR_HAVE_RIGHT as libc::c_int) as libc::c_uint);
+        edges = ::core::mem::transmute::<libc::c_uint, LrEdgeFlags>(
+            edges as libc::c_uint & !(LR_HAVE_RIGHT as libc::c_int) as libc::c_uint,
+        );
         let unit_w: libc::c_int = w - x;
         lr_stripe(
             f,
             p,
-            (pre_lr_border[(bit == 0) as libc::c_int as usize]).as_mut_ptr()
-                as *const [pixel; 4],
+            (pre_lr_border[(bit == 0) as libc::c_int as usize]).as_mut_ptr() as *const [pixel; 4],
             x,
             y,
             plane,
@@ -2164,19 +2090,17 @@ pub unsafe extern "C" fn dav1d_lr_sbrow_16bpc(
     if restore_planes & LR_RESTORE_Y as libc::c_int != 0 {
         let h: libc::c_int = (*f).sr_cur.p.p.h;
         let w: libc::c_int = (*f).sr_cur.p.p.w;
-        let next_row_y: libc::c_int = (sby + 1 as libc::c_int)
-            << 6 as libc::c_int + (*(*f).seq_hdr).sb128;
+        let next_row_y: libc::c_int =
+            (sby + 1 as libc::c_int) << 6 as libc::c_int + (*(*f).seq_hdr).sb128;
         let row_h: libc::c_int = imin(next_row_y - 8 as libc::c_int * not_last, h);
-        let y_stripe: libc::c_int = (sby << 6 as libc::c_int + (*(*f).seq_hdr).sb128)
-            - offset_y;
+        let y_stripe: libc::c_int = (sby << 6 as libc::c_int + (*(*f).seq_hdr).sb128) - offset_y;
         lr_sbrow(
             f,
-            (*dst.offset(0 as libc::c_int as isize))
-                .offset(
-                    -((offset_y as libc::c_long
-                        * PXSTRIDE(*dst_stride.offset(0 as libc::c_int as isize)))
-                        as isize),
-                ),
+            (*dst.offset(0 as libc::c_int as isize)).offset(
+                -((offset_y as libc::c_long
+                    * PXSTRIDE(*dst_stride.offset(0 as libc::c_int as isize)))
+                    as isize),
+            ),
             y_stripe,
             w,
             h,
@@ -2184,32 +2108,30 @@ pub unsafe extern "C" fn dav1d_lr_sbrow_16bpc(
             0 as libc::c_int,
         );
     }
-    if restore_planes & (LR_RESTORE_U as libc::c_int | LR_RESTORE_V as libc::c_int) != 0
-    {
+    if restore_planes & (LR_RESTORE_U as libc::c_int | LR_RESTORE_V as libc::c_int) != 0 {
         let ss_ver: libc::c_int = ((*f).sr_cur.p.p.layout as libc::c_uint
-            == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint) as libc::c_int;
+            == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint)
+            as libc::c_int;
         let ss_hor: libc::c_int = ((*f).sr_cur.p.p.layout as libc::c_uint
-            != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint) as libc::c_int;
+            != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint)
+            as libc::c_int;
         let h_0: libc::c_int = (*f).sr_cur.p.p.h + ss_ver >> ss_ver;
         let w_0: libc::c_int = (*f).sr_cur.p.p.w + ss_hor >> ss_hor;
-        let next_row_y_0: libc::c_int = (sby + 1 as libc::c_int)
-            << 6 as libc::c_int - ss_ver + (*(*f).seq_hdr).sb128;
-        let row_h_0: libc::c_int = imin(
-            next_row_y_0 - (8 as libc::c_int >> ss_ver) * not_last,
-            h_0,
-        );
+        let next_row_y_0: libc::c_int =
+            (sby + 1 as libc::c_int) << 6 as libc::c_int - ss_ver + (*(*f).seq_hdr).sb128;
+        let row_h_0: libc::c_int =
+            imin(next_row_y_0 - (8 as libc::c_int >> ss_ver) * not_last, h_0);
         let offset_uv: libc::c_int = offset_y >> ss_ver;
-        let y_stripe_0: libc::c_int = (sby
-            << 6 as libc::c_int - ss_ver + (*(*f).seq_hdr).sb128) - offset_uv;
+        let y_stripe_0: libc::c_int =
+            (sby << 6 as libc::c_int - ss_ver + (*(*f).seq_hdr).sb128) - offset_uv;
         if restore_planes & LR_RESTORE_U as libc::c_int != 0 {
             lr_sbrow(
                 f,
-                (*dst.offset(1 as libc::c_int as isize))
-                    .offset(
-                        -((offset_uv as libc::c_long
-                            * PXSTRIDE(*dst_stride.offset(1 as libc::c_int as isize)))
-                            as isize),
-                    ),
+                (*dst.offset(1 as libc::c_int as isize)).offset(
+                    -((offset_uv as libc::c_long
+                        * PXSTRIDE(*dst_stride.offset(1 as libc::c_int as isize)))
+                        as isize),
+                ),
                 y_stripe_0,
                 w_0,
                 h_0,
@@ -2220,12 +2142,11 @@ pub unsafe extern "C" fn dav1d_lr_sbrow_16bpc(
         if restore_planes & LR_RESTORE_V as libc::c_int != 0 {
             lr_sbrow(
                 f,
-                (*dst.offset(2 as libc::c_int as isize))
-                    .offset(
-                        -((offset_uv as libc::c_long
-                            * PXSTRIDE(*dst_stride.offset(1 as libc::c_int as isize)))
-                            as isize),
-                    ),
+                (*dst.offset(2 as libc::c_int as isize)).offset(
+                    -((offset_uv as libc::c_long
+                        * PXSTRIDE(*dst_stride.offset(1 as libc::c_int as isize)))
+                        as isize),
+                ),
                 y_stripe_0,
                 w_0,
                 h_0,
