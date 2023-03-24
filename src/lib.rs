@@ -1,6 +1,7 @@
 use ::libc;
 use crate::src::cdf::CdfContext;
 use crate::src::msac::MsacContext;
+use cfg_if::cfg_if;
 use crate::stderr;
 extern "C" {
     pub type _IO_wide_data;
@@ -2057,7 +2058,14 @@ pub struct _IO_FILE {
     pub _unused2: [libc::c_char; 20],
 }
 pub type _IO_lock_t = ();
-pub type pthread_once_t = libc::c_int;
+// pub type pthread_once_t = libc::c_int;
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct _opaque_pthread_once_t {
+    pub __sig: libc::c_long,
+    pub __opaque: [libc::c_char; 8],
+}
+pub type pthread_once_t = _opaque_pthread_once_t;
 pub const memory_order_relaxed: memory_order = 0;
 pub type BlockLevel = libc::c_uint;
 pub const N_BL_LEVELS: BlockLevel = 5;
@@ -2170,20 +2178,25 @@ pub unsafe extern "C" fn dav1d_default_settings(s: *mut Dav1dSettings) {
 unsafe extern "C" fn get_stack_size_internal(
     thread_attr: *const pthread_attr_t,
 ) -> size_t {
-    let get_minstack: Option::<unsafe extern "C" fn(*const pthread_attr_t) -> size_t> = ::core::mem::transmute::<
-        *mut libc::c_void,
-        Option::<unsafe extern "C" fn(*const pthread_attr_t) -> size_t>,
-    >(
-        dlsym(
-            0 as *mut libc::c_void,
-            b"__pthread_get_minstack\0" as *const u8 as *const libc::c_char,
-        ),
-    );
-    if get_minstack.is_some() {
-        return (get_minstack.expect("non-null function pointer")(thread_attr))
-            .wrapping_sub(__sysconf(75 as libc::c_int) as libc::c_ulong);
+    cfg_if! {
+        if #[cfg(target_os = "linux")] {
+            let get_minstack: Option::<unsafe extern "C" fn(*const pthread_attr_t) -> size_t> = ::core::mem::transmute::<
+            *mut libc::c_void,
+            Option::<unsafe extern "C" fn(*const pthread_attr_t) -> size_t>,
+            >(
+                dlsym(
+                    0 as *mut libc::c_void,
+                    b"__pthread_get_minstack\0" as *const u8 as *const libc::c_char,
+                ),
+            );
+            if get_minstack.is_some() {
+                return (get_minstack.expect("non-null function pointer")(thread_attr))
+                    .wrapping_sub(__sysconf(75 as libc::c_int) as libc::c_ulong);
+            }
+        }
     }
-    return 0 as libc::c_int as size_t;
+
+    return 0;
 }
 #[cold]
 unsafe extern "C" fn get_num_threads(
@@ -2320,7 +2333,14 @@ pub unsafe extern "C" fn dav1d_open(
     s: *const Dav1dSettings,
 ) -> libc::c_int {
     let mut current_block: u64;
-    static mut initted: pthread_once_t = 0 as libc::c_int;
+    // static mut initted: pthread_once_t = 0 as libc::c_int;
+    static mut initted: pthread_once_t = {
+        let mut init = _opaque_pthread_once_t {
+                __sig: 0x30b1bcba as libc::c_int as libc::c_long,
+                __opaque: [0 as libc::c_int as libc::c_char, 0, 0, 0, 0, 0, 0, 0],
+            };
+        init
+    };
     pthread_once(&mut initted, Some(init_internal as unsafe extern "C" fn() -> ()));
     if c_out.is_null() {
         fprintf(

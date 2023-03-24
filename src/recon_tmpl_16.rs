@@ -2,7 +2,7 @@ use ::libc;
 use core::arch::asm;
 use crate::src::cdf::CdfContext;
 use crate::src::msac::MsacContext;
-use crate::{stdout,stderr};
+use crate::stdout;
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;

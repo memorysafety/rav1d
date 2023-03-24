@@ -2,6 +2,7 @@
 #![feature(extern_types)]
 #![feature(c_variadic)]
 use ::c2rust_out::*;
+use ::c2rust_out::stderr;
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;

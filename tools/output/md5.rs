@@ -630,7 +630,7 @@ unsafe extern "C" fn md5_open(
                 stderr,
                 b"Failed to open %s: %s\n\0" as *const u8 as *const libc::c_char,
                 file,
-                strerror(*errno_location()),
+                strerror(*crate::errno_location()),
             );
             return -(1 as libc::c_int);
         }

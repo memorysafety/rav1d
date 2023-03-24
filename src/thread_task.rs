@@ -1,6 +1,7 @@
 use ::libc;
 use crate::src::cdf::CdfContext;
 use crate::src::msac::MsacContext;
+use cfg_if::cfg_if;
 extern "C" {
     fn memset(
         _: *mut libc::c_void,
@@ -16,7 +17,13 @@ extern "C" {
         __cond: *mut pthread_cond_t,
         __mutex: *mut pthread_mutex_t,
     ) -> libc::c_int;
-    fn prctl(__option: libc::c_int, _: ...) -> libc::c_int;
+    cfg_if! {
+        if #[cfg(target_os = "linux")] {
+            fn prctl(__option: libc::c_int, _: ...) -> libc::c_int;
+        } else if #[cfg(target_os = "macos")] {
+            fn pthread_setname_np(name: *const libc::c_char);
+        }
+    }
     fn dav1d_cdf_thread_update(
         hdr: *const Dav1dFrameHeader,
         dst: *mut CdfContext,
@@ -1884,9 +1891,17 @@ pub struct ScalableMotionParams {
 unsafe extern "C" fn ctz(mask: libc::c_uint) -> libc::c_int {
     return mask.trailing_zeros() as i32;
 }
-#[inline]
+
 unsafe extern "C" fn dav1d_set_thread_name(name: *const libc::c_char) {
-    prctl(15 as libc::c_int, name);
+    cfg_if::cfg_if! {
+        if #[cfg(target_os = "linux")] {
+            prctl(15 as libc::c_int, name);
+        } else if #[cfg(target_os = "macos")] {
+            pthread_setname_np(name);
+        } else {
+            unimplemented!();
+        }
+    }
 }
 #[inline]
 unsafe extern "C" fn imax(a: libc::c_int, b: libc::c_int) -> libc::c_int {

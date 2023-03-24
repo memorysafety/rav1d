@@ -1,7 +1,7 @@
 use ::libc;
 use crate::src::cdf::CdfContext;
 use crate::src::msac::MsacContext;
-use crate::{stderr,errno_location};
+use crate::stderr;
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
@@ -2025,7 +2025,7 @@ unsafe extern "C" fn picture_alloc_with_edges(
         dav1d_log(
             c,
             b"Failed to wrap picture: %s\n\0" as *const u8 as *const libc::c_char,
-            strerror(*errno_location()),
+            strerror(*crate::errno_location()),
         );
         return -(12 as libc::c_int);
     }

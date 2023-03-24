@@ -1,6 +1,5 @@
 use ::libc;
 use crate::stderr;
-use crate::errno_location;
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
@@ -156,10 +155,10 @@ pub unsafe extern "C" fn input_open(
                 b"Failed to open input file %s: %s\n\0" as *const u8
                     as *const libc::c_char,
                 filename,
-                strerror(*errno_location()),
+                strerror(*crate::errno_location()),
             );
-            return if *errno_location() != 0 {
-                -*errno_location()
+            return if *crate::errno_location() != 0 {
+                -*crate::errno_location()
             } else {
                 -(5 as libc::c_int)
             };
@@ -177,8 +176,8 @@ pub unsafe extern "C" fn input_open(
                 stderr,
                 b"Failed to read probe data\n\0" as *const u8 as *const libc::c_char,
             );
-            return if *errno_location() != 0 {
-                -*errno_location()
+            return if *crate::errno_location() != 0 {
+                -*crate::errno_location()
             } else {
                 -(5 as libc::c_int)
             };

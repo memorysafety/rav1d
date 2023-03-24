@@ -92,6 +92,9 @@ pub mod tables;
 pub mod thread_task;
 pub mod warpmv;
 pub mod wedge;
+pub mod arm {
+pub mod cpu;
+} // mod arm
 pub mod x86 {
 pub mod cpu;
 } // mod x86
