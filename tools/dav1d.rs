@@ -278,17 +278,7 @@ pub struct Dav1dSequenceHeader {
     pub operating_parameter_info: [Dav1dSequenceHeaderOperatingParameterInfo; 32],
 }
 use crate::include::dav1d::headers::Dav1dSequenceHeaderOperatingParameterInfo;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dSequenceHeaderOperatingPoint {
-    pub major_level: libc::c_int,
-    pub minor_level: libc::c_int,
-    pub initial_display_delay: libc::c_int,
-    pub idc: libc::c_int,
-    pub tier: libc::c_int,
-    pub decoder_model_param_present: libc::c_int,
-    pub display_model_param_present: libc::c_int,
-}
+use crate::include::dav1d::headers::Dav1dSequenceHeaderOperatingPoint;
 use crate::include::dav1d::headers::Dav1dSegmentationData;
 use crate::include::dav1d::headers::Dav1dSegmentationDataSet;
 use crate::include::dav1d::headers::Dav1dLoopfilterModeRefDeltas;

@@ -151,6 +151,17 @@ pub struct Dav1dITUTT35 {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
+pub struct Dav1dSequenceHeaderOperatingPoint {
+    pub major_level: libc::c_int,
+    pub minor_level: libc::c_int,
+    pub initial_display_delay: libc::c_int,
+    pub idc: libc::c_int,
+    pub tier: libc::c_int,
+    pub decoder_model_param_present: libc::c_int,
+    pub display_model_param_present: libc::c_int,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
 pub struct Dav1dSequenceHeaderOperatingParameterInfo {
     pub decoder_buffer_delay: libc::c_int,
     pub encoder_buffer_delay: libc::c_int,
