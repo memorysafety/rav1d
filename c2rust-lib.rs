@@ -20,6 +20,7 @@ pub mod include {
 pub mod dav1d {
 pub mod common;
 pub mod data;
+pub mod headers;
 } // mod dav1d
 pub mod pthread;
 pub mod stdatomic;
