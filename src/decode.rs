@@ -866,17 +866,7 @@ use crate::include::dav1d::headers::Dav1dAdaptiveBoolean;
 use crate::include::dav1d::headers::DAV1D_ADAPTIVE;
 use crate::include::dav1d::headers::DAV1D_ON;
 use crate::include::dav1d::headers::DAV1D_OFF;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dSequenceHeaderOperatingPoint {
-    pub major_level: libc::c_int,
-    pub minor_level: libc::c_int,
-    pub initial_display_delay: libc::c_int,
-    pub idc: libc::c_int,
-    pub tier: libc::c_int,
-    pub decoder_model_param_present: libc::c_int,
-    pub display_model_param_present: libc::c_int,
-}
+use crate::include::dav1d::headers::Dav1dSequenceHeaderOperatingPoint;
 use crate::include::dav1d::headers::Dav1dChromaSamplePosition;
 use crate::include::dav1d::headers::DAV1D_CHR_COLOCATED;
 use crate::include::dav1d::headers::DAV1D_CHR_VERTICAL;
