@@ -558,27 +558,7 @@ pub struct C2RustUnnamed_17 {
     pub present: libc::c_int,
     pub update: libc::c_int,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFilmGrainData {
-    pub seed: libc::c_uint,
-    pub num_y_points: libc::c_int,
-    pub y_points: [[uint8_t; 2]; 14],
-    pub chroma_scaling_from_luma: libc::c_int,
-    pub num_uv_points: [libc::c_int; 2],
-    pub uv_points: [[[uint8_t; 2]; 10]; 2],
-    pub scaling_shift: libc::c_int,
-    pub ar_coeff_lag: libc::c_int,
-    pub ar_coeffs_y: [int8_t; 24],
-    pub ar_coeffs_uv: [[int8_t; 28]; 2],
-    pub ar_coeff_shift: uint64_t,
-    pub grain_scale_shift: libc::c_int,
-    pub uv_mult: [libc::c_int; 2],
-    pub uv_luma_mult: [libc::c_int; 2],
-    pub uv_offset: [libc::c_int; 2],
-    pub overlap_flag: libc::c_int,
-    pub clip_to_restricted_range: libc::c_int,
-}
+use crate::include::dav1d::headers::Dav1dFilmGrainData;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dSequenceHeader {
