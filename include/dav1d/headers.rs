@@ -65,6 +65,25 @@ pub const DAV1D_COLOR_PRI_BT470BG: Dav1dColorPrimaries = 5;
 pub const DAV1D_COLOR_PRI_BT470M: Dav1dColorPrimaries = 4;
 pub const DAV1D_COLOR_PRI_UNKNOWN: Dav1dColorPrimaries = 2;
 pub const DAV1D_COLOR_PRI_BT709: Dav1dColorPrimaries = 1;
+pub type Dav1dTransferCharacteristics = libc::c_uint;
+pub const DAV1D_TRC_RESERVED: Dav1dTransferCharacteristics = 255;
+pub const DAV1D_TRC_HLG: Dav1dTransferCharacteristics = 18;
+pub const DAV1D_TRC_SMPTE428: Dav1dTransferCharacteristics = 17;
+pub const DAV1D_TRC_SMPTE2084: Dav1dTransferCharacteristics = 16;
+pub const DAV1D_TRC_BT2020_12BIT: Dav1dTransferCharacteristics = 15;
+pub const DAV1D_TRC_BT2020_10BIT: Dav1dTransferCharacteristics = 14;
+pub const DAV1D_TRC_SRGB: Dav1dTransferCharacteristics = 13;
+pub const DAV1D_TRC_BT1361: Dav1dTransferCharacteristics = 12;
+pub const DAV1D_TRC_IEC61966: Dav1dTransferCharacteristics = 11;
+pub const DAV1D_TRC_LOG100_SQRT10: Dav1dTransferCharacteristics = 10;
+pub const DAV1D_TRC_LOG100: Dav1dTransferCharacteristics = 9;
+pub const DAV1D_TRC_LINEAR: Dav1dTransferCharacteristics = 8;
+pub const DAV1D_TRC_SMPTE240: Dav1dTransferCharacteristics = 7;
+pub const DAV1D_TRC_BT601: Dav1dTransferCharacteristics = 6;
+pub const DAV1D_TRC_BT470BG: Dav1dTransferCharacteristics = 5;
+pub const DAV1D_TRC_BT470M: Dav1dTransferCharacteristics = 4;
+pub const DAV1D_TRC_UNKNOWN: Dav1dTransferCharacteristics = 2;
+pub const DAV1D_TRC_BT709: Dav1dTransferCharacteristics = 1;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContentLightLevel {
