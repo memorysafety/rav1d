@@ -51,6 +51,20 @@ pub const DAV1D_FRAME_TYPE_SWITCH: Dav1dFrameType = 3;
 pub const DAV1D_FRAME_TYPE_INTRA: Dav1dFrameType = 2;
 pub const DAV1D_FRAME_TYPE_INTER: Dav1dFrameType = 1;
 pub const DAV1D_FRAME_TYPE_KEY: Dav1dFrameType = 0;
+pub type Dav1dColorPrimaries = libc::c_uint;
+pub const DAV1D_COLOR_PRI_RESERVED: Dav1dColorPrimaries = 255;
+pub const DAV1D_COLOR_PRI_EBU3213: Dav1dColorPrimaries = 22;
+pub const DAV1D_COLOR_PRI_SMPTE432: Dav1dColorPrimaries = 12;
+pub const DAV1D_COLOR_PRI_SMPTE431: Dav1dColorPrimaries = 11;
+pub const DAV1D_COLOR_PRI_XYZ: Dav1dColorPrimaries = 10;
+pub const DAV1D_COLOR_PRI_BT2020: Dav1dColorPrimaries = 9;
+pub const DAV1D_COLOR_PRI_FILM: Dav1dColorPrimaries = 8;
+pub const DAV1D_COLOR_PRI_SMPTE240: Dav1dColorPrimaries = 7;
+pub const DAV1D_COLOR_PRI_BT601: Dav1dColorPrimaries = 6;
+pub const DAV1D_COLOR_PRI_BT470BG: Dav1dColorPrimaries = 5;
+pub const DAV1D_COLOR_PRI_BT470M: Dav1dColorPrimaries = 4;
+pub const DAV1D_COLOR_PRI_UNKNOWN: Dav1dColorPrimaries = 2;
+pub const DAV1D_COLOR_PRI_BT709: Dav1dColorPrimaries = 1;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContentLightLevel {
