@@ -375,11 +375,11 @@ pub struct C2RustUnnamed_8 {
     pub type_0: [Dav1dRestorationType; 3],
     pub unit_size: [libc::c_int; 2],
 }
-pub type Dav1dRestorationType = libc::c_uint;
-pub const DAV1D_RESTORATION_SGRPROJ: Dav1dRestorationType = 3;
-pub const DAV1D_RESTORATION_WIENER: Dav1dRestorationType = 2;
-pub const DAV1D_RESTORATION_SWITCHABLE: Dav1dRestorationType = 1;
-pub const DAV1D_RESTORATION_NONE: Dav1dRestorationType = 0;
+use crate::include::dav1d::headers::Dav1dRestorationType;
+use crate::include::dav1d::headers::DAV1D_RESTORATION_SGRPROJ;
+use crate::include::dav1d::headers::DAV1D_RESTORATION_WIENER;
+use crate::include::dav1d::headers::DAV1D_RESTORATION_SWITCHABLE;
+use crate::include::dav1d::headers::DAV1D_RESTORATION_NONE;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct C2RustUnnamed_9 {
