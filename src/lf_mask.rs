@@ -100,13 +100,7 @@ pub const DAV1D_FRAME_TYPE_INTRA: Dav1dFrameType = 2;
 pub const DAV1D_FRAME_TYPE_INTER: Dav1dFrameType = 1;
 pub const DAV1D_FRAME_TYPE_KEY: Dav1dFrameType = 0;
 use crate::include::dav1d::headers::Dav1dSegmentationData;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dSegmentationDataSet {
-    pub d: [Dav1dSegmentationData; 8],
-    pub preskip: libc::c_int,
-    pub last_active_segid: libc::c_int,
-}
+use crate::include::dav1d::headers::Dav1dSegmentationDataSet;
 use crate::include::dav1d::headers::Dav1dLoopfilterModeRefDeltas;
 #[derive(Copy, Clone)]
 #[repr(C)]

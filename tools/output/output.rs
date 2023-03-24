@@ -250,13 +250,7 @@ pub struct Dav1dSequenceHeaderOperatingPoint {
     pub display_model_param_present: libc::c_int,
 }
 use crate::include::dav1d::headers::Dav1dSegmentationData;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dSegmentationDataSet {
-    pub d: [Dav1dSegmentationData; 8],
-    pub preskip: libc::c_int,
-    pub last_active_segid: libc::c_int,
-}
+use crate::include::dav1d::headers::Dav1dSegmentationDataSet;
 use crate::include::dav1d::headers::Dav1dLoopfilterModeRefDeltas;
 #[derive(Copy, Clone)]
 #[repr(C)]

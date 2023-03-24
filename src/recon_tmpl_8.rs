@@ -494,13 +494,7 @@ pub struct C2RustUnnamed_13 {
     pub lossless: [libc::c_int; 8],
     pub qidx: [libc::c_int; 8],
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dSegmentationDataSet {
-    pub d: [Dav1dSegmentationData; 8],
-    pub preskip: libc::c_int,
-    pub last_active_segid: libc::c_int,
-}
+use crate::include::dav1d::headers::Dav1dSegmentationDataSet;
 use crate::include::dav1d::headers::Dav1dSegmentationData;
 #[derive(Copy, Clone)]
 #[repr(C)]

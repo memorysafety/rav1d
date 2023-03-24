@@ -12,6 +12,13 @@ pub struct Dav1dSegmentationData {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
+pub struct Dav1dSegmentationDataSet {
+    pub d: [Dav1dSegmentationData; 8],
+    pub preskip: libc::c_int,
+    pub last_active_segid: libc::c_int,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
 pub struct Dav1dLoopfilterModeRefDeltas {
     pub mode_delta: [libc::c_int; 2],
     pub ref_delta: [libc::c_int; 8],
