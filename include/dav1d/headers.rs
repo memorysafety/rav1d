@@ -36,6 +36,11 @@ pub const DAV1D_RESTORATION_SGRPROJ: Dav1dRestorationType = 3;
 pub const DAV1D_RESTORATION_WIENER: Dav1dRestorationType = 2;
 pub const DAV1D_RESTORATION_SWITCHABLE: Dav1dRestorationType = 1;
 pub const DAV1D_RESTORATION_NONE: Dav1dRestorationType = 0;
+pub type Dav1dWarpedMotionType = libc::c_uint;
+pub const DAV1D_WM_TYPE_AFFINE: Dav1dWarpedMotionType = 3;
+pub const DAV1D_WM_TYPE_ROT_ZOOM: Dav1dWarpedMotionType = 2;
+pub const DAV1D_WM_TYPE_TRANSLATION: Dav1dWarpedMotionType = 1;
+pub const DAV1D_WM_TYPE_IDENTITY: Dav1dWarpedMotionType = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContentLightLevel {

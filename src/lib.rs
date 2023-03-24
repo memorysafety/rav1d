@@ -203,11 +203,11 @@ use crate::include::dav1d::headers::DAV1D_RESTORATION_SGRPROJ;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_WIENER;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_SWITCHABLE;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_NONE;
-pub type Dav1dWarpedMotionType = libc::c_uint;
-pub const DAV1D_WM_TYPE_AFFINE: Dav1dWarpedMotionType = 3;
-pub const DAV1D_WM_TYPE_ROT_ZOOM: Dav1dWarpedMotionType = 2;
-pub const DAV1D_WM_TYPE_TRANSLATION: Dav1dWarpedMotionType = 1;
-pub const DAV1D_WM_TYPE_IDENTITY: Dav1dWarpedMotionType = 0;
+use crate::include::dav1d::headers::Dav1dWarpedMotionType;
+use crate::include::dav1d::headers::DAV1D_WM_TYPE_AFFINE;
+use crate::include::dav1d::headers::DAV1D_WM_TYPE_ROT_ZOOM;
+use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
+use crate::include::dav1d::headers::DAV1D_WM_TYPE_IDENTITY;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dWarpedMotionParams {
