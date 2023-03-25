@@ -1,5 +1,6 @@
 use ::libc;
 use crate::stderr;
+use crate::errno_location;
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
@@ -20,7 +21,6 @@ extern "C" {
         __whence: libc::c_int,
     ) -> libc::c_int;
     fn strerror(_: libc::c_int) -> *mut libc::c_char;
-    fn __errno_location() -> *mut libc::c_int;
     fn dav1d_data_create(data: *mut Dav1dData, sz: size_t) -> *mut uint8_t;
     fn dav1d_data_unref(data: *mut Dav1dData);
 }
@@ -329,7 +329,7 @@ unsafe extern "C" fn annexb_open(
             stderr,
             b"Failed to open %s: %s\n\0" as *const u8 as *const libc::c_char,
             file,
-            strerror(*__errno_location()),
+            strerror(*errno_location()),
         );
         return -(1 as libc::c_int);
     }
@@ -395,7 +395,7 @@ unsafe extern "C" fn annexb_read(
         fprintf(
             stderr,
             b"Failed to read frame data: %s\n\0" as *const u8 as *const libc::c_char,
-            strerror(*__errno_location()),
+            strerror(*errno_location()),
         );
         dav1d_data_unref(data);
         return -(1 as libc::c_int);

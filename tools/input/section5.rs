@@ -1,5 +1,6 @@
 use ::libc;
 use crate::stderr;
+use crate::errno_location;
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
@@ -23,7 +24,6 @@ extern "C" {
     fn strerror(_: libc::c_int) -> *mut libc::c_char;
     fn dav1d_data_unref(data: *mut Dav1dData);
     fn dav1d_data_create(data: *mut Dav1dData, sz: size_t) -> *mut uint8_t;
-    fn __errno_location() -> *mut libc::c_int;
 }
 pub type size_t = libc::c_ulong;
 pub type __uint8_t = libc::c_uchar;
@@ -263,7 +263,7 @@ unsafe extern "C" fn section5_open(
             stderr,
             b"Failed to open %s: %s\n\0" as *const u8 as *const libc::c_char,
             file,
-            strerror(*__errno_location()),
+            strerror(*errno_location()),
         );
         return -(1 as libc::c_int);
     }
@@ -399,7 +399,7 @@ unsafe extern "C" fn section5_read(
         fprintf(
             stderr,
             b"Failed to read frame data: %s\n\0" as *const u8 as *const libc::c_char,
-            strerror(*__errno_location()),
+            strerror(*errno_location()),
         );
         dav1d_data_unref(data);
         return -(1 as libc::c_int);

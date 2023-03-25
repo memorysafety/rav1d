@@ -120,12 +120,20 @@ cfg_if::cfg_if! {
             pub static mut stdout: *mut libc::FILE;
             pub static mut stderr: *mut libc::FILE;
         }
+
+        unsafe fn errno_location() -> *mut libc::c_int {
+            libc::__errno_location()
+        }
     } else if #[cfg(target_os = "macos")] {
         extern "C" {
             #[link_name = "__stdoutp"]
             pub static mut stdout: *mut libc::FILE;
             #[link_name = "__stderrp"]
             pub static mut stderr: *mut libc::FILE;
+        }
+
+        unsafe fn errno_location() -> *mut libc::c_int {
+            libc::__error()
         }
     }
 }
