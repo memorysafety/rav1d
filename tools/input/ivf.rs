@@ -1,11 +1,11 @@
 use ::libc;
 use crate::stderr;
+use crate::errno_location;
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
     pub type _IO_marker;
     pub type Dav1dRef;
-    fn __errno_location() -> *mut libc::c_int;
     fn llround(_: libc::c_double) -> libc::c_longlong;
     fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
     fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut libc::FILE;
@@ -145,7 +145,7 @@ unsafe extern "C" fn ivf_open(
             stderr,
             b"Failed to open %s: %s\n\0" as *const u8 as *const libc::c_char,
             file,
-            strerror(*__errno_location()),
+            strerror(*errno_location()),
         );
         return -(1 as libc::c_int);
     } else {
@@ -160,7 +160,7 @@ unsafe extern "C" fn ivf_open(
                 stderr,
                 b"Failed to read stream header: %s\n\0" as *const u8
                     as *const libc::c_char,
-                strerror(*__errno_location()),
+                strerror(*errno_location()),
             );
             fclose((*c).f);
             return -(1 as libc::c_int);
@@ -362,7 +362,7 @@ unsafe extern "C" fn ivf_read(
         fprintf(
             stderr,
             b"Failed to read frame data: %s\n\0" as *const u8 as *const libc::c_char,
-            strerror(*__errno_location()),
+            strerror(*errno_location()),
         );
         dav1d_data_unref(buf);
         return -(1 as libc::c_int);
@@ -392,7 +392,7 @@ unsafe extern "C" fn ivf_seek(c: *mut IvfInputContext, pts: uint64_t) -> libc::c
                 fprintf(
                     stderr,
                     b"Failed to seek: %s\n\0" as *const u8 as *const libc::c_char,
-                    strerror(*__errno_location()),
+                    strerror(*errno_location()),
                 );
                 return -(1 as libc::c_int);
             }

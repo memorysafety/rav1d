@@ -1,11 +1,11 @@
 use ::libc;
 use crate::{stdout,stderr};
+use crate::errno_location;
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
     pub type _IO_marker;
     pub type Dav1dRef;
-    fn __errno_location() -> *mut libc::c_int;
     fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
     fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut libc::FILE;
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
@@ -541,7 +541,7 @@ unsafe extern "C" fn yuv_open(
                 stderr,
                 b"Failed to open %s: %s\n\0" as *const u8 as *const libc::c_char,
                 file,
-                strerror(*__errno_location()),
+                strerror(*errno_location()),
             );
             return -(1 as libc::c_int);
         }
@@ -630,7 +630,7 @@ unsafe extern "C" fn yuv_write(
     fprintf(
         stderr,
         b"Failed to write frame data: %s\n\0" as *const u8 as *const libc::c_char,
-        strerror(*__errno_location()),
+        strerror(*errno_location()),
     );
     return -(1 as libc::c_int);
 }
