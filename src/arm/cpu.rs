@@ -21,7 +21,7 @@ pub unsafe extern "C" fn dav1d_get_cpu_flags_arm() -> libc::c_uint {
             todo!("Android is not yet supported")
         } else {
             if (libc::getauxval(libc::AT_HWCAP) & NEON_HWCAP) != 0 {
-                flags |= DAV1D_ARM_CPU_FLAG_NEON
+                flags |= DAV1D_ARM_CPU_FLAG_NEON;
             }
         }
     }
