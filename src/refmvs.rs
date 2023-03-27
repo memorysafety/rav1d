@@ -2615,56 +2615,32 @@ unsafe extern "C" fn splat_mv_c(
 }
 #[inline(always)]
 unsafe extern "C" fn dav1d_get_cpu_flags() -> libc::c_uint {
-    let mut flags: libc::c_uint = dav1d_cpu_flags & dav1d_cpu_flags_mask;
-    flags |= DAV1D_X86_CPU_FLAG_SSE2 as libc::c_int as libc::c_uint;
+    let mut flags = dav1d_cpu_flags & dav1d_cpu_flags_mask;
+    flags |= DAV1D_X86_CPU_FLAG_SSE2;
     return flags;
 }
 #[inline(always)]
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 unsafe extern "C" fn refmvs_dsp_init_x86(c: *mut Dav1dRefmvsDSPContext) {
-    let flags: libc::c_uint = dav1d_get_cpu_flags();
-    if flags & DAV1D_X86_CPU_FLAG_SSE2 as libc::c_int as libc::c_uint == 0 {
+    let flags = dav1d_get_cpu_flags();
+
+    if flags & DAV1D_X86_CPU_FLAG_SSE2 == 0 {
         return;
     }
-    (*c)
-        .splat_mv = Some(
-        dav1d_splat_mv_sse2
-            as unsafe extern "C" fn(
-                *mut *mut refmvs_block,
-                *const refmvs_block,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    if flags & DAV1D_X86_CPU_FLAG_AVX2 as libc::c_int as libc::c_uint == 0 {
+
+    (*c).splat_mv = Some(dav1d_splat_mv_sse2);
+
+    if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
         return;
     }
-    (*c)
-        .splat_mv = Some(
-        dav1d_splat_mv_avx2
-            as unsafe extern "C" fn(
-                *mut *mut refmvs_block,
-                *const refmvs_block,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    if flags & DAV1D_X86_CPU_FLAG_AVX512ICL as libc::c_int as libc::c_uint == 0 {
+
+    (*c).splat_mv = Some(dav1d_splat_mv_avx2);
+
+    if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
         return;
     }
-    (*c)
-        .splat_mv = Some(
-        dav1d_splat_mv_avx512icl
-            as unsafe extern "C" fn(
-                *mut *mut refmvs_block,
-                *const refmvs_block,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
+
+    (*c).splat_mv = Some(dav1d_splat_mv_avx512icl);
 }
 
 #[inline(always)]
