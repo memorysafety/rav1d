@@ -95,6 +95,9 @@ pub mod wedge;
 pub mod x86 {
 pub mod cpu;
 } // mod x86
+pub mod arm {
+pub mod cpu;
+} // mod arm
 } // mod src
 pub mod tools {
 pub mod dav1d_cli_parse;
