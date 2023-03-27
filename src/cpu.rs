@@ -1,3 +1,4 @@
+use crate::include::stddef::*;
 use ::libc;
 use cfg_if::cfg_if;
 extern "C" {
@@ -15,7 +16,6 @@ extern "C" {
         __cpuset: *mut cpu_set_t,
     ) -> libc::c_int;
 }
-pub type size_t = libc::c_ulong;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct cpu_set_t {

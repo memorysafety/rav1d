@@ -1,16 +1,13 @@
+use crate::include::stddef::*;
+use crate::include::stdint::*;
 use ::libc;
 extern "C" {
     fn abs(_: libc::c_int) -> libc::c_int;
 }
-pub type __uint8_t = libc::c_uchar;
-pub type __uint16_t = libc::c_ushort;
-pub type __uint32_t = libc::c_uint;
-pub type __uint64_t = libc::c_ulong;
-pub type ptrdiff_t = libc::c_long;
-pub type uint8_t = __uint8_t;
-pub type uint16_t = __uint16_t;
-pub type uint32_t = __uint32_t;
-pub type uint64_t = __uint64_t;
+
+
+
+
 pub type pixel = uint16_t;
 #[derive(Copy, Clone)]
 #[repr(C)]

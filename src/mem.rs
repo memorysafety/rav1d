@@ -1,3 +1,5 @@
+use crate::include::stddef::*;
+use crate::include::stdint::*;
 use ::libc;
 extern "C" {
     fn pthread_mutex_init(
@@ -15,10 +17,7 @@ extern "C" {
         __size: size_t,
     ) -> libc::c_int;
 }
-pub type __uint8_t = libc::c_uchar;
-pub type uint8_t = __uint8_t;
-pub type uintptr_t = libc::c_ulong;
-pub type size_t = libc::c_ulong;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union pthread_mutex_t {

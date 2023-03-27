@@ -1,3 +1,5 @@
+use crate::include::stddef::*;
+use crate::include::stdint::*;
 use ::libc;
 use crate::stderr;
 extern "C" {
@@ -20,13 +22,10 @@ extern "C" {
     ) -> *mut Dav1dRef;
     fn dav1d_ref_create(size: size_t) -> *mut Dav1dRef;
 }
-pub type __uint8_t = libc::c_uchar;
-pub type __int64_t = libc::c_long;
+
+
 pub type __off_t = libc::c_long;
 pub type __off64_t = libc::c_long;
-pub type int64_t = __int64_t;
-pub type uint8_t = __uint8_t;
-pub type size_t = libc::c_ulong;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dUserData {

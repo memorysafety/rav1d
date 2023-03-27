@@ -1,6 +1,6 @@
+use crate::include::stdint::*;
 use ::libc;
-pub type __uint16_t = libc::c_ushort;
-pub type uint16_t = __uint16_t;
+
 static mut scan_4x4: [uint16_t; 16] = [
     0 as libc::c_int as uint16_t,
     4 as libc::c_int as uint16_t,

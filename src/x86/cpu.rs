@@ -1,3 +1,4 @@
+use crate::include::stdint::*;
 use ::libc;
 extern "C" {
     fn memcmp(
@@ -12,10 +13,8 @@ extern "C" {
     );
     fn dav1d_cpu_xgetbv(xcr: libc::c_uint) -> uint64_t;
 }
-pub type __uint32_t = libc::c_uint;
-pub type __uint64_t = libc::c_ulong;
-pub type uint32_t = __uint32_t;
-pub type uint64_t = __uint64_t;
+
+
 pub type CpuFlags = libc::c_uint;
 pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
 pub const DAV1D_X86_CPU_FLAG_AVX512ICL: CpuFlags = 16;

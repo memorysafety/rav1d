@@ -1,3 +1,5 @@
+use crate::include::stddef::*;
+use crate::include::stdint::*;
 use ::libc;
 extern "C" {
     fn memcpy(
@@ -7,17 +9,11 @@ extern "C" {
     ) -> *mut libc::c_void;
     static dav1d_sgr_x_by_x: [uint8_t; 256];
 }
-pub type __uint8_t = libc::c_uchar;
-pub type __int16_t = libc::c_short;
-pub type __uint16_t = libc::c_ushort;
-pub type __int32_t = libc::c_int;
-pub type __uint32_t = libc::c_uint;
-pub type int16_t = __int16_t;
-pub type int32_t = __int32_t;
-pub type uint8_t = __uint8_t;
-pub type uint16_t = __uint16_t;
-pub type uint32_t = __uint32_t;
-pub type ptrdiff_t = libc::c_long;
+
+
+
+
+
 pub type pixel = uint16_t;
 pub type coef = int32_t;
 pub type LrEdgeFlags = libc::c_uint;
