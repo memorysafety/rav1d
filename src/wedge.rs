@@ -1,3 +1,4 @@
+use crate::include::stdint::*;
 use ::libc;
 extern "C" {
     fn memcpy(
@@ -12,7 +13,6 @@ extern "C" {
     ) -> *mut libc::c_void;
 }
 
-use crate::include::stdint::uint8_t;
 pub type InterIntraPredMode = libc::c_uint;
 pub const N_INTER_INTRA_PRED_MODES: InterIntraPredMode = 4;
 pub const II_SMOOTH_PRED: InterIntraPredMode = 3;

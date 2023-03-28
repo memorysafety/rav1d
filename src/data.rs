@@ -1,3 +1,5 @@
+use crate::include::stddef::*;
+use crate::include::stdint::*;
 use ::libc;
 use crate::stderr;
 extern "C" {
@@ -24,9 +26,6 @@ extern "C" {
 
 pub type __off_t = libc::c_long;
 pub type __off64_t = libc::c_long;
-use crate::include::stdint::int64_t;
-use crate::include::stdint::uint8_t;
-use crate::include::stddef::size_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dUserData {

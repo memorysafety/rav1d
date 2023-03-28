@@ -1,3 +1,5 @@
+use crate::include::stddef::*;
+use crate::include::stdint::*;
 use ::libc;
 extern "C" {
     fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
@@ -13,9 +15,7 @@ extern "C" {
         size: size_t,
     ) -> *mut Dav1dMemPoolBuffer;
 }
-use crate::include::stddef::size_t;
 
-use crate::include::stdint::uint8_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dRef {

@@ -1,3 +1,5 @@
+use crate::include::stddef::*;
+use crate::include::stdint::*;
 use ::libc;
 use ::c2rust_bitfields;
 extern "C" {
@@ -13,8 +15,6 @@ extern "C" {
     ) -> *mut libc::c_void;
 }
 
-use crate::include::stdint::uint8_t;
-use crate::include::stddef::ptrdiff_t;
 pub type pixel = uint8_t;
 pub type IntraPredMode = libc::c_uint;
 pub const FILTER_PRED: IntraPredMode = 13;

@@ -1,7 +1,7 @@
+use crate::include::stddef::*;
+use crate::include::stdint::*;
 use ::libc;
-use crate::include::stddef::ptrdiff_t;
 
-use crate::include::stdint::int32_t;
 #[inline]
 unsafe extern "C" fn iclip(
     v: libc::c_int,

@@ -1,3 +1,5 @@
+use crate::include::stddef::*;
+use crate::include::stdint::*;
 use ::libc;
 extern "C" {
     fn abs(_: libc::c_int) -> libc::c_int;
@@ -6,11 +8,6 @@ extern "C" {
 
 
 
-use crate::include::stddef::ptrdiff_t;
-use crate::include::stdint::uint8_t;
-use crate::include::stdint::uint16_t;
-use crate::include::stdint::uint32_t;
-use crate::include::stdint::uint64_t;
 pub type pixel = uint16_t;
 #[derive(Copy, Clone)]
 #[repr(C)]

@@ -1,3 +1,5 @@
+use crate::include::stddef::*;
+use crate::include::stdint::*;
 use ::libc;
 extern "C" {
     fn abs(_: libc::c_int) -> libc::c_int;
@@ -6,10 +8,6 @@ extern "C" {
 
 
 
-use crate::include::stdint::int8_t;
-use crate::include::stdint::int16_t;
-use crate::include::stdint::uint16_t;
-use crate::include::stddef::ptrdiff_t;
 pub type pixel = uint16_t;
 pub type CdefEdgeFlags = libc::c_uint;
 pub const CDEF_HAVE_BOTTOM: CdefEdgeFlags = 8;

@@ -1,3 +1,5 @@
+use crate::include::stddef::*;
+use crate::include::stdint::*;
 use ::libc;
 extern "C" {
     fn memcpy(
@@ -17,12 +19,6 @@ extern "C" {
 
 
 
-use crate::include::stdint::int16_t;
-use crate::include::stdint::int32_t;
-use crate::include::stdint::uint8_t;
-use crate::include::stdint::uint16_t;
-use crate::include::stdint::uint32_t;
-use crate::include::stddef::ptrdiff_t;
 pub type pixel = uint8_t;
 pub type coef = int16_t;
 pub type LrEdgeFlags = libc::c_uint;

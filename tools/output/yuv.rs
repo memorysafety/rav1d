@@ -1,3 +1,5 @@
+use crate::include::stddef::*;
+use crate::include::stdint::*;
 use ::libc;
 use crate::{stdout,stderr};
 use crate::errno_location;
@@ -19,7 +21,6 @@ extern "C" {
     fn strerror(_: libc::c_int) -> *mut libc::c_char;
     fn dav1d_picture_unref(p: *mut Dav1dPicture);
 }
-use crate::include::stddef::size_t;
 
 
 
@@ -31,16 +32,6 @@ use crate::include::stddef::size_t;
 pub type __off_t = libc::c_long;
 pub type __off64_t = libc::c_long;
 pub type _IO_lock_t = ();
-use crate::include::stdint::int8_t;
-use crate::include::stdint::int16_t;
-use crate::include::stdint::int32_t;
-use crate::include::stdint::int64_t;
-use crate::include::stddef::ptrdiff_t;
-use crate::include::stdint::uint8_t;
-use crate::include::stdint::uint16_t;
-use crate::include::stdint::uint32_t;
-use crate::include::stdint::uint64_t;
-use crate::include::stdint::uintptr_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dUserData {

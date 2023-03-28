@@ -1,6 +1,8 @@
 #![allow(dead_code, mutable_transmutes, non_camel_case_types, non_snake_case, non_upper_case_globals, unused_assignments, unused_mut)]
 #![feature(extern_types)]
 #![feature(c_variadic)]
+use crate::include::stddef::*;
+use crate::include::stdint::*;
 use ::c2rust_out::*;
 extern "C" {
     pub type _IO_wide_data;
@@ -100,16 +102,6 @@ pub type __off64_t = libc::c_long;
 pub type __time_t = libc::c_long;
 pub type __clockid_t = libc::c_int;
 pub type __syscall_slong_t = libc::c_long;
-use crate::include::stdint::int8_t;
-use crate::include::stdint::int16_t;
-use crate::include::stdint::int32_t;
-use crate::include::stdint::int64_t;
-use crate::include::stdint::uint8_t;
-use crate::include::stdint::uint16_t;
-use crate::include::stdint::uint32_t;
-use crate::include::stdint::uint64_t;
-use crate::include::stdint::uintptr_t;
-use crate::include::stddef::size_t;
 pub type clockid_t = __clockid_t;
 pub type time_t = __time_t;
 #[derive(Copy, Clone)]
@@ -119,7 +111,6 @@ pub struct timespec {
     pub tv_nsec: __syscall_slong_t,
 }
 pub type _IO_lock_t = ();
-use crate::include::stddef::ptrdiff_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dUserData {

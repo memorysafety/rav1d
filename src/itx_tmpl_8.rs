@@ -1,3 +1,5 @@
+use crate::include::stddef::*;
+use crate::include::stdint::*;
 use ::libc;
 extern "C" {
     fn memset(
@@ -97,13 +99,9 @@ extern "C" {
     );
     fn dav1d_inv_wht4_1d_c(c: *mut int32_t, stride: ptrdiff_t);
 }
-use crate::include::stddef::ptrdiff_t;
 
 
 
-use crate::include::stdint::int16_t;
-use crate::include::stdint::int32_t;
-use crate::include::stdint::uint8_t;
 pub type pixel = uint8_t;
 pub type coef = int16_t;
 pub type TxfmSize = libc::c_uint;

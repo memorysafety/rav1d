@@ -1,3 +1,5 @@
+use crate::include::stddef::*;
+use crate::include::stdint::*;
 use ::libc;
 extern "C" {
     fn free(_: *mut libc::c_void);
@@ -9,7 +11,6 @@ extern "C" {
     fn abs(_: libc::c_int) -> libc::c_int;
     static dav1d_block_dimensions: [[uint8_t; 4]; 22];
 }
-use crate::include::stddef::size_t;
 
 
 
@@ -17,14 +18,6 @@ use crate::include::stddef::size_t;
 
 
 
-use crate::include::stdint::int8_t;
-use crate::include::stdint::int16_t;
-use crate::include::stdint::int32_t;
-use crate::include::stddef::ptrdiff_t;
-use crate::include::stdint::uint8_t;
-use crate::include::stdint::uint16_t;
-use crate::include::stdint::uint32_t;
-use crate::include::stdint::uint64_t;
 pub type Dav1dTxfmMode = libc::c_uint;
 pub const DAV1D_N_TX_MODES: Dav1dTxfmMode = 3;
 pub const DAV1D_TX_SWITCHABLE: Dav1dTxfmMode = 2;

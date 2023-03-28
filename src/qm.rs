@@ -1,3 +1,4 @@
+use crate::include::stdint::*;
 use ::libc;
 extern "C" {
     fn memcpy(
@@ -7,7 +8,6 @@ extern "C" {
     ) -> *mut libc::c_void;
 }
 
-use crate::include::stdint::uint8_t;
 pub type TxfmSize = libc::c_uint;
 pub const N_TX_SIZES: TxfmSize = 5;
 pub const TX_64X64: TxfmSize = 4;

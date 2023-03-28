@@ -1,3 +1,5 @@
+use crate::include::stddef::*;
+use crate::include::stdint::*;
 use ::libc;
 extern "C" {
     fn abs(_: libc::c_int) -> libc::c_int;
@@ -19,11 +21,6 @@ extern "C" {
 
 
 
-use crate::include::stdint::int8_t;
-use crate::include::stdint::int16_t;
-use crate::include::stddef::ptrdiff_t;
-use crate::include::stdint::uint8_t;
-use crate::include::stdint::intptr_t;
 pub type pixel = uint8_t;
 pub type Dav1dFilterMode = libc::c_uint;
 pub const DAV1D_FILTER_SWITCHABLE: Dav1dFilterMode = 4;

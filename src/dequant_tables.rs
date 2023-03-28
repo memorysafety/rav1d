@@ -1,6 +1,6 @@
+use crate::include::stdint::*;
 use ::libc;
 
-use crate::include::stdint::uint16_t;
 #[no_mangle]
 pub static mut dav1d_dq_tbl: [[[uint16_t; 2]; 256]; 3] = [
     [

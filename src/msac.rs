@@ -1,3 +1,5 @@
+use crate::include::stddef::*;
+use crate::include::stdint::*;
 use ::libc;
 use cfg_if::cfg_if;
 
@@ -67,9 +69,6 @@ extern "C" {
     static mut dav1d_cpu_flags_mask: libc::c_uint;
     static mut dav1d_cpu_flags: libc::c_uint;
 }
-use crate::include::stdint::uint8_t;
-use crate::include::stdint::uint16_t;
-use crate::include::stddef::size_t;
 pub type ec_win = size_t;
 #[derive(Copy, Clone)]
 #[repr(C)]

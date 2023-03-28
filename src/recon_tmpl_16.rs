@@ -1,3 +1,5 @@
+use crate::include::stddef::*;
+use crate::include::stdint::*;
 use ::libc;
 use core::arch::asm;
 use crate::src::cdf::CdfContext;
@@ -113,7 +115,6 @@ pub struct __va_list_tag {
     pub overflow_arg_area: *mut libc::c_void,
     pub reg_save_area: *mut libc::c_void,
 }
-use crate::include::stddef::size_t;
 
 
 
@@ -125,17 +126,6 @@ use crate::include::stddef::size_t;
 pub type __off_t = libc::c_long;
 pub type __off64_t = libc::c_long;
 pub type _IO_lock_t = ();
-use crate::include::stddef::ptrdiff_t;
-use crate::include::stdint::int8_t;
-use crate::include::stdint::int16_t;
-use crate::include::stdint::int32_t;
-use crate::include::stdint::int64_t;
-use crate::include::stdint::uint8_t;
-use crate::include::stdint::uint16_t;
-use crate::include::stdint::uint32_t;
-use crate::include::stdint::uint64_t;
-use crate::include::stdint::intptr_t;
-use crate::include::stdint::uintptr_t;
 pub type pixel = uint16_t;
 pub type coef = int32_t;
 pub type atomic_int = libc::c_int;

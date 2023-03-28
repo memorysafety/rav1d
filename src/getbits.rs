@@ -1,11 +1,9 @@
+use crate::include::stddef::*;
+use crate::include::stdint::*;
 use ::libc;
 
 
 
-use crate::include::stdint::int64_t;
-use crate::include::stdint::uint8_t;
-use crate::include::stdint::uint64_t;
-use crate::include::stddef::size_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct GetBits {

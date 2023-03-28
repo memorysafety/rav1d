@@ -1,3 +1,5 @@
+use crate::include::stddef::*;
+use crate::include::stdint::*;
 use ::libc;
 use crate::stderr;
 use crate::errno_location;
@@ -24,16 +26,12 @@ extern "C" {
     fn dav1d_data_create(data: *mut Dav1dData, sz: size_t) -> *mut uint8_t;
     fn dav1d_data_unref(data: *mut Dav1dData);
 }
-use crate::include::stddef::size_t;
 
 
 
 pub type __off_t = libc::c_long;
 pub type __off64_t = libc::c_long;
 pub type _IO_lock_t = ();
-use crate::include::stdint::int64_t;
-use crate::include::stdint::uint8_t;
-use crate::include::stdint::uint64_t;
 pub type Dav1dObuType = libc::c_uint;
 pub const DAV1D_OBU_PADDING: Dav1dObuType = 15;
 pub const DAV1D_OBU_REDUNDANT_FRAME_HDR: Dav1dObuType = 7;

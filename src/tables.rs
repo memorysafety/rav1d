@@ -1,14 +1,10 @@
+use crate::include::stdint::*;
 use ::libc;
 
 
 
 
 
-use crate::include::stdint::int8_t;
-use crate::include::stdint::int16_t;
-use crate::include::stdint::int32_t;
-use crate::include::stdint::uint8_t;
-use crate::include::stdint::uint16_t;
 pub type Dav1dFilterMode = libc::c_uint;
 pub const DAV1D_FILTER_SWITCHABLE: Dav1dFilterMode = 4;
 pub const DAV1D_N_FILTERS: Dav1dFilterMode = 4;
