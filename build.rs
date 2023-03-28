@@ -36,7 +36,11 @@ fn build_nasm_files() {
         .write(b"%define FORCE_VEX_ENCODING 0\n")
         .unwrap();
 
-    let asm_files = &["src/x86/msac.asm", "src/x86/cpuid.asm"];
+    let asm_files = &[
+        "src/x86/cpuid.asm",
+        "src/x86/msac.asm",
+        "src/x86/refmvs.asm",
+    ];
 
     let mut config_include_arg = String::from("-I");
     config_include_arg.push_str(&out_dir);
@@ -58,7 +62,7 @@ fn build_nasm_files() {
     // cc is better at finding the correct archiver
     let mut cc = cc::Build::new();
     for o in obj {
-      cc.object(o);
+        cc.object(o);
     }
     cc.compile("rav1dasm");
 
@@ -76,16 +80,16 @@ fn build_asm_files() {
     if env::var("CARGO_CFG_TARGET_VENDOR").unwrap() == "apple" {
         config_file.write(b" #define PREFIX 1\n").unwrap();
     }
-    config_file.write(b" #define PRIVATE_PREFIX dav1d_\n").unwrap();
+    config_file
+        .write(b" #define PRIVATE_PREFIX dav1d_\n")
+        .unwrap();
     config_file.write(b" #define ARCH_AARCH64 1\n").unwrap();
     config_file.write(b" #define ARCH_ARM 0\n").unwrap();
     config_file.write(b" #define CONFIG_LOG 1 \n").unwrap();
     config_file.write(b" #define HAVE_ASM 1\n").unwrap();
     config_file.sync_all().unwrap();
 
-    let asm_files = &[
-        "src/arm/64/msac.S",
-    ];
+    let asm_files = &["src/arm/64/msac.S", "src/arm/64/refmvs.S"];
 
     cc::Build::new()
         .files(asm_files)

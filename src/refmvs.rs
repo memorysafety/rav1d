@@ -1,6 +1,7 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use ::libc;
+use cfg_if::cfg_if;
 extern "C" {
     fn free(_: *mut libc::c_void);
     fn posix_memalign(
@@ -12,11 +13,53 @@ extern "C" {
     static dav1d_block_dimensions: [[uint8_t; 4]; 22];
 }
 
+#[cfg(feature = "asm")]
+extern "C" {
+    static mut dav1d_cpu_flags_mask: libc::c_uint;
+    static mut dav1d_cpu_flags: libc::c_uint;
+}
 
+#[cfg(all(
+    feature = "asm",
+    any(target_arch = "x86", target_arch = "x86_64"),
+))]
+extern "C" {
+    fn dav1d_splat_mv_avx512icl(
+        rr: *mut *mut refmvs_block,
+        rmv: *const refmvs_block,
+        bx4: libc::c_int,
+        bw4: libc::c_int,
+        bh4: libc::c_int,
+    );
+    fn dav1d_splat_mv_avx2(
+        rr: *mut *mut refmvs_block,
+        rmv: *const refmvs_block,
+        bx4: libc::c_int,
+        bw4: libc::c_int,
+        bh4: libc::c_int,
+    );
+    fn dav1d_splat_mv_sse2(
+        rr: *mut *mut refmvs_block,
+        rmv: *const refmvs_block,
+        bx4: libc::c_int,
+        bw4: libc::c_int,
+        bh4: libc::c_int,
+    );
+}
 
-
-
-
+#[cfg(all(
+    feature = "asm",
+    any(target_arch = "arm", target_arch = "aarch64"),
+))]
+extern "C" {
+    fn dav1d_splat_mv_neon(
+        rr: *mut *mut refmvs_block,
+        rmv: *const refmvs_block,
+        bx4: libc::c_int,
+        bw4: libc::c_int,
+        bh4: libc::c_int,
+    );
+}
 
 pub type Dav1dTxfmMode = libc::c_uint;
 pub const DAV1D_N_TX_MODES: Dav1dTxfmMode = 3;
@@ -539,6 +582,13 @@ pub type splat_mv_fn = Option::<
 pub struct Dav1dRefmvsDSPContext {
     pub splat_mv: splat_mv_fn,
 }
+pub const DAV1D_X86_CPU_FLAG_AVX512ICL: CpuFlags = 16;
+pub const DAV1D_X86_CPU_FLAG_SSE2: CpuFlags = 1;
+pub const DAV1D_X86_CPU_FLAG_AVX2: CpuFlags = 8;
+pub type CpuFlags = libc::c_uint;
+pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
+pub const DAV1D_X86_CPU_FLAG_SSE41: CpuFlags = 4;
+pub const DAV1D_X86_CPU_FLAG_SSSE3: CpuFlags = 2;
 #[inline]
 unsafe extern "C" fn imax(a: libc::c_int, b: libc::c_int) -> libc::c_int {
     return if a > b { a } else { b };
@@ -2563,6 +2613,46 @@ unsafe extern "C" fn splat_mv_c(
         }
     };
 }
+#[inline(always)]
+unsafe extern "C" fn dav1d_get_cpu_flags() -> libc::c_uint {
+    let mut flags = dav1d_cpu_flags & dav1d_cpu_flags_mask;
+    flags |= DAV1D_X86_CPU_FLAG_SSE2;
+    return flags;
+}
+#[inline(always)]
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+unsafe extern "C" fn refmvs_dsp_init_x86(c: *mut Dav1dRefmvsDSPContext) {
+    let flags = dav1d_get_cpu_flags();
+
+    if flags & DAV1D_X86_CPU_FLAG_SSE2 == 0 {
+        return;
+    }
+
+    (*c).splat_mv = Some(dav1d_splat_mv_sse2);
+
+    if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
+        return;
+    }
+
+    (*c).splat_mv = Some(dav1d_splat_mv_avx2);
+
+    if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
+        return;
+    }
+
+    (*c).splat_mv = Some(dav1d_splat_mv_avx512icl);
+}
+
+#[inline(always)]
+#[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+unsafe extern "C" fn refmvs_dsp_init_arm(c: *mut Dav1dRefmvsDSPContext) {
+    use crate::src::arm::cpu::DAV1D_ARM_CPU_FLAG_NEON;
+
+    let flags: libc::c_uint = dav1d_get_cpu_flags();
+    if (flags & DAV1D_ARM_CPU_FLAG_NEON) != 0 {
+        (*c).splat_mv = Some(dav1d_splat_mv_neon);
+    }
+}
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_refmvs_dsp_init(c: *mut Dav1dRefmvsDSPContext) {
@@ -2577,4 +2667,11 @@ pub unsafe extern "C" fn dav1d_refmvs_dsp_init(c: *mut Dav1dRefmvsDSPContext) {
                 libc::c_int,
             ) -> (),
     );
+    cfg_if! {
+        if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
+            refmvs_dsp_init_x86(c);
+        } else if #[cfg(any(target_arch = "arm", target_arch = "aarch64"))] {
+            refmvs_dsp_init_arm(c);
+        }
+    }
 }
