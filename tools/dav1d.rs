@@ -1,6 +1,8 @@
 #![allow(dead_code, mutable_transmutes, non_camel_case_types, non_snake_case, non_upper_case_globals, unused_assignments, unused_mut)]
 #![feature(extern_types)]
 #![feature(c_variadic)]
+use crate::include::stddef::*;
+use crate::include::stdint::*;
 use ::c2rust_out::*;
 extern "C" {
     pub type _IO_wide_data;
@@ -87,29 +89,19 @@ pub struct __va_list_tag {
     pub overflow_arg_area: *mut libc::c_void,
     pub reg_save_area: *mut libc::c_void,
 }
-pub type __int8_t = libc::c_schar;
-pub type __uint8_t = libc::c_uchar;
-pub type __int16_t = libc::c_short;
-pub type __uint16_t = libc::c_ushort;
-pub type __int32_t = libc::c_int;
-pub type __uint32_t = libc::c_uint;
-pub type __int64_t = libc::c_long;
-pub type __uint64_t = libc::c_ulong;
+
+
+
+
+
+
+
+
 pub type __off_t = libc::c_long;
 pub type __off64_t = libc::c_long;
 pub type __time_t = libc::c_long;
 pub type __clockid_t = libc::c_int;
 pub type __syscall_slong_t = libc::c_long;
-pub type int8_t = __int8_t;
-pub type int16_t = __int16_t;
-pub type int32_t = __int32_t;
-pub type int64_t = __int64_t;
-pub type uint8_t = __uint8_t;
-pub type uint16_t = __uint16_t;
-pub type uint32_t = __uint32_t;
-pub type uint64_t = __uint64_t;
-pub type uintptr_t = libc::c_ulong;
-pub type size_t = libc::c_ulong;
 pub type clockid_t = __clockid_t;
 pub type time_t = __time_t;
 #[derive(Copy, Clone)]
@@ -119,7 +111,6 @@ pub struct timespec {
     pub tv_nsec: __syscall_slong_t,
 }
 pub type _IO_lock_t = ();
-pub type ptrdiff_t = libc::c_long;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dUserData {

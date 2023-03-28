@@ -16,6 +16,10 @@ compile_error!("No bitdepths enabled. Enable one or more of the following featur
 #[macro_use]
 extern crate c2rust_bitfields;
 extern crate libc;
+pub mod include {
+pub mod stddef;
+pub mod stdint;
+} // mod include
 pub mod src {
 pub mod align;
 #[cfg(feature = "bitdepth_16")]

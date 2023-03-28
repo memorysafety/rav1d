@@ -1,15 +1,13 @@
+use crate::include::stddef::*;
+use crate::include::stdint::*;
 use ::libc;
 extern "C" {
     fn abs(_: libc::c_int) -> libc::c_int;
     static dav1d_cdef_directions: [[int8_t; 2]; 12];
 }
-pub type __int8_t = libc::c_schar;
-pub type __int16_t = libc::c_short;
-pub type __uint16_t = libc::c_ushort;
-pub type int8_t = __int8_t;
-pub type int16_t = __int16_t;
-pub type uint16_t = __uint16_t;
-pub type ptrdiff_t = libc::c_long;
+
+
+
 pub type pixel = uint16_t;
 pub type CdefEdgeFlags = libc::c_uint;
 pub const CDEF_HAVE_BOTTOM: CdefEdgeFlags = 8;

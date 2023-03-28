@@ -1,11 +1,9 @@
+use crate::include::stddef::*;
+use crate::include::stdint::*;
 use ::libc;
-pub type __uint8_t = libc::c_uchar;
-pub type __int64_t = libc::c_long;
-pub type __uint64_t = libc::c_ulong;
-pub type int64_t = __int64_t;
-pub type uint8_t = __uint8_t;
-pub type uint64_t = __uint64_t;
-pub type size_t = libc::c_ulong;
+
+
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct GetBits {

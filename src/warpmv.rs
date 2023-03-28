@@ -1,20 +1,15 @@
+use crate::include::stdint::*;
 use ::libc;
 extern "C" {
     fn abs(_: libc::c_int) -> libc::c_int;
     fn llabs(_: libc::c_longlong) -> libc::c_longlong;
 }
-pub type __int16_t = libc::c_short;
-pub type __uint16_t = libc::c_ushort;
-pub type __int32_t = libc::c_int;
-pub type __uint32_t = libc::c_uint;
-pub type __int64_t = libc::c_long;
-pub type __uint64_t = libc::c_ulong;
-pub type int16_t = __int16_t;
-pub type int32_t = __int32_t;
-pub type int64_t = __int64_t;
-pub type uint16_t = __uint16_t;
-pub type uint32_t = __uint32_t;
-pub type uint64_t = __uint64_t;
+
+
+
+
+
+
 pub type Dav1dWarpedMotionType = libc::c_uint;
 pub const DAV1D_WM_TYPE_AFFINE: Dav1dWarpedMotionType = 3;
 pub const DAV1D_WM_TYPE_ROT_ZOOM: Dav1dWarpedMotionType = 2;
