@@ -4,6 +4,8 @@ extern "C" {
     pub type Dav1dContext;
     #[cfg(target_arch = "x86_64")]
     fn dav1d_get_cpu_flags_x86() -> libc::c_uint;
+    #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+    fn dav1d_get_cpu_flags_arm() -> libc::c_uint;
     fn dav1d_log(c: *mut Dav1dContext, format: *const libc::c_char, _: ...);
     fn __sched_cpucount(__setsize: size_t, __setp: *const cpu_set_t) -> libc::c_int;
     fn pthread_self() -> pthread_t;
@@ -32,6 +34,8 @@ pub unsafe extern "C" fn dav1d_init_cpu() {
     cfg_if! {
         if #[cfg(target_arch = "x86_64")] {
             dav1d_cpu_flags = dav1d_get_cpu_flags_x86();
+        } else if #[cfg(any(target_arch = "arm", target_arch = "aarch64"))] {
+            dav1d_cpu_flags = dav1d_get_cpu_flags_arm();
         }
     }
 }

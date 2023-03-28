@@ -92,9 +92,14 @@ pub mod tables;
 pub mod thread_task;
 pub mod warpmv;
 pub mod wedge;
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 pub mod x86 {
 pub mod cpu;
 } // mod x86
+#[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+pub mod arm {
+pub mod cpu;
+} // mod arm
 } // mod src
 pub mod tools {
 pub mod dav1d_cli_parse;
