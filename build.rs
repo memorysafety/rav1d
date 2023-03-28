@@ -36,11 +36,23 @@ fn build_nasm_files() {
         .write(b"%define FORCE_VEX_ENCODING 0\n")
         .unwrap();
 
-    let asm_files = &[
+    let mut asm_files = vec![
+        "src/x86/cdef_avx2.asm",
+        "src/x86/cdef_sse.asm",
         "src/x86/cpuid.asm",
         "src/x86/msac.asm",
         "src/x86/refmvs.asm",
     ];
+
+    #[cfg(feature = "bitdepth_8")]
+    asm_files.extend_from_slice(&["src/x86/cdef_avx512.asm"]);
+
+    #[cfg(feature = "bitdepth_16")]
+    asm_files.extend_from_slice(&[
+        "src/x86/cdef16_avx2.asm",
+        "src/x86/cdef16_avx512.asm",
+        "src/x86/cdef16_sse.asm",
+    ]);
 
     let mut config_include_arg = String::from("-I");
     config_include_arg.push_str(&out_dir);
@@ -89,7 +101,14 @@ fn build_asm_files() {
     config_file.write(b" #define HAVE_ASM 1\n").unwrap();
     config_file.sync_all().unwrap();
 
-    let asm_files = &["src/arm/64/msac.S", "src/arm/64/refmvs.S"];
+    let asm_files = &[
+        "src/arm/64/msac.S",
+        "src/arm/64/refmvs.S",
+        #[cfg(feature = "bitdepth_8")]
+        "src/arm/64/cdef.S",
+        #[cfg(feature = "bitdepth_16")]
+        "src/arm/64/cdef16.S",
+    ];
 
     cc::Build::new()
         .files(asm_files)
