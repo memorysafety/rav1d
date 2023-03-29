@@ -1,13 +1,219 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use ::libc;
+use cfg_if::cfg_if;
 extern "C" {
     fn abs(_: libc::c_int) -> libc::c_int;
     static dav1d_cdef_directions: [[int8_t; 2]; 12];
 }
 
+#[cfg(feature = "asm")]
+extern "C" {
+    static mut dav1d_cpu_flags: libc::c_uint;
+    static mut dav1d_cpu_flags_mask: libc::c_uint;
+}
 
-
+#[cfg(all(
+    feature = "asm",
+    any(target_arch = "x86", target_arch = "x86_64"),
+))]
+extern "C" {
+    fn dav1d_cdef_filter_8x8_8bpc_ssse3(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        left: const_left_pixel_row_2px,
+        top: *const pixel,
+        bottom: *const pixel,
+        pri_strength: libc::c_int,
+        sec_strength: libc::c_int,
+        dir: libc::c_int,
+        damping: libc::c_int,
+        edges: CdefEdgeFlags,
+    );
+    fn dav1d_cdef_filter_4x8_8bpc_ssse3(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        left: const_left_pixel_row_2px,
+        top: *const pixel,
+        bottom: *const pixel,
+        pri_strength: libc::c_int,
+        sec_strength: libc::c_int,
+        dir: libc::c_int,
+        damping: libc::c_int,
+        edges: CdefEdgeFlags,
+    );
+    fn dav1d_cdef_filter_4x4_8bpc_ssse3(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        left: const_left_pixel_row_2px,
+        top: *const pixel,
+        bottom: *const pixel,
+        pri_strength: libc::c_int,
+        sec_strength: libc::c_int,
+        dir: libc::c_int,
+        damping: libc::c_int,
+        edges: CdefEdgeFlags,
+    );
+    fn dav1d_cdef_dir_8bpc_sse4(
+        dst: *const pixel,
+        dst_stride: ptrdiff_t,
+        var: *mut libc::c_uint,
+    ) -> libc::c_int;
+    fn dav1d_cdef_filter_8x8_8bpc_sse4(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        left: const_left_pixel_row_2px,
+        top: *const pixel,
+        bottom: *const pixel,
+        pri_strength: libc::c_int,
+        sec_strength: libc::c_int,
+        dir: libc::c_int,
+        damping: libc::c_int,
+        edges: CdefEdgeFlags,
+    );
+    fn dav1d_cdef_filter_4x8_8bpc_sse4(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        left: const_left_pixel_row_2px,
+        top: *const pixel,
+        bottom: *const pixel,
+        pri_strength: libc::c_int,
+        sec_strength: libc::c_int,
+        dir: libc::c_int,
+        damping: libc::c_int,
+        edges: CdefEdgeFlags,
+    );
+    fn dav1d_cdef_filter_4x4_8bpc_sse4(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        left: const_left_pixel_row_2px,
+        top: *const pixel,
+        bottom: *const pixel,
+        pri_strength: libc::c_int,
+        sec_strength: libc::c_int,
+        dir: libc::c_int,
+        damping: libc::c_int,
+        edges: CdefEdgeFlags,
+    );
+    fn dav1d_cdef_dir_8bpc_avx2(
+        dst: *const pixel,
+        dst_stride: ptrdiff_t,
+        var: *mut libc::c_uint,
+    ) -> libc::c_int;
+    fn dav1d_cdef_filter_8x8_8bpc_avx2(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        left: const_left_pixel_row_2px,
+        top: *const pixel,
+        bottom: *const pixel,
+        pri_strength: libc::c_int,
+        sec_strength: libc::c_int,
+        dir: libc::c_int,
+        damping: libc::c_int,
+        edges: CdefEdgeFlags,
+    );
+    fn dav1d_cdef_filter_4x8_8bpc_avx2(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        left: const_left_pixel_row_2px,
+        top: *const pixel,
+        bottom: *const pixel,
+        pri_strength: libc::c_int,
+        sec_strength: libc::c_int,
+        dir: libc::c_int,
+        damping: libc::c_int,
+        edges: CdefEdgeFlags,
+    );
+    fn dav1d_cdef_filter_4x4_8bpc_avx2(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        left: const_left_pixel_row_2px,
+        top: *const pixel,
+        bottom: *const pixel,
+        pri_strength: libc::c_int,
+        sec_strength: libc::c_int,
+        dir: libc::c_int,
+        damping: libc::c_int,
+        edges: CdefEdgeFlags,
+    );
+    fn dav1d_cdef_filter_8x8_8bpc_avx512icl(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        left: const_left_pixel_row_2px,
+        top: *const pixel,
+        bottom: *const pixel,
+        pri_strength: libc::c_int,
+        sec_strength: libc::c_int,
+        dir: libc::c_int,
+        damping: libc::c_int,
+        edges: CdefEdgeFlags,
+    );
+    fn dav1d_cdef_filter_4x8_8bpc_avx512icl(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        left: const_left_pixel_row_2px,
+        top: *const pixel,
+        bottom: *const pixel,
+        pri_strength: libc::c_int,
+        sec_strength: libc::c_int,
+        dir: libc::c_int,
+        damping: libc::c_int,
+        edges: CdefEdgeFlags,
+    );
+    fn dav1d_cdef_filter_4x4_8bpc_avx512icl(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        left: const_left_pixel_row_2px,
+        top: *const pixel,
+        bottom: *const pixel,
+        pri_strength: libc::c_int,
+        sec_strength: libc::c_int,
+        dir: libc::c_int,
+        damping: libc::c_int,
+        edges: CdefEdgeFlags,
+    );
+    fn dav1d_cdef_filter_4x8_8bpc_sse2(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        left: const_left_pixel_row_2px,
+        top: *const pixel,
+        bottom: *const pixel,
+        pri_strength: libc::c_int,
+        sec_strength: libc::c_int,
+        dir: libc::c_int,
+        damping: libc::c_int,
+        edges: CdefEdgeFlags,
+    );
+    fn dav1d_cdef_dir_8bpc_ssse3(
+        dst: *const pixel,
+        dst_stride: ptrdiff_t,
+        var: *mut libc::c_uint,
+    ) -> libc::c_int;
+    fn dav1d_cdef_filter_4x4_8bpc_sse2(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        left: const_left_pixel_row_2px,
+        top: *const pixel,
+        bottom: *const pixel,
+        pri_strength: libc::c_int,
+        sec_strength: libc::c_int,
+        dir: libc::c_int,
+        damping: libc::c_int,
+        edges: CdefEdgeFlags,
+    );
+    fn dav1d_cdef_filter_8x8_8bpc_sse2(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        left: const_left_pixel_row_2px,
+        top: *const pixel,
+        bottom: *const pixel,
+        pri_strength: libc::c_int,
+        sec_strength: libc::c_int,
+        dir: libc::c_int,
+        damping: libc::c_int,
+        edges: CdefEdgeFlags,
+    );
+}
 
 pub type pixel = uint8_t;
 pub type CdefEdgeFlags = libc::c_uint;
@@ -39,6 +245,13 @@ pub struct Dav1dCdefDSPContext {
     pub dir: cdef_dir_fn,
     pub fb: [cdef_fn; 3],
 }
+pub const DAV1D_X86_CPU_FLAG_AVX512ICL: CpuFlags = 16;
+pub const DAV1D_X86_CPU_FLAG_SSE2: CpuFlags = 1;
+pub const DAV1D_X86_CPU_FLAG_AVX2: CpuFlags = 8;
+pub const DAV1D_X86_CPU_FLAG_SSE41: CpuFlags = 4;
+pub const DAV1D_X86_CPU_FLAG_SSSE3: CpuFlags = 2;
+pub type CpuFlags = libc::c_uint;
+pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
 #[inline]
 unsafe extern "C" fn imax(a: libc::c_int, b: libc::c_int) -> libc::c_int {
     return if a > b { a } else { b };
@@ -677,67 +890,88 @@ unsafe extern "C" fn cdef_find_dir_c(
         >> 10 as libc::c_int;
     return best_dir;
 }
+#[inline(always)]
+unsafe extern "C" fn dav1d_get_cpu_flags() -> libc::c_uint {
+    let mut flags: libc::c_uint = dav1d_cpu_flags & dav1d_cpu_flags_mask;
+    flags |= DAV1D_X86_CPU_FLAG_SSE2 as libc::c_int as libc::c_uint;
+    return flags;
+}
+
+#[inline(always)]
+#[cfg(all(
+    feature = "asm",
+    any(target_arch = "x86", target_arch = "x86_64"),
+))]
+unsafe extern "C" fn cdef_dsp_init_x86(c: *mut Dav1dCdefDSPContext) {
+    let flags: libc::c_uint = dav1d_get_cpu_flags();
+
+    if flags & DAV1D_X86_CPU_FLAG_SSE2 == 0 {
+        return;
+    }
+
+    (*c).fb[0] = Some(dav1d_cdef_filter_8x8_8bpc_sse2);
+    (*c).fb[1] = Some(dav1d_cdef_filter_4x8_8bpc_sse2);
+    (*c).fb[2] = Some(dav1d_cdef_filter_4x4_8bpc_sse2);
+
+    if flags & DAV1D_X86_CPU_FLAG_SSSE3 == 0 {
+        return;
+    }
+
+    (*c).dir = Some(dav1d_cdef_dir_8bpc_ssse3);
+    (*c).fb[0] = Some(dav1d_cdef_filter_8x8_8bpc_ssse3);
+    (*c).fb[1] = Some(dav1d_cdef_filter_4x8_8bpc_ssse3);
+    (*c).fb[2] = Some(dav1d_cdef_filter_4x4_8bpc_ssse3);
+
+    if flags & DAV1D_X86_CPU_FLAG_SSE41 == 0 {
+        return;
+    }
+
+    (*c).dir = Some(dav1d_cdef_dir_8bpc_sse4);
+    (*c).fb[0] = Some(dav1d_cdef_filter_8x8_8bpc_sse4);
+    (*c).fb[1] = Some(dav1d_cdef_filter_4x8_8bpc_sse4);
+    (*c).fb[2] = Some(dav1d_cdef_filter_4x4_8bpc_sse4);
+
+    if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
+        return;
+    }
+
+    (*c).dir = Some(dav1d_cdef_dir_8bpc_avx2);
+    (*c).fb[0] = Some(dav1d_cdef_filter_8x8_8bpc_avx2);
+    (*c).fb[1] = Some(dav1d_cdef_filter_4x8_8bpc_avx2);
+    (*c).fb[2] = Some(dav1d_cdef_filter_4x4_8bpc_avx2);
+
+    if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
+        return;
+    }
+
+    (*c).fb[0] = Some(dav1d_cdef_filter_8x8_8bpc_avx512icl);
+    (*c).fb[1] = Some(dav1d_cdef_filter_4x8_8bpc_avx512icl);
+    (*c).fb[2] = Some(dav1d_cdef_filter_4x4_8bpc_avx512icl);
+}
+
+#[inline(always)]
+#[cfg(all(
+    feature = "asm",
+    any(target_arch = "arm", target_arch = "aarch64"),
+))]
+unsafe extern "C" fn cdef_dsp_init_arm(c: *mut Dav1dCdefDSPContext) {
+    // TODO: Add init logic for arm assembly.
+}
+
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_cdef_dsp_init_8bpc(c: *mut Dav1dCdefDSPContext) {
-    (*c)
-        .dir = Some(
-        cdef_find_dir_c
-            as unsafe extern "C" fn(
-                *const pixel,
-                ptrdiff_t,
-                *mut libc::c_uint,
-            ) -> libc::c_int,
-    );
-    (*c)
-        .fb[0 as libc::c_int
-        as usize] = Some(
-        cdef_filter_block_8x8_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const [pixel; 2],
-                *const pixel,
-                *const pixel,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                CdefEdgeFlags,
-            ) -> (),
-    );
-    (*c)
-        .fb[1 as libc::c_int
-        as usize] = Some(
-        cdef_filter_block_4x8_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const [pixel; 2],
-                *const pixel,
-                *const pixel,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                CdefEdgeFlags,
-            ) -> (),
-    );
-    (*c)
-        .fb[2 as libc::c_int
-        as usize] = Some(
-        cdef_filter_block_4x4_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const [pixel; 2],
-                *const pixel,
-                *const pixel,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                CdefEdgeFlags,
-            ) -> (),
-    );
+    (*c).dir = Some(cdef_find_dir_c);
+    (*c).fb[0] = Some(cdef_filter_block_8x8_c);
+    (*c).fb[1] = Some(cdef_filter_block_4x8_c);
+    (*c).fb[2] = Some(cdef_filter_block_4x4_c);
+
+    #[cfg(feature = "asm")]
+    cfg_if! {
+        if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
+            cdef_dsp_init_x86(c);
+        } else if #[cfg(any(target_arch = "arm", target_arch = "aarch64"))] {
+            cdef_dsp_init_arm(c);
+        }
+    }
 }
