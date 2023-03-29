@@ -9,3 +9,6 @@ pub const DAV1D_DECODEFRAMETYPE_KEY: Dav1dDecodeFrameType = 3;
 pub const DAV1D_DECODEFRAMETYPE_INTRA: Dav1dDecodeFrameType = 2;
 pub const DAV1D_DECODEFRAMETYPE_REFERENCE: Dav1dDecodeFrameType = 1;
 pub const DAV1D_DECODEFRAMETYPE_ALL: Dav1dDecodeFrameType = 0;
+pub type Dav1dEventFlags = libc::c_uint;
+pub const DAV1D_EVENT_FLAG_NEW_OP_PARAMS_INFO: Dav1dEventFlags = 2;
+pub const DAV1D_EVENT_FLAG_NEW_SEQUENCE: Dav1dEventFlags = 1;

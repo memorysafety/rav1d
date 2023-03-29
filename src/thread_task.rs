@@ -1087,9 +1087,9 @@ pub struct Dav1dLogger {
         ) -> (),
     >,
 }
-pub type Dav1dEventFlags = libc::c_uint;
-pub const DAV1D_EVENT_FLAG_NEW_OP_PARAMS_INFO: Dav1dEventFlags = 2;
-pub const DAV1D_EVENT_FLAG_NEW_SEQUENCE: Dav1dEventFlags = 1;
+use crate::include::dav1d::dav1d::Dav1dEventFlags;
+use crate::include::dav1d::dav1d::DAV1D_EVENT_FLAG_NEW_OP_PARAMS_INFO;
+use crate::include::dav1d::dav1d::DAV1D_EVENT_FLAG_NEW_SEQUENCE;
 pub type PictureFlags = libc::c_uint;
 pub const PICTURE_FLAG_NEW_TEMPORAL_UNIT: PictureFlags = 4;
 pub const PICTURE_FLAG_NEW_OP_PARAMS_INFO: PictureFlags = 2;
