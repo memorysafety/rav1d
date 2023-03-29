@@ -405,11 +405,11 @@ use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_RESTORATION;
 use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_CDEF;
 use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_DEBLOCK;
 use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
-pub type Dav1dDecodeFrameType = libc::c_uint;
-pub const DAV1D_DECODEFRAMETYPE_KEY: Dav1dDecodeFrameType = 3;
-pub const DAV1D_DECODEFRAMETYPE_INTRA: Dav1dDecodeFrameType = 2;
-pub const DAV1D_DECODEFRAMETYPE_REFERENCE: Dav1dDecodeFrameType = 1;
-pub const DAV1D_DECODEFRAMETYPE_ALL: Dav1dDecodeFrameType = 0;
+use crate::include::dav1d::dav1d::Dav1dDecodeFrameType;
+use crate::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_KEY;
+use crate::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_INTRA;
+use crate::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_REFERENCE;
+use crate::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_ALL;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dSettings {
