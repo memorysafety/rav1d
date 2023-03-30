@@ -15,16 +15,9 @@ extern "C" {
         _: ::core::ffi::VaList,
     ) -> libc::c_int;
 }
-pub type __builtin_va_list = [__va_list_tag; 1];
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct __va_list_tag {
-    pub gp_offset: libc::c_uint,
-    pub fp_offset: libc::c_uint,
-    pub overflow_arg_area: *mut libc::c_void,
-    pub reg_save_area: *mut libc::c_void,
-}
-pub type va_list = __builtin_va_list;
+
+
+
 
 pub type __off_t = libc::c_long;
 pub type __off64_t = libc::c_long;

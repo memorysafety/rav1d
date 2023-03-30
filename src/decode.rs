@@ -349,14 +349,7 @@ extern "C" {
         by: libc::c_int,
     );
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct __va_list_tag {
-    pub gp_offset: libc::c_uint,
-    pub fp_offset: libc::c_uint,
-    pub overflow_arg_area: *mut libc::c_void,
-    pub reg_save_area: *mut libc::c_void,
-}
+
 
 use crate::include::dav1d::common::Dav1dUserData;
 use crate::src::r#ref::Dav1dRef;

@@ -107,14 +107,7 @@ extern "C" {
     static mut dav1d_wedge_masks: [[[[*const uint8_t; 16]; 2]; 3]; 22];
     static mut dav1d_ii_masks: [[[*const uint8_t; 4]; 3]; 22];
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct __va_list_tag {
-    pub gp_offset: libc::c_uint,
-    pub fp_offset: libc::c_uint,
-    pub overflow_arg_area: *mut libc::c_void,
-    pub reg_save_area: *mut libc::c_void,
-}
+
 
 
 
