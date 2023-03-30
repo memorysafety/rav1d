@@ -45,13 +45,21 @@ fn build_nasm_files() {
     ];
 
     #[cfg(feature = "bitdepth_8")]
-    asm_files.extend_from_slice(&["src/x86/cdef_avx512.asm"]);
+    asm_files.extend_from_slice(&[
+        "src/x86/cdef_avx512.asm",
+        "src/x86/filmgrain_avx2.asm",
+        "src/x86/filmgrain_avx512.asm",
+        "src/x86/filmgrain_sse.asm",
+    ]);
 
     #[cfg(feature = "bitdepth_16")]
     asm_files.extend_from_slice(&[
         "src/x86/cdef16_avx2.asm",
         "src/x86/cdef16_avx512.asm",
         "src/x86/cdef16_sse.asm",
+        "src/x86/filmgrain16_avx2.asm",
+        "src/x86/filmgrain16_avx512.asm",
+        "src/x86/filmgrain16_sse.asm",
     ]);
 
     let mut config_include_arg = String::from("-I");
