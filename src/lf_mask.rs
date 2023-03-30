@@ -45,29 +45,29 @@ pub union alias16 {
 pub union alias8 {
     pub u8_0: uint8_t,
 }
-pub type Dav1dTxfmMode = libc::c_uint;
-pub const DAV1D_N_TX_MODES: Dav1dTxfmMode = 3;
-pub const DAV1D_TX_SWITCHABLE: Dav1dTxfmMode = 2;
-pub const DAV1D_TX_LARGEST: Dav1dTxfmMode = 1;
-pub const DAV1D_TX_4X4_ONLY: Dav1dTxfmMode = 0;
-pub type Dav1dFilterMode = libc::c_uint;
-pub const DAV1D_FILTER_SWITCHABLE: Dav1dFilterMode = 4;
-pub const DAV1D_N_FILTERS: Dav1dFilterMode = 4;
-pub const DAV1D_FILTER_BILINEAR: Dav1dFilterMode = 3;
-pub const DAV1D_N_SWITCHABLE_FILTERS: Dav1dFilterMode = 3;
-pub const DAV1D_FILTER_8TAP_SHARP: Dav1dFilterMode = 2;
-pub const DAV1D_FILTER_8TAP_SMOOTH: Dav1dFilterMode = 1;
-pub const DAV1D_FILTER_8TAP_REGULAR: Dav1dFilterMode = 0;
-pub type Dav1dRestorationType = libc::c_uint;
-pub const DAV1D_RESTORATION_SGRPROJ: Dav1dRestorationType = 3;
-pub const DAV1D_RESTORATION_WIENER: Dav1dRestorationType = 2;
-pub const DAV1D_RESTORATION_SWITCHABLE: Dav1dRestorationType = 1;
-pub const DAV1D_RESTORATION_NONE: Dav1dRestorationType = 0;
-pub type Dav1dWarpedMotionType = libc::c_uint;
-pub const DAV1D_WM_TYPE_AFFINE: Dav1dWarpedMotionType = 3;
-pub const DAV1D_WM_TYPE_ROT_ZOOM: Dav1dWarpedMotionType = 2;
-pub const DAV1D_WM_TYPE_TRANSLATION: Dav1dWarpedMotionType = 1;
-pub const DAV1D_WM_TYPE_IDENTITY: Dav1dWarpedMotionType = 0;
+use crate::include::dav1d::headers::Dav1dTxfmMode;
+use crate::include::dav1d::headers::DAV1D_N_TX_MODES;
+use crate::include::dav1d::headers::DAV1D_TX_SWITCHABLE;
+use crate::include::dav1d::headers::DAV1D_TX_LARGEST;
+use crate::include::dav1d::headers::DAV1D_TX_4X4_ONLY;
+use crate::include::dav1d::headers::Dav1dFilterMode;
+use crate::include::dav1d::headers::DAV1D_FILTER_SWITCHABLE;
+use crate::include::dav1d::headers::DAV1D_N_FILTERS;
+use crate::include::dav1d::headers::DAV1D_FILTER_BILINEAR;
+use crate::include::dav1d::headers::DAV1D_N_SWITCHABLE_FILTERS;
+use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SHARP;
+use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SMOOTH;
+use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
+use crate::include::dav1d::headers::Dav1dRestorationType;
+use crate::include::dav1d::headers::DAV1D_RESTORATION_SGRPROJ;
+use crate::include::dav1d::headers::DAV1D_RESTORATION_WIENER;
+use crate::include::dav1d::headers::DAV1D_RESTORATION_SWITCHABLE;
+use crate::include::dav1d::headers::DAV1D_RESTORATION_NONE;
+use crate::include::dav1d::headers::Dav1dWarpedMotionType;
+use crate::include::dav1d::headers::DAV1D_WM_TYPE_AFFINE;
+use crate::include::dav1d::headers::DAV1D_WM_TYPE_ROT_ZOOM;
+use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
+use crate::include::dav1d::headers::DAV1D_WM_TYPE_IDENTITY;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dWarpedMotionParams {
@@ -89,16 +89,16 @@ pub struct C2RustUnnamed_0 {
     pub gamma: int16_t,
     pub delta: int16_t,
 }
-pub type Dav1dPixelLayout = libc::c_uint;
-pub const DAV1D_PIXEL_LAYOUT_I444: Dav1dPixelLayout = 3;
-pub const DAV1D_PIXEL_LAYOUT_I422: Dav1dPixelLayout = 2;
-pub const DAV1D_PIXEL_LAYOUT_I420: Dav1dPixelLayout = 1;
-pub const DAV1D_PIXEL_LAYOUT_I400: Dav1dPixelLayout = 0;
-pub type Dav1dFrameType = libc::c_uint;
-pub const DAV1D_FRAME_TYPE_SWITCH: Dav1dFrameType = 3;
-pub const DAV1D_FRAME_TYPE_INTRA: Dav1dFrameType = 2;
-pub const DAV1D_FRAME_TYPE_INTER: Dav1dFrameType = 1;
-pub const DAV1D_FRAME_TYPE_KEY: Dav1dFrameType = 0;
+use crate::include::dav1d::headers::Dav1dPixelLayout;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I422;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
+use crate::include::dav1d::headers::Dav1dFrameType;
+use crate::include::dav1d::headers::DAV1D_FRAME_TYPE_SWITCH;
+use crate::include::dav1d::headers::DAV1D_FRAME_TYPE_INTRA;
+use crate::include::dav1d::headers::DAV1D_FRAME_TYPE_INTER;
+use crate::include::dav1d::headers::DAV1D_FRAME_TYPE_KEY;
 use crate::include::dav1d::headers::Dav1dSegmentationData;
 use crate::include::dav1d::headers::Dav1dSegmentationDataSet;
 use crate::include::dav1d::headers::Dav1dLoopfilterModeRefDeltas;
