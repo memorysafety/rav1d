@@ -1346,6 +1346,11 @@ unsafe extern "C" fn fguv_32x32xn_444_c(
         0 as libc::c_int,
     );
 }
+
+#[cfg(all(
+    feature = "asm",
+    any(target_arch = "x86", target_arch = "x86_64"),
+))]
 #[inline(always)]
 unsafe extern "C" fn film_grain_dsp_init_x86(c: *mut Dav1dFilmGrainDSPContext) {
     let flags = dav1d_get_cpu_flags();
@@ -1388,6 +1393,15 @@ unsafe extern "C" fn film_grain_dsp_init_x86(c: *mut Dav1dFilmGrainDSPContext) {
     (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] = Some(dav1d_fguv_32x32xn_i420_8bpc_avx512icl);
     (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] = Some(dav1d_fguv_32x32xn_i422_8bpc_avx512icl);
     (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] = Some(dav1d_fguv_32x32xn_i444_8bpc_avx512icl);
+}
+
+#[cfg(all(
+    feature = "asm",
+    any(target_arch = "arm", target_arch = "aarch64"),
+))]
+#[inline(always)]
+unsafe extern "C" fn film_grain_dsp_init_arm(c: *mut Dav1dFilmGrainDSPContext) {
+    // TODO: Setup aarch64 assembly.
 }
 
 #[cfg(feature = "asm")]

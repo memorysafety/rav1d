@@ -1453,6 +1453,15 @@ unsafe extern "C" fn film_grain_dsp_init_x86(c: *mut Dav1dFilmGrainDSPContext) {
     (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] = Some(dav1d_fguv_32x32xn_i444_16bpc_avx512icl);
 }
 
+#[cfg(all(
+    feature = "asm",
+    any(target_arch = "arm", target_arch = "aarch64"),
+))]
+#[inline(always)]
+unsafe extern "C" fn film_grain_dsp_init_arm(c: *mut Dav1dFilmGrainDSPContext) {
+    // TODO: Setup aarch64 assembly.
+}
+
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_film_grain_dsp_init_16bpc(c: *mut Dav1dFilmGrainDSPContext) {
