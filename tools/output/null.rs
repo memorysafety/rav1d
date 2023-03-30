@@ -345,23 +345,18 @@ unsafe extern "C" fn null_write(
     return 0 as libc::c_int;
 }
 #[no_mangle]
-pub static mut null_muxer: Muxer = unsafe {
-    {
-        let mut init = Muxer {
-            priv_data_size: 0 as libc::c_int,
-            name: b"null\0" as *const u8 as *const libc::c_char,
-            extension: b"null\0" as *const u8 as *const libc::c_char,
-            write_header: None,
-            write_picture: Some(
-                null_write
-                    as unsafe extern "C" fn(
-                        *mut NullOutputContext,
-                        *mut Dav1dPicture,
-                    ) -> libc::c_int,
-            ),
-            write_trailer: None,
-            verify: None,
-        };
-        init
-    }
+pub static mut null_muxer: Muxer = Muxer {
+    priv_data_size: 0 as libc::c_int,
+    name: b"null\0" as *const u8 as *const libc::c_char,
+    extension: b"null\0" as *const u8 as *const libc::c_char,
+    write_header: None,
+    write_picture: Some(
+        null_write
+            as unsafe extern "C" fn(
+                *mut NullOutputContext,
+                *mut Dav1dPicture,
+            ) -> libc::c_int,
+    ),
+    write_trailer: None,
+    verify: None,
 };

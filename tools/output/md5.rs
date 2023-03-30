@@ -1638,40 +1638,35 @@ unsafe extern "C" fn md5_verify(
     ) != 0) as libc::c_int;
 }
 #[no_mangle]
-pub static mut md5_muxer: Muxer = unsafe {
-    {
-        let mut init = Muxer {
-            priv_data_size: ::core::mem::size_of::<MD5Context>() as libc::c_ulong
-                as libc::c_int,
-            name: b"md5\0" as *const u8 as *const libc::c_char,
-            extension: b"md5\0" as *const u8 as *const libc::c_char,
-            write_header: Some(
-                md5_open
-                    as unsafe extern "C" fn(
-                        *mut MD5Context,
-                        *const libc::c_char,
-                        *const Dav1dPictureParameters,
-                        *const libc::c_uint,
-                    ) -> libc::c_int,
-            ),
-            write_picture: Some(
-                md5_write
-                    as unsafe extern "C" fn(
-                        *mut MD5Context,
-                        *mut Dav1dPicture,
-                    ) -> libc::c_int,
-            ),
-            write_trailer: Some(
-                md5_close as unsafe extern "C" fn(*mut MD5Context) -> (),
-            ),
-            verify: Some(
-                md5_verify
-                    as unsafe extern "C" fn(
-                        *mut MD5Context,
-                        *const libc::c_char,
-                    ) -> libc::c_int,
-            ),
-        };
-        init
-    }
+pub static mut md5_muxer: Muxer = Muxer {
+    priv_data_size: ::core::mem::size_of::<MD5Context>() as libc::c_ulong
+        as libc::c_int,
+    name: b"md5\0" as *const u8 as *const libc::c_char,
+    extension: b"md5\0" as *const u8 as *const libc::c_char,
+    write_header: Some(
+        md5_open
+            as unsafe extern "C" fn(
+                *mut MD5Context,
+                *const libc::c_char,
+                *const Dav1dPictureParameters,
+                *const libc::c_uint,
+            ) -> libc::c_int,
+    ),
+    write_picture: Some(
+        md5_write
+            as unsafe extern "C" fn(
+                *mut MD5Context,
+                *mut Dav1dPicture,
+            ) -> libc::c_int,
+    ),
+    write_trailer: Some(
+        md5_close as unsafe extern "C" fn(*mut MD5Context) -> (),
+    ),
+    verify: Some(
+        md5_verify
+            as unsafe extern "C" fn(
+                *mut MD5Context,
+                *const libc::c_char,
+            ) -> libc::c_int,
+    ),
 };

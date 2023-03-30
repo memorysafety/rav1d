@@ -386,38 +386,33 @@ unsafe extern "C" fn section5_close(c: *mut Section5InputContext) {
     fclose((*c).f);
 }
 #[no_mangle]
-pub static mut section5_demuxer: Demuxer = unsafe {
-    {
-        let mut init = Demuxer {
-            priv_data_size: ::core::mem::size_of::<Section5InputContext>()
-                as libc::c_ulong as libc::c_int,
-            name: b"section5\0" as *const u8 as *const libc::c_char,
-            probe_sz: 2048 as libc::c_int,
-            probe: Some(
-                section5_probe as unsafe extern "C" fn(*const uint8_t) -> libc::c_int,
-            ),
-            open: Some(
-                section5_open
-                    as unsafe extern "C" fn(
-                        *mut Section5InputContext,
-                        *const libc::c_char,
-                        *mut libc::c_uint,
-                        *mut libc::c_uint,
-                        *mut libc::c_uint,
-                    ) -> libc::c_int,
-            ),
-            read: Some(
-                section5_read
-                    as unsafe extern "C" fn(
-                        *mut Section5InputContext,
-                        *mut Dav1dData,
-                    ) -> libc::c_int,
-            ),
-            seek: None,
-            close: Some(
-                section5_close as unsafe extern "C" fn(*mut Section5InputContext) -> (),
-            ),
-        };
-        init
-    }
+pub static mut section5_demuxer: Demuxer = Demuxer {
+    priv_data_size: ::core::mem::size_of::<Section5InputContext>()
+        as libc::c_ulong as libc::c_int,
+    name: b"section5\0" as *const u8 as *const libc::c_char,
+    probe_sz: 2048 as libc::c_int,
+    probe: Some(
+        section5_probe as unsafe extern "C" fn(*const uint8_t) -> libc::c_int,
+    ),
+    open: Some(
+        section5_open
+            as unsafe extern "C" fn(
+                *mut Section5InputContext,
+                *const libc::c_char,
+                *mut libc::c_uint,
+                *mut libc::c_uint,
+                *mut libc::c_uint,
+            ) -> libc::c_int,
+    ),
+    read: Some(
+        section5_read
+            as unsafe extern "C" fn(
+                *mut Section5InputContext,
+                *mut Dav1dData,
+            ) -> libc::c_int,
+    ),
+    seek: None,
+    close: Some(
+        section5_close as unsafe extern "C" fn(*mut Section5InputContext) -> (),
+    ),
 };

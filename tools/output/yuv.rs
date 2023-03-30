@@ -474,34 +474,29 @@ unsafe extern "C" fn yuv_close(c: *mut YuvOutputContext) {
     }
 }
 #[no_mangle]
-pub static mut yuv_muxer: Muxer = unsafe {
-    {
-        let mut init = Muxer {
-            priv_data_size: ::core::mem::size_of::<YuvOutputContext>() as libc::c_ulong
-                as libc::c_int,
-            name: b"yuv\0" as *const u8 as *const libc::c_char,
-            extension: b"yuv\0" as *const u8 as *const libc::c_char,
-            write_header: Some(
-                yuv_open
-                    as unsafe extern "C" fn(
-                        *mut YuvOutputContext,
-                        *const libc::c_char,
-                        *const Dav1dPictureParameters,
-                        *const libc::c_uint,
-                    ) -> libc::c_int,
-            ),
-            write_picture: Some(
-                yuv_write
-                    as unsafe extern "C" fn(
-                        *mut YuvOutputContext,
-                        *mut Dav1dPicture,
-                    ) -> libc::c_int,
-            ),
-            write_trailer: Some(
-                yuv_close as unsafe extern "C" fn(*mut YuvOutputContext) -> (),
-            ),
-            verify: None,
-        };
-        init
-    }
+pub static mut yuv_muxer: Muxer = Muxer {
+    priv_data_size: ::core::mem::size_of::<YuvOutputContext>() as libc::c_ulong
+        as libc::c_int,
+    name: b"yuv\0" as *const u8 as *const libc::c_char,
+    extension: b"yuv\0" as *const u8 as *const libc::c_char,
+    write_header: Some(
+        yuv_open
+            as unsafe extern "C" fn(
+                *mut YuvOutputContext,
+                *const libc::c_char,
+                *const Dav1dPictureParameters,
+                *const libc::c_uint,
+            ) -> libc::c_int,
+    ),
+    write_picture: Some(
+        yuv_write
+            as unsafe extern "C" fn(
+                *mut YuvOutputContext,
+                *mut Dav1dPicture,
+            ) -> libc::c_int,
+    ),
+    write_trailer: Some(
+        yuv_close as unsafe extern "C" fn(*mut YuvOutputContext) -> (),
+    ),
+    verify: None,
 };
