@@ -1060,13 +1060,7 @@ use crate::src::intra_edge::EdgeFlags;
 
 
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct EdgeNode {
-    pub o: EdgeFlags,
-    pub h: [EdgeFlags; 2],
-    pub v: [EdgeFlags; 2],
-}
+use crate::src::intra_edge::EdgeNode;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct EdgeBranch {

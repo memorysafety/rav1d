@@ -1152,13 +1152,7 @@ use crate::src::intra_edge::EDGE_I444_LEFT_HAS_BOTTOM;
 use crate::src::intra_edge::EDGE_I420_TOP_HAS_RIGHT;
 
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct EdgeNode {
-    pub o: EdgeFlags,
-    pub h: [EdgeFlags; 2],
-    pub v: [EdgeFlags; 2],
-}
+use crate::src::intra_edge::EdgeNode;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct EdgeBranch {
