@@ -230,6 +230,93 @@ extern "C" {
     );
 }
 
+#[cfg(all(
+    feature = "asm",
+    any(target_arch = "arm", target_arch = "aarch64")),
+)]
+extern "C" {
+    fn dav1d_fguv_32x32_420_8bpc_neon(
+        dst: *mut pixel,
+        src: *const pixel,
+        stride: ptrdiff_t,
+        scaling: *const uint8_t,
+        data: *const Dav1dFilmGrainData,
+        grain_lut: *const [entry; 82],
+        luma_row: *const pixel,
+        luma_stride: ptrdiff_t,
+        offsets: *const [libc::c_int; 2],
+        h: ptrdiff_t,
+        uv: ptrdiff_t,
+        is_id: ptrdiff_t,
+        type_0: ptrdiff_t,
+    );
+    fn dav1d_generate_grain_uv_422_8bpc_neon(
+        buf: *mut [entry; 82],
+        buf_y: *const [entry; 82],
+        data: *const Dav1dFilmGrainData,
+        uv: intptr_t,
+    );
+    fn dav1d_generate_grain_uv_444_8bpc_neon(
+        buf: *mut [entry; 82],
+        buf_y: *const [entry; 82],
+        data: *const Dav1dFilmGrainData,
+        uv: intptr_t,
+    );
+    fn dav1d_generate_grain_y_8bpc_neon(
+        buf: *mut [entry; 82],
+        data: *const Dav1dFilmGrainData,
+    );
+    fn dav1d_generate_grain_uv_420_8bpc_neon(
+        buf: *mut [entry; 82],
+        buf_y: *const [entry; 82],
+        data: *const Dav1dFilmGrainData,
+        uv: intptr_t,
+    );
+    fn dav1d_fgy_32x32_8bpc_neon(
+        dst: *mut pixel,
+        src: *const pixel,
+        stride: ptrdiff_t,
+        scaling: *const uint8_t,
+        scaling_shift: libc::c_int,
+        grain_lut: *const [entry; 82],
+        offsets: *const [libc::c_int; 2],
+        h: libc::c_int,
+        clip: ptrdiff_t,
+        type_0: ptrdiff_t,
+    );
+    fn dav1d_fguv_32x32_422_8bpc_neon(
+        dst: *mut pixel,
+        src: *const pixel,
+        stride: ptrdiff_t,
+        scaling: *const uint8_t,
+        data: *const Dav1dFilmGrainData,
+        grain_lut: *const [entry; 82],
+        luma_row: *const pixel,
+        luma_stride: ptrdiff_t,
+        offsets: *const [libc::c_int; 2],
+        h: ptrdiff_t,
+        uv: ptrdiff_t,
+        is_id: ptrdiff_t,
+        type_0: ptrdiff_t,
+    );
+    fn dav1d_fguv_32x32_444_8bpc_neon(
+        dst: *mut pixel,
+        src: *const pixel,
+        stride: ptrdiff_t,
+        scaling: *const uint8_t,
+        data: *const Dav1dFilmGrainData,
+        grain_lut: *const [entry; 82],
+        luma_row: *const pixel,
+        luma_stride: ptrdiff_t,
+        offsets: *const [libc::c_int; 2],
+        h: ptrdiff_t,
+        uv: ptrdiff_t,
+        is_id: ptrdiff_t,
+        type_0: ptrdiff_t,
+    );
+}
+
+
 pub type ptrdiff_t = libc::c_long;
 pub type size_t = libc::c_ulong;
 pub type __int8_t = libc::c_schar;
@@ -1401,7 +1488,349 @@ unsafe extern "C" fn film_grain_dsp_init_x86(c: *mut Dav1dFilmGrainDSPContext) {
 ))]
 #[inline(always)]
 unsafe extern "C" fn film_grain_dsp_init_arm(c: *mut Dav1dFilmGrainDSPContext) {
-    // TODO: Setup aarch64 assembly.
+    use crate::src::arm::cpu::DAV1D_ARM_CPU_FLAG_NEON;
+
+    let flags = dav1d_get_cpu_flags();
+
+    if flags & DAV1D_ARM_CPU_FLAG_NEON == 0 {
+        return;
+    }
+
+    (*c).generate_grain_y = Some(dav1d_generate_grain_y_8bpc_neon);
+    (*c).generate_grain_uv[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] = Some(dav1d_generate_grain_uv_420_8bpc_neon);
+    (*c).generate_grain_uv[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] = Some(dav1d_generate_grain_uv_422_8bpc_neon);
+    (*c).generate_grain_uv[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] = Some(dav1d_generate_grain_uv_444_8bpc_neon);
+
+    (*c).fgy_32x32xn = Some(fgy_32x32xn_neon);
+    (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] = Some(fguv_32x32xn_420_neon);
+    (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] = Some(fguv_32x32xn_422_neon);
+    (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] = Some(fguv_32x32xn_444_neon);
+}
+
+#[cfg(all(
+    feature = "asm",
+    any(target_arch = "arm", target_arch = "aarch64"),
+))]
+unsafe extern "C" fn fgy_32x32xn_neon(
+    dst_row: *mut pixel,
+    src_row: *const pixel,
+    stride: ptrdiff_t,
+    data: *const Dav1dFilmGrainData,
+    pw: size_t,
+    mut scaling: *const uint8_t,
+    mut grain_lut: *const [entry; 82],
+    bh: libc::c_int,
+    row_num: libc::c_int,
+) {
+    let rows: libc::c_int = 1 as libc::c_int
+        + ((*data).overlap_flag != 0 && row_num > 0 as libc::c_int) as libc::c_int;
+    let mut seed: [libc::c_uint; 2] = [0; 2];
+    let mut i: libc::c_int = 0 as libc::c_int;
+    while i < rows {
+        seed[i as usize] = (*data).seed;
+        seed[i as usize]
+            ^= (((row_num - i) * 37 as libc::c_int + 178 as libc::c_int
+                & 0xff as libc::c_int) << 8 as libc::c_int) as libc::c_uint;
+        seed[i as usize]
+            ^= ((row_num - i) * 173 as libc::c_int + 105 as libc::c_int
+                & 0xff as libc::c_int) as libc::c_uint;
+        i += 1;
+    }
+    let mut offsets: [[libc::c_int; 2]; 2] = [[0; 2]; 2];
+    let mut bx: libc::c_uint = 0 as libc::c_int as libc::c_uint;
+    while (bx as libc::c_ulong) < pw {
+        if (*data).overlap_flag != 0 && bx != 0 {
+            let mut i_0: libc::c_int = 0 as libc::c_int;
+            while i_0 < rows {
+                offsets[1 as libc::c_int
+                    as usize][i_0
+                    as usize] = offsets[0 as libc::c_int as usize][i_0 as usize];
+                i_0 += 1;
+            }
+        }
+        let mut i_1: libc::c_int = 0 as libc::c_int;
+        while i_1 < rows {
+            offsets[0 as libc::c_int
+                as usize][i_1
+                as usize] = get_random_number(
+                8 as libc::c_int,
+                &mut *seed.as_mut_ptr().offset(i_1 as isize),
+            );
+            i_1 += 1;
+        }
+        let mut type_0: libc::c_int = 0 as libc::c_int;
+        if (*data).overlap_flag != 0 && row_num != 0 {
+            type_0 |= 1 as libc::c_int;
+        }
+        if (*data).overlap_flag != 0 && bx != 0 {
+            type_0 |= 2 as libc::c_int;
+        }
+        dav1d_fgy_32x32_8bpc_neon(
+            dst_row.offset(bx as isize),
+            src_row.offset(bx as isize),
+            stride,
+            scaling,
+            (*data).scaling_shift,
+            grain_lut,
+            offsets.as_mut_ptr() as *const [libc::c_int; 2],
+            bh,
+            (*data).clip_to_restricted_range as ptrdiff_t,
+            type_0 as ptrdiff_t,
+        );
+        bx = bx.wrapping_add(32 as libc::c_int as libc::c_uint);
+    }
+}
+
+#[cfg(all(
+    feature = "asm",
+    any(target_arch = "arm", target_arch = "aarch64"),
+))]
+unsafe extern "C" fn fguv_32x32xn_420_neon(
+    dst_row: *mut pixel,
+    src_row: *const pixel,
+    stride: ptrdiff_t,
+    data: *const Dav1dFilmGrainData,
+    pw: size_t,
+    mut scaling: *const uint8_t,
+    mut grain_lut: *const [entry; 82],
+    bh: libc::c_int,
+    row_num: libc::c_int,
+    luma_row: *const pixel,
+    luma_stride: ptrdiff_t,
+    uv: libc::c_int,
+    is_id: libc::c_int,
+) {
+    let rows: libc::c_int = 1 as libc::c_int
+        + ((*data).overlap_flag != 0 && row_num > 0 as libc::c_int) as libc::c_int;
+    let mut seed: [libc::c_uint; 2] = [0; 2];
+    let mut i: libc::c_int = 0 as libc::c_int;
+    while i < rows {
+        seed[i as usize] = (*data).seed;
+        seed[i as usize]
+            ^= (((row_num - i) * 37 as libc::c_int + 178 as libc::c_int
+                & 0xff as libc::c_int) << 8 as libc::c_int) as libc::c_uint;
+        seed[i as usize]
+            ^= ((row_num - i) * 173 as libc::c_int + 105 as libc::c_int
+                & 0xff as libc::c_int) as libc::c_uint;
+        i += 1;
+    }
+    let mut offsets: [[libc::c_int; 2]; 2] = [[0; 2]; 2];
+    let mut bx: libc::c_uint = 0 as libc::c_int as libc::c_uint;
+    while (bx as libc::c_ulong) < pw {
+        if (*data).overlap_flag != 0 && bx != 0 {
+            let mut i_0: libc::c_int = 0 as libc::c_int;
+            while i_0 < rows {
+                offsets[1 as libc::c_int
+                    as usize][i_0
+                    as usize] = offsets[0 as libc::c_int as usize][i_0 as usize];
+                i_0 += 1;
+            }
+        }
+        let mut i_1: libc::c_int = 0 as libc::c_int;
+        while i_1 < rows {
+            offsets[0 as libc::c_int
+                as usize][i_1
+                as usize] = get_random_number(
+                8 as libc::c_int,
+                &mut *seed.as_mut_ptr().offset(i_1 as isize),
+            );
+            i_1 += 1;
+        }
+        let mut type_0: libc::c_int = 0 as libc::c_int;
+        if (*data).overlap_flag != 0 && row_num != 0 {
+            type_0 |= 1 as libc::c_int;
+        }
+        if (*data).overlap_flag != 0 && bx != 0 {
+            type_0 |= 2 as libc::c_int;
+        }
+        if (*data).chroma_scaling_from_luma != 0 {
+            type_0 |= 4 as libc::c_int;
+        }
+        dav1d_fguv_32x32_420_8bpc_neon(
+            dst_row.offset(bx as isize),
+            src_row.offset(bx as isize),
+            stride,
+            scaling,
+            data,
+            grain_lut,
+            luma_row.offset((bx << 1 as libc::c_int) as isize),
+            luma_stride,
+            offsets.as_mut_ptr() as *const [libc::c_int; 2],
+            bh as ptrdiff_t,
+            uv as ptrdiff_t,
+            is_id as ptrdiff_t,
+            type_0 as ptrdiff_t,
+        );
+        bx = bx.wrapping_add((32 as libc::c_int >> 1 as libc::c_int) as libc::c_uint);
+    }
+}
+
+#[cfg(all(
+    feature = "asm",
+    any(target_arch = "arm", target_arch = "aarch64"),
+))]
+unsafe extern "C" fn fguv_32x32xn_422_neon(
+    dst_row: *mut pixel,
+    src_row: *const pixel,
+    stride: ptrdiff_t,
+    data: *const Dav1dFilmGrainData,
+    pw: size_t,
+    mut scaling: *const uint8_t,
+    mut grain_lut: *const [entry; 82],
+    bh: libc::c_int,
+    row_num: libc::c_int,
+    luma_row: *const pixel,
+    luma_stride: ptrdiff_t,
+    uv: libc::c_int,
+    is_id: libc::c_int,
+) {
+    let rows: libc::c_int = 1 as libc::c_int
+        + ((*data).overlap_flag != 0 && row_num > 0 as libc::c_int) as libc::c_int;
+    let mut seed: [libc::c_uint; 2] = [0; 2];
+    let mut i: libc::c_int = 0 as libc::c_int;
+    while i < rows {
+        seed[i as usize] = (*data).seed;
+        seed[i as usize]
+            ^= (((row_num - i) * 37 as libc::c_int + 178 as libc::c_int
+                & 0xff as libc::c_int) << 8 as libc::c_int) as libc::c_uint;
+        seed[i as usize]
+            ^= ((row_num - i) * 173 as libc::c_int + 105 as libc::c_int
+                & 0xff as libc::c_int) as libc::c_uint;
+        i += 1;
+    }
+    let mut offsets: [[libc::c_int; 2]; 2] = [[0; 2]; 2];
+    let mut bx: libc::c_uint = 0 as libc::c_int as libc::c_uint;
+    while (bx as libc::c_ulong) < pw {
+        if (*data).overlap_flag != 0 && bx != 0 {
+            let mut i_0: libc::c_int = 0 as libc::c_int;
+            while i_0 < rows {
+                offsets[1 as libc::c_int
+                    as usize][i_0
+                    as usize] = offsets[0 as libc::c_int as usize][i_0 as usize];
+                i_0 += 1;
+            }
+        }
+        let mut i_1: libc::c_int = 0 as libc::c_int;
+        while i_1 < rows {
+            offsets[0 as libc::c_int
+                as usize][i_1
+                as usize] = get_random_number(
+                8 as libc::c_int,
+                &mut *seed.as_mut_ptr().offset(i_1 as isize),
+            );
+            i_1 += 1;
+        }
+        let mut type_0: libc::c_int = 0 as libc::c_int;
+        if (*data).overlap_flag != 0 && row_num != 0 {
+            type_0 |= 1 as libc::c_int;
+        }
+        if (*data).overlap_flag != 0 && bx != 0 {
+            type_0 |= 2 as libc::c_int;
+        }
+        if (*data).chroma_scaling_from_luma != 0 {
+            type_0 |= 4 as libc::c_int;
+        }
+        dav1d_fguv_32x32_422_8bpc_neon(
+            dst_row.offset(bx as isize),
+            src_row.offset(bx as isize),
+            stride,
+            scaling,
+            data,
+            grain_lut,
+            luma_row.offset((bx << 1 as libc::c_int) as isize),
+            luma_stride,
+            offsets.as_mut_ptr() as *const [libc::c_int; 2],
+            bh as ptrdiff_t,
+            uv as ptrdiff_t,
+            is_id as ptrdiff_t,
+            type_0 as ptrdiff_t,
+        );
+        bx = bx.wrapping_add((32 as libc::c_int >> 1 as libc::c_int) as libc::c_uint);
+    }
+}
+
+#[cfg(all(
+    feature = "asm",
+    any(target_arch = "arm", target_arch = "aarch64"),
+))]
+unsafe extern "C" fn fguv_32x32xn_444_neon(
+    dst_row: *mut pixel,
+    src_row: *const pixel,
+    stride: ptrdiff_t,
+    data: *const Dav1dFilmGrainData,
+    pw: size_t,
+    mut scaling: *const uint8_t,
+    mut grain_lut: *const [entry; 82],
+    bh: libc::c_int,
+    row_num: libc::c_int,
+    luma_row: *const pixel,
+    luma_stride: ptrdiff_t,
+    uv: libc::c_int,
+    is_id: libc::c_int,
+) {
+    let rows: libc::c_int = 1 as libc::c_int
+        + ((*data).overlap_flag != 0 && row_num > 0 as libc::c_int) as libc::c_int;
+    let mut seed: [libc::c_uint; 2] = [0; 2];
+    let mut i: libc::c_int = 0 as libc::c_int;
+    while i < rows {
+        seed[i as usize] = (*data).seed;
+        seed[i as usize]
+            ^= (((row_num - i) * 37 as libc::c_int + 178 as libc::c_int
+                & 0xff as libc::c_int) << 8 as libc::c_int) as libc::c_uint;
+        seed[i as usize]
+            ^= ((row_num - i) * 173 as libc::c_int + 105 as libc::c_int
+                & 0xff as libc::c_int) as libc::c_uint;
+        i += 1;
+    }
+    let mut offsets: [[libc::c_int; 2]; 2] = [[0; 2]; 2];
+    let mut bx: libc::c_uint = 0 as libc::c_int as libc::c_uint;
+    while (bx as libc::c_ulong) < pw {
+        if (*data).overlap_flag != 0 && bx != 0 {
+            let mut i_0: libc::c_int = 0 as libc::c_int;
+            while i_0 < rows {
+                offsets[1 as libc::c_int
+                    as usize][i_0
+                    as usize] = offsets[0 as libc::c_int as usize][i_0 as usize];
+                i_0 += 1;
+            }
+        }
+        let mut i_1: libc::c_int = 0 as libc::c_int;
+        while i_1 < rows {
+            offsets[0 as libc::c_int
+                as usize][i_1
+                as usize] = get_random_number(
+                8 as libc::c_int,
+                &mut *seed.as_mut_ptr().offset(i_1 as isize),
+            );
+            i_1 += 1;
+        }
+        let mut type_0: libc::c_int = 0 as libc::c_int;
+        if (*data).overlap_flag != 0 && row_num != 0 {
+            type_0 |= 1 as libc::c_int;
+        }
+        if (*data).overlap_flag != 0 && bx != 0 {
+            type_0 |= 2 as libc::c_int;
+        }
+        if (*data).chroma_scaling_from_luma != 0 {
+            type_0 |= 4 as libc::c_int;
+        }
+        dav1d_fguv_32x32_444_8bpc_neon(
+            dst_row.offset(bx as isize),
+            src_row.offset(bx as isize),
+            stride,
+            scaling,
+            data,
+            grain_lut,
+            luma_row.offset((bx << 0 as libc::c_int) as isize),
+            luma_stride,
+            offsets.as_mut_ptr() as *const [libc::c_int; 2],
+            bh as ptrdiff_t,
+            uv as ptrdiff_t,
+            is_id as ptrdiff_t,
+            type_0 as ptrdiff_t,
+        );
+        bx = bx.wrapping_add((32 as libc::c_int >> 0 as libc::c_int) as libc::c_uint);
+    }
 }
 
 #[cfg(feature = "asm")]
