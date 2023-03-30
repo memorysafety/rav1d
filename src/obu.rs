@@ -1082,10 +1082,10 @@ pub struct Dav1dLogger {
 use crate::include::dav1d::dav1d::Dav1dEventFlags;
 
 
-pub type PictureFlags = libc::c_uint;
-pub const PICTURE_FLAG_NEW_TEMPORAL_UNIT: PictureFlags = 4;
-pub const PICTURE_FLAG_NEW_OP_PARAMS_INFO: PictureFlags = 2;
-pub const PICTURE_FLAG_NEW_SEQUENCE: PictureFlags = 1;
+use crate::src::picture::PictureFlags;
+use crate::src::picture::PICTURE_FLAG_NEW_TEMPORAL_UNIT;
+use crate::src::picture::PICTURE_FLAG_NEW_OP_PARAMS_INFO;
+use crate::src::picture::PICTURE_FLAG_NEW_SEQUENCE;
 use crate::include::dav1d::dav1d::Dav1dDecodeFrameType;
 
 use crate::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_INTRA;
