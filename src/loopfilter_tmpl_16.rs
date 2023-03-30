@@ -357,7 +357,7 @@ unsafe extern "C" fn loop_filter_h_sb128y_c(
     mut l: *const [uint8_t; 4],
     mut b4_stride: ptrdiff_t,
     mut lut: *const Av1FilterLUT,
-    h: libc::c_int,
+    _h: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
     let vm: libc::c_uint = *vmask.offset(0 as libc::c_int as isize)
@@ -411,7 +411,7 @@ unsafe extern "C" fn loop_filter_v_sb128y_c(
     mut l: *const [uint8_t; 4],
     mut b4_stride: ptrdiff_t,
     mut lut: *const Av1FilterLUT,
-    w: libc::c_int,
+    _w: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
     let vm: libc::c_uint = *vmask.offset(0 as libc::c_int as isize)
@@ -465,7 +465,7 @@ unsafe extern "C" fn loop_filter_h_sb128uv_c(
     mut l: *const [uint8_t; 4],
     mut b4_stride: ptrdiff_t,
     mut lut: *const Av1FilterLUT,
-    h: libc::c_int,
+    _h: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
     let vm: libc::c_uint = *vmask.offset(0 as libc::c_int as isize)
@@ -513,7 +513,7 @@ unsafe extern "C" fn loop_filter_v_sb128uv_c(
     mut l: *const [uint8_t; 4],
     mut b4_stride: ptrdiff_t,
     mut lut: *const Av1FilterLUT,
-    w: libc::c_int,
+    _w: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
     let vm: libc::c_uint = *vmask.offset(0 as libc::c_int as isize)

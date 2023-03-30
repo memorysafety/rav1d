@@ -29,7 +29,7 @@ pub struct Dav1dRef {
     pub user_data: *mut libc::c_void,
 }
 use crate::include::stdatomic::atomic_int;
-use crate::include::pthread::pthread_mutex_t;
+
 use crate::src::mem::Dav1dMemPoolBuffer;
 use crate::src::mem::Dav1dMemPool;
 #[inline]

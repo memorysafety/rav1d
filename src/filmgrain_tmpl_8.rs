@@ -9,11 +9,11 @@ extern "C" {
 
 
 pub type pixel = uint8_t;
-use crate::include::dav1d::headers::Dav1dPixelLayout;
+
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I422;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
+
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
 pub type entry = int8_t;
 pub type generate_grain_y_fn = Option::<

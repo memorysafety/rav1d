@@ -5741,7 +5741,7 @@ unsafe extern "C" fn inv_txfm_add_wht_wht_4x4_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     coeff: *mut coef,
-    eob: libc::c_int,
+    _eob: libc::c_int,
 ) {
     let mut tmp: [int32_t; 16] = [0; 16];
     let mut c: *mut int32_t = tmp.as_mut_ptr();
@@ -5797,7 +5797,7 @@ unsafe extern "C" fn inv_txfm_add_wht_wht_4x4_c(
 #[cold]
 pub unsafe extern "C" fn dav1d_itx_dsp_init_8bpc(
     c: *mut Dav1dInvTxfmDSPContext,
-    mut bpc: libc::c_int,
+    mut _bpc: libc::c_int,
 ) {
     (*c)
         .itxfm_add[TX_4X4 as libc::c_int

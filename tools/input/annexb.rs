@@ -31,16 +31,16 @@ pub type __off_t = libc::c_long;
 pub type __off64_t = libc::c_long;
 pub type _IO_lock_t = ();
 use crate::include::dav1d::headers::Dav1dObuType;
-use crate::include::dav1d::headers::DAV1D_OBU_PADDING;
-use crate::include::dav1d::headers::DAV1D_OBU_REDUNDANT_FRAME_HDR;
-use crate::include::dav1d::headers::DAV1D_OBU_FRAME;
-use crate::include::dav1d::headers::DAV1D_OBU_METADATA;
-use crate::include::dav1d::headers::DAV1D_OBU_TILE_GRP;
-use crate::include::dav1d::headers::DAV1D_OBU_FRAME_HDR;
+
+
+
+
+
+
 use crate::include::dav1d::headers::DAV1D_OBU_TD;
-use crate::include::dav1d::headers::DAV1D_OBU_SEQ_HDR;
-use crate::include::dav1d::common::Dav1dUserData;
-use crate::include::dav1d::common::Dav1dDataProps;
+
+
+
 use crate::include::dav1d::data::Dav1dData;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -382,38 +382,36 @@ unsafe extern "C" fn annexb_close(c: *mut AnnexbInputContext) {
     fclose((*c).f);
 }
 #[no_mangle]
-pub static mut annexb_demuxer: Demuxer = unsafe {
-    {
-        let mut init = Demuxer {
-            priv_data_size: ::core::mem::size_of::<AnnexbInputContext>() as libc::c_ulong
-                as libc::c_int,
-            name: b"annexb\0" as *const u8 as *const libc::c_char,
-            probe_sz: 2048 as libc::c_int,
-            probe: Some(
-                annexb_probe as unsafe extern "C" fn(*const uint8_t) -> libc::c_int,
-            ),
-            open: Some(
-                annexb_open
-                    as unsafe extern "C" fn(
-                        *mut AnnexbInputContext,
-                        *const libc::c_char,
-                        *mut libc::c_uint,
-                        *mut libc::c_uint,
-                        *mut libc::c_uint,
-                    ) -> libc::c_int,
-            ),
-            read: Some(
-                annexb_read
-                    as unsafe extern "C" fn(
-                        *mut AnnexbInputContext,
-                        *mut Dav1dData,
-                    ) -> libc::c_int,
-            ),
-            seek: None,
-            close: Some(
-                annexb_close as unsafe extern "C" fn(*mut AnnexbInputContext) -> (),
-            ),
-        };
-        init
-    }
+pub static mut annexb_demuxer: Demuxer = {
+    let mut init = Demuxer {
+        priv_data_size: ::core::mem::size_of::<AnnexbInputContext>() as libc::c_ulong
+            as libc::c_int,
+        name: b"annexb\0" as *const u8 as *const libc::c_char,
+        probe_sz: 2048 as libc::c_int,
+        probe: Some(
+            annexb_probe as unsafe extern "C" fn(*const uint8_t) -> libc::c_int,
+        ),
+        open: Some(
+            annexb_open
+                as unsafe extern "C" fn(
+                    *mut AnnexbInputContext,
+                    *const libc::c_char,
+                    *mut libc::c_uint,
+                    *mut libc::c_uint,
+                    *mut libc::c_uint,
+                ) -> libc::c_int,
+        ),
+        read: Some(
+            annexb_read
+                as unsafe extern "C" fn(
+                    *mut AnnexbInputContext,
+                    *mut Dav1dData,
+                ) -> libc::c_int,
+        ),
+        seek: None,
+        close: Some(
+            annexb_close as unsafe extern "C" fn(*mut AnnexbInputContext) -> (),
+        ),
+    };
+    init
 };

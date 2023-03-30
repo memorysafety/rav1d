@@ -25,35 +25,35 @@ extern "C" {
 pub type __off_t = libc::c_long;
 pub type __off64_t = libc::c_long;
 pub type _IO_lock_t = ();
-use crate::include::dav1d::common::Dav1dUserData;
+
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::headers::Dav1dTxfmMode;
-use crate::include::dav1d::headers::DAV1D_N_TX_MODES;
-use crate::include::dav1d::headers::DAV1D_TX_SWITCHABLE;
-use crate::include::dav1d::headers::DAV1D_TX_LARGEST;
-use crate::include::dav1d::headers::DAV1D_TX_4X4_ONLY;
+
+
+
+
 use crate::include::dav1d::headers::Dav1dFilterMode;
-use crate::include::dav1d::headers::DAV1D_FILTER_SWITCHABLE;
-use crate::include::dav1d::headers::DAV1D_N_FILTERS;
-use crate::include::dav1d::headers::DAV1D_FILTER_BILINEAR;
-use crate::include::dav1d::headers::DAV1D_N_SWITCHABLE_FILTERS;
-use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SHARP;
-use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SMOOTH;
-use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
-use crate::include::dav1d::headers::Dav1dAdaptiveBoolean;
-use crate::include::dav1d::headers::DAV1D_ADAPTIVE;
-use crate::include::dav1d::headers::DAV1D_ON;
-use crate::include::dav1d::headers::DAV1D_OFF;
+
+
+
+
+
+
+
+
+
+
+
 use crate::include::dav1d::headers::Dav1dRestorationType;
-use crate::include::dav1d::headers::DAV1D_RESTORATION_SGRPROJ;
-use crate::include::dav1d::headers::DAV1D_RESTORATION_WIENER;
-use crate::include::dav1d::headers::DAV1D_RESTORATION_SWITCHABLE;
-use crate::include::dav1d::headers::DAV1D_RESTORATION_NONE;
+
+
+
+
 use crate::include::dav1d::headers::Dav1dWarpedMotionType;
-use crate::include::dav1d::headers::DAV1D_WM_TYPE_AFFINE;
-use crate::include::dav1d::headers::DAV1D_WM_TYPE_ROT_ZOOM;
-use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
-use crate::include::dav1d::headers::DAV1D_WM_TYPE_IDENTITY;
+
+
+
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dWarpedMotionParams {
@@ -77,74 +77,74 @@ pub struct C2RustUnnamed_0 {
 }
 use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I422;
+
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::Dav1dFrameType;
-use crate::include::dav1d::headers::DAV1D_FRAME_TYPE_SWITCH;
-use crate::include::dav1d::headers::DAV1D_FRAME_TYPE_INTRA;
-use crate::include::dav1d::headers::DAV1D_FRAME_TYPE_INTER;
-use crate::include::dav1d::headers::DAV1D_FRAME_TYPE_KEY;
-use crate::include::dav1d::headers::Dav1dColorPrimaries;
-use crate::include::dav1d::headers::DAV1D_COLOR_PRI_RESERVED;
-use crate::include::dav1d::headers::DAV1D_COLOR_PRI_EBU3213;
-use crate::include::dav1d::headers::DAV1D_COLOR_PRI_SMPTE432;
-use crate::include::dav1d::headers::DAV1D_COLOR_PRI_SMPTE431;
-use crate::include::dav1d::headers::DAV1D_COLOR_PRI_XYZ;
-use crate::include::dav1d::headers::DAV1D_COLOR_PRI_BT2020;
-use crate::include::dav1d::headers::DAV1D_COLOR_PRI_FILM;
-use crate::include::dav1d::headers::DAV1D_COLOR_PRI_SMPTE240;
-use crate::include::dav1d::headers::DAV1D_COLOR_PRI_BT601;
-use crate::include::dav1d::headers::DAV1D_COLOR_PRI_BT470BG;
-use crate::include::dav1d::headers::DAV1D_COLOR_PRI_BT470M;
-use crate::include::dav1d::headers::DAV1D_COLOR_PRI_UNKNOWN;
-use crate::include::dav1d::headers::DAV1D_COLOR_PRI_BT709;
-use crate::include::dav1d::headers::Dav1dTransferCharacteristics;
-use crate::include::dav1d::headers::DAV1D_TRC_RESERVED;
-use crate::include::dav1d::headers::DAV1D_TRC_HLG;
-use crate::include::dav1d::headers::DAV1D_TRC_SMPTE428;
-use crate::include::dav1d::headers::DAV1D_TRC_SMPTE2084;
-use crate::include::dav1d::headers::DAV1D_TRC_BT2020_12BIT;
-use crate::include::dav1d::headers::DAV1D_TRC_BT2020_10BIT;
-use crate::include::dav1d::headers::DAV1D_TRC_SRGB;
-use crate::include::dav1d::headers::DAV1D_TRC_BT1361;
-use crate::include::dav1d::headers::DAV1D_TRC_IEC61966;
-use crate::include::dav1d::headers::DAV1D_TRC_LOG100_SQRT10;
-use crate::include::dav1d::headers::DAV1D_TRC_LOG100;
-use crate::include::dav1d::headers::DAV1D_TRC_LINEAR;
-use crate::include::dav1d::headers::DAV1D_TRC_SMPTE240;
-use crate::include::dav1d::headers::DAV1D_TRC_BT601;
-use crate::include::dav1d::headers::DAV1D_TRC_BT470BG;
-use crate::include::dav1d::headers::DAV1D_TRC_BT470M;
-use crate::include::dav1d::headers::DAV1D_TRC_UNKNOWN;
-use crate::include::dav1d::headers::DAV1D_TRC_BT709;
-use crate::include::dav1d::headers::Dav1dMatrixCoefficients;
-use crate::include::dav1d::headers::DAV1D_MC_RESERVED;
-use crate::include::dav1d::headers::DAV1D_MC_ICTCP;
-use crate::include::dav1d::headers::DAV1D_MC_CHROMAT_CL;
-use crate::include::dav1d::headers::DAV1D_MC_CHROMAT_NCL;
-use crate::include::dav1d::headers::DAV1D_MC_SMPTE2085;
-use crate::include::dav1d::headers::DAV1D_MC_BT2020_CL;
-use crate::include::dav1d::headers::DAV1D_MC_BT2020_NCL;
-use crate::include::dav1d::headers::DAV1D_MC_SMPTE_YCGCO;
-use crate::include::dav1d::headers::DAV1D_MC_SMPTE240;
-use crate::include::dav1d::headers::DAV1D_MC_BT601;
-use crate::include::dav1d::headers::DAV1D_MC_BT470BG;
-use crate::include::dav1d::headers::DAV1D_MC_FCC;
-use crate::include::dav1d::headers::DAV1D_MC_UNKNOWN;
-use crate::include::dav1d::headers::DAV1D_MC_BT709;
-use crate::include::dav1d::headers::DAV1D_MC_IDENTITY;
-use crate::include::dav1d::headers::Dav1dChromaSamplePosition;
-use crate::include::dav1d::headers::DAV1D_CHR_COLOCATED;
-use crate::include::dav1d::headers::DAV1D_CHR_VERTICAL;
-use crate::include::dav1d::headers::DAV1D_CHR_UNKNOWN;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 use crate::include::dav1d::headers::Dav1dContentLightLevel;
 use crate::include::dav1d::headers::Dav1dMasteringDisplay;
 use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
-use crate::include::dav1d::headers::Dav1dSequenceHeaderOperatingParameterInfo;
-use crate::include::dav1d::headers::Dav1dSequenceHeaderOperatingPoint;
-use crate::include::dav1d::headers::Dav1dSegmentationData;
+
+
+
 use crate::include::dav1d::headers::Dav1dSegmentationDataSet;
 use crate::include::dav1d::headers::Dav1dLoopfilterModeRefDeltas;
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
@@ -363,8 +363,8 @@ pub type YuvOutputContext = MuxerPriv;
 unsafe extern "C" fn yuv_open(
     c: *mut YuvOutputContext,
     file: *const libc::c_char,
-    p: *const Dav1dPictureParameters,
-    mut fps: *const libc::c_uint,
+    _p: *const Dav1dPictureParameters,
+    mut _fps: *const libc::c_uint,
 ) -> libc::c_int {
     if strcmp(file, b"-\0" as *const u8 as *const libc::c_char) == 0 {
         (*c).f = stdout;
@@ -474,34 +474,32 @@ unsafe extern "C" fn yuv_close(c: *mut YuvOutputContext) {
     }
 }
 #[no_mangle]
-pub static mut yuv_muxer: Muxer = unsafe {
-    {
-        let mut init = Muxer {
-            priv_data_size: ::core::mem::size_of::<YuvOutputContext>() as libc::c_ulong
-                as libc::c_int,
-            name: b"yuv\0" as *const u8 as *const libc::c_char,
-            extension: b"yuv\0" as *const u8 as *const libc::c_char,
-            write_header: Some(
-                yuv_open
-                    as unsafe extern "C" fn(
-                        *mut YuvOutputContext,
-                        *const libc::c_char,
-                        *const Dav1dPictureParameters,
-                        *const libc::c_uint,
-                    ) -> libc::c_int,
-            ),
-            write_picture: Some(
-                yuv_write
-                    as unsafe extern "C" fn(
-                        *mut YuvOutputContext,
-                        *mut Dav1dPicture,
-                    ) -> libc::c_int,
-            ),
-            write_trailer: Some(
-                yuv_close as unsafe extern "C" fn(*mut YuvOutputContext) -> (),
-            ),
-            verify: None,
-        };
-        init
-    }
+pub static mut yuv_muxer: Muxer = {
+    let mut init = Muxer {
+        priv_data_size: ::core::mem::size_of::<YuvOutputContext>() as libc::c_ulong
+            as libc::c_int,
+        name: b"yuv\0" as *const u8 as *const libc::c_char,
+        extension: b"yuv\0" as *const u8 as *const libc::c_char,
+        write_header: Some(
+            yuv_open
+                as unsafe extern "C" fn(
+                    *mut YuvOutputContext,
+                    *const libc::c_char,
+                    *const Dav1dPictureParameters,
+                    *const libc::c_uint,
+                ) -> libc::c_int,
+        ),
+        write_picture: Some(
+            yuv_write
+                as unsafe extern "C" fn(
+                    *mut YuvOutputContext,
+                    *mut Dav1dPicture,
+                ) -> libc::c_int,
+        ),
+        write_trailer: Some(
+            yuv_close as unsafe extern "C" fn(*mut YuvOutputContext) -> (),
+        ),
+        verify: None,
+    };
+    init
 };

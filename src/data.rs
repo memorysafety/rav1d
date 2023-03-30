@@ -26,19 +26,19 @@ extern "C" {
 
 pub type __off_t = libc::c_long;
 pub type __off64_t = libc::c_long;
-use crate::include::dav1d::common::Dav1dUserData;
+
 use crate::src::r#ref::Dav1dRef;
-use crate::include::stdatomic::atomic_int;
+
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
 pub type _IO_lock_t = ();
-use crate::include::stdatomic::memory_order_relaxed;
-use crate::include::stdatomic::memory_order;
-use crate::include::stdatomic::memory_order_seq_cst;
-use crate::include::stdatomic::memory_order_acq_rel;
-use crate::include::stdatomic::memory_order_release;
-use crate::include::stdatomic::memory_order_acquire;
-use crate::include::stdatomic::memory_order_consume;
+
+
+
+
+
+
+
 #[inline]
 unsafe extern "C" fn dav1d_ref_inc(ref_0: *mut Dav1dRef) {
     ::core::intrinsics::atomic_xadd_relaxed(&mut (*ref_0).ref_cnt, 1 as libc::c_int);

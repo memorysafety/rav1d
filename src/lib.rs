@@ -182,32 +182,32 @@ use crate::src::r#ref::Dav1dRef;
 use crate::include::stdatomic::atomic_int;
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::headers::Dav1dTxfmMode;
-use crate::include::dav1d::headers::DAV1D_N_TX_MODES;
-use crate::include::dav1d::headers::DAV1D_TX_SWITCHABLE;
-use crate::include::dav1d::headers::DAV1D_TX_LARGEST;
-use crate::include::dav1d::headers::DAV1D_TX_4X4_ONLY;
+
+
+
+
 use crate::include::dav1d::headers::Dav1dFilterMode;
-use crate::include::dav1d::headers::DAV1D_FILTER_SWITCHABLE;
-use crate::include::dav1d::headers::DAV1D_N_FILTERS;
-use crate::include::dav1d::headers::DAV1D_FILTER_BILINEAR;
-use crate::include::dav1d::headers::DAV1D_N_SWITCHABLE_FILTERS;
-use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SHARP;
-use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SMOOTH;
-use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
-use crate::include::dav1d::headers::Dav1dAdaptiveBoolean;
-use crate::include::dav1d::headers::DAV1D_ADAPTIVE;
-use crate::include::dav1d::headers::DAV1D_ON;
-use crate::include::dav1d::headers::DAV1D_OFF;
+
+
+
+
+
+
+
+
+
+
+
 use crate::include::dav1d::headers::Dav1dRestorationType;
-use crate::include::dav1d::headers::DAV1D_RESTORATION_SGRPROJ;
-use crate::include::dav1d::headers::DAV1D_RESTORATION_WIENER;
-use crate::include::dav1d::headers::DAV1D_RESTORATION_SWITCHABLE;
-use crate::include::dav1d::headers::DAV1D_RESTORATION_NONE;
+
+
+
+
 use crate::include::dav1d::headers::Dav1dWarpedMotionType;
-use crate::include::dav1d::headers::DAV1D_WM_TYPE_AFFINE;
-use crate::include::dav1d::headers::DAV1D_WM_TYPE_ROT_ZOOM;
-use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
-use crate::include::dav1d::headers::DAV1D_WM_TYPE_IDENTITY;
+
+
+
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dWarpedMotionParams {
@@ -230,75 +230,75 @@ pub struct C2RustUnnamed_0 {
     pub delta: int16_t,
 }
 use crate::include::dav1d::headers::Dav1dPixelLayout;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I422;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
+
+
+
+
 use crate::include::dav1d::headers::Dav1dFrameType;
-use crate::include::dav1d::headers::DAV1D_FRAME_TYPE_SWITCH;
-use crate::include::dav1d::headers::DAV1D_FRAME_TYPE_INTRA;
-use crate::include::dav1d::headers::DAV1D_FRAME_TYPE_INTER;
-use crate::include::dav1d::headers::DAV1D_FRAME_TYPE_KEY;
-use crate::include::dav1d::headers::Dav1dColorPrimaries;
-use crate::include::dav1d::headers::DAV1D_COLOR_PRI_RESERVED;
-use crate::include::dav1d::headers::DAV1D_COLOR_PRI_EBU3213;
-use crate::include::dav1d::headers::DAV1D_COLOR_PRI_SMPTE432;
-use crate::include::dav1d::headers::DAV1D_COLOR_PRI_SMPTE431;
-use crate::include::dav1d::headers::DAV1D_COLOR_PRI_XYZ;
-use crate::include::dav1d::headers::DAV1D_COLOR_PRI_BT2020;
-use crate::include::dav1d::headers::DAV1D_COLOR_PRI_FILM;
-use crate::include::dav1d::headers::DAV1D_COLOR_PRI_SMPTE240;
-use crate::include::dav1d::headers::DAV1D_COLOR_PRI_BT601;
-use crate::include::dav1d::headers::DAV1D_COLOR_PRI_BT470BG;
-use crate::include::dav1d::headers::DAV1D_COLOR_PRI_BT470M;
-use crate::include::dav1d::headers::DAV1D_COLOR_PRI_UNKNOWN;
-use crate::include::dav1d::headers::DAV1D_COLOR_PRI_BT709;
-use crate::include::dav1d::headers::Dav1dTransferCharacteristics;
-use crate::include::dav1d::headers::DAV1D_TRC_RESERVED;
-use crate::include::dav1d::headers::DAV1D_TRC_HLG;
-use crate::include::dav1d::headers::DAV1D_TRC_SMPTE428;
-use crate::include::dav1d::headers::DAV1D_TRC_SMPTE2084;
-use crate::include::dav1d::headers::DAV1D_TRC_BT2020_12BIT;
-use crate::include::dav1d::headers::DAV1D_TRC_BT2020_10BIT;
-use crate::include::dav1d::headers::DAV1D_TRC_SRGB;
-use crate::include::dav1d::headers::DAV1D_TRC_BT1361;
-use crate::include::dav1d::headers::DAV1D_TRC_IEC61966;
-use crate::include::dav1d::headers::DAV1D_TRC_LOG100_SQRT10;
-use crate::include::dav1d::headers::DAV1D_TRC_LOG100;
-use crate::include::dav1d::headers::DAV1D_TRC_LINEAR;
-use crate::include::dav1d::headers::DAV1D_TRC_SMPTE240;
-use crate::include::dav1d::headers::DAV1D_TRC_BT601;
-use crate::include::dav1d::headers::DAV1D_TRC_BT470BG;
-use crate::include::dav1d::headers::DAV1D_TRC_BT470M;
-use crate::include::dav1d::headers::DAV1D_TRC_UNKNOWN;
-use crate::include::dav1d::headers::DAV1D_TRC_BT709;
-use crate::include::dav1d::headers::Dav1dMatrixCoefficients;
-use crate::include::dav1d::headers::DAV1D_MC_RESERVED;
-use crate::include::dav1d::headers::DAV1D_MC_ICTCP;
-use crate::include::dav1d::headers::DAV1D_MC_CHROMAT_CL;
-use crate::include::dav1d::headers::DAV1D_MC_CHROMAT_NCL;
-use crate::include::dav1d::headers::DAV1D_MC_SMPTE2085;
-use crate::include::dav1d::headers::DAV1D_MC_BT2020_CL;
-use crate::include::dav1d::headers::DAV1D_MC_BT2020_NCL;
-use crate::include::dav1d::headers::DAV1D_MC_SMPTE_YCGCO;
-use crate::include::dav1d::headers::DAV1D_MC_SMPTE240;
-use crate::include::dav1d::headers::DAV1D_MC_BT601;
-use crate::include::dav1d::headers::DAV1D_MC_BT470BG;
-use crate::include::dav1d::headers::DAV1D_MC_FCC;
-use crate::include::dav1d::headers::DAV1D_MC_UNKNOWN;
-use crate::include::dav1d::headers::DAV1D_MC_BT709;
-use crate::include::dav1d::headers::DAV1D_MC_IDENTITY;
-use crate::include::dav1d::headers::Dav1dChromaSamplePosition;
-use crate::include::dav1d::headers::DAV1D_CHR_COLOCATED;
-use crate::include::dav1d::headers::DAV1D_CHR_VERTICAL;
-use crate::include::dav1d::headers::DAV1D_CHR_UNKNOWN;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 use crate::include::dav1d::headers::Dav1dContentLightLevel;
 use crate::include::dav1d::headers::Dav1dMasteringDisplay;
 use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
-use crate::include::dav1d::headers::Dav1dSequenceHeaderOperatingParameterInfo;
-use crate::include::dav1d::headers::Dav1dSequenceHeaderOperatingPoint;
-use crate::include::dav1d::headers::Dav1dSegmentationData;
+
+
+
 use crate::include::dav1d::headers::Dav1dSegmentationDataSet;
 use crate::include::dav1d::headers::Dav1dLoopfilterModeRefDeltas;
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
@@ -556,7 +556,7 @@ pub struct Dav1dContext {
     pub picture_pool: *mut Dav1dMemPool,
 }
 use crate::src::mem::Dav1dMemPool;
-use crate::src::mem::Dav1dMemPoolBuffer;
+
 use crate::include::pthread::pthread_mutex_t;
 
 
@@ -574,22 +574,22 @@ pub struct Dav1dLogger {
     >,
 }
 use crate::include::dav1d::dav1d::Dav1dEventFlags;
-use crate::include::dav1d::dav1d::DAV1D_EVENT_FLAG_NEW_OP_PARAMS_INFO;
-use crate::include::dav1d::dav1d::DAV1D_EVENT_FLAG_NEW_SEQUENCE;
+
+
 pub type PictureFlags = libc::c_uint;
 pub const PICTURE_FLAG_NEW_TEMPORAL_UNIT: PictureFlags = 4;
 pub const PICTURE_FLAG_NEW_OP_PARAMS_INFO: PictureFlags = 2;
 pub const PICTURE_FLAG_NEW_SEQUENCE: PictureFlags = 1;
 use crate::include::dav1d::dav1d::Dav1dDecodeFrameType;
 use crate::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_KEY;
-use crate::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_INTRA;
-use crate::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_REFERENCE;
+
+
 use crate::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_ALL;
 use crate::include::dav1d::dav1d::Dav1dInloopFilterType;
 use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_ALL;
-use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_RESTORATION;
-use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_CDEF;
-use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_DEBLOCK;
+
+
+
 use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -1808,18 +1808,18 @@ pub struct _IO_FILE {
 }
 pub type _IO_lock_t = ();
 pub type pthread_once_t = libc::c_int;
-use crate::include::stdatomic::memory_order_relaxed;
+
 pub type BlockLevel = libc::c_uint;
 pub const N_BL_LEVELS: BlockLevel = 5;
 pub const BL_8X8: BlockLevel = 4;
 pub const BL_16X16: BlockLevel = 3;
 pub const BL_32X32: BlockLevel = 2;
-use crate::include::stdatomic::memory_order;
-use crate::include::stdatomic::memory_order_seq_cst;
-use crate::include::stdatomic::memory_order_acq_rel;
-use crate::include::stdatomic::memory_order_release;
-use crate::include::stdatomic::memory_order_acquire;
-use crate::include::stdatomic::memory_order_consume;
+
+
+
+
+
+
 #[inline]
 unsafe extern "C" fn umin(a: libc::c_uint, b: libc::c_uint) -> libc::c_uint {
     return if a < b { a } else { b };

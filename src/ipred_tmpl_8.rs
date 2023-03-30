@@ -23,11 +23,11 @@ extern "C" {
 
 
 pub type pixel = uint8_t;
-use crate::include::dav1d::headers::Dav1dPixelLayout;
+
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I422;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
+
 pub type IntraPredMode = libc::c_uint;
 pub const FILTER_PRED: IntraPredMode = 13;
 pub const Z3_PRED: IntraPredMode = 8;
@@ -227,9 +227,9 @@ unsafe extern "C" fn ipred_dc_top_c(
     topleft: *const pixel,
     width: libc::c_int,
     height: libc::c_int,
-    a: libc::c_int,
-    max_width: libc::c_int,
-    max_height: libc::c_int,
+    _a: libc::c_int,
+    _max_width: libc::c_int,
+    _max_height: libc::c_int,
 ) {
     splat_dc(dst, stride, width, height, dc_gen_top(topleft, width) as libc::c_int);
 }
@@ -273,9 +273,9 @@ unsafe extern "C" fn ipred_dc_left_c(
     topleft: *const pixel,
     width: libc::c_int,
     height: libc::c_int,
-    a: libc::c_int,
-    max_width: libc::c_int,
-    max_height: libc::c_int,
+    _a: libc::c_int,
+    _max_width: libc::c_int,
+    _max_height: libc::c_int,
 ) {
     splat_dc(dst, stride, width, height, dc_gen_left(topleft, height) as libc::c_int);
 }
@@ -335,9 +335,9 @@ unsafe extern "C" fn ipred_dc_c(
     topleft: *const pixel,
     width: libc::c_int,
     height: libc::c_int,
-    a: libc::c_int,
-    max_width: libc::c_int,
-    max_height: libc::c_int,
+    _a: libc::c_int,
+    _max_width: libc::c_int,
+    _max_height: libc::c_int,
 ) {
     splat_dc(dst, stride, width, height, dc_gen(topleft, width, height) as libc::c_int);
 }
@@ -356,12 +356,12 @@ unsafe extern "C" fn ipred_cfl_c(
 unsafe extern "C" fn ipred_dc_128_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
-    topleft: *const pixel,
+    _topleft: *const pixel,
     width: libc::c_int,
     height: libc::c_int,
-    a: libc::c_int,
-    max_width: libc::c_int,
-    max_height: libc::c_int,
+    _a: libc::c_int,
+    _max_width: libc::c_int,
+    _max_height: libc::c_int,
 ) {
     let dc: libc::c_int = 128 as libc::c_int;
     splat_dc(dst, stride, width, height, dc);
@@ -369,7 +369,7 @@ unsafe extern "C" fn ipred_dc_128_c(
 unsafe extern "C" fn ipred_cfl_128_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
-    topleft: *const pixel,
+    _topleft: *const pixel,
     width: libc::c_int,
     height: libc::c_int,
     mut ac: *const int16_t,
@@ -384,9 +384,9 @@ unsafe extern "C" fn ipred_v_c(
     topleft: *const pixel,
     width: libc::c_int,
     height: libc::c_int,
-    a: libc::c_int,
-    max_width: libc::c_int,
-    max_height: libc::c_int,
+    _a: libc::c_int,
+    _max_width: libc::c_int,
+    _max_height: libc::c_int,
 ) {
     let mut y: libc::c_int = 0 as libc::c_int;
     while y < height {
@@ -405,9 +405,9 @@ unsafe extern "C" fn ipred_h_c(
     topleft: *const pixel,
     width: libc::c_int,
     height: libc::c_int,
-    a: libc::c_int,
-    max_width: libc::c_int,
-    max_height: libc::c_int,
+    _a: libc::c_int,
+    _max_width: libc::c_int,
+    _max_height: libc::c_int,
 ) {
     let mut y: libc::c_int = 0 as libc::c_int;
     while y < height {
@@ -426,9 +426,9 @@ unsafe extern "C" fn ipred_paeth_c(
     tl_ptr: *const pixel,
     width: libc::c_int,
     height: libc::c_int,
-    a: libc::c_int,
-    max_width: libc::c_int,
-    max_height: libc::c_int,
+    _a: libc::c_int,
+    _max_width: libc::c_int,
+    _max_height: libc::c_int,
 ) {
     let topleft: libc::c_int = *tl_ptr.offset(0 as libc::c_int as isize) as libc::c_int;
     let mut y: libc::c_int = 0 as libc::c_int;
@@ -465,9 +465,9 @@ unsafe extern "C" fn ipred_smooth_c(
     topleft: *const pixel,
     width: libc::c_int,
     height: libc::c_int,
-    a: libc::c_int,
-    max_width: libc::c_int,
-    max_height: libc::c_int,
+    _a: libc::c_int,
+    _max_width: libc::c_int,
+    _max_height: libc::c_int,
 ) {
     let weights_hor: *const uint8_t = &*dav1d_sm_weights.as_ptr().offset(width as isize)
         as *const uint8_t;
@@ -503,9 +503,9 @@ unsafe extern "C" fn ipred_smooth_v_c(
     topleft: *const pixel,
     width: libc::c_int,
     height: libc::c_int,
-    a: libc::c_int,
-    max_width: libc::c_int,
-    max_height: libc::c_int,
+    _a: libc::c_int,
+    _max_width: libc::c_int,
+    _max_height: libc::c_int,
 ) {
     let weights_ver: *const uint8_t = &*dav1d_sm_weights.as_ptr().offset(height as isize)
         as *const uint8_t;
@@ -534,9 +534,9 @@ unsafe extern "C" fn ipred_smooth_h_c(
     topleft: *const pixel,
     width: libc::c_int,
     height: libc::c_int,
-    a: libc::c_int,
-    max_width: libc::c_int,
-    max_height: libc::c_int,
+    _a: libc::c_int,
+    _max_width: libc::c_int,
+    _max_height: libc::c_int,
 ) {
     let weights_hor: *const uint8_t = &*dav1d_sm_weights.as_ptr().offset(width as isize)
         as *const uint8_t;
@@ -747,8 +747,8 @@ unsafe extern "C" fn ipred_z1_c(
     width: libc::c_int,
     height: libc::c_int,
     mut angle: libc::c_int,
-    max_width: libc::c_int,
-    max_height: libc::c_int,
+    _max_width: libc::c_int,
+    _max_height: libc::c_int,
 ) {
     let is_sm: libc::c_int = angle >> 9 as libc::c_int & 0x1 as libc::c_int;
     let enable_intra_edge_filter: libc::c_int = angle >> 10 as libc::c_int;
@@ -989,8 +989,8 @@ unsafe extern "C" fn ipred_z3_c(
     width: libc::c_int,
     height: libc::c_int,
     mut angle: libc::c_int,
-    max_width: libc::c_int,
-    max_height: libc::c_int,
+    _max_width: libc::c_int,
+    _max_height: libc::c_int,
 ) {
     let is_sm: libc::c_int = angle >> 9 as libc::c_int & 0x1 as libc::c_int;
     let enable_intra_edge_filter: libc::c_int = angle >> 10 as libc::c_int;
@@ -1092,8 +1092,8 @@ unsafe extern "C" fn ipred_filter_c(
     width: libc::c_int,
     height: libc::c_int,
     mut filt_idx: libc::c_int,
-    max_width: libc::c_int,
-    max_height: libc::c_int,
+    _max_width: libc::c_int,
+    _max_height: libc::c_int,
 ) {
     filt_idx &= 511 as libc::c_int;
     if !(filt_idx < 5 as libc::c_int) {

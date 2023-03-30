@@ -1428,8 +1428,8 @@ pub unsafe extern "C" fn dav1d_inv_dct64_1d_c(
 unsafe extern "C" fn inv_adst4_1d_internal_c(
     in_0: *const int32_t,
     in_s: ptrdiff_t,
-    min: libc::c_int,
-    max: libc::c_int,
+    _min: libc::c_int,
+    _max: libc::c_int,
     out: *mut int32_t,
     out_s: ptrdiff_t,
 ) {
@@ -1892,8 +1892,8 @@ pub unsafe extern "C" fn dav1d_inv_adst16_1d_c(
 pub unsafe extern "C" fn dav1d_inv_identity4_1d_c(
     c: *mut int32_t,
     stride: ptrdiff_t,
-    min: libc::c_int,
-    max: libc::c_int,
+    _min: libc::c_int,
+    _max: libc::c_int,
 ) {
     if !(stride > 0 as libc::c_int as libc::c_long) {
         unreachable!();
@@ -1913,8 +1913,8 @@ pub unsafe extern "C" fn dav1d_inv_identity4_1d_c(
 pub unsafe extern "C" fn dav1d_inv_identity8_1d_c(
     c: *mut int32_t,
     stride: ptrdiff_t,
-    min: libc::c_int,
-    max: libc::c_int,
+    _min: libc::c_int,
+    _max: libc::c_int,
 ) {
     if !(stride > 0 as libc::c_int as libc::c_long) {
         unreachable!();
@@ -1930,8 +1930,8 @@ pub unsafe extern "C" fn dav1d_inv_identity8_1d_c(
 pub unsafe extern "C" fn dav1d_inv_identity16_1d_c(
     c: *mut int32_t,
     stride: ptrdiff_t,
-    min: libc::c_int,
-    max: libc::c_int,
+    _min: libc::c_int,
+    _max: libc::c_int,
 ) {
     if !(stride > 0 as libc::c_int as libc::c_long) {
         unreachable!();
@@ -1951,8 +1951,8 @@ pub unsafe extern "C" fn dav1d_inv_identity16_1d_c(
 pub unsafe extern "C" fn dav1d_inv_identity32_1d_c(
     c: *mut int32_t,
     stride: ptrdiff_t,
-    min: libc::c_int,
-    max: libc::c_int,
+    _min: libc::c_int,
+    _max: libc::c_int,
 ) {
     if !(stride > 0 as libc::c_int as libc::c_long) {
         unreachable!();

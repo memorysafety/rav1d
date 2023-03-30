@@ -22,11 +22,11 @@ extern "C" {
 
 
 pub type pixel = uint8_t;
-use crate::include::dav1d::headers::Dav1dFilterMode;
-use crate::include::dav1d::headers::DAV1D_FILTER_SWITCHABLE;
-use crate::include::dav1d::headers::DAV1D_N_FILTERS;
-use crate::include::dav1d::headers::DAV1D_FILTER_BILINEAR;
-use crate::include::dav1d::headers::DAV1D_N_SWITCHABLE_FILTERS;
+
+
+
+
+
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SHARP;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SMOOTH;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
