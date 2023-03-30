@@ -54,3 +54,7 @@ pub const ADST_ADST: TxfmType = 3;
 pub const DCT_ADST: TxfmType = 2;
 pub const ADST_DCT: TxfmType = 1;
 pub const DCT_DCT: TxfmType = 0;
+pub type TxClass = libc::c_uint;
+pub const TX_CLASS_V: TxClass = 2;
+pub const TX_CLASS_H: TxClass = 1;
+pub const TX_CLASS_2D: TxClass = 0;
