@@ -900,13 +900,7 @@ pub struct Av1Filter {
     pub noskip_mask: [[uint16_t; 2]; 16],
 }
 pub type pixel = ();
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Av1FilterLUT {
-    pub e: [uint8_t; 64],
-    pub i: [uint8_t; 64],
-    pub sharp: [uint64_t; 2],
-}
+use crate::src::lf_mask::Av1FilterLUT;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Av1Restoration {
