@@ -28,8 +28,8 @@ pub struct __va_list_tag {
 
 pub type pixel = uint16_t;
 pub type coef = int32_t;
-pub type atomic_int = libc::c_int;
-pub type atomic_uint = libc::c_uint;
+use crate::include::stdatomic::atomic_int;
+use crate::include::stdatomic::atomic_uint;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dUserData {

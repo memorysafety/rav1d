@@ -202,7 +202,7 @@ pub struct Dav1dRef {
     >,
     pub user_data: *mut libc::c_void,
 }
-pub type atomic_int = libc::c_int;
+use crate::include::stdatomic::atomic_int;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dDataProps {
@@ -1297,7 +1297,7 @@ pub struct CdfThreadContext {
     pub data: C2RustUnnamed_15,
     pub progress: *mut atomic_uint,
 }
-pub type atomic_uint = libc::c_uint;
+use crate::include::stdatomic::atomic_uint;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union C2RustUnnamed_15 {
@@ -2048,18 +2048,18 @@ pub struct _IO_FILE {
 }
 pub type _IO_lock_t = ();
 pub type pthread_once_t = libc::c_int;
-pub const memory_order_relaxed: memory_order = 0;
+use crate::include::stdatomic::memory_order_relaxed;
 pub type BlockLevel = libc::c_uint;
 pub const N_BL_LEVELS: BlockLevel = 5;
 pub const BL_8X8: BlockLevel = 4;
 pub const BL_16X16: BlockLevel = 3;
 pub const BL_32X32: BlockLevel = 2;
-pub type memory_order = libc::c_uint;
-pub const memory_order_seq_cst: memory_order = 5;
-pub const memory_order_acq_rel: memory_order = 4;
-pub const memory_order_release: memory_order = 3;
-pub const memory_order_acquire: memory_order = 2;
-pub const memory_order_consume: memory_order = 1;
+use crate::include::stdatomic::memory_order;
+use crate::include::stdatomic::memory_order_seq_cst;
+use crate::include::stdatomic::memory_order_acq_rel;
+use crate::include::stdatomic::memory_order_release;
+use crate::include::stdatomic::memory_order_acquire;
+use crate::include::stdatomic::memory_order_consume;
 #[inline]
 unsafe extern "C" fn umin(a: libc::c_uint, b: libc::c_uint) -> libc::c_uint {
     return if a < b { a } else { b };

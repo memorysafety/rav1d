@@ -28,7 +28,7 @@ pub struct Dav1dRef {
     >,
     pub user_data: *mut libc::c_void,
 }
-pub type atomic_int = libc::c_int;
+use crate::include::stdatomic::atomic_int;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct __pthread_internal_list {

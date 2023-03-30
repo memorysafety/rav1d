@@ -44,7 +44,7 @@ pub struct Dav1dRef {
     >,
     pub user_data: *mut libc::c_void,
 }
-pub type atomic_int = libc::c_int;
+use crate::include::stdatomic::atomic_int;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dDataProps {
@@ -63,13 +63,13 @@ pub struct Dav1dData {
     pub m: Dav1dDataProps,
 }
 pub type _IO_lock_t = ();
-pub const memory_order_relaxed: memory_order = 0;
-pub type memory_order = libc::c_uint;
-pub const memory_order_seq_cst: memory_order = 5;
-pub const memory_order_acq_rel: memory_order = 4;
-pub const memory_order_release: memory_order = 3;
-pub const memory_order_acquire: memory_order = 2;
-pub const memory_order_consume: memory_order = 1;
+use crate::include::stdatomic::memory_order_relaxed;
+use crate::include::stdatomic::memory_order;
+use crate::include::stdatomic::memory_order_seq_cst;
+use crate::include::stdatomic::memory_order_acq_rel;
+use crate::include::stdatomic::memory_order_release;
+use crate::include::stdatomic::memory_order_acquire;
+use crate::include::stdatomic::memory_order_consume;
 #[inline]
 unsafe extern "C" fn dav1d_ref_inc(ref_0: *mut Dav1dRef) {
     ::core::intrinsics::atomic_xadd_relaxed(&mut (*ref_0).ref_cnt, 1 as libc::c_int);
