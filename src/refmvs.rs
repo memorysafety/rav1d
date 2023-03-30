@@ -369,13 +369,13 @@ pub struct C2RustUnnamed_12 {
     pub y: int16_t,
     pub x: int16_t,
 }
-pub type EdgeFlags = libc::c_uint;
-pub const EDGE_I420_LEFT_HAS_BOTTOM: EdgeFlags = 32;
-pub const EDGE_I422_LEFT_HAS_BOTTOM: EdgeFlags = 16;
-pub const EDGE_I444_LEFT_HAS_BOTTOM: EdgeFlags = 8;
-pub const EDGE_I420_TOP_HAS_RIGHT: EdgeFlags = 4;
-pub const EDGE_I422_TOP_HAS_RIGHT: EdgeFlags = 2;
-pub const EDGE_I444_TOP_HAS_RIGHT: EdgeFlags = 1;
+use crate::src::intra_edge::EdgeFlags;
+
+
+
+
+
+use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct refmvs_temporal_block {
