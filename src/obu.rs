@@ -68,14 +68,7 @@ use crate::include::dav1d::common::Dav1dUserData;
 use crate::src::r#ref::Dav1dRef;
 use crate::include::stdatomic::atomic_int;
 use crate::include::dav1d::common::Dav1dDataProps;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dData {
-    pub data: *const uint8_t,
-    pub sz: size_t,
-    pub ref_0: *mut Dav1dRef,
-    pub m: Dav1dDataProps,
-}
+use crate::include::dav1d::data::Dav1dData;
 use crate::include::stdatomic::memory_order;
 use crate::include::stdatomic::memory_order_seq_cst;
 use crate::include::stdatomic::memory_order_acq_rel;
