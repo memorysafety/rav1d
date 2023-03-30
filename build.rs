@@ -109,14 +109,22 @@ fn build_asm_files() {
     config_file.write(b" #define HAVE_ASM 1\n").unwrap();
     config_file.sync_all().unwrap();
 
-    let asm_files = &[
+    let mut asm_files = vec![
         "src/arm/64/msac.S",
         "src/arm/64/refmvs.S",
-        #[cfg(feature = "bitdepth_8")]
-        "src/arm/64/cdef.S",
-        #[cfg(feature = "bitdepth_16")]
-        "src/arm/64/cdef16.S",
     ];
+
+    #[cfg(feature = "bitdepth_8")]
+    asm_files.extend_from_slice(&[
+        "src/arm/64/cdef.S",
+        "src/arm/64/filmgrain.S",
+    ]);
+
+    #[cfg(feature = "bitdepth_16")]
+    asm_files.extend_from_slice(&[
+        "src/arm/64/cdef16.S",
+        "src/arm/64/filmgrain16.S",
+    ]);
 
     cc::Build::new()
         .files(asm_files)
