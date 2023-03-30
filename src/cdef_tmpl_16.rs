@@ -155,6 +155,63 @@ extern "C" {
     ) -> libc::c_int;
 }
 
+#[cfg(all(
+    feature = "asm",
+    any(target_arch = "arm", target_arch = "aarch64")
+))]
+extern "C" {
+    fn dav1d_cdef_find_dir_16bpc_neon(
+        dst: *const pixel,
+        dst_stride: ptrdiff_t,
+        var: *mut libc::c_uint,
+        bitdepth_max: libc::c_int,
+    ) -> libc::c_int;
+    fn dav1d_cdef_padding4_16bpc_neon(
+        tmp: *mut uint16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        left: *const [pixel; 2],
+        top: *const pixel,
+        bottom: *const pixel,
+        h: libc::c_int,
+        edges: CdefEdgeFlags,
+    );
+    fn dav1d_cdef_padding8_16bpc_neon(
+        tmp: *mut uint16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        left: *const [pixel; 2],
+        top: *const pixel,
+        bottom: *const pixel,
+        h: libc::c_int,
+        edges: CdefEdgeFlags,
+    );
+    fn dav1d_cdef_filter4_16bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp: *const uint16_t,
+        pri_strength: libc::c_int,
+        sec_strength: libc::c_int,
+        dir: libc::c_int,
+        damping: libc::c_int,
+        h: libc::c_int,
+        edges: size_t,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_cdef_filter8_16bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp: *const uint16_t,
+        pri_strength: libc::c_int,
+        sec_strength: libc::c_int,
+        dir: libc::c_int,
+        damping: libc::c_int,
+        h: libc::c_int,
+        edges: size_t,
+        bitdepth_max: libc::c_int,
+    );
+}
+
 pub type pixel = uint16_t;
 pub type CdefEdgeFlags = libc::c_uint;
 pub const CDEF_HAVE_BOTTOM: CdefEdgeFlags = 8;
@@ -901,7 +958,159 @@ unsafe extern "C" fn cdef_dsp_init_x86(c: *mut Dav1dCdefDSPContext) {
     any(target_arch = "arm", target_arch = "aarch64"),
 ))]
 unsafe extern "C" fn cdef_dsp_init_arm(c: *mut Dav1dCdefDSPContext) {
-    // TODO: Add init logic for arm assembly.
+    use crate::src::arm::cpu::DAV1D_ARM_CPU_FLAG_NEON;
+
+    let flags: libc::c_uint = dav1d_get_cpu_flags();
+
+    if flags & DAV1D_ARM_CPU_FLAG_NEON == 0 {
+        return;
+    }
+
+    (*c).dir = Some(dav1d_cdef_find_dir_16bpc_neon);
+    (*c).fb[0] = Some(cdef_filter_8x8_neon);
+    (*c).fb[1] = Some(cdef_filter_4x8_neon);
+    (*c).fb[2] = Some(cdef_filter_4x4_neon);
+}
+
+#[inline(always)]
+#[cfg(all(
+    feature = "asm",
+    any(target_arch = "arm", target_arch = "aarch64"),
+))]
+unsafe extern "C" fn cdef_filter_8x8_neon(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    mut left: *const [pixel; 2],
+    top: *const pixel,
+    bottom: *const pixel,
+    pri_strength: libc::c_int,
+    sec_strength: libc::c_int,
+    dir: libc::c_int,
+    damping: libc::c_int,
+    edges: CdefEdgeFlags,
+    bitdepth_max: libc::c_int,
+) {
+    let mut tmp_buf = [0; 200];
+    let mut tmp = tmp_buf
+        .as_mut_ptr()
+        .offset(2 * 16)
+        .offset(8);
+    dav1d_cdef_padding8_16bpc_neon(
+        tmp,
+        dst,
+        stride,
+        left,
+        top,
+        bottom,
+        8,
+        edges,
+    );
+    dav1d_cdef_filter8_16bpc_neon(
+        dst,
+        stride,
+        tmp,
+        pri_strength,
+        sec_strength,
+        dir,
+        damping,
+        8,
+        edges.into(),
+        bitdepth_max,
+    );
+}
+
+#[inline(always)]
+#[cfg(all(
+    feature = "asm",
+    any(target_arch = "arm", target_arch = "aarch64"),
+))]
+unsafe extern "C" fn cdef_filter_4x8_neon(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    mut left: *const [pixel; 2],
+    top: *const pixel,
+    bottom: *const pixel,
+    pri_strength: libc::c_int,
+    sec_strength: libc::c_int,
+    dir: libc::c_int,
+    damping: libc::c_int,
+    edges: CdefEdgeFlags,
+    bitdepth_max: libc::c_int,
+) {
+    let mut tmp_buf: [uint16_t; 104] = [0; 104];
+    let mut tmp = tmp_buf
+        .as_mut_ptr()
+        .offset(2 * 8)
+        .offset(8);
+    dav1d_cdef_padding4_16bpc_neon(
+        tmp,
+        dst,
+        stride,
+        left,
+        top,
+        bottom,
+        8,
+        edges,
+    );
+    dav1d_cdef_filter4_16bpc_neon(
+        dst,
+        stride,
+        tmp,
+        pri_strength,
+        sec_strength,
+        dir,
+        damping,
+        8,
+        edges.into(),
+        bitdepth_max,
+    );
+}
+
+#[inline(always)]
+#[cfg(all(
+    feature = "asm",
+    any(target_arch = "arm", target_arch = "aarch64"),
+))]
+unsafe extern "C" fn cdef_filter_4x4_neon(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    mut left: *const [pixel; 2],
+    top: *const pixel,
+    bottom: *const pixel,
+    pri_strength: libc::c_int,
+    sec_strength: libc::c_int,
+    dir: libc::c_int,
+    damping: libc::c_int,
+    edges: CdefEdgeFlags,
+    bitdepth_max: libc::c_int,
+) {
+    let mut tmp_buf = [0; 104];
+    let mut tmp = tmp_buf
+        .as_mut_ptr()
+        .offset(2 * 8)
+        .offset(8);
+    dav1d_cdef_padding4_16bpc_neon(
+        tmp,
+        dst,
+        stride,
+        left,
+        top,
+        bottom,
+        4,
+        edges,
+    );
+    dav1d_cdef_filter4_16bpc_neon(
+        dst,
+        stride,
+        tmp,
+        pri_strength,
+        sec_strength,
+        dir,
+        damping,
+        4,
+        edges as size_t,
+        bitdepth_max,
+    );
 }
 
 #[inline(always)]
@@ -910,6 +1119,7 @@ unsafe extern "C" fn dav1d_get_cpu_flags() -> libc::c_uint {
     flags |= DAV1D_X86_CPU_FLAG_SSE2 as libc::c_int as libc::c_uint;
     return flags;
 }
+
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_cdef_dsp_init_16bpc(c: *mut Dav1dCdefDSPContext) {
