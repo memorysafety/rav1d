@@ -1737,16 +1737,16 @@ use crate::src::levels::MV_JOINT_HV;
 use crate::src::levels::MV_JOINT_V;
 use crate::src::levels::MV_JOINT_H;
 use crate::src::levels::MV_JOINT_ZERO;
-pub type CompInterPredMode = libc::c_uint;
-pub const N_COMP_INTER_PRED_MODES: CompInterPredMode = 8;
-pub const NEWMV_NEWMV: CompInterPredMode = 7;
-pub const GLOBALMV_GLOBALMV: CompInterPredMode = 6;
-pub const NEWMV_NEARMV: CompInterPredMode = 5;
-pub const NEARMV_NEWMV: CompInterPredMode = 4;
-pub const NEWMV_NEARESTMV: CompInterPredMode = 3;
-pub const NEARESTMV_NEWMV: CompInterPredMode = 2;
-pub const NEARMV_NEARMV: CompInterPredMode = 1;
-pub const NEARESTMV_NEARESTMV: CompInterPredMode = 0;
+use crate::src::levels::CompInterPredMode;
+use crate::src::levels::N_COMP_INTER_PRED_MODES;
+use crate::src::levels::NEWMV_NEWMV;
+use crate::src::levels::GLOBALMV_GLOBALMV;
+use crate::src::levels::NEWMV_NEARMV;
+use crate::src::levels::NEARMV_NEWMV;
+use crate::src::levels::NEWMV_NEARESTMV;
+use crate::src::levels::NEARESTMV_NEWMV;
+use crate::src::levels::NEARMV_NEARMV;
+use crate::src::levels::NEARESTMV_NEARESTMV;
 #[inline]
 unsafe extern "C" fn dav1d_ref_inc(ref_0: *mut Dav1dRef) {
     ::core::intrinsics::atomic_xadd_relaxed(&mut (*ref_0).ref_cnt, 1 as libc::c_int);
