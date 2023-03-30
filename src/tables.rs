@@ -156,12 +156,12 @@ use crate::src::levels::FILTER_2D_8TAP_SHARP_REGULAR;
 use crate::src::levels::FILTER_2D_8TAP_REGULAR_SHARP;
 use crate::src::levels::FILTER_2D_8TAP_REGULAR_SMOOTH;
 use crate::src::levels::FILTER_2D_8TAP_REGULAR;
-pub type InterPredMode = libc::c_uint;
-pub const N_INTER_PRED_MODES: InterPredMode = 4;
-pub const NEWMV: InterPredMode = 3;
-pub const GLOBALMV: InterPredMode = 2;
-pub const NEARMV: InterPredMode = 1;
-pub const NEARESTMV: InterPredMode = 0;
+use crate::src::levels::InterPredMode;
+use crate::src::levels::N_INTER_PRED_MODES;
+use crate::src::levels::NEWMV;
+use crate::src::levels::GLOBALMV;
+use crate::src::levels::NEARMV;
+use crate::src::levels::NEARESTMV;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct TxfmInfo {
