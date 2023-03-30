@@ -141,81 +141,9 @@ use crate::include::dav1d::headers::DAV1D_CHR_UNKNOWN;
 use crate::include::dav1d::headers::Dav1dContentLightLevel;
 use crate::include::dav1d::headers::Dav1dMasteringDisplay;
 use crate::include::dav1d::headers::Dav1dITUTT35;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dSequenceHeader {
-    pub profile: libc::c_int,
-    pub max_width: libc::c_int,
-    pub max_height: libc::c_int,
-    pub layout: Dav1dPixelLayout,
-    pub pri: Dav1dColorPrimaries,
-    pub trc: Dav1dTransferCharacteristics,
-    pub mtrx: Dav1dMatrixCoefficients,
-    pub chr: Dav1dChromaSamplePosition,
-    pub hbd: libc::c_int,
-    pub color_range: libc::c_int,
-    pub num_operating_points: libc::c_int,
-    pub operating_points: [Dav1dSequenceHeaderOperatingPoint; 32],
-    pub still_picture: libc::c_int,
-    pub reduced_still_picture_header: libc::c_int,
-    pub timing_info_present: libc::c_int,
-    pub num_units_in_tick: libc::c_int,
-    pub time_scale: libc::c_int,
-    pub equal_picture_interval: libc::c_int,
-    pub num_ticks_per_picture: libc::c_uint,
-    pub decoder_model_info_present: libc::c_int,
-    pub encoder_decoder_buffer_delay_length: libc::c_int,
-    pub num_units_in_decoding_tick: libc::c_int,
-    pub buffer_removal_delay_length: libc::c_int,
-    pub frame_presentation_delay_length: libc::c_int,
-    pub display_model_info_present: libc::c_int,
-    pub width_n_bits: libc::c_int,
-    pub height_n_bits: libc::c_int,
-    pub frame_id_numbers_present: libc::c_int,
-    pub delta_frame_id_n_bits: libc::c_int,
-    pub frame_id_n_bits: libc::c_int,
-    pub sb128: libc::c_int,
-    pub filter_intra: libc::c_int,
-    pub intra_edge_filter: libc::c_int,
-    pub inter_intra: libc::c_int,
-    pub masked_compound: libc::c_int,
-    pub warped_motion: libc::c_int,
-    pub dual_filter: libc::c_int,
-    pub order_hint: libc::c_int,
-    pub jnt_comp: libc::c_int,
-    pub ref_frame_mvs: libc::c_int,
-    pub screen_content_tools: Dav1dAdaptiveBoolean,
-    pub force_integer_mv: Dav1dAdaptiveBoolean,
-    pub order_hint_n_bits: libc::c_int,
-    pub super_res: libc::c_int,
-    pub cdef: libc::c_int,
-    pub restoration: libc::c_int,
-    pub ss_hor: libc::c_int,
-    pub ss_ver: libc::c_int,
-    pub monochrome: libc::c_int,
-    pub color_description_present: libc::c_int,
-    pub separate_uv_delta_q: libc::c_int,
-    pub film_grain_present: libc::c_int,
-    pub operating_parameter_info: [Dav1dSequenceHeaderOperatingParameterInfo; 32],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dSequenceHeaderOperatingParameterInfo {
-    pub decoder_buffer_delay: libc::c_int,
-    pub encoder_buffer_delay: libc::c_int,
-    pub low_delay_mode: libc::c_int,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dSequenceHeaderOperatingPoint {
-    pub major_level: libc::c_int,
-    pub minor_level: libc::c_int,
-    pub initial_display_delay: libc::c_int,
-    pub idc: libc::c_int,
-    pub tier: libc::c_int,
-    pub decoder_model_param_present: libc::c_int,
-    pub display_model_param_present: libc::c_int,
-}
+use crate::include::dav1d::headers::Dav1dSequenceHeader;
+use crate::include::dav1d::headers::Dav1dSequenceHeaderOperatingParameterInfo;
+use crate::include::dav1d::headers::Dav1dSequenceHeaderOperatingPoint;
 use crate::include::dav1d::headers::Dav1dSegmentationData;
 use crate::include::dav1d::headers::Dav1dSegmentationDataSet;
 use crate::include::dav1d::headers::Dav1dLoopfilterModeRefDeltas;
@@ -366,11 +294,7 @@ pub struct C2RustUnnamed_10 {
     pub width_scale_denominator: libc::c_int,
     pub enabled: libc::c_int,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFrameHeaderOperatingPoint {
-    pub buffer_removal_time: libc::c_int,
-}
+use crate::include::dav1d::headers::Dav1dFrameHeaderOperatingPoint;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct C2RustUnnamed_11 {
