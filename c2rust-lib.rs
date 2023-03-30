@@ -77,6 +77,7 @@ pub mod log;
 pub mod loopfilter_tmpl_16;
 #[cfg(feature = "bitdepth_8")]
 pub mod loopfilter_tmpl_8;
+pub mod looprestoration;
 #[cfg(feature = "bitdepth_16")]
 pub mod looprestoration_tmpl_16;
 #[cfg(feature = "bitdepth_8")]
