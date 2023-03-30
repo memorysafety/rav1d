@@ -1268,15 +1268,7 @@ pub struct Dav1dTileState {
     pub lflvl: *const [[[uint8_t; 2]; 8]; 4],
     pub lr_ref: [*mut Av1RestorationUnit; 3],
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Av1RestorationUnit {
-    pub type_0: uint8_t,
-    pub filter_h: [int8_t; 3],
-    pub filter_v: [int8_t; 3],
-    pub sgr_idx: uint8_t,
-    pub sgr_weights: [int8_t; 2],
-}
+use crate::src::lf_mask::Av1RestorationUnit;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct C2RustUnnamed_38 {

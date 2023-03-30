@@ -313,6 +313,15 @@ pub struct Av1FilterLUT {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
+pub struct Av1RestorationUnit {
+    pub type_0: uint8_t,
+    pub filter_h: [int8_t; 3],
+    pub filter_v: [int8_t; 3],
+    pub sgr_idx: uint8_t,
+    pub sgr_weights: [int8_t; 2],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
 pub struct Av1Filter {
     pub filter_y: [[[[uint16_t; 2]; 3]; 32]; 2],
     pub filter_uv: [[[[uint16_t; 2]; 2]; 32]; 2],
