@@ -35,13 +35,13 @@ pub struct C2RustUnnamed_0 {
     pub gamma: int16_t,
     pub delta: int16_t,
 }
-pub type TxfmSize = libc::c_uint;
-pub const N_TX_SIZES: TxfmSize = 5;
-pub const TX_64X64: TxfmSize = 4;
-pub const TX_32X32: TxfmSize = 3;
-pub const TX_16X16: TxfmSize = 2;
-pub const TX_8X8: TxfmSize = 1;
-pub const TX_4X4: TxfmSize = 0;
+use crate::src::levels::TxfmSize;
+use crate::src::levels::N_TX_SIZES;
+use crate::src::levels::TX_64X64;
+use crate::src::levels::TX_32X32;
+use crate::src::levels::TX_16X16;
+use crate::src::levels::TX_8X8;
+use crate::src::levels::TX_4X4;
 pub type RectTxfmSize = libc::c_uint;
 pub const N_RECT_TX_SIZES: RectTxfmSize = 19;
 pub const RTX_64X16: RectTxfmSize = 18;

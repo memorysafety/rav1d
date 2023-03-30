@@ -1944,13 +1944,13 @@ pub struct ScalableMotionParams {
     pub scale: libc::c_int,
     pub step: libc::c_int,
 }
-pub type TxfmSize = libc::c_uint;
-pub const N_TX_SIZES: TxfmSize = 5;
-pub const TX_64X64: TxfmSize = 4;
-pub const TX_32X32: TxfmSize = 3;
-pub const TX_16X16: TxfmSize = 2;
-pub const TX_8X8: TxfmSize = 1;
-pub const TX_4X4: TxfmSize = 0;
+use crate::src::levels::TxfmSize;
+use crate::src::levels::N_TX_SIZES;
+use crate::src::levels::TX_64X64;
+use crate::src::levels::TX_32X32;
+use crate::src::levels::TX_16X16;
+use crate::src::levels::TX_8X8;
+use crate::src::levels::TX_4X4;
 pub type BlockLevel = libc::c_uint;
 pub const N_BL_LEVELS: BlockLevel = 5;
 pub const BL_8X8: BlockLevel = 4;
