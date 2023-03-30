@@ -1396,6 +1396,8 @@ unsafe extern "C" fn fguv_32x32xn_444_c(
         bitdepth_max,
     );
 }
+
+#[cfg(feature = "asm")]
 #[inline(always)]
 unsafe extern "C" fn dav1d_get_cpu_flags() -> libc::c_uint {
     let mut flags: libc::c_uint = dav1d_cpu_flags & dav1d_cpu_flags_mask;
@@ -1403,7 +1405,10 @@ unsafe extern "C" fn dav1d_get_cpu_flags() -> libc::c_uint {
     return flags;
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
+#[cfg(all(
+    feature = "asm",
+    any(target_arch = "x86", target_arch = "x86_64"),
+))]
 #[inline(always)]
 unsafe extern "C" fn film_grain_dsp_init_x86(c: *mut Dav1dFilmGrainDSPContext) {
     let flags = dav1d_get_cpu_flags();

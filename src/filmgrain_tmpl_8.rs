@@ -1,20 +1,273 @@
-use crate::include::stddef::*;
-use crate::include::stdint::*;
 use ::libc;
+use cfg_if::cfg_if;
+
 extern "C" {
     static dav1d_gaussian_sequence: [int16_t; 2048];
 }
 
+#[cfg(feature = "asm")]
+extern "C" {
+    static mut dav1d_cpu_flags: libc::c_uint;
+    static mut dav1d_cpu_flags_mask: libc::c_uint;
+}
 
+#[cfg(all(
+    feature = "asm",
+    any(target_arch = "x86", target_arch = "x86_64"),
+))]
+extern "C" {
+    fn dav1d_fguv_32x32xn_i422_8bpc_avx512icl(
+        dst_row: *mut pixel,
+        src_row: *const pixel,
+        stride: ptrdiff_t,
+        data: *const Dav1dFilmGrainData,
+        pw: size_t,
+        scaling: *const uint8_t,
+        grain_lut: *const [entry; 82],
+        bh: libc::c_int,
+        row_num: libc::c_int,
+        luma_row: *const pixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: libc::c_int,
+        is_id: libc::c_int,
+    );
+    fn dav1d_fguv_32x32xn_i444_8bpc_avx512icl(
+        dst_row: *mut pixel,
+        src_row: *const pixel,
+        stride: ptrdiff_t,
+        data: *const Dav1dFilmGrainData,
+        pw: size_t,
+        scaling: *const uint8_t,
+        grain_lut: *const [entry; 82],
+        bh: libc::c_int,
+        row_num: libc::c_int,
+        luma_row: *const pixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: libc::c_int,
+        is_id: libc::c_int,
+    );
+    fn dav1d_generate_grain_y_8bpc_ssse3(
+        buf: *mut [entry; 82],
+        data: *const Dav1dFilmGrainData,
+    );
+    fn dav1d_generate_grain_uv_420_8bpc_ssse3(
+        buf: *mut [entry; 82],
+        buf_y: *const [entry; 82],
+        data: *const Dav1dFilmGrainData,
+        uv: intptr_t,
+    );
+    fn dav1d_fgy_32x32xn_8bpc_ssse3(
+        dst_row: *mut pixel,
+        src_row: *const pixel,
+        stride: ptrdiff_t,
+        data: *const Dav1dFilmGrainData,
+        pw: size_t,
+        scaling: *const uint8_t,
+        grain_lut: *const [entry; 82],
+        bh: libc::c_int,
+        row_num: libc::c_int,
+    );
+    fn dav1d_fguv_32x32xn_i420_8bpc_ssse3(
+        dst_row: *mut pixel,
+        src_row: *const pixel,
+        stride: ptrdiff_t,
+        data: *const Dav1dFilmGrainData,
+        pw: size_t,
+        scaling: *const uint8_t,
+        grain_lut: *const [entry; 82],
+        bh: libc::c_int,
+        row_num: libc::c_int,
+        luma_row: *const pixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: libc::c_int,
+        is_id: libc::c_int,
+    );
+    fn dav1d_generate_grain_uv_422_8bpc_ssse3(
+        buf: *mut [entry; 82],
+        buf_y: *const [entry; 82],
+        data: *const Dav1dFilmGrainData,
+        uv: intptr_t,
+    );
+    fn dav1d_generate_grain_uv_444_8bpc_ssse3(
+        buf: *mut [entry; 82],
+        buf_y: *const [entry; 82],
+        data: *const Dav1dFilmGrainData,
+        uv: intptr_t,
+    );
+    fn dav1d_fguv_32x32xn_i444_8bpc_ssse3(
+        dst_row: *mut pixel,
+        src_row: *const pixel,
+        stride: ptrdiff_t,
+        data: *const Dav1dFilmGrainData,
+        pw: size_t,
+        scaling: *const uint8_t,
+        grain_lut: *const [entry; 82],
+        bh: libc::c_int,
+        row_num: libc::c_int,
+        luma_row: *const pixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: libc::c_int,
+        is_id: libc::c_int,
+    );
+    fn dav1d_generate_grain_y_8bpc_avx2(
+        buf: *mut [entry; 82],
+        data: *const Dav1dFilmGrainData,
+    );
+    fn dav1d_generate_grain_uv_420_8bpc_avx2(
+        buf: *mut [entry; 82],
+        buf_y: *const [entry; 82],
+        data: *const Dav1dFilmGrainData,
+        uv: intptr_t,
+    );
+    fn dav1d_generate_grain_uv_422_8bpc_avx2(
+        buf: *mut [entry; 82],
+        buf_y: *const [entry; 82],
+        data: *const Dav1dFilmGrainData,
+        uv: intptr_t,
+    );
+    fn dav1d_generate_grain_uv_444_8bpc_avx2(
+        buf: *mut [entry; 82],
+        buf_y: *const [entry; 82],
+        data: *const Dav1dFilmGrainData,
+        uv: intptr_t,
+    );
+    fn dav1d_fgy_32x32xn_8bpc_avx2(
+        dst_row: *mut pixel,
+        src_row: *const pixel,
+        stride: ptrdiff_t,
+        data: *const Dav1dFilmGrainData,
+        pw: size_t,
+        scaling: *const uint8_t,
+        grain_lut: *const [entry; 82],
+        bh: libc::c_int,
+        row_num: libc::c_int,
+    );
+    fn dav1d_fguv_32x32xn_i420_8bpc_avx2(
+        dst_row: *mut pixel,
+        src_row: *const pixel,
+        stride: ptrdiff_t,
+        data: *const Dav1dFilmGrainData,
+        pw: size_t,
+        scaling: *const uint8_t,
+        grain_lut: *const [entry; 82],
+        bh: libc::c_int,
+        row_num: libc::c_int,
+        luma_row: *const pixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: libc::c_int,
+        is_id: libc::c_int,
+    );
+    fn dav1d_fguv_32x32xn_i422_8bpc_avx2(
+        dst_row: *mut pixel,
+        src_row: *const pixel,
+        stride: ptrdiff_t,
+        data: *const Dav1dFilmGrainData,
+        pw: size_t,
+        scaling: *const uint8_t,
+        grain_lut: *const [entry; 82],
+        bh: libc::c_int,
+        row_num: libc::c_int,
+        luma_row: *const pixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: libc::c_int,
+        is_id: libc::c_int,
+    );
+    fn dav1d_fguv_32x32xn_i444_8bpc_avx2(
+        dst_row: *mut pixel,
+        src_row: *const pixel,
+        stride: ptrdiff_t,
+        data: *const Dav1dFilmGrainData,
+        pw: size_t,
+        scaling: *const uint8_t,
+        grain_lut: *const [entry; 82],
+        bh: libc::c_int,
+        row_num: libc::c_int,
+        luma_row: *const pixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: libc::c_int,
+        is_id: libc::c_int,
+    );
+    fn dav1d_fguv_32x32xn_i420_8bpc_avx512icl(
+        dst_row: *mut pixel,
+        src_row: *const pixel,
+        stride: ptrdiff_t,
+        data: *const Dav1dFilmGrainData,
+        pw: size_t,
+        scaling: *const uint8_t,
+        grain_lut: *const [entry; 82],
+        bh: libc::c_int,
+        row_num: libc::c_int,
+        luma_row: *const pixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: libc::c_int,
+        is_id: libc::c_int,
+    );
+    fn dav1d_fguv_32x32xn_i422_8bpc_ssse3(
+        dst_row: *mut pixel,
+        src_row: *const pixel,
+        stride: ptrdiff_t,
+        data: *const Dav1dFilmGrainData,
+        pw: size_t,
+        scaling: *const uint8_t,
+        grain_lut: *const [entry; 82],
+        bh: libc::c_int,
+        row_num: libc::c_int,
+        luma_row: *const pixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: libc::c_int,
+        is_id: libc::c_int,
+    );
+    fn dav1d_fgy_32x32xn_8bpc_avx512icl(
+        dst_row: *mut pixel,
+        src_row: *const pixel,
+        stride: ptrdiff_t,
+        data: *const Dav1dFilmGrainData,
+        pw: size_t,
+        scaling: *const uint8_t,
+        grain_lut: *const [entry; 82],
+        bh: libc::c_int,
+        row_num: libc::c_int,
+    );
+}
 
-
+pub type ptrdiff_t = libc::c_long;
+pub type size_t = libc::c_ulong;
+pub type __int8_t = libc::c_schar;
+pub type __uint8_t = libc::c_uchar;
+pub type __int16_t = libc::c_short;
+pub type __uint64_t = libc::c_ulong;
+pub type int8_t = __int8_t;
+pub type int16_t = __int16_t;
+pub type uint8_t = __uint8_t;
+pub type uint64_t = __uint64_t;
+pub type intptr_t = libc::c_long;
 pub type pixel = uint8_t;
-
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I422;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-
-use crate::include::dav1d::headers::Dav1dFilmGrainData;
+pub type Dav1dPixelLayout = libc::c_uint;
+pub const DAV1D_PIXEL_LAYOUT_I444: Dav1dPixelLayout = 3;
+pub const DAV1D_PIXEL_LAYOUT_I422: Dav1dPixelLayout = 2;
+pub const DAV1D_PIXEL_LAYOUT_I420: Dav1dPixelLayout = 1;
+pub const DAV1D_PIXEL_LAYOUT_I400: Dav1dPixelLayout = 0;
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dFilmGrainData {
+    pub seed: libc::c_uint,
+    pub num_y_points: libc::c_int,
+    pub y_points: [[uint8_t; 2]; 14],
+    pub chroma_scaling_from_luma: libc::c_int,
+    pub num_uv_points: [libc::c_int; 2],
+    pub uv_points: [[[uint8_t; 2]; 10]; 2],
+    pub scaling_shift: libc::c_int,
+    pub ar_coeff_lag: libc::c_int,
+    pub ar_coeffs_y: [int8_t; 24],
+    pub ar_coeffs_uv: [[int8_t; 28]; 2],
+    pub ar_coeff_shift: uint64_t,
+    pub grain_scale_shift: libc::c_int,
+    pub uv_mult: [libc::c_int; 2],
+    pub uv_luma_mult: [libc::c_int; 2],
+    pub uv_offset: [libc::c_int; 2],
+    pub overlap_flag: libc::c_int,
+    pub clip_to_restricted_range: libc::c_int,
+}
 pub type entry = int8_t;
 pub type generate_grain_y_fn = Option::<
     unsafe extern "C" fn(*mut [entry; 82], *const Dav1dFilmGrainData) -> (),
@@ -65,6 +318,13 @@ pub struct Dav1dFilmGrainDSPContext {
     pub fgy_32x32xn: fgy_32x32xn_fn,
     pub fguv_32x32xn: [fguv_32x32xn_fn; 3],
 }
+pub const DAV1D_X86_CPU_FLAG_AVX512ICL: CpuFlags = 16;
+pub const DAV1D_X86_CPU_FLAG_SSE2: CpuFlags = 1;
+pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
+pub const DAV1D_X86_CPU_FLAG_AVX2: CpuFlags = 8;
+pub const DAV1D_X86_CPU_FLAG_SSSE3: CpuFlags = 2;
+pub type CpuFlags = libc::c_uint;
+pub const DAV1D_X86_CPU_FLAG_SSE41: CpuFlags = 4;
 #[inline]
 unsafe extern "C" fn iclip_u8(v: libc::c_int) -> libc::c_int {
     return iclip(v, 0 as libc::c_int, 255 as libc::c_int);
@@ -1086,122 +1346,79 @@ unsafe extern "C" fn fguv_32x32xn_444_c(
         0 as libc::c_int,
     );
 }
+#[inline(always)]
+unsafe extern "C" fn film_grain_dsp_init_x86(c: *mut Dav1dFilmGrainDSPContext) {
+    let flags = dav1d_get_cpu_flags();
+
+    if flags & DAV1D_X86_CPU_FLAG_SSSE3 == 0 {
+        return;
+    }
+
+    (*c).generate_grain_y = Some(dav1d_generate_grain_y_8bpc_ssse3);
+    (*c).generate_grain_uv[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] = Some(dav1d_generate_grain_uv_420_8bpc_ssse3);
+    (*c).generate_grain_uv[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] = Some(dav1d_generate_grain_uv_422_8bpc_ssse3);
+    (*c).generate_grain_uv[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] = Some(dav1d_generate_grain_uv_444_8bpc_ssse3);
+
+    (*c).fgy_32x32xn = Some(dav1d_fgy_32x32xn_8bpc_ssse3);
+    (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] = Some(dav1d_fguv_32x32xn_i420_8bpc_ssse3);
+    (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] = Some(dav1d_fguv_32x32xn_i422_8bpc_ssse3);
+    (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] = Some(dav1d_fguv_32x32xn_i444_8bpc_ssse3);
+
+    if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
+        return;
+    }
+
+    (*c).generate_grain_y = Some(dav1d_generate_grain_y_8bpc_avx2);
+    (*c).generate_grain_uv[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] = Some(dav1d_generate_grain_uv_420_8bpc_avx2);
+    (*c).generate_grain_uv[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] = Some(dav1d_generate_grain_uv_422_8bpc_avx2);
+    (*c).generate_grain_uv[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] = Some(dav1d_generate_grain_uv_444_8bpc_avx2);
+
+    if flags & DAV1D_X86_CPU_FLAG_SLOW_GATHER == 0 {
+        (*c).fgy_32x32xn = Some(dav1d_fgy_32x32xn_8bpc_avx2);
+        (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] = Some(dav1d_fguv_32x32xn_i420_8bpc_avx2);
+        (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] = Some(dav1d_fguv_32x32xn_i422_8bpc_avx2);
+        (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] = Some(dav1d_fguv_32x32xn_i444_8bpc_avx2);
+    }
+
+    if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
+        return;
+    }
+
+    (*c).fgy_32x32xn = Some(dav1d_fgy_32x32xn_8bpc_avx512icl);
+    (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] = Some(dav1d_fguv_32x32xn_i420_8bpc_avx512icl);
+    (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] = Some(dav1d_fguv_32x32xn_i422_8bpc_avx512icl);
+    (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] = Some(dav1d_fguv_32x32xn_i444_8bpc_avx512icl);
+}
+
+#[cfg(feature = "asm")]
+#[inline(always)]
+unsafe extern "C" fn dav1d_get_cpu_flags() -> libc::c_uint {
+    let mut flags: libc::c_uint = dav1d_cpu_flags & dav1d_cpu_flags_mask;
+    flags |= DAV1D_X86_CPU_FLAG_SSE2 as libc::c_int as libc::c_uint;
+    return flags;
+}
+
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_film_grain_dsp_init_8bpc(
     c: *mut Dav1dFilmGrainDSPContext,
 ) {
-    (*c)
-        .generate_grain_y = Some(
-        generate_grain_y_c
-            as unsafe extern "C" fn(*mut [entry; 82], *const Dav1dFilmGrainData) -> (),
-    );
-    (*c)
-        .generate_grain_uv[(DAV1D_PIXEL_LAYOUT_I420 as libc::c_int - 1 as libc::c_int)
-        as usize] = Some(
-        generate_grain_uv_420_c
-            as unsafe extern "C" fn(
-                *mut [entry; 82],
-                *const [entry; 82],
-                *const Dav1dFilmGrainData,
-                intptr_t,
-            ) -> (),
-    );
-    (*c)
-        .generate_grain_uv[(DAV1D_PIXEL_LAYOUT_I422 as libc::c_int - 1 as libc::c_int)
-        as usize] = Some(
-        generate_grain_uv_422_c
-            as unsafe extern "C" fn(
-                *mut [entry; 82],
-                *const [entry; 82],
-                *const Dav1dFilmGrainData,
-                intptr_t,
-            ) -> (),
-    );
-    (*c)
-        .generate_grain_uv[(DAV1D_PIXEL_LAYOUT_I444 as libc::c_int - 1 as libc::c_int)
-        as usize] = Some(
-        generate_grain_uv_444_c
-            as unsafe extern "C" fn(
-                *mut [entry; 82],
-                *const [entry; 82],
-                *const Dav1dFilmGrainData,
-                intptr_t,
-            ) -> (),
-    );
-    (*c)
-        .fgy_32x32xn = Some(
-        fgy_32x32xn_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                *const pixel,
-                ptrdiff_t,
-                *const Dav1dFilmGrainData,
-                size_t,
-                *const uint8_t,
-                *const [entry; 82],
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I420 as libc::c_int - 1 as libc::c_int)
-        as usize] = Some(
-        fguv_32x32xn_420_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                *const pixel,
-                ptrdiff_t,
-                *const Dav1dFilmGrainData,
-                size_t,
-                *const uint8_t,
-                *const [entry; 82],
-                libc::c_int,
-                libc::c_int,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I422 as libc::c_int - 1 as libc::c_int)
-        as usize] = Some(
-        fguv_32x32xn_422_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                *const pixel,
-                ptrdiff_t,
-                *const Dav1dFilmGrainData,
-                size_t,
-                *const uint8_t,
-                *const [entry; 82],
-                libc::c_int,
-                libc::c_int,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I444 as libc::c_int - 1 as libc::c_int)
-        as usize] = Some(
-        fguv_32x32xn_444_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                *const pixel,
-                ptrdiff_t,
-                *const Dav1dFilmGrainData,
-                size_t,
-                *const uint8_t,
-                *const [entry; 82],
-                libc::c_int,
-                libc::c_int,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
+    (*c).generate_grain_y = Some(generate_grain_y_c);
+    (*c).generate_grain_uv[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] = Some(generate_grain_uv_420_c);
+    (*c).generate_grain_uv[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] = Some(generate_grain_uv_422_c);
+    (*c).generate_grain_uv[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] = Some(generate_grain_uv_444_c);
+
+    (*c).fgy_32x32xn = Some(fgy_32x32xn_c);
+    (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] = Some(fguv_32x32xn_420_c);
+    (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] = Some(fguv_32x32xn_422_c);
+    (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] = Some(fguv_32x32xn_444_c);
+
+    #[cfg(feature = "asm")]
+    cfg_if! {
+        if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
+            film_grain_dsp_init_x86(c);
+        } else if #[cfg(any(target_arch = "arm", target_arch = "aarch64"))] {
+            film_grain_dsp_init_arm(c);
+        }
+    }
 }
