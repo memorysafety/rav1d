@@ -55,14 +55,7 @@ extern "C" {
     fn dav1d_bytealign_get_bits(c: *mut GetBits);
     fn dav1d_log(c: *mut Dav1dContext, format: *const libc::c_char, _: ...);
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct __va_list_tag {
-    pub gp_offset: libc::c_uint,
-    pub fp_offset: libc::c_uint,
-    pub overflow_arg_area: *mut libc::c_void,
-    pub reg_save_area: *mut libc::c_void,
-}
+
 
 
 use crate::src::r#ref::Dav1dRef;

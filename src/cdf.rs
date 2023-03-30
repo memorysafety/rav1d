@@ -21,14 +21,7 @@ extern "C" {
     fn dav1d_ref_dec(ref_0: *mut *mut Dav1dRef);
     static dav1d_partition_type_count: [uint8_t; 5];
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct __va_list_tag {
-    pub gp_offset: libc::c_uint,
-    pub fp_offset: libc::c_uint,
-    pub overflow_arg_area: *mut libc::c_void,
-    pub reg_save_area: *mut libc::c_void,
-}
+
 
 
 
