@@ -1636,12 +1636,12 @@ use crate::include::dav1d::headers::DAV1D_OBU_FRAME;
 
 use crate::include::dav1d::headers::DAV1D_OBU_TD;
 use crate::include::dav1d::headers::DAV1D_OBU_SEQ_HDR;
-pub type ObuMetaType = libc::c_uint;
-pub const OBU_META_TIMECODE: ObuMetaType = 5;
-pub const OBU_META_ITUT_T35: ObuMetaType = 4;
-pub const OBU_META_SCALABILITY: ObuMetaType = 3;
-pub const OBU_META_HDR_MDCV: ObuMetaType = 2;
-pub const OBU_META_HDR_CLL: ObuMetaType = 1;
+use crate::src::levels::ObuMetaType;
+use crate::src::levels::OBU_META_TIMECODE;
+use crate::src::levels::OBU_META_ITUT_T35;
+use crate::src::levels::OBU_META_SCALABILITY;
+use crate::src::levels::OBU_META_HDR_MDCV;
+use crate::src::levels::OBU_META_HDR_CLL;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct GetBits {
