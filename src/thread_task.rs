@@ -265,28 +265,9 @@ pub struct Dav1dPicture {
     pub ref_0: *mut Dav1dRef,
     pub allocator_data: *mut libc::c_void,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dITUTT35 {
-    pub country_code: uint8_t,
-    pub country_code_extension_byte: uint8_t,
-    pub payload_size: size_t,
-    pub payload: *mut uint8_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dMasteringDisplay {
-    pub primaries: [[uint16_t; 2]; 3],
-    pub white_point: [uint16_t; 2],
-    pub max_luminance: uint32_t,
-    pub min_luminance: uint32_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dContentLightLevel {
-    pub max_content_light_level: libc::c_int,
-    pub max_frame_average_light_level: libc::c_int,
-}
+use crate::include::dav1d::headers::Dav1dITUTT35;
+use crate::include::dav1d::headers::Dav1dMasteringDisplay;
+use crate::include::dav1d::headers::Dav1dContentLightLevel;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dPictureParameters {
@@ -415,12 +396,7 @@ pub struct C2RustUnnamed_9 {
     pub mode_ref_deltas: Dav1dLoopfilterModeRefDeltas,
     pub sharpness: libc::c_int,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dLoopfilterModeRefDeltas {
-    pub mode_delta: [libc::c_int; 2],
-    pub ref_delta: [libc::c_int; 8],
-}
+use crate::include::dav1d::headers::Dav1dLoopfilterModeRefDeltas;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct C2RustUnnamed_10 {
@@ -451,25 +427,8 @@ pub struct C2RustUnnamed_13 {
     pub lossless: [libc::c_int; 8],
     pub qidx: [libc::c_int; 8],
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dSegmentationDataSet {
-    pub d: [Dav1dSegmentationData; 8],
-    pub preskip: libc::c_int,
-    pub last_active_segid: libc::c_int,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dSegmentationData {
-    pub delta_q: libc::c_int,
-    pub delta_lf_y_v: libc::c_int,
-    pub delta_lf_y_h: libc::c_int,
-    pub delta_lf_u: libc::c_int,
-    pub delta_lf_v: libc::c_int,
-    pub ref_0: libc::c_int,
-    pub skip: libc::c_int,
-    pub globalmv: libc::c_int,
-}
+use crate::include::dav1d::headers::Dav1dSegmentationDataSet;
+use crate::include::dav1d::headers::Dav1dSegmentationData;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct C2RustUnnamed_14 {
@@ -532,27 +491,7 @@ pub struct C2RustUnnamed_17 {
     pub present: libc::c_int,
     pub update: libc::c_int,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFilmGrainData {
-    pub seed: libc::c_uint,
-    pub num_y_points: libc::c_int,
-    pub y_points: [[uint8_t; 2]; 14],
-    pub chroma_scaling_from_luma: libc::c_int,
-    pub num_uv_points: [libc::c_int; 2],
-    pub uv_points: [[[uint8_t; 2]; 10]; 2],
-    pub scaling_shift: libc::c_int,
-    pub ar_coeff_lag: libc::c_int,
-    pub ar_coeffs_y: [int8_t; 24],
-    pub ar_coeffs_uv: [[int8_t; 28]; 2],
-    pub ar_coeff_shift: uint64_t,
-    pub grain_scale_shift: libc::c_int,
-    pub uv_mult: [libc::c_int; 2],
-    pub uv_luma_mult: [libc::c_int; 2],
-    pub uv_offset: [libc::c_int; 2],
-    pub overlap_flag: libc::c_int,
-    pub clip_to_restricted_range: libc::c_int,
-}
+use crate::include::dav1d::headers::Dav1dFilmGrainData;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dSequenceHeader {
