@@ -13,12 +13,12 @@ extern "C" {
     ) -> *mut libc::c_void;
 }
 
-pub type InterIntraPredMode = libc::c_uint;
-pub const N_INTER_INTRA_PRED_MODES: InterIntraPredMode = 4;
-pub const II_SMOOTH_PRED: InterIntraPredMode = 3;
-pub const II_HOR_PRED: InterIntraPredMode = 2;
-pub const II_VERT_PRED: InterIntraPredMode = 1;
-pub const II_DC_PRED: InterIntraPredMode = 0;
+use crate::src::levels::InterIntraPredMode;
+use crate::src::levels::N_INTER_INTRA_PRED_MODES;
+use crate::src::levels::II_SMOOTH_PRED;
+use crate::src::levels::II_HOR_PRED;
+use crate::src::levels::II_VERT_PRED;
+use crate::src::levels::II_DC_PRED;
 pub type BlockSize = libc::c_uint;
 pub const N_BS_SIZES: BlockSize = 22;
 pub const BS_4x4: BlockSize = 21;
