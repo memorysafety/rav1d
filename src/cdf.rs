@@ -41,15 +41,7 @@ use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
 use crate::include::dav1d::common::Dav1dUserData;
 use crate::src::r#ref::Dav1dRef;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dDataProps {
-    pub timestamp: int64_t,
-    pub duration: int64_t,
-    pub offset: int64_t,
-    pub size: size_t,
-    pub user_data: Dav1dUserData,
-}
+use crate::include::dav1d::common::Dav1dDataProps;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dData {

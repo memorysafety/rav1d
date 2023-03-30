@@ -42,15 +42,7 @@ pub const DAV1D_OBU_FRAME_HDR: Dav1dObuType = 3;
 pub const DAV1D_OBU_TD: Dav1dObuType = 2;
 pub const DAV1D_OBU_SEQ_HDR: Dav1dObuType = 1;
 use crate::include::dav1d::common::Dav1dUserData;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dDataProps {
-    pub timestamp: int64_t,
-    pub duration: int64_t,
-    pub offset: int64_t,
-    pub size: size_t,
-    pub user_data: Dav1dUserData,
-}
+use crate::include::dav1d::common::Dav1dDataProps;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dData {

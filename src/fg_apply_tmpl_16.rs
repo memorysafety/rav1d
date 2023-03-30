@@ -16,15 +16,7 @@ extern "C" {
 }
 
 use crate::include::dav1d::common::Dav1dUserData;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dDataProps {
-    pub timestamp: int64_t,
-    pub duration: int64_t,
-    pub offset: int64_t,
-    pub size: size_t,
-    pub user_data: Dav1dUserData,
-}
+use crate::include::dav1d::common::Dav1dDataProps;
 pub type Dav1dTxfmMode = libc::c_uint;
 pub const DAV1D_N_TX_MODES: Dav1dTxfmMode = 3;
 pub const DAV1D_TX_SWITCHABLE: Dav1dTxfmMode = 2;
