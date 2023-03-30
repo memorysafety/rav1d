@@ -1157,12 +1157,7 @@ pub struct C2RustUnnamed_46 {
     pub tip_sb128: [EdgeTip; 256],
     pub tip_sb64: [EdgeTip; 64],
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct EdgeTip {
-    pub node: EdgeNode,
-    pub split: [EdgeFlags; 4],
-}
+use crate::src::intra_edge::EdgeTip;
 use crate::src::intra_edge::EdgeFlags;
 
 
