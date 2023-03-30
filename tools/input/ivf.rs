@@ -37,8 +37,8 @@ extern "C" {
 pub type __off_t = libc::c_long;
 pub type __off64_t = libc::c_long;
 pub type _IO_lock_t = ();
-use crate::include::dav1d::common::Dav1dUserData;
-use crate::include::dav1d::common::Dav1dDataProps;
+
+
 use crate::include::dav1d::data::Dav1dData;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -402,43 +402,41 @@ unsafe extern "C" fn ivf_close(c: *mut IvfInputContext) {
     fclose((*c).f);
 }
 #[no_mangle]
-pub static mut ivf_demuxer: Demuxer = unsafe {
-    {
-        let mut init = Demuxer {
-            priv_data_size: ::core::mem::size_of::<IvfInputContext>() as libc::c_ulong
-                as libc::c_int,
-            name: b"ivf\0" as *const u8 as *const libc::c_char,
-            probe_sz: ::core::mem::size_of::<[uint8_t; 12]>() as libc::c_ulong
-                as libc::c_int,
-            probe: Some(
-                ivf_probe as unsafe extern "C" fn(*const uint8_t) -> libc::c_int,
-            ),
-            open: Some(
-                ivf_open
-                    as unsafe extern "C" fn(
-                        *mut IvfInputContext,
-                        *const libc::c_char,
-                        *mut libc::c_uint,
-                        *mut libc::c_uint,
-                        *mut libc::c_uint,
-                    ) -> libc::c_int,
-            ),
-            read: Some(
-                ivf_read
-                    as unsafe extern "C" fn(
-                        *mut IvfInputContext,
-                        *mut Dav1dData,
-                    ) -> libc::c_int,
-            ),
-            seek: Some(
-                ivf_seek
-                    as unsafe extern "C" fn(
-                        *mut IvfInputContext,
-                        uint64_t,
-                    ) -> libc::c_int,
-            ),
-            close: Some(ivf_close as unsafe extern "C" fn(*mut IvfInputContext) -> ()),
-        };
-        init
-    }
+pub static mut ivf_demuxer: Demuxer = {
+    let mut init = Demuxer {
+        priv_data_size: ::core::mem::size_of::<IvfInputContext>() as libc::c_ulong
+            as libc::c_int,
+        name: b"ivf\0" as *const u8 as *const libc::c_char,
+        probe_sz: ::core::mem::size_of::<[uint8_t; 12]>() as libc::c_ulong
+            as libc::c_int,
+        probe: Some(
+            ivf_probe as unsafe extern "C" fn(*const uint8_t) -> libc::c_int,
+        ),
+        open: Some(
+            ivf_open
+                as unsafe extern "C" fn(
+                    *mut IvfInputContext,
+                    *const libc::c_char,
+                    *mut libc::c_uint,
+                    *mut libc::c_uint,
+                    *mut libc::c_uint,
+                ) -> libc::c_int,
+        ),
+        read: Some(
+            ivf_read
+                as unsafe extern "C" fn(
+                    *mut IvfInputContext,
+                    *mut Dav1dData,
+                ) -> libc::c_int,
+        ),
+        seek: Some(
+            ivf_seek
+                as unsafe extern "C" fn(
+                    *mut IvfInputContext,
+                    uint64_t,
+                ) -> libc::c_int,
+        ),
+        close: Some(ivf_close as unsafe extern "C" fn(*mut IvfInputContext) -> ()),
+    };
+    init
 };

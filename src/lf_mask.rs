@@ -46,28 +46,28 @@ pub union alias8 {
     pub u8_0: uint8_t,
 }
 use crate::include::dav1d::headers::Dav1dTxfmMode;
-use crate::include::dav1d::headers::DAV1D_N_TX_MODES;
-use crate::include::dav1d::headers::DAV1D_TX_SWITCHABLE;
-use crate::include::dav1d::headers::DAV1D_TX_LARGEST;
-use crate::include::dav1d::headers::DAV1D_TX_4X4_ONLY;
+
+
+
+
 use crate::include::dav1d::headers::Dav1dFilterMode;
-use crate::include::dav1d::headers::DAV1D_FILTER_SWITCHABLE;
-use crate::include::dav1d::headers::DAV1D_N_FILTERS;
-use crate::include::dav1d::headers::DAV1D_FILTER_BILINEAR;
-use crate::include::dav1d::headers::DAV1D_N_SWITCHABLE_FILTERS;
-use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SHARP;
-use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SMOOTH;
-use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
+
+
+
+
+
+
+
 use crate::include::dav1d::headers::Dav1dRestorationType;
-use crate::include::dav1d::headers::DAV1D_RESTORATION_SGRPROJ;
-use crate::include::dav1d::headers::DAV1D_RESTORATION_WIENER;
-use crate::include::dav1d::headers::DAV1D_RESTORATION_SWITCHABLE;
-use crate::include::dav1d::headers::DAV1D_RESTORATION_NONE;
+
+
+
+
 use crate::include::dav1d::headers::Dav1dWarpedMotionType;
-use crate::include::dav1d::headers::DAV1D_WM_TYPE_AFFINE;
-use crate::include::dav1d::headers::DAV1D_WM_TYPE_ROT_ZOOM;
-use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
-use crate::include::dav1d::headers::DAV1D_WM_TYPE_IDENTITY;
+
+
+
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dWarpedMotionParams {
@@ -91,14 +91,14 @@ pub struct C2RustUnnamed_0 {
 }
 use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I422;
+
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
+
 use crate::include::dav1d::headers::Dav1dFrameType;
-use crate::include::dav1d::headers::DAV1D_FRAME_TYPE_SWITCH;
-use crate::include::dav1d::headers::DAV1D_FRAME_TYPE_INTRA;
-use crate::include::dav1d::headers::DAV1D_FRAME_TYPE_INTER;
-use crate::include::dav1d::headers::DAV1D_FRAME_TYPE_KEY;
+
+
+
+
 use crate::include::dav1d::headers::Dav1dSegmentationData;
 use crate::include::dav1d::headers::Dav1dSegmentationDataSet;
 use crate::include::dav1d::headers::Dav1dLoopfilterModeRefDeltas;

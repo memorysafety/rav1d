@@ -520,7 +520,7 @@ unsafe extern "C" fn boxsum5(
 unsafe extern "C" fn selfguided_filter(
     mut dst: *mut coef,
     mut src: *const pixel,
-    src_stride: ptrdiff_t,
+    _src_stride: ptrdiff_t,
     w: libc::c_int,
     h: libc::c_int,
     n: libc::c_int,
@@ -922,7 +922,7 @@ unsafe extern "C" fn sgr_mix_c(
 #[cold]
 pub unsafe extern "C" fn dav1d_loop_restoration_dsp_init_8bpc(
     c: *mut Dav1dLoopRestorationDSPContext,
-    bpc: libc::c_int,
+    _bpc: libc::c_int,
 ) {
     (*c)
         .wiener[1 as libc::c_int
