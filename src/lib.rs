@@ -1692,30 +1692,30 @@ pub struct C2RustUnnamed_50 {
 pub type read_coef_blocks_fn = Option::<
     unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> (),
 >;
-pub type BlockSize = libc::c_uint;
-pub const N_BS_SIZES: BlockSize = 22;
-pub const BS_4x4: BlockSize = 21;
-pub const BS_4x8: BlockSize = 20;
-pub const BS_4x16: BlockSize = 19;
-pub const BS_8x4: BlockSize = 18;
-pub const BS_8x8: BlockSize = 17;
-pub const BS_8x16: BlockSize = 16;
-pub const BS_8x32: BlockSize = 15;
-pub const BS_16x4: BlockSize = 14;
-pub const BS_16x8: BlockSize = 13;
-pub const BS_16x16: BlockSize = 12;
-pub const BS_16x32: BlockSize = 11;
-pub const BS_16x64: BlockSize = 10;
-pub const BS_32x8: BlockSize = 9;
-pub const BS_32x16: BlockSize = 8;
-pub const BS_32x32: BlockSize = 7;
-pub const BS_32x64: BlockSize = 6;
-pub const BS_64x16: BlockSize = 5;
-pub const BS_64x32: BlockSize = 4;
-pub const BS_64x64: BlockSize = 3;
-pub const BS_64x128: BlockSize = 2;
-pub const BS_128x64: BlockSize = 1;
-pub const BS_128x128: BlockSize = 0;
+use crate::src::levels::BlockSize;
+use crate::src::levels::N_BS_SIZES;
+use crate::src::levels::BS_4x4;
+use crate::src::levels::BS_4x8;
+use crate::src::levels::BS_4x16;
+use crate::src::levels::BS_8x4;
+use crate::src::levels::BS_8x8;
+use crate::src::levels::BS_8x16;
+use crate::src::levels::BS_8x32;
+use crate::src::levels::BS_16x4;
+use crate::src::levels::BS_16x8;
+use crate::src::levels::BS_16x16;
+use crate::src::levels::BS_16x32;
+use crate::src::levels::BS_16x64;
+use crate::src::levels::BS_32x8;
+use crate::src::levels::BS_32x16;
+use crate::src::levels::BS_32x32;
+use crate::src::levels::BS_32x64;
+use crate::src::levels::BS_64x16;
+use crate::src::levels::BS_64x32;
+use crate::src::levels::BS_64x64;
+use crate::src::levels::BS_64x128;
+use crate::src::levels::BS_128x64;
+use crate::src::levels::BS_128x128;
 pub type backup_ipred_edge_fn = Option::<
     unsafe extern "C" fn(*mut Dav1dTaskContext) -> (),
 >;
