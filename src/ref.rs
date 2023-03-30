@@ -30,20 +30,8 @@ pub struct Dav1dRef {
 }
 use crate::include::stdatomic::atomic_int;
 use crate::include::pthread::pthread_mutex_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dMemPoolBuffer {
-    pub data: *mut libc::c_void,
-    pub next: *mut Dav1dMemPoolBuffer,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dMemPool {
-    pub lock: pthread_mutex_t,
-    pub buf: *mut Dav1dMemPoolBuffer,
-    pub ref_cnt: libc::c_int,
-    pub end: libc::c_int,
-}
+use crate::src::mem::Dav1dMemPoolBuffer;
+use crate::src::mem::Dav1dMemPool;
 #[inline]
 unsafe extern "C" fn dav1d_alloc_aligned(
     mut sz: size_t,
