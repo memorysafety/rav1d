@@ -18,32 +18,8 @@ extern "C" {
     ) -> libc::c_int;
 }
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union pthread_mutex_t {
-    pub __data: __pthread_mutex_s,
-    pub __size: [libc::c_char; 40],
-    pub __align: libc::c_long,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct __pthread_mutex_s {
-    pub __lock: libc::c_int,
-    pub __count: libc::c_uint,
-    pub __owner: libc::c_int,
-    pub __nusers: libc::c_uint,
-    pub __kind: libc::c_int,
-    pub __spins: libc::c_short,
-    pub __elision: libc::c_short,
-    pub __list: __pthread_list_t,
-}
-pub type __pthread_list_t = __pthread_internal_list;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct __pthread_internal_list {
-    pub __prev: *mut __pthread_internal_list,
-    pub __next: *mut __pthread_internal_list,
-}
+use crate::include::pthread::pthread_mutex_t;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dMemPool {
@@ -58,12 +34,7 @@ pub struct Dav1dMemPoolBuffer {
     pub data: *mut libc::c_void,
     pub next: *mut Dav1dMemPoolBuffer,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union pthread_mutexattr_t {
-    pub __size: [libc::c_char; 4],
-    pub __align: libc::c_int,
-}
+use crate::include::pthread::pthread_mutexattr_t;
 #[inline]
 unsafe extern "C" fn dav1d_free_aligned(mut ptr: *mut libc::c_void) {
     free(ptr);

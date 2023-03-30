@@ -17,6 +17,7 @@ compile_error!("No bitdepths enabled. Enable one or more of the following featur
 extern crate c2rust_bitfields;
 extern crate libc;
 pub mod include {
+pub mod pthread;
 pub mod stdatomic;
 pub mod stddef;
 pub mod stdint;
