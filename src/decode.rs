@@ -2055,10 +2055,10 @@ use crate::src::levels::InterIntraType;
 use crate::src::levels::INTER_INTRA_WEDGE;
 use crate::src::levels::INTER_INTRA_BLEND;
 use crate::src::levels::INTER_INTRA_NONE;
-pub type MotionMode = libc::c_uint;
-pub const MM_WARP: MotionMode = 2;
-pub const MM_OBMC: MotionMode = 1;
-pub const MM_TRANSLATION: MotionMode = 0;
+use crate::src::levels::MotionMode;
+use crate::src::levels::MM_WARP;
+use crate::src::levels::MM_OBMC;
+use crate::src::levels::MM_TRANSLATION;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct TxfmInfo {

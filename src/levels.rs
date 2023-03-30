@@ -175,3 +175,7 @@ pub type InterIntraType = libc::c_uint;
 pub const INTER_INTRA_WEDGE: InterIntraType = 2;
 pub const INTER_INTRA_BLEND: InterIntraType = 1;
 pub const INTER_INTRA_NONE: InterIntraType = 0;
+pub type MotionMode = libc::c_uint;
+pub const MM_WARP: MotionMode = 2;
+pub const MM_OBMC: MotionMode = 1;
+pub const MM_TRANSLATION: MotionMode = 0;
