@@ -330,6 +330,11 @@ pub struct Av1Filter {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
+pub struct Av1Restoration {
+    pub lr: [[Av1RestorationUnit; 4]; 3],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
 pub struct TxfmInfo {
     pub w: uint8_t,
     pub h: uint8_t,

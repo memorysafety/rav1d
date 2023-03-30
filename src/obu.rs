@@ -577,11 +577,7 @@ pub struct C2RustUnnamed_19 {
 use crate::src::lf_mask::Av1Filter;
 pub type pixel = ();
 use crate::src::lf_mask::Av1FilterLUT;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Av1Restoration {
-    pub lr: [[Av1RestorationUnit; 4]; 3],
-}
+use crate::src::lf_mask::Av1Restoration;
 use crate::src::lf_mask::Av1RestorationUnit;
 #[derive(Copy, Clone)]
 #[repr(C)]

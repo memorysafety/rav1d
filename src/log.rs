@@ -1409,11 +1409,7 @@ pub struct C2RustUnnamed_42 {
     pub prev_mask_ptr: *mut Av1Filter,
     pub restore_planes: libc::c_int,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Av1Restoration {
-    pub lr: [[Av1RestorationUnit; 4]; 3],
-}
+use crate::src::lf_mask::Av1Restoration;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct C2RustUnnamed_43 {
