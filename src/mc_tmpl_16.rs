@@ -26,18 +26,18 @@ pub type pixel = uint16_t;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SHARP;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SMOOTH;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
-pub type Filter2d = libc::c_uint;
-pub const N_2D_FILTERS: Filter2d = 10;
-pub const FILTER_2D_BILINEAR: Filter2d = 9;
-pub const FILTER_2D_8TAP_SMOOTH_SHARP: Filter2d = 8;
-pub const FILTER_2D_8TAP_SMOOTH: Filter2d = 7;
-pub const FILTER_2D_8TAP_SMOOTH_REGULAR: Filter2d = 6;
-pub const FILTER_2D_8TAP_SHARP: Filter2d = 5;
-pub const FILTER_2D_8TAP_SHARP_SMOOTH: Filter2d = 4;
-pub const FILTER_2D_8TAP_SHARP_REGULAR: Filter2d = 3;
-pub const FILTER_2D_8TAP_REGULAR_SHARP: Filter2d = 2;
-pub const FILTER_2D_8TAP_REGULAR_SMOOTH: Filter2d = 1;
-pub const FILTER_2D_8TAP_REGULAR: Filter2d = 0;
+use crate::src::levels::Filter2d;
+use crate::src::levels::N_2D_FILTERS;
+use crate::src::levels::FILTER_2D_BILINEAR;
+use crate::src::levels::FILTER_2D_8TAP_SMOOTH_SHARP;
+use crate::src::levels::FILTER_2D_8TAP_SMOOTH;
+use crate::src::levels::FILTER_2D_8TAP_SMOOTH_REGULAR;
+use crate::src::levels::FILTER_2D_8TAP_SHARP;
+use crate::src::levels::FILTER_2D_8TAP_SHARP_SMOOTH;
+use crate::src::levels::FILTER_2D_8TAP_SHARP_REGULAR;
+use crate::src::levels::FILTER_2D_8TAP_REGULAR_SHARP;
+use crate::src::levels::FILTER_2D_8TAP_REGULAR_SMOOTH;
+use crate::src::levels::FILTER_2D_8TAP_REGULAR;
 pub type mc_fn = Option::<
     unsafe extern "C" fn(
         *mut pixel,
