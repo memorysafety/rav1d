@@ -1761,8 +1761,8 @@ pub struct Dav1dSettings {
     pub reserved: [uint8_t; 16],
 }
 use crate::include::pthread::pthread_attr_t;
-pub const BL_64X64: BlockLevel = 1;
-pub const BL_128X128: BlockLevel = 0;
+use crate::src::levels::BL_64X64;
+use crate::src::levels::BL_128X128;
 use crate::include::pthread::pthread_condattr_t;
 use crate::include::pthread::pthread_mutexattr_t;
 pub type FILE = _IO_FILE;
@@ -1801,18 +1801,11 @@ pub struct _IO_FILE {
 }
 pub type _IO_lock_t = ();
 pub type pthread_once_t = libc::c_int;
-
-pub type BlockLevel = libc::c_uint;
-pub const N_BL_LEVELS: BlockLevel = 5;
-pub const BL_8X8: BlockLevel = 4;
-pub const BL_16X16: BlockLevel = 3;
-pub const BL_32X32: BlockLevel = 2;
-
-
-
-
-
-
+use crate::src::levels::BlockLevel;
+use crate::src::levels::N_BL_LEVELS;
+use crate::src::levels::BL_8X8;
+use crate::src::levels::BL_16X16;
+use crate::src::levels::BL_32X32;
 #[inline]
 unsafe extern "C" fn umin(a: libc::c_uint, b: libc::c_uint) -> libc::c_uint {
     return if a < b { a } else { b };
