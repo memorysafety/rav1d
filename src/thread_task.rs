@@ -575,14 +575,7 @@ pub struct C2RustUnnamed_19 {
     pub prev_mask_ptr: *mut Av1Filter,
     pub restore_planes: libc::c_int,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Av1Filter {
-    pub filter_y: [[[[uint16_t; 2]; 3]; 32]; 2],
-    pub filter_uv: [[[[uint16_t; 2]; 2]; 32]; 2],
-    pub cdef_idx: [int8_t; 4],
-    pub noskip_mask: [[uint16_t; 2]; 16],
-}
+use crate::src::lf_mask::Av1Filter;
 pub type pixel = ();
 use crate::src::lf_mask::Av1FilterLUT;
 #[derive(Copy, Clone)]
