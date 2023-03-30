@@ -1100,18 +1100,7 @@ use crate::src::intra_edge::EdgeFlags;
 
 
 use crate::src::intra_edge::EdgeNode;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct EdgeBranch {
-    pub node: EdgeNode,
-    pub tts: [EdgeFlags; 3],
-    pub tbs: [EdgeFlags; 3],
-    pub tls: [EdgeFlags; 3],
-    pub trs: [EdgeFlags; 3],
-    pub h4: [EdgeFlags; 4],
-    pub v4: [EdgeFlags; 4],
-    pub split: [*mut EdgeNode; 4],
-}
+use crate::src::intra_edge::EdgeBranch;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dRefmvsDSPContext {
