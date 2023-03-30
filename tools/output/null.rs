@@ -7,19 +7,7 @@ extern "C" {
     fn dav1d_picture_unref(p: *mut Dav1dPicture);
 }
 
-
-
-
-
-
-
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dUserData {
-    pub data: *const uint8_t,
-    pub ref_0: *mut Dav1dRef,
-}
+use crate::include::dav1d::common::Dav1dUserData;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dDataProps {
