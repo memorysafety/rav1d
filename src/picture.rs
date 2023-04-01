@@ -1091,12 +1091,7 @@ pub struct C2RustUnnamed_46 {
     pub tip_sb128: [EdgeTip; 256],
     pub tip_sb64: [EdgeTip; 64],
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct EdgeTip {
-    pub node: EdgeNode,
-    pub split: [EdgeFlags; 4],
-}
+use crate::src::intra_edge::EdgeTip;
 use crate::src::intra_edge::EdgeFlags;
 
 
@@ -1104,25 +1099,8 @@ use crate::src::intra_edge::EdgeFlags;
 
 
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct EdgeNode {
-    pub o: EdgeFlags,
-    pub h: [EdgeFlags; 2],
-    pub v: [EdgeFlags; 2],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct EdgeBranch {
-    pub node: EdgeNode,
-    pub tts: [EdgeFlags; 3],
-    pub tbs: [EdgeFlags; 3],
-    pub tls: [EdgeFlags; 3],
-    pub trs: [EdgeFlags; 3],
-    pub h4: [EdgeFlags; 4],
-    pub v4: [EdgeFlags; 4],
-    pub split: [*mut EdgeNode; 4],
-}
+use crate::src::intra_edge::EdgeNode;
+use crate::src::intra_edge::EdgeBranch;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dRefmvsDSPContext {
