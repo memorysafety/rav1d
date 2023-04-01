@@ -1712,7 +1712,7 @@ pub struct _IO_FILE {
     pub _unused2: [libc::c_char; 20],
 }
 pub type _IO_lock_t = ();
-pub type pthread_once_t = libc::c_int;
+use crate::include::pthread::pthread_once_t;
 
 
 
