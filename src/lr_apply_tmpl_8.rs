@@ -756,30 +756,30 @@ pub struct C2RustUnnamed_28 {
 pub type read_coef_blocks_fn = Option::<
     unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> (),
 >;
-pub type BlockSize = libc::c_uint;
-pub const N_BS_SIZES: BlockSize = 22;
-pub const BS_4x4: BlockSize = 21;
-pub const BS_4x8: BlockSize = 20;
-pub const BS_4x16: BlockSize = 19;
-pub const BS_8x4: BlockSize = 18;
-pub const BS_8x8: BlockSize = 17;
-pub const BS_8x16: BlockSize = 16;
-pub const BS_8x32: BlockSize = 15;
-pub const BS_16x4: BlockSize = 14;
-pub const BS_16x8: BlockSize = 13;
-pub const BS_16x16: BlockSize = 12;
-pub const BS_16x32: BlockSize = 11;
-pub const BS_16x64: BlockSize = 10;
-pub const BS_32x8: BlockSize = 9;
-pub const BS_32x16: BlockSize = 8;
-pub const BS_32x32: BlockSize = 7;
-pub const BS_32x64: BlockSize = 6;
-pub const BS_64x16: BlockSize = 5;
-pub const BS_64x32: BlockSize = 4;
-pub const BS_64x64: BlockSize = 3;
-pub const BS_64x128: BlockSize = 2;
-pub const BS_128x64: BlockSize = 1;
-pub const BS_128x128: BlockSize = 0;
+use crate::src::levels::BlockSize;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTaskContext {
@@ -827,18 +827,18 @@ pub type pthread_t = libc::c_ulong;
 pub struct C2RustUnnamed_30 {
     pub pass: libc::c_int,
 }
-pub type Filter2d = libc::c_uint;
-pub const N_2D_FILTERS: Filter2d = 10;
-pub const FILTER_2D_BILINEAR: Filter2d = 9;
-pub const FILTER_2D_8TAP_SMOOTH_SHARP: Filter2d = 8;
-pub const FILTER_2D_8TAP_SMOOTH: Filter2d = 7;
-pub const FILTER_2D_8TAP_SMOOTH_REGULAR: Filter2d = 6;
-pub const FILTER_2D_8TAP_SHARP: Filter2d = 5;
-pub const FILTER_2D_8TAP_SHARP_SMOOTH: Filter2d = 4;
-pub const FILTER_2D_8TAP_SHARP_REGULAR: Filter2d = 3;
-pub const FILTER_2D_8TAP_REGULAR_SHARP: Filter2d = 2;
-pub const FILTER_2D_8TAP_REGULAR_SMOOTH: Filter2d = 1;
-pub const FILTER_2D_8TAP_REGULAR: Filter2d = 0;
+use crate::src::levels::Filter2d;
+
+
+
+
+
+
+
+
+
+
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union C2RustUnnamed_31 {

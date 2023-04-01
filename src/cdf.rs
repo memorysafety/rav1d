@@ -766,30 +766,30 @@ pub struct C2RustUnnamed_28 {
 pub type read_coef_blocks_fn = Option::<
     unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> (),
 >;
-pub type BlockSize = libc::c_uint;
-pub const N_BS_SIZES: BlockSize = 22;
-pub const BS_4x4: BlockSize = 21;
-pub const BS_4x8: BlockSize = 20;
-pub const BS_4x16: BlockSize = 19;
-pub const BS_8x4: BlockSize = 18;
-pub const BS_8x8: BlockSize = 17;
-pub const BS_8x16: BlockSize = 16;
-pub const BS_8x32: BlockSize = 15;
-pub const BS_16x4: BlockSize = 14;
-pub const BS_16x8: BlockSize = 13;
-pub const BS_16x16: BlockSize = 12;
-pub const BS_16x32: BlockSize = 11;
-pub const BS_16x64: BlockSize = 10;
-pub const BS_32x8: BlockSize = 9;
-pub const BS_32x16: BlockSize = 8;
-pub const BS_32x32: BlockSize = 7;
-pub const BS_32x64: BlockSize = 6;
-pub const BS_64x16: BlockSize = 5;
-pub const BS_64x32: BlockSize = 4;
-pub const BS_64x64: BlockSize = 3;
-pub const BS_64x128: BlockSize = 2;
-pub const BS_128x64: BlockSize = 1;
-pub const BS_128x128: BlockSize = 0;
+use crate::src::levels::BlockSize;
+use crate::src::levels::N_BS_SIZES;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTaskContext {
@@ -837,18 +837,18 @@ pub type pthread_t = libc::c_ulong;
 pub struct C2RustUnnamed_30 {
     pub pass: libc::c_int,
 }
-pub type Filter2d = libc::c_uint;
-pub const N_2D_FILTERS: Filter2d = 10;
-pub const FILTER_2D_BILINEAR: Filter2d = 9;
-pub const FILTER_2D_8TAP_SMOOTH_SHARP: Filter2d = 8;
-pub const FILTER_2D_8TAP_SMOOTH: Filter2d = 7;
-pub const FILTER_2D_8TAP_SMOOTH_REGULAR: Filter2d = 6;
-pub const FILTER_2D_8TAP_SHARP: Filter2d = 5;
-pub const FILTER_2D_8TAP_SHARP_SMOOTH: Filter2d = 4;
-pub const FILTER_2D_8TAP_SHARP_REGULAR: Filter2d = 3;
-pub const FILTER_2D_8TAP_REGULAR_SHARP: Filter2d = 2;
-pub const FILTER_2D_8TAP_REGULAR_SMOOTH: Filter2d = 1;
-pub const FILTER_2D_8TAP_REGULAR: Filter2d = 0;
+use crate::src::levels::Filter2d;
+
+
+
+
+
+
+
+
+
+
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union C2RustUnnamed_31 {
@@ -1692,61 +1692,61 @@ pub struct ScalableMotionParams {
     pub scale: libc::c_int,
     pub step: libc::c_int,
 }
-pub type TxfmSize = libc::c_uint;
-pub const N_TX_SIZES: TxfmSize = 5;
-pub const TX_64X64: TxfmSize = 4;
-pub const TX_32X32: TxfmSize = 3;
-pub const TX_16X16: TxfmSize = 2;
-pub const TX_8X8: TxfmSize = 1;
-pub const TX_4X4: TxfmSize = 0;
-pub type BlockLevel = libc::c_uint;
-pub const N_BL_LEVELS: BlockLevel = 5;
-pub const BL_8X8: BlockLevel = 4;
-pub const BL_16X16: BlockLevel = 3;
-pub const BL_32X32: BlockLevel = 2;
-pub const BL_64X64: BlockLevel = 1;
-pub const BL_128X128: BlockLevel = 0;
-pub type IntraPredMode = libc::c_uint;
-pub const FILTER_PRED: IntraPredMode = 13;
-pub const Z3_PRED: IntraPredMode = 8;
-pub const Z2_PRED: IntraPredMode = 7;
-pub const Z1_PRED: IntraPredMode = 6;
-pub const DC_128_PRED: IntraPredMode = 5;
-pub const TOP_DC_PRED: IntraPredMode = 4;
-pub const LEFT_DC_PRED: IntraPredMode = 3;
-pub const N_IMPL_INTRA_PRED_MODES: IntraPredMode = 14;
-pub const N_UV_INTRA_PRED_MODES: IntraPredMode = 14;
-pub const CFL_PRED: IntraPredMode = 13;
-pub const N_INTRA_PRED_MODES: IntraPredMode = 13;
-pub const PAETH_PRED: IntraPredMode = 12;
-pub const SMOOTH_H_PRED: IntraPredMode = 11;
-pub const SMOOTH_V_PRED: IntraPredMode = 10;
-pub const SMOOTH_PRED: IntraPredMode = 9;
-pub const VERT_LEFT_PRED: IntraPredMode = 8;
-pub const HOR_UP_PRED: IntraPredMode = 7;
-pub const HOR_DOWN_PRED: IntraPredMode = 6;
-pub const VERT_RIGHT_PRED: IntraPredMode = 5;
-pub const DIAG_DOWN_RIGHT_PRED: IntraPredMode = 4;
-pub const DIAG_DOWN_LEFT_PRED: IntraPredMode = 3;
-pub const HOR_PRED: IntraPredMode = 2;
-pub const VERT_PRED: IntraPredMode = 1;
-pub const DC_PRED: IntraPredMode = 0;
-pub type MVJoint = libc::c_uint;
-pub const N_MV_JOINTS: MVJoint = 4;
-pub const MV_JOINT_HV: MVJoint = 3;
-pub const MV_JOINT_V: MVJoint = 2;
-pub const MV_JOINT_H: MVJoint = 1;
-pub const MV_JOINT_ZERO: MVJoint = 0;
-pub type CompInterPredMode = libc::c_uint;
-pub const N_COMP_INTER_PRED_MODES: CompInterPredMode = 8;
-pub const NEWMV_NEWMV: CompInterPredMode = 7;
-pub const GLOBALMV_GLOBALMV: CompInterPredMode = 6;
-pub const NEWMV_NEARMV: CompInterPredMode = 5;
-pub const NEARMV_NEWMV: CompInterPredMode = 4;
-pub const NEWMV_NEARESTMV: CompInterPredMode = 3;
-pub const NEARESTMV_NEWMV: CompInterPredMode = 2;
-pub const NEARMV_NEARMV: CompInterPredMode = 1;
-pub const NEARESTMV_NEARESTMV: CompInterPredMode = 0;
+
+use crate::src::levels::N_TX_SIZES;
+
+
+
+
+
+
+use crate::src::levels::N_BL_LEVELS;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+use crate::src::levels::N_UV_INTRA_PRED_MODES;
+
+use crate::src::levels::N_INTRA_PRED_MODES;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+use crate::src::levels::N_MV_JOINTS;
+
+
+
+
+
+use crate::src::levels::N_COMP_INTER_PRED_MODES;
+
+
+
+
+
+
+
+
 #[inline]
 unsafe extern "C" fn dav1d_ref_inc(ref_0: *mut Dav1dRef) {
     ::core::intrinsics::atomic_xadd_relaxed(&mut (*ref_0).ref_cnt, 1 as libc::c_int);

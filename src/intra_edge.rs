@@ -37,13 +37,13 @@ pub struct ModeSelMem {
     pub nwc: [*mut EdgeBranch; 3],
     pub nt: *mut EdgeTip,
 }
-pub const BL_32X32: BlockLevel = 2;
-pub const BL_64X64: BlockLevel = 1;
-pub type BlockLevel = libc::c_uint;
-pub const N_BL_LEVELS: BlockLevel = 5;
-pub const BL_8X8: BlockLevel = 4;
-pub const BL_16X16: BlockLevel = 3;
-pub const BL_128X128: BlockLevel = 0;
+use crate::src::levels::BL_32X32;
+use crate::src::levels::BL_64X64;
+use crate::src::levels::BlockLevel;
+
+use crate::src::levels::BL_8X8;
+use crate::src::levels::BL_16X16;
+use crate::src::levels::BL_128X128;
 unsafe extern "C" fn init_edges(
     node: *mut EdgeNode,
     bl: BlockLevel,

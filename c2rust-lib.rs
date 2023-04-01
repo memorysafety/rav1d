@@ -64,6 +64,7 @@ pub mod itx_1d;
 #[cfg(feature = "bitdepth_16")]
 pub mod itx_tmpl_16;
 pub mod itx_tmpl_8;
+pub mod levels;
 #[cfg(feature = "bitdepth_16")]
 pub mod lf_apply_tmpl_16;
 #[cfg(feature = "bitdepth_8")]

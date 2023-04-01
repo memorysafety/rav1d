@@ -257,53 +257,53 @@ pub struct C2RustUnnamed_11 {
     pub present: libc::c_int,
     pub update: libc::c_int,
 }
-pub type TxfmSize = libc::c_uint;
-pub const N_TX_SIZES: TxfmSize = 5;
-pub const TX_64X64: TxfmSize = 4;
-pub const TX_32X32: TxfmSize = 3;
-pub const TX_16X16: TxfmSize = 2;
-pub const TX_8X8: TxfmSize = 1;
-pub const TX_4X4: TxfmSize = 0;
-pub type RectTxfmSize = libc::c_uint;
-pub const N_RECT_TX_SIZES: RectTxfmSize = 19;
-pub const RTX_64X16: RectTxfmSize = 18;
-pub const RTX_16X64: RectTxfmSize = 17;
-pub const RTX_32X8: RectTxfmSize = 16;
-pub const RTX_8X32: RectTxfmSize = 15;
-pub const RTX_16X4: RectTxfmSize = 14;
-pub const RTX_4X16: RectTxfmSize = 13;
-pub const RTX_64X32: RectTxfmSize = 12;
-pub const RTX_32X64: RectTxfmSize = 11;
-pub const RTX_32X16: RectTxfmSize = 10;
-pub const RTX_16X32: RectTxfmSize = 9;
-pub const RTX_16X8: RectTxfmSize = 8;
-pub const RTX_8X16: RectTxfmSize = 7;
-pub const RTX_8X4: RectTxfmSize = 6;
-pub const RTX_4X8: RectTxfmSize = 5;
-pub type BlockSize = libc::c_uint;
-pub const N_BS_SIZES: BlockSize = 22;
-pub const BS_4x4: BlockSize = 21;
-pub const BS_4x8: BlockSize = 20;
-pub const BS_4x16: BlockSize = 19;
-pub const BS_8x4: BlockSize = 18;
-pub const BS_8x8: BlockSize = 17;
-pub const BS_8x16: BlockSize = 16;
-pub const BS_8x32: BlockSize = 15;
-pub const BS_16x4: BlockSize = 14;
-pub const BS_16x8: BlockSize = 13;
-pub const BS_16x16: BlockSize = 12;
-pub const BS_16x32: BlockSize = 11;
-pub const BS_16x64: BlockSize = 10;
-pub const BS_32x8: BlockSize = 9;
-pub const BS_32x16: BlockSize = 8;
-pub const BS_32x32: BlockSize = 7;
-pub const BS_32x64: BlockSize = 6;
-pub const BS_64x16: BlockSize = 5;
-pub const BS_64x32: BlockSize = 4;
-pub const BS_64x64: BlockSize = 3;
-pub const BS_64x128: BlockSize = 2;
-pub const BS_128x64: BlockSize = 1;
-pub const BS_128x128: BlockSize = 0;
+
+
+
+
+
+
+use crate::src::levels::TX_4X4;
+use crate::src::levels::RectTxfmSize;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+use crate::src::levels::BlockSize;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Av1FilterLUT {

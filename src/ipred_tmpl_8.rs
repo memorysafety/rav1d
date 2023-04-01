@@ -28,31 +28,30 @@ use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I422;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 
-pub type IntraPredMode = libc::c_uint;
-pub const FILTER_PRED: IntraPredMode = 13;
-pub const Z3_PRED: IntraPredMode = 8;
-pub const Z2_PRED: IntraPredMode = 7;
-pub const Z1_PRED: IntraPredMode = 6;
-pub const DC_128_PRED: IntraPredMode = 5;
-pub const TOP_DC_PRED: IntraPredMode = 4;
-pub const LEFT_DC_PRED: IntraPredMode = 3;
-pub const N_IMPL_INTRA_PRED_MODES: IntraPredMode = 14;
-pub const N_UV_INTRA_PRED_MODES: IntraPredMode = 14;
-pub const CFL_PRED: IntraPredMode = 13;
-pub const N_INTRA_PRED_MODES: IntraPredMode = 13;
-pub const PAETH_PRED: IntraPredMode = 12;
-pub const SMOOTH_H_PRED: IntraPredMode = 11;
-pub const SMOOTH_V_PRED: IntraPredMode = 10;
-pub const SMOOTH_PRED: IntraPredMode = 9;
-pub const VERT_LEFT_PRED: IntraPredMode = 8;
-pub const HOR_UP_PRED: IntraPredMode = 7;
-pub const HOR_DOWN_PRED: IntraPredMode = 6;
-pub const VERT_RIGHT_PRED: IntraPredMode = 5;
-pub const DIAG_DOWN_RIGHT_PRED: IntraPredMode = 4;
-pub const DIAG_DOWN_LEFT_PRED: IntraPredMode = 3;
-pub const HOR_PRED: IntraPredMode = 2;
-pub const VERT_PRED: IntraPredMode = 1;
-pub const DC_PRED: IntraPredMode = 0;
+use crate::src::levels::FILTER_PRED;
+use crate::src::levels::Z3_PRED;
+use crate::src::levels::Z2_PRED;
+use crate::src::levels::Z1_PRED;
+use crate::src::levels::DC_128_PRED;
+use crate::src::levels::TOP_DC_PRED;
+use crate::src::levels::LEFT_DC_PRED;
+
+
+
+
+use crate::src::levels::PAETH_PRED;
+use crate::src::levels::SMOOTH_H_PRED;
+use crate::src::levels::SMOOTH_V_PRED;
+use crate::src::levels::SMOOTH_PRED;
+
+
+
+
+
+
+use crate::src::levels::HOR_PRED;
+use crate::src::levels::VERT_PRED;
+use crate::src::levels::DC_PRED;
 pub type angular_ipred_fn = Option::<
     unsafe extern "C" fn(
         *mut pixel,

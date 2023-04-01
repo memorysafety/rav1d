@@ -103,49 +103,49 @@ extern "C" {
 
 pub type pixel = uint16_t;
 pub type coef = int32_t;
-pub type TxfmSize = libc::c_uint;
-pub const N_TX_SIZES: TxfmSize = 5;
-pub const TX_64X64: TxfmSize = 4;
-pub const TX_32X32: TxfmSize = 3;
-pub const TX_16X16: TxfmSize = 2;
-pub const TX_8X8: TxfmSize = 1;
-pub const TX_4X4: TxfmSize = 0;
-pub type RectTxfmSize = libc::c_uint;
-pub const N_RECT_TX_SIZES: RectTxfmSize = 19;
-pub const RTX_64X16: RectTxfmSize = 18;
-pub const RTX_16X64: RectTxfmSize = 17;
-pub const RTX_32X8: RectTxfmSize = 16;
-pub const RTX_8X32: RectTxfmSize = 15;
-pub const RTX_16X4: RectTxfmSize = 14;
-pub const RTX_4X16: RectTxfmSize = 13;
-pub const RTX_64X32: RectTxfmSize = 12;
-pub const RTX_32X64: RectTxfmSize = 11;
-pub const RTX_32X16: RectTxfmSize = 10;
-pub const RTX_16X32: RectTxfmSize = 9;
-pub const RTX_16X8: RectTxfmSize = 8;
-pub const RTX_8X16: RectTxfmSize = 7;
-pub const RTX_8X4: RectTxfmSize = 6;
-pub const RTX_4X8: RectTxfmSize = 5;
-pub type TxfmType = libc::c_uint;
-pub const N_TX_TYPES_PLUS_LL: TxfmType = 17;
-pub const WHT_WHT: TxfmType = 16;
-pub const N_TX_TYPES: TxfmType = 16;
-pub const H_FLIPADST: TxfmType = 15;
-pub const V_FLIPADST: TxfmType = 14;
-pub const H_ADST: TxfmType = 13;
-pub const V_ADST: TxfmType = 12;
-pub const H_DCT: TxfmType = 11;
-pub const V_DCT: TxfmType = 10;
-pub const IDTX: TxfmType = 9;
-pub const FLIPADST_ADST: TxfmType = 8;
-pub const ADST_FLIPADST: TxfmType = 7;
-pub const FLIPADST_FLIPADST: TxfmType = 6;
-pub const DCT_FLIPADST: TxfmType = 5;
-pub const FLIPADST_DCT: TxfmType = 4;
-pub const ADST_ADST: TxfmType = 3;
-pub const DCT_ADST: TxfmType = 2;
-pub const ADST_DCT: TxfmType = 1;
-pub const DCT_DCT: TxfmType = 0;
+
+
+use crate::src::levels::TX_64X64;
+use crate::src::levels::TX_32X32;
+use crate::src::levels::TX_16X16;
+use crate::src::levels::TX_8X8;
+use crate::src::levels::TX_4X4;
+
+
+use crate::src::levels::RTX_64X16;
+use crate::src::levels::RTX_16X64;
+use crate::src::levels::RTX_32X8;
+use crate::src::levels::RTX_8X32;
+use crate::src::levels::RTX_16X4;
+use crate::src::levels::RTX_4X16;
+use crate::src::levels::RTX_64X32;
+use crate::src::levels::RTX_32X64;
+use crate::src::levels::RTX_32X16;
+use crate::src::levels::RTX_16X32;
+use crate::src::levels::RTX_16X8;
+use crate::src::levels::RTX_8X16;
+use crate::src::levels::RTX_8X4;
+use crate::src::levels::RTX_4X8;
+
+
+use crate::src::levels::WHT_WHT;
+
+use crate::src::levels::H_FLIPADST;
+use crate::src::levels::V_FLIPADST;
+use crate::src::levels::H_ADST;
+use crate::src::levels::V_ADST;
+use crate::src::levels::H_DCT;
+use crate::src::levels::V_DCT;
+use crate::src::levels::IDTX;
+use crate::src::levels::FLIPADST_ADST;
+use crate::src::levels::ADST_FLIPADST;
+use crate::src::levels::FLIPADST_FLIPADST;
+use crate::src::levels::DCT_FLIPADST;
+use crate::src::levels::FLIPADST_DCT;
+use crate::src::levels::ADST_ADST;
+use crate::src::levels::DCT_ADST;
+use crate::src::levels::ADST_DCT;
+use crate::src::levels::DCT_DCT;
 pub type itxfm_fn = Option::<
     unsafe extern "C" fn(
         *mut pixel,

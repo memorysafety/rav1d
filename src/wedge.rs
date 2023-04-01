@@ -13,36 +13,36 @@ extern "C" {
     ) -> *mut libc::c_void;
 }
 
-pub type InterIntraPredMode = libc::c_uint;
-pub const N_INTER_INTRA_PRED_MODES: InterIntraPredMode = 4;
-pub const II_SMOOTH_PRED: InterIntraPredMode = 3;
-pub const II_HOR_PRED: InterIntraPredMode = 2;
-pub const II_VERT_PRED: InterIntraPredMode = 1;
-pub const II_DC_PRED: InterIntraPredMode = 0;
-pub type BlockSize = libc::c_uint;
-pub const N_BS_SIZES: BlockSize = 22;
-pub const BS_4x4: BlockSize = 21;
-pub const BS_4x8: BlockSize = 20;
-pub const BS_4x16: BlockSize = 19;
-pub const BS_8x4: BlockSize = 18;
-pub const BS_8x8: BlockSize = 17;
-pub const BS_8x16: BlockSize = 16;
-pub const BS_8x32: BlockSize = 15;
-pub const BS_16x4: BlockSize = 14;
-pub const BS_16x8: BlockSize = 13;
-pub const BS_16x16: BlockSize = 12;
-pub const BS_16x32: BlockSize = 11;
-pub const BS_16x64: BlockSize = 10;
-pub const BS_32x8: BlockSize = 9;
-pub const BS_32x16: BlockSize = 8;
-pub const BS_32x32: BlockSize = 7;
-pub const BS_32x64: BlockSize = 6;
-pub const BS_64x16: BlockSize = 5;
-pub const BS_64x32: BlockSize = 4;
-pub const BS_64x64: BlockSize = 3;
-pub const BS_64x128: BlockSize = 2;
-pub const BS_128x64: BlockSize = 1;
-pub const BS_128x128: BlockSize = 0;
+
+
+use crate::src::levels::II_SMOOTH_PRED;
+use crate::src::levels::II_HOR_PRED;
+use crate::src::levels::II_VERT_PRED;
+
+use crate::src::levels::BlockSize;
+
+
+
+
+
+use crate::src::levels::BS_8x8;
+use crate::src::levels::BS_8x16;
+use crate::src::levels::BS_8x32;
+
+use crate::src::levels::BS_16x8;
+use crate::src::levels::BS_16x16;
+use crate::src::levels::BS_16x32;
+
+use crate::src::levels::BS_32x8;
+use crate::src::levels::BS_32x16;
+use crate::src::levels::BS_32x32;
+
+
+
+
+
+
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct wedge_code_type {
