@@ -28,7 +28,7 @@ extern "C" {
     fn dav1d_data_create(data: *mut Dav1dData, sz: size_t) -> *mut uint8_t;
 }
 
-pub type __off_t = libc::c_long;
+
 pub type __off64_t = libc::c_long;
 pub type _IO_lock_t = ();
 pub type off_t = __off64_t;
