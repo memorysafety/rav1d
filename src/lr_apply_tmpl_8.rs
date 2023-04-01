@@ -951,18 +951,7 @@ pub struct Dav1dContext {
 }
 use crate::src::mem::Dav1dMemPool;
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dLogger {
-    pub cookie: *mut libc::c_void,
-    pub callback: Option::<
-        unsafe extern "C" fn(
-            *mut libc::c_void,
-            *const libc::c_char,
-            ::core::ffi::VaList,
-        ) -> (),
-    >,
-}
+use crate::include::dav1d::dav1d::Dav1dLogger;
 use crate::include::dav1d::dav1d::Dav1dEventFlags;
 
 

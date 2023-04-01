@@ -377,18 +377,7 @@ pub struct Dav1dPicAllocator {
         unsafe extern "C" fn(*mut Dav1dPicture, *mut libc::c_void) -> (),
     >,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dLogger {
-    pub cookie: *mut libc::c_void,
-    pub callback: Option::<
-        unsafe extern "C" fn(
-            *mut libc::c_void,
-            *const libc::c_char,
-            ::core::ffi::VaList,
-        ) -> (),
-    >,
-}
+use crate::include::dav1d::dav1d::Dav1dLogger;
 use crate::include::dav1d::dav1d::Dav1dInloopFilterType;
 use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_ALL;
 use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_RESTORATION;
