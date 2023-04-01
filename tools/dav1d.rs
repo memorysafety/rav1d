@@ -83,7 +83,7 @@ extern "C" {
 
 
 use crate::include::time::__time_t;
-pub type __clockid_t = libc::c_int;
+use crate::include::time::__clockid_t;
 pub type __syscall_slong_t = libc::c_long;
 pub type clockid_t = __clockid_t;
 pub type time_t = __time_t;
