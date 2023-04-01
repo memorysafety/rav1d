@@ -123,17 +123,7 @@ pub struct C2RustUnnamed_0 {
     pub head: *mut Dav1dTask,
     pub tail: *mut Dav1dTask,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dTask {
-    pub frame_idx: libc::c_uint,
-    pub type_0: TaskType,
-    pub sby: libc::c_int,
-    pub recon_progress: libc::c_int,
-    pub deblock_progress: libc::c_int,
-    pub deps_skip: libc::c_int,
-    pub next: *mut Dav1dTask,
-}
+use crate::src::internal::Dav1dTask;
 use crate::src::internal::TaskType;
 
 
