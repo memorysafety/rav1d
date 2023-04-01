@@ -1,3 +1,4 @@
+pub type pthread_t = libc::c_ulong;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct __pthread_internal_list {

@@ -761,7 +761,7 @@ pub struct thread_data {
     pub lock: pthread_mutex_t,
     pub inited: libc::c_int,
 }
-pub type pthread_t = libc::c_ulong;
+use crate::include::pthread::pthread_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct C2RustUnnamed_30 {

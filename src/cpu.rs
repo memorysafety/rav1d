@@ -22,7 +22,7 @@ pub struct cpu_set_t {
     pub __bits: [__cpu_mask; 16],
 }
 pub type __cpu_mask = libc::c_ulong;
-pub type pthread_t = libc::c_ulong;
+use crate::include::pthread::pthread_t;
 #[no_mangle]
 pub static mut dav1d_cpu_flags: libc::c_uint = 0 as libc::c_uint;
 #[no_mangle]
