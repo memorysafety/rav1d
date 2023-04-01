@@ -83,9 +83,9 @@ extern "C" {
 
 
 use crate::include::time::__time_t;
-use crate::include::time::__clockid_t;
+
 use crate::include::time::__syscall_slong_t;
-pub type clockid_t = __clockid_t;
+use crate::include::time::clockid_t;
 pub type time_t = __time_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
