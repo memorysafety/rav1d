@@ -1,4 +1,6 @@
 use crate::include::dav1d::data::Dav1dData;
+use crate::include::stdint::int16_t;
+use crate::include::stdint::uint8_t;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -33,4 +35,11 @@ pub struct Dav1dTask {
     pub deblock_progress: libc::c_int,
     pub deps_skip: libc::c_int,
     pub next: *mut Dav1dTask,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct CodedBlockInfo {
+    pub eob: [int16_t; 3],
+    pub txtp: [uint8_t; 3],
 }

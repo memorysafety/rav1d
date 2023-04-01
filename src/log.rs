@@ -1391,12 +1391,7 @@ pub struct C2RustUnnamed_43 {
     pub cf_sz: libc::c_int,
     pub tile_start_off: *mut libc::c_int,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct CodedBlockInfo {
-    pub eob: [int16_t; 3],
-    pub txtp: [uint8_t; 3],
-}
+use crate::src::internal::CodedBlockInfo;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Av1Block {
