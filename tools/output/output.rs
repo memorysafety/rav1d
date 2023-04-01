@@ -38,7 +38,7 @@ extern "C" {
 
 
 
-pub type _IO_lock_t = ();
+
 
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::headers::Dav1dTxfmMode;

@@ -31,7 +31,7 @@ use crate::src::r#ref::Dav1dRef;
 
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
-pub type _IO_lock_t = ();
+
 
 
 

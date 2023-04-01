@@ -45,7 +45,7 @@ extern "C" {
 
 
 
-pub type _IO_lock_t = ();
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union __atomic_wide_counter {

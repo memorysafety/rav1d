@@ -21,7 +21,7 @@ extern "C" {
 
 
 
-pub type _IO_lock_t = ();
+
 
 use crate::src::r#ref::Dav1dRef;
 use crate::include::stdatomic::atomic_int;

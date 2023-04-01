@@ -30,7 +30,7 @@ extern "C" {
 
 
 
-pub type _IO_lock_t = ();
+
 
 
 use crate::include::dav1d::data::Dav1dData;

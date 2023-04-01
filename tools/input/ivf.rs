@@ -36,7 +36,7 @@ extern "C" {
 
 
 use crate::include::sys::types::__off64_t;
-pub type _IO_lock_t = ();
+
 
 
 use crate::include::dav1d::data::Dav1dData;
