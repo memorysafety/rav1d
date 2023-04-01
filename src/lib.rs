@@ -1677,8 +1677,8 @@ use crate::src::levels::BL_64X64;
 use crate::src::levels::BL_128X128;
 use crate::include::pthread::pthread_condattr_t;
 use crate::include::pthread::pthread_mutexattr_t;
-pub type FILE = _IO_FILE;
-use crate::include::stdio::_IO_FILE;
+
+
 
 use crate::include::pthread::pthread_once_t;
 
