@@ -82,17 +82,12 @@ extern "C" {
 
 
 
-use crate::include::time::__time_t;
+
 
 use crate::include::time::__syscall_slong_t;
 use crate::include::time::clockid_t;
 use crate::include::time::time_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct timespec {
-    pub tv_sec: __time_t,
-    pub tv_nsec: __syscall_slong_t,
-}
+use crate::include::time::timespec;
 
 use crate::include::dav1d::common::Dav1dUserData;
 use crate::include::dav1d::common::Dav1dDataProps;
