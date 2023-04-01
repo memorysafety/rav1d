@@ -39,6 +39,13 @@ pub struct Dav1dTask {
 
 #[derive(Copy, Clone)]
 #[repr(C)]
+pub struct ScalableMotionParams {
+    pub scale: libc::c_int,
+    pub step: libc::c_int,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
 pub struct CodedBlockInfo {
     pub eob: [int16_t; 3],
     pub txtp: [uint8_t; 3],

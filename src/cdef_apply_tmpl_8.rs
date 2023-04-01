@@ -1499,12 +1499,7 @@ pub type recon_b_intra_fn = Option::<
         *const Av1Block,
     ) -> (),
 >;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ScalableMotionParams {
-    pub scale: libc::c_int,
-    pub step: libc::c_int,
-}
+use crate::src::internal::ScalableMotionParams;
 pub type Backup2x8Flags = libc::c_uint;
 pub const BACKUP_2X8_UV: Backup2x8Flags = 2;
 pub const BACKUP_2X8_Y: Backup2x8Flags = 1;

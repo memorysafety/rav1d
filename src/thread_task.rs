@@ -1554,12 +1554,7 @@ pub type recon_b_intra_fn = Option::<
         *const Av1Block,
     ) -> (),
 >;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ScalableMotionParams {
-    pub scale: libc::c_int,
-    pub step: libc::c_int,
-}
+use crate::src::internal::ScalableMotionParams;
 #[inline]
 unsafe extern "C" fn ctz(mask: libc::c_uint) -> libc::c_int {
     return mask.trailing_zeros() as i32;
