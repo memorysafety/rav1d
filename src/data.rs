@@ -3,9 +3,6 @@ use crate::include::stdint::*;
 use ::libc;
 use crate::stderr;
 extern "C" {
-    pub type _IO_wide_data;
-    pub type _IO_codecvt;
-    pub type _IO_marker;
     fn memset(
         _: *mut libc::c_void,
         _: libc::c_int,

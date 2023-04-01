@@ -6,9 +6,6 @@ use crate::include::stdint::*;
 use ::c2rust_out::*;
 use crate::src::r#ref::Dav1dRef;
 extern "C" {
-    pub type _IO_wide_data;
-    pub type _IO_codecvt;
-    pub type _IO_marker;
     pub type Dav1dContext;
     pub type DemuxerContext;
     pub type MuxerContext;

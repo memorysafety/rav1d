@@ -5,9 +5,6 @@ use crate::src::cdf::CdfContext;
 use crate::src::msac::MsacContext;
 use crate::stderr;
 extern "C" {
-    pub type _IO_wide_data;
-    pub type _IO_codecvt;
-    pub type _IO_marker;
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
     fn vfprintf(
         _: *mut libc::FILE,
