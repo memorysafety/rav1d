@@ -95,12 +95,7 @@ pub struct Dav1dFrameContext {
     pub task_thread: C2RustUnnamed,
     pub tile_thread: FrameTileThreadData,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct FrameTileThreadData {
-    pub lowest_pixel_mem: *mut [[libc::c_int; 2]; 7],
-    pub lowest_pixel_mem_sz: libc::c_int,
-}
+use crate::src::internal::FrameTileThreadData;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct C2RustUnnamed {
