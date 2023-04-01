@@ -109,7 +109,7 @@ pub struct C2RustUnnamed_0 {
     pub gamma: int16_t,
     pub delta: int16_t,
 }
-use crate::include::dav1d::headers::Dav1dPixelLayout;
+
 
 
 
@@ -336,14 +336,7 @@ pub struct C2RustUnnamed_11 {
     pub present: libc::c_int,
     pub update: libc::c_int,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dPictureParameters {
-    pub w: libc::c_int,
-    pub h: libc::c_int,
-    pub layout: Dav1dPixelLayout,
-    pub bpc: libc::c_int,
-}
+use crate::include::dav1d::picture::Dav1dPictureParameters;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dPicture {
