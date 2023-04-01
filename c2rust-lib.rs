@@ -112,6 +112,7 @@ pub mod recon_tmpl_8;
 pub mod refmvs;
 pub mod scan;
 pub mod tables;
+pub mod thread_data;
 pub mod thread_task;
 pub mod warpmv;
 pub mod wedge;
