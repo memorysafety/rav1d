@@ -1,3 +1,13 @@
+use crate::include::dav1d::data::Dav1dData;
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dTileGroup {
+    pub data: Dav1dData,
+    pub start: libc::c_int,
+    pub end: libc::c_int,
+}
+
 pub type TaskType = libc::c_uint;
 pub const DAV1D_TASK_TYPE_FG_APPLY: TaskType = 12;
 pub const DAV1D_TASK_TYPE_FG_PREP: TaskType = 11;

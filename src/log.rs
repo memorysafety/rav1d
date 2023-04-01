@@ -1004,13 +1004,7 @@ pub struct C2RustUnnamed_22 {
     pub out_delayed: *mut Dav1dThreadPicture,
     pub next: libc::c_uint,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dTileGroup {
-    pub data: Dav1dData,
-    pub start: libc::c_int,
-    pub end: libc::c_int,
-}
+use crate::src::internal::Dav1dTileGroup;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTaskContext {
