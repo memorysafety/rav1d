@@ -770,13 +770,7 @@ pub type loopfilter_sb_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Av1FilterLUT {
-    pub e: [uint8_t; 64],
-    pub i: [uint8_t; 64],
-    pub sharp: [uint64_t; 2],
-}
+use crate::src::lf_mask::Av1FilterLUT;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dInvTxfmDSPContext {
@@ -1252,14 +1246,7 @@ use crate::src::levels::Filter2d;
 
 
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Av1Filter {
-    pub filter_y: [[[[uint16_t; 2]; 3]; 32]; 2],
-    pub filter_uv: [[[[uint16_t; 2]; 2]; 32]; 2],
-    pub cdef_idx: [int8_t; 4],
-    pub noskip_mask: [[uint16_t; 2]; 16],
-}
+use crate::src::lf_mask::Av1Filter;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union C2RustUnnamed_25 {
@@ -1422,15 +1409,7 @@ pub struct Dav1dTileState {
     pub lflvl: *const [[[uint8_t; 2]; 8]; 4],
     pub lr_ref: [*mut Av1RestorationUnit; 3],
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Av1RestorationUnit {
-    pub type_0: uint8_t,
-    pub filter_h: [int8_t; 3],
-    pub filter_v: [int8_t; 3],
-    pub sgr_idx: uint8_t,
-    pub sgr_weights: [int8_t; 2],
-}
+use crate::src::lf_mask::Av1RestorationUnit;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct C2RustUnnamed_38 {
@@ -1578,11 +1557,7 @@ pub struct C2RustUnnamed_42 {
     pub prev_mask_ptr: *mut Av1Filter,
     pub restore_planes: libc::c_int,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Av1Restoration {
-    pub lr: [[Av1RestorationUnit; 4]; 3],
-}
+use crate::src::lf_mask::Av1Restoration;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct C2RustUnnamed_43 {
