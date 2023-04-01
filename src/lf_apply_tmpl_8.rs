@@ -1573,10 +1573,10 @@ pub struct ScalableMotionParams {
     pub scale: libc::c_int,
     pub step: libc::c_int,
 }
-pub const LR_RESTORE_V: LrRestorePlanes = 4;
-pub const LR_RESTORE_U: LrRestorePlanes = 2;
-pub const LR_RESTORE_Y: LrRestorePlanes = 1;
-pub type LrRestorePlanes = libc::c_uint;
+use crate::src::lr_apply::LR_RESTORE_V;
+use crate::src::lr_apply::LR_RESTORE_U;
+use crate::src::lr_apply::LR_RESTORE_Y;
+
 #[inline]
 unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
     return if a < b { a } else { b };

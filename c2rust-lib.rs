@@ -82,6 +82,7 @@ pub mod looprestoration;
 pub mod looprestoration_tmpl_16;
 #[cfg(feature = "bitdepth_8")]
 pub mod looprestoration_tmpl_8;
+pub mod lr_apply;
 #[cfg(feature = "bitdepth_16")]
 pub mod lr_apply_tmpl_16;
 #[cfg(feature = "bitdepth_8")]
