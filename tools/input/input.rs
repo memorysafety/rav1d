@@ -29,7 +29,7 @@ extern "C" {
 }
 
 
-pub type __off64_t = libc::c_long;
+
 pub type _IO_lock_t = ();
 
 

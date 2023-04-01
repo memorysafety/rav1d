@@ -25,7 +25,7 @@ extern "C" {
 
 
 
-pub type __off64_t = libc::c_long;
+
 
 use crate::src::r#ref::Dav1dRef;
 

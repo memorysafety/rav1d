@@ -109,7 +109,7 @@ extern "C" {
 
 
 
-pub type __off64_t = libc::c_long;
+
 pub type _IO_lock_t = ();
 pub type pixel = uint8_t;
 pub type coef = int16_t;

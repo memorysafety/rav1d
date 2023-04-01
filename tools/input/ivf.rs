@@ -35,7 +35,7 @@ extern "C" {
 }
 
 
-pub type __off64_t = libc::c_long;
+use crate::include::sys::types::__off64_t;
 pub type _IO_lock_t = ();
 
 
