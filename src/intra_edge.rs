@@ -40,7 +40,7 @@ pub struct ModeSelMem {
 use crate::src::levels::BL_32X32;
 use crate::src::levels::BL_64X64;
 use crate::src::levels::BlockLevel;
-use crate::src::levels::N_BL_LEVELS;
+
 use crate::src::levels::BL_8X8;
 use crate::src::levels::BL_16X16;
 use crate::src::levels::BL_128X128;

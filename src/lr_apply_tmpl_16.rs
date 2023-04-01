@@ -757,29 +757,29 @@ pub type read_coef_blocks_fn = Option::<
     unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> (),
 >;
 use crate::src::levels::BlockSize;
-use crate::src::levels::N_BS_SIZES;
-use crate::src::levels::BS_4x4;
-use crate::src::levels::BS_4x8;
-use crate::src::levels::BS_4x16;
-use crate::src::levels::BS_8x4;
-use crate::src::levels::BS_8x8;
-use crate::src::levels::BS_8x16;
-use crate::src::levels::BS_8x32;
-use crate::src::levels::BS_16x4;
-use crate::src::levels::BS_16x8;
-use crate::src::levels::BS_16x16;
-use crate::src::levels::BS_16x32;
-use crate::src::levels::BS_16x64;
-use crate::src::levels::BS_32x8;
-use crate::src::levels::BS_32x16;
-use crate::src::levels::BS_32x32;
-use crate::src::levels::BS_32x64;
-use crate::src::levels::BS_64x16;
-use crate::src::levels::BS_64x32;
-use crate::src::levels::BS_64x64;
-use crate::src::levels::BS_64x128;
-use crate::src::levels::BS_128x64;
-use crate::src::levels::BS_128x128;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTaskContext {
@@ -828,17 +828,17 @@ pub struct C2RustUnnamed_30 {
     pub pass: libc::c_int,
 }
 use crate::src::levels::Filter2d;
-use crate::src::levels::N_2D_FILTERS;
-use crate::src::levels::FILTER_2D_BILINEAR;
-use crate::src::levels::FILTER_2D_8TAP_SMOOTH_SHARP;
-use crate::src::levels::FILTER_2D_8TAP_SMOOTH;
-use crate::src::levels::FILTER_2D_8TAP_SMOOTH_REGULAR;
-use crate::src::levels::FILTER_2D_8TAP_SHARP;
-use crate::src::levels::FILTER_2D_8TAP_SHARP_SMOOTH;
-use crate::src::levels::FILTER_2D_8TAP_SHARP_REGULAR;
-use crate::src::levels::FILTER_2D_8TAP_REGULAR_SHARP;
-use crate::src::levels::FILTER_2D_8TAP_REGULAR_SMOOTH;
-use crate::src::levels::FILTER_2D_8TAP_REGULAR;
+
+
+
+
+
+
+
+
+
+
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union C2RustUnnamed_31 {

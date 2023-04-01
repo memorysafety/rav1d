@@ -103,15 +103,15 @@ extern "C" {
 
 pub type pixel = uint16_t;
 pub type coef = int32_t;
-use crate::src::levels::TxfmSize;
-use crate::src::levels::N_TX_SIZES;
+
+
 use crate::src::levels::TX_64X64;
 use crate::src::levels::TX_32X32;
 use crate::src::levels::TX_16X16;
 use crate::src::levels::TX_8X8;
 use crate::src::levels::TX_4X4;
-use crate::src::levels::RectTxfmSize;
-use crate::src::levels::N_RECT_TX_SIZES;
+
+
 use crate::src::levels::RTX_64X16;
 use crate::src::levels::RTX_16X64;
 use crate::src::levels::RTX_32X8;
@@ -126,10 +126,10 @@ use crate::src::levels::RTX_16X8;
 use crate::src::levels::RTX_8X16;
 use crate::src::levels::RTX_8X4;
 use crate::src::levels::RTX_4X8;
-use crate::src::levels::TxfmType;
-use crate::src::levels::N_TX_TYPES_PLUS_LL;
+
+
 use crate::src::levels::WHT_WHT;
-use crate::src::levels::N_TX_TYPES;
+
 use crate::src::levels::H_FLIPADST;
 use crate::src::levels::V_FLIPADST;
 use crate::src::levels::H_ADST;

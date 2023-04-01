@@ -8,15 +8,15 @@ extern "C" {
     ) -> *mut libc::c_void;
 }
 
-use crate::src::levels::TxfmSize;
-use crate::src::levels::N_TX_SIZES;
+
+
 use crate::src::levels::TX_64X64;
 use crate::src::levels::TX_32X32;
 use crate::src::levels::TX_16X16;
 use crate::src::levels::TX_8X8;
 use crate::src::levels::TX_4X4;
-use crate::src::levels::RectTxfmSize;
-use crate::src::levels::N_RECT_TX_SIZES;
+
+
 use crate::src::levels::RTX_64X16;
 use crate::src::levels::RTX_16X64;
 use crate::src::levels::RTX_32X8;

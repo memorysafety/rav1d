@@ -768,28 +768,28 @@ pub type read_coef_blocks_fn = Option::<
 >;
 use crate::src::levels::BlockSize;
 use crate::src::levels::N_BS_SIZES;
-use crate::src::levels::BS_4x4;
-use crate::src::levels::BS_4x8;
-use crate::src::levels::BS_4x16;
-use crate::src::levels::BS_8x4;
-use crate::src::levels::BS_8x8;
-use crate::src::levels::BS_8x16;
-use crate::src::levels::BS_8x32;
-use crate::src::levels::BS_16x4;
-use crate::src::levels::BS_16x8;
-use crate::src::levels::BS_16x16;
-use crate::src::levels::BS_16x32;
-use crate::src::levels::BS_16x64;
-use crate::src::levels::BS_32x8;
-use crate::src::levels::BS_32x16;
-use crate::src::levels::BS_32x32;
-use crate::src::levels::BS_32x64;
-use crate::src::levels::BS_64x16;
-use crate::src::levels::BS_64x32;
-use crate::src::levels::BS_64x64;
-use crate::src::levels::BS_64x128;
-use crate::src::levels::BS_128x64;
-use crate::src::levels::BS_128x128;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTaskContext {
@@ -838,17 +838,17 @@ pub struct C2RustUnnamed_30 {
     pub pass: libc::c_int,
 }
 use crate::src::levels::Filter2d;
-use crate::src::levels::N_2D_FILTERS;
-use crate::src::levels::FILTER_2D_BILINEAR;
-use crate::src::levels::FILTER_2D_8TAP_SMOOTH_SHARP;
-use crate::src::levels::FILTER_2D_8TAP_SMOOTH;
-use crate::src::levels::FILTER_2D_8TAP_SMOOTH_REGULAR;
-use crate::src::levels::FILTER_2D_8TAP_SHARP;
-use crate::src::levels::FILTER_2D_8TAP_SHARP_SMOOTH;
-use crate::src::levels::FILTER_2D_8TAP_SHARP_REGULAR;
-use crate::src::levels::FILTER_2D_8TAP_REGULAR_SHARP;
-use crate::src::levels::FILTER_2D_8TAP_REGULAR_SMOOTH;
-use crate::src::levels::FILTER_2D_8TAP_REGULAR;
+
+
+
+
+
+
+
+
+
+
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union C2RustUnnamed_31 {
@@ -1692,61 +1692,61 @@ pub struct ScalableMotionParams {
     pub scale: libc::c_int,
     pub step: libc::c_int,
 }
-use crate::src::levels::TxfmSize;
+
 use crate::src::levels::N_TX_SIZES;
-use crate::src::levels::TX_64X64;
-use crate::src::levels::TX_32X32;
-use crate::src::levels::TX_16X16;
-use crate::src::levels::TX_8X8;
-use crate::src::levels::TX_4X4;
-use crate::src::levels::BlockLevel;
+
+
+
+
+
+
 use crate::src::levels::N_BL_LEVELS;
-use crate::src::levels::BL_8X8;
-use crate::src::levels::BL_16X16;
-use crate::src::levels::BL_32X32;
-use crate::src::levels::BL_64X64;
-use crate::src::levels::BL_128X128;
-use crate::src::levels::IntraPredMode;
-use crate::src::levels::FILTER_PRED;
-use crate::src::levels::Z3_PRED;
-use crate::src::levels::Z2_PRED;
-use crate::src::levels::Z1_PRED;
-use crate::src::levels::DC_128_PRED;
-use crate::src::levels::TOP_DC_PRED;
-use crate::src::levels::LEFT_DC_PRED;
-use crate::src::levels::N_IMPL_INTRA_PRED_MODES;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 use crate::src::levels::N_UV_INTRA_PRED_MODES;
-use crate::src::levels::CFL_PRED;
+
 use crate::src::levels::N_INTRA_PRED_MODES;
-use crate::src::levels::PAETH_PRED;
-use crate::src::levels::SMOOTH_H_PRED;
-use crate::src::levels::SMOOTH_V_PRED;
-use crate::src::levels::SMOOTH_PRED;
-use crate::src::levels::VERT_LEFT_PRED;
-use crate::src::levels::HOR_UP_PRED;
-use crate::src::levels::HOR_DOWN_PRED;
-use crate::src::levels::VERT_RIGHT_PRED;
-use crate::src::levels::DIAG_DOWN_RIGHT_PRED;
-use crate::src::levels::DIAG_DOWN_LEFT_PRED;
-use crate::src::levels::HOR_PRED;
-use crate::src::levels::VERT_PRED;
-use crate::src::levels::DC_PRED;
-use crate::src::levels::MVJoint;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 use crate::src::levels::N_MV_JOINTS;
-use crate::src::levels::MV_JOINT_HV;
-use crate::src::levels::MV_JOINT_V;
-use crate::src::levels::MV_JOINT_H;
-use crate::src::levels::MV_JOINT_ZERO;
-use crate::src::levels::CompInterPredMode;
+
+
+
+
+
 use crate::src::levels::N_COMP_INTER_PRED_MODES;
-use crate::src::levels::NEWMV_NEWMV;
-use crate::src::levels::GLOBALMV_GLOBALMV;
-use crate::src::levels::NEWMV_NEARMV;
-use crate::src::levels::NEARMV_NEWMV;
-use crate::src::levels::NEWMV_NEARESTMV;
-use crate::src::levels::NEARESTMV_NEWMV;
-use crate::src::levels::NEARMV_NEARMV;
-use crate::src::levels::NEARESTMV_NEARESTMV;
+
+
+
+
+
+
+
+
 #[inline]
 unsafe extern "C" fn dav1d_ref_inc(ref_0: *mut Dav1dRef) {
     ::core::intrinsics::atomic_xadd_relaxed(&mut (*ref_0).ref_cnt, 1 as libc::c_int);

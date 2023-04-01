@@ -856,29 +856,29 @@ pub type read_coef_blocks_fn = Option::<
     unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> (),
 >;
 use crate::src::levels::BlockSize;
-use crate::src::levels::N_BS_SIZES;
-use crate::src::levels::BS_4x4;
-use crate::src::levels::BS_4x8;
-use crate::src::levels::BS_4x16;
-use crate::src::levels::BS_8x4;
-use crate::src::levels::BS_8x8;
-use crate::src::levels::BS_8x16;
-use crate::src::levels::BS_8x32;
-use crate::src::levels::BS_16x4;
-use crate::src::levels::BS_16x8;
-use crate::src::levels::BS_16x16;
-use crate::src::levels::BS_16x32;
-use crate::src::levels::BS_16x64;
-use crate::src::levels::BS_32x8;
-use crate::src::levels::BS_32x16;
-use crate::src::levels::BS_32x32;
-use crate::src::levels::BS_32x64;
-use crate::src::levels::BS_64x16;
-use crate::src::levels::BS_64x32;
-use crate::src::levels::BS_64x64;
-use crate::src::levels::BS_64x128;
-use crate::src::levels::BS_128x64;
-use crate::src::levels::BS_128x128;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTaskContext {
@@ -927,17 +927,17 @@ pub struct C2RustUnnamed_30 {
     pub pass: libc::c_int,
 }
 use crate::src::levels::Filter2d;
-use crate::src::levels::N_2D_FILTERS;
+
 use crate::src::levels::FILTER_2D_BILINEAR;
-use crate::src::levels::FILTER_2D_8TAP_SMOOTH_SHARP;
-use crate::src::levels::FILTER_2D_8TAP_SMOOTH;
-use crate::src::levels::FILTER_2D_8TAP_SMOOTH_REGULAR;
-use crate::src::levels::FILTER_2D_8TAP_SHARP;
-use crate::src::levels::FILTER_2D_8TAP_SHARP_SMOOTH;
-use crate::src::levels::FILTER_2D_8TAP_SHARP_REGULAR;
-use crate::src::levels::FILTER_2D_8TAP_REGULAR_SHARP;
-use crate::src::levels::FILTER_2D_8TAP_REGULAR_SMOOTH;
-use crate::src::levels::FILTER_2D_8TAP_REGULAR;
+
+
+
+
+
+
+
+
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union C2RustUnnamed_31 {
@@ -1703,48 +1703,48 @@ pub struct ScalableMotionParams {
     pub scale: libc::c_int,
     pub step: libc::c_int,
 }
-use crate::src::levels::TxfmSize;
-use crate::src::levels::N_TX_SIZES;
+
+
 use crate::src::levels::TX_64X64;
 use crate::src::levels::TX_32X32;
 use crate::src::levels::TX_16X16;
 use crate::src::levels::TX_8X8;
 use crate::src::levels::TX_4X4;
 use crate::src::levels::RectTxfmSize;
-use crate::src::levels::N_RECT_TX_SIZES;
-use crate::src::levels::RTX_64X16;
-use crate::src::levels::RTX_16X64;
-use crate::src::levels::RTX_32X8;
-use crate::src::levels::RTX_8X32;
-use crate::src::levels::RTX_16X4;
-use crate::src::levels::RTX_4X16;
-use crate::src::levels::RTX_64X32;
-use crate::src::levels::RTX_32X64;
-use crate::src::levels::RTX_32X16;
-use crate::src::levels::RTX_16X32;
-use crate::src::levels::RTX_16X8;
-use crate::src::levels::RTX_8X16;
-use crate::src::levels::RTX_8X4;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 use crate::src::levels::RTX_4X8;
 use crate::src::levels::TxfmType;
-use crate::src::levels::N_TX_TYPES_PLUS_LL;
+
 use crate::src::levels::WHT_WHT;
-use crate::src::levels::N_TX_TYPES;
+
 use crate::src::levels::H_FLIPADST;
 use crate::src::levels::V_FLIPADST;
 use crate::src::levels::H_ADST;
 use crate::src::levels::V_ADST;
-use crate::src::levels::H_DCT;
-use crate::src::levels::V_DCT;
+
+
 use crate::src::levels::IDTX;
-use crate::src::levels::FLIPADST_ADST;
-use crate::src::levels::ADST_FLIPADST;
-use crate::src::levels::FLIPADST_FLIPADST;
-use crate::src::levels::DCT_FLIPADST;
-use crate::src::levels::FLIPADST_DCT;
-use crate::src::levels::ADST_ADST;
-use crate::src::levels::DCT_ADST;
-use crate::src::levels::ADST_DCT;
+
+
+
+
+
+
+
+
 use crate::src::levels::DCT_DCT;
 use crate::src::levels::TxClass;
 use crate::src::levels::TX_CLASS_V;
@@ -1752,65 +1752,65 @@ use crate::src::levels::TX_CLASS_H;
 use crate::src::levels::TX_CLASS_2D;
 use crate::src::levels::IntraPredMode;
 use crate::src::levels::FILTER_PRED;
-use crate::src::levels::Z3_PRED;
-use crate::src::levels::Z2_PRED;
-use crate::src::levels::Z1_PRED;
-use crate::src::levels::DC_128_PRED;
-use crate::src::levels::TOP_DC_PRED;
-use crate::src::levels::LEFT_DC_PRED;
-use crate::src::levels::N_IMPL_INTRA_PRED_MODES;
-use crate::src::levels::N_UV_INTRA_PRED_MODES;
+
+
+
+
+
+
+
+
 use crate::src::levels::CFL_PRED;
-use crate::src::levels::N_INTRA_PRED_MODES;
-use crate::src::levels::PAETH_PRED;
+
+
 use crate::src::levels::SMOOTH_H_PRED;
 use crate::src::levels::SMOOTH_V_PRED;
 use crate::src::levels::SMOOTH_PRED;
-use crate::src::levels::VERT_LEFT_PRED;
-use crate::src::levels::HOR_UP_PRED;
-use crate::src::levels::HOR_DOWN_PRED;
-use crate::src::levels::VERT_RIGHT_PRED;
-use crate::src::levels::DIAG_DOWN_RIGHT_PRED;
-use crate::src::levels::DIAG_DOWN_LEFT_PRED;
-use crate::src::levels::HOR_PRED;
-use crate::src::levels::VERT_PRED;
+
+
+
+
+
+
+
+
 use crate::src::levels::DC_PRED;
-use crate::src::levels::InterIntraPredMode;
-use crate::src::levels::N_INTER_INTRA_PRED_MODES;
+
+
 use crate::src::levels::II_SMOOTH_PRED;
-use crate::src::levels::II_HOR_PRED;
-use crate::src::levels::II_VERT_PRED;
-use crate::src::levels::II_DC_PRED;
-use crate::src::levels::InterPredMode;
-use crate::src::levels::N_INTER_PRED_MODES;
-use crate::src::levels::NEWMV;
+
+
+
+
+
+
 use crate::src::levels::GLOBALMV;
-use crate::src::levels::NEARMV;
-use crate::src::levels::NEARESTMV;
-use crate::src::levels::CompInterPredMode;
-use crate::src::levels::N_COMP_INTER_PRED_MODES;
-use crate::src::levels::NEWMV_NEWMV;
+
+
+
+
+
 use crate::src::levels::GLOBALMV_GLOBALMV;
-use crate::src::levels::NEWMV_NEARMV;
-use crate::src::levels::NEARMV_NEWMV;
-use crate::src::levels::NEWMV_NEARESTMV;
-use crate::src::levels::NEARESTMV_NEWMV;
-use crate::src::levels::NEARMV_NEARMV;
-use crate::src::levels::NEARESTMV_NEARESTMV;
-use crate::src::levels::CompInterType;
-use crate::src::levels::COMP_INTER_WEDGE;
-use crate::src::levels::COMP_INTER_SEG;
-use crate::src::levels::COMP_INTER_AVG;
-use crate::src::levels::COMP_INTER_WEIGHTED_AVG;
+
+
+
+
+
+
+
+
+
+
+
 use crate::src::levels::COMP_INTER_NONE;
-use crate::src::levels::InterIntraType;
-use crate::src::levels::INTER_INTRA_WEDGE;
+
+
 use crate::src::levels::INTER_INTRA_BLEND;
-use crate::src::levels::INTER_INTRA_NONE;
-use crate::src::levels::MotionMode;
+
+
 use crate::src::levels::MM_WARP;
 use crate::src::levels::MM_OBMC;
-use crate::src::levels::MM_TRANSLATION;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct TxfmInfo {

@@ -35,15 +35,15 @@ pub struct C2RustUnnamed_0 {
     pub gamma: int16_t,
     pub delta: int16_t,
 }
-use crate::src::levels::TxfmSize;
-use crate::src::levels::N_TX_SIZES;
+
+
 use crate::src::levels::TX_64X64;
 use crate::src::levels::TX_32X32;
 use crate::src::levels::TX_16X16;
 use crate::src::levels::TX_8X8;
 use crate::src::levels::TX_4X4;
-use crate::src::levels::RectTxfmSize;
-use crate::src::levels::N_RECT_TX_SIZES;
+
+
 use crate::src::levels::RTX_64X16;
 use crate::src::levels::RTX_16X64;
 use crate::src::levels::RTX_32X8;
@@ -58,10 +58,10 @@ use crate::src::levels::RTX_16X8;
 use crate::src::levels::RTX_8X16;
 use crate::src::levels::RTX_8X4;
 use crate::src::levels::RTX_4X8;
-use crate::src::levels::TxfmType;
-use crate::src::levels::N_TX_TYPES_PLUS_LL;
-use crate::src::levels::WHT_WHT;
-use crate::src::levels::N_TX_TYPES;
+
+
+
+
 use crate::src::levels::H_FLIPADST;
 use crate::src::levels::V_FLIPADST;
 use crate::src::levels::H_ADST;
@@ -78,50 +78,50 @@ use crate::src::levels::ADST_ADST;
 use crate::src::levels::DCT_ADST;
 use crate::src::levels::ADST_DCT;
 use crate::src::levels::DCT_DCT;
-use crate::src::levels::TxClass;
+
 use crate::src::levels::TX_CLASS_V;
 use crate::src::levels::TX_CLASS_H;
 use crate::src::levels::TX_CLASS_2D;
-use crate::src::levels::IntraPredMode;
-use crate::src::levels::FILTER_PRED;
-use crate::src::levels::Z3_PRED;
-use crate::src::levels::Z2_PRED;
-use crate::src::levels::Z1_PRED;
-use crate::src::levels::DC_128_PRED;
-use crate::src::levels::TOP_DC_PRED;
-use crate::src::levels::LEFT_DC_PRED;
-use crate::src::levels::N_IMPL_INTRA_PRED_MODES;
-use crate::src::levels::N_UV_INTRA_PRED_MODES;
-use crate::src::levels::CFL_PRED;
-use crate::src::levels::N_INTRA_PRED_MODES;
-use crate::src::levels::PAETH_PRED;
-use crate::src::levels::SMOOTH_H_PRED;
-use crate::src::levels::SMOOTH_V_PRED;
-use crate::src::levels::SMOOTH_PRED;
-use crate::src::levels::VERT_LEFT_PRED;
-use crate::src::levels::HOR_UP_PRED;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 use crate::src::levels::HOR_DOWN_PRED;
-use crate::src::levels::VERT_RIGHT_PRED;
-use crate::src::levels::DIAG_DOWN_RIGHT_PRED;
-use crate::src::levels::DIAG_DOWN_LEFT_PRED;
+
+
+
 use crate::src::levels::HOR_PRED;
 use crate::src::levels::VERT_PRED;
 use crate::src::levels::DC_PRED;
-use crate::src::levels::BlockPartition;
+
 use crate::src::levels::N_SUB8X8_PARTITIONS;
 use crate::src::levels::N_PARTITIONS;
-use crate::src::levels::PARTITION_V4;
-use crate::src::levels::PARTITION_H4;
-use crate::src::levels::PARTITION_T_RIGHT_SPLIT;
-use crate::src::levels::PARTITION_T_LEFT_SPLIT;
-use crate::src::levels::PARTITION_T_BOTTOM_SPLIT;
-use crate::src::levels::PARTITION_T_TOP_SPLIT;
-use crate::src::levels::PARTITION_SPLIT;
-use crate::src::levels::PARTITION_V;
-use crate::src::levels::PARTITION_H;
-use crate::src::levels::PARTITION_NONE;
-use crate::src::levels::BlockSize;
-use crate::src::levels::N_BS_SIZES;
+
+
+
+
+
+
+
+
+
+
+
+
 use crate::src::levels::BS_4x4;
 use crate::src::levels::BS_4x8;
 use crate::src::levels::BS_4x16;
@@ -144,8 +144,8 @@ use crate::src::levels::BS_64x64;
 use crate::src::levels::BS_64x128;
 use crate::src::levels::BS_128x64;
 use crate::src::levels::BS_128x128;
-use crate::src::levels::Filter2d;
-use crate::src::levels::N_2D_FILTERS;
+
+
 use crate::src::levels::FILTER_2D_BILINEAR;
 use crate::src::levels::FILTER_2D_8TAP_SMOOTH_SHARP;
 use crate::src::levels::FILTER_2D_8TAP_SMOOTH;
@@ -156,8 +156,8 @@ use crate::src::levels::FILTER_2D_8TAP_SHARP_REGULAR;
 use crate::src::levels::FILTER_2D_8TAP_REGULAR_SHARP;
 use crate::src::levels::FILTER_2D_8TAP_REGULAR_SMOOTH;
 use crate::src::levels::FILTER_2D_8TAP_REGULAR;
-use crate::src::levels::InterPredMode;
-use crate::src::levels::N_INTER_PRED_MODES;
+
+
 use crate::src::levels::NEWMV;
 use crate::src::levels::GLOBALMV;
 use crate::src::levels::NEARMV;
