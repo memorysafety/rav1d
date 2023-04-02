@@ -1151,11 +1151,11 @@ pub type cdef_fn = Option::<
         CdefEdgeFlags,
     ) -> (),
 >;
-pub type CdefEdgeFlags = libc::c_uint;
-pub const CDEF_HAVE_BOTTOM: CdefEdgeFlags = 8;
-pub const CDEF_HAVE_TOP: CdefEdgeFlags = 4;
-pub const CDEF_HAVE_RIGHT: CdefEdgeFlags = 2;
-pub const CDEF_HAVE_LEFT: CdefEdgeFlags = 1;
+use crate::src::cdef::CdefEdgeFlags;
+
+
+
+
 pub type const_left_pixel_row_2px = *const libc::c_void;
 pub type cdef_dir_fn = Option::<
     unsafe extern "C" fn(
