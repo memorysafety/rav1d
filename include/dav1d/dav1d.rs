@@ -1,3 +1,16 @@
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dLogger {
+    pub cookie: *mut libc::c_void,
+    pub callback: Option::<
+        unsafe extern "C" fn(
+            *mut libc::c_void,
+            *const libc::c_char,
+            ::core::ffi::VaList,
+        ) -> (),
+    >,
+}
+
 pub type Dav1dInloopFilterType = libc::c_uint;
 pub const DAV1D_INLOOPFILTER_ALL: Dav1dInloopFilterType = 7;
 pub const DAV1D_INLOOPFILTER_RESTORATION: Dav1dInloopFilterType = 4;
