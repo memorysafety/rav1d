@@ -26,6 +26,9 @@ pub mod pthread;
 pub mod stdatomic;
 pub mod stddef;
 pub mod stdint;
+pub mod sys {
+pub mod types;
+} // mod sys
 } // mod include
 pub mod src {
 pub mod align;

@@ -27,8 +27,8 @@ extern "C" {
     fn dav1d_data_unref(data: *mut Dav1dData);
 }
 
-pub type __off_t = libc::c_long;
-pub type __off64_t = libc::c_long;
+
+use crate::include::sys::types::__off64_t;
 pub type _IO_lock_t = ();
 use crate::include::dav1d::headers::Dav1dObuType;
 
