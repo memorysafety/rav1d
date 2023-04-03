@@ -9,6 +9,30 @@
 use std::ops::{Index, IndexMut};
 
 #[derive(Copy, Clone)]
+#[repr(C, align(64))]
+pub struct Align64<T>(pub T);
+
+impl<T> From<T> for Align64<T> {
+    fn from(from: T) -> Self {
+        Align64(from)
+    }
+}
+
+impl<T: Index<usize>> Index<usize> for Align64<T> {
+    type Output = T::Output;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.0[index]
+    }
+}
+
+impl<T: IndexMut<usize>> IndexMut<usize> for Align64<T> {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.0[index]
+    }
+}
+
+#[derive(Copy, Clone)]
 #[repr(C, align(32))]
 pub struct Align32<T>(pub T);
 
