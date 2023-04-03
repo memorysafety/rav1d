@@ -3,9 +3,6 @@ use crate::include::stdint::*;
 use ::libc;
 use crate::stderr;
 extern "C" {
-    pub type _IO_wide_data;
-    pub type _IO_codecvt;
-    pub type _IO_marker;
     pub type Dav1dRef;
     pub type MuxerPriv;
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
@@ -38,7 +35,7 @@ extern "C" {
 
 
 
-pub type _IO_lock_t = ();
+
 
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::headers::Dav1dTxfmMode;

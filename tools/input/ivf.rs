@@ -4,9 +4,6 @@ use ::libc;
 use crate::stderr;
 use crate::errno_location;
 extern "C" {
-    pub type _IO_wide_data;
-    pub type _IO_codecvt;
-    pub type _IO_marker;
     pub type Dav1dRef;
     fn llround(_: libc::c_double) -> libc::c_longlong;
     fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
@@ -36,7 +33,7 @@ extern "C" {
 
 
 use crate::include::sys::types::__off64_t;
-pub type _IO_lock_t = ();
+
 
 
 use crate::include::dav1d::data::Dav1dData;

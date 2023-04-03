@@ -6,9 +6,6 @@ use crate::src::cdf::CdfContext;
 use crate::src::msac::MsacContext;
 use crate::{stdout};
 extern "C" {
-    pub type _IO_wide_data;
-    pub type _IO_codecvt;
-    pub type _IO_marker;
     fn memcpy(
         _: *mut libc::c_void,
         _: *const libc::c_void,
@@ -110,7 +107,7 @@ extern "C" {
 
 
 
-pub type _IO_lock_t = ();
+
 pub type pixel = uint8_t;
 pub type coef = int16_t;
 use crate::include::stdatomic::atomic_int;

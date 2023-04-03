@@ -6,9 +6,6 @@ use crate::include::stdint::*;
 use ::c2rust_out::*;
 use crate::src::r#ref::Dav1dRef;
 extern "C" {
-    pub type _IO_wide_data;
-    pub type _IO_codecvt;
-    pub type _IO_marker;
     pub type Dav1dContext;
     pub type DemuxerContext;
     pub type MuxerContext;
@@ -96,7 +93,7 @@ pub struct timespec {
     pub tv_sec: __time_t,
     pub tv_nsec: __syscall_slong_t,
 }
-pub type _IO_lock_t = ();
+
 use crate::include::dav1d::common::Dav1dUserData;
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::headers::Dav1dTxfmMode;
