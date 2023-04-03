@@ -246,15 +246,8 @@ pub struct Dav1dPicture {
 use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dMasteringDisplay;
 use crate::include::dav1d::headers::Dav1dContentLightLevel;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dPictureParameters {
-    pub w: libc::c_int,
-    pub h: libc::c_int,
-    pub layout: Dav1dPixelLayout,
-    pub bpc: libc::c_int,
-}
-use crate::include::dav1d::headers::Dav1dPixelLayout;
+use crate::include::dav1d::picture::Dav1dPictureParameters;
+
 
 
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
