@@ -137,12 +137,7 @@ pub struct Dav1dFrameContext {
     pub task_thread: C2RustUnnamed_0,
     pub tile_thread: FrameTileThreadData,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct FrameTileThreadData {
-    pub lowest_pixel_mem: *mut [[libc::c_int; 2]; 7],
-    pub lowest_pixel_mem_sz: libc::c_int,
-}
+use crate::src::internal::FrameTileThreadData;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct C2RustUnnamed_0 {
@@ -173,17 +168,7 @@ pub struct C2RustUnnamed_1 {
     pub head: *mut Dav1dTask,
     pub tail: *mut Dav1dTask,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dTask {
-    pub frame_idx: libc::c_uint,
-    pub type_0: TaskType,
-    pub sby: libc::c_int,
-    pub recon_progress: libc::c_int,
-    pub deblock_progress: libc::c_int,
-    pub deps_skip: libc::c_int,
-    pub next: *mut Dav1dTask,
-}
+use crate::src::internal::Dav1dTask;
 use crate::src::internal::TaskType;
 
 
@@ -599,12 +584,7 @@ pub struct C2RustUnnamed_20 {
     pub tile_start_off: *mut libc::c_int,
 }
 pub type coef = ();
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct CodedBlockInfo {
-    pub eob: [int16_t; 3],
-    pub txtp: [uint8_t; 3],
-}
+use crate::src::internal::CodedBlockInfo;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Av1Block {
@@ -1545,13 +1525,7 @@ pub struct C2RustUnnamed_50 {
     pub out_delayed: *mut Dav1dThreadPicture,
     pub next: libc::c_uint,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dTileGroup {
-    pub data: Dav1dData,
-    pub start: libc::c_int,
-    pub end: libc::c_int,
-}
+use crate::src::internal::Dav1dTileGroup;
 pub type backup_ipred_edge_fn = Option::<
     unsafe extern "C" fn(*mut Dav1dTaskContext) -> (),
 >;
@@ -1573,12 +1547,7 @@ pub type recon_b_intra_fn = Option::<
         *const Av1Block,
     ) -> (),
 >;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ScalableMotionParams {
-    pub scale: libc::c_int,
-    pub step: libc::c_int,
-}
+use crate::src::internal::ScalableMotionParams;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct pic_ctx_context {
