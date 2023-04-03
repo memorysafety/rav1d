@@ -1195,7 +1195,7 @@ pub struct thread_data {
     pub lock: pthread_mutex_t,
     pub inited: libc::c_int,
 }
-pub type pthread_t = libc::c_ulong;
+use crate::include::pthread::pthread_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct C2RustUnnamed_24 {
@@ -1702,7 +1702,7 @@ pub struct _IO_FILE {
     pub _unused2: [libc::c_char; 20],
 }
 pub type _IO_lock_t = ();
-pub type pthread_once_t = libc::c_int;
+use crate::include::pthread::pthread_once_t;
 
 
 

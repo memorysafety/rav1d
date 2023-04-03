@@ -62,7 +62,7 @@ pub struct C2RustUnnamed {
 
 
 
-pub type pthread_t = libc::c_ulong;
+use crate::include::pthread::pthread_t;
 use crate::include::pthread::pthread_mutex_t;
 use crate::include::pthread::pthread_cond_t;
 
