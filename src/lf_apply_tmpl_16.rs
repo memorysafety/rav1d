@@ -897,7 +897,7 @@ pub struct C2RustUnnamed_45 {
     pub col: libc::c_int,
     pub row: libc::c_int,
 }
-pub type ec_win = size_t;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContext {
