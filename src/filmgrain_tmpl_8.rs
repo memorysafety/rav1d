@@ -317,44 +317,20 @@ extern "C" {
 }
 
 
-pub type ptrdiff_t = libc::c_long;
-pub type size_t = libc::c_ulong;
-pub type __int8_t = libc::c_schar;
-pub type __uint8_t = libc::c_uchar;
-pub type __int16_t = libc::c_short;
-pub type __uint64_t = libc::c_ulong;
-pub type int8_t = __int8_t;
-pub type int16_t = __int16_t;
-pub type uint8_t = __uint8_t;
-pub type uint64_t = __uint64_t;
-pub type intptr_t = libc::c_long;
 pub type pixel = uint8_t;
-pub type Dav1dPixelLayout = libc::c_uint;
-pub const DAV1D_PIXEL_LAYOUT_I444: Dav1dPixelLayout = 3;
-pub const DAV1D_PIXEL_LAYOUT_I422: Dav1dPixelLayout = 2;
-pub const DAV1D_PIXEL_LAYOUT_I420: Dav1dPixelLayout = 1;
-pub const DAV1D_PIXEL_LAYOUT_I400: Dav1dPixelLayout = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFilmGrainData {
-    pub seed: libc::c_uint,
-    pub num_y_points: libc::c_int,
-    pub y_points: [[uint8_t; 2]; 14],
-    pub chroma_scaling_from_luma: libc::c_int,
-    pub num_uv_points: [libc::c_int; 2],
-    pub uv_points: [[[uint8_t; 2]; 10]; 2],
-    pub scaling_shift: libc::c_int,
-    pub ar_coeff_lag: libc::c_int,
-    pub ar_coeffs_y: [int8_t; 24],
-    pub ar_coeffs_uv: [[int8_t; 28]; 2],
-    pub ar_coeff_shift: uint64_t,
-    pub grain_scale_shift: libc::c_int,
-    pub uv_mult: [libc::c_int; 2],
-    pub uv_luma_mult: [libc::c_int; 2],
-    pub uv_offset: [libc::c_int; 2],
-    pub overlap_flag: libc::c_int,
-    pub clip_to_restricted_range: libc::c_int,
-}
+
+use crate::include::stddef::ptrdiff_t;
+use crate::include::stddef::size_t;
+use crate::include::stdint::uint8_t;
+use crate::include::stdint::uint64_t;
+use crate::include::stdint::int8_t;
+use crate::include::stdint::int16_t;
+use crate::include::stdint::intptr_t;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I422;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
+use crate::include::dav1d::headers::Dav1dFilmGrainData;
+
 pub type entry = int8_t;
 pub type generate_grain_y_fn = Option::<
     unsafe extern "C" fn(*mut [entry; 82], *const Dav1dFilmGrainData) -> (),
