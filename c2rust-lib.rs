@@ -35,6 +35,7 @@ pub mod time;
 } // mod include
 pub mod src {
 pub mod align;
+pub mod cdef;
 #[cfg(feature = "bitdepth_16")]
 pub mod cdef_apply_tmpl_16;
 #[cfg(feature = "bitdepth_8")]
