@@ -23,6 +23,7 @@ pub mod dav1d;
 pub mod headers;
 } // mod dav1d
 pub mod pthread;
+pub mod sched;
 pub mod stdatomic;
 pub mod stddef;
 pub mod stdint;
