@@ -1184,14 +1184,7 @@ pub struct C2RustUnnamed_23 {
     pub die: libc::c_int,
 }
 use crate::src::internal::FrameTileThreadData;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct thread_data {
-    pub thread: pthread_t,
-    pub cond: pthread_cond_t,
-    pub lock: pthread_mutex_t,
-    pub inited: libc::c_int,
-}
+use crate::src::thread_data::thread_data;
 use crate::include::pthread::pthread_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
