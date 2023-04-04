@@ -124,12 +124,14 @@ fn build_asm_files() {
     asm_files.extend_from_slice(&[
         "src/arm/64/cdef.S",
         "src/arm/64/filmgrain.S",
+        "src/arm/64/ipred.S",
     ]);
 
     #[cfg(feature = "bitdepth_16")]
     asm_files.extend_from_slice(&[
         "src/arm/64/cdef16.S",
         "src/arm/64/filmgrain16.S",
+        "src/arm/64/ipred16.S",
     ]);
 
     cc::Build::new()

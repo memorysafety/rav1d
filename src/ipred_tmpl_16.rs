@@ -1965,6 +1965,14 @@ unsafe extern "C" fn dav1d_get_cpu_flags() -> libc::c_uint {
     return flags;
 }
 
+#[cfg(all(
+    feature = "asm",
+    any(target_arch = "arm", target_arch = "aarch64"),
+))]
+#[inline(always)]
+unsafe extern "C" fn intra_pred_dsp_init_arm(c: *mut Dav1dIntraPredDSPContext) {
+}
+
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_intra_pred_dsp_init_16bpc(
