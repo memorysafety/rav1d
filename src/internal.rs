@@ -80,3 +80,10 @@ pub struct Dav1dTaskContext_scratch_interintra_edge_16 {
     pub interintra_16bpc: [uint16_t; 4096],
     pub edge_16bpc: [uint16_t; 257],
 }
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub union Dav1dTaskContext_scratch_interintra_edge {
+    pub c2rust_unnamed: Dav1dTaskContext_scratch_interintra_edge_8,
+    pub c2rust_unnamed_0: Dav1dTaskContext_scratch_interintra_edge_16,
+}
