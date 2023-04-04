@@ -819,11 +819,11 @@ pub struct C2RustUnnamed_32 {
 #[repr(C)]
 pub union C2RustUnnamed_33 {
     pub c2rust_unnamed: Dav1dTaskContext_scratch_interintra_edge_8,
-    pub c2rust_unnamed_0: C2RustUnnamed_34,
+    pub c2rust_unnamed_0: Dav1dTaskContext_scratch_interintra_edge_16,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_34 {
+pub struct Dav1dTaskContext_scratch_interintra_edge_16 {
     pub interintra_16bpc: [uint16_t; 4096],
     pub edge_16bpc: [uint16_t; 257],
 }
