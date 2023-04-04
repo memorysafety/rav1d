@@ -2234,8 +2234,8 @@ unsafe extern "C" fn ipred_z3_neon(
     width: libc::c_int,
     height: libc::c_int,
     mut angle: libc::c_int,
-    max_width: libc::c_int,
-    max_height: libc::c_int,
+    _max_width: libc::c_int,
+    _max_height: libc::c_int,
 ) {
     let is_sm: libc::c_int = angle >> 9 as libc::c_int & 0x1 as libc::c_int;
     let enable_intra_edge_filter: libc::c_int = angle >> 10 as libc::c_int;
@@ -2345,8 +2345,8 @@ unsafe extern "C" fn ipred_z1_neon(
     width: libc::c_int,
     height: libc::c_int,
     mut angle: libc::c_int,
-    max_width: libc::c_int,
-    max_height: libc::c_int,
+    _max_width: libc::c_int,
+    _max_height: libc::c_int,
 ) {
     let is_sm: libc::c_int = angle >> 9 as libc::c_int & 0x1 as libc::c_int;
     let enable_intra_edge_filter: libc::c_int = angle >> 10 as libc::c_int;
