@@ -65,3 +65,10 @@ pub union Dav1dTaskContext_cf {
     pub cf_8bpc: [int16_t; 1024],
     pub cf_16bpc: [int32_t; 1024],
 }
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dTaskContext_scratch_interintra_edge_8 {
+    pub interintra_8bpc: [uint8_t; 4096],
+    pub edge_8bpc: [uint8_t; 257],
+}
