@@ -40,6 +40,9 @@ fn build_nasm_files() {
         "src/x86/cdef_avx2.asm",
         "src/x86/cdef_sse.asm",
         "src/x86/cpuid.asm",
+        "src/x86/itx_avx2.asm",
+        "src/x86/itx_avx512.asm",
+        "src/x86/itx_sse.asm",
         "src/x86/msac.asm",
         "src/x86/refmvs.asm",
     ];
@@ -60,6 +63,9 @@ fn build_nasm_files() {
         "src/x86/filmgrain16_avx2.asm",
         "src/x86/filmgrain16_avx512.asm",
         "src/x86/filmgrain16_sse.asm",
+        "src/x86/itx16_avx2.asm",
+        "src/x86/itx16_avx512.asm",
+        "src/x86/itx16_sse.asm",
     ]);
 
     let mut config_include_arg = String::from("-I");
