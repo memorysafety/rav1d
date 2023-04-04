@@ -874,12 +874,7 @@ pub struct C2RustUnnamed_41 {
     pub compinter: [[int16_t; 16384]; 2],
     pub seg_mask: [uint8_t; 16384],
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union Dav1dTaskContext_cf {
-    pub cf_8bpc: [int16_t; 1024],
-    pub cf_16bpc: [int32_t; 1024],
-}
+use crate::src::internal::Dav1dTaskContext_cf;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct refmvs_tile {

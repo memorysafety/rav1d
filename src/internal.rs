@@ -1,5 +1,6 @@
 use crate::include::dav1d::data::Dav1dData;
 use crate::include::stdint::int16_t;
+use crate::include::stdint::int32_t;
 use crate::include::stdint::uint8_t;
 
 #[derive(Copy, Clone)]
@@ -56,4 +57,11 @@ pub struct CodedBlockInfo {
 pub struct FrameTileThreadData {
     pub lowest_pixel_mem: *mut [[libc::c_int; 2]; 7],
     pub lowest_pixel_mem_sz: libc::c_int,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub union Dav1dTaskContext_cf {
+    pub cf_8bpc: [int16_t; 1024],
+    pub cf_16bpc: [int32_t; 1024],
 }
