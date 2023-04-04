@@ -1204,7 +1204,7 @@ pub struct C2RustUnnamed_26 {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union C2RustUnnamed_27 {
-    pub c2rust_unnamed: C2RustUnnamed_29,
+    pub c2rust_unnamed: Dav1dTaskContext_scratch_interintra_edge_8,
     pub c2rust_unnamed_0: C2RustUnnamed_28,
 }
 #[derive(Copy, Clone)]
@@ -1215,7 +1215,7 @@ pub struct C2RustUnnamed_28 {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_29 {
+pub struct Dav1dTaskContext_scratch_interintra_edge_8 {
     pub interintra_8bpc: [uint8_t; 4096],
     pub edge_8bpc: [uint8_t; 257],
 }
