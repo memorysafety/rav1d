@@ -349,7 +349,6 @@ extern "C" {
         by: libc::c_int,
     );
 }
-<<<<<<< HEAD
 
 
 
@@ -357,72 +356,6 @@ use crate::src::r#ref::Dav1dRef;
 use crate::include::stdatomic::atomic_int;
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
-=======
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct __va_list_tag {
-    pub gp_offset: libc::c_uint,
-    pub fp_offset: libc::c_uint,
-    pub overflow_arg_area: *mut libc::c_void,
-    pub reg_save_area: *mut libc::c_void,
-}
-pub type size_t = usize;
-pub type __int8_t = libc::c_schar;
-pub type __uint8_t = libc::c_uchar;
-pub type __int16_t = libc::c_short;
-pub type __uint16_t = libc::c_ushort;
-pub type __int32_t = libc::c_int;
-pub type __uint32_t = libc::c_uint;
-pub type __int64_t = i64;
-pub type __uint64_t = u64;
-pub type int8_t = __int8_t;
-pub type int16_t = __int16_t;
-pub type int32_t = __int32_t;
-pub type int64_t = __int64_t;
-pub type uint8_t = __uint8_t;
-pub type uint16_t = __uint16_t;
-pub type uint32_t = __uint32_t;
-pub type uint64_t = __uint64_t;
-pub type intptr_t = isize;
-pub type uintptr_t = usize;
-pub type ptrdiff_t = isize;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dUserData {
-    pub data: *const uint8_t,
-    pub ref_0: *mut Dav1dRef,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dRef {
-    pub data: *mut libc::c_void,
-    pub const_data: *const libc::c_void,
-    pub ref_cnt: atomic_int,
-    pub free_ref: libc::c_int,
-    pub free_callback: Option::<
-        unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> (),
-    >,
-    pub user_data: *mut libc::c_void,
-}
-pub type atomic_int = libc::c_int;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dDataProps {
-    pub timestamp: int64_t,
-    pub duration: int64_t,
-    pub offset: int64_t,
-    pub size: size_t,
-    pub user_data: Dav1dUserData,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dData {
-    pub data: *const uint8_t,
-    pub sz: size_t,
-    pub ref_0: *mut Dav1dRef,
-    pub m: Dav1dDataProps,
-}
->>>>>>> bb10c4cd (WIP: additional fixes - incomplete)
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union alias64 {
@@ -5508,6 +5441,19 @@ unsafe extern "C" fn obmc_lowest_px(
         }
     }
 }
+/* NOTE: DEBUG_BLOCK_INFO is a macro in recon.h so it should probably live in
+ * one of the rust files generated from recon_tmpl.c once deduplicated.
+ */
+unsafe fn DEBUG_BLOCK_INFO(
+    f: *const Dav1dFrameContext,
+    t: *const Dav1dTaskContext) -> bool {
+    /* TODO: add feature and compile-time guard around this code */
+    0 != 0
+        && (*(*f).frame_hdr).frame_offset == 2
+        && (*t).by >= 0 && (*t).by < 4
+        && (*t).bx >= 8 && (*t).bx < 12
+    // true
+}
 unsafe extern "C" fn decode_b(
     t: *mut Dav1dTaskContext,
     bl: BlockLevel,
@@ -5581,6 +5527,7 @@ unsafe extern "C" fn decode_b(
             } else {
                 (*b).c2rust_unnamed.c2rust_unnamed.y_mode as libc::c_int
             }) as IntraPredMode;
+            /* NOTE(perl): expansion of case_set(bh4, l., 1, by4); */
             match bh4 {
                 1 => {
                     (*(&mut *((*t).l.mode).as_mut_ptr().offset(by4 as isize)
@@ -5692,6 +5639,7 @@ unsafe extern "C" fn decode_b(
                 }
                 _ => {}
             }
+            /* NOTE(perl): xpansion of case_set(bw4, a->, 0, bx4); */
             match bw4 {
                 1 => {
                     (*(&mut *((*(*t).a).mode).as_mut_ptr().offset(bx4 as isize)
@@ -5838,6 +5786,7 @@ unsafe extern "C" fn decode_b(
                 }
             }
             if has_chroma != 0 {
+                /* NOTE(perl:) expansion of case_set(cbh4, l., 1, cby4); */
                 match cbh4 {
                     1 => {
                         (*(&mut *((*t).l.uvmode).as_mut_ptr().offset(cby4 as isize)
@@ -5918,6 +5867,7 @@ unsafe extern "C" fn decode_b(
                     }
                     _ => {}
                 }
+                /* NOTE(perl:) expansion of case_set(cbw4, a->, 0, cbx4); */
                 match cbw4 {
                     1 => {
                         (*(&mut *((*(*t).a).uvmode).as_mut_ptr().offset(cbx4 as isize)
@@ -6070,10 +6020,7 @@ unsafe extern "C" fn decode_b(
                         (*t).by,
                     );
                     dav1d_get_shear_params(&mut (*t).warpmv);
-                    if 0 as libc::c_int != 0
-                        && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                        && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                        && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+                    if DEBUG_BLOCK_INFO(f, t)
                     {
                         printf(
                             b"[ %c%x %c%x %c%x\n  %c%x %c%x %c%x ]\nalpha=%c%x, beta=%c%x, gamma=%c%x, delta=%c%x, mv=y:%d,x:%d\n\0"
@@ -6952,10 +6899,7 @@ unsafe extern "C" fn decode_b(
                     (*b).seg_id = 0 as libc::c_int as uint8_t;
                 }
             }
-            if 0 as libc::c_int != 0
-                && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+            if DEBUG_BLOCK_INFO(f, t)
             {
                 printf(
                     b"Post-segid[preskip;%d]: r=%d\n\0" as *const u8
@@ -6983,9 +6927,7 @@ unsafe extern "C" fn decode_b(
             &mut (*ts).msac,
             ((*ts).cdf.m.skip_mode[smctx as usize]).as_mut_ptr(),
         ) as uint8_t;
-        if 0 as libc::c_int != 0 && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-            && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-            && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+        if DEBUG_BLOCK_INFO(f, t)
         {
             printf(
                 b"Post-skipmode[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
@@ -7006,9 +6948,7 @@ unsafe extern "C" fn decode_b(
             &mut (*ts).msac,
             ((*ts).cdf.m.skip[sctx as usize]).as_mut_ptr(),
         ) as uint8_t;
-        if 0 as libc::c_int != 0 && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-            && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-            && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+        if DEBUG_BLOCK_INFO(f, t)
         {
             printf(
                 b"Post-skip[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
@@ -7093,9 +7033,7 @@ unsafe extern "C" fn decode_b(
         seg = &mut *((*(*f).frame_hdr).segmentation.seg_data.d)
             .as_mut_ptr()
             .offset((*b).seg_id as isize) as *mut Dav1dSegmentationData;
-        if 0 as libc::c_int != 0 && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-            && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-            && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+        if DEBUG_BLOCK_INFO(f, t)
         {
             printf(
                 b"Post-segid[postskip;%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
@@ -7131,10 +7069,7 @@ unsafe extern "C" fn decode_b(
                 *((*t).cur_sb_cdef_idx_ptr)
                     .offset((idx + 3 as libc::c_int) as isize) = v as int8_t;
             }
-            if 0 as libc::c_int != 0
-                && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+            if DEBUG_BLOCK_INFO(f, t)
             {
                 printf(
                     b"Post-cdef_idx[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
@@ -7196,10 +7131,7 @@ unsafe extern "C" fn decode_b(
                 1 as libc::c_int,
                 255 as libc::c_int,
             );
-            if have_delta_q != 0 && 0 as libc::c_int != 0
-                && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+            if have_delta_q != 0 && DEBUG_BLOCK_INFO(f, t)
             {
                 printf(
                     b"Post-delta_q[%d->%d]: r=%d\n\0" as *const u8
@@ -7263,10 +7195,7 @@ unsafe extern "C" fn decode_b(
                         -(63 as libc::c_int),
                         63 as libc::c_int,
                     ) as int8_t;
-                    if have_delta_q != 0 && 0 as libc::c_int != 0
-                        && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                        && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                        && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+                    if have_delta_q != 0 && DEBUG_BLOCK_INFO(f, t)
                     {
                         printf(
                             b"Post-delta_lf[%d:%d]: r=%d\n\0" as *const u8
@@ -7339,10 +7268,7 @@ unsafe extern "C" fn decode_b(
                 &mut (*ts).msac,
                 ((*ts).cdf.m.intra[ictx as usize]).as_mut_ptr(),
             ) == 0) as libc::c_int as uint8_t;
-            if 0 as libc::c_int != 0
-                && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+            if DEBUG_BLOCK_INFO(f, t)
             {
                 printf(
                     b"Post-intra[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
@@ -7357,9 +7283,7 @@ unsafe extern "C" fn decode_b(
             &mut (*ts).msac,
             ((*ts).cdf.m.intrabc.0).as_mut_ptr(),
         ) == 0) as libc::c_int as uint8_t;
-        if 0 as libc::c_int != 0 && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-            && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-            && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+        if DEBUG_BLOCK_INFO(f, t)
         {
             printf(
                 b"Post-intrabcflag[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
@@ -7392,9 +7316,7 @@ unsafe extern "C" fn decode_b(
             ymode_cdf,
             (N_INTRA_PRED_MODES as libc::c_int - 1 as libc::c_int) as size_t,
         ) as uint8_t;
-        if 0 as libc::c_int != 0 && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-            && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-            && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+        if DEBUG_BLOCK_INFO(f, t)
         {
             printf(
                 b"Post-ymode[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
@@ -7453,10 +7375,7 @@ unsafe extern "C" fn decode_b(
                 (N_UV_INTRA_PRED_MODES as libc::c_int - 1 as libc::c_int
                     - (cfl_allowed == 0) as libc::c_int) as size_t,
             ) as uint8_t;
-            if 0 as libc::c_int != 0
-                && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+            if DEBUG_BLOCK_INFO(f, t)
             {
                 printf(
                     b"Post-uvmode[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
@@ -7541,10 +7460,7 @@ unsafe extern "C" fn decode_b(
                         .cfl_alpha[1 as libc::c_int
                         as usize] = 0 as libc::c_int as int8_t;
                 }
-                if 0 as libc::c_int != 0
-                    && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                    && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                    && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+                if DEBUG_BLOCK_INFO(f, t)
                 {
                     printf(
                         b"Post-uvalphas[%d/%d]: r=%d\n\0" as *const u8
@@ -7614,10 +7530,7 @@ unsafe extern "C" fn decode_b(
                     &mut (*ts).msac,
                     ((*ts).cdf.m.pal_y[sz_ctx as usize][pal_ctx as usize]).as_mut_ptr(),
                 ) as libc::c_int;
-                if 0 as libc::c_int != 0
-                    && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                    && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                    && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+                if DEBUG_BLOCK_INFO(f, t)
                 {
                     printf(
                         b"Post-y_pal[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
@@ -7642,10 +7555,7 @@ unsafe extern "C" fn decode_b(
                     &mut (*ts).msac,
                     ((*ts).cdf.m.pal_uv[pal_ctx_0 as usize]).as_mut_ptr(),
                 ) as libc::c_int;
-                if 0 as libc::c_int != 0
-                    && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                    && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                    && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+                if DEBUG_BLOCK_INFO(f, t)
                 {
                     printf(
                         b"Post-uv_pal[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
@@ -7684,10 +7594,7 @@ unsafe extern "C" fn decode_b(
                     4 as libc::c_int as size_t,
                 ) as int8_t;
             }
-            if 0 as libc::c_int != 0
-                && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+            if DEBUG_BLOCK_INFO(f, t)
             {
                 printf(
                     b"Post-filterintramode[%d/%d]: r=%d\n\0" as *const u8
@@ -7714,10 +7621,7 @@ unsafe extern "C" fn decode_b(
                 pal_idx = ((*t).scratch.c2rust_unnamed_0.pal_idx).as_mut_ptr();
             }
             read_pal_indices(t, pal_idx, b, 0 as libc::c_int, w4, h4, bw4, bh4);
-            if 0 as libc::c_int != 0
-                && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+            if DEBUG_BLOCK_INFO(f, t)
             {
                 printf(
                     b"Post-y-pal-indices: r=%d\n\0" as *const u8 as *const libc::c_char,
@@ -7746,10 +7650,7 @@ unsafe extern "C" fn decode_b(
                     .offset((bw4 * bh4 * 16 as libc::c_int) as isize) as *mut uint8_t;
             }
             read_pal_indices(t, pal_idx_0, b, 1 as libc::c_int, cw4, ch4, cbw4, cbh4);
-            if 0 as libc::c_int != 0
-                && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+            if DEBUG_BLOCK_INFO(f, t)
             {
                 printf(
                     b"Post-uv-pal-indices: r=%d\n\0" as *const u8 as *const libc::c_char,
@@ -7805,10 +7706,7 @@ unsafe extern "C" fn decode_b(
                         as *const TxfmInfo;
                 }
             }
-            if 0 as libc::c_int != 0
-                && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+            if DEBUG_BLOCK_INFO(f, t)
             {
                 printf(
                     b"Post-tx[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
@@ -10226,6 +10124,7 @@ unsafe extern "C" fn decode_b(
                 .y as libc::c_int >> 3 as libc::c_int);
         let mut src_right: libc::c_int = src_left + bw4 * 4 as libc::c_int;
         let mut src_bottom: libc::c_int = src_top + bh4 * 4 as libc::c_int;
+
         let border_right: libc::c_int = ((*ts).tiling.col_end + (bw4 - 1 as libc::c_int)
             & !(bw4 - 1 as libc::c_int)) * 4 as libc::c_int;
         if src_left < border_left {
@@ -10259,7 +10158,7 @@ unsafe extern "C" fn decode_b(
             src_bottom -= src_bottom - (sby + sb_size);
         }
         if src_bottom > sby && src_right > sbx {
-            return -(1 as libc::c_int);
+            return -(1 as libc::c_int); /* TODO(perl): figure out why this happens */
         }
         (*b)
             .c2rust_unnamed
@@ -10277,9 +10176,7 @@ unsafe extern "C" fn decode_b(
             .mv[0 as libc::c_int as usize]
             .c2rust_unnamed
             .y = ((src_top - (*t).by * 4 as libc::c_int) * 8 as libc::c_int) as int16_t;
-        if 0 as libc::c_int != 0 && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-            && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-            && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+        if DEBUG_BLOCK_INFO(f, t)
         {
             printf(
                 b"Post-dmv[%d/%d,ref=%d/%d|%d/%d]: r=%d\n\0" as *const u8
@@ -11344,10 +11241,7 @@ unsafe extern "C" fn decode_b(
                 &mut (*ts).msac,
                 ((*ts).cdf.m.comp[ctx_2 as usize]).as_mut_ptr(),
             ) as libc::c_int;
-            if 0 as libc::c_int != 0
-                && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+            if DEBUG_BLOCK_INFO(f, t)
             {
                 printf(
                     b"Post-compflag[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
@@ -11458,10 +11352,7 @@ unsafe extern "C" fn decode_b(
                     .as_mut_ptr()
                     .offset(1 as libc::c_int as isize),
             );
-            if 0 as libc::c_int != 0
-                && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+            if DEBUG_BLOCK_INFO(f, t)
             {
                 printf(
                     b"Post-skipmodeblock[mv=1:y=%d,x=%d,2:y=%d,x=%d,refs=%d+%d\n\0"
@@ -11709,10 +11600,7 @@ unsafe extern "C" fn decode_b(
                     }
                 }
             }
-            if 0 as libc::c_int != 0
-                && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+            if DEBUG_BLOCK_INFO(f, t)
             {
                 printf(
                     b"Post-refs[%d/%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
@@ -11765,10 +11653,7 @@ unsafe extern "C" fn decode_b(
                 ((*ts).cdf.m.comp_inter_mode[ctx_4 as usize]).as_mut_ptr(),
                 (N_COMP_INTER_PRED_MODES as libc::c_int - 1 as libc::c_int) as size_t,
             ) as uint8_t;
-            if 0 as libc::c_int != 0
-                && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+            if DEBUG_BLOCK_INFO(f, t)
             {
                 printf(
                     b"Post-compintermode[%d,ctx=%d,n_mvs=%d]: r=%d\n\0" as *const u8
@@ -11826,10 +11711,7 @@ unsafe extern "C" fn decode_b(
                                 ),
                             ) as uint8_t as uint8_t;
                     }
-                    if 0 as libc::c_int != 0
-                        && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                        && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                        && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+                    if DEBUG_BLOCK_INFO(f, t)
                     {
                         printf(
                             b"Post-drlidx[%d,n_mvs=%d]: r=%d\n\0" as *const u8
@@ -11884,10 +11766,7 @@ unsafe extern "C" fn decode_b(
                                 ),
                             ) as uint8_t as uint8_t;
                     }
-                    if 0 as libc::c_int != 0
-                        && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                        && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                        && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+                    if DEBUG_BLOCK_INFO(f, t)
                     {
                         printf(
                             b"Post-drlidx[%d,n_mvs=%d]: r=%d\n\0" as *const u8
@@ -12081,10 +11960,7 @@ unsafe extern "C" fn decode_b(
                 }
                 _ => {}
             }
-            if 0 as libc::c_int != 0
-                && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+            if DEBUG_BLOCK_INFO(f, t)
             {
                 printf(
                     b"Post-residual_mv[1:y=%d,x=%d,2:y=%d,x=%d]: r=%d\n\0" as *const u8
@@ -12136,10 +12012,7 @@ unsafe extern "C" fn decode_b(
                     &mut (*ts).msac,
                     ((*ts).cdf.m.mask_comp[mask_ctx as usize]).as_mut_ptr(),
                 ) as libc::c_int;
-                if 0 as libc::c_int != 0
-                    && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                    && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                    && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+                if DEBUG_BLOCK_INFO(f, t)
                 {
                     printf(
                         b"Post-segwedge_vs_jntavg[%d,ctx=%d]: r=%d\n\0" as *const u8
@@ -12187,10 +12060,7 @@ unsafe extern "C" fn decode_b(
                                 ((*ts).cdf.m.jnt_comp[jnt_ctx as usize]).as_mut_ptr(),
                             ),
                         ) as uint8_t;
-                    if 0 as libc::c_int != 0
-                        && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                        && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                        && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+                    if DEBUG_BLOCK_INFO(f, t)
                     {
                         printf(
                             b"Post-jnt_comp[%d,ctx=%d[ac:%d,ar:%d,lc:%d,lr:%d]]: r=%d\n\0"
@@ -12255,11 +12125,9 @@ unsafe extern "C" fn decode_b(
                     .c2rust_unnamed_0
                     .c2rust_unnamed
                     .c2rust_unnamed
-                    .mask_sign = dav1d_msac_decode_bool_equi(&mut (*ts).msac) as uint8_t;
-                if 0 as libc::c_int != 0
-                    && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                    && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                    && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+                    .mask_sign = dav1d_msac_decode_bool_equi(&mut (*ts).msac)
+                    as uint8_t;
+                if DEBUG_BLOCK_INFO(f, t)
                 {
                     printf(
                         b"Post-seg/wedge[%d,wedge_idx=%d,sign=%d]: r=%d\n\0" as *const u8
@@ -12418,10 +12286,7 @@ unsafe extern "C" fn decode_b(
                         ) as int8_t;
                     }
                 }
-                if 0 as libc::c_int != 0
-                    && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                    && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                    && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+                if DEBUG_BLOCK_INFO(f, t)
                 {
                     printf(
                         b"Post-ref[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
@@ -12620,10 +12485,7 @@ unsafe extern "C" fn decode_b(
                         );
                     }
                 }
-                if 0 as libc::c_int != 0
-                    && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                    && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                    && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+                if DEBUG_BLOCK_INFO(f, t)
                 {
                     printf(
                         b"Post-intermode[%d,drl=%d,mv=y:%d,x:%d,n_mvs=%d]: r=%d\n\0"
@@ -12741,10 +12603,7 @@ unsafe extern "C" fn decode_b(
                             .offset(0 as libc::c_int as isize),
                     );
                 }
-                if 0 as libc::c_int != 0
-                    && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                    && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                    && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+                if DEBUG_BLOCK_INFO(f, t)
                 {
                     printf(
                         b"Post-intermode[%d,drl=%d]: r=%d\n\0" as *const u8
@@ -12767,10 +12626,7 @@ unsafe extern "C" fn decode_b(
                     &mut (*ts).cdf.mv,
                     ((*(*f).frame_hdr).force_integer_mv == 0) as libc::c_int,
                 );
-                if 0 as libc::c_int != 0
-                    && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                    && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                    && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+                if DEBUG_BLOCK_INFO(f, t)
                 {
                     printf(
                         b"Post-residualmv[mv=y:%d,x:%d]: r=%d\n\0" as *const u8
@@ -12849,10 +12705,7 @@ unsafe extern "C" fn decode_b(
                     .c2rust_unnamed_0
                     .interintra_type = INTER_INTRA_NONE as libc::c_int as uint8_t;
             }
-            if 0 as libc::c_int != 0
-                && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+            if DEBUG_BLOCK_INFO(f, t)
                 && (*(*f).seq_hdr).inter_intra != 0
                 && interintra_allowed_mask
                     & ((1 as libc::c_int) << bs as libc::c_uint) as libc::c_uint != 0
@@ -12964,10 +12817,7 @@ unsafe extern "C" fn decode_b(
                             .mv[0 as libc::c_int as usize],
                         &mut (*t).warpmv,
                     );
-                    if 0 as libc::c_int != 0
-                        && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                        && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                        && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+                    if DEBUG_BLOCK_INFO(f, t)
                     {
                         printf(
                             b"[ %c%x %c%x %c%x\n  %c%x %c%x %c%x ]\nalpha=%c%x, beta=%c%x, gamma=%c%x, delta=%c%x, mv=y:%d,x:%d\n\0"
@@ -13113,10 +12963,7 @@ unsafe extern "C" fn decode_b(
                         }
                     }
                 }
-                if 0 as libc::c_int != 0
-                    && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                    && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                    && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+                if DEBUG_BLOCK_INFO(f, t)
                 {
                     printf(
                         b"Post-motionmode[%d]: r=%d [mask: 0x%lx/0x%lx]\n\0" as *const u8
@@ -13172,10 +13019,7 @@ unsafe extern "C" fn decode_b(
                         by4,
                         bx4,
                     );
-                    if 0 as libc::c_int != 0
-                        && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                        && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                        && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+                    if DEBUG_BLOCK_INFO(f, t)
                     {
                         printf(
                             b"Post-subpel_filter1[%d,ctx=%d]: r=%d\n\0" as *const u8
@@ -13193,10 +13037,7 @@ unsafe extern "C" fn decode_b(
                         (DAV1D_N_SWITCHABLE_FILTERS as libc::c_int - 1 as libc::c_int)
                             as size_t,
                     ) as Dav1dFilterMode;
-                    if 0 as libc::c_int != 0
-                        && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                        && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                        && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+                    if DEBUG_BLOCK_INFO(f, t)
                     {
                         printf(
                             b"Post-subpel_filter2[%d,ctx=%d]: r=%d\n\0" as *const u8
@@ -13209,10 +13050,7 @@ unsafe extern "C" fn decode_b(
                 } else {
                     filter_0[1 as libc::c_int
                         as usize] = filter_0[0 as libc::c_int as usize];
-                    if 0 as libc::c_int != 0
-                        && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                        && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                        && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+                    if DEBUG_BLOCK_INFO(f, t)
                     {
                         printf(
                             b"Post-subpel_filter[%d,ctx=%d]: r=%d\n\0" as *const u8
@@ -15801,7 +15639,7 @@ unsafe extern "C" fn decode_sb(
     let mut bx8: libc::c_int = 0;
     let mut by8: libc::c_int = 0;
     if (*t).frame_thread.pass != 2 as libc::c_int {
-        if 0 as libc::c_int != 0
+        if 1 as libc::c_int != 0
             && bl as libc::c_uint == BL_64X64 as libc::c_int as libc::c_uint
         {
             printf(
@@ -15847,10 +15685,7 @@ unsafe extern "C" fn decode_sb(
             {
                 return 1 as libc::c_int;
             }
-            if 0 as libc::c_int != 0
-                && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+            if DEBUG_BLOCK_INFO(f, t)
             {
                 printf(
                     b"poc=%d,y=%d,x=%d,bl=%d,ctx=%d,bp=%d: r=%d\n\0" as *const u8
@@ -16307,10 +16142,7 @@ unsafe extern "C" fn decode_sb(
                 &mut (*ts).msac,
                 gather_top_partition_prob(pc, bl),
             );
-            if 0 as libc::c_int != 0
-                && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+            if DEBUG_BLOCK_INFO(f, t)
             {
                 printf(
                     b"poc=%d,y=%d,x=%d,bl=%d,ctx=%d,bp=%d: r=%d\n\0" as *const u8
@@ -16394,10 +16226,7 @@ unsafe extern "C" fn decode_sb(
             {
                 return 1 as libc::c_int;
             }
-            if 0 as libc::c_int != 0
-                && (*(*f).frame_hdr).frame_offset == 2 as libc::c_int
-                && (*t).by >= 0 as libc::c_int && (*t).by < 4 as libc::c_int
-                && (*t).bx >= 8 as libc::c_int && (*t).bx < 12 as libc::c_int
+            if DEBUG_BLOCK_INFO(f, t)
             {
                 printf(
                     b"poc=%d,y=%d,x=%d,bl=%d,ctx=%d,bp=%d: r=%d\n\0" as *const u8
@@ -18611,7 +18440,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(
         unreachable!();
     }
     let t: *mut Dav1dTaskContext = &mut *((*c).tc)
-        .offset(f.offset_from((*c).fc) as libc::c_long as isize)
+        .offset(f.offset_from((*c).fc) as isize)
         as *mut Dav1dTaskContext;
     (*t).f = f;
     (*t).frame_thread.pass = 0 as libc::c_int;
