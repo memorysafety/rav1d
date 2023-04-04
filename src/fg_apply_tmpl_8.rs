@@ -1,5 +1,6 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
+use crate::src::align::{Align16, Align64};
 use ::libc;
 extern "C" {
     pub type Dav1dRef;
@@ -716,18 +717,18 @@ pub unsafe extern "C" fn dav1d_apply_grain_8bpc(
     out: *mut Dav1dPicture,
     in_0: *const Dav1dPicture,
 ) {
-    let mut grain_lut: [[[entry; 82]; 74]; 3] = [[[0; 82]; 74]; 3];
-    let mut scaling: [[uint8_t; 256]; 3] = [[0; 256]; 3];
+    let mut grain_lut = Align16([[[0; 82]; 74]; 3]);
+    let mut scaling = Align64([[0; 256]; 3]);
     let rows: libc::c_int = (*out).p.h + 31 as libc::c_int >> 5 as libc::c_int;
-    dav1d_prep_grain_8bpc(dsp, out, in_0, scaling.as_mut_ptr(), grain_lut.as_mut_ptr());
+    dav1d_prep_grain_8bpc(dsp, out, in_0, scaling.0.as_mut_ptr(), grain_lut.0.as_mut_ptr());
     let mut row: libc::c_int = 0 as libc::c_int;
     while row < rows {
         dav1d_apply_grain_row_8bpc(
             dsp,
             out,
             in_0,
-            scaling.as_mut_ptr() as *const [uint8_t; 256],
-            grain_lut.as_mut_ptr() as *const [[entry; 82]; 74],
+            scaling.0.as_mut_ptr() as *const [uint8_t; 256],
+            grain_lut.0.as_mut_ptr() as *const [[entry; 82]; 74],
             row,
         );
         row += 1;
