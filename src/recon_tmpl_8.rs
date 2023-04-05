@@ -861,26 +861,11 @@ pub struct C2RustUnnamed_32 {
     pub ac: [int16_t; 1024],
     pub pal_idx: [uint8_t; 8192],
     pub pal: [[uint16_t; 8]; 3],
-    pub c2rust_unnamed_0: C2RustUnnamed_33,
+    pub c2rust_unnamed_0: Dav1dTaskContext_scratch_interintra_edge,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union C2RustUnnamed_33 {
-    pub c2rust_unnamed: C2RustUnnamed_35,
-    pub c2rust_unnamed_0: C2RustUnnamed_34,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_34 {
-    pub interintra_16bpc: [uint16_t; 4096],
-    pub edge_16bpc: [uint16_t; 257],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_35 {
-    pub interintra_8bpc: [uint8_t; 4096],
-    pub edge_8bpc: [uint8_t; 257],
-}
+use crate::src::internal::Dav1dTaskContext_scratch_interintra_edge;
+
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union C2RustUnnamed_36 {
