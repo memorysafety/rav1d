@@ -131,6 +131,7 @@ fn build_asm_files() {
         "src/arm/64/itx.S",
         "src/arm/64/msac.S",
         "src/arm/64/refmvs.S",
+        "src/arm/64/looprestoration_common.S",
     ];
 
     #[cfg(feature = "bitdepth_8")]
@@ -138,6 +139,7 @@ fn build_asm_files() {
         "src/arm/64/cdef.S",
         "src/arm/64/filmgrain.S",
         "src/arm/64/loopfilter.S",
+        "src/arm/64/looprestoration.S",
     ]);
 
     #[cfg(feature = "bitdepth_16")]
@@ -146,6 +148,7 @@ fn build_asm_files() {
         "src/arm/64/filmgrain16.S",
         "src/arm/64/itx16.S",
         "src/arm/64/loopfilter16.S",
+        "src/arm/64/looprestoration16.S",
     ]);
 
     cc::Build::new()

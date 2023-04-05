@@ -1151,6 +1151,14 @@ unsafe extern "C" fn dav1d_get_cpu_flags() -> libc::c_uint {
     return flags;
 }
 
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[inline(always)]
+unsafe extern "C" fn loop_restoration_dsp_init_arm(
+    c: *mut Dav1dLoopRestorationDSPContext,
+    mut bpc: libc::c_int,
+) {
+}
+
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_loop_restoration_dsp_init_8bpc(
