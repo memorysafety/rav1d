@@ -1143,7 +1143,7 @@ pub struct Dav1dTaskContext {
     pub l: BlockContext,
     pub a: *mut BlockContext,
     pub rt: refmvs_tile,
-    pub c2rust_unnamed: C2RustUnnamed_36,
+    pub c2rust_unnamed: Dav1dTaskContext_cf,
     pub al_pal: [[[[uint16_t; 8]; 3]; 32]; 2],
     pub pal_sz_uv: [[uint8_t; 32]; 2],
     pub txtp_map: [uint8_t; 1024],
@@ -1256,12 +1256,7 @@ pub struct C2RustUnnamed_35 {
     pub compinter: [[int16_t; 16384]; 2],
     pub seg_mask: [uint8_t; 16384],
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union C2RustUnnamed_36 {
-    pub cf_8bpc: [int16_t; 1024],
-    pub cf_16bpc: [int32_t; 1024],
-}
+use crate::src::internal::Dav1dTaskContext_cf;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct refmvs_tile {
