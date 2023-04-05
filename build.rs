@@ -116,6 +116,7 @@ fn build_asm_files() {
     config_file.sync_all().unwrap();
 
     let mut asm_files = vec![
+        "src/arm/64/itx.S",
         "src/arm/64/msac.S",
         "src/arm/64/refmvs.S",
     ];
@@ -130,6 +131,7 @@ fn build_asm_files() {
     asm_files.extend_from_slice(&[
         "src/arm/64/cdef16.S",
         "src/arm/64/filmgrain16.S",
+        "src/arm/64/itx16.S",
     ]);
 
     cc::Build::new()
