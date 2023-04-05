@@ -1,6 +1,8 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use ::libc;
+use ::libc::fread;
+use ::libc::fseeko64;
 use crate::stderr;
 use crate::errno_location;
 extern "C" {
@@ -8,17 +10,6 @@ extern "C" {
     fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
     fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut libc::FILE;
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
-    fn fread(
-        _: *mut libc::c_void,
-        _: libc::c_ulong,
-        _: libc::c_ulong,
-        _: *mut libc::FILE,
-    ) -> libc::c_ulong;
-    fn fseeko(
-        __stream: *mut libc::FILE,
-        __off: __off64_t,
-        __whence: libc::c_int,
-    ) -> libc::c_int;
     fn strerror(_: libc::c_int) -> *mut libc::c_char;
     fn dav1d_data_create(data: *mut Dav1dData, sz: size_t) -> *mut uint8_t;
     fn dav1d_data_unref(data: *mut Dav1dData);
@@ -84,7 +75,7 @@ unsafe extern "C" fn leb128(f: *mut libc::FILE, len: *mut size_t) -> libc::c_int
             1,
             1,
             f,
-        ) < 1 as libc::c_int as libc::c_ulong
+        ) < 1
         {
             return -(1 as libc::c_int);
         }
@@ -307,10 +298,10 @@ unsafe extern "C" fn annexb_open(
         if res < 0 as libc::c_int {
             break;
         }
-        fseeko((*c).f, len as __off64_t, 1 as libc::c_int);
+        fseeko64((*c).f, len as __off64_t, 1 as libc::c_int);
         *num_frames = (*num_frames).wrapping_add(1);
     }
-    fseeko((*c).f, 0 as libc::c_int as __off64_t, 0 as libc::c_int);
+    fseeko64((*c).f, 0, 0 as libc::c_int);
     return 0 as libc::c_int;
 }
 unsafe extern "C" fn annexb_read(
@@ -354,7 +345,7 @@ unsafe extern "C" fn annexb_read(
         .frame_unit_size = ((*c).frame_unit_size)
         .wrapping_sub(len.wrapping_add(res as size_t)) as size_t;
     if fread(ptr as *mut libc::c_void, len, 1, (*c).f)
-        != 1 as libc::c_int as libc::c_ulong
+        != 1
     {
         fprintf(
             stderr,

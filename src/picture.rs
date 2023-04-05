@@ -1,12 +1,12 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use ::libc;
+use ::libc::malloc;
 use crate::src::cdf::CdfContext;
 use crate::src::msac::MsacContext;
 use crate::{stderr,errno_location};
 extern "C" {
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
-    fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
     fn free(_: *mut libc::c_void);
     fn memset(
         _: *mut libc::c_void,
@@ -55,7 +55,6 @@ pub struct C2RustUnnamed {
     pub __low: libc::c_uint,
     pub __high: libc::c_uint,
 }
-<<<<<<< HEAD
 
 
 
@@ -76,98 +75,6 @@ use crate::include::stdatomic::atomic_uint;
 use crate::src::r#ref::Dav1dRef;
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
-=======
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct __pthread_internal_list {
-    pub __prev: *mut __pthread_internal_list,
-    pub __next: *mut __pthread_internal_list,
-}
-pub type __pthread_list_t = __pthread_internal_list;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct __pthread_mutex_s {
-    pub __lock: libc::c_int,
-    pub __count: libc::c_uint,
-    pub __owner: libc::c_int,
-    pub __nusers: libc::c_uint,
-    pub __kind: libc::c_int,
-    pub __spins: libc::c_short,
-    pub __elision: libc::c_short,
-    pub __list: __pthread_list_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct __pthread_cond_s {
-    pub __wseq: __atomic_wide_counter,
-    pub __g1_start: __atomic_wide_counter,
-    pub __g_refs: [libc::c_uint; 2],
-    pub __g_size: [libc::c_uint; 2],
-    pub __g1_orig_size: libc::c_uint,
-    pub __wrefs: libc::c_uint,
-    pub __g_signals: [libc::c_uint; 2],
-}
-pub type pthread_t = libc::c_ulong;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union pthread_mutex_t {
-    pub __data: __pthread_mutex_s,
-    pub __size: [libc::c_char; 40],
-    pub __align: libc::c_long,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union pthread_cond_t {
-    pub __data: __pthread_cond_s,
-    pub __size: [libc::c_char; 48],
-    pub __align: libc::c_longlong,
-}
-pub type ptrdiff_t = isize;
-pub type memory_order = libc::c_uint;
-pub const memory_order_seq_cst: memory_order = 5;
-pub const memory_order_acq_rel: memory_order = 4;
-pub const memory_order_release: memory_order = 3;
-pub const memory_order_acquire: memory_order = 2;
-pub const memory_order_consume: memory_order = 1;
-pub const memory_order_relaxed: memory_order = 0;
-pub type atomic_int = libc::c_int;
-pub type atomic_uint = libc::c_uint;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dUserData {
-    pub data: *const uint8_t,
-    pub ref_0: *mut Dav1dRef,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dRef {
-    pub data: *mut libc::c_void,
-    pub const_data: *const libc::c_void,
-    pub ref_cnt: atomic_int,
-    pub free_ref: libc::c_int,
-    pub free_callback: Option::<
-        unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> (),
-    >,
-    pub user_data: *mut libc::c_void,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dDataProps {
-    pub timestamp: int64_t,
-    pub duration: int64_t,
-    pub offset: int64_t,
-    pub size: size_t,
-    pub user_data: Dav1dUserData,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dData {
-    pub data: *const uint8_t,
-    pub sz: size_t,
-    pub ref_0: *mut Dav1dRef,
-    pub m: Dav1dDataProps,
-}
->>>>>>> bb10c4cd (WIP: additional fixes - incomplete)
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext {

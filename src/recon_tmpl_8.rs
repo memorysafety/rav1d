@@ -16,10 +16,6 @@ extern "C" {
         _: libc::c_int,
         _: libc::size_t,
     ) -> *mut libc::c_void;
-<<<<<<< HEAD
-=======
-    static mut stdout: *mut libc::FILE;
->>>>>>> bb10c4cd (WIP: additional fixes - incomplete)
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
     fn printf(_: *const libc::c_char, _: ...) -> libc::c_int;
     fn llabs(_: libc::c_longlong) -> libc::c_longlong;
@@ -2401,10 +2397,7 @@ unsafe extern "C" fn get_dc_sign_ctx(
         }
         10 => {
             let mut t_9: uint64_t = *(a as *const uint64_t) & mask;
-            t_9 = (t_9 as libc::c_ulong)
-                .wrapping_add(
-                    (*(l as *const uint32_t) & mask as uint32_t) as libc::c_ulong,
-                ) as uint64_t as uint64_t;
+            t_9 = t_9 + (*(l as *const uint32_t) & mask as uint32_t) as uint64_t;
             t_9 = (t_9 >> 6 as libc::c_int).wrapping_mul(mul);
             s = (t_9 >> 56 as libc::c_int) as libc::c_int - 8 as libc::c_int
                 - 4 as libc::c_int;
@@ -2509,10 +2502,7 @@ unsafe extern "C" fn get_dc_sign_ctx(
         18 => {
             let mut t_17: uint64_t = *(&*a.offset(0 as libc::c_int as isize)
                 as *const uint8_t as *const uint64_t) & mask;
-            t_17 = (t_17 as libc::c_ulong)
-                .wrapping_add(
-                    (*(l as *const uint32_t) & mask as uint32_t) as libc::c_ulong,
-                ) as uint64_t as uint64_t;
+            t_17 = t_17 + (*(l as *const uint32_t) & mask as uint32_t) as uint64_t;
             t_17 = (t_17 >> 6 as libc::c_int)
                 .wrapping_add(
                     (*(&*a.offset(8 as libc::c_int as isize) as *const uint8_t
@@ -3837,6 +3827,8 @@ unsafe extern "C" fn decode_coefs(
         }
     } else {
         dc_sign_ctx = get_dc_sign_ctx(tx as libc::c_int, a, l) as libc::c_int;
+        println!("xcheck:tx:{}:dc_sign_ctx:{}:*a:{}:*l:{}",
+            tx, dc_sign_ctx, *a, *l);
         dc_sign_cdf = ((*ts).cdf.coef.dc_sign[chroma as usize][dc_sign_ctx as usize])
             .as_mut_ptr();
         dc_sign = dav1d_msac_decode_bool_adapt(&mut (*ts).msac, dc_sign_cdf)
