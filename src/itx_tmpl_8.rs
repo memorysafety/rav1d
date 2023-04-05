@@ -2873,6 +2873,947 @@ extern "C" {
         eob: libc::c_int,
     );
 }
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+extern "C" {
+    fn dav1d_inv_txfm_add_identity_dct_4x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_identity_4x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_adst_4x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_identity_4x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_identity_4x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_flipadst_4x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_adst_4x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_dct_4x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_flipadst_4x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_adst_4x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_dct_4x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_wht_wht_4x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_identity_4x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_flipadst_4x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_flipadst_4x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_dct_4x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_adst_4x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_identity_4x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_flipadst_4x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_dct_4x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_flipadst_4x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_adst_4x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_dct_4x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_adst_4x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_flipadst_4x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_identity_4x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_dct_4x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_dct_4x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_adst_4x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_flipadst_4x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_adst_4x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_identity_4x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_identity_4x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_identity_4x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_identity_4x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_flipadst_4x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_adst_4x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_adst_4x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_identity_4x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_flipadst_4x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_identity_4x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_dct_4x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_adst_4x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_flipadst_4x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_dct_4x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_adst_4x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_flipadst_4x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_dct_4x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_dct_4x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_adst_8x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_flipadst_8x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_identity_8x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_dct_8x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_identity_8x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_adst_8x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_flipadst_8x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_identity_8x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_dct_8x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_adst_8x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_flipadst_8x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_dct_8x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_adst_8x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_flipadst_8x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_dct_8x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_identity_8x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_flipadst_8x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_adst_8x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_identity_8x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_dct_8x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_identity_8x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_adst_8x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_flipadst_8x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_identity_8x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_dct_8x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_adst_8x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_flipadst_8x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_dct_8x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_adst_8x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_flipadst_8x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_dct_8x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_identity_8x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_flipadst_8x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_dct_8x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_identity_8x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_adst_8x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_flipadst_8x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_identity_8x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_dct_8x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_adst_8x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_flipadst_8x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_dct_8x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_adst_8x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_flipadst_8x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_dct_8x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_identity_8x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_identity_8x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_adst_8x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_identity_8x32_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_dct_8x32_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_identity_16x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_adst_16x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_flipadst_16x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_dct_16x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_identity_16x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_adst_16x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_flipadst_16x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_identity_16x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_dct_16x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_adst_16x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_flipadst_16x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_dct_16x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_adst_16x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_flipadst_16x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_dct_16x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_identity_16x4_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_identity_16x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_flipadst_16x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_adst_16x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_dct_16x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_identity_16x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_adst_16x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_flipadst_16x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_identity_16x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_dct_16x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_adst_16x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_flipadst_16x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_dct_16x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_adst_16x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_flipadst_16x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_dct_16x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_identity_16x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_adst_16x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_dct_16x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_identity_16x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_flipadst_16x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_identity_16x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_dct_16x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_adst_16x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_adst_flipadst_16x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_dct_16x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_adst_16x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_flipadst_flipadst_16x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_dct_16x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_dct_16x32_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_identity_16x32_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_dct_16x64_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_dct_32x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_identity_32x8_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_dct_32x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_identity_32x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_dct_32x32_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_identity_32x32_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_dct_32x64_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_dct_64x16_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_dct_64x32_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_dct_64x64_8bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+    );
+}
+
 pub type pixel = uint8_t;
 pub type coef = int16_t;
 
@@ -7505,7 +8446,172 @@ unsafe extern "C" fn itx_dsp_init_x86(c: *mut Dav1dInvTxfmDSPContext, _bpc: libc
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 #[inline(always)]
-unsafe extern "C" fn itx_dsp_init_arm(c: *mut Dav1dInvTxfmDSPContext, mut bpc: libc::c_int) {
+#[rustfmt::skip]
+unsafe extern "C" fn itx_dsp_init_arm(c: *mut Dav1dInvTxfmDSPContext, mut _bpc: libc::c_int) {
+    use crate::src::arm::cpu::DAV1D_ARM_CPU_FLAG_NEON;
+
+    let flags = dav1d_get_cpu_flags();
+
+    if flags & DAV1D_ARM_CPU_FLAG_NEON == 0 {
+        return;
+    }
+
+    (*c).itxfm_add[TX_4X4 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_4x4_8bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_4x4_8bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][ADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_adst_4x4_8bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][FLIPADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_flipadst_4x4_8bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][H_DCT as usize] = Some(dav1d_inv_txfm_add_dct_identity_4x4_8bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][DCT_ADST as usize] = Some(dav1d_inv_txfm_add_adst_dct_4x4_8bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][ADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_adst_4x4_8bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][FLIPADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_flipadst_4x4_8bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][DCT_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_dct_4x4_8bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][ADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_adst_4x4_8bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][FLIPADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_flipadst_4x4_8bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][V_DCT as usize] = Some(dav1d_inv_txfm_add_identity_dct_4x4_8bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][H_ADST as usize] = Some(dav1d_inv_txfm_add_adst_identity_4x4_8bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][H_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_identity_4x4_8bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][V_ADST as usize] = Some(dav1d_inv_txfm_add_identity_adst_4x4_8bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][V_FLIPADST as usize] = Some(dav1d_inv_txfm_add_identity_flipadst_4x4_8bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][WHT_WHT as usize] = Some(dav1d_inv_txfm_add_wht_wht_4x4_8bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_4x8_8bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_4x8_8bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][ADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_adst_4x8_8bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][FLIPADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_flipadst_4x8_8bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][H_DCT as usize] = Some(dav1d_inv_txfm_add_dct_identity_4x8_8bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][DCT_ADST as usize] = Some(dav1d_inv_txfm_add_adst_dct_4x8_8bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][ADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_adst_4x8_8bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][FLIPADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_flipadst_4x8_8bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][DCT_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_dct_4x8_8bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][ADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_adst_4x8_8bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][FLIPADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_flipadst_4x8_8bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][V_DCT as usize] = Some(dav1d_inv_txfm_add_identity_dct_4x8_8bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][H_ADST as usize] = Some(dav1d_inv_txfm_add_adst_identity_4x8_8bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][H_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_identity_4x8_8bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][V_ADST as usize] = Some(dav1d_inv_txfm_add_identity_adst_4x8_8bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][V_FLIPADST as usize] = Some(dav1d_inv_txfm_add_identity_flipadst_4x8_8bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_4x16_8bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_4x16_8bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][ADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_adst_4x16_8bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][FLIPADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_flipadst_4x16_8bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][H_DCT as usize] = Some(dav1d_inv_txfm_add_dct_identity_4x16_8bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][DCT_ADST as usize] = Some(dav1d_inv_txfm_add_adst_dct_4x16_8bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][ADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_adst_4x16_8bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][FLIPADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_flipadst_4x16_8bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][DCT_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_dct_4x16_8bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][ADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_adst_4x16_8bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][FLIPADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_flipadst_4x16_8bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][V_DCT as usize] = Some(dav1d_inv_txfm_add_identity_dct_4x16_8bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][H_ADST as usize] = Some(dav1d_inv_txfm_add_adst_identity_4x16_8bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][H_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_identity_4x16_8bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][V_ADST as usize] = Some(dav1d_inv_txfm_add_identity_adst_4x16_8bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][V_FLIPADST as usize] = Some(dav1d_inv_txfm_add_identity_flipadst_4x16_8bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_8x4_8bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_8x4_8bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][ADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_adst_8x4_8bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][FLIPADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_flipadst_8x4_8bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][H_DCT as usize] = Some(dav1d_inv_txfm_add_dct_identity_8x4_8bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][DCT_ADST as usize] = Some(dav1d_inv_txfm_add_adst_dct_8x4_8bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][ADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_adst_8x4_8bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][FLIPADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_flipadst_8x4_8bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][DCT_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_dct_8x4_8bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][ADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_adst_8x4_8bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][FLIPADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_flipadst_8x4_8bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][V_DCT as usize] = Some(dav1d_inv_txfm_add_identity_dct_8x4_8bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][H_ADST as usize] = Some(dav1d_inv_txfm_add_adst_identity_8x4_8bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][H_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_identity_8x4_8bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][V_ADST as usize] = Some(dav1d_inv_txfm_add_identity_adst_8x4_8bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][V_FLIPADST as usize] = Some(dav1d_inv_txfm_add_identity_flipadst_8x4_8bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_8x8_8bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_8x8_8bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][ADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_adst_8x8_8bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][FLIPADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_flipadst_8x8_8bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][H_DCT as usize] = Some(dav1d_inv_txfm_add_dct_identity_8x8_8bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][DCT_ADST as usize] = Some(dav1d_inv_txfm_add_adst_dct_8x8_8bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][ADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_adst_8x8_8bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][FLIPADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_flipadst_8x8_8bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][DCT_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_dct_8x8_8bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][ADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_adst_8x8_8bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][FLIPADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_flipadst_8x8_8bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][V_DCT as usize] = Some(dav1d_inv_txfm_add_identity_dct_8x8_8bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][H_ADST as usize] = Some(dav1d_inv_txfm_add_adst_identity_8x8_8bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][H_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_identity_8x8_8bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][V_ADST as usize] = Some(dav1d_inv_txfm_add_identity_adst_8x8_8bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][V_FLIPADST as usize] = Some(dav1d_inv_txfm_add_identity_flipadst_8x8_8bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_8x16_8bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_8x16_8bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][ADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_adst_8x16_8bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][FLIPADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_flipadst_8x16_8bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][H_DCT as usize] = Some(dav1d_inv_txfm_add_dct_identity_8x16_8bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][DCT_ADST as usize] = Some(dav1d_inv_txfm_add_adst_dct_8x16_8bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][ADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_adst_8x16_8bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][FLIPADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_flipadst_8x16_8bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][DCT_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_dct_8x16_8bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][ADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_adst_8x16_8bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][FLIPADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_flipadst_8x16_8bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][V_DCT as usize] = Some(dav1d_inv_txfm_add_identity_dct_8x16_8bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][H_ADST as usize] = Some(dav1d_inv_txfm_add_adst_identity_8x16_8bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][H_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_identity_8x16_8bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][V_ADST as usize] = Some(dav1d_inv_txfm_add_identity_adst_8x16_8bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][V_FLIPADST as usize] = Some(dav1d_inv_txfm_add_identity_flipadst_8x16_8bpc_neon);
+    (*c).itxfm_add[RTX_8X32 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_8x32_8bpc_neon);
+    (*c).itxfm_add[RTX_8X32 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_8x32_8bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_16x4_8bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_16x4_8bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][ADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_adst_16x4_8bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][FLIPADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_flipadst_16x4_8bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][H_DCT as usize] = Some(dav1d_inv_txfm_add_dct_identity_16x4_8bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][DCT_ADST as usize] = Some(dav1d_inv_txfm_add_adst_dct_16x4_8bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][ADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_adst_16x4_8bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][FLIPADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_flipadst_16x4_8bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][DCT_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_dct_16x4_8bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][ADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_adst_16x4_8bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][FLIPADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_flipadst_16x4_8bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][V_DCT as usize] = Some(dav1d_inv_txfm_add_identity_dct_16x4_8bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][H_ADST as usize] = Some(dav1d_inv_txfm_add_adst_identity_16x4_8bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][H_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_identity_16x4_8bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][V_ADST as usize] = Some(dav1d_inv_txfm_add_identity_adst_16x4_8bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][V_FLIPADST as usize] = Some(dav1d_inv_txfm_add_identity_flipadst_16x4_8bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_16x8_8bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_16x8_8bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][ADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_adst_16x8_8bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][FLIPADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_flipadst_16x8_8bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][H_DCT as usize] = Some(dav1d_inv_txfm_add_dct_identity_16x8_8bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][DCT_ADST as usize] = Some(dav1d_inv_txfm_add_adst_dct_16x8_8bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][ADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_adst_16x8_8bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][FLIPADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_flipadst_16x8_8bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][DCT_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_dct_16x8_8bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][ADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_adst_16x8_8bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][FLIPADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_flipadst_16x8_8bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][V_DCT as usize] = Some(dav1d_inv_txfm_add_identity_dct_16x8_8bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][H_ADST as usize] = Some(dav1d_inv_txfm_add_adst_identity_16x8_8bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][H_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_identity_16x8_8bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][V_ADST as usize] = Some(dav1d_inv_txfm_add_identity_adst_16x8_8bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][V_FLIPADST as usize] = Some(dav1d_inv_txfm_add_identity_flipadst_16x8_8bpc_neon);
+    (*c).itxfm_add[TX_16X16 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_16x16_8bpc_neon);
+    (*c).itxfm_add[TX_16X16 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_16x16_8bpc_neon);
+    (*c).itxfm_add[TX_16X16 as usize][ADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_adst_16x16_8bpc_neon);
+    (*c).itxfm_add[TX_16X16 as usize][FLIPADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_flipadst_16x16_8bpc_neon);
+    (*c).itxfm_add[TX_16X16 as usize][H_DCT as usize] = Some(dav1d_inv_txfm_add_dct_identity_16x16_8bpc_neon);
+    (*c).itxfm_add[TX_16X16 as usize][DCT_ADST as usize] = Some(dav1d_inv_txfm_add_adst_dct_16x16_8bpc_neon);
+    (*c).itxfm_add[TX_16X16 as usize][ADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_adst_16x16_8bpc_neon);
+    (*c).itxfm_add[TX_16X16 as usize][FLIPADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_flipadst_16x16_8bpc_neon);
+    (*c).itxfm_add[TX_16X16 as usize][DCT_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_dct_16x16_8bpc_neon);
+    (*c).itxfm_add[TX_16X16 as usize][ADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_adst_16x16_8bpc_neon);
+    (*c).itxfm_add[TX_16X16 as usize][FLIPADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_flipadst_16x16_8bpc_neon);
+    (*c).itxfm_add[TX_16X16 as usize][V_DCT as usize] = Some(dav1d_inv_txfm_add_identity_dct_16x16_8bpc_neon);
+    (*c).itxfm_add[RTX_16X32 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_16x32_8bpc_neon);
+    (*c).itxfm_add[RTX_16X32 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_16x32_8bpc_neon);
+    (*c).itxfm_add[RTX_16X64 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_16x64_8bpc_neon);
+    (*c).itxfm_add[RTX_32X8 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_32x8_8bpc_neon);
+    (*c).itxfm_add[RTX_32X8 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_32x8_8bpc_neon);
+    (*c).itxfm_add[RTX_32X16 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_32x16_8bpc_neon);
+    (*c).itxfm_add[RTX_32X16 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_32x16_8bpc_neon);
+    (*c).itxfm_add[TX_32X32 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_32x32_8bpc_neon);
+    (*c).itxfm_add[TX_32X32 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_32x32_8bpc_neon);
+    (*c).itxfm_add[RTX_32X64 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_32x64_8bpc_neon);
+    (*c).itxfm_add[RTX_64X16 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_64x16_8bpc_neon);
+    (*c).itxfm_add[RTX_64X32 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_64x32_8bpc_neon);
+    (*c).itxfm_add[TX_64X64 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_64x64_8bpc_neon);
 }
 
 #[no_mangle]
