@@ -726,6 +726,11 @@ unsafe extern "C" fn loop_filter_dsp_init_x86(c: *mut Dav1dLoopFilterDSPContext)
     (*c).loop_filter_sb[1][1] = Some(dav1d_lpf_v_sb_uv_16bpc_avx512icl);
 }
 
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[inline(always)]
+unsafe extern "C" fn loop_filter_dsp_init_arm(c: *mut Dav1dLoopFilterDSPContext) {
+}
+
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_loop_filter_dsp_init_16bpc(
