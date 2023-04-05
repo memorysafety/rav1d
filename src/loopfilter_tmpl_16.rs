@@ -136,6 +136,50 @@ extern "C" {
     );
 }
 
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+extern "C" {
+    fn dav1d_lpf_v_sb_uv_16bpc_neon(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        mask: *const uint32_t,
+        lvl: *const [uint8_t; 4],
+        lvl_stride: ptrdiff_t,
+        lut: *const Av1FilterLUT,
+        w: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_lpf_h_sb_uv_16bpc_neon(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        mask: *const uint32_t,
+        lvl: *const [uint8_t; 4],
+        lvl_stride: ptrdiff_t,
+        lut: *const Av1FilterLUT,
+        w: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_lpf_v_sb_y_16bpc_neon(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        mask: *const uint32_t,
+        lvl: *const [uint8_t; 4],
+        lvl_stride: ptrdiff_t,
+        lut: *const Av1FilterLUT,
+        w: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_lpf_h_sb_y_16bpc_neon(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        mask: *const uint32_t,
+        lvl: *const [uint8_t; 4],
+        lvl_stride: ptrdiff_t,
+        lut: *const Av1FilterLUT,
+        w: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+}
+
 pub const DAV1D_X86_CPU_FLAG_AVX512ICL: CpuFlags = 16;
 pub const DAV1D_X86_CPU_FLAG_SSE2: CpuFlags = 1;
 pub const DAV1D_X86_CPU_FLAG_AVX2: CpuFlags = 8;
@@ -729,6 +773,18 @@ unsafe extern "C" fn loop_filter_dsp_init_x86(c: *mut Dav1dLoopFilterDSPContext)
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 #[inline(always)]
 unsafe extern "C" fn loop_filter_dsp_init_arm(c: *mut Dav1dLoopFilterDSPContext) {
+    use crate::src::arm::cpu::DAV1D_ARM_CPU_FLAG_NEON;
+
+    let flags = dav1d_get_cpu_flags();
+
+    if flags & DAV1D_ARM_CPU_FLAG_NEON == 0 {
+        return;
+    }
+
+    (*c).loop_filter_sb[0][0] = Some(dav1d_lpf_h_sb_y_16bpc_neon);
+    (*c).loop_filter_sb[0][1] = Some(dav1d_lpf_v_sb_y_16bpc_neon);
+    (*c).loop_filter_sb[1][0] = Some(dav1d_lpf_h_sb_uv_16bpc_neon);
+    (*c).loop_filter_sb[1][1] = Some(dav1d_lpf_v_sb_uv_16bpc_neon);
 }
 
 #[no_mangle]
