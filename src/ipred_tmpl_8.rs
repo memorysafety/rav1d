@@ -17,25 +17,11 @@ extern "C" {
     static dav1d_dr_intra_derivative: [uint16_t; 44];
     static dav1d_filter_intra_taps: [[int8_t; 64]; 5];
 }
-<<<<<<< HEAD
 
 
 
 
 
-=======
-pub type __int8_t = libc::c_schar;
-pub type __uint8_t = libc::c_uchar;
-pub type __int16_t = libc::c_short;
-pub type __uint16_t = libc::c_ushort;
-pub type __uint64_t = u64;
-pub type int8_t = __int8_t;
-pub type int16_t = __int16_t;
-pub type ptrdiff_t = isize;
-pub type uint8_t = __uint8_t;
-pub type uint16_t = __uint16_t;
-pub type uint64_t = __uint64_t;
->>>>>>> bb10c4cd (WIP: additional fixes - incomplete)
 pub type pixel = uint8_t;
 
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;

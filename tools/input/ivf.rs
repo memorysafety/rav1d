@@ -6,10 +6,6 @@ use crate::errno_location;
 extern "C" {
     pub type Dav1dRef;
     fn llround(_: libc::c_double) -> libc::c_longlong;
-<<<<<<< HEAD
-=======
-    static mut stderr: *mut libc::FILE;
->>>>>>> bb10c4cd (WIP: additional fixes - incomplete)
     fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
     fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut libc::FILE;
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;

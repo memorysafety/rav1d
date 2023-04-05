@@ -10,11 +10,11 @@ extern "C" {
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
     fn fread(
         _: *mut libc::c_void,
-        _: libc::c_ulong,
-        _: libc::c_ulong,
+        _: size_t,
+        _: size_t,
         _: *mut libc::FILE,
-    ) -> libc::c_ulong;
-    fn fseeko(
+    ) -> size_t;
+    fn fseeko64(
         __stream: *mut libc::FILE,
         __off: __off64_t,
         __whence: libc::c_int,
@@ -153,7 +153,7 @@ unsafe extern "C" fn leb128(f: *mut libc::FILE, len: *mut size_t) -> libc::c_int
             1,
             1,
             f,
-        ) < 1 as libc::c_int as libc::c_ulong
+        ) < 1
         {
             return -(1 as libc::c_int);
         }
@@ -245,7 +245,7 @@ unsafe extern "C" fn section5_open(
             1,
             1,
             (*c).f,
-        ) < 1 as libc::c_int as libc::c_ulong
+        ) < 1
         {
             break;
         }
@@ -268,7 +268,7 @@ unsafe extern "C" fn section5_open(
                 1,
                 1,
                 (*c).f,
-            ) < 1 as libc::c_int as libc::c_ulong
+            ) < 1
         {
             return -(1 as libc::c_int);
         }
@@ -277,9 +277,9 @@ unsafe extern "C" fn section5_open(
         if res < 0 as libc::c_int {
             return -(1 as libc::c_int);
         }
-        fseeko((*c).f, len as __off64_t, 1 as libc::c_int);
+        fseeko64((*c).f, len as __off64_t, 1 as libc::c_int);
     }
-    fseeko((*c).f, 0 as libc::c_int as __off64_t, 0 as libc::c_int);
+    fseeko64((*c).f, 0, 0 as libc::c_int);
     return 0 as libc::c_int;
 }
 unsafe extern "C" fn section5_read(
@@ -296,7 +296,7 @@ unsafe extern "C" fn section5_read(
             1,
             1,
             (*c).f,
-        ) < 1 as libc::c_int as libc::c_ulong
+        ) < 1
         {
             if first == 0 && feof((*c).f) != 0 {
                 break;
@@ -314,7 +314,7 @@ unsafe extern "C" fn section5_read(
             } else if obu_type as libc::c_uint
                 == DAV1D_OBU_TD as libc::c_int as libc::c_uint
             {
-                fseeko((*c).f, -(1 as libc::c_int) as __off64_t, 1 as libc::c_int);
+                fseeko64((*c).f, -(1 as libc::c_int) as __off64_t, 1);
                 break;
             }
             let has_length_field: libc::c_int = byte[0 as libc::c_int as usize]
@@ -331,7 +331,7 @@ unsafe extern "C" fn section5_read(
                     1,
                     1,
                     (*c).f,
-                ) < 1 as libc::c_int as libc::c_ulong
+                ) < 1
             {
                 return -(1 as libc::c_int);
             }
@@ -343,11 +343,11 @@ unsafe extern "C" fn section5_read(
             total_bytes = total_bytes.wrapping_add(
                     ((1 as libc::c_int + has_extension + res) as size_t)
                         .wrapping_add(len));
-            fseeko((*c).f, len as __off64_t, 1 as libc::c_int);
+            fseeko64((*c).f, len as __off64_t, 1 as libc::c_int);
             first = 0 as libc::c_int;
         }
     }
-    fseeko((*c).f, -(total_bytes as off_t), 1 as libc::c_int);
+    fseeko64((*c).f, -(total_bytes as __off64_t), 1 as libc::c_int);
     let mut ptr: *mut uint8_t = dav1d_data_create(data, total_bytes);
     if ptr.is_null() {
         return -(1 as libc::c_int);
@@ -357,7 +357,7 @@ unsafe extern "C" fn section5_read(
         total_bytes,
         1,
         (*c).f,
-    ) != 1 as libc::c_int as libc::c_ulong
+    ) != 1
     {
         fprintf(
             stderr,

@@ -279,7 +279,7 @@ pub unsafe extern "C" fn dav1d_msac_decode_subexp(
         a = ((1 as libc::c_int) << k) as libc::c_uint;
     }
     let v: libc::c_uint = (dav1d_msac_decode_bools(s, k)).wrapping_add(a);
-    return (if ref_0 * 2 as libc::c_int <= n {
+    let ret = (if ref_0 * 2 as libc::c_int <= n {
         inv_recenter(ref_0 as libc::c_uint, v)
     } else {
         ((n - 1 as libc::c_int) as libc::c_uint)
@@ -287,6 +287,7 @@ pub unsafe extern "C" fn dav1d_msac_decode_subexp(
                 inv_recenter((n - 1 as libc::c_int - ref_0) as libc::c_uint, v),
             )
     }) as libc::c_int;
+    return ret;
 }
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_msac_decode_symbol_adapt_c(
@@ -442,6 +443,7 @@ pub unsafe extern "C" fn dav1d_msac_init(
 ) {
     (*s).buf_pos = data;
     (*s).buf_end = data.offset(sz as isize);
+    let data_slice = std::slice::from_raw_parts(data, sz);
     (*s)
         .dif = ((1 as libc::c_int as ec_win)
         << ((::core::mem::size_of::<ec_win>()) << 3 as libc::c_int)
