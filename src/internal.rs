@@ -1,6 +1,8 @@
 use crate::include::dav1d::data::Dav1dData;
 use crate::include::stdint::int16_t;
+use crate::include::stdint::int32_t;
 use crate::include::stdint::uint8_t;
+use crate::include::stdint::uint16_t;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -56,4 +58,32 @@ pub struct CodedBlockInfo {
 pub struct FrameTileThreadData {
     pub lowest_pixel_mem: *mut [[libc::c_int; 2]; 7],
     pub lowest_pixel_mem_sz: libc::c_int,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub union Dav1dTaskContext_cf {
+    pub cf_8bpc: [int16_t; 1024],
+    pub cf_16bpc: [int32_t; 1024],
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dTaskContext_scratch_interintra_edge_8 {
+    pub interintra_8bpc: [uint8_t; 4096],
+    pub edge_8bpc: [uint8_t; 257],
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dTaskContext_scratch_interintra_edge_16 {
+    pub interintra_16bpc: [uint16_t; 4096],
+    pub edge_16bpc: [uint16_t; 257],
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub union Dav1dTaskContext_scratch_interintra_edge {
+    pub c2rust_unnamed: Dav1dTaskContext_scratch_interintra_edge_8,
+    pub c2rust_unnamed_0: Dav1dTaskContext_scratch_interintra_edge_16,
 }
