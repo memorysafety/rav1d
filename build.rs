@@ -40,6 +40,9 @@ fn build_nasm_files() {
         "src/x86/cdef_avx2.asm",
         "src/x86/cdef_sse.asm",
         "src/x86/cpuid.asm",
+        "src/x86/itx_avx2.asm",
+        "src/x86/itx_avx512.asm",
+        "src/x86/itx_sse.asm",
         "src/x86/msac.asm",
         "src/x86/refmvs.asm",
     ];
@@ -66,6 +69,9 @@ fn build_nasm_files() {
         "src/x86/ipred16_avx2.asm",
         "src/x86/ipred16_avx512.asm",
         "src/x86/ipred16_sse.asm",
+        "src/x86/itx16_avx2.asm",
+        "src/x86/itx16_avx512.asm",
+        "src/x86/itx16_sse.asm",
     ]);
 
     let mut config_include_arg = String::from("-I");
@@ -116,6 +122,7 @@ fn build_asm_files() {
     config_file.sync_all().unwrap();
 
     let mut asm_files = vec![
+        "src/arm/64/itx.S",
         "src/arm/64/msac.S",
         "src/arm/64/refmvs.S",
     ];
@@ -132,6 +139,7 @@ fn build_asm_files() {
         "src/arm/64/cdef16.S",
         "src/arm/64/filmgrain16.S",
         "src/arm/64/ipred16.S",
+        "src/arm/64/itx16.S",
     ]);
 
     cc::Build::new()
