@@ -8152,7 +8152,7 @@ unsafe extern "C" fn inv_txfm_add_wht_wht_4x4_c(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     coeff: *mut coef,
-    eob: libc::c_int,
+    _eob: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
     let mut tmp: [int32_t; 16] = [0; 16];
