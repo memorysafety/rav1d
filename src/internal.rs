@@ -61,7 +61,7 @@ pub struct FrameTileThreadData {
 }
 
 #[derive(Copy, Clone)]
-#[repr(C)]
+#[repr(C, align(64))]
 pub union Dav1dTaskContext_cf {
     pub cf_8bpc: [int16_t; 1024],
     pub cf_16bpc: [int32_t; 1024],
