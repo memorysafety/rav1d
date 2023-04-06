@@ -443,7 +443,6 @@ pub unsafe extern "C" fn dav1d_msac_init(
 ) {
     (*s).buf_pos = data;
     (*s).buf_end = data.offset(sz as isize);
-    let data_slice = std::slice::from_raw_parts(data, sz);
     (*s)
         .dif = ((1 as libc::c_int as ec_win)
         << ((::core::mem::size_of::<ec_win>()) << 3 as libc::c_int)
