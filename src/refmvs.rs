@@ -2486,13 +2486,14 @@ unsafe extern "C" fn splat_mv_c(
     };
 }
 #[inline(always)]
+#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "asm"))]
 unsafe extern "C" fn dav1d_get_cpu_flags() -> libc::c_uint {
     let mut flags = dav1d_cpu_flags & dav1d_cpu_flags_mask;
     flags |= DAV1D_X86_CPU_FLAG_SSE2;
     return flags;
 }
 #[inline(always)]
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "asm"))]
 unsafe extern "C" fn refmvs_dsp_init_x86(c: *mut Dav1dRefmvsDSPContext) {
     let flags = dav1d_get_cpu_flags();
 
@@ -2540,7 +2541,7 @@ pub unsafe extern "C" fn dav1d_refmvs_dsp_init(c: *mut Dav1dRefmvsDSPContext) {
             ) -> (),
     );
     cfg_if! {
-        if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
+        if #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "asm"))] {
             refmvs_dsp_init_x86(c);
         } else if #[cfg(any(target_arch = "arm", target_arch = "aarch64"))] {
             refmvs_dsp_init_arm(c);

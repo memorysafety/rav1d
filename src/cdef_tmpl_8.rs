@@ -945,6 +945,10 @@ unsafe extern "C" fn cdef_find_dir_c(
     return best_dir;
 }
 #[inline(always)]
+#[cfg(all(
+    feature = "asm",
+    any(target_arch = "x86", target_arch = "x86_64"),
+))]
 unsafe extern "C" fn dav1d_get_cpu_flags() -> libc::c_uint {
     let mut flags: libc::c_uint = dav1d_cpu_flags & dav1d_cpu_flags_mask;
     flags |= DAV1D_X86_CPU_FLAG_SSE2 as libc::c_int as libc::c_uint;
