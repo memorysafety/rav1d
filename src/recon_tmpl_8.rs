@@ -3827,8 +3827,6 @@ unsafe extern "C" fn decode_coefs(
         }
     } else {
         dc_sign_ctx = get_dc_sign_ctx(tx as libc::c_int, a, l) as libc::c_int;
-        println!("xcheck:tx:{}:dc_sign_ctx:{}:*a:{}:*l:{}",
-            tx, dc_sign_ctx, *a, *l);
         dc_sign_cdf = ((*ts).cdf.coef.dc_sign[chroma as usize][dc_sign_ctx as usize])
             .as_mut_ptr();
         dc_sign = dav1d_msac_decode_bool_adapt(&mut (*ts).msac, dc_sign_cdf)

@@ -2219,11 +2219,7 @@ unsafe extern "C" fn get_dc_sign_ctx(
         }
         16 => {
             let mut t_15: uint64_t = *(a as *const uint64_t) & mask;
-            t_15 = (t_15 as libc::c_ulong)
-                .wrapping_add(
-                    (*(l as *const uint16_t) as libc::c_uint & mask as uint32_t)
-                        as libc::c_ulong,
-                ) as uint64_t as uint64_t;
+            t_15 = t_15 + (*(l as *const uint16_t) as libc::c_uint & mask as uint32_t) as uint64_t;
             t_15 = (t_15 >> 6 as libc::c_int).wrapping_mul(mul);
             s = t_15.wrapping_shr(56) as libc::c_int - 8 as libc::c_int
                 - 2 as libc::c_int;
@@ -2249,10 +2245,7 @@ unsafe extern "C" fn get_dc_sign_ctx(
         18 => {
             let mut t_17: uint64_t = *(&*a.offset(0 as libc::c_int as isize)
                 as *const uint8_t as *const uint64_t) & mask;
-            t_17 = (t_17 as libc::c_ulong)
-                .wrapping_add(
-                    (*(l as *const uint32_t) & mask as uint32_t) as libc::c_ulong,
-                ) as uint64_t as uint64_t;
+            t_17 = t_17 + (*(l as *const uint32_t) & mask as uint32_t) as uint64_t;
             t_17 = (t_17 >> 6 as libc::c_int)
                 .wrapping_add(
                     (*(&*a.offset(8 as libc::c_int as isize) as *const uint8_t
@@ -3567,6 +3560,8 @@ unsafe extern "C" fn decode_coefs(
         }
     } else {
         dc_sign_ctx = get_dc_sign_ctx(tx as libc::c_int, a, l) as libc::c_int;
+        println!("xcheck:tx:{}:dc_sign_ctx:{}:*a:{}:*l:{}",
+            tx, dc_sign_ctx, *a, *l);
         dc_sign_cdf = ((*ts).cdf.coef.dc_sign[chroma as usize][dc_sign_ctx as usize])
             .as_mut_ptr();
         dc_sign = dav1d_msac_decode_bool_adapt(&mut (*ts).msac, dc_sign_cdf)
