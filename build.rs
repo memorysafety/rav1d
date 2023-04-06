@@ -53,6 +53,9 @@ fn build_nasm_files() {
         "src/x86/filmgrain_avx2.asm",
         "src/x86/filmgrain_avx512.asm",
         "src/x86/filmgrain_sse.asm",
+        "src/x86/loopfilter_avx2.asm",
+        "src/x86/loopfilter_avx512.asm",
+        "src/x86/loopfilter_sse.asm",
     ]);
 
     #[cfg(feature = "bitdepth_16")]
@@ -66,6 +69,9 @@ fn build_nasm_files() {
         "src/x86/itx16_avx2.asm",
         "src/x86/itx16_avx512.asm",
         "src/x86/itx16_sse.asm",
+        "src/x86/loopfilter16_avx2.asm",
+        "src/x86/loopfilter16_avx512.asm",
+        "src/x86/loopfilter16_sse.asm",
     ]);
 
     let mut config_include_arg = String::from("-I");
@@ -125,6 +131,7 @@ fn build_asm_files() {
     asm_files.extend_from_slice(&[
         "src/arm/64/cdef.S",
         "src/arm/64/filmgrain.S",
+        "src/arm/64/loopfilter.S",
     ]);
 
     #[cfg(feature = "bitdepth_16")]
@@ -132,6 +139,7 @@ fn build_asm_files() {
         "src/arm/64/cdef16.S",
         "src/arm/64/filmgrain16.S",
         "src/arm/64/itx16.S",
+        "src/arm/64/loopfilter16.S",
     ]);
 
     cc::Build::new()
