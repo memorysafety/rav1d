@@ -1,6 +1,7 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use ::libc;
+use cfg_if::cfg_if;
 extern "C" {
     fn memcpy(
         _: *mut libc::c_void,
@@ -10,10 +11,305 @@ extern "C" {
     static dav1d_sgr_x_by_x: [uint8_t; 256];
 }
 
+#[cfg(feature = "asm")]
+extern "C" {
+    static mut dav1d_cpu_flags_mask: libc::c_uint;
+    static mut dav1d_cpu_flags: libc::c_uint;
+}
 
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+extern "C" {
+    fn dav1d_wiener_filter5_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_wiener_filter7_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_wiener_filter5_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_wiener_filter7_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_wiener_filter5_16bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_wiener_filter7_16bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_sgr_filter_mix_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_sgr_filter_3x3_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_sgr_filter_5x5_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_sgr_filter_mix_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_sgr_filter_3x3_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_sgr_filter_5x5_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_sgr_filter_5x5_16bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_sgr_filter_3x3_16bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_sgr_filter_mix_16bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+}
 
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+extern "C" {
+    fn dav1d_wiener_filter7_16bpc_neon(
+        p: *mut pixel,
+        stride: ptrdiff_t,
+        left: *const [pixel; 4],
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_wiener_filter5_16bpc_neon(
+        p: *mut pixel,
+        stride: ptrdiff_t,
+        left: *const [pixel; 4],
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_sgr_box5_v_neon(
+        sumsq: *mut int32_t,
+        sum: *mut int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        edges: LrEdgeFlags,
+    );
+    fn dav1d_sgr_calc_ab2_neon(
+        a: *mut int32_t,
+        b: *mut int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        strength: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_sgr_finish_filter2_16bpc_neon(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        stride: ptrdiff_t,
+        a: *const int32_t,
+        b: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+    );
+    fn dav1d_sgr_box3_h_16bpc_neon(
+        sumsq: *mut int32_t,
+        sum: *mut int16_t,
+        left: *const [pixel; 4],
+        src: *const pixel,
+        stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        edges: LrEdgeFlags,
+    );
+    fn dav1d_sgr_box3_v_neon(
+        sumsq: *mut int32_t,
+        sum: *mut int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        edges: LrEdgeFlags,
+    );
+    fn dav1d_sgr_calc_ab1_neon(
+        a: *mut int32_t,
+        b: *mut int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        strength: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_sgr_finish_filter1_16bpc_neon(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        stride: ptrdiff_t,
+        a: *const int32_t,
+        b: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+    );
+    fn dav1d_sgr_weighted2_16bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        t1: *const int16_t,
+        t2: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        wt: *const int16_t,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_sgr_weighted1_16bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        t1: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        wt: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_sgr_box5_h_16bpc_neon(
+        sumsq: *mut int32_t,
+        sum: *mut int16_t,
+        left: *const [pixel; 4],
+        src: *const pixel,
+        stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        edges: LrEdgeFlags,
+    );
+}
 
-
+pub const DAV1D_X86_CPU_FLAG_AVX512ICL: CpuFlags = 16;
+pub const DAV1D_X86_CPU_FLAG_SSE2: CpuFlags = 1;
+pub const DAV1D_X86_CPU_FLAG_AVX2: CpuFlags = 8;
+pub const DAV1D_X86_CPU_FLAG_SSSE3: CpuFlags = 2;
+pub type CpuFlags = libc::c_uint;
+pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
+pub const DAV1D_X86_CPU_FLAG_SSE41: CpuFlags = 4;
 pub type pixel = uint16_t;
 pub type coef = int32_t;
 use crate::src::looprestoration::LrEdgeFlags;
@@ -924,75 +1220,372 @@ unsafe extern "C" fn sgr_mix_c(
         j += 1;
     }
 }
+
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+#[inline(always)]
+unsafe extern "C" fn loop_restoration_dsp_init_x86(
+    c: *mut Dav1dLoopRestorationDSPContext,
+    bpc: libc::c_int,
+) {
+    let flags = dav1d_get_cpu_flags();
+
+    if flags & DAV1D_X86_CPU_FLAG_SSE2 == 0 {
+        return;
+    }
+
+    if flags & DAV1D_X86_CPU_FLAG_SSSE3 == 0 {
+        return;
+    }
+
+    (*c).wiener[0] = Some(dav1d_wiener_filter7_16bpc_ssse3);
+    (*c).wiener[1] = Some(dav1d_wiener_filter5_16bpc_ssse3);
+
+    if bpc == 10 {
+        (*c).sgr[0] = Some(dav1d_sgr_filter_5x5_16bpc_ssse3);
+        (*c).sgr[1] = Some(dav1d_sgr_filter_3x3_16bpc_ssse3);
+        (*c).sgr[2] = Some(dav1d_sgr_filter_mix_16bpc_ssse3);
+    }
+
+    if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
+        return;
+    }
+
+    (*c).wiener[0] = Some(dav1d_wiener_filter7_16bpc_avx2);
+    (*c).wiener[1] = Some(dav1d_wiener_filter5_16bpc_avx2);
+
+    if bpc == 10 {
+        (*c).sgr[0] = Some(dav1d_sgr_filter_5x5_16bpc_avx2);
+        (*c).sgr[1] = Some(dav1d_sgr_filter_3x3_16bpc_avx2);
+        (*c).sgr[2] = Some(dav1d_sgr_filter_mix_16bpc_avx2);
+    }
+
+    if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
+        return;
+    }
+
+    (*c).wiener[0] = Some(dav1d_wiener_filter7_16bpc_avx512icl);
+    (*c).wiener[1] = Some(dav1d_wiener_filter5_16bpc_avx512icl);
+
+    if bpc == 10 {
+        (*c).sgr[0] = Some(dav1d_sgr_filter_5x5_16bpc_avx512icl);
+        (*c).sgr[1] = Some(dav1d_sgr_filter_3x3_16bpc_avx512icl);
+        (*c).sgr[2] = Some(dav1d_sgr_filter_mix_16bpc_avx512icl);
+    }
+}
+
+#[cfg(feature = "asm")]
+#[inline(always)]
+unsafe extern "C" fn dav1d_get_cpu_flags() -> libc::c_uint {
+    let mut flags: libc::c_uint = dav1d_cpu_flags & dav1d_cpu_flags_mask;
+    flags |= DAV1D_X86_CPU_FLAG_SSE2 as libc::c_int as libc::c_uint;
+    return flags;
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[inline(always)]
+unsafe extern "C" fn loop_restoration_dsp_init_arm(
+    c: *mut Dav1dLoopRestorationDSPContext,
+    mut bpc: libc::c_int,
+) {
+    use crate::src::arm::cpu::DAV1D_ARM_CPU_FLAG_NEON;
+
+    let flags: libc::c_uint = dav1d_get_cpu_flags();
+
+    if flags & DAV1D_ARM_CPU_FLAG_NEON == 0 {
+        return;
+    }
+
+    (*c).wiener[0] = Some(dav1d_wiener_filter7_16bpc_neon);
+    (*c).wiener[1] = Some(dav1d_wiener_filter5_16bpc_neon);
+
+    if bpc == 10 {
+        (*c).sgr[0] = Some(sgr_filter_5x5_neon);
+        (*c).sgr[1] = Some(sgr_filter_3x3_neon);
+        (*c).sgr[2] = Some(sgr_filter_mix_neon);
+    }
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+unsafe extern "C" fn sgr_filter_3x3_neon(
+    dst: *mut pixel,
+    stride: ptrdiff_t,
+    left: *const [pixel; 4],
+    mut lpf: *const pixel,
+    w: libc::c_int,
+    h: libc::c_int,
+    params: *const LooprestorationParams,
+    edges: LrEdgeFlags,
+    bitdepth_max: libc::c_int,
+) {
+    let mut tmp: [int16_t; 24576] = [0; 24576];
+    dav1d_sgr_filter1_neon(
+        tmp.as_mut_ptr(),
+        dst,
+        stride,
+        left,
+        lpf,
+        w,
+        h,
+        (*params).sgr.s1 as libc::c_int,
+        edges,
+        bitdepth_max,
+    );
+    dav1d_sgr_weighted1_16bpc_neon(
+        dst,
+        stride,
+        dst,
+        stride,
+        tmp.as_mut_ptr(),
+        w,
+        h,
+        (*params).sgr.w1 as libc::c_int,
+        bitdepth_max,
+    );
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+unsafe extern "C" fn dav1d_sgr_filter1_neon(
+    mut tmp: *mut int16_t,
+    mut src: *const pixel,
+    stride: ptrdiff_t,
+    mut left: *const [pixel; 4],
+    mut lpf: *const pixel,
+    w: libc::c_int,
+    h: libc::c_int,
+    strength: libc::c_int,
+    edges: LrEdgeFlags,
+    bitdepth_max: libc::c_int,
+) {
+    let mut sumsq_mem: [int32_t; 27208] = [0; 27208];
+    let sumsq: *mut int32_t = &mut *sumsq_mem
+        .as_mut_ptr()
+        .offset(
+            ((384 as libc::c_int + 16 as libc::c_int) * 2 as libc::c_int
+                + 8 as libc::c_int) as isize,
+        ) as *mut int32_t;
+    let a: *mut int32_t = sumsq;
+    let mut sum_mem: [int16_t; 27216] = [0; 27216];
+    let sum: *mut int16_t = &mut *sum_mem
+        .as_mut_ptr()
+        .offset(
+            ((384 as libc::c_int + 16 as libc::c_int) * 2 as libc::c_int
+                + 16 as libc::c_int) as isize,
+        ) as *mut int16_t;
+    let b: *mut int16_t = sum;
+    dav1d_sgr_box3_h_16bpc_neon(sumsq, sum, left, src, stride, w, h, edges);
+    if edges as libc::c_uint & LR_HAVE_TOP as libc::c_int as libc::c_uint != 0 {
+        dav1d_sgr_box3_h_16bpc_neon(
+            &mut *sumsq
+                .offset(
+                    (-(2 as libc::c_int) * (384 as libc::c_int + 16 as libc::c_int))
+                        as isize,
+                ),
+            &mut *sum
+                .offset(
+                    (-(2 as libc::c_int) * (384 as libc::c_int + 16 as libc::c_int))
+                        as isize,
+                ),
+            0 as *const [pixel; 4],
+            lpf,
+            stride,
+            w,
+            2 as libc::c_int,
+            edges,
+        );
+    }
+    if edges as libc::c_uint & LR_HAVE_BOTTOM as libc::c_int as libc::c_uint != 0 {
+        dav1d_sgr_box3_h_16bpc_neon(
+            &mut *sumsq.offset((h * (384 as libc::c_int + 16 as libc::c_int)) as isize),
+            &mut *sum.offset((h * (384 as libc::c_int + 16 as libc::c_int)) as isize),
+            0 as *const [pixel; 4],
+            lpf.offset((6 as libc::c_int as libc::c_long * PXSTRIDE(stride)) as isize),
+            stride,
+            w,
+            2 as libc::c_int,
+            edges,
+        );
+    }
+    dav1d_sgr_box3_v_neon(sumsq, sum, w, h, edges);
+    dav1d_sgr_calc_ab1_neon(a, b, w, h, strength, bitdepth_max);
+    dav1d_sgr_finish_filter1_16bpc_neon(tmp, src, stride, a, b, w, h);
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+unsafe extern "C" fn dav1d_sgr_filter2_neon(
+    mut tmp: *mut int16_t,
+    mut src: *const pixel,
+    stride: ptrdiff_t,
+    mut left: *const [pixel; 4],
+    mut lpf: *const pixel,
+    w: libc::c_int,
+    h: libc::c_int,
+    strength: libc::c_int,
+    edges: LrEdgeFlags,
+    bitdepth_max: libc::c_int,
+) {
+    let mut sumsq_mem: [int32_t; 27208] = [0; 27208];
+    let sumsq: *mut int32_t = &mut *sumsq_mem
+        .as_mut_ptr()
+        .offset(
+            ((384 as libc::c_int + 16 as libc::c_int) * 2 as libc::c_int
+                + 8 as libc::c_int) as isize,
+        ) as *mut int32_t;
+    let a: *mut int32_t = sumsq;
+    let mut sum_mem: [int16_t; 27216] = [0; 27216];
+    let sum: *mut int16_t = &mut *sum_mem
+        .as_mut_ptr()
+        .offset(
+            ((384 as libc::c_int + 16 as libc::c_int) * 2 as libc::c_int
+                + 16 as libc::c_int) as isize,
+        ) as *mut int16_t;
+    let b: *mut int16_t = sum;
+    dav1d_sgr_box5_h_16bpc_neon(sumsq, sum, left, src, stride, w, h, edges);
+    if edges as libc::c_uint & LR_HAVE_TOP as libc::c_int as libc::c_uint != 0 {
+        dav1d_sgr_box5_h_16bpc_neon(
+            &mut *sumsq
+                .offset(
+                    (-(2 as libc::c_int) * (384 as libc::c_int + 16 as libc::c_int))
+                        as isize,
+                ),
+            &mut *sum
+                .offset(
+                    (-(2 as libc::c_int) * (384 as libc::c_int + 16 as libc::c_int))
+                        as isize,
+                ),
+            0 as *const [pixel; 4],
+            lpf,
+            stride,
+            w,
+            2 as libc::c_int,
+            edges,
+        );
+    }
+    if edges as libc::c_uint & LR_HAVE_BOTTOM as libc::c_int as libc::c_uint != 0 {
+        dav1d_sgr_box5_h_16bpc_neon(
+            &mut *sumsq.offset((h * (384 as libc::c_int + 16 as libc::c_int)) as isize),
+            &mut *sum.offset((h * (384 as libc::c_int + 16 as libc::c_int)) as isize),
+            0 as *const [pixel; 4],
+            lpf.offset((6 as libc::c_int as libc::c_long * PXSTRIDE(stride)) as isize),
+            stride,
+            w,
+            2 as libc::c_int,
+            edges,
+        );
+    }
+    dav1d_sgr_box5_v_neon(sumsq, sum, w, h, edges);
+    dav1d_sgr_calc_ab2_neon(a, b, w, h, strength, bitdepth_max);
+    dav1d_sgr_finish_filter2_16bpc_neon(tmp, src, stride, a, b, w, h);
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+unsafe extern "C" fn sgr_filter_5x5_neon(
+    dst: *mut pixel,
+    stride: ptrdiff_t,
+    left: *const [pixel; 4],
+    mut lpf: *const pixel,
+    w: libc::c_int,
+    h: libc::c_int,
+    params: *const LooprestorationParams,
+    edges: LrEdgeFlags,
+    bitdepth_max: libc::c_int,
+) {
+    let mut tmp: [int16_t; 24576] = [0; 24576];
+    dav1d_sgr_filter2_neon(
+        tmp.as_mut_ptr(),
+        dst,
+        stride,
+        left,
+        lpf,
+        w,
+        h,
+        (*params).sgr.s0 as libc::c_int,
+        edges,
+        bitdepth_max,
+    );
+    dav1d_sgr_weighted1_16bpc_neon(
+        dst,
+        stride,
+        dst,
+        stride,
+        tmp.as_mut_ptr(),
+        w,
+        h,
+        (*params).sgr.w0 as libc::c_int,
+        bitdepth_max,
+    );
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+unsafe extern "C" fn sgr_filter_mix_neon(
+    dst: *mut pixel,
+    stride: ptrdiff_t,
+    left: *const [pixel; 4],
+    mut lpf: *const pixel,
+    w: libc::c_int,
+    h: libc::c_int,
+    params: *const LooprestorationParams,
+    edges: LrEdgeFlags,
+    bitdepth_max: libc::c_int,
+) {
+    let mut tmp1: [int16_t; 24576] = [0; 24576];
+    let mut tmp2: [int16_t; 24576] = [0; 24576];
+    dav1d_sgr_filter2_neon(
+        tmp1.as_mut_ptr(),
+        dst,
+        stride,
+        left,
+        lpf,
+        w,
+        h,
+        (*params).sgr.s0 as libc::c_int,
+        edges,
+        bitdepth_max,
+    );
+    dav1d_sgr_filter1_neon(
+        tmp2.as_mut_ptr(),
+        dst,
+        stride,
+        left,
+        lpf,
+        w,
+        h,
+        (*params).sgr.s1 as libc::c_int,
+        edges,
+        bitdepth_max,
+    );
+    let wt: [int16_t; 2] = [(*params).sgr.w0, (*params).sgr.w1];
+    dav1d_sgr_weighted2_16bpc_neon(
+        dst,
+        stride,
+        dst,
+        stride,
+        tmp1.as_mut_ptr(),
+        tmp2.as_mut_ptr(),
+        w,
+        h,
+        wt.as_ptr(),
+        bitdepth_max,
+    );
+}
+
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_loop_restoration_dsp_init_16bpc(
     c: *mut Dav1dLoopRestorationDSPContext,
-    _bpc: libc::c_int,
+    bpc: libc::c_int,
 ) {
-    (*c)
-        .wiener[1 as libc::c_int
-        as usize] = Some(
-        wiener_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const [pixel; 4],
-                *const pixel,
-                libc::c_int,
-                libc::c_int,
-                *const LooprestorationParams,
-                LrEdgeFlags,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c).wiener[0 as libc::c_int as usize] = (*c).wiener[1 as libc::c_int as usize];
-    (*c)
-        .sgr[0 as libc::c_int
-        as usize] = Some(
-        sgr_5x5_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const [pixel; 4],
-                *const pixel,
-                libc::c_int,
-                libc::c_int,
-                *const LooprestorationParams,
-                LrEdgeFlags,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .sgr[1 as libc::c_int
-        as usize] = Some(
-        sgr_3x3_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const [pixel; 4],
-                *const pixel,
-                libc::c_int,
-                libc::c_int,
-                *const LooprestorationParams,
-                LrEdgeFlags,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .sgr[2 as libc::c_int
-        as usize] = Some(
-        sgr_mix_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const [pixel; 4],
-                *const pixel,
-                libc::c_int,
-                libc::c_int,
-                *const LooprestorationParams,
-                LrEdgeFlags,
-                libc::c_int,
-            ) -> (),
-    );
+    (*c).wiener[1] = Some(wiener_c);
+    (*c).wiener[0] = (*c).wiener[1];
+    (*c).sgr[0] = Some(sgr_5x5_c);
+    (*c).sgr[1] = Some(sgr_3x3_c);
+    (*c).sgr[2] = Some(sgr_mix_c);
+
+    #[cfg(feature = "asm")]
+    cfg_if! {
+        if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
+            loop_restoration_dsp_init_x86(c, bpc);
+        } else if #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]{
+            loop_restoration_dsp_init_arm(c, bpc);
+        }
+    }
 }
