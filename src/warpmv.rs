@@ -25,17 +25,17 @@ pub const DAV1D_WM_TYPE_IDENTITY: Dav1dWarpedMotionType = 0;
 pub struct Dav1dWarpedMotionParams {
     pub type_0: Dav1dWarpedMotionType,
     pub matrix: [int32_t; 6],
-    pub u: C2RustUnnamed,
+    pub u: Dav1dWarpedMotionParams_u,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union C2RustUnnamed {
-    pub p: C2RustUnnamed_0,
+pub union Dav1dWarpedMotionParams_u {
+    pub p: Dav1dWarpedMotionParams_u_p,
     pub abcd: [int16_t; 4],
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_0 {
+pub struct Dav1dWarpedMotionParams_u_p {
     pub alpha: int16_t,
     pub beta: int16_t,
     pub gamma: int16_t,
@@ -44,12 +44,12 @@ pub struct C2RustUnnamed_0 {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union mv {
-    pub c2rust_unnamed: C2RustUnnamed_1,
+    pub c2rust_unnamed: C2RustUnnamed,
     pub n: uint32_t,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_1 {
+pub struct C2RustUnnamed {
     pub y: int16_t,
     pub x: int16_t,
 }

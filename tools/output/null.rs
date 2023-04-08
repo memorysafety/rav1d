@@ -70,17 +70,17 @@ pub const DAV1D_WM_TYPE_IDENTITY: Dav1dWarpedMotionType = 0;
 pub struct Dav1dWarpedMotionParams {
     pub type_0: Dav1dWarpedMotionType,
     pub matrix: [int32_t; 6],
-    pub u: C2RustUnnamed,
+    pub u: Dav1dWarpedMotionParams_u,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union C2RustUnnamed {
-    pub p: C2RustUnnamed_0,
+pub union Dav1dWarpedMotionParams_u {
+    pub p: Dav1dWarpedMotionParams_u_p,
     pub abcd: [int16_t; 4],
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_0 {
+pub struct Dav1dWarpedMotionParams_u_p {
     pub alpha: int16_t,
     pub beta: int16_t,
     pub gamma: int16_t,
@@ -295,7 +295,7 @@ pub struct Dav1dFilmGrainData {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader {
-    pub film_grain: C2RustUnnamed_11,
+    pub film_grain: Dav1dFrameHeader_film_grain,
     pub frame_type: Dav1dFrameType,
     pub width: [libc::c_int; 2],
     pub height: libc::c_int,
@@ -319,7 +319,7 @@ pub struct Dav1dFrameHeader {
     pub refresh_frame_flags: libc::c_int,
     pub render_width: libc::c_int,
     pub render_height: libc::c_int,
-    pub super_res: C2RustUnnamed_10,
+    pub super_res: Dav1dFrameHeader_super_res,
     pub have_render_size: libc::c_int,
     pub allow_intrabc: libc::c_int,
     pub frame_ref_short_signaling: libc::c_int,
@@ -329,14 +329,14 @@ pub struct Dav1dFrameHeader {
     pub switchable_motion_mode: libc::c_int,
     pub use_ref_frame_mvs: libc::c_int,
     pub refresh_context: libc::c_int,
-    pub tiling: C2RustUnnamed_9,
-    pub quant: C2RustUnnamed_8,
-    pub segmentation: C2RustUnnamed_7,
-    pub delta: C2RustUnnamed_4,
+    pub tiling: Dav1dFrameHeader_tiling,
+    pub quant: Dav1dFrameHeader_quant,
+    pub segmentation: Dav1dFrameHeader_segmentation,
+    pub delta: Dav1dFrameHeader_delta,
     pub all_lossless: libc::c_int,
-    pub loopfilter: C2RustUnnamed_3,
-    pub cdef: C2RustUnnamed_2,
-    pub restoration: C2RustUnnamed_1,
+    pub loopfilter: Dav1dFrameHeader_loopfilter,
+    pub cdef: Dav1dFrameHeader_cdef,
+    pub restoration: Dav1dFrameHeader_restoration,
     pub txfm_mode: Dav1dTxfmMode,
     pub switchable_comp_refs: libc::c_int,
     pub skip_mode_allowed: libc::c_int,
@@ -348,13 +348,13 @@ pub struct Dav1dFrameHeader {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_1 {
+pub struct Dav1dFrameHeader_restoration {
     pub type_0: [Dav1dRestorationType; 3],
     pub unit_size: [libc::c_int; 2],
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_2 {
+pub struct Dav1dFrameHeader_cdef {
     pub damping: libc::c_int,
     pub n_bits: libc::c_int,
     pub y_strength: [libc::c_int; 8],
@@ -362,7 +362,7 @@ pub struct C2RustUnnamed_2 {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_3 {
+pub struct Dav1dFrameHeader_loopfilter {
     pub level_y: [libc::c_int; 2],
     pub level_u: libc::c_int,
     pub level_v: libc::c_int,
@@ -373,26 +373,26 @@ pub struct C2RustUnnamed_3 {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_4 {
-    pub q: C2RustUnnamed_6,
-    pub lf: C2RustUnnamed_5,
+pub struct Dav1dFrameHeader_delta {
+    pub q: Dav1dFrameHeader_delta_q,
+    pub lf: Dav1dFrameHeader_delta_lf,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_5 {
+pub struct Dav1dFrameHeader_delta_lf {
     pub present: libc::c_int,
     pub res_log2: libc::c_int,
     pub multi: libc::c_int,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_6 {
+pub struct Dav1dFrameHeader_delta_q {
     pub present: libc::c_int,
     pub res_log2: libc::c_int,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_7 {
+pub struct Dav1dFrameHeader_segmentation {
     pub enabled: libc::c_int,
     pub update_map: libc::c_int,
     pub temporal: libc::c_int,
@@ -403,7 +403,7 @@ pub struct C2RustUnnamed_7 {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_8 {
+pub struct Dav1dFrameHeader_quant {
     pub yac: libc::c_int,
     pub ydc_delta: libc::c_int,
     pub udc_delta: libc::c_int,
@@ -417,7 +417,7 @@ pub struct C2RustUnnamed_8 {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_9 {
+pub struct Dav1dFrameHeader_tiling {
     pub uniform: libc::c_int,
     pub n_bytes: libc::c_uint,
     pub min_log2_cols: libc::c_int,
@@ -434,7 +434,7 @@ pub struct C2RustUnnamed_9 {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_10 {
+pub struct Dav1dFrameHeader_super_res {
     pub width_scale_denominator: libc::c_int,
     pub enabled: libc::c_int,
 }
@@ -445,7 +445,7 @@ pub struct Dav1dFrameHeaderOperatingPoint {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_11 {
+pub struct Dav1dFrameHeader_film_grain {
     pub data: Dav1dFilmGrainData,
     pub present: libc::c_int,
     pub update: libc::c_int,

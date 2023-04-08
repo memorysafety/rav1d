@@ -230,7 +230,7 @@ pub struct Dav1dFrameContext {
     pub ts: *mut Dav1dTileState,
     pub n_ts: libc::c_int,
     pub dsp: *const Dav1dDSPContext,
-    pub bd_fn: C2RustUnnamed_28,
+    pub bd_fn: Dav1dFrameContext_bd_fn,
     pub ipred_edge_sz: libc::c_int,
     pub ipred_edge: [*mut libc::c_void; 3],
     pub b4_stride: ptrdiff_t,
@@ -251,9 +251,9 @@ pub struct Dav1dFrameContext {
     pub rf: refmvs_frame,
     pub jnt_weights: [[uint8_t; 7]; 7],
     pub bitdepth_max: libc::c_int,
-    pub frame_thread: C2RustUnnamed_20,
-    pub lf: C2RustUnnamed_19,
-    pub task_thread: C2RustUnnamed_0,
+    pub frame_thread: Dav1dFrameContext_frame_thread,
+    pub lf: Dav1dFrameContext_lf,
+    pub task_thread: Dav1dFrameContext_task_thread,
     pub tile_thread: FrameTileThreadData,
 }
 #[derive(Copy, Clone)]
@@ -264,7 +264,7 @@ pub struct FrameTileThreadData {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_0 {
+pub struct Dav1dFrameContext_task_thread {
     pub lock: pthread_mutex_t,
     pub cond: pthread_cond_t,
     pub ttd: *mut TaskThreadData,
@@ -282,11 +282,11 @@ pub struct C2RustUnnamed_0 {
     pub task_head: *mut Dav1dTask,
     pub task_tail: *mut Dav1dTask,
     pub task_cur_prev: *mut Dav1dTask,
-    pub pending_tasks: C2RustUnnamed_1,
+    pub pending_tasks: Dav1dFrameContext_task_thread_pending_tasks,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_1 {
+pub struct Dav1dFrameContext_task_thread_pending_tasks {
     pub merge: atomic_int,
     pub lock: pthread_mutex_t,
     pub head: *mut Dav1dTask,
@@ -326,35 +326,35 @@ pub struct TaskThreadData {
     pub cur: libc::c_uint,
     pub reset_task_cur: atomic_uint,
     pub cond_signaled: atomic_int,
-    pub delayed_fg: C2RustUnnamed_2,
+    pub delayed_fg: Dav1dContext_task_thread_delayed_fg,
     pub inited: libc::c_int,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_2 {
+pub struct Dav1dContext_task_thread_delayed_fg {
     pub exec: libc::c_int,
     pub cond: pthread_cond_t,
     pub in_0: *const Dav1dPicture,
     pub out: *mut Dav1dPicture,
     pub type_0: TaskType,
     pub progress: [atomic_int; 2],
-    pub c2rust_unnamed: C2RustUnnamed_3,
+    pub c2rust_unnamed: C2RustUnnamed_0,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union C2RustUnnamed_3 {
-    pub c2rust_unnamed: C2RustUnnamed_5,
-    pub c2rust_unnamed_0: C2RustUnnamed_4,
+pub union C2RustUnnamed_0 {
+    pub c2rust_unnamed: C2RustUnnamed_2,
+    pub c2rust_unnamed_0: C2RustUnnamed_1,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_4 {
+pub struct C2RustUnnamed_1 {
     pub grain_lut_16bpc: [[[int16_t; 82]; 74]; 3],
     pub scaling_16bpc: [[uint8_t; 4096]; 3],
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_5 {
+pub struct C2RustUnnamed_2 {
     pub grain_lut_8bpc: [[[int8_t; 82]; 74]; 3],
     pub scaling_8bpc: [[uint8_t; 256]; 3],
 }
@@ -418,7 +418,7 @@ pub const DAV1D_PIXEL_LAYOUT_I400: Dav1dPixelLayout = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader {
-    pub film_grain: C2RustUnnamed_18,
+    pub film_grain: Dav1dFrameHeader_film_grain,
     pub frame_type: Dav1dFrameType,
     pub width: [libc::c_int; 2],
     pub height: libc::c_int,
@@ -442,7 +442,7 @@ pub struct Dav1dFrameHeader {
     pub refresh_frame_flags: libc::c_int,
     pub render_width: libc::c_int,
     pub render_height: libc::c_int,
-    pub super_res: C2RustUnnamed_17,
+    pub super_res: Dav1dFrameHeader_super_res,
     pub have_render_size: libc::c_int,
     pub allow_intrabc: libc::c_int,
     pub frame_ref_short_signaling: libc::c_int,
@@ -452,14 +452,14 @@ pub struct Dav1dFrameHeader {
     pub switchable_motion_mode: libc::c_int,
     pub use_ref_frame_mvs: libc::c_int,
     pub refresh_context: libc::c_int,
-    pub tiling: C2RustUnnamed_16,
-    pub quant: C2RustUnnamed_15,
-    pub segmentation: C2RustUnnamed_14,
-    pub delta: C2RustUnnamed_11,
+    pub tiling: Dav1dFrameHeader_tiling,
+    pub quant: Dav1dFrameHeader_quant,
+    pub segmentation: Dav1dFrameHeader_segmentation,
+    pub delta: Dav1dFrameHeader_delta,
     pub all_lossless: libc::c_int,
-    pub loopfilter: C2RustUnnamed_10,
-    pub cdef: C2RustUnnamed_9,
-    pub restoration: C2RustUnnamed_8,
+    pub loopfilter: Dav1dFrameHeader_loopfilter,
+    pub cdef: Dav1dFrameHeader_cdef,
+    pub restoration: Dav1dFrameHeader_restoration,
     pub txfm_mode: Dav1dTxfmMode,
     pub switchable_comp_refs: libc::c_int,
     pub skip_mode_allowed: libc::c_int,
@@ -474,17 +474,17 @@ pub struct Dav1dFrameHeader {
 pub struct Dav1dWarpedMotionParams {
     pub type_0: Dav1dWarpedMotionType,
     pub matrix: [int32_t; 6],
-    pub u: C2RustUnnamed_6,
+    pub u: Dav1dWarpedMotionParams_u,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union C2RustUnnamed_6 {
-    pub p: C2RustUnnamed_7,
+pub union Dav1dWarpedMotionParams_u {
+    pub p: Dav1dWarpedMotionParams_u_p,
     pub abcd: [int16_t; 4],
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_7 {
+pub struct Dav1dWarpedMotionParams_u_p {
     pub alpha: int16_t,
     pub beta: int16_t,
     pub gamma: int16_t,
@@ -502,7 +502,7 @@ pub const DAV1D_TX_LARGEST: Dav1dTxfmMode = 1;
 pub const DAV1D_TX_4X4_ONLY: Dav1dTxfmMode = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_8 {
+pub struct Dav1dFrameHeader_restoration {
     pub type_0: [Dav1dRestorationType; 3],
     pub unit_size: [libc::c_int; 2],
 }
@@ -513,7 +513,7 @@ pub const DAV1D_RESTORATION_SWITCHABLE: Dav1dRestorationType = 1;
 pub const DAV1D_RESTORATION_NONE: Dav1dRestorationType = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_9 {
+pub struct Dav1dFrameHeader_cdef {
     pub damping: libc::c_int,
     pub n_bits: libc::c_int,
     pub y_strength: [libc::c_int; 8],
@@ -521,7 +521,7 @@ pub struct C2RustUnnamed_9 {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_10 {
+pub struct Dav1dFrameHeader_loopfilter {
     pub level_y: [libc::c_int; 2],
     pub level_u: libc::c_int,
     pub level_v: libc::c_int,
@@ -538,26 +538,26 @@ pub struct Dav1dLoopfilterModeRefDeltas {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_11 {
-    pub q: C2RustUnnamed_13,
-    pub lf: C2RustUnnamed_12,
+pub struct Dav1dFrameHeader_delta {
+    pub q: Dav1dFrameHeader_delta_q,
+    pub lf: Dav1dFrameHeader_delta_lf,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_12 {
+pub struct Dav1dFrameHeader_delta_lf {
     pub present: libc::c_int,
     pub res_log2: libc::c_int,
     pub multi: libc::c_int,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_13 {
+pub struct Dav1dFrameHeader_delta_q {
     pub present: libc::c_int,
     pub res_log2: libc::c_int,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_14 {
+pub struct Dav1dFrameHeader_segmentation {
     pub enabled: libc::c_int,
     pub update_map: libc::c_int,
     pub temporal: libc::c_int,
@@ -587,7 +587,7 @@ pub struct Dav1dSegmentationData {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_15 {
+pub struct Dav1dFrameHeader_quant {
     pub yac: libc::c_int,
     pub ydc_delta: libc::c_int,
     pub udc_delta: libc::c_int,
@@ -601,7 +601,7 @@ pub struct C2RustUnnamed_15 {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_16 {
+pub struct Dav1dFrameHeader_tiling {
     pub uniform: libc::c_int,
     pub n_bytes: libc::c_uint,
     pub min_log2_cols: libc::c_int,
@@ -626,7 +626,7 @@ pub const DAV1D_FILTER_8TAP_SMOOTH: Dav1dFilterMode = 1;
 pub const DAV1D_FILTER_8TAP_REGULAR: Dav1dFilterMode = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_17 {
+pub struct Dav1dFrameHeader_super_res {
     pub width_scale_denominator: libc::c_int,
     pub enabled: libc::c_int,
 }
@@ -642,7 +642,7 @@ pub const DAV1D_FRAME_TYPE_INTER: Dav1dFrameType = 1;
 pub const DAV1D_FRAME_TYPE_KEY: Dav1dFrameType = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_18 {
+pub struct Dav1dFrameHeader_film_grain {
     pub data: Dav1dFilmGrainData,
     pub present: libc::c_int,
     pub update: libc::c_int,
@@ -802,7 +802,7 @@ pub const DAV1D_COLOR_PRI_UNKNOWN: Dav1dColorPrimaries = 2;
 pub const DAV1D_COLOR_PRI_BT709: Dav1dColorPrimaries = 1;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_19 {
+pub struct Dav1dFrameContext_lf {
     pub level: *mut [uint8_t; 4],
     pub mask: *mut Av1Filter,
     pub lr_mask: *mut Av1Restoration,
@@ -862,7 +862,7 @@ pub struct Av1RestorationUnit {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_20 {
+pub struct Dav1dFrameContext_frame_thread {
     pub next_tile_row: [libc::c_int; 2],
     pub entropy_progress: atomic_int,
     pub deblock_progress: atomic_int,
@@ -897,18 +897,18 @@ pub struct Av1Block {
     pub skip_mode: uint8_t,
     pub skip: uint8_t,
     pub uvtx: uint8_t,
-    pub c2rust_unnamed: C2RustUnnamed_21,
+    pub c2rust_unnamed: C2RustUnnamed_3,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union C2RustUnnamed_21 {
-    pub c2rust_unnamed: C2RustUnnamed_27,
-    pub c2rust_unnamed_0: C2RustUnnamed_22,
+pub union C2RustUnnamed_3 {
+    pub c2rust_unnamed: C2RustUnnamed_9,
+    pub c2rust_unnamed_0: C2RustUnnamed_4,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_22 {
-    pub c2rust_unnamed: C2RustUnnamed_23,
+pub struct C2RustUnnamed_4 {
+    pub c2rust_unnamed: C2RustUnnamed_5,
     pub comp_type: uint8_t,
     pub inter_mode: uint8_t,
     pub motion_mode: uint8_t,
@@ -922,31 +922,31 @@ pub struct C2RustUnnamed_22 {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union C2RustUnnamed_23 {
-    pub c2rust_unnamed: C2RustUnnamed_26,
-    pub c2rust_unnamed_0: C2RustUnnamed_24,
+pub union C2RustUnnamed_5 {
+    pub c2rust_unnamed: C2RustUnnamed_8,
+    pub c2rust_unnamed_0: C2RustUnnamed_6,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_24 {
+pub struct C2RustUnnamed_6 {
     pub mv2d: mv,
     pub matrix: [int16_t; 4],
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union mv {
-    pub c2rust_unnamed: C2RustUnnamed_25,
+    pub c2rust_unnamed: C2RustUnnamed_7,
     pub n: uint32_t,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_25 {
+pub struct C2RustUnnamed_7 {
     pub y: int16_t,
     pub x: int16_t,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_26 {
+pub struct C2RustUnnamed_8 {
     pub mv: [mv; 2],
     pub wedge_idx: uint8_t,
     pub mask_sign: uint8_t,
@@ -954,7 +954,7 @@ pub struct C2RustUnnamed_26 {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_27 {
+pub struct C2RustUnnamed_9 {
     pub y_mode: uint8_t,
     pub uv_mode: uint8_t,
     pub tx: uint8_t,
@@ -1039,7 +1039,7 @@ pub struct BlockContext {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_28 {
+pub struct Dav1dFrameContext_bd_fn {
     pub recon_b_intra: recon_b_intra_fn,
     pub recon_b_inter: recon_b_inter_fn,
     pub filter_sbrow: filter_sbrow_fn,
@@ -1091,22 +1091,22 @@ pub struct Dav1dTaskContext {
     pub l: BlockContext,
     pub a: *mut BlockContext,
     pub rt: refmvs_tile,
-    pub c2rust_unnamed: C2RustUnnamed_42,
+    pub c2rust_unnamed: C2RustUnnamed_20,
     pub al_pal: [[[[uint16_t; 8]; 3]; 32]; 2],
     pub pal_sz_uv: [[uint8_t; 32]; 2],
     pub txtp_map: [uint8_t; 1024],
-    pub scratch: C2RustUnnamed_31,
+    pub scratch: Dav1dTaskContext_scratch,
     pub warpmv: Dav1dWarpedMotionParams,
     pub lf_mask: *mut Av1Filter,
     pub top_pre_cdef_toggle: libc::c_int,
     pub cur_sb_cdef_idx_ptr: *mut int8_t,
     pub tl_4x4_filter: Filter2d,
-    pub frame_thread: C2RustUnnamed_30,
-    pub task_thread: C2RustUnnamed_29,
+    pub frame_thread: Dav1dTaskContext_frame_thread,
+    pub task_thread: Dav1dTaskContext_task_thread,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_29 {
+pub struct Dav1dTaskContext_task_thread {
     pub td: thread_data,
     pub ttd: *mut TaskThreadData,
     pub fttd: *mut FrameTileThreadData,
@@ -1123,7 +1123,7 @@ pub struct thread_data {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_30 {
+pub struct Dav1dTaskContext_frame_thread {
     pub pass: libc::c_int,
 }
 pub type Filter2d = libc::c_uint;
@@ -1140,77 +1140,77 @@ pub const FILTER_2D_8TAP_REGULAR_SMOOTH: Filter2d = 1;
 pub const FILTER_2D_8TAP_REGULAR: Filter2d = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union C2RustUnnamed_31 {
-    pub c2rust_unnamed: C2RustUnnamed_38,
-    pub c2rust_unnamed_0: C2RustUnnamed_32,
+pub union Dav1dTaskContext_scratch {
+    pub c2rust_unnamed: C2RustUnnamed_16,
+    pub c2rust_unnamed_0: C2RustUnnamed_10,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_32 {
-    pub c2rust_unnamed: C2RustUnnamed_36,
+pub struct C2RustUnnamed_10 {
+    pub c2rust_unnamed: C2RustUnnamed_14,
     pub ac: [int16_t; 1024],
     pub pal_idx: [uint8_t; 8192],
     pub pal: [[uint16_t; 8]; 3],
-    pub c2rust_unnamed_0: C2RustUnnamed_33,
+    pub c2rust_unnamed_0: C2RustUnnamed_11,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union C2RustUnnamed_33 {
-    pub c2rust_unnamed: C2RustUnnamed_35,
-    pub c2rust_unnamed_0: C2RustUnnamed_34,
+pub union C2RustUnnamed_11 {
+    pub c2rust_unnamed: C2RustUnnamed_13,
+    pub c2rust_unnamed_0: C2RustUnnamed_12,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_34 {
+pub struct C2RustUnnamed_12 {
     pub interintra_16bpc: [uint16_t; 4096],
     pub edge_16bpc: [uint16_t; 257],
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_35 {
+pub struct C2RustUnnamed_13 {
     pub interintra_8bpc: [uint8_t; 4096],
     pub edge_8bpc: [uint8_t; 257],
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union C2RustUnnamed_36 {
+pub union C2RustUnnamed_14 {
     pub levels: [uint8_t; 1088],
-    pub c2rust_unnamed: C2RustUnnamed_37,
+    pub c2rust_unnamed: C2RustUnnamed_15,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_37 {
+pub struct C2RustUnnamed_15 {
     pub pal_order: [[uint8_t; 8]; 64],
     pub pal_ctx: [uint8_t; 64],
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_38 {
-    pub c2rust_unnamed: C2RustUnnamed_40,
-    pub c2rust_unnamed_0: C2RustUnnamed_39,
+pub struct C2RustUnnamed_16 {
+    pub c2rust_unnamed: C2RustUnnamed_18,
+    pub c2rust_unnamed_0: C2RustUnnamed_17,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union C2RustUnnamed_39 {
+pub union C2RustUnnamed_17 {
     pub emu_edge_8bpc: [uint8_t; 84160],
     pub emu_edge_16bpc: [uint16_t; 84160],
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union C2RustUnnamed_40 {
+pub union C2RustUnnamed_18 {
     pub lap_8bpc: [uint8_t; 4096],
     pub lap_16bpc: [uint16_t; 4096],
-    pub c2rust_unnamed: C2RustUnnamed_41,
+    pub c2rust_unnamed: C2RustUnnamed_19,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_41 {
+pub struct C2RustUnnamed_19 {
     pub compinter: [[int16_t; 16384]; 2],
     pub seg_mask: [uint8_t; 16384],
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union C2RustUnnamed_42 {
+pub union C2RustUnnamed_20 {
     pub cf_8bpc: [int16_t; 1024],
     pub cf_16bpc: [int32_t; 1024],
 }
@@ -1220,12 +1220,12 @@ pub struct refmvs_tile {
     pub rf: *const refmvs_frame,
     pub r: [*mut refmvs_block; 37],
     pub rp_proj: *mut refmvs_temporal_block,
-    pub tile_col: C2RustUnnamed_43,
-    pub tile_row: C2RustUnnamed_43,
+    pub tile_col: refmvs_tile_range,
+    pub tile_row: refmvs_tile_range,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_43 {
+pub struct refmvs_tile_range {
     pub start: libc::c_int,
     pub end: libc::c_int,
 }
@@ -1234,9 +1234,9 @@ pub struct C2RustUnnamed_43 {
 pub struct Dav1dTileState {
     pub cdf: CdfContext,
     pub msac: MsacContext,
-    pub tiling: C2RustUnnamed_45,
+    pub tiling: Dav1dTileState_tiling,
     pub progress: [atomic_int; 2],
-    pub frame_thread: [C2RustUnnamed_44; 2],
+    pub frame_thread: [Dav1dTileState_frame_thread; 2],
     pub lowest_pixel: *mut [[libc::c_int; 2]; 7],
     pub dqmem: [[[uint16_t; 2]; 3]; 8],
     pub dq: *const [[uint16_t; 2]; 3],
@@ -1248,13 +1248,13 @@ pub struct Dav1dTileState {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_44 {
+pub struct Dav1dTileState_frame_thread {
     pub pal_idx: *mut uint8_t,
     pub cf: *mut libc::c_void,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_45 {
+pub struct Dav1dTileState_tiling {
     pub col_start: libc::c_int,
     pub col_end: libc::c_int,
     pub row_start: libc::c_int,
@@ -1400,16 +1400,16 @@ pub struct Dav1dContext {
     pub cache: Dav1dThreadPicture,
     pub flush_mem: atomic_int,
     pub flush: *mut atomic_int,
-    pub frame_thread: C2RustUnnamed_50,
+    pub frame_thread: Dav1dContext_frame_thread,
     pub task_thread: TaskThreadData,
     pub segmap_pool: *mut Dav1dMemPool,
     pub refmvs_pool: *mut Dav1dMemPool,
-    pub refs: [C2RustUnnamed_49; 8],
+    pub refs: [Dav1dContext_refs; 8],
     pub cdf_pool: *mut Dav1dMemPool,
     pub cdf: [CdfThreadContext; 8],
     pub dsp: [Dav1dDSPContext; 3],
     pub refmvs_dsp: Dav1dRefmvsDSPContext,
-    pub intra_edge: C2RustUnnamed_46,
+    pub intra_edge: Dav1dContext_intra_edge,
     pub allocator: Dav1dPicAllocator,
     pub apply_grain: libc::c_int,
     pub operating_point: libc::c_int,
@@ -1486,7 +1486,7 @@ pub struct Dav1dPicAllocator {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_46 {
+pub struct Dav1dContext_intra_edge {
     pub root: [*mut EdgeNode; 2],
     pub branch_sb128: [EdgeBranch; 85],
     pub branch_sb64: [EdgeBranch; 21],
@@ -1577,11 +1577,11 @@ pub const LR_HAVE_LEFT: LrEdgeFlags = 1;
 #[repr(C)]
 pub union LooprestorationParams {
     pub filter: [[int16_t; 8]; 2],
-    pub sgr: C2RustUnnamed_47,
+    pub sgr: LooprestorationParams_sgr,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_47 {
+pub struct LooprestorationParams_sgr {
     pub s0: uint32_t,
     pub s1: uint32_t,
     pub w0: int16_t,
@@ -1937,18 +1937,18 @@ pub type generate_grain_y_fn = Option::<
 #[repr(C)]
 pub struct CdfThreadContext {
     pub ref_0: *mut Dav1dRef,
-    pub data: C2RustUnnamed_48,
+    pub data: CdfThreadContext_data,
     pub progress: *mut atomic_uint,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union C2RustUnnamed_48 {
+pub union CdfThreadContext_data {
     pub cdf: *mut CdfContext,
     pub qcat: libc::c_uint,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_49 {
+pub struct Dav1dContext_refs {
     pub p: Dav1dThreadPicture,
     pub segmap: *mut Dav1dRef,
     pub refmvs: *mut Dav1dRef,
@@ -1965,7 +1965,7 @@ pub struct Dav1dThreadPicture {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_50 {
+pub struct Dav1dContext_frame_thread {
     pub out_delayed: *mut Dav1dThreadPicture,
     pub next: libc::c_uint,
 }

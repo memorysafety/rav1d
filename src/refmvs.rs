@@ -57,17 +57,17 @@ pub const DAV1D_WM_TYPE_IDENTITY: Dav1dWarpedMotionType = 0;
 pub struct Dav1dWarpedMotionParams {
     pub type_0: Dav1dWarpedMotionType,
     pub matrix: [int32_t; 6],
-    pub u: C2RustUnnamed,
+    pub u: Dav1dWarpedMotionParams_u,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union C2RustUnnamed {
-    pub p: C2RustUnnamed_0,
+pub union Dav1dWarpedMotionParams_u {
+    pub p: Dav1dWarpedMotionParams_u_p,
     pub abcd: [int16_t; 4],
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_0 {
+pub struct Dav1dWarpedMotionParams_u_p {
     pub alpha: int16_t,
     pub beta: int16_t,
     pub gamma: int16_t,
@@ -260,7 +260,7 @@ pub struct Dav1dFilmGrainData {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader {
-    pub film_grain: C2RustUnnamed_11,
+    pub film_grain: Dav1dFrameHeader_film_grain,
     pub frame_type: Dav1dFrameType,
     pub width: [libc::c_int; 2],
     pub height: libc::c_int,
@@ -284,7 +284,7 @@ pub struct Dav1dFrameHeader {
     pub refresh_frame_flags: libc::c_int,
     pub render_width: libc::c_int,
     pub render_height: libc::c_int,
-    pub super_res: C2RustUnnamed_10,
+    pub super_res: Dav1dFrameHeader_super_res,
     pub have_render_size: libc::c_int,
     pub allow_intrabc: libc::c_int,
     pub frame_ref_short_signaling: libc::c_int,
@@ -294,14 +294,14 @@ pub struct Dav1dFrameHeader {
     pub switchable_motion_mode: libc::c_int,
     pub use_ref_frame_mvs: libc::c_int,
     pub refresh_context: libc::c_int,
-    pub tiling: C2RustUnnamed_9,
-    pub quant: C2RustUnnamed_8,
-    pub segmentation: C2RustUnnamed_7,
-    pub delta: C2RustUnnamed_4,
+    pub tiling: Dav1dFrameHeader_tiling,
+    pub quant: Dav1dFrameHeader_quant,
+    pub segmentation: Dav1dFrameHeader_segmentation,
+    pub delta: Dav1dFrameHeader_delta,
     pub all_lossless: libc::c_int,
-    pub loopfilter: C2RustUnnamed_3,
-    pub cdef: C2RustUnnamed_2,
-    pub restoration: C2RustUnnamed_1,
+    pub loopfilter: Dav1dFrameHeader_loopfilter,
+    pub cdef: Dav1dFrameHeader_cdef,
+    pub restoration: Dav1dFrameHeader_restoration,
     pub txfm_mode: Dav1dTxfmMode,
     pub switchable_comp_refs: libc::c_int,
     pub skip_mode_allowed: libc::c_int,
@@ -313,13 +313,13 @@ pub struct Dav1dFrameHeader {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_1 {
+pub struct Dav1dFrameHeader_restoration {
     pub type_0: [Dav1dRestorationType; 3],
     pub unit_size: [libc::c_int; 2],
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_2 {
+pub struct Dav1dFrameHeader_cdef {
     pub damping: libc::c_int,
     pub n_bits: libc::c_int,
     pub y_strength: [libc::c_int; 8],
@@ -327,7 +327,7 @@ pub struct C2RustUnnamed_2 {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_3 {
+pub struct Dav1dFrameHeader_loopfilter {
     pub level_y: [libc::c_int; 2],
     pub level_u: libc::c_int,
     pub level_v: libc::c_int,
@@ -338,26 +338,26 @@ pub struct C2RustUnnamed_3 {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_4 {
-    pub q: C2RustUnnamed_6,
-    pub lf: C2RustUnnamed_5,
+pub struct Dav1dFrameHeader_delta {
+    pub q: Dav1dFrameHeader_delta_q,
+    pub lf: Dav1dFrameHeader_delta_lf,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_5 {
+pub struct Dav1dFrameHeader_delta_lf {
     pub present: libc::c_int,
     pub res_log2: libc::c_int,
     pub multi: libc::c_int,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_6 {
+pub struct Dav1dFrameHeader_delta_q {
     pub present: libc::c_int,
     pub res_log2: libc::c_int,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_7 {
+pub struct Dav1dFrameHeader_segmentation {
     pub enabled: libc::c_int,
     pub update_map: libc::c_int,
     pub temporal: libc::c_int,
@@ -368,7 +368,7 @@ pub struct C2RustUnnamed_7 {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_8 {
+pub struct Dav1dFrameHeader_quant {
     pub yac: libc::c_int,
     pub ydc_delta: libc::c_int,
     pub udc_delta: libc::c_int,
@@ -382,7 +382,7 @@ pub struct C2RustUnnamed_8 {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_9 {
+pub struct Dav1dFrameHeader_tiling {
     pub uniform: libc::c_int,
     pub n_bytes: libc::c_uint,
     pub min_log2_cols: libc::c_int,
@@ -399,7 +399,7 @@ pub struct C2RustUnnamed_9 {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_10 {
+pub struct Dav1dFrameHeader_super_res {
     pub width_scale_denominator: libc::c_int,
     pub enabled: libc::c_int,
 }
@@ -410,7 +410,7 @@ pub struct Dav1dFrameHeaderOperatingPoint {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_11 {
+pub struct Dav1dFrameHeader_film_grain {
     pub data: Dav1dFilmGrainData,
     pub present: libc::c_int,
     pub update: libc::c_int,
@@ -442,12 +442,12 @@ pub const BS_128x128: BlockSize = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union mv {
-    pub c2rust_unnamed: C2RustUnnamed_12,
+    pub c2rust_unnamed: C2RustUnnamed,
     pub n: uint32_t,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_12 {
+pub struct C2RustUnnamed {
     pub y: int16_t,
     pub x: int16_t,
 }
@@ -517,12 +517,12 @@ pub struct refmvs_tile {
     pub rf: *const refmvs_frame,
     pub r: [*mut refmvs_block; 37],
     pub rp_proj: *mut refmvs_temporal_block,
-    pub tile_col: C2RustUnnamed_13,
-    pub tile_row: C2RustUnnamed_13,
+    pub tile_col: refmvs_tile_range,
+    pub tile_row: refmvs_tile_range,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_13 {
+pub struct refmvs_tile_range {
     pub start: libc::c_int,
     pub end: libc::c_int,
 }
@@ -634,7 +634,7 @@ unsafe extern "C" fn get_gmv_2d(
         1 => {
             let mut res_0: mv = mv {
                 c2rust_unnamed: {
-                    let mut init = C2RustUnnamed_12 {
+                    let mut init = C2RustUnnamed {
                         y: ((*gmv).matrix[0 as libc::c_int as usize]
                             >> 13 as libc::c_int) as int16_t,
                         x: ((*gmv).matrix[1 as libc::c_int as usize]
@@ -651,7 +651,7 @@ unsafe extern "C" fn get_gmv_2d(
         0 => {
             return mv {
                 c2rust_unnamed: {
-                    let mut init = C2RustUnnamed_12 {
+                    let mut init = C2RustUnnamed {
                         y: 0 as libc::c_int as int16_t,
                         x: 0 as libc::c_int as int16_t,
                     };
@@ -678,7 +678,7 @@ unsafe extern "C" fn get_gmv_2d(
     let round: libc::c_int = (1 as libc::c_int) << shift >> 1 as libc::c_int;
     let mut res: mv = mv {
         c2rust_unnamed: {
-            let mut init = C2RustUnnamed_12 {
+            let mut init = C2RustUnnamed {
                 y: apply_sign(
                     abs(yc) + round >> shift << ((*hdr).hp == 0) as libc::c_int,
                     yc,
@@ -1001,7 +1001,7 @@ unsafe extern "C" fn mv_projection(mv: mv, num: libc::c_int, den: libc::c_int) -
     let x: libc::c_int = mv.c2rust_unnamed.x as libc::c_int * frac;
     return mv {
         c2rust_unnamed: {
-            let mut init = C2RustUnnamed_12 {
+            let mut init = C2RustUnnamed {
                 y: iclip(
                     y + 8192 as libc::c_int + (y >> 31 as libc::c_int)
                         >> 14 as libc::c_int,
@@ -1177,7 +1177,7 @@ unsafe extern "C" fn add_compound_extended_candidate(
         } else {
             let mut i_cand_mv: mv = mv {
                 c2rust_unnamed: {
-                    let mut init = C2RustUnnamed_12 {
+                    let mut init = C2RustUnnamed {
                         y: -(cand_mv.c2rust_unnamed.y as libc::c_int) as int16_t,
                         x: -(cand_mv.c2rust_unnamed.x as libc::c_int) as int16_t,
                     };
@@ -1283,10 +1283,10 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
     let bh4: libc::c_int = *b_dim.offset(1 as libc::c_int as isize) as libc::c_int;
     let h4: libc::c_int = imin(imin(bh4, 16 as libc::c_int), (*rt).tile_row.end - by4);
     let mut gmv: [mv; 2] = [mv {
-        c2rust_unnamed: C2RustUnnamed_12 { y: 0, x: 0 },
+        c2rust_unnamed: C2RustUnnamed { y: 0, x: 0 },
     }; 2];
     let mut tgmv: [mv; 2] = [mv {
-        c2rust_unnamed: C2RustUnnamed_12 { y: 0, x: 0 },
+        c2rust_unnamed: C2RustUnnamed { y: 0, x: 0 },
     }; 2];
     *cnt = 0 as libc::c_int;
     if !(ref_0.ref_0[0 as libc::c_int as usize] as libc::c_int >= 0 as libc::c_int
