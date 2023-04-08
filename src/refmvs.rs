@@ -1957,7 +1957,7 @@ pub unsafe extern "C" fn dav1d_refmvs_tile_sbrow_init(
     };
     let mut r: *mut refmvs_block = &mut *((*rf).r)
         .offset(
-            (35 * (*rf).r_stride * tile_row_idx as isize + pass_off),
+            35 * (*rf).r_stride * tile_row_idx as isize + pass_off,
         ) as *mut refmvs_block;
     let sbsz: libc::c_int = (*rf).sbsz;
     let off: libc::c_int = sbsz * sby & 16 as libc::c_int;
@@ -2024,8 +2024,8 @@ pub unsafe extern "C" fn dav1d_refmvs_load_tmvs(
     let stride: ptrdiff_t = (*rf).rp_stride;
     let mut rp_proj: *mut refmvs_temporal_block = &mut *((*rf).rp_proj)
         .offset(
-            (16  * stride * tile_row_idx as isize
-                + (row_start8 & 15) as isize * stride),
+            16  * stride * tile_row_idx as isize
+                + (row_start8 & 15) as isize * stride,
         ) as *mut refmvs_temporal_block;
     let mut y: libc::c_int = row_start8;
     while y < row_end8 {
@@ -2038,7 +2038,7 @@ pub unsafe extern "C" fn dav1d_refmvs_load_tmvs(
         y += 1;
     }
     rp_proj = &mut *((*rf).rp_proj)
-        .offset((16 * stride * tile_row_idx as isize)) as *mut refmvs_temporal_block;
+        .offset(16 * stride * tile_row_idx as isize) as *mut refmvs_temporal_block;
     let mut n: libc::c_int = 0 as libc::c_int;
     while n < (*rf).n_mfmvs {
         let ref2cur: libc::c_int = (*rf).mfmv_ref2cur[n as usize];
