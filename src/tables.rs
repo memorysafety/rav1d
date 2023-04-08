@@ -19,17 +19,17 @@ use crate::include::dav1d::headers::DAV1D_WM_TYPE_IDENTITY;
 pub struct Dav1dWarpedMotionParams {
     pub type_0: Dav1dWarpedMotionType,
     pub matrix: [int32_t; 6],
-    pub u: C2RustUnnamed,
+    pub u: Dav1dWarpedMotionParams_u,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union C2RustUnnamed {
-    pub p: C2RustUnnamed_0,
+pub union Dav1dWarpedMotionParams_u {
+    pub p: Dav1dWarpedMotionParams_u_p,
     pub abcd: [int16_t; 4],
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_0 {
+pub struct Dav1dWarpedMotionParams_u_p {
     pub alpha: int16_t,
     pub beta: int16_t,
     pub gamma: int16_t,
@@ -1286,9 +1286,9 @@ pub static mut dav1d_default_wm_params: Dav1dWarpedMotionParams = {
             0 as libc::c_int,
             (1 as libc::c_int) << 16 as libc::c_int,
         ],
-        u: C2RustUnnamed {
+        u: Dav1dWarpedMotionParams_u {
             p: {
-                let mut init = C2RustUnnamed_0 {
+                let mut init = Dav1dWarpedMotionParams_u_p {
                     alpha: 0 as libc::c_int as int16_t,
                     beta: 0 as libc::c_int as int16_t,
                     gamma: 0 as libc::c_int as int16_t,
