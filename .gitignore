@@ -10,3 +10,5 @@ tags
 
 # Rust
 target/
+
+compile_commands.json
