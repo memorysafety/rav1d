@@ -93,8 +93,8 @@ enum Dav1dWarpedMotionType {
 typedef struct Dav1dWarpedMotionParams {
     enum Dav1dWarpedMotionType type;
     int32_t matrix[6];
-    union {
-        struct {
+    union Dav1dWarpedMotionParams_u {
+        struct Dav1dWarpedMotionParams_u_p {
             int16_t alpha, beta, gamma, delta;
         } p;
         int16_t abcd[4];
@@ -333,7 +333,7 @@ typedef struct Dav1dFilmGrainData {
 } Dav1dFilmGrainData;
 
 typedef struct Dav1dFrameHeader {
-    struct {
+    struct Dav1dFrameHeader_film_grain {
         Dav1dFilmGrainData data;
         int present, update;
     } film_grain; ///< film grain parameters
@@ -361,7 +361,7 @@ typedef struct Dav1dFrameHeader {
     } operating_points[DAV1D_MAX_OPERATING_POINTS];
     int refresh_frame_flags;
     int render_width, render_height;
-    struct {
+    struct Dav1dFrameHeader_super_res {
         int width_scale_denominator;
         int enabled;
     } super_res;
@@ -374,7 +374,7 @@ typedef struct Dav1dFrameHeader {
     int switchable_motion_mode;
     int use_ref_frame_mvs;
     int refresh_context;
-    struct {
+    struct Dav1dFrameHeader_tiling {
         int uniform;
         unsigned n_bytes;
         int min_log2_cols, max_log2_cols, log2_cols, cols;
@@ -383,30 +383,30 @@ typedef struct Dav1dFrameHeader {
         uint16_t row_start_sb[DAV1D_MAX_TILE_ROWS + 1];
         int update;
     } tiling;
-    struct {
+    struct Dav1dFrameHeader_quant {
         int yac;
         int ydc_delta;
         int udc_delta, uac_delta, vdc_delta, vac_delta;
         int qm, qm_y, qm_u, qm_v;
     } quant;
-    struct {
+    struct Dav1dFrameHeader_segmentation {
         int enabled, update_map, temporal, update_data;
         Dav1dSegmentationDataSet seg_data;
         int lossless[DAV1D_MAX_SEGMENTS], qidx[DAV1D_MAX_SEGMENTS];
     } segmentation;
-    struct {
-        struct {
+    struct Dav1dFrameHeader_delta {
+        struct Dav1dFrameHeader_delta_q {
             int present;
             int res_log2;
         } q;
-        struct {
+        struct Dav1dFrameHeader_delta_lf {
             int present;
             int res_log2;
             int multi;
         } lf;
     } delta;
     int all_lossless;
-    struct {
+    struct Dav1dFrameHeader_loopfilter {
         int level_y[2 /* dir */];
         int level_u, level_v;
         int mode_ref_delta_enabled;
@@ -414,13 +414,13 @@ typedef struct Dav1dFrameHeader {
         Dav1dLoopfilterModeRefDeltas mode_ref_deltas;
         int sharpness;
     } loopfilter;
-    struct {
+    struct Dav1dFrameHeader_cdef {
         int damping;
         int n_bits;
         int y_strength[DAV1D_MAX_CDEF_STRENGTHS];
         int uv_strength[DAV1D_MAX_CDEF_STRENGTHS];
     } cdef;
-    struct {
+    struct Dav1dFrameHeader_restoration {
         enum Dav1dRestorationType type[3 /* plane */];
         int unit_size[2 /* y, uv */];
     } restoration;
