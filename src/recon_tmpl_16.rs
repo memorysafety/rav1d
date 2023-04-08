@@ -1992,7 +1992,7 @@ unsafe extern "C" fn get_skip_ctx(
     } else {
         let mut la: libc::c_uint = 0;
         let mut ll: libc::c_uint = 0;
-        let mut current_block_80: u64;
+        let mut _current_block_80: u64;
         match (*t_dim).lw  as libc::c_uint {
             TX_4X4 =>   MERGE_CTX_TX!(la, a, uint8_t,  TX_4X4),
             TX_8X8 =>   MERGE_CTX_TX!(la, a, uint16_t, TX_8X8),
