@@ -1,4 +1,5 @@
 use crate::include::stdint::*;
+use crate::src::align::Align64;
 use ::libc;
 extern "C" {
     fn memcpy(
@@ -461,33 +462,33 @@ static mut wedge_codebook_16_heqw: [wedge_code_type; 16] = [
         init
     },
 ];
-static mut wedge_masks_444_32x32: [uint8_t; 32768] = [0; 32768];
-static mut wedge_masks_444_32x16: [uint8_t; 16384] = [0; 16384];
-static mut wedge_masks_444_32x8: [uint8_t; 8192] = [0; 8192];
-static mut wedge_masks_444_16x32: [uint8_t; 16384] = [0; 16384];
-static mut wedge_masks_444_16x16: [uint8_t; 8192] = [0; 8192];
-static mut wedge_masks_444_16x8: [uint8_t; 4096] = [0; 4096];
-static mut wedge_masks_444_8x32: [uint8_t; 8192] = [0; 8192];
-static mut wedge_masks_444_8x16: [uint8_t; 4096] = [0; 4096];
-static mut wedge_masks_444_8x8: [uint8_t; 2048] = [0; 2048];
-static mut wedge_masks_422_16x32: [uint8_t; 16384] = [0; 16384];
-static mut wedge_masks_422_16x16: [uint8_t; 8192] = [0; 8192];
-static mut wedge_masks_422_16x8: [uint8_t; 4096] = [0; 4096];
-static mut wedge_masks_422_8x32: [uint8_t; 8192] = [0; 8192];
-static mut wedge_masks_422_8x16: [uint8_t; 4096] = [0; 4096];
-static mut wedge_masks_422_8x8: [uint8_t; 2048] = [0; 2048];
-static mut wedge_masks_422_4x32: [uint8_t; 4096] = [0; 4096];
-static mut wedge_masks_422_4x16: [uint8_t; 2048] = [0; 2048];
-static mut wedge_masks_422_4x8: [uint8_t; 1024] = [0; 1024];
-static mut wedge_masks_420_16x16: [uint8_t; 8192] = [0; 8192];
-static mut wedge_masks_420_16x8: [uint8_t; 4096] = [0; 4096];
-static mut wedge_masks_420_16x4: [uint8_t; 2048] = [0; 2048];
-static mut wedge_masks_420_8x16: [uint8_t; 4096] = [0; 4096];
-static mut wedge_masks_420_8x8: [uint8_t; 2048] = [0; 2048];
-static mut wedge_masks_420_8x4: [uint8_t; 1024] = [0; 1024];
-static mut wedge_masks_420_4x16: [uint8_t; 2048] = [0; 2048];
-static mut wedge_masks_420_4x8: [uint8_t; 1024] = [0; 1024];
-static mut wedge_masks_420_4x4: [uint8_t; 512] = [0; 512];
+static mut wedge_masks_444_32x32: Align64<[uint8_t; 32768]> = Align64([0; 32768]);
+static mut wedge_masks_444_32x16: Align64<[uint8_t; 16384]> = Align64([0; 16384]);
+static mut wedge_masks_444_32x8:Align64<[uint8_t; 8192]> = Align64([0; 8192]);
+static mut wedge_masks_444_16x32: Align64<[uint8_t; 16384]> = Align64([0; 16384]);
+static mut wedge_masks_444_16x16: Align64<[uint8_t; 8192]> = Align64([0; 8192]);
+static mut wedge_masks_444_16x8: Align64<[uint8_t; 4096]> = Align64([0; 4096]);
+static mut wedge_masks_444_8x32: Align64<[uint8_t; 8192]> = Align64([0; 8192]);
+static mut wedge_masks_444_8x16: Align64<[uint8_t; 4096]> = Align64([0; 4096]);
+static mut wedge_masks_444_8x8: Align64<[uint8_t; 2048]> = Align64([0; 2048]);
+static mut wedge_masks_422_16x32: Align64<[uint8_t; 16384]> = Align64([0; 16384]);
+static mut wedge_masks_422_16x16: Align64<[uint8_t; 8192]> = Align64([0; 8192]);
+static mut wedge_masks_422_16x8: Align64<[uint8_t; 4096]> = Align64([0; 4096]);
+static mut wedge_masks_422_8x32: Align64<[uint8_t; 8192]> = Align64([0; 8192]);
+static mut wedge_masks_422_8x16: Align64<[uint8_t; 4096]> = Align64([0; 4096]);
+static mut wedge_masks_422_8x8: Align64<[uint8_t; 2048]> = Align64([0; 2048]);
+static mut wedge_masks_422_4x32: Align64<[uint8_t; 4096]> = Align64([0; 4096]);
+static mut wedge_masks_422_4x16: Align64<[uint8_t; 2048]> = Align64([0; 2048]);
+static mut wedge_masks_422_4x8: Align64<[uint8_t; 1024]> = Align64([0; 1024]);
+static mut wedge_masks_420_16x16: Align64<[uint8_t; 8192]> = Align64([0; 8192]);
+static mut wedge_masks_420_16x8: Align64<[uint8_t; 4096]> = Align64([0; 4096]);
+static mut wedge_masks_420_16x4: Align64<[uint8_t; 2048]> = Align64([0; 2048]);
+static mut wedge_masks_420_8x16: Align64<[uint8_t; 4096]> = Align64([0; 4096]);
+static mut wedge_masks_420_8x8: Align64<[uint8_t; 2048]> = Align64([0; 2048]);
+static mut wedge_masks_420_8x4: Align64<[uint8_t; 1024]> = Align64([0; 1024]);
+static mut wedge_masks_420_4x16: Align64<[uint8_t; 2048]> = Align64([0; 2048]);
+static mut wedge_masks_420_4x8: Align64<[uint8_t; 1024]> = Align64([0; 1024]);
+static mut wedge_masks_420_4x4: Align64<[uint8_t; 512]> = Align64([0; 512]);
 #[no_mangle]
 pub static mut dav1d_wedge_masks: [[[[*const uint8_t; 16]; 2]; 3]; 22] = [[[[0
     as *const uint8_t; 16]; 2]; 3]; 22];
@@ -854,111 +855,111 @@ pub unsafe extern "C" fn dav1d_init_wedge_masks() {
         (master[WEDGE_OBLIQUE27 as libc::c_int as usize]).as_mut_ptr(),
     );
     fill2d_16x2(
-        wedge_masks_444_32x32.as_mut_ptr(),
+        wedge_masks_444_32x32.0.as_mut_ptr(),
         32 as libc::c_int,
         32 as libc::c_int,
         BS_32x32,
         master.as_mut_ptr() as *const [uint8_t; 4096],
         wedge_codebook_16_heqw.as_ptr(),
-        wedge_masks_444_32x32.as_mut_ptr(),
-        wedge_masks_422_16x32.as_mut_ptr(),
-        wedge_masks_420_16x16.as_mut_ptr(),
+        wedge_masks_444_32x32.0.as_mut_ptr(),
+        wedge_masks_422_16x32.0.as_mut_ptr(),
+        wedge_masks_420_16x16.0.as_mut_ptr(),
         0x7bfb as libc::c_int as libc::c_uint,
     );
     fill2d_16x2(
-        wedge_masks_444_32x16.as_mut_ptr(),
+        wedge_masks_444_32x16.0.as_mut_ptr(),
         32 as libc::c_int,
         16 as libc::c_int,
         BS_32x16,
         master.as_mut_ptr() as *const [uint8_t; 4096],
         wedge_codebook_16_hltw.as_ptr(),
-        wedge_masks_444_32x16.as_mut_ptr(),
-        wedge_masks_422_16x16.as_mut_ptr(),
-        wedge_masks_420_16x8.as_mut_ptr(),
+        wedge_masks_444_32x16.0.as_mut_ptr(),
+        wedge_masks_422_16x16.0.as_mut_ptr(),
+        wedge_masks_420_16x8.0.as_mut_ptr(),
         0x7beb as libc::c_int as libc::c_uint,
     );
     fill2d_16x2(
-        wedge_masks_444_32x8.as_mut_ptr(),
+        wedge_masks_444_32x8.0.as_mut_ptr(),
         32 as libc::c_int,
         8 as libc::c_int,
         BS_32x8,
         master.as_mut_ptr() as *const [uint8_t; 4096],
         wedge_codebook_16_hltw.as_ptr(),
-        wedge_masks_444_32x8.as_mut_ptr(),
-        wedge_masks_422_16x8.as_mut_ptr(),
-        wedge_masks_420_16x4.as_mut_ptr(),
+        wedge_masks_444_32x8.0.as_mut_ptr(),
+        wedge_masks_422_16x8.0.as_mut_ptr(),
+        wedge_masks_420_16x4.0.as_mut_ptr(),
         0x6beb as libc::c_int as libc::c_uint,
     );
     fill2d_16x2(
-        wedge_masks_444_16x32.as_mut_ptr(),
+        wedge_masks_444_16x32.0.as_mut_ptr(),
         16 as libc::c_int,
         32 as libc::c_int,
         BS_16x32,
         master.as_mut_ptr() as *const [uint8_t; 4096],
         wedge_codebook_16_hgtw.as_ptr(),
-        wedge_masks_444_16x32.as_mut_ptr(),
-        wedge_masks_422_8x32.as_mut_ptr(),
-        wedge_masks_420_8x16.as_mut_ptr(),
+        wedge_masks_444_16x32.0.as_mut_ptr(),
+        wedge_masks_422_8x32.0.as_mut_ptr(),
+        wedge_masks_420_8x16.0.as_mut_ptr(),
         0x7beb as libc::c_int as libc::c_uint,
     );
     fill2d_16x2(
-        wedge_masks_444_16x16.as_mut_ptr(),
+        wedge_masks_444_16x16.0.as_mut_ptr(),
         16 as libc::c_int,
         16 as libc::c_int,
         BS_16x16,
         master.as_mut_ptr() as *const [uint8_t; 4096],
         wedge_codebook_16_heqw.as_ptr(),
-        wedge_masks_444_16x16.as_mut_ptr(),
-        wedge_masks_422_8x16.as_mut_ptr(),
-        wedge_masks_420_8x8.as_mut_ptr(),
+        wedge_masks_444_16x16.0.as_mut_ptr(),
+        wedge_masks_422_8x16.0.as_mut_ptr(),
+        wedge_masks_420_8x8.0.as_mut_ptr(),
         0x7bfb as libc::c_int as libc::c_uint,
     );
     fill2d_16x2(
-        wedge_masks_444_16x8.as_mut_ptr(),
+        wedge_masks_444_16x8.0.as_mut_ptr(),
         16 as libc::c_int,
         8 as libc::c_int,
         BS_16x8,
         master.as_mut_ptr() as *const [uint8_t; 4096],
         wedge_codebook_16_hltw.as_ptr(),
-        wedge_masks_444_16x8.as_mut_ptr(),
-        wedge_masks_422_8x8.as_mut_ptr(),
-        wedge_masks_420_8x4.as_mut_ptr(),
+        wedge_masks_444_16x8.0.as_mut_ptr(),
+        wedge_masks_422_8x8.0.as_mut_ptr(),
+        wedge_masks_420_8x4.0.as_mut_ptr(),
         0x7beb as libc::c_int as libc::c_uint,
     );
     fill2d_16x2(
-        wedge_masks_444_8x32.as_mut_ptr(),
+        wedge_masks_444_8x32.0.as_mut_ptr(),
         8 as libc::c_int,
         32 as libc::c_int,
         BS_8x32,
         master.as_mut_ptr() as *const [uint8_t; 4096],
         wedge_codebook_16_hgtw.as_ptr(),
-        wedge_masks_444_8x32.as_mut_ptr(),
-        wedge_masks_422_4x32.as_mut_ptr(),
-        wedge_masks_420_4x16.as_mut_ptr(),
+        wedge_masks_444_8x32.0.as_mut_ptr(),
+        wedge_masks_422_4x32.0.as_mut_ptr(),
+        wedge_masks_420_4x16.0.as_mut_ptr(),
         0x7aeb as libc::c_int as libc::c_uint,
     );
     fill2d_16x2(
-        wedge_masks_444_8x16.as_mut_ptr(),
+        wedge_masks_444_8x16.0.as_mut_ptr(),
         8 as libc::c_int,
         16 as libc::c_int,
         BS_8x16,
         master.as_mut_ptr() as *const [uint8_t; 4096],
         wedge_codebook_16_hgtw.as_ptr(),
-        wedge_masks_444_8x16.as_mut_ptr(),
-        wedge_masks_422_4x16.as_mut_ptr(),
-        wedge_masks_420_4x8.as_mut_ptr(),
+        wedge_masks_444_8x16.0.as_mut_ptr(),
+        wedge_masks_422_4x16.0.as_mut_ptr(),
+        wedge_masks_420_4x8.0.as_mut_ptr(),
         0x7beb as libc::c_int as libc::c_uint,
     );
     fill2d_16x2(
-        wedge_masks_444_8x8.as_mut_ptr(),
+        wedge_masks_444_8x8.0.as_mut_ptr(),
         8 as libc::c_int,
         8 as libc::c_int,
         BS_8x8,
         master.as_mut_ptr() as *const [uint8_t; 4096],
         wedge_codebook_16_heqw.as_ptr(),
-        wedge_masks_444_8x8.as_mut_ptr(),
-        wedge_masks_422_4x8.as_mut_ptr(),
-        wedge_masks_420_4x4.as_mut_ptr(),
+        wedge_masks_444_8x8.0.as_mut_ptr(),
+        wedge_masks_422_4x8.0.as_mut_ptr(),
+        wedge_masks_420_4x4.0.as_mut_ptr(),
         0x7bfb as libc::c_int as libc::c_uint,
     );
 }
