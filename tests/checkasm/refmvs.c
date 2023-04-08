@@ -49,7 +49,7 @@ static void check_splat_mv(const Dav1dRefmvsDSPContext *const c) {
             const int w_uint32 = w * sizeof(refmvs_block) / sizeof(uint32_t);
             for (int h = h_min; h <= h_max; h *= 2) {
                 const int offset = (int) ((unsigned) w * rnd()) & 31;
-                union {
+                union tmp {
                     refmvs_block rmv;
                     uint32_t u32[3];
                 } ALIGN(tmp, 16);

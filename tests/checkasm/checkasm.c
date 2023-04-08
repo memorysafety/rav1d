@@ -55,7 +55,7 @@
 #endif
 
 /* List of tests to invoke */
-static const struct {
+static const struct test {
     const char *name;
     void (*func)(void);
 } tests[] = {
@@ -83,7 +83,7 @@ static const struct {
 };
 
 /* List of cpu flags to check */
-static const struct {
+static const struct cpu {
     const char *name;
     const char *suffix;
     unsigned flag;
@@ -120,7 +120,7 @@ typedef struct CheckasmFunc {
 } CheckasmFunc;
 
 /* Internal state */
-static struct {
+static struct state {
     CheckasmFunc *funcs;
     CheckasmFunc *current_func;
     CheckasmFuncVersion *current_func_ver;

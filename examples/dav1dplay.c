@@ -146,7 +146,7 @@ static void dp_rd_ctx_parse_args(Dav1dPlayRenderContext *rd_ctx,
     // Short options
     static const char short_opts[] = "i:vuzgr:";
 
-    enum {
+    enum arg {
         ARG_THREADS = 256,
         ARG_FRAME_DELAY,
         ARG_HIGH_QUALITY,

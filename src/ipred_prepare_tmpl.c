@@ -47,7 +47,7 @@ static const uint8_t av1_mode_to_angle_map[8] = {
     90, 180, 45, 135, 113, 157, 203, 67
 };
 
-static const struct {
+static const struct av1_intra_prediction_edge {
     uint8_t needs_left:1;
     uint8_t needs_top:1;
     uint8_t needs_topleft:1;
