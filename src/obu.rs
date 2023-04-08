@@ -4873,11 +4873,11 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                                         &mut (*((*c).tile).offset((*c).n_tile_data as isize)).data,
                                                         in_0,
                                                     );
-                                                    let ref mut fresh2 = (*((*c).tile)
+                                                    let ref mut fresh0 = (*((*c).tile)
                                                         .offset((*c).n_tile_data as isize))
                                                         .data
                                                         .data;
-                                                    *fresh2 = (*fresh2)
+                                                    *fresh0 = (*fresh0)
                                                         .offset((bit_pos >> 3 as libc::c_int) as isize);
                                                     (*((*c).tile).offset((*c).n_tile_data as isize))
                                                         .data
@@ -5001,11 +5001,11 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                                                 );
                                                             } else {
                                                                 pthread_mutex_lock(&mut (*c).task_thread.lock);
-                                                                let fresh3 = (*c).frame_thread.next;
+                                                                let fresh1 = (*c).frame_thread.next;
                                                                 (*c)
                                                                     .frame_thread
                                                                     .next = ((*c).frame_thread.next).wrapping_add(1);
-                                                                let next: libc::c_uint = fresh3;
+                                                                let next: libc::c_uint = fresh1;
                                                                 if (*c).frame_thread.next == (*c).n_fc {
                                                                     (*c).frame_thread.next = 0 as libc::c_int as libc::c_uint;
                                                                 }
@@ -5041,15 +5041,15 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                                                             0 as libc::c_int as libc::c_uint,
                                                                         );
                                                                     }
-                                                                    let fresh6 = ::core::intrinsics::atomic_cxchg_seqcst_seqcst(
+                                                                    let fresh2 = ::core::intrinsics::atomic_cxchg_seqcst_seqcst(
                                                                         &mut (*c).task_thread.reset_task_cur,
                                                                         *&mut first,
-                                                                        (2147483647 as libc::c_int as libc::c_uint)
+                                                                        *(2147483647 as libc::c_int as libc::c_uint)
                                                                             .wrapping_mul(2 as libc::c_uint)
                                                                             .wrapping_add(1 as libc::c_uint),
                                                                     );
-                                                                    *&mut first = fresh6.0;
-                                                                    fresh6.1;
+                                                                    *&mut first = fresh2.0;
+                                                                    fresh2.1;
                                                                     if (*c).task_thread.cur != 0
                                                                         && (*c).task_thread.cur < (*c).n_fc
                                                                     {

@@ -1,6 +1,5 @@
 #![allow(dead_code, mutable_transmutes, non_camel_case_types, non_snake_case, non_upper_case_globals, unused_assignments, unused_mut)]
 #![feature(extern_types)]
-#![feature(c_variadic)]
 use ::c2rust_out::*;
 extern "C" {
     pub type _IO_wide_data;
@@ -989,14 +988,13 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
     let mut i_fps: libc::c_double = 0.;
     let mut frametimes: *mut FILE = 0 as *mut FILE;
     let mut version: *const libc::c_char = dav1d_version();
-    if strcmp(version, b"1.0.0-116-ge219a79\0" as *const u8 as *const libc::c_char) != 0
-    {
+    if strcmp(version, b"7ff80c6\0" as *const u8 as *const libc::c_char) != 0 {
         fprintf(
             stderr,
             b"Version mismatch (library: %s, executable: %s)\n\0" as *const u8
                 as *const libc::c_char,
             version,
-            b"1.0.0-116-ge219a79\0" as *const u8 as *const libc::c_char,
+            b"7ff80c6\0" as *const u8 as *const libc::c_char,
         );
         return 1 as libc::c_int;
     }

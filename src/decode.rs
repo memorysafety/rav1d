@@ -16,6 +16,7 @@ extern "C" {
         _: libc::c_ulong,
     ) -> libc::c_int;
     fn printf(_: *const libc::c_char, _: ...) -> libc::c_int;
+    fn dav1d_cdef_dsp_init_8bpc(c: *mut Dav1dCdefDSPContext);
     fn dav1d_cdef_dsp_init_16bpc(c: *mut Dav1dCdefDSPContext);
     fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
     fn free(_: *mut libc::c_void);
@@ -115,8 +116,11 @@ extern "C" {
         by4: libc::c_int,
         bx4: libc::c_int,
     );
+    fn dav1d_film_grain_dsp_init_8bpc(c: *mut Dav1dFilmGrainDSPContext);
     fn dav1d_film_grain_dsp_init_16bpc(c: *mut Dav1dFilmGrainDSPContext);
+    fn dav1d_intra_pred_dsp_init_8bpc(c: *mut Dav1dIntraPredDSPContext);
     fn dav1d_intra_pred_dsp_init_16bpc(c: *mut Dav1dIntraPredDSPContext);
+    fn dav1d_itx_dsp_init_8bpc(c: *mut Dav1dInvTxfmDSPContext, bpc: libc::c_int);
     fn dav1d_itx_dsp_init_16bpc(c: *mut Dav1dInvTxfmDSPContext, bpc: libc::c_int);
     fn dav1d_create_lf_mask_intra(
         lflvl: *mut Av1Filter,
@@ -162,11 +166,17 @@ extern "C" {
         hdr: *const Dav1dFrameHeader,
         lf_delta: *const int8_t,
     );
+    fn dav1d_loop_filter_dsp_init_8bpc(c: *mut Dav1dLoopFilterDSPContext);
     fn dav1d_loop_filter_dsp_init_16bpc(c: *mut Dav1dLoopFilterDSPContext);
+    fn dav1d_loop_restoration_dsp_init_8bpc(
+        c: *mut Dav1dLoopRestorationDSPContext,
+        bpc: libc::c_int,
+    );
     fn dav1d_loop_restoration_dsp_init_16bpc(
         c: *mut Dav1dLoopRestorationDSPContext,
         bpc: libc::c_int,
     );
+    fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext);
     fn dav1d_mc_dsp_init_16bpc(c: *mut Dav1dMCDSPContext);
     fn dav1d_msac_init(
         s: *mut MsacContext,
@@ -210,30 +220,53 @@ extern "C" {
     fn dav1d_thread_picture_unref(p: *mut Dav1dThreadPicture);
     fn dav1d_picture_unref_internal(p: *mut Dav1dPicture);
     fn dav1d_picture_get_event_flags(p: *const Dav1dThreadPicture) -> Dav1dEventFlags;
+    fn dav1d_recon_b_intra_8bpc(
+        t: *mut Dav1dTaskContext,
+        bs: BlockSize,
+        intra_edge_flags: EdgeFlags,
+        b: *const Av1Block,
+    );
     fn dav1d_recon_b_intra_16bpc(
         t: *mut Dav1dTaskContext,
         bs: BlockSize,
         intra_edge_flags: EdgeFlags,
         b: *const Av1Block,
     );
+    fn dav1d_recon_b_inter_8bpc(
+        t: *mut Dav1dTaskContext,
+        bs: BlockSize,
+        b: *const Av1Block,
+    ) -> libc::c_int;
     fn dav1d_recon_b_inter_16bpc(
         t: *mut Dav1dTaskContext,
         bs: BlockSize,
         b: *const Av1Block,
     ) -> libc::c_int;
+    fn dav1d_filter_sbrow_8bpc(f: *mut Dav1dFrameContext, sby: libc::c_int);
     fn dav1d_filter_sbrow_16bpc(f: *mut Dav1dFrameContext, sby: libc::c_int);
+    fn dav1d_filter_sbrow_deblock_cols_8bpc(f: *mut Dav1dFrameContext, sby: libc::c_int);
     fn dav1d_filter_sbrow_deblock_cols_16bpc(
         f: *mut Dav1dFrameContext,
         sby: libc::c_int,
     );
+    fn dav1d_filter_sbrow_deblock_rows_8bpc(f: *mut Dav1dFrameContext, sby: libc::c_int);
     fn dav1d_filter_sbrow_deblock_rows_16bpc(
         f: *mut Dav1dFrameContext,
         sby: libc::c_int,
     );
+    fn dav1d_filter_sbrow_cdef_8bpc(tc: *mut Dav1dTaskContext, sby: libc::c_int);
     fn dav1d_filter_sbrow_cdef_16bpc(tc: *mut Dav1dTaskContext, sby: libc::c_int);
+    fn dav1d_filter_sbrow_resize_8bpc(f: *mut Dav1dFrameContext, sby: libc::c_int);
     fn dav1d_filter_sbrow_resize_16bpc(f: *mut Dav1dFrameContext, sby: libc::c_int);
+    fn dav1d_filter_sbrow_lr_8bpc(f: *mut Dav1dFrameContext, sby: libc::c_int);
     fn dav1d_filter_sbrow_lr_16bpc(f: *mut Dav1dFrameContext, sby: libc::c_int);
+    fn dav1d_backup_ipred_edge_8bpc(t: *mut Dav1dTaskContext);
     fn dav1d_backup_ipred_edge_16bpc(t: *mut Dav1dTaskContext);
+    fn dav1d_read_coef_blocks_8bpc(
+        t: *mut Dav1dTaskContext,
+        bs: BlockSize,
+        b: *const Av1Block,
+    );
     fn dav1d_read_coef_blocks_16bpc(
         t: *mut Dav1dTaskContext,
         bs: BlockSize,
@@ -3325,9 +3358,9 @@ unsafe extern "C" fn dav1d_msac_decode_bools(
 ) -> libc::c_uint {
     let mut v: libc::c_uint = 0 as libc::c_int as libc::c_uint;
     loop {
-        let fresh2 = n;
+        let fresh0 = n;
         n = n.wrapping_sub(1);
-        if !(fresh2 != 0) {
+        if !(fresh0 != 0) {
             break;
         }
         v = v << 1 as libc::c_int | dav1d_msac_decode_bool_equi_c(s);
@@ -3595,8 +3628,8 @@ unsafe extern "C" fn read_tx_tree(
             ((*(*t).ts).cdf.m.txpart[cat as usize][(a + l) as usize]).as_mut_ptr(),
         ) as libc::c_int;
         if is_split != 0 {
-            let ref mut fresh3 = *masks.offset(depth as isize);
-            *fresh3 = (*fresh3 as libc::c_int
+            let ref mut fresh1 = *masks.offset(depth as isize);
+            *fresh1 = (*fresh1 as libc::c_int
                 | (1 as libc::c_int) << y_off * 4 as libc::c_int + x_off) as uint16_t;
         }
     } else {
@@ -3834,8 +3867,8 @@ unsafe extern "C" fn find_matching_ref(
             && (*r2).ref_0.ref_0[1 as libc::c_int as usize] as libc::c_int
                 == -(1 as libc::c_int)
         {
-            let ref mut fresh4 = *masks.offset(0 as libc::c_int as isize);
-            *fresh4 |= 1 as libc::c_int as libc::c_ulong;
+            let ref mut fresh2 = *masks.offset(0 as libc::c_int as isize);
+            *fresh2 |= 1 as libc::c_int as libc::c_ulong;
             count = 1 as libc::c_int;
         }
         let mut aw4: libc::c_int = dav1d_block_dimensions[(*r2).bs
@@ -3858,8 +3891,8 @@ unsafe extern "C" fn find_matching_ref(
                     && (*r2).ref_0.ref_0[1 as libc::c_int as usize] as libc::c_int
                         == -(1 as libc::c_int)
                 {
-                    let ref mut fresh5 = *masks.offset(0 as libc::c_int as isize);
-                    *fresh5 |= mask as libc::c_ulong;
+                    let ref mut fresh3 = *masks.offset(0 as libc::c_int as isize);
+                    *fresh3 |= mask as libc::c_ulong;
                     count += 1;
                     if count >= 8 as libc::c_int {
                         return;
@@ -3883,8 +3916,8 @@ unsafe extern "C" fn find_matching_ref(
                 .ref_0
                 .ref_0[1 as libc::c_int as usize] as libc::c_int == -(1 as libc::c_int)
         {
-            let ref mut fresh6 = *masks.offset(1 as libc::c_int as isize);
-            *fresh6 |= 1 as libc::c_int as libc::c_ulong;
+            let ref mut fresh4 = *masks.offset(1 as libc::c_int as isize);
+            *fresh4 |= 1 as libc::c_int as libc::c_ulong;
             count += 1;
             if count >= 8 as libc::c_int {
                 return;
@@ -3914,8 +3947,8 @@ unsafe extern "C" fn find_matching_ref(
                         .ref_0[1 as libc::c_int as usize] as libc::c_int
                         == -(1 as libc::c_int)
                 {
-                    let ref mut fresh7 = *masks.offset(1 as libc::c_int as isize);
-                    *fresh7 |= mask_0 as libc::c_ulong;
+                    let ref mut fresh5 = *masks.offset(1 as libc::c_int as isize);
+                    *fresh5 |= mask_0 as libc::c_ulong;
                     count += 1;
                     if count >= 8 as libc::c_int {
                         return;
@@ -3939,8 +3972,8 @@ unsafe extern "C" fn find_matching_ref(
                 .ref_0
                 .ref_0[1 as libc::c_int as usize] as libc::c_int == -(1 as libc::c_int))
     {
-        let ref mut fresh8 = *masks.offset(1 as libc::c_int as isize);
-        *fresh8 = (*fresh8 as libc::c_ulonglong
+        let ref mut fresh6 = *masks.offset(1 as libc::c_int as isize);
+        *fresh6 = (*fresh6 as libc::c_ulonglong
             | (1 as libc::c_ulonglong) << 32 as libc::c_int) as uint64_t;
         count += 1;
         if count >= 8 as libc::c_int {
@@ -3956,8 +3989,8 @@ unsafe extern "C" fn find_matching_ref(
                 .ref_0
                 .ref_0[1 as libc::c_int as usize] as libc::c_int == -(1 as libc::c_int))
     {
-        let ref mut fresh9 = *masks.offset(0 as libc::c_int as isize);
-        *fresh9 = (*fresh9 as libc::c_ulonglong
+        let ref mut fresh7 = *masks.offset(0 as libc::c_int as isize);
+        *fresh7 = (*fresh7 as libc::c_ulonglong
             | (1 as libc::c_ulonglong) << 32 as libc::c_int) as uint64_t;
     }
 }
@@ -4435,9 +4468,9 @@ unsafe extern "C" fn read_pal_plane(
                 || cache[(n_cache - 1 as libc::c_int) as usize] as libc::c_int
                     != *l as libc::c_int
             {
-                let fresh10 = n_cache;
+                let fresh8 = n_cache;
                 n_cache = n_cache + 1;
-                cache[fresh10 as usize] = *l;
+                cache[fresh8 as usize] = *l;
             }
             l = l.offset(1);
             l_cache -= 1;
@@ -4450,9 +4483,9 @@ unsafe extern "C" fn read_pal_plane(
                 || cache[(n_cache - 1 as libc::c_int) as usize] as libc::c_int
                     != *a as libc::c_int
             {
-                let fresh11 = n_cache;
+                let fresh9 = n_cache;
                 n_cache = n_cache + 1;
-                cache[fresh11 as usize] = *a;
+                cache[fresh9 as usize] = *a;
             }
             a = a.offset(1);
             a_cache -= 1;
@@ -4464,9 +4497,9 @@ unsafe extern "C" fn read_pal_plane(
                 || cache[(n_cache - 1 as libc::c_int) as usize] as libc::c_int
                     != *l as libc::c_int
             {
-                let fresh12 = n_cache;
+                let fresh10 = n_cache;
                 n_cache = n_cache + 1;
-                cache[fresh12 as usize] = *l;
+                cache[fresh10 as usize] = *l;
             }
             l = l.offset(1);
             l_cache -= 1;
@@ -4480,9 +4513,9 @@ unsafe extern "C" fn read_pal_plane(
                 || cache[(n_cache - 1 as libc::c_int) as usize] as libc::c_int
                     != *a as libc::c_int
             {
-                let fresh13 = n_cache;
+                let fresh11 = n_cache;
                 n_cache = n_cache + 1;
-                cache[fresh13 as usize] = *a;
+                cache[fresh11 as usize] = *a;
             }
             a = a.offset(1);
             a_cache -= 1;
@@ -4495,9 +4528,9 @@ unsafe extern "C" fn read_pal_plane(
     let mut n: libc::c_int = 0 as libc::c_int;
     while n < n_cache && i < pal_sz {
         if dav1d_msac_decode_bool_equi_c(&mut (*ts).msac) != 0 {
-            let fresh14 = i;
+            let fresh12 = i;
             i = i + 1;
-            used_cache[fresh14 as usize] = cache[n as usize];
+            used_cache[fresh12 as usize] = cache[n as usize];
         }
         n += 1;
     }
@@ -4515,14 +4548,14 @@ unsafe extern "C" fn read_pal_plane(
         ((*t).scratch.c2rust_unnamed_0.pal[pl as usize]).as_mut_ptr()
     };
     if i < pal_sz {
-        let fresh15 = i;
+        let fresh13 = i;
         i = i + 1;
-        let ref mut fresh16 = *pal.offset(fresh15 as isize);
-        *fresh16 = dav1d_msac_decode_bools(
+        let ref mut fresh14 = *pal.offset(fresh13 as isize);
+        *fresh14 = dav1d_msac_decode_bools(
             &mut (*ts).msac,
             (*f).cur.p.bpc as libc::c_uint,
         ) as uint16_t;
-        let mut prev: libc::c_int = *fresh16 as libc::c_int;
+        let mut prev: libc::c_int = *fresh14 as libc::c_int;
         if i < pal_sz {
             let mut bits: libc::c_int = (((*f).cur.p.bpc - 3 as libc::c_int)
                 as libc::c_uint)
@@ -4539,12 +4572,12 @@ unsafe extern "C" fn read_pal_plane(
                     &mut (*ts).msac,
                     bits as libc::c_uint,
                 ) as libc::c_int;
-                let fresh17 = i;
+                let fresh15 = i;
                 i = i + 1;
-                let ref mut fresh18 = *pal.offset(fresh17 as isize);
-                *fresh18 = imin(prev + delta + (pl == 0) as libc::c_int, max)
+                let ref mut fresh16 = *pal.offset(fresh15 as isize);
+                *fresh16 = imin(prev + delta + (pl == 0) as libc::c_int, max)
                     as uint16_t;
-                prev = *fresh18 as libc::c_int;
+                prev = *fresh16 as libc::c_int;
                 if prev + (pl == 0) as libc::c_int >= max {
                     while i < pal_sz {
                         *pal.offset(i as isize) = max as uint16_t;
@@ -4574,16 +4607,16 @@ unsafe extern "C" fn read_pal_plane(
                     || used_cache[n_0 as usize] as libc::c_int
                         <= *pal.offset(m as isize) as libc::c_int)
             {
-                let fresh19 = n_0;
+                let fresh17 = n_0;
                 n_0 = n_0 + 1;
-                *pal.offset(i as isize) = used_cache[fresh19 as usize];
+                *pal.offset(i as isize) = used_cache[fresh17 as usize];
             } else {
                 if !(m < pal_sz) {
                     unreachable!();
                 }
-                let fresh20 = m;
+                let fresh18 = m;
                 m = m + 1;
-                *pal.offset(i as isize) = *pal.offset(fresh20 as isize);
+                *pal.offset(i as isize) = *pal.offset(fresh18 as isize);
             }
             i += 1;
         }
@@ -4667,12 +4700,12 @@ unsafe extern "C" fn read_pal_uv(
                     2 as libc::c_int as libc::c_uint,
                 ),
             ) as libc::c_int;
-        let ref mut fresh21 = *pal.offset(0 as libc::c_int as isize);
-        *fresh21 = dav1d_msac_decode_bools(
+        let ref mut fresh19 = *pal.offset(0 as libc::c_int as isize);
+        *fresh19 = dav1d_msac_decode_bools(
             &mut (*ts).msac,
             (*f).cur.p.bpc as libc::c_uint,
         ) as uint16_t;
-        let mut prev: libc::c_int = *fresh21 as libc::c_int;
+        let mut prev: libc::c_int = *fresh19 as libc::c_int;
         let max: libc::c_int = ((1 as libc::c_int) << (*f).cur.p.bpc) - 1 as libc::c_int;
         let mut i: libc::c_int = 1 as libc::c_int;
         while i
@@ -4686,9 +4719,9 @@ unsafe extern "C" fn read_pal_uv(
             if delta != 0 && dav1d_msac_decode_bool_equi_c(&mut (*ts).msac) != 0 {
                 delta = -delta;
             }
-            let ref mut fresh22 = *pal.offset(i as isize);
-            *fresh22 = (prev + delta & max) as uint16_t;
-            prev = *fresh22 as libc::c_int;
+            let ref mut fresh20 = *pal.offset(i as isize);
+            *fresh20 = (prev + delta & max) as uint16_t;
+            prev = *fresh20 as libc::c_int;
             i += 1;
         }
     } else {
@@ -4760,9 +4793,9 @@ unsafe extern "C" fn order_palette(
             if !((v as libc::c_uint) < 8 as libc::c_uint) {
                 unreachable!();
             }
-            let fresh23 = o_idx;
+            let fresh21 = o_idx;
             o_idx = o_idx + 1;
-            (*order.offset(n as isize))[fresh23 as usize] = v as uint8_t;
+            (*order.offset(n as isize))[fresh21 as usize] = v as uint8_t;
             mask |= ((1 as libc::c_int) << v) as libc::c_uint;
         } else if have_top == 0 {
             *ctx.offset(n as isize) = 0 as libc::c_int as uint8_t;
@@ -4771,9 +4804,9 @@ unsafe extern "C" fn order_palette(
             if !((v_0 as libc::c_uint) < 8 as libc::c_uint) {
                 unreachable!();
             }
-            let fresh24 = o_idx;
+            let fresh22 = o_idx;
             o_idx = o_idx + 1;
-            (*order.offset(n as isize))[fresh24 as usize] = v_0 as uint8_t;
+            (*order.offset(n as isize))[fresh22 as usize] = v_0 as uint8_t;
             mask |= ((1 as libc::c_int) << v_0) as libc::c_uint;
         } else {
             let l: libc::c_int = *pal_idx.offset(-(1 as libc::c_int) as isize)
@@ -4792,9 +4825,9 @@ unsafe extern "C" fn order_palette(
                 if !((v_1 as libc::c_uint) < 8 as libc::c_uint) {
                     unreachable!();
                 }
-                let fresh25 = o_idx;
+                let fresh23 = o_idx;
                 o_idx = o_idx + 1;
-                (*order.offset(n as isize))[fresh25 as usize] = v_1 as uint8_t;
+                (*order.offset(n as isize))[fresh23 as usize] = v_1 as uint8_t;
                 mask |= ((1 as libc::c_int) << v_1) as libc::c_uint;
             } else if same_t_l != 0 {
                 *ctx.offset(n as isize) = 3 as libc::c_int as uint8_t;
@@ -4802,17 +4835,17 @@ unsafe extern "C" fn order_palette(
                 if !((v_2 as libc::c_uint) < 8 as libc::c_uint) {
                     unreachable!();
                 }
-                let fresh26 = o_idx;
+                let fresh24 = o_idx;
                 o_idx = o_idx + 1;
-                (*order.offset(n as isize))[fresh26 as usize] = v_2 as uint8_t;
+                (*order.offset(n as isize))[fresh24 as usize] = v_2 as uint8_t;
                 mask |= ((1 as libc::c_int) << v_2) as libc::c_uint;
                 let v_3: libc::c_int = tl;
                 if !((v_3 as libc::c_uint) < 8 as libc::c_uint) {
                     unreachable!();
                 }
-                let fresh27 = o_idx;
+                let fresh25 = o_idx;
                 o_idx = o_idx + 1;
-                (*order.offset(n as isize))[fresh27 as usize] = v_3 as uint8_t;
+                (*order.offset(n as isize))[fresh25 as usize] = v_3 as uint8_t;
                 mask |= ((1 as libc::c_int) << v_3) as libc::c_uint;
             } else if same_t_tl | same_l_tl != 0 {
                 *ctx.offset(n as isize) = 2 as libc::c_int as uint8_t;
@@ -4820,17 +4853,17 @@ unsafe extern "C" fn order_palette(
                 if !((v_4 as libc::c_uint) < 8 as libc::c_uint) {
                     unreachable!();
                 }
-                let fresh28 = o_idx;
+                let fresh26 = o_idx;
                 o_idx = o_idx + 1;
-                (*order.offset(n as isize))[fresh28 as usize] = v_4 as uint8_t;
+                (*order.offset(n as isize))[fresh26 as usize] = v_4 as uint8_t;
                 mask |= ((1 as libc::c_int) << v_4) as libc::c_uint;
                 let v_5: libc::c_int = if same_t_tl != 0 { l } else { t };
                 if !((v_5 as libc::c_uint) < 8 as libc::c_uint) {
                     unreachable!();
                 }
-                let fresh29 = o_idx;
+                let fresh27 = o_idx;
                 o_idx = o_idx + 1;
-                (*order.offset(n as isize))[fresh29 as usize] = v_5 as uint8_t;
+                (*order.offset(n as isize))[fresh27 as usize] = v_5 as uint8_t;
                 mask |= ((1 as libc::c_int) << v_5) as libc::c_uint;
             } else {
                 *ctx.offset(n as isize) = 1 as libc::c_int as uint8_t;
@@ -4838,25 +4871,25 @@ unsafe extern "C" fn order_palette(
                 if !((v_6 as libc::c_uint) < 8 as libc::c_uint) {
                     unreachable!();
                 }
-                let fresh30 = o_idx;
+                let fresh28 = o_idx;
                 o_idx = o_idx + 1;
-                (*order.offset(n as isize))[fresh30 as usize] = v_6 as uint8_t;
+                (*order.offset(n as isize))[fresh28 as usize] = v_6 as uint8_t;
                 mask |= ((1 as libc::c_int) << v_6) as libc::c_uint;
                 let v_7: libc::c_int = imax(t, l);
                 if !((v_7 as libc::c_uint) < 8 as libc::c_uint) {
                     unreachable!();
                 }
-                let fresh31 = o_idx;
+                let fresh29 = o_idx;
                 o_idx = o_idx + 1;
-                (*order.offset(n as isize))[fresh31 as usize] = v_7 as uint8_t;
+                (*order.offset(n as isize))[fresh29 as usize] = v_7 as uint8_t;
                 mask |= ((1 as libc::c_int) << v_7) as libc::c_uint;
                 let v_8: libc::c_int = tl;
                 if !((v_8 as libc::c_uint) < 8 as libc::c_uint) {
                     unreachable!();
                 }
-                let fresh32 = o_idx;
+                let fresh30 = o_idx;
                 o_idx = o_idx + 1;
-                (*order.offset(n as isize))[fresh32 as usize] = v_8 as uint8_t;
+                (*order.offset(n as isize))[fresh30 as usize] = v_8 as uint8_t;
                 mask |= ((1 as libc::c_int) << v_8) as libc::c_uint;
             }
         }
@@ -4864,9 +4897,9 @@ unsafe extern "C" fn order_palette(
         let mut bit: libc::c_uint = 0 as libc::c_int as libc::c_uint;
         while m < 0x100 as libc::c_int as libc::c_uint {
             if mask & m == 0 {
-                let fresh33 = o_idx;
+                let fresh31 = o_idx;
                 o_idx = o_idx + 1;
-                (*order.offset(n as isize))[fresh33 as usize] = bit as uint8_t;
+                (*order.offset(n as isize))[fresh31 as usize] = bit as uint8_t;
             }
             m <<= 1 as libc::c_int;
             bit = bit.wrapping_add(1);
@@ -8156,9 +8189,9 @@ unsafe extern "C" fn decode_b(
                     imin((*t_dim).max as libc::c_int, 2 as libc::c_int) as size_t,
                 ) as libc::c_int;
                 loop {
-                    let fresh34 = depth;
+                    let fresh32 = depth;
                     depth = depth - 1;
-                    if !(fresh34 != 0) {
+                    if !(fresh32 != 0) {
                         break;
                     }
                     (*b).c2rust_unnamed.c2rust_unnamed.tx = (*t_dim).sub;
@@ -17727,20 +17760,20 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
             sby = 0 as libc::c_int;
             let mut tile_row: libc::c_int = 0 as libc::c_int;
             while tile_row < (*(*f).frame_hdr).tiling.rows {
-                let fresh35 = sby;
+                let fresh33 = sby;
                 sby = sby + 1;
                 *((*f).lf.start_of_tile_row)
-                    .offset(fresh35 as isize) = tile_row as uint8_t;
+                    .offset(fresh33 as isize) = tile_row as uint8_t;
                 while sby
                     < (*(*f).frame_hdr)
                         .tiling
                         .row_start_sb[(tile_row + 1 as libc::c_int) as usize]
                         as libc::c_int
                 {
-                    let fresh36 = sby;
+                    let fresh34 = sby;
                     sby = sby + 1;
                     *((*f).lf.start_of_tile_row)
-                        .offset(fresh36 as isize) = 0 as libc::c_int as uint8_t;
+                        .offset(fresh34 as isize) = 0 as libc::c_int as uint8_t;
                 }
                 tile_row += 1;
             }
@@ -17838,11 +17871,11 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                                             as libc::c_int) * (*f).sb_step * 4 as libc::c_int;
                                     let mut tile_col: libc::c_int = 0 as libc::c_int;
                                     while tile_col < (*(*f).frame_hdr).tiling.cols {
-                                        let fresh37 = tile_idx;
+                                        let fresh35 = tile_idx;
                                         tile_idx = tile_idx + 1;
                                         *((*f).frame_thread.tile_start_off)
                                             .offset(
-                                                fresh37 as isize,
+                                                fresh35 as isize,
                                             ) = row_off
                                             + b_diff
                                                 * (*(*f).frame_hdr).tiling.col_start_sb[tile_col as usize]
@@ -17896,10 +17929,10 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                                                     as libc::c_int;
                                             let mut tile_col_0: libc::c_int = 0 as libc::c_int;
                                             while tile_col_0 < (*(*f).frame_hdr).tiling.cols {
-                                                let ref mut fresh38 = (*((*f).ts)
+                                                let ref mut fresh36 = (*((*f).ts)
                                                     .offset((tile_row_base + tile_col_0) as isize))
                                                     .lowest_pixel;
-                                                *fresh38 = lowest_pixel_ptr;
+                                                *fresh36 = lowest_pixel_ptr;
                                                 lowest_pixel_ptr = lowest_pixel_ptr
                                                     .offset(tile_row_sb_h as isize);
                                                 tile_col_0 += 1;
@@ -18893,10 +18926,10 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(
                 tile_sz = 0 as libc::c_int as size_t;
                 let mut k: libc::c_uint = 0 as libc::c_int as libc::c_uint;
                 while k < (*(*f).frame_hdr).tiling.n_bytes {
-                    let fresh39 = data;
+                    let fresh37 = data;
                     data = data.offset(1);
                     tile_sz
-                        |= ((*fresh39 as libc::c_uint)
+                        |= ((*fresh37 as libc::c_uint)
                             << k.wrapping_mul(8 as libc::c_int as libc::c_uint))
                             as libc::c_ulong;
                     k = k.wrapping_add(1);
@@ -18910,7 +18943,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(
                     break 's_19;
                 }
             }
-            let fresh40 = tile_col;
+            let fresh38 = tile_col;
             tile_col = tile_col + 1;
             setup_tile(
                 &mut *((*f).ts).offset(j as isize),
@@ -18918,7 +18951,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(
                 data,
                 tile_sz,
                 tile_row,
-                fresh40,
+                fresh38,
                 if (*c).n_fc > 1 as libc::c_int as libc::c_uint {
                     *((*f).frame_thread.tile_start_off).offset(j as isize)
                 } else {
@@ -19189,9 +19222,9 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
     let mut out_delayed: *mut Dav1dThreadPicture = 0 as *mut Dav1dThreadPicture;
     if (*c).n_fc > 1 as libc::c_int as libc::c_uint {
         pthread_mutex_lock(&mut (*c).task_thread.lock);
-        let fresh41 = (*c).frame_thread.next;
+        let fresh39 = (*c).frame_thread.next;
         (*c).frame_thread.next = ((*c).frame_thread.next).wrapping_add(1);
-        let next: libc::c_uint = fresh41;
+        let next: libc::c_uint = fresh39;
         if (*c).frame_thread.next == (*c).n_fc {
             (*c).frame_thread.next = 0 as libc::c_int as libc::c_uint;
         }
@@ -19220,15 +19253,15 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                     0 as libc::c_int as libc::c_uint,
                 );
             }
-            let fresh44 = ::core::intrinsics::atomic_cxchg_seqcst_seqcst(
+            let fresh40 = ::core::intrinsics::atomic_cxchg_seqcst_seqcst(
                 &mut (*c).task_thread.reset_task_cur,
                 *&mut first,
-                (2147483647 as libc::c_int as libc::c_uint)
+                *(2147483647 as libc::c_int as libc::c_uint)
                     .wrapping_mul(2 as libc::c_uint)
                     .wrapping_add(1 as libc::c_uint),
             );
-            *&mut first = fresh44.0;
-            fresh44.1;
+            *&mut first = fresh40.0;
+            fresh40.1;
             if (*c).task_thread.cur != 0 && (*c).task_thread.cur < (*c).n_fc {
                 (*c).task_thread.cur = ((*c).task_thread.cur).wrapping_sub(1);
             }
@@ -19282,6 +19315,16 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             .as_mut_ptr()
             .offset((*(*f).seq_hdr).hbd as isize) as *mut Dav1dDSPContext;
         match bpc {
+            8 => {
+                dav1d_cdef_dsp_init_8bpc(&mut (*dsp).cdef);
+                dav1d_intra_pred_dsp_init_8bpc(&mut (*dsp).ipred);
+                dav1d_itx_dsp_init_8bpc(&mut (*dsp).itx, bpc);
+                dav1d_loop_filter_dsp_init_8bpc(&mut (*dsp).lf);
+                dav1d_loop_restoration_dsp_init_8bpc(&mut (*dsp).lr, bpc);
+                dav1d_mc_dsp_init_8bpc(&mut (*dsp).mc);
+                dav1d_film_grain_dsp_init_8bpc(&mut (*dsp).fg);
+                current_block = 313581471991351815;
+            }
             10 | 12 => {
                 dav1d_cdef_dsp_init_16bpc(&mut (*dsp).cdef);
                 dav1d_intra_pred_dsp_init_16bpc(&mut (*dsp).ipred);
@@ -19290,7 +19333,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 dav1d_loop_restoration_dsp_init_16bpc(&mut (*dsp).lr, bpc);
                 dav1d_mc_dsp_init_16bpc(&mut (*dsp).mc);
                 dav1d_film_grain_dsp_init_16bpc(&mut (*dsp).fg);
-                current_block = 10758786907990354186;
+                current_block = 313581471991351815;
             }
             _ => {
                 dav1d_log(
@@ -19304,11 +19347,100 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             }
         }
     } else {
-        current_block = 10758786907990354186;
+        current_block = 313581471991351815;
     }
     match current_block {
-        10758786907990354186 => {
-            if !((*(*f).seq_hdr).hbd == 0) {
+        313581471991351815 => {
+            if (*(*f).seq_hdr).hbd == 0 {
+                (*f)
+                    .bd_fn
+                    .recon_b_inter = Some(
+                    dav1d_recon_b_inter_8bpc
+                        as unsafe extern "C" fn(
+                            *mut Dav1dTaskContext,
+                            BlockSize,
+                            *const Av1Block,
+                        ) -> libc::c_int,
+                );
+                (*f)
+                    .bd_fn
+                    .recon_b_intra = Some(
+                    dav1d_recon_b_intra_8bpc
+                        as unsafe extern "C" fn(
+                            *mut Dav1dTaskContext,
+                            BlockSize,
+                            EdgeFlags,
+                            *const Av1Block,
+                        ) -> (),
+                );
+                (*f)
+                    .bd_fn
+                    .filter_sbrow = Some(
+                    dav1d_filter_sbrow_8bpc
+                        as unsafe extern "C" fn(
+                            *mut Dav1dFrameContext,
+                            libc::c_int,
+                        ) -> (),
+                );
+                (*f)
+                    .bd_fn
+                    .filter_sbrow_deblock_cols = Some(
+                    dav1d_filter_sbrow_deblock_cols_8bpc
+                        as unsafe extern "C" fn(
+                            *mut Dav1dFrameContext,
+                            libc::c_int,
+                        ) -> (),
+                );
+                (*f)
+                    .bd_fn
+                    .filter_sbrow_deblock_rows = Some(
+                    dav1d_filter_sbrow_deblock_rows_8bpc
+                        as unsafe extern "C" fn(
+                            *mut Dav1dFrameContext,
+                            libc::c_int,
+                        ) -> (),
+                );
+                (*f)
+                    .bd_fn
+                    .filter_sbrow_cdef = Some(
+                    dav1d_filter_sbrow_cdef_8bpc
+                        as unsafe extern "C" fn(*mut Dav1dTaskContext, libc::c_int) -> (),
+                );
+                (*f)
+                    .bd_fn
+                    .filter_sbrow_resize = Some(
+                    dav1d_filter_sbrow_resize_8bpc
+                        as unsafe extern "C" fn(
+                            *mut Dav1dFrameContext,
+                            libc::c_int,
+                        ) -> (),
+                );
+                (*f)
+                    .bd_fn
+                    .filter_sbrow_lr = Some(
+                    dav1d_filter_sbrow_lr_8bpc
+                        as unsafe extern "C" fn(
+                            *mut Dav1dFrameContext,
+                            libc::c_int,
+                        ) -> (),
+                );
+                (*f)
+                    .bd_fn
+                    .backup_ipred_edge = Some(
+                    dav1d_backup_ipred_edge_8bpc
+                        as unsafe extern "C" fn(*mut Dav1dTaskContext) -> (),
+                );
+                (*f)
+                    .bd_fn
+                    .read_coef_blocks = Some(
+                    dav1d_read_coef_blocks_8bpc
+                        as unsafe extern "C" fn(
+                            *mut Dav1dTaskContext,
+                            BlockSize,
+                            *const Av1Block,
+                        ) -> (),
+                );
+            } else {
                 (*f)
                     .bd_fn
                     .recon_b_inter = Some(
@@ -19411,10 +19543,10 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                         res = -(22 as libc::c_int);
                         current_block = 4753055712789169719;
                     } else {
-                        current_block = 8545136480011357681;
+                        current_block = 13660591889533726445;
                     }
                 } else {
-                    current_block = 8545136480011357681;
+                    current_block = 13660591889533726445;
                 }
                 match current_block {
                     4753055712789169719 => {}
@@ -19422,7 +19554,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                         let mut i: libc::c_int = 0 as libc::c_int;
                         loop {
                             if !(i < 7 as libc::c_int) {
-                                current_block = 777662472977924419;
+                                current_block = 14648606000749551097;
                                 break;
                             }
                             let refidx: libc::c_int = (*(*f).frame_hdr)
@@ -19520,7 +19652,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                     }
                 }
             } else {
-                current_block = 777662472977924419;
+                current_block = 14648606000749551097;
             }
             match current_block {
                 4753055712789169719 => {}
@@ -19547,10 +19679,10 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                         if res < 0 as libc::c_int {
                             current_block = 4753055712789169719;
                         } else {
-                            current_block = 16108440464692313034;
+                            current_block = 16037123508100270995;
                         }
                     } else {
-                        current_block = 16108440464692313034;
+                        current_block = 16037123508100270995;
                     }
                     match current_block {
                         4753055712789169719 => {}
@@ -19581,10 +19713,10 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                     current_block = 4753055712789169719;
                                 } else {
                                     (*f).n_tile_data_alloc = (*c).n_tile_data;
-                                    current_block = 1852451392920375136;
+                                    current_block = 1417769144978639029;
                                 }
                             } else {
-                                current_block = 1852451392920375136;
+                                current_block = 1417769144978639029;
                             }
                             match current_block {
                                 4753055712789169719 => {}
@@ -19621,11 +19753,11 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                             if res < 0 as libc::c_int {
                                                 current_block = 4753055712789169719;
                                             } else {
-                                                current_block = 9500030526577190060;
+                                                current_block = 5409161009579131794;
                                             }
                                         } else {
                                             dav1d_picture_ref(&mut (*f).cur, &mut (*f).sr_cur.p);
-                                            current_block = 9500030526577190060;
+                                            current_block = 5409161009579131794;
                                         }
                                         match current_block {
                                             4753055712789169719 => {}
@@ -19796,7 +19928,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                                                     as libc::c_ulong,
                                                             );
                                                         }
-                                                        current_block = 7999014830792590863;
+                                                        current_block = 2704538829018177290;
                                                     }
                                                 } else {
                                                     (*f).mvs_ref = 0 as *mut Dav1dRef;
@@ -19806,7 +19938,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                                         ::core::mem::size_of::<[*mut Dav1dRef; 7]>()
                                                             as libc::c_ulong,
                                                     );
-                                                    current_block = 7999014830792590863;
+                                                    current_block = 2704538829018177290;
                                                 }
                                                 match current_block {
                                                     4753055712789169719 => {}
@@ -19860,14 +19992,14 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                                                 } else {
                                                                     (*f)
                                                                         .cur_segmap = (*(*f).cur_segmap_ref).data as *mut uint8_t;
-                                                                    current_block = 9812798724717783973;
+                                                                    current_block = 10194589593280242392;
                                                                 }
                                                             } else if !((*f).prev_segmap_ref).is_null() {
                                                                 (*f).cur_segmap_ref = (*f).prev_segmap_ref;
                                                                 dav1d_ref_inc((*f).cur_segmap_ref);
                                                                 (*f)
                                                                     .cur_segmap = (*(*f).prev_segmap_ref).data as *mut uint8_t;
-                                                                current_block = 9812798724717783973;
+                                                                current_block = 10194589593280242392;
                                                             } else {
                                                                 let segmap_size: size_t = (::core::mem::size_of::<uint8_t>()
                                                                     as libc::c_ulong)
@@ -19890,14 +20022,14 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                                                         0 as libc::c_int,
                                                                         segmap_size,
                                                                     );
-                                                                    current_block = 9812798724717783973;
+                                                                    current_block = 10194589593280242392;
                                                                 }
                                                             }
                                                         } else {
                                                             (*f).cur_segmap = 0 as *mut uint8_t;
                                                             (*f).cur_segmap_ref = 0 as *mut Dav1dRef;
                                                             (*f).prev_segmap_ref = 0 as *mut Dav1dRef;
-                                                            current_block = 9812798724717783973;
+                                                            current_block = 10194589593280242392;
                                                         }
                                                         match current_block {
                                                             4753055712789169719 => {}
@@ -19985,12 +20117,12 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                                                         }
                                                                         current_block = 4753055712789169719;
                                                                     } else {
-                                                                        current_block = 13697927445285749320;
+                                                                        current_block = 8115217508953982058;
                                                                     }
                                                                 } else {
                                                                     dav1d_task_frame_init(f);
                                                                     pthread_mutex_unlock(&mut (*c).task_thread.lock);
-                                                                    current_block = 13697927445285749320;
+                                                                    current_block = 8115217508953982058;
                                                                 }
                                                                 match current_block {
                                                                     4753055712789169719 => {}
