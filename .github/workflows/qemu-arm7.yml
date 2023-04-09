@@ -1,0 +1,66 @@
+name: build and test with QEMU
+on: [push, pull_request]
+jobs:
+  test-on-qemu-linux-arm7:
+    runs-on: ubuntu-latest
+    name: test on debian-bullseye-arm7
+    steps:
+      - name: install prerequisites
+        run: |
+          # make sure we don't silently continue
+          set -euo pipefail
+          sudo apt-get update --quiet=2
+          sudo apt-get install --yes g++-arm-linux-gnueabihf libc6-dev-armhf-cross
+      - name: git checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: set up qemu
+        uses: docker/setup-qemu-action@v2
+        with:
+          platforms: arm64
+      - name: cache rust dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: arm7-unknown-linux-gnu-cargo-and-target-${{ hashFiles('**/Cargo.lock') }}
+      # - name: cache dav1d object files
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: build/
+      #     key: aarch64-unknown-linux-gnu-c-object-files-${{ hashFiles('**/meson.build', '**/*.c', '**/*.h') }}
+      - name: cargo build for armv7-unknown-linux-gnueabihf
+        run: |
+          rustup target add armv7-unknown-linux-gnueabihf
+          cargo build --release --target armv7-unknown-linux-gnueabihf \
+            --no-default-features  --features bitdepth_8,bitdepth_16
+          ln -f target/armv7-unknown-linux-gnueabihf/release/dav1d target/release/dav1d
+        env:
+          CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER: arm-linux-gnueabihf-gcc
+          CC_armv7_unknown_linux_gnueabihf: arm-linux-gnueabihf-gcc
+          CXX_armv7_unknown_linux_gnueabihf: arm-linux-gnueabihf-g++
+          RUSTFLAGS: '-C target-feature=+crt-static'
+      # - name: docker pull
+      #   run: docker pull ghcr.io/immunant/rav1d/debian-bullseye-arm7:latest
+      # - name: build and run tests in docker
+      #   run: |
+      #     docker run \
+      #       --rm \
+      #       -v ~/.cargo/git:/home/prossimo/.cargo/git \
+      #       -v ~/.cargo/registry:/home/prossimo/.cargo/registry \
+      #       -v $(pwd):/${{ github.workspace }} \
+      #       -w ${{ github.workspace }} \
+      #       --platform linux/arm64 \
+      #       ghcr.io/immunant/rav1d/debian-bullseye-arm7:latest \
+      #       .github/workflows/test.sh
+      # - name: upload build artifacts
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: meson-test-logs
+      #     path: |
+      #        ${{ github.workspace }}/build/meson-logs/testlog.txt
