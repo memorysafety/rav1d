@@ -145,8 +145,6 @@ unsafe extern "C" fn parse_obu_header(
     if *buf as libc::c_int & 0x80 as libc::c_int != 0 {
         return -(1 as libc::c_int);
     }
-    // let buf_slice = std::slice::from_raw_parts(buf, buf_size as size_t);
-    // println!("xcheck:buf:{:?}", buf_slice);
     *type_0 = ((*buf as libc::c_int & 0x78 as libc::c_int) >> 3 as libc::c_int)
         as Dav1dObuType;
     extension_flag = (*buf as libc::c_int & 0x4 as libc::c_int) >> 2 as libc::c_int;
@@ -357,8 +355,6 @@ unsafe extern "C" fn annexb_read(
         dav1d_data_unref(data);
         return -(1 as libc::c_int);
     }
-    // println!("ptr[0]: {:#04x}, ptr[1]: {:#04x}, ptr[2]: {:#04x}, len: {:?}",
-    //     *ptr.offset(0), *ptr.offset(1), *ptr.offset(2), len);
     return 0 as libc::c_int;
 }
 unsafe extern "C" fn annexb_close(c: *mut AnnexbInputContext) {

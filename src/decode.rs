@@ -10158,7 +10158,7 @@ unsafe extern "C" fn decode_b(
             src_bottom -= src_bottom - (sby + sb_size);
         }
         if src_bottom > sby && src_right > sbx {
-            return -(1 as libc::c_int); /* TODO(perl): figure out why this happens */
+            return -(1 as libc::c_int);
         }
         (*b)
             .c2rust_unnamed
@@ -15639,7 +15639,7 @@ unsafe extern "C" fn decode_sb(
     let mut bx8: libc::c_int = 0;
     let mut by8: libc::c_int = 0;
     if (*t).frame_thread.pass != 2 as libc::c_int {
-        if 1 as libc::c_int != 0
+        if 0 as libc::c_int != 0
             && bl as libc::c_uint == BL_64X64 as libc::c_int as libc::c_uint
         {
             printf(
