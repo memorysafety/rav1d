@@ -18,7 +18,7 @@ jobs:
       - name: set up qemu
         uses: docker/setup-qemu-action@v2
         with:
-          platforms: arm64
+          platforms: arm
       - name: cache rust dependencies
         uses: actions/cache@v3
         with:
@@ -45,22 +45,22 @@ jobs:
           CC_armv7_unknown_linux_gnueabihf: arm-linux-gnueabihf-gcc
           CXX_armv7_unknown_linux_gnueabihf: arm-linux-gnueabihf-g++
           RUSTFLAGS: '-C target-feature=+crt-static'
-      # - name: docker pull
-      #   run: docker pull ghcr.io/immunant/rav1d/debian-bullseye-arm7:latest
-      # - name: build and run tests in docker
-      #   run: |
-      #     docker run \
-      #       --rm \
-      #       -v ~/.cargo/git:/home/prossimo/.cargo/git \
-      #       -v ~/.cargo/registry:/home/prossimo/.cargo/registry \
-      #       -v $(pwd):/${{ github.workspace }} \
-      #       -w ${{ github.workspace }} \
-      #       --platform linux/arm64 \
-      #       ghcr.io/immunant/rav1d/debian-bullseye-arm7:latest \
-      #       .github/workflows/test.sh
-      # - name: upload build artifacts
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: meson-test-logs
-      #     path: |
-      #        ${{ github.workspace }}/build/meson-logs/testlog.txt
+      - name: docker pull
+        run: docker pull ghcr.io/immunant/rav1d/debian-bullseye-arm7:latest
+      - name: build and run tests in docker
+        run: |
+          docker run \
+            --rm \
+            -v ~/.cargo/git:/home/prossimo/.cargo/git \
+            -v ~/.cargo/registry:/home/prossimo/.cargo/registry \
+            -v $(pwd):/${{ github.workspace }} \
+            -w ${{ github.workspace }} \
+            --platform linux/arm/v7 \
+            ghcr.io/immunant/rav1d/debian-bullseye-arm7:latest \
+            .github/workflows/test.sh
+      - name: upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: meson-test-logs
+          path: |
+             ${{ github.workspace }}/build/meson-logs/testlog.txt
