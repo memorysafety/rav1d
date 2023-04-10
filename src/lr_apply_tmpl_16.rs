@@ -209,60 +209,7 @@ use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFrameHeader {
-    pub film_grain: Dav1dFrameHeader_film_grain,
-    pub frame_type: Dav1dFrameType,
-    pub width: [libc::c_int; 2],
-    pub height: libc::c_int,
-    pub frame_offset: libc::c_int,
-    pub temporal_id: libc::c_int,
-    pub spatial_id: libc::c_int,
-    pub show_existing_frame: libc::c_int,
-    pub existing_frame_idx: libc::c_int,
-    pub frame_id: libc::c_int,
-    pub frame_presentation_delay: libc::c_int,
-    pub show_frame: libc::c_int,
-    pub showable_frame: libc::c_int,
-    pub error_resilient_mode: libc::c_int,
-    pub disable_cdf_update: libc::c_int,
-    pub allow_screen_content_tools: libc::c_int,
-    pub force_integer_mv: libc::c_int,
-    pub frame_size_override: libc::c_int,
-    pub primary_ref_frame: libc::c_int,
-    pub buffer_removal_time_present: libc::c_int,
-    pub operating_points: [Dav1dFrameHeaderOperatingPoint; 32],
-    pub refresh_frame_flags: libc::c_int,
-    pub render_width: libc::c_int,
-    pub render_height: libc::c_int,
-    pub super_res: Dav1dFrameHeader_super_res,
-    pub have_render_size: libc::c_int,
-    pub allow_intrabc: libc::c_int,
-    pub frame_ref_short_signaling: libc::c_int,
-    pub refidx: [libc::c_int; 7],
-    pub hp: libc::c_int,
-    pub subpel_filter_mode: Dav1dFilterMode,
-    pub switchable_motion_mode: libc::c_int,
-    pub use_ref_frame_mvs: libc::c_int,
-    pub refresh_context: libc::c_int,
-    pub tiling: Dav1dFrameHeader_tiling,
-    pub quant: Dav1dFrameHeader_quant,
-    pub segmentation: Dav1dFrameHeader_segmentation,
-    pub delta: Dav1dFrameHeader_delta,
-    pub all_lossless: libc::c_int,
-    pub loopfilter: Dav1dFrameHeader_loopfilter,
-    pub cdef: Dav1dFrameHeader_cdef,
-    pub restoration: Dav1dFrameHeader_restoration,
-    pub txfm_mode: Dav1dTxfmMode,
-    pub switchable_comp_refs: libc::c_int,
-    pub skip_mode_allowed: libc::c_int,
-    pub skip_mode_enabled: libc::c_int,
-    pub skip_mode_refs: [libc::c_int; 2],
-    pub warp_motion: libc::c_int,
-    pub reduced_txtp_set: libc::c_int,
-    pub gmv: [Dav1dWarpedMotionParams; 7],
-}
+use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 
 
@@ -271,29 +218,17 @@ use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 
 
 
-use crate::include::dav1d::headers::Dav1dTxfmMode;
 
 
 
 
-use crate::include::dav1d::headers::Dav1dFrameHeader_restoration;
+
+
 
 use crate::include::dav1d::headers::DAV1D_RESTORATION_SGRPROJ;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_WIENER;
 
 use crate::include::dav1d::headers::DAV1D_RESTORATION_NONE;
-use crate::include::dav1d::headers::Dav1dFrameHeader_cdef;
-use crate::include::dav1d::headers::Dav1dFrameHeader_loopfilter;
-
-use crate::include::dav1d::headers::Dav1dFrameHeader_delta;
-
-
-use crate::include::dav1d::headers::Dav1dFrameHeader_segmentation;
-
-
-use crate::include::dav1d::headers::Dav1dFrameHeader_quant;
-use crate::include::dav1d::headers::Dav1dFrameHeader_tiling;
-use crate::include::dav1d::headers::Dav1dFilterMode;
 
 
 
@@ -301,14 +236,26 @@ use crate::include::dav1d::headers::Dav1dFilterMode;
 
 
 
-use crate::include::dav1d::headers::Dav1dFrameHeader_super_res;
-use crate::include::dav1d::headers::Dav1dFrameHeaderOperatingPoint;
-use crate::include::dav1d::headers::Dav1dFrameType;
 
 
 
 
-use crate::include::dav1d::headers::Dav1dFrameHeader_film_grain;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 
