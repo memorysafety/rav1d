@@ -5161,6 +5161,11 @@ unsafe extern "C" fn mc_dsp_init_x86(c: *mut Dav1dMCDSPContext) {
     (*c).resize = Some(dav1d_resize_16bpc_avx512icl);
 }
 
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[inline(always)]
+unsafe extern "C" fn mc_dsp_init_arm(c: *mut Dav1dMCDSPContext) {
+}
+
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_mc_dsp_init_16bpc(c: *mut Dav1dMCDSPContext) {

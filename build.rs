@@ -138,6 +138,7 @@ fn build_asm_files() {
         "src/arm/64/cdef.S",
         "src/arm/64/filmgrain.S",
         "src/arm/64/loopfilter.S",
+        "src/arm/64/mc.S",
     ]);
 
     #[cfg(feature = "bitdepth_16")]
@@ -146,6 +147,7 @@ fn build_asm_files() {
         "src/arm/64/filmgrain16.S",
         "src/arm/64/itx16.S",
         "src/arm/64/loopfilter16.S",
+        "src/arm/64/mc16.S",
     ]);
 
     cc::Build::new()
