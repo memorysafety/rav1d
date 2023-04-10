@@ -64,14 +64,7 @@ pub union Dav1dWarpedMotionParams_u {
     pub p: Dav1dWarpedMotionParams_u_p,
     pub abcd: [int16_t; 4],
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dWarpedMotionParams_u_p {
-    pub alpha: int16_t,
-    pub beta: int16_t,
-    pub gamma: int16_t,
-    pub delta: int16_t,
-}
+use crate::include::dav1d::headers::Dav1dWarpedMotionParams_u_p;
 
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 
