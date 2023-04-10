@@ -330,3 +330,9 @@ pub struct Dav1dFrameHeader_segmentation {
     pub lossless: [libc::c_int; 8],
     pub qidx: [libc::c_int; 8],
 }
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dFrameHeader_delta_q {
+    pub present: libc::c_int,
+    pub res_log2: libc::c_int,
+}
