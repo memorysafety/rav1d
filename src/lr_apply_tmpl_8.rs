@@ -308,14 +308,9 @@ pub struct Dav1dFrameHeader_loopfilter {
     pub sharpness: libc::c_int,
 }
 use crate::include::dav1d::headers::Dav1dLoopfilterModeRefDeltas;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFrameHeader_delta {
-    pub q: Dav1dFrameHeader_delta_q,
-    pub lf: Dav1dFrameHeader_delta_lf,
-}
-use crate::include::dav1d::headers::Dav1dFrameHeader_delta_lf;
-use crate::include::dav1d::headers::Dav1dFrameHeader_delta_q;
+use crate::include::dav1d::headers::Dav1dFrameHeader_delta;
+
+
 use crate::include::dav1d::headers::Dav1dFrameHeader_segmentation;
 
 
