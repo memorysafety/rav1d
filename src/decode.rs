@@ -698,20 +698,7 @@ pub struct Dav1dFrameHeader_segmentation {
 }
 use crate::include::dav1d::headers::Dav1dSegmentationDataSet;
 use crate::include::dav1d::headers::Dav1dSegmentationData;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFrameHeader_quant {
-    pub yac: libc::c_int,
-    pub ydc_delta: libc::c_int,
-    pub udc_delta: libc::c_int,
-    pub uac_delta: libc::c_int,
-    pub vdc_delta: libc::c_int,
-    pub vac_delta: libc::c_int,
-    pub qm: libc::c_int,
-    pub qm_y: libc::c_int,
-    pub qm_u: libc::c_int,
-    pub qm_v: libc::c_int,
-}
+use crate::include::dav1d::headers::Dav1dFrameHeader_quant;
 use crate::include::dav1d::headers::Dav1dFrameHeader_tiling;
 use crate::include::dav1d::headers::Dav1dFilterMode;
 use crate::include::dav1d::headers::DAV1D_FILTER_SWITCHABLE;

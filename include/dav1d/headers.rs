@@ -305,3 +305,17 @@ pub struct Dav1dFrameHeader_tiling {
     pub row_start_sb: [uint16_t; 65],
     pub update: libc::c_int,
 }
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dFrameHeader_quant {
+    pub yac: libc::c_int,
+    pub ydc_delta: libc::c_int,
+    pub udc_delta: libc::c_int,
+    pub uac_delta: libc::c_int,
+    pub vdc_delta: libc::c_int,
+    pub vac_delta: libc::c_int,
+    pub qm: libc::c_int,
+    pub qm_y: libc::c_int,
+    pub qm_u: libc::c_int,
+    pub qm_v: libc::c_int,
+}
