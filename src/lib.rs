@@ -271,7 +271,7 @@ use crate::include::dav1d::headers::Dav1dSequenceHeader;
 
 
 
-use crate::include::dav1d::headers::Dav1dSegmentationDataSet;
+
 use crate::include::dav1d::headers::Dav1dLoopfilterModeRefDeltas;
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
 #[derive(Copy, Clone)]
@@ -372,17 +372,7 @@ pub struct Dav1dFrameHeader_delta_q {
     pub present: libc::c_int,
     pub res_log2: libc::c_int,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFrameHeader_segmentation {
-    pub enabled: libc::c_int,
-    pub update_map: libc::c_int,
-    pub temporal: libc::c_int,
-    pub update_data: libc::c_int,
-    pub seg_data: Dav1dSegmentationDataSet,
-    pub lossless: [libc::c_int; 8],
-    pub qidx: [libc::c_int; 8],
-}
+use crate::include::dav1d::headers::Dav1dFrameHeader_segmentation;
 use crate::include::dav1d::headers::Dav1dFrameHeader_quant;
 use crate::include::dav1d::headers::Dav1dFrameHeader_tiling;
 use crate::include::dav1d::headers::Dav1dFrameHeader_super_res;

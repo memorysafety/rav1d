@@ -319,3 +319,14 @@ pub struct Dav1dFrameHeader_quant {
     pub qm_u: libc::c_int,
     pub qm_v: libc::c_int,
 }
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dFrameHeader_segmentation {
+    pub enabled: libc::c_int,
+    pub update_map: libc::c_int,
+    pub temporal: libc::c_int,
+    pub update_data: libc::c_int,
+    pub seg_data: Dav1dSegmentationDataSet,
+    pub lossless: [libc::c_int; 8],
+    pub qidx: [libc::c_int; 8],
+}
