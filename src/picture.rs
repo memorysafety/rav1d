@@ -1262,14 +1262,8 @@ pub type generate_grain_uv_fn = Option::<
 pub type generate_grain_y_fn = Option::<
     unsafe extern "C" fn(*mut [entry; 82], *const Dav1dFilmGrainData) -> (),
 >;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct CdfThreadContext {
-    pub ref_0: *mut Dav1dRef,
-    pub data: CdfThreadContext_data,
-    pub progress: *mut atomic_uint,
-}
-use crate::src::cdf::CdfThreadContext_data;
+use crate::src::cdf::CdfThreadContext;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContext_refs {
