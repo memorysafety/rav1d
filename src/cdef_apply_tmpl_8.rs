@@ -403,12 +403,12 @@ pub struct C2RustUnnamed_24 {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union mv {
-    pub c2rust_unnamed: C2RustUnnamed_25,
+    pub c2rust_unnamed: mv_xy,
     pub n: uint32_t,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_25 {
+pub struct mv_xy {
     pub y: int16_t,
     pub x: int16_t,
 }

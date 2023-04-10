@@ -764,12 +764,12 @@ pub struct C2RustUnnamed_6 {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union mv {
-    pub c2rust_unnamed: C2RustUnnamed_7,
+    pub c2rust_unnamed: mv_xy,
     pub n: uint32_t,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_7 {
+pub struct mv_xy {
     pub y: int16_t,
     pub x: int16_t,
 }
@@ -2630,7 +2630,7 @@ unsafe extern "C" fn get_gmv_2d(
         1 => {
             let mut res_0: mv = mv {
                 c2rust_unnamed: {
-                    let mut init = C2RustUnnamed_7 {
+                    let mut init = mv_xy {
                         y: ((*gmv).matrix[0 as libc::c_int as usize]
                             >> 13 as libc::c_int) as int16_t,
                         x: ((*gmv).matrix[1 as libc::c_int as usize]
@@ -2647,7 +2647,7 @@ unsafe extern "C" fn get_gmv_2d(
         0 => {
             return mv {
                 c2rust_unnamed: {
-                    let mut init = C2RustUnnamed_7 {
+                    let mut init = mv_xy {
                         y: 0 as libc::c_int as int16_t,
                         x: 0 as libc::c_int as int16_t,
                     };
@@ -2674,7 +2674,7 @@ unsafe extern "C" fn get_gmv_2d(
     let round: libc::c_int = (1 as libc::c_int) << shift >> 1 as libc::c_int;
     let mut res: mv = mv {
         c2rust_unnamed: {
-            let mut init = C2RustUnnamed_7 {
+            let mut init = mv_xy {
                 y: apply_sign(
                     abs(yc) + round >> shift << ((*hdr).hp == 0) as libc::c_int,
                     yc,
@@ -4787,7 +4787,7 @@ unsafe extern "C" fn splat_oneref_mv(
                         .c2rust_unnamed
                         .mv[0 as libc::c_int as usize],
                     mv {
-                        c2rust_unnamed: C2RustUnnamed_7 { y: 0, x: 0 },
+                        c2rust_unnamed: mv_xy { y: 0, x: 0 },
                     },
                 ],
             },
@@ -4848,7 +4848,7 @@ unsafe extern "C" fn splat_intrabc_mv(
                         .c2rust_unnamed
                         .mv[0 as libc::c_int as usize],
                     mv {
-                        c2rust_unnamed: C2RustUnnamed_7 { y: 0, x: 0 },
+                        c2rust_unnamed: mv_xy { y: 0, x: 0 },
                     },
                 ],
             },
@@ -4956,7 +4956,7 @@ unsafe extern "C" fn splat_intraref(
                         n: 0x80008000 as libc::c_uint,
                     },
                     mv {
-                        c2rust_unnamed: C2RustUnnamed_7 { y: 0, x: 0 },
+                        c2rust_unnamed: mv_xy { y: 0, x: 0 },
                     },
                 ],
             },
@@ -9799,7 +9799,7 @@ unsafe extern "C" fn decode_b(
         let mut mvstack: [refmvs_candidate; 8] = [refmvs_candidate {
             mv: refmvs_mvpair {
                 mv: [mv {
-                    c2rust_unnamed: C2RustUnnamed_7 { y: 0, x: 0 },
+                    c2rust_unnamed: mv_xy { y: 0, x: 0 },
                 }; 2],
             },
             weight: 0,
@@ -11080,7 +11080,7 @@ unsafe extern "C" fn decode_b(
             let mut mvstack_0: [refmvs_candidate; 8] = [refmvs_candidate {
                 mv: refmvs_mvpair {
                     mv: [mv {
-                        c2rust_unnamed: C2RustUnnamed_7 { y: 0, x: 0 },
+                        c2rust_unnamed: mv_xy { y: 0, x: 0 },
                     }; 2],
                 },
                 weight: 0,
@@ -11413,7 +11413,7 @@ unsafe extern "C" fn decode_b(
             let mut mvstack_1: [refmvs_candidate; 8] = [refmvs_candidate {
                 mv: refmvs_mvpair {
                     mv: [mv {
-                        c2rust_unnamed: C2RustUnnamed_7 { y: 0, x: 0 },
+                        c2rust_unnamed: mv_xy { y: 0, x: 0 },
                     }; 2],
                 },
                 weight: 0,
@@ -12104,7 +12104,7 @@ unsafe extern "C" fn decode_b(
             let mut mvstack_2: [refmvs_candidate; 8] = [refmvs_candidate {
                 mv: refmvs_mvpair {
                     mv: [mv {
-                        c2rust_unnamed: C2RustUnnamed_7 { y: 0, x: 0 },
+                        c2rust_unnamed: mv_xy { y: 0, x: 0 },
                     }; 2],
                 },
                 weight: 0,
