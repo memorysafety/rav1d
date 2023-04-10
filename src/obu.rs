@@ -312,13 +312,8 @@ pub struct Dav1dWarpedMotionParams {
     pub matrix: [int32_t; 6],
     pub u: Dav1dWarpedMotionParams_u,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union Dav1dWarpedMotionParams_u {
-    pub p: Dav1dWarpedMotionParams_u_p,
-    pub abcd: [int16_t; 4],
-}
-use crate::include::dav1d::headers::Dav1dWarpedMotionParams_u_p;
+use crate::include::dav1d::headers::Dav1dWarpedMotionParams_u;
+
 use crate::include::dav1d::headers::Dav1dWarpedMotionType;
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_AFFINE;
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_ROT_ZOOM;

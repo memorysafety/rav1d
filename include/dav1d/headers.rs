@@ -50,6 +50,12 @@ pub struct Dav1dWarpedMotionParams_u_p {
     pub gamma: int16_t,
     pub delta: int16_t,
 }
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub union Dav1dWarpedMotionParams_u {
+    pub p: Dav1dWarpedMotionParams_u_p,
+    pub abcd: [int16_t; 4],
+}
 pub type Dav1dPixelLayout = libc::c_uint;
 pub const DAV1D_PIXEL_LAYOUT_I444: Dav1dPixelLayout = 3;
 pub const DAV1D_PIXEL_LAYOUT_I422: Dav1dPixelLayout = 2;
