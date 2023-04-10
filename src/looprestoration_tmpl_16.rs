@@ -322,11 +322,11 @@ pub type const_left_pixel_row = *const [pixel; 4];
 #[repr(C)]
 pub union LooprestorationParams {
     pub filter: [[int16_t; 8]; 2],
-    pub sgr: C2RustUnnamed,
+    pub sgr: LooprestorationParams_sgr,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed {
+pub struct LooprestorationParams_sgr {
     pub s0: uint32_t,
     pub s1: uint32_t,
     pub w0: int16_t,

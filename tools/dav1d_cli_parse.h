@@ -39,7 +39,7 @@ typedef struct {
     const char *verify;
     unsigned limit, skip;
     int quiet;
-    enum {
+    enum CLISettings_realtime {
         REALTIME_DISABLE = 0,
         REALTIME_INPUT,
         REALTIME_CUSTOM,

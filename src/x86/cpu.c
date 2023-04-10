@@ -44,7 +44,7 @@ uint64_t dav1d_cpu_xgetbv(unsigned xcr);
 #define X(reg, mask) (((reg) & (mask)) == (mask))
 
 COLD unsigned dav1d_get_cpu_flags_x86(void) {
-    union {
+    union cpu {
         CpuidRegisters r;
         struct {
             uint32_t max_leaf;

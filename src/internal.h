@@ -122,7 +122,7 @@ struct Dav1dContext {
     // dummy is a pointer to prevent compiler errors about atomic_load()
     // not taking const arguments
     atomic_int flush_mem, *flush;
-    struct {
+    struct Dav1dContext_frame_thread {
         Dav1dThreadPicture *out_delayed;
         unsigned next;
     } frame_thread;
@@ -139,7 +139,7 @@ struct Dav1dContext {
         // See src/thread_task.c:reset_task_cur().
         atomic_uint reset_task_cur;
         atomic_int cond_signaled;
-        struct {
+        struct Dav1dContext_task_thread_delayed_fg {
             int exec;
             pthread_cond_t cond;
             const Dav1dPicture *in;
@@ -163,7 +163,7 @@ struct Dav1dContext {
     // reference/entropy state
     Dav1dMemPool *segmap_pool;
     Dav1dMemPool *refmvs_pool;
-    struct {
+    struct Dav1dContext_refs {
         Dav1dThreadPicture p;
         Dav1dRef *segmap;
         Dav1dRef *refmvs;
@@ -176,7 +176,7 @@ struct Dav1dContext {
     Dav1dRefmvsDSPContext refmvs_dsp;
 
     // tree to keep track of which edges are available
-    struct {
+    struct Dav1dContext_intra_edge {
         EdgeNode *root[2 /* BL_128X128 vs. BL_64X64 */];
         EdgeBranch branch_sb128[1 + 4 + 16 + 64];
         EdgeBranch branch_sb64[1 + 4 + 16];
@@ -249,7 +249,7 @@ struct Dav1dFrameContext {
     Dav1dTileState *ts;
     int n_ts;
     const Dav1dDSPContext *dsp;
-    struct {
+    struct Dav1dFrameContext_bd_fn {
         recon_b_intra_fn recon_b_intra;
         recon_b_inter_fn recon_b_inter;
         filter_sbrow_fn filter_sbrow;
@@ -274,7 +274,7 @@ struct Dav1dFrameContext {
     uint8_t jnt_weights[7][7];
     int bitdepth_max;
 
-    struct {
+    struct Dav1dFrameContext_frame_thread {
         int next_tile_row[2 /* 0: reconstruction, 1: entropy */];
         atomic_int entropy_progress;
         atomic_int deblock_progress; // in sby units
@@ -297,7 +297,7 @@ struct Dav1dFrameContext {
     } frame_thread;
 
     // loopfilter
-    struct {
+    struct Dav1dFrameContext_lf {
         uint8_t (*level)[4];
         Av1Filter *mask;
         Av1Restoration *lr_mask;
@@ -324,7 +324,7 @@ struct Dav1dFrameContext {
         int restore_planes; // enum LrRestorePlanes
     } lf;
 
-    struct {
+    struct Dav1dFrameContext_task_thread {
         pthread_mutex_t lock;
         pthread_cond_t cond;
         struct TaskThreadData *ttd;
@@ -342,7 +342,7 @@ struct Dav1dFrameContext {
         // "prev_t" variable. This is needed to not loose the tasks in
         // [head;cur-1] when picking one for execution.
         struct Dav1dTask *task_cur_prev;
-        struct { // async task insertion
+        struct Dav1dFrameContext_task_thread_pending_tasks { // async task insertion
             atomic_int merge;
             pthread_mutex_t lock;
             Dav1dTask *head, *tail;
@@ -360,14 +360,14 @@ struct Dav1dTileState {
     CdfContext cdf;
     MsacContext msac;
 
-    struct {
+    struct Dav1dTileState_tiling {
         int col_start, col_end, row_start, row_end; // in 4px units
         int col, row; // in tile units
     } tiling;
 
     // in sby units, TILE_ERROR after a decoding error
     atomic_int progress[2 /* 0: reconstruction, 1: entropy */];
-    struct {
+    struct Dav1dTileState_frame_thread {
         uint8_t *pal_idx;
         coef *cf;
     } frame_thread[2 /* 0: reconstruction, 1: entropy */];
@@ -403,7 +403,7 @@ struct Dav1dTaskContext {
     uint16_t al_pal[2 /* a/l */][32 /* bx/y4 */][3 /* plane */][8 /* palette_idx */];
     uint8_t pal_sz_uv[2 /* a/l */][32 /* bx4/by4 */];
     uint8_t txtp_map[32 * 32]; // inter-only
-    ALIGN(union, 64) {
+    ALIGN(union, 64) Dav1dTaskContext_scratch {
         struct {
             union {
                 uint8_t  lap_8bpc [128 * 32];
@@ -452,10 +452,10 @@ struct Dav1dTaskContext {
     // keeps it accessible
     enum Filter2d tl_4x4_filter;
 
-    struct {
+    struct Dav1dTaskContext_frame_thread {
         int pass;
     } frame_thread;
-    struct {
+    struct Dav1dTaskContext_task_thread {
         struct thread_data td;
         struct TaskThreadData *ttd;
         struct FrameTileThreadData *fttd;

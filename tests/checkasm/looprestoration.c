@@ -128,7 +128,7 @@ static void check_sgr(Dav1dLoopRestorationDSPContext *const c, const int bpc) {
                  const LooprestorationParams *params,
                  enum LrEdgeFlags edges HIGHBD_DECL_SUFFIX);
 
-    static const struct { char name[4]; uint8_t idx; } sgr_data[3] = {
+    static const struct sgr_data { char name[4]; uint8_t idx; } sgr_data[3] = {
         { "5x5", 14 },
         { "3x3", 10 },
         { "mix",  0 },
