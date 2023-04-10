@@ -872,17 +872,7 @@ use crate::include::dav1d::dav1d::Dav1dInloopFilterType;
 
 
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dPicAllocator {
-    pub cookie: *mut libc::c_void,
-    pub alloc_picture_callback: Option::<
-        unsafe extern "C" fn(*mut Dav1dPicture, *mut libc::c_void) -> libc::c_int,
-    >,
-    pub release_picture_callback: Option::<
-        unsafe extern "C" fn(*mut Dav1dPicture, *mut libc::c_void) -> (),
-    >,
-}
+use crate::include::dav1d::picture::Dav1dPicAllocator;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContext_intra_edge {
