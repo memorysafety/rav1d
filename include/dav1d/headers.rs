@@ -360,3 +360,11 @@ pub struct Dav1dFrameHeader_loopfilter {
     pub mode_ref_deltas: Dav1dLoopfilterModeRefDeltas,
     pub sharpness: libc::c_int,
 }
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dFrameHeader_cdef {
+    pub damping: libc::c_int,
+    pub n_bits: libc::c_int,
+    pub y_strength: [libc::c_int; 8],
+    pub uv_strength: [libc::c_int; 8],
+}

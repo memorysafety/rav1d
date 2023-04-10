@@ -384,14 +384,7 @@ use crate::include::dav1d::headers::Dav1dRestorationType;
 
 
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFrameHeader_cdef {
-    pub damping: libc::c_int,
-    pub n_bits: libc::c_int,
-    pub y_strength: [libc::c_int; 8],
-    pub uv_strength: [libc::c_int; 8],
-}
+use crate::include::dav1d::headers::Dav1dFrameHeader_cdef;
 use crate::include::dav1d::headers::Dav1dFrameHeader_loopfilter;
 
 use crate::include::dav1d::headers::Dav1dFrameHeader_delta;
