@@ -188,7 +188,7 @@ use crate::include::dav1d::headers::Dav1dFilterMode;
 
 
 
-use crate::include::dav1d::headers::Dav1dRestorationType;
+
 
 
 
@@ -328,12 +328,7 @@ pub struct Dav1dFrameHeader {
     pub reduced_txtp_set: libc::c_int,
     pub gmv: [Dav1dWarpedMotionParams; 7],
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFrameHeader_restoration {
-    pub type_0: [Dav1dRestorationType; 3],
-    pub unit_size: [libc::c_int; 2],
-}
+use crate::include::dav1d::headers::Dav1dFrameHeader_restoration;
 use crate::include::dav1d::headers::Dav1dFrameHeader_cdef;
 use crate::include::dav1d::headers::Dav1dFrameHeader_loopfilter;
 use crate::include::dav1d::headers::Dav1dFrameHeader_delta;

@@ -318,12 +318,7 @@ use crate::include::dav1d::headers::Dav1dTxfmMode;
 use crate::include::dav1d::headers::DAV1D_TX_SWITCHABLE;
 use crate::include::dav1d::headers::DAV1D_TX_LARGEST;
 use crate::include::dav1d::headers::DAV1D_TX_4X4_ONLY;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFrameHeader_restoration {
-    pub type_0: [Dav1dRestorationType; 3],
-    pub unit_size: [libc::c_int; 2],
-}
+use crate::include::dav1d::headers::Dav1dFrameHeader_restoration;
 use crate::include::dav1d::headers::Dav1dRestorationType;
 
 

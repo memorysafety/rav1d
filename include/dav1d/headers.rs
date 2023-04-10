@@ -368,3 +368,9 @@ pub struct Dav1dFrameHeader_cdef {
     pub y_strength: [libc::c_int; 8],
     pub uv_strength: [libc::c_int; 8],
 }
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dFrameHeader_restoration {
+    pub type_0: [Dav1dRestorationType; 3],
+    pub unit_size: [libc::c_int; 2],
+}
