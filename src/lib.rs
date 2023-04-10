@@ -874,12 +874,7 @@ pub struct CdfThreadContext {
     pub progress: *mut atomic_uint,
 }
 use crate::include::stdatomic::atomic_uint;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union CdfThreadContext_data {
-    pub cdf: *mut CdfContext,
-    pub qcat: libc::c_uint,
-}
+use crate::src::cdf::CdfThreadContext_data;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContext_refs {
