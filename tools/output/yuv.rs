@@ -212,13 +212,7 @@ pub struct Dav1dFrameHeader_delta {
     pub q: Dav1dFrameHeader_delta_q,
     pub lf: Dav1dFrameHeader_delta_lf,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFrameHeader_delta_lf {
-    pub present: libc::c_int,
-    pub res_log2: libc::c_int,
-    pub multi: libc::c_int,
-}
+use crate::include::dav1d::headers::Dav1dFrameHeader_delta_lf;
 use crate::include::dav1d::headers::Dav1dFrameHeader_delta_q;
 use crate::include::dav1d::headers::Dav1dFrameHeader_segmentation;
 use crate::include::dav1d::headers::Dav1dFrameHeader_quant;
