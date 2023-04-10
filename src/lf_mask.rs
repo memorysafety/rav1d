@@ -84,7 +84,7 @@ use crate::include::dav1d::headers::Dav1dFrameType;
 use crate::include::dav1d::headers::Dav1dSegmentationData;
 use crate::include::dav1d::headers::Dav1dSegmentationDataSet;
 use crate::include::dav1d::headers::Dav1dLoopfilterModeRefDeltas;
-use crate::include::dav1d::headers::Dav1dFilmGrainData;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader {
@@ -232,13 +232,7 @@ pub struct Dav1dFrameHeader_super_res {
     pub enabled: libc::c_int,
 }
 use crate::include::dav1d::headers::Dav1dFrameHeaderOperatingPoint;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFrameHeader_film_grain {
-    pub data: Dav1dFilmGrainData,
-    pub present: libc::c_int,
-    pub update: libc::c_int,
-}
+use crate::include::dav1d::headers::Dav1dFrameHeader_film_grain;
 
 
 

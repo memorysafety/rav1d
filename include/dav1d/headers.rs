@@ -272,6 +272,13 @@ pub struct Dav1dFilmGrainData {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
+pub struct Dav1dFrameHeader_film_grain {
+    pub data: Dav1dFilmGrainData,
+    pub present: libc::c_int,
+    pub update: libc::c_int,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
 pub struct Dav1dFrameHeaderOperatingPoint {
     pub buffer_removal_time: libc::c_int,
 }
