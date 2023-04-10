@@ -338,18 +338,8 @@ pub struct Dav1dFrameHeader_cdef {
     pub y_strength: [libc::c_int; 8],
     pub uv_strength: [libc::c_int; 8],
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFrameHeader_loopfilter {
-    pub level_y: [libc::c_int; 2],
-    pub level_u: libc::c_int,
-    pub level_v: libc::c_int,
-    pub mode_ref_delta_enabled: libc::c_int,
-    pub mode_ref_delta_update: libc::c_int,
-    pub mode_ref_deltas: Dav1dLoopfilterModeRefDeltas,
-    pub sharpness: libc::c_int,
-}
-use crate::include::dav1d::headers::Dav1dLoopfilterModeRefDeltas;
+use crate::include::dav1d::headers::Dav1dFrameHeader_loopfilter;
+
 use crate::include::dav1d::headers::Dav1dFrameHeader_delta;
 
 
