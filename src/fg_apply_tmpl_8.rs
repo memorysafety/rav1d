@@ -262,12 +262,7 @@ pub struct Dav1dFrameHeader_tiling {
     pub row_start_sb: [uint16_t; 65],
     pub update: libc::c_int,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFrameHeader_super_res {
-    pub width_scale_denominator: libc::c_int,
-    pub enabled: libc::c_int,
-}
+use crate::include::dav1d::headers::Dav1dFrameHeader_super_res;
 use crate::include::dav1d::headers::Dav1dFrameHeaderOperatingPoint;
 use crate::include::dav1d::headers::Dav1dFrameHeader_film_grain;
 use crate::include::dav1d::picture::Dav1dPictureParameters;

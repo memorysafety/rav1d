@@ -282,3 +282,9 @@ pub struct Dav1dFrameHeader_film_grain {
 pub struct Dav1dFrameHeaderOperatingPoint {
     pub buffer_removal_time: libc::c_int,
 }
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dFrameHeader_super_res {
+    pub width_scale_denominator: libc::c_int,
+    pub enabled: libc::c_int,
+}

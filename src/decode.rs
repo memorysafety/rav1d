@@ -737,12 +737,7 @@ use crate::include::dav1d::headers::DAV1D_N_SWITCHABLE_FILTERS;
 
 
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFrameHeader_super_res {
-    pub width_scale_denominator: libc::c_int,
-    pub enabled: libc::c_int,
-}
+use crate::include::dav1d::headers::Dav1dFrameHeader_super_res;
 use crate::include::dav1d::headers::Dav1dFrameHeaderOperatingPoint;
 use crate::include::dav1d::headers::Dav1dFrameType;
 
