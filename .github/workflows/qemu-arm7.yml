@@ -57,7 +57,7 @@ jobs:
             -w ${{ github.workspace }} \
             --platform linux/arm/v7 \
             ghcr.io/immunant/rav1d/debian-bullseye-arm7:latest \
-            .github/workflows/test.sh
+            .github/workflows/test.sh -t 2
       - name: upload build artifacts
         uses: actions/upload-artifact@v3
         with:
