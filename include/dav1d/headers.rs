@@ -288,3 +288,20 @@ pub struct Dav1dFrameHeader_super_res {
     pub width_scale_denominator: libc::c_int,
     pub enabled: libc::c_int,
 }
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dFrameHeader_tiling {
+    pub uniform: libc::c_int,
+    pub n_bytes: libc::c_uint,
+    pub min_log2_cols: libc::c_int,
+    pub max_log2_cols: libc::c_int,
+    pub log2_cols: libc::c_int,
+    pub cols: libc::c_int,
+    pub min_log2_rows: libc::c_int,
+    pub max_log2_rows: libc::c_int,
+    pub log2_rows: libc::c_int,
+    pub rows: libc::c_int,
+    pub col_start_sb: [uint16_t; 65],
+    pub row_start_sb: [uint16_t; 65],
+    pub update: libc::c_int,
+}
