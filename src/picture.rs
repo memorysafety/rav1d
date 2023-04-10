@@ -1,17 +1,17 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use ::libc;
+use ::libc::malloc;
 use crate::src::cdf::CdfContext;
 use crate::src::msac::MsacContext;
 use crate::{stderr,errno_location};
 extern "C" {
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
-    fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
     fn free(_: *mut libc::c_void);
     fn memset(
         _: *mut libc::c_void,
         _: libc::c_int,
-        _: libc::c_ulong,
+        _: size_t,
     ) -> *mut libc::c_void;
     fn strerror(_: libc::c_int) -> *mut libc::c_char;
     fn dav1d_mem_pool_push(pool: *mut Dav1dMemPool, buf: *mut Dav1dMemPoolBuffer);
@@ -1514,25 +1514,25 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     let mut uv_stride: ptrdiff_t = if has_chroma != 0 {
         y_stride >> ss_hor
     } else {
-        0 as libc::c_int as libc::c_long
+        0
     };
-    if y_stride & 1023 as libc::c_int as libc::c_long == 0 {
-        y_stride += 64 as libc::c_int as libc::c_long;
+    if y_stride & 1023 == 0 {
+        y_stride += 64;
     }
-    if uv_stride & 1023 as libc::c_int as libc::c_long == 0 && has_chroma != 0 {
-        uv_stride += 64 as libc::c_int as libc::c_long;
+    if uv_stride & 1023 == 0 && has_chroma != 0 {
+        uv_stride += 64;
     }
     (*p).stride[0 as libc::c_int as usize] = y_stride;
     (*p).stride[1 as libc::c_int as usize] = uv_stride;
-    let y_sz: size_t = (y_stride * aligned_h as libc::c_long) as size_t;
-    let uv_sz: size_t = (uv_stride * (aligned_h >> ss_ver) as libc::c_long) as size_t;
+    let y_sz: size_t = (y_stride * aligned_h as isize) as size_t;
+    let uv_sz: size_t = (uv_stride * (aligned_h >> ss_ver) as isize) as size_t;
     let pic_size: size_t = y_sz
-        .wrapping_add((2 as libc::c_int as libc::c_ulong).wrapping_mul(uv_sz));
+        .wrapping_add(2usize.wrapping_mul(uv_sz));
     let buf: *mut Dav1dMemPoolBuffer = dav1d_mem_pool_pop(
         cookie as *mut Dav1dMemPool,
         pic_size
-            .wrapping_add(64 as libc::c_int as libc::c_ulong)
-            .wrapping_sub(::core::mem::size_of::<Dav1dMemPoolBuffer>() as libc::c_ulong),
+            .wrapping_add(64)
+            .wrapping_sub(::core::mem::size_of::<Dav1dMemPoolBuffer>()),
     );
     if buf.is_null() {
         return -(12 as libc::c_int);
@@ -1606,7 +1606,7 @@ unsafe extern "C" fn picture_alloc_with_edges(
         unreachable!();
     }
     let mut pic_ctx: *mut pic_ctx_context = malloc(
-        extra.wrapping_add(::core::mem::size_of::<pic_ctx_context>() as libc::c_ulong),
+        extra.wrapping_add(::core::mem::size_of::<pic_ctx_context>()),
     ) as *mut pic_ctx_context;
     if pic_ctx.is_null() {
         return -(12 as libc::c_int);
@@ -1703,10 +1703,10 @@ pub unsafe extern "C" fn dav1d_thread_picture_alloc(
         &mut (*((*f).tile).offset(0 as libc::c_int as isize)).data.m,
         &mut (*c).allocator,
         if have_frame_mt != 0 {
-            (::core::mem::size_of::<atomic_int>() as libc::c_ulong)
-                .wrapping_mul(2 as libc::c_int as libc::c_ulong)
+            (::core::mem::size_of::<atomic_int>())
+                .wrapping_mul(2)
         } else {
-            0 as libc::c_int as libc::c_ulong
+            0
         },
         &mut (*p).progress as *mut *mut atomic_uint as *mut *mut libc::c_void,
     );
@@ -1922,7 +1922,7 @@ pub unsafe extern "C" fn dav1d_picture_move_ref(
     memset(
         src as *mut libc::c_void,
         0 as libc::c_int,
-        ::core::mem::size_of::<Dav1dPicture>() as libc::c_ulong,
+        ::core::mem::size_of::<Dav1dPicture>(),
     );
 }
 #[no_mangle]
@@ -1949,7 +1949,7 @@ pub unsafe extern "C" fn dav1d_thread_picture_move_ref(
     memset(
         src as *mut libc::c_void,
         0 as libc::c_int,
-        ::core::mem::size_of::<Dav1dThreadPicture>() as libc::c_ulong,
+        ::core::mem::size_of::<Dav1dThreadPicture>(),
     );
 }
 #[no_mangle]
@@ -1994,7 +1994,7 @@ pub unsafe extern "C" fn dav1d_picture_unref_internal(p: *mut Dav1dPicture) {
     memset(
         p as *mut libc::c_void,
         0 as libc::c_int,
-        ::core::mem::size_of::<Dav1dPicture>() as libc::c_ulong,
+        ::core::mem::size_of::<Dav1dPicture>(),
     );
     dav1d_data_props_set_defaults(&mut (*p).m);
 }

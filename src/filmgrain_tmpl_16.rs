@@ -431,7 +431,7 @@ unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
 }
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
-    if x & 1 as libc::c_int as libc::c_long != 0 {
+    if x & 1 != 0 {
         unreachable!();
     }
     return x >> 1 as libc::c_int;
@@ -748,7 +748,7 @@ unsafe extern "C" fn fgy_32x32xn_c(
     }
     let mut offsets: [[libc::c_int; 2]; 2] = [[0; 2]; 2];
     let mut bx: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    while (bx as libc::c_ulong) < pw {
+    while (bx as size_t) < pw {
         let bw: libc::c_int = imin(
             32 as libc::c_int,
             (pw as libc::c_int as libc::c_uint).wrapping_sub(bx) as libc::c_int,
@@ -801,11 +801,11 @@ unsafe extern "C" fn fgy_32x32xn_c(
                     y,
                 ) as libc::c_int;
                 let src: *const pixel = src_row
-                    .offset((y as libc::c_long * PXSTRIDE(stride)) as isize)
+                    .offset((y as isize * PXSTRIDE(stride)) as isize)
                     .offset(x as isize)
                     .offset(bx as isize);
                 let dst: *mut pixel = dst_row
-                    .offset((y as libc::c_long * PXSTRIDE(stride)) as isize)
+                    .offset((y as isize * PXSTRIDE(stride)) as isize)
                     .offset(x as isize)
                     .offset(bx as isize);
                 let noise: libc::c_int = round2(
@@ -844,11 +844,11 @@ unsafe extern "C" fn fgy_32x32xn_c(
                 );
                 grain_0 = iclip(grain_0, grain_min, grain_max);
                 let src_0: *const pixel = src_row
-                    .offset((y as libc::c_long * PXSTRIDE(stride)) as isize)
+                    .offset((y as isize * PXSTRIDE(stride)) as isize)
                     .offset(x_0 as isize)
                     .offset(bx as isize);
                 let dst_0: *mut pixel = dst_row
-                    .offset((y as libc::c_long * PXSTRIDE(stride)) as isize)
+                    .offset((y as isize * PXSTRIDE(stride)) as isize)
                     .offset(x_0 as isize)
                     .offset(bx as isize);
                 let noise_0: libc::c_int = round2(
@@ -892,11 +892,11 @@ unsafe extern "C" fn fgy_32x32xn_c(
                 );
                 grain_1 = iclip(grain_1, grain_min, grain_max);
                 let src_1: *const pixel = src_row
-                    .offset((y_0 as libc::c_long * PXSTRIDE(stride)) as isize)
+                    .offset((y_0 as isize * PXSTRIDE(stride)) as isize)
                     .offset(x_1 as isize)
                     .offset(bx as isize);
                 let dst_1: *mut pixel = dst_row
-                    .offset((y_0 as libc::c_long * PXSTRIDE(stride)) as isize)
+                    .offset((y_0 as isize * PXSTRIDE(stride)) as isize)
                     .offset(x_1 as isize)
                     .offset(bx as isize);
                 let noise_1: libc::c_int = round2(
@@ -968,11 +968,11 @@ unsafe extern "C" fn fgy_32x32xn_c(
                 );
                 grain_2 = iclip(grain_2, grain_min, grain_max);
                 let src_2: *const pixel = src_row
-                    .offset((y_0 as libc::c_long * PXSTRIDE(stride)) as isize)
+                    .offset((y_0 as isize * PXSTRIDE(stride)) as isize)
                     .offset(x_2 as isize)
                     .offset(bx as isize);
                 let dst_2: *mut pixel = dst_row
-                    .offset((y_0 as libc::c_long * PXSTRIDE(stride)) as isize)
+                    .offset((y_0 as isize * PXSTRIDE(stride)) as isize)
                     .offset(x_2 as isize)
                     .offset(bx as isize);
                 let noise_2: libc::c_int = round2(
@@ -1046,10 +1046,10 @@ unsafe extern "C" fn fguv_32x32xn_c(
     }
     let mut offsets: [[libc::c_int; 2]; 2] = [[0; 2]; 2];
     let mut bx: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    while (bx as libc::c_ulong) < pw {
+    while (bx as size_t) < pw {
         let bw: libc::c_int = imin(
             32 as libc::c_int >> sx,
-            pw.wrapping_sub(bx as libc::c_ulong) as libc::c_int,
+            pw.wrapping_sub(bx as size_t) as libc::c_int,
         );
         if (*data).overlap_flag != 0 && bx != 0 {
             let mut i_0: libc::c_int = 0 as libc::c_int;
@@ -1105,7 +1105,7 @@ unsafe extern "C" fn fguv_32x32xn_c(
                     as libc::c_int;
                 let ly: libc::c_int = y << sy;
                 let luma: *const pixel = luma_row
-                    .offset((ly as libc::c_long * PXSTRIDE(luma_stride)) as isize)
+                    .offset((ly as isize * PXSTRIDE(luma_stride)) as isize)
                     .offset(lx as isize);
                 let mut avg: pixel = *luma.offset(0 as libc::c_int as isize);
                 if sx != 0 {
@@ -1114,10 +1114,10 @@ unsafe extern "C" fn fguv_32x32xn_c(
                         + 1 as libc::c_int >> 1 as libc::c_int) as pixel;
                 }
                 let src: *const pixel = src_row
-                    .offset((y as libc::c_long * PXSTRIDE(stride)) as isize)
+                    .offset((y as isize * PXSTRIDE(stride)) as isize)
                     .offset(bx.wrapping_add(x as libc::c_uint) as isize);
                 let dst: *mut pixel = dst_row
-                    .offset((y as libc::c_long * PXSTRIDE(stride)) as isize)
+                    .offset((y as isize * PXSTRIDE(stride)) as isize)
                     .offset(bx.wrapping_add(x as libc::c_uint) as isize);
                 let mut val: libc::c_int = avg as libc::c_int;
                 if (*data).chroma_scaling_from_luma == 0 {
@@ -1172,7 +1172,7 @@ unsafe extern "C" fn fguv_32x32xn_c(
                     as libc::c_int;
                 let ly_0: libc::c_int = y << sy;
                 let luma_0: *const pixel = luma_row
-                    .offset((ly_0 as libc::c_long * PXSTRIDE(luma_stride)) as isize)
+                    .offset((ly_0 as isize * PXSTRIDE(luma_stride)) as isize)
                     .offset(lx_0 as isize);
                 let mut avg_0: pixel = *luma_0.offset(0 as libc::c_int as isize);
                 if sx != 0 {
@@ -1181,10 +1181,10 @@ unsafe extern "C" fn fguv_32x32xn_c(
                         + 1 as libc::c_int >> 1 as libc::c_int) as pixel;
                 }
                 let src_0: *const pixel = src_row
-                    .offset((y as libc::c_long * PXSTRIDE(stride)) as isize)
+                    .offset((y as isize * PXSTRIDE(stride)) as isize)
                     .offset(bx.wrapping_add(x_0 as libc::c_uint) as isize);
                 let dst_0: *mut pixel = dst_row
-                    .offset((y as libc::c_long * PXSTRIDE(stride)) as isize)
+                    .offset((y as isize * PXSTRIDE(stride)) as isize)
                     .offset(bx.wrapping_add(x_0 as libc::c_uint) as isize);
                 let mut val_0: libc::c_int = avg_0 as libc::c_int;
                 if (*data).chroma_scaling_from_luma == 0 {
@@ -1244,7 +1244,7 @@ unsafe extern "C" fn fguv_32x32xn_c(
                     as libc::c_int;
                 let ly_1: libc::c_int = y_0 << sy;
                 let luma_1: *const pixel = luma_row
-                    .offset((ly_1 as libc::c_long * PXSTRIDE(luma_stride)) as isize)
+                    .offset((ly_1 as isize * PXSTRIDE(luma_stride)) as isize)
                     .offset(lx_1 as isize);
                 let mut avg_1: pixel = *luma_1.offset(0 as libc::c_int as isize);
                 if sx != 0 {
@@ -1253,10 +1253,10 @@ unsafe extern "C" fn fguv_32x32xn_c(
                         + 1 as libc::c_int >> 1 as libc::c_int) as pixel;
                 }
                 let src_1: *const pixel = src_row
-                    .offset((y_0 as libc::c_long * PXSTRIDE(stride)) as isize)
+                    .offset((y_0 as isize * PXSTRIDE(stride)) as isize)
                     .offset(bx.wrapping_add(x_1 as libc::c_uint) as isize);
                 let dst_1: *mut pixel = dst_row
-                    .offset((y_0 as libc::c_long * PXSTRIDE(stride)) as isize)
+                    .offset((y_0 as isize * PXSTRIDE(stride)) as isize)
                     .offset(bx.wrapping_add(x_1 as libc::c_uint) as isize);
                 let mut val_1: libc::c_int = avg_1 as libc::c_int;
                 if (*data).chroma_scaling_from_luma == 0 {
@@ -1345,7 +1345,7 @@ unsafe extern "C" fn fguv_32x32xn_c(
                     as libc::c_int;
                 let ly_2: libc::c_int = y_0 << sy;
                 let luma_2: *const pixel = luma_row
-                    .offset((ly_2 as libc::c_long * PXSTRIDE(luma_stride)) as isize)
+                    .offset((ly_2 as isize * PXSTRIDE(luma_stride)) as isize)
                     .offset(lx_2 as isize);
                 let mut avg_2: pixel = *luma_2.offset(0 as libc::c_int as isize);
                 if sx != 0 {
@@ -1354,10 +1354,10 @@ unsafe extern "C" fn fguv_32x32xn_c(
                         + 1 as libc::c_int >> 1 as libc::c_int) as pixel;
                 }
                 let src_2: *const pixel = src_row
-                    .offset((y_0 as libc::c_long * PXSTRIDE(stride)) as isize)
+                    .offset((y_0 as isize * PXSTRIDE(stride)) as isize)
                     .offset(bx.wrapping_add(x_2 as libc::c_uint) as isize);
                 let dst_2: *mut pixel = dst_row
-                    .offset((y_0 as libc::c_long * PXSTRIDE(stride)) as isize)
+                    .offset((y_0 as isize * PXSTRIDE(stride)) as isize)
                     .offset(bx.wrapping_add(x_2 as libc::c_uint) as isize);
                 let mut val_2: libc::c_int = avg_2 as libc::c_int;
                 if (*data).chroma_scaling_from_luma == 0 {
@@ -1604,7 +1604,7 @@ unsafe extern "C" fn fgy_32x32xn_neon(
     }
     let mut offsets: [[libc::c_int; 2]; 2] = [[0; 2]; 2];
     let mut bx: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    while (bx as libc::c_ulong) < pw {
+    while (bx as size_t) < pw {
         if (*data).overlap_flag != 0 && bx != 0 {
             let mut i_0: libc::c_int = 0 as libc::c_int;
             while i_0 < rows {
@@ -1684,7 +1684,7 @@ unsafe extern "C" fn fguv_32x32xn_420_neon(
     }
     let mut offsets: [[libc::c_int; 2]; 2] = [[0; 2]; 2];
     let mut bx: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    while (bx as libc::c_ulong) < pw {
+    while (bx as size_t) < pw {
         if (*data).overlap_flag != 0 && bx != 0 {
             let mut i_0: libc::c_int = 0 as libc::c_int;
             while i_0 < rows {
@@ -1770,7 +1770,7 @@ unsafe extern "C" fn fguv_32x32xn_422_neon(
     }
     let mut offsets: [[libc::c_int; 2]; 2] = [[0; 2]; 2];
     let mut bx: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    while (bx as libc::c_ulong) < pw {
+    while (bx as size_t) < pw {
         if (*data).overlap_flag != 0 && bx != 0 {
             let mut i_0: libc::c_int = 0 as libc::c_int;
             while i_0 < rows {
@@ -1856,7 +1856,7 @@ unsafe extern "C" fn fguv_32x32xn_444_neon(
     }
     let mut offsets: [[libc::c_int; 2]; 2] = [[0; 2]; 2];
     let mut bx: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    while (bx as libc::c_ulong) < pw {
+    while (bx as size_t) < pw {
         if (*data).overlap_flag != 0 && bx != 0 {
             let mut i_0: libc::c_int = 0 as libc::c_int;
             while i_0 < rows {

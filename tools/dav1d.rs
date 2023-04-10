@@ -9,7 +9,7 @@ extern "C" {
     pub type Dav1dContext;
     pub type DemuxerContext;
     pub type MuxerContext;
-    fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
+    fn malloc(_: size_t) -> *mut libc::c_void;
     fn free(_: *mut libc::c_void);
     fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
     fn fflush(__stream: *mut libc::FILE) -> libc::c_int;
@@ -26,7 +26,7 @@ extern "C" {
     fn memset(
         _: *mut libc::c_void,
         _: libc::c_int,
-        _: libc::c_ulong,
+        _: size_t,
     ) -> *mut libc::c_void;
     fn strcmp(_: *const libc::c_char, _: *const libc::c_char) -> libc::c_int;
     fn strerror(_: libc::c_int) -> *mut libc::c_char;
@@ -461,8 +461,8 @@ unsafe extern "C" fn get_time_nanos() -> uint64_t {
 unsafe extern "C" fn sleep_nanos(mut d: uint64_t) {
     let ts: timespec = {
         let mut init = timespec {
-            tv_sec: d.wrapping_div(1000000000 as libc::c_int as libc::c_ulong) as time_t,
-            tv_nsec: d.wrapping_rem(1000000000 as libc::c_int as libc::c_ulong)
+            tv_sec: d.wrapping_div(1000000000 as uint64_t) as time_t,
+            tv_nsec: d.wrapping_rem(1000000000 as uint64_t)
                 as __syscall_slong_t,
         };
         init
@@ -482,12 +482,12 @@ unsafe extern "C" fn synchronize(
     let last: uint64_t = *elapsed;
     *elapsed = tcurr.wrapping_sub(tfirst);
     if realtime != 0 {
-        let deadline: uint64_t = nspf.wrapping_mul(n_out as libc::c_ulong);
+        let deadline: uint64_t = nspf.wrapping_mul(n_out as uint64_t);
         if *elapsed < deadline {
             let remaining: uint64_t = deadline.wrapping_sub(*elapsed);
-            if remaining > nspf.wrapping_mul(cache as libc::c_ulong) {
+            if remaining > nspf.wrapping_mul(cache as uint64_t) {
                 sleep_nanos(
-                    remaining.wrapping_sub(nspf.wrapping_mul(cache as libc::c_ulong)),
+                    remaining.wrapping_sub(nspf.wrapping_mul(cache as uint64_t)),
                 );
             }
             *elapsed = deadline;
@@ -596,22 +596,21 @@ unsafe extern "C" fn picture_alloc(
     let mut uv_stride: ptrdiff_t = if has_chroma != 0 {
         y_stride >> ss_hor
     } else {
-        0 as libc::c_int as libc::c_long
+        0
     };
-    if y_stride & 1023 as libc::c_int as libc::c_long == 0 {
-        y_stride += 64 as libc::c_int as libc::c_long;
+    if y_stride & 1023 == 0 {
+        y_stride += 64;
     }
-    if uv_stride & 1023 as libc::c_int as libc::c_long == 0 && has_chroma != 0 {
-        uv_stride += 64 as libc::c_int as libc::c_long;
+    if uv_stride & 1023 == 0 && has_chroma != 0 {
+        uv_stride += 64;
     }
     (*p).stride[0 as libc::c_int as usize] = -y_stride;
     (*p).stride[1 as libc::c_int as usize] = -uv_stride;
-    let y_sz: size_t = (y_stride * aligned_h as libc::c_long) as size_t;
-    let uv_sz: size_t = (uv_stride * (aligned_h >> ss_ver) as libc::c_long) as size_t;
-    let pic_size: size_t = y_sz
-        .wrapping_add((2 as libc::c_int as libc::c_ulong).wrapping_mul(uv_sz));
+    let y_sz: size_t = (y_stride * aligned_h as isize) as size_t;
+    let uv_sz: size_t = (uv_stride * (aligned_h >> ss_ver) as isize) as size_t;
+    let pic_size: size_t = y_sz.wrapping_add(2 * uv_sz);
     let buf: *mut uint8_t = malloc(
-        pic_size.wrapping_add((64 as libc::c_int * 2 as libc::c_int) as libc::c_ulong),
+        pic_size.wrapping_add(64),
     ) as *mut uint8_t;
     if buf.is_null() {
         return -(12 as libc::c_int);
@@ -627,7 +626,7 @@ unsafe extern "C" fn picture_alloc(
         .data[1 as libc::c_int
         as usize] = (if has_chroma != 0 {
         data.offset(y_sz as isize)
-            .offset(uv_sz.wrapping_mul(1 as libc::c_int as libc::c_ulong) as isize)
+            .offset(uv_sz.wrapping_mul(1) as isize)
             .offset(-(uv_stride as isize))
     } else {
         0 as *mut uint8_t
@@ -636,7 +635,7 @@ unsafe extern "C" fn picture_alloc(
         .data[2 as libc::c_int
         as usize] = (if has_chroma != 0 {
         data.offset(y_sz as isize)
-            .offset(uv_sz.wrapping_mul(2 as libc::c_int as libc::c_ulong) as isize)
+            .offset(uv_sz.wrapping_mul(2) as isize)
             .offset(-(uv_stride as isize))
     } else {
         0 as *mut uint8_t
@@ -931,7 +930,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
         memset(
             &mut p as *mut Dav1dPicture as *mut libc::c_void,
             0 as libc::c_int,
-            ::core::mem::size_of::<Dav1dPicture>() as libc::c_ulong,
+            ::core::mem::size_of::<Dav1dPicture>(),
         );
         res = dav1d_send_data(c, &mut data);
         if res < 0 as libc::c_int {
@@ -999,13 +998,13 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
         if cli_settings.limit != 0 && n_out == cli_settings.limit {
             break;
         }
-        if !(data.sz > 0 as libc::c_int as libc::c_ulong
+        if !(data.sz > 0
             || input_read(in_0, &mut data) == 0)
         {
             break;
         }
     }
-    if data.sz > 0 as libc::c_int as libc::c_ulong {
+    if data.sz > 0 {
         dav1d_data_unref(&mut data);
     }
     if res == 0 as libc::c_int {

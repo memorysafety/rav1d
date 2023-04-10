@@ -8,25 +8,25 @@ extern "C" {
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
     fn snprintf(
         _: *mut libc::c_char,
-        _: libc::c_ulong,
+        _: size_t,
         _: *const libc::c_char,
         _: ...
     ) -> libc::c_int;
-    fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
+    fn malloc(_: size_t) -> *mut libc::c_void;
     fn free(_: *mut libc::c_void);
     fn memcpy(
         _: *mut libc::c_void,
         _: *const libc::c_void,
-        _: libc::c_ulong,
+        _: size_t,
     ) -> *mut libc::c_void;
     fn strcmp(_: *const libc::c_char, _: *const libc::c_char) -> libc::c_int;
     fn strncmp(
         _: *const libc::c_char,
         _: *const libc::c_char,
-        _: libc::c_ulong,
+        _: size_t,
     ) -> libc::c_int;
     fn strchr(_: *const libc::c_char, _: libc::c_int) -> *mut libc::c_char;
-    fn strlen(_: *const libc::c_char) -> libc::c_ulong;
+    fn strlen(_: *const libc::c_char) -> size_t;
     static null_muxer: Muxer;
     static md5_muxer: Muxer;
     static yuv_muxer: Muxer;
@@ -384,11 +384,11 @@ static mut muxers: [*const Muxer; 5] = unsafe {
 };
 unsafe extern "C" fn find_extension(f: *const libc::c_char) -> *const libc::c_char {
     let l: size_t = strlen(f);
-    if l == 0 as libc::c_int as libc::c_ulong {
+    if l == 0 {
         return 0 as *const libc::c_char;
     }
     let end: *const libc::c_char = &*f
-        .offset(l.wrapping_sub(1 as libc::c_int as libc::c_ulong) as isize)
+        .offset(l.wrapping_sub(1) as isize)
         as *const libc::c_char;
     let mut step: *const libc::c_char = end;
     while *step as libc::c_int >= 'a' as i32 && *step as libc::c_int <= 'z' as i32
@@ -423,7 +423,7 @@ pub unsafe extern "C" fn output_open(
             * (strncmp(
                 name,
                 b"frame\0" as *const u8 as *const libc::c_char,
-                5 as libc::c_int as libc::c_ulong,
+                5,
             ) == 0) as libc::c_int;
         i = 0 as libc::c_int as libc::c_uint;
         while !(muxers[i as usize]).is_null() {
@@ -478,7 +478,7 @@ pub unsafe extern "C" fn output_open(
         }
     }
     c = malloc(
-        (48 as libc::c_ulong).wrapping_add((*impl_0).priv_data_size as libc::c_ulong),
+        (48 as size_t).wrapping_add((*impl_0).priv_data_size as size_t),
     ) as *mut MuxerContext;
     if c.is_null() {
         fprintf(
@@ -544,7 +544,7 @@ unsafe extern "C" fn safe_strncat(
     memcpy(
         dst.offset(dst_fill as isize) as *mut libc::c_void,
         src as *const libc::c_void,
-        to_copy as libc::c_ulong,
+        to_copy as size_t,
     );
     *dst.offset((dst_fill + to_copy) as isize) = 0 as libc::c_int as libc::c_char;
 }
@@ -583,7 +583,7 @@ unsafe extern "C" fn assemble_field(
     let mut tmp: [libc::c_char; 32] = [0; 32];
     snprintf(
         tmp.as_mut_ptr(),
-        ::core::mem::size_of::<[libc::c_char; 32]>() as libc::c_ulong,
+        ::core::mem::size_of::<[libc::c_char; 32]>(),
         fmt_copy.as_mut_ptr(),
         field,
     );

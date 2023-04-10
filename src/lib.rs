@@ -8,18 +8,18 @@ extern "C" {
     fn memcpy(
         _: *mut libc::c_void,
         _: *const libc::c_void,
-        _: libc::c_ulong,
+        _: size_t,
     ) -> *mut libc::c_void;
     fn memset(
         _: *mut libc::c_void,
         _: libc::c_int,
-        _: libc::c_ulong,
+        _: size_t,
     ) -> *mut libc::c_void;
     fn dlsym(
         __handle: *mut libc::c_void,
         __name: *const libc::c_char,
     ) -> *mut libc::c_void;
-    fn calloc(_: libc::c_ulong, _: libc::c_ulong) -> *mut libc::c_void;
+    fn calloc(_: size_t, _: size_t) -> *mut libc::c_void;
     fn free(_: *mut libc::c_void);
     fn posix_memalign(
         __memptr: *mut *mut libc::c_void,
@@ -1652,7 +1652,7 @@ unsafe extern "C" fn dav1d_alloc_aligned(
     mut sz: size_t,
     mut align: size_t,
 ) -> *mut libc::c_void {
-    if align & align.wrapping_sub(1 as libc::c_int as libc::c_ulong) != 0 {
+    if align & align.wrapping_sub(1) != 0 {
         unreachable!();
     }
     let mut ptr: *mut libc::c_void = 0 as *mut libc::c_void;
@@ -1735,20 +1735,24 @@ pub unsafe extern "C" fn dav1d_default_settings(s: *mut Dav1dSettings) {
 unsafe extern "C" fn get_stack_size_internal(
     thread_attr: *const pthread_attr_t,
 ) -> size_t {
-    let get_minstack: Option::<unsafe extern "C" fn(*const pthread_attr_t) -> size_t> = ::core::mem::transmute::<
-        *mut libc::c_void,
-        Option::<unsafe extern "C" fn(*const pthread_attr_t) -> size_t>,
-    >(
-        dlsym(
-            0 as *mut libc::c_void,
-            b"__pthread_get_minstack\0" as *const u8 as *const libc::c_char,
-        ),
-    );
-    if get_minstack.is_some() {
-        return (get_minstack.expect("non-null function pointer")(thread_attr))
-            .wrapping_sub(__sysconf(75 as libc::c_int) as libc::c_ulong);
+    if 0 != 0 {
+        // TODO(perl): migrate the compile-time guard expression for this:
+        // #if defined(__linux__) && defined(HAVE_DLSYM) && defined(__GLIBC__)
+        let get_minstack: Option::<unsafe extern "C" fn(*const pthread_attr_t) -> size_t> = ::core::mem::transmute::<
+            *mut libc::c_void,
+            Option::<unsafe extern "C" fn(*const pthread_attr_t) -> size_t>,
+        >(
+            dlsym(
+                0 as *mut libc::c_void,
+                b"__pthread_get_minstack\0" as *const u8 as *const libc::c_char,
+            ),
+        );
+        if get_minstack.is_some() {
+            return (get_minstack.expect("non-null function pointer")(thread_attr))
+                .wrapping_sub(__sysconf(75) as size_t);
+        }
     }
-    return 0 as libc::c_int as size_t;
+    return 0;
 }
 #[cold]
 unsafe extern "C" fn get_num_threads(
@@ -1993,20 +1997,18 @@ pub unsafe extern "C" fn dav1d_open(
     if pthread_attr_init(&mut thread_attr) != 0 {
         return -(12 as libc::c_int);
     }
-    let mut stack_size: size_t = ((1024 as libc::c_int * 1024 as libc::c_int)
-        as libc::c_ulong)
-        .wrapping_add(get_stack_size_internal(&mut thread_attr));
+    let mut stack_size: size_t = 1024 * 1024 * get_stack_size_internal(&mut thread_attr);
     pthread_attr_setstacksize(&mut thread_attr, stack_size);
     *c_out = dav1d_alloc_aligned(
-        ::core::mem::size_of::<Dav1dContext>() as libc::c_ulong,
-        64 as libc::c_int as size_t,
+        ::core::mem::size_of::<Dav1dContext>(),
+        64,
     ) as *mut Dav1dContext;
     let c: *mut Dav1dContext = *c_out;
     if !c.is_null() {
         memset(
             c as *mut libc::c_void,
-            0 as libc::c_int,
-            ::core::mem::size_of::<Dav1dContext>() as libc::c_ulong,
+            0,
+            ::core::mem::size_of::<Dav1dContext>(),
         );
         (*c).allocator = (*s).allocator;
         (*c).logger = (*s).logger;
@@ -2099,31 +2101,29 @@ pub unsafe extern "C" fn dav1d_open(
                     get_num_threads(c, s, &mut (*c).n_tc, &mut (*c).n_fc);
                     (*c)
                         .fc = dav1d_alloc_aligned(
-                        (::core::mem::size_of::<Dav1dFrameContext>() as libc::c_ulong)
-                            .wrapping_mul((*c).n_fc as libc::c_ulong),
+                        (::core::mem::size_of::<Dav1dFrameContext>())
+                            .wrapping_mul((*c).n_fc as size_t),
                         32 as libc::c_int as size_t,
                     ) as *mut Dav1dFrameContext;
                     if !((*c).fc).is_null() {
                         memset(
                             (*c).fc as *mut libc::c_void,
-                            0 as libc::c_int,
-                            (::core::mem::size_of::<Dav1dFrameContext>()
-                                as libc::c_ulong)
-                                .wrapping_mul((*c).n_fc as libc::c_ulong),
+                            0,
+                            ::core::mem::size_of::<Dav1dFrameContext>()
+                                .wrapping_mul((*c).n_fc as size_t),
                         );
                         (*c)
                             .tc = dav1d_alloc_aligned(
-                            (::core::mem::size_of::<Dav1dTaskContext>() as libc::c_ulong)
-                                .wrapping_mul((*c).n_tc as libc::c_ulong),
+                            (::core::mem::size_of::<Dav1dTaskContext>())
+                                .wrapping_mul((*c).n_tc as size_t),
                             64 as libc::c_int as size_t,
                         ) as *mut Dav1dTaskContext;
                         if !((*c).tc).is_null() {
                             memset(
                                 (*c).tc as *mut libc::c_void,
-                                0 as libc::c_int,
-                                (::core::mem::size_of::<Dav1dTaskContext>()
-                                    as libc::c_ulong)
-                                    .wrapping_mul((*c).n_tc as libc::c_ulong),
+                                0,
+                                ::core::mem::size_of::<Dav1dTaskContext>()
+                                    .wrapping_mul((*c).n_tc as size_t),
                             );
                             if (*c).n_tc > 1 as libc::c_int as libc::c_uint {
                                 if pthread_mutex_init(
@@ -2169,9 +2169,8 @@ pub unsafe extern "C" fn dav1d_open(
                                         (*c)
                                             .frame_thread
                                             .out_delayed = calloc(
-                                            (*c).n_fc as libc::c_ulong,
-                                            ::core::mem::size_of::<Dav1dThreadPicture>()
-                                                as libc::c_ulong,
+                                            (*c).n_fc as size_t,
+                                            ::core::mem::size_of::<Dav1dThreadPicture>(),
                                         ) as *mut Dav1dThreadPicture;
                                         if ((*c).frame_thread.out_delayed).is_null() {
                                             current_block = 16409883578687858768;
@@ -2238,7 +2237,7 @@ pub unsafe extern "C" fn dav1d_open(
                                                         let t: *mut Dav1dTaskContext = &mut *((*c).tc)
                                                             .offset(m as isize) as *mut Dav1dTaskContext;
                                                         (*t)
-                                                            .f = &mut *((*c).fc).offset(0 as libc::c_int as isize)
+                                                            .f = &mut *((*c).fc).offset(0)
                                                             as *mut Dav1dFrameContext;
                                                         (*t).task_thread.ttd = &mut (*c).task_thread;
                                                         (*t).c = c;
@@ -2246,7 +2245,7 @@ pub unsafe extern "C" fn dav1d_open(
                                                             ((*t).c2rust_unnamed.cf_16bpc).as_mut_ptr()
                                                                 as *mut libc::c_void,
                                                             0 as libc::c_int,
-                                                            ::core::mem::size_of::<[int32_t; 1024]>() as libc::c_ulong,
+                                                            ::core::mem::size_of::<[int32_t; 1024]>(),
                                                         );
                                                         if (*c).n_tc > 1 as libc::c_int as libc::c_uint {
                                                             if pthread_mutex_init(
@@ -2438,7 +2437,7 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
                 break;
             }
             _ => {
-                if buf.sz > 0 as libc::c_int as libc::c_ulong {
+                if buf.sz > 0 {
                     res = dav1d_parse_obus(c, &mut buf, 1 as libc::c_int);
                     if res < 0 as libc::c_int {
                         current_block = 10647346020414903899;
@@ -2459,7 +2458,7 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
                     memcpy(
                         out as *mut libc::c_void,
                         (*c).seq_hdr as *const libc::c_void,
-                        ::core::mem::size_of::<Dav1dSequenceHeader>() as libc::c_ulong,
+                        ::core::mem::size_of::<Dav1dSequenceHeader>(),
                     );
                     res = 0 as libc::c_int;
                     current_block = 10647346020414903899;
@@ -2636,7 +2635,7 @@ unsafe extern "C" fn gen_picture(c: *mut Dav1dContext) -> libc::c_int {
     if output_picture_ready(c, 0 as libc::c_int) != 0 {
         return 0 as libc::c_int;
     }
-    while (*in_0).sz > 0 as libc::c_int as libc::c_ulong {
+    while (*in_0).sz > 0 {
         res = dav1d_parse_obus(c, in_0, 0 as libc::c_int);
         if res < 0 as libc::c_int {
             dav1d_data_unref_internal(in_0);

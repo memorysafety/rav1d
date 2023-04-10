@@ -511,8 +511,8 @@ pub unsafe extern "C" fn dav1d_prep_grain_8bpc(
     }
     if (*data).num_y_points == 0 {
         let stride: ptrdiff_t = (*out).stride[0 as libc::c_int as usize];
-        let sz: ptrdiff_t = (*out).p.h as libc::c_long * stride;
-        if sz < 0 as libc::c_int as libc::c_long {
+        let sz: ptrdiff_t = (*out).p.h as isize * stride;
+        if sz < 0 {
             memcpy(
                 ((*out).data[0 as libc::c_int as usize] as *mut uint8_t)
                     .offset(sz as isize)
@@ -542,8 +542,8 @@ pub unsafe extern "C" fn dav1d_prep_grain_8bpc(
         let ss_ver: libc::c_int = ((*in_0).p.layout as libc::c_uint
             == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint) as libc::c_int;
         let stride_0: ptrdiff_t = (*out).stride[1 as libc::c_int as usize];
-        let sz_0: ptrdiff_t = ((*out).p.h + ss_ver >> ss_ver) as libc::c_long * stride_0;
-        if sz_0 < 0 as libc::c_int as libc::c_long {
+        let sz_0: ptrdiff_t = ((*out).p.h + ss_ver >> ss_ver) as isize * stride_0;
+        if sz_0 < 0 {
             if (*data).num_uv_points[0 as libc::c_int as usize] == 0 {
                 memcpy(
                     ((*out).data[1 as libc::c_int as usize] as *mut uint8_t)
@@ -603,7 +603,7 @@ pub unsafe extern "C" fn dav1d_apply_grain_row_8bpc(
         == DAV1D_MC_IDENTITY as libc::c_int as libc::c_uint) as libc::c_int;
     let luma_src: *mut pixel = ((*in_0).data[0 as libc::c_int as usize] as *mut pixel)
         .offset(
-            ((row * 32 as libc::c_int) as libc::c_long
+            ((row * 32 as libc::c_int) as isize
                 * (*in_0).stride[0 as libc::c_int as usize]) as isize,
         );
     if (*data).num_y_points != 0 {
@@ -617,7 +617,7 @@ pub unsafe extern "C" fn dav1d_apply_grain_row_8bpc(
             )(
             ((*out).data[0 as libc::c_int as usize] as *mut pixel)
                 .offset(
-                    ((row * 32 as libc::c_int) as libc::c_long
+                    ((row * 32 as libc::c_int) as isize
                         * (*out).stride[0 as libc::c_int as usize]) as isize,
                 ),
             luma_src,
@@ -651,7 +651,7 @@ pub unsafe extern "C" fn dav1d_apply_grain_row_8bpc(
             y += 1;
         }
     }
-    let uv_off: ptrdiff_t = (row * 32 as libc::c_int) as libc::c_long
+    let uv_off: ptrdiff_t = (row * 32 as libc::c_int) as isize
         * (*out).stride[1 as libc::c_int as usize] >> ss_y;
     if (*data).chroma_scaling_from_luma != 0 {
         let mut pl: libc::c_int = 0 as libc::c_int;

@@ -1062,7 +1062,7 @@ unsafe extern "C" fn ipred_z3_c(
                         * frac;
                 *dst
                     .offset(
-                        (y as libc::c_long * stride + x as libc::c_long) as isize,
+                        (y as isize * stride + x as isize) as isize,
                     ) = (v + 32 as libc::c_int >> 6 as libc::c_int) as pixel;
                 y += 1;
                 base += base_inc;
@@ -1070,7 +1070,7 @@ unsafe extern "C" fn ipred_z3_c(
                 loop {
                     *dst
                         .offset(
-                            (y as libc::c_long * stride + x as libc::c_long) as isize,
+                            (y as isize * stride + x as isize) as isize,
                         ) = *left.offset(-max_base_y as isize);
                     y += 1;
                     if !(y < height) {
@@ -1115,10 +1115,10 @@ unsafe extern "C" fn ipred_filter_c(
             let p3: libc::c_int = *top.offset(2 as libc::c_int as isize) as libc::c_int;
             let p4: libc::c_int = *top.offset(3 as libc::c_int as isize) as libc::c_int;
             let p5: libc::c_int = *left
-                .offset((0 as libc::c_int as libc::c_long * left_stride) as isize)
+                .offset((0 * left_stride) as isize)
                 as libc::c_int;
             let p6: libc::c_int = *left
-                .offset((1 as libc::c_int as libc::c_long * left_stride) as isize)
+                .offset((1 * left_stride) as isize)
                 as libc::c_int;
             let mut ptr: *mut pixel = &mut *dst.offset(x as isize) as *mut pixel;
             let mut flt_ptr: *const int8_t = filter;
@@ -1154,7 +1154,7 @@ unsafe extern "C" fn ipred_filter_c(
             x += 4 as libc::c_int;
         }
         top = &mut *dst.offset(stride as isize) as *mut pixel;
-        dst = &mut *dst.offset((stride * 2 as libc::c_int as libc::c_long) as isize)
+        dst = &mut *dst.offset((stride * 2) as isize)
             as *mut pixel;
         y += 2 as libc::c_int;
     }
@@ -1193,13 +1193,13 @@ unsafe extern "C" fn cfl_ac_c(
             }
             if ss_ver != 0 {
                 ac_sum
-                    += *ypx.offset(((x << ss_hor) as libc::c_long + stride) as isize)
+                    += *ypx.offset(((x << ss_hor) as isize + stride) as isize)
                         as libc::c_int;
                 if ss_hor != 0 {
                     ac_sum
                         += *ypx
                             .offset(
-                                ((x * 2 as libc::c_int + 1 as libc::c_int) as libc::c_long
+                                ((x * 2 as libc::c_int + 1 as libc::c_int) as isize
                                     + stride) as isize,
                             ) as libc::c_int;
                 }

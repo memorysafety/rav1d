@@ -4,16 +4,16 @@ use ::libc;
 use crate::src::cdf::CdfContext;
 use crate::src::msac::MsacContext;
 extern "C" {
-    fn realloc(_: *mut libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
+    fn realloc(_: *mut libc::c_void, _: size_t) -> *mut libc::c_void;
     fn memset(
         _: *mut libc::c_void,
         _: libc::c_int,
-        _: libc::c_ulong,
+        _: size_t,
     ) -> *mut libc::c_void;
     fn memcmp(
         _: *const libc::c_void,
         _: *const libc::c_void,
-        _: libc::c_ulong,
+        _: size_t,
     ) -> libc::c_int;
     fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int;
     fn pthread_mutex_lock(__mutex: *mut pthread_mutex_t) -> libc::c_int;
@@ -1571,7 +1571,7 @@ unsafe extern "C" fn parse_seq_hdr(
     memset(
         hdr as *mut libc::c_void,
         0 as libc::c_int,
-        ::core::mem::size_of::<Dav1dSequenceHeader>() as libc::c_ulong,
+        ::core::mem::size_of::<Dav1dSequenceHeader>(),
     );
     (*hdr).profile = dav1d_get_bits(gb, 3 as libc::c_int) as libc::c_int;
     if !((*hdr).profile > 2 as libc::c_int) {
@@ -2873,8 +2873,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                 &mut (*hdr).segmentation.seg_data
                                     as *mut Dav1dSegmentationDataSet as *mut libc::c_void,
                                 0 as libc::c_int,
-                                ::core::mem::size_of::<Dav1dSegmentationDataSet>()
-                                    as libc::c_ulong,
+                                ::core::mem::size_of::<Dav1dSegmentationDataSet>(),
                             );
                             let mut i_11: libc::c_int = 0 as libc::c_int;
                             while i_11 < 8 as libc::c_int {
@@ -3761,8 +3760,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                                                 &mut (*hdr).film_grain.data as *mut Dav1dFilmGrainData
                                                                     as *mut libc::c_void,
                                                                 0 as libc::c_int,
-                                                                ::core::mem::size_of::<Dav1dFilmGrainData>()
-                                                                    as libc::c_ulong,
+                                                                ::core::mem::size_of::<Dav1dFilmGrainData>(),
                                                             );
                                                             current_block = 17095195114763350366;
                                                         }
@@ -3882,11 +3880,10 @@ pub unsafe extern "C" fn dav1d_parse_obus(
         {
             unreachable!();
         }
-        if !((*in_0).sz >= init_byte_pos as libc::c_ulong) {
+        if !((*in_0).sz >= init_byte_pos as size_t) {
             unreachable!();
         }
-        if !(len as libc::c_ulong
-            > ((*in_0).sz).wrapping_sub(init_byte_pos as libc::c_ulong))
+        if !(len as size_t > ((*in_0).sz).wrapping_sub(init_byte_pos as size_t))
         {
             if type_0 as libc::c_uint != DAV1D_OBU_SEQ_HDR as libc::c_int as libc::c_uint
                 && type_0 as libc::c_uint != DAV1D_OBU_TD as libc::c_int as libc::c_uint
@@ -3906,7 +3903,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                 1 => {
                     let mut ref_0: *mut Dav1dRef = dav1d_ref_create_using_pool(
                         (*c).seq_hdr_pool,
-                        ::core::mem::size_of::<Dav1dSequenceHeader>() as libc::c_ulong,
+                        ::core::mem::size_of::<Dav1dSequenceHeader>(),
                     );
                     if ref_0.is_null() {
                         return -(12 as libc::c_int);
@@ -3934,7 +3931,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                         } else if memcmp(
                             seq_hdr as *const libc::c_void,
                             (*c).seq_hdr as *const libc::c_void,
-                            1100 as libc::c_ulong,
+                            1100,
                         ) != 0
                         {
                             (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
@@ -3975,7 +3972,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                 as *const libc::c_void,
                             ::core::mem::size_of::<
                                 [Dav1dSequenceHeaderOperatingParameterInfo; 32],
-                            >() as libc::c_ulong,
+                            >(),
                         ) != 0
                         {
                             (*c)
@@ -4018,8 +4015,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                         match meta_type as libc::c_uint {
                             1 => {
                                 let mut ref_1: *mut Dav1dRef = dav1d_ref_create(
-                                    ::core::mem::size_of::<Dav1dContentLightLevel>()
-                                        as libc::c_ulong,
+                                    ::core::mem::size_of::<Dav1dContentLightLevel>(),
                                 );
                                 if ref_1.is_null() {
                                     return -(12 as libc::c_int);
@@ -4050,8 +4046,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                             }
                             2 => {
                                 let mut ref_2: *mut Dav1dRef = dav1d_ref_create(
-                                    ::core::mem::size_of::<Dav1dMasteringDisplay>()
-                                        as libc::c_ulong,
+                                    ::core::mem::size_of::<Dav1dMasteringDisplay>(),
                                 );
                                 if ref_2.is_null() {
                                     return -(12 as libc::c_int);
@@ -4132,11 +4127,11 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                     );
                                 } else {
                                     let mut ref_3: *mut Dav1dRef = dav1d_ref_create(
-                                        (::core::mem::size_of::<Dav1dITUTT35>() as libc::c_ulong)
+                                        (::core::mem::size_of::<Dav1dITUTT35>())
                                             .wrapping_add(
-                                                (payload_size as libc::c_ulong)
+                                                (payload_size as size_t)
                                                     .wrapping_mul(
-                                                        ::core::mem::size_of::<uint8_t>() as libc::c_ulong,
+                                                        ::core::mem::size_of::<uint8_t>(),
                                                     ),
                                             ),
                                     );
@@ -4223,7 +4218,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                     (*c)
                                         .frame_hdr_ref = dav1d_ref_create_using_pool(
                                         (*c).frame_hdr_pool,
-                                        ::core::mem::size_of::<Dav1dFrameHeader>() as libc::c_ulong,
+                                        ::core::mem::size_of::<Dav1dFrameHeader>(),
                                     );
                                     if ((*c).frame_hdr_ref).is_null() {
                                         return -(12 as libc::c_int);
@@ -4235,7 +4230,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                 memset(
                                     (*c).frame_hdr as *mut libc::c_void,
                                     0 as libc::c_int,
-                                    ::core::mem::size_of::<Dav1dFrameHeader>() as libc::c_ulong,
+                                    ::core::mem::size_of::<Dav1dFrameHeader>(),
                                 );
                                 (*(*c).frame_hdr).temporal_id = temporal_id;
                                 (*(*c).frame_hdr).spatial_id = spatial_id;
@@ -4271,8 +4266,8 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                         _ => {
                                             if (*c).frame_size_limit != 0
                                                 && (*(*c).frame_hdr).width[1 as libc::c_int as usize]
-                                                    as int64_t * (*(*c).frame_hdr).height as libc::c_long
-                                                    > (*c).frame_size_limit as libc::c_long
+                                                    as int64_t * (*(*c).frame_hdr).height as int64_t
+                                                    > (*c).frame_size_limit as int64_t
                                             {
                                                 dav1d_log(
                                                     c,
@@ -4325,9 +4320,9 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                             } else {
                                                 let mut tile: *mut Dav1dTileGroup = realloc(
                                                     (*c).tile as *mut libc::c_void,
-                                                    (((*c).n_tile_data + 1 as libc::c_int) as libc::c_ulong)
+                                                    (((*c).n_tile_data + 1 as libc::c_int) as size_t)
                                                         .wrapping_mul(
-                                                            ::core::mem::size_of::<Dav1dTileGroup>() as libc::c_ulong,
+                                                            ::core::mem::size_of::<Dav1dTileGroup>(),
                                                         ),
                                                 ) as *mut Dav1dTileGroup;
                                                 if tile.is_null() {
@@ -4338,7 +4333,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                                         ((*c).tile).offset((*c).n_tile_data as isize)
                                                             as *mut libc::c_void,
                                                         0 as libc::c_int,
-                                                        ::core::mem::size_of::<Dav1dTileGroup>() as libc::c_ulong,
+                                                        ::core::mem::size_of::<Dav1dTileGroup>(),
                                                     );
                                                     (*c)
                                                         .n_tile_data_alloc = (*c).n_tile_data + 1 as libc::c_int;

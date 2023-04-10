@@ -127,7 +127,7 @@ unsafe extern "C" fn apply_sign(v: libc::c_int, s: libc::c_int) -> libc::c_int {
 }
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
-    if x & 1 as libc::c_int as libc::c_long != 0 {
+    if x & 1 != 0 {
         unreachable!();
     }
     return x >> 1 as libc::c_int;
@@ -1105,7 +1105,7 @@ unsafe extern "C" fn ipred_z3_c(
                         * frac;
                 *dst
                     .offset(
-                        (y as libc::c_long * PXSTRIDE(stride) + x as libc::c_long)
+                        (y as isize * PXSTRIDE(stride) + x as isize)
                             as isize,
                     ) = (v + 32 as libc::c_int >> 6 as libc::c_int) as pixel;
                 y += 1;
@@ -1114,7 +1114,7 @@ unsafe extern "C" fn ipred_z3_c(
                 loop {
                     *dst
                         .offset(
-                            (y as libc::c_long * PXSTRIDE(stride) + x as libc::c_long)
+                            (y as isize * PXSTRIDE(stride) + x as isize)
                                 as isize,
                         ) = *left.offset(-max_base_y as isize);
                     y += 1;
@@ -1161,10 +1161,10 @@ unsafe extern "C" fn ipred_filter_c(
             let p3: libc::c_int = *top.offset(2 as libc::c_int as isize) as libc::c_int;
             let p4: libc::c_int = *top.offset(3 as libc::c_int as isize) as libc::c_int;
             let p5: libc::c_int = *left
-                .offset((0 as libc::c_int as libc::c_long * left_stride) as isize)
+                .offset((0 * left_stride) as isize)
                 as libc::c_int;
             let p6: libc::c_int = *left
-                .offset((1 as libc::c_int as libc::c_long * left_stride) as isize)
+                .offset((1 * left_stride) as isize)
                 as libc::c_int;
             let mut ptr: *mut pixel = &mut *dst.offset(x as isize) as *mut pixel;
             let mut flt_ptr: *const int8_t = filter;
@@ -1210,7 +1210,7 @@ unsafe extern "C" fn ipred_filter_c(
         dst = &mut *dst
             .offset(
                 ((PXSTRIDE as unsafe extern "C" fn(ptrdiff_t) -> ptrdiff_t)(stride)
-                    * 2 as libc::c_int as libc::c_long) as isize,
+                    * 2) as isize,
             ) as *mut pixel;
         y += 2 as libc::c_int;
     }
@@ -1251,13 +1251,13 @@ unsafe extern "C" fn cfl_ac_c(
                 ac_sum
                     += *ypx
                         .offset(
-                            ((x << ss_hor) as libc::c_long + PXSTRIDE(stride)) as isize,
+                            ((x << ss_hor) as isize + PXSTRIDE(stride)) as isize,
                         ) as libc::c_int;
                 if ss_hor != 0 {
                     ac_sum
                         += *ypx
                             .offset(
-                                ((x * 2 as libc::c_int + 1 as libc::c_int) as libc::c_long
+                                ((x * 2 as libc::c_int + 1 as libc::c_int) as isize
                                     + PXSTRIDE(stride)) as isize,
                             ) as libc::c_int;
                 }

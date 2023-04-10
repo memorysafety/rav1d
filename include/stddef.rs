@@ -1,2 +1,2 @@
-pub type size_t = libc::c_ulong;
-pub type ptrdiff_t = libc::c_long;
+pub type size_t = libc::size_t;
+pub type ptrdiff_t = libc::ptrdiff_t;

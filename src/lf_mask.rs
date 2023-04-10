@@ -908,7 +908,7 @@ unsafe extern "C" fn mask_edges_intra(
     let hstep: libc::c_int = (*t_dim).w as libc::c_int;
     let mut t: libc::c_uint = (1 as libc::c_uint) << by4;
     let mut inner: libc::c_uint = ((t as uint64_t) << h4)
-        .wrapping_sub(t as libc::c_ulong) as libc::c_uint;
+        .wrapping_sub(t as uint64_t) as libc::c_uint;
     let mut inner1: libc::c_uint = inner & 0xffff as libc::c_int as libc::c_uint;
     let mut inner2: libc::c_uint = inner >> 16 as libc::c_int;
     x = hstep;
@@ -931,7 +931,7 @@ unsafe extern "C" fn mask_edges_intra(
     }
     let vstep: libc::c_int = (*t_dim).h as libc::c_int;
     t = (1 as libc::c_uint) << bx4;
-    inner = ((t as uint64_t) << w4).wrapping_sub(t as libc::c_ulong) as libc::c_uint;
+    inner = ((t as uint64_t) << w4).wrapping_sub(t as uint64_t) as libc::c_uint;
     inner1 = inner & 0xffff as libc::c_int as libc::c_uint;
     inner2 = inner >> 16 as libc::c_int;
     y = vstep;
@@ -1116,7 +1116,7 @@ unsafe extern "C" fn mask_edges_chroma(
         let hstep: libc::c_int = (*t_dim).w as libc::c_int;
         let mut t: libc::c_uint = (1 as libc::c_uint) << cby4;
         let mut inner: libc::c_uint = ((t as uint64_t) << ch4)
-            .wrapping_sub(t as libc::c_ulong) as libc::c_uint;
+            .wrapping_sub(t as uint64_t) as libc::c_uint;
         let mut inner1: libc::c_uint = inner
             & (((1 as libc::c_int) << vmask) - 1 as libc::c_int) as libc::c_uint;
         let mut inner2: libc::c_uint = inner >> vmask;
@@ -1140,7 +1140,7 @@ unsafe extern "C" fn mask_edges_chroma(
         }
         let vstep: libc::c_int = (*t_dim).h as libc::c_int;
         t = (1 as libc::c_uint) << cbx4;
-        inner = ((t as uint64_t) << cw4).wrapping_sub(t as libc::c_ulong)
+        inner = ((t as uint64_t) << cw4).wrapping_sub(t as uint64_t)
             as libc::c_uint;
         inner1 = inner
             & (((1 as libc::c_int) << hmask) - 1 as libc::c_int) as libc::c_uint;
@@ -1299,7 +1299,7 @@ pub unsafe extern "C" fn dav1d_create_lf_mask_intra(
     let by4: libc::c_int = by & 31 as libc::c_int;
     if bw4 != 0 && bh4 != 0 {
         let mut level_cache_ptr: *mut [uint8_t; 4] = level_cache
-            .offset((by as libc::c_long * b4_stride) as isize)
+            .offset(by as isize * b4_stride)
             .offset(bx as isize);
         let mut y: libc::c_int = 0 as libc::c_int;
         while y < bh4 {
@@ -1358,7 +1358,7 @@ pub unsafe extern "C" fn dav1d_create_lf_mask_intra(
     let cbx4: libc::c_int = bx4 >> ss_hor;
     let cby4: libc::c_int = by4 >> ss_ver;
     let mut level_cache_ptr_0: *mut [uint8_t; 4] = level_cache
-        .offset(((by >> ss_ver) as libc::c_long * b4_stride) as isize)
+        .offset(((by >> ss_ver) as isize * b4_stride) as isize)
         .offset((bx >> ss_hor) as isize);
     let mut y_0: libc::c_int = 0 as libc::c_int;
     while y_0 < cbh4 {
@@ -1433,7 +1433,7 @@ pub unsafe extern "C" fn dav1d_create_lf_mask_inter(
     let by4: libc::c_int = by & 31 as libc::c_int;
     if bw4 != 0 && bh4 != 0 {
         let mut level_cache_ptr: *mut [uint8_t; 4] = level_cache
-            .offset((by as libc::c_long * b4_stride) as isize)
+            .offset(by as isize * b4_stride)
             .offset(bx as isize);
         let mut y: libc::c_int = 0 as libc::c_int;
         while y < bh4 {
@@ -1494,7 +1494,7 @@ pub unsafe extern "C" fn dav1d_create_lf_mask_inter(
     let cbx4: libc::c_int = bx4 >> ss_hor;
     let cby4: libc::c_int = by4 >> ss_ver;
     let mut level_cache_ptr_0: *mut [uint8_t; 4] = level_cache
-        .offset(((by >> ss_ver) as libc::c_long * b4_stride) as isize)
+        .offset(((by >> ss_ver) as isize * b4_stride) as isize)
         .offset((bx >> ss_hor) as isize);
     let mut y_0: libc::c_int = 0 as libc::c_int;
     while y_0 < cbh4 {
