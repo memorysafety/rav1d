@@ -264,16 +264,10 @@ pub struct Dav1dFrameHeader {
     pub gmv: [Dav1dWarpedMotionParams; 7],
 }
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dWarpedMotionParams {
-    pub type_0: Dav1dWarpedMotionType,
-    pub matrix: [int32_t; 6],
-    pub u: Dav1dWarpedMotionParams_u,
-}
-use crate::include::dav1d::headers::Dav1dWarpedMotionParams_u;
+use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 
-use crate::include::dav1d::headers::Dav1dWarpedMotionType;
+
+
 
 
 

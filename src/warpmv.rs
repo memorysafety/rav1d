@@ -5,19 +5,13 @@ extern "C" {
     fn llabs(_: libc::c_longlong) -> libc::c_longlong;
 }
 
-use crate::include::dav1d::headers::Dav1dWarpedMotionType;
 
 
 
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dWarpedMotionParams {
-    pub type_0: Dav1dWarpedMotionType,
-    pub matrix: [int32_t; 6],
-    pub u: Dav1dWarpedMotionParams_u,
-}
-use crate::include::dav1d::headers::Dav1dWarpedMotionParams_u;
+
+use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
+
 
 #[derive(Copy, Clone)]
 #[repr(C)]
