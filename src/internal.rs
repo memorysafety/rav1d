@@ -10,6 +10,7 @@ use crate::include::stdint::int8_t;
 use crate::include::stdint::uint16_t;
 use crate::include::stdint::uint8_t;
 use crate::src::picture::Dav1dThreadPicture;
+use crate::src::r#ref::Dav1dRef;
 use crate::src::thread_data::thread_data;
 
 #[derive(Copy, Clone)]
@@ -86,6 +87,15 @@ pub struct TaskThreadData {
     pub cond_signaled: atomic_int,
     pub delayed_fg: TaskThreadData_delayed_fg,
     pub inited: libc::c_int,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dContext_refs {
+    pub p: Dav1dThreadPicture,
+    pub segmap: *mut Dav1dRef,
+    pub refmvs: *mut Dav1dRef,
+    pub refpoc: [libc::c_uint; 7],
 }
 
 #[derive(Copy, Clone)]

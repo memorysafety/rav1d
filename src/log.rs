@@ -639,14 +639,7 @@ pub type generate_grain_y_fn = Option::<
 use crate::src::cdf::CdfThreadContext;
 use crate::include::stdatomic::atomic_uint;
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dContext_refs {
-    pub p: Dav1dThreadPicture,
-    pub segmap: *mut Dav1dRef,
-    pub refmvs: *mut Dav1dRef,
-    pub refpoc: [libc::c_uint; 7],
-}
+use crate::src::internal::Dav1dContext_refs;
 use crate::src::picture::Dav1dThreadPicture;
 use crate::src::internal::TaskThreadData;
 
