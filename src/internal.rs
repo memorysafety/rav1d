@@ -9,6 +9,7 @@ use crate::include::stdint::int32_t;
 use crate::include::stdint::int8_t;
 use crate::include::stdint::uint16_t;
 use crate::include::stdint::uint8_t;
+use crate::src::picture::Dav1dThreadPicture;
 use crate::src::thread_data::thread_data;
 
 #[derive(Copy, Clone)]
@@ -33,6 +34,13 @@ pub const DAV1D_TASK_TYPE_ENTROPY_PROGRESS: TaskType = 3;
 pub const DAV1D_TASK_TYPE_TILE_ENTROPY: TaskType = 2;
 pub const DAV1D_TASK_TYPE_INIT_CDF: TaskType = 1;
 pub const DAV1D_TASK_TYPE_INIT: TaskType = 0;
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dContext_frame_thread {
+    pub out_delayed: *mut Dav1dThreadPicture,
+    pub next: libc::c_uint,
+}
 
 #[derive(Copy, Clone)]
 #[repr(C)]

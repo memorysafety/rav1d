@@ -829,12 +829,7 @@ pub struct C2RustUnnamed_3 {
     pub __low: libc::c_uint,
     pub __high: libc::c_uint,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dContext_frame_thread {
-    pub out_delayed: *mut Dav1dThreadPicture,
-    pub next: libc::c_uint,
-}
+use crate::src::internal::Dav1dContext_frame_thread;
 use crate::src::internal::Dav1dTileGroup;
 #[derive(Copy, Clone)]
 #[repr(C)]

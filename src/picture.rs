@@ -1070,12 +1070,7 @@ pub struct Dav1dThreadPicture {
     pub flags: PictureFlags,
     pub progress: *mut atomic_uint,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dContext_frame_thread {
-    pub out_delayed: *mut Dav1dThreadPicture,
-    pub next: libc::c_uint,
-}
+use crate::src::internal::Dav1dContext_frame_thread;
 use crate::src::internal::Dav1dTileGroup;
 pub type backup_ipred_edge_fn = Option::<
     unsafe extern "C" fn(*mut Dav1dTaskContext) -> (),
