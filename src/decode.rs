@@ -840,7 +840,7 @@ pub struct Dav1dTaskContext_scratch_pal {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct C2RustUnnamed_16 {
-    pub c2rust_unnamed: C2RustUnnamed_18,
+    pub c2rust_unnamed: Dav1dTaskContext_scratch_lap,
     pub c2rust_unnamed_0: Dav1dTaskContext_scratch_emu_edge,
 }
 #[derive(Copy, Clone)]
@@ -851,7 +851,7 @@ pub union Dav1dTaskContext_scratch_emu_edge {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union C2RustUnnamed_18 {
+pub union Dav1dTaskContext_scratch_lap {
     pub lap_8bpc: [uint8_t; 4096],
     pub lap_16bpc: [uint16_t; 4096],
     pub c2rust_unnamed: Dav1dTaskContext_scratch_compinter_seg_mask,
