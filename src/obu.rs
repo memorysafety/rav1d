@@ -537,11 +537,11 @@ pub union Dav1dTaskContext_scratch_emu_edge {
 pub union C2RustUnnamed_18 {
     pub lap_8bpc: [uint8_t; 4096],
     pub lap_16bpc: [uint16_t; 4096],
-    pub c2rust_unnamed: C2RustUnnamed_19,
+    pub c2rust_unnamed: Dav1dTaskContext_scratch_compinter_seg_mask,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_19 {
+pub struct Dav1dTaskContext_scratch_compinter_seg_mask {
     pub compinter: [[int16_t; 16384]; 2],
     pub seg_mask: [uint8_t; 16384],
 }
