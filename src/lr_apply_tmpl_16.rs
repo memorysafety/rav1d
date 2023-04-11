@@ -464,13 +464,8 @@ pub struct Dav1dTaskContext_scratch_levels_pal_ac_interintra_edge {
 use crate::src::internal::Dav1dTaskContext_scratch_interintra_edge;
 
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union Dav1dTaskContext_scratch_levels_pal {
-    pub levels: [uint8_t; 1088],
-    pub c2rust_unnamed: Dav1dTaskContext_scratch_pal,
-}
-use crate::src::internal::Dav1dTaskContext_scratch_pal;
+use crate::src::internal::Dav1dTaskContext_scratch_levels_pal;
+
 use crate::src::internal::Dav1dTaskContext_scratch_lap_emu_edge;
 
 
