@@ -466,12 +466,7 @@ pub struct refmvs_block {
     pub bs: uint8_t,
     pub mf: uint8_t,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union refmvs_refpair {
-    pub ref_0: [int8_t; 2],
-    pub pair: uint16_t,
-}
+use crate::src::refmvs::refmvs_refpair;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union refmvs_mvpair {
