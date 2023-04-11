@@ -233,19 +233,8 @@ use crate::include::pthread::pthread_mutex_t;
 
 
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct TaskThreadData {
-    pub lock: pthread_mutex_t,
-    pub cond: pthread_cond_t,
-    pub first: atomic_uint,
-    pub cur: libc::c_uint,
-    pub reset_task_cur: atomic_uint,
-    pub cond_signaled: atomic_int,
-    pub delayed_fg: TaskThreadData_delayed_fg,
-    pub inited: libc::c_int,
-}
-use crate::src::internal::TaskThreadData_delayed_fg;
+use crate::src::internal::TaskThreadData;
+
 
 
 

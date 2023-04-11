@@ -1,7 +1,9 @@
 use crate::include::dav1d::data::Dav1dData;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::pthread::pthread_cond_t;
+use crate::include::pthread::pthread_mutex_t;
 use crate::include::stdatomic::atomic_int;
+use crate::include::stdatomic::atomic_uint;
 use crate::include::stdint::int16_t;
 use crate::include::stdint::int32_t;
 use crate::include::stdint::int8_t;
@@ -62,6 +64,19 @@ pub struct TaskThreadData_delayed_fg {
     pub type_0: TaskType,
     pub progress: [atomic_int; 2],
     pub c2rust_unnamed: TaskThreadData_grain_lut_scaling,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct TaskThreadData {
+    pub lock: pthread_mutex_t,
+    pub cond: pthread_cond_t,
+    pub first: atomic_uint,
+    pub cur: libc::c_uint,
+    pub reset_task_cur: atomic_uint,
+    pub cond_signaled: atomic_int,
+    pub delayed_fg: TaskThreadData_delayed_fg,
+    pub inited: libc::c_int,
 }
 
 #[derive(Copy, Clone)]
