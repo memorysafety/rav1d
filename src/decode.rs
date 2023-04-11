@@ -1656,12 +1656,7 @@ pub struct TxfmInfo {
     pub sub: uint8_t,
     pub ctx: uint8_t,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct refmvs_candidate {
-    pub mv: refmvs_mvpair,
-    pub weight: libc::c_int,
-}
+use crate::src::refmvs::refmvs_candidate;
 #[inline]
 unsafe extern "C" fn ctz(mask: libc::c_uint) -> libc::c_int {
     return mask.trailing_zeros() as i32;
