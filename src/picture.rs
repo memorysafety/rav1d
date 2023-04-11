@@ -462,33 +462,7 @@ pub struct C2RustUnnamed_9 {
     pub uv_angle: int8_t,
     pub cfl_alpha: [int8_t; 2],
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct refmvs_frame {
-    pub frm_hdr: *const Dav1dFrameHeader,
-    pub iw4: libc::c_int,
-    pub ih4: libc::c_int,
-    pub iw8: libc::c_int,
-    pub ih8: libc::c_int,
-    pub sbsz: libc::c_int,
-    pub use_ref_frame_mvs: libc::c_int,
-    pub sign_bias: [uint8_t; 7],
-    pub mfmv_sign: [uint8_t; 7],
-    pub pocdiff: [int8_t; 7],
-    pub mfmv_ref: [uint8_t; 3],
-    pub mfmv_ref2cur: [libc::c_int; 3],
-    pub mfmv_ref2ref: [[libc::c_int; 7]; 3],
-    pub n_mfmvs: libc::c_int,
-    pub rp: *mut refmvs_temporal_block,
-    pub rp_ref: *const *mut refmvs_temporal_block,
-    pub rp_proj: *mut refmvs_temporal_block,
-    pub rp_stride: ptrdiff_t,
-    pub r: *mut refmvs_block,
-    pub r_stride: ptrdiff_t,
-    pub n_tile_rows: libc::c_int,
-    pub n_tile_threads: libc::c_int,
-    pub n_frame_threads: libc::c_int,
-}
+use crate::src::refmvs::refmvs_frame;
 use crate::src::refmvs::refmvs_block;
 
 
