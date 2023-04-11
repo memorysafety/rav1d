@@ -746,12 +746,7 @@ pub struct Dav1dTaskContext_scratch_lap_emu_edge {
     pub c2rust_unnamed: Dav1dTaskContext_scratch_lap,
     pub c2rust_unnamed_0: Dav1dTaskContext_scratch_emu_edge,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union Dav1dTaskContext_scratch_emu_edge {
-    pub emu_edge_8bpc: [uint8_t; 84160],
-    pub emu_edge_16bpc: [uint16_t; 84160],
-}
+use crate::src::internal::Dav1dTaskContext_scratch_emu_edge;
 use crate::src::internal::Dav1dTaskContext_scratch_lap;
 
 use crate::src::internal::Dav1dTaskContext_cf;

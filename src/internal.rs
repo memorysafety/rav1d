@@ -211,6 +211,13 @@ pub union Dav1dTaskContext_scratch_lap {
 
 #[derive(Copy, Clone)]
 #[repr(C)]
+pub union Dav1dTaskContext_scratch_emu_edge {
+    pub emu_edge_8bpc: [uint8_t; 84160],
+    pub emu_edge_16bpc: [uint16_t; 84160],
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
 pub struct Dav1dTaskContext_scratch_interintra_edge_8 {
     pub interintra_8bpc: [uint8_t; 4096],
     pub edge_8bpc: [uint8_t; 257],
