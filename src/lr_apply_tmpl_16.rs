@@ -146,12 +146,12 @@ pub struct TaskThreadData {
     pub cur: libc::c_uint,
     pub reset_task_cur: atomic_uint,
     pub cond_signaled: atomic_int,
-    pub delayed_fg: Dav1dContext_task_thread_delayed_fg,
+    pub delayed_fg: TaskThreadData_delayed_fg,
     pub inited: libc::c_int,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct Dav1dContext_task_thread_delayed_fg {
+pub struct TaskThreadData_delayed_fg {
     pub exec: libc::c_int,
     pub cond: pthread_cond_t,
     pub in_0: *const Dav1dPicture,
