@@ -182,3 +182,9 @@ pub union Dav1dTaskContext_scratch_interintra_edge {
     pub c2rust_unnamed: Dav1dTaskContext_scratch_interintra_edge_8,
     pub c2rust_unnamed_0: Dav1dTaskContext_scratch_interintra_edge_16,
 }
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dTaskContext_frame_thread {
+    pub pass: libc::c_int,
+}

@@ -872,11 +872,7 @@ pub struct Dav1dTaskContext_task_thread {
 use crate::src::internal::FrameTileThreadData;
 use crate::src::thread_data::thread_data;
 use crate::include::pthread::pthread_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dTaskContext_frame_thread {
-    pub pass: libc::c_int,
-}
+use crate::src::internal::Dav1dTaskContext_frame_thread;
 use crate::src::levels::Filter2d;
 
 
