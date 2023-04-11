@@ -556,11 +556,11 @@ use crate::src::internal::Dav1dTaskContext_scratch_interintra_edge;
 #[repr(C)]
 pub union C2RustUnnamed_14 {
     pub levels: [uint8_t; 1088],
-    pub c2rust_unnamed: C2RustUnnamed_15,
+    pub c2rust_unnamed: Dav1dTaskContext_scratch_pal,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_15 {
+pub struct Dav1dTaskContext_scratch_pal {
     pub pal_order: [[uint8_t; 8]; 64],
     pub pal_ctx: [uint8_t; 64],
 }
