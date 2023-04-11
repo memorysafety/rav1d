@@ -157,11 +157,11 @@ pub struct TaskThreadData_delayed_fg {
     pub out: *mut Dav1dPicture,
     pub type_0: TaskType,
     pub progress: [atomic_int; 2],
-    pub c2rust_unnamed: C2RustUnnamed,
+    pub c2rust_unnamed: TaskThreadData_grain_lut_scaling,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union C2RustUnnamed {
+pub union TaskThreadData_grain_lut_scaling {
     pub c2rust_unnamed: TaskThreadData_grain_lut_scaling_8,
     pub c2rust_unnamed_0: TaskThreadData_grain_lut_scaling_16,
 }
