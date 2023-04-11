@@ -60,32 +60,14 @@ use crate::include::dav1d::headers::Dav1dRestorationType;
 
 
 
-use crate::include::dav1d::headers::Dav1dWarpedMotionType;
 
 
 
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dWarpedMotionParams {
-    pub type_0: Dav1dWarpedMotionType,
-    pub matrix: [int32_t; 6],
-    pub u: Dav1dWarpedMotionParams_u,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union Dav1dWarpedMotionParams_u {
-    pub p: Dav1dWarpedMotionParams_u_p,
-    pub abcd: [int16_t; 4],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dWarpedMotionParams_u_p {
-    pub alpha: int16_t,
-    pub beta: int16_t,
-    pub gamma: int16_t,
-    pub delta: int16_t,
-}
+
+use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
+
+
 
 
 

@@ -9,32 +9,14 @@ use crate::include::dav1d::headers::DAV1D_FILTER_BILINEAR;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SHARP;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SMOOTH;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
-use crate::include::dav1d::headers::Dav1dWarpedMotionType;
+
 
 
 
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_IDENTITY;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dWarpedMotionParams {
-    pub type_0: Dav1dWarpedMotionType,
-    pub matrix: [int32_t; 6],
-    pub u: Dav1dWarpedMotionParams_u,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union Dav1dWarpedMotionParams_u {
-    pub p: Dav1dWarpedMotionParams_u_p,
-    pub abcd: [int16_t; 4],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dWarpedMotionParams_u_p {
-    pub alpha: int16_t,
-    pub beta: int16_t,
-    pub gamma: int16_t,
-    pub delta: int16_t,
-}
+use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
+use crate::include::dav1d::headers::Dav1dWarpedMotionParams_u;
+use crate::include::dav1d::headers::Dav1dWarpedMotionParams_u_p;
 
 
 use crate::src::levels::TX_64X64;
