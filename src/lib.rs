@@ -858,19 +858,14 @@ use crate::src::levels::Filter2d;
 
 
 use crate::src::lf_mask::Av1Filter;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union Dav1dTaskContext_scratch {
-    pub c2rust_unnamed: Dav1dTaskContext_scratch_lap_emu_edge,
-    pub c2rust_unnamed_0: Dav1dTaskContext_scratch_levels_pal_ac_interintra_edge,
-}
-use crate::src::internal::Dav1dTaskContext_scratch_levels_pal_ac_interintra_edge;
+use crate::src::internal::Dav1dTaskContext_scratch;
 
 
 
 
 
-use crate::src::internal::Dav1dTaskContext_scratch_lap_emu_edge;
+
+
 
 
 

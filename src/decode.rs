@@ -807,19 +807,14 @@ use crate::src::levels::FILTER_2D_BILINEAR;
 
 
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union Dav1dTaskContext_scratch {
-    pub c2rust_unnamed: Dav1dTaskContext_scratch_lap_emu_edge,
-    pub c2rust_unnamed_0: Dav1dTaskContext_scratch_levels_pal_ac_interintra_edge,
-}
-use crate::src::internal::Dav1dTaskContext_scratch_levels_pal_ac_interintra_edge;
+use crate::src::internal::Dav1dTaskContext_scratch;
 
 
 
 
 
-use crate::src::internal::Dav1dTaskContext_scratch_lap_emu_edge;
+
+
 
 
 
