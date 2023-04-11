@@ -539,12 +539,7 @@ pub union Dav1dTaskContext_scratch_lap {
     pub lap_16bpc: [uint16_t; 4096],
     pub c2rust_unnamed: Dav1dTaskContext_scratch_compinter_seg_mask,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dTaskContext_scratch_compinter_seg_mask {
-    pub compinter: [[int16_t; 16384]; 2],
-    pub seg_mask: [uint8_t; 16384],
-}
+use crate::src::internal::Dav1dTaskContext_scratch_compinter_seg_mask;
 use crate::src::internal::Dav1dTaskContext_cf;
 use crate::src::refmvs::refmvs_tile;
 
