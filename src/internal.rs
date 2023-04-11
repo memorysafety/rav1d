@@ -1,8 +1,9 @@
 use crate::include::dav1d::data::Dav1dData;
 use crate::include::stdint::int16_t;
 use crate::include::stdint::int32_t;
-use crate::include::stdint::uint8_t;
+use crate::include::stdint::int8_t;
 use crate::include::stdint::uint16_t;
+use crate::include::stdint::uint8_t;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -26,6 +27,13 @@ pub const DAV1D_TASK_TYPE_ENTROPY_PROGRESS: TaskType = 3;
 pub const DAV1D_TASK_TYPE_TILE_ENTROPY: TaskType = 2;
 pub const DAV1D_TASK_TYPE_INIT_CDF: TaskType = 1;
 pub const DAV1D_TASK_TYPE_INIT: TaskType = 0;
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct TaskThreadData_grain_lut_scaling_8 {
+    pub grain_lut_8bpc: [[[int8_t; 82]; 74]; 3],
+    pub scaling_8bpc: [[uint8_t; 256]; 3],
+}
 
 #[derive(Copy, Clone)]
 #[repr(C)]

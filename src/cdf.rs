@@ -180,12 +180,7 @@ pub struct TaskThreadData_grain_lut_scaling_16 {
     pub grain_lut_16bpc: [[[int16_t; 82]; 74]; 3],
     pub scaling_16bpc: [[uint8_t; 4096]; 3],
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct TaskThreadData_grain_lut_scaling_8 {
-    pub grain_lut_8bpc: [[[int8_t; 82]; 74]; 3],
-    pub scaling_8bpc: [[uint8_t; 256]; 3],
-}
+use crate::src::internal::TaskThreadData_grain_lut_scaling_8;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dMasteringDisplay;
