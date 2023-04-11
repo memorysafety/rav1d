@@ -458,12 +458,7 @@ pub struct refmvs_block {
     pub mf: uint8_t,
 }
 use crate::src::refmvs::refmvs_refpair;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union refmvs_mvpair {
-    pub mv: [mv; 2],
-    pub n: uint64_t,
-}
+use crate::src::refmvs::refmvs_mvpair;
 use crate::src::refmvs::refmvs_temporal_block;
 use crate::src::env::BlockContext;
 #[derive(Copy, Clone)]
