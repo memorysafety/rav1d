@@ -463,7 +463,7 @@ pub struct C2RustUnnamed_9 {
     pub cfl_alpha: [int8_t; 2],
 }
 use crate::src::refmvs::refmvs_frame;
-use crate::src::refmvs::refmvs_block;
+
 
 
 use crate::src::refmvs::refmvs_temporal_block;
@@ -757,15 +757,7 @@ use crate::src::intra_edge::EdgeBranch;
 pub struct Dav1dRefmvsDSPContext {
     pub splat_mv: splat_mv_fn,
 }
-pub type splat_mv_fn = Option::<
-    unsafe extern "C" fn(
-        *mut *mut refmvs_block,
-        *const refmvs_block,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
+use crate::src::refmvs::splat_mv_fn;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dDSPContext {
