@@ -201,12 +201,12 @@ use crate::src::levels::BlockSize;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union mv {
-    pub c2rust_unnamed: C2RustUnnamed,
+    pub c2rust_unnamed: mv_xy,
     pub n: uint32_t,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed {
+pub struct mv_xy {
     pub y: int16_t,
     pub x: int16_t,
 }
@@ -400,7 +400,7 @@ unsafe extern "C" fn get_gmv_2d(
         1 => {
             let mut res_0: mv = mv {
                 c2rust_unnamed: {
-                    let mut init = C2RustUnnamed {
+                    let mut init = mv_xy {
                         y: ((*gmv).matrix[0 as libc::c_int as usize]
                             >> 13 as libc::c_int) as int16_t,
                         x: ((*gmv).matrix[1 as libc::c_int as usize]
@@ -417,7 +417,7 @@ unsafe extern "C" fn get_gmv_2d(
         0 => {
             return mv {
                 c2rust_unnamed: {
-                    let mut init = C2RustUnnamed {
+                    let mut init = mv_xy {
                         y: 0 as libc::c_int as int16_t,
                         x: 0 as libc::c_int as int16_t,
                     };
@@ -444,7 +444,7 @@ unsafe extern "C" fn get_gmv_2d(
     let round: libc::c_int = (1 as libc::c_int) << shift >> 1 as libc::c_int;
     let mut res: mv = mv {
         c2rust_unnamed: {
-            let mut init = C2RustUnnamed {
+            let mut init = mv_xy {
                 y: apply_sign(
                     abs(yc) + round >> shift << ((*hdr).hp == 0) as libc::c_int,
                     yc,
@@ -767,7 +767,7 @@ unsafe extern "C" fn mv_projection(mv: mv, num: libc::c_int, den: libc::c_int) -
     let x: libc::c_int = mv.c2rust_unnamed.x as libc::c_int * frac;
     return mv {
         c2rust_unnamed: {
-            let mut init = C2RustUnnamed {
+            let mut init = mv_xy {
                 y: iclip(
                     y + 8192 as libc::c_int + (y >> 31 as libc::c_int)
                         >> 14 as libc::c_int,
@@ -943,7 +943,7 @@ unsafe extern "C" fn add_compound_extended_candidate(
         } else {
             let mut i_cand_mv: mv = mv {
                 c2rust_unnamed: {
-                    let mut init = C2RustUnnamed {
+                    let mut init = mv_xy {
                         y: -(cand_mv.c2rust_unnamed.y as libc::c_int) as int16_t,
                         x: -(cand_mv.c2rust_unnamed.x as libc::c_int) as int16_t,
                     };
@@ -1049,10 +1049,10 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
     let bh4: libc::c_int = *b_dim.offset(1 as libc::c_int as isize) as libc::c_int;
     let h4: libc::c_int = imin(imin(bh4, 16 as libc::c_int), (*rt).tile_row.end - by4);
     let mut gmv: [mv; 2] = [mv {
-        c2rust_unnamed: C2RustUnnamed { y: 0, x: 0 },
+        c2rust_unnamed: mv_xy { y: 0, x: 0 },
     }; 2];
     let mut tgmv: [mv; 2] = [mv {
-        c2rust_unnamed: C2RustUnnamed { y: 0, x: 0 },
+        c2rust_unnamed: mv_xy { y: 0, x: 0 },
     }; 2];
     *cnt = 0 as libc::c_int;
     if !(ref_0.ref_0[0 as libc::c_int as usize] as libc::c_int >= 0 as libc::c_int
