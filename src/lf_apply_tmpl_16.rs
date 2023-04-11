@@ -467,12 +467,7 @@ pub union refmvs_mvpair {
     pub mv: [mv; 2],
     pub n: uint64_t,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct refmvs_temporal_block {
-    pub mv: mv,
-    pub ref_0: int8_t,
-}
+use crate::src::refmvs::refmvs_temporal_block;
 use crate::src::env::BlockContext;
 #[derive(Copy, Clone)]
 #[repr(C)]

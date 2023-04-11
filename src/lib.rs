@@ -1046,12 +1046,7 @@ pub struct refmvs_tile_range {
     pub start: libc::c_int,
     pub end: libc::c_int,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct refmvs_temporal_block {
-    pub mv: mv,
-    pub ref_0: int8_t,
-}
+use crate::src::refmvs::refmvs_temporal_block;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct refmvs_frame {
