@@ -258,16 +258,9 @@ pub type splat_mv_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-#[derive(Copy, Clone)]
-#[repr(C, packed)]
-pub struct refmvs_block {
-    pub mv: refmvs_mvpair,
-    pub ref_0: refmvs_refpair,
-    pub bs: uint8_t,
-    pub mf: uint8_t,
-}
-use crate::src::refmvs::refmvs_refpair;
-use crate::src::refmvs::refmvs_mvpair;
+use crate::src::refmvs::refmvs_block;
+
+
 use crate::src::levels::mv;
 
 #[derive(Copy, Clone)]

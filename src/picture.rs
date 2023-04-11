@@ -489,16 +489,9 @@ pub struct refmvs_frame {
     pub n_tile_threads: libc::c_int,
     pub n_frame_threads: libc::c_int,
 }
-#[derive(Copy, Clone)]
-#[repr(C, packed)]
-pub struct refmvs_block {
-    pub mv: refmvs_mvpair,
-    pub ref_0: refmvs_refpair,
-    pub bs: uint8_t,
-    pub mf: uint8_t,
-}
-use crate::src::refmvs::refmvs_refpair;
-use crate::src::refmvs::refmvs_mvpair;
+use crate::src::refmvs::refmvs_block;
+
+
 use crate::src::refmvs::refmvs_temporal_block;
 use crate::src::env::BlockContext;
 #[derive(Copy, Clone)]
