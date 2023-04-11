@@ -1,4 +1,7 @@
 use crate::include::dav1d::data::Dav1dData;
+use crate::include::dav1d::picture::Dav1dPicture;
+use crate::include::pthread::pthread_cond_t;
+use crate::include::stdatomic::atomic_int;
 use crate::include::stdint::int16_t;
 use crate::include::stdint::int32_t;
 use crate::include::stdint::int8_t;
@@ -47,6 +50,18 @@ pub struct TaskThreadData_grain_lut_scaling_16 {
 pub union TaskThreadData_grain_lut_scaling {
     pub c2rust_unnamed: TaskThreadData_grain_lut_scaling_8,
     pub c2rust_unnamed_0: TaskThreadData_grain_lut_scaling_16,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct TaskThreadData_delayed_fg {
+    pub exec: libc::c_int,
+    pub cond: pthread_cond_t,
+    pub in_0: *const Dav1dPicture,
+    pub out: *mut Dav1dPicture,
+    pub type_0: TaskType,
+    pub progress: [atomic_int; 2],
+    pub c2rust_unnamed: TaskThreadData_grain_lut_scaling,
 }
 
 #[derive(Copy, Clone)]

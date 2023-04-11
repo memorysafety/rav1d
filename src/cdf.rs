@@ -127,7 +127,7 @@ pub struct Dav1dFrameContext_task_thread_pending_tasks {
     pub tail: *mut Dav1dTask,
 }
 use crate::src::internal::Dav1dTask;
-use crate::src::internal::TaskType;
+
 
 
 
@@ -157,18 +157,8 @@ pub struct TaskThreadData {
     pub delayed_fg: TaskThreadData_delayed_fg,
     pub inited: libc::c_int,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct TaskThreadData_delayed_fg {
-    pub exec: libc::c_int,
-    pub cond: pthread_cond_t,
-    pub in_0: *const Dav1dPicture,
-    pub out: *mut Dav1dPicture,
-    pub type_0: TaskType,
-    pub progress: [atomic_int; 2],
-    pub c2rust_unnamed: TaskThreadData_grain_lut_scaling,
-}
-use crate::src::internal::TaskThreadData_grain_lut_scaling;
+use crate::src::internal::TaskThreadData_delayed_fg;
+
 
 
 use crate::include::dav1d::picture::Dav1dPicture;
