@@ -248,14 +248,9 @@ pub struct TaskThreadData_delayed_fg {
     pub progress: [atomic_int; 2],
     pub c2rust_unnamed: TaskThreadData_grain_lut_scaling,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union TaskThreadData_grain_lut_scaling {
-    pub c2rust_unnamed: TaskThreadData_grain_lut_scaling_8,
-    pub c2rust_unnamed_0: TaskThreadData_grain_lut_scaling_16,
-}
-use crate::src::internal::TaskThreadData_grain_lut_scaling_16;
-use crate::src::internal::TaskThreadData_grain_lut_scaling_8;
+use crate::src::internal::TaskThreadData_grain_lut_scaling;
+
+
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dMasteringDisplay;

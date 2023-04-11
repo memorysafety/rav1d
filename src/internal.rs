@@ -44,6 +44,13 @@ pub struct TaskThreadData_grain_lut_scaling_16 {
 
 #[derive(Copy, Clone)]
 #[repr(C)]
+pub union TaskThreadData_grain_lut_scaling {
+    pub c2rust_unnamed: TaskThreadData_grain_lut_scaling_8,
+    pub c2rust_unnamed_0: TaskThreadData_grain_lut_scaling_16,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
 pub struct Dav1dTask {
     pub frame_idx: libc::c_uint,
     pub type_0: TaskType,
