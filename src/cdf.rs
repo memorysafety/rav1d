@@ -577,16 +577,7 @@ pub struct Dav1dTileState_frame_thread {
     pub pal_idx: *mut uint8_t,
     pub cf: *mut libc::c_void,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dTileState_tiling {
-    pub col_start: libc::c_int,
-    pub col_end: libc::c_int,
-    pub row_start: libc::c_int,
-    pub row_end: libc::c_int,
-    pub col: libc::c_int,
-    pub row: libc::c_int,
-}
+use crate::src::internal::Dav1dTileState_tiling;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
