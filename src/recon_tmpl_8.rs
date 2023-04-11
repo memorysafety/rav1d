@@ -543,7 +543,7 @@ pub union Dav1dTaskContext_scratch {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct C2RustUnnamed_10 {
-    pub c2rust_unnamed: C2RustUnnamed_14,
+    pub c2rust_unnamed: Dav1dTaskContext_scratch_levels_pal,
     pub ac: [int16_t; 1024],
     pub pal_idx: [uint8_t; 8192],
     pub pal: [[uint16_t; 8]; 3],
@@ -554,7 +554,7 @@ use crate::src::internal::Dav1dTaskContext_scratch_interintra_edge;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union C2RustUnnamed_14 {
+pub union Dav1dTaskContext_scratch_levels_pal {
     pub levels: [uint8_t; 1088],
     pub c2rust_unnamed: Dav1dTaskContext_scratch_pal,
 }
