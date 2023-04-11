@@ -712,17 +712,9 @@ pub struct Dav1dTaskContext {
     pub frame_thread: Dav1dTaskContext_frame_thread,
     pub task_thread: Dav1dTaskContext_task_thread,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dTaskContext_task_thread {
-    pub td: thread_data,
-    pub ttd: *mut TaskThreadData,
-    pub fttd: *mut FrameTileThreadData,
-    pub flushed: libc::c_int,
-    pub die: libc::c_int,
-}
+use crate::src::internal::Dav1dTaskContext_task_thread;
 use crate::src::internal::FrameTileThreadData;
-use crate::src::thread_data::thread_data;
+
 
 use crate::src::internal::Dav1dTaskContext_frame_thread;
 use crate::src::levels::Filter2d;
