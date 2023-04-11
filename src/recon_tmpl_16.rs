@@ -206,14 +206,7 @@ pub struct Dav1dFrameContext_task_thread {
     pub task_cur_prev: *mut Dav1dTask,
     pub pending_tasks: Dav1dFrameContext_task_thread_pending_tasks,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFrameContext_task_thread_pending_tasks {
-    pub merge: atomic_int,
-    pub lock: pthread_mutex_t,
-    pub head: *mut Dav1dTask,
-    pub tail: *mut Dav1dTask,
-}
+use crate::src::internal::Dav1dFrameContext_task_thread_pending_tasks;
 use crate::src::internal::Dav1dTask;
 
 
