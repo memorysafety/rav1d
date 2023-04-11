@@ -757,12 +757,8 @@ use crate::src::intra_edge::EdgeFlags;
 
 use crate::src::intra_edge::EdgeNode;
 use crate::src::intra_edge::EdgeBranch;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dRefmvsDSPContext {
-    pub splat_mv: splat_mv_fn,
-}
-use crate::src::refmvs::splat_mv_fn;
+use crate::src::refmvs::Dav1dRefmvsDSPContext;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dDSPContext {
