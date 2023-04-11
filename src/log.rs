@@ -713,7 +713,7 @@ use crate::src::lf_mask::Av1Filter;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union Dav1dTaskContext_scratch {
-    pub c2rust_unnamed: C2RustUnnamed_10,
+    pub c2rust_unnamed: Dav1dTaskContext_scratch_lap_emu_edge,
     pub c2rust_unnamed_0: C2RustUnnamed_4,
 }
 #[derive(Copy, Clone)]
@@ -742,7 +742,7 @@ pub struct Dav1dTaskContext_scratch_pal {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_10 {
+pub struct Dav1dTaskContext_scratch_lap_emu_edge {
     pub c2rust_unnamed: Dav1dTaskContext_scratch_lap,
     pub c2rust_unnamed_0: Dav1dTaskContext_scratch_emu_edge,
 }

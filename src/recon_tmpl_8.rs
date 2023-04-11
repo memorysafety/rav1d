@@ -537,7 +537,7 @@ use crate::src::levels::FILTER_2D_BILINEAR;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union Dav1dTaskContext_scratch {
-    pub c2rust_unnamed: C2RustUnnamed_16,
+    pub c2rust_unnamed: Dav1dTaskContext_scratch_lap_emu_edge,
     pub c2rust_unnamed_0: C2RustUnnamed_10,
 }
 #[derive(Copy, Clone)]
@@ -566,7 +566,7 @@ pub struct Dav1dTaskContext_scratch_pal {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_16 {
+pub struct Dav1dTaskContext_scratch_lap_emu_edge {
     pub c2rust_unnamed: Dav1dTaskContext_scratch_lap,
     pub c2rust_unnamed_0: Dav1dTaskContext_scratch_emu_edge,
 }
