@@ -9,6 +9,9 @@ use crate::include::stdint::int32_t;
 use crate::include::stdint::int8_t;
 use crate::include::stdint::uint16_t;
 use crate::include::stdint::uint8_t;
+use crate::src::intra_edge::EdgeBranch;
+use crate::src::intra_edge::EdgeNode;
+use crate::src::intra_edge::EdgeTip;
 use crate::src::picture::Dav1dThreadPicture;
 use crate::src::r#ref::Dav1dRef;
 use crate::src::thread_data::thread_data;
@@ -96,6 +99,16 @@ pub struct Dav1dContext_refs {
     pub segmap: *mut Dav1dRef,
     pub refmvs: *mut Dav1dRef,
     pub refpoc: [libc::c_uint; 7],
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dContext_intra_edge {
+    pub root: [*mut EdgeNode; 2],
+    pub branch_sb128: [EdgeBranch; 85],
+    pub branch_sb64: [EdgeBranch; 21],
+    pub tip_sb128: [EdgeTip; 256],
+    pub tip_sb64: [EdgeTip; 64],
 }
 
 #[derive(Copy, Clone)]

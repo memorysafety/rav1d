@@ -705,16 +705,8 @@ use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_CDEF;
 use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_DEBLOCK;
 
 use crate::include::dav1d::picture::Dav1dPicAllocator;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dContext_intra_edge {
-    pub root: [*mut EdgeNode; 2],
-    pub branch_sb128: [EdgeBranch; 85],
-    pub branch_sb64: [EdgeBranch; 21],
-    pub tip_sb128: [EdgeTip; 256],
-    pub tip_sb64: [EdgeTip; 64],
-}
-use crate::src::intra_edge::EdgeTip;
+use crate::src::internal::Dav1dContext_intra_edge;
+
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::intra_edge::EDGE_I420_LEFT_HAS_BOTTOM;
 
@@ -722,8 +714,8 @@ use crate::src::intra_edge::EDGE_I444_LEFT_HAS_BOTTOM;
 use crate::src::intra_edge::EDGE_I420_TOP_HAS_RIGHT;
 
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
-use crate::src::intra_edge::EdgeNode;
-use crate::src::intra_edge::EdgeBranch;
+
+
 use crate::src::refmvs::Dav1dRefmvsDSPContext;
 
 #[derive(Copy, Clone)]
