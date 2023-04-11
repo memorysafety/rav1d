@@ -203,6 +203,14 @@ pub struct Dav1dTaskContext_scratch_compinter_seg_mask {
 
 #[derive(Copy, Clone)]
 #[repr(C)]
+pub union Dav1dTaskContext_scratch_lap {
+    pub lap_8bpc: [uint8_t; 4096],
+    pub lap_16bpc: [uint16_t; 4096],
+    pub c2rust_unnamed: Dav1dTaskContext_scratch_compinter_seg_mask,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
 pub struct Dav1dTaskContext_scratch_interintra_edge_8 {
     pub interintra_8bpc: [uint8_t; 4096],
     pub edge_8bpc: [uint8_t; 257],

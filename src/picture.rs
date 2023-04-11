@@ -528,14 +528,8 @@ pub union Dav1dTaskContext_scratch_emu_edge {
     pub emu_edge_8bpc: [uint8_t; 84160],
     pub emu_edge_16bpc: [uint16_t; 84160],
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union Dav1dTaskContext_scratch_lap {
-    pub lap_8bpc: [uint8_t; 4096],
-    pub lap_16bpc: [uint16_t; 4096],
-    pub c2rust_unnamed: Dav1dTaskContext_scratch_compinter_seg_mask,
-}
-use crate::src::internal::Dav1dTaskContext_scratch_compinter_seg_mask;
+use crate::src::internal::Dav1dTaskContext_scratch_lap;
+
 use crate::src::internal::Dav1dTaskContext_cf;
 use crate::src::refmvs::refmvs_tile;
 
