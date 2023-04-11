@@ -13,13 +13,8 @@ extern "C" {
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union mv {
-    pub c2rust_unnamed: mv_xy,
-    pub n: uint32_t,
-}
-use crate::src::levels::mv_xy;
+use crate::src::levels::mv;
+
 #[inline]
 unsafe extern "C" fn apply_sign(v: libc::c_int, s: libc::c_int) -> libc::c_int {
     return if s < 0 as libc::c_int { -v } else { v };
