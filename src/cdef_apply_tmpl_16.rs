@@ -475,14 +475,9 @@ pub struct Dav1dTaskContext_scratch_pal {
     pub pal_order: [[uint8_t; 8]; 64],
     pub pal_ctx: [uint8_t; 64],
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dTaskContext_scratch_lap_emu_edge {
-    pub c2rust_unnamed: Dav1dTaskContext_scratch_lap,
-    pub c2rust_unnamed_0: Dav1dTaskContext_scratch_emu_edge,
-}
-use crate::src::internal::Dav1dTaskContext_scratch_emu_edge;
-use crate::src::internal::Dav1dTaskContext_scratch_lap;
+use crate::src::internal::Dav1dTaskContext_scratch_lap_emu_edge;
+
+
 
 use crate::src::internal::Dav1dTaskContext_cf;
 use crate::src::refmvs::refmvs_tile;
