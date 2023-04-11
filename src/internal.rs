@@ -260,6 +260,23 @@ pub union Dav1dTaskContext_scratch_interintra_edge {
 
 #[derive(Copy, Clone)]
 #[repr(C)]
+pub struct Dav1dTaskContext_scratch_levels_pal_ac_interintra_edge {
+    pub c2rust_unnamed: Dav1dTaskContext_scratch_levels_pal,
+    pub ac: [int16_t; 1024],
+    pub pal_idx: [uint8_t; 8192],
+    pub pal: [[uint16_t; 8]; 3],
+    pub c2rust_unnamed_0: Dav1dTaskContext_scratch_interintra_edge,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub union Dav1dTaskContext_scratch {
+    pub c2rust_unnamed: Dav1dTaskContext_scratch_lap_emu_edge,
+    pub c2rust_unnamed_0: Dav1dTaskContext_scratch_levels_pal_ac_interintra_edge,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
 pub struct Dav1dTaskContext_frame_thread {
     pub pass: libc::c_int,
 }
