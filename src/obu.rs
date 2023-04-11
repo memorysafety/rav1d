@@ -622,16 +622,8 @@ pub struct C2RustUnnamed_19 {
     pub seg_mask: [uint8_t; 16384],
 }
 use crate::src::internal::Dav1dTaskContext_cf;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct refmvs_tile {
-    pub rf: *const refmvs_frame,
-    pub r: [*mut refmvs_block; 37],
-    pub rp_proj: *mut refmvs_temporal_block,
-    pub tile_col: refmvs_tile_range,
-    pub tile_row: refmvs_tile_range,
-}
-use crate::src::refmvs::refmvs_tile_range;
+use crate::src::refmvs::refmvs_tile;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTileState {
