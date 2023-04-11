@@ -165,12 +165,7 @@ pub union TaskThreadData_grain_lut_scaling {
     pub c2rust_unnamed: TaskThreadData_grain_lut_scaling_8,
     pub c2rust_unnamed_0: TaskThreadData_grain_lut_scaling_16,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct TaskThreadData_grain_lut_scaling_16 {
-    pub grain_lut_16bpc: [[[int16_t; 82]; 74]; 3],
-    pub scaling_16bpc: [[uint8_t; 4096]; 3],
-}
+use crate::src::internal::TaskThreadData_grain_lut_scaling_16;
 use crate::src::internal::TaskThreadData_grain_lut_scaling_8;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::headers::Dav1dITUTT35;
