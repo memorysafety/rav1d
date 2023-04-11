@@ -460,11 +460,11 @@ use crate::src::levels::Filter2d;
 #[repr(C)]
 pub union Dav1dTaskContext_scratch {
     pub c2rust_unnamed: Dav1dTaskContext_scratch_lap_emu_edge,
-    pub c2rust_unnamed_0: C2RustUnnamed_10,
+    pub c2rust_unnamed_0: Dav1dTaskContext_scratch_levels_pal_ac_interintra_edge,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_10 {
+pub struct Dav1dTaskContext_scratch_levels_pal_ac_interintra_edge {
     pub c2rust_unnamed: Dav1dTaskContext_scratch_levels_pal,
     pub ac: [int16_t; 1024],
     pub pal_idx: [uint8_t; 8192],
