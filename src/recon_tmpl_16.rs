@@ -684,12 +684,7 @@ pub struct refmvs_tile {
     pub tile_col: refmvs_tile_range,
     pub tile_row: refmvs_tile_range,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct refmvs_tile_range {
-    pub start: libc::c_int,
-    pub end: libc::c_int,
-}
+use crate::src::refmvs::refmvs_tile_range;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTileState {
