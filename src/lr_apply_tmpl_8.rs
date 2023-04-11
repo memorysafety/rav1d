@@ -704,13 +704,8 @@ use crate::src::looprestoration::LR_HAVE_BOTTOM;
 use crate::src::looprestoration::LR_HAVE_TOP;
 use crate::src::looprestoration::LR_HAVE_RIGHT;
 use crate::src::looprestoration::LR_HAVE_LEFT;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union LooprestorationParams {
-    pub filter: [[int16_t; 8]; 2],
-    pub sgr: LooprestorationParams_sgr,
-}
-use crate::src::looprestoration::LooprestorationParams_sgr;
+use crate::src::looprestoration::LooprestorationParams;
+
 pub type const_left_pixel_row = *const [pixel; 4];
 #[derive(Copy, Clone)]
 #[repr(C)]

@@ -15,3 +15,10 @@ pub struct LooprestorationParams_sgr {
     pub w0: int16_t,
     pub w1: int16_t,
 }
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub union LooprestorationParams {
+    pub filter: [[int16_t; 8]; 2],
+    pub sgr: LooprestorationParams_sgr,
+}
