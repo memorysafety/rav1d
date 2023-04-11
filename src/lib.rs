@@ -842,7 +842,7 @@ pub struct TaskThreadData_delayed_fg {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union C2RustUnnamed_0 {
-    pub c2rust_unnamed: C2RustUnnamed_2,
+    pub c2rust_unnamed: TaskThreadData_grain_lut_scaling_8,
     pub c2rust_unnamed_0: C2RustUnnamed_1,
 }
 #[derive(Copy, Clone)]
@@ -853,7 +853,7 @@ pub struct C2RustUnnamed_1 {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_2 {
+pub struct TaskThreadData_grain_lut_scaling_8 {
     pub grain_lut_8bpc: [[[int8_t; 82]; 74]; 3],
     pub scaling_8bpc: [[uint8_t; 256]; 3],
 }
