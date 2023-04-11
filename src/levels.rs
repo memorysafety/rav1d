@@ -1,3 +1,5 @@
+use crate::include::stdint::int16_t;
+
 pub type ObuMetaType = libc::c_uint;
 pub const OBU_META_TIMECODE: ObuMetaType = 5;
 pub const OBU_META_ITUT_T35: ObuMetaType = 4;
@@ -175,6 +177,14 @@ pub type InterIntraType = libc::c_uint;
 pub const INTER_INTRA_WEDGE: InterIntraType = 2;
 pub const INTER_INTRA_BLEND: InterIntraType = 1;
 pub const INTER_INTRA_NONE: InterIntraType = 0;
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct mv_xy {
+    pub y: int16_t,
+    pub x: int16_t,
+}
+
 pub type MotionMode = libc::c_uint;
 pub const MM_WARP: MotionMode = 2;
 pub const MM_OBMC: MotionMode = 1;

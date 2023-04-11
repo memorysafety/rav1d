@@ -503,12 +503,7 @@ pub union mv {
     pub c2rust_unnamed: mv_xy,
     pub n: uint32_t,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct mv_xy {
-    pub y: int16_t,
-    pub x: int16_t,
-}
+use crate::src::levels::mv_xy;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct C2RustUnnamed_26 {
