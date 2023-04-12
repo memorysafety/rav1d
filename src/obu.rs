@@ -824,10 +824,7 @@ pub struct GetBits {
     pub ptr_start: *const uint8_t,
     pub ptr_end: *const uint8_t,
 }
-#[inline]
-unsafe extern "C" fn imax(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a > b { a } else { b };
-}
+use crate::include::common::intops::imax;
 #[inline]
 unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
     return if a < b { a } else { b };

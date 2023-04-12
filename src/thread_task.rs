@@ -784,10 +784,7 @@ unsafe extern "C" fn ctz(mask: libc::c_uint) -> libc::c_int {
 unsafe extern "C" fn dav1d_set_thread_name(name: *const libc::c_char) {
     prctl(15 as libc::c_int, name);
 }
-#[inline]
-unsafe extern "C" fn imax(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a > b { a } else { b };
-}
+use crate::include::common::intops::imax;
 #[inline]
 unsafe extern "C" fn umin(a: libc::c_uint, b: libc::c_uint) -> libc::c_uint {
     return if a < b { a } else { b };

@@ -259,10 +259,7 @@ pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
 unsafe extern "C" fn clz(mask: libc::c_uint) -> libc::c_int {
     return mask.leading_zeros() as i32;
 }
-#[inline]
-unsafe extern "C" fn imax(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a > b { a } else { b };
-}
+use crate::include::common::intops::imax;
 #[inline]
 unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
     return if a < b { a } else { b };
