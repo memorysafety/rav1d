@@ -883,11 +883,11 @@ pub struct Av1Block {
 #[repr(C)]
 pub union C2RustUnnamed_15 {
     pub c2rust_unnamed: Av1Block_intra,
-    pub c2rust_unnamed_0: C2RustUnnamed_16,
+    pub c2rust_unnamed_0: Av1Block_inter,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_16 {
+pub struct Av1Block_inter {
     pub c2rust_unnamed: Av1Block_inter_nd,
     pub comp_type: uint8_t,
     pub inter_mode: uint8_t,
