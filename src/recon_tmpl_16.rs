@@ -1179,12 +1179,7 @@ pub union alias32 {
     pub u32_0: uint32_t,
     pub u8_0: [uint8_t; 4],
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union alias16 {
-    pub u16_0: uint16_t,
-    pub u8_0: [uint8_t; 2],
-}
+use crate::src::ctx::alias16;
 use crate::src::ctx::alias8;
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
