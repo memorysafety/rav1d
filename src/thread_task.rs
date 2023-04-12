@@ -369,16 +369,11 @@ pub struct Av1Block_inter {
     pub tx_split0: uint8_t,
     pub tx_split1: uint16_t,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union Av1Block_inter_nd {
-    pub c2rust_unnamed: Av1Block_inter_1d,
-    pub c2rust_unnamed_0: Av1Block_inter_2d,
-}
-use crate::src::levels::Av1Block_inter_2d;
+use crate::src::levels::Av1Block_inter_nd;
 
 
-use crate::src::levels::Av1Block_inter_1d;
+
+
 use crate::src::levels::Av1Block_intra;
 use crate::src::refmvs::refmvs_frame;
 
