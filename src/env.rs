@@ -1,5 +1,7 @@
+use crate::include::stdint::int16_t;
 use crate::include::stdint::int8_t;
 use crate::include::stdint::uint8_t;
+use crate::src::levels::mv;
 use crate::src::levels::TxfmType;
 use crate::src::levels::DCT_DCT;
 use crate::src::levels::H_ADST;
@@ -69,4 +71,18 @@ pub unsafe extern "C" fn get_poc_diff(
     let mask: libc::c_int = (1 as libc::c_int) << order_hint_n_bits - 1 as libc::c_int;
     let diff: libc::c_int = poc0 - poc1;
     return (diff & mask - 1 as libc::c_int) - (diff & mask);
+}
+
+#[inline]
+pub unsafe extern "C" fn fix_int_mv_precision(mv: *mut mv) {
+    (*mv)
+        .c2rust_unnamed
+        .x = (((*mv).c2rust_unnamed.x as libc::c_int
+        - ((*mv).c2rust_unnamed.x as libc::c_int >> 15 as libc::c_int)
+        + 3 as libc::c_int) as libc::c_uint & !(7 as libc::c_uint)) as int16_t;
+    (*mv)
+        .c2rust_unnamed
+        .y = (((*mv).c2rust_unnamed.y as libc::c_int
+        - ((*mv).c2rust_unnamed.y as libc::c_int >> 15 as libc::c_int)
+        + 3 as libc::c_int) as libc::c_uint & !(7 as libc::c_uint)) as int16_t;
 }
