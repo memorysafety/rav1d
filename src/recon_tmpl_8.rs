@@ -916,32 +916,7 @@ unsafe extern "C" fn coef_dump(
         y += 1;
     }
 }
-#[inline]
-unsafe extern "C" fn ac_dump(
-    mut buf: *const int16_t,
-    mut w: libc::c_int,
-    mut h: libc::c_int,
-    mut what: *const libc::c_char,
-) {
-    printf(b"%s\n\0" as *const u8 as *const libc::c_char, what);
-    loop {
-        let fresh1 = h;
-        h = h - 1;
-        if !(fresh1 != 0) {
-            break;
-        }
-        let mut x: libc::c_int = 0 as libc::c_int;
-        while x < w {
-            printf(
-                b" %03d\0" as *const u8 as *const libc::c_char,
-                *buf.offset(x as isize) as libc::c_int,
-            );
-            x += 1;
-        }
-        buf = buf.offset(w as isize);
-        printf(b"\n\0" as *const u8 as *const libc::c_char);
-    };
-}
+use crate::include::common::dump::ac_dump;
 use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
 use crate::include::common::intops::umin;

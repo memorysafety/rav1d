@@ -18,6 +18,7 @@ extern crate libc;
 pub mod include {
 pub mod common {
 pub mod attributes;
+pub mod dump;
 pub mod intops;
 } // mod common
 pub mod dav1d {
