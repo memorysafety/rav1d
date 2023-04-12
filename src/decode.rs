@@ -1176,7 +1176,7 @@ use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
-use crate::include::common::intops::apply_sign;
+
 use crate::include::common::intops::apply_sign64;
 use crate::include::common::intops::ulog2;
 use crate::src::mem::dav1d_alloc_aligned;
@@ -1936,95 +1936,9 @@ unsafe extern "C" fn get_cur_frame_segid(
         }) as libc::c_uint;
     };
 }
-use crate::src::env::fix_int_mv_precision;
+
 use crate::src::env::fix_mv_precision;
-#[inline]
-unsafe extern "C" fn get_gmv_2d(
-    gmv: *const Dav1dWarpedMotionParams,
-    bx4: libc::c_int,
-    by4: libc::c_int,
-    bw4: libc::c_int,
-    bh4: libc::c_int,
-    hdr: *const Dav1dFrameHeader,
-) -> mv {
-    match (*gmv).type_0 as libc::c_uint {
-        2 => {
-            if !((*gmv).matrix[5 as libc::c_int as usize]
-                == (*gmv).matrix[2 as libc::c_int as usize])
-            {
-                unreachable!();
-            }
-            if !((*gmv).matrix[4 as libc::c_int as usize]
-                == -(*gmv).matrix[3 as libc::c_int as usize])
-            {
-                unreachable!();
-            }
-        }
-        1 => {
-            let mut res_0: mv = mv {
-                c2rust_unnamed: {
-                    let mut init = mv_xy {
-                        y: ((*gmv).matrix[0 as libc::c_int as usize]
-                            >> 13 as libc::c_int) as int16_t,
-                        x: ((*gmv).matrix[1 as libc::c_int as usize]
-                            >> 13 as libc::c_int) as int16_t,
-                    };
-                    init
-                },
-            };
-            if (*hdr).force_integer_mv != 0 {
-                fix_int_mv_precision(&mut res_0);
-            }
-            return res_0;
-        }
-        0 => {
-            return mv {
-                c2rust_unnamed: {
-                    let mut init = mv_xy {
-                        y: 0 as libc::c_int as int16_t,
-                        x: 0 as libc::c_int as int16_t,
-                    };
-                    init
-                },
-            };
-        }
-        3 | _ => {}
-    }
-    let x: libc::c_int = bx4 * 4 as libc::c_int + bw4 * 2 as libc::c_int
-        - 1 as libc::c_int;
-    let y: libc::c_int = by4 * 4 as libc::c_int + bh4 * 2 as libc::c_int
-        - 1 as libc::c_int;
-    let xc: libc::c_int = ((*gmv).matrix[2 as libc::c_int as usize]
-        - ((1 as libc::c_int) << 16 as libc::c_int)) * x
-        + (*gmv).matrix[3 as libc::c_int as usize] * y
-        + (*gmv).matrix[0 as libc::c_int as usize];
-    let yc: libc::c_int = ((*gmv).matrix[5 as libc::c_int as usize]
-        - ((1 as libc::c_int) << 16 as libc::c_int)) * y
-        + (*gmv).matrix[4 as libc::c_int as usize] * x
-        + (*gmv).matrix[1 as libc::c_int as usize];
-    let shift: libc::c_int = 16 as libc::c_int
-        - (3 as libc::c_int - ((*hdr).hp == 0) as libc::c_int);
-    let round: libc::c_int = (1 as libc::c_int) << shift >> 1 as libc::c_int;
-    let mut res: mv = mv {
-        c2rust_unnamed: {
-            let mut init = mv_xy {
-                y: apply_sign(
-                    abs(yc) + round >> shift << ((*hdr).hp == 0) as libc::c_int,
-                    yc,
-                ) as int16_t,
-                x: apply_sign(
-                    abs(xc) + round >> shift << ((*hdr).hp == 0) as libc::c_int,
-                    xc,
-                ) as int16_t,
-            };
-            init
-        },
-    };
-    if (*hdr).force_integer_mv != 0 {
-        fix_int_mv_precision(&mut res);
-    }
-    return res;
-}
+use crate::src::env::get_gmv_2d;
 use crate::src::msac::dav1d_msac_decode_bools;
 #[inline]
 unsafe extern "C" fn dav1d_msac_decode_uniform(

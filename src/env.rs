@@ -1,8 +1,11 @@
+use crate::include::common::intops::apply_sign;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
+use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 use crate::include::stdint::int16_t;
 use crate::include::stdint::int8_t;
 use crate::include::stdint::uint8_t;
 use crate::src::levels::mv;
+use crate::src::levels::mv_xy;
 use crate::src::levels::TxfmType;
 use crate::src::levels::DCT_DCT;
 use crate::src::levels::H_ADST;
@@ -13,6 +16,10 @@ use crate::src::levels::TX_32X32;
 use crate::src::levels::V_ADST;
 use crate::src::levels::V_FLIPADST;
 use crate::src::tables::TxfmInfo;
+
+extern "C" {
+    fn abs(_: libc::c_int) -> libc::c_int;
+}
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -104,4 +111,92 @@ pub unsafe extern "C" fn fix_mv_precision(hdr: *const Dav1dFrameHeader, mv: *mut
             - ((*mv).c2rust_unnamed.y as libc::c_int >> 15 as libc::c_int))
             as libc::c_uint & !(1 as libc::c_uint)) as int16_t;
     }
+}
+
+#[inline]
+pub unsafe extern "C" fn get_gmv_2d(
+    gmv: *const Dav1dWarpedMotionParams,
+    bx4: libc::c_int,
+    by4: libc::c_int,
+    bw4: libc::c_int,
+    bh4: libc::c_int,
+    hdr: *const Dav1dFrameHeader,
+) -> mv {
+    match (*gmv).type_0 as libc::c_uint {
+        2 => {
+            if !((*gmv).matrix[5 as libc::c_int as usize]
+                == (*gmv).matrix[2 as libc::c_int as usize])
+            {
+                unreachable!();
+            }
+            if !((*gmv).matrix[4 as libc::c_int as usize]
+                == -(*gmv).matrix[3 as libc::c_int as usize])
+            {
+                unreachable!();
+            }
+        }
+        1 => {
+            let mut res_0: mv = mv {
+                c2rust_unnamed: {
+                    let mut init = mv_xy {
+                        y: ((*gmv).matrix[0 as libc::c_int as usize]
+                            >> 13 as libc::c_int) as int16_t,
+                        x: ((*gmv).matrix[1 as libc::c_int as usize]
+                            >> 13 as libc::c_int) as int16_t,
+                    };
+                    init
+                },
+            };
+            if (*hdr).force_integer_mv != 0 {
+                fix_int_mv_precision(&mut res_0);
+            }
+            return res_0;
+        }
+        0 => {
+            return mv {
+                c2rust_unnamed: {
+                    let mut init = mv_xy {
+                        y: 0 as libc::c_int as int16_t,
+                        x: 0 as libc::c_int as int16_t,
+                    };
+                    init
+                },
+            };
+        }
+        3 | _ => {}
+    }
+    let x: libc::c_int = bx4 * 4 as libc::c_int + bw4 * 2 as libc::c_int
+        - 1 as libc::c_int;
+    let y: libc::c_int = by4 * 4 as libc::c_int + bh4 * 2 as libc::c_int
+        - 1 as libc::c_int;
+    let xc: libc::c_int = ((*gmv).matrix[2 as libc::c_int as usize]
+        - ((1 as libc::c_int) << 16 as libc::c_int)) * x
+        + (*gmv).matrix[3 as libc::c_int as usize] * y
+        + (*gmv).matrix[0 as libc::c_int as usize];
+    let yc: libc::c_int = ((*gmv).matrix[5 as libc::c_int as usize]
+        - ((1 as libc::c_int) << 16 as libc::c_int)) * y
+        + (*gmv).matrix[4 as libc::c_int as usize] * x
+        + (*gmv).matrix[1 as libc::c_int as usize];
+    let shift: libc::c_int = 16 as libc::c_int
+        - (3 as libc::c_int - ((*hdr).hp == 0) as libc::c_int);
+    let round: libc::c_int = (1 as libc::c_int) << shift >> 1 as libc::c_int;
+    let mut res: mv = mv {
+        c2rust_unnamed: {
+            let mut init = mv_xy {
+                y: apply_sign(
+                    abs(yc) + round >> shift << ((*hdr).hp == 0) as libc::c_int,
+                    yc,
+                ) as int16_t,
+                x: apply_sign(
+                    abs(xc) + round >> shift << ((*hdr).hp == 0) as libc::c_int,
+                    xc,
+                ) as int16_t,
+            };
+            init
+        },
+    };
+    if (*hdr).force_integer_mv != 0 {
+        fix_int_mv_precision(&mut res);
+    }
+    return res;
 }
