@@ -211,3 +211,12 @@ pub struct Av1Block_intra {
     pub uv_angle: int8_t,
     pub cfl_alpha: [int8_t; 2],
 }
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Av1Block_inter_1d {
+    pub mv: [mv; 2],
+    pub wedge_idx: uint8_t,
+    pub mask_sign: uint8_t,
+    pub interintra_mode: uint8_t,
+}

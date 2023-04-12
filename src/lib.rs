@@ -1060,14 +1060,7 @@ pub struct Av1Block_inter_2d {
     pub mv2d: mv,
     pub matrix: [int16_t; 4],
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Av1Block_inter_1d {
-    pub mv: [mv; 2],
-    pub wedge_idx: uint8_t,
-    pub mask_sign: uint8_t,
-    pub interintra_mode: uint8_t,
-}
+use crate::src::levels::Av1Block_inter_1d;
 use crate::src::levels::Av1Block_intra;
 #[derive(Copy, Clone)]
 #[repr(C)]
