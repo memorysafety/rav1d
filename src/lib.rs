@@ -433,20 +433,8 @@ use crate::src::looprestoration::LrEdgeFlags;
 
 
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union LooprestorationParams {
-    pub filter: [[int16_t; 8]; 2],
-    pub sgr: LooprestorationParams_sgr,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct LooprestorationParams_sgr {
-    pub s0: uint32_t,
-    pub s1: uint32_t,
-    pub w0: int16_t,
-    pub w1: int16_t,
-}
+use crate::src::looprestoration::LooprestorationParams;
+
 pub type pixel = ();
 pub type const_left_pixel_row = *const libc::c_void;
 #[derive(Copy, Clone)]
