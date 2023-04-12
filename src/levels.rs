@@ -220,3 +220,17 @@ pub struct Av1Block_inter_1d {
     pub mask_sign: uint8_t,
     pub interintra_mode: uint8_t,
 }
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Av1Block_inter_2d {
+    pub mv2d: mv,
+    pub matrix: [int16_t; 4],
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub union Av1Block_inter_nd {
+    pub c2rust_unnamed: Av1Block_inter_1d,
+    pub c2rust_unnamed_0: Av1Block_inter_2d,
+}
