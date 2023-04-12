@@ -776,10 +776,7 @@ pub type recon_b_intra_fn = Option::<
     ) -> (),
 >;
 use crate::src::internal::ScalableMotionParams;
-#[inline]
-unsafe extern "C" fn ctz(mask: libc::c_uint) -> libc::c_int {
-    return mask.trailing_zeros() as i32;
-}
+use crate::include::common::attributes::ctz;
 #[inline]
 unsafe extern "C" fn dav1d_set_thread_name(name: *const libc::c_char) {
     prctl(15 as libc::c_int, name);

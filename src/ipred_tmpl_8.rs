@@ -90,10 +90,7 @@ pub struct Dav1dIntraPredDSPContext {
     pub cfl_pred: [cfl_pred_fn; 6],
     pub pal_pred: pal_pred_fn,
 }
-#[inline]
-unsafe extern "C" fn ctz(mask: libc::c_uint) -> libc::c_int {
-    return mask.trailing_zeros() as i32;
-}
+use crate::include::common::attributes::ctz;
 use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
 use crate::include::common::intops::iclip;
