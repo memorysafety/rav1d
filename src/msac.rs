@@ -86,7 +86,7 @@ pub struct MsacContext {
 }
 use crate::include::common::attributes::clz;
 cfg_if! {
-    if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
+    if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
         use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
         use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
     }

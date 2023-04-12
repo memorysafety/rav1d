@@ -4899,11 +4899,15 @@ pub type itxfm_fn =
 pub struct Dav1dInvTxfmDSPContext {
     pub itxfm_add: [[itxfm_fn; 17]; 19],
 }
-use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX512ICL;
-use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
-use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
-use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE41;
-use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSSE3;
+cfg_if! {
+    if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
+        use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX512ICL;
+        use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
+        use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
+        use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE41;
+        use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSSE3;
+    }
+}
 pub type itx_1d_fn =
     Option<unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> ()>;
 use crate::include::common::intops::imin;

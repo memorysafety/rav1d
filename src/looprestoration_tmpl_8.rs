@@ -300,10 +300,14 @@ extern "C" {
     );
 }
 
-use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX512ICL;
-use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
-use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
-use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSSE3;
+cfg_if! {
+    if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
+        use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX512ICL;
+        use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
+        use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
+        use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSSE3;
+    }
+}
 pub type pixel = uint8_t;
 pub type coef = int16_t;
 use crate::src::looprestoration::LrEdgeFlags;
