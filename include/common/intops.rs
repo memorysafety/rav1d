@@ -1,3 +1,4 @@
+use crate::include::common::attributes::clz;
 use crate::include::stdint::int64_t;
 
 #[inline]
@@ -37,4 +38,9 @@ pub unsafe extern "C" fn apply_sign(v: libc::c_int, s: libc::c_int) -> libc::c_i
 #[inline]
 pub unsafe extern "C" fn apply_sign64(v: libc::c_int, s: int64_t) -> libc::c_int {
     return if s < 0 { -v } else { v };
+}
+
+#[inline]
+pub unsafe extern "C" fn ulog2(v: libc::c_uint) -> libc::c_int {
+    return 31 as libc::c_int - clz(v);
 }

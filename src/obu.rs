@@ -827,11 +827,8 @@ pub struct GetBits {
 use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
 use crate::include::common::intops::iclip_u8;
-#[inline]
-unsafe extern "C" fn ulog2(v: libc::c_uint) -> libc::c_int {
-    return 31 as libc::c_int - clz(v);
-}
-use crate::include::common::attributes::clz;
+use crate::include::common::intops::ulog2;
+
 #[inline]
 unsafe extern "C" fn dav1d_ref_inc(ref_0: *mut Dav1dRef) {
     ::core::intrinsics::atomic_xadd_relaxed(&mut (*ref_0).ref_cnt, 1 as libc::c_int);

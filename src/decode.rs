@@ -1171,17 +1171,14 @@ use crate::src::levels::MM_TRANSLATION;
 use crate::src::tables::TxfmInfo;
 use crate::src::refmvs::refmvs_candidate;
 use crate::include::common::attributes::ctz;
-use crate::include::common::attributes::clz;
+
 use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::apply_sign64;
-#[inline]
-unsafe extern "C" fn ulog2(v: libc::c_uint) -> libc::c_int {
-    return 31 as libc::c_int - clz(v);
-}
+use crate::include::common::intops::ulog2;
 #[inline]
 unsafe extern "C" fn dav1d_alloc_aligned(
     mut sz: size_t,

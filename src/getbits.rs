@@ -25,11 +25,8 @@ unsafe extern "C" fn inv_recenter(r: libc::c_uint, v: libc::c_uint) -> libc::c_u
             )
     };
 }
-#[inline]
-unsafe extern "C" fn ulog2(v: libc::c_uint) -> libc::c_int {
-    return 31 as libc::c_int - clz(v);
-}
-use crate::include::common::attributes::clz;
+use crate::include::common::intops::ulog2;
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_init_get_bits(
     c: *mut GetBits,

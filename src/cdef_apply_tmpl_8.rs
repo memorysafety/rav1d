@@ -707,12 +707,9 @@ use crate::src::internal::ScalableMotionParams;
 pub type Backup2x8Flags = libc::c_uint;
 pub const BACKUP_2X8_UV: Backup2x8Flags = 2;
 pub const BACKUP_2X8_Y: Backup2x8Flags = 1;
-use crate::include::common::attributes::clz;
+
 use crate::include::common::intops::imin;
-#[inline]
-unsafe extern "C" fn ulog2(v: libc::c_uint) -> libc::c_int {
-    return 31 as libc::c_int - clz(v);
-}
+use crate::include::common::intops::ulog2;
 unsafe extern "C" fn backup2lines(
     mut dst: *const *mut pixel,
     mut src: *const *mut pixel,

@@ -307,15 +307,12 @@ pub const DAV1D_X86_CPU_FLAG_SSSE3: CpuFlags = 2;
 pub type CpuFlags = libc::c_uint;
 pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
 use crate::include::common::intops::imax;
-use crate::include::common::attributes::clz;
+
 use crate::include::common::intops::imin;
 use crate::include::common::intops::umin;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::apply_sign;
-#[inline]
-unsafe extern "C" fn ulog2(v: libc::c_uint) -> libc::c_int {
-    return 31 as libc::c_int - clz(v);
-}
+use crate::include::common::intops::ulog2;
 #[inline]
 unsafe extern "C" fn constrain(
     diff: libc::c_int,

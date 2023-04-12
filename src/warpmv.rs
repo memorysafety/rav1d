@@ -8,14 +8,11 @@ use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 use crate::src::levels::mv;
 
 use crate::include::common::intops::apply_sign;
-use crate::include::common::attributes::clz;
+
 use crate::include::common::attributes::clzll;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::apply_sign64;
-#[inline]
-unsafe extern "C" fn ulog2(v: libc::c_uint) -> libc::c_int {
-    return 31 as libc::c_int - clz(v);
-}
+use crate::include::common::intops::ulog2;
 #[inline]
 unsafe extern "C" fn u64log2(v: uint64_t) -> libc::c_int {
     return 63 as libc::c_int - clzll(v as libc::c_ulonglong);

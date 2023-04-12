@@ -261,10 +261,7 @@ use crate::include::common::intops::imin;
 use crate::include::common::intops::umin;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::apply_sign;
-#[inline]
-unsafe extern "C" fn ulog2(v: libc::c_uint) -> libc::c_int {
-    return 31 as libc::c_int - clz(v);
-}
+use crate::include::common::intops::ulog2;
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     if x & 1 != 0 {
