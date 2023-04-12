@@ -372,11 +372,11 @@ pub struct C2RustUnnamed_4 {
 #[repr(C)]
 pub union C2RustUnnamed_5 {
     pub c2rust_unnamed: Av1Block_inter_1d,
-    pub c2rust_unnamed_0: C2RustUnnamed_6,
+    pub c2rust_unnamed_0: Av1Block_inter_2d,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_6 {
+pub struct Av1Block_inter_2d {
     pub mv2d: mv,
     pub matrix: [int16_t; 4],
 }
