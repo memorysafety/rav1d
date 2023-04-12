@@ -51,3 +51,17 @@ pub unsafe extern "C" fn ulog2(v: libc::c_uint) -> libc::c_int {
 pub unsafe extern "C" fn u64log2(v: uint64_t) -> libc::c_int {
     return 63 as libc::c_int - clzll(v as libc::c_ulonglong);
 }
+
+#[inline]
+pub unsafe extern "C" fn inv_recenter(r: libc::c_uint, v: libc::c_uint) -> libc::c_uint {
+    if v > r << 1 as libc::c_int {
+        return v
+    } else if v & 1 as libc::c_int as libc::c_uint == 0 as libc::c_int as libc::c_uint {
+        return (v >> 1 as libc::c_int).wrapping_add(r)
+    } else {
+        return r
+            .wrapping_sub(
+                v.wrapping_add(1 as libc::c_int as libc::c_uint) >> 1 as libc::c_int,
+            )
+    };
+}
