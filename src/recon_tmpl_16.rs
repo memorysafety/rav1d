@@ -518,59 +518,11 @@ pub struct C2RustUnnamed_27 {
     pub uv_angle: int8_t,
     pub cfl_alpha: [int8_t; 2],
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct refmvs_frame {
-    pub frm_hdr: *const Dav1dFrameHeader,
-    pub iw4: libc::c_int,
-    pub ih4: libc::c_int,
-    pub iw8: libc::c_int,
-    pub ih8: libc::c_int,
-    pub sbsz: libc::c_int,
-    pub use_ref_frame_mvs: libc::c_int,
-    pub sign_bias: [uint8_t; 7],
-    pub mfmv_sign: [uint8_t; 7],
-    pub pocdiff: [int8_t; 7],
-    pub mfmv_ref: [uint8_t; 3],
-    pub mfmv_ref2cur: [libc::c_int; 3],
-    pub mfmv_ref2ref: [[libc::c_int; 7]; 3],
-    pub n_mfmvs: libc::c_int,
-    pub rp: *mut refmvs_temporal_block,
-    pub rp_ref: *const *mut refmvs_temporal_block,
-    pub rp_proj: *mut refmvs_temporal_block,
-    pub rp_stride: ptrdiff_t,
-    pub r: *mut refmvs_block,
-    pub r_stride: ptrdiff_t,
-    pub n_tile_rows: libc::c_int,
-    pub n_tile_threads: libc::c_int,
-    pub n_frame_threads: libc::c_int,
-}
-#[derive(Copy, Clone)]
-#[repr(C, packed)]
-pub struct refmvs_block {
-    pub mv: refmvs_mvpair,
-    pub ref_0: refmvs_refpair,
-    pub bs: uint8_t,
-    pub mf: uint8_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union refmvs_refpair {
-    pub ref_0: [int8_t; 2],
-    pub pair: uint16_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union refmvs_mvpair {
-    pub mv: [mv; 2],
-    pub n: uint64_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct refmvs_temporal_block {
-    pub mv: mv,
-    pub ref_0: int8_t,
-}
+use crate::src::refmvs::refmvs_frame;
+use crate::src::refmvs::refmvs_block;
+
+
+use crate::src::refmvs::refmvs_temporal_block;
 use crate::src::env::BlockContext;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -723,21 +675,8 @@ pub struct C2RustUnnamed_41 {
     pub seg_mask: [uint8_t; 16384],
 }
 use crate::src::internal::Dav1dTaskContext_cf;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct refmvs_tile {
-    pub rf: *const refmvs_frame,
-    pub r: [*mut refmvs_block; 37],
-    pub rp_proj: *mut refmvs_temporal_block,
-    pub tile_col: refmvs_tile_range,
-    pub tile_row: refmvs_tile_range,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct refmvs_tile_range {
-    pub start: libc::c_int,
-    pub end: libc::c_int,
-}
+use crate::src::refmvs::refmvs_tile;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTileState {
@@ -870,20 +809,8 @@ use crate::src::intra_edge::EDGE_I420_TOP_HAS_RIGHT;
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 use crate::src::intra_edge::EdgeNode;
 use crate::src::intra_edge::EdgeBranch;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dRefmvsDSPContext {
-    pub splat_mv: splat_mv_fn,
-}
-pub type splat_mv_fn = Option::<
-    unsafe extern "C" fn(
-        *mut *mut refmvs_block,
-        *const refmvs_block,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
+use crate::src::refmvs::Dav1dRefmvsDSPContext;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dDSPContext {
