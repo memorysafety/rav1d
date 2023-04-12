@@ -107,6 +107,17 @@ pub struct CodedBlockInfo {
 
 #[derive(Copy, Clone)]
 #[repr(C)]
+pub struct Dav1dTileState_tiling {
+    pub col_start: libc::c_int,
+    pub col_end: libc::c_int,
+    pub row_start: libc::c_int,
+    pub row_end: libc::c_int,
+    pub col: libc::c_int,
+    pub row: libc::c_int,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
 pub struct FrameTileThreadData {
     pub lowest_pixel_mem: *mut [[libc::c_int; 2]; 7],
     pub lowest_pixel_mem_sz: libc::c_int,
