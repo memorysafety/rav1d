@@ -308,23 +308,12 @@ pub type CpuFlags = libc::c_uint;
 pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
 use crate::include::common::intops::imax;
 
-use crate::include::common::intops::imin;
+
 use crate::include::common::intops::umin;
 use crate::include::common::intops::iclip;
-use crate::include::common::intops::apply_sign;
+
 use crate::include::common::intops::ulog2;
-#[inline]
-unsafe extern "C" fn constrain(
-    diff: libc::c_int,
-    threshold: libc::c_int,
-    shift: libc::c_int,
-) -> libc::c_int {
-    let adiff: libc::c_int = abs(diff);
-    return apply_sign(
-        imin(adiff, imax(0 as libc::c_int, threshold - (adiff >> shift))),
-        diff,
-    );
-}
+use crate::src::cdef::constrain;
 #[inline]
 unsafe extern "C" fn fill(
     mut tmp: *mut int16_t,
