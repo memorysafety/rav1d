@@ -389,18 +389,18 @@ pub struct Av1Block {
     pub skip_mode: uint8_t,
     pub skip: uint8_t,
     pub uvtx: uint8_t,
-    pub c2rust_unnamed: C2RustUnnamed_3,
+    pub c2rust_unnamed: Av1Block_intra_inter,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union C2RustUnnamed_3 {
-    pub c2rust_unnamed: C2RustUnnamed_9,
-    pub c2rust_unnamed_0: C2RustUnnamed_4,
+pub union Av1Block_intra_inter {
+    pub c2rust_unnamed: Av1Block_intra,
+    pub c2rust_unnamed_0: Av1Block_inter,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_4 {
-    pub c2rust_unnamed: C2RustUnnamed_5,
+pub struct Av1Block_inter {
+    pub c2rust_unnamed: Av1Block_inter_nd,
     pub comp_type: uint8_t,
     pub inter_mode: uint8_t,
     pub motion_mode: uint8_t,
@@ -414,13 +414,13 @@ pub struct C2RustUnnamed_4 {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union C2RustUnnamed_5 {
-    pub c2rust_unnamed: C2RustUnnamed_8,
-    pub c2rust_unnamed_0: C2RustUnnamed_6,
+pub union Av1Block_inter_nd {
+    pub c2rust_unnamed: Av1Block_inter_1d,
+    pub c2rust_unnamed_0: Av1Block_inter_2d,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_6 {
+pub struct Av1Block_inter_2d {
     pub mv2d: mv,
     pub matrix: [int16_t; 4],
 }
@@ -428,7 +428,7 @@ use crate::src::levels::mv;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_8 {
+pub struct Av1Block_inter_1d {
     pub mv: [mv; 2],
     pub wedge_idx: uint8_t,
     pub mask_sign: uint8_t,
@@ -436,7 +436,7 @@ pub struct C2RustUnnamed_8 {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_9 {
+pub struct Av1Block_intra {
     pub y_mode: uint8_t,
     pub uv_mode: uint8_t,
     pub tx: uint8_t,
