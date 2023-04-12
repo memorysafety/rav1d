@@ -9,6 +9,7 @@ use crate::include::stdint::int32_t;
 use crate::include::stdint::int8_t;
 use crate::include::stdint::uint16_t;
 use crate::include::stdint::uint8_t;
+use crate::src::thread_data::thread_data;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -181,4 +182,20 @@ pub struct Dav1dTaskContext_scratch_interintra_edge_16 {
 pub union Dav1dTaskContext_scratch_interintra_edge {
     pub c2rust_unnamed: Dav1dTaskContext_scratch_interintra_edge_8,
     pub c2rust_unnamed_0: Dav1dTaskContext_scratch_interintra_edge_16,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dTaskContext_frame_thread {
+    pub pass: libc::c_int,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dTaskContext_task_thread {
+    pub td: thread_data,
+    pub ttd: *mut TaskThreadData,
+    pub fttd: *mut FrameTileThreadData,
+    pub flushed: libc::c_int,
+    pub die: libc::c_int,
 }
