@@ -39,8 +39,9 @@ use crate::include::pthread::pthread_mutexattr_t;
 unsafe extern "C" fn dav1d_free_aligned(mut ptr: *mut libc::c_void) {
     free(ptr);
 }
+
 #[inline]
-unsafe extern "C" fn dav1d_alloc_aligned(
+pub unsafe extern "C" fn dav1d_alloc_aligned(
     mut sz: size_t,
     mut align: size_t,
 ) -> *mut libc::c_void {
@@ -53,6 +54,7 @@ unsafe extern "C" fn dav1d_alloc_aligned(
     }
     return ptr;
 }
+
 #[cold]
 unsafe extern "C" fn mem_pool_destroy(pool: *mut Dav1dMemPool) {
     pthread_mutex_destroy(&mut (*pool).lock);

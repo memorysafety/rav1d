@@ -31,20 +31,7 @@ use crate::include::stdatomic::atomic_int;
 
 use crate::src::mem::Dav1dMemPoolBuffer;
 use crate::src::mem::Dav1dMemPool;
-#[inline]
-unsafe extern "C" fn dav1d_alloc_aligned(
-    mut sz: size_t,
-    mut align: size_t,
-) -> *mut libc::c_void {
-    if align & align.wrapping_sub(1) != 0 {
-        unreachable!();
-    }
-    let mut ptr: *mut libc::c_void = 0 as *mut libc::c_void;
-    if posix_memalign(&mut ptr, align, sz) != 0 {
-        return 0 as *mut libc::c_void;
-    }
-    return ptr;
-}
+use crate::src::mem::dav1d_alloc_aligned;
 #[inline]
 unsafe extern "C" fn dav1d_free_aligned(mut ptr: *mut libc::c_void) {
     free(ptr);
