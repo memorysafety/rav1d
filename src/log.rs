@@ -202,7 +202,7 @@ pub struct Dav1dContext {
 }
 use crate::src::mem::Dav1dMemPool;
 
-use crate::include::pthread::pthread_mutex_t;
+
 
 
 
@@ -667,7 +667,7 @@ use crate::src::internal::TaskThreadData;
 
 
 
-use crate::include::pthread::pthread_cond_t;
+
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -888,37 +888,9 @@ pub struct Dav1dFrameContext {
     pub task_thread: Dav1dFrameContext_task_thread,
     pub tile_thread: FrameTileThreadData,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFrameContext_task_thread {
-    pub lock: pthread_mutex_t,
-    pub cond: pthread_cond_t,
-    pub ttd: *mut TaskThreadData,
-    pub tasks: *mut Dav1dTask,
-    pub tile_tasks: [*mut Dav1dTask; 2],
-    pub init_task: Dav1dTask,
-    pub num_tasks: libc::c_int,
-    pub num_tile_tasks: libc::c_int,
-    pub init_done: atomic_int,
-    pub done: [atomic_int; 2],
-    pub retval: libc::c_int,
-    pub update_set: libc::c_int,
-    pub error: atomic_int,
-    pub task_counter: atomic_int,
-    pub task_head: *mut Dav1dTask,
-    pub task_tail: *mut Dav1dTask,
-    pub task_cur_prev: *mut Dav1dTask,
-    pub pending_tasks: Dav1dFrameContext_task_thread_pending_tasks,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFrameContext_task_thread_pending_tasks {
-    pub merge: atomic_int,
-    pub lock: pthread_mutex_t,
-    pub head: *mut Dav1dTask,
-    pub tail: *mut Dav1dTask,
-}
-use crate::src::internal::Dav1dTask;
+use crate::src::internal::Dav1dFrameContext_task_thread;
+
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext_lf {
