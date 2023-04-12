@@ -346,11 +346,11 @@ pub struct Av1Block {
     pub skip_mode: uint8_t,
     pub skip: uint8_t,
     pub uvtx: uint8_t,
-    pub c2rust_unnamed: C2RustUnnamed_3,
+    pub c2rust_unnamed: Av1Block_intra_inter,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union C2RustUnnamed_3 {
+pub union Av1Block_intra_inter {
     pub c2rust_unnamed: Av1Block_intra,
     pub c2rust_unnamed_0: Av1Block_inter,
 }
