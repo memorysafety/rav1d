@@ -112,6 +112,7 @@ pub mod obu;
 pub mod picture;
 pub mod qm;
 pub mod r#ref;
+pub mod recon;
 #[cfg(feature = "bitdepth_16")]
 pub mod recon_tmpl_16;
 #[cfg(feature = "bitdepth_8")]
