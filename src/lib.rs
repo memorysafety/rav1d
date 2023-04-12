@@ -907,14 +907,7 @@ use crate::include::pthread::pthread_once_t;
 use crate::include::common::intops::umin;
 use crate::include::common::intops::iclip;
 use crate::src::mem::dav1d_alloc_aligned;
-#[inline]
-unsafe extern "C" fn freep(mut ptr: *mut libc::c_void) {
-    let mut mem: *mut *mut libc::c_void = ptr as *mut *mut libc::c_void;
-    if !(*mem).is_null() {
-        free(*mem);
-        *mem = 0 as *mut libc::c_void;
-    }
-}
+use crate::src::mem::freep;
 use crate::src::mem::dav1d_free_aligned;
 use crate::src::mem::dav1d_freep_aligned;
 #[cold]

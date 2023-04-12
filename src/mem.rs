@@ -65,6 +65,15 @@ pub unsafe extern "C" fn dav1d_freep_aligned(mut ptr: *mut libc::c_void) {
     }
 }
 
+#[inline]
+pub unsafe extern "C" fn freep(mut ptr: *mut libc::c_void) {
+    let mut mem: *mut *mut libc::c_void = ptr as *mut *mut libc::c_void;
+    if !(*mem).is_null() {
+        free(*mem);
+        *mem = 0 as *mut libc::c_void;
+    }
+}
+
 #[cold]
 unsafe extern "C" fn mem_pool_destroy(pool: *mut Dav1dMemPool) {
     pthread_mutex_destroy(&mut (*pool).lock);
