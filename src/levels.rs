@@ -1,5 +1,7 @@
 use crate::include::stdint::int16_t;
+use crate::include::stdint::int8_t;
 use crate::include::stdint::uint32_t;
+use crate::include::stdint::uint8_t;
 
 pub type ObuMetaType = libc::c_uint;
 pub const OBU_META_TIMECODE: ObuMetaType = 5;
@@ -197,3 +199,15 @@ pub type MotionMode = libc::c_uint;
 pub const MM_WARP: MotionMode = 2;
 pub const MM_OBMC: MotionMode = 1;
 pub const MM_TRANSLATION: MotionMode = 0;
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Av1Block_intra {
+    pub y_mode: uint8_t,
+    pub uv_mode: uint8_t,
+    pub tx: uint8_t,
+    pub pal_sz: [uint8_t; 2],
+    pub y_angle: int8_t,
+    pub uv_angle: int8_t,
+    pub cfl_alpha: [int8_t; 2],
+}

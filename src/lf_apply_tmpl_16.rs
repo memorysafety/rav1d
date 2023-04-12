@@ -345,17 +345,7 @@ pub struct Av1Block_inter_1d {
     pub mask_sign: uint8_t,
     pub interintra_mode: uint8_t,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Av1Block_intra {
-    pub y_mode: uint8_t,
-    pub uv_mode: uint8_t,
-    pub tx: uint8_t,
-    pub pal_sz: [uint8_t; 2],
-    pub y_angle: int8_t,
-    pub uv_angle: int8_t,
-    pub cfl_alpha: [int8_t; 2],
-}
+use crate::src::levels::Av1Block_intra;
 use crate::src::refmvs::refmvs_frame;
 
 
