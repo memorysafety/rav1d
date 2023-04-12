@@ -248,13 +248,11 @@ pub struct Dav1dCdefDSPContext {
     pub dir: cdef_dir_fn,
     pub fb: [cdef_fn; 3],
 }
-pub const DAV1D_X86_CPU_FLAG_AVX512ICL: CpuFlags = 16;
-pub const DAV1D_X86_CPU_FLAG_SSE2: CpuFlags = 1;
-pub const DAV1D_X86_CPU_FLAG_AVX2: CpuFlags = 8;
-pub const DAV1D_X86_CPU_FLAG_SSE41: CpuFlags = 4;
-pub const DAV1D_X86_CPU_FLAG_SSSE3: CpuFlags = 2;
-pub type CpuFlags = libc::c_uint;
-pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
+use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX512ICL;
+use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
+use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
+use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE41;
+use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSSE3;
 use crate::include::common::attributes::clz;
 use crate::include::common::intops::imax;
 

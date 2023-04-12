@@ -62,8 +62,6 @@ extern "C" {
 }
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
 
-
-
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::src::levels::BlockSize;
@@ -161,13 +159,9 @@ pub type splat_mv_fn = Option::<
 pub struct Dav1dRefmvsDSPContext {
     pub splat_mv: splat_mv_fn,
 }
-pub const DAV1D_X86_CPU_FLAG_AVX512ICL: CpuFlags = 16;
-pub const DAV1D_X86_CPU_FLAG_SSE2: CpuFlags = 1;
-pub const DAV1D_X86_CPU_FLAG_AVX2: CpuFlags = 8;
-pub type CpuFlags = libc::c_uint;
-pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
-pub const DAV1D_X86_CPU_FLAG_SSE41: CpuFlags = 4;
-pub const DAV1D_X86_CPU_FLAG_SSSE3: CpuFlags = 2;
+use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX512ICL;
+use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
+use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
 use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
 use crate::include::common::intops::iclip;

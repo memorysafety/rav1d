@@ -303,13 +303,11 @@ extern "C" {
     );
 }
 
-pub const DAV1D_X86_CPU_FLAG_AVX512ICL: CpuFlags = 16;
-pub const DAV1D_X86_CPU_FLAG_SSE2: CpuFlags = 1;
-pub const DAV1D_X86_CPU_FLAG_AVX2: CpuFlags = 8;
-pub const DAV1D_X86_CPU_FLAG_SSSE3: CpuFlags = 2;
-pub type CpuFlags = libc::c_uint;
-pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
-pub const DAV1D_X86_CPU_FLAG_SSE41: CpuFlags = 4;
+use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX512ICL;
+use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
+use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
+use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSSE3;
+
 pub type pixel = uint16_t;
 pub type coef = int32_t;
 use crate::src::looprestoration::LrEdgeFlags;

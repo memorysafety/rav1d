@@ -8,8 +8,6 @@ use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 use crate::src::levels::mv;
 
 use crate::include::common::intops::apply_sign;
-
-
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::apply_sign64;
 use crate::include::common::intops::ulog2;

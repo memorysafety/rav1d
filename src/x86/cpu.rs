@@ -13,6 +13,7 @@ extern "C" {
     );
     fn dav1d_cpu_xgetbv(xcr: libc::c_uint) -> uint64_t;
 }
+
 pub type CpuFlags = libc::c_uint;
 pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
 pub const DAV1D_X86_CPU_FLAG_AVX512ICL: CpuFlags = 16;
@@ -20,6 +21,7 @@ pub const DAV1D_X86_CPU_FLAG_AVX2: CpuFlags = 8;
 pub const DAV1D_X86_CPU_FLAG_SSE41: CpuFlags = 4;
 pub const DAV1D_X86_CPU_FLAG_SSSE3: CpuFlags = 2;
 pub const DAV1D_X86_CPU_FLAG_SSE2: CpuFlags = 1;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct CpuidRegisters {
