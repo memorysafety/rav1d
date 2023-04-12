@@ -17,6 +17,7 @@ extern crate c2rust_bitfields;
 extern crate libc;
 pub mod include {
 pub mod common {
+pub mod attributes;
 pub mod intops;
 } // mod common
 pub mod dav1d {
