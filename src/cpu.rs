@@ -7,7 +7,6 @@ extern "C" {
     fn dav1d_get_cpu_flags_x86() -> libc::c_uint;
     #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
     fn dav1d_get_cpu_flags_arm() -> libc::c_uint;
-    fn dav1d_log(c: *mut Dav1dContext, format: *const libc::c_char, _: ...);
     fn __sched_cpucount(__setsize: size_t, __setp: *const cpu_set_t) -> libc::c_int;
     fn pthread_self() -> pthread_t;
     fn pthread_getaffinity_np(
