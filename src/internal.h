@@ -139,7 +139,7 @@ struct Dav1dContext {
         // See src/thread_task.c:reset_task_cur().
         atomic_uint reset_task_cur;
         atomic_int cond_signaled;
-        struct Dav1dContext_task_thread_delayed_fg {
+        struct TaskThreadData_delayed_fg {
             int exec;
             pthread_cond_t cond;
             const Dav1dPicture *in;

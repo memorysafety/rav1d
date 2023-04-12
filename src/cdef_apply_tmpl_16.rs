@@ -145,35 +145,35 @@ pub struct TaskThreadData {
     pub cur: libc::c_uint,
     pub reset_task_cur: atomic_uint,
     pub cond_signaled: atomic_int,
-    pub delayed_fg: Dav1dContext_task_thread_delayed_fg,
+    pub delayed_fg: TaskThreadData_delayed_fg,
     pub inited: libc::c_int,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct Dav1dContext_task_thread_delayed_fg {
+pub struct TaskThreadData_delayed_fg {
     pub exec: libc::c_int,
     pub cond: pthread_cond_t,
     pub in_0: *const Dav1dPicture,
     pub out: *mut Dav1dPicture,
     pub type_0: TaskType,
     pub progress: [atomic_int; 2],
-    pub c2rust_unnamed: C2RustUnnamed,
+    pub c2rust_unnamed: TaskThreadData_grain_lut_scaling,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union C2RustUnnamed {
-    pub c2rust_unnamed: C2RustUnnamed_1,
-    pub c2rust_unnamed_0: C2RustUnnamed_0,
+pub union TaskThreadData_grain_lut_scaling {
+    pub c2rust_unnamed: TaskThreadData_grain_lut_scaling_8,
+    pub c2rust_unnamed_0: TaskThreadData_grain_lut_scaling_16,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_0 {
+pub struct TaskThreadData_grain_lut_scaling_16 {
     pub grain_lut_16bpc: [[[int16_t; 82]; 74]; 3],
     pub scaling_16bpc: [[uint8_t; 4096]; 3],
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_1 {
+pub struct TaskThreadData_grain_lut_scaling_8 {
     pub grain_lut_8bpc: [[[int8_t; 82]; 74]; 3],
     pub scaling_8bpc: [[uint8_t; 256]; 3],
 }
