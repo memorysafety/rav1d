@@ -7,10 +7,7 @@ extern "C" {
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 use crate::src::levels::mv;
 
-#[inline]
-unsafe extern "C" fn apply_sign(v: libc::c_int, s: libc::c_int) -> libc::c_int {
-    return if s < 0 as libc::c_int { -v } else { v };
-}
+use crate::include::common::intops::apply_sign;
 #[inline]
 unsafe extern "C" fn clz(mask: libc::c_uint) -> libc::c_int {
     return mask.leading_zeros() as i32;

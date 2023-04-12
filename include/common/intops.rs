@@ -26,3 +26,8 @@ pub unsafe extern "C" fn iclip(
 pub unsafe extern "C" fn iclip_u8(v: libc::c_int) -> libc::c_int {
     return iclip(v, 0 as libc::c_int, 255 as libc::c_int);
 }
+
+#[inline]
+pub unsafe extern "C" fn apply_sign(v: libc::c_int, s: libc::c_int) -> libc::c_int {
+    return if s < 0 as libc::c_int { -v } else { v };
+}

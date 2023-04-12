@@ -171,10 +171,7 @@ pub const DAV1D_X86_CPU_FLAG_SSSE3: CpuFlags = 2;
 use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
 use crate::include::common::intops::iclip;
-#[inline]
-unsafe extern "C" fn apply_sign(v: libc::c_int, s: libc::c_int) -> libc::c_int {
-    return if s < 0 as libc::c_int { -v } else { v };
-}
+use crate::include::common::intops::apply_sign;
 #[inline]
 unsafe extern "C" fn get_poc_diff(
     order_hint_n_bits: libc::c_int,
