@@ -1,5 +1,6 @@
 use crate::include::stdint::int16_t;
 use crate::include::stdint::int8_t;
+use crate::include::stdint::uint16_t;
 use crate::include::stdint::uint32_t;
 use crate::include::stdint::uint8_t;
 
@@ -249,4 +250,11 @@ pub struct Av1Block_inter {
     pub interintra_type: uint8_t,
     pub tx_split0: uint8_t,
     pub tx_split1: uint16_t,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub union Av1Block_intra_inter {
+    pub c2rust_unnamed: Av1Block_intra,
+    pub c2rust_unnamed_0: Av1Block_inter,
 }

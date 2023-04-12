@@ -670,22 +670,8 @@ pub union Av1Block_intra_inter {
     pub c2rust_unnamed: Av1Block_intra,
     pub c2rust_unnamed_0: Av1Block_inter,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Av1Block_inter {
-    pub c2rust_unnamed: Av1Block_inter_nd,
-    pub comp_type: uint8_t,
-    pub inter_mode: uint8_t,
-    pub motion_mode: uint8_t,
-    pub drl_idx: uint8_t,
-    pub ref_0: [int8_t; 2],
-    pub max_ytx: uint8_t,
-    pub filter2d: uint8_t,
-    pub interintra_type: uint8_t,
-    pub tx_split0: uint8_t,
-    pub tx_split1: uint16_t,
-}
-use crate::src::levels::Av1Block_inter_nd;
+use crate::src::levels::Av1Block_inter;
+
 
 use crate::src::levels::mv;
 use crate::src::levels::mv_xy;
