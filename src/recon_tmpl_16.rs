@@ -847,13 +847,7 @@ use crate::src::levels::TX_4X4;
 use crate::src::levels::RectTxfmSize;
 use crate::src::levels::RTX_4X8;
 use crate::src::levels::TxfmType;
-
 use crate::src::levels::WHT_WHT;
-
-use crate::src::levels::H_FLIPADST;
-use crate::src::levels::V_FLIPADST;
-use crate::src::levels::H_ADST;
-use crate::src::levels::V_ADST;
 use crate::src::levels::IDTX;
 use crate::src::levels::DCT_DCT;
 use crate::src::levels::TxClass;
@@ -867,9 +861,7 @@ use crate::src::levels::SMOOTH_PRED;
 use crate::src::levels::DC_PRED;
 use crate::src::levels::II_SMOOTH_PRED;
 use crate::src::levels::GLOBALMV;
-
 use crate::src::levels::GLOBALMV_GLOBALMV;
-
 use crate::src::levels::COMP_INTER_NONE;
 use crate::src::levels::INTER_INTRA_BLEND;
 use crate::src::levels::MM_WARP;
@@ -960,29 +952,7 @@ use crate::include::common::intops::imin;
 use crate::include::common::intops::umin;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::apply_sign64;
-#[inline]
-unsafe extern "C" fn get_uv_inter_txtp(
-    uvt_dim: *const TxfmInfo,
-    ytxtp: TxfmType,
-) -> TxfmType {
-    if (*uvt_dim).max as libc::c_int == TX_32X32 as libc::c_int {
-        return (if ytxtp as libc::c_uint == IDTX as libc::c_int as libc::c_uint {
-            IDTX as libc::c_int
-        } else {
-            DCT_DCT as libc::c_int
-        }) as TxfmType;
-    }
-    if (*uvt_dim).min as libc::c_int == TX_16X16 as libc::c_int
-        && (1 as libc::c_int) << ytxtp as libc::c_uint
-            & ((1 as libc::c_int) << H_FLIPADST as libc::c_int
-                | (1 as libc::c_int) << V_FLIPADST as libc::c_int
-                | (1 as libc::c_int) << H_ADST as libc::c_int
-                | (1 as libc::c_int) << V_ADST as libc::c_int) != 0
-    {
-        return DCT_DCT;
-    }
-    return ytxtp;
-}
+use crate::src::env::get_uv_inter_txtp;
 use crate::src::msac::dav1d_msac_decode_bools;
 use crate::src::ipred_prepare::sm_flag;
 use crate::src::ipred_prepare::sm_uv_flag;
