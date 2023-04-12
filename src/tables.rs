@@ -1,5 +1,6 @@
 use crate::include::stdint::*;
 use ::libc;
+use crate::src::align::Align64;
 
 
 
@@ -5328,7 +5329,7 @@ macro_rules! f {
 }
 
 #[no_mangle]
-pub static mut dav1d_filter_intra_taps: [[int8_t; 64]; 5] = [
+pub static mut dav1d_filter_intra_taps: Align64<[[int8_t; 64]; 5]> = Align64([
     {
         let mut array = [0; 64];
         f!(array, 0,  -6, 10,  0,  0,  0, 12,  0);
@@ -5389,7 +5390,7 @@ pub static mut dav1d_filter_intra_taps: [[int8_t; 64]; 5] = [
         f!(array, 7,  -7,  0,  0,  1, 12,  1,  9);
         array
     }
-];
+]);
 
 #[no_mangle]
 pub static mut dav1d_obmc_masks: [uint8_t; 64] = [
