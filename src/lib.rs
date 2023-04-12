@@ -426,18 +426,8 @@ pub union refmvs_mvpair {
     pub mv: [mv; 2],
     pub n: uint64_t,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union mv {
-    pub c2rust_unnamed: mv_xy,
-    pub n: uint32_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct mv_xy {
-    pub y: int16_t,
-    pub x: int16_t,
-}
+use crate::src::levels::mv;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dDSPContext {

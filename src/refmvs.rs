@@ -198,18 +198,8 @@ use crate::src::levels::BlockSize;
 
 
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union mv {
-    pub c2rust_unnamed: mv_xy,
-    pub n: uint32_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct mv_xy {
-    pub y: int16_t,
-    pub x: int16_t,
-}
+use crate::src::levels::mv;
+use crate::src::levels::mv_xy;
 use crate::src::intra_edge::EdgeFlags;
 
 
