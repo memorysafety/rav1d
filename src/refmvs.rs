@@ -2011,17 +2011,9 @@ unsafe extern "C" fn splat_mv_c(
         }
     };
 }
-#[inline(always)]
-#[cfg(feature = "asm")]
-unsafe extern "C" fn dav1d_get_cpu_flags() -> libc::c_uint {
-    let mut flags = dav1d_cpu_flags & dav1d_cpu_flags_mask;
-    cfg_if! {
-        if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
-            flags |= DAV1D_X86_CPU_FLAG_SSE2;
-        }
-    }
-    return flags;
-}
+
+use crate::src::cpu::dav1d_get_cpu_flags;
+
 #[inline(always)]
 #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "asm"))]
 unsafe extern "C" fn refmvs_dsp_init_x86(c: *mut Dav1dRefmvsDSPContext) {

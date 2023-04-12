@@ -181,7 +181,6 @@ extern "C" {
 }
 
 use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX512ICL;
-use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
 use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
 use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSSE3;
 pub type pixel = uint16_t;
@@ -712,13 +711,7 @@ unsafe extern "C" fn loop_filter_v_sb128uv_c(
     }
 }
 
-#[cfg(feature = "asm")]
-#[inline(always)]
-unsafe extern "C" fn dav1d_get_cpu_flags() -> libc::c_uint {
-    let mut flags: libc::c_uint = dav1d_cpu_flags & dav1d_cpu_flags_mask;
-    flags |= DAV1D_X86_CPU_FLAG_SSE2 as libc::c_int as libc::c_uint;
-    return flags;
-}
+use crate::src::cpu::dav1d_get_cpu_flags;
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 #[inline(always)]

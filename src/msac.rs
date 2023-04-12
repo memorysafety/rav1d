@@ -137,13 +137,9 @@ unsafe extern "C" fn msac_init_x86(s: *mut MsacContext) {
         );
     }
 }
-#[cfg(all(feature = "asm", target_arch = "x86_64"))]
-#[inline(always)]
-unsafe extern "C" fn dav1d_get_cpu_flags() -> libc::c_uint {
-    let mut flags: libc::c_uint = dav1d_cpu_flags & dav1d_cpu_flags_mask;
-    flags |= DAV1D_X86_CPU_FLAG_SSE2 as libc::c_int as libc::c_uint;
-    return flags;
-}
+
+use crate::src::cpu::dav1d_get_cpu_flags;
+
 #[inline]
 unsafe extern "C" fn ctx_refill(s: *mut MsacContext) {
     let mut buf_pos: *const uint8_t = (*s).buf_pos;

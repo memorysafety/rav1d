@@ -407,7 +407,6 @@ pub struct Dav1dFilmGrainDSPContext {
     pub fguv_32x32xn: [fguv_32x32xn_fn; 3],
 }
 use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX512ICL;
-use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
 use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SLOW_GATHER;
 use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
 use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSSE3;
@@ -1460,13 +1459,7 @@ unsafe extern "C" fn fguv_32x32xn_444_c(
     );
 }
 
-#[cfg(feature = "asm")]
-#[inline(always)]
-unsafe extern "C" fn dav1d_get_cpu_flags() -> libc::c_uint {
-    let mut flags: libc::c_uint = dav1d_cpu_flags & dav1d_cpu_flags_mask;
-    flags |= DAV1D_X86_CPU_FLAG_SSE2 as libc::c_int as libc::c_uint;
-    return flags;
-}
+use crate::src::cpu::dav1d_get_cpu_flags;
 
 #[cfg(all(
     feature = "asm",

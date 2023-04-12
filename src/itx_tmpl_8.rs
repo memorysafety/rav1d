@@ -7922,17 +7922,7 @@ unsafe extern "C" fn inv_txfm_add_wht_wht_4x4_c(
     }
 }
 
-#[inline(always)]
-#[cfg(feature = "asm")]
-unsafe extern "C" fn dav1d_get_cpu_flags() -> libc::c_uint {
-    let mut flags: libc::c_uint = dav1d_cpu_flags & dav1d_cpu_flags_mask;
-    cfg_if! {
-        if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
-            flags |= DAV1D_X86_CPU_FLAG_SSE2;
-        }
-    }
-    return flags;
-}
+use crate::src::cpu::dav1d_get_cpu_flags;
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 #[inline(always)]

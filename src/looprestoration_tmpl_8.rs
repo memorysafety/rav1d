@@ -1225,13 +1225,7 @@ unsafe extern "C" fn loop_restoration_dsp_init_x86(
     (*c).sgr[2] = Some(dav1d_sgr_filter_mix_8bpc_avx512icl);
 }
 
-#[cfg(feature = "asm")]
-#[inline(always)]
-unsafe extern "C" fn dav1d_get_cpu_flags() -> libc::c_uint {
-    let mut flags: libc::c_uint = dav1d_cpu_flags & dav1d_cpu_flags_mask;
-    flags |= DAV1D_X86_CPU_FLAG_SSE2;
-    return flags;
-}
+use crate::src::cpu::dav1d_get_cpu_flags;
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 #[inline(always)]
