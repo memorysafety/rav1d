@@ -1183,10 +1183,7 @@ use crate::include::common::intops::imin;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
 use crate::include::common::intops::apply_sign;
-#[inline]
-unsafe extern "C" fn apply_sign64(v: libc::c_int, s: int64_t) -> libc::c_int {
-    return if s < 0 { -v } else { v };
-}
+use crate::include::common::intops::apply_sign64;
 #[inline]
 unsafe extern "C" fn ulog2(v: libc::c_uint) -> libc::c_int {
     return 31 as libc::c_int - clz(v);
