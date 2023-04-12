@@ -1128,12 +1128,7 @@ pub struct TxfmInfo {
     pub sub: uint8_t,
     pub ctx: uint8_t,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union alias64 {
-    pub u64_0: uint64_t,
-    pub u8_0: [uint8_t; 8],
-}
+use crate::src::ctx::alias64;
 use crate::src::ctx::alias32;
 use crate::src::ctx::alias16;
 use crate::src::ctx::alias8;

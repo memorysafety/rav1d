@@ -356,12 +356,7 @@ use crate::src::r#ref::Dav1dRef;
 use crate::include::stdatomic::atomic_int;
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union alias64 {
-    pub u64_0: uint64_t,
-    pub u8_0: [uint8_t; 8],
-}
+use crate::src::ctx::alias64;
 use crate::src::ctx::alias32;
 use crate::src::ctx::alias16;
 use crate::src::ctx::alias8;
