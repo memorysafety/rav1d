@@ -19,3 +19,19 @@ pub unsafe extern "C" fn sm_flag(b: *const BlockContext, idx: libc::c_int) -> li
         0 as libc::c_int
     };
 }
+
+#[inline]
+pub unsafe extern "C" fn sm_uv_flag(
+    b: *const BlockContext,
+    idx: libc::c_int,
+) -> libc::c_int {
+    let m: IntraPredMode = (*b).uvmode[idx as usize] as IntraPredMode;
+    return if m as libc::c_uint == SMOOTH_PRED as libc::c_int as libc::c_uint
+        || m as libc::c_uint == SMOOTH_H_PRED as libc::c_int as libc::c_uint
+        || m as libc::c_uint == SMOOTH_V_PRED as libc::c_int as libc::c_uint
+    {
+        512 as libc::c_int
+    } else {
+        0 as libc::c_int
+    };
+}

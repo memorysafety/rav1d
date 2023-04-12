@@ -863,8 +863,6 @@ use crate::src::levels::TX_CLASS_2D;
 use crate::src::levels::IntraPredMode;
 use crate::src::levels::FILTER_PRED;
 use crate::src::levels::CFL_PRED;
-use crate::src::levels::SMOOTH_H_PRED;
-use crate::src::levels::SMOOTH_V_PRED;
 use crate::src::levels::SMOOTH_PRED;
 use crate::src::levels::DC_PRED;
 use crate::src::levels::II_SMOOTH_PRED;
@@ -1012,21 +1010,7 @@ unsafe extern "C" fn get_uv_inter_txtp(
 }
 use crate::src::msac::dav1d_msac_decode_bools;
 use crate::src::ipred_prepare::sm_flag;
-#[inline]
-unsafe extern "C" fn sm_uv_flag(
-    b: *const BlockContext,
-    idx: libc::c_int,
-) -> libc::c_int {
-    let m: IntraPredMode = (*b).uvmode[idx as usize] as IntraPredMode;
-    return if m as libc::c_uint == SMOOTH_PRED as libc::c_int as libc::c_uint
-        || m as libc::c_uint == SMOOTH_H_PRED as libc::c_int as libc::c_uint
-        || m as libc::c_uint == SMOOTH_V_PRED as libc::c_int as libc::c_uint
-    {
-        512 as libc::c_int
-    } else {
-        0 as libc::c_int
-    };
-}
+use crate::src::ipred_prepare::sm_uv_flag;
 #[inline]
 unsafe extern "C" fn read_golomb(msac: *mut MsacContext) -> libc::c_uint {
     let mut len: libc::c_int = 0 as libc::c_int;
