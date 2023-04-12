@@ -7926,6 +7926,7 @@ unsafe extern "C" fn inv_txfm_add_wht_wht_4x4_c(
     }
 }
 
+#[cfg(feature = "asm")]
 use crate::src::cpu::dav1d_get_cpu_flags;
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]

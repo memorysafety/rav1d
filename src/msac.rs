@@ -138,6 +138,7 @@ unsafe extern "C" fn msac_init_x86(s: *mut MsacContext) {
     }
 }
 
+#[cfg(feature = "asm")]
 use crate::src::cpu::dav1d_get_cpu_flags;
 
 #[inline]

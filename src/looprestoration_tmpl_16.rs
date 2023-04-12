@@ -1246,6 +1246,7 @@ unsafe extern "C" fn loop_restoration_dsp_init_x86(
     }
 }
 
+#[cfg(feature = "asm")]
 use crate::src::cpu::dav1d_get_cpu_flags;
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]

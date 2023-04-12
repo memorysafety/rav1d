@@ -2016,6 +2016,7 @@ unsafe extern "C" fn splat_mv_c(
     };
 }
 
+#[cfg(feature = "asm")]
 use crate::src::cpu::dav1d_get_cpu_flags;
 
 #[inline(always)]

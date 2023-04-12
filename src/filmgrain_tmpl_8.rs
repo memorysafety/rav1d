@@ -1779,6 +1779,7 @@ unsafe extern "C" fn fguv_32x32xn_444_neon(
     }
 }
 
+#[cfg(feature = "asm")]
 use crate::src::cpu::dav1d_get_cpu_flags;
 
 #[no_mangle]

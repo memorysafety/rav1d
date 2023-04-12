@@ -1463,6 +1463,7 @@ unsafe extern "C" fn fguv_32x32xn_444_c(
     );
 }
 
+#[cfg(feature = "asm")]
 use crate::src::cpu::dav1d_get_cpu_flags;
 
 #[cfg(all(

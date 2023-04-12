@@ -889,6 +889,7 @@ unsafe extern "C" fn cdef_find_dir_c(
     return best_dir;
 }
 
+#[cfg(feature = "asm")]
 use crate::src::cpu::dav1d_get_cpu_flags;
 
 #[inline(always)]
