@@ -290,73 +290,15 @@ pub struct Dav1dFrameContext_frame_thread {
     pub tile_start_off: *mut libc::c_int,
 }
 use crate::src::internal::CodedBlockInfo;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Av1Block {
-    pub bl: uint8_t,
-    pub bs: uint8_t,
-    pub bp: uint8_t,
-    pub intra: uint8_t,
-    pub seg_id: uint8_t,
-    pub skip_mode: uint8_t,
-    pub skip: uint8_t,
-    pub uvtx: uint8_t,
-    pub c2rust_unnamed: Av1Block_intra_inter,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union Av1Block_intra_inter {
-    pub c2rust_unnamed: Av1Block_intra,
-    pub c2rust_unnamed_0: Av1Block_inter,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Av1Block_inter {
-    pub c2rust_unnamed: Av1Block_inter_nd,
-    pub comp_type: uint8_t,
-    pub inter_mode: uint8_t,
-    pub motion_mode: uint8_t,
-    pub drl_idx: uint8_t,
-    pub ref_0: [int8_t; 2],
-    pub max_ytx: uint8_t,
-    pub filter2d: uint8_t,
-    pub interintra_type: uint8_t,
-    pub tx_split0: uint8_t,
-    pub tx_split1: uint16_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union Av1Block_inter_nd {
-    pub c2rust_unnamed: Av1Block_inter_1d,
-    pub c2rust_unnamed_0: Av1Block_inter_2d,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Av1Block_inter_2d {
-    pub mv2d: mv,
-    pub matrix: [int16_t; 4],
-}
-use crate::src::levels::mv;
+use crate::src::levels::Av1Block;
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Av1Block_inter_1d {
-    pub mv: [mv; 2],
-    pub wedge_idx: uint8_t,
-    pub mask_sign: uint8_t,
-    pub interintra_mode: uint8_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Av1Block_intra {
-    pub y_mode: uint8_t,
-    pub uv_mode: uint8_t,
-    pub tx: uint8_t,
-    pub pal_sz: [uint8_t; 2],
-    pub y_angle: int8_t,
-    pub uv_angle: int8_t,
-    pub cfl_alpha: [int8_t; 2],
-}
+
+
+
+
+
+
+
 use crate::src::refmvs::refmvs_frame;
 
 
