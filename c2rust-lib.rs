@@ -67,6 +67,7 @@ pub mod filmgrain_tmpl_8;
 pub mod getbits;
 pub mod internal;
 pub mod intra_edge;
+pub mod ipred_prepare;
 #[cfg(feature = "bitdepth_16")]
 pub mod ipred_prepare_tmpl_16;
 #[cfg(feature = "bitdepth_8")]
