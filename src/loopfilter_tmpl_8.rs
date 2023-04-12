@@ -192,10 +192,7 @@ pub struct Dav1dLoopFilterDSPContext {
 }
 use crate::include::common::intops::imin;
 use crate::include::common::intops::iclip;
-#[inline]
-unsafe extern "C" fn iclip_u8(v: libc::c_int) -> libc::c_int {
-    return iclip(v, 0 as libc::c_int, 255 as libc::c_int);
-}
+use crate::include::common::intops::iclip_u8;
 #[inline(never)]
 unsafe extern "C" fn loop_filter(
     mut dst: *mut pixel,

@@ -3874,10 +3874,7 @@ pub type CpuFlags = libc::c_uint;
 pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
 use crate::include::common::intops::imin;
 use crate::include::common::intops::iclip;
-#[inline]
-unsafe extern "C" fn iclip_u8(v: libc::c_int) -> libc::c_int {
-    return iclip(v, 0 as libc::c_int, 255 as libc::c_int);
-}
+use crate::include::common::intops::iclip_u8;
 #[inline(never)]
 unsafe extern "C" fn inv_txfm_add_c(
     mut dst: *mut pixel,

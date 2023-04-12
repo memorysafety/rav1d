@@ -339,10 +339,7 @@ pub struct Dav1dLoopRestorationDSPContext {
 use crate::include::common::intops::imax;
 use crate::include::common::intops::umin;
 use crate::include::common::intops::iclip;
-#[inline]
-unsafe extern "C" fn iclip_u8(v: libc::c_int) -> libc::c_int {
-    return iclip(v, 0 as libc::c_int, 255 as libc::c_int);
-}
+use crate::include::common::intops::iclip_u8;
 #[inline(never)]
 unsafe extern "C" fn padding(
     mut dst: *mut pixel,

@@ -826,11 +826,7 @@ pub struct GetBits {
 }
 use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
-use crate::include::common::intops::iclip;
-#[inline]
-unsafe extern "C" fn iclip_u8(v: libc::c_int) -> libc::c_int {
-    return iclip(v, 0 as libc::c_int, 255 as libc::c_int);
-}
+use crate::include::common::intops::iclip_u8;
 #[inline]
 unsafe extern "C" fn ulog2(v: libc::c_uint) -> libc::c_int {
     return 31 as libc::c_int - clz(v);

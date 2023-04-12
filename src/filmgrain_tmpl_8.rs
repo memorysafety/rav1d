@@ -386,10 +386,7 @@ pub const DAV1D_X86_CPU_FLAG_AVX2: CpuFlags = 8;
 pub const DAV1D_X86_CPU_FLAG_SSSE3: CpuFlags = 2;
 pub type CpuFlags = libc::c_uint;
 pub const DAV1D_X86_CPU_FLAG_SSE41: CpuFlags = 4;
-#[inline]
-unsafe extern "C" fn iclip_u8(v: libc::c_int) -> libc::c_int {
-    return iclip(v, 0 as libc::c_int, 255 as libc::c_int);
-}
+use crate::include::common::intops::iclip_u8;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::imin;
 #[inline]

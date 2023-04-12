@@ -21,3 +21,8 @@ pub unsafe extern "C" fn iclip(
 ) -> libc::c_int {
     return if v < min { min } else if v > max { max } else { v };
 }
+
+#[inline]
+pub unsafe extern "C" fn iclip_u8(v: libc::c_int) -> libc::c_int {
+    return iclip(v, 0 as libc::c_int, 255 as libc::c_int);
+}
