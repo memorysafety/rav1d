@@ -33,6 +33,12 @@ use crate::src::mem::Dav1dMemPoolBuffer;
 use crate::src::mem::Dav1dMemPool;
 use crate::src::mem::dav1d_alloc_aligned;
 use crate::src::mem::dav1d_free_aligned;
+
+#[inline]
+pub unsafe extern "C" fn dav1d_ref_inc(ref_0: *mut Dav1dRef) {
+    ::core::intrinsics::atomic_xadd_relaxed(&mut (*ref_0).ref_cnt, 1 as libc::c_int);
+}
+
 unsafe extern "C" fn default_free_callback(
     data: *const uint8_t,
     user_data: *mut libc::c_void,

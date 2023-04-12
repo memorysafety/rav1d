@@ -24,10 +24,7 @@ use crate::src::r#ref::Dav1dRef;
 
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
-#[inline]
-unsafe extern "C" fn dav1d_ref_inc(ref_0: *mut Dav1dRef) {
-    ::core::intrinsics::atomic_xadd_relaxed(&mut (*ref_0).ref_cnt, 1 as libc::c_int);
-}
+use crate::src::r#ref::dav1d_ref_inc;
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_data_create_internal(
     buf: *mut Dav1dData,

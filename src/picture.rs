@@ -758,10 +758,7 @@ pub struct pic_ctx_context {
     pub pic: Dav1dPicture,
     pub extra_ptr: *mut libc::c_void,
 }
-#[inline]
-unsafe extern "C" fn dav1d_ref_inc(ref_0: *mut Dav1dRef) {
-    ::core::intrinsics::atomic_xadd_relaxed(&mut (*ref_0).ref_cnt, 1 as libc::c_int);
-}
+use crate::src::r#ref::dav1d_ref_inc;
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_default_picture_alloc(
     p: *mut Dav1dPicture,

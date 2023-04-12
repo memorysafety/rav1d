@@ -1183,10 +1183,7 @@ use crate::src::mem::dav1d_alloc_aligned;
 use crate::src::mem::dav1d_free_aligned;
 use crate::src::mem::dav1d_freep_aligned;
 use crate::src::mem::freep;
-#[inline]
-unsafe extern "C" fn dav1d_ref_inc(ref_0: *mut Dav1dRef) {
-    ::core::intrinsics::atomic_xadd_relaxed(&mut (*ref_0).ref_cnt, 1 as libc::c_int);
-}
+use crate::src::r#ref::dav1d_ref_inc;
 static mut cfl_allowed_mask: libc::c_uint = ((1 as libc::c_int)
     << BS_32x32 as libc::c_int | (1 as libc::c_int) << BS_32x16 as libc::c_int
     | (1 as libc::c_int) << BS_32x8 as libc::c_int

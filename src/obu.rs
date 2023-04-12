@@ -829,10 +829,7 @@ use crate::include::common::intops::imin;
 use crate::include::common::intops::iclip_u8;
 use crate::include::common::intops::ulog2;
 
-#[inline]
-unsafe extern "C" fn dav1d_ref_inc(ref_0: *mut Dav1dRef) {
-    ::core::intrinsics::atomic_xadd_relaxed(&mut (*ref_0).ref_cnt, 1 as libc::c_int);
-}
+use crate::src::r#ref::dav1d_ref_inc;
 #[inline]
 unsafe extern "C" fn get_poc_diff(
     order_hint_n_bits: libc::c_int,
