@@ -84,10 +84,7 @@ pub struct MsacContext {
         unsafe extern "C" fn(*mut MsacContext, *mut uint16_t, size_t) -> libc::c_uint,
     >,
 }
-#[inline]
-unsafe extern "C" fn clz(mask: libc::c_uint) -> libc::c_int {
-    return mask.leading_zeros() as i32;
-}
+use crate::include::common::attributes::clz;
 cfg_if! {
     if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
         pub type CpuFlags = libc::c_uint;

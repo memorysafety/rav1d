@@ -340,10 +340,7 @@ pub struct Dav1dLoopRestorationDSPContext {
     pub sgr: [looprestorationfilter_fn; 3],
 }
 use crate::include::common::intops::imax;
-#[inline]
-unsafe extern "C" fn clz(mask: libc::c_uint) -> libc::c_int {
-    return mask.leading_zeros() as i32;
-}
+use crate::include::common::attributes::clz;
 use crate::include::common::intops::umin;
 use crate::include::common::intops::iclip;
 #[inline]

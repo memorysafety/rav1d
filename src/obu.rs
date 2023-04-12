@@ -831,10 +831,7 @@ use crate::include::common::intops::iclip_u8;
 unsafe extern "C" fn ulog2(v: libc::c_uint) -> libc::c_int {
     return 31 as libc::c_int - clz(v);
 }
-#[inline]
-unsafe extern "C" fn clz(mask: libc::c_uint) -> libc::c_int {
-    return mask.leading_zeros() as i32;
-}
+use crate::include::common::attributes::clz;
 #[inline]
 unsafe extern "C" fn dav1d_ref_inc(ref_0: *mut Dav1dRef) {
     ::core::intrinsics::atomic_xadd_relaxed(&mut (*ref_0).ref_cnt, 1 as libc::c_int);

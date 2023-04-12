@@ -255,10 +255,7 @@ pub const DAV1D_X86_CPU_FLAG_SSE41: CpuFlags = 4;
 pub const DAV1D_X86_CPU_FLAG_SSSE3: CpuFlags = 2;
 pub type CpuFlags = libc::c_uint;
 pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
-#[inline]
-unsafe extern "C" fn clz(mask: libc::c_uint) -> libc::c_int {
-    return mask.leading_zeros() as i32;
-}
+use crate::include::common::attributes::clz;
 use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
 use crate::include::common::intops::umin;

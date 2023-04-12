@@ -1171,10 +1171,7 @@ use crate::src::levels::MM_TRANSLATION;
 use crate::src::tables::TxfmInfo;
 use crate::src::refmvs::refmvs_candidate;
 use crate::include::common::attributes::ctz;
-#[inline]
-unsafe extern "C" fn clz(mask: libc::c_uint) -> libc::c_int {
-    return mask.leading_zeros() as i32;
-}
+use crate::include::common::attributes::clz;
 use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
 use crate::include::common::intops::iclip;

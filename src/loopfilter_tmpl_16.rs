@@ -207,10 +207,7 @@ pub type loopfilter_sb_fn = Option::<
 pub struct Dav1dLoopFilterDSPContext {
     pub loop_filter_sb: [[loopfilter_sb_fn; 2]; 2],
 }
-#[inline]
-unsafe extern "C" fn clz(mask: libc::c_uint) -> libc::c_int {
-    return mask.leading_zeros() as i32;
-}
+use crate::include::common::attributes::clz;
 use crate::include::common::intops::imin;
 use crate::include::common::intops::iclip;
 #[inline]
