@@ -60,151 +60,17 @@ extern "C" {
         bh4: libc::c_int,
     );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
 
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
-
-
-
-
-
-
 use crate::include::dav1d::headers::Dav1dFrameHeader;
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::src::levels::BlockSize;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 use crate::src::levels::mv;
 use crate::src::levels::mv_xy;
 use crate::src::intra_edge::EdgeFlags;
-
-
-
-
 
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 #[derive(Copy, Clone)]

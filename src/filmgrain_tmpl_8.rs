@@ -315,8 +315,6 @@ extern "C" {
         type_0: ptrdiff_t,
     );
 }
-
-
 pub type pixel = uint8_t;
 
 use crate::include::stddef::ptrdiff_t;

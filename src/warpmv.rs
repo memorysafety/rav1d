@@ -4,15 +4,7 @@ extern "C" {
     fn abs(_: libc::c_int) -> libc::c_int;
     fn llabs(_: libc::c_longlong) -> libc::c_longlong;
 }
-
-
-
-
-
-
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
-
-
 use crate::src::levels::mv;
 
 #[inline]

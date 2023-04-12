@@ -13,10 +13,6 @@ extern "C" {
     static dav1d_filter_intra_taps: [[int8_t; 64]; 5];
 }
 
-
-
-
-
 pub type pixel = uint16_t;
 
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
@@ -30,20 +26,10 @@ use crate::src::levels::Z1_PRED;
 use crate::src::levels::DC_128_PRED;
 use crate::src::levels::TOP_DC_PRED;
 use crate::src::levels::LEFT_DC_PRED;
-
-
-
-
 use crate::src::levels::PAETH_PRED;
 use crate::src::levels::SMOOTH_H_PRED;
 use crate::src::levels::SMOOTH_V_PRED;
 use crate::src::levels::SMOOTH_PRED;
-
-
-
-
-
-
 use crate::src::levels::HOR_PRED;
 use crate::src::levels::VERT_PRED;
 use crate::src::levels::DC_PRED;

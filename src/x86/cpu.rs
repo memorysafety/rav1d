@@ -13,8 +13,6 @@ extern "C" {
     );
     fn dav1d_cpu_xgetbv(xcr: libc::c_uint) -> uint64_t;
 }
-
-
 pub type CpuFlags = libc::c_uint;
 pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
 pub const DAV1D_X86_CPU_FLAG_AVX512ICL: CpuFlags = 16;

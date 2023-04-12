@@ -12,133 +12,19 @@ extern "C" {
         _: ::core::ffi::VaList,
     ) -> libc::c_int;
 }
-
-
-
-
-
-
-
-
 use crate::src::r#ref::Dav1dRef;
 use crate::include::stdatomic::atomic_int;
 use crate::include::dav1d::common::Dav1dDataProps;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 use crate::include::dav1d::headers::Dav1dContentLightLevel;
 use crate::include::dav1d::headers::Dav1dMasteringDisplay;
 use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 
-
-
-
-
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
-
-
-
-
-
-
-
-
-
-
-
-
 
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::picture::Dav1dPicAllocator;
@@ -202,47 +88,17 @@ pub struct Dav1dContext {
 }
 use crate::src::mem::Dav1dMemPool;
 
-
-
-
-
 use crate::include::dav1d::dav1d::Dav1dLogger;
 use crate::include::dav1d::dav1d::Dav1dEventFlags;
-
-
 use crate::src::picture::PictureFlags;
 
-
-
 use crate::include::dav1d::dav1d::Dav1dDecodeFrameType;
-
-
-
-
 use crate::include::dav1d::dav1d::Dav1dInloopFilterType;
-
-
-
-
 
 use crate::src::internal::Dav1dContext_intra_edge;
 
 use crate::src::intra_edge::EdgeFlags;
-
-
-
-
-
-
-
-
 use crate::src::refmvs::Dav1dRefmvsDSPContext;
-
-
-
-
-
-
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dDSPContext {
@@ -273,10 +129,6 @@ pub type looprestorationfilter_fn = Option::<
     ) -> (),
 >;
 use crate::src::looprestoration::LrEdgeFlags;
-
-
-
-
 use crate::src::looprestoration::LooprestorationParams;
 
 pub type pixel = ();
@@ -302,10 +154,6 @@ pub type cdef_fn = Option::<
     ) -> (),
 >;
 use crate::src::cdef::CdefEdgeFlags;
-
-
-
-
 pub type const_left_pixel_row_2px = *const libc::c_void;
 pub type cdef_dir_fn = Option::<
     unsafe extern "C" fn(
@@ -634,26 +482,6 @@ use crate::include::stdatomic::atomic_uint;
 use crate::src::internal::Dav1dContext_refs;
 use crate::src::picture::Dav1dThreadPicture;
 use crate::src::internal::TaskThreadData;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union __atomic_wide_counter {
@@ -694,33 +522,11 @@ pub struct Dav1dTaskContext {
 }
 use crate::src::internal::Dav1dTaskContext_task_thread;
 use crate::src::internal::FrameTileThreadData;
-
-
 use crate::src::internal::Dav1dTaskContext_frame_thread;
 use crate::src::levels::Filter2d;
 
-
-
-
-
-
-
-
-
-
-
 use crate::src::lf_mask::Av1Filter;
 use crate::src::internal::Dav1dTaskContext_scratch;
-
-
-
-
-
-
-
-
-
-
 use crate::src::internal::Dav1dTaskContext_cf;
 use crate::src::refmvs::refmvs_tile;
 
@@ -813,8 +619,6 @@ pub struct Dav1dFrameContext {
     pub tile_thread: FrameTileThreadData,
 }
 use crate::src::internal::Dav1dFrameContext_task_thread;
-
-
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext_lf {
@@ -867,12 +671,6 @@ pub struct Dav1dFrameContext_frame_thread {
 }
 use crate::src::internal::CodedBlockInfo;
 use crate::src::levels::Av1Block;
-
-
-
-
-
-
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext_bd_fn {
@@ -893,28 +691,6 @@ pub type read_coef_blocks_fn = Option::<
     unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> (),
 >;
 use crate::src::levels::BlockSize;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 pub type backup_ipred_edge_fn = Option::<
     unsafe extern "C" fn(*mut Dav1dTaskContext) -> (),

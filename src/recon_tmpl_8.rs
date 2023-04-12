@@ -104,10 +104,6 @@ extern "C" {
     static mut dav1d_ii_masks: [[[*const uint8_t; 4]; 3]; 22];
 }
 
-
-
-
-
 pub type pixel = uint8_t;
 pub type coef = int16_t;
 use crate::include::stdatomic::atomic_int;
@@ -177,31 +173,7 @@ pub struct Dav1dFrameContext {
 }
 use crate::src::internal::FrameTileThreadData;
 use crate::src::internal::Dav1dFrameContext_task_thread;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::src::internal::TaskThreadData;
-
-
-
-
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dMasteringDisplay;
@@ -215,114 +187,10 @@ use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 
-
-
-
-
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -379,18 +247,10 @@ pub struct Dav1dFrameContext_frame_thread {
 }
 use crate::src::internal::CodedBlockInfo;
 use crate::src::levels::Av1Block;
-
-
-
-
 use crate::src::levels::mv;
-
-
 
 use crate::src::refmvs::refmvs_frame;
 use crate::src::refmvs::refmvs_block;
-
-
 use crate::src::refmvs::refmvs_temporal_block;
 use crate::src::env::BlockContext;
 #[derive(Copy, Clone)]
@@ -413,28 +273,6 @@ pub type read_coef_blocks_fn = Option::<
     unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> (),
 >;
 use crate::src::levels::BlockSize;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -461,32 +299,12 @@ pub struct Dav1dTaskContext {
     pub task_thread: Dav1dTaskContext_task_thread,
 }
 use crate::src::internal::Dav1dTaskContext_task_thread;
-
-
 use crate::src::internal::Dav1dTaskContext_frame_thread;
 use crate::src::levels::Filter2d;
 
 use crate::src::levels::FILTER_2D_BILINEAR;
 
-
-
-
-
-
-
-
-
 use crate::src::internal::Dav1dTaskContext_scratch;
-
-
-
-
-
-
-
-
-
-
 use crate::src::internal::Dav1dTaskContext_cf;
 use crate::src::refmvs::refmvs_tile;
 
@@ -576,17 +394,9 @@ use crate::src::mem::Dav1dMemPool;
 
 use crate::include::dav1d::dav1d::Dav1dLogger;
 use crate::include::dav1d::dav1d::Dav1dEventFlags;
-
-
 use crate::src::picture::PictureFlags;
 
-
-
 use crate::include::dav1d::dav1d::Dav1dDecodeFrameType;
-
-
-
-
 use crate::include::dav1d::dav1d::Dav1dInloopFilterType;
 
 use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_RESTORATION;
@@ -603,8 +413,6 @@ use crate::src::intra_edge::EDGE_I444_LEFT_HAS_BOTTOM;
 use crate::src::intra_edge::EDGE_I420_TOP_HAS_RIGHT;
 
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
-
-
 use crate::src::refmvs::Dav1dRefmvsDSPContext;
 
 #[derive(Copy, Clone)]
@@ -637,10 +445,6 @@ pub type looprestorationfilter_fn = Option::<
     ) -> (),
 >;
 use crate::src::looprestoration::LrEdgeFlags;
-
-
-
-
 use crate::src::looprestoration::LooprestorationParams;
 
 pub type const_left_pixel_row = *const [pixel; 4];
@@ -665,10 +469,6 @@ pub type cdef_fn = Option::<
     ) -> (),
 >;
 use crate::src::cdef::CdefEdgeFlags;
-
-
-
-
 pub type const_left_pixel_row_2px = *const [pixel; 2];
 pub type cdef_dir_fn = Option::<
     unsafe extern "C" fn(*const pixel, ptrdiff_t, *mut libc::c_uint) -> libc::c_int,
@@ -1008,28 +808,12 @@ pub type recon_b_intra_fn = Option::<
     ) -> (),
 >;
 use crate::src::internal::ScalableMotionParams;
-
-
 use crate::src::levels::TX_64X64;
 use crate::src::levels::TX_32X32;
 use crate::src::levels::TX_16X16;
 use crate::src::levels::TX_8X8;
 use crate::src::levels::TX_4X4;
 use crate::src::levels::RectTxfmSize;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::src::levels::RTX_4X8;
 use crate::src::levels::TxfmType;
 
@@ -1039,17 +823,7 @@ use crate::src::levels::H_FLIPADST;
 use crate::src::levels::V_FLIPADST;
 use crate::src::levels::H_ADST;
 use crate::src::levels::V_ADST;
-
-
 use crate::src::levels::IDTX;
-
-
-
-
-
-
-
-
 use crate::src::levels::DCT_DCT;
 use crate::src::levels::TxClass;
 use crate::src::levels::TX_CLASS_V;
@@ -1057,62 +831,18 @@ use crate::src::levels::TX_CLASS_H;
 use crate::src::levels::TX_CLASS_2D;
 use crate::src::levels::IntraPredMode;
 use crate::src::levels::FILTER_PRED;
-
-
-
-
-
-
-
-
 use crate::src::levels::CFL_PRED;
-
-
 use crate::src::levels::SMOOTH_H_PRED;
 use crate::src::levels::SMOOTH_V_PRED;
 use crate::src::levels::SMOOTH_PRED;
-
-
-
-
-
-
-
-
 use crate::src::levels::DC_PRED;
-
-
 use crate::src::levels::II_SMOOTH_PRED;
-
-
-
-
-
-
 use crate::src::levels::GLOBALMV;
-
-
-
-
 
 use crate::src::levels::GLOBALMV_GLOBALMV;
 
-
-
-
-
-
-
-
-
-
-
 use crate::src::levels::COMP_INTER_NONE;
-
-
 use crate::src::levels::INTER_INTRA_BLEND;
-
-
 use crate::src::levels::MM_WARP;
 use crate::src::levels::MM_OBMC;
 

@@ -78,12 +78,6 @@ extern "C" {
         lib_settings: *mut Dav1dSettings,
     );
 }
-
-
-
-
-
-
 use crate::include::time::__syscall_slong_t;
 use crate::include::time::clockid_t;
 use crate::include::time::time_t;
@@ -91,97 +85,17 @@ use crate::include::time::timespec;
 
 use crate::include::dav1d::common::Dav1dUserData;
 use crate::include::dav1d::common::Dav1dDataProps;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::include::dav1d::headers::DAV1D_OFF;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
 
-
-
-
-
 use crate::include::dav1d::headers::Dav1dColorPrimaries;
-
-
-
-
-
-
-
-
-
-
-
-
 
 use crate::include::dav1d::headers::Dav1dTransferCharacteristics;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::include::dav1d::headers::DAV1D_MC_IDENTITY;
-
-
 
 use crate::include::dav1d::headers::DAV1D_CHR_UNKNOWN;
 use crate::include::dav1d::headers::Dav1dContentLightLevel;
@@ -190,37 +104,15 @@ use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Dav1dSequenceHeaderOperatingParameterInfo;
 use crate::include::dav1d::headers::Dav1dSequenceHeaderOperatingPoint;
-
-
-
-
 use crate::include::dav1d::headers::Dav1dFrameHeader;
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::include::dav1d::picture::Dav1dPictureParameters;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::picture::Dav1dPicAllocator;
 use crate::include::dav1d::data::Dav1dData;
 use crate::include::dav1d::dav1d::Dav1dLogger;
 use crate::include::dav1d::dav1d::Dav1dInloopFilterType;
-
-
-
-
 use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
 use crate::include::dav1d::dav1d::Dav1dDecodeFrameType;
-
-
 
 use crate::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_ALL;
 #[derive(Copy, Clone)]

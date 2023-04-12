@@ -24,12 +24,6 @@ extern "C" {
     static annexb_demuxer: Demuxer;
     static section5_demuxer: Demuxer;
 }
-
-
-
-
-
-
 use crate::include::dav1d::data::Dav1dData;
 #[derive(Copy, Clone)]
 #[repr(C)]

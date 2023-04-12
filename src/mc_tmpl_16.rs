@@ -1864,19 +1864,11 @@ pub const DAV1D_X86_CPU_FLAG_SSE41: CpuFlags = 4;
 pub const DAV1D_X86_CPU_FLAG_SSSE3: CpuFlags = 2;
 pub type CpuFlags = libc::c_uint;
 pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
-
-
 pub type pixel = uint16_t;
-
-
-
-
 
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SHARP;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SMOOTH;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
-
-
 use crate::src::levels::FILTER_2D_BILINEAR;
 use crate::src::levels::FILTER_2D_8TAP_SMOOTH_SHARP;
 use crate::src::levels::FILTER_2D_8TAP_SMOOTH;
