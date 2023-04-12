@@ -173,23 +173,7 @@ use crate::include::common::intops::imin;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::apply_sign;
 use crate::src::env::get_poc_diff;
-#[inline]
-unsafe extern "C" fn fix_mv_precision(hdr: *const Dav1dFrameHeader, mv: *mut mv) {
-    if (*hdr).force_integer_mv != 0 {
-        fix_int_mv_precision(mv);
-    } else if (*hdr).hp == 0 {
-        (*mv)
-            .c2rust_unnamed
-            .x = (((*mv).c2rust_unnamed.x as libc::c_int
-            - ((*mv).c2rust_unnamed.x as libc::c_int >> 15 as libc::c_int))
-            as libc::c_uint & !(1 as libc::c_uint)) as int16_t;
-        (*mv)
-            .c2rust_unnamed
-            .y = (((*mv).c2rust_unnamed.y as libc::c_int
-            - ((*mv).c2rust_unnamed.y as libc::c_int >> 15 as libc::c_int))
-            as libc::c_uint & !(1 as libc::c_uint)) as int16_t;
-    }
-}
+use crate::src::env::fix_mv_precision;
 use crate::src::env::fix_int_mv_precision;
 #[inline]
 unsafe extern "C" fn get_gmv_2d(
