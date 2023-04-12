@@ -1,5 +1,7 @@
 use crate::include::common::attributes::clz;
+use crate::include::common::attributes::clzll;
 use crate::include::stdint::int64_t;
+use crate::include::stdint::uint64_t;
 
 #[inline]
 pub unsafe extern "C" fn imax(a: libc::c_int, b: libc::c_int) -> libc::c_int {
@@ -43,4 +45,9 @@ pub unsafe extern "C" fn apply_sign64(v: libc::c_int, s: int64_t) -> libc::c_int
 #[inline]
 pub unsafe extern "C" fn ulog2(v: libc::c_uint) -> libc::c_int {
     return 31 as libc::c_int - clz(v);
+}
+
+#[inline]
+pub unsafe extern "C" fn u64log2(v: uint64_t) -> libc::c_int {
+    return 63 as libc::c_int - clzll(v as libc::c_ulonglong);
 }
