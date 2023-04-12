@@ -314,27 +314,7 @@ use crate::include::common::intops::iclip;
 
 use crate::include::common::intops::ulog2;
 use crate::src::cdef::constrain;
-#[inline]
-unsafe extern "C" fn fill(
-    mut tmp: *mut int16_t,
-    stride: ptrdiff_t,
-    w: libc::c_int,
-    h: libc::c_int,
-) {
-    let mut y: libc::c_int = 0 as libc::c_int;
-    while y < h {
-        let mut x: libc::c_int = 0 as libc::c_int;
-        while x < w {
-            *tmp
-                .offset(
-                    x as isize,
-                ) = (-(32767 as libc::c_int) - 1 as libc::c_int) as int16_t;
-            x += 1;
-        }
-        tmp = tmp.offset(stride as isize);
-        y += 1;
-    }
-}
+use crate::src::cdef::fill;
 unsafe extern "C" fn padding(
     mut tmp: *mut int16_t,
     tmp_stride: ptrdiff_t,

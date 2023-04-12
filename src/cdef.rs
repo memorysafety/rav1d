@@ -1,6 +1,8 @@
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
+use crate::include::stdint::int16_t;
+use crate::include::stddef::ptrdiff_t;
 
 extern "C" {
     fn abs(_: libc::c_int) -> libc::c_int;
@@ -23,4 +25,26 @@ pub unsafe extern "C" fn constrain(
         imin(adiff, imax(0 as libc::c_int, threshold - (adiff >> shift))),
         diff,
     );
+}
+
+#[inline]
+pub unsafe extern "C" fn fill(
+    mut tmp: *mut int16_t,
+    stride: ptrdiff_t,
+    w: libc::c_int,
+    h: libc::c_int,
+) {
+    let mut y: libc::c_int = 0 as libc::c_int;
+    while y < h {
+        let mut x: libc::c_int = 0 as libc::c_int;
+        while x < w {
+            *tmp
+                .offset(
+                    x as isize,
+                ) = (-(32767 as libc::c_int) - 1 as libc::c_int) as int16_t;
+            x += 1;
+        }
+        tmp = tmp.offset(stride as isize);
+        y += 1;
+    }
 }
