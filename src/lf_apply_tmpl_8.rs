@@ -306,7 +306,7 @@ pub struct Av1Block {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union C2RustUnnamed_21 {
-    pub c2rust_unnamed: C2RustUnnamed_27,
+    pub c2rust_unnamed: Av1Block_intra,
     pub c2rust_unnamed_0: C2RustUnnamed_22,
 }
 #[derive(Copy, Clone)]
@@ -348,7 +348,7 @@ pub struct C2RustUnnamed_26 {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_27 {
+pub struct Av1Block_intra {
     pub y_mode: uint8_t,
     pub uv_mode: uint8_t,
     pub tx: uint8_t,
