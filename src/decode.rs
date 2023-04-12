@@ -2065,22 +2065,7 @@ unsafe extern "C" fn get_gmv_2d(
     }
     return res;
 }
-#[inline]
-unsafe extern "C" fn dav1d_msac_decode_bools(
-    s: *mut MsacContext,
-    mut n: libc::c_uint,
-) -> libc::c_uint {
-    let mut v: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    loop {
-        let fresh0 = n;
-        n = n.wrapping_sub(1);
-        if !(fresh0 != 0) {
-            break;
-        }
-        v = v << 1 as libc::c_int | dav1d_msac_decode_bool_equi(s);
-    }
-    return v;
-}
+use crate::src::msac::dav1d_msac_decode_bools;
 #[inline]
 unsafe extern "C" fn dav1d_msac_decode_uniform(
     s: *mut MsacContext,

@@ -972,22 +972,7 @@ unsafe extern "C" fn get_uv_inter_txtp(
     }
     return ytxtp;
 }
-#[inline]
-unsafe extern "C" fn dav1d_msac_decode_bools(
-    s: *mut MsacContext,
-    mut n: libc::c_uint,
-) -> libc::c_uint {
-    let mut v: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    loop {
-        let fresh2 = n;
-        n = n.wrapping_sub(1);
-        if !(fresh2 != 0) {
-            break;
-        }
-        v = v << 1 as libc::c_int | dav1d_msac_decode_bool_equi(s);
-    }
-    return v;
-}
+use crate::src::msac::dav1d_msac_decode_bools;
 #[inline]
 unsafe extern "C" fn sm_flag(b: *const BlockContext, idx: libc::c_int) -> libc::c_int {
     if (*b).intra[idx as usize] == 0 {

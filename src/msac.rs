@@ -97,8 +97,9 @@ cfg_if! {
     }
 }
 use crate::include::common::intops::inv_recenter;
+
 #[inline]
-unsafe extern "C" fn dav1d_msac_decode_bools(
+pub unsafe extern "C" fn dav1d_msac_decode_bools(
     s: *mut MsacContext,
     mut n: libc::c_uint,
 ) -> libc::c_uint {
