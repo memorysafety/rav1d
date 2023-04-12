@@ -61,12 +61,6 @@ extern "C" {
     );
 }
 
-use crate::include::dav1d::headers::Dav1dTxfmMode;
-
-
-
-
-use crate::include::dav1d::headers::Dav1dFilterMode;
 
 
 
@@ -78,43 +72,31 @@ use crate::include::dav1d::headers::Dav1dFilterMode;
 
 
 
-use crate::include::dav1d::headers::Dav1dRestorationType;
 
 
 
 
-use crate::include::dav1d::headers::Dav1dWarpedMotionType;
+
+
+
+
+
+
+
+
 
 
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dWarpedMotionParams {
-    pub type_0: Dav1dWarpedMotionType,
-    pub matrix: [int32_t; 6],
-    pub u: C2RustUnnamed,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union C2RustUnnamed {
-    pub p: C2RustUnnamed_0,
-    pub abcd: [int16_t; 4],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_0 {
-    pub alpha: int16_t,
-    pub beta: int16_t,
-    pub gamma: int16_t,
-    pub delta: int16_t,
-}
+use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 
 
 
 
 
-use crate::include::dav1d::headers::Dav1dFrameType;
+
+
+
 
 
 
@@ -176,163 +158,22 @@ use crate::include::dav1d::headers::Dav1dSequenceHeader;
 
 
 
-use crate::include::dav1d::headers::Dav1dSegmentationDataSet;
-use crate::include::dav1d::headers::Dav1dLoopfilterModeRefDeltas;
-use crate::include::dav1d::headers::Dav1dFilmGrainData;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFrameHeader {
-    pub film_grain: C2RustUnnamed_11,
-    pub frame_type: Dav1dFrameType,
-    pub width: [libc::c_int; 2],
-    pub height: libc::c_int,
-    pub frame_offset: libc::c_int,
-    pub temporal_id: libc::c_int,
-    pub spatial_id: libc::c_int,
-    pub show_existing_frame: libc::c_int,
-    pub existing_frame_idx: libc::c_int,
-    pub frame_id: libc::c_int,
-    pub frame_presentation_delay: libc::c_int,
-    pub show_frame: libc::c_int,
-    pub showable_frame: libc::c_int,
-    pub error_resilient_mode: libc::c_int,
-    pub disable_cdf_update: libc::c_int,
-    pub allow_screen_content_tools: libc::c_int,
-    pub force_integer_mv: libc::c_int,
-    pub frame_size_override: libc::c_int,
-    pub primary_ref_frame: libc::c_int,
-    pub buffer_removal_time_present: libc::c_int,
-    pub operating_points: [Dav1dFrameHeaderOperatingPoint; 32],
-    pub refresh_frame_flags: libc::c_int,
-    pub render_width: libc::c_int,
-    pub render_height: libc::c_int,
-    pub super_res: C2RustUnnamed_10,
-    pub have_render_size: libc::c_int,
-    pub allow_intrabc: libc::c_int,
-    pub frame_ref_short_signaling: libc::c_int,
-    pub refidx: [libc::c_int; 7],
-    pub hp: libc::c_int,
-    pub subpel_filter_mode: Dav1dFilterMode,
-    pub switchable_motion_mode: libc::c_int,
-    pub use_ref_frame_mvs: libc::c_int,
-    pub refresh_context: libc::c_int,
-    pub tiling: C2RustUnnamed_9,
-    pub quant: C2RustUnnamed_8,
-    pub segmentation: C2RustUnnamed_7,
-    pub delta: C2RustUnnamed_4,
-    pub all_lossless: libc::c_int,
-    pub loopfilter: C2RustUnnamed_3,
-    pub cdef: C2RustUnnamed_2,
-    pub restoration: C2RustUnnamed_1,
-    pub txfm_mode: Dav1dTxfmMode,
-    pub switchable_comp_refs: libc::c_int,
-    pub skip_mode_allowed: libc::c_int,
-    pub skip_mode_enabled: libc::c_int,
-    pub skip_mode_refs: [libc::c_int; 2],
-    pub warp_motion: libc::c_int,
-    pub reduced_txtp_set: libc::c_int,
-    pub gmv: [Dav1dWarpedMotionParams; 7],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_1 {
-    pub type_0: [Dav1dRestorationType; 3],
-    pub unit_size: [libc::c_int; 2],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_2 {
-    pub damping: libc::c_int,
-    pub n_bits: libc::c_int,
-    pub y_strength: [libc::c_int; 8],
-    pub uv_strength: [libc::c_int; 8],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_3 {
-    pub level_y: [libc::c_int; 2],
-    pub level_u: libc::c_int,
-    pub level_v: libc::c_int,
-    pub mode_ref_delta_enabled: libc::c_int,
-    pub mode_ref_delta_update: libc::c_int,
-    pub mode_ref_deltas: Dav1dLoopfilterModeRefDeltas,
-    pub sharpness: libc::c_int,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_4 {
-    pub q: C2RustUnnamed_6,
-    pub lf: C2RustUnnamed_5,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_5 {
-    pub present: libc::c_int,
-    pub res_log2: libc::c_int,
-    pub multi: libc::c_int,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_6 {
-    pub present: libc::c_int,
-    pub res_log2: libc::c_int,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_7 {
-    pub enabled: libc::c_int,
-    pub update_map: libc::c_int,
-    pub temporal: libc::c_int,
-    pub update_data: libc::c_int,
-    pub seg_data: Dav1dSegmentationDataSet,
-    pub lossless: [libc::c_int; 8],
-    pub qidx: [libc::c_int; 8],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_8 {
-    pub yac: libc::c_int,
-    pub ydc_delta: libc::c_int,
-    pub udc_delta: libc::c_int,
-    pub uac_delta: libc::c_int,
-    pub vdc_delta: libc::c_int,
-    pub vac_delta: libc::c_int,
-    pub qm: libc::c_int,
-    pub qm_y: libc::c_int,
-    pub qm_u: libc::c_int,
-    pub qm_v: libc::c_int,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_9 {
-    pub uniform: libc::c_int,
-    pub n_bytes: libc::c_uint,
-    pub min_log2_cols: libc::c_int,
-    pub max_log2_cols: libc::c_int,
-    pub log2_cols: libc::c_int,
-    pub cols: libc::c_int,
-    pub min_log2_rows: libc::c_int,
-    pub max_log2_rows: libc::c_int,
-    pub log2_rows: libc::c_int,
-    pub rows: libc::c_int,
-    pub col_start_sb: [uint16_t; 65],
-    pub row_start_sb: [uint16_t; 65],
-    pub update: libc::c_int,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_10 {
-    pub width_scale_denominator: libc::c_int,
-    pub enabled: libc::c_int,
-}
-use crate::include::dav1d::headers::Dav1dFrameHeaderOperatingPoint;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_11 {
-    pub data: Dav1dFilmGrainData,
-    pub present: libc::c_int,
-    pub update: libc::c_int,
-}
+
+
+
+use crate::include::dav1d::headers::Dav1dFrameHeader;
+
+
+
+
+
+
+
+
+
+
+
+
 use crate::src::levels::BlockSize;
 
 
@@ -357,18 +198,8 @@ use crate::src::levels::BlockSize;
 
 
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union mv {
-    pub c2rust_unnamed: C2RustUnnamed_12,
-    pub n: uint32_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_12 {
-    pub y: int16_t,
-    pub x: int16_t,
-}
+use crate::src::levels::mv;
+use crate::src::levels::mv_xy;
 use crate::src::intra_edge::EdgeFlags;
 
 
@@ -431,18 +262,18 @@ pub struct refmvs_frame {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
+pub struct refmvs_tile_range {
+    pub start: libc::c_int,
+    pub end: libc::c_int,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
 pub struct refmvs_tile {
     pub rf: *const refmvs_frame,
     pub r: [*mut refmvs_block; 37],
     pub rp_proj: *mut refmvs_temporal_block,
-    pub tile_col: C2RustUnnamed_13,
-    pub tile_row: C2RustUnnamed_13,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_13 {
-    pub start: libc::c_int,
-    pub end: libc::c_int,
+    pub tile_col: refmvs_tile_range,
+    pub tile_row: refmvs_tile_range,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -559,7 +390,7 @@ unsafe extern "C" fn get_gmv_2d(
         1 => {
             let mut res_0: mv = mv {
                 c2rust_unnamed: {
-                    let mut init = C2RustUnnamed_12 {
+                    let mut init = mv_xy {
                         y: ((*gmv).matrix[0 as libc::c_int as usize]
                             >> 13 as libc::c_int) as int16_t,
                         x: ((*gmv).matrix[1 as libc::c_int as usize]
@@ -576,7 +407,7 @@ unsafe extern "C" fn get_gmv_2d(
         0 => {
             return mv {
                 c2rust_unnamed: {
-                    let mut init = C2RustUnnamed_12 {
+                    let mut init = mv_xy {
                         y: 0 as libc::c_int as int16_t,
                         x: 0 as libc::c_int as int16_t,
                     };
@@ -603,7 +434,7 @@ unsafe extern "C" fn get_gmv_2d(
     let round: libc::c_int = (1 as libc::c_int) << shift >> 1 as libc::c_int;
     let mut res: mv = mv {
         c2rust_unnamed: {
-            let mut init = C2RustUnnamed_12 {
+            let mut init = mv_xy {
                 y: apply_sign(
                     abs(yc) + round >> shift << ((*hdr).hp == 0) as libc::c_int,
                     yc,
@@ -638,7 +469,7 @@ unsafe extern "C" fn dav1d_alloc_aligned(
     mut sz: size_t,
     mut align: size_t,
 ) -> *mut libc::c_void {
-    if align & align.wrapping_sub(1 as libc::c_int as libc::c_ulong) != 0 {
+    if align & align.wrapping_sub(1) != 0 {
         unreachable!();
     }
     let mut ptr: *mut libc::c_void = 0 as *mut libc::c_void;
@@ -926,7 +757,7 @@ unsafe extern "C" fn mv_projection(mv: mv, num: libc::c_int, den: libc::c_int) -
     let x: libc::c_int = mv.c2rust_unnamed.x as libc::c_int * frac;
     return mv {
         c2rust_unnamed: {
-            let mut init = C2RustUnnamed_12 {
+            let mut init = mv_xy {
                 y: iclip(
                     y + 8192 as libc::c_int + (y >> 31 as libc::c_int)
                         >> 14 as libc::c_int,
@@ -1102,7 +933,7 @@ unsafe extern "C" fn add_compound_extended_candidate(
         } else {
             let mut i_cand_mv: mv = mv {
                 c2rust_unnamed: {
-                    let mut init = C2RustUnnamed_12 {
+                    let mut init = mv_xy {
                         y: -(cand_mv.c2rust_unnamed.y as libc::c_int) as int16_t,
                         x: -(cand_mv.c2rust_unnamed.x as libc::c_int) as int16_t,
                     };
@@ -1208,10 +1039,10 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
     let bh4: libc::c_int = *b_dim.offset(1 as libc::c_int as isize) as libc::c_int;
     let h4: libc::c_int = imin(imin(bh4, 16 as libc::c_int), (*rt).tile_row.end - by4);
     let mut gmv: [mv; 2] = [mv {
-        c2rust_unnamed: C2RustUnnamed_12 { y: 0, x: 0 },
+        c2rust_unnamed: mv_xy { y: 0, x: 0 },
     }; 2];
     let mut tgmv: [mv; 2] = [mv {
-        c2rust_unnamed: C2RustUnnamed_12 { y: 0, x: 0 },
+        c2rust_unnamed: mv_xy { y: 0, x: 0 },
     }; 2];
     *cnt = 0 as libc::c_int;
     if !(ref_0.ref_0[0 as libc::c_int as usize] as libc::c_int >= 0 as libc::c_int
@@ -1376,9 +1207,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
         let by8: libc::c_int = by4 >> 1 as libc::c_int;
         let bx8: libc::c_int = bx4 >> 1 as libc::c_int;
         let rbi: *const refmvs_temporal_block = &mut *((*rt).rp_proj)
-            .offset(
-                ((by8 & 15 as libc::c_int) as libc::c_long * stride
-                    + bx8 as libc::c_long) as isize,
+            .offset((by8 & 15) as isize * stride + bx8 as isize,
             ) as *mut refmvs_temporal_block;
         let mut rb: *const refmvs_temporal_block = rbi;
         let step_h: libc::c_int = if bw4 >= 16 as libc::c_int {
@@ -1414,13 +1243,13 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
                 );
                 x += step_h;
             }
-            rb = rb.offset((stride * step_v as libc::c_long) as isize);
+            rb = rb.offset(stride * step_v as isize);
             y += step_v;
         }
         if imin(bw4, bh4) >= 2 as libc::c_int && imax(bw4, bh4) < 16 as libc::c_int {
             let bh8: libc::c_int = bh4 >> 1 as libc::c_int;
             let bw8: libc::c_int = bw4 >> 1 as libc::c_int;
-            rb = &*rbi.offset((bh8 as libc::c_long * stride) as isize)
+            rb = &*rbi.offset(bh8 as isize * stride)
                 as *const refmvs_temporal_block;
             let has_bottom: libc::c_int = (by8 + bh8
                 < imin(
@@ -1471,7 +1300,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
                         rf,
                         mvstack,
                         cnt,
-                        &*rb.offset((bw8 as libc::c_long - stride) as isize),
+                        &*rb.offset(bw8 as isize - stride),
                         ref_0,
                         0 as *mut libc::c_int,
                         0 as *const mv,
@@ -1948,22 +1777,18 @@ pub unsafe extern "C" fn dav1d_refmvs_tile_sbrow_init(
     }
     (*rt)
         .rp_proj = &mut *((*rf).rp_proj)
-        .offset(
-            (16 as libc::c_int as libc::c_long * (*rf).rp_stride
-                * tile_row_idx as libc::c_long) as isize,
+        .offset(16 * (*rf).rp_stride * tile_row_idx as isize,
         ) as *mut refmvs_temporal_block;
     let uses_2pass: libc::c_int = ((*rf).n_tile_threads > 1 as libc::c_int
         && (*rf).n_frame_threads > 1 as libc::c_int) as libc::c_int;
     let pass_off: ptrdiff_t = if uses_2pass != 0 && pass == 2 as libc::c_int {
-        35 as libc::c_int as libc::c_long * (*rf).r_stride
-            * (*rf).n_tile_rows as libc::c_long
+        35 * (*rf).r_stride * (*rf).n_tile_rows as isize
     } else {
-        0 as libc::c_int as libc::c_long
+        0
     };
     let mut r: *mut refmvs_block = &mut *((*rf).r)
         .offset(
-            (35 as libc::c_int as libc::c_long * (*rf).r_stride
-                * tile_row_idx as libc::c_long + pass_off) as isize,
+            35 * (*rf).r_stride * tile_row_idx as isize + pass_off,
         ) as *mut refmvs_block;
     let sbsz: libc::c_int = (*rf).sbsz;
     let off: libc::c_int = sbsz * sby & 16 as libc::c_int;
@@ -2030,8 +1855,8 @@ pub unsafe extern "C" fn dav1d_refmvs_load_tmvs(
     let stride: ptrdiff_t = (*rf).rp_stride;
     let mut rp_proj: *mut refmvs_temporal_block = &mut *((*rf).rp_proj)
         .offset(
-            (16 as libc::c_int as libc::c_long * stride * tile_row_idx as libc::c_long
-                + (row_start8 & 15 as libc::c_int) as libc::c_long * stride) as isize,
+            16  * stride * tile_row_idx as isize
+                + (row_start8 & 15) as isize * stride,
         ) as *mut refmvs_temporal_block;
     let mut y: libc::c_int = row_start8;
     while y < row_end8 {
@@ -2044,10 +1869,7 @@ pub unsafe extern "C" fn dav1d_refmvs_load_tmvs(
         y += 1;
     }
     rp_proj = &mut *((*rf).rp_proj)
-        .offset(
-            (16 as libc::c_int as libc::c_long * stride * tile_row_idx as libc::c_long)
-                as isize,
-        ) as *mut refmvs_temporal_block;
+        .offset(16 * stride * tile_row_idx as isize) as *mut refmvs_temporal_block;
     let mut n: libc::c_int = 0 as libc::c_int;
     while n < (*rf).n_mfmvs {
         let ref2cur: libc::c_int = (*rf).mfmv_ref2cur[n as usize];
@@ -2056,7 +1878,7 @@ pub unsafe extern "C" fn dav1d_refmvs_load_tmvs(
             let ref_sign: libc::c_int = ref_0 - 4 as libc::c_int;
             let mut r: *const refmvs_temporal_block = &mut *(*((*rf).rp_ref)
                 .offset(ref_0 as isize))
-                .offset((row_start8 as libc::c_long * stride) as isize)
+                .offset(row_start8 as isize * stride)
                 as *mut refmvs_temporal_block;
             let mut y_0: libc::c_int = row_start8;
             while y_0 < row_end8 {
@@ -2091,16 +1913,15 @@ pub unsafe extern "C" fn dav1d_refmvs_load_tmvs(
                                     offset.c2rust_unnamed.y as libc::c_int ^ ref_sign,
                                 );
                             if pos_y >= y_proj_start && pos_y < y_proj_end {
-                                let pos: ptrdiff_t = (pos_y & 15 as libc::c_int)
-                                    as libc::c_long * stride;
+                                let pos: ptrdiff_t = (pos_y & 15) as isize * stride;
                                 loop {
                                     let x_sb_align: libc::c_int = x_0 & !(7 as libc::c_int);
                                     if pos_x >= imax(x_sb_align - 8 as libc::c_int, col_start8)
                                         && pos_x < imin(x_sb_align + 16 as libc::c_int, col_end8)
                                     {
-                                        (*rp_proj.offset((pos + pos_x as libc::c_long) as isize))
+                                        (*rp_proj.offset(pos + pos_x as isize))
                                             .mv = (*rb).mv;
-                                        (*rp_proj.offset((pos + pos_x as libc::c_long) as isize))
+                                        (*rp_proj.offset(pos + pos_x as isize))
                                             .ref_0 = ref2ref as int8_t;
                                     }
                                     x_0 += 1;
@@ -2161,7 +1982,7 @@ pub unsafe extern "C" fn dav1d_refmvs_save_tmvs(
     let stride: ptrdiff_t = (*rf).rp_stride;
     let ref_sign: *const uint8_t = ((*rf).mfmv_sign).as_ptr();
     let mut rp: *mut refmvs_temporal_block = &mut *((*rf).rp)
-        .offset((row_start8 as libc::c_long * stride) as isize)
+        .offset(row_start8 as isize * stride)
         as *mut refmvs_temporal_block;
     let mut y: libc::c_int = row_start8;
     while y < row_end8 {
@@ -2287,11 +2108,11 @@ pub unsafe extern "C" fn dav1d_refmvs_init_frame(
             && n_frame_threads > 1 as libc::c_int) as libc::c_int;
         (*rf)
             .r = dav1d_alloc_aligned(
-            (::core::mem::size_of::<refmvs_block>() as libc::c_ulong)
-                .wrapping_mul(35 as libc::c_int as libc::c_ulong)
-                .wrapping_mul(r_stride as libc::c_ulong)
-                .wrapping_mul(n_tile_rows as libc::c_ulong)
-                .wrapping_mul((1 as libc::c_int + uses_2pass) as libc::c_ulong),
+            (::core::mem::size_of::<refmvs_block>())
+                .wrapping_mul(35 as size_t)
+                .wrapping_mul(r_stride as size_t)
+                .wrapping_mul(n_tile_rows as size_t)
+                .wrapping_mul((1 + uses_2pass) as size_t),
             64 as libc::c_int as size_t,
         ) as *mut refmvs_block;
         if ((*rf).r).is_null() {
@@ -2309,11 +2130,11 @@ pub unsafe extern "C" fn dav1d_refmvs_init_frame(
         }
         (*rf)
             .rp_proj = dav1d_alloc_aligned(
-            (::core::mem::size_of::<refmvs_temporal_block>() as libc::c_ulong)
-                .wrapping_mul(16 as libc::c_int as libc::c_ulong)
-                .wrapping_mul(rp_stride as libc::c_ulong)
-                .wrapping_mul(n_tile_rows as libc::c_ulong),
-            64 as libc::c_int as size_t,
+            (::core::mem::size_of::<refmvs_temporal_block>())
+                .wrapping_mul(16 as size_t)
+                .wrapping_mul(rp_stride as size_t)
+                .wrapping_mul(n_tile_rows as size_t),
+            64 as size_t,
         ) as *mut refmvs_temporal_block;
         if ((*rf).rp_proj).is_null() {
             return -(12 as libc::c_int);
@@ -2496,13 +2317,18 @@ unsafe extern "C" fn splat_mv_c(
     };
 }
 #[inline(always)]
+#[cfg(feature = "asm")]
 unsafe extern "C" fn dav1d_get_cpu_flags() -> libc::c_uint {
     let mut flags = dav1d_cpu_flags & dav1d_cpu_flags_mask;
-    flags |= DAV1D_X86_CPU_FLAG_SSE2;
+    cfg_if! {
+        if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
+            flags |= DAV1D_X86_CPU_FLAG_SSE2;
+        }
+    }
     return flags;
 }
 #[inline(always)]
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "asm"))]
 unsafe extern "C" fn refmvs_dsp_init_x86(c: *mut Dav1dRefmvsDSPContext) {
     let flags = dav1d_get_cpu_flags();
 
@@ -2526,7 +2352,7 @@ unsafe extern "C" fn refmvs_dsp_init_x86(c: *mut Dav1dRefmvsDSPContext) {
 }
 
 #[inline(always)]
-#[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+#[cfg(all(any(target_arch = "arm", target_arch = "aarch64"), feature = "asm"))]
 unsafe extern "C" fn refmvs_dsp_init_arm(c: *mut Dav1dRefmvsDSPContext) {
     use crate::src::arm::cpu::DAV1D_ARM_CPU_FLAG_NEON;
 
@@ -2550,9 +2376,9 @@ pub unsafe extern "C" fn dav1d_refmvs_dsp_init(c: *mut Dav1dRefmvsDSPContext) {
             ) -> (),
     );
     cfg_if! {
-        if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
+        if #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "asm"))] {
             refmvs_dsp_init_x86(c);
-        } else if #[cfg(any(target_arch = "arm", target_arch = "aarch64"))] {
+        } else if #[cfg(all(any(target_arch = "arm", target_arch = "aarch64"), feature = "asm"))] {
             refmvs_dsp_init_arm(c);
         }
     }

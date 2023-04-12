@@ -1,11 +1,176 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use ::libc;
+use cfg_if::cfg_if;
 extern "C" {
     fn abs(_: libc::c_int) -> libc::c_int;
 }
 
+#[cfg(feature = "asm")]
+extern "C" {
+    static mut dav1d_cpu_flags_mask: libc::c_uint;
+    static mut dav1d_cpu_flags: libc::c_uint;
+}
 
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+extern "C" {
+    fn dav1d_lpf_v_sb_uv_8bpc_avx512icl(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        mask: *const uint32_t,
+        lvl: *const [uint8_t; 4],
+        lvl_stride: ptrdiff_t,
+        lut: *const Av1FilterLUT,
+        w: libc::c_int,
+    );
+    fn dav1d_lpf_h_sb_uv_8bpc_avx512icl(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        mask: *const uint32_t,
+        lvl: *const [uint8_t; 4],
+        lvl_stride: ptrdiff_t,
+        lut: *const Av1FilterLUT,
+        w: libc::c_int,
+    );
+    fn dav1d_lpf_v_sb_y_8bpc_avx512icl(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        mask: *const uint32_t,
+        lvl: *const [uint8_t; 4],
+        lvl_stride: ptrdiff_t,
+        lut: *const Av1FilterLUT,
+        w: libc::c_int,
+    );
+    fn dav1d_lpf_h_sb_y_8bpc_avx512icl(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        mask: *const uint32_t,
+        lvl: *const [uint8_t; 4],
+        lvl_stride: ptrdiff_t,
+        lut: *const Av1FilterLUT,
+        w: libc::c_int,
+    );
+    fn dav1d_lpf_v_sb_uv_8bpc_avx2(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        mask: *const uint32_t,
+        lvl: *const [uint8_t; 4],
+        lvl_stride: ptrdiff_t,
+        lut: *const Av1FilterLUT,
+        w: libc::c_int,
+    );
+    fn dav1d_lpf_h_sb_uv_8bpc_avx2(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        mask: *const uint32_t,
+        lvl: *const [uint8_t; 4],
+        lvl_stride: ptrdiff_t,
+        lut: *const Av1FilterLUT,
+        w: libc::c_int,
+    );
+    fn dav1d_lpf_v_sb_y_8bpc_avx2(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        mask: *const uint32_t,
+        lvl: *const [uint8_t; 4],
+        lvl_stride: ptrdiff_t,
+        lut: *const Av1FilterLUT,
+        w: libc::c_int,
+    );
+    fn dav1d_lpf_h_sb_y_8bpc_avx2(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        mask: *const uint32_t,
+        lvl: *const [uint8_t; 4],
+        lvl_stride: ptrdiff_t,
+        lut: *const Av1FilterLUT,
+        w: libc::c_int,
+    );
+    fn dav1d_lpf_v_sb_uv_8bpc_ssse3(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        mask: *const uint32_t,
+        lvl: *const [uint8_t; 4],
+        lvl_stride: ptrdiff_t,
+        lut: *const Av1FilterLUT,
+        w: libc::c_int,
+    );
+    fn dav1d_lpf_h_sb_uv_8bpc_ssse3(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        mask: *const uint32_t,
+        lvl: *const [uint8_t; 4],
+        lvl_stride: ptrdiff_t,
+        lut: *const Av1FilterLUT,
+        w: libc::c_int,
+    );
+    fn dav1d_lpf_v_sb_y_8bpc_ssse3(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        mask: *const uint32_t,
+        lvl: *const [uint8_t; 4],
+        lvl_stride: ptrdiff_t,
+        lut: *const Av1FilterLUT,
+        w: libc::c_int,
+    );
+    fn dav1d_lpf_h_sb_y_8bpc_ssse3(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        mask: *const uint32_t,
+        lvl: *const [uint8_t; 4],
+        lvl_stride: ptrdiff_t,
+        lut: *const Av1FilterLUT,
+        w: libc::c_int,
+    );
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+extern "C" {
+    fn dav1d_lpf_h_sb_uv_8bpc_neon(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        mask: *const uint32_t,
+        lvl: *const [uint8_t; 4],
+        lvl_stride: ptrdiff_t,
+        lut: *const Av1FilterLUT,
+        w: libc::c_int,
+    );
+    fn dav1d_lpf_v_sb_y_8bpc_neon(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        mask: *const uint32_t,
+        lvl: *const [uint8_t; 4],
+        lvl_stride: ptrdiff_t,
+        lut: *const Av1FilterLUT,
+        w: libc::c_int,
+    );
+    fn dav1d_lpf_h_sb_y_8bpc_neon(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        mask: *const uint32_t,
+        lvl: *const [uint8_t; 4],
+        lvl_stride: ptrdiff_t,
+        lut: *const Av1FilterLUT,
+        w: libc::c_int,
+    );
+    fn dav1d_lpf_v_sb_uv_8bpc_neon(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        mask: *const uint32_t,
+        lvl: *const [uint8_t; 4],
+        lvl_stride: ptrdiff_t,
+        lut: *const Av1FilterLUT,
+        w: libc::c_int,
+    );
+}
+
+pub const DAV1D_X86_CPU_FLAG_AVX512ICL: CpuFlags = 16;
+pub const DAV1D_X86_CPU_FLAG_SSE2: CpuFlags = 1;
+pub const DAV1D_X86_CPU_FLAG_AVX2: CpuFlags = 8;
+pub const DAV1D_X86_CPU_FLAG_SSSE3: CpuFlags = 2;
+pub type CpuFlags = libc::c_uint;
+pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
+pub const DAV1D_X86_CPU_FLAG_SSE41: CpuFlags = 4;
 
 pub type pixel = uint8_t;
 use crate::src::lf_mask::Av1FilterLUT;
@@ -64,16 +229,16 @@ unsafe extern "C" fn loop_filter(
         let mut p3: libc::c_int = 0;
         let mut p2: libc::c_int = 0;
         let mut p1: libc::c_int = *dst
-            .offset((strideb * -(2 as libc::c_int) as libc::c_long) as isize)
+            .offset((strideb * -(2 as libc::c_int) as isize) as isize)
             as libc::c_int;
         let mut p0: libc::c_int = *dst
-            .offset((strideb * -(1 as libc::c_int) as libc::c_long) as isize)
+            .offset((strideb * -(1 as libc::c_int) as isize) as isize)
             as libc::c_int;
         let mut q0: libc::c_int = *dst
-            .offset((strideb * 0 as libc::c_int as libc::c_long) as isize)
+            .offset((strideb * 0) as isize)
             as libc::c_int;
         let mut q1: libc::c_int = *dst
-            .offset((strideb * 1 as libc::c_int as libc::c_long) as isize)
+            .offset((strideb * 1) as isize)
             as libc::c_int;
         let mut q2: libc::c_int = 0;
         let mut q3: libc::c_int = 0;
@@ -87,16 +252,16 @@ unsafe extern "C" fn loop_filter(
             && abs(p0 - q0) * 2 as libc::c_int + (abs(p1 - q1) >> 1 as libc::c_int) <= E)
             as libc::c_int;
         if wd > 4 as libc::c_int {
-            p2 = *dst.offset((strideb * -(3 as libc::c_int) as libc::c_long) as isize)
+            p2 = *dst.offset((strideb * -(3 as libc::c_int) as isize) as isize)
                 as libc::c_int;
-            q2 = *dst.offset((strideb * 2 as libc::c_int as libc::c_long) as isize)
+            q2 = *dst.offset((strideb * 2) as isize)
                 as libc::c_int;
             fm &= (abs(p2 - p1) <= I && abs(q2 - q1) <= I) as libc::c_int;
             if wd > 6 as libc::c_int {
                 p3 = *dst
-                    .offset((strideb * -(4 as libc::c_int) as libc::c_long) as isize)
+                    .offset((strideb * -(4 as libc::c_int) as isize) as isize)
                     as libc::c_int;
-                q3 = *dst.offset((strideb * 3 as libc::c_int as libc::c_long) as isize)
+                q3 = *dst.offset((strideb * 3) as isize)
                     as libc::c_int;
                 fm &= (abs(p3 - p2) <= I && abs(q3 - q2) <= I) as libc::c_int;
             }
@@ -104,19 +269,19 @@ unsafe extern "C" fn loop_filter(
         if !(fm == 0) {
             if wd >= 16 as libc::c_int {
                 p6 = *dst
-                    .offset((strideb * -(7 as libc::c_int) as libc::c_long) as isize)
+                    .offset((strideb * -(7 as libc::c_int) as isize) as isize)
                     as libc::c_int;
                 p5 = *dst
-                    .offset((strideb * -(6 as libc::c_int) as libc::c_long) as isize)
+                    .offset((strideb * -(6 as libc::c_int) as isize) as isize)
                     as libc::c_int;
                 p4 = *dst
-                    .offset((strideb * -(5 as libc::c_int) as libc::c_long) as isize)
+                    .offset((strideb * -(5 as libc::c_int) as isize) as isize)
                     as libc::c_int;
-                q4 = *dst.offset((strideb * 4 as libc::c_int as libc::c_long) as isize)
+                q4 = *dst.offset((strideb * 4) as isize)
                     as libc::c_int;
-                q5 = *dst.offset((strideb * 5 as libc::c_int as libc::c_long) as isize)
+                q5 = *dst.offset((strideb * 5) as isize)
                     as libc::c_int;
-                q6 = *dst.offset((strideb * 6 as libc::c_int as libc::c_long) as isize)
+                q6 = *dst.offset((strideb * 6) as isize)
                     as libc::c_int;
                 flat8out = (abs(p6 - p0) <= F && abs(p5 - p0) <= F && abs(p4 - p0) <= F
                     && abs(q4 - q0) <= F && abs(q5 - q0) <= F && abs(q6 - q0) <= F)
@@ -132,129 +297,129 @@ unsafe extern "C" fn loop_filter(
             if wd >= 16 as libc::c_int && flat8out & flat8in != 0 {
                 *dst
                     .offset(
-                        (strideb * -(6 as libc::c_int) as libc::c_long) as isize,
+                        (strideb * -(6 as libc::c_int) as isize) as isize,
                     ) = (p6 + p6 + p6 + p6 + p6 + p6 * 2 as libc::c_int
                     + p5 * 2 as libc::c_int + p4 * 2 as libc::c_int + p3 + p2 + p1 + p0
                     + q0 + 8 as libc::c_int >> 4 as libc::c_int) as pixel;
                 *dst
                     .offset(
-                        (strideb * -(5 as libc::c_int) as libc::c_long) as isize,
+                        (strideb * -(5 as libc::c_int) as isize) as isize,
                     ) = (p6 + p6 + p6 + p6 + p6 + p5 * 2 as libc::c_int
                     + p4 * 2 as libc::c_int + p3 * 2 as libc::c_int + p2 + p1 + p0 + q0
                     + q1 + 8 as libc::c_int >> 4 as libc::c_int) as pixel;
                 *dst
                     .offset(
-                        (strideb * -(4 as libc::c_int) as libc::c_long) as isize,
+                        (strideb * -(4 as libc::c_int) as isize) as isize,
                     ) = (p6 + p6 + p6 + p6 + p5 + p4 * 2 as libc::c_int
                     + p3 * 2 as libc::c_int + p2 * 2 as libc::c_int + p1 + p0 + q0 + q1
                     + q2 + 8 as libc::c_int >> 4 as libc::c_int) as pixel;
                 *dst
                     .offset(
-                        (strideb * -(3 as libc::c_int) as libc::c_long) as isize,
+                        (strideb * -(3 as libc::c_int) as isize) as isize,
                     ) = (p6 + p6 + p6 + p5 + p4 + p3 * 2 as libc::c_int
                     + p2 * 2 as libc::c_int + p1 * 2 as libc::c_int + p0 + q0 + q1 + q2
                     + q3 + 8 as libc::c_int >> 4 as libc::c_int) as pixel;
                 *dst
                     .offset(
-                        (strideb * -(2 as libc::c_int) as libc::c_long) as isize,
+                        (strideb * -(2 as libc::c_int) as isize) as isize,
                     ) = (p6 + p6 + p5 + p4 + p3 + p2 * 2 as libc::c_int
                     + p1 * 2 as libc::c_int + p0 * 2 as libc::c_int + q0 + q1 + q2 + q3
                     + q4 + 8 as libc::c_int >> 4 as libc::c_int) as pixel;
                 *dst
                     .offset(
-                        (strideb * -(1 as libc::c_int) as libc::c_long) as isize,
+                        (strideb * -(1 as libc::c_int) as isize) as isize,
                     ) = (p6 + p5 + p4 + p3 + p2 + p1 * 2 as libc::c_int
                     + p0 * 2 as libc::c_int + q0 * 2 as libc::c_int + q1 + q2 + q3 + q4
                     + q5 + 8 as libc::c_int >> 4 as libc::c_int) as pixel;
                 *dst
                     .offset(
-                        (strideb * 0 as libc::c_int as libc::c_long) as isize,
+                        (strideb * 0) as isize,
                     ) = (p5 + p4 + p3 + p2 + p1 + p0 * 2 as libc::c_int
                     + q0 * 2 as libc::c_int + q1 * 2 as libc::c_int + q2 + q3 + q4 + q5
                     + q6 + 8 as libc::c_int >> 4 as libc::c_int) as pixel;
                 *dst
                     .offset(
-                        (strideb * 1 as libc::c_int as libc::c_long) as isize,
+                        (strideb * 1) as isize,
                     ) = (p4 + p3 + p2 + p1 + p0 + q0 * 2 as libc::c_int
                     + q1 * 2 as libc::c_int + q2 * 2 as libc::c_int + q3 + q4 + q5 + q6
                     + q6 + 8 as libc::c_int >> 4 as libc::c_int) as pixel;
                 *dst
                     .offset(
-                        (strideb * 2 as libc::c_int as libc::c_long) as isize,
+                        (strideb * 2) as isize,
                     ) = (p3 + p2 + p1 + p0 + q0 + q1 * 2 as libc::c_int
                     + q2 * 2 as libc::c_int + q3 * 2 as libc::c_int + q4 + q5 + q6 + q6
                     + q6 + 8 as libc::c_int >> 4 as libc::c_int) as pixel;
                 *dst
                     .offset(
-                        (strideb * 3 as libc::c_int as libc::c_long) as isize,
+                        (strideb * 3) as isize,
                     ) = (p2 + p1 + p0 + q0 + q1 + q2 * 2 as libc::c_int
                     + q3 * 2 as libc::c_int + q4 * 2 as libc::c_int + q5 + q6 + q6 + q6
                     + q6 + 8 as libc::c_int >> 4 as libc::c_int) as pixel;
                 *dst
                     .offset(
-                        (strideb * 4 as libc::c_int as libc::c_long) as isize,
+                        (strideb * 4) as isize,
                     ) = (p1 + p0 + q0 + q1 + q2 + q3 * 2 as libc::c_int
                     + q4 * 2 as libc::c_int + q5 * 2 as libc::c_int + q6 + q6 + q6 + q6
                     + q6 + 8 as libc::c_int >> 4 as libc::c_int) as pixel;
                 *dst
                     .offset(
-                        (strideb * 5 as libc::c_int as libc::c_long) as isize,
+                        (strideb * 5) as isize,
                     ) = (p0 + q0 + q1 + q2 + q3 + q4 * 2 as libc::c_int
                     + q5 * 2 as libc::c_int + q6 * 2 as libc::c_int + q6 + q6 + q6 + q6
                     + q6 + 8 as libc::c_int >> 4 as libc::c_int) as pixel;
             } else if wd >= 8 as libc::c_int && flat8in != 0 {
                 *dst
                     .offset(
-                        (strideb * -(3 as libc::c_int) as libc::c_long) as isize,
+                        (strideb * -(3 as libc::c_int) as isize) as isize,
                     ) = (p3 + p3 + p3 + 2 as libc::c_int * p2 + p1 + p0 + q0
                     + 4 as libc::c_int >> 3 as libc::c_int) as pixel;
                 *dst
                     .offset(
-                        (strideb * -(2 as libc::c_int) as libc::c_long) as isize,
+                        (strideb * -(2 as libc::c_int) as isize) as isize,
                     ) = (p3 + p3 + p2 + 2 as libc::c_int * p1 + p0 + q0 + q1
                     + 4 as libc::c_int >> 3 as libc::c_int) as pixel;
                 *dst
                     .offset(
-                        (strideb * -(1 as libc::c_int) as libc::c_long) as isize,
+                        (strideb * -(1 as libc::c_int) as isize) as isize,
                     ) = (p3 + p2 + p1 + 2 as libc::c_int * p0 + q0 + q1 + q2
                     + 4 as libc::c_int >> 3 as libc::c_int) as pixel;
                 *dst
                     .offset(
-                        (strideb * 0 as libc::c_int as libc::c_long) as isize,
+                        (strideb * 0) as isize,
                     ) = (p2 + p1 + p0 + 2 as libc::c_int * q0 + q1 + q2 + q3
                     + 4 as libc::c_int >> 3 as libc::c_int) as pixel;
                 *dst
                     .offset(
-                        (strideb * 1 as libc::c_int as libc::c_long) as isize,
+                        (strideb * 1) as isize,
                     ) = (p1 + p0 + q0 + 2 as libc::c_int * q1 + q2 + q3 + q3
                     + 4 as libc::c_int >> 3 as libc::c_int) as pixel;
                 *dst
                     .offset(
-                        (strideb * 2 as libc::c_int as libc::c_long) as isize,
+                        (strideb * 2) as isize,
                     ) = (p0 + q0 + q1 + 2 as libc::c_int * q2 + q3 + q3 + q3
                     + 4 as libc::c_int >> 3 as libc::c_int) as pixel;
             } else if wd == 6 as libc::c_int && flat8in != 0 {
                 *dst
                     .offset(
-                        (strideb * -(2 as libc::c_int) as libc::c_long) as isize,
+                        (strideb * -(2 as libc::c_int) as isize) as isize,
                     ) = (p2 + 2 as libc::c_int * p2 + 2 as libc::c_int * p1
                     + 2 as libc::c_int * p0 + q0 + 4 as libc::c_int >> 3 as libc::c_int)
                     as pixel;
                 *dst
                     .offset(
-                        (strideb * -(1 as libc::c_int) as libc::c_long) as isize,
+                        (strideb * -(1 as libc::c_int) as isize) as isize,
                     ) = (p2 + 2 as libc::c_int * p1 + 2 as libc::c_int * p0
                     + 2 as libc::c_int * q0 + q1 + 4 as libc::c_int >> 3 as libc::c_int)
                     as pixel;
                 *dst
                     .offset(
-                        (strideb * 0 as libc::c_int as libc::c_long) as isize,
+                        (strideb * 0) as isize,
                     ) = (p1 + 2 as libc::c_int * p0 + 2 as libc::c_int * q0
                     + 2 as libc::c_int * q1 + q2 + 4 as libc::c_int >> 3 as libc::c_int)
                     as pixel;
                 *dst
                     .offset(
-                        (strideb * 1 as libc::c_int as libc::c_long) as isize,
+                        (strideb * 1) as isize,
                     ) = (p0 + 2 as libc::c_int * q0 + 2 as libc::c_int * q1
                     + 2 as libc::c_int * q2 + q2 + 4 as libc::c_int >> 3 as libc::c_int)
                     as pixel;
@@ -286,11 +451,11 @@ unsafe extern "C" fn loop_filter(
                     ) >> 3 as libc::c_int;
                     *dst
                         .offset(
-                            (strideb * -(1 as libc::c_int) as libc::c_long) as isize,
+                            (strideb * -(1 as libc::c_int) as isize) as isize,
                         ) = iclip_u8(p0 + f2) as pixel;
                     *dst
                         .offset(
-                            (strideb * 0 as libc::c_int as libc::c_long) as isize,
+                            (strideb * 0) as isize,
                         ) = iclip_u8(q0 - f1) as pixel;
                 } else {
                     let mut f_0: libc::c_int = iclip(
@@ -311,20 +476,20 @@ unsafe extern "C" fn loop_filter(
                     ) >> 3 as libc::c_int;
                     *dst
                         .offset(
-                            (strideb * -(1 as libc::c_int) as libc::c_long) as isize,
+                            (strideb * -(1 as libc::c_int) as isize) as isize,
                         ) = iclip_u8(p0 + f2_0) as pixel;
                     *dst
                         .offset(
-                            (strideb * 0 as libc::c_int as libc::c_long) as isize,
+                            (strideb * 0) as isize,
                         ) = iclip_u8(q0 - f1_0) as pixel;
                     f_0 = f1_0 + 1 as libc::c_int >> 1 as libc::c_int;
                     *dst
                         .offset(
-                            (strideb * -(2 as libc::c_int) as libc::c_long) as isize,
+                            (strideb * -(2 as libc::c_int) as isize) as isize,
                         ) = iclip_u8(p1 + f_0) as pixel;
                     *dst
                         .offset(
-                            (strideb * 1 as libc::c_int as libc::c_long) as isize,
+                            (strideb * 1) as isize,
                         ) = iclip_u8(q1 - f_0) as pixel;
                 }
             }
@@ -381,7 +546,7 @@ unsafe extern "C" fn loop_filter_h_sb128y_c(
             }
         }
         y <<= 1 as libc::c_int;
-        dst = dst.offset((4 as libc::c_int as libc::c_long * stride) as isize);
+        dst = dst.offset((4 * stride) as isize);
         l = l.offset(b4_stride as isize);
     }
 }
@@ -479,7 +644,7 @@ unsafe extern "C" fn loop_filter_h_sb128uv_c(
             }
         }
         y <<= 1 as libc::c_int;
-        dst = dst.offset((4 as libc::c_int as libc::c_long * stride) as isize);
+        dst = dst.offset((4 * stride) as isize);
         l = l.offset(b4_stride as isize);
     }
 }
@@ -529,69 +694,81 @@ unsafe extern "C" fn loop_filter_v_sb128uv_c(
         l = l.offset(1);
     }
 }
+
+#[cfg(feature = "asm")]
+#[inline(always)]
+unsafe extern "C" fn dav1d_get_cpu_flags() -> libc::c_uint {
+    let mut flags: libc::c_uint = dav1d_cpu_flags & dav1d_cpu_flags_mask;
+    flags |= DAV1D_X86_CPU_FLAG_SSE2 as libc::c_int as libc::c_uint;
+    return flags;
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+#[inline(always)]
+unsafe extern "C" fn loop_filter_dsp_init_x86(c: *mut Dav1dLoopFilterDSPContext) {
+    let flags = dav1d_get_cpu_flags();
+
+    if flags & DAV1D_X86_CPU_FLAG_SSSE3 == 0 {
+        return;
+    }
+
+    (*c).loop_filter_sb[0][0] = Some(dav1d_lpf_h_sb_y_8bpc_ssse3);
+    (*c).loop_filter_sb[0][1] = Some(dav1d_lpf_v_sb_y_8bpc_ssse3);
+    (*c).loop_filter_sb[1][0] = Some(dav1d_lpf_h_sb_uv_8bpc_ssse3);
+    (*c).loop_filter_sb[1][1] = Some(dav1d_lpf_v_sb_uv_8bpc_ssse3);
+
+    if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
+        return;
+    }
+
+    (*c).loop_filter_sb[0][0] = Some(dav1d_lpf_h_sb_y_8bpc_avx2);
+    (*c).loop_filter_sb[0][1] = Some(dav1d_lpf_v_sb_y_8bpc_avx2);
+    (*c).loop_filter_sb[1][0] = Some(dav1d_lpf_h_sb_uv_8bpc_avx2);
+    (*c).loop_filter_sb[1][1] = Some(dav1d_lpf_v_sb_uv_8bpc_avx2);
+
+    if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
+        return;
+    }
+
+    (*c).loop_filter_sb[0][0] = Some(dav1d_lpf_h_sb_y_8bpc_avx512icl);
+    (*c).loop_filter_sb[0][1] = Some(dav1d_lpf_v_sb_y_8bpc_avx512icl);
+    (*c).loop_filter_sb[1][0] = Some(dav1d_lpf_h_sb_uv_8bpc_avx512icl);
+    (*c).loop_filter_sb[1][1] = Some(dav1d_lpf_v_sb_uv_8bpc_avx512icl);
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[inline(always)]
+unsafe extern "C" fn loop_filter_dsp_init_arm(c: *mut Dav1dLoopFilterDSPContext) {
+    use crate::src::arm::cpu::DAV1D_ARM_CPU_FLAG_NEON;
+
+    let flags = dav1d_get_cpu_flags();
+
+    if flags & DAV1D_ARM_CPU_FLAG_NEON == 0 {
+        return;
+    }
+
+    (*c).loop_filter_sb[0][0] = Some(dav1d_lpf_h_sb_y_8bpc_neon);
+    (*c).loop_filter_sb[0][1] = Some(dav1d_lpf_v_sb_y_8bpc_neon);
+    (*c).loop_filter_sb[1][0] = Some(dav1d_lpf_h_sb_uv_8bpc_neon);
+    (*c).loop_filter_sb[1][1] = Some(dav1d_lpf_v_sb_uv_8bpc_neon);
+}
+
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_loop_filter_dsp_init_8bpc(
     c: *mut Dav1dLoopFilterDSPContext,
 ) {
-    (*c)
-        .loop_filter_sb[0 as libc::c_int
-        as usize][0 as libc::c_int
-        as usize] = Some(
-        loop_filter_h_sb128y_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const uint32_t,
-                *const [uint8_t; 4],
-                ptrdiff_t,
-                *const Av1FilterLUT,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .loop_filter_sb[0 as libc::c_int
-        as usize][1 as libc::c_int
-        as usize] = Some(
-        loop_filter_v_sb128y_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const uint32_t,
-                *const [uint8_t; 4],
-                ptrdiff_t,
-                *const Av1FilterLUT,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .loop_filter_sb[1 as libc::c_int
-        as usize][0 as libc::c_int
-        as usize] = Some(
-        loop_filter_h_sb128uv_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const uint32_t,
-                *const [uint8_t; 4],
-                ptrdiff_t,
-                *const Av1FilterLUT,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .loop_filter_sb[1 as libc::c_int
-        as usize][1 as libc::c_int
-        as usize] = Some(
-        loop_filter_v_sb128uv_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const uint32_t,
-                *const [uint8_t; 4],
-                ptrdiff_t,
-                *const Av1FilterLUT,
-                libc::c_int,
-            ) -> (),
-    );
+    (*c).loop_filter_sb[0][0] = Some(loop_filter_h_sb128y_c);
+    (*c).loop_filter_sb[0][1] = Some(loop_filter_v_sb128y_c);
+    (*c).loop_filter_sb[1][0] = Some(loop_filter_h_sb128uv_c);
+    (*c).loop_filter_sb[1][1] = Some(loop_filter_v_sb128uv_c);
+
+    #[cfg(feature = "asm")]
+    cfg_if! {
+        if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
+            loop_filter_dsp_init_x86(c);
+        } else if #[cfg(any(target_arch = "arm", target_arch = "aarch64"))] {
+            loop_filter_dsp_init_arm(c);
+        }
+    }
 }

@@ -1,6 +1,7 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use ::libc;
+use cfg_if::cfg_if;
 extern "C" {
     fn abs(_: libc::c_int) -> libc::c_int;
     fn memcpy(
@@ -14,7 +15,1855 @@ extern "C" {
     static dav1d_obmc_masks: [uint8_t; 64];
 }
 
+#[cfg(feature = "asm")]
+extern "C" {
+    static mut dav1d_cpu_flags: libc::c_uint;
+    static mut dav1d_cpu_flags_mask: libc::c_uint;
+}
 
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+extern "C" {
+    fn dav1d_put_8tap_regular_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_regular_16bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_regular_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_regular_smooth_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_regular_smooth_16bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_regular_smooth_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_regular_sharp_16bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_regular_sharp_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_regular_sharp_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_smooth_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_smooth_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_smooth_16bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_smooth_regular_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_smooth_regular_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_smooth_regular_16bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_smooth_sharp_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_smooth_sharp_16bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_smooth_sharp_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_sharp_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_sharp_16bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_sharp_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_sharp_regular_16bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_bilin_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_smooth_16bpc_ssse3(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_sharp_smooth_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_sharp_regular_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_smooth_regular_16bpc_ssse3(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_regular_sharp_16bpc_ssse3(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_regular_smooth_16bpc_ssse3(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_w_mask_420_16bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp1: *const int16_t,
+        tmp2: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mask: *mut uint8_t,
+        sign: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_smooth_sharp_16bpc_ssse3(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_sharp_regular_16bpc_ssse3(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_sharp_smooth_16bpc_ssse3(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_sharp_16bpc_ssse3(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_bilin_16bpc_ssse3(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_scaled_regular_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_scaled_regular_smooth_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_scaled_regular_sharp_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_scaled_smooth_regular_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_scaled_smooth_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_scaled_smooth_sharp_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_scaled_sharp_regular_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_scaled_sharp_smooth_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_scaled_sharp_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_bilin_scaled_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_scaled_regular_16bpc_ssse3(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_scaled_regular_smooth_16bpc_ssse3(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_scaled_regular_sharp_16bpc_ssse3(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_scaled_smooth_regular_16bpc_ssse3(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_scaled_smooth_16bpc_ssse3(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_scaled_smooth_sharp_16bpc_ssse3(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_scaled_sharp_regular_16bpc_ssse3(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_scaled_sharp_smooth_16bpc_ssse3(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_scaled_sharp_16bpc_ssse3(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_bilin_scaled_16bpc_ssse3(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_avg_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp1: *const int16_t,
+        tmp2: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_w_avg_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp1: *const int16_t,
+        tmp2: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        weight: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_mask_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp1: *const int16_t,
+        tmp2: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mask: *const uint8_t,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_w_mask_444_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp1: *const int16_t,
+        tmp2: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mask: *mut uint8_t,
+        sign: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_w_mask_422_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp1: *const int16_t,
+        tmp2: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mask: *mut uint8_t,
+        sign: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_w_mask_420_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp1: *const int16_t,
+        tmp2: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mask: *mut uint8_t,
+        sign: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_blend_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        mask: *const uint8_t,
+    );
+    fn dav1d_blend_v_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+    );
+    fn dav1d_blend_h_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+    );
+    fn dav1d_warp_affine_8x8_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        abcd: *const int16_t,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_warp_affine_8x8t_16bpc_ssse3(
+        tmp: *mut int16_t,
+        tmp_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        abcd: *const int16_t,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_emu_edge_16bpc_ssse3(
+        bw: intptr_t,
+        bh: intptr_t,
+        iw: intptr_t,
+        ih: intptr_t,
+        x: intptr_t,
+        y: intptr_t,
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+    );
+    fn dav1d_resize_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        dst_w: libc::c_int,
+        h: libc::c_int,
+        src_w: libc::c_int,
+        dx: libc::c_int,
+        mx: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_sharp_regular_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_sharp_smooth_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_bilin_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_regular_16bpc_avx2(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_regular_smooth_16bpc_avx2(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_regular_sharp_16bpc_avx2(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_smooth_regular_16bpc_avx2(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_smooth_16bpc_avx2(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_smooth_sharp_16bpc_avx2(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_sharp_regular_16bpc_avx2(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_sharp_smooth_16bpc_avx2(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_sharp_16bpc_avx2(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_bilin_16bpc_avx2(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_scaled_regular_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_scaled_regular_smooth_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_scaled_regular_sharp_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_scaled_smooth_regular_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_scaled_smooth_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_scaled_smooth_sharp_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_scaled_sharp_regular_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_scaled_sharp_smooth_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_scaled_sharp_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_bilin_scaled_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_scaled_regular_16bpc_avx2(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_scaled_regular_smooth_16bpc_avx2(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_scaled_regular_sharp_16bpc_avx2(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_scaled_smooth_regular_16bpc_avx2(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_scaled_smooth_16bpc_avx2(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_scaled_smooth_sharp_16bpc_avx2(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_scaled_sharp_regular_16bpc_avx2(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_scaled_sharp_smooth_16bpc_avx2(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_scaled_sharp_16bpc_avx2(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_bilin_scaled_16bpc_avx2(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_avg_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp1: *const int16_t,
+        tmp2: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_w_avg_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp1: *const int16_t,
+        tmp2: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        weight: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_mask_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp1: *const int16_t,
+        tmp2: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mask: *const uint8_t,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_w_mask_444_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp1: *const int16_t,
+        tmp2: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mask: *mut uint8_t,
+        sign: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_w_mask_422_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp1: *const int16_t,
+        tmp2: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mask: *mut uint8_t,
+        sign: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_w_mask_420_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp1: *const int16_t,
+        tmp2: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mask: *mut uint8_t,
+        sign: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_blend_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        mask: *const uint8_t,
+    );
+    fn dav1d_blend_v_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+    );
+    fn dav1d_blend_h_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+    );
+    fn dav1d_warp_affine_8x8_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        abcd: *const int16_t,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_warp_affine_8x8t_16bpc_avx2(
+        tmp: *mut int16_t,
+        tmp_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        abcd: *const int16_t,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_emu_edge_16bpc_avx2(
+        bw: intptr_t,
+        bh: intptr_t,
+        iw: intptr_t,
+        ih: intptr_t,
+        x: intptr_t,
+        y: intptr_t,
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+    );
+    fn dav1d_resize_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        dst_w: libc::c_int,
+        h: libc::c_int,
+        src_w: libc::c_int,
+        dx: libc::c_int,
+        mx: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_sharp_smooth_16bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_bilin_16bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_regular_16bpc_avx512icl(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_regular_smooth_16bpc_avx512icl(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_regular_sharp_16bpc_avx512icl(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_smooth_regular_16bpc_avx512icl(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_smooth_16bpc_avx512icl(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_smooth_sharp_16bpc_avx512icl(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_sharp_regular_16bpc_avx512icl(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_sharp_smooth_16bpc_avx512icl(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_sharp_16bpc_avx512icl(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_bilin_16bpc_avx512icl(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_avg_16bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp1: *const int16_t,
+        tmp2: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_w_avg_16bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp1: *const int16_t,
+        tmp2: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        weight: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_mask_16bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp1: *const int16_t,
+        tmp2: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mask: *const uint8_t,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_w_mask_444_16bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp1: *const int16_t,
+        tmp2: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mask: *mut uint8_t,
+        sign: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_w_mask_422_16bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp1: *const int16_t,
+        tmp2: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mask: *mut uint8_t,
+        sign: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_regular_16bpc_ssse3(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_blend_16bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        mask: *const uint8_t,
+    );
+    fn dav1d_blend_v_16bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+    );
+    fn dav1d_blend_h_16bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+    );
+    fn dav1d_warp_affine_8x8_16bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        abcd: *const int16_t,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_warp_affine_8x8t_16bpc_avx512icl(
+        tmp: *mut int16_t,
+        tmp_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        abcd: *const int16_t,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_resize_16bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        dst_w: libc::c_int,
+        h: libc::c_int,
+        src_w: libc::c_int,
+        dx: libc::c_int,
+        mx: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+extern "C" {
+    fn dav1d_put_8tap_regular_16bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_regular_smooth_16bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_regular_sharp_16bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_smooth_16bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_smooth_regular_16bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_smooth_sharp_16bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_sharp_16bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_sharp_regular_16bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_8tap_sharp_smooth_16bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_put_bilin_16bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_regular_16bpc_neon(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_regular_smooth_16bpc_neon(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_regular_sharp_16bpc_neon(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_smooth_regular_16bpc_neon(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_smooth_16bpc_neon(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_smooth_sharp_16bpc_neon(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_sharp_regular_16bpc_neon(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_sharp_smooth_16bpc_neon(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_8tap_sharp_16bpc_neon(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_prep_bilin_16bpc_neon(
+        tmp: *mut int16_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_avg_16bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp1: *const int16_t,
+        tmp2: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_w_avg_16bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp1: *const int16_t,
+        tmp2: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        weight: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_mask_16bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp1: *const int16_t,
+        tmp2: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mask: *const uint8_t,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_blend_16bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        mask: *const uint8_t,
+    );
+    fn dav1d_blend_h_16bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+    );
+    fn dav1d_blend_v_16bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+    );
+    fn dav1d_w_mask_444_16bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp1: *const int16_t,
+        tmp2: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mask: *mut uint8_t,
+        sign: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_w_mask_422_16bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp1: *const int16_t,
+        tmp2: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mask: *mut uint8_t,
+        sign: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_w_mask_420_16bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        tmp1: *const int16_t,
+        tmp2: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        mask: *mut uint8_t,
+        sign: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_warp_affine_8x8_16bpc_neon(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        abcd: *const int16_t,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_warp_affine_8x8t_16bpc_neon(
+        tmp: *mut int16_t,
+        tmp_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+        abcd: *const int16_t,
+        mx: libc::c_int,
+        my: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_emu_edge_16bpc_neon(
+        bw: intptr_t,
+        bh: intptr_t,
+        iw: intptr_t,
+        ih: intptr_t,
+        x: intptr_t,
+        y: intptr_t,
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        src: *const pixel,
+        src_stride: ptrdiff_t,
+    );
+}
+
+pub const DAV1D_X86_CPU_FLAG_AVX512ICL: CpuFlags = 16;
+pub const DAV1D_X86_CPU_FLAG_SSE2: CpuFlags = 1;
+pub const DAV1D_X86_CPU_FLAG_AVX2: CpuFlags = 8;
+pub const DAV1D_X86_CPU_FLAG_SSE41: CpuFlags = 4;
+pub const DAV1D_X86_CPU_FLAG_SSSE3: CpuFlags = 2;
+pub type CpuFlags = libc::c_uint;
+pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
 
 
 pub type pixel = uint16_t;
@@ -248,7 +2097,7 @@ unsafe extern "C" fn iclip(
 }
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
-    if x & 1 as libc::c_int as libc::c_long != 0 {
+    if x & 1 != 0 {
         unreachable!();
     }
     return x >> 1 as libc::c_int;
@@ -362,7 +2211,7 @@ unsafe extern "C" fn put_8tap_c(
             let mut mid: [int16_t; 17280] = [0; 17280];
             let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
             src = src
-                .offset(-((src_stride * 3 as libc::c_int as libc::c_long) as isize));
+                .offset(-((src_stride * 3) as isize));
             loop {
                 let mut x: libc::c_int = 0 as libc::c_int;
                 while x < w {
@@ -553,50 +2402,50 @@ unsafe extern "C" fn put_8tap_c(
                     *fv.offset(0 as libc::c_int as isize) as libc::c_int
                         * *src
                             .offset(
-                                (x_2 as libc::c_long
-                                    + -(3 as libc::c_int) as libc::c_long * src_stride) as isize,
+                                (x_2 as isize
+                                    + -(3 as libc::c_int) as isize * src_stride) as isize,
                             ) as libc::c_int
                         + *fv.offset(1 as libc::c_int as isize) as libc::c_int
                             * *src
                                 .offset(
-                                    (x_2 as libc::c_long
-                                        + -(2 as libc::c_int) as libc::c_long * src_stride) as isize,
+                                    (x_2 as isize
+                                        + -(2 as libc::c_int) as isize * src_stride) as isize,
                                 ) as libc::c_int
                         + *fv.offset(2 as libc::c_int as isize) as libc::c_int
                             * *src
                                 .offset(
-                                    (x_2 as libc::c_long
-                                        + -(1 as libc::c_int) as libc::c_long * src_stride) as isize,
+                                    (x_2 as isize
+                                        + -(1 as libc::c_int) as isize * src_stride) as isize,
                                 ) as libc::c_int
                         + *fv.offset(3 as libc::c_int as isize) as libc::c_int
                             * *src
                                 .offset(
-                                    (x_2 as libc::c_long
-                                        + 0 as libc::c_int as libc::c_long * src_stride) as isize,
+                                    (x_2 as isize
+                                        + 0 * src_stride) as isize,
                                 ) as libc::c_int
                         + *fv.offset(4 as libc::c_int as isize) as libc::c_int
                             * *src
                                 .offset(
-                                    (x_2 as libc::c_long
-                                        + 1 as libc::c_int as libc::c_long * src_stride) as isize,
+                                    (x_2 as isize
+                                        + 1 * src_stride) as isize,
                                 ) as libc::c_int
                         + *fv.offset(5 as libc::c_int as isize) as libc::c_int
                             * *src
                                 .offset(
-                                    (x_2 as libc::c_long
-                                        + 2 as libc::c_int as libc::c_long * src_stride) as isize,
+                                    (x_2 as isize
+                                        + 2 * src_stride) as isize,
                                 ) as libc::c_int
                         + *fv.offset(6 as libc::c_int as isize) as libc::c_int
                             * *src
                                 .offset(
-                                    (x_2 as libc::c_long
-                                        + 3 as libc::c_int as libc::c_long * src_stride) as isize,
+                                    (x_2 as isize
+                                        + 3 * src_stride) as isize,
                                 ) as libc::c_int
                         + *fv.offset(7 as libc::c_int as isize) as libc::c_int
                             * *src
                                 .offset(
-                                    (x_2 as libc::c_long
-                                        + 4 as libc::c_int as libc::c_long * src_stride) as isize,
+                                    (x_2 as isize
+                                        + 4 * src_stride) as isize,
                                 ) as libc::c_int
                         + ((1 as libc::c_int) << 6 as libc::c_int >> 1 as libc::c_int)
                         >> 6 as libc::c_int,
@@ -640,7 +2489,7 @@ unsafe extern "C" fn put_8tap_scaled_c(
     let mut mid: [int16_t; 33664] = [0; 33664];
     let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
     src_stride = PXSTRIDE(src_stride);
-    src = src.offset(-((src_stride * 3 as libc::c_int as libc::c_long) as isize));
+    src = src.offset(-((src_stride * 3) as isize));
     loop {
         let mut x: libc::c_int = 0;
         let mut imx: libc::c_int = mx;
@@ -849,7 +2698,7 @@ unsafe extern "C" fn prep_8tap_c(
             let mut mid: [int16_t; 17280] = [0; 17280];
             let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
             src = src
-                .offset(-((src_stride * 3 as libc::c_int as libc::c_long) as isize));
+                .offset(-((src_stride * 3) as isize));
             loop {
                 let mut x: libc::c_int = 0 as libc::c_int;
                 while x < w {
@@ -1034,53 +2883,53 @@ unsafe extern "C" fn prep_8tap_c(
                 *tmp
                     .offset(
                         x_2 as isize,
-                    ) = ((*fv.offset(0 as libc::c_int as isize) as libc::c_int
+                    ) = ((*fv.offset(0) as libc::c_int
                     * *src
                         .offset(
-                            (x_2 as libc::c_long
-                                + -(3 as libc::c_int) as libc::c_long * src_stride) as isize,
+                            (x_2 as isize
+                                + -(3 as libc::c_int) as isize * src_stride) as isize,
                         ) as libc::c_int
                     + *fv.offset(1 as libc::c_int as isize) as libc::c_int
                         * *src
                             .offset(
-                                (x_2 as libc::c_long
-                                    + -(2 as libc::c_int) as libc::c_long * src_stride) as isize,
+                                (x_2 as isize
+                                    + -(2 as libc::c_int) as isize * src_stride) as isize,
                             ) as libc::c_int
                     + *fv.offset(2 as libc::c_int as isize) as libc::c_int
                         * *src
                             .offset(
-                                (x_2 as libc::c_long
-                                    + -(1 as libc::c_int) as libc::c_long * src_stride) as isize,
+                                (x_2 as isize
+                                    + -(1 as libc::c_int) as isize * src_stride) as isize,
                             ) as libc::c_int
                     + *fv.offset(3 as libc::c_int as isize) as libc::c_int
                         * *src
                             .offset(
-                                (x_2 as libc::c_long
-                                    + 0 as libc::c_int as libc::c_long * src_stride) as isize,
+                                (x_2 as isize
+                                    + 0 * src_stride) as isize,
                             ) as libc::c_int
                     + *fv.offset(4 as libc::c_int as isize) as libc::c_int
                         * *src
                             .offset(
-                                (x_2 as libc::c_long
-                                    + 1 as libc::c_int as libc::c_long * src_stride) as isize,
+                                (x_2 as isize
+                                    + 1 * src_stride) as isize,
                             ) as libc::c_int
                     + *fv.offset(5 as libc::c_int as isize) as libc::c_int
                         * *src
                             .offset(
-                                (x_2 as libc::c_long
-                                    + 2 as libc::c_int as libc::c_long * src_stride) as isize,
+                                (x_2 as isize
+                                    + 2 * src_stride) as isize,
                             ) as libc::c_int
                     + *fv.offset(6 as libc::c_int as isize) as libc::c_int
                         * *src
                             .offset(
-                                (x_2 as libc::c_long
-                                    + 3 as libc::c_int as libc::c_long * src_stride) as isize,
+                                (x_2 as isize
+                                    + 3 * src_stride) as isize,
                             ) as libc::c_int
                     + *fv.offset(7 as libc::c_int as isize) as libc::c_int
                         * *src
                             .offset(
-                                (x_2 as libc::c_long
-                                    + 4 as libc::c_int as libc::c_long * src_stride) as isize,
+                                (x_2 as isize
+                                    + 4 * src_stride) as isize,
                             ) as libc::c_int
                     + ((1 as libc::c_int) << 6 as libc::c_int - intermediate_bits
                         >> 1 as libc::c_int) >> 6 as libc::c_int - intermediate_bits)
@@ -1119,7 +2968,7 @@ unsafe extern "C" fn prep_8tap_scaled_c(
     let mut mid: [int16_t; 33664] = [0; 33664];
     let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
     src_stride = PXSTRIDE(src_stride);
-    src = src.offset(-((src_stride * 3 as libc::c_int as libc::c_long) as isize));
+    src = src.offset(-((src_stride * 3) as isize));
     loop {
         let mut x: libc::c_int = 0;
         let mut imx: libc::c_int = mx;
@@ -2322,7 +4171,7 @@ unsafe extern "C" fn put_bilin_c(
                     ) = iclip(
                     16 as libc::c_int * *src.offset(x_2 as isize) as libc::c_int
                         + my
-                            * (*src.offset((x_2 as libc::c_long + src_stride) as isize)
+                            * (*src.offset((x_2 as isize + src_stride) as isize)
                                 as libc::c_int - *src.offset(x_2 as isize) as libc::c_int)
                         + ((1 as libc::c_int) << 4 as libc::c_int >> 1 as libc::c_int)
                         >> 4 as libc::c_int,
@@ -2519,7 +4368,7 @@ unsafe extern "C" fn prep_bilin_c(
                         x_2 as isize,
                     ) = ((16 as libc::c_int * *src.offset(x_2 as isize) as libc::c_int
                     + my
-                        * (*src.offset((x_2 as libc::c_long + src_stride) as isize)
+                        * (*src.offset((x_2 as isize + src_stride) as isize)
                             as libc::c_int - *src.offset(x_2 as isize) as libc::c_int)
                     + ((1 as libc::c_int) << 4 as libc::c_int - intermediate_bits
                         >> 1 as libc::c_int) >> 4 as libc::c_int - intermediate_bits)
@@ -3005,7 +4854,7 @@ unsafe extern "C" fn warp_affine_8x8_c(
     let mut mid: [int16_t; 120] = [0; 120];
     let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
     src = src
-        .offset(-((3 as libc::c_int as libc::c_long * PXSTRIDE(src_stride)) as isize));
+        .offset(-((3 * PXSTRIDE(src_stride)) as isize));
     let mut y: libc::c_int = 0 as libc::c_int;
     while y < 15 as libc::c_int {
         let mut x: libc::c_int = 0 as libc::c_int;
@@ -3128,7 +4977,7 @@ unsafe extern "C" fn warp_affine_8x8t_c(
     let mut mid: [int16_t; 120] = [0; 120];
     let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
     src = src
-        .offset(-((3 as libc::c_int as libc::c_long * PXSTRIDE(src_stride)) as isize));
+        .offset(-((3 * PXSTRIDE(src_stride)) as isize));
     let mut y: libc::c_int = 0 as libc::c_int;
     while y < 15 as libc::c_int {
         let mut x: libc::c_int = 0 as libc::c_int;
@@ -3245,16 +5094,16 @@ unsafe extern "C" fn emu_edge_c(
 ) {
     ref_0 = ref_0
         .offset(
-            (iclip(
+            iclip(
                 y as libc::c_int,
                 0 as libc::c_int,
                 ih as libc::c_int - 1 as libc::c_int,
-            ) as libc::c_long * PXSTRIDE(ref_stride)
+            ) as isize * PXSTRIDE(ref_stride)
                 + iclip(
                     x as libc::c_int,
                     0 as libc::c_int,
                     iw as libc::c_int - 1 as libc::c_int,
-                ) as libc::c_long) as isize,
+                ) as isize,
         );
     let left_ext: libc::c_int = iclip(
         -x as libc::c_int,
@@ -3266,7 +5115,7 @@ unsafe extern "C" fn emu_edge_c(
         0 as libc::c_int,
         bw as libc::c_int - 1 as libc::c_int,
     );
-    if !(((left_ext + right_ext) as libc::c_long) < bw) {
+    if !(((left_ext + right_ext) as isize) < bw) {
         unreachable!();
     }
     let top_ext: libc::c_int = iclip(
@@ -3279,15 +5128,13 @@ unsafe extern "C" fn emu_edge_c(
         0 as libc::c_int,
         bh as libc::c_int - 1 as libc::c_int,
     );
-    if !(((top_ext + bottom_ext) as libc::c_long) < bh) {
+    if !(((top_ext + bottom_ext) as isize) < bh) {
         unreachable!();
     }
     let mut blk: *mut pixel = dst
-        .offset((top_ext as libc::c_long * PXSTRIDE(dst_stride)) as isize);
-    let center_w: libc::c_int = (bw - left_ext as libc::c_long
-        - right_ext as libc::c_long) as libc::c_int;
-    let center_h: libc::c_int = (bh - top_ext as libc::c_long
-        - bottom_ext as libc::c_long) as libc::c_int;
+        .offset((top_ext as isize * PXSTRIDE(dst_stride)) as isize);
+    let center_w: libc::c_int = (bw - left_ext as isize - right_ext as isize) as libc::c_int;
+    let center_h: libc::c_int = (bh - top_ext as isize - bottom_ext as isize) as libc::c_int;
     let mut y_0: libc::c_int = 0 as libc::c_int;
     while y_0 < center_h {
         memcpy(
@@ -3310,7 +5157,7 @@ unsafe extern "C" fn emu_edge_c(
         blk = blk.offset(PXSTRIDE(dst_stride) as isize);
         y_0 += 1;
     }
-    blk = dst.offset((top_ext as libc::c_long * PXSTRIDE(dst_stride)) as isize);
+    blk = dst.offset((top_ext as isize * PXSTRIDE(dst_stride)) as isize);
     let mut y_1: libc::c_int = 0 as libc::c_int;
     while y_1 < top_ext {
         memcpy(
@@ -3321,7 +5168,7 @@ unsafe extern "C" fn emu_edge_c(
         dst = dst.offset(PXSTRIDE(dst_stride) as isize);
         y_1 += 1;
     }
-    dst = dst.offset((center_h as libc::c_long * PXSTRIDE(dst_stride)) as isize);
+    dst = dst.offset((center_h as isize * PXSTRIDE(dst_stride)) as isize);
     let mut y_2: libc::c_int = 0 as libc::c_int;
     while y_2 < bottom_ext {
         memcpy(
@@ -3450,850 +5297,316 @@ unsafe extern "C" fn resize_c(
         }
     };
 }
+
+#[cfg(feature = "asm")]
+#[inline(always)]
+unsafe extern "C" fn dav1d_get_cpu_flags() -> libc::c_uint {
+    let mut flags: libc::c_uint = dav1d_cpu_flags & dav1d_cpu_flags_mask;
+    flags |= DAV1D_X86_CPU_FLAG_SSE2 as libc::c_int as libc::c_uint;
+    return flags;
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+#[inline(always)]
+unsafe extern "C" fn mc_dsp_init_x86(c: *mut Dav1dMCDSPContext) {
+    let flags = dav1d_get_cpu_flags();
+
+    if flags & DAV1D_X86_CPU_FLAG_SSE2 == 0 {
+        return;
+    }
+
+    if flags & DAV1D_X86_CPU_FLAG_SSSE3 == 0 {
+        return;
+    }
+
+    (*c).mc[FILTER_2D_8TAP_REGULAR as usize] = Some(dav1d_put_8tap_regular_16bpc_ssse3);
+    (*c).mc[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = Some(dav1d_put_8tap_regular_smooth_16bpc_ssse3);
+    (*c).mc[FILTER_2D_8TAP_REGULAR_SHARP as usize] = Some(dav1d_put_8tap_regular_sharp_16bpc_ssse3);
+    (*c).mc[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = Some(dav1d_put_8tap_smooth_regular_16bpc_ssse3);
+    (*c).mc[FILTER_2D_8TAP_SMOOTH as usize] = Some(dav1d_put_8tap_smooth_16bpc_ssse3);
+    (*c).mc[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(dav1d_put_8tap_smooth_sharp_16bpc_ssse3);
+    (*c).mc[FILTER_2D_8TAP_SHARP_REGULAR as usize] = Some(dav1d_put_8tap_sharp_regular_16bpc_ssse3);
+    (*c).mc[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(dav1d_put_8tap_sharp_smooth_16bpc_ssse3);
+    (*c).mc[FILTER_2D_8TAP_SHARP as usize] = Some(dav1d_put_8tap_sharp_16bpc_ssse3);
+    (*c).mc[FILTER_2D_BILINEAR as usize] = Some(dav1d_put_bilin_16bpc_ssse3);
+
+    (*c).mct[FILTER_2D_8TAP_REGULAR as usize] = Some(dav1d_prep_8tap_regular_16bpc_ssse3);
+    (*c).mct[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = Some(dav1d_prep_8tap_regular_smooth_16bpc_ssse3);
+    (*c).mct[FILTER_2D_8TAP_REGULAR_SHARP as usize] = Some(dav1d_prep_8tap_regular_sharp_16bpc_ssse3);
+    (*c).mct[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = Some(dav1d_prep_8tap_smooth_regular_16bpc_ssse3);
+    (*c).mct[FILTER_2D_8TAP_SMOOTH as usize] = Some(dav1d_prep_8tap_smooth_16bpc_ssse3);
+    (*c).mct[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(dav1d_prep_8tap_smooth_sharp_16bpc_ssse3);
+    (*c).mct[FILTER_2D_8TAP_SHARP_REGULAR as usize] = Some(dav1d_prep_8tap_sharp_regular_16bpc_ssse3);
+    (*c).mct[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(dav1d_prep_8tap_sharp_smooth_16bpc_ssse3);
+    (*c).mct[FILTER_2D_8TAP_SHARP as usize] = Some(dav1d_prep_8tap_sharp_16bpc_ssse3);
+    (*c).mct[FILTER_2D_BILINEAR as usize] = Some(dav1d_prep_bilin_16bpc_ssse3);
+
+    (*c).mc_scaled[FILTER_2D_8TAP_REGULAR as usize] = Some(dav1d_put_8tap_scaled_regular_16bpc_ssse3);
+    (*c).mc_scaled[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = Some(dav1d_put_8tap_scaled_regular_smooth_16bpc_ssse3);
+    (*c).mc_scaled[FILTER_2D_8TAP_REGULAR_SHARP as usize] = Some(dav1d_put_8tap_scaled_regular_sharp_16bpc_ssse3);
+    (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = Some(dav1d_put_8tap_scaled_smooth_regular_16bpc_ssse3);
+    (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH as usize] = Some(dav1d_put_8tap_scaled_smooth_16bpc_ssse3);
+    (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(dav1d_put_8tap_scaled_smooth_sharp_16bpc_ssse3);
+    (*c).mc_scaled[FILTER_2D_8TAP_SHARP_REGULAR as usize] = Some(dav1d_put_8tap_scaled_sharp_regular_16bpc_ssse3);
+    (*c).mc_scaled[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(dav1d_put_8tap_scaled_sharp_smooth_16bpc_ssse3);
+    (*c).mc_scaled[FILTER_2D_8TAP_SHARP as usize] = Some(dav1d_put_8tap_scaled_sharp_16bpc_ssse3);
+    (*c).mc_scaled[FILTER_2D_BILINEAR as usize] = Some(dav1d_put_bilin_scaled_16bpc_ssse3);
+
+    (*c).mct_scaled[FILTER_2D_8TAP_REGULAR as usize] = Some(dav1d_prep_8tap_scaled_regular_16bpc_ssse3);
+    (*c).mct_scaled[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = Some(dav1d_prep_8tap_scaled_regular_smooth_16bpc_ssse3);
+    (*c).mct_scaled[FILTER_2D_8TAP_REGULAR_SHARP as usize] = Some(dav1d_prep_8tap_scaled_regular_sharp_16bpc_ssse3);
+    (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = Some(dav1d_prep_8tap_scaled_smooth_regular_16bpc_ssse3);
+    (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH as usize] = Some(dav1d_prep_8tap_scaled_smooth_16bpc_ssse3);
+    (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(dav1d_prep_8tap_scaled_smooth_sharp_16bpc_ssse3);
+    (*c).mct_scaled[FILTER_2D_8TAP_SHARP_REGULAR as usize] = Some(dav1d_prep_8tap_scaled_sharp_regular_16bpc_ssse3);
+    (*c).mct_scaled[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(dav1d_prep_8tap_scaled_sharp_smooth_16bpc_ssse3);
+    (*c).mct_scaled[FILTER_2D_8TAP_SHARP as usize] = Some(dav1d_prep_8tap_scaled_sharp_16bpc_ssse3);
+    (*c).mct_scaled[FILTER_2D_BILINEAR as usize] = Some(dav1d_prep_bilin_scaled_16bpc_ssse3);
+
+    (*c).avg = Some(dav1d_avg_16bpc_ssse3);
+    (*c).w_avg = Some(dav1d_w_avg_16bpc_ssse3);
+    (*c).mask = Some(dav1d_mask_16bpc_ssse3);
+
+    (*c).w_mask[0] = Some(dav1d_w_mask_444_16bpc_ssse3);
+    (*c).w_mask[1] = Some(dav1d_w_mask_422_16bpc_ssse3);
+    (*c).w_mask[2] = Some(dav1d_w_mask_420_16bpc_ssse3);
+
+    (*c).blend = Some(dav1d_blend_16bpc_ssse3);
+    (*c).blend_v = Some(dav1d_blend_v_16bpc_ssse3);
+    (*c).blend_h = Some(dav1d_blend_h_16bpc_ssse3);
+    (*c).warp8x8 = Some(dav1d_warp_affine_8x8_16bpc_ssse3);
+    (*c).warp8x8t = Some(dav1d_warp_affine_8x8t_16bpc_ssse3);
+    (*c).emu_edge = Some(dav1d_emu_edge_16bpc_ssse3);
+    (*c).resize = Some(dav1d_resize_16bpc_ssse3);
+
+    if flags & DAV1D_X86_CPU_FLAG_SSE41 == 0 {
+        return;
+    }
+
+    if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
+        return;
+    }
+
+    (*c).mc[FILTER_2D_8TAP_REGULAR as usize] = Some(dav1d_put_8tap_regular_16bpc_avx2);
+    (*c).mc[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = Some(dav1d_put_8tap_regular_smooth_16bpc_avx2);
+    (*c).mc[FILTER_2D_8TAP_REGULAR_SHARP as usize] = Some(dav1d_put_8tap_regular_sharp_16bpc_avx2);
+    (*c).mc[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = Some(dav1d_put_8tap_smooth_regular_16bpc_avx2);
+    (*c).mc[FILTER_2D_8TAP_SMOOTH as usize] = Some(dav1d_put_8tap_smooth_16bpc_avx2);
+    (*c).mc[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(dav1d_put_8tap_smooth_sharp_16bpc_avx2);
+    (*c).mc[FILTER_2D_8TAP_SHARP_REGULAR as usize] = Some(dav1d_put_8tap_sharp_regular_16bpc_avx2);
+    (*c).mc[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(dav1d_put_8tap_sharp_smooth_16bpc_avx2);
+    (*c).mc[FILTER_2D_8TAP_SHARP as usize] = Some(dav1d_put_8tap_sharp_16bpc_avx2);
+    (*c).mc[FILTER_2D_BILINEAR as usize] = Some(dav1d_put_bilin_16bpc_avx2);
+
+    (*c).mct[FILTER_2D_8TAP_REGULAR as usize] = Some(dav1d_prep_8tap_regular_16bpc_avx2);
+    (*c).mct[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = Some(dav1d_prep_8tap_regular_smooth_16bpc_avx2);
+    (*c).mct[FILTER_2D_8TAP_REGULAR_SHARP as usize] = Some(dav1d_prep_8tap_regular_sharp_16bpc_avx2);
+    (*c).mct[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = Some(dav1d_prep_8tap_smooth_regular_16bpc_avx2);
+    (*c).mct[FILTER_2D_8TAP_SMOOTH as usize] = Some(dav1d_prep_8tap_smooth_16bpc_avx2);
+    (*c).mct[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(dav1d_prep_8tap_smooth_sharp_16bpc_avx2);
+    (*c).mct[FILTER_2D_8TAP_SHARP_REGULAR as usize] = Some(dav1d_prep_8tap_sharp_regular_16bpc_avx2);
+    (*c).mct[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(dav1d_prep_8tap_sharp_smooth_16bpc_avx2);
+    (*c).mct[FILTER_2D_8TAP_SHARP as usize] = Some(dav1d_prep_8tap_sharp_16bpc_avx2);
+    (*c).mct[FILTER_2D_BILINEAR as usize] = Some(dav1d_prep_bilin_16bpc_avx2);
+
+    (*c).mc_scaled[FILTER_2D_8TAP_REGULAR as usize] = Some(dav1d_put_8tap_scaled_regular_16bpc_avx2);
+    (*c).mc_scaled[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = Some(dav1d_put_8tap_scaled_regular_smooth_16bpc_avx2);
+    (*c).mc_scaled[FILTER_2D_8TAP_REGULAR_SHARP as usize] = Some(dav1d_put_8tap_scaled_regular_sharp_16bpc_avx2);
+    (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = Some(dav1d_put_8tap_scaled_smooth_regular_16bpc_avx2);
+    (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH as usize] = Some(dav1d_put_8tap_scaled_smooth_16bpc_avx2);
+    (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(dav1d_put_8tap_scaled_smooth_sharp_16bpc_avx2);
+    (*c).mc_scaled[FILTER_2D_8TAP_SHARP_REGULAR as usize] = Some(dav1d_put_8tap_scaled_sharp_regular_16bpc_avx2);
+    (*c).mc_scaled[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(dav1d_put_8tap_scaled_sharp_smooth_16bpc_avx2);
+    (*c).mc_scaled[FILTER_2D_8TAP_SHARP as usize] = Some(dav1d_put_8tap_scaled_sharp_16bpc_avx2);
+    (*c).mc_scaled[FILTER_2D_BILINEAR as usize] = Some(dav1d_put_bilin_scaled_16bpc_avx2);
+
+    (*c).mct_scaled[FILTER_2D_8TAP_REGULAR as usize] = Some(dav1d_prep_8tap_scaled_regular_16bpc_avx2);
+    (*c).mct_scaled[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = Some(dav1d_prep_8tap_scaled_regular_smooth_16bpc_avx2);
+    (*c).mct_scaled[FILTER_2D_8TAP_REGULAR_SHARP as usize] = Some(dav1d_prep_8tap_scaled_regular_sharp_16bpc_avx2);
+    (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = Some(dav1d_prep_8tap_scaled_smooth_regular_16bpc_avx2);
+    (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH as usize] = Some(dav1d_prep_8tap_scaled_smooth_16bpc_avx2);
+    (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(dav1d_prep_8tap_scaled_smooth_sharp_16bpc_avx2);
+    (*c).mct_scaled[FILTER_2D_8TAP_SHARP_REGULAR as usize] = Some(dav1d_prep_8tap_scaled_sharp_regular_16bpc_avx2);
+    (*c).mct_scaled[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(dav1d_prep_8tap_scaled_sharp_smooth_16bpc_avx2);
+    (*c).mct_scaled[FILTER_2D_8TAP_SHARP as usize] = Some(dav1d_prep_8tap_scaled_sharp_16bpc_avx2);
+    (*c).mct_scaled[FILTER_2D_BILINEAR as usize] = Some(dav1d_prep_bilin_scaled_16bpc_avx2);
+
+    (*c).avg = Some(dav1d_avg_16bpc_avx2);
+    (*c).w_avg = Some(dav1d_w_avg_16bpc_avx2);
+    (*c).mask = Some(dav1d_mask_16bpc_avx2);
+
+    (*c).w_mask[0] = Some(dav1d_w_mask_444_16bpc_avx2);
+    (*c).w_mask[1] = Some(dav1d_w_mask_422_16bpc_avx2);
+    (*c).w_mask[2] = Some(dav1d_w_mask_420_16bpc_avx2);
+
+    (*c).blend = Some(dav1d_blend_16bpc_avx2);
+    (*c).blend_v = Some(dav1d_blend_v_16bpc_avx2);
+    (*c).blend_h = Some(dav1d_blend_h_16bpc_avx2);
+    (*c).warp8x8 = Some(dav1d_warp_affine_8x8_16bpc_avx2);
+    (*c).warp8x8t = Some(dav1d_warp_affine_8x8t_16bpc_avx2);
+    (*c).emu_edge = Some(dav1d_emu_edge_16bpc_avx2);
+    (*c).resize = Some(dav1d_resize_16bpc_avx2);
+
+    if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
+        return;
+    }
+
+    (*c).mc[FILTER_2D_8TAP_REGULAR as usize] = Some(dav1d_put_8tap_regular_16bpc_avx512icl);
+    (*c).mc[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = Some(dav1d_put_8tap_regular_smooth_16bpc_avx512icl);
+    (*c).mc[FILTER_2D_8TAP_REGULAR_SHARP as usize] = Some(dav1d_put_8tap_regular_sharp_16bpc_avx512icl);
+    (*c).mc[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = Some(dav1d_put_8tap_smooth_regular_16bpc_avx512icl);
+    (*c).mc[FILTER_2D_8TAP_SMOOTH as usize] = Some(dav1d_put_8tap_smooth_16bpc_avx512icl);
+    (*c).mc[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(dav1d_put_8tap_smooth_sharp_16bpc_avx512icl);
+    (*c).mc[FILTER_2D_8TAP_SHARP_REGULAR as usize] = Some(dav1d_put_8tap_sharp_regular_16bpc_avx512icl);
+    (*c).mc[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(dav1d_put_8tap_sharp_smooth_16bpc_avx512icl);
+    (*c).mc[FILTER_2D_8TAP_SHARP as usize] = Some(dav1d_put_8tap_sharp_16bpc_avx512icl);
+    (*c).mc[FILTER_2D_BILINEAR as usize] = Some(dav1d_put_bilin_16bpc_avx512icl);
+
+    (*c).mct[FILTER_2D_8TAP_REGULAR as usize] = Some(dav1d_prep_8tap_regular_16bpc_avx512icl);
+    (*c).mct[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = Some(dav1d_prep_8tap_regular_smooth_16bpc_avx512icl);
+    (*c).mct[FILTER_2D_8TAP_REGULAR_SHARP as usize] = Some(dav1d_prep_8tap_regular_sharp_16bpc_avx512icl);
+    (*c).mct[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = Some(dav1d_prep_8tap_smooth_regular_16bpc_avx512icl);
+    (*c).mct[FILTER_2D_8TAP_SMOOTH as usize] = Some(dav1d_prep_8tap_smooth_16bpc_avx512icl);
+    (*c).mct[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(dav1d_prep_8tap_smooth_sharp_16bpc_avx512icl);
+    (*c).mct[FILTER_2D_8TAP_SHARP_REGULAR as usize] = Some(dav1d_prep_8tap_sharp_regular_16bpc_avx512icl);
+    (*c).mct[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(dav1d_prep_8tap_sharp_smooth_16bpc_avx512icl);
+    (*c).mct[FILTER_2D_8TAP_SHARP as usize] = Some(dav1d_prep_8tap_sharp_16bpc_avx512icl);
+    (*c).mct[FILTER_2D_BILINEAR as usize] = Some(dav1d_prep_bilin_16bpc_avx512icl);
+
+    (*c).avg = Some(dav1d_avg_16bpc_avx512icl);
+    (*c).w_avg = Some(dav1d_w_avg_16bpc_avx512icl);
+    (*c).mask = Some(dav1d_mask_16bpc_avx512icl);
+
+    (*c).w_mask[0] = Some(dav1d_w_mask_444_16bpc_avx512icl);
+    (*c).w_mask[1] = Some(dav1d_w_mask_422_16bpc_avx512icl);
+    (*c).w_mask[2] = Some(dav1d_w_mask_420_16bpc_avx512icl);
+
+    (*c).blend = Some(dav1d_blend_16bpc_avx512icl);
+    (*c).blend_v = Some(dav1d_blend_v_16bpc_avx512icl);
+    (*c).blend_h = Some(dav1d_blend_h_16bpc_avx512icl);
+    (*c).warp8x8 = Some(dav1d_warp_affine_8x8_16bpc_avx512icl);
+    (*c).warp8x8t = Some(dav1d_warp_affine_8x8t_16bpc_avx512icl);
+    (*c).resize = Some(dav1d_resize_16bpc_avx512icl);
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[inline(always)]
+unsafe extern "C" fn mc_dsp_init_arm(c: *mut Dav1dMCDSPContext) {
+    use crate::src::arm::cpu::DAV1D_ARM_CPU_FLAG_NEON;
+
+    let flags = dav1d_get_cpu_flags();
+
+    if flags & DAV1D_ARM_CPU_FLAG_NEON == 0 {
+        return;
+    }
+
+    (*c).mc[FILTER_2D_8TAP_REGULAR as usize] = Some(dav1d_put_8tap_regular_16bpc_neon);
+    (*c).mc[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = Some(dav1d_put_8tap_regular_smooth_16bpc_neon);
+    (*c).mc[FILTER_2D_8TAP_REGULAR_SHARP as usize] = Some(dav1d_put_8tap_regular_sharp_16bpc_neon);
+    (*c).mc[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = Some(dav1d_put_8tap_smooth_regular_16bpc_neon);
+    (*c).mc[FILTER_2D_8TAP_SMOOTH as usize] = Some(dav1d_put_8tap_smooth_16bpc_neon);
+    (*c).mc[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(dav1d_put_8tap_smooth_sharp_16bpc_neon);
+    (*c).mc[FILTER_2D_8TAP_SHARP_REGULAR as usize] = Some(dav1d_put_8tap_sharp_regular_16bpc_neon);
+    (*c).mc[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(dav1d_put_8tap_sharp_smooth_16bpc_neon);
+    (*c).mc[FILTER_2D_8TAP_SHARP as usize] = Some(dav1d_put_8tap_sharp_16bpc_neon);
+    (*c).mc[FILTER_2D_BILINEAR as usize] = Some(dav1d_put_bilin_16bpc_neon);
+
+    (*c).mct[FILTER_2D_8TAP_REGULAR as usize] = Some(dav1d_prep_8tap_regular_16bpc_neon);
+    (*c).mct[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = Some(dav1d_prep_8tap_regular_smooth_16bpc_neon);
+    (*c).mct[FILTER_2D_8TAP_REGULAR_SHARP as usize] = Some(dav1d_prep_8tap_regular_sharp_16bpc_neon);
+    (*c).mct[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = Some(dav1d_prep_8tap_smooth_regular_16bpc_neon);
+    (*c).mct[FILTER_2D_8TAP_SMOOTH as usize] = Some(dav1d_prep_8tap_smooth_16bpc_neon);
+    (*c).mct[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(dav1d_prep_8tap_smooth_sharp_16bpc_neon);
+    (*c).mct[FILTER_2D_8TAP_SHARP_REGULAR as usize] = Some(dav1d_prep_8tap_sharp_regular_16bpc_neon);
+    (*c).mct[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(dav1d_prep_8tap_sharp_smooth_16bpc_neon);
+    (*c).mct[FILTER_2D_8TAP_SHARP as usize] = Some(dav1d_prep_8tap_sharp_16bpc_neon);
+    (*c).mct[FILTER_2D_BILINEAR as usize] = Some(dav1d_prep_bilin_16bpc_neon);
+
+    (*c).avg = Some(dav1d_avg_16bpc_neon);
+    (*c).w_avg = Some(dav1d_w_avg_16bpc_neon);
+    (*c).mask = Some(dav1d_mask_16bpc_neon);
+    (*c).blend = Some(dav1d_blend_16bpc_neon);
+    (*c).blend_h = Some(dav1d_blend_h_16bpc_neon);
+    (*c).blend_v = Some(dav1d_blend_v_16bpc_neon);
+
+    (*c).w_mask[0] = Some(dav1d_w_mask_444_16bpc_neon);
+    (*c).w_mask[1] = Some(dav1d_w_mask_422_16bpc_neon);
+    (*c).w_mask[2] = Some(dav1d_w_mask_420_16bpc_neon);
+
+    (*c).warp8x8 = Some(dav1d_warp_affine_8x8_16bpc_neon);
+    (*c).warp8x8t = Some(dav1d_warp_affine_8x8t_16bpc_neon);
+    (*c).emu_edge = Some(dav1d_emu_edge_16bpc_neon);
+}
+
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_mc_dsp_init_16bpc(c: *mut Dav1dMCDSPContext) {
-    (*c)
-        .mc[FILTER_2D_8TAP_REGULAR as libc::c_int
-        as usize] = Some(
-        put_8tap_regular_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mc_scaled[FILTER_2D_8TAP_REGULAR as libc::c_int
-        as usize] = Some(
-        put_8tap_regular_scaled_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mct[FILTER_2D_8TAP_REGULAR as libc::c_int
-        as usize] = Some(
-        prep_8tap_regular_c
-            as unsafe extern "C" fn(
-                *mut int16_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mct_scaled[FILTER_2D_8TAP_REGULAR as libc::c_int
-        as usize] = Some(
-        prep_8tap_regular_scaled_c
-            as unsafe extern "C" fn(
-                *mut int16_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mc[FILTER_2D_8TAP_REGULAR_SMOOTH as libc::c_int
-        as usize] = Some(
-        put_8tap_regular_smooth_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mc_scaled[FILTER_2D_8TAP_REGULAR_SMOOTH as libc::c_int
-        as usize] = Some(
-        put_8tap_regular_smooth_scaled_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mct[FILTER_2D_8TAP_REGULAR_SMOOTH as libc::c_int
-        as usize] = Some(
-        prep_8tap_regular_smooth_c
-            as unsafe extern "C" fn(
-                *mut int16_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mct_scaled[FILTER_2D_8TAP_REGULAR_SMOOTH as libc::c_int
-        as usize] = Some(
-        prep_8tap_regular_smooth_scaled_c
-            as unsafe extern "C" fn(
-                *mut int16_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mc[FILTER_2D_8TAP_REGULAR_SHARP as libc::c_int
-        as usize] = Some(
-        put_8tap_regular_sharp_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mc_scaled[FILTER_2D_8TAP_REGULAR_SHARP as libc::c_int
-        as usize] = Some(
-        put_8tap_regular_sharp_scaled_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mct[FILTER_2D_8TAP_REGULAR_SHARP as libc::c_int
-        as usize] = Some(
-        prep_8tap_regular_sharp_c
-            as unsafe extern "C" fn(
-                *mut int16_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mct_scaled[FILTER_2D_8TAP_REGULAR_SHARP as libc::c_int
-        as usize] = Some(
-        prep_8tap_regular_sharp_scaled_c
-            as unsafe extern "C" fn(
-                *mut int16_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mc[FILTER_2D_8TAP_SHARP_REGULAR as libc::c_int
-        as usize] = Some(
-        put_8tap_sharp_regular_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mc_scaled[FILTER_2D_8TAP_SHARP_REGULAR as libc::c_int
-        as usize] = Some(
-        put_8tap_sharp_regular_scaled_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mct[FILTER_2D_8TAP_SHARP_REGULAR as libc::c_int
-        as usize] = Some(
-        prep_8tap_sharp_regular_c
-            as unsafe extern "C" fn(
-                *mut int16_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mct_scaled[FILTER_2D_8TAP_SHARP_REGULAR as libc::c_int
-        as usize] = Some(
-        prep_8tap_sharp_regular_scaled_c
-            as unsafe extern "C" fn(
-                *mut int16_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mc[FILTER_2D_8TAP_SHARP_SMOOTH as libc::c_int
-        as usize] = Some(
-        put_8tap_sharp_smooth_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mc_scaled[FILTER_2D_8TAP_SHARP_SMOOTH as libc::c_int
-        as usize] = Some(
-        put_8tap_sharp_smooth_scaled_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mct[FILTER_2D_8TAP_SHARP_SMOOTH as libc::c_int
-        as usize] = Some(
-        prep_8tap_sharp_smooth_c
-            as unsafe extern "C" fn(
-                *mut int16_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mct_scaled[FILTER_2D_8TAP_SHARP_SMOOTH as libc::c_int
-        as usize] = Some(
-        prep_8tap_sharp_smooth_scaled_c
-            as unsafe extern "C" fn(
-                *mut int16_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mc[FILTER_2D_8TAP_SHARP as libc::c_int
-        as usize] = Some(
-        put_8tap_sharp_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mc_scaled[FILTER_2D_8TAP_SHARP as libc::c_int
-        as usize] = Some(
-        put_8tap_sharp_scaled_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mct[FILTER_2D_8TAP_SHARP as libc::c_int
-        as usize] = Some(
-        prep_8tap_sharp_c
-            as unsafe extern "C" fn(
-                *mut int16_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mct_scaled[FILTER_2D_8TAP_SHARP as libc::c_int
-        as usize] = Some(
-        prep_8tap_sharp_scaled_c
-            as unsafe extern "C" fn(
-                *mut int16_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mc[FILTER_2D_8TAP_SMOOTH_REGULAR as libc::c_int
-        as usize] = Some(
-        put_8tap_smooth_regular_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mc_scaled[FILTER_2D_8TAP_SMOOTH_REGULAR as libc::c_int
-        as usize] = Some(
-        put_8tap_smooth_regular_scaled_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mct[FILTER_2D_8TAP_SMOOTH_REGULAR as libc::c_int
-        as usize] = Some(
-        prep_8tap_smooth_regular_c
-            as unsafe extern "C" fn(
-                *mut int16_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mct_scaled[FILTER_2D_8TAP_SMOOTH_REGULAR as libc::c_int
-        as usize] = Some(
-        prep_8tap_smooth_regular_scaled_c
-            as unsafe extern "C" fn(
-                *mut int16_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mc[FILTER_2D_8TAP_SMOOTH as libc::c_int
-        as usize] = Some(
-        put_8tap_smooth_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mc_scaled[FILTER_2D_8TAP_SMOOTH as libc::c_int
-        as usize] = Some(
-        put_8tap_smooth_scaled_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mct[FILTER_2D_8TAP_SMOOTH as libc::c_int
-        as usize] = Some(
-        prep_8tap_smooth_c
-            as unsafe extern "C" fn(
-                *mut int16_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mct_scaled[FILTER_2D_8TAP_SMOOTH as libc::c_int
-        as usize] = Some(
-        prep_8tap_smooth_scaled_c
-            as unsafe extern "C" fn(
-                *mut int16_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mc[FILTER_2D_8TAP_SMOOTH_SHARP as libc::c_int
-        as usize] = Some(
-        put_8tap_smooth_sharp_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mc_scaled[FILTER_2D_8TAP_SMOOTH_SHARP as libc::c_int
-        as usize] = Some(
-        put_8tap_smooth_sharp_scaled_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mct[FILTER_2D_8TAP_SMOOTH_SHARP as libc::c_int
-        as usize] = Some(
-        prep_8tap_smooth_sharp_c
-            as unsafe extern "C" fn(
-                *mut int16_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mct_scaled[FILTER_2D_8TAP_SMOOTH_SHARP as libc::c_int
-        as usize] = Some(
-        prep_8tap_smooth_sharp_scaled_c
-            as unsafe extern "C" fn(
-                *mut int16_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mc[FILTER_2D_BILINEAR as libc::c_int
-        as usize] = Some(
-        put_bilin_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mc_scaled[FILTER_2D_BILINEAR as libc::c_int
-        as usize] = Some(
-        put_bilin_scaled_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mct[FILTER_2D_BILINEAR as libc::c_int
-        as usize] = Some(
-        prep_bilin_c
-            as unsafe extern "C" fn(
-                *mut int16_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mct_scaled[FILTER_2D_BILINEAR as libc::c_int
-        as usize] = Some(
-        prep_bilin_scaled_c
-            as unsafe extern "C" fn(
-                *mut int16_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .avg = Some(
-        avg_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const int16_t,
-                *const int16_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .w_avg = Some(
-        w_avg_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const int16_t,
-                *const int16_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .mask = Some(
-        mask_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const int16_t,
-                *const int16_t,
-                libc::c_int,
-                libc::c_int,
-                *const uint8_t,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .blend = Some(
-        blend_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const pixel,
-                libc::c_int,
-                libc::c_int,
-                *const uint8_t,
-            ) -> (),
-    );
-    (*c)
-        .blend_v = Some(
-        blend_v_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const pixel,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .blend_h = Some(
-        blend_h_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const pixel,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .w_mask[0 as libc::c_int
-        as usize] = Some(
-        w_mask_444_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const int16_t,
-                *const int16_t,
-                libc::c_int,
-                libc::c_int,
-                *mut uint8_t,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .w_mask[1 as libc::c_int
-        as usize] = Some(
-        w_mask_422_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const int16_t,
-                *const int16_t,
-                libc::c_int,
-                libc::c_int,
-                *mut uint8_t,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .w_mask[2 as libc::c_int
-        as usize] = Some(
-        w_mask_420_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const int16_t,
-                *const int16_t,
-                libc::c_int,
-                libc::c_int,
-                *mut uint8_t,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .warp8x8 = Some(
-        warp_affine_8x8_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const pixel,
-                ptrdiff_t,
-                *const int16_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .warp8x8t = Some(
-        warp_affine_8x8t_c
-            as unsafe extern "C" fn(
-                *mut int16_t,
-                ptrdiff_t,
-                *const pixel,
-                ptrdiff_t,
-                *const int16_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
-    (*c)
-        .emu_edge = Some(
-        emu_edge_c
-            as unsafe extern "C" fn(
-                intptr_t,
-                intptr_t,
-                intptr_t,
-                intptr_t,
-                intptr_t,
-                intptr_t,
-                *mut pixel,
-                ptrdiff_t,
-                *const pixel,
-                ptrdiff_t,
-            ) -> (),
-    );
-    (*c)
-        .resize = Some(
-        resize_c
-            as unsafe extern "C" fn(
-                *mut pixel,
-                ptrdiff_t,
-                *const pixel,
-                ptrdiff_t,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
+    (*c).mc[FILTER_2D_8TAP_REGULAR as usize] = Some(put_8tap_regular_c);
+    (*c).mc[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = Some(put_8tap_regular_smooth_c);
+    (*c).mc[FILTER_2D_8TAP_REGULAR_SHARP as usize] = Some(put_8tap_regular_sharp_c);
+    (*c).mc[FILTER_2D_8TAP_SHARP_REGULAR as usize] = Some(put_8tap_sharp_regular_c);
+    (*c).mc[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(put_8tap_sharp_smooth_c);
+    (*c).mc[FILTER_2D_8TAP_SHARP as usize] = Some(put_8tap_sharp_c);
+    (*c).mc[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = Some(put_8tap_smooth_regular_c);
+    (*c).mc[FILTER_2D_8TAP_SMOOTH as usize] = Some(put_8tap_smooth_c);
+    (*c).mc[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(put_8tap_smooth_sharp_c);
+    (*c).mc[FILTER_2D_BILINEAR as usize] = Some(put_bilin_c);
+
+    (*c).mct[FILTER_2D_8TAP_REGULAR as usize] = Some(prep_8tap_regular_c);
+    (*c).mct[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = Some(prep_8tap_regular_smooth_c);
+    (*c).mct[FILTER_2D_8TAP_REGULAR_SHARP as usize] = Some(prep_8tap_regular_sharp_c);
+    (*c).mct[FILTER_2D_8TAP_SHARP_REGULAR as usize] = Some(prep_8tap_sharp_regular_c);
+    (*c).mct[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(prep_8tap_sharp_smooth_c);
+    (*c).mct[FILTER_2D_8TAP_SHARP as usize] = Some(prep_8tap_sharp_c);
+    (*c).mct[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = Some(prep_8tap_smooth_regular_c);
+    (*c).mct[FILTER_2D_8TAP_SMOOTH as usize] = Some(prep_8tap_smooth_c);
+    (*c).mct[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(prep_8tap_smooth_sharp_c);
+    (*c).mct[FILTER_2D_BILINEAR as usize] = Some(prep_bilin_c);
+
+    (*c).mc_scaled[FILTER_2D_8TAP_REGULAR as usize] = Some(put_8tap_regular_scaled_c);
+    (*c).mc_scaled[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = Some(put_8tap_regular_smooth_scaled_c);
+    (*c).mc_scaled[FILTER_2D_8TAP_REGULAR_SHARP as usize] = Some(put_8tap_regular_sharp_scaled_c);
+    (*c).mc_scaled[FILTER_2D_8TAP_SHARP_REGULAR as usize] = Some(put_8tap_sharp_regular_scaled_c);
+    (*c).mc_scaled[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(put_8tap_sharp_smooth_scaled_c);
+    (*c).mc_scaled[FILTER_2D_8TAP_SHARP as usize] = Some(put_8tap_sharp_scaled_c);
+    (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = Some(put_8tap_smooth_regular_scaled_c);
+    (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH as usize] = Some(put_8tap_smooth_scaled_c);
+    (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(put_8tap_smooth_sharp_scaled_c);
+    (*c).mc_scaled[FILTER_2D_BILINEAR as usize] = Some(put_bilin_scaled_c);
+
+    (*c).mct_scaled[FILTER_2D_8TAP_REGULAR as usize] = Some(prep_8tap_regular_scaled_c);
+    (*c).mct_scaled[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = Some(prep_8tap_regular_smooth_scaled_c);
+    (*c).mct_scaled[FILTER_2D_8TAP_REGULAR_SHARP as usize] = Some(prep_8tap_regular_sharp_scaled_c);
+    (*c).mct_scaled[FILTER_2D_8TAP_SHARP_REGULAR as usize] = Some(prep_8tap_sharp_regular_scaled_c);
+    (*c).mct_scaled[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(prep_8tap_sharp_smooth_scaled_c);
+    (*c).mct_scaled[FILTER_2D_8TAP_SHARP as usize] = Some(prep_8tap_sharp_scaled_c);
+    (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = Some(prep_8tap_smooth_regular_scaled_c);
+    (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH as usize] = Some(prep_8tap_smooth_scaled_c);
+    (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(prep_8tap_smooth_sharp_scaled_c);
+    (*c).mct_scaled[FILTER_2D_BILINEAR as usize] = Some(prep_bilin_scaled_c);
+
+    (*c).avg = Some(avg_c);
+    (*c).w_avg = Some(w_avg_c);
+    (*c).mask = Some(mask_c);
+
+    (*c).w_mask[0 as usize] = Some(w_mask_444_c);
+    (*c).w_mask[1 as usize] = Some(w_mask_422_c);
+    (*c).w_mask[2 as usize] = Some(w_mask_420_c);
+
+    (*c).blend = Some(blend_c);
+    (*c).blend_v = Some(blend_v_c);
+    (*c).blend_h = Some(blend_h_c);
+    (*c).warp8x8 = Some(warp_affine_8x8_c);
+    (*c).warp8x8t = Some(warp_affine_8x8t_c);
+    (*c).emu_edge = Some(emu_edge_c);
+    (*c).resize = Some(resize_c);
+
+    #[cfg(feature = "asm")]
+    cfg_if! {
+        if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
+            mc_dsp_init_x86(c);
+        } else if #[cfg(any(target_arch = "arm", target_arch = "aarch64"))] {
+            mc_dsp_init_arm(c);
+        }
+    }
 }

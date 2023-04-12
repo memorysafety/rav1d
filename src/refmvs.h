@@ -86,7 +86,7 @@ typedef struct refmvs_tile {
     const refmvs_frame *rf;
     refmvs_block *r[32 + 5];
     refmvs_temporal_block *rp_proj;
-    struct {
+    struct refmvs_tile_range {
         int start, end;
     } tile_col, tile_row;
 } refmvs_tile;

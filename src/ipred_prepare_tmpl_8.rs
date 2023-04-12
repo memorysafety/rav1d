@@ -14,7 +14,6 @@ extern "C" {
         _: libc::c_ulong,
     ) -> *mut libc::c_void;
 }
-
 pub type pixel = uint8_t;
 use crate::src::levels::IntraPredMode;
 
@@ -50,7 +49,7 @@ use crate::src::intra_edge::EDGE_I444_LEFT_HAS_BOTTOM;
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 #[derive(Copy, Clone, BitfieldStruct)]
 #[repr(C)]
-pub struct C2RustUnnamed {
+pub struct av1_intra_prediction_edge {
     #[bitfield(name = "needs_left", ty = "uint8_t", bits = "0..=0")]
     #[bitfield(name = "needs_top", ty = "uint8_t", bits = "1..=1")]
     #[bitfield(name = "needs_topleft", ty = "uint8_t", bits = "2..=2")]
@@ -93,7 +92,7 @@ static mut av1_mode_to_angle_map: [uint8_t; 8] = [
     203 as libc::c_int as uint8_t,
     67 as libc::c_int as uint8_t,
 ];
-static mut av1_intra_prediction_edges: [C2RustUnnamed; 14] = [C2RustUnnamed {
+static mut av1_intra_prediction_edges: [av1_intra_prediction_edge; 14] = [av1_intra_prediction_edge {
     needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
 }; 14];
 #[no_mangle]
@@ -173,7 +172,7 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
                         (sz - 1 as libc::c_int - i) as isize,
                     ) = *dst
                     .offset(
-                        (stride * i as libc::c_long - 1 as libc::c_int as libc::c_long)
+                        (stride * i as isize - 1)
                             as isize,
                     );
                 i += 1;
@@ -213,8 +212,8 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
                             -(i_0 + 1 as libc::c_int) as isize,
                         ) = *dst
                         .offset(
-                            ((sz + i_0) as libc::c_long * stride
-                                - 1 as libc::c_int as libc::c_long) as isize,
+                            ((sz + i_0) as isize * stride
+                                - 1 ) as isize,
                         );
                     i_0 += 1;
                 }
@@ -327,7 +326,7 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
 unsafe extern "C" fn run_static_initializers() {
     av1_intra_prediction_edges = [
         {
-            let mut init = C2RustUnnamed {
+            let mut init = av1_intra_prediction_edge {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
             init.set_needs_left(1 as libc::c_int as uint8_t);
@@ -338,7 +337,7 @@ unsafe extern "C" fn run_static_initializers() {
             init
         },
         {
-            let mut init = C2RustUnnamed {
+            let mut init = av1_intra_prediction_edge {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
             init.set_needs_left(0);
@@ -349,7 +348,7 @@ unsafe extern "C" fn run_static_initializers() {
             init
         },
         {
-            let mut init = C2RustUnnamed {
+            let mut init = av1_intra_prediction_edge {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
             init.set_needs_left(1 as libc::c_int as uint8_t);
@@ -360,7 +359,7 @@ unsafe extern "C" fn run_static_initializers() {
             init
         },
         {
-            let mut init = C2RustUnnamed {
+            let mut init = av1_intra_prediction_edge {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
             init.set_needs_left(1 as libc::c_int as uint8_t);
@@ -371,7 +370,7 @@ unsafe extern "C" fn run_static_initializers() {
             init
         },
         {
-            let mut init = C2RustUnnamed {
+            let mut init = av1_intra_prediction_edge {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
             init.set_needs_left(0);
@@ -382,7 +381,7 @@ unsafe extern "C" fn run_static_initializers() {
             init
         },
         {
-            let mut init = C2RustUnnamed {
+            let mut init = av1_intra_prediction_edge {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
             init.set_needs_left(0 as libc::c_int as uint8_t);
@@ -393,7 +392,7 @@ unsafe extern "C" fn run_static_initializers() {
             init
         },
         {
-            let mut init = C2RustUnnamed {
+            let mut init = av1_intra_prediction_edge {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
             init.set_needs_left(0);
@@ -404,7 +403,7 @@ unsafe extern "C" fn run_static_initializers() {
             init
         },
         {
-            let mut init = C2RustUnnamed {
+            let mut init = av1_intra_prediction_edge {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
             init.set_needs_left(1 as libc::c_int as uint8_t);
@@ -415,7 +414,7 @@ unsafe extern "C" fn run_static_initializers() {
             init
         },
         {
-            let mut init = C2RustUnnamed {
+            let mut init = av1_intra_prediction_edge {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
             init.set_needs_left(1 as libc::c_int as uint8_t);
@@ -426,7 +425,7 @@ unsafe extern "C" fn run_static_initializers() {
             init
         },
         {
-            let mut init = C2RustUnnamed {
+            let mut init = av1_intra_prediction_edge {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
             init.set_needs_left(1 as libc::c_int as uint8_t);
@@ -437,7 +436,7 @@ unsafe extern "C" fn run_static_initializers() {
             init
         },
         {
-            let mut init = C2RustUnnamed {
+            let mut init = av1_intra_prediction_edge {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
             init.set_needs_left(1 as libc::c_int as uint8_t);
@@ -448,7 +447,7 @@ unsafe extern "C" fn run_static_initializers() {
             init
         },
         {
-            let mut init = C2RustUnnamed {
+            let mut init = av1_intra_prediction_edge {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
             init.set_needs_left(1 as libc::c_int as uint8_t);
@@ -459,7 +458,7 @@ unsafe extern "C" fn run_static_initializers() {
             init
         },
         {
-            let mut init = C2RustUnnamed {
+            let mut init = av1_intra_prediction_edge {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
             init.set_needs_left(1 as libc::c_int as uint8_t);
@@ -470,7 +469,7 @@ unsafe extern "C" fn run_static_initializers() {
             init
         },
         {
-            let mut init = C2RustUnnamed {
+            let mut init = av1_intra_prediction_edge {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
             init.set_needs_left(1 as libc::c_int as uint8_t);

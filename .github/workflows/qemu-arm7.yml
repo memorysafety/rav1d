@@ -1,16 +1,16 @@
-name: build and test on aarch64 with QEMU
+name: build and test on arm7 with QEMU
 on: [push, pull_request]
 jobs:
-  test-on-qemu-linux-aarch64:
+  test-on-qemu-linux-arm7:
     runs-on: ubuntu-latest
-    name: test on debian-bullseye-aarch64
+    name: test on debian-bullseye-arm7
     steps:
       - name: install prerequisites
         run: |
           # make sure we don't silently continue
           set -euo pipefail
           sudo apt-get update --quiet=2
-          sudo apt-get install --yes g++-aarch64-linux-gnu libc6-dev-arm64-cross
+          sudo apt-get install --yes g++-arm-linux-gnueabihf libc6-dev-armhf-cross
       - name: git checkout
         uses: actions/checkout@v3
         with:
@@ -18,7 +18,7 @@ jobs:
       - name: set up qemu
         uses: docker/setup-qemu-action@v2
         with:
-          platforms: arm64
+          platforms: arm
       - name: cache rust dependencies
         uses: actions/cache@v3
         with:
@@ -28,24 +28,25 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: aarch64-unknown-linux-gnu-cargo-and-target-${{ hashFiles('**/Cargo.lock') }}
+          key: arm7-unknown-linux-gnu-cargo-and-target-${{ hashFiles('**/Cargo.lock') }}
       # - name: cache dav1d object files
       #   uses: actions/cache@v3
       #   with:
       #     path: build/
       #     key: aarch64-unknown-linux-gnu-c-object-files-${{ hashFiles('**/meson.build', '**/*.c', '**/*.h') }}
-      - name: cargo build for aarch64-unknown-linux-gnu
+      - name: cargo build for armv7-unknown-linux-gnueabihf
         run: |
-          rustup target add aarch64-unknown-linux-gnu
-          cargo build --release --target aarch64-unknown-linux-gnu
-          ln -f target/aarch64-unknown-linux-gnu/release/dav1d target/release/dav1d
+          rustup target add armv7-unknown-linux-gnueabihf
+          cargo build --release --target armv7-unknown-linux-gnueabihf \
+            --no-default-features  --features bitdepth_8,bitdepth_16
+          ln -f target/armv7-unknown-linux-gnueabihf/release/dav1d target/release/dav1d
         env:
-          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
-          CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
-          CXX_aarch64_unknown_linux_gnu: aarch64-linux-gnu-g++
+          CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER: arm-linux-gnueabihf-gcc
+          CC_armv7_unknown_linux_gnueabihf: arm-linux-gnueabihf-gcc
+          CXX_armv7_unknown_linux_gnueabihf: arm-linux-gnueabihf-g++
           RUSTFLAGS: '-C target-feature=+crt-static'
       - name: docker pull
-        run: docker pull ghcr.io/immunant/rav1d/debian-bullseye-aarch64:latest
+        run: docker pull ghcr.io/immunant/rav1d/debian-bullseye-arm7:latest
       - name: build and run tests in docker
         run: |
           docker run \
@@ -54,9 +55,9 @@ jobs:
             -v ~/.cargo/registry:/home/prossimo/.cargo/registry \
             -v $(pwd):/${{ github.workspace }} \
             -w ${{ github.workspace }} \
-            --platform linux/arm64 \
-            ghcr.io/immunant/rav1d/debian-bullseye-aarch64:latest \
-            .github/workflows/test.sh
+            --platform linux/arm/v7 \
+            ghcr.io/immunant/rav1d/debian-bullseye-arm7:latest \
+            .github/workflows/test.sh -t 2
       - name: upload build artifacts
         uses: actions/upload-artifact@v3
         with:

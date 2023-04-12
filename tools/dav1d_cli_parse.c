@@ -44,7 +44,7 @@
 
 static const char short_opts[] = "i:o:vql:s:";
 
-enum {
+enum arg {
     ARG_DEMUXER = 256,
     ARG_MUXER,
     ARG_FRAME_TIMES,

@@ -9,32 +9,14 @@ use crate::include::dav1d::headers::DAV1D_FILTER_BILINEAR;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SHARP;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SMOOTH;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
-use crate::include::dav1d::headers::Dav1dWarpedMotionType;
+
 
 
 
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_IDENTITY;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dWarpedMotionParams {
-    pub type_0: Dav1dWarpedMotionType,
-    pub matrix: [int32_t; 6],
-    pub u: C2RustUnnamed,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union C2RustUnnamed {
-    pub p: C2RustUnnamed_0,
-    pub abcd: [int16_t; 4],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_0 {
-    pub alpha: int16_t,
-    pub beta: int16_t,
-    pub gamma: int16_t,
-    pub delta: int16_t,
-}
+use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
+use crate::include::dav1d::headers::Dav1dWarpedMotionParams_u;
+use crate::include::dav1d::headers::Dav1dWarpedMotionParams_u_p;
 
 
 use crate::src::levels::TX_64X64;
@@ -1286,9 +1268,9 @@ pub static mut dav1d_default_wm_params: Dav1dWarpedMotionParams = {
             0 as libc::c_int,
             (1 as libc::c_int) << 16 as libc::c_int,
         ],
-        u: C2RustUnnamed {
+        u: Dav1dWarpedMotionParams_u {
             p: {
-                let mut init = C2RustUnnamed_0 {
+                let mut init = Dav1dWarpedMotionParams_u_p {
                     alpha: 0 as libc::c_int as int16_t,
                     beta: 0 as libc::c_int as int16_t,
                     gamma: 0 as libc::c_int as int16_t,

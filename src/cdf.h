@@ -131,7 +131,7 @@ typedef struct CdfContext {
 
 typedef struct CdfThreadContext {
     Dav1dRef *ref; ///< allocation origin
-    union {
+    union CdfThreadContext_data {
         CdfContext *cdf; // if ref != NULL
         unsigned qcat; // if ref == NULL, from static CDF tables
     } data;

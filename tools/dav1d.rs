@@ -9,7 +9,7 @@ extern "C" {
     pub type Dav1dContext;
     pub type DemuxerContext;
     pub type MuxerContext;
-    fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
+    fn malloc(_: size_t) -> *mut libc::c_void;
     fn free(_: *mut libc::c_void);
     fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
     fn fflush(__stream: *mut libc::FILE) -> libc::c_int;
@@ -26,7 +26,7 @@ extern "C" {
     fn memset(
         _: *mut libc::c_void,
         _: libc::c_int,
-        _: libc::c_ulong,
+        _: size_t,
     ) -> *mut libc::c_void;
     fn strcmp(_: *const libc::c_char, _: *const libc::c_char) -> libc::c_int;
     fn strerror(_: libc::c_int) -> *mut libc::c_char;
@@ -91,12 +91,12 @@ use crate::include::time::timespec;
 
 use crate::include::dav1d::common::Dav1dUserData;
 use crate::include::dav1d::common::Dav1dDataProps;
-use crate::include::dav1d::headers::Dav1dTxfmMode;
 
 
 
 
-use crate::include::dav1d::headers::Dav1dFilterMode;
+
+
 
 
 
@@ -108,43 +108,25 @@ use crate::include::dav1d::headers::Dav1dFilterMode;
 
 
 use crate::include::dav1d::headers::DAV1D_OFF;
-use crate::include::dav1d::headers::Dav1dRestorationType;
 
 
 
 
-use crate::include::dav1d::headers::Dav1dWarpedMotionType;
 
 
 
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dWarpedMotionParams {
-    pub type_0: Dav1dWarpedMotionType,
-    pub matrix: [int32_t; 6],
-    pub u: C2RustUnnamed,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union C2RustUnnamed {
-    pub p: C2RustUnnamed_0,
-    pub abcd: [int16_t; 4],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_0 {
-    pub alpha: int16_t,
-    pub beta: int16_t,
-    pub gamma: int16_t,
-    pub delta: int16_t,
-}
+
+
+
+
+
 
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
-use crate::include::dav1d::headers::Dav1dFrameType;
+
 
 
 
@@ -209,197 +191,25 @@ use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Dav1dSequenceHeaderOperatingParameterInfo;
 use crate::include::dav1d::headers::Dav1dSequenceHeaderOperatingPoint;
 
-use crate::include::dav1d::headers::Dav1dSegmentationDataSet;
-use crate::include::dav1d::headers::Dav1dLoopfilterModeRefDeltas;
-use crate::include::dav1d::headers::Dav1dFilmGrainData;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFrameHeader {
-    pub film_grain: C2RustUnnamed_11,
-    pub frame_type: Dav1dFrameType,
-    pub width: [libc::c_int; 2],
-    pub height: libc::c_int,
-    pub frame_offset: libc::c_int,
-    pub temporal_id: libc::c_int,
-    pub spatial_id: libc::c_int,
-    pub show_existing_frame: libc::c_int,
-    pub existing_frame_idx: libc::c_int,
-    pub frame_id: libc::c_int,
-    pub frame_presentation_delay: libc::c_int,
-    pub show_frame: libc::c_int,
-    pub showable_frame: libc::c_int,
-    pub error_resilient_mode: libc::c_int,
-    pub disable_cdf_update: libc::c_int,
-    pub allow_screen_content_tools: libc::c_int,
-    pub force_integer_mv: libc::c_int,
-    pub frame_size_override: libc::c_int,
-    pub primary_ref_frame: libc::c_int,
-    pub buffer_removal_time_present: libc::c_int,
-    pub operating_points: [Dav1dFrameHeaderOperatingPoint; 32],
-    pub refresh_frame_flags: libc::c_int,
-    pub render_width: libc::c_int,
-    pub render_height: libc::c_int,
-    pub super_res: C2RustUnnamed_10,
-    pub have_render_size: libc::c_int,
-    pub allow_intrabc: libc::c_int,
-    pub frame_ref_short_signaling: libc::c_int,
-    pub refidx: [libc::c_int; 7],
-    pub hp: libc::c_int,
-    pub subpel_filter_mode: Dav1dFilterMode,
-    pub switchable_motion_mode: libc::c_int,
-    pub use_ref_frame_mvs: libc::c_int,
-    pub refresh_context: libc::c_int,
-    pub tiling: C2RustUnnamed_9,
-    pub quant: C2RustUnnamed_8,
-    pub segmentation: C2RustUnnamed_7,
-    pub delta: C2RustUnnamed_4,
-    pub all_lossless: libc::c_int,
-    pub loopfilter: C2RustUnnamed_3,
-    pub cdef: C2RustUnnamed_2,
-    pub restoration: C2RustUnnamed_1,
-    pub txfm_mode: Dav1dTxfmMode,
-    pub switchable_comp_refs: libc::c_int,
-    pub skip_mode_allowed: libc::c_int,
-    pub skip_mode_enabled: libc::c_int,
-    pub skip_mode_refs: [libc::c_int; 2],
-    pub warp_motion: libc::c_int,
-    pub reduced_txtp_set: libc::c_int,
-    pub gmv: [Dav1dWarpedMotionParams; 7],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_1 {
-    pub type_0: [Dav1dRestorationType; 3],
-    pub unit_size: [libc::c_int; 2],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_2 {
-    pub damping: libc::c_int,
-    pub n_bits: libc::c_int,
-    pub y_strength: [libc::c_int; 8],
-    pub uv_strength: [libc::c_int; 8],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_3 {
-    pub level_y: [libc::c_int; 2],
-    pub level_u: libc::c_int,
-    pub level_v: libc::c_int,
-    pub mode_ref_delta_enabled: libc::c_int,
-    pub mode_ref_delta_update: libc::c_int,
-    pub mode_ref_deltas: Dav1dLoopfilterModeRefDeltas,
-    pub sharpness: libc::c_int,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_4 {
-    pub q: C2RustUnnamed_6,
-    pub lf: C2RustUnnamed_5,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_5 {
-    pub present: libc::c_int,
-    pub res_log2: libc::c_int,
-    pub multi: libc::c_int,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_6 {
-    pub present: libc::c_int,
-    pub res_log2: libc::c_int,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_7 {
-    pub enabled: libc::c_int,
-    pub update_map: libc::c_int,
-    pub temporal: libc::c_int,
-    pub update_data: libc::c_int,
-    pub seg_data: Dav1dSegmentationDataSet,
-    pub lossless: [libc::c_int; 8],
-    pub qidx: [libc::c_int; 8],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_8 {
-    pub yac: libc::c_int,
-    pub ydc_delta: libc::c_int,
-    pub udc_delta: libc::c_int,
-    pub uac_delta: libc::c_int,
-    pub vdc_delta: libc::c_int,
-    pub vac_delta: libc::c_int,
-    pub qm: libc::c_int,
-    pub qm_y: libc::c_int,
-    pub qm_u: libc::c_int,
-    pub qm_v: libc::c_int,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_9 {
-    pub uniform: libc::c_int,
-    pub n_bytes: libc::c_uint,
-    pub min_log2_cols: libc::c_int,
-    pub max_log2_cols: libc::c_int,
-    pub log2_cols: libc::c_int,
-    pub cols: libc::c_int,
-    pub min_log2_rows: libc::c_int,
-    pub max_log2_rows: libc::c_int,
-    pub log2_rows: libc::c_int,
-    pub rows: libc::c_int,
-    pub col_start_sb: [uint16_t; 65],
-    pub row_start_sb: [uint16_t; 65],
-    pub update: libc::c_int,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_10 {
-    pub width_scale_denominator: libc::c_int,
-    pub enabled: libc::c_int,
-}
-use crate::include::dav1d::headers::Dav1dFrameHeaderOperatingPoint;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_11 {
-    pub data: Dav1dFilmGrainData,
-    pub present: libc::c_int,
-    pub update: libc::c_int,
-}
+
+
+
+use crate::include::dav1d::headers::Dav1dFrameHeader;
+
+
+
+
+
+
+
+
+
+
+
+
 use crate::include::dav1d::picture::Dav1dPictureParameters;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dPicture {
-    pub seq_hdr: *mut Dav1dSequenceHeader,
-    pub frame_hdr: *mut Dav1dFrameHeader,
-    pub data: [*mut libc::c_void; 3],
-    pub stride: [ptrdiff_t; 2],
-    pub p: Dav1dPictureParameters,
-    pub m: Dav1dDataProps,
-    pub content_light: *mut Dav1dContentLightLevel,
-    pub mastering_display: *mut Dav1dMasteringDisplay,
-    pub itut_t35: *mut Dav1dITUTT35,
-    pub reserved: [uintptr_t; 4],
-    pub frame_hdr_ref: *mut Dav1dRef,
-    pub seq_hdr_ref: *mut Dav1dRef,
-    pub content_light_ref: *mut Dav1dRef,
-    pub mastering_display_ref: *mut Dav1dRef,
-    pub itut_t35_ref: *mut Dav1dRef,
-    pub reserved_ref: [uintptr_t; 4],
-    pub ref_0: *mut Dav1dRef,
-    pub allocator_data: *mut libc::c_void,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dPicAllocator {
-    pub cookie: *mut libc::c_void,
-    pub alloc_picture_callback: Option::<
-        unsafe extern "C" fn(*mut Dav1dPicture, *mut libc::c_void) -> libc::c_int,
-    >,
-    pub release_picture_callback: Option::<
-        unsafe extern "C" fn(*mut Dav1dPicture, *mut libc::c_void) -> (),
-    >,
-}
+use crate::include::dav1d::picture::Dav1dPicture;
+use crate::include::dav1d::picture::Dav1dPicAllocator;
 use crate::include::dav1d::data::Dav1dData;
 use crate::include::dav1d::dav1d::Dav1dLogger;
 use crate::include::dav1d::dav1d::Dav1dInloopFilterType;
@@ -442,15 +252,15 @@ pub struct CLISettings {
     pub limit: libc::c_uint,
     pub skip: libc::c_uint,
     pub quiet: libc::c_int,
-    pub realtime: C2RustUnnamed_12,
+    pub realtime: CLISettings_realtime,
     pub realtime_fps: libc::c_double,
     pub realtime_cache: libc::c_uint,
     pub neg_stride: libc::c_int,
 }
-pub type C2RustUnnamed_12 = libc::c_uint;
-pub const REALTIME_CUSTOM: C2RustUnnamed_12 = 2;
-pub const REALTIME_INPUT: C2RustUnnamed_12 = 1;
-pub const REALTIME_DISABLE: C2RustUnnamed_12 = 0;
+pub type CLISettings_realtime = libc::c_uint;
+pub const REALTIME_CUSTOM: CLISettings_realtime = 2;
+pub const REALTIME_INPUT: CLISettings_realtime = 1;
+pub const REALTIME_DISABLE: CLISettings_realtime = 0;
 unsafe extern "C" fn get_time_nanos() -> uint64_t {
     let mut ts: timespec = timespec { tv_sec: 0, tv_nsec: 0 };
     clock_gettime(1 as libc::c_int, &mut ts);
@@ -461,8 +271,8 @@ unsafe extern "C" fn get_time_nanos() -> uint64_t {
 unsafe extern "C" fn sleep_nanos(mut d: uint64_t) {
     let ts: timespec = {
         let mut init = timespec {
-            tv_sec: d.wrapping_div(1000000000 as libc::c_int as libc::c_ulong) as time_t,
-            tv_nsec: d.wrapping_rem(1000000000 as libc::c_int as libc::c_ulong)
+            tv_sec: d.wrapping_div(1000000000 as uint64_t) as time_t,
+            tv_nsec: d.wrapping_rem(1000000000 as uint64_t)
                 as __syscall_slong_t,
         };
         init
@@ -482,12 +292,12 @@ unsafe extern "C" fn synchronize(
     let last: uint64_t = *elapsed;
     *elapsed = tcurr.wrapping_sub(tfirst);
     if realtime != 0 {
-        let deadline: uint64_t = nspf.wrapping_mul(n_out as libc::c_ulong);
+        let deadline: uint64_t = nspf.wrapping_mul(n_out as uint64_t);
         if *elapsed < deadline {
             let remaining: uint64_t = deadline.wrapping_sub(*elapsed);
-            if remaining > nspf.wrapping_mul(cache as libc::c_ulong) {
+            if remaining > nspf.wrapping_mul(cache as uint64_t) {
                 sleep_nanos(
-                    remaining.wrapping_sub(nspf.wrapping_mul(cache as libc::c_ulong)),
+                    remaining.wrapping_sub(nspf.wrapping_mul(cache as uint64_t)),
                 );
             }
             *elapsed = deadline;
@@ -596,22 +406,21 @@ unsafe extern "C" fn picture_alloc(
     let mut uv_stride: ptrdiff_t = if has_chroma != 0 {
         y_stride >> ss_hor
     } else {
-        0 as libc::c_int as libc::c_long
+        0
     };
-    if y_stride & 1023 as libc::c_int as libc::c_long == 0 {
-        y_stride += 64 as libc::c_int as libc::c_long;
+    if y_stride & 1023 == 0 {
+        y_stride += 64;
     }
-    if uv_stride & 1023 as libc::c_int as libc::c_long == 0 && has_chroma != 0 {
-        uv_stride += 64 as libc::c_int as libc::c_long;
+    if uv_stride & 1023 == 0 && has_chroma != 0 {
+        uv_stride += 64;
     }
     (*p).stride[0 as libc::c_int as usize] = -y_stride;
     (*p).stride[1 as libc::c_int as usize] = -uv_stride;
-    let y_sz: size_t = (y_stride * aligned_h as libc::c_long) as size_t;
-    let uv_sz: size_t = (uv_stride * (aligned_h >> ss_ver) as libc::c_long) as size_t;
-    let pic_size: size_t = y_sz
-        .wrapping_add((2 as libc::c_int as libc::c_ulong).wrapping_mul(uv_sz));
+    let y_sz: size_t = (y_stride * aligned_h as isize) as size_t;
+    let uv_sz: size_t = (uv_stride * (aligned_h >> ss_ver) as isize) as size_t;
+    let pic_size: size_t = y_sz.wrapping_add(2 * uv_sz);
     let buf: *mut uint8_t = malloc(
-        pic_size.wrapping_add((64 as libc::c_int * 2 as libc::c_int) as libc::c_ulong),
+        pic_size.wrapping_add(64),
     ) as *mut uint8_t;
     if buf.is_null() {
         return -(12 as libc::c_int);
@@ -627,7 +436,7 @@ unsafe extern "C" fn picture_alloc(
         .data[1 as libc::c_int
         as usize] = (if has_chroma != 0 {
         data.offset(y_sz as isize)
-            .offset(uv_sz.wrapping_mul(1 as libc::c_int as libc::c_ulong) as isize)
+            .offset(uv_sz.wrapping_mul(1) as isize)
             .offset(-(uv_stride as isize))
     } else {
         0 as *mut uint8_t
@@ -636,7 +445,7 @@ unsafe extern "C" fn picture_alloc(
         .data[2 as libc::c_int
         as usize] = (if has_chroma != 0 {
         data.offset(y_sz as isize)
-            .offset(uv_sz.wrapping_mul(2 as libc::c_int as libc::c_ulong) as isize)
+            .offset(uv_sz.wrapping_mul(2) as isize)
             .offset(-(uv_stride as isize))
     } else {
         0 as *mut uint8_t
@@ -931,7 +740,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
         memset(
             &mut p as *mut Dav1dPicture as *mut libc::c_void,
             0 as libc::c_int,
-            ::core::mem::size_of::<Dav1dPicture>() as libc::c_ulong,
+            ::core::mem::size_of::<Dav1dPicture>(),
         );
         res = dav1d_send_data(c, &mut data);
         if res < 0 as libc::c_int {
@@ -999,13 +808,13 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
         if cli_settings.limit != 0 && n_out == cli_settings.limit {
             break;
         }
-        if !(data.sz > 0 as libc::c_int as libc::c_ulong
+        if !(data.sz > 0
             || input_read(in_0, &mut data) == 0)
         {
             break;
         }
     }
-    if data.sz > 0 as libc::c_int as libc::c_ulong {
+    if data.sz > 0 {
         dav1d_data_unref(&mut data);
     }
     if res == 0 as libc::c_int {
