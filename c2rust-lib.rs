@@ -61,6 +61,7 @@ pub mod env;
 pub mod fg_apply_tmpl_16;
 #[cfg(feature = "bitdepth_8")]
 pub mod fg_apply_tmpl_8;
+pub mod filmgrain;
 #[cfg(feature = "bitdepth_16")]
 pub mod filmgrain_tmpl_16;
 #[cfg(feature = "bitdepth_8")]
