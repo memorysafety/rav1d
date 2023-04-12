@@ -915,10 +915,7 @@ unsafe extern "C" fn freep(mut ptr: *mut libc::c_void) {
         *mem = 0 as *mut libc::c_void;
     }
 }
-#[inline]
-unsafe extern "C" fn dav1d_free_aligned(mut ptr: *mut libc::c_void) {
-    free(ptr);
-}
+use crate::src::mem::dav1d_free_aligned;
 #[inline]
 unsafe extern "C" fn dav1d_freep_aligned(mut ptr: *mut libc::c_void) {
     let mut mem: *mut *mut libc::c_void = ptr as *mut *mut libc::c_void;

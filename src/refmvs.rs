@@ -310,10 +310,7 @@ unsafe extern "C" fn dav1d_freep_aligned(mut ptr: *mut libc::c_void) {
         *mem = 0 as *mut libc::c_void;
     }
 }
-#[inline]
-unsafe extern "C" fn dav1d_free_aligned(mut ptr: *mut libc::c_void) {
-    free(ptr);
-}
+use crate::src::mem::dav1d_free_aligned;
 use crate::src::mem::dav1d_alloc_aligned;
 unsafe extern "C" fn add_spatial_candidate(
     mvstack: *mut refmvs_candidate,

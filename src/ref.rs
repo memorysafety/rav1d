@@ -32,10 +32,7 @@ use crate::include::stdatomic::atomic_int;
 use crate::src::mem::Dav1dMemPoolBuffer;
 use crate::src::mem::Dav1dMemPool;
 use crate::src::mem::dav1d_alloc_aligned;
-#[inline]
-unsafe extern "C" fn dav1d_free_aligned(mut ptr: *mut libc::c_void) {
-    free(ptr);
-}
+use crate::src::mem::dav1d_free_aligned;
 unsafe extern "C" fn default_free_callback(
     data: *const uint8_t,
     user_data: *mut libc::c_void,

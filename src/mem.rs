@@ -35,10 +35,6 @@ pub struct Dav1dMemPoolBuffer {
     pub next: *mut Dav1dMemPoolBuffer,
 }
 use crate::include::pthread::pthread_mutexattr_t;
-#[inline]
-unsafe extern "C" fn dav1d_free_aligned(mut ptr: *mut libc::c_void) {
-    free(ptr);
-}
 
 #[inline]
 pub unsafe extern "C" fn dav1d_alloc_aligned(
@@ -53,6 +49,11 @@ pub unsafe extern "C" fn dav1d_alloc_aligned(
         return 0 as *mut libc::c_void;
     }
     return ptr;
+}
+
+#[inline]
+pub unsafe extern "C" fn dav1d_free_aligned(mut ptr: *mut libc::c_void) {
+    free(ptr);
 }
 
 #[cold]

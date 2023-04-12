@@ -1180,10 +1180,7 @@ use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::apply_sign64;
 use crate::include::common::intops::ulog2;
 use crate::src::mem::dav1d_alloc_aligned;
-#[inline]
-unsafe extern "C" fn dav1d_free_aligned(mut ptr: *mut libc::c_void) {
-    free(ptr);
-}
+use crate::src::mem::dav1d_free_aligned;
 #[inline]
 unsafe extern "C" fn dav1d_freep_aligned(mut ptr: *mut libc::c_void) {
     let mut mem: *mut *mut libc::c_void = ptr as *mut *mut libc::c_void;
