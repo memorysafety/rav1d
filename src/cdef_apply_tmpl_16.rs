@@ -289,20 +289,8 @@ pub struct Dav1dFrameContext_frame_thread {
     pub tile_start_off: *mut libc::c_int,
 }
 use crate::src::internal::CodedBlockInfo;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Av1Block {
-    pub bl: uint8_t,
-    pub bs: uint8_t,
-    pub bp: uint8_t,
-    pub intra: uint8_t,
-    pub seg_id: uint8_t,
-    pub skip_mode: uint8_t,
-    pub skip: uint8_t,
-    pub uvtx: uint8_t,
-    pub c2rust_unnamed: Av1Block_intra_inter,
-}
-use crate::src::levels::Av1Block_intra_inter;
+use crate::src::levels::Av1Block;
+
 
 
 
