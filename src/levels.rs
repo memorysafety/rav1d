@@ -258,3 +258,17 @@ pub union Av1Block_intra_inter {
     pub c2rust_unnamed: Av1Block_intra,
     pub c2rust_unnamed_0: Av1Block_inter,
 }
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Av1Block {
+    pub bl: uint8_t,
+    pub bs: uint8_t,
+    pub bp: uint8_t,
+    pub intra: uint8_t,
+    pub seg_id: uint8_t,
+    pub skip_mode: uint8_t,
+    pub skip: uint8_t,
+    pub uvtx: uint8_t,
+    pub c2rust_unnamed: Av1Block_intra_inter,
+}
