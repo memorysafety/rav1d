@@ -93,14 +93,7 @@ unsafe extern "C" fn ctz(mask: libc::c_uint) -> libc::c_int {
 }
 use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
-#[inline]
-unsafe extern "C" fn iclip(
-    v: libc::c_int,
-    min: libc::c_int,
-    max: libc::c_int,
-) -> libc::c_int {
-    return if v < min { min } else if v > max { max } else { v };
-}
+use crate::include::common::intops::iclip;
 #[inline]
 unsafe extern "C" fn apply_sign(v: libc::c_int, s: libc::c_int) -> libc::c_int {
     return if s < 0 as libc::c_int { -v } else { v };

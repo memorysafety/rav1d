@@ -338,14 +338,7 @@ pub struct Dav1dLoopRestorationDSPContext {
 }
 use crate::include::common::intops::imax;
 use crate::include::common::intops::umin;
-#[inline]
-unsafe extern "C" fn iclip(
-    v: libc::c_int,
-    min: libc::c_int,
-    max: libc::c_int,
-) -> libc::c_int {
-    return if v < min { min } else if v > max { max } else { v };
-}
+use crate::include::common::intops::iclip;
 #[inline]
 unsafe extern "C" fn iclip_u8(v: libc::c_int) -> libc::c_int {
     return iclip(v, 0 as libc::c_int, 255 as libc::c_int);

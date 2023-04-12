@@ -4909,16 +4909,7 @@ pub type itx_1d_fn =
 pub type CpuFlags = libc::c_uint;
 pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
 use crate::include::common::intops::imin;
-#[inline]
-unsafe extern "C" fn iclip(v: libc::c_int, min: libc::c_int, max: libc::c_int) -> libc::c_int {
-    return if v < min {
-        min
-    } else if v > max {
-        max
-    } else {
-        v
-    };
-}
+use crate::include::common::intops::iclip;
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     if x & 1 != 0 {

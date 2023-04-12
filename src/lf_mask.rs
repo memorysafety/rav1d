@@ -64,14 +64,7 @@ pub struct Av1Restoration {
     pub lr: [[Av1RestorationUnit; 4]; 3],
 }
 use crate::src::tables::TxfmInfo;
-#[inline]
-unsafe extern "C" fn iclip(
-    v: libc::c_int,
-    min: libc::c_int,
-    max: libc::c_int,
-) -> libc::c_int {
-    return if v < min { min } else if v > max { max } else { v };
-}
+use crate::include::common::intops::iclip;
 use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
 unsafe extern "C" fn decomp_tx(

@@ -19,14 +19,7 @@ unsafe extern "C" fn clz(mask: libc::c_uint) -> libc::c_int {
 unsafe extern "C" fn clzll(mask: libc::c_ulonglong) -> libc::c_int {
     return mask.leading_zeros() as i32;
 }
-#[inline]
-unsafe extern "C" fn iclip(
-    v: libc::c_int,
-    min: libc::c_int,
-    max: libc::c_int,
-) -> libc::c_int {
-    return if v < min { min } else if v > max { max } else { v };
-}
+use crate::include::common::intops::iclip;
 #[inline]
 unsafe extern "C" fn apply_sign64(v: libc::c_int, s: int64_t) -> libc::c_int {
     return if s < 0 { -v } else { v };
