@@ -9,10 +9,7 @@ use crate::src::levels::mv;
 
 use crate::include::common::intops::apply_sign;
 use crate::include::common::attributes::clz;
-#[inline]
-unsafe extern "C" fn clzll(mask: libc::c_ulonglong) -> libc::c_int {
-    return mask.leading_zeros() as i32;
-}
+use crate::include::common::attributes::clzll;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::apply_sign64;
 #[inline]
