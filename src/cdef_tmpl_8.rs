@@ -312,10 +312,7 @@ unsafe extern "C" fn clz(mask: libc::c_uint) -> libc::c_int {
     return mask.leading_zeros() as i32;
 }
 use crate::include::common::intops::imin;
-#[inline]
-unsafe extern "C" fn umin(a: libc::c_uint, b: libc::c_uint) -> libc::c_uint {
-    return if a < b { a } else { b };
-}
+use crate::include::common::intops::umin;
 #[inline]
 unsafe extern "C" fn iclip(
     v: libc::c_int,

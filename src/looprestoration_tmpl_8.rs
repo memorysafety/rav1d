@@ -337,10 +337,7 @@ pub struct Dav1dLoopRestorationDSPContext {
     pub sgr: [looprestorationfilter_fn; 3],
 }
 use crate::include::common::intops::imax;
-#[inline]
-unsafe extern "C" fn umin(a: libc::c_uint, b: libc::c_uint) -> libc::c_uint {
-    return if a < b { a } else { b };
-}
+use crate::include::common::intops::umin;
 #[inline]
 unsafe extern "C" fn iclip(
     v: libc::c_int,

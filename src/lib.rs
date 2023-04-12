@@ -904,10 +904,7 @@ use crate::include::pthread::pthread_condattr_t;
 use crate::include::pthread::pthread_mutexattr_t;
 
 use crate::include::pthread::pthread_once_t;
-#[inline]
-unsafe extern "C" fn umin(a: libc::c_uint, b: libc::c_uint) -> libc::c_uint {
-    return if a < b { a } else { b };
-}
+use crate::include::common::intops::umin;
 #[inline]
 unsafe extern "C" fn iclip(
     v: libc::c_int,
