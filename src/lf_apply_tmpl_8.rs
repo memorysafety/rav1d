@@ -1052,15 +1052,7 @@ pub struct Dav1dContext_refs {
     pub refmvs: *mut Dav1dRef,
     pub refpoc: [libc::c_uint; 7],
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dThreadPicture {
-    pub p: Dav1dPicture,
-    pub visible: libc::c_int,
-    pub showable: libc::c_int,
-    pub flags: PictureFlags,
-    pub progress: *mut atomic_uint,
-}
+use crate::src::picture::Dav1dThreadPicture;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContext_frame_thread {
