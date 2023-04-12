@@ -73,10 +73,7 @@ unsafe extern "C" fn iclip(
     return if v < min { min } else if v > max { max } else { v };
 }
 use crate::include::common::intops::imax;
-#[inline]
-unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a < b { a } else { b };
-}
+use crate::include::common::intops::imin;
 unsafe extern "C" fn decomp_tx(
     txa: *mut [[[uint8_t; 32]; 32]; 2],
     from: RectTxfmSize,

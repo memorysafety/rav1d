@@ -40,10 +40,7 @@ pub struct av1_intra_prediction_edge {
 unsafe extern "C" fn clz(mask: libc::c_uint) -> libc::c_int {
     return mask.leading_zeros() as i32;
 }
-#[inline]
-unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a < b { a } else { b };
-}
+use crate::include::common::intops::imin;
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     if x & 1 != 0 {

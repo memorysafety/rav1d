@@ -702,10 +702,7 @@ use crate::src::lr_apply::LR_RESTORE_V;
 use crate::src::lr_apply::LR_RESTORE_U;
 use crate::src::lr_apply::LR_RESTORE_Y;
 
-#[inline]
-unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a < b { a } else { b };
-}
+use crate::include::common::intops::imin;
 unsafe extern "C" fn backup_lpf(
     f: *const Dav1dFrameContext,
     mut dst: *mut pixel,

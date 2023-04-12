@@ -2036,10 +2036,7 @@ pub struct Dav1dMCDSPContext {
     pub emu_edge: emu_edge_fn,
     pub resize: resize_fn,
 }
-#[inline]
-unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a < b { a } else { b };
-}
+use crate::include::common::intops::imin;
 #[inline]
 unsafe extern "C" fn iclip(
     v: libc::c_int,

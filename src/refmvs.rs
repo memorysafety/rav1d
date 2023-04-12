@@ -169,10 +169,7 @@ pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
 pub const DAV1D_X86_CPU_FLAG_SSE41: CpuFlags = 4;
 pub const DAV1D_X86_CPU_FLAG_SSSE3: CpuFlags = 2;
 use crate::include::common::intops::imax;
-#[inline]
-unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a < b { a } else { b };
-}
+use crate::include::common::intops::imin;
 #[inline]
 unsafe extern "C" fn iclip(
     v: libc::c_int,

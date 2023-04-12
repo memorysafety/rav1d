@@ -838,10 +838,7 @@ use crate::src::levels::N_COMP_INTER_PRED_MODES;
 unsafe extern "C" fn dav1d_ref_inc(ref_0: *mut Dav1dRef) {
     ::core::intrinsics::atomic_xadd_relaxed(&mut (*ref_0).ref_cnt, 1 as libc::c_int);
 }
-#[inline]
-unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a < b { a } else { b };
-}
+use crate::include::common::intops::imin;
 pub fn av1_default_cdf() -> CdfModeContext {
     let mut init = CdfModeContext {
         y_mode: [

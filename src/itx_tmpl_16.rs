@@ -4908,10 +4908,7 @@ pub type itx_1d_fn =
     Option<unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> ()>;
 pub type CpuFlags = libc::c_uint;
 pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
-#[inline]
-unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a < b { a } else { b };
-}
+use crate::include::common::intops::imin;
 #[inline]
 unsafe extern "C" fn iclip(v: libc::c_int, min: libc::c_int, max: libc::c_int) -> libc::c_int {
     return if v < min {

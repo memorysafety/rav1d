@@ -311,10 +311,7 @@ use crate::include::common::intops::imax;
 unsafe extern "C" fn clz(mask: libc::c_uint) -> libc::c_int {
     return mask.leading_zeros() as i32;
 }
-#[inline]
-unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a < b { a } else { b };
-}
+use crate::include::common::intops::imin;
 #[inline]
 unsafe extern "C" fn umin(a: libc::c_uint, b: libc::c_uint) -> libc::c_uint {
     return if a < b { a } else { b };

@@ -67,10 +67,7 @@ pub struct Muxer {
         unsafe extern "C" fn(*mut MuxerPriv, *const libc::c_char) -> libc::c_int,
     >,
 }
-#[inline]
-unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a < b { a } else { b };
-}
+use crate::include::common::intops::imin;
 static mut muxers: [*const Muxer; 5] = unsafe {
     [
         &null_muxer as *const Muxer,

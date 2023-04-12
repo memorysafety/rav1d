@@ -76,10 +76,7 @@ pub struct Dav1dFilmGrainDSPContext {
     pub fgy_32x32xn: fgy_32x32xn_fn,
     pub fguv_32x32xn: [fguv_32x32xn_fn; 3],
 }
-#[inline]
-unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a < b { a } else { b };
-}
+use crate::include::common::intops::imin;
 unsafe extern "C" fn generate_scaling(
     _bitdepth: libc::c_int,
     mut points: *const [uint8_t; 2],

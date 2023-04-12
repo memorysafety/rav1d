@@ -983,10 +983,7 @@ unsafe extern "C" fn ac_dump(
     };
 }
 use crate::include::common::intops::imax;
-#[inline]
-unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a < b { a } else { b };
-}
+use crate::include::common::intops::imin;
 #[inline]
 unsafe extern "C" fn umin(a: libc::c_uint, b: libc::c_uint) -> libc::c_uint {
     return if a < b { a } else { b };

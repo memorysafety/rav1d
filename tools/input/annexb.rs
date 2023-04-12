@@ -50,10 +50,7 @@ pub struct Demuxer {
     pub close: Option::<unsafe extern "C" fn(*mut DemuxerPriv) -> ()>,
 }
 pub type AnnexbInputContext = DemuxerPriv;
-#[inline]
-unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a < b { a } else { b };
-}
+use crate::include::common::intops::imin;
 unsafe extern "C" fn leb128(f: *mut libc::FILE, len: *mut size_t) -> libc::c_int {
     let mut val: uint64_t = 0 as libc::c_int as uint64_t;
     let mut i: libc::c_uint = 0 as libc::c_int as libc::c_uint;
