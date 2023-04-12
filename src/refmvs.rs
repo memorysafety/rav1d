@@ -172,19 +172,7 @@ use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::apply_sign;
-#[inline]
-unsafe extern "C" fn get_poc_diff(
-    order_hint_n_bits: libc::c_int,
-    poc0: libc::c_int,
-    poc1: libc::c_int,
-) -> libc::c_int {
-    if order_hint_n_bits == 0 {
-        return 0 as libc::c_int;
-    }
-    let mask: libc::c_int = (1 as libc::c_int) << order_hint_n_bits - 1 as libc::c_int;
-    let diff: libc::c_int = poc0 - poc1;
-    return (diff & mask - 1 as libc::c_int) - (diff & mask);
-}
+use crate::src::env::get_poc_diff;
 #[inline]
 unsafe extern "C" fn fix_mv_precision(hdr: *const Dav1dFrameHeader, mv: *mut mv) {
     if (*hdr).force_integer_mv != 0 {

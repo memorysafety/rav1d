@@ -22,3 +22,17 @@ pub struct BlockContext {
     pub uvmode: [uint8_t; 32],
     pub pal_sz: [uint8_t; 32],
 }
+
+#[inline]
+pub unsafe extern "C" fn get_poc_diff(
+    order_hint_n_bits: libc::c_int,
+    poc0: libc::c_int,
+    poc1: libc::c_int,
+) -> libc::c_int {
+    if order_hint_n_bits == 0 {
+        return 0 as libc::c_int;
+    }
+    let mask: libc::c_int = (1 as libc::c_int) << order_hint_n_bits - 1 as libc::c_int;
+    let diff: libc::c_int = poc0 - poc1;
+    return (diff & mask - 1 as libc::c_int) - (diff & mask);
+}

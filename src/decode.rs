@@ -1503,19 +1503,7 @@ unsafe extern "C" fn get_comp_dir_ctx(
         return 2 as libc::c_int
     };
 }
-#[inline]
-unsafe extern "C" fn get_poc_diff(
-    order_hint_n_bits: libc::c_int,
-    poc0: libc::c_int,
-    poc1: libc::c_int,
-) -> libc::c_int {
-    if order_hint_n_bits == 0 {
-        return 0 as libc::c_int;
-    }
-    let mask: libc::c_int = (1 as libc::c_int) << order_hint_n_bits - 1 as libc::c_int;
-    let diff: libc::c_int = poc0 - poc1;
-    return (diff & mask - 1 as libc::c_int) - (diff & mask);
-}
+use crate::src::env::get_poc_diff;
 #[inline]
 unsafe extern "C" fn get_jnt_comp_ctx(
     order_hint_n_bits: libc::c_int,
