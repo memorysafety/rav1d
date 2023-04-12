@@ -846,18 +846,7 @@ use crate::src::levels::INTER_INTRA_BLEND;
 use crate::src::levels::MM_WARP;
 use crate::src::levels::MM_OBMC;
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct TxfmInfo {
-    pub w: uint8_t,
-    pub h: uint8_t,
-    pub lw: uint8_t,
-    pub lh: uint8_t,
-    pub min: uint8_t,
-    pub max: uint8_t,
-    pub sub: uint8_t,
-    pub ctx: uint8_t,
-}
+use crate::src::tables::TxfmInfo;
 use crate::src::ctx::alias64;
 use crate::src::ctx::alias32;
 use crate::src::ctx::alias16;

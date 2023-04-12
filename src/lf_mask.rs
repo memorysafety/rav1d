@@ -63,18 +63,7 @@ pub struct Av1Filter {
 pub struct Av1Restoration {
     pub lr: [[Av1RestorationUnit; 4]; 3],
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct TxfmInfo {
-    pub w: uint8_t,
-    pub h: uint8_t,
-    pub lw: uint8_t,
-    pub lh: uint8_t,
-    pub min: uint8_t,
-    pub max: uint8_t,
-    pub sub: uint8_t,
-    pub ctx: uint8_t,
-}
+use crate::src::tables::TxfmInfo;
 #[inline]
 unsafe extern "C" fn iclip(
     v: libc::c_int,

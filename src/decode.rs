@@ -1168,18 +1168,7 @@ use crate::src::levels::INTER_INTRA_NONE;
 use crate::src::levels::MM_WARP;
 use crate::src::levels::MM_OBMC;
 use crate::src::levels::MM_TRANSLATION;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct TxfmInfo {
-    pub w: uint8_t,
-    pub h: uint8_t,
-    pub lw: uint8_t,
-    pub lh: uint8_t,
-    pub min: uint8_t,
-    pub max: uint8_t,
-    pub sub: uint8_t,
-    pub ctx: uint8_t,
-}
+use crate::src::tables::TxfmInfo;
 use crate::src::refmvs::refmvs_candidate;
 #[inline]
 unsafe extern "C" fn ctz(mask: libc::c_uint) -> libc::c_int {
