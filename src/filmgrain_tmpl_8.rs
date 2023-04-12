@@ -390,10 +390,7 @@ use crate::include::common::intops::iclip_u8;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::imin;
 use crate::src::filmgrain::get_random_number;
-#[inline]
-unsafe extern "C" fn round2(x: libc::c_int, shift: uint64_t) -> libc::c_int {
-    return x + ((1 as libc::c_int) << shift >> 1 as libc::c_int) >> shift;
-}
+use crate::src::filmgrain::round2;
 unsafe extern "C" fn generate_grain_y_c(
     mut buf: *mut [entry; 82],
     data: *const Dav1dFilmGrainData,

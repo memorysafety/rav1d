@@ -1,3 +1,5 @@
+use crate::include::stdint::uint64_t;
+
 #[inline]
 pub unsafe extern "C" fn get_random_number(
     bits: libc::c_int,
@@ -11,4 +13,9 @@ pub unsafe extern "C" fn get_random_number(
     return (*state >> 16 as libc::c_int - bits
         & (((1 as libc::c_int) << bits) - 1 as libc::c_int) as libc::c_uint)
         as libc::c_int;
+}
+
+#[inline]
+pub unsafe extern "C" fn round2(x: libc::c_int, shift: uint64_t) -> libc::c_int {
+    return x + ((1 as libc::c_int) << shift >> 1 as libc::c_int) >> shift;
 }
