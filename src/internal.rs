@@ -1,8 +1,14 @@
 use crate::include::dav1d::data::Dav1dData;
+use crate::include::dav1d::picture::Dav1dPicture;
+use crate::include::pthread::pthread_cond_t;
+use crate::include::pthread::pthread_mutex_t;
+use crate::include::stdatomic::atomic_int;
+use crate::include::stdatomic::atomic_uint;
 use crate::include::stdint::int16_t;
 use crate::include::stdint::int32_t;
-use crate::include::stdint::uint8_t;
+use crate::include::stdint::int8_t;
 use crate::include::stdint::uint16_t;
+use crate::include::stdint::uint8_t;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -26,6 +32,52 @@ pub const DAV1D_TASK_TYPE_ENTROPY_PROGRESS: TaskType = 3;
 pub const DAV1D_TASK_TYPE_TILE_ENTROPY: TaskType = 2;
 pub const DAV1D_TASK_TYPE_INIT_CDF: TaskType = 1;
 pub const DAV1D_TASK_TYPE_INIT: TaskType = 0;
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct TaskThreadData_grain_lut_scaling_8 {
+    pub grain_lut_8bpc: [[[int8_t; 82]; 74]; 3],
+    pub scaling_8bpc: [[uint8_t; 256]; 3],
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct TaskThreadData_grain_lut_scaling_16 {
+    pub grain_lut_16bpc: [[[int16_t; 82]; 74]; 3],
+    pub scaling_16bpc: [[uint8_t; 4096]; 3],
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub union TaskThreadData_grain_lut_scaling {
+    pub c2rust_unnamed: TaskThreadData_grain_lut_scaling_8,
+    pub c2rust_unnamed_0: TaskThreadData_grain_lut_scaling_16,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct TaskThreadData_delayed_fg {
+    pub exec: libc::c_int,
+    pub cond: pthread_cond_t,
+    pub in_0: *const Dav1dPicture,
+    pub out: *mut Dav1dPicture,
+    pub type_0: TaskType,
+    pub progress: [atomic_int; 2],
+    pub c2rust_unnamed: TaskThreadData_grain_lut_scaling,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct TaskThreadData {
+    pub lock: pthread_mutex_t,
+    pub cond: pthread_cond_t,
+    pub first: atomic_uint,
+    pub cur: libc::c_uint,
+    pub reset_task_cur: atomic_uint,
+    pub cond_signaled: atomic_int,
+    pub delayed_fg: TaskThreadData_delayed_fg,
+    pub inited: libc::c_int,
+}
 
 #[derive(Copy, Clone)]
 #[repr(C)]
