@@ -302,32 +302,9 @@ unsafe extern "C" fn get_gmv_2d(
     }
     return res;
 }
-#[inline]
-unsafe extern "C" fn dav1d_freep_aligned(mut ptr: *mut libc::c_void) {
-    let mut mem: *mut *mut libc::c_void = ptr as *mut *mut libc::c_void;
-    if !(*mem).is_null() {
-        dav1d_free_aligned(*mem);
-        *mem = 0 as *mut libc::c_void;
-    }
-}
-#[inline]
-unsafe extern "C" fn dav1d_free_aligned(mut ptr: *mut libc::c_void) {
-    free(ptr);
-}
-#[inline]
-unsafe extern "C" fn dav1d_alloc_aligned(
-    mut sz: size_t,
-    mut align: size_t,
-) -> *mut libc::c_void {
-    if align & align.wrapping_sub(1) != 0 {
-        unreachable!();
-    }
-    let mut ptr: *mut libc::c_void = 0 as *mut libc::c_void;
-    if posix_memalign(&mut ptr, align, sz) != 0 {
-        return 0 as *mut libc::c_void;
-    }
-    return ptr;
-}
+use crate::src::mem::dav1d_freep_aligned;
+
+use crate::src::mem::dav1d_alloc_aligned;
 unsafe extern "C" fn add_spatial_candidate(
     mvstack: *mut refmvs_candidate,
     cnt: *mut libc::c_int,
