@@ -965,10 +965,10 @@ unsafe extern "C" fn lr_stripe(
     );
     let mut lr_fn: looprestorationfilter_fn = None;
     let mut params: LooprestorationParams = LooprestorationParams {
-        filter: [[0; 8]; 2],
+        filter: [[0; 8]; 2].into(),
     };
     if (*lr).type_0 as libc::c_int == DAV1D_RESTORATION_WIENER as libc::c_int {
-        let filter: *mut [int16_t; 8] = (params.filter).as_mut_ptr();
+        let filter: *mut [int16_t; 8] = (params.filter.0).as_mut_ptr();
         let ref mut fresh0 = (*filter
             .offset(0 as libc::c_int as isize))[6 as libc::c_int as usize];
         *fresh0 = (*lr).filter_h[0 as libc::c_int as usize] as int16_t;
