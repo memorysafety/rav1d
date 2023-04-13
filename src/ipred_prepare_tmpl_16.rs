@@ -9,8 +9,6 @@ extern "C" {
         _: libc::c_ulong,
     ) -> *mut libc::c_void;
 }
-
-
 pub type pixel = uint16_t;
 use crate::src::levels::IntraPredMode;
 
@@ -20,29 +18,13 @@ use crate::src::levels::Z1_PRED;
 use crate::src::levels::DC_128_PRED;
 use crate::src::levels::TOP_DC_PRED;
 use crate::src::levels::LEFT_DC_PRED;
-
-
-
-
 use crate::src::levels::PAETH_PRED;
-
-
-
-
-
-
-
-
 
 use crate::src::levels::HOR_PRED;
 use crate::src::levels::VERT_PRED;
 use crate::src::levels::DC_PRED;
 use crate::src::intra_edge::EdgeFlags;
-
-
 use crate::src::intra_edge::EDGE_I444_LEFT_HAS_BOTTOM;
-
-
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 #[derive(Copy, Clone, BitfieldStruct)]
 #[repr(C)]

@@ -16,115 +16,23 @@ extern "C" {
     static dav1d_txfm_dimensions: [TxfmInfo; 19];
 }
 
-
-
-
-
-
-
 use crate::src::ctx::alias64;
 use crate::src::ctx::alias32;
 use crate::src::ctx::alias16;
 use crate::src::ctx::alias8;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-
-
-
-
-
-
 use crate::include::dav1d::headers::Dav1dSegmentationData;
 
 use crate::include::dav1d::headers::Dav1dLoopfilterModeRefDeltas;
 
 use crate::include::dav1d::headers::Dav1dFrameHeader;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::src::levels::TX_4X4;
 use crate::src::levels::RectTxfmSize;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::src::levels::BlockSize;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #[derive(Copy, Clone)]
 #[repr(C)]

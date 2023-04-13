@@ -2,8 +2,6 @@ use crate::include::stddef::*;
 use crate::include::stdint::*;
 use ::libc;
 
-
-
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct GetBits {

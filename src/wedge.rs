@@ -14,17 +14,11 @@ extern "C" {
     ) -> *mut libc::c_void;
 }
 
-
-
 use crate::src::levels::II_SMOOTH_PRED;
 use crate::src::levels::II_HOR_PRED;
 use crate::src::levels::II_VERT_PRED;
 
 use crate::src::levels::BlockSize;
-
-
-
-
 
 use crate::src::levels::BS_8x8;
 use crate::src::levels::BS_8x16;
@@ -37,12 +31,6 @@ use crate::src::levels::BS_16x32;
 use crate::src::levels::BS_32x8;
 use crate::src::levels::BS_32x16;
 use crate::src::levels::BS_32x32;
-
-
-
-
-
-
 
 #[derive(Copy, Clone)]
 #[repr(C)]

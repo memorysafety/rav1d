@@ -350,8 +350,6 @@ extern "C" {
     );
 }
 
-
-
 use crate::src::r#ref::Dav1dRef;
 use crate::include::stdatomic::atomic_int;
 use crate::include::dav1d::common::Dav1dDataProps;
@@ -360,12 +358,6 @@ use crate::src::ctx::alias64;
 use crate::src::ctx::alias32;
 use crate::src::ctx::alias16;
 use crate::src::ctx::alias8;
-
-
-
-
-
-
 
 use crate::include::stdatomic::atomic_uint;
 #[derive(Copy, Clone)]
@@ -429,31 +421,9 @@ pub struct Dav1dFrameContext {
 }
 use crate::src::internal::FrameTileThreadData;
 use crate::src::internal::Dav1dFrameContext_task_thread;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::include::pthread::pthread_mutex_t;
 
-
-
 use crate::src::internal::TaskThreadData;
-
-
-
-
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dMasteringDisplay;
@@ -467,114 +437,26 @@ use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 
-
-
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_AFFINE;
 
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_IDENTITY;
-
-
 use crate::include::dav1d::headers::DAV1D_TX_SWITCHABLE;
-
-
 
 use crate::include::dav1d::headers::Dav1dRestorationType;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_SGRPROJ;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_WIENER;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_SWITCHABLE;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_NONE;
-
-
-
-
-
-
-
-
 use crate::include::dav1d::headers::Dav1dSegmentationData;
-
-
 use crate::include::dav1d::headers::Dav1dFilterMode;
 use crate::include::dav1d::headers::DAV1D_FILTER_SWITCHABLE;
-
-
 use crate::include::dav1d::headers::DAV1D_N_SWITCHABLE_FILTERS;
-
-
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
-
-
-
-
-
-
-
-
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::include::pthread::pthread_cond_t;
-
-
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -635,8 +517,6 @@ use crate::src::internal::CodedBlockInfo;
 use crate::src::levels::Av1Block;
 use crate::src::levels::Av1Block_intra_inter;
 
-
-
 use crate::src::levels::mv;
 use crate::src::levels::mv_xy;
 
@@ -684,11 +564,7 @@ use crate::src::levels::BS_32x8;
 use crate::src::levels::BS_32x16;
 use crate::src::levels::BS_32x32;
 
-
-
 use crate::src::levels::BS_64x64;
-
-
 use crate::src::levels::BS_128x128;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -715,32 +591,12 @@ pub struct Dav1dTaskContext {
     pub task_thread: Dav1dTaskContext_task_thread,
 }
 use crate::src::internal::Dav1dTaskContext_task_thread;
-
-
 use crate::src::internal::Dav1dTaskContext_frame_thread;
 use crate::src::levels::Filter2d;
 
 use crate::src::levels::FILTER_2D_BILINEAR;
 
-
-
-
-
-
-
-
-
 use crate::src::internal::Dav1dTaskContext_scratch;
-
-
-
-
-
-
-
-
-
-
 use crate::src::internal::Dav1dTaskContext_cf;
 use crate::src::refmvs::refmvs_tile;
 
@@ -830,31 +686,15 @@ use crate::src::mem::Dav1dMemPool;
 
 use crate::include::dav1d::dav1d::Dav1dLogger;
 use crate::include::dav1d::dav1d::Dav1dEventFlags;
-
-
 use crate::src::picture::PictureFlags;
 
-
-
 use crate::include::dav1d::dav1d::Dav1dDecodeFrameType;
-
-
-
-
 use crate::include::dav1d::dav1d::Dav1dInloopFilterType;
-
-
-
-
 
 use crate::include::dav1d::picture::Dav1dPicAllocator;
 use crate::src::internal::Dav1dContext_intra_edge;
 use crate::src::intra_edge::EdgeTip;
 use crate::src::intra_edge::EdgeFlags;
-
-
-
-
 
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 use crate::src::intra_edge::EdgeNode;
@@ -891,10 +731,6 @@ pub type looprestorationfilter_fn = Option::<
     ) -> (),
 >;
 use crate::src::looprestoration::LrEdgeFlags;
-
-
-
-
 use crate::src::looprestoration::LooprestorationParams;
 
 pub type const_left_pixel_row = *const libc::c_void;
@@ -919,10 +755,6 @@ pub type cdef_fn = Option::<
     ) -> (),
 >;
 use crate::src::cdef::CdefEdgeFlags;
-
-
-
-
 pub type const_left_pixel_row_2px = *const libc::c_void;
 pub type cdef_dir_fn = Option::<
     unsafe extern "C" fn(
@@ -1271,70 +1103,28 @@ pub type recon_b_intra_fn = Option::<
     ) -> (),
 >;
 use crate::src::internal::ScalableMotionParams;
-
-
 use crate::src::levels::TX_64X64;
-
-
 use crate::src::levels::TX_8X8;
 use crate::src::levels::TX_4X4;
 use crate::src::levels::BlockLevel;
 
 use crate::src::levels::BL_8X8;
-
-
 use crate::src::levels::BL_64X64;
 use crate::src::levels::BL_128X128;
 use crate::src::levels::RectTxfmSize;
 use crate::src::levels::N_RECT_TX_SIZES;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::src::levels::IntraPredMode;
 use crate::src::levels::FILTER_PRED;
-
-
-
-
-
-
 
 use crate::src::levels::N_UV_INTRA_PRED_MODES;
 use crate::src::levels::CFL_PRED;
 use crate::src::levels::N_INTRA_PRED_MODES;
-
-
-
-
 use crate::src::levels::VERT_LEFT_PRED;
-
-
-
-
-
-
 use crate::src::levels::VERT_PRED;
 use crate::src::levels::DC_PRED;
 
 use crate::src::levels::N_INTER_INTRA_PRED_MODES;
-
-
-
-
 use crate::src::levels::BlockPartition;
-
-
 use crate::src::levels::PARTITION_V4;
 use crate::src::levels::PARTITION_H4;
 use crate::src::levels::PARTITION_T_RIGHT_SPLIT;
@@ -1347,10 +1137,6 @@ use crate::src::levels::PARTITION_H;
 use crate::src::levels::PARTITION_NONE;
 
 use crate::src::levels::N_MV_JOINTS;
-
-
-
-
 use crate::src::levels::InterPredMode;
 
 use crate::src::levels::NEWMV;
@@ -1366,10 +1152,6 @@ use crate::src::levels::CompInterPredMode;
 use crate::src::levels::N_COMP_INTER_PRED_MODES;
 use crate::src::levels::NEWMV_NEWMV;
 use crate::src::levels::GLOBALMV_GLOBALMV;
-
-
-
-
 
 use crate::src::levels::NEARESTMV_NEARESTMV;
 

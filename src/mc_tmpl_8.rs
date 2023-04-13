@@ -1530,8 +1530,6 @@ extern "C" {
         my: libc::c_int,
     );
 }
-
-
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 extern "C" {
     fn dav1d_put_8tap_regular_8bpc_neon(
@@ -1844,15 +1842,9 @@ pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
 
 pub type pixel = uint8_t;
 
-
-
-
-
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SHARP;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SMOOTH;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
-
-
 use crate::src::levels::FILTER_2D_BILINEAR;
 use crate::src::levels::FILTER_2D_8TAP_SMOOTH_SHARP;
 use crate::src::levels::FILTER_2D_8TAP_SMOOTH;

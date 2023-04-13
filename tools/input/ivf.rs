@@ -30,11 +30,7 @@ extern "C" {
     fn dav1d_data_create(data: *mut Dav1dData, sz: size_t) -> *mut uint8_t;
     fn dav1d_data_unref(data: *mut Dav1dData);
 }
-
-
 use crate::include::sys::types::__off64_t;
-
-
 
 use crate::include::dav1d::data::Dav1dData;
 #[derive(Copy, Clone)]
