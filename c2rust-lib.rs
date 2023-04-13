@@ -47,6 +47,7 @@ pub mod cdef_tmpl_16;
 pub mod cdef_tmpl_8;
 pub mod cdf;
 pub mod cpu;
+pub mod ctx;
 pub mod data;
 pub mod decode;
 pub mod dequant_tables;
