@@ -847,13 +847,7 @@ use crate::src::levels::TX_4X4;
 use crate::src::levels::RectTxfmSize;
 use crate::src::levels::RTX_4X8;
 use crate::src::levels::TxfmType;
-
 use crate::src::levels::WHT_WHT;
-
-use crate::src::levels::H_FLIPADST;
-use crate::src::levels::V_FLIPADST;
-use crate::src::levels::H_ADST;
-use crate::src::levels::V_ADST;
 use crate::src::levels::IDTX;
 use crate::src::levels::DCT_DCT;
 use crate::src::levels::TxClass;
@@ -863,15 +857,11 @@ use crate::src::levels::TX_CLASS_2D;
 use crate::src::levels::IntraPredMode;
 use crate::src::levels::FILTER_PRED;
 use crate::src::levels::CFL_PRED;
-use crate::src::levels::SMOOTH_H_PRED;
-use crate::src::levels::SMOOTH_V_PRED;
 use crate::src::levels::SMOOTH_PRED;
 use crate::src::levels::DC_PRED;
 use crate::src::levels::II_SMOOTH_PRED;
 use crate::src::levels::GLOBALMV;
-
 use crate::src::levels::GLOBALMV_GLOBALMV;
-
 use crate::src::levels::COMP_INTER_NONE;
 use crate::src::levels::INTER_INTRA_BLEND;
 use crate::src::levels::MM_WARP;
@@ -956,123 +946,17 @@ unsafe extern "C" fn coef_dump(
         y += 1;
     }
 }
-#[inline]
-unsafe extern "C" fn ac_dump(
-    mut buf: *const int16_t,
-    mut w: libc::c_int,
-    mut h: libc::c_int,
-    mut what: *const libc::c_char,
-) {
-    printf(b"%s\n\0" as *const u8 as *const libc::c_char, what);
-    loop {
-        let fresh1 = h;
-        h = h - 1;
-        if !(fresh1 != 0) {
-            break;
-        }
-        let mut x: libc::c_int = 0 as libc::c_int;
-        while x < w {
-            printf(
-                b" %03d\0" as *const u8 as *const libc::c_char,
-                *buf.offset(x as isize) as libc::c_int,
-            );
-            x += 1;
-        }
-        buf = buf.offset(w as isize);
-        printf(b"\n\0" as *const u8 as *const libc::c_char);
-    };
-}
+use crate::include::common::dump::ac_dump;
 use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
 use crate::include::common::intops::umin;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::apply_sign64;
-#[inline]
-unsafe extern "C" fn get_uv_inter_txtp(
-    uvt_dim: *const TxfmInfo,
-    ytxtp: TxfmType,
-) -> TxfmType {
-    if (*uvt_dim).max as libc::c_int == TX_32X32 as libc::c_int {
-        return (if ytxtp as libc::c_uint == IDTX as libc::c_int as libc::c_uint {
-            IDTX as libc::c_int
-        } else {
-            DCT_DCT as libc::c_int
-        }) as TxfmType;
-    }
-    if (*uvt_dim).min as libc::c_int == TX_16X16 as libc::c_int
-        && (1 as libc::c_int) << ytxtp as libc::c_uint
-            & ((1 as libc::c_int) << H_FLIPADST as libc::c_int
-                | (1 as libc::c_int) << V_FLIPADST as libc::c_int
-                | (1 as libc::c_int) << H_ADST as libc::c_int
-                | (1 as libc::c_int) << V_ADST as libc::c_int) != 0
-    {
-        return DCT_DCT;
-    }
-    return ytxtp;
-}
-#[inline]
-unsafe extern "C" fn dav1d_msac_decode_bools(
-    s: *mut MsacContext,
-    mut n: libc::c_uint,
-) -> libc::c_uint {
-    let mut v: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    loop {
-        let fresh2 = n;
-        n = n.wrapping_sub(1);
-        if !(fresh2 != 0) {
-            break;
-        }
-        v = v << 1 as libc::c_int | dav1d_msac_decode_bool_equi(s);
-    }
-    return v;
-}
-#[inline]
-unsafe extern "C" fn sm_flag(b: *const BlockContext, idx: libc::c_int) -> libc::c_int {
-    if (*b).intra[idx as usize] == 0 {
-        return 0 as libc::c_int;
-    }
-    let m: IntraPredMode = (*b).mode[idx as usize] as IntraPredMode;
-    return if m as libc::c_uint == SMOOTH_PRED as libc::c_int as libc::c_uint
-        || m as libc::c_uint == SMOOTH_H_PRED as libc::c_int as libc::c_uint
-        || m as libc::c_uint == SMOOTH_V_PRED as libc::c_int as libc::c_uint
-    {
-        512 as libc::c_int
-    } else {
-        0 as libc::c_int
-    };
-}
-#[inline]
-unsafe extern "C" fn sm_uv_flag(
-    b: *const BlockContext,
-    idx: libc::c_int,
-) -> libc::c_int {
-    let m: IntraPredMode = (*b).uvmode[idx as usize] as IntraPredMode;
-    return if m as libc::c_uint == SMOOTH_PRED as libc::c_int as libc::c_uint
-        || m as libc::c_uint == SMOOTH_H_PRED as libc::c_int as libc::c_uint
-        || m as libc::c_uint == SMOOTH_V_PRED as libc::c_int as libc::c_uint
-    {
-        512 as libc::c_int
-    } else {
-        0 as libc::c_int
-    };
-}
-#[inline]
-unsafe extern "C" fn read_golomb(msac: *mut MsacContext) -> libc::c_uint {
-    let mut len: libc::c_int = 0 as libc::c_int;
-    let mut val: libc::c_uint = 1 as libc::c_int as libc::c_uint;
-    while dav1d_msac_decode_bool_equi(msac) == 0 && len < 32 as libc::c_int {
-        len += 1;
-    }
-    loop {
-        let fresh3 = len;
-        len = len - 1;
-        if !(fresh3 != 0) {
-            break;
-        }
-        val = (val << 1 as libc::c_int).wrapping_add(dav1d_msac_decode_bool_equi(msac));
-    }
-    return val.wrapping_sub(1 as libc::c_int as libc::c_uint);
-}
+use crate::src::env::get_uv_inter_txtp;
+use crate::src::msac::dav1d_msac_decode_bools;
+use crate::src::ipred_prepare::sm_flag;
+use crate::src::ipred_prepare::sm_uv_flag;
+use crate::src::recon::read_golomb;
 // If the C macro is called like `MERGE_CTX(a, uint8_t,  0x40)`, the
 // corresponding call to this macro is `MERGE_CTX(ca, a, uint8_t,  0x40)`.
 macro_rules! MERGE_CTX {

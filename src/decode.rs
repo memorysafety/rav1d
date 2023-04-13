@@ -1176,7 +1176,7 @@ use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
-use crate::include::common::intops::apply_sign;
+
 use crate::include::common::intops::apply_sign64;
 use crate::include::common::intops::ulog2;
 use crate::src::mem::dav1d_alloc_aligned;
@@ -1503,19 +1503,7 @@ unsafe extern "C" fn get_comp_dir_ctx(
         return 2 as libc::c_int
     };
 }
-#[inline]
-unsafe extern "C" fn get_poc_diff(
-    order_hint_n_bits: libc::c_int,
-    poc0: libc::c_int,
-    poc1: libc::c_int,
-) -> libc::c_int {
-    if order_hint_n_bits == 0 {
-        return 0 as libc::c_int;
-    }
-    let mask: libc::c_int = (1 as libc::c_int) << order_hint_n_bits - 1 as libc::c_int;
-    let diff: libc::c_int = poc0 - poc1;
-    return (diff & mask - 1 as libc::c_int) - (diff & mask);
-}
+use crate::src::env::get_poc_diff;
 #[inline]
 unsafe extern "C" fn get_jnt_comp_ctx(
     order_hint_n_bits: libc::c_int,
@@ -1948,139 +1936,10 @@ unsafe extern "C" fn get_cur_frame_segid(
         }) as libc::c_uint;
     };
 }
-#[inline]
-unsafe extern "C" fn fix_int_mv_precision(mv: *mut mv) {
-    (*mv)
-        .c2rust_unnamed
-        .x = (((*mv).c2rust_unnamed.x as libc::c_int
-        - ((*mv).c2rust_unnamed.x as libc::c_int >> 15 as libc::c_int)
-        + 3 as libc::c_int) as libc::c_uint & !(7 as libc::c_uint)) as int16_t;
-    (*mv)
-        .c2rust_unnamed
-        .y = (((*mv).c2rust_unnamed.y as libc::c_int
-        - ((*mv).c2rust_unnamed.y as libc::c_int >> 15 as libc::c_int)
-        + 3 as libc::c_int) as libc::c_uint & !(7 as libc::c_uint)) as int16_t;
-}
-#[inline]
-unsafe extern "C" fn fix_mv_precision(hdr: *const Dav1dFrameHeader, mv: *mut mv) {
-    if (*hdr).force_integer_mv != 0 {
-        fix_int_mv_precision(mv);
-    } else if (*hdr).hp == 0 {
-        (*mv)
-            .c2rust_unnamed
-            .x = (((*mv).c2rust_unnamed.x as libc::c_int
-            - ((*mv).c2rust_unnamed.x as libc::c_int >> 15 as libc::c_int))
-            as libc::c_uint & !(1 as libc::c_uint)) as int16_t;
-        (*mv)
-            .c2rust_unnamed
-            .y = (((*mv).c2rust_unnamed.y as libc::c_int
-            - ((*mv).c2rust_unnamed.y as libc::c_int >> 15 as libc::c_int))
-            as libc::c_uint & !(1 as libc::c_uint)) as int16_t;
-    }
-}
-#[inline]
-unsafe extern "C" fn get_gmv_2d(
-    gmv: *const Dav1dWarpedMotionParams,
-    bx4: libc::c_int,
-    by4: libc::c_int,
-    bw4: libc::c_int,
-    bh4: libc::c_int,
-    hdr: *const Dav1dFrameHeader,
-) -> mv {
-    match (*gmv).type_0 as libc::c_uint {
-        2 => {
-            if !((*gmv).matrix[5 as libc::c_int as usize]
-                == (*gmv).matrix[2 as libc::c_int as usize])
-            {
-                unreachable!();
-            }
-            if !((*gmv).matrix[4 as libc::c_int as usize]
-                == -(*gmv).matrix[3 as libc::c_int as usize])
-            {
-                unreachable!();
-            }
-        }
-        1 => {
-            let mut res_0: mv = mv {
-                c2rust_unnamed: {
-                    let mut init = mv_xy {
-                        y: ((*gmv).matrix[0 as libc::c_int as usize]
-                            >> 13 as libc::c_int) as int16_t,
-                        x: ((*gmv).matrix[1 as libc::c_int as usize]
-                            >> 13 as libc::c_int) as int16_t,
-                    };
-                    init
-                },
-            };
-            if (*hdr).force_integer_mv != 0 {
-                fix_int_mv_precision(&mut res_0);
-            }
-            return res_0;
-        }
-        0 => {
-            return mv {
-                c2rust_unnamed: {
-                    let mut init = mv_xy {
-                        y: 0 as libc::c_int as int16_t,
-                        x: 0 as libc::c_int as int16_t,
-                    };
-                    init
-                },
-            };
-        }
-        3 | _ => {}
-    }
-    let x: libc::c_int = bx4 * 4 as libc::c_int + bw4 * 2 as libc::c_int
-        - 1 as libc::c_int;
-    let y: libc::c_int = by4 * 4 as libc::c_int + bh4 * 2 as libc::c_int
-        - 1 as libc::c_int;
-    let xc: libc::c_int = ((*gmv).matrix[2 as libc::c_int as usize]
-        - ((1 as libc::c_int) << 16 as libc::c_int)) * x
-        + (*gmv).matrix[3 as libc::c_int as usize] * y
-        + (*gmv).matrix[0 as libc::c_int as usize];
-    let yc: libc::c_int = ((*gmv).matrix[5 as libc::c_int as usize]
-        - ((1 as libc::c_int) << 16 as libc::c_int)) * y
-        + (*gmv).matrix[4 as libc::c_int as usize] * x
-        + (*gmv).matrix[1 as libc::c_int as usize];
-    let shift: libc::c_int = 16 as libc::c_int
-        - (3 as libc::c_int - ((*hdr).hp == 0) as libc::c_int);
-    let round: libc::c_int = (1 as libc::c_int) << shift >> 1 as libc::c_int;
-    let mut res: mv = mv {
-        c2rust_unnamed: {
-            let mut init = mv_xy {
-                y: apply_sign(
-                    abs(yc) + round >> shift << ((*hdr).hp == 0) as libc::c_int,
-                    yc,
-                ) as int16_t,
-                x: apply_sign(
-                    abs(xc) + round >> shift << ((*hdr).hp == 0) as libc::c_int,
-                    xc,
-                ) as int16_t,
-            };
-            init
-        },
-    };
-    if (*hdr).force_integer_mv != 0 {
-        fix_int_mv_precision(&mut res);
-    }
-    return res;
-}
-#[inline]
-unsafe extern "C" fn dav1d_msac_decode_bools(
-    s: *mut MsacContext,
-    mut n: libc::c_uint,
-) -> libc::c_uint {
-    let mut v: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    loop {
-        let fresh0 = n;
-        n = n.wrapping_sub(1);
-        if !(fresh0 != 0) {
-            break;
-        }
-        v = v << 1 as libc::c_int | dav1d_msac_decode_bool_equi(s);
-    }
-    return v;
-}
+
+use crate::src::env::fix_mv_precision;
+use crate::src::env::get_gmv_2d;
+use crate::src::msac::dav1d_msac_decode_bools;
 #[inline]
 unsafe extern "C" fn dav1d_msac_decode_uniform(
     s: *mut MsacContext,

@@ -18,6 +18,7 @@ extern crate libc;
 pub mod include {
 pub mod common {
 pub mod attributes;
+pub mod dump;
 pub mod intops;
 } // mod common
 pub mod dav1d {
@@ -60,6 +61,7 @@ pub mod env;
 pub mod fg_apply_tmpl_16;
 #[cfg(feature = "bitdepth_8")]
 pub mod fg_apply_tmpl_8;
+pub mod filmgrain;
 #[cfg(feature = "bitdepth_16")]
 pub mod filmgrain_tmpl_16;
 #[cfg(feature = "bitdepth_8")]
@@ -67,10 +69,12 @@ pub mod filmgrain_tmpl_8;
 pub mod getbits;
 pub mod internal;
 pub mod intra_edge;
+pub mod ipred_prepare;
 #[cfg(feature = "bitdepth_16")]
 pub mod ipred_prepare_tmpl_16;
 #[cfg(feature = "bitdepth_8")]
 pub mod ipred_prepare_tmpl_8;
+pub mod ipred;
 #[cfg(feature = "bitdepth_16")]
 pub mod ipred_tmpl_16;
 #[cfg(feature = "bitdepth_8")]
@@ -111,6 +115,7 @@ pub mod obu;
 pub mod picture;
 pub mod qm;
 pub mod r#ref;
+pub mod recon;
 #[cfg(feature = "bitdepth_16")]
 pub mod recon_tmpl_16;
 #[cfg(feature = "bitdepth_8")]
