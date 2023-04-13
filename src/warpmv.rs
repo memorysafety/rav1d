@@ -7,38 +7,13 @@ extern "C" {
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 use crate::src::levels::mv;
 
-#[inline]
-unsafe extern "C" fn apply_sign(v: libc::c_int, s: libc::c_int) -> libc::c_int {
-    return if s < 0 as libc::c_int { -v } else { v };
-}
-#[inline]
-unsafe extern "C" fn clz(mask: libc::c_uint) -> libc::c_int {
-    return mask.leading_zeros() as i32;
-}
-#[inline]
-unsafe extern "C" fn clzll(mask: libc::c_ulonglong) -> libc::c_int {
-    return mask.leading_zeros() as i32;
-}
-#[inline]
-unsafe extern "C" fn iclip(
-    v: libc::c_int,
-    min: libc::c_int,
-    max: libc::c_int,
-) -> libc::c_int {
-    return if v < min { min } else if v > max { max } else { v };
-}
-#[inline]
-unsafe extern "C" fn apply_sign64(v: libc::c_int, s: int64_t) -> libc::c_int {
-    return if s < 0 { -v } else { v };
-}
-#[inline]
-unsafe extern "C" fn ulog2(v: libc::c_uint) -> libc::c_int {
-    return 31 as libc::c_int - clz(v);
-}
-#[inline]
-unsafe extern "C" fn u64log2(v: uint64_t) -> libc::c_int {
-    return 63 as libc::c_int - clzll(v as libc::c_ulonglong);
-}
+use crate::include::common::intops::apply_sign;
+
+
+use crate::include::common::intops::iclip;
+use crate::include::common::intops::apply_sign64;
+use crate::include::common::intops::ulog2;
+use crate::include::common::intops::u64log2;
 static mut div_lut: [uint16_t; 257] = [
     16384 as libc::c_int as uint16_t,
     16320 as libc::c_int as uint16_t,

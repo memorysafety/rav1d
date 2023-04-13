@@ -776,30 +776,14 @@ pub type recon_b_intra_fn = Option::<
     ) -> (),
 >;
 use crate::src::internal::ScalableMotionParams;
-#[inline]
-unsafe extern "C" fn ctz(mask: libc::c_uint) -> libc::c_int {
-    return mask.trailing_zeros() as i32;
-}
+use crate::include::common::attributes::ctz;
 #[inline]
 unsafe extern "C" fn dav1d_set_thread_name(name: *const libc::c_char) {
     prctl(15 as libc::c_int, name);
 }
-#[inline]
-unsafe extern "C" fn imax(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a > b { a } else { b };
-}
-#[inline]
-unsafe extern "C" fn umin(a: libc::c_uint, b: libc::c_uint) -> libc::c_uint {
-    return if a < b { a } else { b };
-}
-#[inline]
-unsafe extern "C" fn iclip(
-    v: libc::c_int,
-    min: libc::c_int,
-    max: libc::c_int,
-) -> libc::c_int {
-    return if v < min { min } else if v > max { max } else { v };
-}
+use crate::include::common::intops::imax;
+use crate::include::common::intops::umin;
+use crate::include::common::intops::iclip;
 #[inline]
 unsafe extern "C" fn reset_task_cur(
     c: *const Dav1dContext,

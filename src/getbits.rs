@@ -12,27 +12,9 @@ pub struct GetBits {
     pub ptr_start: *const uint8_t,
     pub ptr_end: *const uint8_t,
 }
-#[inline]
-unsafe extern "C" fn inv_recenter(r: libc::c_uint, v: libc::c_uint) -> libc::c_uint {
-    if v > r << 1 as libc::c_int {
-        return v
-    } else if v & 1 as libc::c_int as libc::c_uint == 0 as libc::c_int as libc::c_uint {
-        return (v >> 1 as libc::c_int).wrapping_add(r)
-    } else {
-        return r
-            .wrapping_sub(
-                v.wrapping_add(1 as libc::c_int as libc::c_uint) >> 1 as libc::c_int,
-            )
-    };
-}
-#[inline]
-unsafe extern "C" fn ulog2(v: libc::c_uint) -> libc::c_int {
-    return 31 as libc::c_int - clz(v);
-}
-#[inline]
-unsafe extern "C" fn clz(mask: libc::c_uint) -> libc::c_int {
-    return mask.leading_zeros() as i32;
-}
+use crate::include::common::intops::inv_recenter;
+use crate::include::common::intops::ulog2;
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_init_get_bits(
     c: *mut GetBits,

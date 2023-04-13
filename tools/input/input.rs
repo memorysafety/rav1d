@@ -54,10 +54,7 @@ pub struct Demuxer {
     pub seek: Option::<unsafe extern "C" fn(*mut DemuxerPriv, uint64_t) -> libc::c_int>,
     pub close: Option::<unsafe extern "C" fn(*mut DemuxerPriv) -> ()>,
 }
-#[inline]
-unsafe extern "C" fn imax(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a > b { a } else { b };
-}
+use crate::include::common::intops::imax;
 static mut demuxers: [*const Demuxer; 4] = unsafe {
     [
         &ivf_demuxer as *const Demuxer,

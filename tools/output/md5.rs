@@ -73,10 +73,7 @@ pub struct Muxer {
     >,
 }
 pub type MD5Context = MuxerPriv;
-#[inline]
-unsafe extern "C" fn umin(a: libc::c_uint, b: libc::c_uint) -> libc::c_uint {
-    return if a < b { a } else { b };
-}
+use crate::include::common::intops::umin;
 static mut k: [uint32_t; 64] = [
     0xd76aa478 as libc::c_uint,
     0xe8c7b756 as libc::c_uint,

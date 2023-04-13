@@ -92,6 +92,7 @@ use crate::src::levels::NEWMV;
 use crate::src::levels::GLOBALMV;
 use crate::src::levels::NEARMV;
 use crate::src::levels::NEARESTMV;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct TxfmInfo {
@@ -104,6 +105,7 @@ pub struct TxfmInfo {
     pub sub: uint8_t,
     pub ctx: uint8_t,
 }
+
 #[no_mangle]
 pub static mut dav1d_al_part_ctx: [[[uint8_t; 10]; 5]; 2] = [
     [

@@ -877,18 +877,7 @@ use crate::src::levels::INTER_INTRA_BLEND;
 use crate::src::levels::MM_WARP;
 use crate::src::levels::MM_OBMC;
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct TxfmInfo {
-    pub w: uint8_t,
-    pub h: uint8_t,
-    pub lw: uint8_t,
-    pub lh: uint8_t,
-    pub min: uint8_t,
-    pub max: uint8_t,
-    pub sub: uint8_t,
-    pub ctx: uint8_t,
-}
+use crate::src::tables::TxfmInfo;
 use crate::src::ctx::alias64;
 use crate::src::ctx::alias32;
 use crate::src::ctx::alias16;
@@ -993,30 +982,11 @@ unsafe extern "C" fn ac_dump(
         printf(b"\n\0" as *const u8 as *const libc::c_char);
     };
 }
-#[inline]
-unsafe extern "C" fn imax(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a > b { a } else { b };
-}
-#[inline]
-unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a < b { a } else { b };
-}
-#[inline]
-unsafe extern "C" fn umin(a: libc::c_uint, b: libc::c_uint) -> libc::c_uint {
-    return if a < b { a } else { b };
-}
-#[inline]
-unsafe extern "C" fn iclip(
-    v: libc::c_int,
-    min: libc::c_int,
-    max: libc::c_int,
-) -> libc::c_int {
-    return if v < min { min } else if v > max { max } else { v };
-}
-#[inline]
-unsafe extern "C" fn apply_sign64(v: libc::c_int, s: int64_t) -> libc::c_int {
-    return if s < 0 { -v } else { v };
-}
+use crate::include::common::intops::imax;
+use crate::include::common::intops::imin;
+use crate::include::common::intops::umin;
+use crate::include::common::intops::iclip;
+use crate::include::common::intops::apply_sign64;
 #[inline]
 unsafe extern "C" fn get_uv_inter_txtp(
     uvt_dim: *const TxfmInfo,
