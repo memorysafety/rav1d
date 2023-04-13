@@ -413,22 +413,9 @@ pub const DAV1D_X86_CPU_FLAG_AVX2: CpuFlags = 8;
 pub const DAV1D_X86_CPU_FLAG_SSSE3: CpuFlags = 2;
 pub type CpuFlags = libc::c_uint;
 pub const DAV1D_X86_CPU_FLAG_SSE41: CpuFlags = 4;
-#[inline]
-unsafe extern "C" fn clz(mask: libc::c_uint) -> libc::c_int {
-    return mask.leading_zeros() as i32;
-}
-#[inline]
-unsafe extern "C" fn iclip(
-    v: libc::c_int,
-    min: libc::c_int,
-    max: libc::c_int,
-) -> libc::c_int {
-    return if v < min { min } else if v > max { max } else { v };
-}
-#[inline]
-unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a < b { a } else { b };
-}
+use crate::include::common::attributes::clz;
+use crate::include::common::intops::iclip;
+use crate::include::common::intops::imin;
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     if x & 1 != 0 {
@@ -436,24 +423,8 @@ unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     }
     return x >> 1 as libc::c_int;
 }
-#[inline]
-unsafe extern "C" fn get_random_number(
-    bits: libc::c_int,
-    state: *mut libc::c_uint,
-) -> libc::c_int {
-    let r: libc::c_int = *state as libc::c_int;
-    let mut bit: libc::c_uint = ((r >> 0 as libc::c_int ^ r >> 1 as libc::c_int
-        ^ r >> 3 as libc::c_int ^ r >> 12 as libc::c_int) & 1 as libc::c_int)
-        as libc::c_uint;
-    *state = (r >> 1 as libc::c_int) as libc::c_uint | bit << 15 as libc::c_int;
-    return (*state >> 16 as libc::c_int - bits
-        & (((1 as libc::c_int) << bits) - 1 as libc::c_int) as libc::c_uint)
-        as libc::c_int;
-}
-#[inline]
-unsafe extern "C" fn round2(x: libc::c_int, shift: uint64_t) -> libc::c_int {
-    return x + ((1 as libc::c_int) << shift >> 1 as libc::c_int) >> shift;
-}
+use crate::src::filmgrain::get_random_number;
+use crate::src::filmgrain::round2;
 unsafe extern "C" fn generate_grain_y_c(
     mut buf: *mut [entry; 82],
     data: *const Dav1dFilmGrainData,

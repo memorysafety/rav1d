@@ -24,12 +24,6 @@ extern "C" {
     static annexb_demuxer: Demuxer;
     static section5_demuxer: Demuxer;
 }
-
-
-
-
-
-
 use crate::include::dav1d::data::Dav1dData;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -60,10 +54,7 @@ pub struct Demuxer {
     pub seek: Option::<unsafe extern "C" fn(*mut DemuxerPriv, uint64_t) -> libc::c_int>,
     pub close: Option::<unsafe extern "C" fn(*mut DemuxerPriv) -> ()>,
 }
-#[inline]
-unsafe extern "C" fn imax(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a > b { a } else { b };
-}
+use crate::include::common::intops::imax;
 static mut demuxers: [*const Demuxer; 4] = unsafe {
     [
         &ivf_demuxer as *const Demuxer,

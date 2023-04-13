@@ -56,18 +56,10 @@ extern "C" {
     fn dav1d_log(c: *mut Dav1dContext, format: *const libc::c_char, _: ...);
 }
 
-
-
 use crate::src::r#ref::Dav1dRef;
 use crate::include::stdatomic::atomic_int;
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
-
-
-
-
-
-
 
 use crate::include::stdatomic::atomic_uint;
 #[derive(Copy, Clone)]
@@ -131,31 +123,9 @@ pub struct Dav1dFrameContext {
 }
 use crate::src::internal::FrameTileThreadData;
 use crate::src::internal::Dav1dFrameContext_task_thread;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::include::pthread::pthread_mutex_t;
 
-
-
 use crate::src::internal::TaskThreadData;
-
-
-
-
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dMasteringDisplay;
@@ -168,8 +138,6 @@ use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
-
-
 use crate::include::dav1d::headers::Dav1dWarpedMotionType;
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_AFFINE;
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_ROT_ZOOM;
@@ -183,28 +151,12 @@ use crate::include::dav1d::headers::DAV1D_TX_4X4_ONLY;
 
 use crate::include::dav1d::headers::Dav1dRestorationType;
 
-
-
 use crate::include::dav1d::headers::DAV1D_RESTORATION_NONE;
-
-
 use crate::include::dav1d::headers::Dav1dLoopfilterModeRefDeltas;
-
-
-
-
 use crate::include::dav1d::headers::Dav1dSegmentationDataSet;
 use crate::include::dav1d::headers::Dav1dSegmentationData;
-
-
 use crate::include::dav1d::headers::Dav1dFilterMode;
 use crate::include::dav1d::headers::DAV1D_FILTER_SWITCHABLE;
-
-
-
-
-
-
 
 use crate::include::dav1d::headers::Dav1dFrameHeaderOperatingPoint;
 use crate::include::dav1d::headers::Dav1dFrameType;
@@ -218,65 +170,23 @@ use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Dav1dSequenceHeaderOperatingParameterInfo;
 use crate::include::dav1d::headers::Dav1dAdaptiveBoolean;
 use crate::include::dav1d::headers::DAV1D_ADAPTIVE;
-
-
 use crate::include::dav1d::headers::Dav1dSequenceHeaderOperatingPoint;
 use crate::include::dav1d::headers::Dav1dChromaSamplePosition;
-
-
 use crate::include::dav1d::headers::DAV1D_CHR_UNKNOWN;
 use crate::include::dav1d::headers::Dav1dMatrixCoefficients;
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::include::dav1d::headers::DAV1D_MC_UNKNOWN;
 
 use crate::include::dav1d::headers::DAV1D_MC_IDENTITY;
 use crate::include::dav1d::headers::Dav1dTransferCharacteristics;
-
-
-
-
-
-
 use crate::include::dav1d::headers::DAV1D_TRC_SRGB;
-
-
-
-
-
-
-
-
 
 use crate::include::dav1d::headers::DAV1D_TRC_UNKNOWN;
 
 use crate::include::dav1d::headers::Dav1dColorPrimaries;
 
-
-
-
-
-
-
-
-
-
-
 use crate::include::dav1d::headers::DAV1D_COLOR_PRI_UNKNOWN;
 use crate::include::dav1d::headers::DAV1D_COLOR_PRI_BT709;
 use crate::include::pthread::pthread_cond_t;
-
-
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -335,17 +245,7 @@ pub struct Dav1dFrameContext_frame_thread {
 pub type coef = ();
 use crate::src::internal::CodedBlockInfo;
 use crate::src::levels::Av1Block;
-
-
-
-
-
-
-
-
 use crate::src::refmvs::refmvs_frame;
-
-
 
 use crate::src::refmvs::refmvs_temporal_block;
 use crate::src::env::BlockContext;
@@ -369,28 +269,6 @@ pub type read_coef_blocks_fn = Option::<
     unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> (),
 >;
 use crate::src::levels::BlockSize;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -417,32 +295,10 @@ pub struct Dav1dTaskContext {
     pub task_thread: Dav1dTaskContext_task_thread,
 }
 use crate::src::internal::Dav1dTaskContext_task_thread;
-
-
 use crate::src::internal::Dav1dTaskContext_frame_thread;
 use crate::src::levels::Filter2d;
 
-
-
-
-
-
-
-
-
-
-
 use crate::src::internal::Dav1dTaskContext_scratch;
-
-
-
-
-
-
-
-
-
-
 use crate::src::internal::Dav1dTaskContext_cf;
 use crate::src::refmvs::refmvs_tile;
 
@@ -532,8 +388,6 @@ use crate::src::mem::Dav1dMemPool;
 
 use crate::include::dav1d::dav1d::Dav1dLogger;
 use crate::include::dav1d::dav1d::Dav1dEventFlags;
-
-
 use crate::src::picture::PictureFlags;
 use crate::src::picture::PICTURE_FLAG_NEW_TEMPORAL_UNIT;
 use crate::src::picture::PICTURE_FLAG_NEW_OP_PARAMS_INFO;
@@ -545,22 +399,10 @@ use crate::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_REFERENCE;
 
 use crate::include::dav1d::dav1d::Dav1dInloopFilterType;
 
-
-
-
-
 use crate::include::dav1d::picture::Dav1dPicAllocator;
 use crate::src::internal::Dav1dContext_intra_edge;
 
 use crate::src::intra_edge::EdgeFlags;
-
-
-
-
-
-
-
-
 use crate::src::refmvs::Dav1dRefmvsDSPContext;
 
 #[derive(Copy, Clone)]
@@ -593,10 +435,6 @@ pub type looprestorationfilter_fn = Option::<
     ) -> (),
 >;
 use crate::src::looprestoration::LrEdgeFlags;
-
-
-
-
 use crate::src::looprestoration::LooprestorationParams;
 
 pub type const_left_pixel_row = *const libc::c_void;
@@ -621,10 +459,6 @@ pub type cdef_fn = Option::<
     ) -> (),
 >;
 use crate::src::cdef::CdefEdgeFlags;
-
-
-
-
 pub type const_left_pixel_row_2px = *const libc::c_void;
 pub type cdef_dir_fn = Option::<
     unsafe extern "C" fn(
@@ -974,19 +808,11 @@ pub type recon_b_intra_fn = Option::<
 >;
 use crate::src::internal::ScalableMotionParams;
 use crate::include::dav1d::headers::Dav1dObuType;
-
-
 use crate::include::dav1d::headers::DAV1D_OBU_FRAME;
-
-
 
 use crate::include::dav1d::headers::DAV1D_OBU_TD;
 use crate::include::dav1d::headers::DAV1D_OBU_SEQ_HDR;
 use crate::src::levels::ObuMetaType;
-
-
-
-
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -998,51 +824,13 @@ pub struct GetBits {
     pub ptr_start: *const uint8_t,
     pub ptr_end: *const uint8_t,
 }
-#[inline]
-unsafe extern "C" fn imax(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a > b { a } else { b };
-}
-#[inline]
-unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a < b { a } else { b };
-}
-#[inline]
-unsafe extern "C" fn iclip(
-    v: libc::c_int,
-    min: libc::c_int,
-    max: libc::c_int,
-) -> libc::c_int {
-    return if v < min { min } else if v > max { max } else { v };
-}
-#[inline]
-unsafe extern "C" fn iclip_u8(v: libc::c_int) -> libc::c_int {
-    return iclip(v, 0 as libc::c_int, 255 as libc::c_int);
-}
-#[inline]
-unsafe extern "C" fn ulog2(v: libc::c_uint) -> libc::c_int {
-    return 31 as libc::c_int - clz(v);
-}
-#[inline]
-unsafe extern "C" fn clz(mask: libc::c_uint) -> libc::c_int {
-    return mask.leading_zeros() as i32;
-}
-#[inline]
-unsafe extern "C" fn dav1d_ref_inc(ref_0: *mut Dav1dRef) {
-    ::core::intrinsics::atomic_xadd_relaxed(&mut (*ref_0).ref_cnt, 1 as libc::c_int);
-}
-#[inline]
-unsafe extern "C" fn get_poc_diff(
-    order_hint_n_bits: libc::c_int,
-    poc0: libc::c_int,
-    poc1: libc::c_int,
-) -> libc::c_int {
-    if order_hint_n_bits == 0 {
-        return 0 as libc::c_int;
-    }
-    let mask: libc::c_int = (1 as libc::c_int) << order_hint_n_bits - 1 as libc::c_int;
-    let diff: libc::c_int = poc0 - poc1;
-    return (diff & mask - 1 as libc::c_int) - (diff & mask);
-}
+use crate::include::common::intops::imax;
+use crate::include::common::intops::imin;
+use crate::include::common::intops::iclip_u8;
+use crate::include::common::intops::ulog2;
+
+use crate::src::r#ref::dav1d_ref_inc;
+use crate::src::env::get_poc_diff;
 #[inline]
 unsafe extern "C" fn dav1d_get_bits_pos(mut c: *const GetBits) -> libc::c_uint {
     return (((*c).ptr).offset_from((*c).ptr_start) as libc::c_long as libc::c_uint)

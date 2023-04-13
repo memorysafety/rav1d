@@ -35,12 +35,9 @@ pub struct Dav1dMemPoolBuffer {
     pub next: *mut Dav1dMemPoolBuffer,
 }
 use crate::include::pthread::pthread_mutexattr_t;
+
 #[inline]
-unsafe extern "C" fn dav1d_free_aligned(mut ptr: *mut libc::c_void) {
-    free(ptr);
-}
-#[inline]
-unsafe extern "C" fn dav1d_alloc_aligned(
+pub unsafe extern "C" fn dav1d_alloc_aligned(
     mut sz: size_t,
     mut align: size_t,
 ) -> *mut libc::c_void {
@@ -53,6 +50,30 @@ unsafe extern "C" fn dav1d_alloc_aligned(
     }
     return ptr;
 }
+
+#[inline]
+pub unsafe extern "C" fn dav1d_free_aligned(mut ptr: *mut libc::c_void) {
+    free(ptr);
+}
+
+#[inline]
+pub unsafe extern "C" fn dav1d_freep_aligned(mut ptr: *mut libc::c_void) {
+    let mut mem: *mut *mut libc::c_void = ptr as *mut *mut libc::c_void;
+    if !(*mem).is_null() {
+        dav1d_free_aligned(*mem);
+        *mem = 0 as *mut libc::c_void;
+    }
+}
+
+#[inline]
+pub unsafe extern "C" fn freep(mut ptr: *mut libc::c_void) {
+    let mut mem: *mut *mut libc::c_void = ptr as *mut *mut libc::c_void;
+    if !(*mem).is_null() {
+        free(*mem);
+        *mem = 0 as *mut libc::c_void;
+    }
+}
+
 #[cold]
 unsafe extern "C" fn mem_pool_destroy(pool: *mut Dav1dMemPool) {
     pthread_mutex_destroy(&mut (*pool).lock);

@@ -811,20 +811,10 @@ use crate::src::levels::Z1_PRED;
 use crate::src::levels::DC_128_PRED;
 use crate::src::levels::TOP_DC_PRED;
 use crate::src::levels::LEFT_DC_PRED;
-
-
-
-
 use crate::src::levels::PAETH_PRED;
 use crate::src::levels::SMOOTH_H_PRED;
 use crate::src::levels::SMOOTH_V_PRED;
 use crate::src::levels::SMOOTH_PRED;
-
-
-
-
-
-
 use crate::src::levels::HOR_PRED;
 use crate::src::levels::VERT_PRED;
 use crate::src::levels::DC_PRED;
@@ -880,34 +870,12 @@ pub struct Dav1dIntraPredDSPContext {
     pub cfl_pred: [cfl_pred_fn; 6],
     pub pal_pred: pal_pred_fn,
 }
-#[inline]
-unsafe extern "C" fn ctz(mask: libc::c_uint) -> libc::c_int {
-    return mask.trailing_zeros() as i32;
-}
-#[inline]
-unsafe extern "C" fn imax(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a > b { a } else { b };
-}
-#[inline]
-unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a < b { a } else { b };
-}
-#[inline]
-unsafe extern "C" fn iclip(
-    v: libc::c_int,
-    min: libc::c_int,
-    max: libc::c_int,
-) -> libc::c_int {
-    return if v < min { min } else if v > max { max } else { v };
-}
-#[inline]
-unsafe extern "C" fn iclip_u8(v: libc::c_int) -> libc::c_int {
-    return iclip(v, 0 as libc::c_int, 255 as libc::c_int);
-}
-#[inline]
-unsafe extern "C" fn apply_sign(v: libc::c_int, s: libc::c_int) -> libc::c_int {
-    return if s < 0 as libc::c_int { -v } else { v };
-}
+use crate::include::common::attributes::ctz;
+use crate::include::common::intops::imax;
+use crate::include::common::intops::imin;
+use crate::include::common::intops::iclip;
+use crate::include::common::intops::iclip_u8;
+use crate::include::common::intops::apply_sign;
 #[inline(never)]
 unsafe extern "C" fn splat_dc(
     mut dst: *mut pixel,
@@ -1463,15 +1431,7 @@ unsafe extern "C" fn filter_edge(
         i += 1;
     }
 }
-#[inline]
-unsafe extern "C" fn get_upsample(
-    wh: libc::c_int,
-    angle: libc::c_int,
-    is_sm: libc::c_int,
-) -> libc::c_int {
-    return (angle < 40 as libc::c_int && wh <= 16 as libc::c_int >> is_sm)
-        as libc::c_int;
-}
+use crate::src::ipred::get_upsample;
 #[inline(never)]
 unsafe extern "C" fn upsample_edge(
     out: *mut pixel,

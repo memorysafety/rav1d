@@ -306,71 +306,15 @@ pub const DAV1D_X86_CPU_FLAG_SSE41: CpuFlags = 4;
 pub const DAV1D_X86_CPU_FLAG_SSSE3: CpuFlags = 2;
 pub type CpuFlags = libc::c_uint;
 pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
-#[inline]
-unsafe extern "C" fn imax(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a > b { a } else { b };
-}
-#[inline]
-unsafe extern "C" fn clz(mask: libc::c_uint) -> libc::c_int {
-    return mask.leading_zeros() as i32;
-}
-#[inline]
-unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a < b { a } else { b };
-}
-#[inline]
-unsafe extern "C" fn umin(a: libc::c_uint, b: libc::c_uint) -> libc::c_uint {
-    return if a < b { a } else { b };
-}
-#[inline]
-unsafe extern "C" fn iclip(
-    v: libc::c_int,
-    min: libc::c_int,
-    max: libc::c_int,
-) -> libc::c_int {
-    return if v < min { min } else if v > max { max } else { v };
-}
-#[inline]
-unsafe extern "C" fn apply_sign(v: libc::c_int, s: libc::c_int) -> libc::c_int {
-    return if s < 0 as libc::c_int { -v } else { v };
-}
-#[inline]
-unsafe extern "C" fn ulog2(v: libc::c_uint) -> libc::c_int {
-    return 31 as libc::c_int - clz(v);
-}
-#[inline]
-unsafe extern "C" fn constrain(
-    diff: libc::c_int,
-    threshold: libc::c_int,
-    shift: libc::c_int,
-) -> libc::c_int {
-    let adiff: libc::c_int = abs(diff);
-    return apply_sign(
-        imin(adiff, imax(0 as libc::c_int, threshold - (adiff >> shift))),
-        diff,
-    );
-}
-#[inline]
-unsafe extern "C" fn fill(
-    mut tmp: *mut int16_t,
-    stride: ptrdiff_t,
-    w: libc::c_int,
-    h: libc::c_int,
-) {
-    let mut y: libc::c_int = 0 as libc::c_int;
-    while y < h {
-        let mut x: libc::c_int = 0 as libc::c_int;
-        while x < w {
-            *tmp
-                .offset(
-                    x as isize,
-                ) = (-(32767 as libc::c_int) - 1 as libc::c_int) as int16_t;
-            x += 1;
-        }
-        tmp = tmp.offset(stride as isize);
-        y += 1;
-    }
-}
+use crate::include::common::intops::imax;
+
+
+use crate::include::common::intops::umin;
+use crate::include::common::intops::iclip;
+
+use crate::include::common::intops::ulog2;
+use crate::src::cdef::constrain;
+use crate::src::cdef::fill;
 unsafe extern "C" fn padding(
     mut tmp: *mut int16_t,
     tmp_stride: ptrdiff_t,

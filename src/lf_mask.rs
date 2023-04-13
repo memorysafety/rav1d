@@ -16,134 +16,23 @@ extern "C" {
     static dav1d_txfm_dimensions: [TxfmInfo; 19];
 }
 
-
-
-
-
-
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union alias64 {
-    pub u64_0: uint64_t,
-    pub u8_0: [uint8_t; 8],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union alias32 {
-    pub u32_0: uint32_t,
-    pub u8_0: [uint8_t; 4],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union alias16 {
-    pub u16_0: uint16_t,
-    pub u8_0: [uint8_t; 2],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union alias8 {
-    pub u8_0: uint8_t,
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+use crate::src::ctx::alias64;
+use crate::src::ctx::alias32;
+use crate::src::ctx::alias16;
+use crate::src::ctx::alias8;
 use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-
-
-
-
-
-
 use crate::include::dav1d::headers::Dav1dSegmentationData;
 
 use crate::include::dav1d::headers::Dav1dLoopfilterModeRefDeltas;
 
 use crate::include::dav1d::headers::Dav1dFrameHeader;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::src::levels::TX_4X4;
 use crate::src::levels::RectTxfmSize;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::src::levels::BlockSize;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -174,34 +63,10 @@ pub struct Av1Filter {
 pub struct Av1Restoration {
     pub lr: [[Av1RestorationUnit; 4]; 3],
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct TxfmInfo {
-    pub w: uint8_t,
-    pub h: uint8_t,
-    pub lw: uint8_t,
-    pub lh: uint8_t,
-    pub min: uint8_t,
-    pub max: uint8_t,
-    pub sub: uint8_t,
-    pub ctx: uint8_t,
-}
-#[inline]
-unsafe extern "C" fn iclip(
-    v: libc::c_int,
-    min: libc::c_int,
-    max: libc::c_int,
-) -> libc::c_int {
-    return if v < min { min } else if v > max { max } else { v };
-}
-#[inline]
-unsafe extern "C" fn imax(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a > b { a } else { b };
-}
-#[inline]
-unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a < b { a } else { b };
-}
+use crate::src::tables::TxfmInfo;
+use crate::include::common::intops::iclip;
+use crate::include::common::intops::imax;
+use crate::include::common::intops::imin;
 unsafe extern "C" fn decomp_tx(
     txa: *mut [[[uint8_t; 32]; 32]; 2],
     from: RectTxfmSize,

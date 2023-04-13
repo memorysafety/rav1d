@@ -1530,8 +1530,6 @@ extern "C" {
         my: libc::c_int,
     );
 }
-
-
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 extern "C" {
     fn dav1d_put_8tap_regular_8bpc_neon(
@@ -1844,15 +1842,9 @@ pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
 
 pub type pixel = uint8_t;
 
-
-
-
-
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SHARP;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SMOOTH;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
-
-
 use crate::src::levels::FILTER_2D_BILINEAR;
 use crate::src::levels::FILTER_2D_8TAP_SMOOTH_SHARP;
 use crate::src::levels::FILTER_2D_8TAP_SMOOTH;
@@ -2044,22 +2036,9 @@ pub struct Dav1dMCDSPContext {
     pub emu_edge: emu_edge_fn,
     pub resize: resize_fn,
 }
-#[inline]
-unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a < b { a } else { b };
-}
-#[inline]
-unsafe extern "C" fn iclip(
-    v: libc::c_int,
-    min: libc::c_int,
-    max: libc::c_int,
-) -> libc::c_int {
-    return if v < min { min } else if v > max { max } else { v };
-}
-#[inline]
-unsafe extern "C" fn iclip_u8(v: libc::c_int) -> libc::c_int {
-    return iclip(v, 0 as libc::c_int, 255 as libc::c_int);
-}
+use crate::include::common::intops::imin;
+use crate::include::common::intops::iclip;
+use crate::include::common::intops::iclip_u8;
 #[inline(never)]
 unsafe extern "C" fn put_c(
     mut dst: *mut pixel,

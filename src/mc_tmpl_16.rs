@@ -1864,19 +1864,11 @@ pub const DAV1D_X86_CPU_FLAG_SSE41: CpuFlags = 4;
 pub const DAV1D_X86_CPU_FLAG_SSSE3: CpuFlags = 2;
 pub type CpuFlags = libc::c_uint;
 pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
-
-
 pub type pixel = uint16_t;
-
-
-
-
 
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SHARP;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SMOOTH;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
-
-
 use crate::src::levels::FILTER_2D_BILINEAR;
 use crate::src::levels::FILTER_2D_8TAP_SMOOTH_SHARP;
 use crate::src::levels::FILTER_2D_8TAP_SMOOTH;
@@ -2079,22 +2071,9 @@ pub struct Dav1dMCDSPContext {
     pub emu_edge: emu_edge_fn,
     pub resize: resize_fn,
 }
-#[inline]
-unsafe extern "C" fn clz(mask: libc::c_uint) -> libc::c_int {
-    return mask.leading_zeros() as i32;
-}
-#[inline]
-unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a < b { a } else { b };
-}
-#[inline]
-unsafe extern "C" fn iclip(
-    v: libc::c_int,
-    min: libc::c_int,
-    max: libc::c_int,
-) -> libc::c_int {
-    return if v < min { min } else if v > max { max } else { v };
-}
+use crate::include::common::attributes::clz;
+use crate::include::common::intops::imin;
+use crate::include::common::intops::iclip;
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     if x & 1 != 0 {

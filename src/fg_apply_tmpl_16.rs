@@ -15,126 +15,14 @@ extern "C" {
         _: libc::c_ulong,
     ) -> *mut libc::c_void;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::include::dav1d::headers::DAV1D_MC_IDENTITY;
 
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::include::dav1d::picture::Dav1dPicture;
 pub type pixel = uint16_t;
 pub type entry = int16_t;
@@ -190,10 +78,7 @@ pub struct Dav1dFilmGrainDSPContext {
     pub fgy_32x32xn: fgy_32x32xn_fn,
     pub fguv_32x32xn: [fguv_32x32xn_fn; 3],
 }
-#[inline]
-unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a < b { a } else { b };
-}
+use crate::include::common::intops::imin;
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     if x & 1 != 0 {

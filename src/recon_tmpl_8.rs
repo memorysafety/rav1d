@@ -104,10 +104,6 @@ extern "C" {
     static mut dav1d_ii_masks: [[[*const uint8_t; 4]; 3]; 22];
 }
 
-
-
-
-
 pub type pixel = uint8_t;
 pub type coef = int16_t;
 use crate::include::stdatomic::atomic_int;
@@ -177,31 +173,7 @@ pub struct Dav1dFrameContext {
 }
 use crate::src::internal::FrameTileThreadData;
 use crate::src::internal::Dav1dFrameContext_task_thread;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::src::internal::TaskThreadData;
-
-
-
-
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dMasteringDisplay;
@@ -215,114 +187,10 @@ use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 
-
-
-
-
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -379,18 +247,10 @@ pub struct Dav1dFrameContext_frame_thread {
 }
 use crate::src::internal::CodedBlockInfo;
 use crate::src::levels::Av1Block;
-
-
-
-
 use crate::src::levels::mv;
-
-
 
 use crate::src::refmvs::refmvs_frame;
 use crate::src::refmvs::refmvs_block;
-
-
 use crate::src::refmvs::refmvs_temporal_block;
 use crate::src::env::BlockContext;
 #[derive(Copy, Clone)]
@@ -413,28 +273,6 @@ pub type read_coef_blocks_fn = Option::<
     unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> (),
 >;
 use crate::src::levels::BlockSize;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -461,32 +299,12 @@ pub struct Dav1dTaskContext {
     pub task_thread: Dav1dTaskContext_task_thread,
 }
 use crate::src::internal::Dav1dTaskContext_task_thread;
-
-
 use crate::src::internal::Dav1dTaskContext_frame_thread;
 use crate::src::levels::Filter2d;
 
 use crate::src::levels::FILTER_2D_BILINEAR;
 
-
-
-
-
-
-
-
-
 use crate::src::internal::Dav1dTaskContext_scratch;
-
-
-
-
-
-
-
-
-
-
 use crate::src::internal::Dav1dTaskContext_cf;
 use crate::src::refmvs::refmvs_tile;
 
@@ -576,17 +394,9 @@ use crate::src::mem::Dav1dMemPool;
 
 use crate::include::dav1d::dav1d::Dav1dLogger;
 use crate::include::dav1d::dav1d::Dav1dEventFlags;
-
-
 use crate::src::picture::PictureFlags;
 
-
-
 use crate::include::dav1d::dav1d::Dav1dDecodeFrameType;
-
-
-
-
 use crate::include::dav1d::dav1d::Dav1dInloopFilterType;
 
 use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_RESTORATION;
@@ -603,8 +413,6 @@ use crate::src::intra_edge::EDGE_I444_LEFT_HAS_BOTTOM;
 use crate::src::intra_edge::EDGE_I420_TOP_HAS_RIGHT;
 
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
-
-
 use crate::src::refmvs::Dav1dRefmvsDSPContext;
 
 #[derive(Copy, Clone)]
@@ -637,10 +445,6 @@ pub type looprestorationfilter_fn = Option::<
     ) -> (),
 >;
 use crate::src::looprestoration::LrEdgeFlags;
-
-
-
-
 use crate::src::looprestoration::LooprestorationParams;
 
 pub type const_left_pixel_row = *const [pixel; 4];
@@ -665,10 +469,6 @@ pub type cdef_fn = Option::<
     ) -> (),
 >;
 use crate::src::cdef::CdefEdgeFlags;
-
-
-
-
 pub type const_left_pixel_row_2px = *const [pixel; 2];
 pub type cdef_dir_fn = Option::<
     unsafe extern "C" fn(*const pixel, ptrdiff_t, *mut libc::c_uint) -> libc::c_int,
@@ -1008,48 +808,16 @@ pub type recon_b_intra_fn = Option::<
     ) -> (),
 >;
 use crate::src::internal::ScalableMotionParams;
-
-
 use crate::src::levels::TX_64X64;
 use crate::src::levels::TX_32X32;
 use crate::src::levels::TX_16X16;
 use crate::src::levels::TX_8X8;
 use crate::src::levels::TX_4X4;
 use crate::src::levels::RectTxfmSize;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::src::levels::RTX_4X8;
 use crate::src::levels::TxfmType;
-
 use crate::src::levels::WHT_WHT;
-
-use crate::src::levels::H_FLIPADST;
-use crate::src::levels::V_FLIPADST;
-use crate::src::levels::H_ADST;
-use crate::src::levels::V_ADST;
-
-
 use crate::src::levels::IDTX;
-
-
-
-
-
-
-
-
 use crate::src::levels::DCT_DCT;
 use crate::src::levels::TxClass;
 use crate::src::levels::TX_CLASS_V;
@@ -1057,100 +825,22 @@ use crate::src::levels::TX_CLASS_H;
 use crate::src::levels::TX_CLASS_2D;
 use crate::src::levels::IntraPredMode;
 use crate::src::levels::FILTER_PRED;
-
-
-
-
-
-
-
-
 use crate::src::levels::CFL_PRED;
-
-
-use crate::src::levels::SMOOTH_H_PRED;
-use crate::src::levels::SMOOTH_V_PRED;
 use crate::src::levels::SMOOTH_PRED;
-
-
-
-
-
-
-
-
 use crate::src::levels::DC_PRED;
-
-
 use crate::src::levels::II_SMOOTH_PRED;
-
-
-
-
-
-
 use crate::src::levels::GLOBALMV;
-
-
-
-
-
 use crate::src::levels::GLOBALMV_GLOBALMV;
-
-
-
-
-
-
-
-
-
-
-
 use crate::src::levels::COMP_INTER_NONE;
-
-
 use crate::src::levels::INTER_INTRA_BLEND;
-
-
 use crate::src::levels::MM_WARP;
 use crate::src::levels::MM_OBMC;
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct TxfmInfo {
-    pub w: uint8_t,
-    pub h: uint8_t,
-    pub lw: uint8_t,
-    pub lh: uint8_t,
-    pub min: uint8_t,
-    pub max: uint8_t,
-    pub sub: uint8_t,
-    pub ctx: uint8_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union alias64 {
-    pub u64_0: uint64_t,
-    pub u8_0: [uint8_t; 8],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union alias32 {
-    pub u32_0: uint32_t,
-    pub u8_0: [uint8_t; 4],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union alias16 {
-    pub u16_0: uint16_t,
-    pub u8_0: [uint8_t; 2],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union alias8 {
-    pub u8_0: uint8_t,
-}
+use crate::src::tables::TxfmInfo;
+use crate::src::ctx::alias64;
+use crate::src::ctx::alias32;
+use crate::src::ctx::alias16;
+use crate::src::ctx::alias8;
 #[inline]
 unsafe extern "C" fn hex_fdump(
     mut out: *mut libc::FILE,
@@ -1218,142 +908,17 @@ unsafe extern "C" fn coef_dump(
         y += 1;
     }
 }
-#[inline]
-unsafe extern "C" fn ac_dump(
-    mut buf: *const int16_t,
-    mut w: libc::c_int,
-    mut h: libc::c_int,
-    mut what: *const libc::c_char,
-) {
-    printf(b"%s\n\0" as *const u8 as *const libc::c_char, what);
-    loop {
-        let fresh1 = h;
-        h = h - 1;
-        if !(fresh1 != 0) {
-            break;
-        }
-        let mut x: libc::c_int = 0 as libc::c_int;
-        while x < w {
-            printf(
-                b" %03d\0" as *const u8 as *const libc::c_char,
-                *buf.offset(x as isize) as libc::c_int,
-            );
-            x += 1;
-        }
-        buf = buf.offset(w as isize);
-        printf(b"\n\0" as *const u8 as *const libc::c_char);
-    };
-}
-#[inline]
-unsafe extern "C" fn imax(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a > b { a } else { b };
-}
-#[inline]
-unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a < b { a } else { b };
-}
-#[inline]
-unsafe extern "C" fn umin(a: libc::c_uint, b: libc::c_uint) -> libc::c_uint {
-    return if a < b { a } else { b };
-}
-#[inline]
-unsafe extern "C" fn iclip(
-    v: libc::c_int,
-    min: libc::c_int,
-    max: libc::c_int,
-) -> libc::c_int {
-    return if v < min { min } else if v > max { max } else { v };
-}
-#[inline]
-unsafe extern "C" fn apply_sign64(v: libc::c_int, s: int64_t) -> libc::c_int {
-    return if s < 0 { -v } else { v };
-}
-#[inline]
-unsafe extern "C" fn get_uv_inter_txtp(
-    uvt_dim: *const TxfmInfo,
-    ytxtp: TxfmType,
-) -> TxfmType {
-    if (*uvt_dim).max as libc::c_int == TX_32X32 as libc::c_int {
-        return (if ytxtp as libc::c_uint == IDTX as libc::c_int as libc::c_uint {
-            IDTX as libc::c_int
-        } else {
-            DCT_DCT as libc::c_int
-        }) as TxfmType;
-    }
-    if (*uvt_dim).min as libc::c_int == TX_16X16 as libc::c_int
-        && (1 as libc::c_int) << ytxtp as libc::c_uint
-            & ((1 as libc::c_int) << H_FLIPADST as libc::c_int
-                | (1 as libc::c_int) << V_FLIPADST as libc::c_int
-                | (1 as libc::c_int) << H_ADST as libc::c_int
-                | (1 as libc::c_int) << V_ADST as libc::c_int) != 0
-    {
-        return DCT_DCT;
-    }
-    return ytxtp;
-}
-#[inline]
-unsafe extern "C" fn dav1d_msac_decode_bools(
-    s: *mut MsacContext,
-    mut n: libc::c_uint,
-) -> libc::c_uint {
-    let mut v: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    loop {
-        let fresh2 = n;
-        n = n.wrapping_sub(1);
-        if !(fresh2 != 0) {
-            break;
-        }
-        v = v << 1 as libc::c_int | dav1d_msac_decode_bool_equi(s);
-    }
-    return v;
-}
-#[inline]
-unsafe extern "C" fn sm_flag(b: *const BlockContext, idx: libc::c_int) -> libc::c_int {
-    if (*b).intra[idx as usize] == 0 {
-        return 0 as libc::c_int;
-    }
-    let m: IntraPredMode = (*b).mode[idx as usize] as IntraPredMode;
-    return if m as libc::c_uint == SMOOTH_PRED as libc::c_int as libc::c_uint
-        || m as libc::c_uint == SMOOTH_H_PRED as libc::c_int as libc::c_uint
-        || m as libc::c_uint == SMOOTH_V_PRED as libc::c_int as libc::c_uint
-    {
-        512 as libc::c_int
-    } else {
-        0 as libc::c_int
-    };
-}
-#[inline]
-unsafe extern "C" fn sm_uv_flag(
-    b: *const BlockContext,
-    idx: libc::c_int,
-) -> libc::c_int {
-    let m: IntraPredMode = (*b).uvmode[idx as usize] as IntraPredMode;
-    return if m as libc::c_uint == SMOOTH_PRED as libc::c_int as libc::c_uint
-        || m as libc::c_uint == SMOOTH_H_PRED as libc::c_int as libc::c_uint
-        || m as libc::c_uint == SMOOTH_V_PRED as libc::c_int as libc::c_uint
-    {
-        512 as libc::c_int
-    } else {
-        0 as libc::c_int
-    };
-}
-#[inline]
-unsafe extern "C" fn read_golomb(msac: *mut MsacContext) -> libc::c_uint {
-    let mut len: libc::c_int = 0 as libc::c_int;
-    let mut val: libc::c_uint = 1 as libc::c_int as libc::c_uint;
-    while dav1d_msac_decode_bool_equi(msac) == 0 && len < 32 as libc::c_int {
-        len += 1;
-    }
-    loop {
-        let fresh3 = len;
-        len = len - 1;
-        if !(fresh3 != 0) {
-            break;
-        }
-        val = (val << 1 as libc::c_int).wrapping_add(dav1d_msac_decode_bool_equi(msac));
-    }
-    return val.wrapping_sub(1 as libc::c_int as libc::c_uint);
-}
+use crate::include::common::dump::ac_dump;
+use crate::include::common::intops::imax;
+use crate::include::common::intops::imin;
+use crate::include::common::intops::umin;
+use crate::include::common::intops::iclip;
+use crate::include::common::intops::apply_sign64;
+use crate::src::env::get_uv_inter_txtp;
+use crate::src::msac::dav1d_msac_decode_bools;
+use crate::src::ipred_prepare::sm_flag;
+use crate::src::ipred_prepare::sm_uv_flag;
+use crate::src::recon::read_golomb;
 #[inline]
 unsafe extern "C" fn get_skip_ctx(
     t_dim: *const TxfmInfo,

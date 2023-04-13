@@ -60,151 +60,17 @@ extern "C" {
         bh4: libc::c_int,
     );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
-
-use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
-
-
-
-
-
-
 use crate::include::dav1d::headers::Dav1dFrameHeader;
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::src::levels::BlockSize;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 use crate::src::levels::mv;
 use crate::src::levels::mv_xy;
 use crate::src::intra_edge::EdgeFlags;
-
-
-
-
 
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 #[derive(Copy, Clone)]
@@ -302,182 +168,17 @@ pub type CpuFlags = libc::c_uint;
 pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
 pub const DAV1D_X86_CPU_FLAG_SSE41: CpuFlags = 4;
 pub const DAV1D_X86_CPU_FLAG_SSSE3: CpuFlags = 2;
-#[inline]
-unsafe extern "C" fn imax(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a > b { a } else { b };
-}
-#[inline]
-unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a < b { a } else { b };
-}
-#[inline]
-unsafe extern "C" fn iclip(
-    v: libc::c_int,
-    min: libc::c_int,
-    max: libc::c_int,
-) -> libc::c_int {
-    return if v < min { min } else if v > max { max } else { v };
-}
-#[inline]
-unsafe extern "C" fn apply_sign(v: libc::c_int, s: libc::c_int) -> libc::c_int {
-    return if s < 0 as libc::c_int { -v } else { v };
-}
-#[inline]
-unsafe extern "C" fn get_poc_diff(
-    order_hint_n_bits: libc::c_int,
-    poc0: libc::c_int,
-    poc1: libc::c_int,
-) -> libc::c_int {
-    if order_hint_n_bits == 0 {
-        return 0 as libc::c_int;
-    }
-    let mask: libc::c_int = (1 as libc::c_int) << order_hint_n_bits - 1 as libc::c_int;
-    let diff: libc::c_int = poc0 - poc1;
-    return (diff & mask - 1 as libc::c_int) - (diff & mask);
-}
-#[inline]
-unsafe extern "C" fn fix_mv_precision(hdr: *const Dav1dFrameHeader, mv: *mut mv) {
-    if (*hdr).force_integer_mv != 0 {
-        fix_int_mv_precision(mv);
-    } else if (*hdr).hp == 0 {
-        (*mv)
-            .c2rust_unnamed
-            .x = (((*mv).c2rust_unnamed.x as libc::c_int
-            - ((*mv).c2rust_unnamed.x as libc::c_int >> 15 as libc::c_int))
-            as libc::c_uint & !(1 as libc::c_uint)) as int16_t;
-        (*mv)
-            .c2rust_unnamed
-            .y = (((*mv).c2rust_unnamed.y as libc::c_int
-            - ((*mv).c2rust_unnamed.y as libc::c_int >> 15 as libc::c_int))
-            as libc::c_uint & !(1 as libc::c_uint)) as int16_t;
-    }
-}
-#[inline]
-unsafe extern "C" fn fix_int_mv_precision(mv: *mut mv) {
-    (*mv)
-        .c2rust_unnamed
-        .x = (((*mv).c2rust_unnamed.x as libc::c_int
-        - ((*mv).c2rust_unnamed.x as libc::c_int >> 15 as libc::c_int)
-        + 3 as libc::c_int) as libc::c_uint & !(7 as libc::c_uint)) as int16_t;
-    (*mv)
-        .c2rust_unnamed
-        .y = (((*mv).c2rust_unnamed.y as libc::c_int
-        - ((*mv).c2rust_unnamed.y as libc::c_int >> 15 as libc::c_int)
-        + 3 as libc::c_int) as libc::c_uint & !(7 as libc::c_uint)) as int16_t;
-}
-#[inline]
-unsafe extern "C" fn get_gmv_2d(
-    gmv: *const Dav1dWarpedMotionParams,
-    bx4: libc::c_int,
-    by4: libc::c_int,
-    bw4: libc::c_int,
-    bh4: libc::c_int,
-    hdr: *const Dav1dFrameHeader,
-) -> mv {
-    match (*gmv).type_0 as libc::c_uint {
-        2 => {
-            if !((*gmv).matrix[5 as libc::c_int as usize]
-                == (*gmv).matrix[2 as libc::c_int as usize])
-            {
-                unreachable!();
-            }
-            if !((*gmv).matrix[4 as libc::c_int as usize]
-                == -(*gmv).matrix[3 as libc::c_int as usize])
-            {
-                unreachable!();
-            }
-        }
-        1 => {
-            let mut res_0: mv = mv {
-                c2rust_unnamed: {
-                    let mut init = mv_xy {
-                        y: ((*gmv).matrix[0 as libc::c_int as usize]
-                            >> 13 as libc::c_int) as int16_t,
-                        x: ((*gmv).matrix[1 as libc::c_int as usize]
-                            >> 13 as libc::c_int) as int16_t,
-                    };
-                    init
-                },
-            };
-            if (*hdr).force_integer_mv != 0 {
-                fix_int_mv_precision(&mut res_0);
-            }
-            return res_0;
-        }
-        0 => {
-            return mv {
-                c2rust_unnamed: {
-                    let mut init = mv_xy {
-                        y: 0 as libc::c_int as int16_t,
-                        x: 0 as libc::c_int as int16_t,
-                    };
-                    init
-                },
-            };
-        }
-        3 | _ => {}
-    }
-    let x: libc::c_int = bx4 * 4 as libc::c_int + bw4 * 2 as libc::c_int
-        - 1 as libc::c_int;
-    let y: libc::c_int = by4 * 4 as libc::c_int + bh4 * 2 as libc::c_int
-        - 1 as libc::c_int;
-    let xc: libc::c_int = ((*gmv).matrix[2 as libc::c_int as usize]
-        - ((1 as libc::c_int) << 16 as libc::c_int)) * x
-        + (*gmv).matrix[3 as libc::c_int as usize] * y
-        + (*gmv).matrix[0 as libc::c_int as usize];
-    let yc: libc::c_int = ((*gmv).matrix[5 as libc::c_int as usize]
-        - ((1 as libc::c_int) << 16 as libc::c_int)) * y
-        + (*gmv).matrix[4 as libc::c_int as usize] * x
-        + (*gmv).matrix[1 as libc::c_int as usize];
-    let shift: libc::c_int = 16 as libc::c_int
-        - (3 as libc::c_int - ((*hdr).hp == 0) as libc::c_int);
-    let round: libc::c_int = (1 as libc::c_int) << shift >> 1 as libc::c_int;
-    let mut res: mv = mv {
-        c2rust_unnamed: {
-            let mut init = mv_xy {
-                y: apply_sign(
-                    abs(yc) + round >> shift << ((*hdr).hp == 0) as libc::c_int,
-                    yc,
-                ) as int16_t,
-                x: apply_sign(
-                    abs(xc) + round >> shift << ((*hdr).hp == 0) as libc::c_int,
-                    xc,
-                ) as int16_t,
-            };
-            init
-        },
-    };
-    if (*hdr).force_integer_mv != 0 {
-        fix_int_mv_precision(&mut res);
-    }
-    return res;
-}
-#[inline]
-unsafe extern "C" fn dav1d_freep_aligned(mut ptr: *mut libc::c_void) {
-    let mut mem: *mut *mut libc::c_void = ptr as *mut *mut libc::c_void;
-    if !(*mem).is_null() {
-        dav1d_free_aligned(*mem);
-        *mem = 0 as *mut libc::c_void;
-    }
-}
-#[inline]
-unsafe extern "C" fn dav1d_free_aligned(mut ptr: *mut libc::c_void) {
-    free(ptr);
-}
-#[inline]
-unsafe extern "C" fn dav1d_alloc_aligned(
-    mut sz: size_t,
-    mut align: size_t,
-) -> *mut libc::c_void {
-    if align & align.wrapping_sub(1) != 0 {
-        unreachable!();
-    }
-    let mut ptr: *mut libc::c_void = 0 as *mut libc::c_void;
-    if posix_memalign(&mut ptr, align, sz) != 0 {
-        return 0 as *mut libc::c_void;
-    }
-    return ptr;
-}
+use crate::include::common::intops::imax;
+use crate::include::common::intops::imin;
+use crate::include::common::intops::iclip;
+use crate::include::common::intops::apply_sign;
+use crate::src::env::get_poc_diff;
+use crate::src::env::fix_mv_precision;
+
+use crate::src::env::get_gmv_2d;
+use crate::src::mem::dav1d_freep_aligned;
+
+use crate::src::mem::dav1d_alloc_aligned;
 unsafe extern "C" fn add_spatial_candidate(
     mvstack: *mut refmvs_candidate,
     cnt: *mut libc::c_int,

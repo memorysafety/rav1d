@@ -1,32 +1,19 @@
 use crate::include::stdint::*;
 use ::libc;
 use crate::src::align::Align64;
-
-
-
-
 use crate::include::dav1d::headers::DAV1D_FILTER_BILINEAR;
-
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SHARP;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SMOOTH;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
-
-
-
-
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_IDENTITY;
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams_u;
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams_u_p;
-
-
 use crate::src::levels::TX_64X64;
 use crate::src::levels::TX_32X32;
 use crate::src::levels::TX_16X16;
 use crate::src::levels::TX_8X8;
 use crate::src::levels::TX_4X4;
-
-
 use crate::src::levels::RTX_64X16;
 use crate::src::levels::RTX_16X64;
 use crate::src::levels::RTX_32X8;
@@ -41,10 +28,6 @@ use crate::src::levels::RTX_16X8;
 use crate::src::levels::RTX_8X16;
 use crate::src::levels::RTX_8X4;
 use crate::src::levels::RTX_4X8;
-
-
-
-
 use crate::src::levels::H_FLIPADST;
 use crate::src::levels::V_FLIPADST;
 use crate::src::levels::H_ADST;
@@ -65,27 +48,7 @@ use crate::src::levels::DCT_DCT;
 use crate::src::levels::TX_CLASS_V;
 use crate::src::levels::TX_CLASS_H;
 use crate::src::levels::TX_CLASS_2D;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::src::levels::HOR_DOWN_PRED;
-
-
 
 use crate::src::levels::HOR_PRED;
 use crate::src::levels::VERT_PRED;
@@ -93,18 +56,6 @@ use crate::src::levels::DC_PRED;
 
 use crate::src::levels::N_SUB8X8_PARTITIONS;
 use crate::src::levels::N_PARTITIONS;
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::src::levels::BS_4x4;
 use crate::src::levels::BS_4x8;
 use crate::src::levels::BS_4x16;
@@ -127,8 +78,6 @@ use crate::src::levels::BS_64x64;
 use crate::src::levels::BS_64x128;
 use crate::src::levels::BS_128x64;
 use crate::src::levels::BS_128x128;
-
-
 use crate::src::levels::FILTER_2D_BILINEAR;
 use crate::src::levels::FILTER_2D_8TAP_SMOOTH_SHARP;
 use crate::src::levels::FILTER_2D_8TAP_SMOOTH;
@@ -139,12 +88,11 @@ use crate::src::levels::FILTER_2D_8TAP_SHARP_REGULAR;
 use crate::src::levels::FILTER_2D_8TAP_REGULAR_SHARP;
 use crate::src::levels::FILTER_2D_8TAP_REGULAR_SMOOTH;
 use crate::src::levels::FILTER_2D_8TAP_REGULAR;
-
-
 use crate::src::levels::NEWMV;
 use crate::src::levels::GLOBALMV;
 use crate::src::levels::NEARMV;
 use crate::src::levels::NEARESTMV;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct TxfmInfo {
@@ -157,6 +105,7 @@ pub struct TxfmInfo {
     pub sub: uint8_t,
     pub ctx: uint8_t,
 }
+
 #[no_mangle]
 pub static mut dav1d_al_part_ctx: [[[uint8_t; 10]; 5]; 2] = [
     [

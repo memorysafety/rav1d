@@ -23,29 +23,13 @@ use crate::src::levels::Z1_PRED;
 use crate::src::levels::DC_128_PRED;
 use crate::src::levels::TOP_DC_PRED;
 use crate::src::levels::LEFT_DC_PRED;
-
-
-
-
 use crate::src::levels::PAETH_PRED;
-
-
-
-
-
-
-
-
 
 use crate::src::levels::HOR_PRED;
 use crate::src::levels::VERT_PRED;
 use crate::src::levels::DC_PRED;
 use crate::src::intra_edge::EdgeFlags;
-
-
 use crate::src::intra_edge::EDGE_I444_LEFT_HAS_BOTTOM;
-
-
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 #[derive(Copy, Clone, BitfieldStruct)]
 #[repr(C)]
@@ -57,10 +41,7 @@ pub struct av1_intra_prediction_edge {
     #[bitfield(name = "needs_bottomleft", ty = "uint8_t", bits = "4..=4")]
     pub needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [u8; 1],
 }
-#[inline]
-unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a < b { a } else { b };
-}
+use crate::include::common::intops::imin;
 static mut av1_mode_conv: [[[uint8_t; 2]; 2]; 13] = [
     [
         [DC_128_PRED as libc::c_int as uint8_t, TOP_DC_PRED as libc::c_int as uint8_t],

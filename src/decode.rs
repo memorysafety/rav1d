@@ -350,41 +350,14 @@ extern "C" {
     );
 }
 
-
-
 use crate::src::r#ref::Dav1dRef;
 use crate::include::stdatomic::atomic_int;
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union alias64 {
-    pub u64_0: uint64_t,
-    pub u8_0: [uint8_t; 8],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union alias32 {
-    pub u32_0: uint32_t,
-    pub u8_0: [uint8_t; 4],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union alias16 {
-    pub u16_0: uint16_t,
-    pub u8_0: [uint8_t; 2],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union alias8 {
-    pub u8_0: uint8_t,
-}
-
-
-
-
-
-
+use crate::src::ctx::alias64;
+use crate::src::ctx::alias32;
+use crate::src::ctx::alias16;
+use crate::src::ctx::alias8;
 
 use crate::include::stdatomic::atomic_uint;
 #[derive(Copy, Clone)]
@@ -448,31 +421,9 @@ pub struct Dav1dFrameContext {
 }
 use crate::src::internal::FrameTileThreadData;
 use crate::src::internal::Dav1dFrameContext_task_thread;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::include::pthread::pthread_mutex_t;
 
-
-
 use crate::src::internal::TaskThreadData;
-
-
-
-
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dMasteringDisplay;
@@ -486,114 +437,26 @@ use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 
-
-
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_AFFINE;
 
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_IDENTITY;
-
-
 use crate::include::dav1d::headers::DAV1D_TX_SWITCHABLE;
-
-
 
 use crate::include::dav1d::headers::Dav1dRestorationType;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_SGRPROJ;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_WIENER;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_SWITCHABLE;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_NONE;
-
-
-
-
-
-
-
-
 use crate::include::dav1d::headers::Dav1dSegmentationData;
-
-
 use crate::include::dav1d::headers::Dav1dFilterMode;
 use crate::include::dav1d::headers::DAV1D_FILTER_SWITCHABLE;
-
-
 use crate::include::dav1d::headers::DAV1D_N_SWITCHABLE_FILTERS;
-
-
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
-
-
-
-
-
-
-
-
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::include::pthread::pthread_cond_t;
-
-
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -654,8 +517,6 @@ use crate::src::internal::CodedBlockInfo;
 use crate::src::levels::Av1Block;
 use crate::src::levels::Av1Block_intra_inter;
 
-
-
 use crate::src::levels::mv;
 use crate::src::levels::mv_xy;
 
@@ -703,11 +564,7 @@ use crate::src::levels::BS_32x8;
 use crate::src::levels::BS_32x16;
 use crate::src::levels::BS_32x32;
 
-
-
 use crate::src::levels::BS_64x64;
-
-
 use crate::src::levels::BS_128x128;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -734,32 +591,12 @@ pub struct Dav1dTaskContext {
     pub task_thread: Dav1dTaskContext_task_thread,
 }
 use crate::src::internal::Dav1dTaskContext_task_thread;
-
-
 use crate::src::internal::Dav1dTaskContext_frame_thread;
 use crate::src::levels::Filter2d;
 
 use crate::src::levels::FILTER_2D_BILINEAR;
 
-
-
-
-
-
-
-
-
 use crate::src::internal::Dav1dTaskContext_scratch;
-
-
-
-
-
-
-
-
-
-
 use crate::src::internal::Dav1dTaskContext_cf;
 use crate::src::refmvs::refmvs_tile;
 
@@ -849,31 +686,15 @@ use crate::src::mem::Dav1dMemPool;
 
 use crate::include::dav1d::dav1d::Dav1dLogger;
 use crate::include::dav1d::dav1d::Dav1dEventFlags;
-
-
 use crate::src::picture::PictureFlags;
 
-
-
 use crate::include::dav1d::dav1d::Dav1dDecodeFrameType;
-
-
-
-
 use crate::include::dav1d::dav1d::Dav1dInloopFilterType;
-
-
-
-
 
 use crate::include::dav1d::picture::Dav1dPicAllocator;
 use crate::src::internal::Dav1dContext_intra_edge;
 use crate::src::intra_edge::EdgeTip;
 use crate::src::intra_edge::EdgeFlags;
-
-
-
-
 
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 use crate::src::intra_edge::EdgeNode;
@@ -910,10 +731,6 @@ pub type looprestorationfilter_fn = Option::<
     ) -> (),
 >;
 use crate::src::looprestoration::LrEdgeFlags;
-
-
-
-
 use crate::src::looprestoration::LooprestorationParams;
 
 pub type const_left_pixel_row = *const libc::c_void;
@@ -938,10 +755,6 @@ pub type cdef_fn = Option::<
     ) -> (),
 >;
 use crate::src::cdef::CdefEdgeFlags;
-
-
-
-
 pub type const_left_pixel_row_2px = *const libc::c_void;
 pub type cdef_dir_fn = Option::<
     unsafe extern "C" fn(
@@ -1290,70 +1103,28 @@ pub type recon_b_intra_fn = Option::<
     ) -> (),
 >;
 use crate::src::internal::ScalableMotionParams;
-
-
 use crate::src::levels::TX_64X64;
-
-
 use crate::src::levels::TX_8X8;
 use crate::src::levels::TX_4X4;
 use crate::src::levels::BlockLevel;
 
 use crate::src::levels::BL_8X8;
-
-
 use crate::src::levels::BL_64X64;
 use crate::src::levels::BL_128X128;
 use crate::src::levels::RectTxfmSize;
 use crate::src::levels::N_RECT_TX_SIZES;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 use crate::src::levels::IntraPredMode;
 use crate::src::levels::FILTER_PRED;
-
-
-
-
-
-
 
 use crate::src::levels::N_UV_INTRA_PRED_MODES;
 use crate::src::levels::CFL_PRED;
 use crate::src::levels::N_INTRA_PRED_MODES;
-
-
-
-
 use crate::src::levels::VERT_LEFT_PRED;
-
-
-
-
-
-
 use crate::src::levels::VERT_PRED;
 use crate::src::levels::DC_PRED;
 
 use crate::src::levels::N_INTER_INTRA_PRED_MODES;
-
-
-
-
 use crate::src::levels::BlockPartition;
-
-
 use crate::src::levels::PARTITION_V4;
 use crate::src::levels::PARTITION_H4;
 use crate::src::levels::PARTITION_T_RIGHT_SPLIT;
@@ -1366,10 +1137,6 @@ use crate::src::levels::PARTITION_H;
 use crate::src::levels::PARTITION_NONE;
 
 use crate::src::levels::N_MV_JOINTS;
-
-
-
-
 use crate::src::levels::InterPredMode;
 
 use crate::src::levels::NEWMV;
@@ -1386,10 +1153,6 @@ use crate::src::levels::N_COMP_INTER_PRED_MODES;
 use crate::src::levels::NEWMV_NEWMV;
 use crate::src::levels::GLOBALMV_GLOBALMV;
 
-
-
-
-
 use crate::src::levels::NEARESTMV_NEARESTMV;
 
 use crate::src::levels::COMP_INTER_WEDGE;
@@ -1405,97 +1168,22 @@ use crate::src::levels::INTER_INTRA_NONE;
 use crate::src::levels::MM_WARP;
 use crate::src::levels::MM_OBMC;
 use crate::src::levels::MM_TRANSLATION;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct TxfmInfo {
-    pub w: uint8_t,
-    pub h: uint8_t,
-    pub lw: uint8_t,
-    pub lh: uint8_t,
-    pub min: uint8_t,
-    pub max: uint8_t,
-    pub sub: uint8_t,
-    pub ctx: uint8_t,
-}
+use crate::src::tables::TxfmInfo;
 use crate::src::refmvs::refmvs_candidate;
-#[inline]
-unsafe extern "C" fn ctz(mask: libc::c_uint) -> libc::c_int {
-    return mask.trailing_zeros() as i32;
-}
-#[inline]
-unsafe extern "C" fn clz(mask: libc::c_uint) -> libc::c_int {
-    return mask.leading_zeros() as i32;
-}
-#[inline]
-unsafe extern "C" fn imax(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a > b { a } else { b };
-}
-#[inline]
-unsafe extern "C" fn imin(a: libc::c_int, b: libc::c_int) -> libc::c_int {
-    return if a < b { a } else { b };
-}
-#[inline]
-unsafe extern "C" fn iclip(
-    v: libc::c_int,
-    min: libc::c_int,
-    max: libc::c_int,
-) -> libc::c_int {
-    return if v < min { min } else if v > max { max } else { v };
-}
-#[inline]
-unsafe extern "C" fn iclip_u8(v: libc::c_int) -> libc::c_int {
-    return iclip(v, 0 as libc::c_int, 255 as libc::c_int);
-}
-#[inline]
-unsafe extern "C" fn apply_sign(v: libc::c_int, s: libc::c_int) -> libc::c_int {
-    return if s < 0 as libc::c_int { -v } else { v };
-}
-#[inline]
-unsafe extern "C" fn apply_sign64(v: libc::c_int, s: int64_t) -> libc::c_int {
-    return if s < 0 { -v } else { v };
-}
-#[inline]
-unsafe extern "C" fn ulog2(v: libc::c_uint) -> libc::c_int {
-    return 31 as libc::c_int - clz(v);
-}
-#[inline]
-unsafe extern "C" fn dav1d_alloc_aligned(
-    mut sz: size_t,
-    mut align: size_t,
-) -> *mut libc::c_void {
-    if align & align.wrapping_sub(1) != 0 {
-        unreachable!();
-    }
-    let mut ptr: *mut libc::c_void = 0 as *mut libc::c_void;
-    if posix_memalign(&mut ptr, align, sz) != 0 {
-        return 0 as *mut libc::c_void;
-    }
-    return ptr;
-}
-#[inline]
-unsafe extern "C" fn dav1d_free_aligned(mut ptr: *mut libc::c_void) {
-    free(ptr);
-}
-#[inline]
-unsafe extern "C" fn dav1d_freep_aligned(mut ptr: *mut libc::c_void) {
-    let mut mem: *mut *mut libc::c_void = ptr as *mut *mut libc::c_void;
-    if !(*mem).is_null() {
-        dav1d_free_aligned(*mem);
-        *mem = 0 as *mut libc::c_void;
-    }
-}
-#[inline]
-unsafe extern "C" fn freep(mut ptr: *mut libc::c_void) {
-    let mut mem: *mut *mut libc::c_void = ptr as *mut *mut libc::c_void;
-    if !(*mem).is_null() {
-        free(*mem);
-        *mem = 0 as *mut libc::c_void;
-    }
-}
-#[inline]
-unsafe extern "C" fn dav1d_ref_inc(ref_0: *mut Dav1dRef) {
-    ::core::intrinsics::atomic_xadd_relaxed(&mut (*ref_0).ref_cnt, 1 as libc::c_int);
-}
+use crate::include::common::attributes::ctz;
+
+use crate::include::common::intops::imax;
+use crate::include::common::intops::imin;
+use crate::include::common::intops::iclip;
+use crate::include::common::intops::iclip_u8;
+
+use crate::include::common::intops::apply_sign64;
+use crate::include::common::intops::ulog2;
+use crate::src::mem::dav1d_alloc_aligned;
+use crate::src::mem::dav1d_free_aligned;
+use crate::src::mem::dav1d_freep_aligned;
+use crate::src::mem::freep;
+use crate::src::r#ref::dav1d_ref_inc;
 static mut cfl_allowed_mask: libc::c_uint = ((1 as libc::c_int)
     << BS_32x32 as libc::c_int | (1 as libc::c_int) << BS_32x16 as libc::c_int
     | (1 as libc::c_int) << BS_32x8 as libc::c_int
@@ -1815,19 +1503,7 @@ unsafe extern "C" fn get_comp_dir_ctx(
         return 2 as libc::c_int
     };
 }
-#[inline]
-unsafe extern "C" fn get_poc_diff(
-    order_hint_n_bits: libc::c_int,
-    poc0: libc::c_int,
-    poc1: libc::c_int,
-) -> libc::c_int {
-    if order_hint_n_bits == 0 {
-        return 0 as libc::c_int;
-    }
-    let mask: libc::c_int = (1 as libc::c_int) << order_hint_n_bits - 1 as libc::c_int;
-    let diff: libc::c_int = poc0 - poc1;
-    return (diff & mask - 1 as libc::c_int) - (diff & mask);
-}
+use crate::src::env::get_poc_diff;
 #[inline]
 unsafe extern "C" fn get_jnt_comp_ctx(
     order_hint_n_bits: libc::c_int,
@@ -2260,139 +1936,10 @@ unsafe extern "C" fn get_cur_frame_segid(
         }) as libc::c_uint;
     };
 }
-#[inline]
-unsafe extern "C" fn fix_int_mv_precision(mv: *mut mv) {
-    (*mv)
-        .c2rust_unnamed
-        .x = (((*mv).c2rust_unnamed.x as libc::c_int
-        - ((*mv).c2rust_unnamed.x as libc::c_int >> 15 as libc::c_int)
-        + 3 as libc::c_int) as libc::c_uint & !(7 as libc::c_uint)) as int16_t;
-    (*mv)
-        .c2rust_unnamed
-        .y = (((*mv).c2rust_unnamed.y as libc::c_int
-        - ((*mv).c2rust_unnamed.y as libc::c_int >> 15 as libc::c_int)
-        + 3 as libc::c_int) as libc::c_uint & !(7 as libc::c_uint)) as int16_t;
-}
-#[inline]
-unsafe extern "C" fn fix_mv_precision(hdr: *const Dav1dFrameHeader, mv: *mut mv) {
-    if (*hdr).force_integer_mv != 0 {
-        fix_int_mv_precision(mv);
-    } else if (*hdr).hp == 0 {
-        (*mv)
-            .c2rust_unnamed
-            .x = (((*mv).c2rust_unnamed.x as libc::c_int
-            - ((*mv).c2rust_unnamed.x as libc::c_int >> 15 as libc::c_int))
-            as libc::c_uint & !(1 as libc::c_uint)) as int16_t;
-        (*mv)
-            .c2rust_unnamed
-            .y = (((*mv).c2rust_unnamed.y as libc::c_int
-            - ((*mv).c2rust_unnamed.y as libc::c_int >> 15 as libc::c_int))
-            as libc::c_uint & !(1 as libc::c_uint)) as int16_t;
-    }
-}
-#[inline]
-unsafe extern "C" fn get_gmv_2d(
-    gmv: *const Dav1dWarpedMotionParams,
-    bx4: libc::c_int,
-    by4: libc::c_int,
-    bw4: libc::c_int,
-    bh4: libc::c_int,
-    hdr: *const Dav1dFrameHeader,
-) -> mv {
-    match (*gmv).type_0 as libc::c_uint {
-        2 => {
-            if !((*gmv).matrix[5 as libc::c_int as usize]
-                == (*gmv).matrix[2 as libc::c_int as usize])
-            {
-                unreachable!();
-            }
-            if !((*gmv).matrix[4 as libc::c_int as usize]
-                == -(*gmv).matrix[3 as libc::c_int as usize])
-            {
-                unreachable!();
-            }
-        }
-        1 => {
-            let mut res_0: mv = mv {
-                c2rust_unnamed: {
-                    let mut init = mv_xy {
-                        y: ((*gmv).matrix[0 as libc::c_int as usize]
-                            >> 13 as libc::c_int) as int16_t,
-                        x: ((*gmv).matrix[1 as libc::c_int as usize]
-                            >> 13 as libc::c_int) as int16_t,
-                    };
-                    init
-                },
-            };
-            if (*hdr).force_integer_mv != 0 {
-                fix_int_mv_precision(&mut res_0);
-            }
-            return res_0;
-        }
-        0 => {
-            return mv {
-                c2rust_unnamed: {
-                    let mut init = mv_xy {
-                        y: 0 as libc::c_int as int16_t,
-                        x: 0 as libc::c_int as int16_t,
-                    };
-                    init
-                },
-            };
-        }
-        3 | _ => {}
-    }
-    let x: libc::c_int = bx4 * 4 as libc::c_int + bw4 * 2 as libc::c_int
-        - 1 as libc::c_int;
-    let y: libc::c_int = by4 * 4 as libc::c_int + bh4 * 2 as libc::c_int
-        - 1 as libc::c_int;
-    let xc: libc::c_int = ((*gmv).matrix[2 as libc::c_int as usize]
-        - ((1 as libc::c_int) << 16 as libc::c_int)) * x
-        + (*gmv).matrix[3 as libc::c_int as usize] * y
-        + (*gmv).matrix[0 as libc::c_int as usize];
-    let yc: libc::c_int = ((*gmv).matrix[5 as libc::c_int as usize]
-        - ((1 as libc::c_int) << 16 as libc::c_int)) * y
-        + (*gmv).matrix[4 as libc::c_int as usize] * x
-        + (*gmv).matrix[1 as libc::c_int as usize];
-    let shift: libc::c_int = 16 as libc::c_int
-        - (3 as libc::c_int - ((*hdr).hp == 0) as libc::c_int);
-    let round: libc::c_int = (1 as libc::c_int) << shift >> 1 as libc::c_int;
-    let mut res: mv = mv {
-        c2rust_unnamed: {
-            let mut init = mv_xy {
-                y: apply_sign(
-                    abs(yc) + round >> shift << ((*hdr).hp == 0) as libc::c_int,
-                    yc,
-                ) as int16_t,
-                x: apply_sign(
-                    abs(xc) + round >> shift << ((*hdr).hp == 0) as libc::c_int,
-                    xc,
-                ) as int16_t,
-            };
-            init
-        },
-    };
-    if (*hdr).force_integer_mv != 0 {
-        fix_int_mv_precision(&mut res);
-    }
-    return res;
-}
-#[inline]
-unsafe extern "C" fn dav1d_msac_decode_bools(
-    s: *mut MsacContext,
-    mut n: libc::c_uint,
-) -> libc::c_uint {
-    let mut v: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    loop {
-        let fresh0 = n;
-        n = n.wrapping_sub(1);
-        if !(fresh0 != 0) {
-            break;
-        }
-        v = v << 1 as libc::c_int | dav1d_msac_decode_bool_equi(s);
-    }
-    return v;
-}
+
+use crate::src::env::fix_mv_precision;
+use crate::src::env::get_gmv_2d;
+use crate::src::msac::dav1d_msac_decode_bools;
 #[inline]
 unsafe extern "C" fn dav1d_msac_decode_uniform(
     s: *mut MsacContext,
