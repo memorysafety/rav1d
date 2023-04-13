@@ -300,14 +300,6 @@ extern "C" {
     );
 }
 
-cfg_if! {
-    if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
-        use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX512ICL;
-        use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
-        use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
-        use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSSE3;
-    }
-}
 pub type pixel = uint8_t;
 pub type coef = int16_t;
 use crate::src::looprestoration::LrEdgeFlags;
@@ -1186,6 +1178,11 @@ unsafe extern "C" fn loop_restoration_dsp_init_x86(
     c: *mut Dav1dLoopRestorationDSPContext,
     _bpc: libc::c_int,
 ) {
+    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX512ICL;
+    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
+    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
+    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSSE3;
+
     let flags = dav1d_get_cpu_flags();
 
     if flags & DAV1D_X86_CPU_FLAG_SSE2 == 0 {

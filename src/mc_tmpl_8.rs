@@ -1832,16 +1832,6 @@ extern "C" {
     );
 }
 
-cfg_if! {
-    if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
-        use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX512ICL;
-        use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
-        use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
-        use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE41;
-        use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSSE3;
-    }
-}
-
 pub type pixel = uint8_t;
 
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SHARP;
@@ -5072,6 +5062,12 @@ unsafe extern "C" fn resize_c(
 #[cfg(all(feature = "asm", any(target_arch ="x86", target_arch = "x86_64")))]
 #[inline(always)]
 unsafe extern "C" fn mc_dsp_init_x86(c: *mut Dav1dMCDSPContext) {
+    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX512ICL;
+    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
+    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
+    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE41;
+    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSSE3;
+
     let flags: libc::c_uint = dav1d_get_cpu_flags();
 
     if flags & DAV1D_X86_CPU_FLAG_SSE2 == 0 {

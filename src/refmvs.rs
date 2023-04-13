@@ -159,13 +159,7 @@ pub type splat_mv_fn = Option::<
 pub struct Dav1dRefmvsDSPContext {
     pub splat_mv: splat_mv_fn,
 }
-cfg_if! {
-    if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
-        use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX512ICL;
-        use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
-        use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
-    }
-}
+
 use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
 use crate::include::common::intops::iclip;
@@ -2022,6 +2016,10 @@ use crate::src::cpu::dav1d_get_cpu_flags;
 #[inline(always)]
 #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "asm"))]
 unsafe extern "C" fn refmvs_dsp_init_x86(c: *mut Dav1dRefmvsDSPContext) {
+    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX512ICL;
+    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
+    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
+
     let flags = dav1d_get_cpu_flags();
 
     if flags & DAV1D_X86_CPU_FLAG_SSE2 == 0 {

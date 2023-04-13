@@ -85,12 +85,6 @@ pub struct MsacContext {
     >,
 }
 use crate::include::common::attributes::clz;
-cfg_if! {
-    if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
-        use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
-        use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
-    }
-}
 use crate::include::common::intops::inv_recenter;
 
 #[inline]
@@ -113,6 +107,9 @@ pub unsafe extern "C" fn dav1d_msac_decode_bools(
 #[cfg(all(feature = "asm", target_arch = "x86_64"))]
 #[inline(always)]
 unsafe extern "C" fn msac_init_x86(s: *mut MsacContext) {
+    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
+    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
+
     let flags: libc::c_uint = dav1d_get_cpu_flags();
     if flags & DAV1D_X86_CPU_FLAG_SSE2 as libc::c_int as libc::c_uint != 0 {
         (*s)

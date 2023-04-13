@@ -379,14 +379,6 @@ pub struct Dav1dFilmGrainDSPContext {
     pub fgy_32x32xn: fgy_32x32xn_fn,
     pub fguv_32x32xn: [fguv_32x32xn_fn; 3],
 }
-cfg_if! {
-    if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
-        use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX512ICL;
-        use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SLOW_GATHER;
-        use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
-        use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSSE3;
-    }
-}
 use crate::include::common::intops::iclip_u8;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::imin;
@@ -1386,6 +1378,11 @@ unsafe extern "C" fn fguv_32x32xn_444_c(
 ))]
 #[inline(always)]
 unsafe extern "C" fn film_grain_dsp_init_x86(c: *mut Dav1dFilmGrainDSPContext) {
+    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX512ICL;
+    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SLOW_GATHER;
+    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
+    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSSE3;
+
     let flags = dav1d_get_cpu_flags();
 
     if flags & DAV1D_X86_CPU_FLAG_SSSE3 == 0 {
