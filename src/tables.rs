@@ -2,7 +2,6 @@ use crate::include::stdint::*;
 use ::libc;
 use crate::src::align::Align64;
 use crate::include::dav1d::headers::DAV1D_FILTER_BILINEAR;
-
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SHARP;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SMOOTH;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
@@ -5231,339 +5230,117 @@ pub static mut dav1d_dr_intra_derivative: [uint16_t; 44] = [
     7 as libc::c_int as uint16_t,
     3 as libc::c_int as uint16_t,
 ];
+
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+macro_rules! f {
+    (
+        $arr:ident,
+        $idx:literal,
+        $f0:literal,
+        $f1:literal,
+        $f2:literal,
+        $f3:literal,
+        $f4:literal,
+        $f5:literal,
+        $f6:literal
+    ) => {
+        $arr[2 * $idx + 0]  = $f0;
+        $arr[2 * $idx + 1]  = $f1;
+        $arr[2 * $idx + 16] = $f2;
+        $arr[2 * $idx + 17] = $f3;
+        $arr[2 * $idx + 32] = $f4;
+        $arr[2 * $idx + 33] = $f5;
+        $arr[2 * $idx + 48] = $f6;
+    }
+}
+
+#[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
+macro_rules! f {
+    (
+        $arr:ident,
+        $idx:literal,
+        $f0:literal,
+        $f1:literal,
+        $f2:literal,
+        $f3:literal,
+        $f4:literal,
+        $f5:literal,
+        $f6:literal
+    ) => {
+        $arr[1 * $idx + 0]  = $f0;
+        $arr[1 * $idx + 8]  = $f1;
+        $arr[1 * $idx + 16] = $f2;
+        $arr[1 * $idx + 24] = $f3;
+        $arr[1 * $idx + 32] = $f4;
+        $arr[1 * $idx + 40] = $f5;
+        $arr[1 * $idx + 48] = $f6;
+    }
+}
+
 #[no_mangle]
-pub static mut dav1d_filter_intra_taps: [[int8_t; 64]; 5] = [
-    [
-        -(6 as libc::c_int) as int8_t,
-        10 as libc::c_int as int8_t,
-        -(5 as libc::c_int) as int8_t,
-        2 as libc::c_int as int8_t,
-        -(3 as libc::c_int) as int8_t,
-        1 as libc::c_int as int8_t,
-        -(3 as libc::c_int) as int8_t,
-        1 as libc::c_int as int8_t,
-        -(4 as libc::c_int) as int8_t,
-        6 as libc::c_int as int8_t,
-        -(3 as libc::c_int) as int8_t,
-        2 as libc::c_int as int8_t,
-        -(3 as libc::c_int) as int8_t,
-        2 as libc::c_int as int8_t,
-        -(3 as libc::c_int) as int8_t,
-        1 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        10 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        1 as libc::c_int as int8_t,
-        10 as libc::c_int as int8_t,
-        1 as libc::c_int as int8_t,
-        2 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        6 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        2 as libc::c_int as int8_t,
-        6 as libc::c_int as int8_t,
-        2 as libc::c_int as int8_t,
-        2 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        12 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        9 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        7 as libc::c_int as int8_t,
-        10 as libc::c_int as int8_t,
-        5 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        2 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        2 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        2 as libc::c_int as int8_t,
-        6 as libc::c_int as int8_t,
-        3 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0,
-        0 as libc::c_int as int8_t,
-        0,
-        0 as libc::c_int as int8_t,
-        0,
-        0 as libc::c_int as int8_t,
-        0,
-        12 as libc::c_int as int8_t,
-        0,
-        9 as libc::c_int as int8_t,
-        0,
-        7 as libc::c_int as int8_t,
-        0,
-        5 as libc::c_int as int8_t,
-        0,
-    ],
-    [
-        -(10 as libc::c_int) as int8_t,
-        16 as libc::c_int as int8_t,
-        -(6 as libc::c_int) as int8_t,
-        0 as libc::c_int as int8_t,
-        -(4 as libc::c_int) as int8_t,
-        0 as libc::c_int as int8_t,
-        -(2 as libc::c_int) as int8_t,
-        0 as libc::c_int as int8_t,
-        -(10 as libc::c_int) as int8_t,
-        16 as libc::c_int as int8_t,
-        -(6 as libc::c_int) as int8_t,
-        0 as libc::c_int as int8_t,
-        -(4 as libc::c_int) as int8_t,
-        0 as libc::c_int as int8_t,
-        -(2 as libc::c_int) as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        16 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        16 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        16 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        16 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        10 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        6 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        4 as libc::c_int as int8_t,
-        16 as libc::c_int as int8_t,
-        2 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        16 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0,
-        0 as libc::c_int as int8_t,
-        0,
-        0 as libc::c_int as int8_t,
-        0,
-        0 as libc::c_int as int8_t,
-        0,
-        10 as libc::c_int as int8_t,
-        0,
-        6 as libc::c_int as int8_t,
-        0,
-        4 as libc::c_int as int8_t,
-        0,
-        2 as libc::c_int as int8_t,
-        0,
-    ],
-    [
-        -(8 as libc::c_int) as int8_t,
-        8 as libc::c_int as int8_t,
-        -(8 as libc::c_int) as int8_t,
-        0 as libc::c_int as int8_t,
-        -(8 as libc::c_int) as int8_t,
-        0 as libc::c_int as int8_t,
-        -(8 as libc::c_int) as int8_t,
-        0 as libc::c_int as int8_t,
-        -(4 as libc::c_int) as int8_t,
-        4 as libc::c_int as int8_t,
-        -(4 as libc::c_int) as int8_t,
-        0 as libc::c_int as int8_t,
-        -(4 as libc::c_int) as int8_t,
-        0 as libc::c_int as int8_t,
-        -(4 as libc::c_int) as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        8 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        8 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        4 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        4 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        16 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        16 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        16 as libc::c_int as int8_t,
-        8 as libc::c_int as int8_t,
-        16 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        4 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0,
-        0 as libc::c_int as int8_t,
-        0,
-        0 as libc::c_int as int8_t,
-        0,
-        0 as libc::c_int as int8_t,
-        0,
-        16 as libc::c_int as int8_t,
-        0,
-        16 as libc::c_int as int8_t,
-        0,
-        16 as libc::c_int as int8_t,
-        0,
-        16 as libc::c_int as int8_t,
-        0,
-    ],
-    [
-        -(2 as libc::c_int) as int8_t,
-        8 as libc::c_int as int8_t,
-        -(1 as libc::c_int) as int8_t,
-        3 as libc::c_int as int8_t,
-        -(1 as libc::c_int) as int8_t,
-        2 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        1 as libc::c_int as int8_t,
-        -(1 as libc::c_int) as int8_t,
-        4 as libc::c_int as int8_t,
-        -(1 as libc::c_int) as int8_t,
-        3 as libc::c_int as int8_t,
-        -(1 as libc::c_int) as int8_t,
-        2 as libc::c_int as int8_t,
-        -(1 as libc::c_int) as int8_t,
-        2 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        8 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        3 as libc::c_int as int8_t,
-        8 as libc::c_int as int8_t,
-        2 as libc::c_int as int8_t,
-        3 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        4 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        3 as libc::c_int as int8_t,
-        4 as libc::c_int as int8_t,
-        2 as libc::c_int as int8_t,
-        3 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        10 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        6 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        4 as libc::c_int as int8_t,
-        8 as libc::c_int as int8_t,
-        2 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        3 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        4 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        4 as libc::c_int as int8_t,
-        4 as libc::c_int as int8_t,
-        3 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0,
-        0 as libc::c_int as int8_t,
-        0,
-        0 as libc::c_int as int8_t,
-        0,
-        0 as libc::c_int as int8_t,
-        0,
-        10 as libc::c_int as int8_t,
-        0,
-        6 as libc::c_int as int8_t,
-        0,
-        4 as libc::c_int as int8_t,
-        0,
-        3 as libc::c_int as int8_t,
-        0,
-    ],
-    [
-        -(12 as libc::c_int) as int8_t,
-        14 as libc::c_int as int8_t,
-        -(10 as libc::c_int) as int8_t,
-        0 as libc::c_int as int8_t,
-        -(9 as libc::c_int) as int8_t,
-        0 as libc::c_int as int8_t,
-        -(8 as libc::c_int) as int8_t,
-        0 as libc::c_int as int8_t,
-        -(10 as libc::c_int) as int8_t,
-        12 as libc::c_int as int8_t,
-        -(9 as libc::c_int) as int8_t,
-        1 as libc::c_int as int8_t,
-        -(8 as libc::c_int) as int8_t,
-        0 as libc::c_int as int8_t,
-        -(7 as libc::c_int) as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        14 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        14 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        12 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        12 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        1 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        14 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        12 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        11 as libc::c_int as int8_t,
-        14 as libc::c_int as int8_t,
-        10 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        1 as libc::c_int as int8_t,
-        12 as libc::c_int as int8_t,
-        1 as libc::c_int as int8_t,
-        0 as libc::c_int as int8_t,
-        0,
-        0 as libc::c_int as int8_t,
-        0,
-        0 as libc::c_int as int8_t,
-        0,
-        0 as libc::c_int as int8_t,
-        0,
-        14 as libc::c_int as int8_t,
-        0,
-        12 as libc::c_int as int8_t,
-        0,
-        11 as libc::c_int as int8_t,
-        0,
-        9 as libc::c_int as int8_t,
-        0,
-    ],
-];
+pub static mut dav1d_filter_intra_taps: Align64<[[int8_t; 64]; 5]> = Align64([
+    {
+        let mut array = [0; 64];
+        f!(array, 0,  -6, 10,  0,  0,  0, 12,  0);
+        f!(array, 1,  -5,  2, 10,  0,  0,  9,  0);
+        f!(array, 2,  -3,  1,  1, 10,  0,  7,  0);
+        f!(array, 3,  -3,  1,  1,  2, 10,  5,  0);
+        f!(array, 4,  -4,  6,  0,  0,  0,  2, 12);
+        f!(array, 5,  -3,  2,  6,  0,  0,  2,  9);
+        f!(array, 6,  -3,  2,  2,  6,  0,  2,  7);
+        f!(array, 7,  -3,  1,  2,  2,  6,  3,  5);
+        array
+    },
+    {
+        let mut array = [0; 64];
+        f!(array, 0, -10, 16,  0,  0,  0, 10,  0);
+        f!(array, 1,  -6,  0, 16,  0,  0,  6,  0);
+        f!(array, 2,  -4,  0,  0, 16,  0,  4,  0);
+        f!(array, 3,  -2,  0,  0,  0, 16,  2,  0);
+        f!(array, 4, -10, 16,  0,  0,  0,  0, 10);
+        f!(array, 5,  -6,  0, 16,  0,  0,  0,  6);
+        f!(array, 6,  -4,  0,  0, 16,  0,  0,  4);
+        f!(array, 7,  -2,  0,  0,  0, 16,  0,  2);
+        array
+    },
+    {
+        let mut array = [0; 64];
+        f!(array, 0,  -8,  8,  0,  0,  0, 16,  0);
+        f!(array, 1,  -8,  0,  8,  0,  0, 16,  0);
+        f!(array, 2,  -8,  0,  0,  8,  0, 16,  0);
+        f!(array, 3,  -8,  0,  0,  0,  8, 16,  0);
+        f!(array, 4,  -4,  4,  0,  0,  0,  0, 16);
+        f!(array, 5,  -4,  0,  4,  0,  0,  0, 16);
+        f!(array, 6,  -4,  0,  0,  4,  0,  0, 16);
+        f!(array, 7,  -4,  0,  0,  0,  4,  0, 16);
+        array
+    },
+    {
+        let mut array = [0; 64];
+        f!(array, 0,  -2,  8,  0,  0,  0, 10,  0);
+        f!(array, 1,  -1,  3,  8,  0,  0,  6,  0);
+        f!(array, 2,  -1,  2,  3,  8,  0,  4,  0);
+        f!(array, 3,   0,  1,  2,  3,  8,  2,  0);
+        f!(array, 4,  -1,  4,  0,  0,  0,  3, 10);
+        f!(array, 5,  -1,  3,  4,  0,  0,  4,  6);
+        f!(array, 6,  -1,  2,  3,  4,  0,  4,  4);
+        f!(array, 7,  -1,  2,  2,  3,  4,  3,  3);
+        array
+    },
+    {
+        let mut array = [0; 64];
+        f!(array, 0, -12, 14,  0,  0,  0, 14,  0);
+        f!(array, 1, -10,  0, 14,  0,  0, 12,  0);
+        f!(array, 2,  -9,  0,  0, 14,  0, 11,  0);
+        f!(array, 3,  -8,  0,  0,  0, 14, 10,  0);
+        f!(array, 4, -10, 12,  0,  0,  0,  0, 14);
+        f!(array, 5,  -9,  1, 12,  0,  0,  0, 12);
+        f!(array, 6,  -8,  0,  0, 12,  0,  1, 11);
+        f!(array, 7,  -7,  0,  0,  1, 12,  1,  9);
+        array
+    }
+]);
+
 #[no_mangle]
 pub static mut dav1d_obmc_masks: [uint8_t; 64] = [
     0 as libc::c_int as uint8_t,

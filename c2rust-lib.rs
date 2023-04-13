@@ -75,6 +75,7 @@ pub mod ipred_prepare_tmpl_16;
 #[cfg(feature = "bitdepth_8")]
 pub mod ipred_prepare_tmpl_8;
 pub mod ipred;
+pub mod ipred_tmpl;
 #[cfg(feature = "bitdepth_16")]
 pub mod ipred_tmpl_16;
 #[cfg(feature = "bitdepth_8")]
