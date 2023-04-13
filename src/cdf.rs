@@ -834,10 +834,7 @@ use crate::src::levels::N_INTRA_PRED_MODES;
 use crate::src::levels::N_MV_JOINTS;
 
 use crate::src::levels::N_COMP_INTER_PRED_MODES;
-#[inline]
-unsafe extern "C" fn dav1d_ref_inc(ref_0: *mut Dav1dRef) {
-    ::core::intrinsics::atomic_xadd_relaxed(&mut (*ref_0).ref_cnt, 1 as libc::c_int);
-}
+use crate::src::r#ref::dav1d_ref_inc;
 use crate::include::common::intops::imin;
 pub fn av1_default_cdf() -> CdfModeContext {
     let mut init = CdfModeContext {
