@@ -1815,6 +1815,8 @@ unsafe extern "C" fn ipred_filter_c(
     _max_height: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
+    use crate::src::ipred_tmpl::{filter_fn, FLT_INCR};
+
     filt_idx &= 511 as libc::c_int;
     if !(filt_idx < 5 as libc::c_int) {
         unreachable!();
@@ -1847,15 +1849,7 @@ unsafe extern "C" fn ipred_filter_c(
             while yy < 2 as libc::c_int {
                 let mut xx: libc::c_int = 0 as libc::c_int;
                 while xx < 4 as libc::c_int {
-                    let acc: libc::c_int = *flt_ptr.offset(0 as libc::c_int as isize)
-                        as libc::c_int * p0
-                        + *flt_ptr.offset(1 as libc::c_int as isize) as libc::c_int * p1
-                        + *flt_ptr.offset(16 as libc::c_int as isize) as libc::c_int * p2
-                        + *flt_ptr.offset(17 as libc::c_int as isize) as libc::c_int * p3
-                        + *flt_ptr.offset(32 as libc::c_int as isize) as libc::c_int * p4
-                        + *flt_ptr.offset(33 as libc::c_int as isize) as libc::c_int * p5
-                        + *flt_ptr.offset(48 as libc::c_int as isize) as libc::c_int
-                            * p6;
+                    let acc: libc::c_int = filter_fn(flt_ptr, p0, p1, p2, p3, p4, p5, p6);
                     *ptr
                         .offset(
                             xx as isize,
@@ -1865,7 +1859,7 @@ unsafe extern "C" fn ipred_filter_c(
                         bitdepth_max,
                     ) as pixel;
                     xx += 1;
-                    flt_ptr = flt_ptr.offset(2 as libc::c_int as isize);
+                    flt_ptr = flt_ptr.offset(FLT_INCR);
                 }
                 ptr = ptr.offset(PXSTRIDE(stride) as isize);
                 yy += 1;
