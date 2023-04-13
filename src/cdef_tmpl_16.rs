@@ -248,13 +248,6 @@ pub struct Dav1dCdefDSPContext {
     pub dir: cdef_dir_fn,
     pub fb: [cdef_fn; 3],
 }
-pub const DAV1D_X86_CPU_FLAG_AVX512ICL: CpuFlags = 16;
-pub const DAV1D_X86_CPU_FLAG_SSE2: CpuFlags = 1;
-pub const DAV1D_X86_CPU_FLAG_AVX2: CpuFlags = 8;
-pub const DAV1D_X86_CPU_FLAG_SSE41: CpuFlags = 4;
-pub const DAV1D_X86_CPU_FLAG_SSSE3: CpuFlags = 2;
-pub type CpuFlags = libc::c_uint;
-pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
 use crate::include::common::attributes::clz;
 use crate::include::common::intops::imax;
 
@@ -861,6 +854,11 @@ unsafe extern "C" fn cdef_find_dir_c(
     any(target_arch = "x86", target_arch = "x86_64"),
 ))]
 unsafe extern "C" fn cdef_dsp_init_x86(c: *mut Dav1dCdefDSPContext) {
+    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX512ICL;
+    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
+    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE41;
+    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSSE3;
+
     let flags = dav1d_get_cpu_flags();
 
     if flags & DAV1D_X86_CPU_FLAG_SSSE3 == 0 {
@@ -1057,17 +1055,8 @@ unsafe extern "C" fn cdef_filter_4x4_neon(
     );
 }
 
-#[inline(always)]
 #[cfg(feature = "asm")]
-unsafe extern "C" fn dav1d_get_cpu_flags() -> libc::c_uint {
-    let mut flags: libc::c_uint = dav1d_cpu_flags & dav1d_cpu_flags_mask;
-    cfg_if! {
-        if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
-            flags |= DAV1D_X86_CPU_FLAG_SSE2;
-        }
-    }
-    return flags;
-}
+use crate::src::cpu::dav1d_get_cpu_flags;
 
 #[no_mangle]
 #[cold]

@@ -18,10 +18,25 @@ extern "C" {
 use crate::include::sched::cpu_set_t;
 
 use crate::include::pthread::pthread_t;
+
 #[no_mangle]
 pub static mut dav1d_cpu_flags: libc::c_uint = 0 as libc::c_uint;
 #[no_mangle]
 pub static mut dav1d_cpu_flags_mask: libc::c_uint = !(0 as libc::c_uint);
+
+#[cfg(feature = "asm")]
+#[inline(always)]
+pub unsafe extern "C" fn dav1d_get_cpu_flags() -> libc::c_uint {
+    let mut flags: libc::c_uint = dav1d_cpu_flags & dav1d_cpu_flags_mask;
+    cfg_if! {
+        if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
+            use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
+            flags |= DAV1D_X86_CPU_FLAG_SSE2;
+        }
+    }
+    return flags;
+}
+
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_init_cpu() {

@@ -85,17 +85,6 @@ pub struct MsacContext {
     >,
 }
 use crate::include::common::attributes::clz;
-cfg_if! {
-    if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
-        pub type CpuFlags = libc::c_uint;
-        pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
-        pub const DAV1D_X86_CPU_FLAG_AVX512ICL: CpuFlags = 16;
-        pub const DAV1D_X86_CPU_FLAG_AVX2: CpuFlags = 8;
-        pub const DAV1D_X86_CPU_FLAG_SSE41: CpuFlags = 4;
-        pub const DAV1D_X86_CPU_FLAG_SSSE3: CpuFlags = 2;
-        pub const DAV1D_X86_CPU_FLAG_SSE2: CpuFlags = 1;
-    }
-}
 use crate::include::common::intops::inv_recenter;
 
 #[inline]
@@ -118,6 +107,9 @@ pub unsafe extern "C" fn dav1d_msac_decode_bools(
 #[cfg(all(feature = "asm", target_arch = "x86_64"))]
 #[inline(always)]
 unsafe extern "C" fn msac_init_x86(s: *mut MsacContext) {
+    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
+    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
+
     let flags: libc::c_uint = dav1d_get_cpu_flags();
     if flags & DAV1D_X86_CPU_FLAG_SSE2 as libc::c_int as libc::c_uint != 0 {
         (*s)
@@ -142,13 +134,10 @@ unsafe extern "C" fn msac_init_x86(s: *mut MsacContext) {
         );
     }
 }
-#[cfg(all(feature = "asm", target_arch = "x86_64"))]
-#[inline(always)]
-unsafe extern "C" fn dav1d_get_cpu_flags() -> libc::c_uint {
-    let mut flags: libc::c_uint = dav1d_cpu_flags & dav1d_cpu_flags_mask;
-    flags |= DAV1D_X86_CPU_FLAG_SSE2 as libc::c_int as libc::c_uint;
-    return flags;
-}
+
+#[cfg(feature = "asm")]
+use crate::src::cpu::dav1d_get_cpu_flags;
+
 #[inline]
 unsafe extern "C" fn ctx_refill(s: *mut MsacContext) {
     let mut buf_pos: *const uint8_t = (*s).buf_pos;
