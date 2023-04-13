@@ -584,7 +584,7 @@ unsafe extern "C" fn wiener_c(
     padding(tmp.as_mut_ptr(), p, stride, left, lpf, w, h, edges);
     let mut hor: [uint16_t; 27300] = [0; 27300];
     let mut hor_ptr: *mut uint16_t = hor.as_mut_ptr();
-    let filter: *const [int16_t; 8] = ((*params).filter).as_ptr();
+    let filter: *const [int16_t; 8] = ((*params).filter.0).as_ptr();
     let bitdepth: libc::c_int = 32 as libc::c_int - clz(bitdepth_max as libc::c_uint);
     let round_bits_h: libc::c_int = 3 as libc::c_int
         + (bitdepth == 12 as libc::c_int) as libc::c_int * 2 as libc::c_int;
