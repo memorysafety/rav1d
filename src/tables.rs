@@ -1,5 +1,6 @@
 use crate::include::stdint::*;
 use ::libc;
+use crate::src::align::Align64;
 use crate::include::dav1d::headers::DAV1D_FILTER_BILINEAR;
 
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SHARP;
@@ -1303,7 +1304,7 @@ pub static mut dav1d_sgr_params: [[uint16_t; 2]; 16] = [
     [22 as libc::c_int as uint16_t, 0 as libc::c_int as uint16_t],
 ];
 #[no_mangle]
-pub static mut dav1d_sgr_x_by_x: [uint8_t; 256] = [
+pub static mut dav1d_sgr_x_by_x: Align64<[uint8_t; 256]> = Align64([
     255 as libc::c_int as uint8_t,
     128 as libc::c_int as uint8_t,
     85 as libc::c_int as uint8_t,
@@ -1560,7 +1561,7 @@ pub static mut dav1d_sgr_x_by_x: [uint8_t; 256] = [
     1 as libc::c_int as uint8_t,
     1 as libc::c_int as uint8_t,
     0 as libc::c_int as uint8_t,
-];
+]);
 #[no_mangle]
 pub static mut dav1d_mc_subpel_filters: [[[int8_t; 8]; 15]; 6] = [
     [
