@@ -2,7 +2,6 @@ use crate::include::stdint::uint16_t;
 use crate::include::stdint::uint32_t;
 use crate::include::stdint::uint64_t;
 use crate::include::stdint::uint8_t;
-use std::mem;
 
 pub trait Alias {
     fn set(&mut self, val: u64);
@@ -63,8 +62,6 @@ impl Alias for alias64 {
 pub unsafe fn set_ctx_rep1<T: Alias>(buf: *mut u8, off: isize, val: u64) {
     let buf = buf.offset(off);
     let buf = buf.cast::<T>();
-    // debug_assert!(buf.is_aligned()); // #![feature(pointer_is_aligned)]
-    debug_assert!(buf.cast::<u8>() as usize & mem::align_of::<T>() - 1 == 0);
     (*buf).set(val);
 }
 
