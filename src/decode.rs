@@ -4536,8 +4536,8 @@ unsafe fn decode_b(
             }) as IntraPredMode;
 
             let set_ctx = |dir: &mut BlockContext, off, mul, rep_macro: SetCtxFn| {
-                rep_macro(dir.mode.as_mut_ptr() as *mut u8, off, mul * y_mode_nofilt as u64);
-                rep_macro(dir.intra.as_mut_ptr() as *mut u8, off, mul);
+                rep_macro(dir.mode.as_mut_ptr(), off, mul * y_mode_nofilt as u64);
+                rep_macro(dir.intra.as_mut_ptr(), off, mul);
             };
             case_set(bh4, &mut t.l, by4 as isize, set_ctx);
             case_set(bw4, &mut *t.a, bx4 as isize, set_ctx);
@@ -4579,7 +4579,7 @@ unsafe fn decode_b(
             if has_chroma != 0 {
                 let set_ctx = |dir: &mut BlockContext, off, mul, rep_macro: SetCtxFn| {
                     rep_macro(
-                        dir.uvmode.as_mut_ptr() as *mut u8,
+                        dir.uvmode.as_mut_ptr(),
                         off,
                         mul * (*b).c2rust_unnamed.c2rust_unnamed.uv_mode as u64,
                     );
@@ -4842,7 +4842,7 @@ unsafe fn decode_b(
             }
             if has_chroma != 0 {
                 let set_ctx = |dir: &mut BlockContext, off, mul, rep_macro: SetCtxFn| {
-                    rep_macro(dir.uvmode.as_mut_ptr().cast(), off, mul * DC_PRED as u64);
+                    rep_macro(dir.uvmode.as_mut_ptr(), off, mul * DC_PRED as u64);
                 };
                 case_set(cbh4, &mut t.l, cby4 as isize, set_ctx);
                 case_set(cbw4, &mut *t.a, cbx4 as isize, set_ctx);
