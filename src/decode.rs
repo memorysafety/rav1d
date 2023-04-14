@@ -4587,172 +4587,42 @@ unsafe fn decode_b(
                 case_set(cbw4, &mut *t.a, cbx4 as isize, set_ctx);
             }
         } else {
-            if (*f.frame_hdr).frame_type as libc::c_uint
-                & 1 as libc::c_int as libc::c_uint != 0
-                && b.c2rust_unnamed.c2rust_unnamed_0.comp_type as libc::c_int
-                    == COMP_INTER_NONE as libc::c_int
-                && b.c2rust_unnamed.c2rust_unnamed_0.motion_mode as libc::c_int
-                    == MM_WARP as libc::c_int
-            {
-                if b
-                    .c2rust_unnamed
-                    .c2rust_unnamed_0
-                    .c2rust_unnamed
-                    .c2rust_unnamed_0
-                    .matrix[0 as libc::c_int as usize] as libc::c_int
-                    == -(32767 as libc::c_int) - 1 as libc::c_int
-                {
+            if is_inter_or_switch(&*f.frame_hdr) {
+                if b.matrix()[0] == i16::MIN {
                     t.warpmv.type_0 = DAV1D_WM_TYPE_IDENTITY;
                 } else {
                     t.warpmv.type_0 = DAV1D_WM_TYPE_AFFINE;
-                    (*t)
-                        .warpmv
-                        .matrix[2 as libc::c_int
-                        as usize] = b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .matrix[0 as libc::c_int as usize] as libc::c_int
-                        + 0x10000 as libc::c_int;
-                    (*t)
-                        .warpmv
-                        .matrix[3 as libc::c_int
-                        as usize] = b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .matrix[1 as libc::c_int as usize] as int32_t;
-                    (*t)
-                        .warpmv
-                        .matrix[4 as libc::c_int
-                        as usize] = b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .matrix[2 as libc::c_int as usize] as int32_t;
-                    (*t)
-                        .warpmv
-                        .matrix[5 as libc::c_int
-                        as usize] = b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .matrix[3 as libc::c_int as usize] as libc::c_int
-                        + 0x10000 as libc::c_int;
+                    t.warpmv.matrix[2] = b.matrix()[0] as int32_t + 0x10000;
+                    t.warpmv.matrix[3] = b.matrix()[1] as int32_t;
+                    t.warpmv.matrix[4] = b.matrix()[2] as int32_t;
+                    t.warpmv.matrix[5] = b.matrix()[3] as int32_t + 0x10000;
                     dav1d_set_affine_mv2d(
                         bw4,
                         bh4,
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .mv2d,
+                        *b.mv2d(),
                         &mut t.warpmv,
                         t.bx,
                         t.by,
                     );
                     dav1d_get_shear_params(&mut t.warpmv);
+
                     if DEBUG_BLOCK_INFO(f, t)
                     {
-                        printf(
-                            b"[ %c%x %c%x %c%x\n  %c%x %c%x %c%x ]\nalpha=%c%x, beta=%c%x, gamma=%c%x, delta=%c%x, mv=y:%d,x:%d\n\0"
-                                as *const u8 as *const libc::c_char,
-                            if t.warpmv.matrix[0 as libc::c_int as usize]
-                                < 0 as libc::c_int
-                            {
-                                '-' as i32
-                            } else {
-                                ' ' as i32
-                            },
-                            abs(t.warpmv.matrix[0 as libc::c_int as usize]),
-                            if t.warpmv.matrix[1 as libc::c_int as usize]
-                                < 0 as libc::c_int
-                            {
-                                '-' as i32
-                            } else {
-                                ' ' as i32
-                            },
-                            abs(t.warpmv.matrix[1 as libc::c_int as usize]),
-                            if t.warpmv.matrix[2 as libc::c_int as usize]
-                                < 0 as libc::c_int
-                            {
-                                '-' as i32
-                            } else {
-                                ' ' as i32
-                            },
-                            abs(t.warpmv.matrix[2 as libc::c_int as usize]),
-                            if t.warpmv.matrix[3 as libc::c_int as usize]
-                                < 0 as libc::c_int
-                            {
-                                '-' as i32
-                            } else {
-                                ' ' as i32
-                            },
-                            abs(t.warpmv.matrix[3 as libc::c_int as usize]),
-                            if t.warpmv.matrix[4 as libc::c_int as usize]
-                                < 0 as libc::c_int
-                            {
-                                '-' as i32
-                            } else {
-                                ' ' as i32
-                            },
-                            abs(t.warpmv.matrix[4 as libc::c_int as usize]),
-                            if t.warpmv.matrix[5 as libc::c_int as usize]
-                                < 0 as libc::c_int
-                            {
-                                '-' as i32
-                            } else {
-                                ' ' as i32
-                            },
-                            abs(t.warpmv.matrix[5 as libc::c_int as usize]),
-                            if (t.warpmv.u.p.alpha as libc::c_int) < 0 as libc::c_int
-                            {
-                                '-' as i32
-                            } else {
-                                ' ' as i32
-                            },
-                            abs(t.warpmv.u.p.alpha as libc::c_int),
-                            if (t.warpmv.u.p.beta as libc::c_int) < 0 as libc::c_int {
-                                '-' as i32
-                            } else {
-                                ' ' as i32
-                            },
-                            abs(t.warpmv.u.p.beta as libc::c_int),
-                            if (t.warpmv.u.p.gamma as libc::c_int) < 0 as libc::c_int
-                            {
-                                '-' as i32
-                            } else {
-                                ' ' as i32
-                            },
-                            abs(t.warpmv.u.p.gamma as libc::c_int),
-                            if (t.warpmv.u.p.delta as libc::c_int) < 0 as libc::c_int
-                            {
-                                '-' as i32
-                            } else {
-                                ' ' as i32
-                            },
-                            abs(t.warpmv.u.p.delta as libc::c_int),
-                            b
-                                .c2rust_unnamed
-                                .c2rust_unnamed_0
-                                .c2rust_unnamed
-                                .c2rust_unnamed_0
-                                .mv2d
-                                .c2rust_unnamed
-                                .y as libc::c_int,
-                            b
-                                .c2rust_unnamed
-                                .c2rust_unnamed_0
-                                .c2rust_unnamed
-                                .c2rust_unnamed_0
-                                .mv2d
-                                .c2rust_unnamed
-                                .x as libc::c_int,
+                        println!(
+                            "[ {:+x} {:+x} {:+x}\n  {:+x} {:+x} {:+x} ]\n\
+                            alpha={:+x}, beta={:+x}, gamma={:+x}, deta={:+x}, mv=y:{},x:{}",
+                            t.warpmv.matrix[0],
+                            t.warpmv.matrix[1],
+                            t.warpmv.matrix[2],
+                            t.warpmv.matrix[3],
+                            t.warpmv.matrix[4],
+                            t.warpmv.matrix[5],
+                            t.warpmv.u.p.alpha,
+                            t.warpmv.u.p.beta,
+                            t.warpmv.u.p.gamma,
+                            t.warpmv.u.p.delta,
+                            b.mv2d().y(),
+                            b.mv2d().x(),
                         );
                     }
                 }
