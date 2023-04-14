@@ -19,6 +19,7 @@ pub mod include {
 pub mod common {
 pub mod attributes;
 pub mod dump;
+pub mod frame;
 pub mod intops;
 } // mod common
 pub mod dav1d {

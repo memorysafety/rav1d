@@ -280,3 +280,9 @@ pub struct Av1Block {
     pub uvtx: uint8_t,
     pub c2rust_unnamed: Av1Block_intra_inter,
 }
+
+impl Av1Block {
+    pub unsafe fn y_mode(&self) -> u8 {
+        self.c2rust_unnamed.c2rust_unnamed.y_mode
+    }
+}
