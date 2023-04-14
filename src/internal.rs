@@ -15,6 +15,7 @@ use crate::src::intra_edge::EdgeTip;
 use crate::src::picture::Dav1dThreadPicture;
 use crate::src::r#ref::Dav1dRef;
 use crate::src::thread_data::thread_data;
+use crate::src::align::*;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -49,15 +50,15 @@ pub struct Dav1dContext_frame_thread {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct TaskThreadData_grain_lut_scaling_8 {
-    pub grain_lut_8bpc: [[[int8_t; 82]; 74]; 3],
-    pub scaling_8bpc: [[uint8_t; 256]; 3],
+    pub grain_lut_8bpc: Align16<[[[int8_t; 82]; 74]; 3]>,
+    pub scaling_8bpc: Align64<[[uint8_t; 256]; 3]>,
 }
 
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct TaskThreadData_grain_lut_scaling_16 {
-    pub grain_lut_16bpc: [[[int16_t; 82]; 74]; 3],
-    pub scaling_16bpc: [[uint8_t; 4096]; 3],
+    pub grain_lut_16bpc: Align16<[[[int16_t; 82]; 74]; 3]>,
+    pub scaling_16bpc: Align64<[[uint8_t; 4096]; 3]>,
 }
 
 #[derive(Copy, Clone)]
