@@ -79,3 +79,16 @@ where
     };
     set_ctx(&case, dir);
 }
+
+pub unsafe fn case_set_many<const N: usize, T, F>(
+    aligns: [c_int; N],
+    offsets: [c_int; N],
+    dirs: [&mut T; N],
+    set_ctx: F,
+) where
+    F: Fn(&CaseSetter, &mut T) + Copy,
+{
+    for i in 0..N {
+        case_set(aligns[i], offsets[i], dirs[i], set_ctx);
+    }
+}
