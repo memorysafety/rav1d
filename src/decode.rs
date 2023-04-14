@@ -4,6 +4,9 @@ use ::libc;
 use crate::src::msac::MsacContext;
 use crate::src::cdf::{CdfContext, CdfMvComponent, CdfMvContext};
 use crate::src::ctx::{case_set, SetCtxFn};
+
+use crate::src::align::Align16;
+
 extern "C" {
     fn memcpy(
         _: *mut libc::c_void,
@@ -471,7 +474,7 @@ pub struct Dav1dFrameContext_lf {
     pub cdef_buf_sbh: libc::c_int,
     pub lr_buf_plane_sz: [libc::c_int; 2],
     pub re_sz: libc::c_int,
-    pub lim_lut: Av1FilterLUT,
+    pub lim_lut: Align16<Av1FilterLUT>,
     pub last_sharpness: libc::c_int,
     pub lvl: [[[[uint8_t; 2]; 8]; 4]; 8],
     pub tx_lpf_right_edge: [*mut uint8_t; 2],
@@ -4007,7 +4010,7 @@ unsafe extern "C" fn splat_oneref_mv(
 ) {
     let mode: InterPredMode = (*b).c2rust_unnamed.c2rust_unnamed_0.inter_mode
         as InterPredMode;
-    let tmpl: refmvs_block = {
+    let tmpl: Align16<refmvs_block> = {
         let mut init = refmvs_block {
             mv: refmvs_mvpair {
                 mv: [
@@ -4044,7 +4047,7 @@ unsafe extern "C" fn splat_oneref_mv(
                 | (mode as libc::c_uint == NEWMV as libc::c_int as libc::c_uint)
                     as libc::c_int * 2 as libc::c_int) as uint8_t,
         };
-        init
+        Align16(init)
     };
     ((*c).refmvs_dsp.splat_mv)
         .expect(
@@ -4053,7 +4056,7 @@ unsafe extern "C" fn splat_oneref_mv(
         &mut *((*t).rt.r)
             .as_mut_ptr()
             .offset((((*t).by & 31 as libc::c_int) + 5 as libc::c_int) as isize),
-        &tmpl,
+        &tmpl.0,
         (*t).bx,
         bw4,
         bh4,
@@ -4068,7 +4071,7 @@ unsafe extern "C" fn splat_intrabc_mv(
     bw4: libc::c_int,
     bh4: libc::c_int,
 ) {
-    let tmpl: refmvs_block = {
+    let tmpl: Align16<refmvs_block> = {
         let mut init = refmvs_block {
             mv: refmvs_mvpair {
                 mv: [
@@ -4089,7 +4092,7 @@ unsafe extern "C" fn splat_intrabc_mv(
             bs: bs as uint8_t,
             mf: 0 as libc::c_int as uint8_t,
         };
-        init
+        Align16(init)
     };
     ((*c).refmvs_dsp.splat_mv)
         .expect(
@@ -4098,7 +4101,7 @@ unsafe extern "C" fn splat_intrabc_mv(
         &mut *((*t).rt.r)
             .as_mut_ptr()
             .offset((((*t).by & 31 as libc::c_int) + 5 as libc::c_int) as isize),
-        &tmpl,
+        &tmpl.0,
         (*t).bx,
         bw4,
         bh4,
@@ -4118,7 +4121,7 @@ unsafe extern "C" fn splat_tworef_mv(
     }
     let mode: CompInterPredMode = (*b).c2rust_unnamed.c2rust_unnamed_0.inter_mode
         as CompInterPredMode;
-    let tmpl: refmvs_block = {
+    let tmpl: Align16<refmvs_block> = {
         let mut init = refmvs_block {
             mv: refmvs_mvpair {
                 mv: [
@@ -4156,7 +4159,7 @@ unsafe extern "C" fn splat_tworef_mv(
                 | ((1 as libc::c_int) << mode as libc::c_uint & 0xbc as libc::c_int != 0)
                     as libc::c_int * 2 as libc::c_int) as uint8_t,
         };
-        init
+        Align16(init)
     };
     ((*c).refmvs_dsp.splat_mv)
         .expect(
@@ -4165,7 +4168,7 @@ unsafe extern "C" fn splat_tworef_mv(
         &mut *((*t).rt.r)
             .as_mut_ptr()
             .offset((((*t).by & 31 as libc::c_int) + 5 as libc::c_int) as isize),
-        &tmpl,
+        &tmpl.0,
         (*t).bx,
         bw4,
         bh4,
@@ -4179,7 +4182,7 @@ unsafe extern "C" fn splat_intraref(
     bw4: libc::c_int,
     bh4: libc::c_int,
 ) {
-    let tmpl: refmvs_block = {
+    let tmpl: Align16<refmvs_block> = {
         let mut init = refmvs_block {
             mv: refmvs_mvpair {
                 mv: [
@@ -4197,7 +4200,7 @@ unsafe extern "C" fn splat_intraref(
             bs: bs as uint8_t,
             mf: 0 as libc::c_int as uint8_t,
         };
-        init
+        Align16(init)
     };
     ((*c).refmvs_dsp.splat_mv)
         .expect(
@@ -4206,7 +4209,7 @@ unsafe extern "C" fn splat_intraref(
         &mut *((*t).rt.r)
             .as_mut_ptr()
             .offset((((*t).by & 31 as libc::c_int) + 5 as libc::c_int) as isize),
-        &tmpl,
+        &tmpl.0,
         (*t).bx,
         bw4,
         bh4,
@@ -16047,7 +16050,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                                                                         != (*f).lf.last_sharpness
                                                                     {
                                                                         dav1d_calc_eih(
-                                                                            &mut (*f).lf.lim_lut,
+                                                                            &mut (*f).lf.lim_lut.0,
                                                                             (*(*f).frame_hdr).loopfilter.sharpness,
                                                                         );
                                                                         (*f)

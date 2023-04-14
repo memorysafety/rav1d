@@ -95,6 +95,8 @@ use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 
+use crate::src::align::Align16;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext_lf {
@@ -107,7 +109,7 @@ pub struct Dav1dFrameContext_lf {
     pub cdef_buf_sbh: libc::c_int,
     pub lr_buf_plane_sz: [libc::c_int; 2],
     pub re_sz: libc::c_int,
-    pub lim_lut: Av1FilterLUT,
+    pub lim_lut: Align16<Av1FilterLUT>,
     pub last_sharpness: libc::c_int,
     pub lvl: [[[[uint8_t; 2]; 8]; 4]; 8],
     pub tx_lpf_right_edge: [*mut uint8_t; 2],
@@ -1195,7 +1197,7 @@ unsafe extern "C" fn filter_plane_cols_y(
                 &*(*lvl.offset(x as isize)).as_ptr().offset(0 as libc::c_int as isize)
                     as *const uint8_t as *const [uint8_t; 4],
                 b4_stride,
-                &(*f).lf.lim_lut,
+                &(*f).lf.lim_lut.0,
                 endy4 - starty4,
                 (*f).bitdepth_max,
             );
@@ -1267,7 +1269,7 @@ unsafe extern "C" fn filter_plane_rows_y(
                     .offset(1 as libc::c_int as isize) as *const uint8_t
                     as *const [uint8_t; 4],
                 b4_stride,
-                &(*f).lf.lim_lut,
+                &(*f).lf.lim_lut.0,
                 w,
                 (*f).bitdepth_max,
             );
@@ -1347,7 +1349,7 @@ unsafe extern "C" fn filter_plane_cols_uv(
                 &*(*lvl.offset(x as isize)).as_ptr().offset(2 as libc::c_int as isize)
                     as *const uint8_t as *const [uint8_t; 4],
                 b4_stride,
-                &(*f).lf.lim_lut,
+                &(*f).lf.lim_lut.0,
                 endy4 - starty4,
                 (*f).bitdepth_max,
             );
@@ -1363,7 +1365,7 @@ unsafe extern "C" fn filter_plane_cols_uv(
                 &*(*lvl.offset(x as isize)).as_ptr().offset(3 as libc::c_int as isize)
                     as *const uint8_t as *const [uint8_t; 4],
                 b4_stride,
-                &(*f).lf.lim_lut,
+                &(*f).lf.lim_lut.0,
                 endy4 - starty4,
                 (*f).bitdepth_max,
             );
@@ -1428,7 +1430,7 @@ unsafe extern "C" fn filter_plane_rows_uv(
                     .offset(2 as libc::c_int as isize) as *const uint8_t
                     as *const [uint8_t; 4],
                 b4_stride,
-                &(*f).lf.lim_lut,
+                &(*f).lf.lim_lut.0,
                 w,
                 (*f).bitdepth_max,
             );
@@ -1446,7 +1448,7 @@ unsafe extern "C" fn filter_plane_rows_uv(
                     .offset(3 as libc::c_int as isize) as *const uint8_t
                     as *const [uint8_t; 4],
                 b4_stride,
-                &(*f).lf.lim_lut,
+                &(*f).lf.lim_lut.0,
                 w,
                 (*f).bitdepth_max,
             );
