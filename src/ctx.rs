@@ -95,6 +95,7 @@ where
         4 => set_ctx(dir, off, 0x01010101, set_ctx_rep1::<alias32>),
         8 => set_ctx(dir, off, 0x0101010101010101, set_ctx_rep1::<alias64>),
         16 => set_ctx(dir, off, 0x0101010101010101, set_ctx_rep2),
+        32 => set_ctx(dir, off, 0x0101010101010101, set_ctx_rep4),
 
         _ => unreachable!(),
     }
