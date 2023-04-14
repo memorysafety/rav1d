@@ -201,7 +201,7 @@ pub const MM_WARP: MotionMode = 2;
 pub const MM_OBMC: MotionMode = 1;
 pub const MM_TRANSLATION: MotionMode = 0;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct Av1Block_intra {
     pub y_mode: uint8_t,
@@ -259,7 +259,15 @@ pub union Av1Block_intra_inter {
     pub c2rust_unnamed_0: Av1Block_inter,
 }
 
-#[derive(Copy, Clone)]
+impl Default for Av1Block_intra_inter {
+    fn default() -> Self {
+        Av1Block_intra_inter {
+            c2rust_unnamed: Default::default(),
+        }
+    }
+}
+
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct Av1Block {
     pub bl: uint8_t,

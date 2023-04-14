@@ -515,12 +515,10 @@ pub struct Dav1dFrameContext_frame_thread {
 pub type coef = ();
 use crate::src::internal::CodedBlockInfo;
 use crate::src::levels::Av1Block;
-use crate::src::levels::Av1Block_intra_inter;
 
 use crate::src::levels::mv;
 use crate::src::levels::mv_xy;
 
-use crate::src::levels::Av1Block_intra;
 use crate::src::refmvs::refmvs_frame;
 use crate::src::refmvs::refmvs_block;
 use crate::src::refmvs::refmvs_refpair;
@@ -4493,59 +4491,35 @@ unsafe fn decode_b(
     bp: BlockPartition,
     intra_edge_flags: EdgeFlags,
 ) -> libc::c_int {
-    let ts: *mut Dav1dTileState = t.ts;
-    let f: *const Dav1dFrameContext = t.f;
-    let mut b_mem: Av1Block = Av1Block {
-        bl: 0,
-        bs: 0,
-        bp: 0,
-        intra: 0,
-        seg_id: 0,
-        skip_mode: 0,
-        skip: 0,
-        uvtx: 0,
-        c2rust_unnamed: Av1Block_intra_inter {
-            c2rust_unnamed: Av1Block_intra {
-                y_mode: 0,
-                uv_mode: 0,
-                tx: 0,
-                pal_sz: [0; 2],
-                y_angle: 0,
-                uv_angle: 0,
-                cfl_alpha: [0; 2],
-            },
-        },
-    };
-    let b: *mut Av1Block = if t.frame_thread.pass != 0 {
-        &mut *((*f).frame_thread.b)
-            .offset(
-                (t.by as isize * (*f).b4_stride + t.bx as isize)
-                    as isize,
-            ) as *mut Av1Block
+    let ts = t.ts;
+    let f = t.f;
+    let mut b_mem = Default::default();
+
+    let b = if t.frame_thread.pass != 0 {
+        (*f).frame_thread.b.offset(t.by as isize * (*f).b4_stride + t.bx as isize)
     } else {
         &mut b_mem
     };
-    let b_dim: *const uint8_t = (dav1d_block_dimensions[bs as usize]).as_ptr();
-    let bx4: libc::c_int = t.bx & 31 as libc::c_int;
-    let by4: libc::c_int = t.by & 31 as libc::c_int;
-    let ss_ver: libc::c_int = ((*f).cur.p.layout as libc::c_uint
-        == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint) as libc::c_int;
-    let ss_hor: libc::c_int = ((*f).cur.p.layout as libc::c_uint
-        != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint) as libc::c_int;
-    let cbx4: libc::c_int = bx4 >> ss_hor;
-    let cby4: libc::c_int = by4 >> ss_ver;
-    let bw4: libc::c_int = *b_dim.offset(0 as libc::c_int as isize) as libc::c_int;
-    let bh4: libc::c_int = *b_dim.offset(1 as libc::c_int as isize) as libc::c_int;
-    let w4: libc::c_int = imin(bw4, (*f).bw - t.bx);
-    let h4: libc::c_int = imin(bh4, (*f).bh - t.by);
-    let cbw4: libc::c_int = bw4 + ss_hor >> ss_hor;
-    let cbh4: libc::c_int = bh4 + ss_ver >> ss_ver;
-    let have_left: libc::c_int = (t.bx > (*ts).tiling.col_start) as libc::c_int;
-    let have_top: libc::c_int = (t.by > (*ts).tiling.row_start) as libc::c_int;
-    let has_chroma: libc::c_int = ((*f).cur.p.layout as libc::c_uint
-        != DAV1D_PIXEL_LAYOUT_I400 as libc::c_int as libc::c_uint
-        && (bw4 > ss_hor || t.bx & 1 as libc::c_int != 0)
-        && (bh4 > ss_ver || t.by & 1 as libc::c_int != 0)) as libc::c_int;
+
+    let b_dim = dav1d_block_dimensions[bs as usize].as_ptr();
+    let bx4 = t.bx & 31;
+    let by4 = t.by & 31;
+    let ss_ver = ((*f).cur.p.layout == DAV1D_PIXEL_LAYOUT_I420) as libc::c_int;
+    let ss_hor = ((*f).cur.p.layout != DAV1D_PIXEL_LAYOUT_I444) as libc::c_int;
+    let cbx4 = bx4 >> ss_hor;
+    let cby4 = by4 >> ss_ver;
+    let bw4 = *b_dim.offset(0) as libc::c_int;
+    let bh4 = *b_dim.offset(1) as libc::c_int;
+    let w4 = imin(bw4, (*f).bw - t.bx);
+    let h4 = imin(bh4, (*f).bh - t.by);
+    let cbw4 = bw4 + ss_hor >> ss_hor;
+    let cbh4 = bh4 + ss_ver >> ss_ver;
+    let have_left = (t.bx > (*ts).tiling.col_start) as libc::c_int;
+    let have_top = (t.by > (*ts).tiling.row_start) as libc::c_int;
+    let has_chroma = ((*f).cur.p.layout != DAV1D_PIXEL_LAYOUT_I400
+        && (bw4 > ss_hor || t.bx & 1 != 0)
+        && (bh4 > ss_ver || t.by & 1 != 0)) as libc::c_int;
+
     if t.frame_thread.pass == 2 as libc::c_int {
         if (*b).intra != 0 {
             ((*f).bd_fn.recon_b_intra)
