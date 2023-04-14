@@ -1579,9 +1579,9 @@ unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThrea
                         &(*((*c).dsp).as_ptr().offset(0 as libc::c_int as isize)).fg,
                         out,
                         in_0,
-                        ((*ttd).delayed_fg.c2rust_unnamed.c2rust_unnamed.scaling_8bpc)
+                        ((*ttd).delayed_fg.c2rust_unnamed.c2rust_unnamed.scaling_8bpc.0)
                             .as_mut_ptr() as *mut libc::c_void,
-                        ((*ttd).delayed_fg.c2rust_unnamed.c2rust_unnamed.grain_lut_8bpc)
+                        ((*ttd).delayed_fg.c2rust_unnamed.c2rust_unnamed.grain_lut_8bpc.0)
                             .as_mut_ptr() as *mut libc::c_void,
                     );
                 }
@@ -1591,13 +1591,13 @@ unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThrea
                         &(*((*c).dsp).as_ptr().offset(off as isize)).fg,
                         out,
                         in_0,
-                        ((*ttd).delayed_fg.c2rust_unnamed.c2rust_unnamed_0.scaling_16bpc)
+                        ((*ttd).delayed_fg.c2rust_unnamed.c2rust_unnamed_0.scaling_16bpc.0)
                             .as_mut_ptr() as *mut libc::c_void,
                         ((*ttd)
                             .delayed_fg
                             .c2rust_unnamed
                             .c2rust_unnamed_0
-                            .grain_lut_16bpc)
+                            .grain_lut_16bpc.0)
                             .as_mut_ptr() as *mut libc::c_void,
                     );
                 }
@@ -1639,9 +1639,9 @@ unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThrea
                     &(*((*c).dsp).as_ptr().offset(0 as libc::c_int as isize)).fg,
                     out,
                     in_0,
-                    ((*ttd).delayed_fg.c2rust_unnamed.c2rust_unnamed.scaling_8bpc)
+                    ((*ttd).delayed_fg.c2rust_unnamed.c2rust_unnamed.scaling_8bpc.0)
                         .as_mut_ptr() as *mut libc::c_void,
-                    ((*ttd).delayed_fg.c2rust_unnamed.c2rust_unnamed.grain_lut_8bpc)
+                    ((*ttd).delayed_fg.c2rust_unnamed.c2rust_unnamed.grain_lut_8bpc.0)
                         .as_mut_ptr() as *mut libc::c_void,
                     row,
                 );
@@ -1652,9 +1652,9 @@ unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThrea
                     &(*((*c).dsp).as_ptr().offset(off as isize)).fg,
                     out,
                     in_0,
-                    ((*ttd).delayed_fg.c2rust_unnamed.c2rust_unnamed_0.scaling_16bpc)
+                    ((*ttd).delayed_fg.c2rust_unnamed.c2rust_unnamed_0.scaling_16bpc.0)
                         .as_mut_ptr() as *mut libc::c_void,
-                    ((*ttd).delayed_fg.c2rust_unnamed.c2rust_unnamed_0.grain_lut_16bpc)
+                    ((*ttd).delayed_fg.c2rust_unnamed.c2rust_unnamed_0.grain_lut_16bpc.0)
                         .as_mut_ptr() as *mut libc::c_void,
                     row,
                 );
