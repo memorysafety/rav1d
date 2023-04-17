@@ -4241,7 +4241,7 @@ fn mc_lowest_px(
 
 #[inline(always)]
 unsafe fn affine_lowest_px(
-    t: *mut Dav1dTaskContext,
+    t: &Dav1dTaskContext,
     dst: &mut libc::c_int,
     b_dim: *const uint8_t,
     wmp: &Dav1dWarpedMotionParams,
@@ -4256,11 +4256,11 @@ unsafe fn affine_lowest_px(
     }
     let mat = wmp.matrix.as_ptr();
     let y = *b_dim.offset(1) as libc::c_int * v_mul - 8;
-    let src_y = (*t).by * 4 + ((y + 4) << ss_ver);
+    let src_y = t.by * 4 + ((y + 4) << ss_ver);
     let mat5_y = *mat.offset(5) as int64_t * src_y as int64_t + *mat.offset(1) as int64_t;
     let mut x = 0;
     while x < *b_dim.offset(0) as libc::c_int * h_mul {
-        let src_x = (*t).bx * 4 + ((x + 4) << ss_hor);
+        let src_x = t.bx * 4 + ((x + 4) << ss_hor);
         let mvy = *mat.offset(4) as int64_t * src_x as int64_t + mat5_y >> ss_ver;
         let dy = (mvy >> 16) as libc::c_int - 4;
         *dst = imax(*dst, dy + 4 + 8);
@@ -4270,7 +4270,7 @@ unsafe fn affine_lowest_px(
 
 #[inline(never)]
 unsafe fn affine_lowest_px_luma(
-    t: *mut Dav1dTaskContext,
+    t: &Dav1dTaskContext,
     dst: &mut libc::c_int,
     b_dim: *const uint8_t,
     wmp: &Dav1dWarpedMotionParams,
@@ -4280,12 +4280,12 @@ unsafe fn affine_lowest_px_luma(
 
 #[inline(never)]
 unsafe fn affine_lowest_px_chroma(
-    t: *mut Dav1dTaskContext,
+    t: &Dav1dTaskContext,
     dst: &mut libc::c_int,
     b_dim: *const uint8_t,
     wmp: &Dav1dWarpedMotionParams,
 ) {
-    let f = (*t).f;
+    let f = t.f;
     if !((*f).cur.p.layout != DAV1D_PIXEL_LAYOUT_I400) {
         unreachable!();
     }
@@ -13181,7 +13181,7 @@ unsafe fn decode_b(
                     if b.c2rust_unnamed.c2rust_unnamed_0.motion_mode as libc::c_int
                         == MM_WARP as libc::c_int
                     {
-                        &mut t.warpmv
+                        &t.warpmv
                     } else {
                         &mut *((*f.frame_hdr).gmv)
                             .as_mut_ptr()
@@ -13433,7 +13433,7 @@ unsafe fn decode_b(
                         if b.c2rust_unnamed.c2rust_unnamed_0.motion_mode
                             as libc::c_int == MM_WARP as libc::c_int
                         {
-                            &mut t.warpmv
+                            &t.warpmv
                         } else {
                             &mut *((*f.frame_hdr).gmv)
                                 .as_mut_ptr()
