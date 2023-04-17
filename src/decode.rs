@@ -2380,37 +2380,39 @@ unsafe extern "C" fn read_tx_tree(
         }
     };
 }
-unsafe extern "C" fn neg_deinterleave(
+
+fn neg_deinterleave(
     mut diff: libc::c_int,
-    mut ref_0: libc::c_int,
+    mut r#ref: libc::c_int,
     mut max: libc::c_int,
 ) -> libc::c_int {
-    if ref_0 == 0 {
-        return diff;
-    }
-    if ref_0 >= max - 1 as libc::c_int {
-        return max - diff - 1 as libc::c_int;
-    }
-    if 2 as libc::c_int * ref_0 < max {
-        if diff <= 2 as libc::c_int * ref_0 {
-            if diff & 1 as libc::c_int != 0 {
-                return ref_0 + (diff + 1 as libc::c_int >> 1 as libc::c_int)
+    if r#ref == 0 {
+        diff
+    } else if r#ref >= max - 1 {
+        max - diff - 1
+    } else if 2 * r#ref < max {
+        if diff <= 2 * r#ref {
+            if diff & 1 != 0 {
+                r#ref + (diff + 1 >> 1)
             } else {
-                return ref_0 - (diff >> 1 as libc::c_int)
+                r#ref - (diff >> 1)
             }
+        } else {
+            diff
         }
-        return diff;
     } else {
-        if diff <= 2 as libc::c_int * (max - ref_0 - 1 as libc::c_int) {
-            if diff & 1 as libc::c_int != 0 {
-                return ref_0 + (diff + 1 as libc::c_int >> 1 as libc::c_int)
+        if diff <= 2 * (max - r#ref - 1) {
+            if diff & 1 != 0 {
+                r#ref + (diff + 1 >> 1)
             } else {
-                return ref_0 - (diff >> 1 as libc::c_int)
+                r#ref - (diff >> 1)
             }
+        } else {
+            max - (diff + 1)
         }
-        return max - (diff + 1 as libc::c_int);
-    };
+    }
 }
+
 unsafe extern "C" fn find_matching_ref(
     t: *const Dav1dTaskContext,
     intra_edge_flags: EdgeFlags,
