@@ -4223,9 +4223,7 @@ unsafe fn obmc_lowest_px(
     w4: libc::c_int,
     h4: libc::c_int,
 ) {
-    if !((*t).bx & 1 == 0 && (*t).by & 1 == 0) {
-        unreachable!();
-    }
+    assert!(!((*t).bx & 1 == 0 && (*t).by & 1 == 0));
     let f = (*t).f;
     let mut r = &mut *((*t).rt.r)
         .as_mut_ptr()
