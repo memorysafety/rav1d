@@ -4492,9 +4492,9 @@ unsafe fn decode_b(
     let cbh4 = bh4 + ss_ver >> ss_ver;
     let have_left = (t.bx > ts.tiling.col_start) as libc::c_int;
     let have_top = (t.by > ts.tiling.row_start) as libc::c_int;
-    let has_chroma = (f.cur.p.layout != DAV1D_PIXEL_LAYOUT_I400
+    let has_chroma = f.cur.p.layout != DAV1D_PIXEL_LAYOUT_I400
         && (bw4 > ss_hor || t.bx & 1 != 0)
-        && (bh4 > ss_ver || t.by & 1 != 0)) as libc::c_int;
+        && (bh4 > ss_ver || t.by & 1 != 0);
 
     if t.frame_thread.pass == 2 {
         if b.intra != 0 {
@@ -4533,7 +4533,7 @@ unsafe fn decode_b(
                 }
             }
 
-            if has_chroma != 0 {
+            if has_chroma {
                 let set_ctx = |dir: &mut BlockContext, off, mul, rep_macro: SetCtxFn| {
                     rep_macro(
                         dir.uvmode.as_mut_ptr(),
@@ -4620,7 +4620,7 @@ unsafe fn decode_b(
                 }
             }
 
-            if has_chroma != 0 {
+            if has_chroma {
                 let set_ctx = |dir: &mut BlockContext, off, mul, rep_macro: SetCtxFn| {
                     rep_macro(dir.uvmode.as_mut_ptr(), off, mul * DC_PRED as u64);
                 };
@@ -5176,7 +5176,7 @@ unsafe fn decode_b(
         } else {
             b.c2rust_unnamed.c2rust_unnamed.y_angle = 0 as libc::c_int as int8_t;
         }
-        if has_chroma != 0 {
+        if has_chroma {
             let cfl_allowed: libc::c_int = if (*f.frame_hdr)
                 .segmentation
                 .lossless[b.seg_id as usize] != 0
@@ -5369,7 +5369,7 @@ unsafe fn decode_b(
                     read_pal_plane(t, b, 0 as libc::c_int, sz_ctx, bx4, by4);
                 }
             }
-            if has_chroma != 0
+            if has_chroma
                 && b.c2rust_unnamed.c2rust_unnamed.uv_mode as libc::c_int
                     == DC_PRED as libc::c_int
             {
@@ -5456,7 +5456,7 @@ unsafe fn decode_b(
                 );
             }
         }
-        if has_chroma != 0
+        if has_chroma
             && b.c2rust_unnamed.c2rust_unnamed.pal_sz[1 as libc::c_int as usize]
                 as libc::c_int != 0
         {
@@ -5573,12 +5573,12 @@ unsafe fn decode_b(
                 f.cur.p.layout,
                 &mut *((*t.a).tx_lpf_y).as_mut_ptr().offset(bx4 as isize),
                 &mut *(t.l.tx_lpf_y).as_mut_ptr().offset(by4 as isize),
-                if has_chroma != 0 {
+                if has_chroma {
                     &mut *((*t.a).tx_lpf_uv).as_mut_ptr().offset(cbx4 as isize)
                 } else {
                     0 as *mut uint8_t
                 },
-                if has_chroma != 0 {
+                if has_chroma {
                     &mut *(t.l.tx_lpf_uv).as_mut_ptr().offset(cby4 as isize)
                 } else {
                     0 as *mut uint8_t
@@ -5635,7 +5635,7 @@ unsafe fn decode_b(
                     .as_mut_ptr()
                     .offset(by4 as isize) as *mut uint8_t as *mut alias8))
                     .u8_0 = (0x1 as libc::c_int
-                    * (if has_chroma != 0 {
+                    * (if has_chroma {
                         b
                             .c2rust_unnamed
                             .c2rust_unnamed
@@ -5721,7 +5721,7 @@ unsafe fn decode_b(
                     .as_mut_ptr()
                     .offset(by4 as isize) as *mut uint8_t as *mut alias16))
                     .u16_0 = (0x101 as libc::c_int
-                    * (if has_chroma != 0 {
+                    * (if has_chroma {
                         b
                             .c2rust_unnamed
                             .c2rust_unnamed
@@ -5815,7 +5815,7 @@ unsafe fn decode_b(
                     .offset(by4 as isize) as *mut uint8_t as *mut alias32))
                     .u32_0 = (0x1010101 as libc::c_uint)
                     .wrapping_mul(
-                        (if has_chroma != 0 {
+                        (if has_chroma {
                             b
                                 .c2rust_unnamed
                                 .c2rust_unnamed
@@ -5914,7 +5914,7 @@ unsafe fn decode_b(
                     .offset(by4 as isize) as *mut uint8_t as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
                     .wrapping_mul(
-                        (if has_chroma != 0 {
+                        (if has_chroma {
                             b
                                 .c2rust_unnamed
                                 .c2rust_unnamed
@@ -6081,7 +6081,7 @@ unsafe fn decode_b(
                     .u64_0 = const_val_34;
                 let const_val_35: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                     .wrapping_mul(
-                        (if has_chroma != 0 {
+                        (if has_chroma {
                             b
                                 .c2rust_unnamed
                                 .c2rust_unnamed
@@ -6386,7 +6386,7 @@ unsafe fn decode_b(
                     .u64_0 = const_val_48;
                 let const_val_49: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                     .wrapping_mul(
-                        (if has_chroma != 0 {
+                        (if has_chroma {
                             b
                                 .c2rust_unnamed
                                 .c2rust_unnamed
@@ -6625,7 +6625,7 @@ unsafe fn decode_b(
                     .as_mut_ptr()
                     .offset(bx4 as isize) as *mut uint8_t as *mut alias8))
                     .u8_0 = (0x1 as libc::c_int
-                    * (if has_chroma != 0 {
+                    * (if has_chroma {
                         b
                             .c2rust_unnamed
                             .c2rust_unnamed
@@ -6711,7 +6711,7 @@ unsafe fn decode_b(
                     .as_mut_ptr()
                     .offset(bx4 as isize) as *mut uint8_t as *mut alias16))
                     .u16_0 = (0x101 as libc::c_int
-                    * (if has_chroma != 0 {
+                    * (if has_chroma {
                         b
                             .c2rust_unnamed
                             .c2rust_unnamed
@@ -6805,7 +6805,7 @@ unsafe fn decode_b(
                     .offset(bx4 as isize) as *mut uint8_t as *mut alias32))
                     .u32_0 = (0x1010101 as libc::c_uint)
                     .wrapping_mul(
-                        (if has_chroma != 0 {
+                        (if has_chroma {
                             b
                                 .c2rust_unnamed
                                 .c2rust_unnamed
@@ -6904,7 +6904,7 @@ unsafe fn decode_b(
                     .offset(bx4 as isize) as *mut uint8_t as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
                     .wrapping_mul(
-                        (if has_chroma != 0 {
+                        (if has_chroma {
                             b
                                 .c2rust_unnamed
                                 .c2rust_unnamed
@@ -7071,7 +7071,7 @@ unsafe fn decode_b(
                     .u64_0 = const_val_62;
                 let const_val_63: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                     .wrapping_mul(
-                        (if has_chroma != 0 {
+                        (if has_chroma {
                             b
                                 .c2rust_unnamed
                                 .c2rust_unnamed
@@ -7376,7 +7376,7 @@ unsafe fn decode_b(
                     .u64_0 = const_val_76;
                 let const_val_77: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                     .wrapping_mul(
-                        (if has_chroma != 0 {
+                        (if has_chroma {
                             b
                                 .c2rust_unnamed
                                 .c2rust_unnamed
@@ -7613,7 +7613,7 @@ unsafe fn decode_b(
                 y_1 += 1;
             }
         }
-        if has_chroma != 0 {
+        if has_chroma {
             match cbh4 {
                 1 => {
                     (*(&mut *(t.l.uvmode).as_mut_ptr().offset(cby4 as isize)
@@ -7923,7 +7923,7 @@ unsafe fn decode_b(
         );
         let mut border_left: libc::c_int = ts.tiling.col_start * 4 as libc::c_int;
         let mut border_top: libc::c_int = ts.tiling.row_start * 4 as libc::c_int;
-        if has_chroma != 0 {
+        if has_chroma {
             if bw4 < 2 as libc::c_int && ss_hor != 0 {
                 border_left += 4 as libc::c_int;
             }
@@ -8906,7 +8906,7 @@ unsafe fn decode_b(
             }
             _ => {}
         }
-        if has_chroma != 0 {
+        if has_chroma {
             match cbh4 {
                 1 => {
                     (*(&mut *(t.l.uvmode).as_mut_ptr().offset(cby4 as isize)
@@ -10952,12 +10952,12 @@ unsafe fn decode_b(
                 f.cur.p.layout,
                 &mut *((*t.a).tx_lpf_y).as_mut_ptr().offset(bx4 as isize),
                 &mut *(t.l.tx_lpf_y).as_mut_ptr().offset(by4 as isize),
-                if has_chroma != 0 {
+                if has_chroma {
                     &mut *((*t.a).tx_lpf_uv).as_mut_ptr().offset(cbx4 as isize)
                 } else {
                     0 as *mut uint8_t
                 },
-                if has_chroma != 0 {
+                if has_chroma {
                     &mut *(t.l.tx_lpf_uv).as_mut_ptr().offset(cby4 as isize)
                 } else {
                     0 as *mut uint8_t
@@ -12683,7 +12683,7 @@ unsafe fn decode_b(
             }
             _ => {}
         }
-        if has_chroma != 0 {
+        if has_chroma {
             match cbh4 {
                 1 => {
                     (*(&mut *(t.l.uvmode).as_mut_ptr().offset(cby4 as isize)
@@ -13040,7 +13040,7 @@ unsafe fn decode_b(
                     );
                 }
             }
-            if has_chroma != 0 {
+            if has_chroma {
                 let mut is_sub8x8: libc::c_int = (bw4 == ss_hor || bh4 == ss_ver)
                     as libc::c_int;
                 let mut r_1: *const *mut refmvs_block = 0 as *const *mut refmvs_block;
@@ -13357,7 +13357,7 @@ unsafe fn decode_b(
                 }
                 i_0 += 1;
             }
-            if has_chroma != 0 {
+            if has_chroma {
                 let mut i_1: libc::c_int = 0 as libc::c_int;
                 while i_1 < 2 as libc::c_int {
                     if b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as libc::c_int
