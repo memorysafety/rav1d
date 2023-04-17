@@ -4223,138 +4223,71 @@ unsafe fn obmc_lowest_px(
     w4: libc::c_int,
     h4: libc::c_int,
 ) {
-    if !((*t).bx & 1 as libc::c_int == 0 && (*t).by & 1 as libc::c_int == 0) {
+    if !((*t).bx & 1 == 0 && (*t).by & 1 == 0) {
         unreachable!();
     }
-    let f: *const Dav1dFrameContext = (*t).f;
-    let mut r: *mut *mut refmvs_block = &mut *((*t).rt.r)
+    let f = (*t).f;
+    let mut r = &mut *((*t).rt.r)
         .as_mut_ptr()
-        .offset((((*t).by & 31 as libc::c_int) + 5 as libc::c_int) as isize)
+        .offset((((*t).by & 31) + 5) as isize)
         as *mut *mut refmvs_block;
-    let ss_ver: libc::c_int = (is_chroma != 0
-        && (*f).cur.p.layout as libc::c_uint
-            == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint) as libc::c_int;
-    let ss_hor: libc::c_int = (is_chroma != 0
-        && (*f).cur.p.layout as libc::c_uint
-            != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint) as libc::c_int;
-    let h_mul: libc::c_int = 4 as libc::c_int >> ss_hor;
-    let v_mul: libc::c_int = 4 as libc::c_int >> ss_ver;
-    if (*t).by > (*(*t).ts).tiling.row_start
-        && (is_chroma == 0
-            || *b_dim.offset(0 as libc::c_int as isize) as libc::c_int * h_mul
-                + *b_dim.offset(1 as libc::c_int as isize) as libc::c_int * v_mul
-                >= 16 as libc::c_int)
-    {
-        let mut i: libc::c_int = 0 as libc::c_int;
-        let mut x: libc::c_int = 0 as libc::c_int;
-        while x < w4
-            && i
-                < imin(
-                    *b_dim.offset(2 as libc::c_int as isize) as libc::c_int,
-                    4 as libc::c_int,
-                )
-        {
-            let a_r: *const refmvs_block = &mut *(*r
-                .offset(-(1 as libc::c_int) as isize))
-                .offset(((*t).bx + x + 1 as libc::c_int) as isize) as *mut refmvs_block;
-            let a_b_dim: *const uint8_t = (dav1d_block_dimensions[(*a_r).bs as usize])
+    let ss_ver = (is_chroma != 0 && (*f).cur.p.layout == DAV1D_PIXEL_LAYOUT_I420) as libc::c_int;
+    let ss_hor = (is_chroma != 0 && (*f).cur.p.layout != DAV1D_PIXEL_LAYOUT_I444) as libc::c_int;
+    let h_mul = 4 >> ss_hor;
+    let v_mul = 4 >> ss_ver;
+    if (*t).by > (*(*t).ts).tiling.row_start && (is_chroma == 0
+        || *b_dim.offset(0) as libc::c_int * h_mul
+            + *b_dim.offset(1) as libc::c_int * v_mul >= 16) {
+        let mut i = 0;
+        let mut x = 0;
+        while x < w4 && i < imin(*b_dim.offset(2) as libc::c_int, 4) {
+            let a_r = &mut *(*r.offset(-1)).offset(((*t).bx + x + 1) as isize);
+            let a_b_dim = (dav1d_block_dimensions[(*a_r).bs as usize])
                 .as_ptr();
-            if (*a_r).r#ref.r#ref[0 as libc::c_int as usize] as libc::c_int
-                > 0 as libc::c_int
-            {
-                let oh4: libc::c_int = imin(
-                    *b_dim.offset(1 as libc::c_int as isize) as libc::c_int,
-                    16 as libc::c_int,
-                ) >> 1 as libc::c_int;
+            if (*a_r).r#ref.r#ref[0] as libc::c_int > 0 {
+                let oh4 = imin(*b_dim.offset(1) as libc::c_int, 16) >> 1;
                 mc_lowest_px(
-                    &mut *(*dst
-                        .offset(
-                            (*((*a_r).r#ref.r#ref)
-                                .as_ptr()
-                                .offset(0 as libc::c_int as isize) as libc::c_int
-                                - 1 as libc::c_int) as isize,
-                        ))
+                    &mut *(*dst.offset((*((*a_r).r#ref.r#ref).as_ptr().offset(0) as libc::c_int - 1) as isize))
                         .as_mut_ptr()
                         .offset(is_chroma as isize),
                     (*t).by,
-                    oh4 * 3 as libc::c_int + 3 as libc::c_int >> 2 as libc::c_int,
-                    (*a_r).mv.mv[0 as libc::c_int as usize].y as libc::c_int,
+                    oh4 * 3 + 3 >> 2,
+                    (*a_r).mv.mv[0].y as libc::c_int,
                     ss_ver,
-                    &*(*((*f).svc)
+                    &*(*((*f).svc).as_ptr().offset((*((*a_r).r#ref.r#ref).as_ptr().offset(0) as libc::c_int - 1) as isize))
                         .as_ptr()
-                        .offset(
-                            (*((*a_r).r#ref.r#ref)
-                                .as_ptr()
-                                .offset(0 as libc::c_int as isize) as libc::c_int
-                                - 1 as libc::c_int) as isize,
-                        ))
-                        .as_ptr()
-                        .offset(1 as libc::c_int as isize),
+                        .offset(1),
                 );
                 i += 1;
             }
-            x
-                += imax(
-                    *a_b_dim.offset(0 as libc::c_int as isize) as libc::c_int,
-                    2 as libc::c_int,
-                );
+            x += imax(*a_b_dim.offset(0) as libc::c_int, 2);
         }
     }
     if (*t).bx > (*(*t).ts).tiling.col_start {
-        let mut i_0: libc::c_int = 0 as libc::c_int;
-        let mut y: libc::c_int = 0 as libc::c_int;
-        while y < h4
-            && i_0
-                < imin(
-                    *b_dim.offset(3 as libc::c_int as isize) as libc::c_int,
-                    4 as libc::c_int,
-                )
-        {
-            let l_r: *const refmvs_block = &mut *(*r
-                .offset((y + 1 as libc::c_int) as isize))
-                .offset(((*t).bx - 1 as libc::c_int) as isize) as *mut refmvs_block;
-            let l_b_dim: *const uint8_t = (dav1d_block_dimensions[(*l_r).bs as usize])
-                .as_ptr();
-            if (*l_r).r#ref.r#ref[0 as libc::c_int as usize] as libc::c_int
-                > 0 as libc::c_int
-            {
-                let oh4_0: libc::c_int = iclip(
-                    *l_b_dim.offset(1 as libc::c_int as isize) as libc::c_int,
-                    2 as libc::c_int,
-                    *b_dim.offset(1 as libc::c_int as isize) as libc::c_int,
-                );
+        let mut i_0 = 0;
+        let mut y = 0;
+        while y < h4 && i_0 < imin(*b_dim.offset(3) as libc::c_int, 4) {
+            let l_r = &mut *(*r
+                .offset((y + 1) as isize))
+                .offset(((*t).bx - 1) as isize);
+            let l_b_dim = (dav1d_block_dimensions[(*l_r).bs as usize]).as_ptr();
+            if (*l_r).r#ref.r#ref[0] as libc::c_int > 0 {
+                let oh4_0 = iclip(*l_b_dim.offset(1) as libc::c_int, 2, *b_dim.offset(1) as libc::c_int);
                 mc_lowest_px(
-                    &mut *(*dst
-                        .offset(
-                            (*((*l_r).r#ref.r#ref)
-                                .as_ptr()
-                                .offset(0 as libc::c_int as isize) as libc::c_int
-                                - 1 as libc::c_int) as isize,
-                        ))
+                    &mut *(*dst.offset((*((*l_r).r#ref.r#ref).as_ptr().offset(0) as libc::c_int - 1) as isize))
                         .as_mut_ptr()
                         .offset(is_chroma as isize),
                     (*t).by + y,
                     oh4_0,
-                    (*l_r).mv.mv[0 as libc::c_int as usize].y as libc::c_int,
+                    (*l_r).mv.mv[0].y as libc::c_int,
                     ss_ver,
-                    &*(*((*f).svc)
+                    &*(*((*f).svc).as_ptr().offset((*((*l_r).r#ref.r#ref).as_ptr().offset(0) as libc::c_int - 1) as isize))
                         .as_ptr()
-                        .offset(
-                            (*((*l_r).r#ref.r#ref)
-                                .as_ptr()
-                                .offset(0 as libc::c_int as isize) as libc::c_int
-                                - 1 as libc::c_int) as isize,
-                        ))
-                        .as_ptr()
-                        .offset(1 as libc::c_int as isize),
+                        .offset(1),
                 );
                 i_0 += 1;
             }
-            y
-                += imax(
-                    *l_b_dim.offset(1 as libc::c_int as isize) as libc::c_int,
-                    2 as libc::c_int,
-                );
+            y += imax(*l_b_dim.offset(1) as libc::c_int, 2);
         }
     }
 }
