@@ -4254,14 +4254,14 @@ unsafe fn affine_lowest_px(
         && *b_dim.offset(1) as libc::c_int * v_mul & 7 == 0) {
         unreachable!();
     }
-    let mat = wmp.matrix.as_ptr();
+    let mat = &wmp.matrix;
     let y = *b_dim.offset(1) as libc::c_int * v_mul - 8;
     let src_y = t.by * 4 + ((y + 4) << ss_ver);
-    let mat5_y = *mat.offset(5) as int64_t * src_y as int64_t + *mat.offset(1) as int64_t;
+    let mat5_y = mat[5] as int64_t * src_y as int64_t + mat[1] as int64_t;
     let mut x = 0;
     while x < *b_dim.offset(0) as libc::c_int * h_mul {
         let src_x = t.bx * 4 + ((x + 4) << ss_hor);
-        let mvy = *mat.offset(4) as int64_t * src_x as int64_t + mat5_y >> ss_ver;
+        let mvy = mat[4] as int64_t * src_x as int64_t + mat5_y >> ss_ver;
         let dy = (mvy >> 16) as libc::c_int - 4;
         *dst = imax(*dst, dy + 4 + 8);
         x += imax(8, *b_dim.offset(0) as libc::c_int * h_mul - 8);
