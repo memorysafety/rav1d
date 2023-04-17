@@ -102,6 +102,8 @@ use crate::include::dav1d::headers::DAV1D_N_SWITCHABLE_FILTERS;
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 
+use crate::src::align::Align16;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext_lf {
@@ -114,7 +116,7 @@ pub struct Dav1dFrameContext_lf {
     pub cdef_buf_sbh: libc::c_int,
     pub lr_buf_plane_sz: [libc::c_int; 2],
     pub re_sz: libc::c_int,
-    pub lim_lut: Av1FilterLUT,
+    pub lim_lut: Align16<Av1FilterLUT>,
     pub last_sharpness: libc::c_int,
     pub lvl: [[[[uint8_t; 2]; 8]; 4]; 8],
     pub tx_lpf_right_edge: [*mut uint8_t; 2],
