@@ -1974,8 +1974,9 @@ unsafe extern "C" fn init_quant_tables(
     qidx: libc::c_int,
     mut dq: *mut [[uint16_t; 2]; 3],
 ) {
-    for i in 0..(if (*frame_hdr).segmentation.enabled != 0 { 8 } else { 1 }) {
-        let yac = if (*frame_hdr).segmentation.enabled != 0 {
+    let segmentation_is_enabled = (*frame_hdr).segmentation.enabled != 0;
+    for i in 0..(if segmentation_is_enabled { 8 } else { 1 }) {
+        let yac = if segmentation_is_enabled {
             iclip_u8(qidx + (*frame_hdr).segmentation.seg_data.d[i].delta_q)
         } else {
             qidx
