@@ -10790,14 +10790,8 @@ unsafe fn decode_b(
                             .ref_0[0 as libc::c_int as usize] as usize]
                         .type_0 as libc::c_uint
                         > DAV1D_WM_TYPE_TRANSLATION as libc::c_int as libc::c_uint)
-                && (have_left != 0
-                    && findoddzero(
-                        &t.l.intra[by4 as usize..][..h4 as usize],
-                    )
-                    || have_top != 0
-                        && findoddzero(
-                            &(*t.a).intra[bx4 as usize..][..w4 as usize],
-                        ))
+                && (have_left != 0 && findoddzero(&t.l.intra[by4 as usize..][..h4 as usize])
+                    || have_top != 0 && findoddzero(&(*t.a).intra[bx4 as usize..][..w4 as usize]))
             {
                 let mut mask: [uint64_t; 2] = [
                     0 as libc::c_int as uint64_t,
