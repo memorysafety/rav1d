@@ -1,14 +1,16 @@
+use std::ffi::{c_int, c_uint, c_ulonglong};
+
 #[inline]
-pub fn ctz(mask: libc::c_uint) -> libc::c_int {
-    return mask.trailing_zeros() as i32;
+pub fn ctz(mask: c_uint) -> c_int {
+    mask.trailing_zeros() as i32
 }
 
 #[inline]
-pub fn clz(mask: libc::c_uint) -> libc::c_int {
-    return mask.leading_zeros() as i32;
+pub fn clz(mask: c_uint) -> c_int {
+    mask.leading_zeros() as i32
 }
 
 #[inline]
-pub fn clzll(mask: libc::c_ulonglong) -> libc::c_int {
-    return mask.leading_zeros() as i32;
+pub fn clzll(mask: c_ulonglong) -> c_int {
+    mask.leading_zeros() as i32
 }
