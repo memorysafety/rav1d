@@ -4285,11 +4285,11 @@ unsafe fn affine_lowest_px_chroma(
     b_dim: *const uint8_t,
     wmp: &Dav1dWarpedMotionParams,
 ) {
-    let f = t.f;
-    if !((*f).cur.p.layout != DAV1D_PIXEL_LAYOUT_I400) {
+    let f = &*t.f;
+    if !(f.cur.p.layout != DAV1D_PIXEL_LAYOUT_I400) {
         unreachable!();
     }
-    if (*f).cur.p.layout == DAV1D_PIXEL_LAYOUT_I444 {
+    if f.cur.p.layout == DAV1D_PIXEL_LAYOUT_I444 {
         affine_lowest_px_luma(t, dst, b_dim, wmp);
     } else {
         affine_lowest_px(
@@ -4297,7 +4297,7 @@ unsafe fn affine_lowest_px_chroma(
             dst,
             b_dim,
             wmp,
-            ((*f).cur.p.layout & DAV1D_PIXEL_LAYOUT_I420) as libc::c_int,
+            (f.cur.p.layout & DAV1D_PIXEL_LAYOUT_I420) as libc::c_int,
             1,
         );
     };
