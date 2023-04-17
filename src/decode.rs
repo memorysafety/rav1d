@@ -4506,6 +4506,18 @@ unsafe fn decode_b(
     bp: BlockPartition,
     intra_edge_flags: EdgeFlags,
 ) -> libc::c_int {
+    use std::fmt;
+
+    /// Helper struct for printing a number as a signed hexidecimal value.
+    struct SignAbs(i32);
+
+    impl fmt::Display for SignAbs {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            let sign = if self.0 < 0 { "-" } else { " " };
+            write!(f, "{}{:x}", sign, self.0.abs())
+        }
+    }
+
     let ts = &mut *t.ts;
     let f = &*t.f;
     let mut b_mem = Default::default();
@@ -4608,18 +4620,6 @@ unsafe fn decode_b(
 
                     if DEBUG_BLOCK_INFO(f, t)
                     {
-                        use std::fmt;
-
-                        /// Helper struct for printing a number as a signed hexidecimal value.
-                        struct SignAbs(i32);
-
-                        impl fmt::Display for SignAbs {
-                            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                                let sign = if self.0 < 0 { "-" } else { " " };
-                                write!(f, "{}{:x}", sign, self.0.abs())
-                            }
-                        }
-
                         println!(
                             "[ {} {} {}\n  {} {} {} ]\n\
                             alpha={}, beta={}, gamma={}, deta={}, mv=y:{},x:{}",
