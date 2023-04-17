@@ -3,7 +3,6 @@ use crate::include::stdint::*;
 use ::libc;
 use cfg_if::cfg_if;
 extern "C" {
-    fn abs(_: libc::c_int) -> libc::c_int;
     fn memcpy(
         _: *mut libc::c_void,
         _: *const libc::c_void,
@@ -4475,10 +4474,10 @@ unsafe extern "C" fn w_mask_c(
         while x < w {
             let m: libc::c_int = imin(
                 38 as libc::c_int
-                    + (abs(
+                    + ((
                         *tmp1.offset(x as isize) as libc::c_int
-                            - *tmp2.offset(x as isize) as libc::c_int,
-                    ) + mask_rnd >> mask_sh),
+                            - *tmp2.offset(x as isize) as libc::c_int
+                    ).abs() + mask_rnd >> mask_sh),
                 64 as libc::c_int,
             );
             *dst
@@ -4493,10 +4492,10 @@ unsafe extern "C" fn w_mask_c(
                 x += 1;
                 let n: libc::c_int = imin(
                     38 as libc::c_int
-                        + (abs(
+                        + ((
                             *tmp1.offset(x as isize) as libc::c_int
-                                - *tmp2.offset(x as isize) as libc::c_int,
-                        ) + mask_rnd >> mask_sh),
+                                - *tmp2.offset(x as isize) as libc::c_int
+                        ).abs() + mask_rnd >> mask_sh),
                     64 as libc::c_int,
                 );
                 *dst

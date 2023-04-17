@@ -2,9 +2,6 @@ use crate::include::stddef::*;
 use crate::include::stdint::*;
 use ::libc;
 use cfg_if::cfg_if;
-extern "C" {
-    fn abs(_: libc::c_int) -> libc::c_int;
-}
 
 #[cfg(feature = "asm")]
 extern "C" {
@@ -253,22 +250,22 @@ unsafe extern "C" fn loop_filter(
         let mut fm: libc::c_int = 0;
         let mut flat8out: libc::c_int = 0;
         let mut flat8in: libc::c_int = 0;
-        fm = (abs(p1 - p0) <= I && abs(q1 - q0) <= I
-            && abs(p0 - q0) * 2 as libc::c_int + (abs(p1 - q1) >> 1 as libc::c_int) <= E)
+        fm = ((p1 - p0).abs() <= I && (q1 - q0).abs() <= I
+            && (p0 - q0).abs() * 2 as libc::c_int + ((p1 - q1).abs() >> 1 as libc::c_int) <= E)
             as libc::c_int;
         if wd > 4 as libc::c_int {
             p2 = *dst.offset(strideb * -(3 as libc::c_int) as isize)
                 as libc::c_int;
             q2 = *dst.offset((strideb * 2) as isize)
                 as libc::c_int;
-            fm &= (abs(p2 - p1) <= I && abs(q2 - q1) <= I) as libc::c_int;
+            fm &= ((p2 - p1).abs() <= I && (q2 - q1).abs() <= I) as libc::c_int;
             if wd > 6 as libc::c_int {
                 p3 = *dst
                     .offset(strideb * -(4 as libc::c_int) as isize)
                     as libc::c_int;
                 q3 = *dst.offset((strideb * 3) as isize)
                     as libc::c_int;
-                fm &= (abs(p3 - p2) <= I && abs(q3 - q2) <= I) as libc::c_int;
+                fm &= ((p3 - p2).abs() <= I && (q3 - q2).abs() <= I) as libc::c_int;
             }
         }
         if !(fm == 0) {
@@ -288,16 +285,16 @@ unsafe extern "C" fn loop_filter(
                     as libc::c_int;
                 q6 = *dst.offset(strideb * 6)
                     as libc::c_int;
-                flat8out = (abs(p6 - p0) <= F && abs(p5 - p0) <= F && abs(p4 - p0) <= F
-                    && abs(q4 - q0) <= F && abs(q5 - q0) <= F && abs(q6 - q0) <= F)
+                flat8out = ((p6 - p0).abs() <= F && (p5 - p0).abs() <= F && (p4 - p0).abs() <= F
+                    && (q4 - q0).abs() <= F && (q5 - q0).abs() <= F && (q6 - q0).abs() <= F)
                     as libc::c_int;
             }
             if wd >= 6 as libc::c_int {
-                flat8in = (abs(p2 - p0) <= F && abs(p1 - p0) <= F && abs(q1 - q0) <= F
-                    && abs(q2 - q0) <= F) as libc::c_int;
+                flat8in = ((p2 - p0).abs() <= F && (p1 - p0).abs() <= F && (q1 - q0).abs() <= F
+                    && (q2 - q0).abs() <= F) as libc::c_int;
             }
             if wd >= 8 as libc::c_int {
-                flat8in &= (abs(p3 - p0) <= F && abs(q3 - q0) <= F) as libc::c_int;
+                flat8in &= ((p3 - p0).abs() <= F && (q3 - q0).abs() <= F) as libc::c_int;
             }
             if wd >= 16 as libc::c_int && flat8out & flat8in != 0 {
                 *dst
@@ -429,7 +426,7 @@ unsafe extern "C" fn loop_filter(
                     + 2 as libc::c_int * q2 + q2 + 4 as libc::c_int >> 3 as libc::c_int)
                     as pixel;
             } else {
-                let hev: libc::c_int = (abs(p1 - p0) > H || abs(q1 - q0) > H)
+                let hev: libc::c_int = ((p1 - p0).abs() > H || (q1 - q0).abs() > H)
                     as libc::c_int;
                 if hev != 0 {
                     let mut f: libc::c_int = iclip(

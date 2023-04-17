@@ -9,7 +9,6 @@ extern "C" {
         __alignment: size_t,
         __size: size_t,
     ) -> libc::c_int;
-    fn abs(_: libc::c_int) -> libc::c_int;
     static dav1d_block_dimensions: [[uint8_t; 4]; 22];
 }
 
@@ -491,16 +490,16 @@ unsafe extern "C" fn add_temporal_candidate(
     let last: libc::c_int = *cnt;
     if ref_0.ref_0[1 as libc::c_int as usize] as libc::c_int == -(1 as libc::c_int) {
         if !globalmv_ctx.is_null() {
-            *globalmv_ctx = (abs(
+            *globalmv_ctx = ((
                 mv.c2rust_unnamed.x as libc::c_int
                     - (*gmv.offset(0 as libc::c_int as isize)).c2rust_unnamed.x
-                        as libc::c_int,
-            )
-                | abs(
+                        as libc::c_int
+            ).abs()
+                | (
                     mv.c2rust_unnamed.y as libc::c_int
                         - (*gmv.offset(0 as libc::c_int as isize)).c2rust_unnamed.y
-                            as libc::c_int,
-                ) >= 16 as libc::c_int) as libc::c_int;
+                            as libc::c_int
+                ).abs() >= 16 as libc::c_int) as libc::c_int;
         }
         let mut n: libc::c_int = 0 as libc::c_int;
         while n < last {
@@ -1595,13 +1594,13 @@ pub unsafe extern "C" fn dav1d_refmvs_load_tmvs(
                             let offset: mv = mv_projection(b_mv, ref2cur, ref2ref);
                             let mut pos_x: libc::c_int = x_0
                                 + apply_sign(
-                                    abs(offset.c2rust_unnamed.x as libc::c_int)
+                                    (offset.c2rust_unnamed.x as libc::c_int).abs()
                                         >> 6 as libc::c_int,
                                     offset.c2rust_unnamed.x as libc::c_int ^ ref_sign,
                                 );
                             let pos_y: libc::c_int = y_0
                                 + apply_sign(
-                                    abs(offset.c2rust_unnamed.y as libc::c_int)
+                                    (offset.c2rust_unnamed.y as libc::c_int).abs()
                                         >> 6 as libc::c_int,
                                     offset.c2rust_unnamed.y as libc::c_int ^ ref_sign,
                                 );
@@ -1696,14 +1695,14 @@ pub unsafe extern "C" fn dav1d_refmvs_save_tmvs(
                         ((*cand_b).ref_0.ref_0[1 as libc::c_int as usize] as libc::c_int
                             - 1 as libc::c_int) as isize,
                     ) as libc::c_int != 0
-                && abs(
+                && (
                     (*cand_b).mv.mv[1 as libc::c_int as usize].c2rust_unnamed.y
-                        as libc::c_int,
-                )
-                    | abs(
+                        as libc::c_int
+                ).abs()
+                    | (
                         (*cand_b).mv.mv[1 as libc::c_int as usize].c2rust_unnamed.x
-                            as libc::c_int,
-                    ) < 4096 as libc::c_int
+                            as libc::c_int
+                    ).abs() < 4096 as libc::c_int
             {
                 let mut n: libc::c_int = 0 as libc::c_int;
                 while n < bw8 {
@@ -1727,14 +1726,14 @@ pub unsafe extern "C" fn dav1d_refmvs_save_tmvs(
                         ((*cand_b).ref_0.ref_0[0 as libc::c_int as usize] as libc::c_int
                             - 1 as libc::c_int) as isize,
                     ) as libc::c_int != 0
-                && abs(
+                && (
                     (*cand_b).mv.mv[0 as libc::c_int as usize].c2rust_unnamed.y
-                        as libc::c_int,
-                )
-                    | abs(
+                        as libc::c_int
+                ).abs()
+                    | (
                         (*cand_b).mv.mv[0 as libc::c_int as usize].c2rust_unnamed.x
-                            as libc::c_int,
-                    ) < 4096 as libc::c_int
+                            as libc::c_int
+                    ).abs() < 4096 as libc::c_int
             {
                 let mut n_0: libc::c_int = 0 as libc::c_int;
                 while n_0 < bw8 {
@@ -1929,7 +1928,7 @@ pub unsafe extern "C" fn dav1d_refmvs_init_frame(
                 rpoc as libc::c_int,
                 (*frm_hdr).frame_offset,
             );
-            if abs(diff1) > 31 as libc::c_int {
+            if diff1.abs() > 31 as libc::c_int {
                 (*rf)
                     .mfmv_ref2cur[n
                     as usize] = -(2147483647 as libc::c_int) - 1 as libc::c_int;

@@ -1,8 +1,5 @@
 use crate::include::stdint::*;
 use ::libc;
-extern "C" {
-    fn abs(_: libc::c_int) -> libc::c_int;
-}
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 use crate::src::levels::mv;
 
@@ -277,7 +274,7 @@ unsafe extern "C" fn iclip_wmp(v: libc::c_int) -> libc::c_int {
         -(32767 as libc::c_int) - 1 as libc::c_int,
         32767 as libc::c_int,
     );
-    return apply_sign(abs(cv) + 32 as libc::c_int >> 6 as libc::c_int, cv)
+    return apply_sign(cv.abs() + 32 as libc::c_int >> 6 as libc::c_int, cv)
         * ((1 as libc::c_int) << 6 as libc::c_int);
 }
 #[inline]
@@ -318,7 +315,7 @@ pub unsafe extern "C" fn dav1d_get_shear_params(
     let mut shift: libc::c_int = 0;
     let y: libc::c_int = apply_sign(
         resolve_divisor_32(
-            abs(*mat.offset(2 as libc::c_int as isize)) as libc::c_uint,
+            (*mat.offset(2 as libc::c_int as isize)).abs() as libc::c_uint,
             &mut shift,
         ),
         *mat.offset(2 as libc::c_int as isize),
@@ -349,10 +346,10 @@ pub unsafe extern "C" fn dav1d_get_shear_params(
                 v2,
             ) - 0x10000 as libc::c_int,
     ) as int16_t;
-    return (4 as libc::c_int * abs((*wm).u.p.alpha as libc::c_int)
-        + 7 as libc::c_int * abs((*wm).u.p.beta as libc::c_int) >= 0x10000 as libc::c_int
-        || 4 as libc::c_int * abs((*wm).u.p.gamma as libc::c_int)
-            + 4 as libc::c_int * abs((*wm).u.p.delta as libc::c_int)
+    return (4 as libc::c_int * ((*wm).u.p.alpha as libc::c_int).abs()
+        + 7 as libc::c_int * ((*wm).u.p.beta as libc::c_int).abs() >= 0x10000 as libc::c_int
+        || 4 as libc::c_int * ((*wm).u.p.gamma as libc::c_int).abs()
+            + 4 as libc::c_int * ((*wm).u.p.delta as libc::c_int).abs()
             >= 0x10000 as libc::c_int) as libc::c_int;
 }
 unsafe extern "C" fn resolve_divisor_64(
@@ -479,7 +476,7 @@ pub unsafe extern "C" fn dav1d_find_affine_int(
         let sy: libc::c_int = (*pts
             .offset(i as isize))[0 as libc::c_int as usize][1 as libc::c_int as usize]
             - suy;
-        if abs(sx - dx) < 256 as libc::c_int && abs(sy - dy) < 256 as libc::c_int {
+        if (sx - dx).abs() < 256 as libc::c_int && (sy - dy).abs() < 256 as libc::c_int {
             a[0 as libc::c_int as usize][0 as libc::c_int as usize]
                 += (sx * sx >> 2 as libc::c_int) + sx * 2 as libc::c_int
                     + 8 as libc::c_int;

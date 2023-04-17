@@ -17,10 +17,6 @@ use crate::src::levels::V_ADST;
 use crate::src::levels::V_FLIPADST;
 use crate::src::tables::TxfmInfo;
 
-extern "C" {
-    fn abs(_: libc::c_int) -> libc::c_int;
-}
-
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct BlockContext {
@@ -184,11 +180,11 @@ pub unsafe extern "C" fn get_gmv_2d(
         c2rust_unnamed: {
             let mut init = mv_xy {
                 y: apply_sign(
-                    abs(yc) + round >> shift << ((*hdr).hp == 0) as libc::c_int,
+                    yc.abs() + round >> shift << ((*hdr).hp == 0) as libc::c_int,
                     yc,
                 ) as int16_t,
                 x: apply_sign(
-                    abs(xc) + round >> shift << ((*hdr).hp == 0) as libc::c_int,
+                    xc.abs() + round >> shift << ((*hdr).hp == 0) as libc::c_int,
                     xc,
                 ) as int16_t,
             };

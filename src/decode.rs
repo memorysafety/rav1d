@@ -36,7 +36,6 @@ extern "C" {
         __alignment: size_t,
         __size: size_t,
     ) -> libc::c_int;
-    fn abs(_: libc::c_int) -> libc::c_int;
     fn pthread_mutex_lock(__mutex: *mut pthread_mutex_t) -> libc::c_int;
     fn pthread_mutex_unlock(__mutex: *mut pthread_mutex_t) -> libc::c_int;
     fn pthread_cond_signal(__cond: *mut pthread_cond_t) -> libc::c_int;
@@ -1530,12 +1529,8 @@ unsafe extern "C" fn get_jnt_comp_ctx(
     yb4: libc::c_int,
     xb4: libc::c_int,
 ) -> libc::c_int {
-    let d0: libc::c_uint = abs(
-        get_poc_diff(order_hint_n_bits, ref0poc as libc::c_int, poc as libc::c_int),
-    ) as libc::c_uint;
-    let d1: libc::c_uint = abs(
-        get_poc_diff(order_hint_n_bits, poc as libc::c_int, ref1poc as libc::c_int),
-    ) as libc::c_uint;
+    let d0: libc::c_uint = get_poc_diff(order_hint_n_bits, ref0poc as libc::c_int, poc as libc::c_int).abs() as libc::c_uint;
+    let d1: libc::c_uint = get_poc_diff(order_hint_n_bits, poc as libc::c_int, ref1poc as libc::c_int).abs() as libc::c_uint;
     let offset: libc::c_int = (d0 == d1) as libc::c_int;
     let a_ctx: libc::c_int = ((*a).comp_type[xb4 as usize] as libc::c_int
         >= COMP_INTER_AVG as libc::c_int
@@ -2892,17 +2887,17 @@ unsafe extern "C" fn derive_warpmv(
     let mut i: libc::c_int = 0 as libc::c_int;
     while i < np {
         mvd[i
-            as usize] = abs(
+            as usize] = (
             pts[i as usize][1 as libc::c_int as usize][0 as libc::c_int as usize]
                 - pts[i as usize][0 as libc::c_int as usize][0 as libc::c_int as usize]
-                - mv.c2rust_unnamed.x as libc::c_int,
-        )
-            + abs(
+                - mv.c2rust_unnamed.x as libc::c_int
+        ).abs()
+            + (
                 pts[i as usize][1 as libc::c_int as usize][1 as libc::c_int as usize]
                     - pts[i
                         as usize][0 as libc::c_int as usize][1 as libc::c_int as usize]
-                    - mv.c2rust_unnamed.y as libc::c_int,
-            );
+                    - mv.c2rust_unnamed.y as libc::c_int
+            ).abs();
         if mvd[i as usize] > thresh {
             mvd[i as usize] = -(1 as libc::c_int);
         } else {
@@ -10680,7 +10675,7 @@ unsafe fn decode_b(
                             } else {
                                 ' ' as i32
                             },
-                            abs(t.warpmv.matrix[0 as libc::c_int as usize]),
+                            (t.warpmv.matrix[0 as libc::c_int as usize]).abs(),
                             if t.warpmv.matrix[1 as libc::c_int as usize]
                                 < 0 as libc::c_int
                             {
@@ -10688,7 +10683,7 @@ unsafe fn decode_b(
                             } else {
                                 ' ' as i32
                             },
-                            abs(t.warpmv.matrix[1 as libc::c_int as usize]),
+                            (t.warpmv.matrix[1 as libc::c_int as usize]).abs(),
                             if t.warpmv.matrix[2 as libc::c_int as usize]
                                 < 0 as libc::c_int
                             {
@@ -10696,7 +10691,7 @@ unsafe fn decode_b(
                             } else {
                                 ' ' as i32
                             },
-                            abs(t.warpmv.matrix[2 as libc::c_int as usize]),
+                            (t.warpmv.matrix[2 as libc::c_int as usize]).abs(),
                             if t.warpmv.matrix[3 as libc::c_int as usize]
                                 < 0 as libc::c_int
                             {
@@ -10704,7 +10699,7 @@ unsafe fn decode_b(
                             } else {
                                 ' ' as i32
                             },
-                            abs(t.warpmv.matrix[3 as libc::c_int as usize]),
+                            (t.warpmv.matrix[3 as libc::c_int as usize]).abs(),
                             if t.warpmv.matrix[4 as libc::c_int as usize]
                                 < 0 as libc::c_int
                             {
@@ -10712,7 +10707,7 @@ unsafe fn decode_b(
                             } else {
                                 ' ' as i32
                             },
-                            abs(t.warpmv.matrix[4 as libc::c_int as usize]),
+                            (t.warpmv.matrix[4 as libc::c_int as usize]).abs(),
                             if t.warpmv.matrix[5 as libc::c_int as usize]
                                 < 0 as libc::c_int
                             {
@@ -10720,34 +10715,34 @@ unsafe fn decode_b(
                             } else {
                                 ' ' as i32
                             },
-                            abs(t.warpmv.matrix[5 as libc::c_int as usize]),
+                            (t.warpmv.matrix[5 as libc::c_int as usize]).abs(),
                             if (t.warpmv.u.p.alpha as libc::c_int) < 0 as libc::c_int
                             {
                                 '-' as i32
                             } else {
                                 ' ' as i32
                             },
-                            abs(t.warpmv.u.p.alpha as libc::c_int),
+                            (t.warpmv.u.p.alpha as libc::c_int).abs(),
                             if (t.warpmv.u.p.beta as libc::c_int) < 0 as libc::c_int {
                                 '-' as i32
                             } else {
                                 ' ' as i32
                             },
-                            abs(t.warpmv.u.p.beta as libc::c_int),
+                            (t.warpmv.u.p.beta as libc::c_int).abs(),
                             if (t.warpmv.u.p.gamma as libc::c_int) < 0 as libc::c_int
                             {
                                 '-' as i32
                             } else {
                                 ' ' as i32
                             },
-                            abs(t.warpmv.u.p.gamma as libc::c_int),
+                            (t.warpmv.u.p.gamma as libc::c_int).abs(),
                             if (t.warpmv.u.p.delta as libc::c_int) < 0 as libc::c_int
                             {
                                 '-' as i32
                             } else {
                                 ' ' as i32
                             },
-                            abs(t.warpmv.u.p.delta as libc::c_int),
+                            (t.warpmv.u.p.delta as libc::c_int).abs(),
                             b
                                 .c2rust_unnamed
                                 .c2rust_unnamed_0
@@ -16033,23 +16028,19 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                                                                                                             .frame_hdr)
                                                                                                             .frame_offset as libc::c_uint;
                                                                                                         let d1: libc::c_uint = imin(
-                                                                                                            abs(
-                                                                                                                get_poc_diff(
-                                                                                                                    (*(*f).seq_hdr).order_hint_n_bits,
-                                                                                                                    ref0poc as libc::c_int,
-                                                                                                                    (*(*f).cur.frame_hdr).frame_offset,
-                                                                                                                ),
-                                                                                                            ),
+                                                                                                            get_poc_diff(
+                                                                                                                (*(*f).seq_hdr).order_hint_n_bits,
+                                                                                                                ref0poc as libc::c_int,
+                                                                                                                (*(*f).cur.frame_hdr).frame_offset,
+                                                                                                            ).abs(),
                                                                                                             31 as libc::c_int,
                                                                                                         ) as libc::c_uint;
                                                                                                         let d0: libc::c_uint = imin(
-                                                                                                            abs(
-                                                                                                                get_poc_diff(
-                                                                                                                    (*(*f).seq_hdr).order_hint_n_bits,
-                                                                                                                    ref1poc as libc::c_int,
-                                                                                                                    (*(*f).cur.frame_hdr).frame_offset,
-                                                                                                                ),
-                                                                                                            ),
+                                                                                                            get_poc_diff(
+                                                                                                                (*(*f).seq_hdr).order_hint_n_bits,
+                                                                                                                ref1poc as libc::c_int,
+                                                                                                                (*(*f).cur.frame_hdr).frame_offset,
+                                                                                                            ).abs(),
                                                                                                             31 as libc::c_int,
                                                                                                         ) as libc::c_uint;
                                                                                                         let order: libc::c_int = (d0 <= d1) as libc::c_int;
