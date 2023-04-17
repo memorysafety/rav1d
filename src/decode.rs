@@ -2981,7 +2981,7 @@ unsafe extern "C" fn derive_warpmv(
 }
 
 #[inline]
-unsafe extern "C" fn findoddzero(buf: *const uint8_t, len: libc::c_int) -> bool {
+unsafe fn findoddzero(buf: *const uint8_t, len: libc::c_int) -> bool {
     (0..len).find(|n| *buf.offset((n * 2) as isize) == 0).is_some()
 }
 
