@@ -1979,7 +1979,8 @@ fn init_quant_tables(
     let tbl = unsafe { &dav1d_dq_tbl };
 
     let segmentation_is_enabled = frame_hdr.segmentation.enabled != 0;
-    for i in 0..(if segmentation_is_enabled { 8 } else { 1 }) {
+    let len = if segmentation_is_enabled { 8 } else { 1 };
+    for i in 0..len {
         let yac = if segmentation_is_enabled {
             iclip_u8(qidx + frame_hdr.segmentation.seg_data.d[i].delta_q)
         } else {
