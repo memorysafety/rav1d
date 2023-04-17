@@ -1968,7 +1968,7 @@ unsafe extern "C" fn dav1d_msac_decode_uniform(
     }) as libc::c_int;
 }
 
-unsafe extern "C" fn init_quant_tables(
+unsafe fn init_quant_tables(
     seq_hdr: &Dav1dSequenceHeader,
     frame_hdr: &Dav1dFrameHeader,
     qidx: libc::c_int,
