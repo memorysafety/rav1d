@@ -1974,10 +1974,9 @@ unsafe extern "C" fn init_quant_tables(
     qidx: libc::c_int,
     mut dq: *mut [[uint16_t; 2]; 3],
 ) {
-    let mut i = 0;
-    while i < (if (*frame_hdr).segmentation.enabled != 0 { 8 } else { 1 }) {
+    for i in 0..(if (*frame_hdr).segmentation.enabled != 0 { 8 } else { 1 }) {
         let yac = if (*frame_hdr).segmentation.enabled != 0 {
-            iclip_u8(qidx + (*frame_hdr).segmentation.seg_data.d[i as usize].delta_q)
+            iclip_u8(qidx + (*frame_hdr).segmentation.seg_data.d[i].delta_q)
         } else {
             qidx
         };
@@ -1992,7 +1991,6 @@ unsafe extern "C" fn init_quant_tables(
         (*dq.offset(i as isize))[1][1] = dav1d_dq_tbl[(*seq_hdr).hbd as usize][uac as usize][1];
         (*dq.offset(i as isize))[2][0] = dav1d_dq_tbl[(*seq_hdr).hbd as usize][vdc as usize][0];
         (*dq.offset(i as isize))[2][1] = dav1d_dq_tbl[(*seq_hdr).hbd as usize][vac as usize][1];
-        i += 1;
     }
 }
 
