@@ -1974,6 +1974,10 @@ unsafe fn init_quant_tables(
     qidx: libc::c_int,
     mut dq: &mut [[[uint16_t; 2]; 3]],
 ) {
+    // Safety: `dav1d_dq_tbl: [[[u16; 2]; 256]; 3]` is valid for all bit patterns,
+    // as ultimately they're all `u16`s.
+    let tbl = unsafe { &dav1d_dq_tbl };
+
     let segmentation_is_enabled = frame_hdr.segmentation.enabled != 0;
     for i in 0..(if segmentation_is_enabled { 8 } else { 1 }) {
         let yac = if segmentation_is_enabled {
@@ -1986,12 +1990,12 @@ unsafe fn init_quant_tables(
         let udc = iclip_u8(yac + frame_hdr.quant.udc_delta);
         let vac = iclip_u8(yac + frame_hdr.quant.vac_delta);
         let vdc = iclip_u8(yac + frame_hdr.quant.vdc_delta);
-        dq[i][0][0] = dav1d_dq_tbl[seq_hdr.hbd as usize][ydc as usize][0];
-        dq[i][0][1] = dav1d_dq_tbl[seq_hdr.hbd as usize][yac as usize][1];
-        dq[i][1][0] = dav1d_dq_tbl[seq_hdr.hbd as usize][udc as usize][0];
-        dq[i][1][1] = dav1d_dq_tbl[seq_hdr.hbd as usize][uac as usize][1];
-        dq[i][2][0] = dav1d_dq_tbl[seq_hdr.hbd as usize][vdc as usize][0];
-        dq[i][2][1] = dav1d_dq_tbl[seq_hdr.hbd as usize][vac as usize][1];
+        dq[i][0][0] = tbl[seq_hdr.hbd as usize][ydc as usize][0];
+        dq[i][0][1] = tbl[seq_hdr.hbd as usize][yac as usize][1];
+        dq[i][1][0] = tbl[seq_hdr.hbd as usize][udc as usize][0];
+        dq[i][1][1] = tbl[seq_hdr.hbd as usize][uac as usize][1];
+        dq[i][2][0] = tbl[seq_hdr.hbd as usize][vdc as usize][0];
+        dq[i][2][1] = tbl[seq_hdr.hbd as usize][vac as usize][1];
     }
 }
 
