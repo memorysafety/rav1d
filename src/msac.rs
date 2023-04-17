@@ -90,18 +90,13 @@ use crate::include::common::intops::inv_recenter;
 #[inline]
 pub unsafe extern "C" fn dav1d_msac_decode_bools(
     s: *mut MsacContext,
-    mut n: libc::c_uint,
+    n: libc::c_uint,
 ) -> libc::c_uint {
-    let mut v: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    loop {
-        let fresh0 = n;
-        n = n.wrapping_sub(1);
-        if !(fresh0 != 0) {
-            break;
-        }
-        v = v << 1 as libc::c_int | dav1d_msac_decode_bool_equi(s);
+    let mut v = 0;
+    for _ in 0..n {
+        v = v << 1 | dav1d_msac_decode_bool_equi(s);
     }
-    return v;
+    v
 }
 
 #[cfg(all(feature = "asm", target_arch = "x86_64"))]
