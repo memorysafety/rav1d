@@ -1972,7 +1972,7 @@ unsafe fn init_quant_tables(
     seq_hdr: &Dav1dSequenceHeader,
     frame_hdr: &Dav1dFrameHeader,
     qidx: libc::c_int,
-    mut dq: *mut [[uint16_t; 2]; 3],
+    mut dq: &mut [[[uint16_t; 2]; 3]],
 ) {
     let segmentation_is_enabled = frame_hdr.segmentation.enabled != 0;
     for i in 0..(if segmentation_is_enabled { 8 } else { 1 }) {
@@ -1986,12 +1986,12 @@ unsafe fn init_quant_tables(
         let udc = iclip_u8(yac + frame_hdr.quant.udc_delta);
         let vac = iclip_u8(yac + frame_hdr.quant.vac_delta);
         let vdc = iclip_u8(yac + frame_hdr.quant.vdc_delta);
-        (*dq.offset(i as isize))[0][0] = dav1d_dq_tbl[seq_hdr.hbd as usize][ydc as usize][0];
-        (*dq.offset(i as isize))[0][1] = dav1d_dq_tbl[seq_hdr.hbd as usize][yac as usize][1];
-        (*dq.offset(i as isize))[1][0] = dav1d_dq_tbl[seq_hdr.hbd as usize][udc as usize][0];
-        (*dq.offset(i as isize))[1][1] = dav1d_dq_tbl[seq_hdr.hbd as usize][uac as usize][1];
-        (*dq.offset(i as isize))[2][0] = dav1d_dq_tbl[seq_hdr.hbd as usize][vdc as usize][0];
-        (*dq.offset(i as isize))[2][1] = dav1d_dq_tbl[seq_hdr.hbd as usize][vac as usize][1];
+        dq[i][0][0] = dav1d_dq_tbl[seq_hdr.hbd as usize][ydc as usize][0];
+        dq[i][0][1] = dav1d_dq_tbl[seq_hdr.hbd as usize][yac as usize][1];
+        dq[i][1][0] = dav1d_dq_tbl[seq_hdr.hbd as usize][udc as usize][0];
+        dq[i][1][1] = dav1d_dq_tbl[seq_hdr.hbd as usize][uac as usize][1];
+        dq[i][2][0] = dav1d_dq_tbl[seq_hdr.hbd as usize][vdc as usize][0];
+        dq[i][2][1] = dav1d_dq_tbl[seq_hdr.hbd as usize][vac as usize][1];
     }
 }
 
@@ -5222,7 +5222,7 @@ unsafe fn decode_b(
                 &*f.seq_hdr,
                 &*f.frame_hdr,
                 ts.last_qidx,
-                (ts.dqmem).as_mut_ptr(),
+                &mut ts.dqmem,
             );
             ts.dq = (ts.dqmem).as_mut_ptr() as *const [[uint16_t; 2]; 3];
         }
@@ -16131,7 +16131,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                                                                                                 &*(*f).seq_hdr,
                                                                                                 &*(*f).frame_hdr,
                                                                                                 (*(*f).frame_hdr).quant.yac,
-                                                                                                ((*f).dq).as_mut_ptr(),
+                                                                                                &mut (*f).dq,
                                                                                             );
                                                                                             if (*(*f).frame_hdr).quant.qm != 0 {
                                                                                                 let mut i: libc::c_int = 0 as libc::c_int;
