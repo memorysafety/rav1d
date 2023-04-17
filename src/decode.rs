@@ -4608,19 +4608,31 @@ unsafe fn decode_b(
 
                     if DEBUG_BLOCK_INFO(f, t)
                     {
+                        use std::fmt;
+
+                        /// Helper struct for printing a number as a signed hexidecimal value.
+                        struct SignAbs(i32);
+
+                        impl fmt::Display for SignAbs {
+                            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                                let sign = if self.0 < 0 { "-" } else { " " };
+                                write!(f, "{}{:x}", sign, self.0.abs())
+                            }
+                        }
+
                         println!(
-                            "[ {:+x} {:+x} {:+x}\n  {:+x} {:+x} {:+x} ]\n\
-                            alpha={:+x}, beta={:+x}, gamma={:+x}, deta={:+x}, mv=y:{},x:{}",
-                            t.warpmv.matrix[0],
-                            t.warpmv.matrix[1],
-                            t.warpmv.matrix[2],
-                            t.warpmv.matrix[3],
-                            t.warpmv.matrix[4],
-                            t.warpmv.matrix[5],
-                            t.warpmv.u.p.alpha,
-                            t.warpmv.u.p.beta,
-                            t.warpmv.u.p.gamma,
-                            t.warpmv.u.p.delta,
+                            "[ {} {} {}\n  {} {} {} ]\n\
+                            alpha={}, beta={}, gamma={}, deta={}, mv=y:{},x:{}",
+                            SignAbs(t.warpmv.matrix[0]),
+                            SignAbs(t.warpmv.matrix[1]),
+                            SignAbs(t.warpmv.matrix[2]),
+                            SignAbs(t.warpmv.matrix[3]),
+                            SignAbs(t.warpmv.matrix[4]),
+                            SignAbs(t.warpmv.matrix[5]),
+                            SignAbs(t.warpmv.u.p.alpha.into()),
+                            SignAbs(t.warpmv.u.p.beta.into()),
+                            SignAbs(t.warpmv.u.p.gamma.into()),
+                            SignAbs(t.warpmv.u.p.delta.into()),
                             b.mv2d().y(),
                             b.mv2d().x(),
                         );
