@@ -4564,12 +4564,9 @@ unsafe fn decode_b(
                     block.bs = bs as uint8_t;
                 }
 
-                let mut rr: *const *mut refmvs_block = &t.rt.r[((t.by & 31) + 5) as usize];
+                let mut rr = &t.rt.r[((t.by & 31) + 5) as usize..];
                 for y in 0..bh4 - 1 {
-                    let block = &mut *rr
-                        .offset(y as isize)
-                        .read()
-                        .offset((t.bx + bw4 - 1) as isize);
+                    let block = &mut *rr[y as usize].offset((t.bx + bw4 - 1) as isize);
                     block.ref_0.ref_0[0] = 0;
                     block.bs = bs as uint8_t;
                 }
