@@ -4240,7 +4240,7 @@ fn mc_lowest_px(
 }
 
 #[inline(always)]
-unsafe extern "C" fn affine_lowest_px(
+unsafe fn affine_lowest_px(
     t: *mut Dav1dTaskContext,
     dst: *mut libc::c_int,
     b_dim: *const uint8_t,
@@ -4269,7 +4269,7 @@ unsafe extern "C" fn affine_lowest_px(
 }
 
 #[inline(never)]
-unsafe extern "C" fn affine_lowest_px_luma(
+unsafe fn affine_lowest_px_luma(
     t: *mut Dav1dTaskContext,
     dst: *mut libc::c_int,
     b_dim: *const uint8_t,
@@ -4279,7 +4279,7 @@ unsafe extern "C" fn affine_lowest_px_luma(
 }
 
 #[inline(never)]
-unsafe extern "C" fn affine_lowest_px_chroma(
+unsafe fn affine_lowest_px_chroma(
     t: *mut Dav1dTaskContext,
     dst: *mut libc::c_int,
     b_dim: *const uint8_t,
