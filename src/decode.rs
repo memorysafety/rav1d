@@ -453,7 +453,6 @@ use crate::include::dav1d::headers::DAV1D_RESTORATION_SGRPROJ;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_WIENER;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_SWITCHABLE;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_NONE;
-use crate::include::dav1d::headers::Dav1dSegmentationData;
 use crate::include::dav1d::headers::Dav1dFilterMode;
 use crate::include::dav1d::headers::DAV1D_FILTER_SWITCHABLE;
 use crate::include::dav1d::headers::DAV1D_N_SWITCHABLE_FILTERS;
@@ -4639,7 +4638,7 @@ unsafe fn decode_b(
     b.bp = bp as uint8_t;
     b.bs = bs as uint8_t;
 
-    let mut seg = std::ptr::null();
+    let mut seg = None;
 
     // segment_id (if seg_feature for skip/ref/gmv is enabled)
     let mut seg_pred = 0;
@@ -4665,7 +4664,7 @@ unsafe fn decode_b(
                 b.seg_id = 0;
             }
 
-            seg = &(*f.frame_hdr).segmentation.seg_data.d[b.seg_id as usize];
+            seg = Some(&(*f.frame_hdr).segmentation.seg_data.d[b.seg_id as usize]);
         } else if (*f.frame_hdr).segmentation.seg_data.preskip != 0 {
             if (*f.frame_hdr).segmentation.temporal != 0
                 && {
@@ -4736,16 +4735,15 @@ unsafe fn decode_b(
                 println!("Post-segid[preskip;{}]: r={}", b.seg_id, ts.msac.rng);
             }
 
-            seg = &(*f.frame_hdr).segmentation.seg_data.d[b.seg_id as usize];
+            seg = Some(&(*f.frame_hdr).segmentation.seg_data.d[b.seg_id as usize]);
         }
     } else {
         b.seg_id = 0 as libc::c_int as uint8_t;
     }
 
-    if (seg.is_null()
-        || (*seg).globalmv == 0 && (*seg).ref_0 == -(1 as libc::c_int)
-            && (*seg).skip == 0) && (*f.frame_hdr).skip_mode_enabled != 0
-        && imin(bw4, bh4) > 1 as libc::c_int
+    if seg.map(|seg| seg.globalmv == 0 && seg.ref_0 == -1 && seg.skip == 0).unwrap_or(true)
+        && (*f.frame_hdr).skip_mode_enabled != 0
+        && imin(bw4, bh4) > 1
     {
         let smctx: libc::c_int = (*t.a).skip_mode[bx4 as usize] as libc::c_int
             + t.l.skip_mode[by4 as usize] as libc::c_int;
@@ -4765,7 +4763,7 @@ unsafe fn decode_b(
     } else {
         b.skip_mode = 0 as libc::c_int as uint8_t;
     }
-    if b.skip_mode as libc::c_int != 0 || !seg.is_null() && (*seg).skip != 0 {
+    if b.skip_mode as libc::c_int != 0 || seg.map(|seg| seg.skip != 0).unwrap_or_default() {
         b.skip = 1 as libc::c_int as uint8_t;
     } else {
         let sctx: libc::c_int = (*t.a).skip[bx4 as usize] as libc::c_int
@@ -4857,9 +4855,7 @@ unsafe fn decode_b(
                 b.seg_id = 0 as libc::c_int as uint8_t;
             }
         }
-        seg = &mut *((*f.frame_hdr).segmentation.seg_data.d)
-            .as_mut_ptr()
-            .offset(b.seg_id as isize) as *mut Dav1dSegmentationData;
+        seg = Some(&(*f.frame_hdr).segmentation.seg_data.d[b.seg_id as usize]);
         if DEBUG_BLOCK_INFO(f, t)
         {
             printf(
@@ -5079,8 +5075,8 @@ unsafe fn decode_b(
     } else if (*f.frame_hdr).frame_type as libc::c_uint
         & 1 as libc::c_int as libc::c_uint != 0
     {
-        if !seg.is_null() && ((*seg).ref_0 >= 0 as libc::c_int || (*seg).globalmv != 0) {
-            b.intra = ((*seg).ref_0 == 0) as libc::c_int as uint8_t;
+        if seg.map(|seg| seg.ref_0 >= 0 || seg.globalmv != 0).unwrap_or_default() {
+            b.intra = (seg.as_ref().unwrap().ref_0 == 0) as uint8_t;
         } else {
             let ictx: libc::c_int = get_intra_ctx(
                 t.a,
@@ -9051,10 +9047,12 @@ unsafe fn decode_b(
         let mut has_subpel_filter: libc::c_int = 0;
         if b.skip_mode != 0 {
             is_comp = 1 as libc::c_int;
-        } else if (seg.is_null()
-            || (*seg).ref_0 == -(1 as libc::c_int) && (*seg).globalmv == 0
-                && (*seg).skip == 0) && (*f.frame_hdr).switchable_comp_refs != 0
-            && imin(bw4, bh4) > 1 as libc::c_int
+        } else if
+            seg
+                .map(|seg| seg.ref_0 == -1 && seg.globalmv == 0 && seg.skip == 0)
+                .unwrap_or(true)
+            && (*f.frame_hdr).switchable_comp_refs != 0
+            && imin(bw4, bh4) > 1
         {
             let ctx_2: libc::c_int = get_comp_ctx(
                 t.a,
@@ -9982,13 +9980,13 @@ unsafe fn decode_b(
                 .c2rust_unnamed
                 .c2rust_unnamed_0
                 .comp_type = COMP_INTER_NONE as libc::c_int as uint8_t;
-            if !seg.is_null() && (*seg).ref_0 > 0 as libc::c_int {
+            if seg.map(|seg| seg.ref_0 > 0).unwrap_or_default() {
                 b
                     .c2rust_unnamed
                     .c2rust_unnamed_0
                     .r#ref[0 as libc::c_int
-                    as usize] = ((*seg).ref_0 - 1 as libc::c_int) as int8_t;
-            } else if !seg.is_null() && ((*seg).globalmv != 0 || (*seg).skip != 0) {
+                    as usize] = seg.as_ref().unwrap().ref_0 as i8 - 1;
+            } else if seg.map(|seg| seg.globalmv != 0 || seg.skip != 0).unwrap_or_default() {
                 b
                     .c2rust_unnamed
                     .c2rust_unnamed_0
@@ -10159,14 +10157,14 @@ unsafe fn decode_b(
                 t.by,
                 t.bx,
             );
-            if !seg.is_null() && ((*seg).skip != 0 || (*seg).globalmv != 0)
+            if seg.map(|seg| seg.skip != 0 || seg.globalmv != 0).unwrap_or_default()
                 || dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     (ts.cdf.m.newmv_mode[(ctx_6 & 7 as libc::c_int) as usize])
                         .as_mut_ptr(),
                 ) != 0
             {
-                if !seg.is_null() && ((*seg).skip != 0 || (*seg).globalmv != 0)
+                if seg.map(|seg| seg.skip != 0 || seg.globalmv != 0).unwrap_or_default()
                     || dav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
                         (ts
