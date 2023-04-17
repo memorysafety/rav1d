@@ -269,7 +269,7 @@ static mut div_lut: [uint16_t; 257] = [
 ];
 
 #[inline]
-unsafe fn iclip_wmp(v: libc::c_int) -> libc::c_int {
+fn iclip_wmp(v: libc::c_int) -> libc::c_int {
     let cv: libc::c_int = iclip(
         v,
         -(32767 as libc::c_int) - 1 as libc::c_int,
