@@ -1967,75 +1967,39 @@ unsafe extern "C" fn dav1d_msac_decode_uniform(
             .wrapping_add(dav1d_msac_decode_bool_equi(s))
     }) as libc::c_int;
 }
-unsafe extern "C" fn init_quant_tables(
-    seq_hdr: *const Dav1dSequenceHeader,
-    frame_hdr: *const Dav1dFrameHeader,
+
+fn init_quant_tables(
+    seq_hdr: &Dav1dSequenceHeader,
+    frame_hdr: &Dav1dFrameHeader,
     qidx: libc::c_int,
-    mut dq: *mut [[uint16_t; 2]; 3],
+    mut dq: &mut [[[uint16_t; 2]; 3]],
 ) {
-    let mut i: libc::c_int = 0 as libc::c_int;
-    while i
-        < (if (*frame_hdr).segmentation.enabled != 0 {
-            8 as libc::c_int
-        } else {
-            1 as libc::c_int
-        })
-    {
-        let yac: libc::c_int = if (*frame_hdr).segmentation.enabled != 0 {
-            iclip_u8(qidx + (*frame_hdr).segmentation.seg_data.d[i as usize].delta_q)
+    // Safety: `dav1d_dq_tbl: [[[u16; 2]; 256]; 3]` is valid for all bit patterns,
+    // as ultimately they're all `u16`s.
+    let tbl = unsafe { &dav1d_dq_tbl };
+
+    let segmentation_is_enabled = frame_hdr.segmentation.enabled != 0;
+    let len = if segmentation_is_enabled { 8 } else { 1 };
+    for i in 0..len {
+        let yac = if segmentation_is_enabled {
+            iclip_u8(qidx + frame_hdr.segmentation.seg_data.d[i].delta_q)
         } else {
             qidx
         };
-        let ydc: libc::c_int = iclip_u8(yac + (*frame_hdr).quant.ydc_delta);
-        let uac: libc::c_int = iclip_u8(yac + (*frame_hdr).quant.uac_delta);
-        let udc: libc::c_int = iclip_u8(yac + (*frame_hdr).quant.udc_delta);
-        let vac: libc::c_int = iclip_u8(yac + (*frame_hdr).quant.vac_delta);
-        let vdc: libc::c_int = iclip_u8(yac + (*frame_hdr).quant.vdc_delta);
-        (*dq
-            .offset(
-                i as isize,
-            ))[0 as libc::c_int
-            as usize][0 as libc::c_int
-            as usize] = dav1d_dq_tbl[(*seq_hdr).hbd
-            as usize][ydc as usize][0 as libc::c_int as usize];
-        (*dq
-            .offset(
-                i as isize,
-            ))[0 as libc::c_int
-            as usize][1 as libc::c_int
-            as usize] = dav1d_dq_tbl[(*seq_hdr).hbd
-            as usize][yac as usize][1 as libc::c_int as usize];
-        (*dq
-            .offset(
-                i as isize,
-            ))[1 as libc::c_int
-            as usize][0 as libc::c_int
-            as usize] = dav1d_dq_tbl[(*seq_hdr).hbd
-            as usize][udc as usize][0 as libc::c_int as usize];
-        (*dq
-            .offset(
-                i as isize,
-            ))[1 as libc::c_int
-            as usize][1 as libc::c_int
-            as usize] = dav1d_dq_tbl[(*seq_hdr).hbd
-            as usize][uac as usize][1 as libc::c_int as usize];
-        (*dq
-            .offset(
-                i as isize,
-            ))[2 as libc::c_int
-            as usize][0 as libc::c_int
-            as usize] = dav1d_dq_tbl[(*seq_hdr).hbd
-            as usize][vdc as usize][0 as libc::c_int as usize];
-        (*dq
-            .offset(
-                i as isize,
-            ))[2 as libc::c_int
-            as usize][1 as libc::c_int
-            as usize] = dav1d_dq_tbl[(*seq_hdr).hbd
-            as usize][vac as usize][1 as libc::c_int as usize];
-        i += 1;
+        let ydc = iclip_u8(yac + frame_hdr.quant.ydc_delta);
+        let uac = iclip_u8(yac + frame_hdr.quant.uac_delta);
+        let udc = iclip_u8(yac + frame_hdr.quant.udc_delta);
+        let vac = iclip_u8(yac + frame_hdr.quant.vac_delta);
+        let vdc = iclip_u8(yac + frame_hdr.quant.vdc_delta);
+        dq[i][0][0] = tbl[seq_hdr.hbd as usize][ydc as usize][0];
+        dq[i][0][1] = tbl[seq_hdr.hbd as usize][yac as usize][1];
+        dq[i][1][0] = tbl[seq_hdr.hbd as usize][udc as usize][0];
+        dq[i][1][1] = tbl[seq_hdr.hbd as usize][uac as usize][1];
+        dq[i][2][0] = tbl[seq_hdr.hbd as usize][vdc as usize][0];
+        dq[i][2][1] = tbl[seq_hdr.hbd as usize][vac as usize][1];
     }
 }
+
 unsafe extern "C" fn read_mv_component_diff(
     t: *mut Dav1dTaskContext,
     mv_comp: *mut CdfMvComponent,
@@ -5260,10 +5224,10 @@ unsafe fn decode_b(
             ts.dq = (f.dq).as_ptr();
         } else if ts.last_qidx != prev_qidx {
             init_quant_tables(
-                f.seq_hdr,
-                f.frame_hdr,
+                &*f.seq_hdr,
+                &*f.frame_hdr,
                 ts.last_qidx,
-                (ts.dqmem).as_mut_ptr(),
+                &mut ts.dqmem,
             );
             ts.dq = (ts.dqmem).as_mut_ptr() as *const [[uint16_t; 2]; 3];
         }
@@ -16169,10 +16133,10 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                                                                                         13495985911605184990 => {}
                                                                                         _ => {
                                                                                             init_quant_tables(
-                                                                                                (*f).seq_hdr,
-                                                                                                (*f).frame_hdr,
+                                                                                                &*(*f).seq_hdr,
+                                                                                                &*(*f).frame_hdr,
                                                                                                 (*(*f).frame_hdr).quant.yac,
-                                                                                                ((*f).dq).as_mut_ptr(),
+                                                                                                &mut (*f).dq,
                                                                                             );
                                                                                             if (*(*f).frame_hdr).quant.qm != 0 {
                                                                                                 let mut i: libc::c_int = 0 as libc::c_int;
