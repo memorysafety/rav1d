@@ -4248,39 +4248,26 @@ unsafe extern "C" fn affine_lowest_px(
     ss_ver: libc::c_int,
     ss_hor: libc::c_int,
 ) {
-    let h_mul: libc::c_int = 4 as libc::c_int >> ss_hor;
-    let v_mul: libc::c_int = 4 as libc::c_int >> ss_ver;
-    if !(*b_dim.offset(0 as libc::c_int as isize) as libc::c_int * h_mul
-        & 7 as libc::c_int == 0
-        && *b_dim.offset(1 as libc::c_int as isize) as libc::c_int * v_mul
-            & 7 as libc::c_int == 0)
-    {
+    let h_mul = 4 >> ss_hor;
+    let v_mul = 4 >> ss_ver;
+    if !(*b_dim.offset(0) as libc::c_int * h_mul & 7 == 0
+        && *b_dim.offset(1) as libc::c_int * v_mul & 7 == 0) {
         unreachable!();
     }
-    let mat: *const int32_t = ((*wmp).matrix).as_ptr();
-    let y: libc::c_int = *b_dim.offset(1 as libc::c_int as isize) as libc::c_int * v_mul
-        - 8 as libc::c_int;
-    let src_y: libc::c_int = (*t).by * 4 as libc::c_int
-        + ((y + 4 as libc::c_int) << ss_ver);
-    let mat5_y: int64_t = *mat.offset(5 as libc::c_int as isize) as int64_t
-        * src_y as int64_t + *mat.offset(1 as libc::c_int as isize) as int64_t;
-    let mut x: libc::c_int = 0 as libc::c_int;
-    while x < *b_dim.offset(0 as libc::c_int as isize) as libc::c_int * h_mul {
-        let src_x: libc::c_int = (*t).bx * 4 as libc::c_int
-            + ((x + 4 as libc::c_int) << ss_hor);
-        let mvy: int64_t = *mat.offset(4 as libc::c_int as isize) as int64_t
-            * src_x as int64_t + mat5_y >> ss_ver;
-        let dy: libc::c_int = (mvy >> 16 as libc::c_int) as libc::c_int
-            - 4 as libc::c_int;
-        *dst = imax(*dst, dy + 4 as libc::c_int + 8 as libc::c_int);
-        x
-            += imax(
-                8 as libc::c_int,
-                *b_dim.offset(0 as libc::c_int as isize) as libc::c_int * h_mul
-                    - 8 as libc::c_int,
-            );
+    let mat = ((*wmp).matrix).as_ptr();
+    let y = *b_dim.offset(1) as libc::c_int * v_mul - 8;
+    let src_y = (*t).by * 4 + ((y + 4) << ss_ver);
+    let mat5_y = *mat.offset(5) as int64_t * src_y as int64_t + *mat.offset(1) as int64_t;
+    let mut x = 0;
+    while x < *b_dim.offset(0) as libc::c_int * h_mul {
+        let src_x = (*t).bx * 4 + ((x + 4) << ss_hor);
+        let mvy = *mat.offset(4) as int64_t * src_x as int64_t + mat5_y >> ss_ver;
+        let dy = (mvy >> 16) as libc::c_int - 4;
+        *dst = imax(*dst, dy + 4 + 8);
+        x += imax(8, *b_dim.offset(0) as libc::c_int * h_mul - 8);
     }
 }
+
 #[inline(never)]
 unsafe extern "C" fn affine_lowest_px_luma(
     t: *mut Dav1dTaskContext,
@@ -4288,8 +4275,9 @@ unsafe extern "C" fn affine_lowest_px_luma(
     b_dim: *const uint8_t,
     wmp: *const Dav1dWarpedMotionParams,
 ) {
-    affine_lowest_px(t, dst, b_dim, wmp, 0 as libc::c_int, 0 as libc::c_int);
+    affine_lowest_px(t, dst, b_dim, wmp, 0, 0);
 }
+
 #[inline(never)]
 unsafe extern "C" fn affine_lowest_px_chroma(
     t: *mut Dav1dTaskContext,
@@ -4297,15 +4285,11 @@ unsafe extern "C" fn affine_lowest_px_chroma(
     b_dim: *const uint8_t,
     wmp: *const Dav1dWarpedMotionParams,
 ) {
-    let f: *const Dav1dFrameContext = (*t).f;
-    if !((*f).cur.p.layout as libc::c_uint
-        != DAV1D_PIXEL_LAYOUT_I400 as libc::c_int as libc::c_uint)
-    {
+    let f = (*t).f;
+    if !((*f).cur.p.layout != DAV1D_PIXEL_LAYOUT_I400) {
         unreachable!();
     }
-    if (*f).cur.p.layout as libc::c_uint
-        == DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint
-    {
+    if (*f).cur.p.layout == DAV1D_PIXEL_LAYOUT_I444 {
         affine_lowest_px_luma(t, dst, b_dim, wmp);
     } else {
         affine_lowest_px(
@@ -4313,12 +4297,12 @@ unsafe extern "C" fn affine_lowest_px_chroma(
             dst,
             b_dim,
             wmp,
-            ((*f).cur.p.layout as libc::c_uint
-                & DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint) as libc::c_int,
-            1 as libc::c_int,
+            ((*f).cur.p.layout & DAV1D_PIXEL_LAYOUT_I420) as libc::c_int,
+            1,
         );
     };
 }
+
 unsafe extern "C" fn obmc_lowest_px(
     t: *mut Dav1dTaskContext,
     dst: *mut [libc::c_int; 2],
