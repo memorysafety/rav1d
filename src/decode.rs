@@ -2979,20 +2979,22 @@ unsafe extern "C" fn derive_warpmv(
         (*wmp).type_0 = DAV1D_WM_TYPE_IDENTITY;
     };
 }
+
 #[inline]
 unsafe extern "C" fn findoddzero(
     mut buf: *const uint8_t,
     mut len: libc::c_int,
-) -> libc::c_int {
+) -> bool {
     let mut n: libc::c_int = 0 as libc::c_int;
     while n < len {
         if *buf.offset((n * 2 as libc::c_int) as isize) == 0 {
-            return 1 as libc::c_int;
+            return true;
         }
         n += 1;
     }
-    return 0 as libc::c_int;
+    return false;
 }
+
 unsafe extern "C" fn read_pal_plane(
     t: *mut Dav1dTaskContext,
     b: *mut Av1Block,
@@ -10800,14 +10802,14 @@ unsafe fn decode_b(
                             .as_mut_ptr()
                             .offset((by4 + 1 as libc::c_int) as isize),
                         h4 >> 1 as libc::c_int,
-                    ) != 0
+                    )
                     || have_top != 0
                         && findoddzero(
                             &mut *((*t.a).intra)
                                 .as_mut_ptr()
                                 .offset((bx4 + 1 as libc::c_int) as isize),
                             w4 >> 1 as libc::c_int,
-                        ) != 0)
+                        ))
             {
                 let mut mask: [uint64_t; 2] = [
                     0 as libc::c_int as uint64_t,
