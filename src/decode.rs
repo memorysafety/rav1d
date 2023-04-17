@@ -1967,75 +1967,35 @@ unsafe extern "C" fn dav1d_msac_decode_uniform(
             .wrapping_add(dav1d_msac_decode_bool_equi(s))
     }) as libc::c_int;
 }
+
 unsafe extern "C" fn init_quant_tables(
     seq_hdr: *const Dav1dSequenceHeader,
     frame_hdr: *const Dav1dFrameHeader,
     qidx: libc::c_int,
     mut dq: *mut [[uint16_t; 2]; 3],
 ) {
-    let mut i: libc::c_int = 0 as libc::c_int;
-    while i
-        < (if (*frame_hdr).segmentation.enabled != 0 {
-            8 as libc::c_int
-        } else {
-            1 as libc::c_int
-        })
-    {
-        let yac: libc::c_int = if (*frame_hdr).segmentation.enabled != 0 {
+    let mut i = 0;
+    while i < (if (*frame_hdr).segmentation.enabled != 0 { 8 } else { 1 }) {
+        let yac = if (*frame_hdr).segmentation.enabled != 0 {
             iclip_u8(qidx + (*frame_hdr).segmentation.seg_data.d[i as usize].delta_q)
         } else {
             qidx
         };
-        let ydc: libc::c_int = iclip_u8(yac + (*frame_hdr).quant.ydc_delta);
-        let uac: libc::c_int = iclip_u8(yac + (*frame_hdr).quant.uac_delta);
-        let udc: libc::c_int = iclip_u8(yac + (*frame_hdr).quant.udc_delta);
-        let vac: libc::c_int = iclip_u8(yac + (*frame_hdr).quant.vac_delta);
-        let vdc: libc::c_int = iclip_u8(yac + (*frame_hdr).quant.vdc_delta);
-        (*dq
-            .offset(
-                i as isize,
-            ))[0 as libc::c_int
-            as usize][0 as libc::c_int
-            as usize] = dav1d_dq_tbl[(*seq_hdr).hbd
-            as usize][ydc as usize][0 as libc::c_int as usize];
-        (*dq
-            .offset(
-                i as isize,
-            ))[0 as libc::c_int
-            as usize][1 as libc::c_int
-            as usize] = dav1d_dq_tbl[(*seq_hdr).hbd
-            as usize][yac as usize][1 as libc::c_int as usize];
-        (*dq
-            .offset(
-                i as isize,
-            ))[1 as libc::c_int
-            as usize][0 as libc::c_int
-            as usize] = dav1d_dq_tbl[(*seq_hdr).hbd
-            as usize][udc as usize][0 as libc::c_int as usize];
-        (*dq
-            .offset(
-                i as isize,
-            ))[1 as libc::c_int
-            as usize][1 as libc::c_int
-            as usize] = dav1d_dq_tbl[(*seq_hdr).hbd
-            as usize][uac as usize][1 as libc::c_int as usize];
-        (*dq
-            .offset(
-                i as isize,
-            ))[2 as libc::c_int
-            as usize][0 as libc::c_int
-            as usize] = dav1d_dq_tbl[(*seq_hdr).hbd
-            as usize][vdc as usize][0 as libc::c_int as usize];
-        (*dq
-            .offset(
-                i as isize,
-            ))[2 as libc::c_int
-            as usize][1 as libc::c_int
-            as usize] = dav1d_dq_tbl[(*seq_hdr).hbd
-            as usize][vac as usize][1 as libc::c_int as usize];
+        let ydc = iclip_u8(yac + (*frame_hdr).quant.ydc_delta);
+        let uac = iclip_u8(yac + (*frame_hdr).quant.uac_delta);
+        let udc = iclip_u8(yac + (*frame_hdr).quant.udc_delta);
+        let vac = iclip_u8(yac + (*frame_hdr).quant.vac_delta);
+        let vdc = iclip_u8(yac + (*frame_hdr).quant.vdc_delta);
+        (*dq.offset(i as isize))[0][0] = dav1d_dq_tbl[(*seq_hdr).hbd as usize][ydc as usize][0];
+        (*dq.offset(i as isize))[0][1] = dav1d_dq_tbl[(*seq_hdr).hbd as usize][yac as usize][1];
+        (*dq.offset(i as isize))[1][0] = dav1d_dq_tbl[(*seq_hdr).hbd as usize][udc as usize][0];
+        (*dq.offset(i as isize))[1][1] = dav1d_dq_tbl[(*seq_hdr).hbd as usize][uac as usize][1];
+        (*dq.offset(i as isize))[2][0] = dav1d_dq_tbl[(*seq_hdr).hbd as usize][vdc as usize][0];
+        (*dq.offset(i as isize))[2][1] = dav1d_dq_tbl[(*seq_hdr).hbd as usize][vac as usize][1];
         i += 1;
     }
 }
+
 unsafe extern "C" fn read_mv_component_diff(
     t: *mut Dav1dTaskContext,
     mv_comp: *mut CdfMvComponent,
