@@ -2982,10 +2982,10 @@ unsafe extern "C" fn derive_warpmv(
 
 #[inline]
 fn findoddzero(buf: &[u8], len: usize) -> bool {
-    buf[..len * 2 - 1]
+    buf[..len * 2]
         .iter()
         .enumerate()
-        .find(|(i, &e)| i & 1 == 0 && e == 0)
+        .find(|(i, &e)| i & 1 == 1 && e == 0)
         .is_some()
 }
 
@@ -10792,12 +10792,12 @@ unsafe fn decode_b(
                         > DAV1D_WM_TYPE_TRANSLATION as libc::c_int as libc::c_uint)
                 && (have_left != 0
                     && findoddzero(
-                        &t.l.intra[by4 as usize + 1..],
+                        &t.l.intra[by4 as usize..],
                         h4 as usize >> 1,
                     )
                     || have_top != 0
                         && findoddzero(
-                            &(*t.a).intra[bx4 as usize + 1..],
+                            &(*t.a).intra[bx4 as usize..],
                             w4 as usize >> 1,
                         ))
             {
