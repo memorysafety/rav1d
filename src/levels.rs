@@ -254,7 +254,7 @@ pub struct Av1Block_inter {
     pub inter_mode: uint8_t,
     pub motion_mode: uint8_t,
     pub drl_idx: uint8_t,
-    pub ref_0: [int8_t; 2],
+    pub r#ref: [int8_t; 2],
     pub max_ytx: uint8_t,
     pub filter2d: uint8_t,
     pub interintra_type: uint8_t,
@@ -314,11 +314,28 @@ impl Av1Block {
             .matrix
     }
 
-    pub unsafe fn mv2d(&self) -> &mv {
+    pub unsafe fn mv(&self) -> &[mv; 2] {
         &self.c2rust_unnamed
+            .c2rust_unnamed_0
+            .c2rust_unnamed
+            .c2rust_unnamed
+            .mv
+    }
+
+    pub unsafe fn mv2d(&self) -> &mv {
+        &self
+            .c2rust_unnamed
             .c2rust_unnamed_0
             .c2rust_unnamed
             .c2rust_unnamed_0
             .mv2d
+    }
+
+    pub unsafe fn filter2d(&self) -> u8 {
+        self.c2rust_unnamed.c2rust_unnamed_0.filter2d
+    }
+
+    pub unsafe fn r#ref(&self) -> [int8_t; 2] {
+        self.c2rust_unnamed.c2rust_unnamed_0.r#ref
     }
 }

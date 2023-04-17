@@ -6279,7 +6279,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_16bpc(
         let refp: *const Dav1dThreadPicture = &*((*f).refp)
             .as_ptr()
             .offset(
-                *((*b).c2rust_unnamed.c2rust_unnamed_0.ref_0)
+                *((*b).c2rust_unnamed.c2rust_unnamed_0.r#ref)
                     .as_ptr()
                     .offset(0 as libc::c_int as isize) as isize,
             ) as *const Dav1dThreadPicture;
@@ -6292,7 +6292,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_16bpc(
                     .gmv_warp_allowed[(*b)
                     .c2rust_unnamed
                     .c2rust_unnamed_0
-                    .ref_0[0 as libc::c_int as usize] as usize] as libc::c_int != 0
+                    .r#ref[0 as libc::c_int as usize] as usize] as libc::c_int != 0
                 || (*b).c2rust_unnamed.c2rust_unnamed_0.motion_mode as libc::c_int
                     == MM_WARP as libc::c_int
                     && (*t).warpmv.type_0 as libc::c_uint
@@ -6314,7 +6314,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_16bpc(
                     &mut *((*(*f).frame_hdr).gmv)
                         .as_mut_ptr()
                         .offset(
-                            *((*b).c2rust_unnamed.c2rust_unnamed_0.ref_0)
+                            *((*b).c2rust_unnamed.c2rust_unnamed_0.r#ref)
                                 .as_ptr()
                                 .offset(0 as libc::c_int as isize) as isize,
                         )
@@ -6341,7 +6341,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_16bpc(
                     .c2rust_unnamed
                     .mv[0 as libc::c_int as usize],
                 refp,
-                (*b).c2rust_unnamed.c2rust_unnamed_0.ref_0[0 as libc::c_int as usize]
+                (*b).c2rust_unnamed.c2rust_unnamed_0.r#ref[0 as libc::c_int as usize]
                     as libc::c_int,
                 filter_2d,
             );
@@ -6728,7 +6728,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_16bpc(
                         (*b)
                             .c2rust_unnamed
                             .c2rust_unnamed_0
-                            .ref_0[0 as libc::c_int as usize] as libc::c_int,
+                            .r#ref[0 as libc::c_int as usize] as libc::c_int,
                         filter_2d,
                     );
                     if res != 0 {
@@ -6744,7 +6744,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_16bpc(
                             .gmv_warp_allowed[(*b)
                             .c2rust_unnamed
                             .c2rust_unnamed_0
-                            .ref_0[0 as libc::c_int as usize] as usize] as libc::c_int
+                            .r#ref[0 as libc::c_int as usize] as usize] as libc::c_int
                             != 0
                         || (*b).c2rust_unnamed.c2rust_unnamed_0.motion_mode
                             as libc::c_int == MM_WARP as libc::c_int
@@ -6771,7 +6771,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_16bpc(
                                 &mut *((*(*f).frame_hdr).gmv)
                                     .as_mut_ptr()
                                     .offset(
-                                        *((*b).c2rust_unnamed.c2rust_unnamed_0.ref_0)
+                                        *((*b).c2rust_unnamed.c2rust_unnamed_0.r#ref)
                                             .as_ptr()
                                             .offset(0 as libc::c_int as isize) as isize,
                                     )
@@ -6807,7 +6807,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_16bpc(
                             (*b)
                                 .c2rust_unnamed
                                 .c2rust_unnamed_0
-                                .ref_0[0 as libc::c_int as usize] as libc::c_int,
+                                .r#ref[0 as libc::c_int as usize] as libc::c_int,
                             filter_2d,
                         );
                         if res != 0 {
@@ -6991,7 +6991,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_16bpc(
             let refp_0: *const Dav1dThreadPicture = &*((*f).refp)
                 .as_ptr()
                 .offset(
-                    *((*b).c2rust_unnamed.c2rust_unnamed_0.ref_0)
+                    *((*b).c2rust_unnamed.c2rust_unnamed_0.r#ref)
                         .as_ptr()
                         .offset(i as isize) as isize,
                 ) as *const Dav1dThreadPicture;
@@ -7001,7 +7001,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_16bpc(
                     .gmv_warp_allowed[(*b)
                     .c2rust_unnamed
                     .c2rust_unnamed_0
-                    .ref_0[i as usize] as usize] as libc::c_int != 0
+                    .r#ref[i as usize] as usize] as libc::c_int != 0
             {
                 res = warp_affine(
                     t,
@@ -7014,7 +7014,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_16bpc(
                     &mut *((*(*f).frame_hdr).gmv)
                         .as_mut_ptr()
                         .offset(
-                            *((*b).c2rust_unnamed.c2rust_unnamed_0.ref_0)
+                            *((*b).c2rust_unnamed.c2rust_unnamed_0.r#ref)
                                 .as_ptr()
                                 .offset(i as isize) as isize,
                         ),
@@ -7040,7 +7040,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_16bpc(
                         .c2rust_unnamed
                         .mv[i as usize],
                     refp_0,
-                    (*b).c2rust_unnamed.c2rust_unnamed_0.ref_0[i as usize]
+                    (*b).c2rust_unnamed.c2rust_unnamed_0.r#ref[i as usize]
                         as libc::c_int,
                     filter_2d_0,
                 );
@@ -7070,11 +7070,11 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_16bpc(
                     .jnt_weights[(*b)
                     .c2rust_unnamed
                     .c2rust_unnamed_0
-                    .ref_0[0 as libc::c_int as usize]
+                    .r#ref[0 as libc::c_int as usize]
                     as usize][(*b)
                     .c2rust_unnamed
                     .c2rust_unnamed_0
-                    .ref_0[1 as libc::c_int as usize] as usize] as libc::c_int;
+                    .r#ref[1 as libc::c_int as usize] as usize] as libc::c_int;
                 ((*dsp).mc.w_avg)
                     .expect(
                         "non-null function pointer",
@@ -7197,7 +7197,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_16bpc(
                     let refp_1: *const Dav1dThreadPicture = &*((*f).refp)
                         .as_ptr()
                         .offset(
-                            *((*b).c2rust_unnamed.c2rust_unnamed_0.ref_0)
+                            *((*b).c2rust_unnamed.c2rust_unnamed_0.r#ref)
                                 .as_ptr()
                                 .offset(i_0 as isize) as isize,
                         ) as *const Dav1dThreadPicture;
@@ -7208,7 +7208,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_16bpc(
                             .gmv_warp_allowed[(*b)
                             .c2rust_unnamed
                             .c2rust_unnamed_0
-                            .ref_0[i_0 as usize] as usize] as libc::c_int != 0
+                            .r#ref[i_0 as usize] as usize] as libc::c_int != 0
                     {
                         res = warp_affine(
                             t,
@@ -7221,7 +7221,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_16bpc(
                             &mut *((*(*f).frame_hdr).gmv)
                                 .as_mut_ptr()
                                 .offset(
-                                    *((*b).c2rust_unnamed.c2rust_unnamed_0.ref_0)
+                                    *((*b).c2rust_unnamed.c2rust_unnamed_0.r#ref)
                                         .as_ptr()
                                         .offset(i_0 as isize) as isize,
                                 ),
@@ -7247,7 +7247,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_16bpc(
                                 .c2rust_unnamed
                                 .mv[i_0 as usize],
                             refp_1,
-                            (*b).c2rust_unnamed.c2rust_unnamed_0.ref_0[i_0 as usize]
+                            (*b).c2rust_unnamed.c2rust_unnamed_0.r#ref[i_0 as usize]
                                 as libc::c_int,
                             filter_2d_0,
                         );
