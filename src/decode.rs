@@ -4233,7 +4233,7 @@ unsafe fn mc_lowest_px(
     } else {
         let mut y= (by4 * v_mul << 4) + mvy * (1 << (ss_ver == 0) as libc::c_int);
         let tmp = y as int64_t * smp.scale as int64_t + ((smp.scale - 0x4000) * 8) as int64_t;
-        y = apply_sign64((llabs(tmp) + 128 >> 8) as libc::c_int, tmp) + 32;
+        y = apply_sign64((tmp.abs() + 128 >> 8) as libc::c_int, tmp) + 32;
         let bottom = (y + (bh4 * v_mul - 1) * smp.step >> 10) + 1 + 4;
         *dst = imax(*dst, bottom);
     };
