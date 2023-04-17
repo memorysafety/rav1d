@@ -4243,28 +4243,28 @@ fn mc_lowest_px(
 unsafe fn affine_lowest_px(
     t: &Dav1dTaskContext,
     dst: &mut libc::c_int,
-    b_dim: *const uint8_t,
+    b_dim: &[u8; 4],
     wmp: &Dav1dWarpedMotionParams,
     ss_ver: libc::c_int,
     ss_hor: libc::c_int,
 ) {
     let h_mul = 4 >> ss_hor;
     let v_mul = 4 >> ss_ver;
-    if !(*b_dim.offset(0) as libc::c_int * h_mul & 7 == 0
-        && *b_dim.offset(1) as libc::c_int * v_mul & 7 == 0) {
+    if !(b_dim[0] as libc::c_int * h_mul & 7 == 0
+        && b_dim[1] as libc::c_int * v_mul & 7 == 0) {
         unreachable!();
     }
     let mat = &wmp.matrix;
-    let y = *b_dim.offset(1) as libc::c_int * v_mul - 8;
+    let y = b_dim[1] as libc::c_int * v_mul - 8;
     let src_y = t.by * 4 + ((y + 4) << ss_ver);
     let mat5_y = mat[5] as int64_t * src_y as int64_t + mat[1] as int64_t;
     let mut x = 0;
-    while x < *b_dim.offset(0) as libc::c_int * h_mul {
+    while x < b_dim[0] as libc::c_int * h_mul {
         let src_x = t.bx * 4 + ((x + 4) << ss_hor);
         let mvy = mat[4] as int64_t * src_x as int64_t + mat5_y >> ss_ver;
         let dy = (mvy >> 16) as libc::c_int - 4;
         *dst = imax(*dst, dy + 4 + 8);
-        x += imax(8, *b_dim.offset(0) as libc::c_int * h_mul - 8);
+        x += imax(8, b_dim[0] as libc::c_int * h_mul - 8);
     }
 }
 
@@ -4272,7 +4272,7 @@ unsafe fn affine_lowest_px(
 unsafe fn affine_lowest_px_luma(
     t: &Dav1dTaskContext,
     dst: &mut libc::c_int,
-    b_dim: *const uint8_t,
+    b_dim: &[u8; 4],
     wmp: &Dav1dWarpedMotionParams,
 ) {
     affine_lowest_px(t, dst, b_dim, wmp, 0, 0);
@@ -4282,7 +4282,7 @@ unsafe fn affine_lowest_px_luma(
 unsafe fn affine_lowest_px_chroma(
     t: &Dav1dTaskContext,
     dst: &mut libc::c_int,
-    b_dim: *const uint8_t,
+    b_dim: &[u8; 4],
     wmp: &Dav1dWarpedMotionParams,
 ) {
     let f = &*t.f;
@@ -4481,7 +4481,8 @@ unsafe fn decode_b(
         &mut b_mem
     };
 
-    let b_dim = dav1d_block_dimensions[bs as usize].as_ptr();
+    let b_dim_array = &dav1d_block_dimensions[bs as usize];
+    let b_dim = b_dim_array.as_ptr();
     let bx4 = t.bx & 31;
     let by4 = t.by & 31;
     let ss_ver = (f.cur.p.layout == DAV1D_PIXEL_LAYOUT_I420) as libc::c_int;
@@ -13177,8 +13178,8 @@ unsafe fn decode_b(
                         ))
                         .as_mut_ptr()
                         .offset(0 as libc::c_int as isize),
-                    b_dim,
-                    if b.c2rust_unnamed.c2rust_unnamed_0.motion_mode as libc::c_int
+                    b_dim_array,
+                    if (*b).c2rust_unnamed.c2rust_unnamed_0.motion_mode as libc::c_int
                         == MM_WARP as libc::c_int
                     {
                         &t.warpmv
@@ -13429,8 +13430,8 @@ unsafe fn decode_b(
                             ))
                             .as_mut_ptr()
                             .offset(1 as libc::c_int as isize),
-                        b_dim,
-                        if b.c2rust_unnamed.c2rust_unnamed_0.motion_mode
+                        b_dim_array,
+                        if (*b).c2rust_unnamed.c2rust_unnamed_0.motion_mode
                             as libc::c_int == MM_WARP as libc::c_int
                         {
                             &t.warpmv
@@ -13512,7 +13513,7 @@ unsafe fn decode_b(
                             ))
                             .as_mut_ptr()
                             .offset(0 as libc::c_int as isize),
-                        b_dim,
+                        b_dim_array,
                         &mut *((*f.frame_hdr).gmv)
                             .as_mut_ptr()
                             .offset(
@@ -13577,7 +13578,7 @@ unsafe fn decode_b(
                                 ))
                                 .as_mut_ptr()
                                 .offset(1 as libc::c_int as isize),
-                            b_dim,
+                            b_dim_array,
                             &mut *((*f.frame_hdr).gmv)
                                 .as_mut_ptr()
                                 .offset(
