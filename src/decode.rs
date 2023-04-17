@@ -1969,29 +1969,29 @@ unsafe extern "C" fn dav1d_msac_decode_uniform(
 }
 
 unsafe extern "C" fn init_quant_tables(
-    seq_hdr: *const Dav1dSequenceHeader,
-    frame_hdr: *const Dav1dFrameHeader,
+    seq_hdr: &Dav1dSequenceHeader,
+    frame_hdr: &Dav1dFrameHeader,
     qidx: libc::c_int,
     mut dq: *mut [[uint16_t; 2]; 3],
 ) {
-    let segmentation_is_enabled = (*frame_hdr).segmentation.enabled != 0;
+    let segmentation_is_enabled = frame_hdr.segmentation.enabled != 0;
     for i in 0..(if segmentation_is_enabled { 8 } else { 1 }) {
         let yac = if segmentation_is_enabled {
-            iclip_u8(qidx + (*frame_hdr).segmentation.seg_data.d[i].delta_q)
+            iclip_u8(qidx + frame_hdr.segmentation.seg_data.d[i].delta_q)
         } else {
             qidx
         };
-        let ydc = iclip_u8(yac + (*frame_hdr).quant.ydc_delta);
-        let uac = iclip_u8(yac + (*frame_hdr).quant.uac_delta);
-        let udc = iclip_u8(yac + (*frame_hdr).quant.udc_delta);
-        let vac = iclip_u8(yac + (*frame_hdr).quant.vac_delta);
-        let vdc = iclip_u8(yac + (*frame_hdr).quant.vdc_delta);
-        (*dq.offset(i as isize))[0][0] = dav1d_dq_tbl[(*seq_hdr).hbd as usize][ydc as usize][0];
-        (*dq.offset(i as isize))[0][1] = dav1d_dq_tbl[(*seq_hdr).hbd as usize][yac as usize][1];
-        (*dq.offset(i as isize))[1][0] = dav1d_dq_tbl[(*seq_hdr).hbd as usize][udc as usize][0];
-        (*dq.offset(i as isize))[1][1] = dav1d_dq_tbl[(*seq_hdr).hbd as usize][uac as usize][1];
-        (*dq.offset(i as isize))[2][0] = dav1d_dq_tbl[(*seq_hdr).hbd as usize][vdc as usize][0];
-        (*dq.offset(i as isize))[2][1] = dav1d_dq_tbl[(*seq_hdr).hbd as usize][vac as usize][1];
+        let ydc = iclip_u8(yac + frame_hdr.quant.ydc_delta);
+        let uac = iclip_u8(yac + frame_hdr.quant.uac_delta);
+        let udc = iclip_u8(yac + frame_hdr.quant.udc_delta);
+        let vac = iclip_u8(yac + frame_hdr.quant.vac_delta);
+        let vdc = iclip_u8(yac + frame_hdr.quant.vdc_delta);
+        (*dq.offset(i as isize))[0][0] = dav1d_dq_tbl[seq_hdr.hbd as usize][ydc as usize][0];
+        (*dq.offset(i as isize))[0][1] = dav1d_dq_tbl[seq_hdr.hbd as usize][yac as usize][1];
+        (*dq.offset(i as isize))[1][0] = dav1d_dq_tbl[seq_hdr.hbd as usize][udc as usize][0];
+        (*dq.offset(i as isize))[1][1] = dav1d_dq_tbl[seq_hdr.hbd as usize][uac as usize][1];
+        (*dq.offset(i as isize))[2][0] = dav1d_dq_tbl[seq_hdr.hbd as usize][vdc as usize][0];
+        (*dq.offset(i as isize))[2][1] = dav1d_dq_tbl[seq_hdr.hbd as usize][vac as usize][1];
     }
 }
 
@@ -5219,8 +5219,8 @@ unsafe fn decode_b(
             ts.dq = (f.dq).as_ptr();
         } else if ts.last_qidx != prev_qidx {
             init_quant_tables(
-                f.seq_hdr,
-                f.frame_hdr,
+                &*f.seq_hdr,
+                &*f.frame_hdr,
                 ts.last_qidx,
                 (ts.dqmem).as_mut_ptr(),
             );
@@ -16128,8 +16128,8 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                                                                                         13495985911605184990 => {}
                                                                                         _ => {
                                                                                             init_quant_tables(
-                                                                                                (*f).seq_hdr,
-                                                                                                (*f).frame_hdr,
+                                                                                                &*(*f).seq_hdr,
+                                                                                                &*(*f).frame_hdr,
                                                                                                 (*(*f).frame_hdr).quant.yac,
                                                                                                 ((*f).dq).as_mut_ptr(),
                                                                                             );
