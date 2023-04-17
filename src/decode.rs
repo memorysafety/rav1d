@@ -2982,7 +2982,11 @@ unsafe extern "C" fn derive_warpmv(
 
 #[inline]
 fn findoddzero(buf: &[u8], len: usize) -> bool {
-    (0..len).find(|n| buf[n * 2] == 0).is_some()
+    buf[..len * 2 - 1]
+        .iter()
+        .enumerate()
+        .find(|(i, &e)| i & 1 == 0 && e == 0)
+        .is_some()
 }
 
 unsafe extern "C" fn read_pal_plane(
