@@ -2981,8 +2981,8 @@ unsafe extern "C" fn derive_warpmv(
 }
 
 #[inline]
-unsafe fn findoddzero(buf: *const uint8_t, len: libc::c_int) -> bool {
-    (0..len).find(|n| *buf.offset((n * 2) as isize) == 0).is_some()
+fn findoddzero(buf: &[u8], len: usize) -> bool {
+    (0..len).find(|n| buf[n * 2] == 0).is_some()
 }
 
 unsafe extern "C" fn read_pal_plane(
@@ -10788,17 +10788,13 @@ unsafe fn decode_b(
                         > DAV1D_WM_TYPE_TRANSLATION as libc::c_int as libc::c_uint)
                 && (have_left != 0
                     && findoddzero(
-                        &mut *(t.l.intra)
-                            .as_mut_ptr()
-                            .offset((by4 + 1 as libc::c_int) as isize),
-                        h4 >> 1 as libc::c_int,
+                        &t.l.intra[by4 as usize + 1..],
+                        h4 as usize >> 1,
                     )
                     || have_top != 0
                         && findoddzero(
-                            &mut *((*t.a).intra)
-                                .as_mut_ptr()
-                                .offset((bx4 + 1 as libc::c_int) as isize),
-                            w4 >> 1 as libc::c_int,
+                            &(*t.a).intra[bx4 as usize + 1..],
+                            w4 as usize >> 1,
                         ))
             {
                 let mut mask: [uint64_t; 2] = [
