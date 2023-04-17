@@ -4225,10 +4225,7 @@ unsafe fn obmc_lowest_px(
 ) {
     assert!(!((*t).bx & 1 == 0 && (*t).by & 1 == 0));
     let f = (*t).f;
-    let mut r = &mut *((*t).rt.r)
-        .as_mut_ptr()
-        .offset((((*t).by & 31) + 5) as isize)
-        as *mut *mut refmvs_block;
+    let mut r = &mut ((*t).rt.r)[(((*t).by & 31) + 5) as usize] as *mut *mut refmvs_block;
     let ss_ver = (is_chroma && (*f).cur.p.layout == DAV1D_PIXEL_LAYOUT_I420) as libc::c_int;
     let ss_hor = (is_chroma && (*f).cur.p.layout != DAV1D_PIXEL_LAYOUT_I444) as libc::c_int;
     let h_mul = 4 >> ss_hor;
@@ -4240,25 +4237,20 @@ unsafe fn obmc_lowest_px(
         let mut x = 0;
         while x < w4 && i < imin(*b_dim.offset(2) as libc::c_int, 4) {
             let a_r = &mut *(*r.offset(-1)).offset(((*t).bx + x + 1) as isize);
-            let a_b_dim = (dav1d_block_dimensions[(*a_r).bs as usize])
-                .as_ptr();
+            let a_b_dim = &dav1d_block_dimensions[(*a_r).bs as usize];
             if (*a_r).r#ref.r#ref[0] as libc::c_int > 0 {
                 let oh4 = imin(*b_dim.offset(1) as libc::c_int, 16) >> 1;
                 mc_lowest_px(
-                    &mut *(*dst.offset((*((*a_r).r#ref.r#ref).as_ptr().offset(0) as libc::c_int - 1) as isize))
-                        .as_mut_ptr()
-                        .offset(is_chroma as isize),
+                    &mut (*dst.offset(((*a_r).r#ref.r#ref[0] as libc::c_int - 1) as isize))[is_chroma as usize],
                     (*t).by,
                     oh4 * 3 + 3 >> 2,
                     (*a_r).mv.mv[0].y as libc::c_int,
                     ss_ver,
-                    &*(*((*f).svc).as_ptr().offset((*((*a_r).r#ref.r#ref).as_ptr().offset(0) as libc::c_int - 1) as isize))
-                        .as_ptr()
-                        .offset(1),
+                    &((*f).svc[((*a_r).r#ref.r#ref[0] as libc::c_int - 1) as usize])[1],
                 );
                 i += 1;
             }
-            x += imax(*a_b_dim.offset(0) as libc::c_int, 2);
+            x += imax(a_b_dim[0] as libc::c_int, 2);
         }
     }
     if (*t).bx > (*(*t).ts).tiling.col_start {
@@ -4268,24 +4260,20 @@ unsafe fn obmc_lowest_px(
             let l_r = &mut *(*r
                 .offset((y + 1) as isize))
                 .offset(((*t).bx - 1) as isize);
-            let l_b_dim = (dav1d_block_dimensions[(*l_r).bs as usize]).as_ptr();
+            let l_b_dim = &dav1d_block_dimensions[(*l_r).bs as usize];
             if (*l_r).r#ref.r#ref[0] as libc::c_int > 0 {
-                let oh4_0 = iclip(*l_b_dim.offset(1) as libc::c_int, 2, *b_dim.offset(1) as libc::c_int);
+                let oh4_0 = iclip(l_b_dim[1] as libc::c_int, 2, *b_dim.offset(1) as libc::c_int);
                 mc_lowest_px(
-                    &mut *(*dst.offset((*((*l_r).r#ref.r#ref).as_ptr().offset(0) as libc::c_int - 1) as isize))
-                        .as_mut_ptr()
-                        .offset(is_chroma as isize),
+                    &mut (*dst.offset(((*l_r).r#ref.r#ref[0] as libc::c_int - 1) as isize))[is_chroma as usize],
                     (*t).by + y,
                     oh4_0,
                     (*l_r).mv.mv[0].y as libc::c_int,
                     ss_ver,
-                    &*(*((*f).svc).as_ptr().offset((*((*l_r).r#ref.r#ref).as_ptr().offset(0) as libc::c_int - 1) as isize))
-                        .as_ptr()
-                        .offset(1),
+                    &(*f).svc[((*l_r).r#ref.r#ref[0] as libc::c_int - 1) as usize][1],
                 );
                 i_0 += 1;
             }
-            y += imax(*l_b_dim.offset(1) as libc::c_int, 2);
+            y += imax(l_b_dim[1] as libc::c_int, 2);
         }
     }
 }
