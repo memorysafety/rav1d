@@ -2,7 +2,6 @@ use crate::include::stdint::*;
 use ::libc;
 extern "C" {
     fn abs(_: libc::c_int) -> libc::c_int;
-    fn llabs(_: libc::c_longlong) -> libc::c_longlong;
 }
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 use crate::src::levels::mv;
@@ -332,7 +331,7 @@ pub unsafe extern "C" fn dav1d_get_shear_params(
         .p
         .gamma = iclip_wmp(
         apply_sign64(
-            (llabs(v1 as libc::c_longlong) + rnd as libc::c_longlong >> shift)
+            ((v1 as libc::c_longlong).abs() + rnd as libc::c_longlong >> shift)
                 as libc::c_int,
             v1,
         ),
@@ -345,7 +344,7 @@ pub unsafe extern "C" fn dav1d_get_shear_params(
         .delta = iclip_wmp(
         *mat.offset(5 as libc::c_int as isize)
             - apply_sign64(
-                (llabs(v2 as libc::c_longlong) + rnd as libc::c_longlong >> shift)
+                ((v2 as libc::c_longlong).abs() + rnd as libc::c_longlong >> shift)
                     as libc::c_int,
                 v2,
             ) - 0x10000 as libc::c_int,
@@ -383,7 +382,7 @@ unsafe extern "C" fn get_mult_shift_ndiag(
 ) -> libc::c_int {
     let v1: int64_t = px * idet as int64_t;
     let v2: libc::c_int = apply_sign64(
-        (llabs(v1 as libc::c_longlong)
+        ((v1 as libc::c_longlong).abs()
             + ((1 as libc::c_longlong) << shift >> 1 as libc::c_int) >> shift)
             as libc::c_int,
         v1,
@@ -397,7 +396,7 @@ unsafe extern "C" fn get_mult_shift_diag(
 ) -> libc::c_int {
     let v1: int64_t = px * idet as int64_t;
     let v2: libc::c_int = apply_sign64(
-        (llabs(v1 as libc::c_longlong)
+        ((v1 as libc::c_longlong).abs()
             + ((1 as libc::c_longlong) << shift >> 1 as libc::c_int) >> shift)
             as libc::c_int,
         v1,
@@ -509,7 +508,7 @@ pub unsafe extern "C" fn dav1d_find_affine_int(
     }
     let mut shift: libc::c_int = 0;
     let mut idet: libc::c_int = apply_sign64(
-        resolve_divisor_64(llabs(det as libc::c_longlong) as uint64_t, &mut shift),
+        resolve_divisor_64((det as libc::c_longlong).abs() as uint64_t, &mut shift),
         det,
     );
     shift -= 16 as libc::c_int;
