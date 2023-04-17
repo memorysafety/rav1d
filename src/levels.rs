@@ -196,6 +196,16 @@ pub union mv {
     pub n: uint32_t,
 }
 
+impl mv {
+    pub fn x(&self) -> i16 {
+        unsafe { self.c2rust_unnamed.x }
+    }
+
+    pub fn y(&self) -> i16 {
+        unsafe { self.c2rust_unnamed.y }
+    }
+}
+
 pub type MotionMode = libc::c_uint;
 pub const MM_WARP: MotionMode = 2;
 pub const MM_OBMC: MotionMode = 1;
@@ -284,5 +294,31 @@ pub struct Av1Block {
 impl Av1Block {
     pub unsafe fn y_mode(&self) -> u8 {
         self.c2rust_unnamed.c2rust_unnamed.y_mode
+    }
+
+    pub unsafe fn matrix(&self) -> &[i16; 4] {
+        &self
+            .c2rust_unnamed
+            .c2rust_unnamed_0
+            .c2rust_unnamed
+            .c2rust_unnamed_0
+            .matrix
+    }
+
+    pub unsafe fn matrix_mut(&mut self) -> &mut [i16; 4] {
+        &mut self
+            .c2rust_unnamed
+            .c2rust_unnamed_0
+            .c2rust_unnamed
+            .c2rust_unnamed_0
+            .matrix
+    }
+
+    pub unsafe fn mv2d(&self) -> &mv {
+        &self.c2rust_unnamed
+            .c2rust_unnamed_0
+            .c2rust_unnamed
+            .c2rust_unnamed_0
+            .mv2d
     }
 }
