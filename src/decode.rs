@@ -4214,7 +4214,7 @@ unsafe extern "C" fn splat_intraref(
     );
 }
 
-unsafe extern "C" fn mc_lowest_px(
+unsafe fn mc_lowest_px(
     dst: *mut libc::c_int,
     by4: libc::c_int,
     bh4: libc::c_int,
