@@ -2985,14 +2985,12 @@ unsafe extern "C" fn findoddzero(
     mut buf: *const uint8_t,
     mut len: libc::c_int,
 ) -> bool {
-    let mut n: libc::c_int = 0 as libc::c_int;
-    while n < len {
-        if *buf.offset((n * 2 as libc::c_int) as isize) == 0 {
+    for n in 0..len {
+        if *buf.offset((n * 2) as isize) == 0 {
             return true;
         }
-        n += 1;
     }
-    return false;
+    false
 }
 
 unsafe extern "C" fn read_pal_plane(
