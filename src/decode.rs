@@ -4177,38 +4177,32 @@ unsafe extern "C" fn splat_intraref(
         bh4,
     );
 }
-unsafe extern "C" fn mc_lowest_px(
-    dst: *mut libc::c_int,
+
+fn mc_lowest_px(
+    dst: &mut libc::c_int,
     by4: libc::c_int,
     bh4: libc::c_int,
     mvy: libc::c_int,
     ss_ver: libc::c_int,
-    smp: *const ScalableMotionParams,
+    smp: &ScalableMotionParams,
 ) {
-    let v_mul: libc::c_int = 4 as libc::c_int >> ss_ver;
-    if (*smp).scale == 0 {
-        let my: libc::c_int = mvy >> 3 as libc::c_int + ss_ver;
-        let dy: libc::c_int = mvy & 15 as libc::c_int >> (ss_ver == 0) as libc::c_int;
+    let v_mul = 4 >> ss_ver;
+    if smp.scale == 0 {
+        let my = mvy >> 3 + ss_ver;
+        let dy = mvy & 15 >> (ss_ver == 0) as libc::c_int;
         *dst = imax(
             *dst,
-            (by4 + bh4) * v_mul + my + 4 as libc::c_int * (dy != 0) as libc::c_int,
+            (by4 + bh4) * v_mul + my + 4 * (dy != 0) as libc::c_int,
         );
     } else {
-        let mut y: libc::c_int = (by4 * v_mul << 4 as libc::c_int)
-            + mvy * ((1 as libc::c_int) << (ss_ver == 0) as libc::c_int);
-        let tmp: int64_t = y as int64_t * (*smp).scale as int64_t
-            + (((*smp).scale - 0x4000 as libc::c_int) * 8 as libc::c_int)
-                as int64_t;
-        y = apply_sign64(
-            (llabs(tmp as libc::c_longlong) + 128 as libc::c_int as libc::c_longlong
-                >> 8 as libc::c_int) as libc::c_int,
-            tmp,
-        ) + 32 as libc::c_int;
-        let bottom: libc::c_int = (y + (bh4 * v_mul - 1 as libc::c_int) * (*smp).step
-            >> 10 as libc::c_int) + 1 as libc::c_int + 4 as libc::c_int;
+        let mut y= (by4 * v_mul << 4) + mvy * (1 << (ss_ver == 0) as libc::c_int);
+        let tmp = y as int64_t * smp.scale as int64_t + ((smp.scale - 0x4000) * 8) as int64_t;
+        y = apply_sign64((tmp.abs() + 128 >> 8) as libc::c_int, tmp) + 32;
+        let bottom = (y + (bh4 * v_mul - 1) * smp.step >> 10) + 1 + 4;
         *dst = imax(*dst, bottom);
     };
 }
+
 #[inline(always)]
 unsafe extern "C" fn affine_lowest_px(
     t: *mut Dav1dTaskContext,
