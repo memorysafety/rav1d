@@ -4216,7 +4216,7 @@ unsafe fn affine_lowest_px_chroma(
 unsafe fn obmc_lowest_px(
     t: *mut Dav1dTaskContext,
     dst: *mut [libc::c_int; 2],
-    is_chroma: libc::c_int,
+    is_chroma: bool,
     b_dim: *const uint8_t,
     _bx4: libc::c_int,
     _by4: libc::c_int,
@@ -4229,11 +4229,11 @@ unsafe fn obmc_lowest_px(
         .as_mut_ptr()
         .offset((((*t).by & 31) + 5) as isize)
         as *mut *mut refmvs_block;
-    let ss_ver = (is_chroma != 0 && (*f).cur.p.layout == DAV1D_PIXEL_LAYOUT_I420) as libc::c_int;
-    let ss_hor = (is_chroma != 0 && (*f).cur.p.layout != DAV1D_PIXEL_LAYOUT_I444) as libc::c_int;
+    let ss_ver = (is_chroma && (*f).cur.p.layout == DAV1D_PIXEL_LAYOUT_I420) as libc::c_int;
+    let ss_hor = (is_chroma && (*f).cur.p.layout != DAV1D_PIXEL_LAYOUT_I444) as libc::c_int;
     let h_mul = 4 >> ss_hor;
     let v_mul = 4 >> ss_ver;
-    if (*t).by > (*(*t).ts).tiling.row_start && (is_chroma == 0
+    if (*t).by > (*(*t).ts).tiling.row_start && (!is_chroma
         || *b_dim.offset(0) as libc::c_int * h_mul
             + *b_dim.offset(1) as libc::c_int * v_mul >= 16) {
         let mut i = 0;
@@ -12772,7 +12772,7 @@ unsafe fn decode_b(
                     obmc_lowest_px(
                         t,
                         lowest_px,
-                        0 as libc::c_int,
+                        false,
                         b_dim,
                         bx4,
                         by4,
@@ -13022,7 +13022,7 @@ unsafe fn decode_b(
                         obmc_lowest_px(
                             t,
                             lowest_px,
-                            1 as libc::c_int,
+                            true,
                             b_dim,
                             bx4,
                             by4,
