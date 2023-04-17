@@ -1,3 +1,4 @@
+use crate::include::common::frame::is_inter_or_switch;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use ::libc;
@@ -545,6 +546,19 @@ pub struct Dav1dFrameContext_bd_fn {
     pub backup_ipred_edge: backup_ipred_edge_fn,
     pub read_coef_blocks: read_coef_blocks_fn,
 }
+
+impl Dav1dFrameContext_bd_fn {
+    pub unsafe fn recon_b_intra(
+        &self,
+        context: *mut Dav1dTaskContext,
+        block_size: BlockSize,
+        flags: EdgeFlags,
+        block: *const Av1Block,
+    ) {
+        self.recon_b_intra.expect("non-null function pointer")(context, block_size, flags, block);
+    }
+}
+
 pub type read_coef_blocks_fn = Option::<
     unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> (),
 >;
@@ -4463,17 +4477,14 @@ unsafe fn decode_b(
 
     if t.frame_thread.pass == 2 {
         if b.intra != 0 {
-            (f.bd_fn.recon_b_intra)
-                .expect("non-null function pointer")(t, bs, intra_edge_flags, b);
-            let y_mode_nofilt: IntraPredMode = (if b
-                .c2rust_unnamed
-                .c2rust_unnamed
-                .y_mode as libc::c_int == FILTER_PRED as libc::c_int
-            {
-                DC_PRED as libc::c_int
+            f.bd_fn.recon_b_intra(t, bs, intra_edge_flags, b);
+
+            let y_mode = b.y_mode() as IntraPredMode;
+            let y_mode_nofilt = if y_mode == FILTER_PRED {
+                DC_PRED
             } else {
-                b.c2rust_unnamed.c2rust_unnamed.y_mode as libc::c_int
-            }) as IntraPredMode;
+                y_mode
+            };
 
             let set_ctx = |dir: &mut BlockContext, off, mul, rep_macro: SetCtxFn| {
                 rep_macro(dir.mode.as_mut_ptr(), off, mul * y_mode_nofilt as u64);
@@ -4482,40 +4493,25 @@ unsafe fn decode_b(
             case_set(bh4, &mut t.l, by4 as isize, set_ctx);
             case_set(bw4, &mut *t.a, bx4 as isize, set_ctx);
 
-            if (*f.frame_hdr).frame_type as libc::c_uint
-                & 1 as libc::c_int as libc::c_uint != 0
-            {
-                let r: *mut refmvs_block = &mut *(*(t.rt.r)
-                    .as_mut_ptr()
-                    .offset(
-                        ((t.by & 31 as libc::c_int) + 5 as libc::c_int + bh4
-                            - 1 as libc::c_int) as isize,
-                    ))
-                    .offset(t.bx as isize) as *mut refmvs_block;
-                let mut x: libc::c_int = 0 as libc::c_int;
-                while x < bw4 {
-                    (*r.offset(x as isize))
-                        .ref_0
-                        .ref_0[0 as libc::c_int as usize] = 0 as libc::c_int as int8_t;
-                    (*r.offset(x as isize)).bs = bs as uint8_t;
-                    x += 1;
+            if is_inter_or_switch(&*f.frame_hdr) {
+                let r: *mut refmvs_block = t
+                    .rt
+                    .r[((t.by & 31) + 5 + bh4 - 1) as usize]
+                    .offset(t.bx as isize);
+                for x in 0..bw4 {
+                    let block = &mut *r.offset(x as isize);
+                    block.ref_0.ref_0[0] = 0;
+                    block.bs = bs as uint8_t;
                 }
-                let mut rr: *const *mut refmvs_block = &mut *(t.rt.r)
-                    .as_mut_ptr()
-                    .offset(((t.by & 31 as libc::c_int) + 5 as libc::c_int) as isize)
-                    as *mut *mut refmvs_block;
-                let mut y: libc::c_int = 0 as libc::c_int;
-                while y < bh4 - 1 as libc::c_int {
-                    (*(*rr.offset(y as isize))
-                        .offset((t.bx + bw4 - 1 as libc::c_int) as isize))
-                        .ref_0
-                        .ref_0[0 as libc::c_int as usize] = 0 as libc::c_int as int8_t;
-                    (*(*rr.offset(y as isize))
-                        .offset((t.bx + bw4 - 1 as libc::c_int) as isize))
-                        .bs = bs as uint8_t;
-                    y += 1;
+
+                let mut rr = &t.rt.r[((t.by & 31) + 5) as usize..];
+                for y in 0..bh4 - 1 {
+                    let block = &mut *rr[y as usize].offset((t.bx + bw4 - 1) as isize);
+                    block.ref_0.ref_0[0] = 0;
+                    block.bs = bs as uint8_t;
                 }
             }
+
             if has_chroma != 0 {
                 let set_ctx = |dir: &mut BlockContext, off, mul, rep_macro: SetCtxFn| {
                     rep_macro(
