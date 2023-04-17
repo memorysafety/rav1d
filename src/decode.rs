@@ -4240,7 +4240,7 @@ fn mc_lowest_px(
 }
 
 #[inline(always)]
-unsafe fn affine_lowest_px(
+fn affine_lowest_px(
     t: &Dav1dTaskContext,
     dst: &mut libc::c_int,
     b_dim: &[u8; 4],
@@ -4269,7 +4269,7 @@ unsafe fn affine_lowest_px(
 }
 
 #[inline(never)]
-unsafe fn affine_lowest_px_luma(
+fn affine_lowest_px_luma(
     t: &Dav1dTaskContext,
     dst: &mut libc::c_int,
     b_dim: &[u8; 4],
