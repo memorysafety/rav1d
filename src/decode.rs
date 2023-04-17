@@ -2380,7 +2380,7 @@ unsafe extern "C" fn read_tx_tree(
         }
     };
 }
-unsafe extern "C" fn neg_deinterleave(
+extern "C" fn neg_deinterleave(
     mut diff: libc::c_int,
     mut ref_0: libc::c_int,
     mut max: libc::c_int,
