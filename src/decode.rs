@@ -2979,20 +2979,16 @@ unsafe extern "C" fn derive_warpmv(
         (*wmp).type_0 = DAV1D_WM_TYPE_IDENTITY;
     };
 }
+
 #[inline]
-unsafe extern "C" fn findoddzero(
-    mut buf: *const uint8_t,
-    mut len: libc::c_int,
-) -> libc::c_int {
-    let mut n: libc::c_int = 0 as libc::c_int;
-    while n < len {
-        if *buf.offset((n * 2 as libc::c_int) as isize) == 0 {
-            return 1 as libc::c_int;
-        }
-        n += 1;
-    }
-    return 0 as libc::c_int;
+fn findoddzero(buf: &[u8]) -> bool {
+    buf
+        .iter()
+        .enumerate()
+        .find(|(i, &e)| i & 1 == 1 && e == 0)
+        .is_some()
 }
+
 unsafe extern "C" fn read_pal_plane(
     t: *mut Dav1dTaskContext,
     b: *mut Av1Block,
@@ -10794,20 +10790,8 @@ unsafe fn decode_b(
                             .ref_0[0 as libc::c_int as usize] as usize]
                         .type_0 as libc::c_uint
                         > DAV1D_WM_TYPE_TRANSLATION as libc::c_int as libc::c_uint)
-                && (have_left != 0
-                    && findoddzero(
-                        &mut *(t.l.intra)
-                            .as_mut_ptr()
-                            .offset((by4 + 1 as libc::c_int) as isize),
-                        h4 >> 1 as libc::c_int,
-                    ) != 0
-                    || have_top != 0
-                        && findoddzero(
-                            &mut *((*t.a).intra)
-                                .as_mut_ptr()
-                                .offset((bx4 + 1 as libc::c_int) as isize),
-                            w4 >> 1 as libc::c_int,
-                        ) != 0)
+                && (have_left != 0 && findoddzero(&t.l.intra[by4 as usize..][..h4 as usize])
+                    || have_top != 0 && findoddzero(&(*t.a).intra[bx4 as usize..][..w4 as usize]))
             {
                 let mut mask: [uint64_t; 2] = [
                     0 as libc::c_int as uint64_t,
