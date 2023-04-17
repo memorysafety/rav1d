@@ -4213,7 +4213,7 @@ unsafe fn affine_lowest_px_chroma(
     };
 }
 
-unsafe extern "C" fn obmc_lowest_px(
+unsafe fn obmc_lowest_px(
     t: *mut Dav1dTaskContext,
     dst: *mut [libc::c_int; 2],
     is_chroma: libc::c_int,
@@ -4358,6 +4358,7 @@ unsafe extern "C" fn obmc_lowest_px(
         }
     }
 }
+
 /* NOTE: DEBUG_BLOCK_INFO is a macro in recon.h so it should probably live in
  * one of the rust files generated from recon_tmpl.c once deduplicated.
  */
