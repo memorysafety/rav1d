@@ -4244,7 +4244,7 @@ unsafe fn affine_lowest_px(
     t: *mut Dav1dTaskContext,
     dst: &mut libc::c_int,
     b_dim: *const uint8_t,
-    wmp: *const Dav1dWarpedMotionParams,
+    wmp: &Dav1dWarpedMotionParams,
     ss_ver: libc::c_int,
     ss_hor: libc::c_int,
 ) {
@@ -4254,7 +4254,7 @@ unsafe fn affine_lowest_px(
         && *b_dim.offset(1) as libc::c_int * v_mul & 7 == 0) {
         unreachable!();
     }
-    let mat = ((*wmp).matrix).as_ptr();
+    let mat = wmp.matrix.as_ptr();
     let y = *b_dim.offset(1) as libc::c_int * v_mul - 8;
     let src_y = (*t).by * 4 + ((y + 4) << ss_ver);
     let mat5_y = *mat.offset(5) as int64_t * src_y as int64_t + *mat.offset(1) as int64_t;
@@ -4273,7 +4273,7 @@ unsafe fn affine_lowest_px_luma(
     t: *mut Dav1dTaskContext,
     dst: &mut libc::c_int,
     b_dim: *const uint8_t,
-    wmp: *const Dav1dWarpedMotionParams,
+    wmp: &Dav1dWarpedMotionParams,
 ) {
     affine_lowest_px(t, dst, b_dim, wmp, 0, 0);
 }
@@ -4283,7 +4283,7 @@ unsafe fn affine_lowest_px_chroma(
     t: *mut Dav1dTaskContext,
     dst: &mut libc::c_int,
     b_dim: *const uint8_t,
-    wmp: *const Dav1dWarpedMotionParams,
+    wmp: &Dav1dWarpedMotionParams,
 ) {
     let f = (*t).f;
     if !((*f).cur.p.layout != DAV1D_PIXEL_LAYOUT_I400) {
