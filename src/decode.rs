@@ -4215,7 +4215,7 @@ unsafe fn affine_lowest_px_chroma(
 
 unsafe fn obmc_lowest_px(
     t: *mut Dav1dTaskContext,
-    dst: *mut [libc::c_int; 2],
+    dst: &mut [[libc::c_int; 2]; 7],
     is_chroma: bool,
     b_dim: &[u8; 4],
     _bx4: libc::c_int,
@@ -4240,7 +4240,7 @@ unsafe fn obmc_lowest_px(
             if (*a_r).r#ref.r#ref[0] as libc::c_int > 0 {
                 let oh4 = imin(b_dim[1] as libc::c_int, 16) >> 1;
                 mc_lowest_px(
-                    &mut (*dst.offset(((*a_r).r#ref.r#ref[0] as libc::c_int - 1) as isize))[is_chroma as usize],
+                    &mut dst[((*a_r).r#ref.r#ref[0] as libc::c_int - 1) as usize][is_chroma as usize],
                     (*t).by,
                     oh4 * 3 + 3 >> 2,
                     (*a_r).mv.mv[0].y as libc::c_int,
@@ -4263,7 +4263,7 @@ unsafe fn obmc_lowest_px(
             if (*l_r).r#ref.r#ref[0] as libc::c_int > 0 {
                 let oh4_0 = iclip(l_b_dim[1] as libc::c_int, 2, b_dim[1] as libc::c_int);
                 mc_lowest_px(
-                    &mut (*dst.offset(((*l_r).r#ref.r#ref[0] as libc::c_int - 1) as isize))[is_chroma as usize],
+                    &mut dst[((*l_r).r#ref.r#ref[0] as libc::c_int - 1) as usize][is_chroma as usize],
                     (*t).by + y,
                     oh4_0,
                     (*l_r).mv.mv[0].y as libc::c_int,
@@ -12679,9 +12679,7 @@ unsafe fn decode_b(
             & 1 as libc::c_int as libc::c_uint != 0
     {
         let sby_0: libc::c_int = t.by - ts.tiling.row_start >> f.sb_shift;
-        let lowest_px: *mut [libc::c_int; 2] = (*(ts.lowest_pixel)
-            .offset(sby_0 as isize))
-            .as_mut_ptr();
+        let lowest_px = &mut *ts.lowest_pixel.offset(sby_0 as isize);
         if b.c2rust_unnamed.c2rust_unnamed_0.comp_type as libc::c_int
             == COMP_INTER_NONE as libc::c_int
         {
@@ -12700,14 +12698,7 @@ unsafe fn decode_b(
             {
                 affine_lowest_px_luma(
                     t,
-                    &mut *(*lowest_px
-                        .offset(
-                            *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
-                                .as_mut_ptr()
-                                .offset(0 as libc::c_int as isize) as isize,
-                        ))
-                        .as_mut_ptr()
-                        .offset(0 as libc::c_int as isize),
+                    &mut lowest_px[b.r#ref()[0] as usize][0],
                     b_dim_array,
                     if (*b).c2rust_unnamed.c2rust_unnamed_0.motion_mode as libc::c_int
                         == MM_WARP as libc::c_int
@@ -12725,14 +12716,7 @@ unsafe fn decode_b(
                 );
             } else {
                 mc_lowest_px(
-                    &mut *(*lowest_px
-                        .offset(
-                            *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
-                                .as_mut_ptr()
-                                .offset(0 as libc::c_int as isize) as isize,
-                        ))
-                        .as_mut_ptr()
-                        .offset(0 as libc::c_int as isize),
+                    &mut lowest_px[b.r#ref()[0] as usize][0],
                     t.by,
                     bh4,
                     b
@@ -12816,15 +12800,7 @@ unsafe fn decode_b(
                             .offset((t.bx - 1 as libc::c_int) as isize)
                             as *mut refmvs_block;
                         mc_lowest_px(
-                            &mut *(*lowest_px
-                                .offset(
-                                    (*((*rr_1).r#ref.r#ref)
-                                        .as_ptr()
-                                        .offset(0 as libc::c_int as isize) as libc::c_int
-                                        - 1 as libc::c_int) as isize,
-                                ))
-                                .as_mut_ptr()
-                                .offset(1 as libc::c_int as isize),
+                            &mut lowest_px[(*rr_1).r#ref.r#ref[0] as usize - 1][1],
                             t.by - 1 as libc::c_int,
                             bh4,
                             (*rr_1).mv.mv[0 as libc::c_int as usize].y
@@ -12848,15 +12824,7 @@ unsafe fn decode_b(
                             .offset((t.bx - 1 as libc::c_int) as isize)
                             as *mut refmvs_block;
                         mc_lowest_px(
-                            &mut *(*lowest_px
-                                .offset(
-                                    (*((*rr_2).r#ref.r#ref)
-                                        .as_ptr()
-                                        .offset(0 as libc::c_int as isize) as libc::c_int
-                                        - 1 as libc::c_int) as isize,
-                                ))
-                                .as_mut_ptr()
-                                .offset(1 as libc::c_int as isize),
+                            &mut lowest_px[(*rr_2).r#ref.r#ref[0] as usize - 1][1],
                             t.by,
                             bh4,
                             (*rr_2).mv.mv[0 as libc::c_int as usize].y
@@ -12879,15 +12847,7 @@ unsafe fn decode_b(
                             .offset(-(1 as libc::c_int) as isize))
                             .offset(t.bx as isize) as *mut refmvs_block;
                         mc_lowest_px(
-                            &mut *(*lowest_px
-                                .offset(
-                                    (*((*rr_3).r#ref.r#ref)
-                                        .as_ptr()
-                                        .offset(0 as libc::c_int as isize) as libc::c_int
-                                        - 1 as libc::c_int) as isize,
-                                ))
-                                .as_mut_ptr()
-                                .offset(1 as libc::c_int as isize),
+                            &mut lowest_px[(*rr_3).r#ref.r#ref[0] as usize - 1][1],
                             t.by - 1 as libc::c_int,
                             bh4,
                             (*rr_3).mv.mv[0 as libc::c_int as usize].y
@@ -12906,14 +12866,7 @@ unsafe fn decode_b(
                         );
                     }
                     mc_lowest_px(
-                        &mut *(*lowest_px
-                            .offset(
-                                *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
-                                    .as_mut_ptr()
-                                    .offset(0 as libc::c_int as isize) as isize,
-                            ))
-                            .as_mut_ptr()
-                            .offset(1 as libc::c_int as isize),
+                        &mut lowest_px[b.r#ref()[0] as usize][1],
                         t.by,
                         bh4,
                         b
@@ -12950,14 +12903,7 @@ unsafe fn decode_b(
                 {
                     affine_lowest_px_chroma(
                         t,
-                        &mut *(*lowest_px
-                            .offset(
-                                *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
-                                    .as_mut_ptr()
-                                    .offset(0 as libc::c_int as isize) as isize,
-                            ))
-                            .as_mut_ptr()
-                            .offset(1 as libc::c_int as isize),
+                        &mut lowest_px[b.r#ref()[0] as usize][1],
                         b_dim_array,
                         if (*b).c2rust_unnamed.c2rust_unnamed_0.motion_mode
                             as libc::c_int == MM_WARP as libc::c_int
@@ -12975,14 +12921,7 @@ unsafe fn decode_b(
                     );
                 } else {
                     mc_lowest_px(
-                        &mut *(*lowest_px
-                            .offset(
-                                *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
-                                    .as_mut_ptr()
-                                    .offset(0 as libc::c_int as isize) as isize,
-                            ))
-                            .as_mut_ptr()
-                            .offset(1 as libc::c_int as isize),
+                        &mut lowest_px[b.r#ref()[0] as usize][1],
                         t.by & !ss_ver,
                         bh4 << (bh4 == ss_ver) as libc::c_int,
                         b
@@ -13032,14 +12971,7 @@ unsafe fn decode_b(
                 {
                     affine_lowest_px_luma(
                         t,
-                        &mut *(*lowest_px
-                            .offset(
-                                *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
-                                    .as_mut_ptr()
-                                    .offset(i_0 as isize) as isize,
-                            ))
-                            .as_mut_ptr()
-                            .offset(0 as libc::c_int as isize),
+                        &mut lowest_px[b.r#ref()[i_0 as usize] as usize][0],
                         b_dim_array,
                         &mut *((*f.frame_hdr).gmv)
                             .as_mut_ptr()
@@ -13051,14 +12983,7 @@ unsafe fn decode_b(
                     );
                 } else {
                     mc_lowest_px(
-                        &mut *(*lowest_px
-                            .offset(
-                                *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
-                                    .as_mut_ptr()
-                                    .offset(i_0 as isize) as isize,
-                            ))
-                            .as_mut_ptr()
-                            .offset(0 as libc::c_int as isize),
+                        &mut lowest_px[b.r#ref()[i_0 as usize] as usize][0],
                         t.by,
                         bh4,
                         b
@@ -13096,14 +13021,7 @@ unsafe fn decode_b(
                     {
                         affine_lowest_px_chroma(
                             t,
-                            &mut *(*lowest_px
-                                .offset(
-                                    *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
-                                        .as_mut_ptr()
-                                        .offset(i_1 as isize) as isize,
-                                ))
-                                .as_mut_ptr()
-                                .offset(1 as libc::c_int as isize),
+                            &mut lowest_px[b.r#ref()[i_1 as usize] as usize][1],
                             b_dim_array,
                             &mut *((*f.frame_hdr).gmv)
                                 .as_mut_ptr()
@@ -13115,14 +13033,7 @@ unsafe fn decode_b(
                         );
                     } else {
                         mc_lowest_px(
-                            &mut *(*lowest_px
-                                .offset(
-                                    *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
-                                        .as_mut_ptr()
-                                        .offset(i_1 as isize) as isize,
-                                ))
-                                .as_mut_ptr()
-                                .offset(1 as libc::c_int as isize),
+                            &mut lowest_px[b.r#ref()[i_1 as usize] as usize][1],
                             t.by,
                             bh4,
                             b
