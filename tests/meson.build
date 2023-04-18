@@ -145,17 +145,11 @@ if get_option('enable_tools')
     )
 endif
 
-if get_option('build_rust')
-    # TODO: adhere to meson's configured buildtype (debug/release)?
-    run_command('cargo', 'build', '--release', check: true)
-endif
-
 # HACK: If we're trying to test the Rust build, override the `dav1d`
 # variable to point to `dav1d` executable produced by Cargo. This will cause
 # the Rust executable to be used for the data tests.
 if get_option('test_rust')
-    test_rust_path = get_option('test_rust_path')
-    dav1d = files(test_rust_path)
+    dav1d = files('../target/release/dav1d')
 endif
 
 # Include dav1d test data repository with additional tests
