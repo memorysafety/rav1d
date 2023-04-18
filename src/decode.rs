@@ -4230,8 +4230,8 @@ unsafe fn obmc_lowest_px(
     let ss_hor = (is_chroma && f.cur.p.layout != DAV1D_PIXEL_LAYOUT_I444) as libc::c_int;
     let h_mul = 4 >> ss_hor;
     let v_mul = 4 >> ss_ver;
-    if t.by > (*t.ts).tiling.row_start && (!is_chroma
-        || b_dim[0] as libc::c_int * h_mul + b_dim[1] as libc::c_int * v_mul >= 16) {
+    if t.by > (*t.ts).tiling.row_start &&
+        (!is_chroma || b_dim[0] as libc::c_int * h_mul + b_dim[1] as libc::c_int * v_mul >= 16) {
         let mut i = 0;
         let mut x = 0;
         while x < w4 && i < imin(b_dim[2] as libc::c_int, 4) {
@@ -4245,7 +4245,7 @@ unsafe fn obmc_lowest_px(
                     oh4 * 3 + 3 >> 2,
                     a_r.mv.mv[0].y as libc::c_int,
                     ss_ver,
-                    &(f.svc[a_r.r#ref.r#ref[0] as usize - 1])[1],
+                    &f.svc[a_r.r#ref.r#ref[0] as usize - 1][1],
                 );
                 i += 1;
             }
@@ -4253,24 +4253,24 @@ unsafe fn obmc_lowest_px(
         }
     }
     if t.bx > (*t.ts).tiling.col_start {
-        let mut i_0 = 0;
+        let mut i = 0;
         let mut y = 0;
-        while y < h4 && i_0 < imin(b_dim[3] as libc::c_int, 4) {
+        while y < h4 && i < imin(b_dim[3] as libc::c_int, 4) {
             let l_r = &mut *(*r
                 .offset((y + 1) as isize))
                 .offset((t.bx - 1) as isize);
             let l_b_dim = &dav1d_block_dimensions[l_r.bs as usize];
             if l_r.r#ref.r#ref[0] as libc::c_int > 0 {
-                let oh4_0 = iclip(l_b_dim[1] as libc::c_int, 2, b_dim[1] as libc::c_int);
+                let oh4 = iclip(l_b_dim[1] as libc::c_int, 2, b_dim[1] as libc::c_int);
                 mc_lowest_px(
                     &mut dst[l_r.r#ref.r#ref[0] as usize - 1][is_chroma as usize],
                     t.by + y,
-                    oh4_0,
+                    oh4,
                     l_r.mv.mv[0].y as libc::c_int,
                     ss_ver,
                     &f.svc[l_r.r#ref.r#ref[0] as usize - 1][1],
                 );
-                i_0 += 1;
+                i += 1;
             }
             y += imax(l_b_dim[1] as libc::c_int, 2);
         }
