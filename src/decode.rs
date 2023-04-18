@@ -4214,7 +4214,7 @@ unsafe fn affine_lowest_px_chroma(
 }
 
 unsafe fn obmc_lowest_px(
-    t: *mut Dav1dTaskContext,
+    t: &mut Dav1dTaskContext,
     dst: &mut [[libc::c_int; 2]; 7],
     is_chroma: bool,
     b_dim: &[u8; 4],
@@ -4223,25 +4223,25 @@ unsafe fn obmc_lowest_px(
     w4: libc::c_int,
     h4: libc::c_int,
 ) {
-    assert!(!((*t).bx & 1 == 0 && (*t).by & 1 == 0));
-    let f = (*t).f;
-    let mut r = &mut ((*t).rt.r)[(((*t).by & 31) + 5) as usize] as *mut *mut refmvs_block;
+    assert!(!(t.bx & 1 == 0 && t.by & 1 == 0));
+    let f = t.f;
+    let mut r = &mut (t.rt.r)[((t.by & 31) + 5) as usize] as *mut *mut refmvs_block;
     let ss_ver = (is_chroma && (*f).cur.p.layout == DAV1D_PIXEL_LAYOUT_I420) as libc::c_int;
     let ss_hor = (is_chroma && (*f).cur.p.layout != DAV1D_PIXEL_LAYOUT_I444) as libc::c_int;
     let h_mul = 4 >> ss_hor;
     let v_mul = 4 >> ss_ver;
-    if (*t).by > (*(*t).ts).tiling.row_start && (!is_chroma
+    if t.by > (*t.ts).tiling.row_start && (!is_chroma
         || b_dim[0] as libc::c_int * h_mul + b_dim[1] as libc::c_int * v_mul >= 16) {
         let mut i = 0;
         let mut x = 0;
         while x < w4 && i < imin(b_dim[2] as libc::c_int, 4) {
-            let a_r = &mut *(*r.offset(-1)).offset(((*t).bx + x + 1) as isize);
+            let a_r = &mut *(*r.offset(-1)).offset((t.bx + x + 1) as isize);
             let a_b_dim = &dav1d_block_dimensions[(*a_r).bs as usize];
             if (*a_r).r#ref.r#ref[0] as libc::c_int > 0 {
                 let oh4 = imin(b_dim[1] as libc::c_int, 16) >> 1;
                 mc_lowest_px(
                     &mut dst[((*a_r).r#ref.r#ref[0] as libc::c_int - 1) as usize][is_chroma as usize],
-                    (*t).by,
+                    t.by,
                     oh4 * 3 + 3 >> 2,
                     (*a_r).mv.mv[0].y as libc::c_int,
                     ss_ver,
@@ -4252,19 +4252,19 @@ unsafe fn obmc_lowest_px(
             x += imax(a_b_dim[0] as libc::c_int, 2);
         }
     }
-    if (*t).bx > (*(*t).ts).tiling.col_start {
+    if t.bx > (*t.ts).tiling.col_start {
         let mut i_0 = 0;
         let mut y = 0;
         while y < h4 && i_0 < imin(b_dim[3] as libc::c_int, 4) {
             let l_r = &mut *(*r
                 .offset((y + 1) as isize))
-                .offset(((*t).bx - 1) as isize);
+                .offset((t.bx - 1) as isize);
             let l_b_dim = &dav1d_block_dimensions[(*l_r).bs as usize];
             if (*l_r).r#ref.r#ref[0] as libc::c_int > 0 {
                 let oh4_0 = iclip(l_b_dim[1] as libc::c_int, 2, b_dim[1] as libc::c_int);
                 mc_lowest_px(
                     &mut dst[((*l_r).r#ref.r#ref[0] as libc::c_int - 1) as usize][is_chroma as usize],
-                    (*t).by + y,
+                    t.by + y,
                     oh4_0,
                     (*l_r).mv.mv[0].y as libc::c_int,
                     ss_ver,
