@@ -4224,10 +4224,10 @@ unsafe fn obmc_lowest_px(
     h4: libc::c_int,
 ) {
     assert!(!(t.bx & 1 == 0 && t.by & 1 == 0));
-    let f = t.f;
+    let f = &*t.f;
     let mut r = &mut (t.rt.r)[((t.by & 31) + 5) as usize] as *mut *mut refmvs_block;
-    let ss_ver = (is_chroma && (*f).cur.p.layout == DAV1D_PIXEL_LAYOUT_I420) as libc::c_int;
-    let ss_hor = (is_chroma && (*f).cur.p.layout != DAV1D_PIXEL_LAYOUT_I444) as libc::c_int;
+    let ss_ver = (is_chroma && f.cur.p.layout == DAV1D_PIXEL_LAYOUT_I420) as libc::c_int;
+    let ss_hor = (is_chroma && f.cur.p.layout != DAV1D_PIXEL_LAYOUT_I444) as libc::c_int;
     let h_mul = 4 >> ss_hor;
     let v_mul = 4 >> ss_ver;
     if t.by > (*t.ts).tiling.row_start && (!is_chroma
@@ -4245,7 +4245,7 @@ unsafe fn obmc_lowest_px(
                     oh4 * 3 + 3 >> 2,
                     (*a_r).mv.mv[0].y as libc::c_int,
                     ss_ver,
-                    &((*f).svc[((*a_r).r#ref.r#ref[0] as libc::c_int - 1) as usize])[1],
+                    &(f.svc[((*a_r).r#ref.r#ref[0] as libc::c_int - 1) as usize])[1],
                 );
                 i += 1;
             }
@@ -4268,7 +4268,7 @@ unsafe fn obmc_lowest_px(
                     oh4_0,
                     (*l_r).mv.mv[0].y as libc::c_int,
                     ss_ver,
-                    &(*f).svc[((*l_r).r#ref.r#ref[0] as libc::c_int - 1) as usize][1],
+                    &f.svc[((*l_r).r#ref.r#ref[0] as libc::c_int - 1) as usize][1],
                 );
                 i_0 += 1;
             }
