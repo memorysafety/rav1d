@@ -4763,7 +4763,7 @@ unsafe fn decode_b(
     } else {
         b.skip_mode = 0 as libc::c_int as uint8_t;
     }
-    if b.skip_mode as libc::c_int != 0 || seg.map(|seg| seg.skip != 0).unwrap_or_default() {
+    if b.skip_mode as libc::c_int != 0 || seg.map(|seg| seg.skip != 0).unwrap_or(false) {
         b.skip = 1 as libc::c_int as uint8_t;
     } else {
         let sctx: libc::c_int = (*t.a).skip[bx4 as usize] as libc::c_int
@@ -5075,8 +5075,8 @@ unsafe fn decode_b(
     } else if (*f.frame_hdr).frame_type as libc::c_uint
         & 1 as libc::c_int as libc::c_uint != 0
     {
-        if seg.map(|seg| seg.ref_0 >= 0 || seg.globalmv != 0).unwrap_or_default() {
-            b.intra = (seg.as_ref().unwrap().ref_0 == 0) as uint8_t;
+        if let Some(seg) = seg && (seg.ref_0 >= 0 || seg.globalmv != 0) {
+            b.intra = (seg.ref_0 == 0) as uint8_t;
         } else {
             let ictx: libc::c_int = get_intra_ctx(
                 t.a,
@@ -9980,13 +9980,13 @@ unsafe fn decode_b(
                 .c2rust_unnamed
                 .c2rust_unnamed_0
                 .comp_type = COMP_INTER_NONE as libc::c_int as uint8_t;
-            if seg.map(|seg| seg.ref_0 > 0).unwrap_or_default() {
+            if let Some(seg) = seg && seg.ref_0 > 0 {
                 b
                     .c2rust_unnamed
                     .c2rust_unnamed_0
                     .r#ref[0 as libc::c_int
-                    as usize] = seg.as_ref().unwrap().ref_0 as i8 - 1;
-            } else if seg.map(|seg| seg.globalmv != 0 || seg.skip != 0).unwrap_or_default() {
+                    as usize] = seg.ref_0 as i8 - 1;
+            } else if let Some(seg) = seg && (seg.globalmv != 0 || seg.skip != 0) {
                 b
                     .c2rust_unnamed
                     .c2rust_unnamed_0
@@ -10157,14 +10157,14 @@ unsafe fn decode_b(
                 t.by,
                 t.bx,
             );
-            if seg.map(|seg| seg.skip != 0 || seg.globalmv != 0).unwrap_or_default()
+            if seg.map(|seg| seg.skip != 0 || seg.globalmv != 0).unwrap_or(false)
                 || dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     (ts.cdf.m.newmv_mode[(ctx_6 & 7 as libc::c_int) as usize])
                         .as_mut_ptr(),
                 ) != 0
             {
-                if seg.map(|seg| seg.skip != 0 || seg.globalmv != 0).unwrap_or_default()
+                if seg.map(|seg| seg.skip != 0 || seg.globalmv != 0).unwrap_or(false)
                     || dav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
                         (ts
