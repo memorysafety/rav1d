@@ -4235,7 +4235,7 @@ unsafe fn obmc_lowest_px(
         let mut i = 0;
         let mut x = 0;
         while x < w4 && i < imin(b_dim[2] as libc::c_int, 4) {
-            let a_r = &mut *(*r.offset(-1)).offset((t.bx + x + 1) as isize);
+            let a_r = &*(*r.offset(-1)).offset((t.bx + x + 1) as isize);
             let a_b_dim = &dav1d_block_dimensions[a_r.bs as usize];
             if a_r.r#ref.r#ref[0] as libc::c_int > 0 {
                 let oh4 = imin(b_dim[1] as libc::c_int, 16) >> 1;
@@ -4256,7 +4256,7 @@ unsafe fn obmc_lowest_px(
         let mut i = 0;
         let mut y = 0;
         while y < h4 && i < imin(b_dim[3] as libc::c_int, 4) {
-            let l_r = &mut *(*r
+            let l_r = &*(*r
                 .offset((y + 1) as isize))
                 .offset((t.bx - 1) as isize);
             let l_b_dim = &dav1d_block_dimensions[l_r.bs as usize];
