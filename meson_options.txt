@@ -64,7 +64,17 @@ option('trim_dsp',
     value: 'if-release',
     description: 'Eliminate redundant DSP functions where possible')
 
+option('build_rust',
+    type: 'boolean',
+    value: true,
+    description: 'Release build Rust port of dav1d')
+
 option('test_rust',
     type: 'boolean',
     value: true,
-    description: 'Run tests against the Rust build of dav1d')
+    description: 'Run tests against the Rust port of dav1d')
+
+option('test_rust_path',
+    type: 'string',
+    value: '../target/release/dav1d',
+    description: 'Path to rust binary used for testing (if test_rust is set).')
