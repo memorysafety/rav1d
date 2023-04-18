@@ -38,12 +38,6 @@ jobs:
         run: |
           rustup target add aarch64-unknown-linux-gnu
           cargo build --release --target aarch64-unknown-linux-gnu
-          ln -f target/aarch64-unknown-linux-gnu/release/dav1d target/release/dav1d
-        env:
-          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
-          CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
-          CXX_aarch64_unknown_linux_gnu: aarch64-linux-gnu-g++
-          RUSTFLAGS: '-C target-feature=+crt-static'
       - name: docker pull
         run: docker pull ghcr.io/immunant/rav1d/debian-bullseye-aarch64:latest
       - name: build and run tests in docker
@@ -56,7 +50,8 @@ jobs:
             -w ${{ github.workspace }} \
             --platform linux/arm64 \
             ghcr.io/immunant/rav1d/debian-bullseye-aarch64:latest \
-            .github/workflows/test.sh
+            .github/workflows/test.sh \
+                -r ../target/aarch64-unknown-linux-gnu/release/dav1d
       - name: upload build artifacts
         uses: actions/upload-artifact@v3
         with:
