@@ -4236,16 +4236,16 @@ unsafe fn obmc_lowest_px(
         let mut x = 0;
         while x < w4 && i < imin(b_dim[2] as libc::c_int, 4) {
             let a_r = &mut *(*r.offset(-1)).offset((t.bx + x + 1) as isize);
-            let a_b_dim = &dav1d_block_dimensions[(*a_r).bs as usize];
-            if (*a_r).r#ref.r#ref[0] as libc::c_int > 0 {
+            let a_b_dim = &dav1d_block_dimensions[a_r.bs as usize];
+            if a_r.r#ref.r#ref[0] as libc::c_int > 0 {
                 let oh4 = imin(b_dim[1] as libc::c_int, 16) >> 1;
                 mc_lowest_px(
-                    &mut dst[((*a_r).r#ref.r#ref[0] as libc::c_int - 1) as usize][is_chroma as usize],
+                    &mut dst[(a_r.r#ref.r#ref[0] as libc::c_int - 1) as usize][is_chroma as usize],
                     t.by,
                     oh4 * 3 + 3 >> 2,
-                    (*a_r).mv.mv[0].y as libc::c_int,
+                    a_r.mv.mv[0].y as libc::c_int,
                     ss_ver,
-                    &(f.svc[((*a_r).r#ref.r#ref[0] as libc::c_int - 1) as usize])[1],
+                    &(f.svc[(a_r.r#ref.r#ref[0] as libc::c_int - 1) as usize])[1],
                 );
                 i += 1;
             }
@@ -4259,16 +4259,16 @@ unsafe fn obmc_lowest_px(
             let l_r = &mut *(*r
                 .offset((y + 1) as isize))
                 .offset((t.bx - 1) as isize);
-            let l_b_dim = &dav1d_block_dimensions[(*l_r).bs as usize];
-            if (*l_r).r#ref.r#ref[0] as libc::c_int > 0 {
+            let l_b_dim = &dav1d_block_dimensions[l_r.bs as usize];
+            if l_r.r#ref.r#ref[0] as libc::c_int > 0 {
                 let oh4_0 = iclip(l_b_dim[1] as libc::c_int, 2, b_dim[1] as libc::c_int);
                 mc_lowest_px(
-                    &mut dst[((*l_r).r#ref.r#ref[0] as libc::c_int - 1) as usize][is_chroma as usize],
+                    &mut dst[(l_r.r#ref.r#ref[0] as libc::c_int - 1) as usize][is_chroma as usize],
                     t.by + y,
                     oh4_0,
-                    (*l_r).mv.mv[0].y as libc::c_int,
+                    l_r.mv.mv[0].y as libc::c_int,
                     ss_ver,
-                    &f.svc[((*l_r).r#ref.r#ref[0] as libc::c_int - 1) as usize][1],
+                    &f.svc[(l_r.r#ref.r#ref[0] as libc::c_int - 1) as usize][1],
                 );
                 i_0 += 1;
             }
