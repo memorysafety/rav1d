@@ -127,6 +127,10 @@ pub type Dav1dChromaSamplePosition = libc::c_uint;
 pub const DAV1D_CHR_COLOCATED: Dav1dChromaSamplePosition = 2;
 pub const DAV1D_CHR_VERTICAL: Dav1dChromaSamplePosition = 1;
 pub const DAV1D_CHR_UNKNOWN: Dav1dChromaSamplePosition = 0;
+
+// Constants from Section 3. "Symbols and abbreviated terms"
+pub const DAV1D_MAX_SEGMENTS: u8 = 8;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContentLightLevel {

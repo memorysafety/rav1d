@@ -2,11 +2,11 @@ use crate::include::common::frame::is_inter_or_switch;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use ::libc;
+use crate::src::align::Align16;
 use crate::src::msac::MsacContext;
 use crate::src::cdf::{CdfContext, CdfMvComponent, CdfMvContext};
 use crate::src::ctx::{case_set, SetCtxFn};
-
-use crate::src::align::Align16;
+use crate::include::dav1d::headers::DAV1D_MAX_SEGMENTS;
 
 extern "C" {
     fn memcpy(
@@ -4625,17 +4625,22 @@ unsafe fn decode_b(
 
         return 0;
     }
+
     let cw4: libc::c_int = w4 + ss_hor >> ss_hor;
     let ch4: libc::c_int = h4 + ss_ver >> ss_ver;
+
     b.bl = bl as uint8_t;
     b.bp = bp as uint8_t;
     b.bs = bs as uint8_t;
-    let mut seg: *const Dav1dSegmentationData = 0 as *const Dav1dSegmentationData;
-    let mut seg_pred: libc::c_int = 0 as libc::c_int;
+
+    let mut seg = std::ptr::null();
+
+    // segment_id (if seg_feature for skip/ref/gmv is enabled)
+    let mut seg_pred = 0;
     if (*f.frame_hdr).segmentation.enabled != 0 {
         if (*f.frame_hdr).segmentation.update_map == 0 {
             if !(f.prev_segmap).is_null() {
-                let mut seg_id: libc::c_uint = get_prev_frame_segid(
+                let mut seg_id = get_prev_frame_segid(
                     f,
                     t.by,
                     t.bx,
@@ -4644,33 +4649,30 @@ unsafe fn decode_b(
                     f.prev_segmap,
                     f.b4_stride,
                 );
-                if seg_id >= 8 as libc::c_int as libc::c_uint {
-                    return -(1 as libc::c_int);
+
+                if seg_id >= 8 {
+                    return -1;
                 }
+
                 b.seg_id = seg_id as uint8_t;
             } else {
-                b.seg_id = 0 as libc::c_int as uint8_t;
+                b.seg_id = 0;
             }
-            seg = &mut *((*f.frame_hdr).segmentation.seg_data.d)
-                .as_mut_ptr()
-                .offset(b.seg_id as isize) as *mut Dav1dSegmentationData;
+
+            seg = &(*f.frame_hdr).segmentation.seg_data.d[b.seg_id as usize];
         } else if (*f.frame_hdr).segmentation.seg_data.preskip != 0 {
             if (*f.frame_hdr).segmentation.temporal != 0
                 && {
+                    let index = (*t.a).seg_pred[bx4 as usize] + t.l.seg_pred[by4 as usize];
                     seg_pred = dav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
-                        (ts
-                            .cdf
-                            .m
-                            .seg_pred[((*t.a).seg_pred[bx4 as usize] as libc::c_int
-                            + t.l.seg_pred[by4 as usize] as libc::c_int) as usize])
-                            .as_mut_ptr(),
+                        ts.cdf.m.seg_pred[index as usize].as_mut_ptr(),
                     ) as libc::c_int;
                     seg_pred != 0
                 }
             {
                 if !(f.prev_segmap).is_null() {
-                    let mut seg_id_0: libc::c_uint = get_prev_frame_segid(
+                    let mut seg_id = get_prev_frame_segid(
                         f,
                         t.by,
                         t.bx,
@@ -4679,16 +4681,18 @@ unsafe fn decode_b(
                         f.prev_segmap,
                         f.b4_stride,
                     );
-                    if seg_id_0 >= 8 as libc::c_int as libc::c_uint {
-                        return -(1 as libc::c_int);
+
+                    if seg_id >= 8 {
+                        return -1;
                     }
-                    b.seg_id = seg_id_0 as uint8_t;
+
+                    b.seg_id = seg_id as uint8_t;
                 } else {
                     b.seg_id = 0 as libc::c_int as uint8_t;
                 }
             } else {
-                let mut seg_ctx: libc::c_int = 0;
-                let pred_seg_id: libc::c_uint = get_cur_frame_segid(
+                let mut seg_ctx = 0;
+                let pred_seg_id = get_cur_frame_segid(
                     t.by,
                     t.bx,
                     have_top,
@@ -4697,45 +4701,41 @@ unsafe fn decode_b(
                     f.cur_segmap,
                     f.b4_stride,
                 );
-                let diff: libc::c_uint = dav1d_msac_decode_symbol_adapt8(
+                let diff = dav1d_msac_decode_symbol_adapt8(
                     &mut ts.msac,
                     (ts.cdf.m.seg_id[seg_ctx as usize]).as_mut_ptr(),
-                    (8 as libc::c_int - 1 as libc::c_int) as size_t,
+                    (DAV1D_MAX_SEGMENTS - 1) as size_t,
                 );
-                let last_active_seg_id: libc::c_uint = (*f.frame_hdr)
+                let last_active_seg_id = (*f.frame_hdr)
                     .segmentation
                     .seg_data
-                    .last_active_segid as libc::c_uint;
-                b
-                    .seg_id = neg_deinterleave(
+                    .last_active_segid;
+
+                b.seg_id = neg_deinterleave(
                     diff as libc::c_int,
                     pred_seg_id as libc::c_int,
-                    last_active_seg_id.wrapping_add(1 as libc::c_int as libc::c_uint)
-                        as libc::c_int,
+                    last_active_seg_id + 1,
                 ) as uint8_t;
-                if b.seg_id as libc::c_uint > last_active_seg_id {
-                    b.seg_id = 0 as libc::c_int as uint8_t;
+
+                if b.seg_id as libc::c_int > last_active_seg_id {
+                    b.seg_id = 0;
                 }
-                if b.seg_id as libc::c_int >= 8 as libc::c_int {
-                    b.seg_id = 0 as libc::c_int as uint8_t;
+
+                if b.seg_id  >= DAV1D_MAX_SEGMENTS {
+                    b.seg_id = 0;
                 }
             }
-            if DEBUG_BLOCK_INFO(f, t)
-            {
-                printf(
-                    b"Post-segid[preskip;%d]: r=%d\n\0" as *const u8
-                        as *const libc::c_char,
-                    b.seg_id as libc::c_int,
-                    ts.msac.rng,
-                );
+
+            if DEBUG_BLOCK_INFO(f, t) {
+                println!("Post-segid[preskip;{}]: r={}", b.seg_id, ts.msac.rng);
             }
-            seg = &mut *((*f.frame_hdr).segmentation.seg_data.d)
-                .as_mut_ptr()
-                .offset(b.seg_id as isize) as *mut Dav1dSegmentationData;
+
+            seg = &(*f.frame_hdr).segmentation.seg_data.d[b.seg_id as usize];
         }
     } else {
         b.seg_id = 0 as libc::c_int as uint8_t;
     }
+
     if (seg.is_null()
         || (*seg).globalmv == 0 && (*seg).ref_0 == -(1 as libc::c_int)
             && (*seg).skip == 0) && (*f.frame_hdr).skip_mode_enabled != 0
