@@ -3,7 +3,6 @@ use crate::include::stdint::*;
 use ::libc;
 use cfg_if::cfg_if;
 extern "C" {
-    fn abs(_: libc::c_int) -> libc::c_int;
     static dav1d_cdef_directions: [[int8_t; 2]; 12];
 }
 

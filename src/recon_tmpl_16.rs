@@ -18,7 +18,6 @@ extern "C" {
     ) -> *mut libc::c_void;
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
     fn printf(_: *const libc::c_char, _: ...) -> libc::c_int;
-    fn llabs(_: libc::c_longlong) -> libc::c_longlong;
     static dav1d_block_dimensions: [[uint8_t; 4]; 22];
     static dav1d_txfm_dimensions: [TxfmInfo; 19];
     static dav1d_txtp_from_uvmode: [uint8_t; 14];
@@ -4277,7 +4276,7 @@ unsafe extern "C" fn mc(
             + (((*f).svc[refidx as usize][0 as libc::c_int as usize].scale
                 - 0x4000 as libc::c_int) * 8 as libc::c_int) as int64_t;
         pos_x = apply_sign64(
-            (llabs(tmp as libc::c_longlong) + 128 as libc::c_longlong
+            ((tmp as libc::c_longlong).abs() + 128 as libc::c_longlong
                 >> 8 as libc::c_int) as libc::c_int,
             tmp,
         ) + 32 as libc::c_int;
@@ -4286,7 +4285,7 @@ unsafe extern "C" fn mc(
             + (((*f).svc[refidx as usize][1 as libc::c_int as usize].scale
                 - 0x4000 as libc::c_int) * 8 as libc::c_int) as int64_t;
         pos_y = apply_sign64(
-            (llabs(tmp_0 as libc::c_longlong) + 128 as libc::c_longlong
+            ((tmp_0 as libc::c_longlong).abs() + 128 as libc::c_longlong
                 >> 8 as libc::c_int) as libc::c_int,
             tmp_0,
         ) + 32 as libc::c_int;

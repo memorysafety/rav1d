@@ -3,7 +3,6 @@ use crate::include::stdint::*;
 use ::libc;
 use cfg_if::cfg_if;
 extern "C" {
-    fn abs(_: libc::c_int) -> libc::c_int;
     fn memcpy(
         _: *mut libc::c_void,
         _: *const libc::c_void,
@@ -940,7 +939,7 @@ unsafe extern "C" fn cfl_pred(
                 .offset(
                     x as isize,
                 ) = iclip_u8(
-                dc + apply_sign(abs(diff) + 32 as libc::c_int >> 6 as libc::c_int, diff),
+                dc + apply_sign(diff.abs() + 32 as libc::c_int >> 6 as libc::c_int, diff),
             ) as pixel;
             x += 1;
         }
@@ -1183,9 +1182,9 @@ unsafe extern "C" fn ipred_paeth_c(
             let top: libc::c_int = *tl_ptr.offset((1 as libc::c_int + x) as isize)
                 as libc::c_int;
             let base: libc::c_int = left + top - topleft;
-            let ldiff: libc::c_int = abs(left - base);
-            let tdiff: libc::c_int = abs(top - base);
-            let tldiff: libc::c_int = abs(topleft - base);
+            let ldiff: libc::c_int = (left - base).abs();
+            let tdiff: libc::c_int = (top - base).abs();
+            let tldiff: libc::c_int = (topleft - base).abs();
             *dst
                 .offset(
                     x as isize,
