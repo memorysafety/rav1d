@@ -22,25 +22,6 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-tests = []
-
-subdir('argon')
-subdir('data')
-subdir('features')
-subdir('issues')
-subdir('quantizer')
-
-foreach test : tests
-    test(test[0], dav1d, suite: 'testdata-10',
-         args: dav1d_test_args + ['-i', test[1], '--verify', test[2]])
-    if '@0@'.format(test[1][0]).endswith('.ivf')
-        test(test[0], seek_stress, suite: 'testdata_seek-stress', timeout: 60,
-             args: dav1d_test_args + ['-i', test[1], '--muxer', 'null'])
-    endif
-endforeach
-
-# test with film grain applied against dav1d's md5
-test('av1-1-b10-23-film_grain-50', dav1d, suite: 'testdata-10',
-    args: dav1d_test_args + ['-i', files('film_grain/av1-1-b10-23-film_grain-50.ivf'),
-           '--filmgrain',  '1',
-           '--verify', 'be596f5921854b9a9a5be81c302a5327'])
+tests += [
+	['itut_t35', files('itut_t35.ivf'), '62463dae0e6544f52f9c9e06ea4c948f'],
+]
