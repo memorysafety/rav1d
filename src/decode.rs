@@ -4225,7 +4225,7 @@ unsafe fn obmc_lowest_px(
 ) {
     assert!(!(t.bx & 1 == 0 && t.by & 1 == 0));
     let f = &*t.f;
-    let mut r = &mut (t.rt.r)[((t.by & 31) + 5) as usize] as *mut *mut refmvs_block;
+    let r = &t.rt.r[(t.by as usize & 31) + 5 - 1..];
     let ss_ver = (is_chroma && f.cur.p.layout == DAV1D_PIXEL_LAYOUT_I420) as libc::c_int;
     let ss_hor = (is_chroma && f.cur.p.layout != DAV1D_PIXEL_LAYOUT_I444) as libc::c_int;
     let h_mul = 4 >> ss_hor;
@@ -4235,7 +4235,7 @@ unsafe fn obmc_lowest_px(
         let mut i = 0;
         let mut x = 0;
         while x < w4 && i < imin(b_dim[2] as libc::c_int, 4) {
-            let a_r = &*(*r.offset(-1)).offset((t.bx + x + 1) as isize);
+            let a_r = &*r[0].offset((t.bx + x + 1) as isize);
             let a_b_dim = &dav1d_block_dimensions[a_r.bs as usize];
             if a_r.r#ref.r#ref[0] as libc::c_int > 0 {
                 let oh4 = imin(b_dim[1] as libc::c_int, 16) >> 1;
@@ -4256,9 +4256,7 @@ unsafe fn obmc_lowest_px(
         let mut i = 0;
         let mut y = 0;
         while y < h4 && i < imin(b_dim[3] as libc::c_int, 4) {
-            let l_r = &*(*r
-                .offset((y + 1) as isize))
-                .offset((t.bx - 1) as isize);
+            let l_r = &*r[y as usize + 1 + 1].offset((t.bx - 1) as isize);
             let l_b_dim = &dav1d_block_dimensions[l_r.bs as usize];
             if l_r.r#ref.r#ref[0] as libc::c_int > 0 {
                 let oh4 = iclip(l_b_dim[1] as libc::c_int, 2, b_dim[1] as libc::c_int);
