@@ -267,16 +267,13 @@ static mut div_lut: [uint16_t; 257] = [
     8208 as libc::c_int as uint16_t,
     8192 as libc::c_int as uint16_t,
 ];
+
 #[inline]
-unsafe extern "C" fn iclip_wmp(v: libc::c_int) -> libc::c_int {
-    let cv: libc::c_int = iclip(
-        v,
-        -(32767 as libc::c_int) - 1 as libc::c_int,
-        32767 as libc::c_int,
-    );
-    return apply_sign(cv.abs() + 32 as libc::c_int >> 6 as libc::c_int, cv)
-        * ((1 as libc::c_int) << 6 as libc::c_int);
+fn iclip_wmp(v: libc::c_int) -> libc::c_int {
+    let cv = iclip(v, i16::MIN.into(), i16::MAX.into());
+    return apply_sign(cv.abs() + 32 >> 6, cv) * (1 << 6);
 }
+
 #[inline]
 unsafe extern "C" fn resolve_divisor_32(
     d: libc::c_uint,
