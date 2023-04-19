@@ -687,7 +687,7 @@ unsafe extern "C" fn add_single_extended_candidate(
 /// their respective position in the current frame.
 pub unsafe fn dav1d_refmvs_find(
     rt: &refmvs_tile,
-    mut mvstack: &mut [refmvs_candidate; 8],
+    mvstack: &mut [refmvs_candidate; 8],
     cnt: &mut usize,
     ctx: &mut libc::c_int,
     r#ref: refmvs_refpair,
