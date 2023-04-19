@@ -82,7 +82,7 @@ fn fix_int_mv_precision(mv: &mut mv) {
 }
 
 #[inline]
-pub unsafe extern "C" fn fix_mv_precision(hdr: *const Dav1dFrameHeader, mv: &mut mv) {
+pub unsafe fn fix_mv_precision(hdr: *const Dav1dFrameHeader, mv: &mut mv) {
     if (*hdr).force_integer_mv != 0 {
         fix_int_mv_precision(mv);
     } else if (*hdr).hp == 0 {
