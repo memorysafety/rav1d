@@ -179,7 +179,7 @@ unsafe extern "C" fn add_spatial_candidate(
     have_newmv_match: *mut libc::c_int,
     have_refmv_match: *mut libc::c_int,
 ) {
-    if (*b).mv.mv[0] == mv::INVALID {
+    if (*b).mv.mv[0].is_invalid() {
         return;
     }
     if ref_0.ref_0[1 as libc::c_int as usize] as libc::c_int == -(1 as libc::c_int) {
