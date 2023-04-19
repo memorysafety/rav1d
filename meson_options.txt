@@ -68,3 +68,9 @@ option('test_rust',
     type: 'boolean',
     value: true,
     description: 'Run tests against the Rust build of dav1d')
+
+# Used in CI to test against a prebuilt Rust binary instead of calling cargo build from meson.
+option('test_rust_path',
+    type: 'string',
+    value: '',
+    description: 'Use specified Rust binary instead of building it. Path must be relative to build directory.')

@@ -145,11 +145,23 @@ if get_option('enable_tools')
     )
 endif
 
+test_rust_path = get_option('test_rust_path')
+# build if test_rust_path was not set
+if test_rust_path == ''
+    if get_option('debug')
+        run_command('cargo', 'build', check: true)
+        test_rust_path = '../target/debug/dav1d'
+    else
+        run_command('cargo', 'build', '--release', check: true)
+        test_rust_path = '../target/release/dav1d'
+    endif
+endif
+
 # HACK: If we're trying to test the Rust build, override the `dav1d`
 # variable to point to `dav1d` executable produced by Cargo. This will cause
 # the Rust executable to be used for the data tests.
 if get_option('test_rust')
-    dav1d = files('../target/release/dav1d')
+    dav1d = files(test_rust_path)
 endif
 
 # Include dav1d test data repository with additional tests
