@@ -945,28 +945,10 @@ pub unsafe fn dav1d_refmvs_find(
     };
 
     // sorting (nearest, then "secondary")
-    let mut len = nearest_cnt;
-    while len != 0 {
-        let mut last = 0;
-        for n in 1..len {
-            if mvstack[n - 1].weight < mvstack[n].weight {
-                mvstack.swap(n - 1, n);
-                last = n;
-            }
-        }
-        len = last;
-    }
-    len = *cnt;
-    while len > nearest_cnt {
-        let mut last = nearest_cnt;
-        for n in nearest_cnt + 1..len {
-            if mvstack[n - 1].weight < mvstack[n].weight {
-                mvstack.swap(n - 1, n);
-                last = n;
-            }
-        }
-        len = last;
-    }
+    // Previously used bubble sort; now we use Rust's stable sort,
+    // which for small slices is insertion sort.
+    mvstack[..nearest_cnt].sort_by_key(|cand| -cand.weight);
+    mvstack[nearest_cnt..*cnt].sort_by_key(|cand| -cand.weight);
 
     if r#ref.r#ref[1] > 0 {
         if *cnt < 2 {
