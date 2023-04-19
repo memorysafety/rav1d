@@ -108,7 +108,7 @@ extern "C" {
     fn dav1d_refmvs_clear(rf: *mut refmvs_frame);
     fn dav1d_cdf_thread_unref(cdf: *mut CdfThreadContext);
     fn dav1d_thread_picture_unref(p: *mut Dav1dThreadPicture);
-    fn dav1d_ref_dec(ref_0: *mut *mut Dav1dRef);
+    fn dav1d_ref_dec(r#ref: *mut *mut Dav1dRef);
     fn dav1d_mem_pool_end(pool: *mut Dav1dMemPool);
     fn pthread_attr_destroy(__attr: *mut pthread_attr_t) -> libc::c_int;
     fn dav1d_default_picture_alloc(

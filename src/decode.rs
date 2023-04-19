@@ -47,7 +47,7 @@ extern "C" {
         pool: *mut Dav1dMemPool,
         size: size_t,
     ) -> *mut Dav1dRef;
-    fn dav1d_ref_dec(ref_0: *mut *mut Dav1dRef);
+    fn dav1d_ref_dec(r#ref: *mut *mut Dav1dRef);
     fn dav1d_cdf_thread_init_static(cdf: *mut CdfThreadContext, qidx: libc::c_int);
     fn dav1d_cdf_thread_alloc(
         c: *mut Dav1dContext,
@@ -119,7 +119,7 @@ extern "C" {
         mvstack: *mut refmvs_candidate,
         cnt: *mut libc::c_int,
         ctx: *mut libc::c_int,
-        ref_0: refmvs_refpair,
+        r#ref: refmvs_refpair,
         bs: BlockSize,
         edge_flags: EdgeFlags,
         by4: libc::c_int,
@@ -207,7 +207,7 @@ extern "C" {
     );
     fn dav1d_msac_decode_subexp(
         s: *mut MsacContext,
-        ref_0: libc::c_int,
+        r#ref: libc::c_int,
         n: libc::c_int,
         k: libc::c_uint,
     ) -> libc::c_int;
@@ -1348,21 +1348,21 @@ unsafe extern "C" fn get_filter_ctx(
     l: *const BlockContext,
     comp: libc::c_int,
     dir: libc::c_int,
-    ref_0: libc::c_int,
+    r#ref: libc::c_int,
     yb4: libc::c_int,
     xb4: libc::c_int,
 ) -> libc::c_int {
     let a_filter: libc::c_int = if (*a).r#ref[0 as libc::c_int as usize][xb4 as usize]
-        as libc::c_int == ref_0
-        || (*a).r#ref[1 as libc::c_int as usize][xb4 as usize] as libc::c_int == ref_0
+        as libc::c_int == r#ref
+        || (*a).r#ref[1 as libc::c_int as usize][xb4 as usize] as libc::c_int == r#ref
     {
         (*a).filter[dir as usize][xb4 as usize] as libc::c_int
     } else {
         DAV1D_N_SWITCHABLE_FILTERS as libc::c_int
     };
     let l_filter: libc::c_int = if (*l).r#ref[0 as libc::c_int as usize][yb4 as usize]
-        as libc::c_int == ref_0
-        || (*l).r#ref[1 as libc::c_int as usize][yb4 as usize] as libc::c_int == ref_0
+        as libc::c_int == r#ref
+        || (*l).r#ref[1 as libc::c_int as usize][yb4 as usize] as libc::c_int == r#ref
     {
         (*l).filter[dir as usize][yb4 as usize] as libc::c_int
     } else {
@@ -2365,7 +2365,7 @@ unsafe extern "C" fn find_matching_ref(
     h4: libc::c_int,
     have_left: libc::c_int,
     have_top: libc::c_int,
-    ref_0: libc::c_int,
+    r#ref: libc::c_int,
     mut masks: *mut uint64_t,
 ) {
     let mut r: *const *mut refmvs_block = &*((*t).rt.r)
@@ -2383,7 +2383,7 @@ unsafe extern "C" fn find_matching_ref(
         let mut r2: *const refmvs_block = &mut *(*r.offset(-(1 as libc::c_int) as isize))
             .offset((*t).bx as isize) as *mut refmvs_block;
         if (*r2).r#ref.r#ref[0 as libc::c_int as usize] as libc::c_int
-            == ref_0 + 1 as libc::c_int
+            == r#ref + 1 as libc::c_int
             && (*r2).r#ref.r#ref[1 as libc::c_int as usize] as libc::c_int
                 == -(1 as libc::c_int)
         {
@@ -2407,7 +2407,7 @@ unsafe extern "C" fn find_matching_ref(
             while x < w4 {
                 r2 = r2.offset(aw4 as isize);
                 if (*r2).r#ref.r#ref[0 as libc::c_int as usize] as libc::c_int
-                    == ref_0 + 1 as libc::c_int
+                    == r#ref + 1 as libc::c_int
                     && (*r2).r#ref.r#ref[1 as libc::c_int as usize] as libc::c_int
                         == -(1 as libc::c_int)
                 {
@@ -2430,7 +2430,7 @@ unsafe extern "C" fn find_matching_ref(
         if (*(*r2_0.offset(0 as libc::c_int as isize))
             .offset(((*t).bx - 1 as libc::c_int) as isize))
             .r#ref
-            .r#ref[0 as libc::c_int as usize] as libc::c_int == ref_0 + 1 as libc::c_int
+            .r#ref[0 as libc::c_int as usize] as libc::c_int == r#ref + 1 as libc::c_int
             && (*(*r2_0.offset(0 as libc::c_int as isize))
                 .offset(((*t).bx - 1 as libc::c_int) as isize))
                 .r#ref
@@ -2460,7 +2460,7 @@ unsafe extern "C" fn find_matching_ref(
                     .offset(((*t).bx - 1 as libc::c_int) as isize))
                     .r#ref
                     .r#ref[0 as libc::c_int as usize] as libc::c_int
-                    == ref_0 + 1 as libc::c_int
+                    == r#ref + 1 as libc::c_int
                     && (*(*r2_0.offset(0 as libc::c_int as isize))
                         .offset(((*t).bx - 1 as libc::c_int) as isize))
                         .r#ref
@@ -2486,7 +2486,7 @@ unsafe extern "C" fn find_matching_ref(
         && ((*(*r.offset(-(1 as libc::c_int) as isize))
             .offset(((*t).bx - 1 as libc::c_int) as isize))
             .r#ref
-            .r#ref[0 as libc::c_int as usize] as libc::c_int == ref_0 + 1 as libc::c_int
+            .r#ref[0 as libc::c_int as usize] as libc::c_int == r#ref + 1 as libc::c_int
             && (*(*r.offset(-(1 as libc::c_int) as isize))
                 .offset(((*t).bx - 1 as libc::c_int) as isize))
                 .r#ref
@@ -2503,7 +2503,7 @@ unsafe extern "C" fn find_matching_ref(
     if have_topright != 0
         && ((*(*r.offset(-(1 as libc::c_int) as isize)).offset(((*t).bx + bw4) as isize))
             .r#ref
-            .r#ref[0 as libc::c_int as usize] as libc::c_int == ref_0 + 1 as libc::c_int
+            .r#ref[0 as libc::c_int as usize] as libc::c_int == r#ref + 1 as libc::c_int
             && (*(*r.offset(-(1 as libc::c_int) as isize))
                 .offset(((*t).bx + bw4) as isize))
                 .r#ref
@@ -7830,7 +7830,7 @@ unsafe fn decode_b(
                 .mv[0 as libc::c_int as usize]
                 .x = 0 as libc::c_int as int16_t;
         }
-        let ref_0: mv = b
+        let r#ref: mv = b
             .c2rust_unnamed
             .c2rust_unnamed_0
             .c2rust_unnamed
@@ -7941,8 +7941,8 @@ unsafe fn decode_b(
                     .c2rust_unnamed
                     .mv[0 as libc::c_int as usize]
                     .x as libc::c_int,
-                ref_0.y as libc::c_int,
-                ref_0.x as libc::c_int,
+                r#ref.y as libc::c_int,
+                r#ref.x as libc::c_int,
                 mvstack[0 as libc::c_int as usize]
                     .mv
                     .mv[0 as libc::c_int as usize]

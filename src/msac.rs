@@ -230,7 +230,7 @@ pub unsafe extern "C" fn dav1d_msac_decode_bool_c(
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_msac_decode_subexp(
     s: *mut MsacContext,
-    ref_0: libc::c_int,
+    r#ref: libc::c_int,
     n: libc::c_int,
     mut k: libc::c_uint,
 ) -> libc::c_int {
@@ -249,12 +249,12 @@ pub unsafe extern "C" fn dav1d_msac_decode_subexp(
         a = ((1 as libc::c_int) << k) as libc::c_uint;
     }
     let v: libc::c_uint = (dav1d_msac_decode_bools(s, k)).wrapping_add(a);
-    let ret = (if ref_0 * 2 as libc::c_int <= n {
-        inv_recenter(ref_0 as libc::c_uint, v)
+    let ret = (if r#ref * 2 as libc::c_int <= n {
+        inv_recenter(r#ref as libc::c_uint, v)
     } else {
         ((n - 1 as libc::c_int) as libc::c_uint)
             .wrapping_sub(
-                inv_recenter((n - 1 as libc::c_int - ref_0) as libc::c_uint, v),
+                inv_recenter((n - 1 as libc::c_int - r#ref) as libc::c_uint, v),
             )
     }) as libc::c_int;
     return ret;

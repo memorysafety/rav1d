@@ -18,7 +18,7 @@ extern "C" {
         pool: *mut Dav1dMemPool,
         size: size_t,
     ) -> *mut Dav1dRef;
-    fn dav1d_ref_dec(ref_0: *mut *mut Dav1dRef);
+    fn dav1d_ref_dec(r#ref: *mut *mut Dav1dRef);
     static dav1d_partition_type_count: [uint8_t; 5];
 }
 

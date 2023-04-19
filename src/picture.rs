@@ -26,7 +26,7 @@ extern "C" {
         >,
         user_data: *mut libc::c_void,
     ) -> *mut Dav1dRef;
-    fn dav1d_ref_dec(ref_0: *mut *mut Dav1dRef);
+    fn dav1d_ref_dec(r#ref: *mut *mut Dav1dRef);
     fn dav1d_data_props_copy(dst: *mut Dav1dDataProps, src: *const Dav1dDataProps);
     fn dav1d_data_props_set_defaults(props: *mut Dav1dDataProps);
     fn dav1d_log(c: *mut Dav1dContext, format: *const libc::c_char, _: ...);

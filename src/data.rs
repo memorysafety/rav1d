@@ -9,7 +9,7 @@ extern "C" {
         _: libc::c_ulong,
     ) -> *mut libc::c_void;
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
-    fn dav1d_ref_dec(ref_0: *mut *mut Dav1dRef);
+    fn dav1d_ref_dec(r#ref: *mut *mut Dav1dRef);
     fn dav1d_ref_wrap(
         ptr: *const uint8_t,
         free_callback: Option::<
