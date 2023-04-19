@@ -100,16 +100,12 @@ pub unsafe extern "C" fn get_gmv_2d(
     bh4: libc::c_int,
     hdr: *const Dav1dFrameHeader,
 ) -> mv {
-    match (*gmv).type_0 as libc::c_uint {
+    match (*gmv).type_0 {
         2 => {
-            if !((*gmv).matrix[5 as libc::c_int as usize]
-                == (*gmv).matrix[2 as libc::c_int as usize])
-            {
+            if !((*gmv).matrix[5] == (*gmv).matrix[2]) {
                 unreachable!();
             }
-            if !((*gmv).matrix[4 as libc::c_int as usize]
-                == -(*gmv).matrix[3 as libc::c_int as usize])
-            {
+            if !((*gmv).matrix[4] == -(*gmv).matrix[3]) {
                 unreachable!();
             }
         }
@@ -128,21 +124,12 @@ pub unsafe extern "C" fn get_gmv_2d(
         }
         3 | _ => {}
     }
-    let x: libc::c_int = bx4 * 4 as libc::c_int + bw4 * 2 as libc::c_int
-        - 1 as libc::c_int;
-    let y: libc::c_int = by4 * 4 as libc::c_int + bh4 * 2 as libc::c_int
-        - 1 as libc::c_int;
-    let xc: libc::c_int = ((*gmv).matrix[2 as libc::c_int as usize]
-        - ((1 as libc::c_int) << 16 as libc::c_int)) * x
-        + (*gmv).matrix[3 as libc::c_int as usize] * y
-        + (*gmv).matrix[0 as libc::c_int as usize];
-    let yc: libc::c_int = ((*gmv).matrix[5 as libc::c_int as usize]
-        - ((1 as libc::c_int) << 16 as libc::c_int)) * y
-        + (*gmv).matrix[4 as libc::c_int as usize] * x
-        + (*gmv).matrix[1 as libc::c_int as usize];
-    let shift: libc::c_int = 16 as libc::c_int
-        - (3 as libc::c_int - ((*hdr).hp == 0) as libc::c_int);
-    let round: libc::c_int = (1 as libc::c_int) << shift >> 1 as libc::c_int;
+    let x = bx4 * 4 + bw4 * 2 - 1;
+    let y = by4 * 4 + bh4 * 2 - 1;
+    let xc = ((*gmv).matrix[2] - (1 << 16)) * x + (*gmv).matrix[3] * y + (*gmv).matrix[0];
+    let yc = ((*gmv).matrix[5] - (1 << 16)) * y + (*gmv).matrix[4] * x + (*gmv).matrix[1];
+    let shift = 16 - (3 - ((*hdr).hp == 0) as libc::c_int);
+    let round = 1 << shift >> 1;
     let mut res: mv = mv {
         y: apply_sign(
             yc.abs() + round >> shift << ((*hdr).hp == 0) as libc::c_int,
