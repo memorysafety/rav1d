@@ -2382,9 +2382,9 @@ unsafe extern "C" fn find_matching_ref(
     if have_top != 0 {
         let mut r2: *const refmvs_block = &mut *(*r.offset(-(1 as libc::c_int) as isize))
             .offset((*t).bx as isize) as *mut refmvs_block;
-        if (*r2).ref_0.ref_0[0 as libc::c_int as usize] as libc::c_int
+        if (*r2).ref_0.r#ref[0 as libc::c_int as usize] as libc::c_int
             == ref_0 + 1 as libc::c_int
-            && (*r2).ref_0.ref_0[1 as libc::c_int as usize] as libc::c_int
+            && (*r2).ref_0.r#ref[1 as libc::c_int as usize] as libc::c_int
                 == -(1 as libc::c_int)
         {
             let ref mut fresh2 = *masks.offset(0 as libc::c_int as isize);
@@ -2406,9 +2406,9 @@ unsafe extern "C" fn find_matching_ref(
             let mut x: libc::c_int = aw4;
             while x < w4 {
                 r2 = r2.offset(aw4 as isize);
-                if (*r2).ref_0.ref_0[0 as libc::c_int as usize] as libc::c_int
+                if (*r2).ref_0.r#ref[0 as libc::c_int as usize] as libc::c_int
                     == ref_0 + 1 as libc::c_int
-                    && (*r2).ref_0.ref_0[1 as libc::c_int as usize] as libc::c_int
+                    && (*r2).ref_0.r#ref[1 as libc::c_int as usize] as libc::c_int
                         == -(1 as libc::c_int)
                 {
                     let ref mut fresh3 = *masks.offset(0 as libc::c_int as isize);
@@ -2430,11 +2430,11 @@ unsafe extern "C" fn find_matching_ref(
         if (*(*r2_0.offset(0 as libc::c_int as isize))
             .offset(((*t).bx - 1 as libc::c_int) as isize))
             .ref_0
-            .ref_0[0 as libc::c_int as usize] as libc::c_int == ref_0 + 1 as libc::c_int
+            .r#ref[0 as libc::c_int as usize] as libc::c_int == ref_0 + 1 as libc::c_int
             && (*(*r2_0.offset(0 as libc::c_int as isize))
                 .offset(((*t).bx - 1 as libc::c_int) as isize))
                 .ref_0
-                .ref_0[1 as libc::c_int as usize] as libc::c_int == -(1 as libc::c_int)
+                .r#ref[1 as libc::c_int as usize] as libc::c_int == -(1 as libc::c_int)
         {
             let ref mut fresh4 = *masks.offset(1 as libc::c_int as isize);
             *fresh4 |= 1;
@@ -2459,12 +2459,12 @@ unsafe extern "C" fn find_matching_ref(
                 if (*(*r2_0.offset(0 as libc::c_int as isize))
                     .offset(((*t).bx - 1 as libc::c_int) as isize))
                     .ref_0
-                    .ref_0[0 as libc::c_int as usize] as libc::c_int
+                    .r#ref[0 as libc::c_int as usize] as libc::c_int
                     == ref_0 + 1 as libc::c_int
                     && (*(*r2_0.offset(0 as libc::c_int as isize))
                         .offset(((*t).bx - 1 as libc::c_int) as isize))
                         .ref_0
-                        .ref_0[1 as libc::c_int as usize] as libc::c_int
+                        .r#ref[1 as libc::c_int as usize] as libc::c_int
                         == -(1 as libc::c_int)
                 {
                     let ref mut fresh5 = *masks.offset(1 as libc::c_int as isize);
@@ -2486,11 +2486,11 @@ unsafe extern "C" fn find_matching_ref(
         && ((*(*r.offset(-(1 as libc::c_int) as isize))
             .offset(((*t).bx - 1 as libc::c_int) as isize))
             .ref_0
-            .ref_0[0 as libc::c_int as usize] as libc::c_int == ref_0 + 1 as libc::c_int
+            .r#ref[0 as libc::c_int as usize] as libc::c_int == ref_0 + 1 as libc::c_int
             && (*(*r.offset(-(1 as libc::c_int) as isize))
                 .offset(((*t).bx - 1 as libc::c_int) as isize))
                 .ref_0
-                .ref_0[1 as libc::c_int as usize] as libc::c_int == -(1 as libc::c_int))
+                .r#ref[1 as libc::c_int as usize] as libc::c_int == -(1 as libc::c_int))
     {
         let ref mut fresh6 = *masks.offset(1 as libc::c_int as isize);
         *fresh6 = (*fresh6 as libc::c_ulonglong
@@ -2503,11 +2503,11 @@ unsafe extern "C" fn find_matching_ref(
     if have_topright != 0
         && ((*(*r.offset(-(1 as libc::c_int) as isize)).offset(((*t).bx + bw4) as isize))
             .ref_0
-            .ref_0[0 as libc::c_int as usize] as libc::c_int == ref_0 + 1 as libc::c_int
+            .r#ref[0 as libc::c_int as usize] as libc::c_int == ref_0 + 1 as libc::c_int
             && (*(*r.offset(-(1 as libc::c_int) as isize))
                 .offset(((*t).bx + bw4) as isize))
                 .ref_0
-                .ref_0[1 as libc::c_int as usize] as libc::c_int == -(1 as libc::c_int))
+                .r#ref[1 as libc::c_int as usize] as libc::c_int == -(1 as libc::c_int))
     {
         let ref mut fresh7 = *masks.offset(0 as libc::c_int as isize);
         *fresh7 = (*fresh7 as libc::c_ulonglong
@@ -3953,7 +3953,7 @@ unsafe extern "C" fn splat_oneref_mv(
                 ],
             },
             ref_0: refmvs_refpair {
-                ref_0: [
+                r#ref: [
                     ((*b)
                         .c2rust_unnamed
                         .c2rust_unnamed_0
@@ -4012,7 +4012,7 @@ unsafe extern "C" fn splat_intrabc_mv(
                 ],
             },
             ref_0: refmvs_refpair {
-                ref_0: [0 as libc::c_int as int8_t, -(1 as libc::c_int) as int8_t],
+                r#ref: [0 as libc::c_int as int8_t, -(1 as libc::c_int) as int8_t],
             },
             bs: bs as uint8_t,
             mf: 0 as libc::c_int as uint8_t,
@@ -4065,7 +4065,7 @@ unsafe extern "C" fn splat_tworef_mv(
                 ],
             },
             ref_0: refmvs_refpair {
-                ref_0: [
+                r#ref: [
                     ((*b)
                         .c2rust_unnamed
                         .c2rust_unnamed_0
@@ -4116,7 +4116,7 @@ unsafe extern "C" fn splat_intraref(
                 ],
             },
             ref_0: refmvs_refpair {
-                ref_0: [0 as libc::c_int as int8_t, -(1 as libc::c_int) as int8_t],
+                r#ref: [0 as libc::c_int as int8_t, -(1 as libc::c_int) as int8_t],
             },
             bs: bs as uint8_t,
             mf: 0 as libc::c_int as uint8_t,
@@ -4268,7 +4268,7 @@ unsafe extern "C" fn obmc_lowest_px(
                 .offset(((*t).bx + x + 1 as libc::c_int) as isize) as *mut refmvs_block;
             let a_b_dim: *const uint8_t = (dav1d_block_dimensions[(*a_r).bs as usize])
                 .as_ptr();
-            if (*a_r).ref_0.ref_0[0 as libc::c_int as usize] as libc::c_int
+            if (*a_r).ref_0.r#ref[0 as libc::c_int as usize] as libc::c_int
                 > 0 as libc::c_int
             {
                 let oh4: libc::c_int = imin(
@@ -4278,7 +4278,7 @@ unsafe extern "C" fn obmc_lowest_px(
                 mc_lowest_px(
                     &mut *(*dst
                         .offset(
-                            (*((*a_r).ref_0.ref_0)
+                            (*((*a_r).ref_0.r#ref)
                                 .as_ptr()
                                 .offset(0 as libc::c_int as isize) as libc::c_int
                                 - 1 as libc::c_int) as isize,
@@ -4292,7 +4292,7 @@ unsafe extern "C" fn obmc_lowest_px(
                     &*(*((*f).svc)
                         .as_ptr()
                         .offset(
-                            (*((*a_r).ref_0.ref_0)
+                            (*((*a_r).ref_0.r#ref)
                                 .as_ptr()
                                 .offset(0 as libc::c_int as isize) as libc::c_int
                                 - 1 as libc::c_int) as isize,
@@ -4324,7 +4324,7 @@ unsafe extern "C" fn obmc_lowest_px(
                 .offset(((*t).bx - 1 as libc::c_int) as isize) as *mut refmvs_block;
             let l_b_dim: *const uint8_t = (dav1d_block_dimensions[(*l_r).bs as usize])
                 .as_ptr();
-            if (*l_r).ref_0.ref_0[0 as libc::c_int as usize] as libc::c_int
+            if (*l_r).ref_0.r#ref[0 as libc::c_int as usize] as libc::c_int
                 > 0 as libc::c_int
             {
                 let oh4_0: libc::c_int = iclip(
@@ -4335,7 +4335,7 @@ unsafe extern "C" fn obmc_lowest_px(
                 mc_lowest_px(
                     &mut *(*dst
                         .offset(
-                            (*((*l_r).ref_0.ref_0)
+                            (*((*l_r).ref_0.r#ref)
                                 .as_ptr()
                                 .offset(0 as libc::c_int as isize) as libc::c_int
                                 - 1 as libc::c_int) as isize,
@@ -4349,7 +4349,7 @@ unsafe extern "C" fn obmc_lowest_px(
                     &*(*((*f).svc)
                         .as_ptr()
                         .offset(
-                            (*((*l_r).ref_0.ref_0)
+                            (*((*l_r).ref_0.r#ref)
                                 .as_ptr()
                                 .offset(0 as libc::c_int as isize) as libc::c_int
                                 - 1 as libc::c_int) as isize,
@@ -4455,14 +4455,14 @@ unsafe fn decode_b(
                     .offset(t.bx as isize);
                 for x in 0..bw4 {
                     let block = &mut *r.offset(x as isize);
-                    block.ref_0.ref_0[0] = 0;
+                    block.ref_0.r#ref[0] = 0;
                     block.bs = bs as uint8_t;
                 }
 
                 let mut rr = &t.rt.r[((t.by & 31) + 5) as usize..];
                 for y in 0..bh4 - 1 {
                     let block = &mut *rr[y as usize].offset((t.bx + bw4 - 1) as isize);
-                    block.ref_0.ref_0[0] = 0;
+                    block.ref_0.r#ref[0] = 0;
                     block.bs = bs as uint8_t;
                 }
             }
@@ -4540,7 +4540,7 @@ unsafe fn decode_b(
                     .r[((t.by & 31) + 5 + bh4 - 1) as usize]
                     .offset(t.bx as isize);
                 for x in 0..bw4 as isize {
-                    (*r.offset(x)).ref_0.ref_0[0] = b.r#ref()[0] + 1;
+                    (*r.offset(x)).ref_0.r#ref[0] = b.r#ref()[0] + 1;
                     (*r.offset(x)).mv.mv[0] = b.mv()[0];
                     (*r.offset(x)).bs = bs as uint8_t;
                 }
@@ -4548,7 +4548,7 @@ unsafe fn decode_b(
                 let mut rr: &[*mut refmvs_block] = &t.rt.r[((t.by & 31) + 5) as usize..];
                 for y in 0..bh4 as usize - 1 {
                     let r = &mut *rr[y].offset((t.bx + bw4 - 1) as isize);
-                    r.ref_0.ref_0[0] = b.r#ref()[0] + 1;
+                    r.ref_0.r#ref[0] = b.r#ref()[0] + 1;
                     r.mv.mv[0] = b.mv()[0];
                     r.bs = bs as uint8_t;
                 }
@@ -7769,7 +7769,7 @@ unsafe fn decode_b(
             &mut n_mvs,
             &mut ctx_1,
             refmvs_refpair {
-                ref_0: [0 as libc::c_int as int8_t, -(1 as libc::c_int) as int8_t],
+                r#ref: [0 as libc::c_int as int8_t, -(1 as libc::c_int) as int8_t],
             },
             bs,
             intra_edge_flags,
@@ -9036,7 +9036,7 @@ unsafe fn decode_b(
                 &mut n_mvs_0,
                 &mut ctx_3,
                 refmvs_refpair {
-                    ref_0: [
+                    r#ref: [
                         (b
                             .c2rust_unnamed
                             .c2rust_unnamed_0
@@ -9363,7 +9363,7 @@ unsafe fn decode_b(
                 &mut n_mvs_1,
                 &mut ctx_4,
                 refmvs_refpair {
-                    ref_0: [
+                    r#ref: [
                         (b
                             .c2rust_unnamed
                             .c2rust_unnamed_0
@@ -10048,7 +10048,7 @@ unsafe fn decode_b(
                 &mut n_mvs_2,
                 &mut ctx_6,
                 refmvs_refpair {
-                    ref_0: [
+                    r#ref: [
                         (b
                             .c2rust_unnamed
                             .c2rust_unnamed_0
@@ -12954,7 +12954,7 @@ unsafe fn decode_b(
                             &= ((*(*r_1.offset(0 as libc::c_int as isize))
                                 .offset((t.bx - 1 as libc::c_int) as isize))
                                 .ref_0
-                                .ref_0[0 as libc::c_int as usize] as libc::c_int
+                                .r#ref[0 as libc::c_int as usize] as libc::c_int
                                 > 0 as libc::c_int) as libc::c_int;
                     }
                     if bh4 == ss_ver {
@@ -12962,7 +12962,7 @@ unsafe fn decode_b(
                             &= ((*(*r_1.offset(-(1 as libc::c_int) as isize))
                                 .offset(t.bx as isize))
                                 .ref_0
-                                .ref_0[0 as libc::c_int as usize] as libc::c_int
+                                .r#ref[0 as libc::c_int as usize] as libc::c_int
                                 > 0 as libc::c_int) as libc::c_int;
                     }
                     if bw4 == 1 as libc::c_int && bh4 == ss_ver {
@@ -12970,7 +12970,7 @@ unsafe fn decode_b(
                             &= ((*(*r_1.offset(-(1 as libc::c_int) as isize))
                                 .offset((t.bx - 1 as libc::c_int) as isize))
                                 .ref_0
-                                .ref_0[0 as libc::c_int as usize] as libc::c_int
+                                .r#ref[0 as libc::c_int as usize] as libc::c_int
                                 > 0 as libc::c_int) as libc::c_int;
                     }
                 }
@@ -12986,7 +12986,7 @@ unsafe fn decode_b(
                         mc_lowest_px(
                             &mut *(*lowest_px
                                 .offset(
-                                    (*((*rr_1).ref_0.ref_0)
+                                    (*((*rr_1).ref_0.r#ref)
                                         .as_ptr()
                                         .offset(0 as libc::c_int as isize) as libc::c_int
                                         - 1 as libc::c_int) as isize,
@@ -13001,7 +13001,7 @@ unsafe fn decode_b(
                             &*(*(f.svc)
                                 .as_ptr()
                                 .offset(
-                                    (*((*rr_1).ref_0.ref_0)
+                                    (*((*rr_1).ref_0.r#ref)
                                         .as_ptr()
                                         .offset(0 as libc::c_int as isize) as libc::c_int
                                         - 1 as libc::c_int) as isize,
@@ -13018,7 +13018,7 @@ unsafe fn decode_b(
                         mc_lowest_px(
                             &mut *(*lowest_px
                                 .offset(
-                                    (*((*rr_2).ref_0.ref_0)
+                                    (*((*rr_2).ref_0.r#ref)
                                         .as_ptr()
                                         .offset(0 as libc::c_int as isize) as libc::c_int
                                         - 1 as libc::c_int) as isize,
@@ -13033,7 +13033,7 @@ unsafe fn decode_b(
                             &*(*(f.svc)
                                 .as_ptr()
                                 .offset(
-                                    (*((*rr_2).ref_0.ref_0)
+                                    (*((*rr_2).ref_0.r#ref)
                                         .as_ptr()
                                         .offset(0 as libc::c_int as isize) as libc::c_int
                                         - 1 as libc::c_int) as isize,
@@ -13049,7 +13049,7 @@ unsafe fn decode_b(
                         mc_lowest_px(
                             &mut *(*lowest_px
                                 .offset(
-                                    (*((*rr_3).ref_0.ref_0)
+                                    (*((*rr_3).ref_0.r#ref)
                                         .as_ptr()
                                         .offset(0 as libc::c_int as isize) as libc::c_int
                                         - 1 as libc::c_int) as isize,
@@ -13064,7 +13064,7 @@ unsafe fn decode_b(
                             &*(*(f.svc)
                                 .as_ptr()
                                 .offset(
-                                    (*((*rr_3).ref_0.ref_0)
+                                    (*((*rr_3).ref_0.r#ref)
                                         .as_ptr()
                                         .offset(0 as libc::c_int as isize) as libc::c_int
                                         - 1 as libc::c_int) as isize,

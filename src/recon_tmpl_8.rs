@@ -4725,7 +4725,7 @@ unsafe extern "C" fn obmc(
                 2 as libc::c_int,
                 16 as libc::c_int,
             );
-            if (*a_r).ref_0.ref_0[0 as libc::c_int as usize] as libc::c_int
+            if (*a_r).ref_0.r#ref[0 as libc::c_int as usize] as libc::c_int
                 > 0 as libc::c_int
             {
                 let ow4: libc::c_int = imin(
@@ -4752,12 +4752,12 @@ unsafe extern "C" fn obmc(
                     &*((*f).refp)
                         .as_ptr()
                         .offset(
-                            (*((*a_r).ref_0.ref_0)
+                            (*((*a_r).ref_0.r#ref)
                                 .as_ptr()
                                 .offset(0 as libc::c_int as isize) as libc::c_int
                                 - 1 as libc::c_int) as isize,
                         ),
-                    (*a_r).ref_0.ref_0[0 as libc::c_int as usize] as libc::c_int
+                    (*a_r).ref_0.r#ref[0 as libc::c_int as usize] as libc::c_int
                         - 1 as libc::c_int,
                     dav1d_filter_2d[(*(*t).a)
                         .filter[1 as libc::c_int
@@ -4805,7 +4805,7 @@ unsafe extern "C" fn obmc(
                 2 as libc::c_int,
                 16 as libc::c_int,
             );
-            if (*l_r).ref_0.ref_0[0 as libc::c_int as usize] as libc::c_int
+            if (*l_r).ref_0.r#ref[0 as libc::c_int as usize] as libc::c_int
                 > 0 as libc::c_int
             {
                 let ow4_0: libc::c_int = imin(
@@ -4832,12 +4832,12 @@ unsafe extern "C" fn obmc(
                     &*((*f).refp)
                         .as_ptr()
                         .offset(
-                            (*((*l_r).ref_0.ref_0)
+                            (*((*l_r).ref_0.r#ref)
                                 .as_ptr()
                                 .offset(0 as libc::c_int as isize) as libc::c_int
                                 - 1 as libc::c_int) as isize,
                         ),
-                    (*l_r).ref_0.ref_0[0 as libc::c_int as usize] as libc::c_int
+                    (*l_r).ref_0.r#ref[0 as libc::c_int as usize] as libc::c_int
                         - 1 as libc::c_int,
                     dav1d_filter_2d[(*t)
                         .l
@@ -6748,7 +6748,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                         &= ((*(*r.offset(0 as libc::c_int as isize))
                             .offset(((*t).bx - 1 as libc::c_int) as isize))
                             .ref_0
-                            .ref_0[0 as libc::c_int as usize] as libc::c_int
+                            .r#ref[0 as libc::c_int as usize] as libc::c_int
                             > 0 as libc::c_int) as libc::c_int;
                 }
                 if bh4 == ss_ver {
@@ -6756,7 +6756,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                         &= ((*(*r.offset(-(1 as libc::c_int) as isize))
                             .offset((*t).bx as isize))
                             .ref_0
-                            .ref_0[0 as libc::c_int as usize] as libc::c_int
+                            .r#ref[0 as libc::c_int as usize] as libc::c_int
                             > 0 as libc::c_int) as libc::c_int;
                 }
                 if bw4 == 1 as libc::c_int && bh4 == ss_ver {
@@ -6764,7 +6764,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                         &= ((*(*r.offset(-(1 as libc::c_int) as isize))
                             .offset(((*t).bx - 1 as libc::c_int) as isize))
                             .ref_0
-                            .ref_0[0 as libc::c_int as usize] as libc::c_int
+                            .r#ref[0 as libc::c_int as usize] as libc::c_int
                             > 0 as libc::c_int) as libc::c_int;
                 }
             }
@@ -6799,7 +6799,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                                     (*((*(*r.offset(-(1 as libc::c_int) as isize))
                                         .offset(((*t).bx - 1 as libc::c_int) as isize))
                                         .ref_0
-                                        .ref_0)
+                                        .r#ref)
                                         .as_mut_ptr()
                                         .offset(0 as libc::c_int as isize) as libc::c_int
                                         - 1 as libc::c_int) as isize,
@@ -6807,7 +6807,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                             (*(*r.offset(-(1 as libc::c_int) as isize))
                                 .offset(((*t).bx - 1 as libc::c_int) as isize))
                                 .ref_0
-                                .ref_0[0 as libc::c_int as usize] as libc::c_int
+                                .r#ref[0 as libc::c_int as usize] as libc::c_int
                                 - 1 as libc::c_int,
                             (if (*t).frame_thread.pass != 2 as libc::c_int {
                                 (*t).tl_4x4_filter as libc::c_uint
@@ -6861,7 +6861,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                                     (*((*(*r.offset(0 as libc::c_int as isize))
                                         .offset(((*t).bx - 1 as libc::c_int) as isize))
                                         .ref_0
-                                        .ref_0)
+                                        .r#ref)
                                         .as_mut_ptr()
                                         .offset(0 as libc::c_int as isize) as libc::c_int
                                         - 1 as libc::c_int) as isize,
@@ -6869,7 +6869,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                             (*(*r.offset(0 as libc::c_int as isize))
                                 .offset(((*t).bx - 1 as libc::c_int) as isize))
                                 .ref_0
-                                .ref_0[0 as libc::c_int as usize] as libc::c_int
+                                .r#ref[0 as libc::c_int as usize] as libc::c_int
                                 - 1 as libc::c_int,
                             (if (*t).frame_thread.pass != 2 as libc::c_int {
                                 left_filter_2d as libc::c_uint
@@ -6922,7 +6922,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                                     (*((*(*r.offset(-(1 as libc::c_int) as isize))
                                         .offset((*t).bx as isize))
                                         .ref_0
-                                        .ref_0)
+                                        .r#ref)
                                         .as_mut_ptr()
                                         .offset(0 as libc::c_int as isize) as libc::c_int
                                         - 1 as libc::c_int) as isize,
@@ -6930,7 +6930,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                             (*(*r.offset(-(1 as libc::c_int) as isize))
                                 .offset((*t).bx as isize))
                                 .ref_0
-                                .ref_0[0 as libc::c_int as usize] as libc::c_int
+                                .r#ref[0 as libc::c_int as usize] as libc::c_int
                                 - 1 as libc::c_int,
                             (if (*t).frame_thread.pass != 2 as libc::c_int {
                                 top_filter_2d as libc::c_uint
