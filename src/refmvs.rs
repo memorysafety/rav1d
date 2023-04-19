@@ -950,9 +950,7 @@ pub unsafe fn dav1d_refmvs_find(
         let mut last = 0;
         for n in 1..len {
             if mvstack[n - 1].weight < mvstack[n].weight {
-                let mut tmp = mvstack[n - 1];
-                mvstack[n - 1] = mvstack[n];
-                mvstack[n] = tmp;
+                mvstack.swap(n - 1, n);
                 last = n;
             }
         }
@@ -963,9 +961,7 @@ pub unsafe fn dav1d_refmvs_find(
         let mut last = nearest_cnt;
         for n in nearest_cnt + 1..len {
             if mvstack[n - 1].weight < mvstack[n].weight {
-                let mut tmp_0 = mvstack[n - 1];
-                mvstack[n - 1] = mvstack[n];
-                mvstack[n] = tmp_0;
+                mvstack.swap(n - 1, n);
                 last = n;
             }
         }
