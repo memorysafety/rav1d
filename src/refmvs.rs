@@ -1042,36 +1042,30 @@ pub unsafe fn dav1d_refmvs_find(
             let diff_count = &same_count[2..];
 
             // merge together
-            let mut current_block_118: u64;
             for n in 0..2 {
                 let mut m = same_count[n as usize];
-                if !(m >= 2) {
-                    let l = diff_count[n as usize];
-                    if l != 0 {
-                        same[m as usize].mv.mv[n as usize] = diff[0].mv.mv[n as usize];
-                        m += 1;
-                        if m == 2 {
-                            current_block_118 = 13740693533991687037;
-                        } else if l == 2 {
-                            same[1].mv.mv[n as usize] = diff[1].mv.mv[n as usize];
-                            current_block_118 = 13740693533991687037;
-                        } else {
-                            current_block_118 = 9430418855388998878;
-                        }
-                    } else {
-                        current_block_118 = 9430418855388998878;
+
+                if m >= 2 {
+                    continue;
+                }
+
+                let l = diff_count[n as usize];
+                if l != 0 {
+                    same[m as usize].mv.mv[n as usize] = diff[0].mv.mv[n as usize];
+                    m += 1;
+                    if m == 2 {
+                        continue;
                     }
-                    match current_block_118 {
-                        13740693533991687037 => {}
-                        _ => {
-                            loop {
-                                same[m as usize].mv.mv[n as usize] = tgmv[n as usize];
-                                m += 1;
-                                if !(m < 2) {
-                                    break;
-                                }
-                            }
-                        }
+                    if l == 2 {
+                        same[1].mv.mv[n as usize] = diff[1].mv.mv[n as usize];
+                        continue;
+                    }
+                }
+                loop {
+                    same[m as usize].mv.mv[n as usize] = tgmv[n as usize];
+                    m += 1;
+                    if !(m < 2) {
+                        break;
                     }
                 }
             }
