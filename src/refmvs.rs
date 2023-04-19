@@ -396,8 +396,9 @@ unsafe extern "C" fn scan_col(
         len = imax(step, cand_bh4);
     };
 }
+
 #[inline]
-unsafe extern "C" fn mv_projection(mv: mv, num: libc::c_int, den: libc::c_int) -> mv {
+unsafe fn mv_projection(mv: mv, num: libc::c_int, den: libc::c_int) -> mv {
     static mut div_mult: [uint16_t; 32] = [
         0 as libc::c_int as uint16_t,
         16384 as libc::c_int as uint16_t,
@@ -446,6 +447,7 @@ unsafe extern "C" fn mv_projection(mv: mv, num: libc::c_int, den: libc::c_int) -
         x: iclip(x + 8192 + (x >> 31) >> 14, -0x3fff, 0x3fff) as i16,
     };
 }
+
 unsafe extern "C" fn add_temporal_candidate(
     rf: *const refmvs_frame,
     mvstack: *mut refmvs_candidate,
