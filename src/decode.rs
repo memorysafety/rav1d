@@ -519,7 +519,6 @@ use crate::src::internal::CodedBlockInfo;
 use crate::src::levels::Av1Block;
 
 use crate::src::levels::mv;
-use crate::src::levels::mv_xy;
 
 use crate::src::refmvs::refmvs_frame;
 use crate::src::refmvs::refmvs_block;
@@ -2105,50 +2104,14 @@ unsafe extern "C" fn read_mv_residual(
         (N_MV_JOINTS as libc::c_int - 1 as libc::c_int) as size_t,
     ) {
         3 => {
-            (*ref_mv)
-                .c2rust_unnamed
-                .y = ((*ref_mv).c2rust_unnamed.y as libc::c_int
-                + read_mv_component_diff(
-                    t,
-                    &mut *((*mv_cdf).comp)
-                        .as_mut_ptr()
-                        .offset(0 as libc::c_int as isize),
-                    have_fp,
-                )) as int16_t;
-            (*ref_mv)
-                .c2rust_unnamed
-                .x = ((*ref_mv).c2rust_unnamed.x as libc::c_int
-                + read_mv_component_diff(
-                    t,
-                    &mut *((*mv_cdf).comp)
-                        .as_mut_ptr()
-                        .offset(1 as libc::c_int as isize),
-                    have_fp,
-                )) as int16_t;
+            (*ref_mv).y = (*ref_mv).y + read_mv_component_diff(t, &mut (*mv_cdf).comp[0], have_fp) as i16;
+            (*ref_mv).x = (*ref_mv).x + read_mv_component_diff(t, &mut (*mv_cdf).comp[1], have_fp) as i16;
         }
         1 => {
-            (*ref_mv)
-                .c2rust_unnamed
-                .x = ((*ref_mv).c2rust_unnamed.x as libc::c_int
-                + read_mv_component_diff(
-                    t,
-                    &mut *((*mv_cdf).comp)
-                        .as_mut_ptr()
-                        .offset(1 as libc::c_int as isize),
-                    have_fp,
-                )) as int16_t;
+            (*ref_mv).x = (*ref_mv).x + read_mv_component_diff(t, &mut (*mv_cdf).comp[1], have_fp) as i16;
         }
         2 => {
-            (*ref_mv)
-                .c2rust_unnamed
-                .y = ((*ref_mv).c2rust_unnamed.y as libc::c_int
-                + read_mv_component_diff(
-                    t,
-                    &mut *((*mv_cdf).comp)
-                        .as_mut_ptr()
-                        .offset(0 as libc::c_int as isize),
-                    have_fp,
-                )) as int16_t;
+            (*ref_mv).y = (*ref_mv).y + read_mv_component_diff(t, &mut (*mv_cdf).comp[0], have_fp) as i16;
         }
         _ => {}
     };
@@ -2602,7 +2565,6 @@ unsafe extern "C" fn derive_warpmv(
             + (*(*r.offset(-(1 as libc::c_int) as isize)).offset((*t).bx as isize))
                 .mv
                 .mv[0 as libc::c_int as usize]
-                .c2rust_unnamed
                 .x as libc::c_int;
         pts[np
             as usize][1 as libc::c_int
@@ -2612,7 +2574,6 @@ unsafe extern "C" fn derive_warpmv(
             + (*(*r.offset(-(1 as libc::c_int) as isize)).offset((*t).bx as isize))
                 .mv
                 .mv[0 as libc::c_int as usize]
-                .c2rust_unnamed
                 .y as libc::c_int;
         np += 1;
     } else {
@@ -2664,7 +2625,6 @@ unsafe extern "C" fn derive_warpmv(
                     .offset(((*t).bx as libc::c_uint).wrapping_add(off_0) as isize))
                     .mv
                     .mv[0 as libc::c_int as usize]
-                    .c2rust_unnamed
                     .x as libc::c_int;
             pts[np
                 as usize][1 as libc::c_int
@@ -2675,7 +2635,6 @@ unsafe extern "C" fn derive_warpmv(
                     .offset(((*t).bx as libc::c_uint).wrapping_add(off_0) as isize))
                     .mv
                     .mv[0 as libc::c_int as usize]
-                    .c2rust_unnamed
                     .y as libc::c_int;
             np += 1;
             xmask &= !(1 as libc::c_int) as libc::c_uint;
@@ -2718,7 +2677,6 @@ unsafe extern "C" fn derive_warpmv(
                 .offset(((*t).bx - 1 as libc::c_int) as isize))
                 .mv
                 .mv[0 as libc::c_int as usize]
-                .c2rust_unnamed
                 .x as libc::c_int;
         pts[np
             as usize][1 as libc::c_int
@@ -2729,7 +2687,6 @@ unsafe extern "C" fn derive_warpmv(
                 .offset(((*t).bx - 1 as libc::c_int) as isize))
                 .mv
                 .mv[0 as libc::c_int as usize]
-                .c2rust_unnamed
                 .y as libc::c_int;
         np += 1;
     } else {
@@ -2775,7 +2732,6 @@ unsafe extern "C" fn derive_warpmv(
                     .offset(((*t).bx - 1 as libc::c_int) as isize))
                     .mv
                     .mv[0 as libc::c_int as usize]
-                    .c2rust_unnamed
                     .x as libc::c_int;
             pts[np
                 as usize][1 as libc::c_int
@@ -2786,7 +2742,6 @@ unsafe extern "C" fn derive_warpmv(
                     .offset(((*t).bx - 1 as libc::c_int) as isize))
                     .mv
                     .mv[0 as libc::c_int as usize]
-                    .c2rust_unnamed
                     .y as libc::c_int;
             np += 1;
             ymask &= !(1 as libc::c_int) as libc::c_uint;
@@ -2823,7 +2778,6 @@ unsafe extern "C" fn derive_warpmv(
                 .offset(((*t).bx - 1 as libc::c_int) as isize))
                 .mv
                 .mv[0 as libc::c_int as usize]
-                .c2rust_unnamed
                 .x as libc::c_int;
         pts[np
             as usize][1 as libc::c_int
@@ -2834,7 +2788,6 @@ unsafe extern "C" fn derive_warpmv(
                 .offset(((*t).bx - 1 as libc::c_int) as isize))
                 .mv
                 .mv[0 as libc::c_int as usize]
-                .c2rust_unnamed
                 .y as libc::c_int;
         np += 1;
     }
@@ -2870,7 +2823,6 @@ unsafe extern "C" fn derive_warpmv(
                 .offset(((*t).bx + bw4) as isize))
                 .mv
                 .mv[0 as libc::c_int as usize]
-                .c2rust_unnamed
                 .x as libc::c_int;
         pts[np
             as usize][1 as libc::c_int
@@ -2881,7 +2833,6 @@ unsafe extern "C" fn derive_warpmv(
                 .offset(((*t).bx + bw4) as isize))
                 .mv
                 .mv[0 as libc::c_int as usize]
-                .c2rust_unnamed
                 .y as libc::c_int;
         np += 1;
     }
@@ -2898,13 +2849,13 @@ unsafe extern "C" fn derive_warpmv(
             as usize] = (
             pts[i as usize][1 as libc::c_int as usize][0 as libc::c_int as usize]
                 - pts[i as usize][0 as libc::c_int as usize][0 as libc::c_int as usize]
-                - mv.c2rust_unnamed.x as libc::c_int
+                - mv.x as libc::c_int
         ).abs()
             + (
                 pts[i as usize][1 as libc::c_int as usize][1 as libc::c_int as usize]
                     - pts[i
                         as usize][0 as libc::c_int as usize][1 as libc::c_int as usize]
-                    - mv.c2rust_unnamed.y as libc::c_int
+                    - mv.y as libc::c_int
             ).abs();
         if mvd[i as usize] > thresh {
             mvd[i as usize] = -(1 as libc::c_int);
@@ -3998,9 +3949,7 @@ unsafe extern "C" fn splat_oneref_mv(
                         .c2rust_unnamed
                         .c2rust_unnamed
                         .mv[0 as libc::c_int as usize],
-                    mv {
-                        c2rust_unnamed: mv_xy { y: 0, x: 0 },
-                    },
+                    mv::ZERO,
                 ],
             },
             ref_0: refmvs_refpair {
@@ -4059,9 +4008,7 @@ unsafe extern "C" fn splat_intrabc_mv(
                         .c2rust_unnamed
                         .c2rust_unnamed
                         .mv[0 as libc::c_int as usize],
-                    mv {
-                        c2rust_unnamed: mv_xy { y: 0, x: 0 },
-                    },
+                    mv::ZERO,
                 ],
             },
             ref_0: refmvs_refpair {
@@ -4164,12 +4111,8 @@ unsafe extern "C" fn splat_intraref(
         let mut init = refmvs_block {
             mv: refmvs_mvpair {
                 mv: [
-                    mv {
-                        n: 0x80008000 as libc::c_uint,
-                    },
-                    mv {
-                        c2rust_unnamed: mv_xy { y: 0, x: 0 },
-                    },
+                    mv::INVALID,
+                    mv::ZERO,
                 ],
             },
             ref_0: refmvs_refpair {
@@ -4344,8 +4287,7 @@ unsafe extern "C" fn obmc_lowest_px(
                         .offset(is_chroma as isize),
                     (*t).by,
                     oh4 * 3 as libc::c_int + 3 as libc::c_int >> 2 as libc::c_int,
-                    (*a_r).mv.mv[0 as libc::c_int as usize].c2rust_unnamed.y
-                        as libc::c_int,
+                    (*a_r).mv.mv[0 as libc::c_int as usize].y as libc::c_int,
                     ss_ver,
                     &*(*((*f).svc)
                         .as_ptr()
@@ -4402,8 +4344,7 @@ unsafe extern "C" fn obmc_lowest_px(
                         .offset(is_chroma as isize),
                     (*t).by + y,
                     oh4_0,
-                    (*l_r).mv.mv[0 as libc::c_int as usize].c2rust_unnamed.y
-                        as libc::c_int,
+                    (*l_r).mv.mv[0 as libc::c_int as usize].y as libc::c_int,
                     ss_ver,
                     &*(*((*f).svc)
                         .as_ptr()
@@ -4572,8 +4513,8 @@ unsafe fn decode_b(
                             SignAbs(t.warpmv.u.p.beta.into()),
                             SignAbs(t.warpmv.u.p.gamma.into()),
                             SignAbs(t.warpmv.u.p.delta.into()),
-                            b.mv2d().y(),
-                            b.mv2d().x(),
+                            b.mv2d().y,
+                            b.mv2d().x,
                         );
                     }
                 }
@@ -7816,9 +7757,7 @@ unsafe fn decode_b(
     {
         let mut mvstack: [refmvs_candidate; 8] = [refmvs_candidate {
             mv: refmvs_mvpair {
-                mv: [mv {
-                    c2rust_unnamed: mv_xy { y: 0, x: 0 },
-                }; 2],
+                mv: [mv::ZERO; 2],
             },
             weight: 0,
         }; 8];
@@ -7837,7 +7776,7 @@ unsafe fn decode_b(
             t.by,
             t.bx,
         );
-        if mvstack[0 as libc::c_int as usize].mv.mv[0 as libc::c_int as usize].n != 0 {
+        if mvstack[0 as libc::c_int as usize].mv.mv[0 as libc::c_int as usize] != mv::ZERO {
             b
                 .c2rust_unnamed
                 .c2rust_unnamed_0
@@ -7847,9 +7786,7 @@ unsafe fn decode_b(
                 as usize] = mvstack[0 as libc::c_int as usize]
                 .mv
                 .mv[0 as libc::c_int as usize];
-        } else if mvstack[1 as libc::c_int as usize].mv.mv[0 as libc::c_int as usize].n
-            != 0
-        {
+        } else if mvstack[1 as libc::c_int as usize].mv.mv[0 as libc::c_int as usize] != mv::ZERO {
             b
                 .c2rust_unnamed
                 .c2rust_unnamed_0
@@ -7868,7 +7805,6 @@ unsafe fn decode_b(
                 .c2rust_unnamed
                 .c2rust_unnamed
                 .mv[0 as libc::c_int as usize]
-                .c2rust_unnamed
                 .y = 0 as libc::c_int as int16_t;
             b
                 .c2rust_unnamed
@@ -7876,7 +7812,6 @@ unsafe fn decode_b(
                 .c2rust_unnamed
                 .c2rust_unnamed
                 .mv[0 as libc::c_int as usize]
-                .c2rust_unnamed
                 .x = (-((512 as libc::c_int) << (*f.seq_hdr).sb128)
                 - 2048 as libc::c_int) as int16_t;
         } else {
@@ -7886,7 +7821,6 @@ unsafe fn decode_b(
                 .c2rust_unnamed
                 .c2rust_unnamed
                 .mv[0 as libc::c_int as usize]
-                .c2rust_unnamed
                 .y = -((512 as libc::c_int) << (*f.seq_hdr).sb128) as int16_t;
             b
                 .c2rust_unnamed
@@ -7894,7 +7828,6 @@ unsafe fn decode_b(
                 .c2rust_unnamed
                 .c2rust_unnamed
                 .mv[0 as libc::c_int as usize]
-                .c2rust_unnamed
                 .x = 0 as libc::c_int as int16_t;
         }
         let ref_0: mv = b
@@ -7928,7 +7861,6 @@ unsafe fn decode_b(
                 .c2rust_unnamed
                 .c2rust_unnamed
                 .mv[0 as libc::c_int as usize]
-                .c2rust_unnamed
                 .x as libc::c_int >> 3 as libc::c_int);
         let mut src_top: libc::c_int = t.by * 4 as libc::c_int
             + (b
@@ -7937,7 +7869,6 @@ unsafe fn decode_b(
                 .c2rust_unnamed
                 .c2rust_unnamed
                 .mv[0 as libc::c_int as usize]
-                .c2rust_unnamed
                 .y as libc::c_int >> 3 as libc::c_int);
         let mut src_right: libc::c_int = src_left + bw4 * 4 as libc::c_int;
         let mut src_bottom: libc::c_int = src_top + bh4 * 4 as libc::c_int;
@@ -7983,7 +7914,6 @@ unsafe fn decode_b(
             .c2rust_unnamed
             .c2rust_unnamed
             .mv[0 as libc::c_int as usize]
-            .c2rust_unnamed
             .x = ((src_left - t.bx * 4 as libc::c_int) * 8 as libc::c_int) as int16_t;
         b
             .c2rust_unnamed
@@ -7991,7 +7921,6 @@ unsafe fn decode_b(
             .c2rust_unnamed
             .c2rust_unnamed
             .mv[0 as libc::c_int as usize]
-            .c2rust_unnamed
             .y = ((src_top - t.by * 4 as libc::c_int) * 8 as libc::c_int) as int16_t;
         if DEBUG_BLOCK_INFO(f, t)
         {
@@ -8004,7 +7933,6 @@ unsafe fn decode_b(
                     .c2rust_unnamed
                     .c2rust_unnamed
                     .mv[0 as libc::c_int as usize]
-                    .c2rust_unnamed
                     .y as libc::c_int,
                 b
                     .c2rust_unnamed
@@ -8012,19 +7940,16 @@ unsafe fn decode_b(
                     .c2rust_unnamed
                     .c2rust_unnamed
                     .mv[0 as libc::c_int as usize]
-                    .c2rust_unnamed
                     .x as libc::c_int,
-                ref_0.c2rust_unnamed.y as libc::c_int,
-                ref_0.c2rust_unnamed.x as libc::c_int,
+                ref_0.y as libc::c_int,
+                ref_0.x as libc::c_int,
                 mvstack[0 as libc::c_int as usize]
                     .mv
                     .mv[0 as libc::c_int as usize]
-                    .c2rust_unnamed
                     .y as libc::c_int,
                 mvstack[0 as libc::c_int as usize]
                     .mv
                     .mv[0 as libc::c_int as usize]
-                    .c2rust_unnamed
                     .x as libc::c_int,
                 ts.msac.rng,
             );
@@ -9099,9 +9024,7 @@ unsafe fn decode_b(
             has_subpel_filter = 0 as libc::c_int;
             let mut mvstack_0: [refmvs_candidate; 8] = [refmvs_candidate {
                 mv: refmvs_mvpair {
-                    mv: [mv {
-                        c2rust_unnamed: mv_xy { y: 0, x: 0 },
-                    }; 2],
+                    mv: [mv::ZERO; 2],
                 },
                 weight: 0,
             }; 8];
@@ -9182,7 +9105,6 @@ unsafe fn decode_b(
                         .c2rust_unnamed
                         .c2rust_unnamed
                         .mv[0 as libc::c_int as usize]
-                        .c2rust_unnamed
                         .y as libc::c_int,
                     b
                         .c2rust_unnamed
@@ -9190,7 +9112,6 @@ unsafe fn decode_b(
                         .c2rust_unnamed
                         .c2rust_unnamed
                         .mv[0 as libc::c_int as usize]
-                        .c2rust_unnamed
                         .x as libc::c_int,
                     b
                         .c2rust_unnamed
@@ -9198,7 +9119,6 @@ unsafe fn decode_b(
                         .c2rust_unnamed
                         .c2rust_unnamed
                         .mv[1 as libc::c_int as usize]
-                        .c2rust_unnamed
                         .y as libc::c_int,
                     b
                         .c2rust_unnamed
@@ -9206,7 +9126,6 @@ unsafe fn decode_b(
                         .c2rust_unnamed
                         .c2rust_unnamed
                         .mv[1 as libc::c_int as usize]
-                        .c2rust_unnamed
                         .x as libc::c_int,
                     b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0 as libc::c_int as usize]
                         as libc::c_int,
@@ -9432,9 +9351,7 @@ unsafe fn decode_b(
             }
             let mut mvstack_1: [refmvs_candidate; 8] = [refmvs_candidate {
                 mv: refmvs_mvpair {
-                    mv: [mv {
-                        c2rust_unnamed: mv_xy { y: 0, x: 0 },
-                    }; 2],
+                    mv: [mv::ZERO; 2],
                 },
                 weight: 0,
             }; 8];
@@ -9790,7 +9707,6 @@ unsafe fn decode_b(
                         .c2rust_unnamed
                         .c2rust_unnamed
                         .mv[0 as libc::c_int as usize]
-                        .c2rust_unnamed
                         .y as libc::c_int,
                     b
                         .c2rust_unnamed
@@ -9798,7 +9714,6 @@ unsafe fn decode_b(
                         .c2rust_unnamed
                         .c2rust_unnamed
                         .mv[0 as libc::c_int as usize]
-                        .c2rust_unnamed
                         .x as libc::c_int,
                     b
                         .c2rust_unnamed
@@ -9806,7 +9721,6 @@ unsafe fn decode_b(
                         .c2rust_unnamed
                         .c2rust_unnamed
                         .mv[1 as libc::c_int as usize]
-                        .c2rust_unnamed
                         .y as libc::c_int,
                     b
                         .c2rust_unnamed
@@ -9814,7 +9728,6 @@ unsafe fn decode_b(
                         .c2rust_unnamed
                         .c2rust_unnamed
                         .mv[1 as libc::c_int as usize]
-                        .c2rust_unnamed
                         .x as libc::c_int,
                     ts.msac.rng,
                 );
@@ -10123,9 +10036,7 @@ unsafe fn decode_b(
                 .r#ref[1 as libc::c_int as usize] = -(1 as libc::c_int) as int8_t;
             let mut mvstack_2: [refmvs_candidate; 8] = [refmvs_candidate {
                 mv: refmvs_mvpair {
-                    mv: [mv {
-                        c2rust_unnamed: mv_xy { y: 0, x: 0 },
-                    }; 2],
+                    mv: [mv::ZERO; 2],
                 },
                 weight: 0,
             }; 8];
@@ -10317,7 +10228,6 @@ unsafe fn decode_b(
                             .c2rust_unnamed
                             .c2rust_unnamed
                             .mv[0 as libc::c_int as usize]
-                            .c2rust_unnamed
                             .y as libc::c_int,
                         b
                             .c2rust_unnamed
@@ -10325,7 +10235,6 @@ unsafe fn decode_b(
                             .c2rust_unnamed
                             .c2rust_unnamed
                             .mv[0 as libc::c_int as usize]
-                            .c2rust_unnamed
                             .x as libc::c_int,
                         n_mvs_2,
                         ts.msac.rng,
@@ -10456,7 +10365,6 @@ unsafe fn decode_b(
                             .c2rust_unnamed
                             .c2rust_unnamed
                             .mv[0 as libc::c_int as usize]
-                            .c2rust_unnamed
                             .y as libc::c_int,
                         b
                             .c2rust_unnamed
@@ -10464,7 +10372,6 @@ unsafe fn decode_b(
                             .c2rust_unnamed
                             .c2rust_unnamed
                             .mv[0 as libc::c_int as usize]
-                            .c2rust_unnamed
                             .x as libc::c_int,
                         ts.msac.rng,
                     );
@@ -10710,7 +10617,6 @@ unsafe fn decode_b(
                                 .c2rust_unnamed
                                 .c2rust_unnamed
                                 .mv[0 as libc::c_int as usize]
-                                .c2rust_unnamed
                                 .y as libc::c_int,
                             b
                                 .c2rust_unnamed
@@ -10718,7 +10624,6 @@ unsafe fn decode_b(
                                 .c2rust_unnamed
                                 .c2rust_unnamed
                                 .mv[0 as libc::c_int as usize]
-                                .c2rust_unnamed
                                 .x as libc::c_int,
                         );
                     }
@@ -13004,7 +12909,6 @@ unsafe fn decode_b(
                         .c2rust_unnamed
                         .c2rust_unnamed
                         .mv[0 as libc::c_int as usize]
-                        .c2rust_unnamed
                         .y as libc::c_int,
                     0 as libc::c_int,
                     &*(*(f.svc)
@@ -13091,7 +12995,7 @@ unsafe fn decode_b(
                                 .offset(1 as libc::c_int as isize),
                             t.by - 1 as libc::c_int,
                             bh4,
-                            (*rr_1).mv.mv[0 as libc::c_int as usize].c2rust_unnamed.y
+                            (*rr_1).mv.mv[0 as libc::c_int as usize].y
                                 as libc::c_int,
                             ss_ver,
                             &*(*(f.svc)
@@ -13123,7 +13027,7 @@ unsafe fn decode_b(
                                 .offset(1 as libc::c_int as isize),
                             t.by,
                             bh4,
-                            (*rr_2).mv.mv[0 as libc::c_int as usize].c2rust_unnamed.y
+                            (*rr_2).mv.mv[0 as libc::c_int as usize].y
                                 as libc::c_int,
                             ss_ver,
                             &*(*(f.svc)
@@ -13154,7 +13058,7 @@ unsafe fn decode_b(
                                 .offset(1 as libc::c_int as isize),
                             t.by - 1 as libc::c_int,
                             bh4,
-                            (*rr_3).mv.mv[0 as libc::c_int as usize].c2rust_unnamed.y
+                            (*rr_3).mv.mv[0 as libc::c_int as usize].y
                                 as libc::c_int,
                             ss_ver,
                             &*(*(f.svc)
@@ -13186,7 +13090,6 @@ unsafe fn decode_b(
                             .c2rust_unnamed
                             .c2rust_unnamed
                             .mv[0 as libc::c_int as usize]
-                            .c2rust_unnamed
                             .y as libc::c_int,
                         ss_ver,
                         &*(*(f.svc)
@@ -13256,7 +13159,6 @@ unsafe fn decode_b(
                             .c2rust_unnamed
                             .c2rust_unnamed
                             .mv[0 as libc::c_int as usize]
-                            .c2rust_unnamed
                             .y as libc::c_int,
                         ss_ver,
                         &*(*(f.svc)
@@ -13333,7 +13235,6 @@ unsafe fn decode_b(
                             .c2rust_unnamed
                             .c2rust_unnamed
                             .mv[i_0 as usize]
-                            .c2rust_unnamed
                             .y as libc::c_int,
                         0 as libc::c_int,
                         &*(*(f.svc)
@@ -13398,7 +13299,6 @@ unsafe fn decode_b(
                                 .c2rust_unnamed
                                 .c2rust_unnamed
                                 .mv[i_1 as usize]
-                                .c2rust_unnamed
                                 .y as libc::c_int,
                             ss_ver,
                             &*(*(f.svc)

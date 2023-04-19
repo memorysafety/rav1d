@@ -415,7 +415,7 @@ pub unsafe extern "C" fn dav1d_set_affine_mv2d(
         .offset(
             0 as libc::c_int as isize,
         ) = iclip(
-        mv.c2rust_unnamed.x as libc::c_int * 0x2000 as libc::c_int
+        mv.x as libc::c_int * 0x2000 as libc::c_int
             - (isux * (*mat.offset(2 as libc::c_int as isize) - 0x10000 as libc::c_int)
                 + isuy * *mat.offset(3 as libc::c_int as isize)),
         -(0x800000 as libc::c_int),
@@ -425,7 +425,7 @@ pub unsafe extern "C" fn dav1d_set_affine_mv2d(
         .offset(
             1 as libc::c_int as isize,
         ) = iclip(
-        mv.c2rust_unnamed.y as libc::c_int * 0x2000 as libc::c_int
+        mv.y as libc::c_int * 0x2000 as libc::c_int
             - (isux * *mat.offset(4 as libc::c_int as isize)
                 + isuy
                     * (*mat.offset(5 as libc::c_int as isize) - 0x10000 as libc::c_int)),
@@ -455,8 +455,8 @@ pub unsafe extern "C" fn dav1d_find_affine_int(
     let rsux: libc::c_int = 2 as libc::c_int * bw4 - 1 as libc::c_int;
     let suy: libc::c_int = rsuy * 8 as libc::c_int;
     let sux: libc::c_int = rsux * 8 as libc::c_int;
-    let duy: libc::c_int = suy + mv.c2rust_unnamed.y as libc::c_int;
-    let dux: libc::c_int = sux + mv.c2rust_unnamed.x as libc::c_int;
+    let duy: libc::c_int = suy + mv.y as libc::c_int;
+    let dux: libc::c_int = sux + mv.x as libc::c_int;
     let isuy: libc::c_int = by4 * 4 as libc::c_int + rsuy;
     let isux: libc::c_int = bx4 * 4 as libc::c_int + rsux;
     let mut i: libc::c_int = 0 as libc::c_int;
@@ -558,7 +558,7 @@ pub unsafe extern "C" fn dav1d_find_affine_int(
         .offset(
             0 as libc::c_int as isize,
         ) = iclip(
-        mv.c2rust_unnamed.x as libc::c_int * 0x2000 as libc::c_int
+        mv.x as libc::c_int * 0x2000 as libc::c_int
             - (isux * (*mat.offset(2 as libc::c_int as isize) - 0x10000 as libc::c_int)
                 + isuy * *mat.offset(3 as libc::c_int as isize)),
         -(0x800000 as libc::c_int),
@@ -568,7 +568,7 @@ pub unsafe extern "C" fn dav1d_find_affine_int(
         .offset(
             1 as libc::c_int as isize,
         ) = iclip(
-        mv.c2rust_unnamed.y as libc::c_int * 0x2000 as libc::c_int
+        mv.y as libc::c_int * 0x2000 as libc::c_int
             - (isux * *mat.offset(4 as libc::c_int as isize)
                 + isuy
                     * (*mat.offset(5 as libc::c_int as isize) - 0x10000 as libc::c_int)),
