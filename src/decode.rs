@@ -9539,7 +9539,7 @@ unsafe fn decode_b(
                         t.by,
                         bw4,
                         bh4,
-                        f.frame_hdr,
+                        &*f.frame_hdr,
                     );
                 }
                 3 => {
@@ -9615,7 +9615,7 @@ unsafe fn decode_b(
                         t.by,
                         bw4,
                         bh4,
-                        f.frame_hdr,
+                        &*f.frame_hdr,
                     );
                 }
                 3 => {
@@ -10053,7 +10053,7 @@ unsafe fn decode_b(
                         t.by,
                         bw4,
                         bh4,
-                        f.frame_hdr,
+                        &*f.frame_hdr,
                     );
                     has_subpel_filter = (imin(bw4, bh4) == 1 as libc::c_int
                         || (*f.frame_hdr)
