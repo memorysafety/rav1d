@@ -31,3 +31,6 @@ default = ["asm", "bitdepth_8", "bitdepth_16"]
 asm = []
 bitdepth_8 = []
 bitdepth_16 = []
+
+[profile.release]
+overflow-checks = true
