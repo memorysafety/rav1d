@@ -37,7 +37,7 @@ pub struct Dav1dPicture {
     pub mastering_display_ref: *mut Dav1dRef,
     pub itut_t35_ref: *mut Dav1dRef,
     pub reserved_ref: [uintptr_t; 4],
-    pub ref_0: *mut Dav1dRef,
+    pub r#ref: *mut Dav1dRef,
     pub allocator_data: *mut libc::c_void,
 }
 

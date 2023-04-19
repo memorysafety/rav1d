@@ -8,6 +8,6 @@ use crate::src::r#ref::Dav1dRef;
 pub struct Dav1dData {
     pub data: *const uint8_t,
     pub sz: size_t,
-    pub ref_0: *mut Dav1dRef,
+    pub r#ref: *mut Dav1dRef,
     pub m: Dav1dDataProps,
 }

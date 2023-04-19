@@ -69,11 +69,12 @@ use crate::src::levels::mv;
 use crate::src::intra_edge::EdgeFlags;
 
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct refmvs_temporal_block {
     pub mv: mv,
-    pub ref_0: int8_t,
+    pub r#ref: int8_t,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -92,10 +93,11 @@ pub struct refmvs_mvpair {
 #[repr(C, packed)]
 pub struct refmvs_block {
     pub mv: refmvs_mvpair,
-    pub ref_0: refmvs_refpair,
+    pub r#ref: refmvs_refpair,
     pub bs: uint8_t,
     pub mf: uint8_t,
 }
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct refmvs_frame {
@@ -175,7 +177,7 @@ unsafe extern "C" fn add_spatial_candidate(
     cnt: *mut libc::c_int,
     weight: libc::c_int,
     b: *const refmvs_block,
-    ref_0: refmvs_refpair,
+    r#ref: refmvs_refpair,
     mut gmv: *const mv,
     have_newmv_match: *mut libc::c_int,
     have_refmv_match: *mut libc::c_int,
@@ -183,11 +185,11 @@ unsafe extern "C" fn add_spatial_candidate(
     if (*b).mv.mv[0].is_invalid() {
         return;
     }
-    if ref_0.r#ref[1 as libc::c_int as usize] as libc::c_int == -(1 as libc::c_int) {
+    if r#ref.r#ref[1 as libc::c_int as usize] as libc::c_int == -(1 as libc::c_int) {
         let mut n: libc::c_int = 0 as libc::c_int;
         while n < 2 as libc::c_int {
-            if (*b).ref_0.r#ref[n as usize] as libc::c_int
-                == ref_0.r#ref[0 as libc::c_int as usize] as libc::c_int
+            if (*b).r#ref.r#ref[n as usize] as libc::c_int
+                == r#ref.r#ref[0 as libc::c_int as usize] as libc::c_int
             {
                 let cand_mv: mv = if (*b).mf as libc::c_int & 1 as libc::c_int != 0
                     && (*gmv.offset(0)) != mv::INVALID {
@@ -217,7 +219,7 @@ unsafe extern "C" fn add_spatial_candidate(
             }
             n += 1;
         }
-    } else if (*b).ref_0 == ref_0 {
+    } else if (*b).r#ref == r#ref {
         let cand_mv_0: refmvs_mvpair = refmvs_mvpair {
             mv: [
                 if (*b).mf as libc::c_int & 1 as libc::c_int != 0
@@ -255,7 +257,7 @@ unsafe extern "C" fn add_spatial_candidate(
 unsafe extern "C" fn scan_row(
     mvstack: *mut refmvs_candidate,
     cnt: *mut libc::c_int,
-    ref_0: refmvs_refpair,
+    r#ref: refmvs_refpair,
     mut gmv: *const mv,
     mut b: *const refmvs_block,
     bw4: libc::c_int,
@@ -290,7 +292,7 @@ unsafe extern "C" fn scan_row(
             cnt,
             len * weight,
             cand_b,
-            ref_0,
+            r#ref,
             gmv,
             have_newmv_match,
             have_refmv_match,
@@ -304,7 +306,7 @@ unsafe extern "C" fn scan_row(
             cnt,
             len * 2 as libc::c_int,
             cand_b,
-            ref_0,
+            r#ref,
             gmv,
             have_newmv_match,
             have_refmv_match,
@@ -325,7 +327,7 @@ unsafe extern "C" fn scan_row(
 unsafe extern "C" fn scan_col(
     mvstack: *mut refmvs_candidate,
     cnt: *mut libc::c_int,
-    ref_0: refmvs_refpair,
+    r#ref: refmvs_refpair,
     mut gmv: *const mv,
     mut b: *const *mut refmvs_block,
     bh4: libc::c_int,
@@ -362,7 +364,7 @@ unsafe extern "C" fn scan_col(
             cnt,
             len * weight,
             cand_b,
-            ref_0,
+            r#ref,
             gmv,
             have_newmv_match,
             have_refmv_match,
@@ -376,7 +378,7 @@ unsafe extern "C" fn scan_col(
             cnt,
             len * 2 as libc::c_int,
             cand_b,
-            ref_0,
+            r#ref,
             gmv,
             have_newmv_match,
             have_refmv_match,
@@ -449,7 +451,7 @@ unsafe extern "C" fn add_temporal_candidate(
     mvstack: *mut refmvs_candidate,
     cnt: *mut libc::c_int,
     rb: *const refmvs_temporal_block,
-    ref_0: refmvs_refpair,
+    r#ref: refmvs_refpair,
     globalmv_ctx: *mut libc::c_int,
     mut gmv: *const mv,
 ) {
@@ -459,13 +461,13 @@ unsafe extern "C" fn add_temporal_candidate(
     let mut mv: mv = mv_projection(
         (*rb).mv,
         (*rf)
-            .pocdiff[(ref_0.r#ref[0 as libc::c_int as usize] as libc::c_int
+            .pocdiff[(r#ref.r#ref[0 as libc::c_int as usize] as libc::c_int
             - 1 as libc::c_int) as usize] as libc::c_int,
-        (*rb).ref_0 as libc::c_int,
+        (*rb).r#ref as libc::c_int,
     );
     fix_mv_precision((*rf).frm_hdr, &mut mv);
     let last: libc::c_int = *cnt;
-    if ref_0.r#ref[1 as libc::c_int as usize] as libc::c_int == -(1 as libc::c_int) {
+    if r#ref.r#ref[1 as libc::c_int as usize] as libc::c_int == -(1 as libc::c_int) {
         if !globalmv_ctx.is_null() {
             *globalmv_ctx = ((mv.x as libc::c_int - (*gmv.offset(0)).x as libc::c_int).abs()
                 | (mv.y as libc::c_int - (*gmv.offset(0)).y as libc::c_int).abs() >= 16 as libc::c_int) as libc::c_int;
@@ -490,9 +492,9 @@ unsafe extern "C" fn add_temporal_candidate(
                 mv_projection(
                     (*rb).mv,
                     (*rf)
-                        .pocdiff[(ref_0.r#ref[1 as libc::c_int as usize] as libc::c_int
+                        .pocdiff[(r#ref.r#ref[1 as libc::c_int as usize] as libc::c_int
                         - 1 as libc::c_int) as usize] as libc::c_int,
-                    (*rb).ref_0 as libc::c_int,
+                    (*rb).r#ref as libc::c_int,
                 ),
             ],
         };
@@ -521,7 +523,7 @@ unsafe extern "C" fn add_compound_extended_candidate(
     cand_b: *const refmvs_block,
     sign0: libc::c_int,
     sign1: libc::c_int,
-    ref_0: refmvs_refpair,
+    r#ref: refmvs_refpair,
     sign_bias: *const uint8_t,
 ) {
     let diff: *mut refmvs_candidate = &mut *same.offset(2 as libc::c_int as isize)
@@ -530,12 +532,12 @@ unsafe extern "C" fn add_compound_extended_candidate(
         as *mut libc::c_int;
     let mut n: libc::c_int = 0 as libc::c_int;
     while n < 2 as libc::c_int {
-        let cand_ref: libc::c_int = (*cand_b).ref_0.r#ref[n as usize] as libc::c_int;
+        let cand_ref: libc::c_int = (*cand_b).r#ref.r#ref[n as usize] as libc::c_int;
         if cand_ref <= 0 as libc::c_int {
             break;
         }
         let mut cand_mv: mv = (*cand_b).mv.mv[n as usize];
-        if cand_ref == ref_0.r#ref[0 as libc::c_int as usize] as libc::c_int {
+        if cand_ref == r#ref.r#ref[0 as libc::c_int as usize] as libc::c_int {
             if *same_count.offset(0 as libc::c_int as isize) < 2 as libc::c_int {
                 let ref mut fresh0 = *same_count.offset(0 as libc::c_int as isize);
                 let fresh1 = *fresh0;
@@ -561,7 +563,7 @@ unsafe extern "C" fn add_compound_extended_candidate(
                     .mv
                     .mv[1 as libc::c_int as usize] = cand_mv;
             }
-        } else if cand_ref == ref_0.r#ref[1 as libc::c_int as usize] as libc::c_int {
+        } else if cand_ref == r#ref.r#ref[1 as libc::c_int as usize] as libc::c_int {
             if *same_count.offset(1 as libc::c_int as isize) < 2 as libc::c_int {
                 let ref mut fresh4 = *same_count.offset(1 as libc::c_int as isize);
                 let fresh5 = *fresh4;
@@ -635,7 +637,7 @@ unsafe extern "C" fn add_single_extended_candidate(
 ) {
     let mut n: libc::c_int = 0 as libc::c_int;
     while n < 2 as libc::c_int {
-        let cand_ref: libc::c_int = (*cand_b).ref_0.r#ref[n as usize] as libc::c_int;
+        let cand_ref: libc::c_int = (*cand_b).r#ref.r#ref[n as usize] as libc::c_int;
         if cand_ref <= 0 as libc::c_int {
             break;
         }
@@ -672,7 +674,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
     mut mvstack: *mut refmvs_candidate,
     cnt: *mut libc::c_int,
     ctx: *mut libc::c_int,
-    ref_0: refmvs_refpair,
+    r#ref: refmvs_refpair,
     bs: BlockSize,
     edge_flags: EdgeFlags,
     by4: libc::c_int,
@@ -687,20 +689,20 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
     let mut gmv: [mv; 2] = [mv::ZERO; 2];
     let mut tgmv: [mv; 2] = [mv::ZERO; 2];
     *cnt = 0 as libc::c_int;
-    if !(ref_0.r#ref[0 as libc::c_int as usize] as libc::c_int >= 0 as libc::c_int
-        && ref_0.r#ref[0 as libc::c_int as usize] as libc::c_int <= 8 as libc::c_int
-        && ref_0.r#ref[1 as libc::c_int as usize] as libc::c_int >= -(1 as libc::c_int)
-        && ref_0.r#ref[1 as libc::c_int as usize] as libc::c_int <= 8 as libc::c_int)
+    if !(r#ref.r#ref[0 as libc::c_int as usize] as libc::c_int >= 0 as libc::c_int
+        && r#ref.r#ref[0 as libc::c_int as usize] as libc::c_int <= 8 as libc::c_int
+        && r#ref.r#ref[1 as libc::c_int as usize] as libc::c_int >= -(1 as libc::c_int)
+        && r#ref.r#ref[1 as libc::c_int as usize] as libc::c_int <= 8 as libc::c_int)
     {
         unreachable!();
     }
-    if ref_0.r#ref[0 as libc::c_int as usize] as libc::c_int > 0 as libc::c_int {
+    if r#ref.r#ref[0 as libc::c_int as usize] as libc::c_int > 0 as libc::c_int {
         tgmv[0 as libc::c_int
             as usize] = get_gmv_2d(
             &*((*(*rf).frm_hdr).gmv)
                 .as_ptr()
                 .offset(
-                    (*(ref_0.r#ref).as_ptr().offset(0 as libc::c_int as isize)
+                    (*(r#ref.r#ref).as_ptr().offset(0 as libc::c_int as isize)
                         as libc::c_int - 1 as libc::c_int) as isize,
                 ),
             bx4,
@@ -711,7 +713,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
         );
         gmv[0 as libc::c_int
             as usize] = if (*(*rf).frm_hdr)
-            .gmv[(ref_0.r#ref[0 as libc::c_int as usize] as libc::c_int
+            .gmv[(r#ref.r#ref[0 as libc::c_int as usize] as libc::c_int
                 - 1 as libc::c_int) as usize]
             .type_0 as libc::c_uint
             > DAV1D_WM_TYPE_TRANSLATION as libc::c_int as libc::c_uint
@@ -724,13 +726,13 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
         tgmv[0] = mv::ZERO;
         gmv[0] = mv::INVALID;
     }
-    if ref_0.r#ref[1 as libc::c_int as usize] as libc::c_int > 0 as libc::c_int {
+    if r#ref.r#ref[1 as libc::c_int as usize] as libc::c_int > 0 as libc::c_int {
         tgmv[1 as libc::c_int
             as usize] = get_gmv_2d(
             &*((*(*rf).frm_hdr).gmv)
                 .as_ptr()
                 .offset(
-                    (*(ref_0.r#ref).as_ptr().offset(1 as libc::c_int as isize)
+                    (*(r#ref.r#ref).as_ptr().offset(1 as libc::c_int as isize)
                         as libc::c_int - 1 as libc::c_int) as isize,
                 ),
             bx4,
@@ -741,7 +743,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
         );
         gmv[1 as libc::c_int
             as usize] = if (*(*rf).frm_hdr)
-            .gmv[(ref_0.r#ref[1 as libc::c_int as usize] as libc::c_int
+            .gmv[(r#ref.r#ref[1 as libc::c_int as usize] as libc::c_int
                 - 1 as libc::c_int) as usize]
             .type_0 as libc::c_uint
             > DAV1D_WM_TYPE_TRANSLATION as libc::c_int as libc::c_uint
@@ -772,7 +774,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
         n_rows = scan_row(
             mvstack,
             cnt,
-            ref_0,
+            r#ref,
             gmv.as_mut_ptr() as *const mv,
             b_top,
             bw4,
@@ -798,7 +800,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
         n_cols = scan_col(
             mvstack,
             cnt,
-            ref_0,
+            r#ref,
             gmv.as_mut_ptr() as *const mv,
             b_left,
             bh4,
@@ -820,7 +822,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
             cnt,
             4 as libc::c_int,
             &*b_top.offset(bw4 as isize),
-            ref_0,
+            r#ref,
             gmv.as_mut_ptr() as *const mv,
             &mut have_newmv,
             &mut have_row_mvs,
@@ -869,7 +871,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
                     mvstack,
                     cnt,
                     &*rb.offset(x as isize),
-                    ref_0,
+                    r#ref,
                     if x | y == 0 { &mut globalmv_ctx } else { 0 as *mut libc::c_int },
                     tgmv.as_mut_ptr() as *const mv,
                 );
@@ -900,7 +902,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
                     mvstack,
                     cnt,
                     &*rb.offset(-(1 as libc::c_int) as isize),
-                    ref_0,
+                    r#ref,
                     0 as *mut libc::c_int,
                     0 as *const mv,
                 );
@@ -917,7 +919,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
                         mvstack,
                         cnt,
                         &*rb.offset(bw8 as isize),
-                        ref_0,
+                        r#ref,
                         0 as *mut libc::c_int,
                         0 as *const mv,
                     );
@@ -933,7 +935,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
                         mvstack,
                         cnt,
                         &*rb.offset(bw8 as isize - stride),
-                        ref_0,
+                        r#ref,
                         0 as *mut libc::c_int,
                         0 as *const mv,
                     );
@@ -951,7 +953,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
             cnt,
             4 as libc::c_int,
             &*b_top.offset(-(1 as libc::c_int) as isize),
-            ref_0,
+            r#ref,
             gmv.as_mut_ptr() as *const mv,
             &mut have_dummy_newmv_match,
             &mut have_row_mvs,
@@ -965,7 +967,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
                     scan_row(
                         mvstack,
                         cnt,
-                        ref_0,
+                        r#ref,
                         gmv.as_mut_ptr() as *const mv,
                         &mut *(*((*rt).r)
                             .as_ptr()
@@ -996,7 +998,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
                     scan_col(
                         mvstack,
                         cnt,
-                        ref_0,
+                        r#ref,
                         gmv.as_mut_ptr() as *const mv,
                         &*((*rt).r)
                             .as_ptr()
@@ -1086,13 +1088,13 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
         }
         len = last_0;
     }
-    if ref_0.r#ref[1 as libc::c_int as usize] as libc::c_int > 0 as libc::c_int {
+    if r#ref.r#ref[1 as libc::c_int as usize] as libc::c_int > 0 as libc::c_int {
         if *cnt < 2 as libc::c_int {
             let sign0: libc::c_int = (*rf)
-                .sign_bias[(ref_0.r#ref[0 as libc::c_int as usize] as libc::c_int
+                .sign_bias[(r#ref.r#ref[0 as libc::c_int as usize] as libc::c_int
                 - 1 as libc::c_int) as usize] as libc::c_int;
             let sign1: libc::c_int = (*rf)
-                .sign_bias[(ref_0.r#ref[1 as libc::c_int as usize] as libc::c_int
+                .sign_bias[(r#ref.r#ref[1 as libc::c_int as usize] as libc::c_int
                 - 1 as libc::c_int) as usize] as libc::c_int;
             let sz4: libc::c_int = imin(w4, h4);
             let same: *mut refmvs_candidate = &mut *mvstack.offset(*cnt as isize)
@@ -1109,7 +1111,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
                         cand_b,
                         sign0,
                         sign1,
-                        ref_0,
+                        r#ref,
                         ((*rf).sign_bias).as_ptr(),
                     );
                     x_0
@@ -1129,7 +1131,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
                         cand_b_0,
                         sign0,
                         sign1,
-                        ref_0,
+                        r#ref,
                         ((*rf).sign_bias).as_ptr(),
                     );
                     y_0
@@ -1281,10 +1283,10 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
         return;
     } else {
         if *cnt < 2 as libc::c_int
-            && ref_0.r#ref[0 as libc::c_int as usize] as libc::c_int > 0 as libc::c_int
+            && r#ref.r#ref[0 as libc::c_int as usize] as libc::c_int > 0 as libc::c_int
         {
             let sign: libc::c_int = (*rf)
-                .sign_bias[(ref_0.r#ref[0 as libc::c_int as usize] as libc::c_int
+                .sign_bias[(r#ref.r#ref[0 as libc::c_int as usize] as libc::c_int
                 - 1 as libc::c_int) as usize] as libc::c_int;
             let sz4_0: libc::c_int = imin(w4, h4);
             if n_rows != !(0 as libc::c_uint) {
@@ -1490,10 +1492,10 @@ pub unsafe extern "C" fn dav1d_refmvs_load_tmvs(
     while n < (*rf).n_mfmvs {
         let ref2cur: libc::c_int = (*rf).mfmv_ref2cur[n as usize];
         if !(ref2cur == -(2147483647 as libc::c_int) - 1 as libc::c_int) {
-            let ref_0: libc::c_int = (*rf).mfmv_ref[n as usize] as libc::c_int;
-            let ref_sign: libc::c_int = ref_0 - 4 as libc::c_int;
+            let r#ref: libc::c_int = (*rf).mfmv_ref[n as usize] as libc::c_int;
+            let ref_sign: libc::c_int = r#ref - 4 as libc::c_int;
             let mut r: *const refmvs_temporal_block = &mut *(*((*rf).rp_ref)
-                .offset(ref_0 as isize))
+                .offset(r#ref as isize))
                 .offset(row_start8 as isize * stride)
                 as *mut refmvs_temporal_block;
             let mut y_0: libc::c_int = row_start8;
@@ -1508,7 +1510,7 @@ pub unsafe extern "C" fn dav1d_refmvs_load_tmvs(
                 while x_0 < col_end8i {
                     let mut rb: *const refmvs_temporal_block = &*r.offset(x_0 as isize)
                         as *const refmvs_temporal_block;
-                    let b_ref: libc::c_int = (*rb).ref_0 as libc::c_int;
+                    let b_ref: libc::c_int = (*rb).r#ref as libc::c_int;
                     if !(b_ref == 0) {
                         let ref2ref: libc::c_int = (*rf)
                             .mfmv_ref2ref[n
@@ -1538,14 +1540,14 @@ pub unsafe extern "C" fn dav1d_refmvs_load_tmvs(
                                         (*rp_proj.offset(pos + pos_x as isize))
                                             .mv = (*rb).mv;
                                         (*rp_proj.offset(pos + pos_x as isize))
-                                            .ref_0 = ref2ref as int8_t;
+                                            .r#ref = ref2ref as int8_t;
                                     }
                                     x_0 += 1;
                                     if x_0 >= col_end8i {
                                         break;
                                     }
                                     rb = rb.offset(1);
-                                    if (*rb).ref_0 as libc::c_int != b_ref || (*rb).mv != b_mv {
+                                    if (*rb).r#ref as libc::c_int != b_ref || (*rb).mv != b_mv {
                                         break;
                                     }
                                     pos_x += 1;
@@ -1557,7 +1559,7 @@ pub unsafe extern "C" fn dav1d_refmvs_load_tmvs(
                                         break;
                                     }
                                     rb = rb.offset(1);
-                                    if (*rb).ref_0 as libc::c_int != b_ref || (*rb).mv != b_mv {
+                                    if (*rb).r#ref as libc::c_int != b_ref || (*rb).mv != b_mv {
                                         break;
                                     }
                                 }
@@ -1608,11 +1610,11 @@ pub unsafe extern "C" fn dav1d_refmvs_save_tmvs(
             let bw8: libc::c_int = dav1d_block_dimensions[(*cand_b).bs
                 as usize][0 as libc::c_int as usize] as libc::c_int + 1 as libc::c_int
                 >> 1 as libc::c_int;
-            if (*cand_b).ref_0.r#ref[1 as libc::c_int as usize] as libc::c_int
+            if (*cand_b).r#ref.r#ref[1 as libc::c_int as usize] as libc::c_int
                 > 0 as libc::c_int
                 && *ref_sign
                     .offset(
-                        ((*cand_b).ref_0.r#ref[1 as libc::c_int as usize] as libc::c_int
+                        ((*cand_b).r#ref.r#ref[1 as libc::c_int as usize] as libc::c_int
                             - 1 as libc::c_int) as isize,
                     ) as libc::c_int != 0
                 && (*cand_b).mv.mv[1].y.abs() | (*cand_b).mv.mv[1].x.abs() < 4096 {
@@ -1624,18 +1626,18 @@ pub unsafe extern "C" fn dav1d_refmvs_save_tmvs(
                         ) = {
                         let mut init = refmvs_temporal_block {
                             mv: (*cand_b).mv.mv[1 as libc::c_int as usize],
-                            ref_0: (*cand_b).ref_0.r#ref[1 as libc::c_int as usize],
+                            r#ref: (*cand_b).r#ref.r#ref[1 as libc::c_int as usize],
                         };
                         init
                     };
                     n += 1;
                     x += 1;
                 }
-            } else if (*cand_b).ref_0.r#ref[0 as libc::c_int as usize] as libc::c_int
+            } else if (*cand_b).r#ref.r#ref[0 as libc::c_int as usize] as libc::c_int
                 > 0 as libc::c_int
                 && *ref_sign
                     .offset(
-                        ((*cand_b).ref_0.r#ref[0 as libc::c_int as usize] as libc::c_int
+                        ((*cand_b).r#ref.r#ref[0 as libc::c_int as usize] as libc::c_int
                             - 1 as libc::c_int) as isize,
                     ) as libc::c_int != 0
                 && (*cand_b).mv.mv[0].y.abs() | (*cand_b).mv.mv[0].x.abs() < 4096 {
@@ -1647,7 +1649,7 @@ pub unsafe extern "C" fn dav1d_refmvs_save_tmvs(
                         ) = {
                         let mut init = refmvs_temporal_block {
                             mv: (*cand_b).mv.mv[0 as libc::c_int as usize],
-                            ref_0: (*cand_b).ref_0.r#ref[0 as libc::c_int as usize],
+                            r#ref: (*cand_b).r#ref.r#ref[0 as libc::c_int as usize],
                         };
                         init
                     };
@@ -1657,7 +1659,7 @@ pub unsafe extern "C" fn dav1d_refmvs_save_tmvs(
             } else {
                 let mut n_1: libc::c_int = 0 as libc::c_int;
                 while n_1 < bw8 {
-                    (*rp.offset(x as isize)).ref_0 = 0 as libc::c_int as int8_t;
+                    (*rp.offset(x as isize)).r#ref = 0 as libc::c_int as int8_t;
                     n_1 += 1;
                     x += 1;
                 }

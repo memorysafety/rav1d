@@ -9,7 +9,7 @@ extern "C" {
         _: libc::c_ulong,
     ) -> *mut libc::c_void;
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
-    fn dav1d_ref_dec(ref_0: *mut *mut Dav1dRef);
+    fn dav1d_ref_dec(r#ref: *mut *mut Dav1dRef);
     fn dav1d_ref_wrap(
         ptr: *const uint8_t,
         free_callback: Option::<
@@ -48,15 +48,15 @@ pub unsafe extern "C" fn dav1d_data_create_internal(
     {
         return 0 as *mut uint8_t;
     }
-    (*buf).ref_0 = dav1d_ref_create(sz);
-    if ((*buf).ref_0).is_null() {
+    (*buf).r#ref = dav1d_ref_create(sz);
+    if ((*buf).r#ref).is_null() {
         return 0 as *mut uint8_t;
     }
-    (*buf).data = (*(*buf).ref_0).const_data as *const uint8_t;
+    (*buf).data = (*(*buf).r#ref).const_data as *const uint8_t;
     (*buf).sz = sz;
     dav1d_data_props_set_defaults(&mut (*buf).m);
     (*buf).m.size = sz;
-    return (*(*buf).ref_0).data as *mut uint8_t;
+    return (*(*buf).r#ref).data as *mut uint8_t;
 }
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_data_wrap_internal(
@@ -110,8 +110,8 @@ pub unsafe extern "C" fn dav1d_data_wrap_internal(
         );
         return -(22 as libc::c_int);
     }
-    (*buf).ref_0 = dav1d_ref_wrap(ptr, free_callback, cookie);
-    if ((*buf).ref_0).is_null() {
+    (*buf).r#ref = dav1d_ref_wrap(ptr, free_callback, cookie);
+    if ((*buf).r#ref).is_null() {
         return -(12 as libc::c_int);
     }
     (*buf).data = ptr;
@@ -157,8 +157,8 @@ pub unsafe extern "C" fn dav1d_data_wrap_user_data_internal(
         );
         return -(22 as libc::c_int);
     }
-    (*buf).m.user_data.ref_0 = dav1d_ref_wrap(user_data, free_callback, cookie);
-    if ((*buf).m.user_data.ref_0).is_null() {
+    (*buf).m.user_data.r#ref = dav1d_ref_wrap(user_data, free_callback, cookie);
+    if ((*buf).m.user_data.r#ref).is_null() {
         return -(12 as libc::c_int);
     }
     (*buf).m.user_data.data = user_data;
@@ -208,7 +208,7 @@ pub unsafe extern "C" fn dav1d_data_ref(dst: *mut Dav1dData, src: *const Dav1dDa
         );
         return;
     }
-    if !((*src).ref_0).is_null() {
+    if !((*src).r#ref).is_null() {
         if ((*src).data).is_null() {
             fprintf(
                 stderr,
@@ -223,10 +223,10 @@ pub unsafe extern "C" fn dav1d_data_ref(dst: *mut Dav1dData, src: *const Dav1dDa
             );
             return;
         }
-        dav1d_ref_inc((*src).ref_0);
+        dav1d_ref_inc((*src).r#ref);
     }
-    if !((*src).m.user_data.ref_0).is_null() {
-        dav1d_ref_inc((*src).m.user_data.ref_0);
+    if !((*src).m.user_data.r#ref).is_null() {
+        dav1d_ref_inc((*src).m.user_data.r#ref);
     }
     *dst = *src;
 }
@@ -241,10 +241,10 @@ pub unsafe extern "C" fn dav1d_data_props_copy(
     if src.is_null() {
         unreachable!();
     }
-    dav1d_ref_dec(&mut (*dst).user_data.ref_0);
+    dav1d_ref_dec(&mut (*dst).user_data.r#ref);
     *dst = *src;
-    if !((*dst).user_data.ref_0).is_null() {
-        dav1d_ref_inc((*dst).user_data.ref_0);
+    if !((*dst).user_data.r#ref).is_null() {
+        dav1d_ref_inc((*dst).user_data.r#ref);
     }
 }
 #[no_mangle]
@@ -276,7 +276,7 @@ pub unsafe extern "C" fn dav1d_data_props_unref_internal(props: *mut Dav1dDataPr
         );
         return;
     }
-    let mut user_data_ref: *mut Dav1dRef = (*props).user_data.ref_0;
+    let mut user_data_ref: *mut Dav1dRef = (*props).user_data.r#ref;
     dav1d_data_props_set_defaults(props);
     dav1d_ref_dec(&mut user_data_ref);
 }
@@ -296,8 +296,8 @@ pub unsafe extern "C" fn dav1d_data_unref_internal(buf: *mut Dav1dData) {
         );
         return;
     }
-    let mut user_data_ref: *mut Dav1dRef = (*buf).m.user_data.ref_0;
-    if !((*buf).ref_0).is_null() {
+    let mut user_data_ref: *mut Dav1dRef = (*buf).m.user_data.r#ref;
+    if !((*buf).r#ref).is_null() {
         if ((*buf).data).is_null() {
             fprintf(
                 stderr,
@@ -312,7 +312,7 @@ pub unsafe extern "C" fn dav1d_data_unref_internal(buf: *mut Dav1dData) {
             );
             return;
         }
-        dav1d_ref_dec(&mut (*buf).ref_0);
+        dav1d_ref_dec(&mut (*buf).r#ref);
     }
     memset(
         buf as *mut libc::c_void,

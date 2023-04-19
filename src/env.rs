@@ -27,7 +27,7 @@ pub struct BlockContext {
     pub skip_mode: [uint8_t; 32],
     pub intra: [uint8_t; 32],
     pub comp_type: [uint8_t; 32],
-    pub ref_0: [[int8_t; 32]; 2],
+    pub r#ref: [[int8_t; 32]; 2],
     pub filter: [[uint8_t; 32]; 2],
     pub tx_intra: [int8_t; 32],
     pub tx: [int8_t; 32],

@@ -167,7 +167,7 @@ pub unsafe extern "C" fn dav1d_get_vlc(c: *mut GetBits) -> libc::c_uint {
 }
 unsafe extern "C" fn get_bits_subexp_u(
     c: *mut GetBits,
-    ref_0: libc::c_uint,
+    r#ref: libc::c_uint,
     n: libc::c_uint,
 ) -> libc::c_uint {
     let mut v: libc::c_uint = 0 as libc::c_int as libc::c_uint;
@@ -200,21 +200,21 @@ unsafe extern "C" fn get_bits_subexp_u(
             i += 1;
         }
     }
-    return if ref_0.wrapping_mul(2 as libc::c_int as libc::c_uint) <= n {
-        inv_recenter(ref_0, v)
+    return if r#ref.wrapping_mul(2 as libc::c_int as libc::c_uint) <= n {
+        inv_recenter(r#ref, v)
     } else {
-        n.wrapping_sub(inv_recenter(n.wrapping_sub(ref_0), v))
+        n.wrapping_sub(inv_recenter(n.wrapping_sub(r#ref), v))
     };
 }
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_get_bits_subexp(
     c: *mut GetBits,
-    ref_0: libc::c_int,
+    r#ref: libc::c_int,
     n: libc::c_uint,
 ) -> libc::c_int {
     return get_bits_subexp_u(
         c,
-        (ref_0 + ((1 as libc::c_int) << n)) as libc::c_uint,
+        (r#ref + ((1 as libc::c_int) << n)) as libc::c_uint,
         ((2 as libc::c_int) << n) as libc::c_uint,
     ) as libc::c_int - ((1 as libc::c_int) << n);
 }

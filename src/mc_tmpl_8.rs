@@ -4850,10 +4850,10 @@ unsafe extern "C" fn emu_edge_c(
     y: intptr_t,
     mut dst: *mut pixel,
     dst_stride: ptrdiff_t,
-    mut ref_0: *const pixel,
+    mut r#ref: *const pixel,
     ref_stride: ptrdiff_t,
 ) {
-    ref_0 = ref_0
+    r#ref = r#ref
         .offset(
             (iclip(
                 y as libc::c_int,
@@ -4902,7 +4902,7 @@ unsafe extern "C" fn emu_edge_c(
     while y_0 < center_h {
         memcpy(
             blk.offset(left_ext as isize) as *mut libc::c_void,
-            ref_0 as *const libc::c_void,
+            r#ref as *const libc::c_void,
             center_w as libc::c_ulong,
         );
         if left_ext != 0 {
@@ -4921,7 +4921,7 @@ unsafe extern "C" fn emu_edge_c(
                 right_ext as libc::c_ulong,
             );
         }
-        ref_0 = ref_0.offset(ref_stride as isize);
+        r#ref = r#ref.offset(ref_stride as isize);
         blk = blk.offset(dst_stride as isize);
         y_0 += 1;
     }

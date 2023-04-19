@@ -108,7 +108,7 @@ extern "C" {
     fn dav1d_refmvs_clear(rf: *mut refmvs_frame);
     fn dav1d_cdf_thread_unref(cdf: *mut CdfThreadContext);
     fn dav1d_thread_picture_unref(p: *mut Dav1dThreadPicture);
-    fn dav1d_ref_dec(ref_0: *mut *mut Dav1dRef);
+    fn dav1d_ref_dec(r#ref: *mut *mut Dav1dRef);
     fn dav1d_mem_pool_end(pool: *mut Dav1dMemPool);
     fn pthread_attr_destroy(__attr: *mut pthread_attr_t) -> libc::c_int;
     fn dav1d_default_picture_alloc(
@@ -1584,7 +1584,7 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
         let mut init = Dav1dData {
             data: 0 as *const uint8_t,
             sz: 0,
-            ref_0: 0 as *mut Dav1dRef,
+            r#ref: 0 as *mut Dav1dRef,
             m: Dav1dDataProps {
                 timestamp: 0,
                 duration: 0,
@@ -1592,7 +1592,7 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
                 size: 0,
                 user_data: Dav1dUserData {
                     data: 0 as *const uint8_t,
-                    ref_0: 0 as *mut Dav1dRef,
+                    r#ref: 0 as *mut Dav1dRef,
                 },
             },
         };

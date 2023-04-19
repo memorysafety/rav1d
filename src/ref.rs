@@ -35,8 +35,8 @@ use crate::src::mem::dav1d_alloc_aligned;
 use crate::src::mem::dav1d_free_aligned;
 
 #[inline]
-pub unsafe extern "C" fn dav1d_ref_inc(ref_0: *mut Dav1dRef) {
-    ::core::intrinsics::atomic_xadd_relaxed(&mut (*ref_0).ref_cnt, 1 as libc::c_int);
+pub unsafe extern "C" fn dav1d_ref_inc(r#ref: *mut Dav1dRef) {
+    ::core::intrinsics::atomic_xadd_relaxed(&mut (*r#ref).ref_cnt, 1 as libc::c_int);
 }
 
 unsafe extern "C" fn default_free_callback(
@@ -139,29 +139,29 @@ pub unsafe extern "C" fn dav1d_ref_dec(pref: *mut *mut Dav1dRef) {
     if pref.is_null() {
         unreachable!();
     }
-    let ref_0: *mut Dav1dRef = *pref;
-    if ref_0.is_null() {
+    let r#ref: *mut Dav1dRef = *pref;
+    if r#ref.is_null() {
         return;
     }
     *pref = 0 as *mut Dav1dRef;
     if ::core::intrinsics::atomic_xsub_seqcst(
-        &mut (*ref_0).ref_cnt as *mut atomic_int,
+        &mut (*r#ref).ref_cnt as *mut atomic_int,
         1 as libc::c_int,
     ) == 1 as libc::c_int
     {
-        let free_ref: libc::c_int = (*ref_0).free_ref;
-        ((*ref_0).free_callback)
+        let free_ref: libc::c_int = (*r#ref).free_ref;
+        ((*r#ref).free_callback)
             .expect(
                 "non-null function pointer",
-            )((*ref_0).const_data as *const uint8_t, (*ref_0).user_data);
+            )((*r#ref).const_data as *const uint8_t, (*r#ref).user_data);
         if free_ref != 0 {
-            free(ref_0 as *mut libc::c_void);
+            free(r#ref as *mut libc::c_void);
         }
     }
 }
 #[no_mangle]
-pub unsafe extern "C" fn dav1d_ref_is_writable(ref_0: *mut Dav1dRef) -> libc::c_int {
+pub unsafe extern "C" fn dav1d_ref_is_writable(r#ref: *mut Dav1dRef) -> libc::c_int {
     return (::core::intrinsics::atomic_load_seqcst(
-        &mut (*ref_0).ref_cnt as *mut atomic_int,
-    ) == 1 as libc::c_int && !((*ref_0).data).is_null()) as libc::c_int;
+        &mut (*r#ref).ref_cnt as *mut atomic_int,
+    ) == 1 as libc::c_int && !((*r#ref).data).is_null()) as libc::c_int;
 }
