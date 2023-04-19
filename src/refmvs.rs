@@ -82,12 +82,12 @@ pub struct refmvs_refpair {
     pub r#ref: [int8_t; 2],
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
-pub union refmvs_mvpair {
+pub struct refmvs_mvpair {
     pub mv: [mv; 2],
-    pub n: uint64_t,
 }
+
 #[derive(Copy, Clone)]
 #[repr(C, packed)]
 pub struct refmvs_block {
@@ -239,7 +239,7 @@ unsafe extern "C" fn add_spatial_candidate(
         let last_0: libc::c_int = *cnt;
         let mut n_0: libc::c_int = 0 as libc::c_int;
         while n_0 < last_0 {
-            if (*mvstack.offset(n_0 as isize)).mv.n == cand_mv_0.n {
+            if (*mvstack.offset(n_0 as isize)).mv == cand_mv_0 {
                 (*mvstack.offset(n_0 as isize)).weight += weight;
                 return;
             }
@@ -502,7 +502,7 @@ unsafe extern "C" fn add_temporal_candidate(
         );
         let mut n_0: libc::c_int = 0 as libc::c_int;
         while n_0 < last {
-            if (*mvstack.offset(n_0 as isize)).mv.n == mvp.n {
+            if (*mvstack.offset(n_0 as isize)).mv == mvp {
                 (*mvstack.offset(n_0 as isize)).weight += 2 as libc::c_int;
                 return;
             }
@@ -1190,12 +1190,8 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
                 n_3 += 1;
             }
             let mut n_4: libc::c_int = *cnt;
-            if n_4 == 1 as libc::c_int
-                && (*mvstack.offset(0 as libc::c_int as isize)).mv.n
-                    == (*same.offset(0 as libc::c_int as isize)).mv.n
-            {
-                (*mvstack.offset(1 as libc::c_int as isize))
-                    .mv = (*mvstack.offset(2 as libc::c_int as isize)).mv;
+            if n_4 == 1 && (*mvstack.offset(0)).mv == (*same.offset(0)).mv {
+                (*mvstack.offset(1)).mv = (*mvstack.offset(2)).mv;
             }
             loop {
                 (*mvstack.offset(n_4 as isize)).weight = 2 as libc::c_int;
