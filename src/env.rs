@@ -62,17 +62,17 @@ pub unsafe extern "C" fn get_uv_inter_txtp(
 }
 
 #[inline]
-pub unsafe extern "C" fn get_poc_diff(
+pub fn get_poc_diff(
     order_hint_n_bits: libc::c_int,
     poc0: libc::c_int,
     poc1: libc::c_int,
 ) -> libc::c_int {
     if order_hint_n_bits == 0 {
-        return 0 as libc::c_int;
+        return 0;
     }
-    let mask: libc::c_int = (1 as libc::c_int) << order_hint_n_bits - 1 as libc::c_int;
-    let diff: libc::c_int = poc0 - poc1;
-    return (diff & mask - 1 as libc::c_int) - (diff & mask);
+    let mask = 1 << order_hint_n_bits - 1;
+    let diff = poc0 - poc1;
+    return (diff & mask - 1) - (diff & mask);
 }
 
 #[inline]
