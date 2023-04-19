@@ -331,6 +331,14 @@ impl Av1Block {
             .mv
     }
 
+    pub unsafe fn mv_mut(&mut self) -> &mut [mv; 2] {
+        &mut self.c2rust_unnamed
+            .c2rust_unnamed_0
+            .c2rust_unnamed
+            .c2rust_unnamed
+            .mv
+    }
+
     pub unsafe fn mv2d(&self) -> &mv {
         &self
             .c2rust_unnamed

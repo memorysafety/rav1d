@@ -498,10 +498,7 @@ unsafe extern "C" fn add_temporal_candidate(
                 ),
             ],
         };
-        fix_mv_precision(
-            &*(*rf).frm_hdr,
-            &mut *(mvp.mv).as_mut_ptr().offset(1 as libc::c_int as isize),
-        );
+        fix_mv_precision(&*(*rf).frm_hdr, &mut mvp.mv[1]);
         let mut n_0 = 0;
         while n_0 < last {
             if (*mvstack.offset(n_0 as isize)).mv == mvp {
