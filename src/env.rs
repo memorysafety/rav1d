@@ -77,7 +77,7 @@ pub unsafe extern "C" fn get_poc_diff(
 }
 
 #[inline]
-unsafe fn fix_int_mv_precision(mv: &mut mv) {
+fn fix_int_mv_precision(mv: &mut mv) {
     mv.x = (mv.x - (mv.x >> 15) + 3) & !7;
     mv.y = (mv.y - (mv.y >> 15) + 3) & !7;
 }
