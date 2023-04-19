@@ -1074,18 +1074,12 @@ pub unsafe fn dav1d_refmvs_find(
             mv[1].y = iclip(mv[1].y as libc::c_int, top, bottom) as i16;
         }
 
-        match refmv_ctx >> 1 {
-            0 => {
-                *ctx = imin(newmv_ctx, 1);
-            }
-            1 => {
-                *ctx = 1 + imin(newmv_ctx, 3);
-            }
-            2 => {
-                *ctx = iclip(3 + newmv_ctx, 4, 7);
-            }
-            _ => {}
-        }
+        *ctx = match refmv_ctx >> 1 {
+            0 => imin(newmv_ctx, 1),
+            1 => 1 + imin(newmv_ctx, 3),
+            2 => iclip(3 + newmv_ctx, 4, 7),
+            _ => *ctx,
+        };
 
         return;
     } else if *cnt < 2 && r#ref.r#ref[0] > 0 {
