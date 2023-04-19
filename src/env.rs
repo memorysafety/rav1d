@@ -78,14 +78,8 @@ pub unsafe extern "C" fn get_poc_diff(
 
 #[inline]
 unsafe fn fix_int_mv_precision(mv: &mut mv) {
-    mv
-        .x = ((mv.x as libc::c_int
-        - (mv.x as libc::c_int >> 15 as libc::c_int)
-        + 3 as libc::c_int) as libc::c_uint & !(7 as libc::c_uint)) as int16_t;
-    mv
-        .y = ((mv.y as libc::c_int
-        - (mv.y as libc::c_int >> 15 as libc::c_int)
-        + 3 as libc::c_int) as libc::c_uint & !(7 as libc::c_uint)) as int16_t;
+    mv.x = (mv.x - (mv.x >> 15) + 3) & !7;
+    mv.y = (mv.y - (mv.y >> 15) + 3) & !7;
 }
 
 #[inline]
