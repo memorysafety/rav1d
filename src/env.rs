@@ -77,7 +77,7 @@ pub unsafe extern "C" fn get_poc_diff(
 }
 
 #[inline]
-pub unsafe extern "C" fn fix_int_mv_precision(mv: *mut mv) {
+pub unsafe fn fix_int_mv_precision(mv: *mut mv) {
     (*mv)
         .x = (((*mv).x as libc::c_int
         - ((*mv).x as libc::c_int >> 15 as libc::c_int)
