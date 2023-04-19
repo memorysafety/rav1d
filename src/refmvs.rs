@@ -465,7 +465,7 @@ unsafe extern "C" fn add_temporal_candidate(
             - 1 as libc::c_int) as usize] as libc::c_int,
         (*rb).r#ref as libc::c_int,
     );
-    fix_mv_precision((*rf).frm_hdr, &mut mv);
+    fix_mv_precision(&*(*rf).frm_hdr, &mut mv);
     let last = *cnt;
     if r#ref.r#ref[1 as libc::c_int as usize] as libc::c_int == -(1 as libc::c_int) {
         if !globalmv_ctx.is_null() {
@@ -499,7 +499,7 @@ unsafe extern "C" fn add_temporal_candidate(
             ],
         };
         fix_mv_precision(
-            (*rf).frm_hdr,
+            &*(*rf).frm_hdr,
             &mut *(mvp.mv).as_mut_ptr().offset(1 as libc::c_int as isize),
         );
         let mut n_0 = 0;

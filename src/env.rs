@@ -82,8 +82,8 @@ fn fix_int_mv_precision(mv: &mut mv) {
 }
 
 #[inline]
-pub unsafe fn fix_mv_precision(hdr: *const Dav1dFrameHeader, mv: &mut mv) {
-    if (*hdr).force_integer_mv != 0 {
+pub unsafe fn fix_mv_precision(hdr: &Dav1dFrameHeader, mv: &mut mv) {
+    if hdr.force_integer_mv != 0 {
         fix_int_mv_precision(mv);
     } else if (*hdr).hp == 0 {
         mv.x = (mv.x - (mv.x >> 15)) & !1;

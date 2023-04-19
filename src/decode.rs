@@ -9064,7 +9064,7 @@ unsafe fn decode_b(
                 .mv
                 .mv[1 as libc::c_int as usize];
             fix_mv_precision(
-                f.frame_hdr,
+                &*f.frame_hdr,
                 &mut *(b
                     .c2rust_unnamed
                     .c2rust_unnamed_0
@@ -9075,7 +9075,7 @@ unsafe fn decode_b(
                     .offset(0 as libc::c_int as isize),
             );
             fix_mv_precision(
-                f.frame_hdr,
+                &*f.frame_hdr,
                 &mut *(b
                     .c2rust_unnamed
                     .c2rust_unnamed_0
@@ -9530,7 +9530,7 @@ unsafe fn decode_b(
                         .mv
                         .mv[0 as libc::c_int as usize];
                     fix_mv_precision(
-                        f.frame_hdr,
+                        &*f.frame_hdr,
                         &mut *(b
                             .c2rust_unnamed
                             .c2rust_unnamed_0
@@ -9616,7 +9616,7 @@ unsafe fn decode_b(
                         .mv
                         .mv[1 as libc::c_int as usize];
                     fix_mv_precision(
-                        f.frame_hdr,
+                        &*f.frame_hdr,
                         &mut *(b
                             .c2rust_unnamed
                             .c2rust_unnamed_0
@@ -10194,7 +10194,7 @@ unsafe fn decode_b(
                         < NEAR_DRL as libc::c_int
                     {
                         fix_mv_precision(
-                            f.frame_hdr,
+                            &*f.frame_hdr,
                             &mut *(b
                                 .c2rust_unnamed
                                 .c2rust_unnamed_0
@@ -10311,7 +10311,7 @@ unsafe fn decode_b(
                         .mv
                         .mv[0 as libc::c_int as usize];
                     fix_mv_precision(
-                        f.frame_hdr,
+                        &*f.frame_hdr,
                         &mut *(b
                             .c2rust_unnamed
                             .c2rust_unnamed_0
