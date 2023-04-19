@@ -682,10 +682,10 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
     bx4: libc::c_int,
 ) {
     let rf = (*rt).rf;
-    let b_dim = dav1d_block_dimensions[bs as usize].as_ptr();
-    let bw4 = *b_dim.offset(0) as libc::c_int;
+    let b_dim = &dav1d_block_dimensions[bs as usize];
+    let bw4 = b_dim[0] as libc::c_int;
     let w4 = imin(imin(bw4, 16), (*rt).tile_col.end - bx4);
-    let bh4 = *b_dim.offset(1) as libc::c_int;
+    let bh4 = b_dim[1] as libc::c_int;
     let h4 = imin(imin(bh4, 16), (*rt).tile_row.end - by4);
     let mut gmv = [mv::ZERO; 2];
     let mut tgmv = [mv::ZERO; 2];
