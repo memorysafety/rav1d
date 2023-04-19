@@ -9063,28 +9063,8 @@ unsafe fn decode_b(
                 as usize] = mvstack_0[0 as libc::c_int as usize]
                 .mv
                 .mv[1 as libc::c_int as usize];
-            fix_mv_precision(
-                f.frame_hdr,
-                &mut *(b
-                    .c2rust_unnamed
-                    .c2rust_unnamed_0
-                    .c2rust_unnamed
-                    .c2rust_unnamed
-                    .mv)
-                    .as_mut_ptr()
-                    .offset(0 as libc::c_int as isize),
-            );
-            fix_mv_precision(
-                f.frame_hdr,
-                &mut *(b
-                    .c2rust_unnamed
-                    .c2rust_unnamed_0
-                    .c2rust_unnamed
-                    .c2rust_unnamed
-                    .mv)
-                    .as_mut_ptr()
-                    .offset(1 as libc::c_int as isize),
-            );
+            fix_mv_precision(&*f.frame_hdr, &mut b.mv_mut()[0]);
+            fix_mv_precision(&*f.frame_hdr, &mut b.mv_mut()[1]);
             if DEBUG_BLOCK_INFO(f, t)
             {
                 printf(
@@ -9529,17 +9509,7 @@ unsafe fn decode_b(
                             .drl_idx as usize]
                         .mv
                         .mv[0 as libc::c_int as usize];
-                    fix_mv_precision(
-                        f.frame_hdr,
-                        &mut *(b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .mv)
-                            .as_mut_ptr()
-                            .offset(0 as libc::c_int as isize),
-                    );
+                    fix_mv_precision(&*f.frame_hdr, &mut b.mv_mut()[0]);
                 }
                 2 => {
                     has_subpel_filter
@@ -9615,17 +9585,7 @@ unsafe fn decode_b(
                             .drl_idx as usize]
                         .mv
                         .mv[1 as libc::c_int as usize];
-                    fix_mv_precision(
-                        f.frame_hdr,
-                        &mut *(b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .mv)
-                            .as_mut_ptr()
-                            .offset(1 as libc::c_int as isize),
-                    );
+                    fix_mv_precision(&*f.frame_hdr, &mut b.mv_mut()[1]);
                 }
                 2 => {
                     has_subpel_filter
@@ -10193,17 +10153,7 @@ unsafe fn decode_b(
                     if (b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_int)
                         < NEAR_DRL as libc::c_int
                     {
-                        fix_mv_precision(
-                            f.frame_hdr,
-                            &mut *(b
-                                .c2rust_unnamed
-                                .c2rust_unnamed_0
-                                .c2rust_unnamed
-                                .c2rust_unnamed
-                                .mv)
-                                .as_mut_ptr()
-                                .offset(0 as libc::c_int as isize),
-                        );
+                        fix_mv_precision(&*f.frame_hdr, &mut b.mv_mut()[0]);
                     }
                 }
                 if DEBUG_BLOCK_INFO(f, t)
@@ -10310,17 +10260,7 @@ unsafe fn decode_b(
                         as usize] = mvstack_2[0 as libc::c_int as usize]
                         .mv
                         .mv[0 as libc::c_int as usize];
-                    fix_mv_precision(
-                        f.frame_hdr,
-                        &mut *(b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .mv)
-                            .as_mut_ptr()
-                            .offset(0 as libc::c_int as isize),
-                    );
+                    fix_mv_precision(&*f.frame_hdr, &mut b.mv_mut()[0]);
                 }
                 if DEBUG_BLOCK_INFO(f, t)
                 {
