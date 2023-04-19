@@ -7756,7 +7756,7 @@ unsafe fn decode_b(
         let mut ctx_1: libc::c_int = 0;
         dav1d_refmvs_find(
             &mut t.rt,
-            mvstack.as_mut_ptr(),
+            &mut mvstack,
             &mut n_mvs,
             &mut ctx_1,
             refmvs_refpair {
@@ -9023,7 +9023,7 @@ unsafe fn decode_b(
             let mut ctx_3: libc::c_int = 0;
             dav1d_refmvs_find(
                 &mut t.rt,
-                mvstack_0.as_mut_ptr(),
+                &mut mvstack_0,
                 &mut n_mvs_0,
                 &mut ctx_3,
                 refmvs_refpair {
@@ -9350,7 +9350,7 @@ unsafe fn decode_b(
             let mut ctx_4: libc::c_int = 0;
             dav1d_refmvs_find(
                 &mut t.rt,
-                mvstack_1.as_mut_ptr(),
+                &mut mvstack_1,
                 &mut n_mvs_1,
                 &mut ctx_4,
                 refmvs_refpair {
@@ -10035,7 +10035,7 @@ unsafe fn decode_b(
             let mut ctx_6: libc::c_int = 0;
             dav1d_refmvs_find(
                 &mut t.rt,
-                mvstack_2.as_mut_ptr(),
+                &mut mvstack_2,
                 &mut n_mvs_2,
                 &mut ctx_6,
                 refmvs_refpair {

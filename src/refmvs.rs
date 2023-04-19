@@ -671,7 +671,7 @@ unsafe extern "C" fn add_single_extended_candidate(
 
 pub unsafe fn dav1d_refmvs_find(
     rt: &refmvs_tile,
-    mut mvstack: *mut refmvs_candidate,
+    mut mvstack: &mut [refmvs_candidate; 8],
     cnt: &mut libc::c_int,
     ctx: &mut libc::c_int,
     r#ref: refmvs_refpair,
@@ -734,7 +734,7 @@ pub unsafe fn dav1d_refmvs_find(
         max_rows = imin(by4 - rt.tile_row.start + 1 >> 1, 2 + (bh4 > 1) as libc::c_int) as libc::c_uint;
         b_top = &mut *rt.r[(by4 as usize & 31) + 5 - 1].offset(bx4 as isize);
         n_rows = scan_row(
-            mvstack,
+            mvstack.as_mut_ptr(),
             cnt,
             r#ref,
             gmv.as_mut_ptr() as *const mv,
@@ -754,7 +754,7 @@ pub unsafe fn dav1d_refmvs_find(
         max_cols = imin(bx4 - rt.tile_col.start + 1 >> 1, 2 + (bw4 > 1) as libc::c_int) as libc::c_uint;
         b_left = &rt.r[(by4 as usize & 31) + 5];
         n_cols = scan_col(
-            mvstack,
+            mvstack.as_mut_ptr(),
             cnt,
             r#ref,
             gmv.as_mut_ptr() as *const mv,
@@ -771,7 +771,7 @@ pub unsafe fn dav1d_refmvs_find(
     if n_rows != !0 && edge_flags & EDGE_I444_TOP_HAS_RIGHT != 0
         && imax(bw4, bh4) <= 16 && bw4 + bx4 < rt.tile_col.end {
         add_spatial_candidate(
-            mvstack,
+            mvstack.as_mut_ptr(),
             cnt,
             4,
             &*b_top.offset(bw4 as isize),
@@ -785,7 +785,7 @@ pub unsafe fn dav1d_refmvs_find(
     let nearest_cnt = *cnt;
     let mut n = 0;
     while n < nearest_cnt {
-        (*mvstack.offset(n as isize)).weight += 640;
+        mvstack[n as usize].weight += 640;
         n += 1;
     }
     let mut globalmv_ctx = (*rf.frm_hdr).use_ref_frame_mvs;
@@ -806,7 +806,7 @@ pub unsafe fn dav1d_refmvs_find(
             while x < w8 {
                 add_temporal_candidate(
                     rf,
-                    mvstack,
+                    mvstack.as_mut_ptr(),
                     cnt,
                     &*rb.offset(x as isize),
                     r#ref,
@@ -826,7 +826,7 @@ pub unsafe fn dav1d_refmvs_find(
             if has_bottom != 0 && bx8 - 1 >= imax(rt.tile_col.start >> 1, bx8 & !7) {
                 add_temporal_candidate(
                     rf,
-                    mvstack,
+                    mvstack.as_mut_ptr(),
                     cnt,
                     &*rb.offset(-1),
                     r#ref,
@@ -838,7 +838,7 @@ pub unsafe fn dav1d_refmvs_find(
                 if has_bottom != 0 {
                     add_temporal_candidate(
                         rf,
-                        mvstack,
+                        mvstack.as_mut_ptr(),
                         cnt,
                         &*rb.offset(bw8 as isize),
                         r#ref,
@@ -849,7 +849,7 @@ pub unsafe fn dav1d_refmvs_find(
                 if (by8 + bh8 - 1) < imin(rt.tile_row.end >> 1, (by8 & !7) + 8) {
                     add_temporal_candidate(
                         rf,
-                        mvstack,
+                        mvstack.as_mut_ptr(),
                         cnt,
                         &*rb.offset(bw8 as isize - stride),
                         r#ref,
@@ -864,7 +864,7 @@ pub unsafe fn dav1d_refmvs_find(
     let mut have_dummy_newmv_match = 0;
     if n_rows | n_cols != !0 {
         add_spatial_candidate(
-            mvstack,
+            mvstack.as_mut_ptr(),
             cnt,
             4,
             &*b_top.offset(-1),
@@ -880,7 +880,7 @@ pub unsafe fn dav1d_refmvs_find(
             n_rows = n_rows
                 .wrapping_add(
                     scan_row(
-                        mvstack,
+                        mvstack.as_mut_ptr(),
                         cnt,
                         r#ref,
                         gmv.as_mut_ptr() as *const mv,
@@ -898,7 +898,7 @@ pub unsafe fn dav1d_refmvs_find(
             n_cols = n_cols
                 .wrapping_add(
                     scan_col(
-                        mvstack,
+                        mvstack.as_mut_ptr(),
                         cnt,
                         r#ref,
                         gmv.as_mut_ptr() as *const mv,
@@ -939,10 +939,10 @@ pub unsafe fn dav1d_refmvs_find(
         let mut last = 0;
         let mut n_1 = 1;
         while n_1 < len {
-            if (*mvstack.offset(n_1 as isize - 1)).weight < (*mvstack.offset(n_1 as isize)).weight {
-                let mut tmp = *mvstack.offset((n_1 - 1) as isize);
-                *mvstack.offset(n_1 as isize - 1) = *mvstack.offset(n_1 as isize);
-                *mvstack.offset(n_1 as isize) = tmp;
+            if mvstack[n_1 as usize - 1].weight < mvstack[n_1 as usize].weight {
+                let mut tmp = mvstack[n_1 as usize - 1];
+                mvstack[n_1 as usize - 1] = mvstack[n_1 as usize];
+                mvstack[n_1 as usize] = tmp;
                 last = n_1;
             }
             n_1 += 1;
@@ -954,10 +954,10 @@ pub unsafe fn dav1d_refmvs_find(
         let mut last_0 = nearest_cnt;
         let mut n_2 = nearest_cnt + 1;
         while n_2 < len {
-            if (*mvstack.offset(n_2 as isize - 1)).weight < (*mvstack.offset(n_2 as isize)).weight {
-                let mut tmp_0 = *mvstack.offset(n_2 as isize - 1);
-                *mvstack.offset(n_2 as isize - 1) = *mvstack.offset(n_2 as isize);
-                *mvstack.offset(n_2 as isize) = tmp_0;
+            if mvstack[n_2 as usize - 1].weight < mvstack[n_2 as usize].weight {
+                let mut tmp_0 = mvstack[n_2 as usize - 1];
+                mvstack[n_2 as usize - 1] = mvstack[n_2 as usize];
+                mvstack[n_2 as usize] = tmp_0;
                 last_0 = n_2;
             }
             n_2 += 1;
@@ -969,14 +969,15 @@ pub unsafe fn dav1d_refmvs_find(
             let sign0 = rf.sign_bias[r#ref.r#ref[0] as usize - 1] as libc::c_int;
             let sign1 = rf.sign_bias[r#ref.r#ref[1] as usize - 1] as libc::c_int;
             let sz4 = imin(w4, h4);
-            let same = &mut *mvstack.offset(*cnt as isize) as *mut refmvs_candidate;
+            let cur_cnt = *cnt as usize;
+            let same = &mut mvstack[cur_cnt..];
             let mut same_count = [0, 0, 0, 0];
             if n_rows != !0 {
                 let mut x_0 = 0;
                 while x_0 < sz4 {
                     let cand_b = &*b_top.offset(x_0 as isize) as *const refmvs_block;
                     add_compound_extended_candidate(
-                        same,
+                        same.as_mut_ptr(),
                         same_count.as_mut_ptr(),
                         cand_b,
                         sign0,
@@ -993,7 +994,7 @@ pub unsafe fn dav1d_refmvs_find(
                     let cand_b_0: *const refmvs_block = &mut *(*b_left.offset(y_0 as isize))
                         .offset(bx4 as isize - 1) as *mut refmvs_block;
                     add_compound_extended_candidate(
-                        same,
+                        same.as_mut_ptr(),
                         same_count.as_mut_ptr(),
                         cand_b_0,
                         sign0,
@@ -1004,8 +1005,12 @@ pub unsafe fn dav1d_refmvs_find(
                     y_0 += dav1d_block_dimensions[(*cand_b_0).bs as usize][1] as libc::c_int;
                 }
             }
-            let diff = &mut *same
-                .offset(2) as *mut refmvs_candidate;
+            
+            // Below, `same` will only be accessed by `m`, which is `< 2`,
+            // so this `same.split_at_mut(2).0` won't be accessed out of bounds.
+            let (same, diff) = same.split_at_mut(2);
+            let diff = &diff[..]; // not &mut
+
             let diff_count: *const libc::c_int = &mut *same_count.as_mut_ptr().offset(2) as *mut libc::c_int;
             let mut current_block_118: u64;
             let mut n_3 = 0;
@@ -1014,12 +1019,12 @@ pub unsafe fn dav1d_refmvs_find(
                 if !(m >= 2) {
                     let l = *diff_count.offset(n_3 as isize);
                     if l != 0 {
-                        (*same.offset(m as isize)).mv.mv[n_3 as usize] = (*diff.offset(0)).mv.mv[n_3 as usize];
+                        same[m as usize].mv.mv[n_3 as usize] = diff[0].mv.mv[n_3 as usize];
                         m += 1;
                         if m == 2 {
                             current_block_118 = 13740693533991687037;
                         } else if l == 2 {
-                            (*same.offset(1)).mv.mv[n_3 as usize] = (*diff.offset(1)).mv.mv[n_3 as usize];
+                            same[1].mv.mv[n_3 as usize] = diff[1].mv.mv[n_3 as usize];
                             current_block_118 = 13740693533991687037;
                         } else {
                             current_block_118 = 9430418855388998878;
@@ -1031,7 +1036,7 @@ pub unsafe fn dav1d_refmvs_find(
                         13740693533991687037 => {}
                         _ => {
                             loop {
-                                (*same.offset(m as isize)).mv.mv[n_3 as usize] = tgmv[n_3 as usize];
+                                same[m as usize].mv.mv[n_3 as usize] = tgmv[n_3 as usize];
                                 m += 1;
                                 if !(m < 2) {
                                     break;
@@ -1043,11 +1048,12 @@ pub unsafe fn dav1d_refmvs_find(
                 n_3 += 1;
             }
             let mut n_4 = *cnt;
-            if n_4 == 1 && (*mvstack.offset(0)).mv == (*same.offset(0)).mv {
-                (*mvstack.offset(1)).mv = (*mvstack.offset(2)).mv;
+            let same = &mvstack[cur_cnt..]; // need to reborrow to get a &, not &mut
+            if n_4 == 1 && mvstack[0].mv == same[0].mv {
+                mvstack[1].mv = mvstack[2].mv;
             }
             loop {
-                (*mvstack.offset(n_4 as isize)).weight = 2;
+                mvstack[n_4 as usize].weight = 2;
                 n_4 += 1;
                 if !(n_4 < 2) {
                     break;
@@ -1062,14 +1068,10 @@ pub unsafe fn dav1d_refmvs_find(
         let n_refmvs = *cnt;
         let mut n_5 = 0;
         loop {
-            (*mvstack.offset(n_5 as isize)).mv.mv[0].x = 
-                iclip((*mvstack.offset(n_5 as isize)).mv.mv[0].x as libc::c_int, left, right) as i16;
-            (*mvstack.offset(n_5 as isize)).mv.mv[0].y = 
-                iclip((*mvstack.offset(n_5 as isize)).mv.mv[0].y as libc::c_int, top, bottom) as i16;
-            (*mvstack.offset(n_5 as isize)).mv.mv[1].x = 
-                iclip((*mvstack.offset(n_5 as isize)).mv.mv[1].x as libc::c_int, left, right) as i16;
-            (*mvstack.offset(n_5 as isize)).mv.mv[1].y = 
-                iclip((*mvstack.offset(n_5 as isize)).mv.mv[1].y as libc::c_int, top, bottom) as i16;
+            mvstack[n_5 as usize].mv.mv[0].x = iclip(mvstack[n_5 as usize].mv.mv[0].x as libc::c_int, left, right) as i16;
+            mvstack[n_5 as usize].mv.mv[0].y = iclip(mvstack[n_5 as usize].mv.mv[0].y as libc::c_int, top, bottom) as i16;
+            mvstack[n_5 as usize].mv.mv[1].x = iclip(mvstack[n_5 as usize].mv.mv[1].x as libc::c_int, left, right) as i16;
+            mvstack[n_5 as usize].mv.mv[1].y = iclip(mvstack[n_5 as usize].mv.mv[1].y as libc::c_int, top, bottom) as i16;
             n_5 += 1;
             if !(n_5 < n_refmvs) {
                 break;
@@ -1097,7 +1099,7 @@ pub unsafe fn dav1d_refmvs_find(
                 while x_1 < sz4_0 && *cnt < 2 {
                     let cand_b_1 = &*b_top.offset(x_1 as isize) as *const refmvs_block;
                     add_single_extended_candidate(
-                        mvstack,
+                        mvstack.as_mut_ptr(),
                         cnt,
                         cand_b_1,
                         sign,
@@ -1112,7 +1114,7 @@ pub unsafe fn dav1d_refmvs_find(
                     let cand_b_2: *const refmvs_block = &mut *(*b_left.offset(y_1 as isize))
                         .offset(bx4 as isize - 1) as *mut refmvs_block;
                     add_single_extended_candidate(
-                        mvstack,
+                        mvstack.as_mut_ptr(),
                         cnt,
                         cand_b_2,
                         sign,
@@ -1132,10 +1134,8 @@ pub unsafe fn dav1d_refmvs_find(
         let bottom_0 = (rf.ih4 - by4 + 4) * 4 * 8;
         let mut n_6 = 0;
         loop {
-            (*mvstack.offset(n_6 as isize)).mv.mv[0].x = 
-                iclip((*mvstack.offset(n_6 as isize)).mv.mv[0].x as libc::c_int, left_0, right_0) as i16;
-            (*mvstack.offset(n_6 as isize)).mv.mv[0].y = 
-                iclip((*mvstack.offset(n_6 as isize)).mv.mv[0].y as libc::c_int, top_0, bottom_0) as i16;
+            mvstack[n_6 as usize].mv.mv[0].x = iclip(mvstack[n_6 as usize].mv.mv[0].x as libc::c_int, left_0, right_0) as i16;
+            mvstack[n_6 as usize].mv.mv[0].y = iclip(mvstack[n_6 as usize].mv.mv[0].y as libc::c_int, top_0, bottom_0) as i16;
             n_6 += 1;
             if !(n_6 < n_refmvs_0) {
                 break;
@@ -1144,7 +1144,7 @@ pub unsafe fn dav1d_refmvs_find(
     }
     let mut n_7 = *cnt;
     while n_7 < 2 {
-        (*mvstack.offset(n_7 as isize)).mv.mv[0] = tgmv[0];
+        mvstack[n_7 as usize].mv.mv[0] = tgmv[0];
         n_7 += 1;
     }
     *ctx = refmv_ctx << 4 | globalmv_ctx << 3 | newmv_ctx;
