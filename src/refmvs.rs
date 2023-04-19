@@ -712,7 +712,7 @@ pub unsafe fn dav1d_refmvs_find(
             by4,
             bw4,
             bh4,
-            rf.frm_hdr,
+            &*rf.frm_hdr,
         );
         gmv[0] = if (*rf.frm_hdr).gmv[r#ref.r#ref[0] as usize - 1].type_0 > DAV1D_WM_TYPE_TRANSLATION {
             tgmv[0]
@@ -730,7 +730,7 @@ pub unsafe fn dav1d_refmvs_find(
             by4,
             bw4,
             bh4,
-            rf.frm_hdr,
+            &*rf.frm_hdr,
         );
         gmv[1] = if (*rf.frm_hdr).gmv[r#ref.r#ref[1] as usize - 1].type_0 > DAV1D_WM_TYPE_TRANSLATION {
             tgmv[1]
