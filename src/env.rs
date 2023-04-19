@@ -77,29 +77,23 @@ pub unsafe extern "C" fn get_poc_diff(
 }
 
 #[inline]
-pub unsafe extern "C" fn fix_int_mv_precision(mv: *mut mv) {
-    (*mv)
-        .x = (((*mv).x as libc::c_int
-        - ((*mv).x as libc::c_int >> 15 as libc::c_int)
-        + 3 as libc::c_int) as libc::c_uint & !(7 as libc::c_uint)) as int16_t;
-    (*mv)
-        .y = (((*mv).y as libc::c_int
-        - ((*mv).y as libc::c_int >> 15 as libc::c_int)
-        + 3 as libc::c_int) as libc::c_uint & !(7 as libc::c_uint)) as int16_t;
+fn fix_int_mv_precision(mv: &mut mv) {
+    mv.x = (mv.x - (mv.x >> 15) + 3) & !7;
+    mv.y = (mv.y - (mv.y >> 15) + 3) & !7;
 }
 
 #[inline]
-pub unsafe extern "C" fn fix_mv_precision(hdr: *const Dav1dFrameHeader, mv: *mut mv) {
+pub unsafe extern "C" fn fix_mv_precision(hdr: *const Dav1dFrameHeader, mv: &mut mv) {
     if (*hdr).force_integer_mv != 0 {
         fix_int_mv_precision(mv);
     } else if (*hdr).hp == 0 {
-        (*mv)
-            .x = (((*mv).x as libc::c_int
-            - ((*mv).x as libc::c_int >> 15 as libc::c_int))
+        mv
+            .x = ((mv.x as libc::c_int
+            - (mv.x as libc::c_int >> 15 as libc::c_int))
             as libc::c_uint & !(1 as libc::c_uint)) as int16_t;
-        (*mv)
-            .y = (((*mv).y as libc::c_int
-            - ((*mv).y as libc::c_int >> 15 as libc::c_int))
+        mv
+            .y = ((mv.y as libc::c_int
+            - (mv.y as libc::c_int >> 15 as libc::c_int))
             as libc::c_uint & !(1 as libc::c_uint)) as int16_t;
     }
 }
