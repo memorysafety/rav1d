@@ -1,7 +1,6 @@
 use crate::include::common::intops::apply_sign;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
-use crate::include::stdint::int16_t;
 use crate::include::stdint::int8_t;
 use crate::include::stdint::uint8_t;
 use crate::src::levels::mv;
@@ -87,14 +86,8 @@ pub unsafe extern "C" fn fix_mv_precision(hdr: *const Dav1dFrameHeader, mv: &mut
     if (*hdr).force_integer_mv != 0 {
         fix_int_mv_precision(mv);
     } else if (*hdr).hp == 0 {
-        mv
-            .x = ((mv.x as libc::c_int
-            - (mv.x as libc::c_int >> 15 as libc::c_int))
-            as libc::c_uint & !(1 as libc::c_uint)) as int16_t;
-        mv
-            .y = ((mv.y as libc::c_int
-            - (mv.y as libc::c_int >> 15 as libc::c_int))
-            as libc::c_uint & !(1 as libc::c_uint)) as int16_t;
+        mv.x = (mv.x - (mv.x >> 15)) & !1;
+        mv.y = (mv.y - (mv.y >> 15)) & !1;
     }
 }
 
