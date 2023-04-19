@@ -1011,13 +1011,13 @@ pub unsafe fn dav1d_refmvs_find(
             let (same, diff) = same.split_at_mut(2);
             let diff = &diff[..]; // not &mut
 
-            let diff_count: *const libc::c_int = &mut *same_count.as_mut_ptr().offset(2) as *mut libc::c_int;
+            let diff_count = &same_count[2..];
             let mut current_block_118: u64;
             let mut n_3 = 0;
             while n_3 < 2 {
                 let mut m = same_count[n_3 as usize];
                 if !(m >= 2) {
-                    let l = *diff_count.offset(n_3 as isize);
+                    let l = diff_count[n_3 as usize];
                     if l != 0 {
                         same[m as usize].mv.mv[n_3 as usize] = diff[0].mv.mv[n_3 as usize];
                         m += 1;
