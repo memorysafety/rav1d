@@ -900,14 +900,14 @@ unsafe extern "C" fn picture_alloc_with_edges(
     (*pic_ctx).allocator = *p_allocator;
     (*pic_ctx).pic = *p;
     (*p)
-        .ref_0 = dav1d_ref_wrap(
+        .r#ref = dav1d_ref_wrap(
         (*p).data[0 as libc::c_int as usize] as *const uint8_t,
         Some(
             free_buffer as unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> (),
         ),
         pic_ctx as *mut libc::c_void,
     );
-    if ((*p).ref_0).is_null() {
+    if ((*p).r#ref).is_null() {
         ((*p_allocator).release_picture_callback)
             .expect("non-null function pointer")(p, (*p_allocator).cookie);
         free(pic_ctx as *mut libc::c_void);
@@ -1016,7 +1016,7 @@ pub unsafe extern "C" fn dav1d_picture_alloc_copy(
     w: libc::c_int,
     src: *const Dav1dPicture,
 ) -> libc::c_int {
-    let pic_ctx: *mut pic_ctx_context = (*(*src).ref_0).user_data
+    let pic_ctx: *mut pic_ctx_context = (*(*src).r#ref).user_data
         as *mut pic_ctx_context;
     let res: libc::c_int = picture_alloc_with_edges(
         c,
@@ -1088,7 +1088,7 @@ pub unsafe extern "C" fn dav1d_picture_ref(
         );
         return;
     }
-    if !((*src).ref_0).is_null() {
+    if !((*src).r#ref).is_null() {
         if ((*src).data[0 as libc::c_int as usize]).is_null() {
             fprintf(
                 stderr,
@@ -1103,7 +1103,7 @@ pub unsafe extern "C" fn dav1d_picture_ref(
             );
             return;
         }
-        dav1d_ref_inc((*src).ref_0);
+        dav1d_ref_inc((*src).r#ref);
     }
     if !((*src).frame_hdr_ref).is_null() {
         dav1d_ref_inc((*src).frame_hdr_ref);
@@ -1111,8 +1111,8 @@ pub unsafe extern "C" fn dav1d_picture_ref(
     if !((*src).seq_hdr_ref).is_null() {
         dav1d_ref_inc((*src).seq_hdr_ref);
     }
-    if !((*src).m.user_data.ref_0).is_null() {
-        dav1d_ref_inc((*src).m.user_data.ref_0);
+    if !((*src).m.user_data.r#ref).is_null() {
+        dav1d_ref_inc((*src).m.user_data.r#ref);
     }
     if !((*src).content_light_ref).is_null() {
         dav1d_ref_inc((*src).content_light_ref);
@@ -1172,7 +1172,7 @@ pub unsafe extern "C" fn dav1d_picture_move_ref(
         );
         return;
     }
-    if !((*src).ref_0).is_null() {
+    if !((*src).r#ref).is_null() {
         if ((*src).data[0 as libc::c_int as usize]).is_null() {
             fprintf(
                 stderr,
@@ -1238,7 +1238,7 @@ pub unsafe extern "C" fn dav1d_picture_unref_internal(p: *mut Dav1dPicture) {
         );
         return;
     }
-    if !((*p).ref_0).is_null() {
+    if !((*p).r#ref).is_null() {
         if ((*p).data[0 as libc::c_int as usize]).is_null() {
             fprintf(
                 stderr,
@@ -1253,11 +1253,11 @@ pub unsafe extern "C" fn dav1d_picture_unref_internal(p: *mut Dav1dPicture) {
             );
             return;
         }
-        dav1d_ref_dec(&mut (*p).ref_0);
+        dav1d_ref_dec(&mut (*p).r#ref);
     }
     dav1d_ref_dec(&mut (*p).seq_hdr_ref);
     dav1d_ref_dec(&mut (*p).frame_hdr_ref);
-    dav1d_ref_dec(&mut (*p).m.user_data.ref_0);
+    dav1d_ref_dec(&mut (*p).m.user_data.r#ref);
     dav1d_ref_dec(&mut (*p).content_light_ref);
     dav1d_ref_dec(&mut (*p).mastering_display_ref);
     dav1d_ref_dec(&mut (*p).itut_t35_ref);

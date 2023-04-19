@@ -407,7 +407,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
             size: 0,
             user_data: Dav1dUserData {
                 data: 0 as *const uint8_t,
-                ref_0: 0 as *mut Dav1dRef,
+                r#ref: 0 as *mut Dav1dRef,
             },
         },
         content_light: 0 as *mut Dav1dContentLightLevel,
@@ -420,14 +420,14 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
         mastering_display_ref: 0 as *mut Dav1dRef,
         itut_t35_ref: 0 as *mut Dav1dRef,
         reserved_ref: [0; 4],
-        ref_0: 0 as *mut Dav1dRef,
+        r#ref: 0 as *mut Dav1dRef,
         allocator_data: 0 as *mut libc::c_void,
     };
     let mut c: *mut Dav1dContext = 0 as *mut Dav1dContext;
     let mut data: Dav1dData = Dav1dData {
         data: 0 as *const uint8_t,
         sz: 0,
-        ref_0: 0 as *mut Dav1dRef,
+        r#ref: 0 as *mut Dav1dRef,
         m: Dav1dDataProps {
             timestamp: 0,
             duration: 0,
@@ -435,7 +435,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
             size: 0,
             user_data: Dav1dUserData {
                 data: 0 as *const uint8_t,
-                ref_0: 0 as *mut Dav1dRef,
+                r#ref: 0 as *mut Dav1dRef,
             },
         },
     };

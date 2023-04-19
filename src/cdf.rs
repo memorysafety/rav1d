@@ -329,7 +329,7 @@ pub struct CdfModeContext {
     pub jnt_comp: Align4<[[uint16_t; 2]; 6]>,
     pub mask_comp: Align4<[[uint16_t; 2]; 6]>,
     pub wedge_comp: Align4<[[uint16_t; 2]; 9]>,
-    pub ref_0: Align4<[[[uint16_t; 2]; 3]; 6]>,
+    pub r#ref: Align4<[[[uint16_t; 2]; 3]; 6]>,
     pub comp_fwd_ref: Align4<[[[uint16_t; 2]; 3]; 3]>,
     pub comp_bwd_ref: Align4<[[[uint16_t; 2]; 3]; 2]>,
     pub comp_uni_ref: Align4<[[[uint16_t; 2]; 3]; 3]>,
@@ -791,7 +791,7 @@ pub type generate_grain_y_fn = Option::<
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct CdfThreadContext {
-    pub ref_0: *mut Dav1dRef,
+    pub r#ref: *mut Dav1dRef,
     pub data: CdfThreadContext_data,
     pub progress: *mut atomic_uint,
 }
@@ -4320,7 +4320,7 @@ pub fn av1_default_cdf() -> CdfModeContext {
             [(32768 as libc::c_int - 11820 as libc::c_int) as uint16_t, 0],
             [(32768 as libc::c_int - 7701 as libc::c_int) as uint16_t, 0],
         ].into(),
-        ref_0: [
+        r#ref: [
             [
                 [(32768 as libc::c_int - 4897 as libc::c_int) as uint16_t, 0],
                 [(32768 as libc::c_int - 16973 as libc::c_int) as uint16_t, 0],
@@ -23450,15 +23450,15 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         while i_20 < 3 as libc::c_int {
             (*dst)
                 .m
-                .ref_0[j_30
+                .r#ref[j_30
                 as usize][i_20
                 as usize][0 as libc::c_int
                 as usize] = (*src)
                 .m
-                .ref_0[j_30 as usize][i_20 as usize][0 as libc::c_int as usize];
+                .r#ref[j_30 as usize][i_20 as usize][0 as libc::c_int as usize];
             (*dst)
                 .m
-                .ref_0[j_30
+                .r#ref[j_30
                 as usize][i_20
                 as usize][1 as libc::c_int as usize] = 0 as libc::c_int as uint16_t;
             i_20 += 1;
@@ -23734,7 +23734,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_init_static(
     cdf: *mut CdfThreadContext,
     qidx: libc::c_int,
 ) {
-    (*cdf).ref_0 = 0 as *mut Dav1dRef;
+    (*cdf).r#ref = 0 as *mut Dav1dRef;
     (*cdf).data.qcat = get_qcat_idx(qidx) as libc::c_uint;
 }
 #[no_mangle]
@@ -23742,7 +23742,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_copy(
     dst: *mut CdfContext,
     src: *const CdfThreadContext,
 ) {
-    if !((*src).ref_0).is_null() {
+    if !((*src).r#ref).is_null() {
         memcpy(
             dst as *mut libc::c_void,
             (*src).data.cdf as *const libc::c_void,
@@ -23787,15 +23787,15 @@ pub unsafe extern "C" fn dav1d_cdf_thread_alloc(
     have_frame_mt: libc::c_int,
 ) -> libc::c_int {
     (*cdf)
-        .ref_0 = dav1d_ref_create_using_pool(
+        .r#ref = dav1d_ref_create_using_pool(
         (*c).cdf_pool,
         (::core::mem::size_of::<CdfContext>())
             .wrapping_add(::core::mem::size_of::<atomic_uint>()),
     );
-    if ((*cdf).ref_0).is_null() {
+    if ((*cdf).r#ref).is_null() {
         return -(12 as libc::c_int);
     }
-    (*cdf).data.cdf = (*(*cdf).ref_0).data as *mut CdfContext;
+    (*cdf).data.cdf = (*(*cdf).r#ref).data as *mut CdfContext;
     if have_frame_mt != 0 {
         (*cdf)
             .progress = &mut *((*cdf).data.cdf).offset(1 as libc::c_int as isize)
@@ -23810,8 +23810,8 @@ pub unsafe extern "C" fn dav1d_cdf_thread_ref(
     src: *mut CdfThreadContext,
 ) {
     *dst = *src;
-    if !((*src).ref_0).is_null() {
-        dav1d_ref_inc((*src).ref_0);
+    if !((*src).r#ref).is_null() {
+        dav1d_ref_inc((*src).r#ref);
     }
 }
 #[no_mangle]
@@ -23822,5 +23822,5 @@ pub unsafe extern "C" fn dav1d_cdf_thread_unref(cdf: *mut CdfThreadContext) {
         (::core::mem::size_of::<CdfThreadContext>() as libc::c_ulong)
             .wrapping_sub(8 as libc::c_ulong),
     );
-    dav1d_ref_dec(&mut (*cdf).ref_0);
+    dav1d_ref_dec(&mut (*cdf).r#ref);
 }

@@ -1584,7 +1584,7 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
         let mut init = Dav1dData {
             data: 0 as *const uint8_t,
             sz: 0,
-            ref_0: 0 as *mut Dav1dRef,
+            r#ref: 0 as *mut Dav1dRef,
             m: Dav1dDataProps {
                 timestamp: 0,
                 duration: 0,
@@ -1592,7 +1592,7 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
                 size: 0,
                 user_data: Dav1dUserData {
                     data: 0 as *const uint8_t,
-                    ref_0: 0 as *mut Dav1dRef,
+                    r#ref: 0 as *mut Dav1dRef,
                 },
             },
         };

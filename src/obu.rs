@@ -2110,12 +2110,12 @@ unsafe extern "C" fn parse_frame_hdr(
                                     }
                                     if dav1d_get_bit(gb) != 0 {
                                         (*seg)
-                                            .ref_0 = dav1d_get_bits(gb, 3 as libc::c_int)
+                                            .r#ref = dav1d_get_bits(gb, 3 as libc::c_int)
                                             as libc::c_int;
                                         (*hdr).segmentation.seg_data.last_active_segid = i_10;
                                         (*hdr).segmentation.seg_data.preskip = 1 as libc::c_int;
                                     } else {
-                                        (*seg).ref_0 = -(1 as libc::c_int);
+                                        (*seg).r#ref = -(1 as libc::c_int);
                                     }
                                     (*seg).skip = dav1d_get_bit(gb) as libc::c_int;
                                     if (*seg).skip != 0 {
@@ -2160,7 +2160,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                     .segmentation
                                     .seg_data
                                     .d[i_11 as usize]
-                                    .ref_0 = -(1 as libc::c_int);
+                                    .r#ref = -(1 as libc::c_int);
                                 i_11 += 1;
                             }
                             current_block = 8075351136037156718;

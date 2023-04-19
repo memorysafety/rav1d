@@ -236,7 +236,7 @@ pub struct Dav1dSegmentationData {
     pub delta_lf_y_h: libc::c_int,
     pub delta_lf_u: libc::c_int,
     pub delta_lf_v: libc::c_int,
-    pub ref_0: libc::c_int,
+    pub r#ref: libc::c_int,
     pub skip: libc::c_int,
     pub globalmv: libc::c_int,
 }
