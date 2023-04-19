@@ -868,8 +868,8 @@ pub unsafe fn dav1d_refmvs_find(
             &mut have_row_mvs,
         );
     }
-    for n_0 in 2..=3 {
-        if n_0 as libc::c_uint > n_rows && n_0 as libc::c_uint <= max_rows {
+    for n in 2..=3 {
+        if n as libc::c_uint > n_rows && n as libc::c_uint <= max_rows {
             n_rows = n_rows
                 .wrapping_add(
                     scan_row(
@@ -877,17 +877,17 @@ pub unsafe fn dav1d_refmvs_find(
                         cnt,
                         r#ref,
                         gmv.as_ptr(),
-                        &mut *(rt.r[(((by4 & 31) - 2 * n_0 + 1 | 1) + 5) as usize]).offset(bx4 as isize | 1),
+                        &mut *(rt.r[(((by4 & 31) - 2 * n + 1 | 1) + 5) as usize]).offset(bx4 as isize | 1),
                         bw4,
                         w4,
-                        (1 as libc::c_uint).wrapping_add(max_rows).wrapping_sub(n_0 as libc::c_uint) as libc::c_int,
+                        (1 as libc::c_uint).wrapping_add(max_rows).wrapping_sub(n as libc::c_uint) as libc::c_int,
                         if bw4 >= 16 { 4 } else { 2 },
                         &mut have_dummy_newmv_match,
                         &mut have_row_mvs,
                     ) as libc::c_uint,
                 );
         }
-        if n_0 as libc::c_uint > n_cols && n_0 as libc::c_uint <= max_cols {
+        if n as libc::c_uint > n_cols && n as libc::c_uint <= max_cols {
             n_cols = n_cols
                 .wrapping_add(
                     scan_col(
@@ -898,8 +898,8 @@ pub unsafe fn dav1d_refmvs_find(
                         &rt.r[(by4 as usize & 31 | 1) + 5],
                         bh4,
                         h4,
-                        bx4 - n_0 * 2 + 1 | 1,
-                        (1 as libc::c_uint).wrapping_add(max_cols).wrapping_sub(n_0 as libc::c_uint) as libc::c_int,
+                        bx4 - n * 2 + 1 | 1,
+                        (1 as libc::c_uint).wrapping_add(max_cols).wrapping_sub(n as libc::c_uint) as libc::c_int,
                         if bh4 >= 16 { 4 } else { 2 },
                         &mut have_dummy_newmv_match,
                         &mut have_col_mvs,
@@ -929,28 +929,28 @@ pub unsafe fn dav1d_refmvs_find(
     let mut len = nearest_cnt;
     while len != 0 {
         let mut last = 0;
-        for n_1 in 1..len {
-            if mvstack[n_1 as usize - 1].weight < mvstack[n_1 as usize].weight {
-                let mut tmp = mvstack[n_1 as usize - 1];
-                mvstack[n_1 as usize - 1] = mvstack[n_1 as usize];
-                mvstack[n_1 as usize] = tmp;
-                last = n_1;
+        for n in 1..len {
+            if mvstack[n as usize - 1].weight < mvstack[n as usize].weight {
+                let mut tmp = mvstack[n as usize - 1];
+                mvstack[n as usize - 1] = mvstack[n as usize];
+                mvstack[n as usize] = tmp;
+                last = n;
             }
         }
         len = last;
     }
     len = *cnt;
     while len > nearest_cnt {
-        let mut last_0 = nearest_cnt;
-        for n_2 in nearest_cnt + 1..len {
-            if mvstack[n_2 as usize - 1].weight < mvstack[n_2 as usize].weight {
-                let mut tmp_0 = mvstack[n_2 as usize - 1];
-                mvstack[n_2 as usize - 1] = mvstack[n_2 as usize];
-                mvstack[n_2 as usize] = tmp_0;
-                last_0 = n_2;
+        let mut last = nearest_cnt;
+        for n in nearest_cnt + 1..len {
+            if mvstack[n as usize - 1].weight < mvstack[n as usize].weight {
+                let mut tmp_0 = mvstack[n as usize - 1];
+                mvstack[n as usize - 1] = mvstack[n as usize];
+                mvstack[n as usize] = tmp_0;
+                last = n;
             }
         }
-        len = last_0;
+        len = last;
     }
     if r#ref.r#ref[1] > 0 {
         if *cnt < 2 {
@@ -961,9 +961,9 @@ pub unsafe fn dav1d_refmvs_find(
             let same = &mut mvstack[cur_cnt..];
             let mut same_count = [0, 0, 0, 0];
             if n_rows != !0 {
-                let mut x_0 = 0;
-                while x_0 < sz4 {
-                    let cand_b = &*b_top.offset(x_0 as isize) as *const refmvs_block;
+                let mut x = 0;
+                while x < sz4 {
+                    let cand_b = &*b_top.offset(x as isize) as *const refmvs_block;
                     add_compound_extended_candidate(
                         same.as_mut_ptr(),
                         same_count.as_mut_ptr(),
@@ -973,24 +973,24 @@ pub unsafe fn dav1d_refmvs_find(
                         r#ref,
                         rf.sign_bias.as_ptr(),
                     );
-                    x_0 += dav1d_block_dimensions[(*cand_b).bs as usize][0] as libc::c_int;
+                    x += dav1d_block_dimensions[(*cand_b).bs as usize][0] as libc::c_int;
                 }
             }
             if n_cols != !0 {
-                let mut y_0 = 0;
-                while y_0 < sz4 {
-                    let cand_b_0: *const refmvs_block = &mut *(*b_left.offset(y_0 as isize))
+                let mut y = 0;
+                while y < sz4 {
+                    let cand_b: *const refmvs_block = &mut *(*b_left.offset(y as isize))
                         .offset(bx4 as isize - 1) as *mut refmvs_block;
                     add_compound_extended_candidate(
                         same.as_mut_ptr(),
                         same_count.as_mut_ptr(),
-                        cand_b_0,
+                        cand_b,
                         sign0,
                         sign1,
                         r#ref,
                         rf.sign_bias.as_ptr(),
                     );
-                    y_0 += dav1d_block_dimensions[(*cand_b_0).bs as usize][1] as libc::c_int;
+                    y += dav1d_block_dimensions[(*cand_b).bs as usize][1] as libc::c_int;
                 }
             }
             
@@ -1001,17 +1001,17 @@ pub unsafe fn dav1d_refmvs_find(
 
             let diff_count = &same_count[2..];
             let mut current_block_118: u64;
-            for n_3 in 0..2 {
-                let mut m = same_count[n_3 as usize];
+            for n in 0..2 {
+                let mut m = same_count[n as usize];
                 if !(m >= 2) {
-                    let l = diff_count[n_3 as usize];
+                    let l = diff_count[n as usize];
                     if l != 0 {
-                        same[m as usize].mv.mv[n_3 as usize] = diff[0].mv.mv[n_3 as usize];
+                        same[m as usize].mv.mv[n as usize] = diff[0].mv.mv[n as usize];
                         m += 1;
                         if m == 2 {
                             current_block_118 = 13740693533991687037;
                         } else if l == 2 {
-                            same[1].mv.mv[n_3 as usize] = diff[1].mv.mv[n_3 as usize];
+                            same[1].mv.mv[n as usize] = diff[1].mv.mv[n as usize];
                             current_block_118 = 13740693533991687037;
                         } else {
                             current_block_118 = 9430418855388998878;
@@ -1023,7 +1023,7 @@ pub unsafe fn dav1d_refmvs_find(
                         13740693533991687037 => {}
                         _ => {
                             loop {
-                                same[m as usize].mv.mv[n_3 as usize] = tgmv[n_3 as usize];
+                                same[m as usize].mv.mv[n as usize] = tgmv[n as usize];
                                 m += 1;
                                 if !(m < 2) {
                                     break;
@@ -1033,15 +1033,15 @@ pub unsafe fn dav1d_refmvs_find(
                     }
                 }
             }
-            let mut n_4 = *cnt;
+            let mut n = *cnt;
             let same = &mvstack[cur_cnt..]; // need to reborrow to get a &, not &mut
-            if n_4 == 1 && mvstack[0].mv == same[0].mv {
+            if n == 1 && mvstack[0].mv == same[0].mv {
                 mvstack[1].mv = mvstack[2].mv;
             }
             loop {
-                mvstack[n_4 as usize].weight = 2;
-                n_4 += 1;
-                if !(n_4 < 2) {
+                mvstack[n as usize].weight = 2;
+                n += 1;
+                if !(n < 2) {
                     break;
                 }
             }
@@ -1052,14 +1052,14 @@ pub unsafe fn dav1d_refmvs_find(
         let top = -(by4 + bh4 + 4) * 4 * 8;
         let bottom = (rf.ih4 - by4 + 4) * 4 * 8;
         let n_refmvs = *cnt;
-        let mut n_5 = 0;
+        let mut n = 0;
         loop {
-            mvstack[n_5 as usize].mv.mv[0].x = iclip(mvstack[n_5 as usize].mv.mv[0].x as libc::c_int, left, right) as i16;
-            mvstack[n_5 as usize].mv.mv[0].y = iclip(mvstack[n_5 as usize].mv.mv[0].y as libc::c_int, top, bottom) as i16;
-            mvstack[n_5 as usize].mv.mv[1].x = iclip(mvstack[n_5 as usize].mv.mv[1].x as libc::c_int, left, right) as i16;
-            mvstack[n_5 as usize].mv.mv[1].y = iclip(mvstack[n_5 as usize].mv.mv[1].y as libc::c_int, top, bottom) as i16;
-            n_5 += 1;
-            if !(n_5 < n_refmvs) {
+            mvstack[n as usize].mv.mv[0].x = iclip(mvstack[n as usize].mv.mv[0].x as libc::c_int, left, right) as i16;
+            mvstack[n as usize].mv.mv[0].y = iclip(mvstack[n as usize].mv.mv[0].y as libc::c_int, top, bottom) as i16;
+            mvstack[n as usize].mv.mv[1].x = iclip(mvstack[n as usize].mv.mv[1].x as libc::c_int, left, right) as i16;
+            mvstack[n as usize].mv.mv[1].y = iclip(mvstack[n as usize].mv.mv[1].y as libc::c_int, top, bottom) as i16;
+            n += 1;
+            if !(n < n_refmvs) {
                 break;
             }
         }
@@ -1079,11 +1079,11 @@ pub unsafe fn dav1d_refmvs_find(
     } else {
         if *cnt < 2 && r#ref.r#ref[0] > 0 {
             let sign = rf.sign_bias[r#ref.r#ref[0] as usize - 1] as libc::c_int;
-            let sz4_0 = imin(w4, h4);
+            let sz4 = imin(w4, h4);
             if n_rows != !0 {
-                let mut x_1 = 0;
-                while x_1 < sz4_0 && *cnt < 2 {
-                    let cand_b_1 = &*b_top.offset(x_1 as isize) as *const refmvs_block;
+                let mut x = 0;
+                while x < sz4 && *cnt < 2 {
+                    let cand_b_1 = &*b_top.offset(x as isize) as *const refmvs_block;
                     add_single_extended_candidate(
                         mvstack.as_mut_ptr(),
                         cnt,
@@ -1091,45 +1091,45 @@ pub unsafe fn dav1d_refmvs_find(
                         sign,
                         rf.sign_bias.as_ptr(),
                     );
-                    x_1 += dav1d_block_dimensions[(*cand_b_1).bs as usize][0] as libc::c_int;
+                    x += dav1d_block_dimensions[(*cand_b_1).bs as usize][0] as libc::c_int;
                 }
             }
             if n_cols != !0 {
-                let mut y_1 = 0;
-                while y_1 < sz4_0 && *cnt < 2 {
-                    let cand_b_2: *const refmvs_block = &mut *(*b_left.offset(y_1 as isize))
+                let mut y = 0;
+                while y < sz4 && *cnt < 2 {
+                    let cand_b: *const refmvs_block = &mut *(*b_left.offset(y as isize))
                         .offset(bx4 as isize - 1) as *mut refmvs_block;
                     add_single_extended_candidate(
                         mvstack.as_mut_ptr(),
                         cnt,
-                        cand_b_2,
+                        cand_b,
                         sign,
                         rf.sign_bias.as_ptr(),
                     );
-                    y_1 += dav1d_block_dimensions[(*cand_b_2).bs as usize][1] as libc::c_int;
+                    y += dav1d_block_dimensions[(*cand_b).bs as usize][1] as libc::c_int;
                 }
             }
         }
     }
     assert!(*cnt <= 8);
-    let mut n_refmvs_0 = *cnt;
-    if n_refmvs_0 != 0 {
-        let left_0 = -(bx4 + bw4 + 4) * 4 * 8;
-        let right_0 = (rf.iw4 - bx4 + 4) * 4 * 8;
-        let top_0 = -(by4 + bh4 + 4) * 4 * 8;
-        let bottom_0 = (rf.ih4 - by4 + 4) * 4 * 8;
-        let mut n_6 = 0;
+    let mut n_refmvs = *cnt;
+    if n_refmvs != 0 {
+        let left = -(bx4 + bw4 + 4) * 4 * 8;
+        let right = (rf.iw4 - bx4 + 4) * 4 * 8;
+        let top = -(by4 + bh4 + 4) * 4 * 8;
+        let bottom = (rf.ih4 - by4 + 4) * 4 * 8;
+        let mut n = 0;
         loop {
-            mvstack[n_6 as usize].mv.mv[0].x = iclip(mvstack[n_6 as usize].mv.mv[0].x as libc::c_int, left_0, right_0) as i16;
-            mvstack[n_6 as usize].mv.mv[0].y = iclip(mvstack[n_6 as usize].mv.mv[0].y as libc::c_int, top_0, bottom_0) as i16;
-            n_6 += 1;
-            if !(n_6 < n_refmvs_0) {
+            mvstack[n as usize].mv.mv[0].x = iclip(mvstack[n as usize].mv.mv[0].x as libc::c_int, left, right) as i16;
+            mvstack[n as usize].mv.mv[0].y = iclip(mvstack[n as usize].mv.mv[0].y as libc::c_int, top, bottom) as i16;
+            n += 1;
+            if !(n < n_refmvs) {
                 break;
             }
         }
     }
-    for n_7 in *cnt..2 {
-        mvstack[n_7 as usize].mv.mv[0] = tgmv[0];
+    for n in *cnt..2 {
+        mvstack[n as usize].mv.mv[0] = tgmv[0];
     }
     *ctx = refmv_ctx << 4 | globalmv_ctx << 3 | newmv_ctx;
 }
