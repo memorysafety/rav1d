@@ -901,41 +901,35 @@ pub unsafe fn dav1d_refmvs_find(
     // what is different about secondary is that everything is now in 8x8 resolution
     for n in 2..=3 {
         if n as libc::c_uint > n_rows && n as libc::c_uint <= max_rows {
-            n_rows = n_rows
-                .wrapping_add(
-                    scan_row(
-                        mvstack.as_mut_ptr(),
-                        cnt,
-                        r#ref,
-                        gmv.as_ptr(),
-                        &mut *(rt.r[(((by4 & 31) - 2 * n + 1 | 1) + 5) as usize]).offset(bx4 as isize | 1),
-                        bw4,
-                        w4,
-                        (1 as libc::c_uint).wrapping_add(max_rows).wrapping_sub(n as libc::c_uint) as libc::c_int,
-                        if bw4 >= 16 { 4 } else { 2 },
-                        &mut have_dummy_newmv_match,
-                        &mut have_row_mvs,
-                    ) as libc::c_uint,
-                );
+            n_rows = n_rows.wrapping_add(scan_row(
+                mvstack.as_mut_ptr(),
+                cnt,
+                r#ref,
+                gmv.as_ptr(),
+                &mut *(rt.r[(((by4 & 31) - 2 * n + 1 | 1) + 5) as usize]).offset(bx4 as isize | 1),
+                bw4,
+                w4,
+                (1 as libc::c_uint).wrapping_add(max_rows).wrapping_sub(n as libc::c_uint) as libc::c_int,
+                if bw4 >= 16 { 4 } else { 2 },
+                &mut have_dummy_newmv_match,
+                &mut have_row_mvs,
+            ) as libc::c_uint);
         }
         if n as libc::c_uint > n_cols && n as libc::c_uint <= max_cols {
-            n_cols = n_cols
-                .wrapping_add(
-                    scan_col(
-                        mvstack.as_mut_ptr(),
-                        cnt,
-                        r#ref,
-                        gmv.as_ptr(),
-                        &rt.r[(by4 as usize & 31 | 1) + 5],
-                        bh4,
-                        h4,
-                        bx4 - n * 2 + 1 | 1,
-                        (1 as libc::c_uint).wrapping_add(max_cols).wrapping_sub(n as libc::c_uint) as libc::c_int,
-                        if bh4 >= 16 { 4 } else { 2 },
-                        &mut have_dummy_newmv_match,
-                        &mut have_col_mvs,
-                    ) as libc::c_uint,
-                );
+            n_cols = n_cols.wrapping_add(scan_col(
+                mvstack.as_mut_ptr(),
+                cnt,
+                r#ref,
+                gmv.as_ptr(),
+                &rt.r[(by4 as usize & 31 | 1) + 5],
+                bh4,
+                h4,
+                bx4 - n * 2 + 1 | 1,
+                (1 as libc::c_uint).wrapping_add(max_cols).wrapping_sub(n as libc::c_uint) as libc::c_int,
+                if bh4 >= 16 { 4 } else { 2 },
+                &mut have_dummy_newmv_match,
+                &mut have_col_mvs,
+            ) as libc::c_uint);
         }
     }
     assert!(*cnt <= 8);
