@@ -1157,8 +1157,10 @@ pub unsafe fn dav1d_refmvs_find(
         }
     }
 
-    for n in *cnt..2 {
-        mvstack[n].mv.mv[0] = tgmv[0];
+    // Need to use `min` so we don't get a backwards range,
+    // which will fail on slicing.
+    for cand in &mut mvstack[std::cmp::min(*cnt, 2)..2] {
+        cand.mv.mv[0] = tgmv[0];
     }
 
     *ctx = refmv_ctx << 4 | globalmv_ctx << 3 | newmv_ctx;
