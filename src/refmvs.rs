@@ -405,12 +405,8 @@ unsafe fn mv_projection(mv: mv, num: libc::c_int, den: libc::c_int) -> mv {
         1024,   963,  910,  862,  819,  780,  744,  712,
          682,   655,  630,  606,  585,  564,  546,  528,
     ];
-    if !(den > 0 && den < 32) {
-        unreachable!();
-    }
-    if !(num > -32 && num < 32) {
-        unreachable!();
-    }
+    assert!(den > 0 && den < 32);
+    assert!(num > -32 && num < 32);
     let frac = num * div_mult[den as usize] as libc::c_int;
     let y = mv.y as libc::c_int * frac;
     let x = mv.x as libc::c_int * frac;
