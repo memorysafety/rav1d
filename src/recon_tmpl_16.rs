@@ -1472,7 +1472,7 @@ unsafe extern "C" fn decode_coefs(
             dav1d_txtp_from_uvmode[(*b).c2rust_unnamed.c2rust_unnamed.uv_mode as usize]
                 as libc::c_uint
         } else {
-            get_uv_inter_txtp(t_dim, *txtp) as libc::c_uint
+            get_uv_inter_txtp(&*t_dim, *txtp) as libc::c_uint
         }) as TxfmType;
     } else if (*(*f).frame_hdr).segmentation.qidx[(*b).seg_id as usize] == 0 {
         *txtp = DCT_DCT;

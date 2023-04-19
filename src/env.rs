@@ -5,6 +5,7 @@ use crate::include::stdint::int8_t;
 use crate::include::stdint::uint8_t;
 use crate::src::levels::mv;
 use crate::src::levels::TxfmType;
+use crate::src::levels::TxfmSize;
 use crate::src::levels::DCT_DCT;
 use crate::src::levels::H_ADST;
 use crate::src::levels::H_FLIPADST;
@@ -38,26 +39,22 @@ pub struct BlockContext {
 }
 
 #[inline]
-pub unsafe extern "C" fn get_uv_inter_txtp(
-    uvt_dim: *const TxfmInfo,
+pub fn get_uv_inter_txtp(
+    uvt_dim: &TxfmInfo,
     ytxtp: TxfmType,
 ) -> TxfmType {
-    if (*uvt_dim).max as libc::c_int == TX_32X32 as libc::c_int {
-        return (if ytxtp as libc::c_uint == IDTX as libc::c_int as libc::c_uint {
-            IDTX as libc::c_int
+    if (*uvt_dim).max as TxfmSize == TX_32X32 {
+        return if ytxtp == IDTX {
+            IDTX
         } else {
-            DCT_DCT as libc::c_int
-        }) as TxfmType;
+            DCT_DCT
+        };
     }
-    if (*uvt_dim).min as libc::c_int == TX_16X16 as libc::c_int
-        && (1 as libc::c_int) << ytxtp as libc::c_uint
-            & ((1 as libc::c_int) << H_FLIPADST as libc::c_int
-                | (1 as libc::c_int) << V_FLIPADST as libc::c_int
-                | (1 as libc::c_int) << H_ADST as libc::c_int
-                | (1 as libc::c_int) << V_ADST as libc::c_int) != 0
-    {
+    if (*uvt_dim).min as TxfmSize == TX_16X16
+        && ((1 << ytxtp) & ((1 << H_FLIPADST) | (1 << V_FLIPADST) | (1 << H_ADST) | (1 << V_ADST))) != 0 {
         return DCT_DCT;
     }
+
     return ytxtp;
 }
 
