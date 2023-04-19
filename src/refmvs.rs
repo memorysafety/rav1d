@@ -937,23 +937,12 @@ pub unsafe fn dav1d_refmvs_find(
     let ref_match_count = have_col_mvs + have_row_mvs;
 
     // context build-up
-    let mut refmv_ctx = 0;
-    let mut newmv_ctx = 0;
-    match nearest_match {
-        0 => {
-            refmv_ctx = imin(2, ref_match_count);
-            newmv_ctx = (ref_match_count > 0) as libc::c_int;
-        }
-        1 => {
-            refmv_ctx = imin(ref_match_count * 3, 4);
-            newmv_ctx = 3 - have_newmv;
-        }
-        2 => {
-            refmv_ctx = 5;
-            newmv_ctx = 5 - have_newmv;
-        }
-        _ => {}
-    }
+    let (refmv_ctx, newmv_ctx) = match nearest_match {
+        0 => (imin(2, ref_match_count), (ref_match_count > 0) as libc::c_int),
+        1 => (imin(ref_match_count * 3, 4), 3 - have_newmv),
+        2 => (5, 5 - have_newmv),
+        _ => (0, 0),
+    };
 
     // sorting (nearest, then "secondary")
     let mut len = nearest_cnt;
