@@ -695,9 +695,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
     }
     if r#ref.r#ref[0] > 0 {
         tgmv[0] = get_gmv_2d(
-            &*((*(*rf).frm_hdr).gmv)
-                .as_ptr()
-                .offset(*(r#ref.r#ref).as_ptr().offset(0) as isize - 1),
+            &(*(*rf).frm_hdr).gmv[r#ref.r#ref[0] as usize - 1],
             bx4,
             by4,
             bw4,
@@ -715,9 +713,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
     }
     if r#ref.r#ref[1] > 0 {
         tgmv[1] = get_gmv_2d(
-            &*((*(*rf).frm_hdr).gmv)
-                .as_ptr()
-                .offset(*(r#ref.r#ref).as_ptr().offset(1) as isize - 1),
+            &(*(*rf).frm_hdr).gmv[r#ref.r#ref[1] as usize - 1],
             bx4,
             by4,
             bw4,
@@ -738,10 +734,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
     let mut b_top = 0 as *const refmvs_block;
     if by4 > (*rt).tile_row.start {
         max_rows = imin(by4 - (*rt).tile_row.start + 1 >> 1, 2 + (bh4 > 1) as libc::c_int) as libc::c_uint;
-        b_top = &mut *(*((*rt).r)
-            .as_ptr()
-            .offset((by4 as isize & 31) - 1 + 5))
-            .offset(bx4 as isize) as *mut refmvs_block;
+        b_top = &mut *(*rt).r[(by4 as usize & 31) + 5 - 1].offset(bx4 as isize) as *mut refmvs_block;
         n_rows = scan_row(
             mvstack,
             cnt,
@@ -761,10 +754,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
     let mut b_left = 0 as *const *mut refmvs_block;
     if bx4 > (*rt).tile_col.start {
         max_cols = imin(bx4 - (*rt).tile_col.start + 1 >> 1, 2 + (bw4 > 1) as libc::c_int) as libc::c_uint;
-        b_left = &*((*rt).r)
-            .as_ptr()
-            .offset((by4 as isize & 31) + 5)
-            as *const *mut refmvs_block;
+        b_left = &(*rt).r[(by4 as usize & 31) + 5] as *const *mut refmvs_block;
         n_cols = scan_col(
             mvstack,
             cnt,
@@ -898,10 +888,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
                         cnt,
                         r#ref,
                         gmv.as_mut_ptr() as *const mv,
-                        &mut *(*((*rt).r)
-                            .as_ptr()
-                            .offset((((by4 & 31) - 2 * n_0 + 1 | 1) + 5) as isize))
-                            .offset(bx4 as isize | 1),
+                        &mut *((*rt).r[(((by4 & 31) - 2 * n_0 + 1 | 1) + 5) as usize]).offset(bx4 as isize | 1),
                         bw4,
                         w4,
                         (1 as libc::c_uint).wrapping_add(max_rows).wrapping_sub(n_0 as libc::c_uint) as libc::c_int,
@@ -919,9 +906,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
                         cnt,
                         r#ref,
                         gmv.as_mut_ptr() as *const mv,
-                        &*((*rt).r)
-                            .as_ptr()
-                            .offset((by4 as isize & 31 | 1) + 5),
+                        &(*rt).r[(by4 as usize & 31 | 1) + 5],
                         bh4,
                         h4,
                         bx4 - n_0 * 2 + 1 | 1,
