@@ -670,7 +670,7 @@ unsafe extern "C" fn add_single_extended_candidate(
 }
 
 pub unsafe fn dav1d_refmvs_find(
-    rt: *const refmvs_tile,
+    rt: &refmvs_tile,
     mut mvstack: *mut refmvs_candidate,
     cnt: *mut libc::c_int,
     ctx: *mut libc::c_int,
@@ -680,12 +680,12 @@ pub unsafe fn dav1d_refmvs_find(
     by4: libc::c_int,
     bx4: libc::c_int,
 ) {
-    let rf = &*(*rt).rf;
+    let rf = &*rt.rf;
     let b_dim = &dav1d_block_dimensions[bs as usize];
     let bw4 = b_dim[0] as libc::c_int;
-    let w4 = imin(imin(bw4, 16), (*rt).tile_col.end - bx4);
+    let w4 = imin(imin(bw4, 16), rt.tile_col.end - bx4);
     let bh4 = b_dim[1] as libc::c_int;
-    let h4 = imin(imin(bh4, 16), (*rt).tile_row.end - by4);
+    let h4 = imin(imin(bh4, 16), rt.tile_row.end - by4);
     let mut gmv = [mv::ZERO; 2];
     let mut tgmv = [mv::ZERO; 2];
     *cnt = 0;
@@ -730,9 +730,9 @@ pub unsafe fn dav1d_refmvs_find(
     let mut max_rows = 0;
     let mut n_rows = !0;
     let mut b_top = std::ptr::null();
-    if by4 > (*rt).tile_row.start {
-        max_rows = imin(by4 - (*rt).tile_row.start + 1 >> 1, 2 + (bh4 > 1) as libc::c_int) as libc::c_uint;
-        b_top = &mut *(*rt).r[(by4 as usize & 31) + 5 - 1].offset(bx4 as isize);
+    if by4 > rt.tile_row.start {
+        max_rows = imin(by4 - rt.tile_row.start + 1 >> 1, 2 + (bh4 > 1) as libc::c_int) as libc::c_uint;
+        b_top = &mut *rt.r[(by4 as usize & 31) + 5 - 1].offset(bx4 as isize);
         n_rows = scan_row(
             mvstack,
             cnt,
@@ -750,9 +750,9 @@ pub unsafe fn dav1d_refmvs_find(
     let mut max_cols = 0;
     let mut n_cols = !0;
     let mut b_left = std::ptr::null();
-    if bx4 > (*rt).tile_col.start {
-        max_cols = imin(bx4 - (*rt).tile_col.start + 1 >> 1, 2 + (bw4 > 1) as libc::c_int) as libc::c_uint;
-        b_left = &(*rt).r[(by4 as usize & 31) + 5];
+    if bx4 > rt.tile_col.start {
+        max_cols = imin(bx4 - rt.tile_col.start + 1 >> 1, 2 + (bw4 > 1) as libc::c_int) as libc::c_uint;
+        b_left = &rt.r[(by4 as usize & 31) + 5];
         n_cols = scan_col(
             mvstack,
             cnt,
@@ -769,7 +769,7 @@ pub unsafe fn dav1d_refmvs_find(
         ) as libc::c_uint;
     }
     if n_rows != !0 && edge_flags & EDGE_I444_TOP_HAS_RIGHT != 0
-        && imax(bw4, bh4) <= 16 && bw4 + bx4 < (*rt).tile_col.end {
+        && imax(bw4, bh4) <= 16 && bw4 + bx4 < rt.tile_col.end {
         add_spatial_candidate(
             mvstack,
             cnt,
@@ -793,7 +793,7 @@ pub unsafe fn dav1d_refmvs_find(
         let stride: ptrdiff_t = rf.rp_stride;
         let by8 = by4 >> 1;
         let bx8 = bx4 >> 1;
-        let rbi: *const refmvs_temporal_block = &mut *((*rt).rp_proj)
+        let rbi: *const refmvs_temporal_block = &mut *(rt.rp_proj)
             .offset((by8 & 15) as isize * stride + bx8 as isize) as *mut refmvs_temporal_block;
         let mut rb = rbi;
         let step_h = if bw4 >= 16 { 2 } else { 1 };
@@ -822,8 +822,8 @@ pub unsafe fn dav1d_refmvs_find(
             let bh8 = bh4 >> 1;
             let bw8 = bw4 >> 1;
             rb = &*rbi.offset(bh8 as isize * stride) as *const refmvs_temporal_block;
-            let has_bottom = (by8 + bh8 < imin((*rt).tile_row.end >> 1, (by8 & !7) + 8)) as libc::c_int;
-            if has_bottom != 0 && bx8 - 1 >= imax((*rt).tile_col.start >> 1, bx8 & !7) {
+            let has_bottom = (by8 + bh8 < imin(rt.tile_row.end >> 1, (by8 & !7) + 8)) as libc::c_int;
+            if has_bottom != 0 && bx8 - 1 >= imax(rt.tile_col.start >> 1, bx8 & !7) {
                 add_temporal_candidate(
                     rf,
                     mvstack,
@@ -834,7 +834,7 @@ pub unsafe fn dav1d_refmvs_find(
                     std::ptr::null(),
                 );
             }
-            if bx8 + bw8 < imin((*rt).tile_col.end >> 1, (bx8 & !7) + 8) {
+            if bx8 + bw8 < imin(rt.tile_col.end >> 1, (bx8 & !7) + 8) {
                 if has_bottom != 0 {
                     add_temporal_candidate(
                         rf,
@@ -846,7 +846,7 @@ pub unsafe fn dav1d_refmvs_find(
                         std::ptr::null(),
                     );
                 }
-                if (by8 + bh8 - 1) < imin((*rt).tile_row.end >> 1, (by8 & !7) + 8) {
+                if (by8 + bh8 - 1) < imin(rt.tile_row.end >> 1, (by8 & !7) + 8) {
                     add_temporal_candidate(
                         rf,
                         mvstack,
@@ -884,7 +884,7 @@ pub unsafe fn dav1d_refmvs_find(
                         cnt,
                         r#ref,
                         gmv.as_mut_ptr() as *const mv,
-                        &mut *((*rt).r[(((by4 & 31) - 2 * n_0 + 1 | 1) + 5) as usize]).offset(bx4 as isize | 1),
+                        &mut *(rt.r[(((by4 & 31) - 2 * n_0 + 1 | 1) + 5) as usize]).offset(bx4 as isize | 1),
                         bw4,
                         w4,
                         (1 as libc::c_uint).wrapping_add(max_rows).wrapping_sub(n_0 as libc::c_uint) as libc::c_int,
@@ -902,7 +902,7 @@ pub unsafe fn dav1d_refmvs_find(
                         cnt,
                         r#ref,
                         gmv.as_mut_ptr() as *const mv,
-                        &(*rt).r[(by4 as usize & 31 | 1) + 5],
+                        &rt.r[(by4 as usize & 31 | 1) + 5],
                         bh4,
                         h4,
                         bx4 - n_0 * 2 + 1 | 1,
