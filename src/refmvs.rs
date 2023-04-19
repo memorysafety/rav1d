@@ -807,8 +807,8 @@ pub unsafe fn dav1d_refmvs_find(
 
     let nearest_match = have_col_mvs + have_row_mvs;
     let nearest_cnt = *cnt;
-    for n in 0..nearest_cnt {
-        mvstack[n].weight += 640;
+    for cand in &mut mvstack[..nearest_cnt] {
+        cand.weight += 640;
     }
 
     // temporal
