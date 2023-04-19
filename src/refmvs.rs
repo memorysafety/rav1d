@@ -996,7 +996,7 @@ pub unsafe fn dav1d_refmvs_find(
             let sz4 = imin(w4, h4);
             let cur_cnt = *cnt as usize;
             let same = &mut mvstack[cur_cnt..];
-            let mut same_count = [0, 0, 0, 0];
+            let mut same_count = [0; 4];
 
             // non-self references in top
             if n_rows != !0 {
