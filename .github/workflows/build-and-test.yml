@@ -35,22 +35,24 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: cargo build
-        run: cargo build --release
+        run: |
+          # debug build to catch overflows
+          cargo build
       - name: meson test
         run: |
-          .github/workflows/test.sh
+          .github/workflows/test.sh -r ../target/debug/dav1d
           cp ${{ github.workspace }}/build/meson-logs/testlog.txt \
              ${{ github.workspace }}/build/meson-logs/testlog-$(uname -m).txt
       - name: cargo build for i686 (assembly temporarily disabled)
         run: |
           cargo clean
           rustup target add i686-unknown-linux-gnu --toolchain nightly-2022-08-08
-          cargo build --release --target i686-unknown-linux-gnu \
+          # debug build to catch overflows
+          cargo build --target i686-unknown-linux-gnu \
               --no-default-features --features bitdepth_8,bitdepth_16
-          ln target/i686-unknown-linux-gnu/release/dav1d target/release/dav1d
       - name: meson test i686
         run: |
-          .github/workflows/test.sh
+          .github/workflows/test.sh -r ../target/i686-unknown-linux-gnu/debug/dav1d
           cp ${{ github.workspace }}/build/meson-logs/testlog.txt \
              ${{ github.workspace }}/build/meson-logs/testlog-i686.txt
       - name: upload build artifacts
