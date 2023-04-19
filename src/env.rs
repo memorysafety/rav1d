@@ -106,14 +106,14 @@ pub unsafe extern "C" fn get_gmv_2d(
             assert!(gmv.matrix[4] == -gmv.matrix[3]);
         }
         1 => {
-            let mut res_0 = mv {
+            let mut res = mv {
                 y: (gmv.matrix[0] >> 13) as i16,
                 x: (gmv.matrix[1] >> 13) as i16,
             };
             if hdr.force_integer_mv != 0 {
-                fix_int_mv_precision(&mut res_0);
+                fix_int_mv_precision(&mut res);
             }
-            return res_0;
+            return res;
         }
         0 => {
             return mv::ZERO;
@@ -126,15 +126,9 @@ pub unsafe extern "C" fn get_gmv_2d(
     let yc = (gmv.matrix[5] - (1 << 16)) * y + gmv.matrix[4] * x + gmv.matrix[1];
     let shift = 16 - (3 - (hdr.hp == 0) as libc::c_int);
     let round = 1 << shift >> 1;
-    let mut res: mv = mv {
-        y: apply_sign(
-            yc.abs() + round >> shift << (hdr.hp == 0) as libc::c_int,
-            yc,
-        ) as i16,
-        x: apply_sign(
-            xc.abs() + round >> shift << (hdr.hp == 0) as libc::c_int,
-            xc,
-        ) as i16,
+    let mut res = mv {
+        y: apply_sign(yc.abs() + round >> shift << (hdr.hp == 0) as libc::c_int, yc) as i16,
+        x: apply_sign(xc.abs() + round >> shift << (hdr.hp == 0) as libc::c_int, xc) as i16,
     };
     if hdr.force_integer_mv != 0 {
         fix_int_mv_precision(&mut res);
