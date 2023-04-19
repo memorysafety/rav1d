@@ -102,12 +102,8 @@ pub unsafe extern "C" fn get_gmv_2d(
 ) -> mv {
     match (*gmv).type_0 {
         2 => {
-            if !((*gmv).matrix[5] == (*gmv).matrix[2]) {
-                unreachable!();
-            }
-            if !((*gmv).matrix[4] == -(*gmv).matrix[3]) {
-                unreachable!();
-            }
+            assert!((*gmv).matrix[5] == (*gmv).matrix[2]);
+            assert!((*gmv).matrix[4] == -(*gmv).matrix[3]);
         }
         1 => {
             let mut res_0 = mv {
