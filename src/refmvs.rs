@@ -669,8 +669,7 @@ unsafe extern "C" fn add_single_extended_candidate(
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_refmvs_find(
+pub unsafe fn dav1d_refmvs_find(
     rt: *const refmvs_tile,
     mut mvstack: *mut refmvs_candidate,
     cnt: *mut libc::c_int,

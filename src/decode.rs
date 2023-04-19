@@ -114,17 +114,6 @@ extern "C" {
         tile_row_idx: libc::c_int,
         pass: libc::c_int,
     );
-    fn dav1d_refmvs_find(
-        rt: *const refmvs_tile,
-        mvstack: *mut refmvs_candidate,
-        cnt: *mut libc::c_int,
-        ctx: *mut libc::c_int,
-        r#ref: refmvs_refpair,
-        bs: BlockSize,
-        edge_flags: EdgeFlags,
-        by4: libc::c_int,
-        bx4: libc::c_int,
-    );
     #[cfg(feature="bitdepth_8")]
     fn dav1d_film_grain_dsp_init_8bpc(c: *mut Dav1dFilmGrainDSPContext);
     #[cfg(feature="bitdepth_16")]
@@ -352,6 +341,8 @@ extern "C" {
         by: libc::c_int,
     );
 }
+
+use crate::src::refmvs::dav1d_refmvs_find;
 
 use crate::src::r#ref::Dav1dRef;
 use crate::include::stdatomic::atomic_int;
