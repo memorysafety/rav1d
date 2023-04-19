@@ -731,7 +731,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
     let mut have_row_mvs = 0;
     let mut max_rows = 0;
     let mut n_rows = !0;
-    let mut b_top = 0 as *const refmvs_block;
+    let mut b_top = std::ptr::null();
     if by4 > (*rt).tile_row.start {
         max_rows = imin(by4 - (*rt).tile_row.start + 1 >> 1, 2 + (bh4 > 1) as libc::c_int) as libc::c_uint;
         b_top = &mut *(*rt).r[(by4 as usize & 31) + 5 - 1].offset(bx4 as isize) as *mut refmvs_block;
@@ -832,8 +832,8 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
                     cnt,
                     &*rb.offset(-1),
                     r#ref,
-                    0 as *mut libc::c_int,
-                    0 as *const mv,
+                    std::ptr::null_mut(),
+                    std::ptr::null(),
                 );
             }
             if bx8 + bw8 < imin((*rt).tile_col.end >> 1, (bx8 & !7) + 8) {
@@ -844,8 +844,8 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
                         cnt,
                         &*rb.offset(bw8 as isize),
                         r#ref,
-                        0 as *mut libc::c_int,
-                        0 as *const mv,
+                        std::ptr::null_mut(),
+                        std::ptr::null(),
                     );
                 }
                 if (by8 + bh8 - 1) < imin((*rt).tile_row.end >> 1, (by8 & !7) + 8) {
@@ -855,8 +855,8 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
                         cnt,
                         &*rb.offset(bw8 as isize - stride),
                         r#ref,
-                        0 as *mut libc::c_int,
-                        0 as *const mv,
+                        std::ptr::null_mut(),
+                        std::ptr::null(),
                     );
                 }
             }
