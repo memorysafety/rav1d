@@ -174,7 +174,7 @@ use crate::src::mem::dav1d_freep_aligned;
 use crate::src::mem::dav1d_alloc_aligned;
 unsafe extern "C" fn add_spatial_candidate(
     mvstack: *mut refmvs_candidate,
-    cnt: *mut libc::c_int,
+    cnt: &mut usize,
     weight: libc::c_int,
     b: *const refmvs_block,
     r#ref: refmvs_refpair,
@@ -199,8 +199,8 @@ unsafe extern "C" fn add_spatial_candidate(
                 };
                 *have_refmv_match = 1 as libc::c_int;
                 *have_newmv_match |= (*b).mf as libc::c_int >> 1 as libc::c_int;
-                let last: libc::c_int = *cnt;
-                let mut m: libc::c_int = 0 as libc::c_int;
+                let last = *cnt;
+                let mut m = 0;
                 while m < last {
                     if (*mvstack.offset(m as isize)).mv.mv[0 as libc::c_int as usize] == cand_mv {
                         (*mvstack.offset(m as isize)).weight += weight;
@@ -208,12 +208,12 @@ unsafe extern "C" fn add_spatial_candidate(
                     }
                     m += 1;
                 }
-                if last < 8 as libc::c_int {
+                if last < 8 {
                     (*mvstack.offset(last as isize))
                         .mv
                         .mv[0 as libc::c_int as usize] = cand_mv;
                     (*mvstack.offset(last as isize)).weight = weight;
-                    *cnt = last + 1 as libc::c_int;
+                    *cnt = last + 1;
                 }
                 return;
             }
@@ -238,8 +238,8 @@ unsafe extern "C" fn add_spatial_candidate(
         };
         *have_refmv_match = 1 as libc::c_int;
         *have_newmv_match |= (*b).mf as libc::c_int >> 1 as libc::c_int;
-        let last_0: libc::c_int = *cnt;
-        let mut n_0: libc::c_int = 0 as libc::c_int;
+        let last_0 = *cnt;
+        let mut n_0 = 0;
         while n_0 < last_0 {
             if (*mvstack.offset(n_0 as isize)).mv == cand_mv_0 {
                 (*mvstack.offset(n_0 as isize)).weight += weight;
@@ -247,16 +247,16 @@ unsafe extern "C" fn add_spatial_candidate(
             }
             n_0 += 1;
         }
-        if last_0 < 8 as libc::c_int {
+        if last_0 < 8 {
             (*mvstack.offset(last_0 as isize)).mv = cand_mv_0;
             (*mvstack.offset(last_0 as isize)).weight = weight;
-            *cnt = last_0 + 1 as libc::c_int;
+            *cnt = last_0 + 1;
         }
     }
 }
 unsafe extern "C" fn scan_row(
     mvstack: *mut refmvs_candidate,
-    cnt: *mut libc::c_int,
+    cnt: &mut usize,
     r#ref: refmvs_refpair,
     mut gmv: *const mv,
     mut b: *const refmvs_block,
@@ -326,7 +326,7 @@ unsafe extern "C" fn scan_row(
 }
 unsafe extern "C" fn scan_col(
     mvstack: *mut refmvs_candidate,
-    cnt: *mut libc::c_int,
+    cnt: &mut usize,
     r#ref: refmvs_refpair,
     mut gmv: *const mv,
     mut b: *const *mut refmvs_block,
@@ -449,7 +449,7 @@ unsafe extern "C" fn mv_projection(mv: mv, num: libc::c_int, den: libc::c_int) -
 unsafe extern "C" fn add_temporal_candidate(
     rf: *const refmvs_frame,
     mvstack: *mut refmvs_candidate,
-    cnt: *mut libc::c_int,
+    cnt: &mut usize,
     rb: *const refmvs_temporal_block,
     r#ref: refmvs_refpair,
     globalmv_ctx: *mut libc::c_int,
@@ -466,13 +466,13 @@ unsafe extern "C" fn add_temporal_candidate(
         (*rb).r#ref as libc::c_int,
     );
     fix_mv_precision((*rf).frm_hdr, &mut mv);
-    let last: libc::c_int = *cnt;
+    let last = *cnt;
     if r#ref.r#ref[1 as libc::c_int as usize] as libc::c_int == -(1 as libc::c_int) {
         if !globalmv_ctx.is_null() {
             *globalmv_ctx = ((mv.x as libc::c_int - (*gmv.offset(0)).x as libc::c_int).abs()
                 | (mv.y as libc::c_int - (*gmv.offset(0)).y as libc::c_int).abs() >= 16 as libc::c_int) as libc::c_int;
         }
-        let mut n: libc::c_int = 0 as libc::c_int;
+        let mut n = 0;
         while n < last {
             if (*mvstack.offset(n as isize)).mv.mv[0] == mv {
                 (*mvstack.offset(n as isize)).weight += 2 as libc::c_int;
@@ -480,10 +480,10 @@ unsafe extern "C" fn add_temporal_candidate(
             }
             n += 1;
         }
-        if last < 8 as libc::c_int {
+        if last < 8 {
             (*mvstack.offset(last as isize)).mv.mv[0] = mv;
             (*mvstack.offset(last as isize)).weight = 2 as libc::c_int;
-            *cnt = last + 1 as libc::c_int;
+            *cnt = last + 1;
         }
     } else {
         let mut mvp: refmvs_mvpair = refmvs_mvpair {
@@ -502,7 +502,7 @@ unsafe extern "C" fn add_temporal_candidate(
             (*rf).frm_hdr,
             &mut *(mvp.mv).as_mut_ptr().offset(1 as libc::c_int as isize),
         );
-        let mut n_0: libc::c_int = 0 as libc::c_int;
+        let mut n_0 = 0;
         while n_0 < last {
             if (*mvstack.offset(n_0 as isize)).mv == mvp {
                 (*mvstack.offset(n_0 as isize)).weight += 2 as libc::c_int;
@@ -510,10 +510,10 @@ unsafe extern "C" fn add_temporal_candidate(
             }
             n_0 += 1;
         }
-        if last < 8 as libc::c_int {
+        if last < 8 {
             (*mvstack.offset(last as isize)).mv = mvp;
             (*mvstack.offset(last as isize)).weight = 2 as libc::c_int;
-            *cnt = last + 1 as libc::c_int;
+            *cnt = last + 1;
         }
     };
 }
@@ -630,7 +630,7 @@ unsafe extern "C" fn add_compound_extended_candidate(
 }
 unsafe extern "C" fn add_single_extended_candidate(
     mut mvstack: *mut refmvs_candidate,
-    cnt: *mut libc::c_int,
+    cnt: &mut usize,
     cand_b: *const refmvs_block,
     sign: libc::c_int,
     sign_bias: *const uint8_t,
@@ -651,9 +651,9 @@ unsafe extern "C" fn add_single_extended_candidate(
             cand_mv
                 .x = -(cand_mv.x as libc::c_int) as int16_t;
         }
-        let mut m: libc::c_int = 0;
-        let last: libc::c_int = *cnt;
-        m = 0 as libc::c_int;
+        let mut m = 0;
+        let last = *cnt;
+        m = 0;
         while m < last {
             if cand_mv == (*mvstack.offset(m as isize)).mv.mv[0] {
                 break;
@@ -663,61 +663,61 @@ unsafe extern "C" fn add_single_extended_candidate(
         if m == last {
             (*mvstack.offset(m as isize)).mv.mv[0] = cand_mv;
             (*mvstack.offset(m as isize)).weight = 2 as libc::c_int;
-            *cnt = last + 1 as libc::c_int;
+            *cnt = last + 1;
         }
         n += 1;
     }
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_refmvs_find(
-    rt: *const refmvs_tile,
-    mut mvstack: *mut refmvs_candidate,
-    cnt: *mut libc::c_int,
-    ctx: *mut libc::c_int,
+
+/// refmvs_frame allocates memory for one sbrow (32 blocks high, whole frame
+/// wide) of 4x4-resolution refmvs_block entries for spatial MV referencing.
+/// mvrefs_tile[] keeps a list of 35 (32 + 3 above) pointers into this memory,
+/// and each sbrow, the bottom entries (y=27/29/31) are exchanged with the top
+/// (-5/-3/-1) pointers by calling dav1d_refmvs_tile_sbrow_init() at the start
+/// of each tile/sbrow.
+/// 
+/// For temporal MV referencing, we call dav1d_refmvs_save_tmvs() at the end of
+/// each tile/sbrow (when tile column threading is enabled), or at the start of
+/// each interleaved sbrow (i.e. once for all tile columns together, when tile
+/// column threading is disabled). This will copy the 4x4-resolution spatial MVs
+/// into 8x8-resolution refmvs_temporal_block structures. Then, for subsequent
+/// frames, at the start of each tile/sbrow (when tile column threading is
+/// enabled) or at the start of each interleaved sbrow (when tile column
+/// threading is disabled), we call load_tmvs(), which will project the MVs to
+/// their respective position in the current frame.
+pub unsafe fn dav1d_refmvs_find(
+    rt: &refmvs_tile,
+    mvstack: &mut [refmvs_candidate; 8],
+    cnt: &mut usize,
+    ctx: &mut libc::c_int,
     r#ref: refmvs_refpair,
     bs: BlockSize,
     edge_flags: EdgeFlags,
     by4: libc::c_int,
     bx4: libc::c_int,
 ) {
-    let rf: *const refmvs_frame = (*rt).rf;
-    let b_dim: *const uint8_t = (dav1d_block_dimensions[bs as usize]).as_ptr();
-    let bw4: libc::c_int = *b_dim.offset(0 as libc::c_int as isize) as libc::c_int;
-    let w4: libc::c_int = imin(imin(bw4, 16 as libc::c_int), (*rt).tile_col.end - bx4);
-    let bh4: libc::c_int = *b_dim.offset(1 as libc::c_int as isize) as libc::c_int;
-    let h4: libc::c_int = imin(imin(bh4, 16 as libc::c_int), (*rt).tile_row.end - by4);
-    let mut gmv: [mv; 2] = [mv::ZERO; 2];
-    let mut tgmv: [mv; 2] = [mv::ZERO; 2];
-    *cnt = 0 as libc::c_int;
-    if !(r#ref.r#ref[0 as libc::c_int as usize] as libc::c_int >= 0 as libc::c_int
-        && r#ref.r#ref[0 as libc::c_int as usize] as libc::c_int <= 8 as libc::c_int
-        && r#ref.r#ref[1 as libc::c_int as usize] as libc::c_int >= -(1 as libc::c_int)
-        && r#ref.r#ref[1 as libc::c_int as usize] as libc::c_int <= 8 as libc::c_int)
-    {
-        unreachable!();
-    }
-    if r#ref.r#ref[0 as libc::c_int as usize] as libc::c_int > 0 as libc::c_int {
-        tgmv[0 as libc::c_int
-            as usize] = get_gmv_2d(
-            &*((*(*rf).frm_hdr).gmv)
-                .as_ptr()
-                .offset(
-                    (*(r#ref.r#ref).as_ptr().offset(0 as libc::c_int as isize)
-                        as libc::c_int - 1 as libc::c_int) as isize,
-                ),
+    let rf = &*rt.rf;
+    let b_dim = &dav1d_block_dimensions[bs as usize];
+    let bw4 = b_dim[0] as libc::c_int;
+    let w4 = imin(imin(bw4, 16), rt.tile_col.end - bx4);
+    let bh4 = b_dim[1] as libc::c_int;
+    let h4 = imin(imin(bh4, 16), rt.tile_row.end - by4);
+    let mut gmv = [mv::default(); 2];
+    let mut tgmv = [mv::default(); 2];
+
+    *cnt = 0;
+    assert!(r#ref.r#ref[0] >= 0 && r#ref.r#ref[0] <= 8
+        && r#ref.r#ref[1] >= -1 && r#ref.r#ref[1] <= 8);
+    if r#ref.r#ref[0] > 0 {
+        tgmv[0] = get_gmv_2d(
+            &(*rf.frm_hdr).gmv[r#ref.r#ref[0] as usize - 1],
             bx4,
             by4,
             bw4,
             bh4,
-            (*rf).frm_hdr,
+            rf.frm_hdr,
         );
-        gmv[0 as libc::c_int
-            as usize] = if (*(*rf).frm_hdr)
-            .gmv[(r#ref.r#ref[0 as libc::c_int as usize] as libc::c_int
-                - 1 as libc::c_int) as usize]
-            .type_0 as libc::c_uint
-            > DAV1D_WM_TYPE_TRANSLATION as libc::c_int as libc::c_uint
-        {
+        gmv[0] = if (*rf.frm_hdr).gmv[r#ref.r#ref[0] as usize - 1].type_0 > DAV1D_WM_TYPE_TRANSLATION {
             tgmv[0]
         } else {
             mv::INVALID
@@ -726,658 +726,407 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
         tgmv[0] = mv::ZERO;
         gmv[0] = mv::INVALID;
     }
-    if r#ref.r#ref[1 as libc::c_int as usize] as libc::c_int > 0 as libc::c_int {
-        tgmv[1 as libc::c_int
-            as usize] = get_gmv_2d(
-            &*((*(*rf).frm_hdr).gmv)
-                .as_ptr()
-                .offset(
-                    (*(r#ref.r#ref).as_ptr().offset(1 as libc::c_int as isize)
-                        as libc::c_int - 1 as libc::c_int) as isize,
-                ),
+    if r#ref.r#ref[1] > 0 {
+        tgmv[1] = get_gmv_2d(
+            &(*rf.frm_hdr).gmv[r#ref.r#ref[1] as usize - 1],
             bx4,
             by4,
             bw4,
             bh4,
-            (*rf).frm_hdr,
+            rf.frm_hdr,
         );
-        gmv[1 as libc::c_int
-            as usize] = if (*(*rf).frm_hdr)
-            .gmv[(r#ref.r#ref[1 as libc::c_int as usize] as libc::c_int
-                - 1 as libc::c_int) as usize]
-            .type_0 as libc::c_uint
-            > DAV1D_WM_TYPE_TRANSLATION as libc::c_int as libc::c_uint
-        {
-            tgmv[1 as libc::c_int as usize]
+        gmv[1] = if (*rf.frm_hdr).gmv[r#ref.r#ref[1] as usize - 1].type_0 > DAV1D_WM_TYPE_TRANSLATION {
+            tgmv[1]
         } else {
             mv::INVALID
         };
     }
-    let mut have_newmv: libc::c_int = 0 as libc::c_int;
-    let mut have_col_mvs: libc::c_int = 0 as libc::c_int;
-    let mut have_row_mvs: libc::c_int = 0 as libc::c_int;
-    let mut max_rows: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    let mut n_rows: libc::c_uint = !(0 as libc::c_int) as libc::c_uint;
-    let mut b_top: *const refmvs_block = 0 as *const refmvs_block;
-    if by4 > (*rt).tile_row.start {
-        max_rows = imin(
-            by4 - (*rt).tile_row.start + 1 as libc::c_int >> 1 as libc::c_int,
-            2 as libc::c_int + (bh4 > 1 as libc::c_int) as libc::c_int,
-        ) as libc::c_uint;
-        b_top = &mut *(*((*rt).r)
-            .as_ptr()
-            .offset(
-                ((by4 & 31 as libc::c_int) - 1 as libc::c_int + 5 as libc::c_int)
-                    as isize,
-            ))
-            .offset(bx4 as isize) as *mut refmvs_block;
+
+    // top
+    let mut have_newmv = 0;
+    let mut have_col_mvs = 0;
+    let mut have_row_mvs = 0;
+    let mut max_rows = 0;
+    let mut n_rows = !0;
+    let mut b_top = std::ptr::null();
+    if by4 > rt.tile_row.start {
+        max_rows = imin(by4 - rt.tile_row.start + 1 >> 1, 2 + (bh4 > 1) as libc::c_int) as libc::c_uint;
+        b_top = &mut *rt.r[(by4 as usize & 31) + 5 - 1].offset(bx4 as isize);
         n_rows = scan_row(
-            mvstack,
+            mvstack.as_mut_ptr(),
             cnt,
             r#ref,
-            gmv.as_mut_ptr() as *const mv,
+            gmv.as_ptr(),
             b_top,
             bw4,
             w4,
             max_rows as libc::c_int,
-            if bw4 >= 16 as libc::c_int { 4 as libc::c_int } else { 1 as libc::c_int },
+            if bw4 >= 16 { 4 } else { 1 },
             &mut have_newmv,
             &mut have_row_mvs,
         ) as libc::c_uint;
     }
-    let mut max_cols: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    let mut n_cols: libc::c_uint = !(0 as libc::c_uint);
-    let mut b_left: *const *mut refmvs_block = 0 as *const *mut refmvs_block;
-    if bx4 > (*rt).tile_col.start {
-        max_cols = imin(
-            bx4 - (*rt).tile_col.start + 1 as libc::c_int >> 1 as libc::c_int,
-            2 as libc::c_int + (bw4 > 1 as libc::c_int) as libc::c_int,
-        ) as libc::c_uint;
-        b_left = &*((*rt).r)
-            .as_ptr()
-            .offset(((by4 & 31 as libc::c_int) + 5 as libc::c_int) as isize)
-            as *const *mut refmvs_block;
+
+    // left
+    let mut max_cols = 0;
+    let mut n_cols = !0;
+    let mut b_left = std::ptr::null();
+    if bx4 > rt.tile_col.start {
+        max_cols = imin(bx4 - rt.tile_col.start + 1 >> 1, 2 + (bw4 > 1) as libc::c_int) as libc::c_uint;
+        b_left = &rt.r[(by4 as usize & 31) + 5];
         n_cols = scan_col(
-            mvstack,
+            mvstack.as_mut_ptr(),
             cnt,
             r#ref,
-            gmv.as_mut_ptr() as *const mv,
+            gmv.as_ptr(),
             b_left,
             bh4,
             h4,
-            bx4 - 1 as libc::c_int,
+            bx4 - 1,
             max_cols as libc::c_int,
-            if bh4 >= 16 as libc::c_int { 4 as libc::c_int } else { 1 as libc::c_int },
+            if bh4 >= 16 { 4 } else { 1 },
             &mut have_newmv,
             &mut have_col_mvs,
         ) as libc::c_uint;
     }
-    if n_rows != !(0 as libc::c_uint)
-        && edge_flags as libc::c_uint
-            & EDGE_I444_TOP_HAS_RIGHT as libc::c_int as libc::c_uint != 0
-        && imax(bw4, bh4) <= 16 as libc::c_int && bw4 + bx4 < (*rt).tile_col.end
-    {
+
+    // top/right
+    if n_rows != !0 && edge_flags & EDGE_I444_TOP_HAS_RIGHT != 0
+        && imax(bw4, bh4) <= 16 && bw4 + bx4 < rt.tile_col.end {
         add_spatial_candidate(
-            mvstack,
+            mvstack.as_mut_ptr(),
             cnt,
-            4 as libc::c_int,
+            4,
             &*b_top.offset(bw4 as isize),
             r#ref,
-            gmv.as_mut_ptr() as *const mv,
+            gmv.as_ptr(),
             &mut have_newmv,
             &mut have_row_mvs,
         );
     }
-    let nearest_match: libc::c_int = have_col_mvs + have_row_mvs;
-    let nearest_cnt: libc::c_int = *cnt;
-    let mut n: libc::c_int = 0 as libc::c_int;
-    while n < nearest_cnt {
-        (*mvstack.offset(n as isize)).weight += 640 as libc::c_int;
-        n += 1;
+
+    let nearest_match = have_col_mvs + have_row_mvs;
+    let nearest_cnt = *cnt;
+    for cand in &mut mvstack[..nearest_cnt] {
+        cand.weight += 640;
     }
-    let mut globalmv_ctx: libc::c_int = (*(*rf).frm_hdr).use_ref_frame_mvs;
-    if (*rf).use_ref_frame_mvs != 0 {
-        let stride: ptrdiff_t = (*rf).rp_stride;
-        let by8: libc::c_int = by4 >> 1 as libc::c_int;
-        let bx8: libc::c_int = bx4 >> 1 as libc::c_int;
-        let rbi: *const refmvs_temporal_block = &mut *((*rt).rp_proj)
-            .offset((by8 & 15) as isize * stride + bx8 as isize,
-            ) as *mut refmvs_temporal_block;
-        let mut rb: *const refmvs_temporal_block = rbi;
-        let step_h: libc::c_int = if bw4 >= 16 as libc::c_int {
-            2 as libc::c_int
-        } else {
-            1 as libc::c_int
-        };
-        let step_v: libc::c_int = if bh4 >= 16 as libc::c_int {
-            2 as libc::c_int
-        } else {
-            1 as libc::c_int
-        };
-        let w8: libc::c_int = imin(
-            w4 + 1 as libc::c_int >> 1 as libc::c_int,
-            8 as libc::c_int,
-        );
-        let h8: libc::c_int = imin(
-            h4 + 1 as libc::c_int >> 1 as libc::c_int,
-            8 as libc::c_int,
-        );
-        let mut y: libc::c_int = 0 as libc::c_int;
-        while y < h8 {
-            let mut x: libc::c_int = 0 as libc::c_int;
-            while x < w8 {
+
+    // temporal
+    let mut globalmv_ctx = (*rf.frm_hdr).use_ref_frame_mvs;
+    if rf.use_ref_frame_mvs != 0 {
+        let stride: ptrdiff_t = rf.rp_stride;
+        let by8 = by4 >> 1;
+        let bx8 = bx4 >> 1;
+        let rbi: *const refmvs_temporal_block = &mut *(rt.rp_proj)
+            .offset((by8 & 15) as isize * stride + bx8 as isize) as *mut refmvs_temporal_block;
+        let mut rb = rbi;
+        let step_h = if bw4 >= 16 { 2 } else { 1 };
+        let step_v = if bh4 >= 16 { 2 } else { 1 };
+        let w8 = imin(w4 + 1 >> 1, 8);
+        let h8 = imin(h4 + 1 >> 1, 8);
+        for y in (0..h8).step_by(step_v) {
+            for x in (0..w8).step_by(step_h) {
                 add_temporal_candidate(
                     rf,
-                    mvstack,
+                    mvstack.as_mut_ptr(),
                     cnt,
                     &*rb.offset(x as isize),
                     r#ref,
                     if x | y == 0 { &mut globalmv_ctx } else { 0 as *mut libc::c_int },
-                    tgmv.as_mut_ptr() as *const mv,
+                    tgmv.as_ptr(),
                 );
-                x += step_h;
             }
             rb = rb.offset(stride * step_v as isize);
-            y += step_v;
         }
-        if imin(bw4, bh4) >= 2 as libc::c_int && imax(bw4, bh4) < 16 as libc::c_int {
-            let bh8: libc::c_int = bh4 >> 1 as libc::c_int;
-            let bw8: libc::c_int = bw4 >> 1 as libc::c_int;
-            rb = &*rbi.offset(bh8 as isize * stride)
-                as *const refmvs_temporal_block;
-            let has_bottom: libc::c_int = (by8 + bh8
-                < imin(
-                    (*rt).tile_row.end >> 1 as libc::c_int,
-                    (by8 & !(7 as libc::c_int)) + 8 as libc::c_int,
-                )) as libc::c_int;
-            if has_bottom != 0
-                && bx8 - 1 as libc::c_int
-                    >= imax(
-                        (*rt).tile_col.start >> 1 as libc::c_int,
-                        bx8 & !(7 as libc::c_int),
-                    )
-            {
+        if imin(bw4, bh4) >= 2 && imax(bw4, bh4) < 16 {
+            let bh8 = bh4 >> 1;
+            let bw8 = bw4 >> 1;
+            rb = &*rbi.offset(bh8 as isize * stride) as *const refmvs_temporal_block;
+            let has_bottom = (by8 + bh8 < imin(rt.tile_row.end >> 1, (by8 & !7) + 8)) as libc::c_int;
+            if has_bottom != 0 && bx8 - 1 >= imax(rt.tile_col.start >> 1, bx8 & !7) {
                 add_temporal_candidate(
                     rf,
-                    mvstack,
+                    mvstack.as_mut_ptr(),
                     cnt,
-                    &*rb.offset(-(1 as libc::c_int) as isize),
+                    &*rb.offset(-1),
                     r#ref,
-                    0 as *mut libc::c_int,
-                    0 as *const mv,
+                    std::ptr::null_mut(),
+                    std::ptr::null(),
                 );
             }
-            if bx8 + bw8
-                < imin(
-                    (*rt).tile_col.end >> 1 as libc::c_int,
-                    (bx8 & !(7 as libc::c_int)) + 8 as libc::c_int,
-                )
-            {
+            if bx8 + bw8 < imin(rt.tile_col.end >> 1, (bx8 & !7) + 8) {
                 if has_bottom != 0 {
                     add_temporal_candidate(
                         rf,
-                        mvstack,
+                        mvstack.as_mut_ptr(),
                         cnt,
                         &*rb.offset(bw8 as isize),
                         r#ref,
-                        0 as *mut libc::c_int,
-                        0 as *const mv,
+                        std::ptr::null_mut(),
+                        std::ptr::null(),
                     );
                 }
-                if (by8 + bh8 - 1 as libc::c_int)
-                    < imin(
-                        (*rt).tile_row.end >> 1 as libc::c_int,
-                        (by8 & !(7 as libc::c_int)) + 8 as libc::c_int,
-                    )
-                {
+                if (by8 + bh8 - 1) < imin(rt.tile_row.end >> 1, (by8 & !7) + 8) {
                     add_temporal_candidate(
                         rf,
-                        mvstack,
+                        mvstack.as_mut_ptr(),
                         cnt,
                         &*rb.offset(bw8 as isize - stride),
                         r#ref,
-                        0 as *mut libc::c_int,
-                        0 as *const mv,
+                        std::ptr::null_mut(),
+                        std::ptr::null(),
                     );
                 }
             }
         }
     }
-    if !(*cnt <= 8 as libc::c_int) {
-        unreachable!();
-    }
-    let mut have_dummy_newmv_match: libc::c_int = 0;
-    if n_rows | n_cols != !(0 as libc::c_uint) {
+    assert!(*cnt <= 8);
+
+    // top/left (which, confusingly, is part of "secondary" references)
+    let mut have_dummy_newmv_match = 0;
+    if n_rows | n_cols != !0 {
         add_spatial_candidate(
-            mvstack,
+            mvstack.as_mut_ptr(),
             cnt,
-            4 as libc::c_int,
-            &*b_top.offset(-(1 as libc::c_int) as isize),
+            4,
+            &*b_top.offset(-1),
             r#ref,
-            gmv.as_mut_ptr() as *const mv,
+            gmv.as_ptr(),
             &mut have_dummy_newmv_match,
             &mut have_row_mvs,
         );
     }
-    let mut n_0: libc::c_int = 2 as libc::c_int;
-    while n_0 <= 3 as libc::c_int {
-        if n_0 as libc::c_uint > n_rows && n_0 as libc::c_uint <= max_rows {
-            n_rows = n_rows
-                .wrapping_add(
-                    scan_row(
-                        mvstack,
-                        cnt,
-                        r#ref,
-                        gmv.as_mut_ptr() as *const mv,
-                        &mut *(*((*rt).r)
-                            .as_ptr()
-                            .offset(
-                                (((by4 & 31 as libc::c_int) - 2 as libc::c_int * n_0
-                                    + 1 as libc::c_int | 1 as libc::c_int) + 5 as libc::c_int)
-                                    as isize,
-                            ))
-                            .offset((bx4 | 1 as libc::c_int) as isize),
-                        bw4,
-                        w4,
-                        (1 as libc::c_int as libc::c_uint)
-                            .wrapping_add(max_rows)
-                            .wrapping_sub(n_0 as libc::c_uint) as libc::c_int,
-                        if bw4 >= 16 as libc::c_int {
-                            4 as libc::c_int
-                        } else {
-                            2 as libc::c_int
-                        },
-                        &mut have_dummy_newmv_match,
-                        &mut have_row_mvs,
-                    ) as libc::c_uint,
-                );
+
+    // "secondary" (non-direct neighbour) top & left edges
+    // what is different about secondary is that everything is now in 8x8 resolution
+    for n in 2..=3 {
+        if n as libc::c_uint > n_rows && n as libc::c_uint <= max_rows {
+            n_rows = n_rows.wrapping_add(scan_row(
+                mvstack.as_mut_ptr(),
+                cnt,
+                r#ref,
+                gmv.as_ptr(),
+                &mut *(rt.r[(((by4 & 31) - 2 * n + 1 | 1) + 5) as usize]).offset(bx4 as isize | 1),
+                bw4,
+                w4,
+                (1 as libc::c_uint).wrapping_add(max_rows).wrapping_sub(n as libc::c_uint) as libc::c_int,
+                if bw4 >= 16 { 4 } else { 2 },
+                &mut have_dummy_newmv_match,
+                &mut have_row_mvs,
+            ) as libc::c_uint);
         }
-        if n_0 as libc::c_uint > n_cols && n_0 as libc::c_uint <= max_cols {
-            n_cols = n_cols
-                .wrapping_add(
-                    scan_col(
-                        mvstack,
-                        cnt,
-                        r#ref,
-                        gmv.as_mut_ptr() as *const mv,
-                        &*((*rt).r)
-                            .as_ptr()
-                            .offset(
-                                ((by4 & 31 as libc::c_int | 1 as libc::c_int)
-                                    + 5 as libc::c_int) as isize,
-                            ),
-                        bh4,
-                        h4,
-                        bx4 - n_0 * 2 as libc::c_int + 1 as libc::c_int
-                            | 1 as libc::c_int,
-                        (1 as libc::c_int as libc::c_uint)
-                            .wrapping_add(max_cols)
-                            .wrapping_sub(n_0 as libc::c_uint) as libc::c_int,
-                        if bh4 >= 16 as libc::c_int {
-                            4 as libc::c_int
-                        } else {
-                            2 as libc::c_int
-                        },
-                        &mut have_dummy_newmv_match,
-                        &mut have_col_mvs,
-                    ) as libc::c_uint,
-                );
+        if n as libc::c_uint > n_cols && n as libc::c_uint <= max_cols {
+            n_cols = n_cols.wrapping_add(scan_col(
+                mvstack.as_mut_ptr(),
+                cnt,
+                r#ref,
+                gmv.as_ptr(),
+                &rt.r[(by4 as usize & 31 | 1) + 5],
+                bh4,
+                h4,
+                bx4 - n * 2 + 1 | 1,
+                (1 as libc::c_uint).wrapping_add(max_cols).wrapping_sub(n as libc::c_uint) as libc::c_int,
+                if bh4 >= 16 { 4 } else { 2 },
+                &mut have_dummy_newmv_match,
+                &mut have_col_mvs,
+            ) as libc::c_uint);
         }
-        n_0 += 1;
     }
-    if !(*cnt <= 8 as libc::c_int) {
-        unreachable!();
-    }
-    let ref_match_count: libc::c_int = have_col_mvs + have_row_mvs;
-    let mut refmv_ctx: libc::c_int = 0;
-    let mut newmv_ctx: libc::c_int = 0;
-    match nearest_match {
-        0 => {
-            refmv_ctx = imin(2 as libc::c_int, ref_match_count);
-            newmv_ctx = (ref_match_count > 0 as libc::c_int) as libc::c_int;
-        }
-        1 => {
-            refmv_ctx = imin(ref_match_count * 3 as libc::c_int, 4 as libc::c_int);
-            newmv_ctx = 3 as libc::c_int - have_newmv;
-        }
-        2 => {
-            refmv_ctx = 5 as libc::c_int;
-            newmv_ctx = 5 as libc::c_int - have_newmv;
-        }
-        _ => {}
-    }
-    let mut len: libc::c_int = nearest_cnt;
-    while len != 0 {
-        let mut last: libc::c_int = 0 as libc::c_int;
-        let mut n_1: libc::c_int = 1 as libc::c_int;
-        while n_1 < len {
-            if (*mvstack.offset((n_1 - 1 as libc::c_int) as isize)).weight
-                < (*mvstack.offset(n_1 as isize)).weight
-            {
-                let mut tmp: refmvs_candidate = *mvstack
-                    .offset((n_1 - 1 as libc::c_int) as isize);
-                *mvstack
-                    .offset(
-                        (n_1 - 1 as libc::c_int) as isize,
-                    ) = *mvstack.offset(n_1 as isize);
-                *mvstack.offset(n_1 as isize) = tmp;
-                last = n_1;
-            }
-            n_1 += 1;
-        }
-        len = last;
-    }
-    len = *cnt;
-    while len > nearest_cnt {
-        let mut last_0: libc::c_int = nearest_cnt;
-        let mut n_2: libc::c_int = nearest_cnt + 1 as libc::c_int;
-        while n_2 < len {
-            if (*mvstack.offset((n_2 - 1 as libc::c_int) as isize)).weight
-                < (*mvstack.offset(n_2 as isize)).weight
-            {
-                let mut tmp_0: refmvs_candidate = *mvstack
-                    .offset((n_2 - 1 as libc::c_int) as isize);
-                *mvstack
-                    .offset(
-                        (n_2 - 1 as libc::c_int) as isize,
-                    ) = *mvstack.offset(n_2 as isize);
-                *mvstack.offset(n_2 as isize) = tmp_0;
-                last_0 = n_2;
-            }
-            n_2 += 1;
-        }
-        len = last_0;
-    }
-    if r#ref.r#ref[1 as libc::c_int as usize] as libc::c_int > 0 as libc::c_int {
-        if *cnt < 2 as libc::c_int {
-            let sign0: libc::c_int = (*rf)
-                .sign_bias[(r#ref.r#ref[0 as libc::c_int as usize] as libc::c_int
-                - 1 as libc::c_int) as usize] as libc::c_int;
-            let sign1: libc::c_int = (*rf)
-                .sign_bias[(r#ref.r#ref[1 as libc::c_int as usize] as libc::c_int
-                - 1 as libc::c_int) as usize] as libc::c_int;
-            let sz4: libc::c_int = imin(w4, h4);
-            let same: *mut refmvs_candidate = &mut *mvstack.offset(*cnt as isize)
-                as *mut refmvs_candidate;
-            let mut same_count: [libc::c_int; 4] = [0 as libc::c_int, 0, 0, 0];
-            if n_rows != !(0 as libc::c_uint) {
-                let mut x_0: libc::c_int = 0 as libc::c_int;
-                while x_0 < sz4 {
-                    let cand_b: *const refmvs_block = &*b_top.offset(x_0 as isize)
-                        as *const refmvs_block;
+    assert!(*cnt <= 8);
+
+    let ref_match_count = have_col_mvs + have_row_mvs;
+
+    // context build-up
+    let (refmv_ctx, newmv_ctx) = match nearest_match {
+        0 => (imin(2, ref_match_count), (ref_match_count > 0) as libc::c_int),
+        1 => (imin(ref_match_count * 3, 4), 3 - have_newmv),
+        2 => (5, 5 - have_newmv),
+        _ => (0, 0),
+    };
+
+    // sorting (nearest, then "secondary")
+    // Previously used bubble sort; now we use Rust's stable sort,
+    // which for small slices is insertion sort.
+    mvstack[..nearest_cnt].sort_by_key(|cand| -cand.weight);
+    mvstack[nearest_cnt..*cnt].sort_by_key(|cand| -cand.weight);
+
+    if r#ref.r#ref[1] > 0 {
+        if *cnt < 2 {
+            let sign0 = rf.sign_bias[r#ref.r#ref[0] as usize - 1] as libc::c_int;
+            let sign1 = rf.sign_bias[r#ref.r#ref[1] as usize - 1] as libc::c_int;
+            let sz4 = imin(w4, h4);
+            let cur_cnt = *cnt;
+            let same = &mut mvstack[cur_cnt..];
+            let mut same_count = [0; 4];
+
+            // non-self references in top
+            if n_rows != !0 {
+                let mut x = 0;
+                while x < sz4 {
+                    let cand_b = &*b_top.offset(x as isize) as *const refmvs_block;
                     add_compound_extended_candidate(
-                        same,
+                        same.as_mut_ptr(),
                         same_count.as_mut_ptr(),
                         cand_b,
                         sign0,
                         sign1,
                         r#ref,
-                        ((*rf).sign_bias).as_ptr(),
+                        rf.sign_bias.as_ptr(),
                     );
-                    x_0
-                        += dav1d_block_dimensions[(*cand_b).bs
-                            as usize][0 as libc::c_int as usize] as libc::c_int;
+                    x += dav1d_block_dimensions[(*cand_b).bs as usize][0] as libc::c_int;
                 }
             }
-            if n_cols != !(0 as libc::c_uint) {
-                let mut y_0: libc::c_int = 0 as libc::c_int;
-                while y_0 < sz4 {
-                    let cand_b_0: *const refmvs_block = &mut *(*b_left
-                        .offset(y_0 as isize))
-                        .offset((bx4 - 1 as libc::c_int) as isize) as *mut refmvs_block;
+
+            // non-self references in left
+            if n_cols != !0 {
+                let mut y = 0;
+                while y < sz4 {
+                    let cand_b: *const refmvs_block = &mut *(*b_left.offset(y as isize))
+                        .offset(bx4 as isize - 1) as *mut refmvs_block;
                     add_compound_extended_candidate(
-                        same,
+                        same.as_mut_ptr(),
                         same_count.as_mut_ptr(),
-                        cand_b_0,
+                        cand_b,
                         sign0,
                         sign1,
                         r#ref,
-                        ((*rf).sign_bias).as_ptr(),
+                        rf.sign_bias.as_ptr(),
                     );
-                    y_0
-                        += dav1d_block_dimensions[(*cand_b_0).bs
-                            as usize][1 as libc::c_int as usize] as libc::c_int;
+                    y += dav1d_block_dimensions[(*cand_b).bs as usize][1] as libc::c_int;
                 }
             }
-            let diff: *mut refmvs_candidate = &mut *same
-                .offset(2 as libc::c_int as isize) as *mut refmvs_candidate;
-            let diff_count: *const libc::c_int = &mut *same_count
-                .as_mut_ptr()
-                .offset(2 as libc::c_int as isize) as *mut libc::c_int;
-            let mut current_block_118: u64;
-            let mut n_3: libc::c_int = 0 as libc::c_int;
-            while n_3 < 2 as libc::c_int {
-                let mut m: libc::c_int = same_count[n_3 as usize];
-                if !(m >= 2 as libc::c_int) {
-                    let l: libc::c_int = *diff_count.offset(n_3 as isize);
-                    if l != 0 {
-                        (*same.offset(m as isize))
-                            .mv
-                            .mv[n_3
-                            as usize] = (*diff.offset(0 as libc::c_int as isize))
-                            .mv
-                            .mv[n_3 as usize];
-                        m += 1;
-                        if m == 2 as libc::c_int {
-                            current_block_118 = 13740693533991687037;
-                        } else if l == 2 as libc::c_int {
-                            (*same.offset(1 as libc::c_int as isize))
-                                .mv
-                                .mv[n_3
-                                as usize] = (*diff.offset(1 as libc::c_int as isize))
-                                .mv
-                                .mv[n_3 as usize];
-                            current_block_118 = 13740693533991687037;
-                        } else {
-                            current_block_118 = 9430418855388998878;
-                        }
-                    } else {
-                        current_block_118 = 9430418855388998878;
+            
+            // Below, `same` will only be accessed by `m`, which is `< 2`,
+            // so this `same.split_at_mut(2).0` won't be accessed out of bounds.
+            let (same, diff) = same.split_at_mut(2);
+            let diff = &diff[..]; // not &mut
+            let diff_count = &same_count[2..];
+
+            // merge together
+            for n in 0..2 {
+                let mut m = same_count[n] as usize;
+
+                if m >= 2 {
+                    continue;
+                }
+
+                let l = diff_count[n];
+                if l != 0 {
+                    same[m].mv.mv[n] = diff[0].mv.mv[n];
+                    m += 1;
+                    if m == 2 {
+                        continue;
                     }
-                    match current_block_118 {
-                        13740693533991687037 => {}
-                        _ => {
-                            loop {
-                                (*same.offset(m as isize))
-                                    .mv
-                                    .mv[n_3 as usize] = tgmv[n_3 as usize];
-                                m += 1;
-                                if !(m < 2 as libc::c_int) {
-                                    break;
-                                }
-                            }
-                        }
+                    if l == 2 {
+                        same[1].mv.mv[n] = diff[1].mv.mv[n];
+                        continue;
                     }
                 }
-                n_3 += 1;
-            }
-            let mut n_4: libc::c_int = *cnt;
-            if n_4 == 1 && (*mvstack.offset(0)).mv == (*same.offset(0)).mv {
-                (*mvstack.offset(1)).mv = (*mvstack.offset(2)).mv;
-            }
-            loop {
-                (*mvstack.offset(n_4 as isize)).weight = 2 as libc::c_int;
-                n_4 += 1;
-                if !(n_4 < 2 as libc::c_int) {
-                    break;
+                for mut cand in &mut same[m..2] {
+                    cand.mv.mv[n] = tgmv[n];
                 }
             }
-            *cnt = 2 as libc::c_int;
+
+            // if the first extended was the same as the non-extended one,
+            // then replace it with the second extended one
+            let mut n = *cnt;
+            let same = &mvstack[cur_cnt..]; // need to reborrow to get a &, not &mut
+            if n == 1 && mvstack[0].mv == same[0].mv {
+                mvstack[1].mv = mvstack[2].mv;
+            }
+            for cand in &mut mvstack[n..2] {
+                cand.weight = 2;
+            }
+            *cnt = 2;
         }
-        let left: libc::c_int = -(bx4 + bw4 + 4 as libc::c_int) * 4 as libc::c_int
-            * 8 as libc::c_int;
-        let right: libc::c_int = ((*rf).iw4 - bx4 + 4 as libc::c_int) * 4 as libc::c_int
-            * 8 as libc::c_int;
-        let top: libc::c_int = -(by4 + bh4 + 4 as libc::c_int) * 4 as libc::c_int
-            * 8 as libc::c_int;
-        let bottom: libc::c_int = ((*rf).ih4 - by4 + 4 as libc::c_int) * 4 as libc::c_int
-            * 8 as libc::c_int;
-        let n_refmvs: libc::c_int = *cnt;
-        let mut n_5: libc::c_int = 0 as libc::c_int;
-        loop {
-            (*mvstack.offset(n_5 as isize))
-                .mv
-                .mv[0 as libc::c_int as usize]
-                .x = iclip(
-                (*mvstack.offset(n_5 as isize))
-                    .mv
-                    .mv[0 as libc::c_int as usize]
-                    .x as libc::c_int,
-                left,
-                right,
-            ) as int16_t;
-            (*mvstack.offset(n_5 as isize))
-                .mv
-                .mv[0 as libc::c_int as usize]
-                .y = iclip(
-                (*mvstack.offset(n_5 as isize))
-                    .mv
-                    .mv[0 as libc::c_int as usize]
-                    .y as libc::c_int,
-                top,
-                bottom,
-            ) as int16_t;
-            (*mvstack.offset(n_5 as isize))
-                .mv
-                .mv[1 as libc::c_int as usize]
-                .x = iclip(
-                (*mvstack.offset(n_5 as isize))
-                    .mv
-                    .mv[1 as libc::c_int as usize]
-                    .x as libc::c_int,
-                left,
-                right,
-            ) as int16_t;
-            (*mvstack.offset(n_5 as isize))
-                .mv
-                .mv[1 as libc::c_int as usize]
-                .y = iclip(
-                (*mvstack.offset(n_5 as isize))
-                    .mv
-                    .mv[1 as libc::c_int as usize]
-                    .y as libc::c_int,
-                top,
-                bottom,
-            ) as int16_t;
-            n_5 += 1;
-            if !(n_5 < n_refmvs) {
-                break;
-            }
+
+        // clamping
+        let left = -(bx4 + bw4 + 4) * 4 * 8;
+        let right = (rf.iw4 - bx4 + 4) * 4 * 8;
+        let top = -(by4 + bh4 + 4) * 4 * 8;
+        let bottom = (rf.ih4 - by4 + 4) * 4 * 8;
+
+        let n_refmvs = *cnt;
+        
+        for cand in &mut mvstack[..n_refmvs] {
+            let mv = &mut cand.mv.mv;
+            mv[0].x = iclip(mv[0].x as libc::c_int, left, right) as i16;
+            mv[0].y = iclip(mv[0].y as libc::c_int, top, bottom) as i16;
+            mv[1].x = iclip(mv[1].x as libc::c_int, left, right) as i16;
+            mv[1].y = iclip(mv[1].y as libc::c_int, top, bottom) as i16;
         }
-        match refmv_ctx >> 1 as libc::c_int {
-            0 => {
-                *ctx = imin(newmv_ctx, 1 as libc::c_int);
-            }
-            1 => {
-                *ctx = 1 as libc::c_int + imin(newmv_ctx, 3 as libc::c_int);
-            }
-            2 => {
-                *ctx = iclip(
-                    3 as libc::c_int + newmv_ctx,
-                    4 as libc::c_int,
-                    7 as libc::c_int,
-                );
-            }
-            _ => {}
-        }
+
+        *ctx = match refmv_ctx >> 1 {
+            0 => imin(newmv_ctx, 1),
+            1 => 1 + imin(newmv_ctx, 3),
+            2 => iclip(3 + newmv_ctx, 4, 7),
+            _ => *ctx,
+        };
+
         return;
-    } else {
-        if *cnt < 2 as libc::c_int
-            && r#ref.r#ref[0 as libc::c_int as usize] as libc::c_int > 0 as libc::c_int
-        {
-            let sign: libc::c_int = (*rf)
-                .sign_bias[(r#ref.r#ref[0 as libc::c_int as usize] as libc::c_int
-                - 1 as libc::c_int) as usize] as libc::c_int;
-            let sz4_0: libc::c_int = imin(w4, h4);
-            if n_rows != !(0 as libc::c_uint) {
-                let mut x_1: libc::c_int = 0 as libc::c_int;
-                while x_1 < sz4_0 && *cnt < 2 as libc::c_int {
-                    let cand_b_1: *const refmvs_block = &*b_top.offset(x_1 as isize)
-                        as *const refmvs_block;
-                    add_single_extended_candidate(
-                        mvstack,
-                        cnt,
-                        cand_b_1,
-                        sign,
-                        ((*rf).sign_bias).as_ptr(),
-                    );
-                    x_1
-                        += dav1d_block_dimensions[(*cand_b_1).bs
-                            as usize][0 as libc::c_int as usize] as libc::c_int;
-                }
+    } else if *cnt < 2 && r#ref.r#ref[0] > 0 {
+        let sign = rf.sign_bias[r#ref.r#ref[0] as usize - 1] as libc::c_int;
+        let sz4 = imin(w4, h4);
+
+        // non-self references in top
+        if n_rows != !0 {
+            let mut x = 0;
+            while x < sz4 && *cnt < 2 {
+                let cand_b_1 = &*b_top.offset(x as isize) as *const refmvs_block;
+                add_single_extended_candidate(
+                    mvstack.as_mut_ptr(),
+                    cnt,
+                    cand_b_1,
+                    sign,
+                    rf.sign_bias.as_ptr(),
+                );
+                x += dav1d_block_dimensions[(*cand_b_1).bs as usize][0] as libc::c_int;
             }
-            if n_cols != !(0 as libc::c_uint) {
-                let mut y_1: libc::c_int = 0 as libc::c_int;
-                while y_1 < sz4_0 && *cnt < 2 as libc::c_int {
-                    let cand_b_2: *const refmvs_block = &mut *(*b_left
-                        .offset(y_1 as isize))
-                        .offset((bx4 - 1 as libc::c_int) as isize) as *mut refmvs_block;
-                    add_single_extended_candidate(
-                        mvstack,
-                        cnt,
-                        cand_b_2,
-                        sign,
-                        ((*rf).sign_bias).as_ptr(),
-                    );
-                    y_1
-                        += dav1d_block_dimensions[(*cand_b_2).bs
-                            as usize][1 as libc::c_int as usize] as libc::c_int;
-                }
+        }
+
+        // non-self references in left
+        if n_cols != !0 {
+            let mut y = 0;
+            while y < sz4 && *cnt < 2 {
+                let cand_b: *const refmvs_block = &mut *(*b_left.offset(y as isize))
+                    .offset(bx4 as isize - 1) as *mut refmvs_block;
+                add_single_extended_candidate(
+                    mvstack.as_mut_ptr(),
+                    cnt,
+                    cand_b,
+                    sign,
+                    rf.sign_bias.as_ptr(),
+                );
+                y += dav1d_block_dimensions[(*cand_b).bs as usize][1] as libc::c_int;
             }
         }
     }
-    if !(*cnt <= 8 as libc::c_int) {
-        unreachable!();
-    }
-    let mut n_refmvs_0: libc::c_int = *cnt;
-    if n_refmvs_0 != 0 {
-        let left_0: libc::c_int = -(bx4 + bw4 + 4 as libc::c_int) * 4 as libc::c_int
-            * 8 as libc::c_int;
-        let right_0: libc::c_int = ((*rf).iw4 - bx4 + 4 as libc::c_int)
-            * 4 as libc::c_int * 8 as libc::c_int;
-        let top_0: libc::c_int = -(by4 + bh4 + 4 as libc::c_int) * 4 as libc::c_int
-            * 8 as libc::c_int;
-        let bottom_0: libc::c_int = ((*rf).ih4 - by4 + 4 as libc::c_int)
-            * 4 as libc::c_int * 8 as libc::c_int;
-        let mut n_6: libc::c_int = 0 as libc::c_int;
-        loop {
-            (*mvstack.offset(n_6 as isize))
-                .mv
-                .mv[0 as libc::c_int as usize]
-                .x = iclip(
-                (*mvstack.offset(n_6 as isize))
-                    .mv
-                    .mv[0 as libc::c_int as usize]
-                    .x as libc::c_int,
-                left_0,
-                right_0,
-            ) as int16_t;
-            (*mvstack.offset(n_6 as isize))
-                .mv
-                .mv[0 as libc::c_int as usize]
-                .y = iclip(
-                (*mvstack.offset(n_6 as isize))
-                    .mv
-                    .mv[0 as libc::c_int as usize]
-                    .y as libc::c_int,
-                top_0,
-                bottom_0,
-            ) as int16_t;
-            n_6 += 1;
-            if !(n_6 < n_refmvs_0) {
-                break;
-            }
+    assert!(*cnt <= 8);
+
+    // clamping
+    let mut n_refmvs = *cnt;
+    if n_refmvs != 0 {
+        let left = -(bx4 + bw4 + 4) * 4 * 8;
+        let right = (rf.iw4 - bx4 + 4) * 4 * 8;
+        let top = -(by4 + bh4 + 4) * 4 * 8;
+        let bottom = (rf.ih4 - by4 + 4) * 4 * 8;
+
+        for cand in &mut mvstack[..n_refmvs] {
+            let mv = &mut cand.mv.mv;
+            mv[0].x = iclip(mv[0].x as libc::c_int, left, right) as i16;
+            mv[0].y = iclip(mv[0].y as libc::c_int, top, bottom) as i16;
         }
     }
-    let mut n_7: libc::c_int = *cnt;
-    while n_7 < 2 as libc::c_int {
-        (*mvstack.offset(n_7 as isize))
-            .mv
-            .mv[0 as libc::c_int as usize] = tgmv[0 as libc::c_int as usize];
-        n_7 += 1;
+
+    // Need to use `min` so we don't get a backwards range,
+    // which will fail on slicing.
+    for cand in &mut mvstack[std::cmp::min(*cnt, 2)..2] {
+        cand.mv.mv[0] = tgmv[0];
     }
-    *ctx = refmv_ctx << 4 as libc::c_int | globalmv_ctx << 3 as libc::c_int | newmv_ctx;
+
+    *ctx = refmv_ctx << 4 | globalmv_ctx << 3 | newmv_ctx;
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_refmvs_tile_sbrow_init(
     rt: *mut refmvs_tile,
