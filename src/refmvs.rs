@@ -410,6 +410,8 @@ unsafe fn mv_projection(mv: mv, num: libc::c_int, den: libc::c_int) -> mv {
     let frac = num * div_mult[den as usize] as libc::c_int;
     let y = mv.y as libc::c_int * frac;
     let x = mv.x as libc::c_int * frac;
+    // Round and clip according to AV1 spec section 7.9.3
+    // 0x3fff == (1 << 14) - 1
     return mv {
         y: iclip(y + 8192 + (y >> 31) >> 14, -0x3fff, 0x3fff) as i16,
         x: iclip(x + 8192 + (x >> 31) >> 14, -0x3fff, 0x3fff) as i16,
