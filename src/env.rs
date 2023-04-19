@@ -92,7 +92,7 @@ pub fn fix_mv_precision(hdr: &Dav1dFrameHeader, mv: &mut mv) {
 }
 
 #[inline]
-pub extern "C" fn get_gmv_2d(
+pub fn get_gmv_2d(
     gmv: &Dav1dWarpedMotionParams,
     bx4: libc::c_int,
     by4: libc::c_int,
