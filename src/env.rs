@@ -93,22 +93,22 @@ pub fn fix_mv_precision(hdr: &Dav1dFrameHeader, mv: &mut mv) {
 
 #[inline]
 pub unsafe extern "C" fn get_gmv_2d(
-    gmv: *const Dav1dWarpedMotionParams,
+    gmv: &Dav1dWarpedMotionParams,
     bx4: libc::c_int,
     by4: libc::c_int,
     bw4: libc::c_int,
     bh4: libc::c_int,
     hdr: &Dav1dFrameHeader,
 ) -> mv {
-    match (*gmv).type_0 {
+    match gmv.type_0 {
         2 => {
-            assert!((*gmv).matrix[5] == (*gmv).matrix[2]);
-            assert!((*gmv).matrix[4] == -(*gmv).matrix[3]);
+            assert!(gmv.matrix[5] == gmv.matrix[2]);
+            assert!(gmv.matrix[4] == -gmv.matrix[3]);
         }
         1 => {
             let mut res_0 = mv {
-                y: ((*gmv).matrix[0] >> 13) as i16,
-                x: ((*gmv).matrix[1] >> 13) as i16,
+                y: (gmv.matrix[0] >> 13) as i16,
+                x: (gmv.matrix[1] >> 13) as i16,
             };
             if hdr.force_integer_mv != 0 {
                 fix_int_mv_precision(&mut res_0);
@@ -122,8 +122,8 @@ pub unsafe extern "C" fn get_gmv_2d(
     }
     let x = bx4 * 4 + bw4 * 2 - 1;
     let y = by4 * 4 + bh4 * 2 - 1;
-    let xc = ((*gmv).matrix[2] - (1 << 16)) * x + (*gmv).matrix[3] * y + (*gmv).matrix[0];
-    let yc = ((*gmv).matrix[5] - (1 << 16)) * y + (*gmv).matrix[4] * x + (*gmv).matrix[1];
+    let xc = (gmv.matrix[2] - (1 << 16)) * x + gmv.matrix[3] * y + gmv.matrix[0];
+    let yc = (gmv.matrix[5] - (1 << 16)) * y + gmv.matrix[4] * x + gmv.matrix[1];
     let shift = 16 - (3 - (hdr.hp == 0) as libc::c_int);
     let round = 1 << shift >> 1;
     let mut res: mv = mv {
