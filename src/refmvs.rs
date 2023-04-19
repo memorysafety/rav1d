@@ -686,8 +686,8 @@ pub unsafe fn dav1d_refmvs_find(
     let w4 = imin(imin(bw4, 16), rt.tile_col.end - bx4);
     let bh4 = b_dim[1] as libc::c_int;
     let h4 = imin(imin(bh4, 16), rt.tile_row.end - by4);
-    let mut gmv = [mv::ZERO; 2];
-    let mut tgmv = [mv::ZERO; 2];
+    let mut gmv = [mv::default(); 2];
+    let mut tgmv = [mv::default(); 2];
     *cnt = 0;
     assert!(r#ref.r#ref[0] >= 0 && r#ref.r#ref[0] <= 8
         && r#ref.r#ref[1] >= -1 && r#ref.r#ref[1] <= 8);
