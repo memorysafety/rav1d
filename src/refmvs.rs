@@ -405,15 +405,15 @@ unsafe fn mv_projection(mv: mv, num: libc::c_int, den: libc::c_int) -> mv {
         1024,   963,  910,  862,  819,  780,  744,  712,
          682,   655,  630,  606,  585,  564,  546,  528,
     ];
-    if !(den > 0 as libc::c_int && den < 32 as libc::c_int) {
+    if !(den > 0 && den < 32) {
         unreachable!();
     }
-    if !(num > -(32 as libc::c_int) && num < 32 as libc::c_int) {
+    if !(num > -32 && num < 32) {
         unreachable!();
     }
-    let frac: libc::c_int = num * div_mult[den as usize] as libc::c_int;
-    let y: libc::c_int = mv.y as libc::c_int * frac;
-    let x: libc::c_int = mv.x as libc::c_int * frac;
+    let frac = num * div_mult[den as usize] as libc::c_int;
+    let y = mv.y as libc::c_int * frac;
+    let x = mv.x as libc::c_int * frac;
     return mv {
         y: iclip(y + 8192 + (y >> 31) >> 14, -0x3fff, 0x3fff) as i16,
         x: iclip(x + 8192 + (x >> 31) >> 14, -0x3fff, 0x3fff) as i16,
