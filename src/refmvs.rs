@@ -737,7 +737,7 @@ pub unsafe fn dav1d_refmvs_find(
             mvstack.as_mut_ptr(),
             cnt,
             r#ref,
-            gmv.as_mut_ptr() as *const mv,
+            gmv.as_ptr(),
             b_top,
             bw4,
             w4,
@@ -757,7 +757,7 @@ pub unsafe fn dav1d_refmvs_find(
             mvstack.as_mut_ptr(),
             cnt,
             r#ref,
-            gmv.as_mut_ptr() as *const mv,
+            gmv.as_ptr(),
             b_left,
             bh4,
             h4,
@@ -776,7 +776,7 @@ pub unsafe fn dav1d_refmvs_find(
             4,
             &*b_top.offset(bw4 as isize),
             r#ref,
-            gmv.as_mut_ptr() as *const mv,
+            gmv.as_ptr(),
             &mut have_newmv,
             &mut have_row_mvs,
         );
@@ -811,7 +811,7 @@ pub unsafe fn dav1d_refmvs_find(
                     &*rb.offset(x as isize),
                     r#ref,
                     if x | y == 0 { &mut globalmv_ctx } else { 0 as *mut libc::c_int },
-                    tgmv.as_mut_ptr() as *const mv,
+                    tgmv.as_ptr(),
                 );
                 x += step_h;
             }
@@ -869,7 +869,7 @@ pub unsafe fn dav1d_refmvs_find(
             4,
             &*b_top.offset(-1),
             r#ref,
-            gmv.as_mut_ptr() as *const mv,
+            gmv.as_ptr(),
             &mut have_dummy_newmv_match,
             &mut have_row_mvs,
         );
@@ -883,7 +883,7 @@ pub unsafe fn dav1d_refmvs_find(
                         mvstack.as_mut_ptr(),
                         cnt,
                         r#ref,
-                        gmv.as_mut_ptr() as *const mv,
+                        gmv.as_ptr(),
                         &mut *(rt.r[(((by4 & 31) - 2 * n_0 + 1 | 1) + 5) as usize]).offset(bx4 as isize | 1),
                         bw4,
                         w4,
@@ -901,7 +901,7 @@ pub unsafe fn dav1d_refmvs_find(
                         mvstack.as_mut_ptr(),
                         cnt,
                         r#ref,
-                        gmv.as_mut_ptr() as *const mv,
+                        gmv.as_ptr(),
                         &rt.r[(by4 as usize & 31 | 1) + 5],
                         bh4,
                         h4,
