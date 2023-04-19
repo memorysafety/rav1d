@@ -398,7 +398,7 @@ unsafe extern "C" fn scan_col(
 }
 
 #[inline]
-unsafe fn mv_projection(mv: mv, num: libc::c_int, den: libc::c_int) -> mv {
+fn mv_projection(mv: mv, num: libc::c_int, den: libc::c_int) -> mv {
     static div_mult: [u16; 32] = [
            0, 16384, 8192, 5461, 4096, 3276, 2730, 2340,
         2048,  1820, 1638, 1489, 1365, 1260, 1170, 1092,
