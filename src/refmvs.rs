@@ -690,9 +690,8 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
     let mut gmv = [mv::ZERO; 2];
     let mut tgmv = [mv::ZERO; 2];
     *cnt = 0;
-    if !(r#ref.r#ref[0] >= 0 && r#ref.r#ref[0] <= 8 && r#ref.r#ref[1] >= -1 && r#ref.r#ref[1] <= 8) {
-        unreachable!();
-    }
+    assert!(r#ref.r#ref[0] >= 0 && r#ref.r#ref[0] <= 8
+        && r#ref.r#ref[1] >= -1 && r#ref.r#ref[1] <= 8);
     if r#ref.r#ref[0] > 0 {
         tgmv[0] = get_gmv_2d(
             &(*(*rf).frm_hdr).gmv[r#ref.r#ref[0] as usize - 1],
@@ -734,7 +733,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
     let mut b_top = std::ptr::null();
     if by4 > (*rt).tile_row.start {
         max_rows = imin(by4 - (*rt).tile_row.start + 1 >> 1, 2 + (bh4 > 1) as libc::c_int) as libc::c_uint;
-        b_top = &mut *(*rt).r[(by4 as usize & 31) + 5 - 1].offset(bx4 as isize) as *mut refmvs_block;
+        b_top = &mut *(*rt).r[(by4 as usize & 31) + 5 - 1].offset(bx4 as isize);
         n_rows = scan_row(
             mvstack,
             cnt,
@@ -751,10 +750,10 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
     }
     let mut max_cols = 0;
     let mut n_cols = !0;
-    let mut b_left = 0 as *const *mut refmvs_block;
+    let mut b_left = std::ptr::null();
     if bx4 > (*rt).tile_col.start {
         max_cols = imin(bx4 - (*rt).tile_col.start + 1 >> 1, 2 + (bw4 > 1) as libc::c_int) as libc::c_uint;
-        b_left = &(*rt).r[(by4 as usize & 31) + 5] as *const *mut refmvs_block;
+        b_left = &(*rt).r[(by4 as usize & 31) + 5];
         n_cols = scan_col(
             mvstack,
             cnt,
@@ -862,9 +861,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
             }
         }
     }
-    if !(*cnt <= 8) {
-        unreachable!();
-    }
+    assert!(*cnt <= 8);
     let mut have_dummy_newmv_match = 0;
     if n_rows | n_cols != !0 {
         add_spatial_candidate(
@@ -919,9 +916,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
         }
         n_0 += 1;
     }
-    if !(*cnt <= 8) {
-        unreachable!();
-    }
+    assert!(*cnt <= 8);
     let ref_match_count = have_col_mvs + have_row_mvs;
     let mut refmv_ctx = 0;
     let mut newmv_ctx = 0;
@@ -1129,9 +1124,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
             }
         }
     }
-    if !(*cnt <= 8) {
-        unreachable!();
-    }
+    assert!(*cnt <= 8);
     let mut n_refmvs_0 = *cnt;
     if n_refmvs_0 != 0 {
         let left_0 = -(bx4 + bw4 + 4) * 4 * 8;
