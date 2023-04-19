@@ -681,7 +681,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
     by4: libc::c_int,
     bx4: libc::c_int,
 ) {
-    let rf = (*rt).rf;
+    let rf = &*(*rt).rf;
     let b_dim = &dav1d_block_dimensions[bs as usize];
     let bw4 = b_dim[0] as libc::c_int;
     let w4 = imin(imin(bw4, 16), (*rt).tile_col.end - bx4);
@@ -694,14 +694,14 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
         && r#ref.r#ref[1] >= -1 && r#ref.r#ref[1] <= 8);
     if r#ref.r#ref[0] > 0 {
         tgmv[0] = get_gmv_2d(
-            &(*(*rf).frm_hdr).gmv[r#ref.r#ref[0] as usize - 1],
+            &(*rf.frm_hdr).gmv[r#ref.r#ref[0] as usize - 1],
             bx4,
             by4,
             bw4,
             bh4,
-            (*rf).frm_hdr,
+            rf.frm_hdr,
         );
-        gmv[0] = if (*(*rf).frm_hdr).gmv[r#ref.r#ref[0] as usize - 1].type_0 > DAV1D_WM_TYPE_TRANSLATION {
+        gmv[0] = if (*rf.frm_hdr).gmv[r#ref.r#ref[0] as usize - 1].type_0 > DAV1D_WM_TYPE_TRANSLATION {
             tgmv[0]
         } else {
             mv::INVALID
@@ -712,14 +712,14 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
     }
     if r#ref.r#ref[1] > 0 {
         tgmv[1] = get_gmv_2d(
-            &(*(*rf).frm_hdr).gmv[r#ref.r#ref[1] as usize - 1],
+            &(*rf.frm_hdr).gmv[r#ref.r#ref[1] as usize - 1],
             bx4,
             by4,
             bw4,
             bh4,
-            (*rf).frm_hdr,
+            rf.frm_hdr,
         );
-        gmv[1] = if (*(*rf).frm_hdr).gmv[r#ref.r#ref[1] as usize - 1].type_0 > DAV1D_WM_TYPE_TRANSLATION {
+        gmv[1] = if (*rf.frm_hdr).gmv[r#ref.r#ref[1] as usize - 1].type_0 > DAV1D_WM_TYPE_TRANSLATION {
             tgmv[1]
         } else {
             mv::INVALID
@@ -789,9 +789,9 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
         (*mvstack.offset(n as isize)).weight += 640;
         n += 1;
     }
-    let mut globalmv_ctx = (*(*rf).frm_hdr).use_ref_frame_mvs;
-    if (*rf).use_ref_frame_mvs != 0 {
-        let stride: ptrdiff_t = (*rf).rp_stride;
+    let mut globalmv_ctx = (*rf.frm_hdr).use_ref_frame_mvs;
+    if rf.use_ref_frame_mvs != 0 {
+        let stride: ptrdiff_t = rf.rp_stride;
         let by8 = by4 >> 1;
         let bx8 = bx4 >> 1;
         let rbi: *const refmvs_temporal_block = &mut *((*rt).rp_proj)
@@ -967,8 +967,8 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
     }
     if r#ref.r#ref[1] > 0 {
         if *cnt < 2 {
-            let sign0 = (*rf).sign_bias[r#ref.r#ref[0] as usize - 1] as libc::c_int;
-            let sign1 = (*rf).sign_bias[r#ref.r#ref[1] as usize - 1] as libc::c_int;
+            let sign0 = rf.sign_bias[r#ref.r#ref[0] as usize - 1] as libc::c_int;
+            let sign1 = rf.sign_bias[r#ref.r#ref[1] as usize - 1] as libc::c_int;
             let sz4 = imin(w4, h4);
             let same = &mut *mvstack.offset(*cnt as isize) as *mut refmvs_candidate;
             let mut same_count = [0, 0, 0, 0];
@@ -983,7 +983,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
                         sign0,
                         sign1,
                         r#ref,
-                        (*rf).sign_bias.as_ptr(),
+                        rf.sign_bias.as_ptr(),
                     );
                     x_0 += dav1d_block_dimensions[(*cand_b).bs as usize][0] as libc::c_int;
                 }
@@ -1000,7 +1000,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
                         sign0,
                         sign1,
                         r#ref,
-                        (*rf).sign_bias.as_ptr(),
+                        rf.sign_bias.as_ptr(),
                     );
                     y_0 += dav1d_block_dimensions[(*cand_b_0).bs as usize][1] as libc::c_int;
                 }
@@ -1057,9 +1057,9 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
             *cnt = 2;
         }
         let left = -(bx4 + bw4 + 4) * 4 * 8;
-        let right = ((*rf).iw4 - bx4 + 4) * 4 * 8;
+        let right = (rf.iw4 - bx4 + 4) * 4 * 8;
         let top = -(by4 + bh4 + 4) * 4 * 8;
-        let bottom = ((*rf).ih4 - by4 + 4) * 4 * 8;
+        let bottom = (rf.ih4 - by4 + 4) * 4 * 8;
         let n_refmvs = *cnt;
         let mut n_5 = 0;
         loop {
@@ -1091,7 +1091,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
         return;
     } else {
         if *cnt < 2 && r#ref.r#ref[0] > 0 {
-            let sign = (*rf).sign_bias[r#ref.r#ref[0] as usize - 1] as libc::c_int;
+            let sign = rf.sign_bias[r#ref.r#ref[0] as usize - 1] as libc::c_int;
             let sz4_0 = imin(w4, h4);
             if n_rows != !0 {
                 let mut x_1 = 0;
@@ -1102,7 +1102,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
                         cnt,
                         cand_b_1,
                         sign,
-                        (*rf).sign_bias.as_ptr(),
+                        rf.sign_bias.as_ptr(),
                     );
                     x_1 += dav1d_block_dimensions[(*cand_b_1).bs as usize][0] as libc::c_int;
                 }
@@ -1117,7 +1117,7 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
                         cnt,
                         cand_b_2,
                         sign,
-                        (*rf).sign_bias.as_ptr(),
+                        rf.sign_bias.as_ptr(),
                     );
                     y_1 += dav1d_block_dimensions[(*cand_b_2).bs as usize][1] as libc::c_int;
                 }
@@ -1128,9 +1128,9 @@ pub unsafe extern "C" fn dav1d_refmvs_find(
     let mut n_refmvs_0 = *cnt;
     if n_refmvs_0 != 0 {
         let left_0 = -(bx4 + bw4 + 4) * 4 * 8;
-        let right_0 = ((*rf).iw4 - bx4 + 4) * 4 * 8;
+        let right_0 = (rf.iw4 - bx4 + 4) * 4 * 8;
         let top_0 = -(by4 + bh4 + 4) * 4 * 8;
-        let bottom_0 = ((*rf).ih4 - by4 + 4) * 4 * 8;
+        let bottom_0 = (rf.ih4 - by4 + 4) * 4 * 8;
         let mut n_6 = 0;
         loop {
             (*mvstack.offset(n_6 as isize)).mv.mv[0].x = 
