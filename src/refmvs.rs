@@ -1067,10 +1067,11 @@ pub unsafe fn dav1d_refmvs_find(
         let n_refmvs = *cnt;
         
         for cand in &mut mvstack[..n_refmvs] {
-            cand.mv.mv[0].x = iclip(cand.mv.mv[0].x as libc::c_int, left, right) as i16;
-            cand.mv.mv[0].y = iclip(cand.mv.mv[0].y as libc::c_int, top, bottom) as i16;
-            cand.mv.mv[1].x = iclip(cand.mv.mv[1].x as libc::c_int, left, right) as i16;
-            cand.mv.mv[1].y = iclip(cand.mv.mv[1].y as libc::c_int, top, bottom) as i16;
+            let mv = &mut cand.mv.mv;
+            mv[0].x = iclip(mv[0].x as libc::c_int, left, right) as i16;
+            mv[0].y = iclip(mv[0].y as libc::c_int, top, bottom) as i16;
+            mv[1].x = iclip(mv[1].x as libc::c_int, left, right) as i16;
+            mv[1].y = iclip(mv[1].y as libc::c_int, top, bottom) as i16;
         }
 
         match refmv_ctx >> 1 {
@@ -1135,8 +1136,9 @@ pub unsafe fn dav1d_refmvs_find(
         let bottom = (rf.ih4 - by4 + 4) * 4 * 8;
 
         for cand in &mut mvstack[..n_refmvs] {
-            cand.mv.mv[0].x = iclip(cand.mv.mv[0].x as libc::c_int, left, right) as i16;
-            cand.mv.mv[0].y = iclip(cand.mv.mv[0].y as libc::c_int, top, bottom) as i16;
+            let mv = &mut cand.mv.mv;
+            mv[0].x = iclip(mv[0].x as libc::c_int, left, right) as i16;
+            mv[0].y = iclip(mv[0].y as libc::c_int, top, bottom) as i16;
         }
     }
 
