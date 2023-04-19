@@ -1040,12 +1040,8 @@ pub unsafe fn dav1d_refmvs_find(
                         continue;
                     }
                 }
-                loop {
+                for m in m..2 {
                     same[m].mv.mv[n] = tgmv[n];
-                    m += 1;
-                    if !(m < 2) {
-                        break;
-                    }
                 }
             }
 
@@ -1056,12 +1052,8 @@ pub unsafe fn dav1d_refmvs_find(
             if n == 1 && mvstack[0].mv == same[0].mv {
                 mvstack[1].mv = mvstack[2].mv;
             }
-            loop {
+            for n in n..2 {
                 mvstack[n].weight = 2;
-                n += 1;
-                if !(n < 2) {
-                    break;
-                }
             }
             *cnt = 2;
         }
@@ -1073,16 +1065,12 @@ pub unsafe fn dav1d_refmvs_find(
         let bottom = (rf.ih4 - by4 + 4) * 4 * 8;
 
         let n_refmvs = *cnt;
-        let mut n = 0;
-        loop {
+        
+        for n in 0..n_refmvs {
             mvstack[n].mv.mv[0].x = iclip(mvstack[n].mv.mv[0].x as libc::c_int, left, right) as i16;
             mvstack[n].mv.mv[0].y = iclip(mvstack[n].mv.mv[0].y as libc::c_int, top, bottom) as i16;
             mvstack[n].mv.mv[1].x = iclip(mvstack[n].mv.mv[1].x as libc::c_int, left, right) as i16;
             mvstack[n].mv.mv[1].y = iclip(mvstack[n].mv.mv[1].y as libc::c_int, top, bottom) as i16;
-            n += 1;
-            if !(n < n_refmvs) {
-                break;
-            }
         }
 
         match refmv_ctx >> 1 {
@@ -1146,14 +1134,9 @@ pub unsafe fn dav1d_refmvs_find(
         let top = -(by4 + bh4 + 4) * 4 * 8;
         let bottom = (rf.ih4 - by4 + 4) * 4 * 8;
 
-        let mut n = 0;
-        loop {
+        for n in 0..n_refmvs {
             mvstack[n].mv.mv[0].x = iclip(mvstack[n].mv.mv[0].x as libc::c_int, left, right) as i16;
             mvstack[n].mv.mv[0].y = iclip(mvstack[n].mv.mv[0].y as libc::c_int, top, bottom) as i16;
-            n += 1;
-            if !(n < n_refmvs) {
-                break;
-            }
         }
     }
 
