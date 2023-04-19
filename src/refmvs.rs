@@ -76,11 +76,10 @@ pub struct refmvs_temporal_block {
     pub ref_0: int8_t,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
-pub union refmvs_refpair {
+pub struct refmvs_refpair {
     pub r#ref: [int8_t; 2],
-    pub pair: uint16_t,
 }
 
 #[derive(Copy, Clone)]
@@ -218,7 +217,7 @@ unsafe extern "C" fn add_spatial_candidate(
             }
             n += 1;
         }
-    } else if (*b).ref_0.pair as libc::c_int == ref_0.pair as libc::c_int {
+    } else if (*b).ref_0 == ref_0 {
         let cand_mv_0: refmvs_mvpair = refmvs_mvpair {
             mv: [
                 if (*b).mf as libc::c_int & 1 as libc::c_int != 0
