@@ -669,6 +669,22 @@ unsafe extern "C" fn add_single_extended_candidate(
     }
 }
 
+/// refmvs_frame allocates memory for one sbrow (32 blocks high, whole frame
+/// wide) of 4x4-resolution refmvs_block entries for spatial MV referencing.
+/// mvrefs_tile[] keeps a list of 35 (32 + 3 above) pointers into this memory,
+/// and each sbrow, the bottom entries (y=27/29/31) are exchanged with the top
+/// (-5/-3/-1) pointers by calling dav1d_refmvs_tile_sbrow_init() at the start
+/// of each tile/sbrow.
+/// 
+/// For temporal MV referencing, we call dav1d_refmvs_save_tmvs() at the end of
+/// each tile/sbrow (when tile column threading is enabled), or at the start of
+/// each interleaved sbrow (i.e. once for all tile columns together, when tile
+/// column threading is disabled). This will copy the 4x4-resolution spatial MVs
+/// into 8x8-resolution refmvs_temporal_block structures. Then, for subsequent
+/// frames, at the start of each tile/sbrow (when tile column threading is
+/// enabled) or at the start of each interleaved sbrow (when tile column
+/// threading is disabled), we call load_tmvs(), which will project the MVs to
+/// their respective position in the current frame.
 pub unsafe fn dav1d_refmvs_find(
     rt: &refmvs_tile,
     mut mvstack: &mut [refmvs_candidate; 8],
@@ -688,6 +704,7 @@ pub unsafe fn dav1d_refmvs_find(
     let h4 = imin(imin(bh4, 16), rt.tile_row.end - by4);
     let mut gmv = [mv::default(); 2];
     let mut tgmv = [mv::default(); 2];
+
     *cnt = 0;
     assert!(r#ref.r#ref[0] >= 0 && r#ref.r#ref[0] <= 8
         && r#ref.r#ref[1] >= -1 && r#ref.r#ref[1] <= 8);
@@ -724,6 +741,8 @@ pub unsafe fn dav1d_refmvs_find(
             mv::INVALID
         };
     }
+
+    // top
     let mut have_newmv = 0;
     let mut have_col_mvs = 0;
     let mut have_row_mvs = 0;
@@ -747,6 +766,8 @@ pub unsafe fn dav1d_refmvs_find(
             &mut have_row_mvs,
         ) as libc::c_uint;
     }
+
+    // left
     let mut max_cols = 0;
     let mut n_cols = !0;
     let mut b_left = std::ptr::null();
@@ -768,6 +789,8 @@ pub unsafe fn dav1d_refmvs_find(
             &mut have_col_mvs,
         ) as libc::c_uint;
     }
+
+    // top/right
     if n_rows != !0 && edge_flags & EDGE_I444_TOP_HAS_RIGHT != 0
         && imax(bw4, bh4) <= 16 && bw4 + bx4 < rt.tile_col.end {
         add_spatial_candidate(
@@ -781,11 +804,14 @@ pub unsafe fn dav1d_refmvs_find(
             &mut have_row_mvs,
         );
     }
+
     let nearest_match = have_col_mvs + have_row_mvs;
     let nearest_cnt = *cnt;
     for n in 0..nearest_cnt {
         mvstack[n as usize].weight += 640;
     }
+
+    // temporal
     let mut globalmv_ctx = (*rf.frm_hdr).use_ref_frame_mvs;
     if rf.use_ref_frame_mvs != 0 {
         let stride: ptrdiff_t = rf.rp_stride;
@@ -855,6 +881,8 @@ pub unsafe fn dav1d_refmvs_find(
         }
     }
     assert!(*cnt <= 8);
+
+    // top/left (which, confusingly, is part of "secondary" references)
     let mut have_dummy_newmv_match = 0;
     if n_rows | n_cols != !0 {
         add_spatial_candidate(
@@ -868,6 +896,9 @@ pub unsafe fn dav1d_refmvs_find(
             &mut have_row_mvs,
         );
     }
+
+    // "secondary" (non-direct neighbour) top & left edges
+    // what is different about secondary is that everything is now in 8x8 resolution
     for n in 2..=3 {
         if n as libc::c_uint > n_rows && n as libc::c_uint <= max_rows {
             n_rows = n_rows
@@ -908,7 +939,10 @@ pub unsafe fn dav1d_refmvs_find(
         }
     }
     assert!(*cnt <= 8);
+
     let ref_match_count = have_col_mvs + have_row_mvs;
+
+    // context build-up
     let mut refmv_ctx = 0;
     let mut newmv_ctx = 0;
     match nearest_match {
@@ -926,6 +960,8 @@ pub unsafe fn dav1d_refmvs_find(
         }
         _ => {}
     }
+
+    // sorting (nearest, then "secondary")
     let mut len = nearest_cnt;
     while len != 0 {
         let mut last = 0;
@@ -952,6 +988,7 @@ pub unsafe fn dav1d_refmvs_find(
         }
         len = last;
     }
+
     if r#ref.r#ref[1] > 0 {
         if *cnt < 2 {
             let sign0 = rf.sign_bias[r#ref.r#ref[0] as usize - 1] as libc::c_int;
@@ -960,6 +997,8 @@ pub unsafe fn dav1d_refmvs_find(
             let cur_cnt = *cnt as usize;
             let same = &mut mvstack[cur_cnt..];
             let mut same_count = [0, 0, 0, 0];
+
+            // non-self references in top
             if n_rows != !0 {
                 let mut x = 0;
                 while x < sz4 {
@@ -976,6 +1015,8 @@ pub unsafe fn dav1d_refmvs_find(
                     x += dav1d_block_dimensions[(*cand_b).bs as usize][0] as libc::c_int;
                 }
             }
+
+            // non-self references in left
             if n_cols != !0 {
                 let mut y = 0;
                 while y < sz4 {
@@ -998,8 +1039,9 @@ pub unsafe fn dav1d_refmvs_find(
             // so this `same.split_at_mut(2).0` won't be accessed out of bounds.
             let (same, diff) = same.split_at_mut(2);
             let diff = &diff[..]; // not &mut
-
             let diff_count = &same_count[2..];
+
+            // merge together
             let mut current_block_118: u64;
             for n in 0..2 {
                 let mut m = same_count[n as usize];
@@ -1033,6 +1075,9 @@ pub unsafe fn dav1d_refmvs_find(
                     }
                 }
             }
+
+            // if the first extended was the same as the non-extended one,
+            // then replace it with the second extended one
             let mut n = *cnt;
             let same = &mvstack[cur_cnt..]; // need to reborrow to get a &, not &mut
             if n == 1 && mvstack[0].mv == same[0].mv {
@@ -1047,10 +1092,13 @@ pub unsafe fn dav1d_refmvs_find(
             }
             *cnt = 2;
         }
+
+        // clamping
         let left = -(bx4 + bw4 + 4) * 4 * 8;
         let right = (rf.iw4 - bx4 + 4) * 4 * 8;
         let top = -(by4 + bh4 + 4) * 4 * 8;
         let bottom = (rf.ih4 - by4 + 4) * 4 * 8;
+
         let n_refmvs = *cnt;
         let mut n = 0;
         loop {
@@ -1063,6 +1111,7 @@ pub unsafe fn dav1d_refmvs_find(
                 break;
             }
         }
+
         match refmv_ctx >> 1 {
             0 => {
                 *ctx = imin(newmv_ctx, 1);
@@ -1075,11 +1124,14 @@ pub unsafe fn dav1d_refmvs_find(
             }
             _ => {}
         }
+
         return;
     } else {
         if *cnt < 2 && r#ref.r#ref[0] > 0 {
             let sign = rf.sign_bias[r#ref.r#ref[0] as usize - 1] as libc::c_int;
             let sz4 = imin(w4, h4);
+
+            // non-self references in top
             if n_rows != !0 {
                 let mut x = 0;
                 while x < sz4 && *cnt < 2 {
@@ -1094,6 +1146,8 @@ pub unsafe fn dav1d_refmvs_find(
                     x += dav1d_block_dimensions[(*cand_b_1).bs as usize][0] as libc::c_int;
                 }
             }
+
+            // non-self references in left
             if n_cols != !0 {
                 let mut y = 0;
                 while y < sz4 && *cnt < 2 {
@@ -1112,12 +1166,15 @@ pub unsafe fn dav1d_refmvs_find(
         }
     }
     assert!(*cnt <= 8);
+
+    // clamping
     let mut n_refmvs = *cnt;
     if n_refmvs != 0 {
         let left = -(bx4 + bw4 + 4) * 4 * 8;
         let right = (rf.iw4 - bx4 + 4) * 4 * 8;
         let top = -(by4 + bh4 + 4) * 4 * 8;
         let bottom = (rf.ih4 - by4 + 4) * 4 * 8;
+
         let mut n = 0;
         loop {
             mvstack[n as usize].mv.mv[0].x = iclip(mvstack[n as usize].mv.mv[0].x as libc::c_int, left, right) as i16;
@@ -1128,9 +1185,11 @@ pub unsafe fn dav1d_refmvs_find(
             }
         }
     }
+
     for n in *cnt..2 {
         mvstack[n as usize].mv.mv[0] = tgmv[0];
     }
+
     *ctx = refmv_ctx << 4 | globalmv_ctx << 3 | newmv_ctx;
 }
 
