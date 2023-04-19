@@ -672,8 +672,8 @@ unsafe extern "C" fn add_single_extended_candidate(
 pub unsafe fn dav1d_refmvs_find(
     rt: &refmvs_tile,
     mut mvstack: *mut refmvs_candidate,
-    cnt: *mut libc::c_int,
-    ctx: *mut libc::c_int,
+    cnt: &mut libc::c_int,
+    ctx: &mut libc::c_int,
     r#ref: refmvs_refpair,
     bs: BlockSize,
     edge_flags: EdgeFlags,
