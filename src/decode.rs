@@ -9528,13 +9528,7 @@ unsafe fn decode_b(
                         .c2rust_unnamed
                         .mv[0 as libc::c_int
                         as usize] = get_gmv_2d(
-                        &mut *((*f.frame_hdr).gmv)
-                            .as_mut_ptr()
-                            .offset(
-                                *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
-                                    .as_mut_ptr()
-                                    .offset(0 as libc::c_int as isize) as isize,
-                            ),
+                        &(*f.frame_hdr).gmv[b.r#ref()[0] as usize],
                         t.bx,
                         t.by,
                         bw4,
@@ -9604,13 +9598,7 @@ unsafe fn decode_b(
                         .c2rust_unnamed
                         .mv[1 as libc::c_int
                         as usize] = get_gmv_2d(
-                        &mut *((*f.frame_hdr).gmv)
-                            .as_mut_ptr()
-                            .offset(
-                                *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
-                                    .as_mut_ptr()
-                                    .offset(1 as libc::c_int as isize) as isize,
-                            ),
+                        &(*f.frame_hdr).gmv[b.r#ref()[1] as usize],
                         t.bx,
                         t.by,
                         bw4,
@@ -10042,13 +10030,7 @@ unsafe fn decode_b(
                         .c2rust_unnamed
                         .mv[0 as libc::c_int
                         as usize] = get_gmv_2d(
-                        &mut *((*f.frame_hdr).gmv)
-                            .as_mut_ptr()
-                            .offset(
-                                *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
-                                    .as_mut_ptr()
-                                    .offset(0 as libc::c_int as isize) as isize,
-                            ),
+                        &(*f.frame_hdr).gmv[b.r#ref()[0] as usize],
                         t.bx,
                         t.by,
                         bw4,
