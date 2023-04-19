@@ -4443,8 +4443,8 @@ unsafe extern "C" fn mc(
             != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint) as libc::c_int;
     let h_mul: libc::c_int = 4 as libc::c_int >> ss_hor;
     let v_mul: libc::c_int = 4 as libc::c_int >> ss_ver;
-    let mvx: libc::c_int = mv.c2rust_unnamed.x as libc::c_int;
-    let mvy: libc::c_int = mv.c2rust_unnamed.y as libc::c_int;
+    let mvx: libc::c_int = mv.x as libc::c_int;
+    let mvy: libc::c_int = mv.y as libc::c_int;
     let mx: libc::c_int = mvx & 15 as libc::c_int >> (ss_hor == 0) as libc::c_int;
     let my: libc::c_int = mvy & 15 as libc::c_int >> (ss_ver == 0) as libc::c_int;
     let mut ref_stride: ptrdiff_t = (*refp).p.stride[(pl != 0) as libc::c_int as usize];

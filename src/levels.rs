@@ -1,7 +1,6 @@
 use crate::include::stdint::int16_t;
 use crate::include::stdint::int8_t;
 use crate::include::stdint::uint16_t;
-use crate::include::stdint::uint32_t;
 use crate::include::stdint::uint8_t;
 
 pub type ObuMetaType = libc::c_uint;
@@ -182,28 +181,23 @@ pub const INTER_INTRA_WEDGE: InterIntraType = 2;
 pub const INTER_INTRA_BLEND: InterIntraType = 1;
 pub const INTER_INTRA_NONE: InterIntraType = 0;
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
-pub struct mv_xy {
-    pub y: int16_t,
-    pub x: int16_t,
-}
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union mv {
-    pub c2rust_unnamed: mv_xy,
-    pub n: uint32_t,
+pub struct mv {
+    pub y: i16,
+    pub x: i16,
 }
 
 impl mv {
-    pub fn x(&self) -> i16 {
-        unsafe { self.c2rust_unnamed.x }
-    }
+    pub const ZERO: Self = Self {
+        y: 0,
+        x: 0,
+    };
 
-    pub fn y(&self) -> i16 {
-        unsafe { self.c2rust_unnamed.y }
-    }
+    pub const INVALID: Self = Self {
+        y: i16::MIN,
+        x: i16::MIN,
+    };
 }
 
 pub type MotionMode = libc::c_uint;

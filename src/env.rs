@@ -5,7 +5,6 @@ use crate::include::stdint::int16_t;
 use crate::include::stdint::int8_t;
 use crate::include::stdint::uint8_t;
 use crate::src::levels::mv;
-use crate::src::levels::mv_xy;
 use crate::src::levels::TxfmType;
 use crate::src::levels::DCT_DCT;
 use crate::src::levels::H_ADST;
@@ -80,14 +79,12 @@ pub unsafe extern "C" fn get_poc_diff(
 #[inline]
 pub unsafe extern "C" fn fix_int_mv_precision(mv: *mut mv) {
     (*mv)
-        .c2rust_unnamed
-        .x = (((*mv).c2rust_unnamed.x as libc::c_int
-        - ((*mv).c2rust_unnamed.x as libc::c_int >> 15 as libc::c_int)
+        .x = (((*mv).x as libc::c_int
+        - ((*mv).x as libc::c_int >> 15 as libc::c_int)
         + 3 as libc::c_int) as libc::c_uint & !(7 as libc::c_uint)) as int16_t;
     (*mv)
-        .c2rust_unnamed
-        .y = (((*mv).c2rust_unnamed.y as libc::c_int
-        - ((*mv).c2rust_unnamed.y as libc::c_int >> 15 as libc::c_int)
+        .y = (((*mv).y as libc::c_int
+        - ((*mv).y as libc::c_int >> 15 as libc::c_int)
         + 3 as libc::c_int) as libc::c_uint & !(7 as libc::c_uint)) as int16_t;
 }
 
@@ -97,14 +94,12 @@ pub unsafe extern "C" fn fix_mv_precision(hdr: *const Dav1dFrameHeader, mv: *mut
         fix_int_mv_precision(mv);
     } else if (*hdr).hp == 0 {
         (*mv)
-            .c2rust_unnamed
-            .x = (((*mv).c2rust_unnamed.x as libc::c_int
-            - ((*mv).c2rust_unnamed.x as libc::c_int >> 15 as libc::c_int))
+            .x = (((*mv).x as libc::c_int
+            - ((*mv).x as libc::c_int >> 15 as libc::c_int))
             as libc::c_uint & !(1 as libc::c_uint)) as int16_t;
         (*mv)
-            .c2rust_unnamed
-            .y = (((*mv).c2rust_unnamed.y as libc::c_int
-            - ((*mv).c2rust_unnamed.y as libc::c_int >> 15 as libc::c_int))
+            .y = (((*mv).y as libc::c_int
+            - ((*mv).y as libc::c_int >> 15 as libc::c_int))
             as libc::c_uint & !(1 as libc::c_uint)) as int16_t;
     }
 }
@@ -132,16 +127,9 @@ pub unsafe extern "C" fn get_gmv_2d(
             }
         }
         1 => {
-            let mut res_0: mv = mv {
-                c2rust_unnamed: {
-                    let mut init = mv_xy {
-                        y: ((*gmv).matrix[0 as libc::c_int as usize]
-                            >> 13 as libc::c_int) as int16_t,
-                        x: ((*gmv).matrix[1 as libc::c_int as usize]
-                            >> 13 as libc::c_int) as int16_t,
-                    };
-                    init
-                },
+            let mut res_0 = mv {
+                y: ((*gmv).matrix[0] >> 13) as i16,
+                x: ((*gmv).matrix[1] >> 13) as i16,
             };
             if (*hdr).force_integer_mv != 0 {
                 fix_int_mv_precision(&mut res_0);
@@ -149,15 +137,7 @@ pub unsafe extern "C" fn get_gmv_2d(
             return res_0;
         }
         0 => {
-            return mv {
-                c2rust_unnamed: {
-                    let mut init = mv_xy {
-                        y: 0 as libc::c_int as int16_t,
-                        x: 0 as libc::c_int as int16_t,
-                    };
-                    init
-                },
-            };
+            return mv::ZERO;
         }
         3 | _ => {}
     }
@@ -177,19 +157,14 @@ pub unsafe extern "C" fn get_gmv_2d(
         - (3 as libc::c_int - ((*hdr).hp == 0) as libc::c_int);
     let round: libc::c_int = (1 as libc::c_int) << shift >> 1 as libc::c_int;
     let mut res: mv = mv {
-        c2rust_unnamed: {
-            let mut init = mv_xy {
-                y: apply_sign(
-                    yc.abs() + round >> shift << ((*hdr).hp == 0) as libc::c_int,
-                    yc,
-                ) as int16_t,
-                x: apply_sign(
-                    xc.abs() + round >> shift << ((*hdr).hp == 0) as libc::c_int,
-                    xc,
-                ) as int16_t,
-            };
-            init
-        },
+        y: apply_sign(
+            yc.abs() + round >> shift << ((*hdr).hp == 0) as libc::c_int,
+            yc,
+        ) as i16,
+        x: apply_sign(
+            xc.abs() + round >> shift << ((*hdr).hp == 0) as libc::c_int,
+            xc,
+        ) as i16,
     };
     if (*hdr).force_integer_mv != 0 {
         fix_int_mv_precision(&mut res);
