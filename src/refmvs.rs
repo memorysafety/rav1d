@@ -1040,8 +1040,8 @@ pub unsafe fn dav1d_refmvs_find(
                         continue;
                     }
                 }
-                for m in m..2 {
-                    same[m].mv.mv[n] = tgmv[n];
+                for mut cand in &mut same[m..2] {
+                    cand.mv.mv[n] = tgmv[n];
                 }
             }
 
@@ -1052,8 +1052,8 @@ pub unsafe fn dav1d_refmvs_find(
             if n == 1 && mvstack[0].mv == same[0].mv {
                 mvstack[1].mv = mvstack[2].mv;
             }
-            for n in n..2 {
-                mvstack[n].weight = 2;
+            for cand in &mut mvstack[n..2] {
+                cand.weight = 2;
             }
             *cnt = 2;
         }
@@ -1066,11 +1066,11 @@ pub unsafe fn dav1d_refmvs_find(
 
         let n_refmvs = *cnt;
         
-        for n in 0..n_refmvs {
-            mvstack[n].mv.mv[0].x = iclip(mvstack[n].mv.mv[0].x as libc::c_int, left, right) as i16;
-            mvstack[n].mv.mv[0].y = iclip(mvstack[n].mv.mv[0].y as libc::c_int, top, bottom) as i16;
-            mvstack[n].mv.mv[1].x = iclip(mvstack[n].mv.mv[1].x as libc::c_int, left, right) as i16;
-            mvstack[n].mv.mv[1].y = iclip(mvstack[n].mv.mv[1].y as libc::c_int, top, bottom) as i16;
+        for cand in &mut mvstack[..n_refmvs] {
+            cand.mv.mv[0].x = iclip(cand.mv.mv[0].x as libc::c_int, left, right) as i16;
+            cand.mv.mv[0].y = iclip(cand.mv.mv[0].y as libc::c_int, top, bottom) as i16;
+            cand.mv.mv[1].x = iclip(cand.mv.mv[1].x as libc::c_int, left, right) as i16;
+            cand.mv.mv[1].y = iclip(cand.mv.mv[1].y as libc::c_int, top, bottom) as i16;
         }
 
         match refmv_ctx >> 1 {
@@ -1134,9 +1134,9 @@ pub unsafe fn dav1d_refmvs_find(
         let top = -(by4 + bh4 + 4) * 4 * 8;
         let bottom = (rf.ih4 - by4 + 4) * 4 * 8;
 
-        for n in 0..n_refmvs {
-            mvstack[n].mv.mv[0].x = iclip(mvstack[n].mv.mv[0].x as libc::c_int, left, right) as i16;
-            mvstack[n].mv.mv[0].y = iclip(mvstack[n].mv.mv[0].y as libc::c_int, top, bottom) as i16;
+        for cand in &mut mvstack[..n_refmvs] {
+            cand.mv.mv[0].x = iclip(cand.mv.mv[0].x as libc::c_int, left, right) as i16;
+            cand.mv.mv[0].y = iclip(cand.mv.mv[0].y as libc::c_int, top, bottom) as i16;
         }
     }
 
