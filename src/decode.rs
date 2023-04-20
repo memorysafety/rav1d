@@ -4209,8 +4209,8 @@ unsafe fn decode_b(
     }
 
     // delta-q/lf
-    let shfl = ((*f.seq_hdr).sb128 == 0) as libc::c_int;
-    if t.bx & (31 >> shfl) == 0 && t.by & (31 >> shfl) == 0 {
+    let not_sb128 = ((*f.seq_hdr).sb128 == 0) as libc::c_int;
+    if t.bx & (31 >> not_sb128) == 0 && t.by & (31 >> not_sb128) == 0 {
         let prev_qidx = ts.last_qidx;
         let have_delta_q = (*f.frame_hdr).delta.q.present != 0
             && (bs
