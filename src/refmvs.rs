@@ -606,11 +606,11 @@ unsafe fn add_single_extended_candidate(
     sign_bias: &[u8; 7],
 ) {
     for n in 0..2 {
-        let cand_ref = cand_b.r#ref.r#ref[n as usize];
+        let cand_ref = cand_b.r#ref.r#ref[n];
         if cand_ref <= 0 {
             break;
         }
-        let mut cand_mv = cand_b.mv.mv[n as usize];
+        let mut cand_mv = cand_b.mv.mv[n];
         if (sign ^ sign_bias[cand_ref as usize - 1] as libc::c_int) != 0 {
             cand_mv.y = -cand_mv.y;
             cand_mv.x = -cand_mv.x;
