@@ -6,12 +6,9 @@ pub unsafe extern "C" fn get_random_number(
     state: *mut libc::c_uint,
 ) -> libc::c_int {
     let r = *state as libc::c_int;
-    let mut bit: libc::c_uint = ((r >> 0 ^ r >> 1
-        ^ r >> 3 ^ r >> 12) & 1)
-        as libc::c_uint;
+    let mut bit: libc::c_uint = ((r >> 0 ^ r >> 1 ^ r >> 3 ^ r >> 12) & 1) as libc::c_uint;
     *state = (r >> 1) as libc::c_uint | bit << 15;
-    return (*state >> 16 - bits
-        & (((1 as libc::c_int) << bits) - 1) as libc::c_uint)
+    return (*state >> 16 - bits & (((1 as libc::c_int) << bits) - 1) as libc::c_uint)
         as libc::c_int;
 }
 

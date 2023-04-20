@@ -56,8 +56,6 @@ pub unsafe extern "C" fn dav1d_set_cpu_flags_mask(mask: libc::c_uint) {
 }
 #[no_mangle]
 #[cold]
-pub unsafe extern "C" fn dav1d_num_logical_processors(
-    _c: *mut Dav1dContext,
-) -> libc::c_int {
+pub unsafe extern "C" fn dav1d_num_logical_processors(_c: *mut Dav1dContext) -> libc::c_int {
     num_cpus::get() as libc::c_int
 }

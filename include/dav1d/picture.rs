@@ -45,10 +45,8 @@ pub struct Dav1dPicture {
 #[repr(C)]
 pub struct Dav1dPicAllocator {
     pub cookie: *mut libc::c_void,
-    pub alloc_picture_callback: Option::<
-        unsafe extern "C" fn(*mut Dav1dPicture, *mut libc::c_void) -> libc::c_int,
-    >,
-    pub release_picture_callback: Option::<
-        unsafe extern "C" fn(*mut Dav1dPicture, *mut libc::c_void) -> (),
-    >,
+    pub alloc_picture_callback:
+        Option<unsafe extern "C" fn(*mut Dav1dPicture, *mut libc::c_void) -> libc::c_int>,
+    pub release_picture_callback:
+        Option<unsafe extern "C" fn(*mut Dav1dPicture, *mut libc::c_void) -> ()>,
 }

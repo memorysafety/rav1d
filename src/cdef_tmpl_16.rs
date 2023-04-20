@@ -12,10 +12,7 @@ extern "C" {
     static mut dav1d_cpu_flags: libc::c_uint;
 }
 
-#[cfg(all(
-    feature = "asm",
-    any(target_arch = "x86", target_arch = "x86_64")
-))]
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 extern "C" {
     fn dav1d_cdef_filter_4x4_16bpc_avx512icl(
         dst: *mut pixel,
@@ -154,10 +151,7 @@ extern "C" {
     ) -> libc::c_int;
 }
 
-#[cfg(all(
-    feature = "asm",
-    any(target_arch = "arm", target_arch = "aarch64")
-))]
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 extern "C" {
     fn dav1d_cdef_find_dir_16bpc_neon(
         dst: *const pixel,
@@ -214,11 +208,11 @@ extern "C" {
 pub type pixel = uint16_t;
 use crate::src::cdef::CdefEdgeFlags;
 use crate::src::cdef::CDEF_HAVE_BOTTOM;
-use crate::src::cdef::CDEF_HAVE_TOP;
-use crate::src::cdef::CDEF_HAVE_RIGHT;
 use crate::src::cdef::CDEF_HAVE_LEFT;
+use crate::src::cdef::CDEF_HAVE_RIGHT;
+use crate::src::cdef::CDEF_HAVE_TOP;
 pub type const_left_pixel_row_2px = *const [pixel; 2];
-pub type cdef_fn = Option::<
+pub type cdef_fn = Option<
     unsafe extern "C" fn(
         *mut pixel,
         ptrdiff_t,
@@ -233,13 +227,8 @@ pub type cdef_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type cdef_dir_fn = Option::<
-    unsafe extern "C" fn(
-        *const pixel,
-        ptrdiff_t,
-        *mut libc::c_uint,
-        libc::c_int,
-    ) -> libc::c_int,
+pub type cdef_dir_fn = Option<
+    unsafe extern "C" fn(*const pixel, ptrdiff_t, *mut libc::c_uint, libc::c_int) -> libc::c_int,
 >;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -250,8 +239,8 @@ pub struct Dav1dCdefDSPContext {
 use crate::include::common::attributes::clz;
 use crate::include::common::intops::imax;
 
-use crate::include::common::intops::umin;
 use crate::include::common::intops::iclip;
+use crate::include::common::intops::umin;
 
 use crate::include::common::intops::ulog2;
 #[inline]
@@ -281,9 +270,7 @@ unsafe extern "C" fn padding(
     let mut y_end = h + 2;
     if edges as libc::c_uint & CDEF_HAVE_TOP as libc::c_int as libc::c_uint == 0 {
         fill(
-            tmp
-                .offset(-2)
-                .offset(-((2 * tmp_stride) as isize)),
+            tmp.offset(-2).offset(-((2 * tmp_stride) as isize)),
             tmp_stride,
             w + 4,
             2 as libc::c_int,
@@ -292,8 +279,7 @@ unsafe extern "C" fn padding(
     }
     if edges as libc::c_uint & CDEF_HAVE_BOTTOM as libc::c_int as libc::c_uint == 0 {
         fill(
-            tmp
-                .offset((h as isize * tmp_stride) as isize)
+            tmp.offset((h as isize * tmp_stride) as isize)
                 .offset(-(2 as libc::c_int as isize)),
             tmp_stride,
             w + 4,
@@ -303,8 +289,7 @@ unsafe extern "C" fn padding(
     }
     if edges as libc::c_uint & CDEF_HAVE_LEFT as libc::c_int as libc::c_uint == 0 {
         fill(
-            tmp
-                .offset((y_start as isize * tmp_stride) as isize)
+            tmp.offset((y_start as isize * tmp_stride) as isize)
                 .offset(-(2 as libc::c_int as isize)),
             tmp_stride,
             2 as libc::c_int,
@@ -314,8 +299,7 @@ unsafe extern "C" fn padding(
     }
     if edges as libc::c_uint & CDEF_HAVE_RIGHT as libc::c_int as libc::c_uint == 0 {
         fill(
-            tmp
-                .offset((y_start as isize * tmp_stride) as isize)
+            tmp.offset((y_start as isize * tmp_stride) as isize)
                 .offset(w as isize),
             tmp_stride,
             2 as libc::c_int,
@@ -327,10 +311,8 @@ unsafe extern "C" fn padding(
     while y < 0 {
         let mut x = x_start;
         while x < x_end {
-            *tmp
-                .offset(
-                    (x as isize + y as isize * tmp_stride) as isize,
-                ) = *top.offset(x as isize) as int16_t;
+            *tmp.offset((x as isize + y as isize * tmp_stride) as isize) =
+                *top.offset(x as isize) as int16_t;
             x += 1;
         }
         top = top.offset(PXSTRIDE(src_stride) as isize);
@@ -340,11 +322,8 @@ unsafe extern "C" fn padding(
     while y_0 < h {
         let mut x_0 = x_start;
         while x_0 < 0 {
-            *tmp
-                .offset(
-                    (x_0 as isize + y_0 as isize * tmp_stride) as isize,
-                ) = (*left.offset(y_0 as isize))[(2 + x_0) as usize]
-                as int16_t;
+            *tmp.offset((x_0 as isize + y_0 as isize * tmp_stride) as isize) =
+                (*left.offset(y_0 as isize))[(2 + x_0) as usize] as int16_t;
             x_0 += 1;
         }
         y_0 += 1;
@@ -389,9 +368,7 @@ unsafe extern "C" fn cdef_filter_block_c(
     bitdepth_max: libc::c_int,
 ) {
     let tmp_stride: ptrdiff_t = 12 as libc::c_int as ptrdiff_t;
-    if !((w == 4 || w == 8)
-        && (h == 4 || h == 8))
-    {
+    if !((w == 4 || w == 8) && (h == 4 || h == 8)) {
         unreachable!();
     }
     let mut tmp_buf: [int16_t; 144] = [0; 144];
@@ -399,12 +376,12 @@ unsafe extern "C" fn cdef_filter_block_c(
         .as_mut_ptr()
         .offset((2 * tmp_stride) as isize)
         .offset(2);
-    padding(tmp, tmp_stride, dst, dst_stride, left, top, bottom, w, h, edges);
+    padding(
+        tmp, tmp_stride, dst, dst_stride, left, top, bottom, w, h, edges,
+    );
     if pri_strength != 0 {
-        let bitdepth_min_8 = 32 as libc::c_int
-            - clz(bitdepth_max as libc::c_uint) - 8;
-        let pri_tap = 4 as libc::c_int
-            - (pri_strength >> bitdepth_min_8 & 1);
+        let bitdepth_min_8 = 32 as libc::c_int - clz(bitdepth_max as libc::c_uint) - 8;
+        let pri_tap = 4 as libc::c_int - (pri_strength >> bitdepth_min_8 & 1);
         let pri_shift = imax(
             0 as libc::c_int,
             damping - ulog2(pri_strength as libc::c_uint),
@@ -421,62 +398,42 @@ unsafe extern "C" fn cdef_filter_block_c(
                     let mut pri_tap_k = pri_tap;
                     let mut k = 0;
                     while k < 2 {
-                        let off1 = dav1d_cdef_directions[(dir
-                            + 2) as usize][k as usize] as libc::c_int;
-                        let p0 = *tmp.offset((x + off1) as isize)
-                            as libc::c_int;
-                        let p1 = *tmp.offset((x - off1) as isize)
-                            as libc::c_int;
+                        let off1 =
+                            dav1d_cdef_directions[(dir + 2) as usize][k as usize] as libc::c_int;
+                        let p0 = *tmp.offset((x + off1) as isize) as libc::c_int;
+                        let p1 = *tmp.offset((x - off1) as isize) as libc::c_int;
                         sum += pri_tap_k * constrain(p0 - px, pri_strength, pri_shift);
                         sum += pri_tap_k * constrain(p1 - px, pri_strength, pri_shift);
                         pri_tap_k = pri_tap_k & 3 | 2;
-                        min = umin(p0 as libc::c_uint, min as libc::c_uint)
-                            as libc::c_int;
+                        min = umin(p0 as libc::c_uint, min as libc::c_uint) as libc::c_int;
                         max = imax(p0, max);
-                        min = umin(p1 as libc::c_uint, min as libc::c_uint)
-                            as libc::c_int;
+                        min = umin(p1 as libc::c_uint, min as libc::c_uint) as libc::c_int;
                         max = imax(p1, max);
-                        let off2 = dav1d_cdef_directions[(dir
-                            + 4) as usize][k as usize] as libc::c_int;
-                        let off3 = dav1d_cdef_directions[(dir
-                            + 0) as usize][k as usize] as libc::c_int;
-                        let s0 = *tmp.offset((x + off2) as isize)
-                            as libc::c_int;
-                        let s1 = *tmp.offset((x - off2) as isize)
-                            as libc::c_int;
-                        let s2 = *tmp.offset((x + off3) as isize)
-                            as libc::c_int;
-                        let s3 = *tmp.offset((x - off3) as isize)
-                            as libc::c_int;
+                        let off2 =
+                            dav1d_cdef_directions[(dir + 4) as usize][k as usize] as libc::c_int;
+                        let off3 =
+                            dav1d_cdef_directions[(dir + 0) as usize][k as usize] as libc::c_int;
+                        let s0 = *tmp.offset((x + off2) as isize) as libc::c_int;
+                        let s1 = *tmp.offset((x - off2) as isize) as libc::c_int;
+                        let s2 = *tmp.offset((x + off3) as isize) as libc::c_int;
+                        let s3 = *tmp.offset((x - off3) as isize) as libc::c_int;
                         let sec_tap = 2 - k;
                         sum += sec_tap * constrain(s0 - px, sec_strength, sec_shift);
                         sum += sec_tap * constrain(s1 - px, sec_strength, sec_shift);
                         sum += sec_tap * constrain(s2 - px, sec_strength, sec_shift);
                         sum += sec_tap * constrain(s3 - px, sec_strength, sec_shift);
-                        min = umin(s0 as libc::c_uint, min as libc::c_uint)
-                            as libc::c_int;
+                        min = umin(s0 as libc::c_uint, min as libc::c_uint) as libc::c_int;
                         max = imax(s0, max);
-                        min = umin(s1 as libc::c_uint, min as libc::c_uint)
-                            as libc::c_int;
+                        min = umin(s1 as libc::c_uint, min as libc::c_uint) as libc::c_int;
                         max = imax(s1, max);
-                        min = umin(s2 as libc::c_uint, min as libc::c_uint)
-                            as libc::c_int;
+                        min = umin(s2 as libc::c_uint, min as libc::c_uint) as libc::c_int;
                         max = imax(s2, max);
-                        min = umin(s3 as libc::c_uint, min as libc::c_uint)
-                            as libc::c_int;
+                        min = umin(s3 as libc::c_uint, min as libc::c_uint) as libc::c_int;
                         max = imax(s3, max);
                         k += 1;
                     }
-                    *dst
-                        .offset(
-                            x as isize,
-                        ) = iclip(
-                        px
-                            + (sum - (sum < 0) as libc::c_int
-                                + 8 >> 4),
-                        min,
-                        max,
-                    ) as pixel;
+                    *dst.offset(x as isize) =
+                        iclip(px + (sum - (sum < 0) as libc::c_int + 8 >> 4), min, max) as pixel;
                     x += 1;
                 }
                 dst = dst.offset(PXSTRIDE(dst_stride) as isize);
@@ -495,27 +452,17 @@ unsafe extern "C" fn cdef_filter_block_c(
                     let mut pri_tap_k_0 = pri_tap;
                     let mut k_0 = 0;
                     while k_0 < 2 {
-                        let off = dav1d_cdef_directions[(dir
-                            + 2) as usize][k_0 as usize] as libc::c_int;
-                        let p0_0 = *tmp.offset((x_0 + off) as isize)
-                            as libc::c_int;
-                        let p1_0 = *tmp.offset((x_0 - off) as isize)
-                            as libc::c_int;
-                        sum_0
-                            += pri_tap_k_0
-                                * constrain(p0_0 - px_0, pri_strength, pri_shift);
-                        sum_0
-                            += pri_tap_k_0
-                                * constrain(p1_0 - px_0, pri_strength, pri_shift);
+                        let off =
+                            dav1d_cdef_directions[(dir + 2) as usize][k_0 as usize] as libc::c_int;
+                        let p0_0 = *tmp.offset((x_0 + off) as isize) as libc::c_int;
+                        let p1_0 = *tmp.offset((x_0 - off) as isize) as libc::c_int;
+                        sum_0 += pri_tap_k_0 * constrain(p0_0 - px_0, pri_strength, pri_shift);
+                        sum_0 += pri_tap_k_0 * constrain(p1_0 - px_0, pri_strength, pri_shift);
                         pri_tap_k_0 = pri_tap_k_0 & 3 | 2;
                         k_0 += 1;
                     }
-                    *dst
-                        .offset(
-                            x_0 as isize,
-                        ) = (px_0
-                        + (sum_0 - (sum_0 < 0) as libc::c_int
-                            + 8 >> 4)) as pixel;
+                    *dst.offset(x_0 as isize) =
+                        (px_0 + (sum_0 - (sum_0 < 0) as libc::c_int + 8 >> 4)) as pixel;
                     x_0 += 1;
                 }
                 dst = dst.offset(PXSTRIDE(dst_stride) as isize);
@@ -538,35 +485,23 @@ unsafe extern "C" fn cdef_filter_block_c(
                 let mut sum_1 = 0;
                 let mut k_1 = 0;
                 while k_1 < 2 {
-                    let off1_0 = dav1d_cdef_directions[(dir
-                        + 4) as usize][k_1 as usize] as libc::c_int;
-                    let off2_0 = dav1d_cdef_directions[(dir
-                        + 0) as usize][k_1 as usize] as libc::c_int;
-                    let s0_0 = *tmp.offset((x_1 + off1_0) as isize)
-                        as libc::c_int;
-                    let s1_0 = *tmp.offset((x_1 - off1_0) as isize)
-                        as libc::c_int;
-                    let s2_0 = *tmp.offset((x_1 + off2_0) as isize)
-                        as libc::c_int;
-                    let s3_0 = *tmp.offset((x_1 - off2_0) as isize)
-                        as libc::c_int;
+                    let off1_0 =
+                        dav1d_cdef_directions[(dir + 4) as usize][k_1 as usize] as libc::c_int;
+                    let off2_0 =
+                        dav1d_cdef_directions[(dir + 0) as usize][k_1 as usize] as libc::c_int;
+                    let s0_0 = *tmp.offset((x_1 + off1_0) as isize) as libc::c_int;
+                    let s1_0 = *tmp.offset((x_1 - off1_0) as isize) as libc::c_int;
+                    let s2_0 = *tmp.offset((x_1 + off2_0) as isize) as libc::c_int;
+                    let s3_0 = *tmp.offset((x_1 - off2_0) as isize) as libc::c_int;
                     let sec_tap_0 = 2 - k_1;
-                    sum_1
-                        += sec_tap_0 * constrain(s0_0 - px_1, sec_strength, sec_shift_0);
-                    sum_1
-                        += sec_tap_0 * constrain(s1_0 - px_1, sec_strength, sec_shift_0);
-                    sum_1
-                        += sec_tap_0 * constrain(s2_0 - px_1, sec_strength, sec_shift_0);
-                    sum_1
-                        += sec_tap_0 * constrain(s3_0 - px_1, sec_strength, sec_shift_0);
+                    sum_1 += sec_tap_0 * constrain(s0_0 - px_1, sec_strength, sec_shift_0);
+                    sum_1 += sec_tap_0 * constrain(s1_0 - px_1, sec_strength, sec_shift_0);
+                    sum_1 += sec_tap_0 * constrain(s2_0 - px_1, sec_strength, sec_shift_0);
+                    sum_1 += sec_tap_0 * constrain(s3_0 - px_1, sec_strength, sec_shift_0);
                     k_1 += 1;
                 }
-                *dst
-                    .offset(
-                        x_1 as isize,
-                    ) = (px_1
-                    + (sum_1 - (sum_1 < 0) as libc::c_int
-                        + 8 >> 4)) as pixel;
+                *dst.offset(x_1 as isize) =
+                    (px_1 + (sum_1 - (sum_1 < 0) as libc::c_int + 8 >> 4)) as pixel;
                 x_1 += 1;
             }
             dst = dst.offset(PXSTRIDE(dst_stride) as isize);
@@ -671,12 +606,9 @@ unsafe extern "C" fn cdef_find_dir_c(
     var: *mut libc::c_uint,
     bitdepth_max: libc::c_int,
 ) -> libc::c_int {
-    let bitdepth_min_8 = 32 as libc::c_int
-        - clz(bitdepth_max as libc::c_uint) - 8;
-    let mut partial_sum_hv: [[libc::c_int; 8]; 2] = [
-        [0 as libc::c_int, 0, 0, 0, 0, 0, 0, 0],
-        [0; 8],
-    ];
+    let bitdepth_min_8 = 32 as libc::c_int - clz(bitdepth_max as libc::c_uint) - 8;
+    let mut partial_sum_hv: [[libc::c_int; 8]; 2] =
+        [[0 as libc::c_int, 0, 0, 0, 0, 0, 0, 0], [0; 8]];
     let mut partial_sum_diag: [[libc::c_int; 15]; 2] = [
         [0 as libc::c_int, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0; 15],
@@ -691,62 +623,33 @@ unsafe extern "C" fn cdef_find_dir_c(
     while y < 8 {
         let mut x = 0;
         while x < 8 {
-            let px = (*img.offset(x as isize) as libc::c_int
-                >> bitdepth_min_8) - 128;
+            let px = (*img.offset(x as isize) as libc::c_int >> bitdepth_min_8) - 128;
             partial_sum_diag[0][(y + x) as usize] += px;
-            partial_sum_alt[0 as libc::c_int
-                as usize][(y + (x >> 1)) as usize] += px;
+            partial_sum_alt[0 as libc::c_int as usize][(y + (x >> 1)) as usize] += px;
             partial_sum_hv[0][y as usize] += px;
-            partial_sum_alt[1 as libc::c_int
-                as usize][(3 + y - (x >> 1)) as usize]
-                += px;
-            partial_sum_diag[1 as libc::c_int
-                as usize][(7 + y - x) as usize] += px;
-            partial_sum_alt[2 as libc::c_int
-                as usize][(3 - (y >> 1) + x) as usize]
-                += px;
+            partial_sum_alt[1 as libc::c_int as usize][(3 + y - (x >> 1)) as usize] += px;
+            partial_sum_diag[1 as libc::c_int as usize][(7 + y - x) as usize] += px;
+            partial_sum_alt[2 as libc::c_int as usize][(3 - (y >> 1) + x) as usize] += px;
             partial_sum_hv[1][x as usize] += px;
-            partial_sum_alt[3 as libc::c_int
-                as usize][((y >> 1) + x) as usize] += px;
+            partial_sum_alt[3 as libc::c_int as usize][((y >> 1) + x) as usize] += px;
             x += 1;
         }
         img = img.offset(PXSTRIDE(stride) as isize);
         y += 1;
     }
-    let mut cost: [libc::c_uint; 8] = [
-        0 as libc::c_int as libc::c_uint,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-    ];
+    let mut cost: [libc::c_uint; 8] = [0 as libc::c_int as libc::c_uint, 0, 0, 0, 0, 0, 0, 0];
     let mut n = 0;
     while n < 8 {
-        cost[2 as libc::c_int
-            as usize] = (cost[2])
-            .wrapping_add(
-                (partial_sum_hv[0][n as usize]
-                    * partial_sum_hv[0][n as usize])
-                    as libc::c_uint,
-            );
-        cost[6 as libc::c_int
-            as usize] = (cost[6])
-            .wrapping_add(
-                (partial_sum_hv[1][n as usize]
-                    * partial_sum_hv[1][n as usize])
-                    as libc::c_uint,
-            );
+        cost[2 as libc::c_int as usize] = (cost[2]).wrapping_add(
+            (partial_sum_hv[0][n as usize] * partial_sum_hv[0][n as usize]) as libc::c_uint,
+        );
+        cost[6 as libc::c_int as usize] = (cost[6]).wrapping_add(
+            (partial_sum_hv[1][n as usize] * partial_sum_hv[1][n as usize]) as libc::c_uint,
+        );
         n += 1;
     }
-    cost[2 as libc::c_int
-        as usize] = (cost[2])
-        .wrapping_mul(105 as libc::c_int as libc::c_uint);
-    cost[6 as libc::c_int
-        as usize] = (cost[6])
-        .wrapping_mul(105 as libc::c_int as libc::c_uint);
+    cost[2 as libc::c_int as usize] = (cost[2]).wrapping_mul(105 as libc::c_int as libc::c_uint);
+    cost[6 as libc::c_int as usize] = (cost[6]).wrapping_mul(105 as libc::c_int as libc::c_uint);
     static mut div_table: [uint16_t; 7] = [
         840 as libc::c_int as uint16_t,
         420 as libc::c_int as uint16_t,
@@ -759,75 +662,48 @@ unsafe extern "C" fn cdef_find_dir_c(
     let mut n_0 = 0;
     while n_0 < 7 {
         let d = div_table[n_0 as usize] as libc::c_int;
-        cost[0 as libc::c_int
-            as usize] = (cost[0])
-            .wrapping_add(
-                ((partial_sum_diag[0][n_0 as usize]
-                    * partial_sum_diag[0][n_0 as usize]
-                    + partial_sum_diag[0 as libc::c_int
-                        as usize][(14 - n_0) as usize]
-                        * partial_sum_diag[0 as libc::c_int
-                            as usize][(14 - n_0) as usize]) * d)
-                    as libc::c_uint,
-            );
-        cost[4 as libc::c_int
-            as usize] = (cost[4])
-            .wrapping_add(
-                ((partial_sum_diag[1][n_0 as usize]
-                    * partial_sum_diag[1][n_0 as usize]
-                    + partial_sum_diag[1 as libc::c_int
-                        as usize][(14 - n_0) as usize]
-                        * partial_sum_diag[1 as libc::c_int
-                            as usize][(14 - n_0) as usize]) * d)
-                    as libc::c_uint,
-            );
+        cost[0 as libc::c_int as usize] = (cost[0]).wrapping_add(
+            ((partial_sum_diag[0][n_0 as usize] * partial_sum_diag[0][n_0 as usize]
+                + partial_sum_diag[0 as libc::c_int as usize][(14 - n_0) as usize]
+                    * partial_sum_diag[0 as libc::c_int as usize][(14 - n_0) as usize])
+                * d) as libc::c_uint,
+        );
+        cost[4 as libc::c_int as usize] = (cost[4]).wrapping_add(
+            ((partial_sum_diag[1][n_0 as usize] * partial_sum_diag[1][n_0 as usize]
+                + partial_sum_diag[1 as libc::c_int as usize][(14 - n_0) as usize]
+                    * partial_sum_diag[1 as libc::c_int as usize][(14 - n_0) as usize])
+                * d) as libc::c_uint,
+        );
         n_0 += 1;
     }
-    cost[0 as libc::c_int
-        as usize] = (cost[0])
-        .wrapping_add(
-            (partial_sum_diag[0][7]
-                * partial_sum_diag[0][7]
-                * 105) as libc::c_uint,
-        );
-    cost[4 as libc::c_int
-        as usize] = (cost[4])
-        .wrapping_add(
-            (partial_sum_diag[1][7]
-                * partial_sum_diag[1][7]
-                * 105) as libc::c_uint,
-        );
+    cost[0 as libc::c_int as usize] = (cost[0])
+        .wrapping_add((partial_sum_diag[0][7] * partial_sum_diag[0][7] * 105) as libc::c_uint);
+    cost[4 as libc::c_int as usize] = (cost[4])
+        .wrapping_add((partial_sum_diag[1][7] * partial_sum_diag[1][7] * 105) as libc::c_uint);
     let mut n_1 = 0;
     while n_1 < 4 {
-        let cost_ptr: *mut libc::c_uint = &mut *cost
-            .as_mut_ptr()
-            .offset((n_1 * 2 + 1) as isize)
-            as *mut libc::c_uint;
+        let cost_ptr: *mut libc::c_uint =
+            &mut *cost.as_mut_ptr().offset((n_1 * 2 + 1) as isize) as *mut libc::c_uint;
         let mut m = 0;
         while m < 5 {
-            *cost_ptr = (*cost_ptr)
-                .wrapping_add(
-                    (partial_sum_alt[n_1 as usize][(3 + m) as usize]
-                        * partial_sum_alt[n_1 as usize][(3 + m) as usize])
-                        as libc::c_uint,
-                );
+            *cost_ptr = (*cost_ptr).wrapping_add(
+                (partial_sum_alt[n_1 as usize][(3 + m) as usize]
+                    * partial_sum_alt[n_1 as usize][(3 + m) as usize])
+                    as libc::c_uint,
+            );
             m += 1;
         }
         *cost_ptr = (*cost_ptr).wrapping_mul(105 as libc::c_int as libc::c_uint);
         let mut m_0 = 0;
         while m_0 < 3 {
-            let d_0 = div_table[(2 * m_0 + 1)
-                as usize] as libc::c_int;
-            *cost_ptr = (*cost_ptr)
-                .wrapping_add(
-                    ((partial_sum_alt[n_1 as usize][m_0 as usize]
-                        * partial_sum_alt[n_1 as usize][m_0 as usize]
-                        + partial_sum_alt[n_1
-                            as usize][(10 - m_0) as usize]
-                            * partial_sum_alt[n_1
-                                as usize][(10 - m_0) as usize]) * d_0)
-                        as libc::c_uint,
-                );
+            let d_0 = div_table[(2 * m_0 + 1) as usize] as libc::c_int;
+            *cost_ptr = (*cost_ptr).wrapping_add(
+                ((partial_sum_alt[n_1 as usize][m_0 as usize]
+                    * partial_sum_alt[n_1 as usize][m_0 as usize]
+                    + partial_sum_alt[n_1 as usize][(10 - m_0) as usize]
+                        * partial_sum_alt[n_1 as usize][(10 - m_0) as usize])
+                    * d_0) as libc::c_uint,
+            );
             m_0 += 1;
         }
         n_1 += 1;
@@ -842,19 +718,15 @@ unsafe extern "C" fn cdef_find_dir_c(
         }
         n_2 += 1;
     }
-    *var = best_cost.wrapping_sub(cost[(best_dir ^ 4 as libc::c_int) as usize])
-        >> 10;
+    *var = best_cost.wrapping_sub(cost[(best_dir ^ 4 as libc::c_int) as usize]) >> 10;
     return best_dir;
 }
 
 #[inline(always)]
-#[cfg(all(
-    feature = "asm",
-    any(target_arch = "x86", target_arch = "x86_64"),
-))]
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
 unsafe extern "C" fn cdef_dsp_init_x86(c: *mut Dav1dCdefDSPContext) {
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX512ICL;
     use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
+    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX512ICL;
     use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE41;
     use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSSE3;
 
@@ -894,10 +766,7 @@ unsafe extern "C" fn cdef_dsp_init_x86(c: *mut Dav1dCdefDSPContext) {
 }
 
 #[inline(always)]
-#[cfg(all(
-    feature = "asm",
-    any(target_arch = "arm", target_arch = "aarch64"),
-))]
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
 unsafe extern "C" fn cdef_dsp_init_arm(c: *mut Dav1dCdefDSPContext) {
     use crate::src::arm::cpu::DAV1D_ARM_CPU_FLAG_NEON;
 
@@ -914,10 +783,7 @@ unsafe extern "C" fn cdef_dsp_init_arm(c: *mut Dav1dCdefDSPContext) {
 }
 
 #[inline(always)]
-#[cfg(all(
-    feature = "asm",
-    any(target_arch = "arm", target_arch = "aarch64"),
-))]
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
 unsafe extern "C" fn cdef_filter_8x8_neon(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
@@ -932,20 +798,8 @@ unsafe extern "C" fn cdef_filter_8x8_neon(
     bitdepth_max: libc::c_int,
 ) {
     let mut tmp_buf = [0; 200];
-    let mut tmp = tmp_buf
-        .as_mut_ptr()
-        .offset(2 * 16)
-        .offset(8);
-    dav1d_cdef_padding8_16bpc_neon(
-        tmp,
-        dst,
-        stride,
-        left,
-        top,
-        bottom,
-        8,
-        edges,
-    );
+    let mut tmp = tmp_buf.as_mut_ptr().offset(2 * 16).offset(8);
+    dav1d_cdef_padding8_16bpc_neon(tmp, dst, stride, left, top, bottom, 8, edges);
     dav1d_cdef_filter8_16bpc_neon(
         dst,
         stride,
@@ -961,10 +815,7 @@ unsafe extern "C" fn cdef_filter_8x8_neon(
 }
 
 #[inline(always)]
-#[cfg(all(
-    feature = "asm",
-    any(target_arch = "arm", target_arch = "aarch64"),
-))]
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
 unsafe extern "C" fn cdef_filter_4x8_neon(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
@@ -979,20 +830,8 @@ unsafe extern "C" fn cdef_filter_4x8_neon(
     bitdepth_max: libc::c_int,
 ) {
     let mut tmp_buf: [uint16_t; 104] = [0; 104];
-    let mut tmp = tmp_buf
-        .as_mut_ptr()
-        .offset(2 * 8)
-        .offset(8);
-    dav1d_cdef_padding4_16bpc_neon(
-        tmp,
-        dst,
-        stride,
-        left,
-        top,
-        bottom,
-        8,
-        edges,
-    );
+    let mut tmp = tmp_buf.as_mut_ptr().offset(2 * 8).offset(8);
+    dav1d_cdef_padding4_16bpc_neon(tmp, dst, stride, left, top, bottom, 8, edges);
     dav1d_cdef_filter4_16bpc_neon(
         dst,
         stride,
@@ -1008,10 +847,7 @@ unsafe extern "C" fn cdef_filter_4x8_neon(
 }
 
 #[inline(always)]
-#[cfg(all(
-    feature = "asm",
-    any(target_arch = "arm", target_arch = "aarch64"),
-))]
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
 unsafe extern "C" fn cdef_filter_4x4_neon(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
@@ -1026,20 +862,8 @@ unsafe extern "C" fn cdef_filter_4x4_neon(
     bitdepth_max: libc::c_int,
 ) {
     let mut tmp_buf = [0; 104];
-    let mut tmp = tmp_buf
-        .as_mut_ptr()
-        .offset(2 * 8)
-        .offset(8);
-    dav1d_cdef_padding4_16bpc_neon(
-        tmp,
-        dst,
-        stride,
-        left,
-        top,
-        bottom,
-        4,
-        edges,
-    );
+    let mut tmp = tmp_buf.as_mut_ptr().offset(2 * 8).offset(8);
+    dav1d_cdef_padding4_16bpc_neon(tmp, dst, stride, left, top, bottom, 4, edges);
     dav1d_cdef_filter4_16bpc_neon(
         dst,
         stride,

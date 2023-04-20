@@ -107,9 +107,7 @@ pub unsafe extern "C" fn dav1d_mem_pool_pop(
     pool: *mut Dav1dMemPool,
     size: size_t,
 ) -> *mut Dav1dMemPoolBuffer {
-    if size
-        & ::core::mem::size_of::<*mut libc::c_void>().wrapping_sub(1) != 0
-    {
+    if size & ::core::mem::size_of::<*mut libc::c_void>().wrapping_sub(1) != 0 {
         unreachable!();
     }
     pthread_mutex_lock(&mut (*pool).lock);
@@ -134,10 +132,7 @@ pub unsafe extern "C" fn dav1d_mem_pool_pop(
     match current_block_20 {
         5350950662582111547 => {
             data = dav1d_alloc_aligned(
-                size
-                    .wrapping_add(
-                        ::core::mem::size_of::<Dav1dMemPoolBuffer>(),
-                    ),
+                size.wrapping_add(::core::mem::size_of::<Dav1dMemPoolBuffer>()),
                 64,
             ) as *mut uint8_t;
             if data.is_null() {
@@ -159,12 +154,9 @@ pub unsafe extern "C" fn dav1d_mem_pool_pop(
 }
 #[no_mangle]
 #[cold]
-pub unsafe extern "C" fn dav1d_mem_pool_init(
-    ppool: *mut *mut Dav1dMemPool,
-) -> libc::c_int {
-    let pool: *mut Dav1dMemPool = malloc(
-        ::core::mem::size_of::<Dav1dMemPool>() as libc::c_ulong,
-    ) as *mut Dav1dMemPool;
+pub unsafe extern "C" fn dav1d_mem_pool_init(ppool: *mut *mut Dav1dMemPool) -> libc::c_int {
+    let pool: *mut Dav1dMemPool =
+        malloc(::core::mem::size_of::<Dav1dMemPool>() as libc::c_ulong) as *mut Dav1dMemPool;
     if !pool.is_null() {
         if pthread_mutex_init(&mut (*pool).lock, 0 as *const pthread_mutexattr_t) == 0 {
             (*pool).buf = 0 as *mut Dav1dMemPoolBuffer;

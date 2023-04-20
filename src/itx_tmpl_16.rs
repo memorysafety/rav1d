@@ -4901,8 +4901,8 @@ pub struct Dav1dInvTxfmDSPContext {
 }
 pub type itx_1d_fn =
     Option<unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> ()>;
-use crate::include::common::intops::imin;
 use crate::include::common::intops::iclip;
+use crate::include::common::intops::imin;
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     if x & 1 != 0 {
@@ -4933,8 +4933,7 @@ unsafe extern "C" fn inv_txfm_add_c(
     if !(eob >= 0) {
         unreachable!();
     }
-    let is_rect2: libc::c_int =
-        (w * 2 == h || h * 2 == w) as libc::c_int;
+    let is_rect2: libc::c_int = (w * 2 == h || h * 2 == w) as libc::c_int;
     let rnd = (1 as libc::c_int) << shift >> 1;
     if eob < has_dconly {
         let mut dc = *coeff.offset(0);
@@ -4944,8 +4943,7 @@ unsafe extern "C" fn inv_txfm_add_c(
         }
         dc = dc * 181 + 128 >> 8;
         dc = dc + rnd >> shift;
-        dc =
-            dc * 181 + 128 + 2048 >> 12;
+        dc = dc * 181 + 128 + 2048 >> 12;
         let mut y = 0;
         while y < h {
             let mut x = 0;
@@ -4964,10 +4962,8 @@ unsafe extern "C" fn inv_txfm_add_c(
     }
     let sh = imin(h, 32 as libc::c_int);
     let sw = imin(w, 32 as libc::c_int);
-    let row_clip_min: libc::c_int =
-        ((!bitdepth_max as libc::c_uint) << 7) as libc::c_int;
-    let col_clip_min: libc::c_int =
-        ((!bitdepth_max as libc::c_uint) << 5) as libc::c_int;
+    let row_clip_min: libc::c_int = ((!bitdepth_max as libc::c_uint) << 7) as libc::c_int;
+    let col_clip_min: libc::c_int = ((!bitdepth_max as libc::c_uint) << 5) as libc::c_int;
     let row_clip_max = !row_clip_min;
     let col_clip_max = !col_clip_min;
     let mut tmp: [int32_t; 4096] = [0; 4096];
@@ -4977,10 +4973,7 @@ unsafe extern "C" fn inv_txfm_add_c(
         if is_rect2 != 0 {
             let mut x_0 = 0;
             while x_0 < sw {
-                *c.offset(x_0 as isize) = *coeff.offset((y_0 + x_0 * sh) as isize)
-                    * 181
-                    + 128
-                    >> 8;
+                *c.offset(x_0 as isize) = *coeff.offset((y_0 + x_0 * sh) as isize) * 181 + 128 >> 8;
                 x_0 += 1;
             }
         } else {
@@ -5029,8 +5022,7 @@ unsafe extern "C" fn inv_txfm_add_c(
             let fresh0 = c;
             c = c.offset(1);
             *dst.offset(x_3 as isize) = iclip(
-                *dst.offset(x_3 as isize) as libc::c_int
-                    + (*fresh0 + 8 >> 4),
+                *dst.offset(x_3 as isize) as libc::c_int + (*fresh0 + 8 >> 4),
                 0 as libc::c_int,
                 bitdepth_max,
             ) as pixel;
@@ -9238,8 +9230,7 @@ unsafe extern "C" fn inv_txfm_add_wht_wht_4x4_c(
     while y < 4 {
         let mut x = 0;
         while x < 4 {
-            *c.offset(x as isize) =
-                *coeff.offset((y + x * 4) as isize) >> 2;
+            *c.offset(x as isize) = *coeff.offset((y + x * 4) as isize) >> 2;
             x += 1;
         }
         dav1d_inv_wht4_1d_c(c, 1 as libc::c_int as ptrdiff_t);
@@ -9869,162 +9860,318 @@ unsafe extern "C" fn itx_dsp_init_arm(c: *mut Dav1dInvTxfmDSPContext, mut bpc: l
         return;
     }
 
-    (*c).itxfm_add[TX_4X4 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_4x4_16bpc_neon);
-    (*c).itxfm_add[TX_4X4 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_4x4_16bpc_neon);
-    (*c).itxfm_add[TX_4X4 as usize][ADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_adst_4x4_16bpc_neon);
-    (*c).itxfm_add[TX_4X4 as usize][FLIPADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_flipadst_4x4_16bpc_neon);
-    (*c).itxfm_add[TX_4X4 as usize][H_DCT as usize] = Some(dav1d_inv_txfm_add_dct_identity_4x4_16bpc_neon);
-    (*c).itxfm_add[TX_4X4 as usize][DCT_ADST as usize] = Some(dav1d_inv_txfm_add_adst_dct_4x4_16bpc_neon);
-    (*c).itxfm_add[TX_4X4 as usize][ADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_adst_4x4_16bpc_neon);
-    (*c).itxfm_add[TX_4X4 as usize][FLIPADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_flipadst_4x4_16bpc_neon);
-    (*c).itxfm_add[TX_4X4 as usize][DCT_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_dct_4x4_16bpc_neon);
-    (*c).itxfm_add[TX_4X4 as usize][ADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_adst_4x4_16bpc_neon);
-    (*c).itxfm_add[TX_4X4 as usize][FLIPADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_flipadst_4x4_16bpc_neon);
-    (*c).itxfm_add[TX_4X4 as usize][V_DCT as usize] = Some(dav1d_inv_txfm_add_identity_dct_4x4_16bpc_neon);
-    (*c).itxfm_add[TX_4X4 as usize][H_ADST as usize] = Some(dav1d_inv_txfm_add_adst_identity_4x4_16bpc_neon);
-    (*c).itxfm_add[TX_4X4 as usize][H_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_identity_4x4_16bpc_neon);
-    (*c).itxfm_add[TX_4X4 as usize][V_ADST as usize] = Some(dav1d_inv_txfm_add_identity_adst_4x4_16bpc_neon);
-    (*c).itxfm_add[TX_4X4 as usize][V_FLIPADST as usize] = Some(dav1d_inv_txfm_add_identity_flipadst_4x4_16bpc_neon);
-    (*c).itxfm_add[TX_4X4 as usize][WHT_WHT as usize] = Some(dav1d_inv_txfm_add_wht_wht_4x4_16bpc_neon);
-    (*c).itxfm_add[RTX_4X8 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_4x8_16bpc_neon);
-    (*c).itxfm_add[RTX_4X8 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_4x8_16bpc_neon);
-    (*c).itxfm_add[RTX_4X8 as usize][ADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_adst_4x8_16bpc_neon);
-    (*c).itxfm_add[RTX_4X8 as usize][FLIPADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_flipadst_4x8_16bpc_neon);
-    (*c).itxfm_add[RTX_4X8 as usize][H_DCT as usize] = Some(dav1d_inv_txfm_add_dct_identity_4x8_16bpc_neon);
-    (*c).itxfm_add[RTX_4X8 as usize][DCT_ADST as usize] = Some(dav1d_inv_txfm_add_adst_dct_4x8_16bpc_neon);
-    (*c).itxfm_add[RTX_4X8 as usize][ADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_adst_4x8_16bpc_neon);
-    (*c).itxfm_add[RTX_4X8 as usize][FLIPADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_flipadst_4x8_16bpc_neon);
-    (*c).itxfm_add[RTX_4X8 as usize][DCT_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_dct_4x8_16bpc_neon);
-    (*c).itxfm_add[RTX_4X8 as usize][ADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_adst_4x8_16bpc_neon);
-    (*c).itxfm_add[RTX_4X8 as usize][FLIPADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_flipadst_4x8_16bpc_neon);
-    (*c).itxfm_add[RTX_4X8 as usize][V_DCT as usize] = Some(dav1d_inv_txfm_add_identity_dct_4x8_16bpc_neon);
-    (*c).itxfm_add[RTX_4X8 as usize][H_ADST as usize] = Some(dav1d_inv_txfm_add_adst_identity_4x8_16bpc_neon);
-    (*c).itxfm_add[RTX_4X8 as usize][H_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_identity_4x8_16bpc_neon);
-    (*c).itxfm_add[RTX_4X8 as usize][V_ADST as usize] = Some(dav1d_inv_txfm_add_identity_adst_4x8_16bpc_neon);
-    (*c).itxfm_add[RTX_4X8 as usize][V_FLIPADST as usize] = Some(dav1d_inv_txfm_add_identity_flipadst_4x8_16bpc_neon);
-    (*c).itxfm_add[RTX_4X16 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_4x16_16bpc_neon);
-    (*c).itxfm_add[RTX_4X16 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_4x16_16bpc_neon);
-    (*c).itxfm_add[RTX_4X16 as usize][ADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_adst_4x16_16bpc_neon);
-    (*c).itxfm_add[RTX_4X16 as usize][FLIPADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_flipadst_4x16_16bpc_neon);
-    (*c).itxfm_add[RTX_4X16 as usize][H_DCT as usize] = Some(dav1d_inv_txfm_add_dct_identity_4x16_16bpc_neon);
-    (*c).itxfm_add[RTX_4X16 as usize][DCT_ADST as usize] = Some(dav1d_inv_txfm_add_adst_dct_4x16_16bpc_neon);
-    (*c).itxfm_add[RTX_4X16 as usize][ADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_adst_4x16_16bpc_neon);
-    (*c).itxfm_add[RTX_4X16 as usize][FLIPADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_flipadst_4x16_16bpc_neon);
-    (*c).itxfm_add[RTX_4X16 as usize][DCT_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_dct_4x16_16bpc_neon);
-    (*c).itxfm_add[RTX_4X16 as usize][ADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_adst_4x16_16bpc_neon);
-    (*c).itxfm_add[RTX_4X16 as usize][FLIPADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_flipadst_4x16_16bpc_neon);
-    (*c).itxfm_add[RTX_4X16 as usize][V_DCT as usize] = Some(dav1d_inv_txfm_add_identity_dct_4x16_16bpc_neon);
-    (*c).itxfm_add[RTX_4X16 as usize][H_ADST as usize] = Some(dav1d_inv_txfm_add_adst_identity_4x16_16bpc_neon);
-    (*c).itxfm_add[RTX_4X16 as usize][H_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_identity_4x16_16bpc_neon);
-    (*c).itxfm_add[RTX_4X16 as usize][V_ADST as usize] = Some(dav1d_inv_txfm_add_identity_adst_4x16_16bpc_neon);
-    (*c).itxfm_add[RTX_4X16 as usize][V_FLIPADST as usize] = Some(dav1d_inv_txfm_add_identity_flipadst_4x16_16bpc_neon);
-    (*c).itxfm_add[RTX_8X4 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_8x4_16bpc_neon);
-    (*c).itxfm_add[RTX_8X4 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_8x4_16bpc_neon);
-    (*c).itxfm_add[RTX_8X4 as usize][ADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_adst_8x4_16bpc_neon);
-    (*c).itxfm_add[RTX_8X4 as usize][FLIPADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_flipadst_8x4_16bpc_neon);
-    (*c).itxfm_add[RTX_8X4 as usize][H_DCT as usize] = Some(dav1d_inv_txfm_add_dct_identity_8x4_16bpc_neon);
-    (*c).itxfm_add[RTX_8X4 as usize][DCT_ADST as usize] = Some(dav1d_inv_txfm_add_adst_dct_8x4_16bpc_neon);
-    (*c).itxfm_add[RTX_8X4 as usize][ADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_adst_8x4_16bpc_neon);
-    (*c).itxfm_add[RTX_8X4 as usize][FLIPADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_flipadst_8x4_16bpc_neon);
-    (*c).itxfm_add[RTX_8X4 as usize][DCT_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_dct_8x4_16bpc_neon);
-    (*c).itxfm_add[RTX_8X4 as usize][ADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_adst_8x4_16bpc_neon);
-    (*c).itxfm_add[RTX_8X4 as usize][FLIPADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_flipadst_8x4_16bpc_neon);
-    (*c).itxfm_add[RTX_8X4 as usize][V_DCT as usize] = Some(dav1d_inv_txfm_add_identity_dct_8x4_16bpc_neon);
-    (*c).itxfm_add[RTX_8X4 as usize][H_ADST as usize] = Some(dav1d_inv_txfm_add_adst_identity_8x4_16bpc_neon);
-    (*c).itxfm_add[RTX_8X4 as usize][H_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_identity_8x4_16bpc_neon);
-    (*c).itxfm_add[RTX_8X4 as usize][V_ADST as usize] = Some(dav1d_inv_txfm_add_identity_adst_8x4_16bpc_neon);
-    (*c).itxfm_add[RTX_8X4 as usize][V_FLIPADST as usize] = Some(dav1d_inv_txfm_add_identity_flipadst_8x4_16bpc_neon);
-    (*c).itxfm_add[TX_8X8 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_8x8_16bpc_neon);
-    (*c).itxfm_add[TX_8X8 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_8x8_16bpc_neon);
-    (*c).itxfm_add[TX_8X8 as usize][ADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_adst_8x8_16bpc_neon);
-    (*c).itxfm_add[TX_8X8 as usize][FLIPADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_flipadst_8x8_16bpc_neon);
-    (*c).itxfm_add[TX_8X8 as usize][H_DCT as usize] = Some(dav1d_inv_txfm_add_dct_identity_8x8_16bpc_neon);
-    (*c).itxfm_add[TX_8X8 as usize][DCT_ADST as usize] = Some(dav1d_inv_txfm_add_adst_dct_8x8_16bpc_neon);
-    (*c).itxfm_add[TX_8X8 as usize][ADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_adst_8x8_16bpc_neon);
-    (*c).itxfm_add[TX_8X8 as usize][FLIPADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_flipadst_8x8_16bpc_neon);
-    (*c).itxfm_add[TX_8X8 as usize][DCT_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_dct_8x8_16bpc_neon);
-    (*c).itxfm_add[TX_8X8 as usize][ADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_adst_8x8_16bpc_neon);
-    (*c).itxfm_add[TX_8X8 as usize][FLIPADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_flipadst_8x8_16bpc_neon);
-    (*c).itxfm_add[TX_8X8 as usize][V_DCT as usize] = Some(dav1d_inv_txfm_add_identity_dct_8x8_16bpc_neon);
-    (*c).itxfm_add[TX_8X8 as usize][H_ADST as usize] = Some(dav1d_inv_txfm_add_adst_identity_8x8_16bpc_neon);
-    (*c).itxfm_add[TX_8X8 as usize][H_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_identity_8x8_16bpc_neon);
-    (*c).itxfm_add[TX_8X8 as usize][V_ADST as usize] = Some(dav1d_inv_txfm_add_identity_adst_8x8_16bpc_neon);
-    (*c).itxfm_add[TX_8X8 as usize][V_FLIPADST as usize] = Some(dav1d_inv_txfm_add_identity_flipadst_8x8_16bpc_neon);
-    (*c).itxfm_add[RTX_8X16 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_8x16_16bpc_neon);
-    (*c).itxfm_add[RTX_8X16 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_8x16_16bpc_neon);
-    (*c).itxfm_add[RTX_8X16 as usize][ADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_adst_8x16_16bpc_neon);
-    (*c).itxfm_add[RTX_8X16 as usize][FLIPADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_flipadst_8x16_16bpc_neon);
-    (*c).itxfm_add[RTX_8X16 as usize][H_DCT as usize] = Some(dav1d_inv_txfm_add_dct_identity_8x16_16bpc_neon);
-    (*c).itxfm_add[RTX_8X16 as usize][DCT_ADST as usize] = Some(dav1d_inv_txfm_add_adst_dct_8x16_16bpc_neon);
-    (*c).itxfm_add[RTX_8X16 as usize][ADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_adst_8x16_16bpc_neon);
-    (*c).itxfm_add[RTX_8X16 as usize][FLIPADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_flipadst_8x16_16bpc_neon);
-    (*c).itxfm_add[RTX_8X16 as usize][DCT_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_dct_8x16_16bpc_neon);
-    (*c).itxfm_add[RTX_8X16 as usize][ADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_adst_8x16_16bpc_neon);
-    (*c).itxfm_add[RTX_8X16 as usize][FLIPADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_flipadst_8x16_16bpc_neon);
-    (*c).itxfm_add[RTX_8X16 as usize][V_DCT as usize] = Some(dav1d_inv_txfm_add_identity_dct_8x16_16bpc_neon);
-    (*c).itxfm_add[RTX_8X16 as usize][H_ADST as usize] = Some(dav1d_inv_txfm_add_adst_identity_8x16_16bpc_neon);
-    (*c).itxfm_add[RTX_8X16 as usize][H_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_identity_8x16_16bpc_neon);
-    (*c).itxfm_add[RTX_8X16 as usize][V_ADST as usize] = Some(dav1d_inv_txfm_add_identity_adst_8x16_16bpc_neon);
-    (*c).itxfm_add[RTX_8X16 as usize][V_FLIPADST as usize] = Some(dav1d_inv_txfm_add_identity_flipadst_8x16_16bpc_neon);
-    (*c).itxfm_add[RTX_8X32 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_8x32_16bpc_neon);
-    (*c).itxfm_add[RTX_8X32 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_8x32_16bpc_neon);
-    (*c).itxfm_add[RTX_16X4 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_16x4_16bpc_neon);
-    (*c).itxfm_add[RTX_16X4 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_16x4_16bpc_neon);
-    (*c).itxfm_add[RTX_16X4 as usize][ADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_adst_16x4_16bpc_neon);
-    (*c).itxfm_add[RTX_16X4 as usize][FLIPADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_flipadst_16x4_16bpc_neon);
-    (*c).itxfm_add[RTX_16X4 as usize][H_DCT as usize] = Some(dav1d_inv_txfm_add_dct_identity_16x4_16bpc_neon);
-    (*c).itxfm_add[RTX_16X4 as usize][DCT_ADST as usize] = Some(dav1d_inv_txfm_add_adst_dct_16x4_16bpc_neon);
-    (*c).itxfm_add[RTX_16X4 as usize][ADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_adst_16x4_16bpc_neon);
-    (*c).itxfm_add[RTX_16X4 as usize][FLIPADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_flipadst_16x4_16bpc_neon);
-    (*c).itxfm_add[RTX_16X4 as usize][DCT_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_dct_16x4_16bpc_neon);
-    (*c).itxfm_add[RTX_16X4 as usize][ADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_adst_16x4_16bpc_neon);
-    (*c).itxfm_add[RTX_16X4 as usize][FLIPADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_flipadst_16x4_16bpc_neon);
-    (*c).itxfm_add[RTX_16X4 as usize][V_DCT as usize] = Some(dav1d_inv_txfm_add_identity_dct_16x4_16bpc_neon);
-    (*c).itxfm_add[RTX_16X4 as usize][H_ADST as usize] = Some(dav1d_inv_txfm_add_adst_identity_16x4_16bpc_neon);
-    (*c).itxfm_add[RTX_16X4 as usize][H_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_identity_16x4_16bpc_neon);
-    (*c).itxfm_add[RTX_16X4 as usize][V_ADST as usize] = Some(dav1d_inv_txfm_add_identity_adst_16x4_16bpc_neon);
-    (*c).itxfm_add[RTX_16X4 as usize][V_FLIPADST as usize] = Some(dav1d_inv_txfm_add_identity_flipadst_16x4_16bpc_neon);
-    (*c).itxfm_add[RTX_16X8 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_16x8_16bpc_neon);
-    (*c).itxfm_add[RTX_16X8 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_16x8_16bpc_neon);
-    (*c).itxfm_add[RTX_16X8 as usize][ADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_adst_16x8_16bpc_neon);
-    (*c).itxfm_add[RTX_16X8 as usize][FLIPADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_flipadst_16x8_16bpc_neon);
-    (*c).itxfm_add[RTX_16X8 as usize][H_DCT as usize] = Some(dav1d_inv_txfm_add_dct_identity_16x8_16bpc_neon);
-    (*c).itxfm_add[RTX_16X8 as usize][DCT_ADST as usize] = Some(dav1d_inv_txfm_add_adst_dct_16x8_16bpc_neon);
-    (*c).itxfm_add[RTX_16X8 as usize][ADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_adst_16x8_16bpc_neon);
-    (*c).itxfm_add[RTX_16X8 as usize][FLIPADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_flipadst_16x8_16bpc_neon);
-    (*c).itxfm_add[RTX_16X8 as usize][DCT_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_dct_16x8_16bpc_neon);
-    (*c).itxfm_add[RTX_16X8 as usize][ADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_adst_16x8_16bpc_neon);
-    (*c).itxfm_add[RTX_16X8 as usize][FLIPADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_flipadst_16x8_16bpc_neon);
-    (*c).itxfm_add[RTX_16X8 as usize][V_DCT as usize] = Some(dav1d_inv_txfm_add_identity_dct_16x8_16bpc_neon);
-    (*c).itxfm_add[RTX_16X8 as usize][H_ADST as usize] = Some(dav1d_inv_txfm_add_adst_identity_16x8_16bpc_neon);
-    (*c).itxfm_add[RTX_16X8 as usize][H_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_identity_16x8_16bpc_neon);
-    (*c).itxfm_add[RTX_16X8 as usize][V_ADST as usize] = Some(dav1d_inv_txfm_add_identity_adst_16x8_16bpc_neon);
-    (*c).itxfm_add[RTX_16X8 as usize][V_FLIPADST as usize] = Some(dav1d_inv_txfm_add_identity_flipadst_16x8_16bpc_neon);
-    (*c).itxfm_add[TX_16X16 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_16x16_16bpc_neon);
-    (*c).itxfm_add[TX_16X16 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_16x16_16bpc_neon);
-    (*c).itxfm_add[TX_16X16 as usize][ADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_adst_16x16_16bpc_neon);
-    (*c).itxfm_add[TX_16X16 as usize][FLIPADST_DCT as usize] = Some(dav1d_inv_txfm_add_dct_flipadst_16x16_16bpc_neon);
-    (*c).itxfm_add[TX_16X16 as usize][H_DCT as usize] = Some(dav1d_inv_txfm_add_dct_identity_16x16_16bpc_neon);
-    (*c).itxfm_add[TX_16X16 as usize][DCT_ADST as usize] = Some(dav1d_inv_txfm_add_adst_dct_16x16_16bpc_neon);
-    (*c).itxfm_add[TX_16X16 as usize][ADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_adst_16x16_16bpc_neon);
-    (*c).itxfm_add[TX_16X16 as usize][FLIPADST_ADST as usize] = Some(dav1d_inv_txfm_add_adst_flipadst_16x16_16bpc_neon);
-    (*c).itxfm_add[TX_16X16 as usize][DCT_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_dct_16x16_16bpc_neon);
-    (*c).itxfm_add[TX_16X16 as usize][ADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_adst_16x16_16bpc_neon);
-    (*c).itxfm_add[TX_16X16 as usize][FLIPADST_FLIPADST as usize] = Some(dav1d_inv_txfm_add_flipadst_flipadst_16x16_16bpc_neon);
-    (*c).itxfm_add[TX_16X16 as usize][V_DCT as usize] = Some(dav1d_inv_txfm_add_identity_dct_16x16_16bpc_neon);
-    (*c).itxfm_add[RTX_16X32 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_16x32_16bpc_neon);
-    (*c).itxfm_add[RTX_16X32 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_16x32_16bpc_neon);
-    (*c).itxfm_add[RTX_16X64 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_16x64_16bpc_neon);
-    (*c).itxfm_add[RTX_32X8 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_32x8_16bpc_neon);
-    (*c).itxfm_add[RTX_32X8 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_32x8_16bpc_neon);
-    (*c).itxfm_add[RTX_32X16 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_32x16_16bpc_neon);
-    (*c).itxfm_add[RTX_32X16 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_32x16_16bpc_neon);
-    (*c).itxfm_add[TX_32X32 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_32x32_16bpc_neon);
-    (*c).itxfm_add[TX_32X32 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_32x32_16bpc_neon);
-    (*c).itxfm_add[RTX_32X64 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_32x64_16bpc_neon);
-    (*c).itxfm_add[RTX_64X16 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_64x16_16bpc_neon);
-    (*c).itxfm_add[RTX_64X32 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_64x32_16bpc_neon);
-    (*c).itxfm_add[TX_64X64 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_64x64_16bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][DCT_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_dct_4x4_16bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][IDTX as usize] =
+        Some(dav1d_inv_txfm_add_identity_identity_4x4_16bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][ADST_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_adst_4x4_16bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][FLIPADST_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_flipadst_4x4_16bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][H_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_identity_4x4_16bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][DCT_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_dct_4x4_16bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][ADST_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_adst_4x4_16bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][FLIPADST_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_flipadst_4x4_16bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][DCT_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_dct_4x4_16bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][ADST_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_adst_4x4_16bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][FLIPADST_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_flipadst_4x4_16bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][V_DCT as usize] =
+        Some(dav1d_inv_txfm_add_identity_dct_4x4_16bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][H_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_identity_4x4_16bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][H_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_identity_4x4_16bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][V_ADST as usize] =
+        Some(dav1d_inv_txfm_add_identity_adst_4x4_16bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][V_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_identity_flipadst_4x4_16bpc_neon);
+    (*c).itxfm_add[TX_4X4 as usize][WHT_WHT as usize] =
+        Some(dav1d_inv_txfm_add_wht_wht_4x4_16bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][DCT_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_dct_4x8_16bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][IDTX as usize] =
+        Some(dav1d_inv_txfm_add_identity_identity_4x8_16bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][ADST_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_adst_4x8_16bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][FLIPADST_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_flipadst_4x8_16bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][H_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_identity_4x8_16bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][DCT_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_dct_4x8_16bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][ADST_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_adst_4x8_16bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][FLIPADST_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_flipadst_4x8_16bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][DCT_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_dct_4x8_16bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][ADST_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_adst_4x8_16bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][FLIPADST_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_flipadst_4x8_16bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][V_DCT as usize] =
+        Some(dav1d_inv_txfm_add_identity_dct_4x8_16bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][H_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_identity_4x8_16bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][H_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_identity_4x8_16bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][V_ADST as usize] =
+        Some(dav1d_inv_txfm_add_identity_adst_4x8_16bpc_neon);
+    (*c).itxfm_add[RTX_4X8 as usize][V_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_identity_flipadst_4x8_16bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][DCT_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_dct_4x16_16bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][IDTX as usize] =
+        Some(dav1d_inv_txfm_add_identity_identity_4x16_16bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][ADST_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_adst_4x16_16bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][FLIPADST_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_flipadst_4x16_16bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][H_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_identity_4x16_16bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][DCT_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_dct_4x16_16bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][ADST_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_adst_4x16_16bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][FLIPADST_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_flipadst_4x16_16bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][DCT_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_dct_4x16_16bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][ADST_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_adst_4x16_16bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][FLIPADST_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_flipadst_4x16_16bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][V_DCT as usize] =
+        Some(dav1d_inv_txfm_add_identity_dct_4x16_16bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][H_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_identity_4x16_16bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][H_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_identity_4x16_16bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][V_ADST as usize] =
+        Some(dav1d_inv_txfm_add_identity_adst_4x16_16bpc_neon);
+    (*c).itxfm_add[RTX_4X16 as usize][V_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_identity_flipadst_4x16_16bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][DCT_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_dct_8x4_16bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][IDTX as usize] =
+        Some(dav1d_inv_txfm_add_identity_identity_8x4_16bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][ADST_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_adst_8x4_16bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][FLIPADST_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_flipadst_8x4_16bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][H_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_identity_8x4_16bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][DCT_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_dct_8x4_16bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][ADST_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_adst_8x4_16bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][FLIPADST_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_flipadst_8x4_16bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][DCT_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_dct_8x4_16bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][ADST_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_adst_8x4_16bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][FLIPADST_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_flipadst_8x4_16bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][V_DCT as usize] =
+        Some(dav1d_inv_txfm_add_identity_dct_8x4_16bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][H_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_identity_8x4_16bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][H_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_identity_8x4_16bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][V_ADST as usize] =
+        Some(dav1d_inv_txfm_add_identity_adst_8x4_16bpc_neon);
+    (*c).itxfm_add[RTX_8X4 as usize][V_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_identity_flipadst_8x4_16bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][DCT_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_dct_8x8_16bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][IDTX as usize] =
+        Some(dav1d_inv_txfm_add_identity_identity_8x8_16bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][ADST_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_adst_8x8_16bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][FLIPADST_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_flipadst_8x8_16bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][H_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_identity_8x8_16bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][DCT_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_dct_8x8_16bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][ADST_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_adst_8x8_16bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][FLIPADST_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_flipadst_8x8_16bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][DCT_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_dct_8x8_16bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][ADST_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_adst_8x8_16bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][FLIPADST_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_flipadst_8x8_16bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][V_DCT as usize] =
+        Some(dav1d_inv_txfm_add_identity_dct_8x8_16bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][H_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_identity_8x8_16bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][H_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_identity_8x8_16bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][V_ADST as usize] =
+        Some(dav1d_inv_txfm_add_identity_adst_8x8_16bpc_neon);
+    (*c).itxfm_add[TX_8X8 as usize][V_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_identity_flipadst_8x8_16bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][DCT_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_dct_8x16_16bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][IDTX as usize] =
+        Some(dav1d_inv_txfm_add_identity_identity_8x16_16bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][ADST_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_adst_8x16_16bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][FLIPADST_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_flipadst_8x16_16bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][H_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_identity_8x16_16bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][DCT_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_dct_8x16_16bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][ADST_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_adst_8x16_16bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][FLIPADST_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_flipadst_8x16_16bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][DCT_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_dct_8x16_16bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][ADST_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_adst_8x16_16bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][FLIPADST_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_flipadst_8x16_16bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][V_DCT as usize] =
+        Some(dav1d_inv_txfm_add_identity_dct_8x16_16bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][H_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_identity_8x16_16bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][H_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_identity_8x16_16bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][V_ADST as usize] =
+        Some(dav1d_inv_txfm_add_identity_adst_8x16_16bpc_neon);
+    (*c).itxfm_add[RTX_8X16 as usize][V_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_identity_flipadst_8x16_16bpc_neon);
+    (*c).itxfm_add[RTX_8X32 as usize][DCT_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_dct_8x32_16bpc_neon);
+    (*c).itxfm_add[RTX_8X32 as usize][IDTX as usize] =
+        Some(dav1d_inv_txfm_add_identity_identity_8x32_16bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][DCT_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_dct_16x4_16bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][IDTX as usize] =
+        Some(dav1d_inv_txfm_add_identity_identity_16x4_16bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][ADST_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_adst_16x4_16bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][FLIPADST_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_flipadst_16x4_16bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][H_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_identity_16x4_16bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][DCT_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_dct_16x4_16bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][ADST_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_adst_16x4_16bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][FLIPADST_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_flipadst_16x4_16bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][DCT_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_dct_16x4_16bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][ADST_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_adst_16x4_16bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][FLIPADST_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_flipadst_16x4_16bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][V_DCT as usize] =
+        Some(dav1d_inv_txfm_add_identity_dct_16x4_16bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][H_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_identity_16x4_16bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][H_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_identity_16x4_16bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][V_ADST as usize] =
+        Some(dav1d_inv_txfm_add_identity_adst_16x4_16bpc_neon);
+    (*c).itxfm_add[RTX_16X4 as usize][V_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_identity_flipadst_16x4_16bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][DCT_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_dct_16x8_16bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][IDTX as usize] =
+        Some(dav1d_inv_txfm_add_identity_identity_16x8_16bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][ADST_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_adst_16x8_16bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][FLIPADST_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_flipadst_16x8_16bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][H_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_identity_16x8_16bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][DCT_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_dct_16x8_16bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][ADST_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_adst_16x8_16bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][FLIPADST_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_flipadst_16x8_16bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][DCT_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_dct_16x8_16bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][ADST_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_adst_16x8_16bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][FLIPADST_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_flipadst_16x8_16bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][V_DCT as usize] =
+        Some(dav1d_inv_txfm_add_identity_dct_16x8_16bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][H_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_identity_16x8_16bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][H_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_identity_16x8_16bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][V_ADST as usize] =
+        Some(dav1d_inv_txfm_add_identity_adst_16x8_16bpc_neon);
+    (*c).itxfm_add[RTX_16X8 as usize][V_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_identity_flipadst_16x8_16bpc_neon);
+    (*c).itxfm_add[TX_16X16 as usize][DCT_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_dct_16x16_16bpc_neon);
+    (*c).itxfm_add[TX_16X16 as usize][IDTX as usize] =
+        Some(dav1d_inv_txfm_add_identity_identity_16x16_16bpc_neon);
+    (*c).itxfm_add[TX_16X16 as usize][ADST_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_adst_16x16_16bpc_neon);
+    (*c).itxfm_add[TX_16X16 as usize][FLIPADST_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_flipadst_16x16_16bpc_neon);
+    (*c).itxfm_add[TX_16X16 as usize][H_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_identity_16x16_16bpc_neon);
+    (*c).itxfm_add[TX_16X16 as usize][DCT_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_dct_16x16_16bpc_neon);
+    (*c).itxfm_add[TX_16X16 as usize][ADST_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_adst_16x16_16bpc_neon);
+    (*c).itxfm_add[TX_16X16 as usize][FLIPADST_ADST as usize] =
+        Some(dav1d_inv_txfm_add_adst_flipadst_16x16_16bpc_neon);
+    (*c).itxfm_add[TX_16X16 as usize][DCT_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_dct_16x16_16bpc_neon);
+    (*c).itxfm_add[TX_16X16 as usize][ADST_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_adst_16x16_16bpc_neon);
+    (*c).itxfm_add[TX_16X16 as usize][FLIPADST_FLIPADST as usize] =
+        Some(dav1d_inv_txfm_add_flipadst_flipadst_16x16_16bpc_neon);
+    (*c).itxfm_add[TX_16X16 as usize][V_DCT as usize] =
+        Some(dav1d_inv_txfm_add_identity_dct_16x16_16bpc_neon);
+    (*c).itxfm_add[RTX_16X32 as usize][DCT_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_dct_16x32_16bpc_neon);
+    (*c).itxfm_add[RTX_16X32 as usize][IDTX as usize] =
+        Some(dav1d_inv_txfm_add_identity_identity_16x32_16bpc_neon);
+    (*c).itxfm_add[RTX_16X64 as usize][DCT_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_dct_16x64_16bpc_neon);
+    (*c).itxfm_add[RTX_32X8 as usize][DCT_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_dct_32x8_16bpc_neon);
+    (*c).itxfm_add[RTX_32X8 as usize][IDTX as usize] =
+        Some(dav1d_inv_txfm_add_identity_identity_32x8_16bpc_neon);
+    (*c).itxfm_add[RTX_32X16 as usize][DCT_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_dct_32x16_16bpc_neon);
+    (*c).itxfm_add[RTX_32X16 as usize][IDTX as usize] =
+        Some(dav1d_inv_txfm_add_identity_identity_32x16_16bpc_neon);
+    (*c).itxfm_add[TX_32X32 as usize][DCT_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_dct_32x32_16bpc_neon);
+    (*c).itxfm_add[TX_32X32 as usize][IDTX as usize] =
+        Some(dav1d_inv_txfm_add_identity_identity_32x32_16bpc_neon);
+    (*c).itxfm_add[RTX_32X64 as usize][DCT_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_dct_32x64_16bpc_neon);
+    (*c).itxfm_add[RTX_64X16 as usize][DCT_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_dct_64x16_16bpc_neon);
+    (*c).itxfm_add[RTX_64X32 as usize][DCT_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_dct_64x32_16bpc_neon);
+    (*c).itxfm_add[TX_64X64 as usize][DCT_DCT as usize] =
+        Some(dav1d_inv_txfm_add_dct_dct_64x64_16bpc_neon);
 }
 
 #[no_mangle]

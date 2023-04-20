@@ -16,11 +16,7 @@ use crate::include::common::intops::inv_recenter;
 use crate::include::common::intops::ulog2;
 
 #[no_mangle]
-pub unsafe extern "C" fn dav1d_init_get_bits(
-    c: *mut GetBits,
-    data: *const uint8_t,
-    sz: size_t,
-) {
+pub unsafe extern "C" fn dav1d_init_get_bits(c: *mut GetBits, data: *const uint8_t, sz: size_t) {
     if sz == 0 {
         unreachable!();
     }
@@ -76,10 +72,7 @@ unsafe extern "C" fn refill(c: *mut GetBits, n: libc::c_int) {
     (*c).state |= (state as uint64_t) << 64 - (*c).bits_left;
 }
 #[no_mangle]
-pub unsafe extern "C" fn dav1d_get_bits(
-    c: *mut GetBits,
-    n: libc::c_int,
-) -> libc::c_uint {
+pub unsafe extern "C" fn dav1d_get_bits(c: *mut GetBits, n: libc::c_int) -> libc::c_uint {
     assert!(n > 0 && n <= 32);
     /* Unsigned cast avoids refill after eob */
     if n as libc::c_uint > (*c).bits_left as libc::c_uint {
@@ -91,10 +84,7 @@ pub unsafe extern "C" fn dav1d_get_bits(
     return (state as uint64_t >> 64 - n) as libc::c_uint;
 }
 #[no_mangle]
-pub unsafe extern "C" fn dav1d_get_sbits(
-    c: *mut GetBits,
-    n: libc::c_int,
-) -> libc::c_int {
+pub unsafe extern "C" fn dav1d_get_sbits(c: *mut GetBits, n: libc::c_int) -> libc::c_int {
     assert!(n > 0 && n <= 32);
     /* Unsigned cast avoids refill after eob */
     if n as libc::c_uint > (*c).bits_left as libc::c_uint {
@@ -119,18 +109,14 @@ pub unsafe extern "C" fn dav1d_get_uleb128(c: *mut GetBits) -> libc::c_uint {
             break;
         }
     }
-    if val > u32::MAX as uint64_t || more != 0
-    {
+    if val > u32::MAX as uint64_t || more != 0 {
         (*c).error = 1 as libc::c_int;
         return 0;
     }
     return val as libc::c_uint;
 }
 #[no_mangle]
-pub unsafe extern "C" fn dav1d_get_uniform(
-    c: *mut GetBits,
-    max: libc::c_uint,
-) -> libc::c_uint {
+pub unsafe extern "C" fn dav1d_get_uniform(c: *mut GetBits, max: libc::c_uint) -> libc::c_uint {
     if !(max > 1 as libc::c_uint) {
         unreachable!();
     }
@@ -173,24 +159,13 @@ unsafe extern "C" fn get_bits_subexp_u(
     let mut v: libc::c_uint = 0 as libc::c_int as libc::c_uint;
     let mut i = 0;
     loop {
-        let b = if i != 0 {
-            3 + i - 1
-        } else {
-            3 as libc::c_int
-        };
-        if n
-            < v
-                .wrapping_add(
-                    (3 * ((1 as libc::c_int) << b)) as libc::c_uint,
-                )
-        {
-            v = v
-                .wrapping_add(
-                    dav1d_get_uniform(
-                        c,
-                        n.wrapping_sub(v).wrapping_add(1 as libc::c_int as libc::c_uint),
-                    ),
-                );
+        let b = if i != 0 { 3 + i - 1 } else { 3 as libc::c_int };
+        if n < v.wrapping_add((3 * ((1 as libc::c_int) << b)) as libc::c_uint) {
+            v = v.wrapping_add(dav1d_get_uniform(
+                c,
+                n.wrapping_sub(v)
+                    .wrapping_add(1 as libc::c_int as libc::c_uint),
+            ));
             break;
         } else if dav1d_get_bit(c) == 0 {
             v = v.wrapping_add(dav1d_get_bits(c, b));
@@ -216,7 +191,8 @@ pub unsafe extern "C" fn dav1d_get_bits_subexp(
         c,
         (r#ref + ((1 as libc::c_int) << n)) as libc::c_uint,
         ((2 as libc::c_int) << n) as libc::c_uint,
-    ) as libc::c_int - ((1 as libc::c_int) << n);
+    ) as libc::c_int
+        - ((1 as libc::c_int) << n);
 }
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_bytealign_get_bits(mut c: *mut GetBits) {

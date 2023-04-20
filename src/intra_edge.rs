@@ -37,236 +37,184 @@ pub struct ModeSelMem {
     pub nwc: [*mut EdgeBranch; 3],
     pub nt: *mut EdgeTip,
 }
+use crate::src::levels::BlockLevel;
 use crate::src::levels::BL_32X32;
 use crate::src::levels::BL_64X64;
-use crate::src::levels::BlockLevel;
 
-use crate::src::levels::BL_8X8;
-use crate::src::levels::BL_16X16;
 use crate::src::levels::BL_128X128;
-unsafe extern "C" fn init_edges(
-    node: *mut EdgeNode,
-    bl: BlockLevel,
-    edge_flags: EdgeFlags,
-) {
+use crate::src::levels::BL_16X16;
+use crate::src::levels::BL_8X8;
+unsafe extern "C" fn init_edges(node: *mut EdgeNode, bl: BlockLevel, edge_flags: EdgeFlags) {
     (*node).o = edge_flags;
     if bl as libc::c_uint == BL_8X8 as libc::c_int as libc::c_uint {
         let nt: *mut EdgeTip = node as *mut EdgeTip;
-        (*node)
-            .h[0 as libc::c_int
-            as usize] = (edge_flags as libc::c_uint
+        (*node).h[0 as libc::c_int as usize] = (edge_flags as libc::c_uint
             | (EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int
                 | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int
                 | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int) as libc::c_uint)
             as EdgeFlags;
-        (*node)
-            .h[1 as libc::c_int
-            as usize] = (edge_flags as libc::c_uint
+        (*node).h[1 as libc::c_int as usize] = (edge_flags as libc::c_uint
             & (EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int
                 | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int
                 | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int
-                | EDGE_I420_TOP_HAS_RIGHT as libc::c_int) as libc::c_uint) as EdgeFlags;
-        (*node)
-            .v[0 as libc::c_int
-            as usize] = (edge_flags as libc::c_uint
+                | EDGE_I420_TOP_HAS_RIGHT as libc::c_int) as libc::c_uint)
+            as EdgeFlags;
+        (*node).v[0 as libc::c_int as usize] = (edge_flags as libc::c_uint
             | (EDGE_I444_TOP_HAS_RIGHT as libc::c_int
                 | EDGE_I422_TOP_HAS_RIGHT as libc::c_int
-                | EDGE_I420_TOP_HAS_RIGHT as libc::c_int) as libc::c_uint) as EdgeFlags;
-        (*node)
-            .v[1 as libc::c_int
-            as usize] = (edge_flags as libc::c_uint
+                | EDGE_I420_TOP_HAS_RIGHT as libc::c_int) as libc::c_uint)
+            as EdgeFlags;
+        (*node).v[1 as libc::c_int as usize] = (edge_flags as libc::c_uint
             & (EDGE_I444_TOP_HAS_RIGHT as libc::c_int
                 | EDGE_I422_TOP_HAS_RIGHT as libc::c_int
                 | EDGE_I420_TOP_HAS_RIGHT as libc::c_int
                 | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int
                 | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int) as libc::c_uint)
             as EdgeFlags;
-        (*nt)
-            .split[0 as libc::c_int
-            as usize] = (EDGE_I444_TOP_HAS_RIGHT as libc::c_int
+        (*nt).split[0 as libc::c_int as usize] = (EDGE_I444_TOP_HAS_RIGHT as libc::c_int
             | EDGE_I422_TOP_HAS_RIGHT as libc::c_int
             | EDGE_I420_TOP_HAS_RIGHT as libc::c_int
             | (EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int
                 | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int
-                | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int)) as EdgeFlags;
-        (*nt)
-            .split[1 as libc::c_int
-            as usize] = (edge_flags as libc::c_uint
+                | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int))
+            as EdgeFlags;
+        (*nt).split[1 as libc::c_int as usize] = (edge_flags as libc::c_uint
             & (EDGE_I444_TOP_HAS_RIGHT as libc::c_int
                 | EDGE_I422_TOP_HAS_RIGHT as libc::c_int
                 | EDGE_I420_TOP_HAS_RIGHT as libc::c_int) as libc::c_uint
-            | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int as libc::c_uint) as EdgeFlags;
-        (*nt)
-            .split[2 as libc::c_int
-            as usize] = (edge_flags as libc::c_uint
-            | EDGE_I444_TOP_HAS_RIGHT as libc::c_int as libc::c_uint) as EdgeFlags;
-        (*nt)
-            .split[3 as libc::c_int
-            as usize] = (edge_flags as libc::c_uint
+            | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int as libc::c_uint)
+            as EdgeFlags;
+        (*nt).split[2 as libc::c_int as usize] = (edge_flags as libc::c_uint
+            | EDGE_I444_TOP_HAS_RIGHT as libc::c_int as libc::c_uint)
+            as EdgeFlags;
+        (*nt).split[3 as libc::c_int as usize] = (edge_flags as libc::c_uint
             & (EDGE_I420_TOP_HAS_RIGHT as libc::c_int
                 | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int
                 | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int) as libc::c_uint)
             as EdgeFlags;
     } else {
         let nwc: *mut EdgeBranch = node as *mut EdgeBranch;
-        (*node)
-            .h[0 as libc::c_int
-            as usize] = (edge_flags as libc::c_uint
+        (*node).h[0 as libc::c_int as usize] = (edge_flags as libc::c_uint
             | (EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int
                 | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int
                 | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int) as libc::c_uint)
             as EdgeFlags;
-        (*node)
-            .h[1 as libc::c_int
-            as usize] = (edge_flags as libc::c_uint
+        (*node).h[1 as libc::c_int as usize] = (edge_flags as libc::c_uint
             & (EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int
                 | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int
                 | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int) as libc::c_uint)
             as EdgeFlags;
-        (*node)
-            .v[0 as libc::c_int
-            as usize] = (edge_flags as libc::c_uint
+        (*node).v[0 as libc::c_int as usize] = (edge_flags as libc::c_uint
             | (EDGE_I444_TOP_HAS_RIGHT as libc::c_int
                 | EDGE_I422_TOP_HAS_RIGHT as libc::c_int
-                | EDGE_I420_TOP_HAS_RIGHT as libc::c_int) as libc::c_uint) as EdgeFlags;
-        (*node)
-            .v[1 as libc::c_int
-            as usize] = (edge_flags as libc::c_uint
+                | EDGE_I420_TOP_HAS_RIGHT as libc::c_int) as libc::c_uint)
+            as EdgeFlags;
+        (*node).v[1 as libc::c_int as usize] = (edge_flags as libc::c_uint
             & (EDGE_I444_TOP_HAS_RIGHT as libc::c_int
                 | EDGE_I422_TOP_HAS_RIGHT as libc::c_int
-                | EDGE_I420_TOP_HAS_RIGHT as libc::c_int) as libc::c_uint) as EdgeFlags;
-        (*nwc)
-            .h4[0 as libc::c_int
-            as usize] = (edge_flags as libc::c_uint
+                | EDGE_I420_TOP_HAS_RIGHT as libc::c_int) as libc::c_uint)
+            as EdgeFlags;
+        (*nwc).h4[0 as libc::c_int as usize] = (edge_flags as libc::c_uint
             | (EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int
                 | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int
                 | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int) as libc::c_uint)
             as EdgeFlags;
-        (*nwc)
-            .h4[2 as libc::c_int
-            as usize] = (EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int
+        (*nwc).h4[2 as libc::c_int as usize] = (EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int
             | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int
-            | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int) as EdgeFlags;
+            | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int)
+            as EdgeFlags;
         (*nwc).h4[1] = (*nwc).h4[2];
-        (*nwc)
-            .h4[3 as libc::c_int
-            as usize] = (edge_flags as libc::c_uint
+        (*nwc).h4[3 as libc::c_int as usize] = (edge_flags as libc::c_uint
             & (EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int
                 | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int
                 | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int) as libc::c_uint)
             as EdgeFlags;
         if bl as libc::c_uint == BL_16X16 as libc::c_int as libc::c_uint {
-            (*nwc)
-                .h4[1 as libc::c_int
-                as usize] = ::core::mem::transmute::<
-                libc::c_uint,
-                EdgeFlags,
-            >(
+            (*nwc).h4[1 as libc::c_int as usize] = ::core::mem::transmute::<libc::c_uint, EdgeFlags>(
                 (*nwc).h4[1] as libc::c_uint
                     | edge_flags as libc::c_uint
                         & EDGE_I420_TOP_HAS_RIGHT as libc::c_int as libc::c_uint,
             );
         }
-        (*nwc)
-            .v4[0 as libc::c_int
-            as usize] = (edge_flags as libc::c_uint
+        (*nwc).v4[0 as libc::c_int as usize] = (edge_flags as libc::c_uint
             | (EDGE_I444_TOP_HAS_RIGHT as libc::c_int
                 | EDGE_I422_TOP_HAS_RIGHT as libc::c_int
-                | EDGE_I420_TOP_HAS_RIGHT as libc::c_int) as libc::c_uint) as EdgeFlags;
-        (*nwc)
-            .v4[2 as libc::c_int
-            as usize] = (EDGE_I444_TOP_HAS_RIGHT as libc::c_int
+                | EDGE_I420_TOP_HAS_RIGHT as libc::c_int) as libc::c_uint)
+            as EdgeFlags;
+        (*nwc).v4[2 as libc::c_int as usize] = (EDGE_I444_TOP_HAS_RIGHT as libc::c_int
             | EDGE_I422_TOP_HAS_RIGHT as libc::c_int
-            | EDGE_I420_TOP_HAS_RIGHT as libc::c_int) as EdgeFlags;
+            | EDGE_I420_TOP_HAS_RIGHT as libc::c_int)
+            as EdgeFlags;
         (*nwc).v4[1] = (*nwc).v4[2];
-        (*nwc)
-            .v4[3 as libc::c_int
-            as usize] = (edge_flags as libc::c_uint
+        (*nwc).v4[3 as libc::c_int as usize] = (edge_flags as libc::c_uint
             & (EDGE_I444_TOP_HAS_RIGHT as libc::c_int
                 | EDGE_I422_TOP_HAS_RIGHT as libc::c_int
-                | EDGE_I420_TOP_HAS_RIGHT as libc::c_int) as libc::c_uint) as EdgeFlags;
+                | EDGE_I420_TOP_HAS_RIGHT as libc::c_int) as libc::c_uint)
+            as EdgeFlags;
         if bl as libc::c_uint == BL_16X16 as libc::c_int as libc::c_uint {
-            (*nwc)
-                .v4[1 as libc::c_int
-                as usize] = ::core::mem::transmute::<
-                libc::c_uint,
-                EdgeFlags,
-            >(
+            (*nwc).v4[1 as libc::c_int as usize] = ::core::mem::transmute::<libc::c_uint, EdgeFlags>(
                 (*nwc).v4[1] as libc::c_uint
                     | edge_flags as libc::c_uint
                         & (EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int
-                            | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int) as libc::c_uint,
+                            | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int)
+                            as libc::c_uint,
             );
         }
-        (*nwc)
-            .tls[0 as libc::c_int
-            as usize] = (EDGE_I444_TOP_HAS_RIGHT as libc::c_int
+        (*nwc).tls[0 as libc::c_int as usize] = (EDGE_I444_TOP_HAS_RIGHT as libc::c_int
             | EDGE_I422_TOP_HAS_RIGHT as libc::c_int
             | EDGE_I420_TOP_HAS_RIGHT as libc::c_int
             | (EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int
                 | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int
-                | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int)) as EdgeFlags;
-        (*nwc)
-            .tls[1 as libc::c_int
-            as usize] = (edge_flags as libc::c_uint
+                | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int))
+            as EdgeFlags;
+        (*nwc).tls[1 as libc::c_int as usize] = (edge_flags as libc::c_uint
             & (EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int
                 | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int
                 | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int) as libc::c_uint)
             as EdgeFlags;
-        (*nwc)
-            .tls[2 as libc::c_int
-            as usize] = (edge_flags as libc::c_uint
+        (*nwc).tls[2 as libc::c_int as usize] = (edge_flags as libc::c_uint
             & (EDGE_I444_TOP_HAS_RIGHT as libc::c_int
                 | EDGE_I422_TOP_HAS_RIGHT as libc::c_int
-                | EDGE_I420_TOP_HAS_RIGHT as libc::c_int) as libc::c_uint) as EdgeFlags;
-        (*nwc)
-            .trs[0 as libc::c_int
-            as usize] = (edge_flags as libc::c_uint
+                | EDGE_I420_TOP_HAS_RIGHT as libc::c_int) as libc::c_uint)
+            as EdgeFlags;
+        (*nwc).trs[0 as libc::c_int as usize] = (edge_flags as libc::c_uint
             | (EDGE_I444_TOP_HAS_RIGHT as libc::c_int
                 | EDGE_I422_TOP_HAS_RIGHT as libc::c_int
-                | EDGE_I420_TOP_HAS_RIGHT as libc::c_int) as libc::c_uint) as EdgeFlags;
-        (*nwc)
-            .trs[1 as libc::c_int
-            as usize] = (edge_flags as libc::c_uint
+                | EDGE_I420_TOP_HAS_RIGHT as libc::c_int) as libc::c_uint)
+            as EdgeFlags;
+        (*nwc).trs[1 as libc::c_int as usize] = (edge_flags as libc::c_uint
             | (EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int
                 | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int
                 | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int) as libc::c_uint)
             as EdgeFlags;
         (*nwc).trs[2] = 0 as EdgeFlags;
-        (*nwc)
-            .tts[0 as libc::c_int
-            as usize] = (EDGE_I444_TOP_HAS_RIGHT as libc::c_int
+        (*nwc).tts[0 as libc::c_int as usize] = (EDGE_I444_TOP_HAS_RIGHT as libc::c_int
             | EDGE_I422_TOP_HAS_RIGHT as libc::c_int
             | EDGE_I420_TOP_HAS_RIGHT as libc::c_int
             | (EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int
                 | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int
-                | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int)) as EdgeFlags;
-        (*nwc)
-            .tts[1 as libc::c_int
-            as usize] = (edge_flags as libc::c_uint
+                | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int))
+            as EdgeFlags;
+        (*nwc).tts[1 as libc::c_int as usize] = (edge_flags as libc::c_uint
             & (EDGE_I444_TOP_HAS_RIGHT as libc::c_int
                 | EDGE_I422_TOP_HAS_RIGHT as libc::c_int
-                | EDGE_I420_TOP_HAS_RIGHT as libc::c_int) as libc::c_uint) as EdgeFlags;
-        (*nwc)
-            .tts[2 as libc::c_int
-            as usize] = (edge_flags as libc::c_uint
+                | EDGE_I420_TOP_HAS_RIGHT as libc::c_int) as libc::c_uint)
+            as EdgeFlags;
+        (*nwc).tts[2 as libc::c_int as usize] = (edge_flags as libc::c_uint
             & (EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int
                 | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int
                 | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int) as libc::c_uint)
             as EdgeFlags;
-        (*nwc)
-            .tbs[0 as libc::c_int
-            as usize] = (edge_flags as libc::c_uint
+        (*nwc).tbs[0 as libc::c_int as usize] = (edge_flags as libc::c_uint
             | (EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int
                 | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int
                 | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int) as libc::c_uint)
             as EdgeFlags;
-        (*nwc)
-            .tbs[1 as libc::c_int
-            as usize] = (edge_flags as libc::c_uint
+        (*nwc).tbs[1 as libc::c_int as usize] = (edge_flags as libc::c_uint
             | (EDGE_I444_TOP_HAS_RIGHT as libc::c_int
                 | EDGE_I422_TOP_HAS_RIGHT as libc::c_int
-                | EDGE_I420_TOP_HAS_RIGHT as libc::c_int) as libc::c_uint) as EdgeFlags;
+                | EDGE_I420_TOP_HAS_RIGHT as libc::c_int) as libc::c_uint)
+            as EdgeFlags;
         (*nwc).tbs[2] = 0 as EdgeFlags;
     };
 }
@@ -286,14 +234,13 @@ unsafe extern "C" fn init_mode_node(
                 | EDGE_I420_TOP_HAS_RIGHT as libc::c_int
         } else {
             0 as libc::c_int
-        })
-            | (if left_has_bottom != 0 {
-                EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int
-                    | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int
-                    | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int
-            } else {
-                0 as libc::c_int
-            })) as EdgeFlags,
+        }) | (if left_has_bottom != 0 {
+            EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int
+                | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int
+                | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int
+        } else {
+            0 as libc::c_int
+        })) as EdgeFlags,
     );
     if bl as libc::c_uint == BL_16X16 as libc::c_int as libc::c_uint {
         let mut n = 0;
@@ -304,25 +251,20 @@ unsafe extern "C" fn init_mode_node(
             (*nwc).split[n as usize] = &mut (*nt).node;
             init_edges(
                 &mut (*nt).node,
-                (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint)
-                    as BlockLevel,
-                ((if n == 3 || n == 1 && top_has_right == 0
-                {
+                (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as BlockLevel,
+                ((if n == 3 || n == 1 && top_has_right == 0 {
                     0 as libc::c_int
                 } else {
                     EDGE_I444_TOP_HAS_RIGHT as libc::c_int
                         | EDGE_I422_TOP_HAS_RIGHT as libc::c_int
                         | EDGE_I420_TOP_HAS_RIGHT as libc::c_int
-                })
-                    | (if !(n == 0
-                        || n == 2 && left_has_bottom != 0)
-                    {
-                        0 as libc::c_int
-                    } else {
-                        EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int
-                            | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int
-                            | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int
-                    })) as EdgeFlags,
+                }) | (if !(n == 0 || n == 2 && left_has_bottom != 0) {
+                    0 as libc::c_int
+                } else {
+                    EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int
+                        | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int
+                        | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int
+                })) as EdgeFlags,
             );
             n += 1;
         }
@@ -335,13 +277,10 @@ unsafe extern "C" fn init_mode_node(
             (*nwc).split[n_0 as usize] = &mut (*nwc_child).node;
             init_mode_node(
                 nwc_child,
-                (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint)
-                    as BlockLevel,
+                (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as BlockLevel,
                 mem,
-                !(n_0 == 3
-                    || n_0 == 1 && top_has_right == 0) as libc::c_int,
-                (n_0 == 0
-                    || n_0 == 2 && left_has_bottom != 0) as libc::c_int,
+                !(n_0 == 3 || n_0 == 1 && top_has_right == 0) as libc::c_int,
+                (n_0 == 0 || n_0 == 2 && left_has_bottom != 0) as libc::c_int,
             );
             n_0 += 1;
         }
@@ -360,39 +299,30 @@ pub unsafe extern "C" fn dav1d_init_mode_tree(
     };
     mem.nt = nt;
     if allow_sb128 != 0 {
-        mem
-            .nwc[BL_128X128 as libc::c_int
-            as usize] = &mut *root.offset(1) as *mut EdgeBranch;
-        mem
-            .nwc[BL_64X64 as libc::c_int
-            as usize] = &mut *root.offset((1 + 4) as isize)
-            as *mut EdgeBranch;
-        mem
-            .nwc[BL_32X32 as libc::c_int
-            as usize] = &mut *root
-            .offset((1 + 4 + 16) as isize)
-            as *mut EdgeBranch;
-        init_mode_node(root, BL_128X128, &mut mem, 1 as libc::c_int, 0 as libc::c_int);
+        mem.nwc[BL_128X128 as libc::c_int as usize] = &mut *root.offset(1) as *mut EdgeBranch;
+        mem.nwc[BL_64X64 as libc::c_int as usize] =
+            &mut *root.offset((1 + 4) as isize) as *mut EdgeBranch;
+        mem.nwc[BL_32X32 as libc::c_int as usize] =
+            &mut *root.offset((1 + 4 + 16) as isize) as *mut EdgeBranch;
+        init_mode_node(
+            root,
+            BL_128X128,
+            &mut mem,
+            1 as libc::c_int,
+            0 as libc::c_int,
+        );
         if !(mem.nwc[BL_128X128 as libc::c_int as usize]
-            == &mut *root.offset((1 + 4) as isize)
-                as *mut EdgeBranch)
+            == &mut *root.offset((1 + 4) as isize) as *mut EdgeBranch)
         {
             unreachable!();
         }
         if !(mem.nwc[BL_64X64 as libc::c_int as usize]
-            == &mut *root
-                .offset(
-                    (1 + 4 + 16) as isize,
-                ) as *mut EdgeBranch)
+            == &mut *root.offset((1 + 4 + 16) as isize) as *mut EdgeBranch)
         {
             unreachable!();
         }
         if !(mem.nwc[BL_32X32 as libc::c_int as usize]
-            == &mut *root
-                .offset(
-                    (1 + 4 + 16
-                        + 64) as isize,
-                ) as *mut EdgeBranch)
+            == &mut *root.offset((1 + 4 + 16 + 64) as isize) as *mut EdgeBranch)
         {
             unreachable!();
         }
@@ -401,25 +331,17 @@ pub unsafe extern "C" fn dav1d_init_mode_tree(
         }
     } else {
         mem.nwc[BL_128X128 as libc::c_int as usize] = 0 as *mut EdgeBranch;
-        mem
-            .nwc[BL_64X64 as libc::c_int
-            as usize] = &mut *root.offset(1) as *mut EdgeBranch;
-        mem
-            .nwc[BL_32X32 as libc::c_int
-            as usize] = &mut *root.offset((1 + 4) as isize)
-            as *mut EdgeBranch;
+        mem.nwc[BL_64X64 as libc::c_int as usize] = &mut *root.offset(1) as *mut EdgeBranch;
+        mem.nwc[BL_32X32 as libc::c_int as usize] =
+            &mut *root.offset((1 + 4) as isize) as *mut EdgeBranch;
         init_mode_node(root, BL_64X64, &mut mem, 1 as libc::c_int, 0 as libc::c_int);
         if !(mem.nwc[BL_64X64 as libc::c_int as usize]
-            == &mut *root.offset((1 + 4) as isize)
-                as *mut EdgeBranch)
+            == &mut *root.offset((1 + 4) as isize) as *mut EdgeBranch)
         {
             unreachable!();
         }
         if !(mem.nwc[BL_32X32 as libc::c_int as usize]
-            == &mut *root
-                .offset(
-                    (1 + 4 + 16) as isize,
-                ) as *mut EdgeBranch)
+            == &mut *root.offset((1 + 4 + 16) as isize) as *mut EdgeBranch)
         {
             unreachable!();
         }

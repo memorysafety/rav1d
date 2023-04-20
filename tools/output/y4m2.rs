@@ -1,8 +1,7 @@
-
-use crate::include::stdint::*;
-use ::libc;
-use crate::{stdout,stderr};
 use crate::errno_location;
+use crate::include::stdint::*;
+use crate::{stderr, stdout};
+use ::libc;
 extern "C" {
     pub type Dav1dRef;
     fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
@@ -21,13 +20,13 @@ extern "C" {
 
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 
 use crate::include::dav1d::headers::DAV1D_CHR_UNKNOWN;
 
-use crate::include::dav1d::picture::Dav1dPictureParameters;
 use crate::include::dav1d::picture::Dav1dPicture;
+use crate::include::dav1d::picture::Dav1dPictureParameters;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct MuxerPriv {
@@ -41,7 +40,7 @@ pub struct Muxer {
     pub priv_data_size: libc::c_int,
     pub name: *const libc::c_char,
     pub extension: *const libc::c_char,
-    pub write_header: Option::<
+    pub write_header: Option<
         unsafe extern "C" fn(
             *mut MuxerPriv,
             *const libc::c_char,
@@ -49,13 +48,10 @@ pub struct Muxer {
             *const libc::c_uint,
         ) -> libc::c_int,
     >,
-    pub write_picture: Option::<
-        unsafe extern "C" fn(*mut MuxerPriv, *mut Dav1dPicture) -> libc::c_int,
-    >,
-    pub write_trailer: Option::<unsafe extern "C" fn(*mut MuxerPriv) -> ()>,
-    pub verify: Option::<
-        unsafe extern "C" fn(*mut MuxerPriv, *const libc::c_char) -> libc::c_int,
-    >,
+    pub write_picture:
+        Option<unsafe extern "C" fn(*mut MuxerPriv, *mut Dav1dPicture) -> libc::c_int>,
+    pub write_trailer: Option<unsafe extern "C" fn(*mut MuxerPriv) -> ()>,
+    pub verify: Option<unsafe extern "C" fn(*mut MuxerPriv, *const libc::c_char) -> libc::c_int>,
 }
 pub type Y4m2OutputContext = MuxerPriv;
 unsafe extern "C" fn y4m2_open(
@@ -118,9 +114,7 @@ unsafe extern "C" fn write_header(
         == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint
         && (*p).p.bpc == 8
     {
-        chr_names_8bpc_i420[(if (*(*p).seq_hdr).chr as libc::c_uint
-            > 2 as libc::c_uint
-        {
+        chr_names_8bpc_i420[(if (*(*p).seq_hdr).chr as libc::c_uint > 2 as libc::c_uint {
             DAV1D_CHR_UNKNOWN as libc::c_int as libc::c_uint
         } else {
             (*(*p).seq_hdr).chr as libc::c_uint
@@ -130,10 +124,10 @@ unsafe extern "C" fn write_header(
     };
     let fw: libc::c_uint = (*p).p.w as libc::c_uint;
     let fh: libc::c_uint = (*p).p.h as libc::c_uint;
-    let mut aw: uint64_t = (fh as uint64_t)
-        .wrapping_mul((*(*p).frame_hdr).render_width as uint64_t);
-    let mut ah: uint64_t = (fw as uint64_t)
-        .wrapping_mul((*(*p).frame_hdr).render_height as uint64_t);
+    let mut aw: uint64_t =
+        (fh as uint64_t).wrapping_mul((*(*p).frame_hdr).render_width as uint64_t);
+    let mut ah: uint64_t =
+        (fw as uint64_t).wrapping_mul((*(*p).frame_hdr).render_height as uint64_t);
     let mut gcd: uint64_t = ah;
     let mut a: uint64_t = aw;
     let mut b: uint64_t = 0;
@@ -149,8 +143,7 @@ unsafe extern "C" fn write_header(
     ah = ah.wrapping_div(gcd);
     fprintf(
         (*c).f,
-        b"YUV4MPEG2 W%u H%u F%u:%u Ip A%lu:%lu C%s\n\0" as *const u8
-            as *const libc::c_char,
+        b"YUV4MPEG2 W%u H%u F%u:%u Ip A%lu:%lu C%s\n\0" as *const u8 as *const libc::c_char,
         fw,
         fh,
         (*c).fps[0],
@@ -161,10 +154,7 @@ unsafe extern "C" fn write_header(
     );
     return 0 as libc::c_int;
 }
-unsafe extern "C" fn y4m2_write(
-    c: *mut Y4m2OutputContext,
-    p: *mut Dav1dPicture,
-) -> libc::c_int {
+unsafe extern "C" fn y4m2_write(c: *mut Y4m2OutputContext, p: *mut Dav1dPicture) -> libc::c_int {
     let mut current_block: u64;
     if (*c).first != 0 {
         (*c).first = 0 as libc::c_int;
@@ -228,8 +218,7 @@ unsafe extern "C" fn y4m2_write(
                             current_block = 11545648641752300099;
                             break 's_64;
                         }
-                        ptr = ptr
-                            .offset((*p).stride[1] as isize);
+                        ptr = ptr.offset((*p).stride[1] as isize);
                         y_0 += 1;
                     }
                     pl += 1;
@@ -263,8 +252,7 @@ unsafe extern "C" fn y4m2_close(c: *mut Y4m2OutputContext) {
 #[no_mangle]
 pub static mut y4m2_muxer: Muxer = {
     let mut init = Muxer {
-        priv_data_size: ::core::mem::size_of::<Y4m2OutputContext>() as libc::c_ulong
-            as libc::c_int,
+        priv_data_size: ::core::mem::size_of::<Y4m2OutputContext>() as libc::c_ulong as libc::c_int,
         name: b"yuv4mpeg2\0" as *const u8 as *const libc::c_char,
         extension: b"y4m\0" as *const u8 as *const libc::c_char,
         write_header: Some(
@@ -278,14 +266,9 @@ pub static mut y4m2_muxer: Muxer = {
         ),
         write_picture: Some(
             y4m2_write
-                as unsafe extern "C" fn(
-                    *mut Y4m2OutputContext,
-                    *mut Dav1dPicture,
-                ) -> libc::c_int,
+                as unsafe extern "C" fn(*mut Y4m2OutputContext, *mut Dav1dPicture) -> libc::c_int,
         ),
-        write_trailer: Some(
-            y4m2_close as unsafe extern "C" fn(*mut Y4m2OutputContext) -> (),
-        ),
+        write_trailer: Some(y4m2_close as unsafe extern "C" fn(*mut Y4m2OutputContext) -> ()),
         verify: None,
     };
     init

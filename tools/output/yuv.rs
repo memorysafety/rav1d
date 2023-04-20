@@ -1,8 +1,7 @@
-
-use crate::include::stdint::*;
-use ::libc;
-use crate::{stdout,stderr};
 use crate::errno_location;
+use crate::include::stdint::*;
+use crate::{stderr, stdout};
+use ::libc;
 extern "C" {
     pub type Dav1dRef;
     fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
@@ -21,11 +20,11 @@ extern "C" {
 
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 
-use crate::include::dav1d::picture::Dav1dPictureParameters;
 use crate::include::dav1d::picture::Dav1dPicture;
+use crate::include::dav1d::picture::Dav1dPictureParameters;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct MuxerPriv {
@@ -37,7 +36,7 @@ pub struct Muxer {
     pub priv_data_size: libc::c_int,
     pub name: *const libc::c_char,
     pub extension: *const libc::c_char,
-    pub write_header: Option::<
+    pub write_header: Option<
         unsafe extern "C" fn(
             *mut MuxerPriv,
             *const libc::c_char,
@@ -45,13 +44,10 @@ pub struct Muxer {
             *const libc::c_uint,
         ) -> libc::c_int,
     >,
-    pub write_picture: Option::<
-        unsafe extern "C" fn(*mut MuxerPriv, *mut Dav1dPicture) -> libc::c_int,
-    >,
-    pub write_trailer: Option::<unsafe extern "C" fn(*mut MuxerPriv) -> ()>,
-    pub verify: Option::<
-        unsafe extern "C" fn(*mut MuxerPriv, *const libc::c_char) -> libc::c_int,
-    >,
+    pub write_picture:
+        Option<unsafe extern "C" fn(*mut MuxerPriv, *mut Dav1dPicture) -> libc::c_int>,
+    pub write_trailer: Option<unsafe extern "C" fn(*mut MuxerPriv) -> ()>,
+    pub verify: Option<unsafe extern "C" fn(*mut MuxerPriv, *const libc::c_char) -> libc::c_int>,
 }
 pub type YuvOutputContext = MuxerPriv;
 unsafe extern "C" fn yuv_open(
@@ -76,10 +72,7 @@ unsafe extern "C" fn yuv_open(
     }
     return 0 as libc::c_int;
 }
-unsafe extern "C" fn yuv_write(
-    c: *mut YuvOutputContext,
-    p: *mut Dav1dPicture,
-) -> libc::c_int {
+unsafe extern "C" fn yuv_write(c: *mut YuvOutputContext, p: *mut Dav1dPicture) -> libc::c_int {
     let mut current_block: u64;
     let mut ptr: *mut uint8_t = 0 as *mut uint8_t;
     let hbd = ((*p).p.bpc > 8) as libc::c_int;
@@ -135,8 +128,7 @@ unsafe extern "C" fn yuv_write(
                             current_block = 11680617278722171943;
                             break 's_40;
                         }
-                        ptr = ptr
-                            .offset((*p).stride[1] as isize);
+                        ptr = ptr.offset((*p).stride[1] as isize);
                         y_0 += 1;
                     }
                     pl += 1;
@@ -170,8 +162,7 @@ unsafe extern "C" fn yuv_close(c: *mut YuvOutputContext) {
 #[no_mangle]
 pub static mut yuv_muxer: Muxer = {
     let mut init = Muxer {
-        priv_data_size: ::core::mem::size_of::<YuvOutputContext>() as libc::c_ulong
-            as libc::c_int,
+        priv_data_size: ::core::mem::size_of::<YuvOutputContext>() as libc::c_ulong as libc::c_int,
         name: b"yuv\0" as *const u8 as *const libc::c_char,
         extension: b"yuv\0" as *const u8 as *const libc::c_char,
         write_header: Some(
@@ -185,14 +176,9 @@ pub static mut yuv_muxer: Muxer = {
         ),
         write_picture: Some(
             yuv_write
-                as unsafe extern "C" fn(
-                    *mut YuvOutputContext,
-                    *mut Dav1dPicture,
-                ) -> libc::c_int,
+                as unsafe extern "C" fn(*mut YuvOutputContext, *mut Dav1dPicture) -> libc::c_int,
         ),
-        write_trailer: Some(
-            yuv_close as unsafe extern "C" fn(*mut YuvOutputContext) -> (),
-        ),
+        write_trailer: Some(yuv_close as unsafe extern "C" fn(*mut YuvOutputContext) -> ()),
         verify: None,
     };
     init
