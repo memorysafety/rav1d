@@ -743,7 +743,7 @@ pub unsafe fn dav1d_refmvs_find(
                     if x | y == 0 {
                         &mut globalmv_ctx
                     } else {
-                        0 as *mut libc::c_int
+                        std::ptr::null_mut()
                     },
                     tgmv.as_ptr(),
                 );
