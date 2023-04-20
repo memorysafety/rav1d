@@ -603,7 +603,7 @@ unsafe fn add_single_extended_candidate(
     cnt: &mut usize,
     cand_b: &refmvs_block,
     sign: libc::c_int,
-    sign_bias: *const uint8_t,
+    sign_bias: &[u8],
 ) {
     let mut n = 0;
     while n < 2 {
@@ -612,7 +612,7 @@ unsafe fn add_single_extended_candidate(
             break;
         }
         let mut cand_mv = cand_b.mv.mv[n as usize];
-        if (sign ^ *sign_bias.offset((cand_ref - 1) as isize) as libc::c_int) != 0 {
+        if (sign ^ sign_bias[(cand_ref - 1) as usize] as libc::c_int) != 0 {
             cand_mv.y = -cand_mv.y;
             cand_mv.x = -cand_mv.x;
         }
@@ -1043,7 +1043,7 @@ pub unsafe fn dav1d_refmvs_find(
                     cnt,
                     cand_b,
                     sign,
-                    rf.sign_bias.as_ptr(),
+                    &rf.sign_bias,
                 );
                 x += dav1d_block_dimensions[cand_b.bs as usize][0] as libc::c_int;
             }
@@ -1060,7 +1060,7 @@ pub unsafe fn dav1d_refmvs_find(
                     cnt,
                     cand_b,
                     sign,
-                    rf.sign_bias.as_ptr(),
+                    &rf.sign_bias,
                 );
                 y += dav1d_block_dimensions[cand_b.bs as usize][1] as libc::c_int;
             }
