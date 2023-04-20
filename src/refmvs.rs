@@ -603,7 +603,7 @@ unsafe fn add_single_extended_candidate(
     cnt: &mut usize,
     cand_b: &refmvs_block,
     sign: libc::c_int,
-    sign_bias: &[u8],
+    sign_bias: &[u8; 7],
 ) {
     let mut n = 0;
     while n < 2 {
