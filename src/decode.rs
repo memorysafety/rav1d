@@ -4180,12 +4180,12 @@ unsafe fn decode_b(
             0
         } as isize;
 
-        if *(t.cur_sb_cdef_idx_ptr).offset(idx as isize) == -1 {
+        if *(t.cur_sb_cdef_idx_ptr).offset(idx) == -1 {
             let v =
                 dav1d_msac_decode_bools(&mut ts.msac, (*f.frame_hdr).cdef.n_bits as libc::c_uint)
                     as i8;
 
-            *(t.cur_sb_cdef_idx_ptr).offset(idx as isize) = v;
+            *(t.cur_sb_cdef_idx_ptr).offset(idx) = v;
 
             if bw4 > 16 {
                 *(t.cur_sb_cdef_idx_ptr).offset(idx + 1) = v;
