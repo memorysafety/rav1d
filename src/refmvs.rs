@@ -178,8 +178,10 @@ fn add_spatial_candidate(
     have_refmv_match: &mut libc::c_int,
 ) {
     if b.mv.mv[0].is_invalid() {
+        // intra block, no intrabc
         return;
     }
+
     let mf_odd = b.mf & 1 != 0;
     if r#ref.r#ref[1] == -1 {
         for n in 0..2 {
@@ -189,8 +191,10 @@ fn add_spatial_candidate(
                 } else {
                     b.mv.mv[n]
                 };
+
                 *have_refmv_match = 1;
                 *have_newmv_match |= b.mf as libc::c_int >> 1;
+
                 let last = *cnt;
                 for cand in &mut mvstack[..last] {
                     if cand.mv.mv[0] == cand_mv {
@@ -198,6 +202,7 @@ fn add_spatial_candidate(
                         return;
                     }
                 }
+
                 if last < 8 {
                     let cand = &mut mvstack[last];
                     cand.mv.mv[0] = cand_mv;
@@ -222,8 +227,10 @@ fn add_spatial_candidate(
                 },
             ],
         };
+
         *have_refmv_match = 1;
         *have_newmv_match |= b.mf as libc::c_int >> 1;
+
         let last = *cnt;
         for cand in &mut mvstack[..last] {
             if cand.mv == cand_mv {
@@ -231,6 +238,7 @@ fn add_spatial_candidate(
                 return;
             }
         }
+
         if last < 8 {
             let cand = &mut mvstack[last];
             cand.mv = cand_mv;
