@@ -4171,168 +4171,153 @@ unsafe fn decode_b(
             );
         }
     }
+
+    // cdef index
     if b.skip == 0 {
         let idx = if (*f.seq_hdr).sb128 != 0 {
             ((t.bx & 16) >> 4) + ((t.by & 16) >> 3)
         } else {
-            0 as libc::c_int
-        };
-        if *(t.cur_sb_cdef_idx_ptr).offset(idx as isize) as libc::c_int == -(1 as libc::c_int) {
+            0
+        } as isize;
+
+        if *(t.cur_sb_cdef_idx_ptr).offset(idx as isize) == -1 {
             let v =
                 dav1d_msac_decode_bools(&mut ts.msac, (*f.frame_hdr).cdef.n_bits as libc::c_uint)
-                    as libc::c_int;
-            *(t.cur_sb_cdef_idx_ptr).offset(idx as isize) = v as int8_t;
+                    as i8;
+
+            *(t.cur_sb_cdef_idx_ptr).offset(idx as isize) = v;
+
             if bw4 > 16 {
-                *(t.cur_sb_cdef_idx_ptr).offset((idx + 1) as isize) = v as int8_t;
+                *(t.cur_sb_cdef_idx_ptr).offset(idx + 1) = v;
             }
+
             if bh4 > 16 {
-                *(t.cur_sb_cdef_idx_ptr).offset((idx + 2) as isize) = v as int8_t;
+                *(t.cur_sb_cdef_idx_ptr).offset(idx + 2) = v;
             }
+
             if bw4 == 32 && bh4 == 32 {
-                *(t.cur_sb_cdef_idx_ptr).offset((idx + 3) as isize) = v as int8_t;
+                *(t.cur_sb_cdef_idx_ptr).offset(idx + 3) = v;
             }
+
             if DEBUG_BLOCK_INFO(f, t) {
-                printf(
-                    b"Post-cdef_idx[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
-                    *t.cur_sb_cdef_idx_ptr as libc::c_int,
-                    ts.msac.rng,
+                println!(
+                    "Post-cdef_idx[{}]: r={}",
+                    *t.cur_sb_cdef_idx_ptr, ts.msac.rng
                 );
             }
         }
     }
-    if t.bx & 31 >> ((*f.seq_hdr).sb128 == 0) as libc::c_int == 0
-        && t.by & 31 >> ((*f.seq_hdr).sb128 == 0) as libc::c_int == 0
-    {
+
+    // delta-q/lf
+    let shfl = ((*f.seq_hdr).sb128 == 0) as libc::c_int;
+    if t.bx & (31 >> shfl) == 0 && t.by & (31 >> shfl) == 0 {
         let prev_qidx = ts.last_qidx;
-        let have_delta_q = ((*f.frame_hdr).delta.q.present != 0
-            && (bs as libc::c_uint
+        let have_delta_q = (*f.frame_hdr).delta.q.present != 0
+            && (bs
                 != (if (*f.seq_hdr).sb128 != 0 {
-                    BS_128x128 as libc::c_int
+                    BS_128x128
                 } else {
-                    BS_64x64 as libc::c_int
-                }) as libc::c_uint
-                || b.skip == 0)) as libc::c_int;
-        let mut prev_delta_lf: [int8_t; 4] = [0; 4];
-        memcpy(
-            prev_delta_lf.as_mut_ptr() as *mut libc::c_void,
-            (ts.last_delta_lf).as_mut_ptr() as *const libc::c_void,
-            4 as libc::c_int as libc::c_ulong,
-        );
-        if have_delta_q != 0 {
-            let mut delta_q = dav1d_msac_decode_symbol_adapt4(
-                &mut ts.msac,
-                (ts.cdf.m.delta_q.0).as_mut_ptr(),
-                3 as libc::c_int as size_t,
-            ) as libc::c_int;
-            if delta_q == 3 {
-                let n_bits = (1 as libc::c_int as libc::c_uint).wrapping_add(
-                    dav1d_msac_decode_bools(&mut ts.msac, 3 as libc::c_int as libc::c_uint),
-                ) as libc::c_int;
-                delta_q = (dav1d_msac_decode_bools(&mut ts.msac, n_bits as libc::c_uint))
-                    .wrapping_add(1 as libc::c_int as libc::c_uint)
-                    .wrapping_add(((1 as libc::c_int) << n_bits) as libc::c_uint)
+                    BS_64x64
+                })
+                || b.skip == 0);
+        let mut prev_delta_lf = ts.last_delta_lf;
+
+        if have_delta_q {
+            let mut delta_q =
+                dav1d_msac_decode_symbol_adapt4(&mut ts.msac, (ts.cdf.m.delta_q.0).as_mut_ptr(), 3)
                     as libc::c_int;
+
+            if delta_q == 3 {
+                let n_bits = 1 + dav1d_msac_decode_bools(&mut ts.msac, 3);
+                delta_q = dav1d_msac_decode_bools(&mut ts.msac, n_bits) as libc::c_int
+                    + 1
+                    + (1 << n_bits);
             }
+
             if delta_q != 0 {
                 if dav1d_msac_decode_bool_equi(&mut ts.msac) != 0 {
                     delta_q = -delta_q;
                 }
-                delta_q *= (1 as libc::c_int) << (*f.frame_hdr).delta.q.res_log2;
+                delta_q *= 1 << (*f.frame_hdr).delta.q.res_log2;
             }
-            ts.last_qidx = iclip(ts.last_qidx + delta_q, 1 as libc::c_int, 255 as libc::c_int);
-            if have_delta_q != 0 && DEBUG_BLOCK_INFO(f, t) {
-                printf(
-                    b"Post-delta_q[%d->%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
-                    delta_q,
-                    ts.last_qidx,
-                    ts.msac.rng,
+
+            ts.last_qidx = iclip(ts.last_qidx + delta_q, 1, 255);
+
+            if have_delta_q && DEBUG_BLOCK_INFO(f, t) {
+                println!(
+                    "Post-delta_q[{}->{}]: r={}",
+                    delta_q, ts.last_qidx, ts.msac.rng
                 );
             }
+
             if (*f.frame_hdr).delta.lf.present != 0 {
                 let n_lfs = if (*f.frame_hdr).delta.lf.multi != 0 {
-                    if f.cur.p.layout as libc::c_uint
-                        != DAV1D_PIXEL_LAYOUT_I400 as libc::c_int as libc::c_uint
-                    {
-                        4 as libc::c_int
+                    if f.cur.p.layout != DAV1D_PIXEL_LAYOUT_I400 {
+                        4
                     } else {
-                        2 as libc::c_int
+                        2
                     }
                 } else {
-                    1 as libc::c_int
+                    1
                 };
-                let mut i = 0;
-                while i < n_lfs {
+
+                for i in 0..n_lfs as usize {
+                    let delta_lf_index = i + (*f.frame_hdr).delta.lf.multi as usize;
                     let mut delta_lf = dav1d_msac_decode_symbol_adapt4(
                         &mut ts.msac,
-                        (ts.cdf.m.delta_lf[(i + (*f.frame_hdr).delta.lf.multi) as usize])
-                            .as_mut_ptr(),
-                        3 as libc::c_int as size_t,
+                        ts.cdf.m.delta_lf[delta_lf_index].as_mut_ptr(),
+                        3,
                     ) as libc::c_int;
+
                     if delta_lf == 3 {
-                        let n_bits_0 = (1 as libc::c_int as libc::c_uint).wrapping_add(
-                            dav1d_msac_decode_bools(&mut ts.msac, 3 as libc::c_int as libc::c_uint),
-                        ) as libc::c_int;
-                        delta_lf = (dav1d_msac_decode_bools(&mut ts.msac, n_bits_0 as libc::c_uint))
-                            .wrapping_add(1 as libc::c_int as libc::c_uint)
-                            .wrapping_add(((1 as libc::c_int) << n_bits_0) as libc::c_uint)
-                            as libc::c_int;
+                        let n_bits = 1 + dav1d_msac_decode_bools(&mut ts.msac, 3);
+                        delta_lf = dav1d_msac_decode_bools(&mut ts.msac, n_bits as libc::c_uint)
+                            as libc::c_int
+                            + 1
+                            + (1 << n_bits);
                     }
+
                     if delta_lf != 0 {
                         if dav1d_msac_decode_bool_equi(&mut ts.msac) != 0 {
                             delta_lf = -delta_lf;
                         }
-                        delta_lf *= (1 as libc::c_int) << (*f.frame_hdr).delta.lf.res_log2;
+
+                        delta_lf *= 1 << (*f.frame_hdr).delta.lf.res_log2;
                     }
-                    ts.last_delta_lf[i as usize] = iclip(
-                        ts.last_delta_lf[i as usize] as libc::c_int + delta_lf,
-                        -(63 as libc::c_int),
-                        63 as libc::c_int,
-                    ) as int8_t;
-                    if have_delta_q != 0 && DEBUG_BLOCK_INFO(f, t) {
-                        printf(
-                            b"Post-delta_lf[%d:%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
-                            i,
-                            delta_lf,
-                            ts.msac.rng,
-                        );
+
+                    ts.last_delta_lf[i] =
+                        iclip(ts.last_delta_lf[i] as libc::c_int + delta_lf, -63, 63) as int8_t;
+
+                    if have_delta_q && DEBUG_BLOCK_INFO(f, t) {
+                        println!("Post-delta_lf[{}:{}]: r={}", i, delta_lf, ts.msac.rng);
                     }
-                    i += 1;
                 }
             }
         }
+
         if ts.last_qidx == (*f.frame_hdr).quant.yac {
-            ts.dq = (f.dq).as_ptr();
+            // assign frame-wide q values to this sb
+            ts.dq = f.dq.as_ptr();
         } else if ts.last_qidx != prev_qidx {
+            // find sb-specific quant parameters
             init_quant_tables(&*f.seq_hdr, &*f.frame_hdr, ts.last_qidx, &mut ts.dqmem);
-            ts.dq = (ts.dqmem).as_mut_ptr() as *const [[uint16_t; 2]; 3];
+            ts.dq = ts.dqmem.as_ptr();
         }
-        if memcmp(
-            (ts.last_delta_lf).as_mut_ptr() as *const libc::c_void,
-            [
-                0 as libc::c_int as int8_t,
-                0 as libc::c_int as int8_t,
-                0 as libc::c_int as int8_t,
-                0 as libc::c_int as int8_t,
-            ]
-            .as_mut_ptr() as *const libc::c_void,
-            4 as libc::c_int as libc::c_ulong,
-        ) == 0
-        {
-            ts.lflvl = (f.lf.lvl).as_ptr();
-        } else if memcmp(
-            (ts.last_delta_lf).as_mut_ptr() as *const libc::c_void,
-            prev_delta_lf.as_mut_ptr() as *const libc::c_void,
-            4 as libc::c_int as libc::c_ulong,
-        ) != 0
-        {
+
+        if ts.last_delta_lf == [0, 0, 0, 0] {
+            // assign frame-wide lf values to this sb
+            ts.lflvl = f.lf.lvl.as_ptr();
+        } else if ts.last_delta_lf != prev_delta_lf {
+            // find sb-specific lf lvl parameters
             dav1d_calc_lf_values(
-                (ts.lflvlmem).as_mut_ptr(),
+                ts.lflvlmem.as_mut_ptr(),
                 f.frame_hdr,
-                (ts.last_delta_lf).as_mut_ptr() as *const int8_t,
+                ts.last_delta_lf.as_ptr(),
             );
-            ts.lflvl = (ts.lflvlmem).as_mut_ptr() as *const [[[uint8_t; 2]; 8]; 4];
+            ts.lflvl = ts.lflvlmem.as_ptr();
         }
     }
+
     if b.skip_mode != 0 {
         b.intra = 0 as libc::c_int as uint8_t;
     } else if (*f.frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint != 0 {
