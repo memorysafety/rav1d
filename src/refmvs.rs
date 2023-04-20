@@ -423,8 +423,9 @@ unsafe fn add_temporal_candidate(
             }
         }
         if last < 8 {
-            mvstack[last].mv.mv[0] = mv;
-            mvstack[last].weight = 2;
+            let cand = &mut mvstack[last];
+            cand.mv.mv[0] = mv;
+            cand.weight = 2;
             *cnt = last + 1;
         }
     } else {
@@ -446,8 +447,9 @@ unsafe fn add_temporal_candidate(
             }
         }
         if last < 8 {
-            mvstack[last].mv = mvp;
-            mvstack[last].weight = 2;
+            let cand = &mut mvstack[last];
+            cand.mv = mvp;
+            cand.weight = 2;
             *cnt = last + 1;
         }
     };
