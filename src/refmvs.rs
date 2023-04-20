@@ -598,7 +598,7 @@ unsafe extern "C" fn add_compound_extended_candidate(
     }
 }
 
-unsafe fn add_single_extended_candidate(
+fn add_single_extended_candidate(
     mvstack: &mut [refmvs_candidate; 8],
     cnt: &mut usize,
     cand_b: &refmvs_block,
