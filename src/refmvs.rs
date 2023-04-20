@@ -403,18 +403,21 @@ unsafe fn add_temporal_candidate(
     if rb.mv == mv::INVALID {
         return;
     }
+
     let mut mv = mv_projection(
         rb.mv,
         rf.pocdiff[r#ref.r#ref[0] as usize - 1] as libc::c_int,
         rb.r#ref as libc::c_int,
     );
     fix_mv_precision(&*rf.frm_hdr, &mut mv);
+
     let last = *cnt;
     if r#ref.r#ref[1] == -1 {
         if let Some((globalmv_ctx, gmv)) = globalmv {
             *globalmv_ctx =
                 ((mv.x - gmv[0].x).abs() | (mv.y - gmv[0].y).abs() >= 16) as libc::c_int;
         }
+
         for cand in &mut mvstack[..last] {
             if cand.mv.mv[0] == mv {
                 cand.weight += 2;
@@ -439,6 +442,7 @@ unsafe fn add_temporal_candidate(
             ],
         };
         fix_mv_precision(&*rf.frm_hdr, &mut mvp.mv[1]);
+        
         for cand in &mut mvstack[..last] {
             if cand.mv == mvp {
                 cand.weight += 2;
