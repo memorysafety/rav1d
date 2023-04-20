@@ -860,13 +860,13 @@ unsafe extern "C" fn parse_seq_hdr(
             if (*hdr).reduced_still_picture_header != 0 {
                 (*hdr).num_operating_points = 1 as libc::c_int;
                 (*hdr)
-                    .operating_points[0 as libc::c_int as usize]
+                    .operating_points[0]
                     .major_level = dav1d_get_bits(gb, 3 as libc::c_int) as libc::c_int;
                 (*hdr)
-                    .operating_points[0 as libc::c_int as usize]
+                    .operating_points[0]
                     .minor_level = dav1d_get_bits(gb, 2 as libc::c_int) as libc::c_int;
                 (*hdr)
-                    .operating_points[0 as libc::c_int as usize]
+                    .operating_points[0]
                     .initial_display_delay = 10 as libc::c_int;
                 current_block = 4090602189656566074;
             } else {
@@ -1254,7 +1254,7 @@ unsafe extern "C" fn read_frame_size(
                 }
                 (*hdr)
                     .width[1 as libc::c_int
-                    as usize] = (*(*r#ref).p.frame_hdr).width[1 as libc::c_int as usize];
+                    as usize] = (*(*r#ref).p.frame_hdr).width[1];
                 (*hdr).height = (*(*r#ref).p.frame_hdr).height;
                 (*hdr).render_width = (*(*r#ref).p.frame_hdr).render_width;
                 (*hdr).render_height = (*(*r#ref).p.frame_hdr).render_height;
@@ -1272,15 +1272,15 @@ unsafe extern "C" fn read_frame_size(
                     (*hdr)
                         .width[0 as libc::c_int
                         as usize] = imax(
-                        ((*hdr).width[1 as libc::c_int as usize] * 8 as libc::c_int
+                        ((*hdr).width[1] * 8 as libc::c_int
                             + (d >> 1 as libc::c_int)) / d,
-                        imin(16 as libc::c_int, (*hdr).width[1 as libc::c_int as usize]),
+                        imin(16 as libc::c_int, (*hdr).width[1]),
                     );
                 } else {
                     (*hdr).super_res.width_scale_denominator = 8 as libc::c_int;
                     (*hdr)
                         .width[0 as libc::c_int
-                        as usize] = (*hdr).width[1 as libc::c_int as usize];
+                        as usize] = (*hdr).width[1];
                 }
                 return 0 as libc::c_int;
             }
@@ -1296,7 +1296,7 @@ unsafe extern "C" fn read_frame_size(
             .height = (dav1d_get_bits(gb, (*seqhdr).height_n_bits))
             .wrapping_add(1 as libc::c_int as libc::c_uint) as libc::c_int;
     } else {
-        (*hdr).width[1 as libc::c_int as usize] = (*seqhdr).max_width;
+        (*hdr).width[1] = (*seqhdr).max_width;
         (*hdr).height = (*seqhdr).max_height;
     }
     (*hdr)
@@ -1311,14 +1311,14 @@ unsafe extern "C" fn read_frame_size(
         (*hdr)
             .width[0 as libc::c_int
             as usize] = imax(
-            ((*hdr).width[1 as libc::c_int as usize] * 8 as libc::c_int
+            ((*hdr).width[1] * 8 as libc::c_int
                 + (d_0 >> 1 as libc::c_int)) / d_0,
-            imin(16 as libc::c_int, (*hdr).width[1 as libc::c_int as usize]),
+            imin(16 as libc::c_int, (*hdr).width[1]),
         );
     } else {
         (*hdr).super_res.width_scale_denominator = 8 as libc::c_int;
         (*hdr)
-            .width[0 as libc::c_int as usize] = (*hdr).width[1 as libc::c_int as usize];
+            .width[0] = (*hdr).width[1];
     }
     (*hdr).have_render_size = dav1d_get_bit(gb) as libc::c_int;
     if (*hdr).have_render_size != 0 {
@@ -1329,7 +1329,7 @@ unsafe extern "C" fn read_frame_size(
             .render_height = (dav1d_get_bits(gb, 16 as libc::c_int))
             .wrapping_add(1 as libc::c_int as libc::c_uint) as libc::c_int;
     } else {
-        (*hdr).render_width = (*hdr).width[1 as libc::c_int as usize];
+        (*hdr).render_width = (*hdr).width[1];
         (*hdr).render_height = (*hdr).height;
     }
     return 0 as libc::c_int;
@@ -1585,20 +1585,20 @@ unsafe extern "C" fn parse_frame_hdr(
                 (*hdr)
                     .refidx[0 as libc::c_int
                     as usize] = dav1d_get_bits(gb, 3 as libc::c_int) as libc::c_int;
-                (*hdr).refidx[2 as libc::c_int as usize] = -(1 as libc::c_int);
+                (*hdr).refidx[2] = -(1 as libc::c_int);
                 (*hdr)
                     .refidx[1 as libc::c_int
-                    as usize] = (*hdr).refidx[2 as libc::c_int as usize];
+                    as usize] = (*hdr).refidx[2];
                 (*hdr)
                     .refidx[3 as libc::c_int
                     as usize] = dav1d_get_bits(gb, 3 as libc::c_int) as libc::c_int;
-                (*hdr).refidx[6 as libc::c_int as usize] = -(1 as libc::c_int);
+                (*hdr).refidx[6] = -(1 as libc::c_int);
                 (*hdr)
                     .refidx[5 as libc::c_int
-                    as usize] = (*hdr).refidx[6 as libc::c_int as usize];
+                    as usize] = (*hdr).refidx[6];
                 (*hdr)
                     .refidx[4 as libc::c_int
-                    as usize] = (*hdr).refidx[5 as libc::c_int as usize];
+                    as usize] = (*hdr).refidx[5];
                 let mut shifted_frame_offset: [libc::c_int; 8] = [0; 8];
                 let current_frame_offset: libc::c_int = (1 as libc::c_int)
                     << (*seqhdr).order_hint_n_bits - 1 as libc::c_int;
@@ -1634,9 +1634,9 @@ unsafe extern "C" fn parse_frame_hdr(
                             0,
                             0,
                         ];
-                        used_frame[(*hdr).refidx[0 as libc::c_int as usize]
+                        used_frame[(*hdr).refidx[0]
                             as usize] = 1 as libc::c_int;
-                        used_frame[(*hdr).refidx[3 as libc::c_int as usize]
+                        used_frame[(*hdr).refidx[3]
                             as usize] = 1 as libc::c_int;
                         let mut latest_frame_offset: libc::c_int = -(1 as libc::c_int);
                         let mut i_3: libc::c_int = 0 as libc::c_int;
@@ -1646,13 +1646,13 @@ unsafe extern "C" fn parse_frame_hdr(
                                 && hint >= current_frame_offset
                                 && hint >= latest_frame_offset
                             {
-                                (*hdr).refidx[6 as libc::c_int as usize] = i_3;
+                                (*hdr).refidx[6] = i_3;
                                 latest_frame_offset = hint;
                             }
                             i_3 += 1;
                         }
                         if latest_frame_offset != -(1 as libc::c_int) {
-                            used_frame[(*hdr).refidx[6 as libc::c_int as usize]
+                            used_frame[(*hdr).refidx[6]
                                 as usize] = 1 as libc::c_int;
                         }
                         let mut earliest_frame_offset: libc::c_int = 2147483647
@@ -1664,13 +1664,13 @@ unsafe extern "C" fn parse_frame_hdr(
                                 && hint_0 >= current_frame_offset
                                 && hint_0 < earliest_frame_offset
                             {
-                                (*hdr).refidx[4 as libc::c_int as usize] = i_4;
+                                (*hdr).refidx[4] = i_4;
                                 earliest_frame_offset = hint_0;
                             }
                             i_4 += 1;
                         }
                         if earliest_frame_offset != 2147483647 as libc::c_int {
-                            used_frame[(*hdr).refidx[4 as libc::c_int as usize]
+                            used_frame[(*hdr).refidx[4]
                                 as usize] = 1 as libc::c_int;
                         }
                         earliest_frame_offset = 2147483647 as libc::c_int;
@@ -1681,13 +1681,13 @@ unsafe extern "C" fn parse_frame_hdr(
                                 && hint_1 >= current_frame_offset
                                 && hint_1 < earliest_frame_offset
                             {
-                                (*hdr).refidx[5 as libc::c_int as usize] = i_5;
+                                (*hdr).refidx[5] = i_5;
                                 earliest_frame_offset = hint_1;
                             }
                             i_5 += 1;
                         }
                         if earliest_frame_offset != 2147483647 as libc::c_int {
-                            used_frame[(*hdr).refidx[5 as libc::c_int as usize]
+                            used_frame[(*hdr).refidx[5]
                                 as usize] = 1 as libc::c_int;
                         }
                         let mut i_6: libc::c_int = 1 as libc::c_int;
@@ -1818,7 +1818,7 @@ unsafe extern "C" fn parse_frame_hdr(
                 (*hdr).tiling.uniform = dav1d_get_bit(gb) as libc::c_int;
                 sbsz_min1 = ((64 as libc::c_int) << (*seqhdr).sb128) - 1 as libc::c_int;
                 sbsz_log2 = 6 as libc::c_int + (*seqhdr).sb128;
-                sbw = (*hdr).width[0 as libc::c_int as usize] + sbsz_min1 >> sbsz_log2;
+                sbw = (*hdr).width[0] + sbsz_min1 >> sbsz_log2;
                 sbh = (*hdr).height + sbsz_min1 >> sbsz_log2;
                 max_tile_width_sb = 4096 as libc::c_int >> sbsz_log2;
                 max_tile_area_sb = 4096 as libc::c_int * 2304 as libc::c_int
@@ -2237,13 +2237,13 @@ unsafe extern "C" fn parse_frame_hdr(
                                 if (*hdr).all_lossless != 0 || (*hdr).allow_intrabc != 0 {
                                     (*hdr)
                                         .loopfilter
-                                        .level_y[1 as libc::c_int as usize] = 0 as libc::c_int;
+                                        .level_y[1] = 0 as libc::c_int;
                                     (*hdr)
                                         .loopfilter
                                         .level_y[0 as libc::c_int
                                         as usize] = (*hdr)
                                         .loopfilter
-                                        .level_y[1 as libc::c_int as usize];
+                                        .level_y[1];
                                     (*hdr).loopfilter.level_v = 0 as libc::c_int;
                                     (*hdr).loopfilter.level_u = (*hdr).loopfilter.level_v;
                                     (*hdr).loopfilter.sharpness = 0 as libc::c_int;
@@ -2263,9 +2263,9 @@ unsafe extern "C" fn parse_frame_hdr(
                                         as usize] = dav1d_get_bits(gb, 6 as libc::c_int)
                                         as libc::c_int;
                                     if (*seqhdr).monochrome == 0
-                                        && ((*hdr).loopfilter.level_y[0 as libc::c_int as usize]
+                                        && ((*hdr).loopfilter.level_y[0]
                                             != 0
-                                            || (*hdr).loopfilter.level_y[1 as libc::c_int as usize]
+                                            || (*hdr).loopfilter.level_y[1]
                                                 != 0)
                                     {
                                         (*hdr)
@@ -2376,10 +2376,10 @@ unsafe extern "C" fn parse_frame_hdr(
                                             (*hdr).cdef.n_bits = 0 as libc::c_int;
                                             (*hdr)
                                                 .cdef
-                                                .y_strength[0 as libc::c_int as usize] = 0 as libc::c_int;
+                                                .y_strength[0] = 0 as libc::c_int;
                                             (*hdr)
                                                 .cdef
-                                                .uv_strength[0 as libc::c_int as usize] = 0 as libc::c_int;
+                                                .uv_strength[0] = 0 as libc::c_int;
                                         }
                                         if ((*hdr).all_lossless == 0
                                             || (*hdr).super_res.enabled != 0)
@@ -2404,19 +2404,19 @@ unsafe extern "C" fn parse_frame_hdr(
                                             } else {
                                                 (*hdr)
                                                     .restoration
-                                                    .type_0[2 as libc::c_int as usize] = DAV1D_RESTORATION_NONE;
+                                                    .type_0[2] = DAV1D_RESTORATION_NONE;
                                                 (*hdr)
                                                     .restoration
                                                     .type_0[1 as libc::c_int
                                                     as usize] = (*hdr)
                                                     .restoration
-                                                    .type_0[2 as libc::c_int as usize];
+                                                    .type_0[2];
                                             }
-                                            if (*hdr).restoration.type_0[0 as libc::c_int as usize]
+                                            if (*hdr).restoration.type_0[0]
                                                 as libc::c_uint != 0
-                                                || (*hdr).restoration.type_0[1 as libc::c_int as usize]
+                                                || (*hdr).restoration.type_0[1]
                                                     as libc::c_uint != 0
-                                                || (*hdr).restoration.type_0[2 as libc::c_int as usize]
+                                                || (*hdr).restoration.type_0[2]
                                                     as libc::c_uint != 0
                                             {
                                                 (*hdr)
@@ -2424,7 +2424,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                                     .unit_size[0 as libc::c_int
                                                     as usize] = 6 as libc::c_int + (*seqhdr).sb128;
                                                 if dav1d_get_bit(gb) != 0 {
-                                                    (*hdr).restoration.unit_size[0 as libc::c_int as usize]
+                                                    (*hdr).restoration.unit_size[0]
                                                         += 1;
                                                     if (*seqhdr).sb128 == 0 {
                                                         (*hdr)
@@ -2432,7 +2432,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                                             .unit_size[0 as libc::c_int
                                                             as usize] = ((*hdr)
                                                             .restoration
-                                                            .unit_size[0 as libc::c_int as usize] as libc::c_uint)
+                                                            .unit_size[0] as libc::c_uint)
                                                             .wrapping_add(dav1d_get_bit(gb)) as libc::c_int
                                                             as libc::c_int;
                                                     }
@@ -2442,10 +2442,10 @@ unsafe extern "C" fn parse_frame_hdr(
                                                     .unit_size[1 as libc::c_int
                                                     as usize] = (*hdr)
                                                     .restoration
-                                                    .unit_size[0 as libc::c_int as usize];
-                                                if ((*hdr).restoration.type_0[1 as libc::c_int as usize]
+                                                    .unit_size[0];
+                                                if ((*hdr).restoration.type_0[1]
                                                     as libc::c_uint != 0
-                                                    || (*hdr).restoration.type_0[2 as libc::c_int as usize]
+                                                    || (*hdr).restoration.type_0[2]
                                                         as libc::c_uint != 0)
                                                     && (*seqhdr).ss_hor == 1 as libc::c_int
                                                     && (*seqhdr).ss_ver == 1 as libc::c_int
@@ -2455,25 +2455,25 @@ unsafe extern "C" fn parse_frame_hdr(
                                                         .unit_size[1 as libc::c_int
                                                         as usize] = ((*hdr)
                                                         .restoration
-                                                        .unit_size[1 as libc::c_int as usize] as libc::c_uint)
+                                                        .unit_size[1] as libc::c_uint)
                                                         .wrapping_sub(dav1d_get_bit(gb)) as libc::c_int
                                                         as libc::c_int;
                                                 }
                                             } else {
                                                 (*hdr)
                                                     .restoration
-                                                    .unit_size[0 as libc::c_int as usize] = 8 as libc::c_int;
+                                                    .unit_size[0] = 8 as libc::c_int;
                                             }
                                         } else {
                                             (*hdr)
                                                 .restoration
-                                                .type_0[0 as libc::c_int as usize] = DAV1D_RESTORATION_NONE;
+                                                .type_0[0] = DAV1D_RESTORATION_NONE;
                                             (*hdr)
                                                 .restoration
-                                                .type_0[1 as libc::c_int as usize] = DAV1D_RESTORATION_NONE;
+                                                .type_0[1] = DAV1D_RESTORATION_NONE;
                                             (*hdr)
                                                 .restoration
-                                                .type_0[2 as libc::c_int as usize] = DAV1D_RESTORATION_NONE;
+                                                .type_0[2] = DAV1D_RESTORATION_NONE;
                                         }
                                         (*hdr)
                                             .txfm_mode = (if (*hdr).all_lossless != 0 {
@@ -2862,8 +2862,8 @@ unsafe extern "C" fn parse_frame_hdr(
                                                                         if i_21 != 0
                                                                             && (*fgd)
                                                                                 .y_points[(i_21 - 1 as libc::c_int)
-                                                                                as usize][0 as libc::c_int as usize] as libc::c_int
-                                                                                >= (*fgd).y_points[i_21 as usize][0 as libc::c_int as usize]
+                                                                                as usize][0] as libc::c_int
+                                                                                >= (*fgd).y_points[i_21 as usize][0]
                                                                                     as libc::c_int
                                                                         {
                                                                             current_block = 17922947093064792850;
@@ -2892,7 +2892,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                                                                     as usize] = 0 as libc::c_int;
                                                                                 (*fgd)
                                                                                     .num_uv_points[0 as libc::c_int
-                                                                                    as usize] = (*fgd).num_uv_points[1 as libc::c_int as usize];
+                                                                                    as usize] = (*fgd).num_uv_points[1];
                                                                                 current_block = 8773475593684033964;
                                                                             } else {
                                                                                 let mut pl: libc::c_int = 0 as libc::c_int;
@@ -2920,10 +2920,10 @@ unsafe extern "C" fn parse_frame_hdr(
                                                                                             && (*fgd)
                                                                                                 .uv_points[pl
                                                                                                 as usize][(i_22 - 1 as libc::c_int)
-                                                                                                as usize][0 as libc::c_int as usize] as libc::c_int
+                                                                                                as usize][0] as libc::c_int
                                                                                                 >= (*fgd)
                                                                                                     .uv_points[pl
-                                                                                                    as usize][i_22 as usize][0 as libc::c_int as usize]
+                                                                                                    as usize][i_22 as usize][0]
                                                                                                     as libc::c_int
                                                                                         {
                                                                                             current_block = 17922947093064792850;
@@ -2944,9 +2944,9 @@ unsafe extern "C" fn parse_frame_hdr(
                                                                                 _ => {
                                                                                     if (*seqhdr).ss_hor == 1 as libc::c_int
                                                                                         && (*seqhdr).ss_ver == 1 as libc::c_int
-                                                                                        && ((*fgd).num_uv_points[0 as libc::c_int as usize] != 0)
+                                                                                        && ((*fgd).num_uv_points[0] != 0)
                                                                                             as libc::c_int
-                                                                                            != ((*fgd).num_uv_points[1 as libc::c_int as usize] != 0)
+                                                                                            != ((*fgd).num_uv_points[1] != 0)
                                                                                                 as libc::c_int
                                                                                     {
                                                                                         current_block = 17922947093064792850;
@@ -3544,7 +3544,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                         2084488458830559219 => {}
                                         _ => {
                                             if (*c).frame_size_limit != 0
-                                                && (*(*c).frame_hdr).width[1 as libc::c_int as usize]
+                                                && (*(*c).frame_hdr).width[1]
                                                     as int64_t * (*(*c).frame_hdr).height as int64_t
                                                     > (*c).frame_size_limit as int64_t
                                             {
@@ -3552,7 +3552,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                                     c,
                                                     b"Frame size %dx%d exceeds limit %u\n\0" as *const u8
                                                         as *const libc::c_char,
-                                                    (*(*c).frame_hdr).width[1 as libc::c_int as usize],
+                                                    (*(*c).frame_hdr).width[1],
                                                     (*(*c).frame_hdr).height,
                                                     (*c).frame_size_limit,
                                                 );
@@ -3737,7 +3737,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                                             .refs[(*(*c).frame_hdr).existing_frame_idx as usize]
                                                             .p
                                                             .p
-                                                            .data[0 as libc::c_int as usize])
+                                                            .data[0])
                                                             .is_null()
                                                         {
                                                             current_block = 2084488458830559219;
@@ -3793,7 +3793,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                                                     .frame_thread
                                                                     .out_delayed)
                                                                     .offset(next as isize) as *mut Dav1dThreadPicture;
-                                                                if !((*out_delayed).p.data[0 as libc::c_int as usize])
+                                                                if !((*out_delayed).p.data[0])
                                                                     .is_null()
                                                                     || ::core::intrinsics::atomic_load_seqcst(
                                                                         &mut (*f).task_thread.error as *mut atomic_int,
@@ -3841,7 +3841,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                                                     dav1d_thread_picture_unref(out_delayed);
                                                                 } else if !((*out_delayed)
                                                                     .p
-                                                                    .data[0 as libc::c_int as usize])
+                                                                    .data[0])
                                                                     .is_null()
                                                                 {
                                                                     let progress: libc::c_uint = ::core::intrinsics::atomic_load_relaxed(

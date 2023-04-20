@@ -932,10 +932,10 @@ pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
     let have_tt: libc::c_int = ((*(*f).c).n_tc > 1 as libc::c_int as libc::c_uint)
         as libc::c_int;
     let sb128: libc::c_int = (*(*f).seq_hdr).sb128;
-    let resize: libc::c_int = ((*(*f).frame_hdr).width[0 as libc::c_int as usize]
-        != (*(*f).frame_hdr).width[1 as libc::c_int as usize]) as libc::c_int;
-    let y_stride: ptrdiff_t = (*f).cur.stride[0 as libc::c_int as usize];
-    let uv_stride: ptrdiff_t = (*f).cur.stride[1 as libc::c_int as usize];
+    let resize: libc::c_int = ((*(*f).frame_hdr).width[0]
+        != (*(*f).frame_hdr).width[1]) as libc::c_int;
+    let y_stride: ptrdiff_t = (*f).cur.stride[0];
+    let uv_stride: ptrdiff_t = (*f).cur.stride[1];
     let mut bit: libc::c_int = 0 as libc::c_int;
     let mut by: libc::c_int = by_start;
     while by < by_end {
@@ -958,7 +958,7 @@ pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
                 ((*f)
                     .lf
                     .cdef_line[(tf == 0) as libc::c_int
-                    as usize][0 as libc::c_int as usize])
+                    as usize][0])
                     .offset(
                         ((have_tt * sby * 4 as libc::c_int) as isize * y_stride)
                             as isize,
@@ -966,7 +966,7 @@ pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
                 ((*f)
                     .lf
                     .cdef_line[(tf == 0) as libc::c_int
-                    as usize][1 as libc::c_int as usize])
+                    as usize][1])
                     .offset(
                         ((have_tt * sby * 8 as libc::c_int) as isize * uv_stride)
                             as isize,
@@ -974,7 +974,7 @@ pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
                 ((*f)
                     .lf
                     .cdef_line[(tf == 0) as libc::c_int
-                    as usize][2 as libc::c_int as usize])
+                    as usize][2])
                     .offset(
                         ((have_tt * sby * 8 as libc::c_int) as isize * uv_stride)
                             as isize,
@@ -989,9 +989,9 @@ pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
         }
         let mut lr_bak: [[[[pixel; 2]; 8]; 3]; 2] = [[[[0; 2]; 8]; 3]; 2];
         let mut iptrs: [*mut pixel; 3] = [
-            ptrs[0 as libc::c_int as usize],
-            ptrs[1 as libc::c_int as usize],
-            ptrs[2 as libc::c_int as usize],
+            ptrs[0],
+            ptrs[1],
+            ptrs[2],
         ];
         edges = ::core::mem::transmute::<
             libc::c_uint,
@@ -1030,10 +1030,10 @@ pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
                     .as_ptr()
                     .offset(by_idx as isize) as *const [uint16_t; 2];
                 noskip_mask = ((*noskip_row
-                    .offset(0 as libc::c_int as isize))[1 as libc::c_int as usize]
+                    .offset(0 as libc::c_int as isize))[1]
                     as libc::c_uint) << 16 as libc::c_int
                     | (*noskip_row
-                        .offset(0 as libc::c_int as isize))[0 as libc::c_int as usize]
+                        .offset(0 as libc::c_int as isize))[0]
                         as libc::c_uint;
                 y_lvl = (*(*f).frame_hdr).cdef.y_strength[cdef_idx as usize];
                 uv_lvl = (*(*f).frame_hdr).cdef.uv_strength[cdef_idx as usize];
@@ -1049,9 +1049,9 @@ pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
                 uv_sec_lvl += (uv_sec_lvl == 3 as libc::c_int) as libc::c_int;
                 uv_sec_lvl <<= bitdepth_min_8;
                 bptrs = [
-                    iptrs[0 as libc::c_int as usize],
-                    iptrs[1 as libc::c_int as usize],
-                    iptrs[2 as libc::c_int as usize],
+                    iptrs[0],
+                    iptrs[1],
+                    iptrs[2],
                 ];
                 let mut bx: libc::c_int = sbx * sbsz;
                 while bx < imin((sbx + 1 as libc::c_int) * sbsz, (*f).bw) {
@@ -1116,8 +1116,8 @@ pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
                                 .expect(
                                     "non-null function pointer",
                                 )(
-                                bptrs[0 as libc::c_int as usize],
-                                (*f).cur.stride[0 as libc::c_int as usize],
+                                bptrs[0],
+                                (*f).cur.stride[0],
                                 &mut variance,
                             );
                         }
@@ -1144,7 +1144,7 @@ pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
                                     .offset(0 as libc::c_int as isize))
                                     .offset(offset as isize) as *mut pixel;
                             }
-                            bot = (bptrs[0 as libc::c_int as usize])
+                            bot = (bptrs[0])
                                 .offset(
                                     (8 * y_stride) as isize,
                                 );
@@ -1194,7 +1194,7 @@ pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
                                         (have_tt as isize * offset
                                             + (bx * 4 as libc::c_int) as isize) as isize,
                                     ) as *mut pixel;
-                                bot = (bptrs[0 as libc::c_int as usize])
+                                bot = (bptrs[0])
                                     .offset(
                                         (8 * y_stride) as isize,
                                     );
@@ -1207,13 +1207,13 @@ pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
                                 variance,
                             );
                             if adj_y_pri_lvl != 0 || y_sec_lvl != 0 {
-                                ((*dsp).cdef.fb[0 as libc::c_int as usize])
+                                ((*dsp).cdef.fb[0])
                                     .expect(
                                         "non-null function pointer",
                                     )(
-                                    bptrs[0 as libc::c_int as usize],
-                                    (*f).cur.stride[0 as libc::c_int as usize],
-                                    (lr_bak[bit as usize][0 as libc::c_int as usize])
+                                    bptrs[0],
+                                    (*f).cur.stride[0],
+                                    (lr_bak[bit as usize][0])
                                         .as_mut_ptr() as const_left_pixel_row_2px,
                                     top,
                                     bot,
@@ -1225,13 +1225,13 @@ pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
                                 );
                             }
                         } else if y_sec_lvl != 0 {
-                            ((*dsp).cdef.fb[0 as libc::c_int as usize])
+                            ((*dsp).cdef.fb[0])
                                 .expect(
                                     "non-null function pointer",
                                 )(
-                                bptrs[0 as libc::c_int as usize],
-                                (*f).cur.stride[0 as libc::c_int as usize],
-                                (lr_bak[bit as usize][0 as libc::c_int as usize])
+                                bptrs[0],
+                                (*f).cur.stride[0],
+                                (lr_bak[bit as usize][0])
                                     .as_mut_ptr() as const_left_pixel_row_2px,
                                 top,
                                 bot,
@@ -1345,7 +1345,7 @@ pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
                                         "non-null function pointer",
                                     )(
                                     bptrs[pl as usize],
-                                    (*f).cur.stride[1 as libc::c_int as usize],
+                                    (*f).cur.stride[1],
                                     (lr_bak[bit as usize][pl as usize]).as_mut_ptr()
                                         as const_left_pixel_row_2px,
                                     top,
@@ -1363,13 +1363,13 @@ pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
                         last_skip = 0 as libc::c_int;
                     }
                     bptrs[0 as libc::c_int
-                        as usize] = (bptrs[0 as libc::c_int as usize])
+                        as usize] = (bptrs[0])
                         .offset(8 as libc::c_int as isize);
                     bptrs[1 as libc::c_int
-                        as usize] = (bptrs[1 as libc::c_int as usize])
+                        as usize] = (bptrs[1])
                         .offset((8 as libc::c_int >> ss_hor) as isize);
                     bptrs[2 as libc::c_int
-                        as usize] = (bptrs[2 as libc::c_int as usize])
+                        as usize] = (bptrs[2])
                         .offset((8 as libc::c_int >> ss_hor) as isize);
                     bx += 2 as libc::c_int;
                     edges = ::core::mem::transmute::<
@@ -1382,13 +1382,13 @@ pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
                 }
             }
             iptrs[0 as libc::c_int
-                as usize] = (iptrs[0 as libc::c_int as usize])
+                as usize] = (iptrs[0])
                 .offset((sbsz * 4 as libc::c_int) as isize);
             iptrs[1 as libc::c_int
-                as usize] = (iptrs[1 as libc::c_int as usize])
+                as usize] = (iptrs[1])
                 .offset((sbsz * 4 as libc::c_int >> ss_hor) as isize);
             iptrs[2 as libc::c_int
-                as usize] = (iptrs[2 as libc::c_int as usize])
+                as usize] = (iptrs[2])
                 .offset((sbsz * 4 as libc::c_int >> ss_hor) as isize);
             sbx += 1;
             edges = ::core::mem::transmute::<
@@ -1397,19 +1397,19 @@ pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
             >(edges as libc::c_uint | CDEF_HAVE_LEFT as libc::c_int as libc::c_uint);
         }
         ptrs[0 as libc::c_int
-            as usize] = (ptrs[0 as libc::c_int as usize])
+            as usize] = (ptrs[0])
             .offset(
-                (8 * (*f).cur.stride[0 as libc::c_int as usize]) as isize,
+                (8 * (*f).cur.stride[0]) as isize,
             );
         ptrs[1 as libc::c_int
-            as usize] = (ptrs[1 as libc::c_int as usize])
+            as usize] = (ptrs[1])
             .offset(
-                (8 * (*f).cur.stride[1 as libc::c_int as usize] >> ss_ver) as isize,
+                (8 * (*f).cur.stride[1] >> ss_ver) as isize,
             );
         ptrs[2 as libc::c_int
-            as usize] = (ptrs[2 as libc::c_int as usize])
+            as usize] = (ptrs[2])
             .offset(
-                (8 * (*f).cur.stride[1 as libc::c_int as usize] >> ss_ver) as isize,
+                (8 * (*f).cur.stride[1] >> ss_ver) as isize,
             );
         (*tc).top_pre_cdef_toggle ^= 1 as libc::c_int;
         by += 2 as libc::c_int;

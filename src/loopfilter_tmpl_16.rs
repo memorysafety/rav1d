@@ -517,13 +517,13 @@ unsafe extern "C" fn loop_filter_h_sb128y_c(
     while vm & !y.wrapping_sub(1 as libc::c_int as libc::c_uint) != 0 {
         if vm & y != 0 {
             let L: libc::c_int = if (*l
-                .offset(0 as libc::c_int as isize))[0 as libc::c_int as usize]
+                .offset(0 as libc::c_int as isize))[0]
                 as libc::c_int != 0
             {
-                (*l.offset(0 as libc::c_int as isize))[0 as libc::c_int as usize]
+                (*l.offset(0 as libc::c_int as isize))[0]
                     as libc::c_int
             } else {
-                (*l.offset(-(1 as libc::c_int) as isize))[0 as libc::c_int as usize]
+                (*l.offset(-(1 as libc::c_int) as isize))[0]
                     as libc::c_int
             };
             if !(L == 0) {
@@ -571,13 +571,13 @@ unsafe extern "C" fn loop_filter_v_sb128y_c(
     while vm & !x.wrapping_sub(1 as libc::c_int as libc::c_uint) != 0 {
         if vm & x != 0 {
             let L: libc::c_int = if (*l
-                .offset(0 as libc::c_int as isize))[0 as libc::c_int as usize]
+                .offset(0 as libc::c_int as isize))[0]
                 as libc::c_int != 0
             {
-                (*l.offset(0 as libc::c_int as isize))[0 as libc::c_int as usize]
+                (*l.offset(0 as libc::c_int as isize))[0]
                     as libc::c_int
             } else {
-                (*l.offset(-b4_stride as isize))[0 as libc::c_int as usize]
+                (*l.offset(-b4_stride as isize))[0]
                     as libc::c_int
             };
             if !(L == 0) {
@@ -624,13 +624,13 @@ unsafe extern "C" fn loop_filter_h_sb128uv_c(
     while vm & !y.wrapping_sub(1 as libc::c_int as libc::c_uint) != 0 {
         if vm & y != 0 {
             let L: libc::c_int = if (*l
-                .offset(0 as libc::c_int as isize))[0 as libc::c_int as usize]
+                .offset(0 as libc::c_int as isize))[0]
                 as libc::c_int != 0
             {
-                (*l.offset(0 as libc::c_int as isize))[0 as libc::c_int as usize]
+                (*l.offset(0 as libc::c_int as isize))[0]
                     as libc::c_int
             } else {
-                (*l.offset(-(1 as libc::c_int) as isize))[0 as libc::c_int as usize]
+                (*l.offset(-(1 as libc::c_int) as isize))[0]
                     as libc::c_int
             };
             if !(L == 0) {
@@ -672,13 +672,13 @@ unsafe extern "C" fn loop_filter_v_sb128uv_c(
     while vm & !x.wrapping_sub(1 as libc::c_int as libc::c_uint) != 0 {
         if vm & x != 0 {
             let L: libc::c_int = if (*l
-                .offset(0 as libc::c_int as isize))[0 as libc::c_int as usize]
+                .offset(0 as libc::c_int as isize))[0]
                 as libc::c_int != 0
             {
-                (*l.offset(0 as libc::c_int as isize))[0 as libc::c_int as usize]
+                (*l.offset(0 as libc::c_int as isize))[0]
                     as libc::c_int
             } else {
-                (*l.offset(-b4_stride as isize))[0 as libc::c_int as usize]
+                (*l.offset(-b4_stride as isize))[0]
                     as libc::c_int
             };
             if !(L == 0) {

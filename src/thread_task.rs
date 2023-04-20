@@ -1114,12 +1114,12 @@ unsafe extern "C" fn create_filter_sbrow(
 ) -> libc::c_int {
     let has_deblock: libc::c_int = ((*(*f).frame_hdr)
         .loopfilter
-        .level_y[0 as libc::c_int as usize] != 0
-        || (*(*f).frame_hdr).loopfilter.level_y[1 as libc::c_int as usize] != 0)
+        .level_y[0] != 0
+        || (*(*f).frame_hdr).loopfilter.level_y[1] != 0)
         as libc::c_int;
     let has_cdef: libc::c_int = (*(*f).seq_hdr).cdef;
-    let has_resize: libc::c_int = ((*(*f).frame_hdr).width[0 as libc::c_int as usize]
-        != (*(*f).frame_hdr).width[1 as libc::c_int as usize]) as libc::c_int;
+    let has_resize: libc::c_int = ((*(*f).frame_hdr).width[0]
+        != (*(*f).frame_hdr).width[1]) as libc::c_int;
     let has_lr: libc::c_int = (*f).lf.restore_planes;
     let mut tasks: *mut Dav1dTask = (*f).task_thread.tasks;
     let uses_2pass: libc::c_int = ((*(*f).c).n_fc > 1 as libc::c_int as libc::c_uint)
@@ -1207,7 +1207,7 @@ pub unsafe extern "C" fn dav1d_task_create_tile_sbrow(
 ) -> libc::c_int {
     let mut tasks: *mut Dav1dTask = (*f)
         .task_thread
-        .tile_tasks[0 as libc::c_int as usize];
+        .tile_tasks[0];
     let uses_2pass: libc::c_int = ((*(*f).c).n_fc > 1 as libc::c_int as libc::c_uint)
         as libc::c_int;
     let num_tasks: libc::c_int = (*(*f).frame_hdr).tiling.cols
@@ -1219,7 +1219,7 @@ pub unsafe extern "C" fn dav1d_task_create_tile_sbrow(
             let size: size_t = (::core::mem::size_of::<Dav1dTask>())
                 .wrapping_mul(alloc_num_tasks as size_t);
             tasks = realloc(
-                (*f).task_thread.tile_tasks[0 as libc::c_int as usize]
+                (*f).task_thread.tile_tasks[0]
                     as *mut libc::c_void,
                 size,
             ) as *mut Dav1dTask;
@@ -1227,12 +1227,12 @@ pub unsafe extern "C" fn dav1d_task_create_tile_sbrow(
                 return -(1 as libc::c_int);
             }
             memset(tasks as *mut libc::c_void, 0 as libc::c_int, size);
-            (*f).task_thread.tile_tasks[0 as libc::c_int as usize] = tasks;
+            (*f).task_thread.tile_tasks[0] = tasks;
             (*f).task_thread.num_tile_tasks = alloc_num_tasks;
         }
         (*f)
             .task_thread
-            .tile_tasks[1 as libc::c_int as usize] = tasks.offset(num_tasks as isize);
+            .tile_tasks[1] = tasks.offset(num_tasks as isize);
     }
     tasks = tasks.offset((num_tasks * (pass & 1 as libc::c_int)) as isize);
     let mut pf_t: *mut Dav1dTask = 0 as *mut Dav1dTask;
@@ -1415,21 +1415,21 @@ unsafe extern "C" fn check_tile(
                 current_block_14 = 2370887241019905314;
             } else {
                 let y: libc::c_int = if (*lowest_px
-                    .offset(n as isize))[0 as libc::c_int as usize]
+                    .offset(n as isize))[0]
                     == -(2147483647 as libc::c_int) - 1 as libc::c_int
                 {
                     -(2147483647 as libc::c_int) - 1 as libc::c_int
                 } else {
-                    (*lowest_px.offset(n as isize))[0 as libc::c_int as usize]
+                    (*lowest_px.offset(n as isize))[0]
                         + 8 as libc::c_int
                 };
                 let uv: libc::c_int = if (*lowest_px
-                    .offset(n as isize))[1 as libc::c_int as usize]
+                    .offset(n as isize))[1]
                     == -(2147483647 as libc::c_int) - 1 as libc::c_int
                 {
                     -(2147483647 as libc::c_int) - 1 as libc::c_int
                 } else {
-                    (*lowest_px.offset(n as isize))[1 as libc::c_int as usize]
+                    (*lowest_px.offset(n as isize))[1]
                         * ((1 as libc::c_int) << ss_ver) + 8 as libc::c_int
                 };
                 let max: libc::c_int = imax(y, uv);
@@ -2350,10 +2350,10 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                 }
                                 if (*(*f).frame_hdr)
                                     .loopfilter
-                                    .level_y[0 as libc::c_int as usize] != 0
+                                    .level_y[0] != 0
                                     || (*(*f).frame_hdr)
                                         .loopfilter
-                                        .level_y[1 as libc::c_int as usize] != 0
+                                        .level_y[1] != 0
                                 {
                                     error_0 = ::core::intrinsics::atomic_load_seqcst(
                                         &mut (*f).task_thread.error,
@@ -2432,8 +2432,8 @@ pub unsafe extern "C" fn dav1d_worker_task(
                         }
                         match current_block {
                             12196494833634779273 => {
-                                if (*(*f).frame_hdr).width[0 as libc::c_int as usize]
-                                    != (*(*f).frame_hdr).width[1 as libc::c_int as usize]
+                                if (*(*f).frame_hdr).width[0]
+                                    != (*(*f).frame_hdr).width[1]
                                 {
                                     if ::core::intrinsics::atomic_load_seqcst(
                                         &mut (*f).task_thread.error as *mut atomic_int,
@@ -2486,7 +2486,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                             if !((*c).n_fc > 1 as libc::c_int as libc::c_uint) {
                                 unreachable!();
                             }
-                            if !((*f).sr_cur.p.data[0 as libc::c_int as usize]).is_null()
+                            if !((*f).sr_cur.p.data[0]).is_null()
                             {
                                 ::core::intrinsics::atomic_store_seqcst(
                                     &mut *((*f).sr_cur.progress)
@@ -2575,7 +2575,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                     .wrapping_mul(sbsz as libc::c_uint)
                             };
                             if (*c).n_fc > 1 as libc::c_int as libc::c_uint
-                                && !((*f).sr_cur.p.data[0 as libc::c_int as usize])
+                                && !((*f).sr_cur.p.data[0])
                                     .is_null()
                             {
                                 ::core::intrinsics::atomic_store_seqcst(

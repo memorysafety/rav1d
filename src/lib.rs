@@ -1704,8 +1704,8 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
 unsafe extern "C" fn has_grain(pic: *const Dav1dPicture) -> libc::c_int {
     let mut fgdata: *const Dav1dFilmGrainData = &mut (*(*pic).frame_hdr).film_grain.data;
     return ((*fgdata).num_y_points != 0
-        || (*fgdata).num_uv_points[0 as libc::c_int as usize] != 0
-        || (*fgdata).num_uv_points[1 as libc::c_int as usize] != 0
+        || (*fgdata).num_uv_points[0] != 0
+        || (*fgdata).num_uv_points[1] != 0
         || (*fgdata).clip_to_restricted_range != 0
             && (*fgdata).chroma_scaling_from_luma != 0) as libc::c_int;
 }
@@ -1729,7 +1729,7 @@ unsafe extern "C" fn output_image(
         dav1d_thread_picture_unref(in_0);
     }
     if (*c).all_layers == 0 && (*c).max_spatial_id != 0
-        && !((*c).out.p.data[0 as libc::c_int as usize]).is_null()
+        && !((*c).out.p.data[0]).is_null()
     {
         dav1d_thread_picture_move_ref(in_0, &mut (*c).out);
     }
@@ -1743,8 +1743,8 @@ unsafe extern "C" fn output_picture_ready(
         return 1 as libc::c_int;
     }
     if (*c).all_layers == 0 && (*c).max_spatial_id != 0 {
-        if !((*c).out.p.data[0 as libc::c_int as usize]).is_null()
-            && !((*c).cache.p.data[0 as libc::c_int as usize]).is_null()
+        if !((*c).out.p.data[0]).is_null()
+            && !((*c).cache.p.data[0]).is_null()
         {
             if (*c).max_spatial_id == (*(*c).cache.p.frame_hdr).spatial_id
                 || (*c).out.flags as libc::c_uint
@@ -1756,17 +1756,17 @@ unsafe extern "C" fn output_picture_ready(
             dav1d_thread_picture_move_ref(&mut (*c).cache, &mut (*c).out);
             return 0 as libc::c_int;
         } else {
-            if !((*c).cache.p.data[0 as libc::c_int as usize]).is_null() && drain != 0 {
+            if !((*c).cache.p.data[0]).is_null() && drain != 0 {
                 return 1 as libc::c_int
             } else {
-                if !((*c).out.p.data[0 as libc::c_int as usize]).is_null() {
+                if !((*c).out.p.data[0]).is_null() {
                     dav1d_thread_picture_move_ref(&mut (*c).cache, &mut (*c).out);
                     return 0 as libc::c_int;
                 }
             }
         }
     }
-    return !((*c).out.p.data[0 as libc::c_int as usize]).is_null() as libc::c_int;
+    return !((*c).out.p.data[0]).is_null() as libc::c_int;
 }
 unsafe extern "C" fn drain_picture(
     c: *mut Dav1dContext,
@@ -1824,7 +1824,7 @@ unsafe extern "C" fn drain_picture(
             dav1d_thread_picture_unref(out_delayed);
             return error;
         }
-        if !((*out_delayed).p.data[0 as libc::c_int as usize]).is_null() {
+        if !((*out_delayed).p.data[0]).is_null() {
             let progress: libc::c_uint = ::core::intrinsics::atomic_load_relaxed(
                 &mut *((*out_delayed).progress).offset(1 as libc::c_int as isize)
                     as *mut atomic_uint,
@@ -2324,13 +2324,13 @@ unsafe extern "C" fn close_internal(
                 as *mut libc::c_void,
         );
         dav1d_free_aligned((*f).ts as *mut libc::c_void);
-        dav1d_free_aligned((*f).ipred_edge[0 as libc::c_int as usize]);
+        dav1d_free_aligned((*f).ipred_edge[0]);
         free((*f).a as *mut libc::c_void);
         free((*f).tile as *mut libc::c_void);
         free((*f).lf.mask as *mut libc::c_void);
         free((*f).lf.lr_mask as *mut libc::c_void);
         free((*f).lf.level as *mut libc::c_void);
-        free((*f).lf.tx_lpf_right_edge[0 as libc::c_int as usize] as *mut libc::c_void);
+        free((*f).lf.tx_lpf_right_edge[0] as *mut libc::c_void);
         free((*f).lf.start_of_tile_row as *mut libc::c_void);
         dav1d_refmvs_clear(&mut (*f).rf);
         dav1d_free_aligned((*f).lf.cdef_line_buf as *mut libc::c_void);

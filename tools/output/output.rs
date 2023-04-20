@@ -141,7 +141,7 @@ pub unsafe extern "C" fn output_open(
             return -(92 as libc::c_int);
         }
     } else if strcmp(filename, b"/dev/null\0" as *const u8 as *const libc::c_char) == 0 {
-        impl_0 = muxers[0 as libc::c_int as usize];
+        impl_0 = muxers[0];
     } else {
         let ext: *const libc::c_char = find_extension(filename);
         if ext.is_null() {
@@ -202,8 +202,8 @@ pub unsafe extern "C" fn output_open(
         .one_file_per_frame = (name_offset != 0
         || name.is_null() && have_num_pattern != 0) as libc::c_int;
     if (*c).one_file_per_frame != 0 {
-        (*c).fps[0 as libc::c_int as usize] = *fps.offset(0 as libc::c_int as isize);
-        (*c).fps[1 as libc::c_int as usize] = *fps.offset(1 as libc::c_int as isize);
+        (*c).fps[0] = *fps.offset(0 as libc::c_int as isize);
+        (*c).fps[1] = *fps.offset(1 as libc::c_int as isize);
         (*c).filename = filename;
         (*c).framenum = 0 as libc::c_int;
     } else if ((*impl_0).write_header).is_some()
@@ -254,14 +254,14 @@ unsafe extern "C" fn assemble_field(
     if !(*fmt.offset(0 as libc::c_int as isize) as libc::c_int == '%' as i32) {
         unreachable!();
     }
-    fmt_copy[0 as libc::c_int as usize] = '%' as i32 as libc::c_char;
+    fmt_copy[0] = '%' as i32 as libc::c_char;
     if *fmt.offset(1 as libc::c_int as isize) as libc::c_int >= '1' as i32
         && *fmt.offset(1 as libc::c_int as isize) as libc::c_int <= '9' as i32
     {
-        fmt_copy[1 as libc::c_int as usize] = '0' as i32 as libc::c_char;
-        fmt_copy[2 as libc::c_int as usize] = 0 as libc::c_int as libc::c_char;
+        fmt_copy[1] = '0' as i32 as libc::c_char;
+        fmt_copy[2] = 0 as libc::c_int as libc::c_char;
     } else {
-        fmt_copy[1 as libc::c_int as usize] = 0 as libc::c_int as libc::c_char;
+        fmt_copy[1] = 0 as libc::c_int as libc::c_char;
     }
     safe_strncat(
         fmt_copy.as_mut_ptr(),

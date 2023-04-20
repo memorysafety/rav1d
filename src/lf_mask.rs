@@ -177,7 +177,7 @@ unsafe extern "C" fn decomp_tx(
                         .offset(
                             0 as libc::c_int as isize,
                         ))[1 as libc::c_int
-                        as usize][y as usize][0 as libc::c_int as usize] = (*t_dim).w;
+                        as usize][y as usize][0] = (*t_dim).w;
                     y += 1;
                 }
             }
@@ -206,7 +206,7 @@ unsafe extern "C" fn decomp_tx(
                         .offset(
                             0 as libc::c_int as isize,
                         ))[1 as libc::c_int
-                        as usize][y_0 as usize][0 as libc::c_int as usize] = (*t_dim).w;
+                        as usize][y_0 as usize][0] = (*t_dim).w;
                     y_0 += 1;
                 }
             }
@@ -237,7 +237,7 @@ unsafe extern "C" fn decomp_tx(
                         .offset(
                             0 as libc::c_int as isize,
                         ))[1 as libc::c_int
-                        as usize][y_1 as usize][0 as libc::c_int as usize] = (*t_dim).w;
+                        as usize][y_1 as usize][0] = (*t_dim).w;
                     y_1 += 1;
                 }
             }
@@ -268,7 +268,7 @@ unsafe extern "C" fn decomp_tx(
                         .offset(
                             0 as libc::c_int as isize,
                         ))[1 as libc::c_int
-                        as usize][y_2 as usize][0 as libc::c_int as usize] = (*t_dim).w;
+                        as usize][y_2 as usize][0] = (*t_dim).w;
                     y_2 += 1;
                 }
             }
@@ -319,7 +319,7 @@ unsafe extern "C" fn decomp_tx(
                         .offset(
                             0 as libc::c_int as isize,
                         ))[1 as libc::c_int
-                        as usize][y_3 as usize][0 as libc::c_int as usize] = (*t_dim).w;
+                        as usize][y_3 as usize][0] = (*t_dim).w;
                     y_3 += 1;
                 }
             }
@@ -453,7 +453,7 @@ unsafe extern "C" fn mask_edges_inter(
             as usize][imin(
             txa[0 as libc::c_int
                 as usize][0 as libc::c_int
-                as usize][y as usize][0 as libc::c_int as usize] as libc::c_int,
+                as usize][y as usize][0] as libc::c_int,
             *l.offset(y as isize) as libc::c_int,
         ) as usize][sidx as usize];
         *fresh0 = (*fresh0 as libc::c_uint | smask) as uint16_t;
@@ -473,7 +473,7 @@ unsafe extern "C" fn mask_edges_inter(
             as usize][imin(
             txa[1 as libc::c_int
                 as usize][0 as libc::c_int
-                as usize][0 as libc::c_int as usize][x as usize] as libc::c_int,
+                as usize][0][x as usize] as libc::c_int,
             *a.offset(x as isize) as libc::c_int,
         ) as usize][sidx_0 as usize];
         *fresh1 = (*fresh1 as libc::c_uint | smask_0) as uint16_t;
@@ -488,14 +488,14 @@ unsafe extern "C" fn mask_edges_inter(
             let smask_1: libc::c_uint = mask >> (sidx_1 << 4 as libc::c_int);
             let mut ltx: libc::c_int = txa[0 as libc::c_int
                 as usize][0 as libc::c_int
-                as usize][y as usize][0 as libc::c_int as usize] as libc::c_int;
+                as usize][y as usize][0] as libc::c_int;
             let mut step: libc::c_int = txa[0 as libc::c_int
                 as usize][1 as libc::c_int
-                as usize][y as usize][0 as libc::c_int as usize] as libc::c_int;
+                as usize][y as usize][0] as libc::c_int;
             x = step;
             while x < w4 {
                 let rtx: libc::c_int = txa[0 as libc::c_int
-                    as usize][0 as libc::c_int as usize][y as usize][x as usize]
+                    as usize][0][y as usize][x as usize]
                     as libc::c_int;
                 let ref mut fresh2 = (*masks
                     .offset(
@@ -504,7 +504,7 @@ unsafe extern "C" fn mask_edges_inter(
                 *fresh2 = (*fresh2 as libc::c_uint | smask_1) as uint16_t;
                 ltx = rtx;
                 step = txa[0 as libc::c_int
-                    as usize][1 as libc::c_int as usize][y as usize][x as usize]
+                    as usize][1][y as usize][x as usize]
                     as libc::c_int;
                 x += step;
             }
@@ -518,14 +518,14 @@ unsafe extern "C" fn mask_edges_inter(
             let smask_2: libc::c_uint = mask >> (sidx_2 << 4 as libc::c_int);
             let mut ttx: libc::c_int = txa[1 as libc::c_int
                 as usize][0 as libc::c_int
-                as usize][0 as libc::c_int as usize][x as usize] as libc::c_int;
+                as usize][0][x as usize] as libc::c_int;
             let mut step_0: libc::c_int = txa[1 as libc::c_int
                 as usize][1 as libc::c_int
-                as usize][0 as libc::c_int as usize][x as usize] as libc::c_int;
+                as usize][0][x as usize] as libc::c_int;
             y = step_0;
             while y < h4 {
                 let btx: libc::c_int = txa[1 as libc::c_int
-                    as usize][0 as libc::c_int as usize][y as usize][x as usize]
+                    as usize][0][y as usize][x as usize]
                     as libc::c_int;
                 let ref mut fresh3 = (*masks
                     .offset(
@@ -534,7 +534,7 @@ unsafe extern "C" fn mask_edges_inter(
                 *fresh3 = (*fresh3 as libc::c_uint | smask_2) as uint16_t;
                 ttx = btx;
                 step_0 = txa[1 as libc::c_int
-                    as usize][1 as libc::c_int as usize][y as usize][x as usize]
+                    as usize][1][y as usize][x as usize]
                     as libc::c_int;
                 y += step_0;
             }
@@ -555,7 +555,7 @@ unsafe extern "C" fn mask_edges_inter(
     memcpy(
         a as *mut libc::c_void,
         (txa[1 as libc::c_int
-            as usize][0 as libc::c_int as usize][(h4 - 1 as libc::c_int) as usize])
+            as usize][0][(h4 - 1 as libc::c_int) as usize])
             .as_mut_ptr() as *const libc::c_void,
         w4 as libc::c_ulong,
     );
@@ -623,14 +623,14 @@ unsafe extern "C" fn mask_edges_intra(
             let ref mut fresh6 = (*masks
                 .offset(
                     0 as libc::c_int as isize,
-                ))[(bx4 + x) as usize][twl4c as usize][0 as libc::c_int as usize];
+                ))[(bx4 + x) as usize][twl4c as usize][0];
             *fresh6 = (*fresh6 as libc::c_uint | inner1) as uint16_t;
         }
         if inner2 != 0 {
             let ref mut fresh7 = (*masks
                 .offset(
                     0 as libc::c_int as isize,
-                ))[(bx4 + x) as usize][twl4c as usize][1 as libc::c_int as usize];
+                ))[(bx4 + x) as usize][twl4c as usize][1];
             *fresh7 = (*fresh7 as libc::c_uint | inner2) as uint16_t;
         }
         x += hstep;
@@ -646,14 +646,14 @@ unsafe extern "C" fn mask_edges_intra(
             let ref mut fresh8 = (*masks
                 .offset(
                     1 as libc::c_int as isize,
-                ))[(by4 + y) as usize][thl4c as usize][0 as libc::c_int as usize];
+                ))[(by4 + y) as usize][thl4c as usize][0];
             *fresh8 = (*fresh8 as libc::c_uint | inner1) as uint16_t;
         }
         if inner2 != 0 {
             let ref mut fresh9 = (*masks
                 .offset(
                     1 as libc::c_int as isize,
-                ))[(by4 + y) as usize][thl4c as usize][1 as libc::c_int as usize];
+                ))[(by4 + y) as usize][thl4c as usize][1];
             *fresh9 = (*fresh9 as libc::c_uint | inner2) as uint16_t;
         }
         y += vstep;
@@ -832,14 +832,14 @@ unsafe extern "C" fn mask_edges_chroma(
                 let ref mut fresh12 = (*masks
                     .offset(
                         0 as libc::c_int as isize,
-                    ))[(cbx4 + x) as usize][twl4c as usize][0 as libc::c_int as usize];
+                    ))[(cbx4 + x) as usize][twl4c as usize][0];
                 *fresh12 = (*fresh12 as libc::c_uint | inner1) as uint16_t;
             }
             if inner2 != 0 {
                 let ref mut fresh13 = (*masks
                     .offset(
                         0 as libc::c_int as isize,
-                    ))[(cbx4 + x) as usize][twl4c as usize][1 as libc::c_int as usize];
+                    ))[(cbx4 + x) as usize][twl4c as usize][1];
                 *fresh13 = (*fresh13 as libc::c_uint | inner2) as uint16_t;
             }
             x += hstep;
@@ -857,14 +857,14 @@ unsafe extern "C" fn mask_edges_chroma(
                 let ref mut fresh14 = (*masks
                     .offset(
                         1 as libc::c_int as isize,
-                    ))[(cby4 + y) as usize][thl4c as usize][0 as libc::c_int as usize];
+                    ))[(cby4 + y) as usize][thl4c as usize][0];
                 *fresh14 = (*fresh14 as libc::c_uint | inner1) as uint16_t;
             }
             if inner2 != 0 {
                 let ref mut fresh15 = (*masks
                     .offset(
                         1 as libc::c_int as isize,
-                    ))[(cby4 + y) as usize][thl4c as usize][1 as libc::c_int as usize];
+                    ))[(cby4 + y) as usize][thl4c as usize][1];
                 *fresh15 = (*fresh15 as libc::c_uint | inner2) as uint16_t;
             }
             y += vstep;
@@ -1018,7 +1018,7 @@ pub unsafe extern "C" fn dav1d_create_lf_mask_intra(
                     as usize] = (*filter_level
                     .offset(
                         0 as libc::c_int as isize,
-                    ))[0 as libc::c_int as usize][0 as libc::c_int as usize];
+                    ))[0][0];
                 (*level_cache_ptr
                     .offset(
                         x as isize,
@@ -1026,7 +1026,7 @@ pub unsafe extern "C" fn dav1d_create_lf_mask_intra(
                     as usize] = (*filter_level
                     .offset(
                         1 as libc::c_int as isize,
-                    ))[0 as libc::c_int as usize][0 as libc::c_int as usize];
+                    ))[0][0];
                 x += 1;
             }
             level_cache_ptr = level_cache_ptr.offset(b4_stride as isize);
@@ -1077,7 +1077,7 @@ pub unsafe extern "C" fn dav1d_create_lf_mask_intra(
                 as usize] = (*filter_level
                 .offset(
                     2 as libc::c_int as isize,
-                ))[0 as libc::c_int as usize][0 as libc::c_int as usize];
+                ))[0][0];
             (*level_cache_ptr_0
                 .offset(
                     x_0 as isize,
@@ -1085,7 +1085,7 @@ pub unsafe extern "C" fn dav1d_create_lf_mask_intra(
                 as usize] = (*filter_level
                 .offset(
                     3 as libc::c_int as isize,
-                ))[0 as libc::c_int as usize][0 as libc::c_int as usize];
+                ))[0][0];
             x_0 += 1;
         }
         level_cache_ptr_0 = level_cache_ptr_0.offset(b4_stride as isize);
@@ -1152,7 +1152,7 @@ pub unsafe extern "C" fn dav1d_create_lf_mask_inter(
                     as usize] = (*filter_level
                     .offset(
                         0 as libc::c_int as isize,
-                    ))[0 as libc::c_int as usize][0 as libc::c_int as usize];
+                    ))[0][0];
                 (*level_cache_ptr
                     .offset(
                         x as isize,
@@ -1160,7 +1160,7 @@ pub unsafe extern "C" fn dav1d_create_lf_mask_inter(
                     as usize] = (*filter_level
                     .offset(
                         1 as libc::c_int as isize,
-                    ))[0 as libc::c_int as usize][0 as libc::c_int as usize];
+                    ))[0][0];
                 x += 1;
             }
             level_cache_ptr = level_cache_ptr.offset(b4_stride as isize);
@@ -1213,7 +1213,7 @@ pub unsafe extern "C" fn dav1d_create_lf_mask_inter(
                 as usize] = (*filter_level
                 .offset(
                     2 as libc::c_int as isize,
-                ))[0 as libc::c_int as usize][0 as libc::c_int as usize];
+                ))[0][0];
             (*level_cache_ptr_0
                 .offset(
                     x_0 as isize,
@@ -1221,7 +1221,7 @@ pub unsafe extern "C" fn dav1d_create_lf_mask_inter(
                 as usize] = (*filter_level
                 .offset(
                     3 as libc::c_int as isize,
-                ))[0 as libc::c_int as usize][0 as libc::c_int as usize];
+                ))[0][0];
             x_0 += 1;
         }
         level_cache_ptr_0 = level_cache_ptr_0.offset(b4_stride as isize);
@@ -1294,16 +1294,16 @@ unsafe extern "C" fn calc_lf_value(
     } else {
         let sh: libc::c_int = (base >= 32 as libc::c_int) as libc::c_int;
         let ref mut fresh16 = (*lflvl_values
-            .offset(0 as libc::c_int as isize))[1 as libc::c_int as usize];
+            .offset(0 as libc::c_int as isize))[1];
         *fresh16 = iclip(
             base
-                + (*mr_delta).ref_delta[0 as libc::c_int as usize]
+                + (*mr_delta).ref_delta[0]
                     * ((1 as libc::c_int) << sh),
             0 as libc::c_int,
             63 as libc::c_int,
         ) as uint8_t;
         (*lflvl_values
-            .offset(0 as libc::c_int as isize))[0 as libc::c_int as usize] = *fresh16;
+            .offset(0 as libc::c_int as isize))[0] = *fresh16;
         let mut r: libc::c_int = 1 as libc::c_int;
         while r < 8 as libc::c_int {
             let mut m: libc::c_int = 0 as libc::c_int;
@@ -1354,8 +1354,8 @@ pub unsafe extern "C" fn dav1d_calc_lf_values(
     } else {
         1 as libc::c_int
     };
-    if (*hdr).loopfilter.level_y[0 as libc::c_int as usize] == 0
-        && (*hdr).loopfilter.level_y[1 as libc::c_int as usize] == 0
+    if (*hdr).loopfilter.level_y[0] == 0
+        && (*hdr).loopfilter.level_y[1] == 0
     {
         memset(
             lflvl_values as *mut libc::c_void,
@@ -1382,15 +1382,15 @@ pub unsafe extern "C" fn dav1d_calc_lf_values(
             0 as *const Dav1dSegmentationData
         };
         calc_lf_value(
-            ((*lflvl_values.offset(s as isize))[0 as libc::c_int as usize]).as_mut_ptr(),
-            (*hdr).loopfilter.level_y[0 as libc::c_int as usize],
+            ((*lflvl_values.offset(s as isize))[0]).as_mut_ptr(),
+            (*hdr).loopfilter.level_y[0],
             *lf_delta.offset(0 as libc::c_int as isize) as libc::c_int,
             if !segd.is_null() { (*segd).delta_lf_y_v } else { 0 as libc::c_int },
             mr_deltas,
         );
         calc_lf_value(
-            ((*lflvl_values.offset(s as isize))[1 as libc::c_int as usize]).as_mut_ptr(),
-            (*hdr).loopfilter.level_y[1 as libc::c_int as usize],
+            ((*lflvl_values.offset(s as isize))[1]).as_mut_ptr(),
+            (*hdr).loopfilter.level_y[1],
             *lf_delta
                 .offset(
                     (if (*hdr).delta.lf.multi != 0 {
@@ -1403,7 +1403,7 @@ pub unsafe extern "C" fn dav1d_calc_lf_values(
             mr_deltas,
         );
         calc_lf_value_chroma(
-            ((*lflvl_values.offset(s as isize))[2 as libc::c_int as usize]).as_mut_ptr(),
+            ((*lflvl_values.offset(s as isize))[2]).as_mut_ptr(),
             (*hdr).loopfilter.level_u,
             *lf_delta
                 .offset(
@@ -1417,7 +1417,7 @@ pub unsafe extern "C" fn dav1d_calc_lf_values(
             mr_deltas,
         );
         calc_lf_value_chroma(
-            ((*lflvl_values.offset(s as isize))[3 as libc::c_int as usize]).as_mut_ptr(),
+            ((*lflvl_values.offset(s as isize))[3]).as_mut_ptr(),
             (*hdr).loopfilter.level_v,
             *lf_delta
                 .offset(

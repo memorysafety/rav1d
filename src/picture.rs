@@ -792,8 +792,8 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     if uv_stride & 1023 == 0 && has_chroma != 0 {
         uv_stride += 64;
     }
-    (*p).stride[0 as libc::c_int as usize] = y_stride;
-    (*p).stride[1 as libc::c_int as usize] = uv_stride;
+    (*p).stride[0] = y_stride;
+    (*p).stride[1] = uv_stride;
     let y_sz: size_t = (y_stride * aligned_h as isize) as size_t;
     let uv_sz: size_t = (uv_stride * (aligned_h >> ss_ver) as isize) as size_t;
     let pic_size: size_t = y_sz
@@ -809,7 +809,7 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     }
     (*p).allocator_data = buf as *mut libc::c_void;
     let data: *mut uint8_t = (*buf).data as *mut uint8_t;
-    (*p).data[0 as libc::c_int as usize] = data as *mut libc::c_void;
+    (*p).data[0] = data as *mut libc::c_void;
     (*p)
         .data[1 as libc::c_int
         as usize] = (if has_chroma != 0 {
@@ -865,7 +865,7 @@ unsafe extern "C" fn picture_alloc_with_edges(
     extra: size_t,
     extra_ptr: *mut *mut libc::c_void,
 ) -> libc::c_int {
-    if !((*p).data[0 as libc::c_int as usize]).is_null() {
+    if !((*p).data[0]).is_null() {
         dav1d_log(
             c,
             b"Picture already allocated!\n\0" as *const u8 as *const libc::c_char,
@@ -901,7 +901,7 @@ unsafe extern "C" fn picture_alloc_with_edges(
     (*pic_ctx).pic = *p;
     (*p)
         .r#ref = dav1d_ref_wrap(
-        (*p).data[0 as libc::c_int as usize] as *const uint8_t,
+        (*p).data[0] as *const uint8_t,
         Some(
             free_buffer as unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> (),
         ),
@@ -957,7 +957,7 @@ pub unsafe extern "C" fn dav1d_thread_picture_alloc(
     let res: libc::c_int = picture_alloc_with_edges(
         c,
         &mut (*p).p,
-        (*(*f).frame_hdr).width[1 as libc::c_int as usize],
+        (*(*f).frame_hdr).width[1],
         (*(*f).frame_hdr).height,
         (*f).seq_hdr,
         (*f).seq_hdr_ref,
@@ -1060,7 +1060,7 @@ pub unsafe extern "C" fn dav1d_picture_ref(
         );
         return;
     }
-    if !((*dst).data[0 as libc::c_int as usize]).is_null() {
+    if !((*dst).data[0]).is_null() {
         fprintf(
             stderr,
             b"Input validation check '%s' failed in %s!\n\0" as *const u8
@@ -1089,7 +1089,7 @@ pub unsafe extern "C" fn dav1d_picture_ref(
         return;
     }
     if !((*src).r#ref).is_null() {
-        if ((*src).data[0 as libc::c_int as usize]).is_null() {
+        if ((*src).data[0]).is_null() {
             fprintf(
                 stderr,
                 b"Input validation check '%s' failed in %s!\n\0" as *const u8
@@ -1144,7 +1144,7 @@ pub unsafe extern "C" fn dav1d_picture_move_ref(
         );
         return;
     }
-    if !((*dst).data[0 as libc::c_int as usize]).is_null() {
+    if !((*dst).data[0]).is_null() {
         fprintf(
             stderr,
             b"Input validation check '%s' failed in %s!\n\0" as *const u8
@@ -1173,7 +1173,7 @@ pub unsafe extern "C" fn dav1d_picture_move_ref(
         return;
     }
     if !((*src).r#ref).is_null() {
-        if ((*src).data[0 as libc::c_int as usize]).is_null() {
+        if ((*src).data[0]).is_null() {
             fprintf(
                 stderr,
                 b"Input validation check '%s' failed in %s!\n\0" as *const u8
@@ -1239,7 +1239,7 @@ pub unsafe extern "C" fn dav1d_picture_unref_internal(p: *mut Dav1dPicture) {
         return;
     }
     if !((*p).r#ref).is_null() {
-        if ((*p).data[0 as libc::c_int as usize]).is_null() {
+        if ((*p).data[0]).is_null() {
             fprintf(
                 stderr,
                 b"Input validation check '%s' failed in %s!\n\0" as *const u8

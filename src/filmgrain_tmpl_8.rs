@@ -655,7 +655,7 @@ unsafe extern "C" fn fgy_32x32xn_c(
             while i_0 < rows {
                 offsets[1 as libc::c_int
                     as usize][i_0
-                    as usize] = offsets[0 as libc::c_int as usize][i_0 as usize];
+                    as usize] = offsets[0][i_0 as usize];
                 i_0 += 1;
             }
         }
@@ -735,8 +735,8 @@ unsafe extern "C" fn fgy_32x32xn_c(
                     y,
                 ) as libc::c_int;
                 grain_0 = round2(
-                    old * w[x_0 as usize][0 as libc::c_int as usize]
-                        + grain_0 * w[x_0 as usize][1 as libc::c_int as usize],
+                    old * w[x_0 as usize][0]
+                        + grain_0 * w[x_0 as usize][1],
                     5 as libc::c_int as uint64_t,
                 );
                 grain_0 = iclip(grain_0, grain_min, grain_max);
@@ -783,8 +783,8 @@ unsafe extern "C" fn fgy_32x32xn_c(
                     y_0,
                 ) as libc::c_int;
                 grain_1 = round2(
-                    old_0 * w[y_0 as usize][0 as libc::c_int as usize]
-                        + grain_1 * w[y_0 as usize][1 as libc::c_int as usize],
+                    old_0 * w[y_0 as usize][0]
+                        + grain_1 * w[y_0 as usize][1],
                     5 as libc::c_int as uint64_t,
                 );
                 grain_1 = iclip(grain_1, grain_min, grain_max);
@@ -827,8 +827,8 @@ unsafe extern "C" fn fgy_32x32xn_c(
                     y_0,
                 ) as libc::c_int;
                 top = round2(
-                    old_1 * w[x_2 as usize][0 as libc::c_int as usize]
-                        + top * w[x_2 as usize][1 as libc::c_int as usize],
+                    old_1 * w[x_2 as usize][0]
+                        + top * w[x_2 as usize][1],
                     5 as libc::c_int as uint64_t,
                 );
                 top = iclip(top, grain_min, grain_max);
@@ -853,14 +853,14 @@ unsafe extern "C" fn fgy_32x32xn_c(
                     y_0,
                 ) as libc::c_int;
                 grain_2 = round2(
-                    old_1 * w[x_2 as usize][0 as libc::c_int as usize]
-                        + grain_2 * w[x_2 as usize][1 as libc::c_int as usize],
+                    old_1 * w[x_2 as usize][0]
+                        + grain_2 * w[x_2 as usize][1],
                     5 as libc::c_int as uint64_t,
                 );
                 grain_2 = iclip(grain_2, grain_min, grain_max);
                 grain_2 = round2(
-                    top * w[y_0 as usize][0 as libc::c_int as usize]
-                        + grain_2 * w[y_0 as usize][1 as libc::c_int as usize],
+                    top * w[y_0 as usize][0]
+                        + grain_2 * w[y_0 as usize][1],
                     5 as libc::c_int as uint64_t,
                 );
                 grain_2 = iclip(grain_2, grain_min, grain_max);
@@ -951,7 +951,7 @@ unsafe extern "C" fn fguv_32x32xn_c(
             while i_0 < rows {
                 offsets[1 as libc::c_int
                     as usize][i_0
-                    as usize] = offsets[0 as libc::c_int as usize][i_0 as usize];
+                    as usize] = offsets[0][i_0 as usize];
                 i_0 += 1;
             }
         }
@@ -1055,9 +1055,9 @@ unsafe extern "C" fn fguv_32x32xn_c(
                     y,
                 ) as libc::c_int;
                 grain_0 = round2(
-                    old * w[sx as usize][x_0 as usize][0 as libc::c_int as usize]
+                    old * w[sx as usize][x_0 as usize][0]
                         + grain_0
-                            * w[sx as usize][x_0 as usize][1 as libc::c_int as usize],
+                            * w[sx as usize][x_0 as usize][1],
                     5 as libc::c_int as uint64_t,
                 );
                 grain_0 = iclip(grain_0, grain_min, grain_max);
@@ -1125,9 +1125,9 @@ unsafe extern "C" fn fguv_32x32xn_c(
                     y_0,
                 ) as libc::c_int;
                 grain_1 = round2(
-                    old_0 * w[sy as usize][y_0 as usize][0 as libc::c_int as usize]
+                    old_0 * w[sy as usize][y_0 as usize][0]
                         + grain_1
-                            * w[sy as usize][y_0 as usize][1 as libc::c_int as usize],
+                            * w[sy as usize][y_0 as usize][1],
                     5 as libc::c_int as uint64_t,
                 );
                 grain_1 = iclip(grain_1, grain_min, grain_max);
@@ -1191,8 +1191,8 @@ unsafe extern "C" fn fguv_32x32xn_c(
                     y_0,
                 ) as libc::c_int;
                 top = round2(
-                    old_1 * w[sx as usize][x_2 as usize][0 as libc::c_int as usize]
-                        + top * w[sx as usize][x_2 as usize][1 as libc::c_int as usize],
+                    old_1 * w[sx as usize][x_2 as usize][0]
+                        + top * w[sx as usize][x_2 as usize][1],
                     5 as libc::c_int as uint64_t,
                 );
                 top = iclip(top, grain_min, grain_max);
@@ -1217,16 +1217,16 @@ unsafe extern "C" fn fguv_32x32xn_c(
                     y_0,
                 ) as libc::c_int;
                 grain_2 = round2(
-                    old_1 * w[sx as usize][x_2 as usize][0 as libc::c_int as usize]
+                    old_1 * w[sx as usize][x_2 as usize][0]
                         + grain_2
-                            * w[sx as usize][x_2 as usize][1 as libc::c_int as usize],
+                            * w[sx as usize][x_2 as usize][1],
                     5 as libc::c_int as uint64_t,
                 );
                 grain_2 = iclip(grain_2, grain_min, grain_max);
                 grain_2 = round2(
-                    top * w[sy as usize][y_0 as usize][0 as libc::c_int as usize]
+                    top * w[sy as usize][y_0 as usize][0]
                         + grain_2
-                            * w[sy as usize][y_0 as usize][1 as libc::c_int as usize],
+                            * w[sy as usize][y_0 as usize][1],
                     5 as libc::c_int as uint64_t,
                 );
                 grain_2 = iclip(grain_2, grain_min, grain_max);
@@ -1487,7 +1487,7 @@ unsafe extern "C" fn fgy_32x32xn_neon(
             while i_0 < rows {
                 offsets[1 as libc::c_int
                     as usize][i_0
-                    as usize] = offsets[0 as libc::c_int as usize][i_0 as usize];
+                    as usize] = offsets[0][i_0 as usize];
                 i_0 += 1;
             }
         }
@@ -1565,7 +1565,7 @@ unsafe extern "C" fn fguv_32x32xn_420_neon(
             while i_0 < rows {
                 offsets[1 as libc::c_int
                     as usize][i_0
-                    as usize] = offsets[0 as libc::c_int as usize][i_0 as usize];
+                    as usize] = offsets[0][i_0 as usize];
                 i_0 += 1;
             }
         }
@@ -1649,7 +1649,7 @@ unsafe extern "C" fn fguv_32x32xn_422_neon(
             while i_0 < rows {
                 offsets[1 as libc::c_int
                     as usize][i_0
-                    as usize] = offsets[0 as libc::c_int as usize][i_0 as usize];
+                    as usize] = offsets[0][i_0 as usize];
                 i_0 += 1;
             }
         }
@@ -1733,7 +1733,7 @@ unsafe extern "C" fn fguv_32x32xn_444_neon(
             while i_0 < rows {
                 offsets[1 as libc::c_int
                     as usize][i_0
-                    as usize] = offsets[0 as libc::c_int as usize][i_0 as usize];
+                    as usize] = offsets[0][i_0 as usize];
                 i_0 += 1;
             }
         }

@@ -147,7 +147,7 @@ unsafe extern "C" fn init_edges(
             as usize] = (EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int
             | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int
             | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int) as EdgeFlags;
-        (*nwc).h4[1 as libc::c_int as usize] = (*nwc).h4[2 as libc::c_int as usize];
+        (*nwc).h4[1] = (*nwc).h4[2];
         (*nwc)
             .h4[3 as libc::c_int
             as usize] = (edge_flags as libc::c_uint
@@ -162,7 +162,7 @@ unsafe extern "C" fn init_edges(
                 libc::c_uint,
                 EdgeFlags,
             >(
-                (*nwc).h4[1 as libc::c_int as usize] as libc::c_uint
+                (*nwc).h4[1] as libc::c_uint
                     | edge_flags as libc::c_uint
                         & EDGE_I420_TOP_HAS_RIGHT as libc::c_int as libc::c_uint,
             );
@@ -178,7 +178,7 @@ unsafe extern "C" fn init_edges(
             as usize] = (EDGE_I444_TOP_HAS_RIGHT as libc::c_int
             | EDGE_I422_TOP_HAS_RIGHT as libc::c_int
             | EDGE_I420_TOP_HAS_RIGHT as libc::c_int) as EdgeFlags;
-        (*nwc).v4[1 as libc::c_int as usize] = (*nwc).v4[2 as libc::c_int as usize];
+        (*nwc).v4[1] = (*nwc).v4[2];
         (*nwc)
             .v4[3 as libc::c_int
             as usize] = (edge_flags as libc::c_uint
@@ -192,7 +192,7 @@ unsafe extern "C" fn init_edges(
                 libc::c_uint,
                 EdgeFlags,
             >(
-                (*nwc).v4[1 as libc::c_int as usize] as libc::c_uint
+                (*nwc).v4[1] as libc::c_uint
                     | edge_flags as libc::c_uint
                         & (EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int
                             | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int) as libc::c_uint,
@@ -232,7 +232,7 @@ unsafe extern "C" fn init_edges(
                 | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int
                 | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int) as libc::c_uint)
             as EdgeFlags;
-        (*nwc).trs[2 as libc::c_int as usize] = 0 as EdgeFlags;
+        (*nwc).trs[2] = 0 as EdgeFlags;
         (*nwc)
             .tts[0 as libc::c_int
             as usize] = (EDGE_I444_TOP_HAS_RIGHT as libc::c_int
@@ -267,7 +267,7 @@ unsafe extern "C" fn init_edges(
             | (EDGE_I444_TOP_HAS_RIGHT as libc::c_int
                 | EDGE_I422_TOP_HAS_RIGHT as libc::c_int
                 | EDGE_I420_TOP_HAS_RIGHT as libc::c_int) as libc::c_uint) as EdgeFlags;
-        (*nwc).tbs[2 as libc::c_int as usize] = 0 as EdgeFlags;
+        (*nwc).tbs[2] = 0 as EdgeFlags;
     };
 }
 unsafe extern "C" fn init_mode_node(

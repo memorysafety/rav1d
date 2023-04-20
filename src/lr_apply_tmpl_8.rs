@@ -755,55 +755,55 @@ unsafe extern "C" fn lr_stripe(
     if (*lr).type_0 as libc::c_int == DAV1D_RESTORATION_WIENER as libc::c_int {
         let filter: *mut [int16_t; 8] = (params.filter.0).as_mut_ptr();
         let ref mut fresh0 = (*filter
-            .offset(0 as libc::c_int as isize))[6 as libc::c_int as usize];
-        *fresh0 = (*lr).filter_h[0 as libc::c_int as usize] as int16_t;
-        (*filter.offset(0 as libc::c_int as isize))[0 as libc::c_int as usize] = *fresh0;
+            .offset(0 as libc::c_int as isize))[6];
+        *fresh0 = (*lr).filter_h[0] as int16_t;
+        (*filter.offset(0 as libc::c_int as isize))[0] = *fresh0;
         let ref mut fresh1 = (*filter
-            .offset(0 as libc::c_int as isize))[5 as libc::c_int as usize];
-        *fresh1 = (*lr).filter_h[1 as libc::c_int as usize] as int16_t;
-        (*filter.offset(0 as libc::c_int as isize))[1 as libc::c_int as usize] = *fresh1;
+            .offset(0 as libc::c_int as isize))[5];
+        *fresh1 = (*lr).filter_h[1] as int16_t;
+        (*filter.offset(0 as libc::c_int as isize))[1] = *fresh1;
         let ref mut fresh2 = (*filter
-            .offset(0 as libc::c_int as isize))[4 as libc::c_int as usize];
-        *fresh2 = (*lr).filter_h[2 as libc::c_int as usize] as int16_t;
-        (*filter.offset(0 as libc::c_int as isize))[2 as libc::c_int as usize] = *fresh2;
+            .offset(0 as libc::c_int as isize))[4];
+        *fresh2 = (*lr).filter_h[2] as int16_t;
+        (*filter.offset(0 as libc::c_int as isize))[2] = *fresh2;
         (*filter
             .offset(
                 0 as libc::c_int as isize,
             ))[3 as libc::c_int
             as usize] = (-((*filter
-            .offset(0 as libc::c_int as isize))[0 as libc::c_int as usize] as libc::c_int
-            + (*filter.offset(0 as libc::c_int as isize))[1 as libc::c_int as usize]
+            .offset(0 as libc::c_int as isize))[0] as libc::c_int
+            + (*filter.offset(0 as libc::c_int as isize))[1]
                 as libc::c_int
-            + (*filter.offset(0 as libc::c_int as isize))[2 as libc::c_int as usize]
+            + (*filter.offset(0 as libc::c_int as isize))[2]
                 as libc::c_int) * 2 as libc::c_int) as int16_t;
         let ref mut fresh3 = (*filter
-            .offset(1 as libc::c_int as isize))[6 as libc::c_int as usize];
-        *fresh3 = (*lr).filter_v[0 as libc::c_int as usize] as int16_t;
-        (*filter.offset(1 as libc::c_int as isize))[0 as libc::c_int as usize] = *fresh3;
+            .offset(1 as libc::c_int as isize))[6];
+        *fresh3 = (*lr).filter_v[0] as int16_t;
+        (*filter.offset(1 as libc::c_int as isize))[0] = *fresh3;
         let ref mut fresh4 = (*filter
-            .offset(1 as libc::c_int as isize))[5 as libc::c_int as usize];
-        *fresh4 = (*lr).filter_v[1 as libc::c_int as usize] as int16_t;
-        (*filter.offset(1 as libc::c_int as isize))[1 as libc::c_int as usize] = *fresh4;
+            .offset(1 as libc::c_int as isize))[5];
+        *fresh4 = (*lr).filter_v[1] as int16_t;
+        (*filter.offset(1 as libc::c_int as isize))[1] = *fresh4;
         let ref mut fresh5 = (*filter
-            .offset(1 as libc::c_int as isize))[4 as libc::c_int as usize];
-        *fresh5 = (*lr).filter_v[2 as libc::c_int as usize] as int16_t;
-        (*filter.offset(1 as libc::c_int as isize))[2 as libc::c_int as usize] = *fresh5;
+            .offset(1 as libc::c_int as isize))[4];
+        *fresh5 = (*lr).filter_v[2] as int16_t;
+        (*filter.offset(1 as libc::c_int as isize))[2] = *fresh5;
         (*filter
             .offset(
                 1 as libc::c_int as isize,
             ))[3 as libc::c_int
             as usize] = (128 as libc::c_int
-            - ((*filter.offset(1 as libc::c_int as isize))[0 as libc::c_int as usize]
+            - ((*filter.offset(1 as libc::c_int as isize))[0]
                 as libc::c_int
-                + (*filter.offset(1 as libc::c_int as isize))[1 as libc::c_int as usize]
+                + (*filter.offset(1 as libc::c_int as isize))[1]
                     as libc::c_int
-                + (*filter.offset(1 as libc::c_int as isize))[2 as libc::c_int as usize]
+                + (*filter.offset(1 as libc::c_int as isize))[2]
                     as libc::c_int) * 2 as libc::c_int) as int16_t;
         lr_fn = (*dsp)
             .lr
             .wiener[((*filter
-            .offset(0 as libc::c_int as isize))[0 as libc::c_int as usize] as libc::c_int
-            | (*filter.offset(1 as libc::c_int as isize))[0 as libc::c_int as usize]
+            .offset(0 as libc::c_int as isize))[0] as libc::c_int
+            | (*filter.offset(1 as libc::c_int as isize))[0]
                 as libc::c_int == 0) as libc::c_int as usize];
     } else {
         if !((*lr).type_0 as libc::c_int == DAV1D_RESTORATION_SGRPROJ as libc::c_int) {
@@ -813,12 +813,12 @@ unsafe extern "C" fn lr_stripe(
             .as_ptr();
         params.sgr.s0 = *sgr_params.offset(0 as libc::c_int as isize) as uint32_t;
         params.sgr.s1 = *sgr_params.offset(1 as libc::c_int as isize) as uint32_t;
-        params.sgr.w0 = (*lr).sgr_weights[0 as libc::c_int as usize] as int16_t;
+        params.sgr.w0 = (*lr).sgr_weights[0] as int16_t;
         params
             .sgr
             .w1 = (128 as libc::c_int
-            - ((*lr).sgr_weights[0 as libc::c_int as usize] as libc::c_int
-                + (*lr).sgr_weights[1 as libc::c_int as usize] as libc::c_int))
+            - ((*lr).sgr_weights[0] as libc::c_int
+                + (*lr).sgr_weights[1] as libc::c_int))
             as int16_t;
         lr_fn = (*dsp)
             .lr
@@ -917,7 +917,7 @@ unsafe extern "C" fn lr_sbrow(
         .offset(plane as isize))
         .as_mut_ptr()
         .offset(unit_idx as isize) as *mut Av1RestorationUnit;
-    let mut restore: libc::c_int = ((*lr[0 as libc::c_int as usize]).type_0
+    let mut restore: libc::c_int = ((*lr[0]).type_0
         as libc::c_int != DAV1D_RESTORATION_NONE as libc::c_int) as libc::c_int;
     let mut x: libc::c_int = 0 as libc::c_int;
     let mut bit: libc::c_int = 0 as libc::c_int;

@@ -698,10 +698,10 @@ unsafe extern "C" fn fill2d_16x2(
         init_chroma(
             dav1d_wedge_masks[bs
                 as usize][1 as libc::c_int
-                as usize][0 as libc::c_int as usize][n_1 as usize] as *mut uint8_t,
+                as usize][0][n_1 as usize] as *mut uint8_t,
             dav1d_wedge_masks[bs
                 as usize][0 as libc::c_int
-                as usize][0 as libc::c_int as usize][n_1 as usize],
+                as usize][0][n_1 as usize],
             0 as libc::c_int,
             w,
             h,
@@ -710,10 +710,10 @@ unsafe extern "C" fn fill2d_16x2(
         init_chroma(
             dav1d_wedge_masks[bs
                 as usize][1 as libc::c_int
-                as usize][1 as libc::c_int as usize][n_1 as usize] as *mut uint8_t,
+                as usize][1][n_1 as usize] as *mut uint8_t,
             dav1d_wedge_masks[bs
                 as usize][0 as libc::c_int
-                as usize][0 as libc::c_int as usize][n_1 as usize],
+                as usize][0][n_1 as usize],
             1 as libc::c_int,
             w,
             h,
@@ -722,10 +722,10 @@ unsafe extern "C" fn fill2d_16x2(
         init_chroma(
             dav1d_wedge_masks[bs
                 as usize][2 as libc::c_int
-                as usize][0 as libc::c_int as usize][n_1 as usize] as *mut uint8_t,
+                as usize][0][n_1 as usize] as *mut uint8_t,
             dav1d_wedge_masks[bs
                 as usize][0 as libc::c_int
-                as usize][0 as libc::c_int as usize][n_1 as usize],
+                as usize][0][n_1 as usize],
             0 as libc::c_int,
             w,
             h,
@@ -734,10 +734,10 @@ unsafe extern "C" fn fill2d_16x2(
         init_chroma(
             dav1d_wedge_masks[bs
                 as usize][2 as libc::c_int
-                as usize][1 as libc::c_int as usize][n_1 as usize] as *mut uint8_t,
+                as usize][1][n_1 as usize] as *mut uint8_t,
             dav1d_wedge_masks[bs
                 as usize][0 as libc::c_int
-                as usize][0 as libc::c_int as usize][n_1 as usize],
+                as usize][0][n_1 as usize],
             1 as libc::c_int,
             w,
             h,

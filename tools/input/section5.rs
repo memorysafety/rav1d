@@ -237,17 +237,17 @@ unsafe extern "C" fn section5_open(
         {
             break;
         }
-        let obu_type: Dav1dObuType = (byte[0 as libc::c_int as usize] as libc::c_int
+        let obu_type: Dav1dObuType = (byte[0] as libc::c_int
             >> 3 as libc::c_int & 0xf as libc::c_int) as Dav1dObuType;
         if obu_type as libc::c_uint == DAV1D_OBU_TD as libc::c_int as libc::c_uint {
             *num_frames = (*num_frames).wrapping_add(1);
         }
-        let has_length_field: libc::c_int = byte[0 as libc::c_int as usize]
+        let has_length_field: libc::c_int = byte[0]
             as libc::c_int & 0x2 as libc::c_int;
         if has_length_field == 0 {
             return -(1 as libc::c_int);
         }
-        let has_extension: libc::c_int = byte[0 as libc::c_int as usize] as libc::c_int
+        let has_extension: libc::c_int = byte[0] as libc::c_int
             & 0x4 as libc::c_int;
         if has_extension != 0
             && fread(
@@ -291,7 +291,7 @@ unsafe extern "C" fn section5_read(
             }
             return -(1 as libc::c_int);
         } else {
-            let obu_type: Dav1dObuType = (byte[0 as libc::c_int as usize] as libc::c_int
+            let obu_type: Dav1dObuType = (byte[0] as libc::c_int
                 >> 3 as libc::c_int & 0xf as libc::c_int) as Dav1dObuType;
             if first != 0 {
                 if obu_type as libc::c_uint
@@ -305,12 +305,12 @@ unsafe extern "C" fn section5_read(
                 fseeko64((*c).f, -(1 as libc::c_int) as __off64_t, 1);
                 break;
             }
-            let has_length_field: libc::c_int = byte[0 as libc::c_int as usize]
+            let has_length_field: libc::c_int = byte[0]
                 as libc::c_int & 0x2 as libc::c_int;
             if has_length_field == 0 {
                 return -(1 as libc::c_int);
             }
-            let has_extension: libc::c_int = (byte[0 as libc::c_int as usize]
+            let has_extension: libc::c_int = (byte[0]
                 as libc::c_int & 0x4 as libc::c_int != 0) as libc::c_int;
             if has_extension != 0
                 && fread(

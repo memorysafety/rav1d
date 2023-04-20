@@ -306,8 +306,8 @@ unsafe extern "C" fn picture_alloc(
     if uv_stride & 1023 == 0 && has_chroma != 0 {
         uv_stride += 64;
     }
-    (*p).stride[0 as libc::c_int as usize] = -y_stride;
-    (*p).stride[1 as libc::c_int as usize] = -uv_stride;
+    (*p).stride[0] = -y_stride;
+    (*p).stride[1] = -uv_stride;
     let y_sz: size_t = (y_stride * aligned_h as isize) as size_t;
     let uv_sz: size_t = (uv_stride * (aligned_h >> ss_ver) as isize) as size_t;
     let pic_size: size_t = y_sz.wrapping_add(2 * uv_sz);
@@ -612,15 +612,15 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
     if cli_settings.realtime as libc::c_uint
         != REALTIME_CUSTOM as libc::c_int as libc::c_uint
     {
-        if fps[1 as libc::c_int as usize] == 0 as libc::c_int as libc::c_uint {
+        if fps[1] == 0 as libc::c_int as libc::c_uint {
             i_fps = 0 as libc::c_int as libc::c_double;
             nspf = 0 as libc::c_int as uint64_t;
         } else {
-            i_fps = fps[0 as libc::c_int as usize] as libc::c_double
-                / fps[1 as libc::c_int as usize] as libc::c_double;
+            i_fps = fps[0] as libc::c_double
+                / fps[1] as libc::c_double;
             nspf = (1000000000 as libc::c_ulonglong)
-                .wrapping_mul(fps[1 as libc::c_int as usize] as libc::c_ulonglong)
-                .wrapping_div(fps[0 as libc::c_int as usize] as libc::c_ulonglong)
+                .wrapping_mul(fps[1] as libc::c_ulonglong)
+                .wrapping_div(fps[0] as libc::c_ulonglong)
                 as uint64_t;
         }
     } else {

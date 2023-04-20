@@ -79,8 +79,8 @@ unsafe extern "C" fn y4m2_open(
         }
     }
     (*c).first = 1 as libc::c_int;
-    (*c).fps[0 as libc::c_int as usize] = *fps.offset(0 as libc::c_int as isize);
-    (*c).fps[1 as libc::c_int as usize] = *fps.offset(1 as libc::c_int as isize);
+    (*c).fps[0] = *fps.offset(0 as libc::c_int as isize);
+    (*c).fps[1] = *fps.offset(1 as libc::c_int as isize);
     return 0 as libc::c_int;
 }
 unsafe extern "C" fn write_header(
@@ -153,8 +153,8 @@ unsafe extern "C" fn write_header(
             as *const libc::c_char,
         fw,
         fh,
-        (*c).fps[0 as libc::c_int as usize],
-        (*c).fps[1 as libc::c_int as usize],
+        (*c).fps[0],
+        (*c).fps[1],
         aw,
         ah,
         ss_name,
@@ -176,7 +176,7 @@ unsafe extern "C" fn y4m2_write(
     fprintf((*c).f, b"FRAME\n\0" as *const u8 as *const libc::c_char);
     let mut ptr: *mut uint8_t = 0 as *mut uint8_t;
     let hbd: libc::c_int = ((*p).p.bpc > 8 as libc::c_int) as libc::c_int;
-    ptr = (*p).data[0 as libc::c_int as usize] as *mut uint8_t;
+    ptr = (*p).data[0] as *mut uint8_t;
     let mut y: libc::c_int = 0 as libc::c_int;
     loop {
         if !(y < (*p).p.h) {
@@ -193,7 +193,7 @@ unsafe extern "C" fn y4m2_write(
             current_block = 11545648641752300099;
             break;
         }
-        ptr = ptr.offset((*p).stride[0 as libc::c_int as usize] as isize);
+        ptr = ptr.offset((*p).stride[0] as isize);
         y += 1;
     }
     match current_block {
@@ -229,7 +229,7 @@ unsafe extern "C" fn y4m2_write(
                             break 's_64;
                         }
                         ptr = ptr
-                            .offset((*p).stride[1 as libc::c_int as usize] as isize);
+                            .offset((*p).stride[1] as isize);
                         y_0 += 1;
                     }
                     pl += 1;

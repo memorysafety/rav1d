@@ -143,10 +143,10 @@ unsafe extern "C" fn ivf_open(
                         as *const u8 as *const libc::c_char,
                     file,
                     hdr.as_mut_ptr(),
-                    hdr[0 as libc::c_int as usize] as libc::c_int,
-                    hdr[1 as libc::c_int as usize] as libc::c_int,
-                    hdr[2 as libc::c_int as usize] as libc::c_int,
-                    hdr[3 as libc::c_int as usize] as libc::c_int,
+                    hdr[0] as libc::c_int,
+                    hdr[1] as libc::c_int,
+                    hdr[2] as libc::c_int,
+                    hdr[3] as libc::c_int,
                 );
                 fclose((*c).f);
                 return -(1 as libc::c_int);
@@ -165,10 +165,10 @@ unsafe extern "C" fn ivf_open(
                         file,
                         &mut *hdr.as_mut_ptr().offset(8 as libc::c_int as isize)
                             as *mut uint8_t,
-                        hdr[8 as libc::c_int as usize] as libc::c_int,
-                        hdr[9 as libc::c_int as usize] as libc::c_int,
-                        hdr[10 as libc::c_int as usize] as libc::c_int,
-                        hdr[11 as libc::c_int as usize] as libc::c_int,
+                        hdr[8] as libc::c_int,
+                        hdr[9] as libc::c_int,
+                        hdr[10] as libc::c_int,
+                        hdr[11] as libc::c_int,
                     );
                     fclose((*c).f);
                     return -(1 as libc::c_int);
