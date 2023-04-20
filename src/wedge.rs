@@ -586,7 +586,7 @@ unsafe extern "C" fn init_chroma(
     while y < h {
         let mut x = 0;
         while x < w {
-            let mut sum: libc::c_int = *luma.offset(x as isize) as libc::c_int
+            let mut sum = *luma.offset(x as isize) as libc::c_int
                 + *luma.offset((x + 1) as isize) as libc::c_int
                 + 1;
             if ss_ver != 0 {
@@ -644,15 +644,15 @@ unsafe extern "C" fn fill2d_16x2(
         n_0 += 1;
         off += w * h;
     }
-    let n_stride_444: libc::c_int = w * h;
-    let n_stride_422: libc::c_int = n_stride_444 >> 1;
-    let n_stride_420: libc::c_int = n_stride_444 >> 2;
-    let sign_stride_444: libc::c_int = 16 * n_stride_444;
-    let sign_stride_422: libc::c_int = 16 * n_stride_422;
-    let sign_stride_420: libc::c_int = 16 * n_stride_420;
+    let n_stride_444 = w * h;
+    let n_stride_422 = n_stride_444 >> 1;
+    let n_stride_420 = n_stride_444 >> 2;
+    let sign_stride_444 = 16 * n_stride_444;
+    let sign_stride_422 = 16 * n_stride_422;
+    let sign_stride_420 = 16 * n_stride_420;
     let mut n_1 = 0;
     while n_1 < 16 {
-        let sign: libc::c_int = (signs >> n_1 & 1 as libc::c_uint)
+        let sign = (signs >> n_1 & 1 as libc::c_uint)
             as libc::c_int;
         dav1d_wedge_masks[bs
             as usize][0 as libc::c_int

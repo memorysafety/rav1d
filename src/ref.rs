@@ -149,7 +149,7 @@ pub unsafe extern "C" fn dav1d_ref_dec(pref: *mut *mut Dav1dRef) {
         1 as libc::c_int,
     ) == 1
     {
-        let free_ref: libc::c_int = (*r#ref).free_ref;
+        let free_ref = (*r#ref).free_ref;
         ((*r#ref).free_callback)
             .expect(
                 "non-null function pointer",

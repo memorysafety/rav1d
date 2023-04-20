@@ -1211,9 +1211,9 @@ unsafe extern "C" fn md5_write(
     md5: *mut MD5Context,
     p: *mut Dav1dPicture,
 ) -> libc::c_int {
-    let hbd: libc::c_int = ((*p).p.bpc > 8) as libc::c_int;
-    let w: libc::c_int = (*p).p.w;
-    let h: libc::c_int = (*p).p.h;
+    let hbd = ((*p).p.bpc > 8) as libc::c_int;
+    let w = (*p).p.w;
+    let h = (*p).p.h;
     let mut yptr: *mut uint8_t = (*p).data[0] as *mut uint8_t;
     let mut y = 0;
     while y < h {
@@ -1224,12 +1224,12 @@ unsafe extern "C" fn md5_write(
     if (*p).p.layout as libc::c_uint
         != DAV1D_PIXEL_LAYOUT_I400 as libc::c_int as libc::c_uint
     {
-        let ss_ver: libc::c_int = ((*p).p.layout as libc::c_uint
+        let ss_ver = ((*p).p.layout as libc::c_uint
             == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint) as libc::c_int;
-        let ss_hor: libc::c_int = ((*p).p.layout as libc::c_uint
+        let ss_hor = ((*p).p.layout as libc::c_uint
             != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint) as libc::c_int;
-        let cw: libc::c_int = w + ss_hor >> ss_hor;
-        let ch: libc::c_int = h + ss_ver >> ss_ver;
+        let cw = w + ss_hor >> ss_hor;
+        let ch = h + ss_ver >> ss_ver;
         let mut pl = 1;
         while pl <= 2 {
             let mut uvptr: *mut uint8_t = (*p).data[pl as usize] as *mut uint8_t;

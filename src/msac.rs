@@ -137,7 +137,7 @@ use crate::src::cpu::dav1d_get_cpu_flags;
 unsafe extern "C" fn ctx_refill(s: *mut MsacContext) {
     let mut buf_pos: *const uint8_t = (*s).buf_pos;
     let mut buf_end: *const uint8_t = (*s).buf_end;
-    let mut c: libc::c_int = ((::core::mem::size_of::<ec_win>() as libc::c_ulong)
+    let mut c = ((::core::mem::size_of::<ec_win>() as libc::c_ulong)
         << 3)
         .wrapping_sub((*s).cnt as libc::c_ulong)
         .wrapping_sub(24 as libc::c_int as libc::c_ulong) as libc::c_int;
@@ -157,7 +157,7 @@ unsafe extern "C" fn ctx_refill(s: *mut MsacContext) {
 }
 #[inline]
 unsafe extern "C" fn ctx_norm(s: *mut MsacContext, dif: ec_win, rng: libc::c_uint) {
-    let d: libc::c_int = 15 as libc::c_int ^ (31 as libc::c_int ^ clz(rng));
+    let d = 15 as libc::c_int ^ (31 as libc::c_int ^ clz(rng));
     if !(rng <= 65535 as libc::c_uint) {
         unreachable!();
     }
@@ -348,7 +348,7 @@ pub unsafe extern "C" fn dav1d_msac_decode_bool_adapt_c(
     let bit: libc::c_uint = dav1d_msac_decode_bool(s, *cdf as libc::c_uint);
     if (*s).allow_update_cdf != 0 {
         let count: libc::c_uint = *cdf.offset(1) as libc::c_uint;
-        let rate: libc::c_int = (4 as libc::c_int as libc::c_uint)
+        let rate = (4 as libc::c_int as libc::c_uint)
             .wrapping_add(count >> 4) as libc::c_int;
         if bit != 0 {
             let ref mut fresh4 = *cdf.offset(0);

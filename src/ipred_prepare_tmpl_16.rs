@@ -107,7 +107,7 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_16bpc(
     topleft_out: *mut pixel,
     bitdepth_max: libc::c_int,
 ) -> IntraPredMode {
-    let bitdepth: libc::c_int = 32 - clz(bitdepth_max as libc::c_uint);
+    let bitdepth = 32 - clz(bitdepth_max as libc::c_uint);
     if !(y < h && x < w) {
         unreachable!();
     }
@@ -158,10 +158,10 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_16bpc(
         }
     }
     if (av1_intra_prediction_edges[mode as usize]).needs_left() != 0 {
-        let sz: libc::c_int = th << 2;
+        let sz = th << 2;
         let left: *mut pixel = &mut *topleft_out.offset(-sz as isize) as *mut pixel;
         if have_left != 0 {
-            let px_have: libc::c_int = imin(sz, h - y << 2);
+            let px_have = imin(sz, h - y << 2);
             let mut i = 0;
             while i < px_have {
                 *left
@@ -193,14 +193,14 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_16bpc(
             );
         }
         if (av1_intra_prediction_edges[mode as usize]).needs_bottomleft() != 0 {
-            let have_bottomleft: libc::c_int = (if have_left == 0 || y + th >= h {
+            let have_bottomleft = (if have_left == 0 || y + th >= h {
                 0 as libc::c_int as libc::c_uint
             } else {
                 edge_flags as libc::c_uint
                     & EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int as libc::c_uint
             }) as libc::c_int;
             if have_bottomleft != 0 {
-                let px_have_0: libc::c_int = imin(sz, h - y - th << 2);
+                let px_have_0 = imin(sz, h - y - th << 2);
                 let mut i_0 = 0;
                 while i_0 < px_have_0 {
                     *left
@@ -230,11 +230,11 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_16bpc(
         }
     }
     if (av1_intra_prediction_edges[mode as usize]).needs_top() != 0 {
-        let sz_0: libc::c_int = tw << 2;
+        let sz_0 = tw << 2;
         let top: *mut pixel = &mut *topleft_out.offset(1)
             as *mut pixel;
         if have_top != 0 {
-            let px_have_1: libc::c_int = imin(sz_0, w - x << 2);
+            let px_have_1 = imin(sz_0, w - x << 2);
             memcpy(
                 top as *mut libc::c_void,
                 dst_top as *const libc::c_void,
@@ -260,14 +260,14 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_16bpc(
             );
         }
         if (av1_intra_prediction_edges[mode as usize]).needs_topright() != 0 {
-            let have_topright: libc::c_int = (if have_top == 0 || x + tw >= w {
+            let have_topright = (if have_top == 0 || x + tw >= w {
                 0 as libc::c_int as libc::c_uint
             } else {
                 edge_flags as libc::c_uint
                     & EDGE_I444_TOP_HAS_RIGHT as libc::c_int as libc::c_uint
             }) as libc::c_int;
             if have_topright != 0 {
-                let px_have_2: libc::c_int = imin(sz_0, w - x - tw << 2);
+                let px_have_2 = imin(sz_0, w - x - tw << 2);
                 memcpy(
                     top.offset(sz_0 as isize) as *mut libc::c_void,
                     &*dst_top.offset(sz_0 as isize) as *const pixel

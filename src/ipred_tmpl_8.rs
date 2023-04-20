@@ -934,7 +934,7 @@ unsafe extern "C" fn cfl_pred(
     while y < height {
         let mut x = 0;
         while x < width {
-            let diff: libc::c_int = alpha * *ac.offset(x as isize) as libc::c_int;
+            let diff = alpha * *ac.offset(x as isize) as libc::c_int;
             *dst
                 .offset(
                     x as isize,
@@ -1172,19 +1172,19 @@ unsafe extern "C" fn ipred_paeth_c(
     _max_width: libc::c_int,
     _max_height: libc::c_int,
 ) {
-    let topleft: libc::c_int = *tl_ptr.offset(0) as libc::c_int;
+    let topleft = *tl_ptr.offset(0) as libc::c_int;
     let mut y = 0;
     while y < height {
-        let left: libc::c_int = *tl_ptr.offset(-(y + 1) as isize)
+        let left = *tl_ptr.offset(-(y + 1) as isize)
             as libc::c_int;
         let mut x = 0;
         while x < width {
-            let top: libc::c_int = *tl_ptr.offset((1 + x) as isize)
+            let top = *tl_ptr.offset((1 + x) as isize)
                 as libc::c_int;
-            let base: libc::c_int = left + top - topleft;
-            let ldiff: libc::c_int = (left - base).abs();
-            let tdiff: libc::c_int = (top - base).abs();
-            let tldiff: libc::c_int = (topleft - base).abs();
+            let base = left + top - topleft;
+            let ldiff = (left - base).abs();
+            let tdiff = (top - base).abs();
+            let tldiff = (topleft - base).abs();
             *dst
                 .offset(
                     x as isize,
@@ -1215,13 +1215,13 @@ unsafe extern "C" fn ipred_smooth_c(
         as *const uint8_t;
     let weights_ver: *const uint8_t = &*dav1d_sm_weights.as_ptr().offset(height as isize)
         as *const uint8_t;
-    let right: libc::c_int = *topleft.offset(width as isize) as libc::c_int;
-    let bottom: libc::c_int = *topleft.offset(-height as isize) as libc::c_int;
+    let right = *topleft.offset(width as isize) as libc::c_int;
+    let bottom = *topleft.offset(-height as isize) as libc::c_int;
     let mut y = 0;
     while y < height {
         let mut x = 0;
         while x < width {
-            let pred: libc::c_int = *weights_ver.offset(y as isize) as libc::c_int
+            let pred = *weights_ver.offset(y as isize) as libc::c_int
                 * *topleft.offset((1 + x) as isize) as libc::c_int
                 + (256 - *weights_ver.offset(y as isize) as libc::c_int)
                     * bottom
@@ -1251,12 +1251,12 @@ unsafe extern "C" fn ipred_smooth_v_c(
 ) {
     let weights_ver: *const uint8_t = &*dav1d_sm_weights.as_ptr().offset(height as isize)
         as *const uint8_t;
-    let bottom: libc::c_int = *topleft.offset(-height as isize) as libc::c_int;
+    let bottom = *topleft.offset(-height as isize) as libc::c_int;
     let mut y = 0;
     while y < height {
         let mut x = 0;
         while x < width {
-            let pred: libc::c_int = *weights_ver.offset(y as isize) as libc::c_int
+            let pred = *weights_ver.offset(y as isize) as libc::c_int
                 * *topleft.offset((1 + x) as isize) as libc::c_int
                 + (256 - *weights_ver.offset(y as isize) as libc::c_int)
                     * bottom;
@@ -1282,12 +1282,12 @@ unsafe extern "C" fn ipred_smooth_h_c(
 ) {
     let weights_hor: *const uint8_t = &*dav1d_sm_weights.as_ptr().offset(width as isize)
         as *const uint8_t;
-    let right: libc::c_int = *topleft.offset(width as isize) as libc::c_int;
+    let right = *topleft.offset(width as isize) as libc::c_int;
     let mut y = 0;
     while y < height {
         let mut x = 0;
         while x < width {
-            let pred: libc::c_int = *weights_hor.offset(x as isize) as libc::c_int
+            let pred = *weights_hor.offset(x as isize) as libc::c_int
                 * *topleft.offset(-(y + 1) as isize) as libc::c_int
                 + (256 - *weights_hor.offset(x as isize) as libc::c_int)
                     * right;
@@ -1445,7 +1445,7 @@ unsafe extern "C" fn upsample_edge(
         9 as libc::c_int as int8_t,
         -(1 as libc::c_int) as int8_t,
     ];
-    let mut i: libc::c_int = 0;
+    let mut i = 0;
     i = 0 as libc::c_int;
     while i < hsz - 1 {
         *out
@@ -1484,18 +1484,18 @@ unsafe extern "C" fn ipred_z1_c(
     _max_width: libc::c_int,
     _max_height: libc::c_int,
 ) {
-    let is_sm: libc::c_int = angle >> 9 & 0x1 as libc::c_int;
-    let enable_intra_edge_filter: libc::c_int = angle >> 10;
+    let is_sm = angle >> 9 & 0x1 as libc::c_int;
+    let enable_intra_edge_filter = angle >> 10;
     angle &= 511 as libc::c_int;
     if !(angle < 90) {
         unreachable!();
     }
-    let mut dx: libc::c_int = dav1d_dr_intra_derivative[(angle >> 1)
+    let mut dx = dav1d_dr_intra_derivative[(angle >> 1)
         as usize] as libc::c_int;
     let mut top_out: [pixel; 128] = [0; 128];
     let mut top: *const pixel = 0 as *const pixel;
-    let mut max_base_x: libc::c_int = 0;
-    let upsample_above: libc::c_int = if enable_intra_edge_filter != 0 {
+    let mut max_base_x = 0;
+    let upsample_above = if enable_intra_edge_filter != 0 {
         get_upsample(width + height, 90 - angle, is_sm)
     } else {
         0 as libc::c_int
@@ -1512,7 +1512,7 @@ unsafe extern "C" fn ipred_z1_c(
         max_base_x = 2 * (width + height) - 2;
         dx <<= 1;
     } else {
-        let filter_strength: libc::c_int = if enable_intra_edge_filter != 0 {
+        let filter_strength = if enable_intra_edge_filter != 0 {
             get_filter_strength(width + height, 90 - angle, is_sm)
         } else {
             0 as libc::c_int
@@ -1535,16 +1535,16 @@ unsafe extern "C" fn ipred_z1_c(
             max_base_x = width + imin(width, height) - 1;
         }
     }
-    let base_inc: libc::c_int = 1 + upsample_above;
+    let base_inc = 1 + upsample_above;
     let mut y = 0;
-    let mut xpos: libc::c_int = dx;
+    let mut xpos = dx;
     while y < height {
-        let frac: libc::c_int = xpos & 0x3e as libc::c_int;
+        let frac = xpos & 0x3e as libc::c_int;
         let mut x = 0;
-        let mut base: libc::c_int = xpos >> 6;
+        let mut base = xpos >> 6;
         while x < width {
             if base < max_base_x {
-                let v: libc::c_int = *top.offset(base as isize) as libc::c_int
+                let v = *top.offset(base as isize) as libc::c_int
                     * (64 - frac)
                     + *top.offset((base + 1) as isize) as libc::c_int
                         * frac;
@@ -1578,22 +1578,22 @@ unsafe extern "C" fn ipred_z2_c(
     max_width: libc::c_int,
     max_height: libc::c_int,
 ) {
-    let is_sm: libc::c_int = angle >> 9 & 0x1 as libc::c_int;
-    let enable_intra_edge_filter: libc::c_int = angle >> 10;
+    let is_sm = angle >> 9 & 0x1 as libc::c_int;
+    let enable_intra_edge_filter = angle >> 10;
     angle &= 511 as libc::c_int;
     if !(angle > 90 && angle < 180) {
         unreachable!();
     }
-    let mut dy: libc::c_int = dav1d_dr_intra_derivative[(angle - 90
+    let mut dy = dav1d_dr_intra_derivative[(angle - 90
         >> 1) as usize] as libc::c_int;
-    let mut dx: libc::c_int = dav1d_dr_intra_derivative[(180 - angle
+    let mut dx = dav1d_dr_intra_derivative[(180 - angle
         >> 1) as usize] as libc::c_int;
-    let upsample_left: libc::c_int = if enable_intra_edge_filter != 0 {
+    let upsample_left = if enable_intra_edge_filter != 0 {
         get_upsample(width + height, 180 - angle, is_sm)
     } else {
         0 as libc::c_int
     };
-    let upsample_above: libc::c_int = if enable_intra_edge_filter != 0 {
+    let upsample_above = if enable_intra_edge_filter != 0 {
         get_upsample(width + height, angle - 90, is_sm)
     } else {
         0 as libc::c_int
@@ -1611,7 +1611,7 @@ unsafe extern "C" fn ipred_z2_c(
         );
         dx <<= 1;
     } else {
-        let filter_strength: libc::c_int = if enable_intra_edge_filter != 0 {
+        let filter_strength = if enable_intra_edge_filter != 0 {
             get_filter_strength(width + height, angle - 90, is_sm)
         } else {
             0 as libc::c_int
@@ -1647,7 +1647,7 @@ unsafe extern "C" fn ipred_z2_c(
         );
         dy <<= 1;
     } else {
-        let filter_strength_0: libc::c_int = if enable_intra_edge_filter != 0 {
+        let filter_strength_0 = if enable_intra_edge_filter != 0 {
             get_filter_strength(width + height, 180 - angle, is_sm)
         } else {
             0 as libc::c_int
@@ -1674,30 +1674,30 @@ unsafe extern "C" fn ipred_z2_c(
         }
     }
     *topleft = *topleft_in;
-    let base_inc_x: libc::c_int = 1 + upsample_above;
+    let base_inc_x = 1 + upsample_above;
     let left: *const pixel = &mut *topleft
         .offset(-(1 + upsample_left) as isize) as *mut pixel;
     let mut y = 0;
-    let mut xpos: libc::c_int = (1 + upsample_above << 6)
+    let mut xpos = (1 + upsample_above << 6)
         - dx;
     while y < height {
-        let mut base_x: libc::c_int = xpos >> 6;
-        let frac_x: libc::c_int = xpos & 0x3e as libc::c_int;
+        let mut base_x = xpos >> 6;
+        let frac_x = xpos & 0x3e as libc::c_int;
         let mut x = 0;
-        let mut ypos: libc::c_int = (y << 6 + upsample_left) - dy;
+        let mut ypos = (y << 6 + upsample_left) - dy;
         while x < width {
-            let mut v: libc::c_int = 0;
+            let mut v = 0;
             if base_x >= 0 {
                 v = *topleft.offset(base_x as isize) as libc::c_int
                     * (64 - frac_x)
                     + *topleft.offset((base_x + 1) as isize)
                         as libc::c_int * frac_x;
             } else {
-                let base_y: libc::c_int = ypos >> 6;
+                let base_y = ypos >> 6;
                 if !(base_y >= -(1 + upsample_left)) {
                     unreachable!();
                 }
-                let frac_y: libc::c_int = ypos & 0x3e as libc::c_int;
+                let frac_y = ypos & 0x3e as libc::c_int;
                 v = *left.offset(-base_y as isize) as libc::c_int
                     * (64 - frac_y)
                     + *left.offset(-(base_y + 1) as isize) as libc::c_int
@@ -1726,18 +1726,18 @@ unsafe extern "C" fn ipred_z3_c(
     _max_width: libc::c_int,
     _max_height: libc::c_int,
 ) {
-    let is_sm: libc::c_int = angle >> 9 & 0x1 as libc::c_int;
-    let enable_intra_edge_filter: libc::c_int = angle >> 10;
+    let is_sm = angle >> 9 & 0x1 as libc::c_int;
+    let enable_intra_edge_filter = angle >> 10;
     angle &= 511 as libc::c_int;
     if !(angle > 180) {
         unreachable!();
     }
-    let mut dy: libc::c_int = dav1d_dr_intra_derivative[(270 - angle
+    let mut dy = dav1d_dr_intra_derivative[(270 - angle
         >> 1) as usize] as libc::c_int;
     let mut left_out: [pixel; 128] = [0; 128];
     let mut left: *const pixel = 0 as *const pixel;
-    let mut max_base_y: libc::c_int = 0;
-    let upsample_left: libc::c_int = if enable_intra_edge_filter != 0 {
+    let mut max_base_y = 0;
+    let upsample_left = if enable_intra_edge_filter != 0 {
         get_upsample(width + height, angle - 180, is_sm)
     } else {
         0 as libc::c_int
@@ -1757,7 +1757,7 @@ unsafe extern "C" fn ipred_z3_c(
         max_base_y = 2 * (width + height) - 2;
         dy <<= 1;
     } else {
-        let filter_strength: libc::c_int = if enable_intra_edge_filter != 0 {
+        let filter_strength = if enable_intra_edge_filter != 0 {
             get_filter_strength(width + height, angle - 180, is_sm)
         } else {
             0 as libc::c_int
@@ -1782,16 +1782,16 @@ unsafe extern "C" fn ipred_z3_c(
             max_base_y = height + imin(width, height) - 1;
         }
     }
-    let base_inc: libc::c_int = 1 + upsample_left;
+    let base_inc = 1 + upsample_left;
     let mut x = 0;
-    let mut ypos: libc::c_int = dy;
+    let mut ypos = dy;
     while x < width {
-        let frac: libc::c_int = ypos & 0x3e as libc::c_int;
+        let frac = ypos & 0x3e as libc::c_int;
         let mut y = 0;
-        let mut base: libc::c_int = ypos >> 6;
+        let mut base = ypos >> 6;
         while y < height {
             if base < max_base_y {
-                let v: libc::c_int = *left.offset(-base as isize) as libc::c_int
+                let v = *left.offset(-base as isize) as libc::c_int
                     * (64 - frac)
                     + *left.offset(-(base + 1) as isize) as libc::c_int
                         * frac;
@@ -1846,15 +1846,15 @@ unsafe extern "C" fn ipred_filter_c(
         let mut left_stride: ptrdiff_t = -(1 as libc::c_int) as ptrdiff_t;
         let mut x = 0;
         while x < width {
-            let p0: libc::c_int = *topleft as libc::c_int;
-            let p1: libc::c_int = *top.offset(0) as libc::c_int;
-            let p2: libc::c_int = *top.offset(1) as libc::c_int;
-            let p3: libc::c_int = *top.offset(2) as libc::c_int;
-            let p4: libc::c_int = *top.offset(3) as libc::c_int;
-            let p5: libc::c_int = *left
+            let p0 = *topleft as libc::c_int;
+            let p1 = *top.offset(0) as libc::c_int;
+            let p2 = *top.offset(1) as libc::c_int;
+            let p3 = *top.offset(2) as libc::c_int;
+            let p4 = *top.offset(3) as libc::c_int;
+            let p5 = *left
                 .offset((0 * left_stride) as isize)
                 as libc::c_int;
-            let p6: libc::c_int = *left
+            let p6 = *left
                 .offset((1 * left_stride) as isize)
                 as libc::c_int;
             let mut ptr: *mut pixel = &mut *dst.offset(x as isize) as *mut pixel;
@@ -1863,7 +1863,7 @@ unsafe extern "C" fn ipred_filter_c(
             while yy < 2 {
                 let mut xx = 0;
                 while xx < 4 {
-                    let acc: libc::c_int = filter_fn(flt_ptr, p0, p1, p2, p3, p4, p5, p6);
+                    let acc = filter_fn(flt_ptr, p0, p1, p2, p3, p4, p5, p6);
                     *ptr
                         .offset(
                             xx as isize,
@@ -1900,8 +1900,8 @@ unsafe extern "C" fn cfl_ac_c(
     ss_hor: libc::c_int,
     ss_ver: libc::c_int,
 ) {
-    let mut y: libc::c_int = 0;
-    let mut x: libc::c_int = 0;
+    let mut y = 0;
+    let mut x = 0;
     let ac_orig: *mut int16_t = ac;
     if !(w_pad >= 0 && (w_pad * 4) < width) {
         unreachable!();
@@ -1913,7 +1913,7 @@ unsafe extern "C" fn cfl_ac_c(
     while y < height - 4 * h_pad {
         x = 0 as libc::c_int;
         while x < width - 4 * w_pad {
-            let mut ac_sum: libc::c_int = *ypx.offset((x << ss_hor) as isize)
+            let mut ac_sum = *ypx.offset((x << ss_hor) as isize)
                 as libc::c_int;
             if ss_hor != 0 {
                 ac_sum
@@ -1959,8 +1959,8 @@ unsafe extern "C" fn cfl_ac_c(
         ac = ac.offset(width as isize);
         y += 1;
     }
-    let log2sz: libc::c_int = ctz(width as libc::c_uint) + ctz(height as libc::c_uint);
-    let mut sum: libc::c_int = (1 as libc::c_int) << log2sz >> 1;
+    let log2sz = ctz(width as libc::c_uint) + ctz(height as libc::c_uint);
+    let mut sum = (1 as libc::c_int) << log2sz >> 1;
     ac = ac_orig;
     y = 0 as libc::c_int;
     while y < height {
@@ -2190,18 +2190,18 @@ unsafe extern "C" fn ipred_z3_neon(
     _max_width: libc::c_int,
     _max_height: libc::c_int,
 ) {
-    let is_sm: libc::c_int = angle >> 9 & 0x1 as libc::c_int;
-    let enable_intra_edge_filter: libc::c_int = angle >> 10;
+    let is_sm = angle >> 9 & 0x1 as libc::c_int;
+    let enable_intra_edge_filter = angle >> 10;
     angle &= 511 as libc::c_int;
     if !(angle > 180) {
         unreachable!();
     }
-    let mut dy: libc::c_int = dav1d_dr_intra_derivative[(270 - angle
+    let mut dy = dav1d_dr_intra_derivative[(270 - angle
         >> 1) as usize] as libc::c_int;
     let mut flipped: [pixel; 144] = [0; 144];
     let mut left_out: [pixel; 286] = [0; 286];
-    let mut max_base_y: libc::c_int = 0;
-    let upsample_left: libc::c_int = if enable_intra_edge_filter != 0 {
+    let mut max_base_y = 0;
+    let upsample_left = if enable_intra_edge_filter != 0 {
         get_upsample(width + height, angle - 180, is_sm)
     } else {
         0 as libc::c_int
@@ -2223,7 +2223,7 @@ unsafe extern "C" fn ipred_z3_neon(
         max_base_y = 2 * (width + height) - 2;
         dy <<= 1;
     } else {
-        let filter_strength: libc::c_int = if enable_intra_edge_filter != 0 {
+        let filter_strength = if enable_intra_edge_filter != 0 {
             get_filter_strength(width + height, angle - 180, is_sm)
         } else {
             0 as libc::c_int
@@ -2253,8 +2253,8 @@ unsafe extern "C" fn ipred_z3_neon(
             max_base_y = height + imin(width, height) - 1;
         }
     }
-    let base_inc: libc::c_int = 1 + upsample_left;
-    let mut pad_pixels: libc::c_int = imax(
+    let base_inc = 1 + upsample_left;
+    let mut pad_pixels = imax(
         64 - max_base_y - 1,
         height + 15,
     );
@@ -2301,14 +2301,14 @@ unsafe extern "C" fn ipred_z1_neon(
     _max_width: libc::c_int,
     _max_height: libc::c_int,
 ) {
-    let is_sm: libc::c_int = angle >> 9 & 0x1 as libc::c_int;
-    let enable_intra_edge_filter: libc::c_int = angle >> 10;
+    let is_sm = angle >> 9 & 0x1 as libc::c_int;
+    let enable_intra_edge_filter = angle >> 10;
     angle &= 511 as libc::c_int;
-    let mut dx: libc::c_int = dav1d_dr_intra_derivative[(angle >> 1)
+    let mut dx = dav1d_dr_intra_derivative[(angle >> 1)
         as usize] as libc::c_int;
     let mut top_out: [pixel; 286] = [0; 286];
-    let mut max_base_x: libc::c_int = 0;
-    let upsample_above: libc::c_int = if enable_intra_edge_filter != 0 {
+    let mut max_base_x = 0;
+    let upsample_above = if enable_intra_edge_filter != 0 {
         get_upsample(width + height, 90 - angle, is_sm)
     } else {
         0 as libc::c_int
@@ -2323,7 +2323,7 @@ unsafe extern "C" fn ipred_z1_neon(
         max_base_x = 2 * (width + height) - 2;
         dx <<= 1;
     } else {
-        let filter_strength: libc::c_int = if enable_intra_edge_filter != 0 {
+        let filter_strength = if enable_intra_edge_filter != 0 {
             get_filter_strength(width + height, 90 - angle, is_sm)
         } else {
             0 as libc::c_int
@@ -2348,8 +2348,8 @@ unsafe extern "C" fn ipred_z1_neon(
             );
         }
     }
-    let base_inc: libc::c_int = 1 + upsample_above;
-    let mut pad_pixels: libc::c_int = width + 15;
+    let base_inc = 1 + upsample_above;
+    let mut pad_pixels = width + 15;
     memset(
         &mut *top_out.as_mut_ptr().offset((max_base_x + 1) as isize)
             as *mut pixel as *mut libc::c_void,

@@ -73,7 +73,7 @@ unsafe extern "C" fn leb(
         }
         let fresh1 = ptr;
         ptr = ptr.offset(1);
-        let v: libc::c_int = *fresh1 as libc::c_int;
+        let v = *fresh1 as libc::c_int;
         more = (v & 0x80 as libc::c_int) as libc::c_uint;
         val
             |= ((v & 0x7f as libc::c_int) as uint64_t)
@@ -97,9 +97,9 @@ unsafe extern "C" fn parse_obu_header(
     type_0: *mut Dav1dObuType,
     allow_implicit_size: libc::c_int,
 ) -> libc::c_int {
-    let mut ret: libc::c_int = 0;
-    let mut extension_flag: libc::c_int = 0;
-    let mut has_size_flag: libc::c_int = 0;
+    let mut ret = 0;
+    let mut extension_flag = 0;
+    let mut has_size_flag = 0;
     if buf_size == 0 {
         return -(1 as libc::c_int);
     }
@@ -161,7 +161,7 @@ unsafe extern "C" fn leb128(f: *mut libc::FILE, len: *mut size_t) -> libc::c_int
     return i as libc::c_int;
 }
 unsafe extern "C" fn section5_probe(mut data: *const uint8_t) -> libc::c_int {
-    let mut ret: libc::c_int = 0;
+    let mut ret = 0;
     let mut cnt = 0;
     let mut obu_size: size_t = 0;
     let mut type_0: Dav1dObuType = 0 as Dav1dObuType;
@@ -242,12 +242,12 @@ unsafe extern "C" fn section5_open(
         if obu_type as libc::c_uint == DAV1D_OBU_TD as libc::c_int as libc::c_uint {
             *num_frames = (*num_frames).wrapping_add(1);
         }
-        let has_length_field: libc::c_int = byte[0]
+        let has_length_field = byte[0]
             as libc::c_int & 0x2 as libc::c_int;
         if has_length_field == 0 {
             return -(1 as libc::c_int);
         }
-        let has_extension: libc::c_int = byte[0] as libc::c_int
+        let has_extension = byte[0] as libc::c_int
             & 0x4 as libc::c_int;
         if has_extension != 0
             && fread(
@@ -261,7 +261,7 @@ unsafe extern "C" fn section5_open(
             return -(1 as libc::c_int);
         }
         let mut len: size_t = 0;
-        let res: libc::c_int = leb128((*c).f, &mut len);
+        let res = leb128((*c).f, &mut len);
         if res < 0 {
             return -(1 as libc::c_int);
         }
@@ -305,12 +305,12 @@ unsafe extern "C" fn section5_read(
                 fseeko64((*c).f, -(1 as libc::c_int) as __off64_t, 1);
                 break;
             }
-            let has_length_field: libc::c_int = byte[0]
+            let has_length_field = byte[0]
                 as libc::c_int & 0x2 as libc::c_int;
             if has_length_field == 0 {
                 return -(1 as libc::c_int);
             }
-            let has_extension: libc::c_int = (byte[0]
+            let has_extension = (byte[0]
                 as libc::c_int & 0x4 as libc::c_int != 0) as libc::c_int;
             if has_extension != 0
                 && fread(
@@ -324,7 +324,7 @@ unsafe extern "C" fn section5_read(
                 return -(1 as libc::c_int);
             }
             let mut len: size_t = 0;
-            let res: libc::c_int = leb128((*c).f, &mut len);
+            let res = leb128((*c).f, &mut len);
             if res < 0 {
                 return -(1 as libc::c_int);
             }

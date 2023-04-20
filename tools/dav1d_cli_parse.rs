@@ -395,7 +395,7 @@ unsafe extern "C" fn error(
     shouldbe: *const libc::c_char,
 ) {
     let mut optname: [libc::c_char; 256] = [0; 256];
-    let mut n: libc::c_int = 0;
+    let mut n = 0;
     n = 0 as libc::c_int;
     while !(long_opts[n as usize].name).is_null() {
         if long_opts[n as usize].val == option {
@@ -671,7 +671,7 @@ pub unsafe extern "C" fn parse(
     cli_settings: *mut CLISettings,
     lib_settings: *mut Dav1dSettings,
 ) {
-    let mut o: libc::c_int = 0;
+    let mut o = 0;
     memset(
         cli_settings as *mut libc::c_void,
         0 as libc::c_int,

@@ -47807,7 +47807,7 @@ unsafe extern "C" fn untriangle(
             (y + 1) as libc::c_ulong,
         );
         let mut src_ptr: *const uint8_t = &*src.offset(y as isize) as *const uint8_t;
-        let mut x: libc::c_int = y + 1;
+        let mut x = y + 1;
         while x < sz {
             src_ptr = src_ptr.offset(x as isize);
             *dst.offset(x as isize) = *src_ptr;

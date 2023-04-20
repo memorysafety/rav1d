@@ -16,7 +16,7 @@ pub unsafe extern "C" fn constrain(
     threshold: libc::c_int,
     shift: libc::c_int,
 ) -> libc::c_int {
-    let adiff: libc::c_int = diff.abs();
+    let adiff = diff.abs();
     return apply_sign(
         imin(adiff, imax(0 as libc::c_int, threshold - (adiff >> shift))),
         diff,

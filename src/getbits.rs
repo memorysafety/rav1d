@@ -111,7 +111,7 @@ pub unsafe extern "C" fn dav1d_get_uleb128(c: *mut GetBits) -> libc::c_uint {
     let mut i: libc::c_uint = 0 as libc::c_int as libc::c_uint;
     let mut more: libc::c_uint = 0;
     loop {
-        let v: libc::c_int = dav1d_get_bits(c, 8 as libc::c_int) as libc::c_int;
+        let v = dav1d_get_bits(c, 8 as libc::c_int) as libc::c_int;
         more = (v & 0x80 as libc::c_int) as libc::c_uint;
         val |= ((v & 0x7f as libc::c_int) as uint64_t) << i;
         i = i.wrapping_add(7 as libc::c_int as libc::c_uint);
@@ -134,7 +134,7 @@ pub unsafe extern "C" fn dav1d_get_uniform(
     if !(max > 1 as libc::c_uint) {
         unreachable!();
     }
-    let l: libc::c_int = ulog2(max) + 1;
+    let l = ulog2(max) + 1;
     if !(l > 1) {
         unreachable!();
     }
@@ -173,7 +173,7 @@ unsafe extern "C" fn get_bits_subexp_u(
     let mut v: libc::c_uint = 0 as libc::c_int as libc::c_uint;
     let mut i = 0;
     loop {
-        let b: libc::c_int = if i != 0 {
+        let b = if i != 0 {
             3 + i - 1
         } else {
             3 as libc::c_int

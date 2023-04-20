@@ -1598,7 +1598,7 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
         };
         init
     };
-    let mut res: libc::c_int = 0;
+    let mut res = 0;
     if out.is_null() {
         fprintf(
             stderr,
@@ -1817,7 +1817,7 @@ unsafe extern "C" fn drain_picture(
             (*c).task_thread.cur = ((*c).task_thread.cur).wrapping_sub(1);
         }
         pthread_mutex_unlock(&mut (*c).task_thread.lock);
-        let error: libc::c_int = (*f).task_thread.retval;
+        let error = (*f).task_thread.retval;
         if error != 0 {
             (*f).task_thread.retval = 0 as libc::c_int;
             dav1d_data_props_copy(&mut (*c).cached_error_props, &mut (*out_delayed).p.m);
@@ -1862,7 +1862,7 @@ unsafe extern "C" fn drain_picture(
     return -(11 as libc::c_int);
 }
 unsafe extern "C" fn gen_picture(c: *mut Dav1dContext) -> libc::c_int {
-    let mut res: libc::c_int = 0;
+    let mut res = 0;
     let in_0: *mut Dav1dData = &mut (*c).in_0;
     if output_picture_ready(c, 0 as libc::c_int) != 0 {
         return 0 as libc::c_int;
@@ -1946,7 +1946,7 @@ pub unsafe extern "C" fn dav1d_send_data(
         return -(11 as libc::c_int);
     }
     dav1d_data_ref(&mut (*c).in_0, in_0);
-    let mut res: libc::c_int = gen_picture(c);
+    let mut res = gen_picture(c);
     if res == 0 {
         dav1d_data_unref_internal(in_0);
     }
@@ -1985,14 +1985,14 @@ pub unsafe extern "C" fn dav1d_get_picture(
         );
         return -(22 as libc::c_int);
     }
-    let drain: libc::c_int = (*c).drain;
+    let drain = (*c).drain;
     (*c).drain = 1 as libc::c_int;
-    let mut res: libc::c_int = gen_picture(c);
+    let mut res = gen_picture(c);
     if res < 0 {
         return res;
     }
     if (*c).cached_error != 0 {
-        let res_0: libc::c_int = (*c).cached_error;
+        let res_0 = (*c).cached_error;
         (*c).cached_error = 0 as libc::c_int;
         return res_0;
     }
@@ -2060,7 +2060,7 @@ pub unsafe extern "C" fn dav1d_apply_grain(
         dav1d_picture_ref(out, in_0);
         return 0 as libc::c_int;
     }
-    let mut res: libc::c_int = dav1d_picture_alloc_copy(c, out, (*in_0).p.w, in_0);
+    let mut res = dav1d_picture_alloc_copy(c, out, (*in_0).p.w, in_0);
     if res < 0 {
         dav1d_picture_unref_internal(out);
         return res;

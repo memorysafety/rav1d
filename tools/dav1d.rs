@@ -285,14 +285,14 @@ unsafe extern "C" fn picture_alloc(
     p: *mut Dav1dPicture,
     _: *mut libc::c_void,
 ) -> libc::c_int {
-    let hbd: libc::c_int = ((*p).p.bpc > 8) as libc::c_int;
-    let aligned_w: libc::c_int = (*p).p.w + 127 & !(127 as libc::c_int);
-    let aligned_h: libc::c_int = (*p).p.h + 127 & !(127 as libc::c_int);
-    let has_chroma: libc::c_int = ((*p).p.layout as libc::c_uint
+    let hbd = ((*p).p.bpc > 8) as libc::c_int;
+    let aligned_w = (*p).p.w + 127 & !(127 as libc::c_int);
+    let aligned_h = (*p).p.h + 127 & !(127 as libc::c_int);
+    let has_chroma = ((*p).p.layout as libc::c_uint
         != DAV1D_PIXEL_LAYOUT_I400 as libc::c_int as libc::c_uint) as libc::c_int;
-    let ss_ver: libc::c_int = ((*p).p.layout as libc::c_uint
+    let ss_ver = ((*p).p.layout as libc::c_uint
         == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint) as libc::c_int;
-    let ss_hor: libc::c_int = ((*p).p.layout as libc::c_uint
+    let ss_hor = ((*p).p.layout as libc::c_uint
         != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint) as libc::c_int;
     let mut y_stride: ptrdiff_t = (aligned_w << hbd) as ptrdiff_t;
     let mut uv_stride: ptrdiff_t = if has_chroma != 0 {
@@ -348,7 +348,7 @@ unsafe extern "C" fn picture_release(p: *mut Dav1dPicture, _: *mut libc::c_void)
     free((*p).allocator_data);
 }
 unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_int {
-    let istty: libc::c_int = isatty(fileno(stderr));
+    let istty = isatty(fileno(stderr));
     let mut res = 0;
     let mut cli_settings: CLISettings = CLISettings {
         outputfile: 0 as *const libc::c_char,

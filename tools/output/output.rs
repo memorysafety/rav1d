@@ -111,7 +111,7 @@ pub unsafe extern "C" fn output_open(
     let mut impl_0: *const Muxer = 0 as *const Muxer;
     let mut c: *mut MuxerContext = 0 as *mut MuxerContext;
     let mut i: libc::c_uint = 0;
-    let mut res: libc::c_int = 0;
+    let mut res = 0;
     let mut name_offset = 0;
     if !name.is_null() {
         name_offset = 5 as libc::c_int
@@ -228,11 +228,11 @@ unsafe extern "C" fn safe_strncat(
     if src_len == 0 {
         return;
     }
-    let dst_fill: libc::c_int = strlen(dst) as libc::c_int;
+    let dst_fill = strlen(dst) as libc::c_int;
     if !(dst_fill < dst_len) {
         unreachable!();
     }
-    let to_copy: libc::c_int = imin(src_len, dst_len - dst_fill - 1);
+    let to_copy = imin(src_len, dst_len - dst_fill - 1);
     if to_copy == 0 {
         return;
     }
@@ -298,7 +298,7 @@ unsafe extern "C" fn assemble_filename(
     *filename.offset(0) = 0 as libc::c_int as libc::c_char;
     let fresh0 = (*ctx).framenum;
     (*ctx).framenum = (*ctx).framenum + 1;
-    let framenum: libc::c_int = fresh0;
+    let framenum = fresh0;
     if ((*ctx).filename).is_null() {
         unreachable!();
     }
@@ -370,7 +370,7 @@ pub unsafe extern "C" fn output_write(
     ctx: *mut MuxerContext,
     p: *mut Dav1dPicture,
 ) -> libc::c_int {
-    let mut res: libc::c_int = 0;
+    let mut res = 0;
     if (*ctx).one_file_per_frame != 0 && ((*(*ctx).impl_0).write_header).is_some() {
         let mut filename: [libc::c_char; 1024] = [0; 1024];
         assemble_filename(
@@ -417,7 +417,7 @@ pub unsafe extern "C" fn output_verify(
     ctx: *mut MuxerContext,
     md5_str: *const libc::c_char,
 ) -> libc::c_int {
-    let res: libc::c_int = if ((*(*ctx).impl_0).verify).is_some() {
+    let res = if ((*(*ctx).impl_0).verify).is_some() {
         ((*(*ctx).impl_0).verify)
             .expect("non-null function pointer")((*ctx).data, md5_str)
     } else {

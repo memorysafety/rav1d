@@ -168,14 +168,14 @@ unsafe extern "C" fn y4m2_write(
     let mut current_block: u64;
     if (*c).first != 0 {
         (*c).first = 0 as libc::c_int;
-        let res: libc::c_int = write_header(c, p);
+        let res = write_header(c, p);
         if res < 0 {
             return res;
         }
     }
     fprintf((*c).f, b"FRAME\n\0" as *const u8 as *const libc::c_char);
     let mut ptr: *mut uint8_t = 0 as *mut uint8_t;
-    let hbd: libc::c_int = ((*p).p.bpc > 8) as libc::c_int;
+    let hbd = ((*p).p.bpc > 8) as libc::c_int;
     ptr = (*p).data[0] as *mut uint8_t;
     let mut y = 0;
     loop {
@@ -201,14 +201,14 @@ unsafe extern "C" fn y4m2_write(
             if (*p).p.layout as libc::c_uint
                 != DAV1D_PIXEL_LAYOUT_I400 as libc::c_int as libc::c_uint
             {
-                let ss_ver: libc::c_int = ((*p).p.layout as libc::c_uint
+                let ss_ver = ((*p).p.layout as libc::c_uint
                     == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint)
                     as libc::c_int;
-                let ss_hor: libc::c_int = ((*p).p.layout as libc::c_uint
+                let ss_hor = ((*p).p.layout as libc::c_uint
                     != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint)
                     as libc::c_int;
-                let cw: libc::c_int = (*p).p.w + ss_hor >> ss_hor;
-                let ch: libc::c_int = (*p).p.h + ss_ver >> ss_ver;
+                let cw = (*p).p.w + ss_hor >> ss_hor;
+                let ch = (*p).p.h + ss_ver >> ss_ver;
                 let mut pl = 1;
                 's_64: loop {
                     if !(pl <= 2) {

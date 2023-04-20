@@ -3892,9 +3892,9 @@ unsafe extern "C" fn inv_txfm_add_c(
     }
     let is_rect2: libc::c_int =
         (w * 2 == h || h * 2 == w) as libc::c_int;
-    let rnd: libc::c_int = (1 as libc::c_int) << shift >> 1;
+    let rnd = (1 as libc::c_int) << shift >> 1;
     if eob < has_dconly {
-        let mut dc: libc::c_int = *coeff.offset(0) as libc::c_int;
+        let mut dc = *coeff.offset(0) as libc::c_int;
         *coeff.offset(0) = 0 as libc::c_int as coef;
         if is_rect2 != 0 {
             dc = dc * 181 + 128 >> 8;
@@ -3916,12 +3916,12 @@ unsafe extern "C" fn inv_txfm_add_c(
         }
         return;
     }
-    let sh: libc::c_int = imin(h, 32 as libc::c_int);
-    let sw: libc::c_int = imin(w, 32 as libc::c_int);
-    let row_clip_min: libc::c_int = -(32767 as libc::c_int) - 1;
-    let col_clip_min: libc::c_int = -(32767 as libc::c_int) - 1;
-    let row_clip_max: libc::c_int = !row_clip_min;
-    let col_clip_max: libc::c_int = !col_clip_min;
+    let sh = imin(h, 32 as libc::c_int);
+    let sw = imin(w, 32 as libc::c_int);
+    let row_clip_min = -(32767 as libc::c_int) - 1;
+    let col_clip_min = -(32767 as libc::c_int) - 1;
+    let row_clip_max = !row_clip_min;
+    let col_clip_max = !col_clip_min;
     let mut tmp: [int32_t; 4096] = [0; 4096];
     let mut c: *mut int32_t = tmp.as_mut_ptr();
     let mut y_0 = 0;

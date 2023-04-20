@@ -74,8 +74,8 @@ pub unsafe extern "C" fn input_open(
 ) -> libc::c_int {
     let mut impl_0: *const Demuxer = 0 as *const Demuxer;
     let mut c: *mut DemuxerContext = 0 as *mut DemuxerContext;
-    let mut res: libc::c_int = 0;
-    let mut i: libc::c_int = 0;
+    let mut res = 0;
+    let mut i = 0;
     if !name.is_null() {
         i = 0 as libc::c_int;
         while !(demuxers[i as usize]).is_null() {

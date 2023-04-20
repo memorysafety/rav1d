@@ -280,9 +280,9 @@ unsafe extern "C" fn resolve_divisor_32(
     shift: *mut libc::c_int,
 ) -> libc::c_int {
     *shift = ulog2(d);
-    let e: libc::c_int = d.wrapping_sub(((1 as libc::c_int) << *shift) as libc::c_uint)
+    let e = d.wrapping_sub(((1 as libc::c_int) << *shift) as libc::c_uint)
         as libc::c_int;
-    let f: libc::c_int = if *shift > 8 {
+    let f = if *shift > 8 {
         e + ((1 as libc::c_int) << *shift - 9)
             >> *shift - 8
     } else {
@@ -309,8 +309,8 @@ pub unsafe extern "C" fn dav1d_get_shear_params(
         *mat.offset(2) - 0x10000 as libc::c_int,
     ) as int16_t;
     (*wm).u.p.beta = iclip_wmp(*mat.offset(3)) as int16_t;
-    let mut shift: libc::c_int = 0;
-    let y: libc::c_int = apply_sign(
+    let mut shift = 0;
+    let y = apply_sign(
         resolve_divisor_32(
             (*mat.offset(2)).abs() as libc::c_uint,
             &mut shift,
@@ -319,7 +319,7 @@ pub unsafe extern "C" fn dav1d_get_shear_params(
     );
     let v1: int64_t = *mat.offset(4) as int64_t
         * 0x10000 * y as int64_t;
-    let rnd: libc::c_int = (1 as libc::c_int) << shift >> 1;
+    let rnd = (1 as libc::c_int) << shift >> 1;
     (*wm)
         .u
         .p
@@ -375,7 +375,7 @@ unsafe extern "C" fn get_mult_shift_ndiag(
     shift: libc::c_int,
 ) -> libc::c_int {
     let v1: int64_t = px * idet as int64_t;
-    let v2: libc::c_int = apply_sign64(
+    let v2 = apply_sign64(
         ((v1 as libc::c_longlong).abs()
             + ((1 as libc::c_longlong) << shift >> 1) >> shift)
             as libc::c_int,
@@ -389,7 +389,7 @@ unsafe extern "C" fn get_mult_shift_diag(
     shift: libc::c_int,
 ) -> libc::c_int {
     let v1: int64_t = px * idet as int64_t;
-    let v2: libc::c_int = apply_sign64(
+    let v2 = apply_sign64(
         ((v1 as libc::c_longlong).abs()
             + ((1 as libc::c_longlong) << shift >> 1) >> shift)
             as libc::c_int,
@@ -407,10 +407,10 @@ pub unsafe extern "C" fn dav1d_set_affine_mv2d(
     by4: libc::c_int,
 ) {
     let mat: *mut int32_t = ((*wm).matrix).as_mut_ptr();
-    let rsuy: libc::c_int = 2 * bh4 - 1;
-    let rsux: libc::c_int = 2 * bw4 - 1;
-    let isuy: libc::c_int = by4 * 4 + rsuy;
-    let isux: libc::c_int = bx4 * 4 + rsux;
+    let rsuy = 2 * bh4 - 1;
+    let rsux = 2 * bw4 - 1;
+    let isuy = by4 * 4 + rsuy;
+    let isux = bx4 * 4 + rsux;
     *mat
         .offset(
             0 as libc::c_int as isize,
@@ -451,26 +451,26 @@ pub unsafe extern "C" fn dav1d_find_affine_int(
     ];
     let mut bx: [libc::c_int; 2] = [0 as libc::c_int, 0 as libc::c_int];
     let mut by: [libc::c_int; 2] = [0 as libc::c_int, 0 as libc::c_int];
-    let rsuy: libc::c_int = 2 * bh4 - 1;
-    let rsux: libc::c_int = 2 * bw4 - 1;
-    let suy: libc::c_int = rsuy * 8;
-    let sux: libc::c_int = rsux * 8;
-    let duy: libc::c_int = suy + mv.y as libc::c_int;
-    let dux: libc::c_int = sux + mv.x as libc::c_int;
-    let isuy: libc::c_int = by4 * 4 + rsuy;
-    let isux: libc::c_int = bx4 * 4 + rsux;
+    let rsuy = 2 * bh4 - 1;
+    let rsux = 2 * bw4 - 1;
+    let suy = rsuy * 8;
+    let sux = rsux * 8;
+    let duy = suy + mv.y as libc::c_int;
+    let dux = sux + mv.x as libc::c_int;
+    let isuy = by4 * 4 + rsuy;
+    let isux = bx4 * 4 + rsux;
     let mut i = 0;
     while i < np {
-        let dx: libc::c_int = (*pts
+        let dx = (*pts
             .offset(i as isize))[1][0]
             - dux;
-        let dy: libc::c_int = (*pts
+        let dy = (*pts
             .offset(i as isize))[1][1]
             - duy;
-        let sx: libc::c_int = (*pts
+        let sx = (*pts
             .offset(i as isize))[0][0]
             - sux;
-        let sy: libc::c_int = (*pts
+        let sy = (*pts
             .offset(i as isize))[0][1]
             - suy;
         if (sx - dx).abs() < 256 && (sy - dy).abs() < 256 {
@@ -500,8 +500,8 @@ pub unsafe extern "C" fn dav1d_find_affine_int(
     if det == 0 {
         return 1 as libc::c_int;
     }
-    let mut shift: libc::c_int = 0;
-    let mut idet: libc::c_int = apply_sign64(
+    let mut shift = 0;
+    let mut idet = apply_sign64(
         resolve_divisor_64((det as libc::c_longlong).abs() as uint64_t, &mut shift),
         det,
     );

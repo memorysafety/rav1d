@@ -98,7 +98,7 @@ unsafe extern "C" fn leb(
         }
         let fresh1 = ptr;
         ptr = ptr.offset(1);
-        let v: libc::c_int = *fresh1 as libc::c_int;
+        let v = *fresh1 as libc::c_int;
         more = (v & 0x80 as libc::c_int) as libc::c_uint;
         val
             |= ((v & 0x7f as libc::c_int) as uint64_t)
@@ -123,9 +123,9 @@ unsafe extern "C" fn parse_obu_header(
     type_0: *mut Dav1dObuType,
     allow_implicit_size: libc::c_int,
 ) -> libc::c_int {
-    let mut ret: libc::c_int = 0;
-    let mut extension_flag: libc::c_int = 0;
-    let mut has_size_flag: libc::c_int = 0;
+    let mut ret = 0;
+    let mut extension_flag = 0;
+    let mut has_size_flag = 0;
     if buf_size == 0 {
         return -(1 as libc::c_int);
     }
@@ -157,7 +157,7 @@ unsafe extern "C" fn parse_obu_header(
     return buf_size + 1 + extension_flag;
 }
 unsafe extern "C" fn annexb_probe(mut data: *const uint8_t) -> libc::c_int {
-    let mut ret: libc::c_int = 0;
+    let mut ret = 0;
     let mut cnt = 0;
     let mut temporal_unit_size: size_t = 0;
     ret = leb(
@@ -263,7 +263,7 @@ unsafe extern "C" fn annexb_open(
     num_frames: *mut libc::c_uint,
     mut timebase: *mut libc::c_uint,
 ) -> libc::c_int {
-    let mut res: libc::c_int = 0;
+    let mut res = 0;
     let mut len: size_t = 0;
     (*c).f = fopen(file, b"rb\0" as *const u8 as *const libc::c_char);
     if ((*c).f).is_null() {
@@ -296,7 +296,7 @@ unsafe extern "C" fn annexb_read(
     data: *mut Dav1dData,
 ) -> libc::c_int {
     let mut len: size_t = 0;
-    let mut res: libc::c_int = 0;
+    let mut res = 0;
     if (*c).temporal_unit_size == 0 {
         res = leb128((*c).f, &mut (*c).temporal_unit_size);
         if res < 0 {
