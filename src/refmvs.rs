@@ -302,9 +302,7 @@ unsafe fn scan_row(
         }
         cand_b = &*b.offset(x as isize);
         cand_bw4 = dav1d_block_dimensions[(*cand_b).bs as usize][0] as libc::c_int;
-        if !(cand_bw4 < bw4) {
-            unreachable!();
-        }
+        assert!(cand_bw4 < bw4);
         len = imax(step, cand_bw4);
     }
 }
@@ -364,9 +362,7 @@ unsafe fn scan_col(
         }
         cand_b = &*(*b.offset(y as isize)).offset(bx4 as isize);
         cand_bh4 = dav1d_block_dimensions[(*cand_b).bs as usize][1] as libc::c_int;
-        if !(cand_bh4 < bh4) {
-            unreachable!();
-        }
+        assert!(cand_bh4 < bh4);
         len = imax(step, cand_bh4);
     }
 }
