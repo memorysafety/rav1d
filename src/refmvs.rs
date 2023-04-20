@@ -605,8 +605,7 @@ unsafe fn add_single_extended_candidate(
     sign: libc::c_int,
     sign_bias: &[u8; 7],
 ) {
-    let mut n = 0;
-    while n < 2 {
+    for n in 0..2 {
         let cand_ref = cand_b.r#ref.r#ref[n as usize];
         if cand_ref <= 0 {
             break;
@@ -630,7 +629,6 @@ unsafe fn add_single_extended_candidate(
             mvstack[m].weight = 2;
             *cnt = last + 1;
         }
-        n += 1;
     }
 }
 
