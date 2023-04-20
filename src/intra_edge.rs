@@ -365,16 +365,16 @@ pub unsafe extern "C" fn dav1d_init_mode_tree(
             as usize] = &mut *root.offset(1) as *mut EdgeBranch;
         mem
             .nwc[BL_64X64 as libc::c_int
-            as usize] = &mut *root.offset((1 as libc::c_int + 4) as isize)
+            as usize] = &mut *root.offset((1 + 4) as isize)
             as *mut EdgeBranch;
         mem
             .nwc[BL_32X32 as libc::c_int
             as usize] = &mut *root
-            .offset((1 as libc::c_int + 4 + 16) as isize)
+            .offset((1 + 4 + 16) as isize)
             as *mut EdgeBranch;
         init_mode_node(root, BL_128X128, &mut mem, 1 as libc::c_int, 0 as libc::c_int);
         if !(mem.nwc[BL_128X128 as libc::c_int as usize]
-            == &mut *root.offset((1 as libc::c_int + 4) as isize)
+            == &mut *root.offset((1 + 4) as isize)
                 as *mut EdgeBranch)
         {
             unreachable!();
@@ -382,7 +382,7 @@ pub unsafe extern "C" fn dav1d_init_mode_tree(
         if !(mem.nwc[BL_64X64 as libc::c_int as usize]
             == &mut *root
                 .offset(
-                    (1 as libc::c_int + 4 + 16) as isize,
+                    (1 + 4 + 16) as isize,
                 ) as *mut EdgeBranch)
         {
             unreachable!();
@@ -390,7 +390,7 @@ pub unsafe extern "C" fn dav1d_init_mode_tree(
         if !(mem.nwc[BL_32X32 as libc::c_int as usize]
             == &mut *root
                 .offset(
-                    (1 as libc::c_int + 4 + 16
+                    (1 + 4 + 16
                         + 64) as isize,
                 ) as *mut EdgeBranch)
         {
@@ -406,11 +406,11 @@ pub unsafe extern "C" fn dav1d_init_mode_tree(
             as usize] = &mut *root.offset(1) as *mut EdgeBranch;
         mem
             .nwc[BL_32X32 as libc::c_int
-            as usize] = &mut *root.offset((1 as libc::c_int + 4) as isize)
+            as usize] = &mut *root.offset((1 + 4) as isize)
             as *mut EdgeBranch;
         init_mode_node(root, BL_64X64, &mut mem, 1 as libc::c_int, 0 as libc::c_int);
         if !(mem.nwc[BL_64X64 as libc::c_int as usize]
-            == &mut *root.offset((1 as libc::c_int + 4) as isize)
+            == &mut *root.offset((1 + 4) as isize)
                 as *mut EdgeBranch)
         {
             unreachable!();
@@ -418,7 +418,7 @@ pub unsafe extern "C" fn dav1d_init_mode_tree(
         if !(mem.nwc[BL_32X32 as libc::c_int as usize]
             == &mut *root
                 .offset(
-                    (1 as libc::c_int + 4 + 16) as isize,
+                    (1 + 4 + 16) as isize,
                 ) as *mut EdgeBranch)
         {
             unreachable!();

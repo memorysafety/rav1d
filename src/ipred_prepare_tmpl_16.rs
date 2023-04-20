@@ -107,7 +107,7 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_16bpc(
     topleft_out: *mut pixel,
     bitdepth_max: libc::c_int,
 ) -> IntraPredMode {
-    let bitdepth: libc::c_int = 32 as libc::c_int - clz(bitdepth_max as libc::c_uint);
+    let bitdepth: libc::c_int = 32 - clz(bitdepth_max as libc::c_uint);
     if !(y < h && x < w) {
         unreachable!();
     }

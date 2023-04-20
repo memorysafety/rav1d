@@ -1312,7 +1312,7 @@ pub unsafe extern "C" fn dav1d_open(
                         < 8 as libc::c_ulong
                         && ((*s).frame_size_limit)
                             .wrapping_sub(1 as libc::c_int as libc::c_uint)
-                            >= (8192 as libc::c_int * 8192)
+                            >= (8192 * 8192)
                                 as libc::c_uint
                     {
                         (*c)

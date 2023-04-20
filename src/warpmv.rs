@@ -343,7 +343,7 @@ pub unsafe extern "C" fn dav1d_get_shear_params(
                 v2,
             ) - 0x10000 as libc::c_int,
     ) as int16_t;
-    return (4 as libc::c_int * ((*wm).u.p.alpha as libc::c_int).abs()
+    return (4 * ((*wm).u.p.alpha as libc::c_int).abs()
         + 7 * ((*wm).u.p.beta as libc::c_int).abs() >= 0x10000 as libc::c_int
         || 4 * ((*wm).u.p.gamma as libc::c_int).abs()
             + 4 * ((*wm).u.p.delta as libc::c_int).abs()
@@ -407,8 +407,8 @@ pub unsafe extern "C" fn dav1d_set_affine_mv2d(
     by4: libc::c_int,
 ) {
     let mat: *mut int32_t = ((*wm).matrix).as_mut_ptr();
-    let rsuy: libc::c_int = 2 as libc::c_int * bh4 - 1;
-    let rsux: libc::c_int = 2 as libc::c_int * bw4 - 1;
+    let rsuy: libc::c_int = 2 * bh4 - 1;
+    let rsux: libc::c_int = 2 * bw4 - 1;
     let isuy: libc::c_int = by4 * 4 + rsuy;
     let isux: libc::c_int = bx4 * 4 + rsux;
     *mat
@@ -451,8 +451,8 @@ pub unsafe extern "C" fn dav1d_find_affine_int(
     ];
     let mut bx: [libc::c_int; 2] = [0 as libc::c_int, 0 as libc::c_int];
     let mut by: [libc::c_int; 2] = [0 as libc::c_int, 0 as libc::c_int];
-    let rsuy: libc::c_int = 2 as libc::c_int * bh4 - 1;
-    let rsux: libc::c_int = 2 as libc::c_int * bw4 - 1;
+    let rsuy: libc::c_int = 2 * bh4 - 1;
+    let rsux: libc::c_int = 2 * bw4 - 1;
     let suy: libc::c_int = rsuy * 8;
     let sux: libc::c_int = rsux * 8;
     let duy: libc::c_int = suy + mv.y as libc::c_int;

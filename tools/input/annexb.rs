@@ -162,7 +162,7 @@ unsafe extern "C" fn annexb_probe(mut data: *const uint8_t) -> libc::c_int {
     let mut temporal_unit_size: size_t = 0;
     ret = leb(
         data.offset(cnt as isize),
-        2048 as libc::c_int - cnt,
+        2048 - cnt,
         &mut temporal_unit_size,
     );
     if ret < 0 {
@@ -172,7 +172,7 @@ unsafe extern "C" fn annexb_probe(mut data: *const uint8_t) -> libc::c_int {
     let mut frame_unit_size: size_t = 0;
     ret = leb(
         data.offset(cnt as isize),
-        2048 as libc::c_int - cnt,
+        2048 - cnt,
         &mut frame_unit_size,
     );
     if ret < 0
@@ -184,7 +184,7 @@ unsafe extern "C" fn annexb_probe(mut data: *const uint8_t) -> libc::c_int {
     temporal_unit_size = (temporal_unit_size as libc::c_ulong)
         .wrapping_sub(ret as libc::c_ulong) as size_t as size_t;
     let mut obu_unit_size: size_t = 0;
-    ret = leb(data.offset(cnt as isize), 2048 as libc::c_int - cnt, &mut obu_unit_size);
+    ret = leb(data.offset(cnt as isize), 2048 - cnt, &mut obu_unit_size);
     if ret < 0
         || obu_unit_size.wrapping_add(ret as size_t) >= frame_unit_size
     {
@@ -199,7 +199,7 @@ unsafe extern "C" fn annexb_probe(mut data: *const uint8_t) -> libc::c_int {
     let mut type_0: Dav1dObuType = 0 as Dav1dObuType;
     ret = parse_obu_header(
         data.offset(cnt as isize),
-        imin(2048 as libc::c_int - cnt, obu_unit_size as libc::c_int),
+        imin(2048 - cnt, obu_unit_size as libc::c_int),
         &mut obu_size,
         &mut type_0,
         1 as libc::c_int,
@@ -215,7 +215,7 @@ unsafe extern "C" fn annexb_probe(mut data: *const uint8_t) -> libc::c_int {
     while cnt < 2048 {
         ret = leb(
             data.offset(cnt as isize),
-            2048 as libc::c_int - cnt,
+            2048 - cnt,
             &mut obu_unit_size,
         );
         if ret < 0
@@ -230,7 +230,7 @@ unsafe extern "C" fn annexb_probe(mut data: *const uint8_t) -> libc::c_int {
             .wrapping_sub(ret as libc::c_ulong) as size_t as size_t;
         ret = parse_obu_header(
             data.offset(cnt as isize),
-            imin(2048 as libc::c_int - cnt, obu_unit_size as libc::c_int),
+            imin(2048 - cnt, obu_unit_size as libc::c_int),
             &mut obu_size,
             &mut type_0,
             1 as libc::c_int,

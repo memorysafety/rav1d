@@ -388,9 +388,9 @@ unsafe extern "C" fn generate_grain_y_c(
     mut buf: *mut [entry; 82],
     data: *const Dav1dFilmGrainData,
 ) {
-    let bitdepth_min_8: libc::c_int = 8 as libc::c_int - 8;
+    let bitdepth_min_8: libc::c_int = 8 - 8;
     let mut seed: libc::c_uint = (*data).seed;
-    let shift: libc::c_int = 4 as libc::c_int - bitdepth_min_8
+    let shift: libc::c_int = 4 - bitdepth_min_8
         + (*data).grain_scale_shift;
     let grain_ctr: libc::c_int = (128 as libc::c_int) << bitdepth_min_8;
     let grain_min: libc::c_int = -grain_ctr;
@@ -457,11 +457,11 @@ unsafe extern "C" fn generate_grain_uv_c(
     subx: libc::c_int,
     suby: libc::c_int,
 ) {
-    let bitdepth_min_8: libc::c_int = 8 as libc::c_int - 8;
+    let bitdepth_min_8: libc::c_int = 8 - 8;
     let mut seed: libc::c_uint = (*data).seed
         ^ (if uv != 0 { 0x49d8 as libc::c_int } else { 0xb524 as libc::c_int })
             as libc::c_uint;
-    let shift: libc::c_int = 4 as libc::c_int - bitdepth_min_8
+    let shift: libc::c_int = 4 - bitdepth_min_8
         + (*data).grain_scale_shift;
     let grain_ctr: libc::c_int = (128 as libc::c_int) << bitdepth_min_8;
     let grain_min: libc::c_int = -grain_ctr;
@@ -587,15 +587,15 @@ unsafe extern "C" fn sample_lut(
 ) -> entry {
     let randval: libc::c_int = (*offsets.offset(bx as isize))[by as usize];
     let offx: libc::c_int = 3 as libc::c_int
-        + (2 as libc::c_int >> subx)
-            * (3 as libc::c_int + (randval >> 4));
+        + (2 >> subx)
+            * (3 + (randval >> 4));
     let offy: libc::c_int = 3 as libc::c_int
-        + (2 as libc::c_int >> suby)
-            * (3 as libc::c_int + (randval & 0xf as libc::c_int));
+        + (2 >> suby)
+            * (3 + (randval & 0xf as libc::c_int));
     return (*grain_lut
         .offset(
-            (offy + y + (32 as libc::c_int >> suby) * by) as isize,
-        ))[(offx + x + (32 as libc::c_int >> subx) * bx) as usize];
+            (offy + y + (32 >> suby) * by) as isize,
+        ))[(offx + x + (32 >> subx) * bx) as usize];
 }
 unsafe extern "C" fn fgy_32x32xn_c(
     dst_row: *mut pixel,
@@ -610,7 +610,7 @@ unsafe extern "C" fn fgy_32x32xn_c(
 ) {
     let rows: libc::c_int = 1 as libc::c_int
         + ((*data).overlap_flag != 0 && row_num > 0) as libc::c_int;
-    let bitdepth_min_8: libc::c_int = 8 as libc::c_int - 8;
+    let bitdepth_min_8: libc::c_int = 8 - 8;
     let grain_ctr: libc::c_int = (128 as libc::c_int) << bitdepth_min_8;
     let grain_min: libc::c_int = -grain_ctr;
     let grain_max: libc::c_int = grain_ctr - 1;
@@ -905,7 +905,7 @@ unsafe extern "C" fn fguv_32x32xn_c(
 ) {
     let rows: libc::c_int = 1 as libc::c_int
         + ((*data).overlap_flag != 0 && row_num > 0) as libc::c_int;
-    let bitdepth_min_8: libc::c_int = 8 as libc::c_int - 8;
+    let bitdepth_min_8: libc::c_int = 8 - 8;
     let grain_ctr: libc::c_int = (128 as libc::c_int) << bitdepth_min_8;
     let grain_min: libc::c_int = -grain_ctr;
     let grain_max: libc::c_int = grain_ctr - 1;
@@ -943,7 +943,7 @@ unsafe extern "C" fn fguv_32x32xn_c(
     let mut bx: libc::c_uint = 0 as libc::c_int as libc::c_uint;
     while (bx as size_t) < pw {
         let bw: libc::c_int = imin(
-            32 as libc::c_int >> sx,
+            32 >> sx,
             pw.wrapping_sub(bx as size_t) as libc::c_int,
         );
         if (*data).overlap_flag != 0 && bx != 0 {
@@ -966,12 +966,12 @@ unsafe extern "C" fn fguv_32x32xn_c(
             i_1 += 1;
         }
         let ystart: libc::c_int = if (*data).overlap_flag != 0 && row_num != 0 {
-            imin(2 as libc::c_int >> sy, bh)
+            imin(2 >> sy, bh)
         } else {
             0 as libc::c_int
         };
         let xstart: libc::c_int = if (*data).overlap_flag != 0 && bx != 0 {
-            imin(2 as libc::c_int >> sx, bw)
+            imin(2 >> sx, bw)
         } else {
             0 as libc::c_int
         };
@@ -1269,7 +1269,7 @@ unsafe extern "C" fn fguv_32x32xn_c(
             }
             y_0 += 1;
         }
-        bx = bx.wrapping_add((32 as libc::c_int >> sx) as libc::c_uint);
+        bx = bx.wrapping_add((32 >> sx) as libc::c_uint);
     }
 }
 unsafe extern "C" fn fguv_32x32xn_420_c(
@@ -1604,7 +1604,7 @@ unsafe extern "C" fn fguv_32x32xn_420_neon(
             is_id as ptrdiff_t,
             type_0 as ptrdiff_t,
         );
-        bx = bx.wrapping_add((32 as libc::c_int >> 1) as libc::c_uint);
+        bx = bx.wrapping_add((32 >> 1) as libc::c_uint);
     }
 }
 
@@ -1688,7 +1688,7 @@ unsafe extern "C" fn fguv_32x32xn_422_neon(
             is_id as ptrdiff_t,
             type_0 as ptrdiff_t,
         );
-        bx = bx.wrapping_add((32 as libc::c_int >> 1) as libc::c_uint);
+        bx = bx.wrapping_add((32 >> 1) as libc::c_uint);
     }
 }
 
@@ -1772,7 +1772,7 @@ unsafe extern "C" fn fguv_32x32xn_444_neon(
             is_id as ptrdiff_t,
             type_0 as ptrdiff_t,
         );
-        bx = bx.wrapping_add((32 as libc::c_int >> 0) as libc::c_uint);
+        bx = bx.wrapping_add((32 >> 0) as libc::c_uint);
     }
 }
 

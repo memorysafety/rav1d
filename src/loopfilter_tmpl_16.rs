@@ -432,15 +432,15 @@ unsafe extern "C" fn loop_filter(
                     let mut f: libc::c_int = iclip(
                         p1 - q1,
                         -(128 as libc::c_int) * ((1 as libc::c_int) << bitdepth_min_8),
-                        128 as libc::c_int * ((1 as libc::c_int) << bitdepth_min_8)
+                        128 * ((1 as libc::c_int) << bitdepth_min_8)
                             - 1,
                     );
                     let mut f1: libc::c_int = 0;
                     let mut f2: libc::c_int = 0;
                     f = iclip(
-                        3 as libc::c_int * (q0 - p0) + f,
+                        3 * (q0 - p0) + f,
                         -(128 as libc::c_int) * ((1 as libc::c_int) << bitdepth_min_8),
-                        128 as libc::c_int * ((1 as libc::c_int) << bitdepth_min_8)
+                        128 * ((1 as libc::c_int) << bitdepth_min_8)
                             - 1,
                     );
                     f1 = imin(
@@ -461,9 +461,9 @@ unsafe extern "C" fn loop_filter(
                         ) = iclip(q0 - f1, 0 as libc::c_int, bitdepth_max) as pixel;
                 } else {
                     let mut f_0: libc::c_int = iclip(
-                        3 as libc::c_int * (q0 - p0),
+                        3 * (q0 - p0),
                         -(128 as libc::c_int) * ((1 as libc::c_int) << bitdepth_min_8),
-                        128 as libc::c_int * ((1 as libc::c_int) << bitdepth_min_8)
+                        128 * ((1 as libc::c_int) << bitdepth_min_8)
                             - 1,
                     );
                     let mut f1_0: libc::c_int = 0;
@@ -646,7 +646,7 @@ unsafe extern "C" fn loop_filter_h_sb128uv_c(
                     H,
                     PXSTRIDE(stride),
                     1 as libc::c_int as ptrdiff_t,
-                    4 as libc::c_int + 2 * idx,
+                    4 + 2 * idx,
                     bitdepth_max,
                 );
             }
@@ -694,7 +694,7 @@ unsafe extern "C" fn loop_filter_v_sb128uv_c(
                     H,
                     1 as libc::c_int as ptrdiff_t,
                     PXSTRIDE(stride),
-                    4 as libc::c_int + 2 * idx,
+                    4 + 2 * idx,
                     bitdepth_max,
                 );
             }

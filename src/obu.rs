@@ -960,7 +960,7 @@ unsafe extern "C" fn parse_seq_hdr(
                                 .idc = dav1d_get_bits(gb, 12 as libc::c_int) as libc::c_int;
                             if (*op).idc != 0
                                 && ((*op).idc & 0xff as libc::c_int == 0
-                                    || (*op).idc & 0xf00 as libc::c_int == 0)
+                                    || (*op).idc & 0xf00 == 0)
                             {
                                 current_block = 181392771181400725;
                                 break;
@@ -1817,11 +1817,11 @@ unsafe extern "C" fn parse_frame_hdr(
                     as libc::c_int;
                 (*hdr).tiling.uniform = dav1d_get_bit(gb) as libc::c_int;
                 sbsz_min1 = ((64 as libc::c_int) << (*seqhdr).sb128) - 1;
-                sbsz_log2 = 6 as libc::c_int + (*seqhdr).sb128;
+                sbsz_log2 = 6 + (*seqhdr).sb128;
                 sbw = (*hdr).width[0] + sbsz_min1 >> sbsz_log2;
                 sbh = (*hdr).height + sbsz_min1 >> sbsz_log2;
-                max_tile_width_sb = 4096 as libc::c_int >> sbsz_log2;
-                max_tile_area_sb = 4096 as libc::c_int * 2304
+                max_tile_width_sb = 4096 >> sbsz_log2;
+                max_tile_area_sb = 4096 * 2304
                     >> 2 * sbsz_log2;
                 (*hdr).tiling.min_log2_cols = tile_log2(max_tile_width_sb, sbw);
                 (*hdr)
@@ -2422,7 +2422,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                                 (*hdr)
                                                     .restoration
                                                     .unit_size[0 as libc::c_int
-                                                    as usize] = 6 as libc::c_int + (*seqhdr).sb128;
+                                                    as usize] = 6 + (*seqhdr).sb128;
                                                 if dav1d_get_bit(gb) != 0 {
                                                     (*hdr).restoration.unit_size[0]
                                                         += 1;
@@ -2734,8 +2734,8 @@ unsafe extern "C" fn parse_frame_hdr(
                                                                 bits = 12 as libc::c_int;
                                                                 shift = 10 as libc::c_int;
                                                             } else {
-                                                                bits = 9 as libc::c_int - ((*hdr).hp == 0) as libc::c_int;
-                                                                shift = 13 as libc::c_int + ((*hdr).hp == 0) as libc::c_int;
+                                                                bits = 9 - ((*hdr).hp == 0) as libc::c_int;
+                                                                shift = 13 + ((*hdr).hp == 0) as libc::c_int;
                                                             }
                                                             if (*hdr).gmv[i_19 as usize].type_0 as libc::c_uint
                                                                 == DAV1D_WM_TYPE_AFFINE as libc::c_int as libc::c_uint

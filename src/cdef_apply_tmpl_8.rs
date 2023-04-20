@@ -863,7 +863,7 @@ unsafe extern "C" fn adjust_strength(
     } else {
         0 as libc::c_int
     };
-    return strength * (4 as libc::c_int + i) + 8 >> 4;
+    return strength * (4 + i) + 8 >> 4;
 }
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
@@ -876,7 +876,7 @@ pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
     sby: libc::c_int,
 ) {
     let f: *mut Dav1dFrameContext = (*tc).f as *mut Dav1dFrameContext;
-    let bitdepth_min_8: libc::c_int = if 8 as libc::c_int == 8 {
+    let bitdepth_min_8: libc::c_int = if 8 == 8 {
         0 as libc::c_int
     } else {
         (*f).cur.p.bpc - 8
@@ -1279,7 +1279,7 @@ pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
                                     }
                                     bot = (bptrs[pl as usize])
                                         .offset(
-                                            ((8 as libc::c_int >> ss_ver) as isize * uv_stride)
+                                            ((8 >> ss_ver) as isize * uv_stride)
                                                 as isize,
                                         );
                                     current_block_77 = 6540614962658479183;
@@ -1334,7 +1334,7 @@ pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
                                             ) as *mut pixel;
                                         bot = (bptrs[pl as usize])
                                             .offset(
-                                                ((8 as libc::c_int >> ss_ver) as isize * uv_stride)
+                                                ((8 >> ss_ver) as isize * uv_stride)
                                                     as isize,
                                             );
                                     }
@@ -1367,10 +1367,10 @@ pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
                         .offset(8);
                     bptrs[1 as libc::c_int
                         as usize] = (bptrs[1])
-                        .offset((8 as libc::c_int >> ss_hor) as isize);
+                        .offset((8 >> ss_hor) as isize);
                     bptrs[2 as libc::c_int
                         as usize] = (bptrs[2])
-                        .offset((8 as libc::c_int >> ss_hor) as isize);
+                        .offset((8 >> ss_hor) as isize);
                     bx += 2 as libc::c_int;
                     edges = ::core::mem::transmute::<
                         libc::c_uint,

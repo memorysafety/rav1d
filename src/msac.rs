@@ -319,7 +319,7 @@ pub unsafe extern "C" fn dav1d_msac_decode_symbol_adapt_c(
         while i < val {
             let ref mut fresh2 = *cdf.offset(i as isize);
             *fresh2 = (*fresh2 as libc::c_int
-                + (32768 as libc::c_int - *cdf.offset(i as isize) as libc::c_int
+                + (32768 - *cdf.offset(i as isize) as libc::c_int
                     >> rate)) as uint16_t;
             i = i.wrapping_add(1);
         }

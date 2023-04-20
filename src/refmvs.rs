@@ -282,7 +282,7 @@ unsafe extern "C" fn scan_row(
             imax(
                 2 as libc::c_int,
                 imin(
-                    2 as libc::c_int * max_rows,
+                    2 * max_rows,
                     *first_cand_b_dim.offset(1) as libc::c_int,
                 ),
             )
@@ -354,7 +354,7 @@ unsafe extern "C" fn scan_col(
             imax(
                 2 as libc::c_int,
                 imin(
-                    2 as libc::c_int * max_cols,
+                    2 * max_cols,
                     *first_cand_b_dim.offset(0) as libc::c_int,
                 ),
             )
@@ -1271,7 +1271,7 @@ pub unsafe extern "C" fn dav1d_refmvs_save_tmvs(
     let mut y: libc::c_int = row_start8;
     while y < row_end8 {
         let b: *const refmvs_block = (*rt)
-            .r[(6 as libc::c_int + (y & 15) * 2) as usize];
+            .r[(6 + (y & 15) * 2) as usize];
         let mut x: libc::c_int = col_start8;
         while x < col_end8 {
             let cand_b: *const refmvs_block = &*b

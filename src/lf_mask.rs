@@ -163,7 +163,7 @@ unsafe extern "C" fn decomp_tx(
                         .as_mut_ptr()
                         .offset(0) as *mut uint8_t
                         as *mut alias8))
-                        .u8_0 = (0x1 as libc::c_int * lw) as uint8_t;
+                        .u8_0 = (0x1 * lw) as uint8_t;
                     (*(&mut *(*(*(*txa.offset(1))
                         .as_mut_ptr()
                         .offset(0))
@@ -172,7 +172,7 @@ unsafe extern "C" fn decomp_tx(
                         .as_mut_ptr()
                         .offset(0) as *mut uint8_t
                         as *mut alias8))
-                        .u8_0 = (0x1 as libc::c_int * lh) as uint8_t;
+                        .u8_0 = (0x1 * lh) as uint8_t;
                     (*txa
                         .offset(
                             0 as libc::c_int as isize,
@@ -192,7 +192,7 @@ unsafe extern "C" fn decomp_tx(
                         .as_mut_ptr()
                         .offset(0) as *mut uint8_t
                         as *mut alias16))
-                        .u16_0 = (0x101 as libc::c_int * lw) as uint16_t;
+                        .u16_0 = (0x101 * lw) as uint16_t;
                     (*(&mut *(*(*(*txa.offset(1))
                         .as_mut_ptr()
                         .offset(0))
@@ -201,7 +201,7 @@ unsafe extern "C" fn decomp_tx(
                         .as_mut_ptr()
                         .offset(0) as *mut uint8_t
                         as *mut alias16))
-                        .u16_0 = (0x101 as libc::c_int * lh) as uint16_t;
+                        .u16_0 = (0x101 * lh) as uint16_t;
                     (*txa
                         .offset(
                             0 as libc::c_int as isize,
@@ -283,7 +283,7 @@ unsafe extern "C" fn decomp_tx(
                         .as_mut_ptr()
                         .offset(y_3 as isize))
                         .as_mut_ptr()
-                        .offset((0 as libc::c_int + 0) as isize)
+                        .offset((0 + 0) as isize)
                         as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val;
                     (*(&mut *(*(*(*txa.offset(0))
@@ -292,7 +292,7 @@ unsafe extern "C" fn decomp_tx(
                         .as_mut_ptr()
                         .offset(y_3 as isize))
                         .as_mut_ptr()
-                        .offset((0 as libc::c_int + 8) as isize)
+                        .offset((0 + 8) as isize)
                         as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val;
                     let const_val_0: uint64_t = (0x101010101010101 as libc::c_ulonglong)
@@ -303,7 +303,7 @@ unsafe extern "C" fn decomp_tx(
                         .as_mut_ptr()
                         .offset(y_3 as isize))
                         .as_mut_ptr()
-                        .offset((0 as libc::c_int + 0) as isize)
+                        .offset((0 + 0) as isize)
                         as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_0;
                     (*(&mut *(*(*(*txa.offset(1))
@@ -312,7 +312,7 @@ unsafe extern "C" fn decomp_tx(
                         .as_mut_ptr()
                         .offset(y_3 as isize))
                         .as_mut_ptr()
-                        .offset((0 as libc::c_int + 8) as isize)
+                        .offset((0 + 8) as isize)
                         as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_0;
                     (*txa
@@ -334,7 +334,7 @@ unsafe extern "C" fn decomp_tx(
                     .offset(0))
                     .as_mut_ptr()
                     .offset(0) as *mut uint8_t as *mut alias8))
-                    .u8_0 = (0x1 as libc::c_int * (*t_dim).h as libc::c_int) as uint8_t;
+                    .u8_0 = (0x1 * (*t_dim).h as libc::c_int) as uint8_t;
             }
             2 => {
                 (*(&mut *(*(*(*txa.offset(1))
@@ -344,7 +344,7 @@ unsafe extern "C" fn decomp_tx(
                     .offset(0))
                     .as_mut_ptr()
                     .offset(0) as *mut uint8_t as *mut alias16))
-                    .u16_0 = (0x101 as libc::c_int * (*t_dim).h as libc::c_int)
+                    .u16_0 = (0x101 * (*t_dim).h as libc::c_int)
                     as uint16_t;
             }
             4 => {
@@ -378,7 +378,7 @@ unsafe extern "C" fn decomp_tx(
                     .as_mut_ptr()
                     .offset(0))
                     .as_mut_ptr()
-                    .offset((0 as libc::c_int + 0) as isize)
+                    .offset((0 + 0) as isize)
                     as *mut uint8_t as *mut alias64))
                     .u64_0 = const_val_1;
                 (*(&mut *(*(*(*txa.offset(1))
@@ -387,7 +387,7 @@ unsafe extern "C" fn decomp_tx(
                     .as_mut_ptr()
                     .offset(0))
                     .as_mut_ptr()
-                    .offset((0 as libc::c_int + 8) as isize)
+                    .offset((0 + 8) as isize)
                     as *mut uint8_t as *mut alias64))
                     .u64_0 = const_val_1;
             }
@@ -661,12 +661,12 @@ unsafe extern "C" fn mask_edges_intra(
     match w4 {
         1 => {
             (*(&mut *a.offset(0) as *mut uint8_t as *mut alias8))
-                .u8_0 = (0x1 as libc::c_int * thl4c) as uint8_t;
+                .u8_0 = (0x1 * thl4c) as uint8_t;
         }
         2 => {
             (*(&mut *a.offset(0) as *mut uint8_t
                 as *mut alias16))
-                .u16_0 = (0x101 as libc::c_int * thl4c) as uint16_t;
+                .u16_0 = (0x101 * thl4c) as uint16_t;
         }
         4 => {
             (*(&mut *a.offset(0) as *mut uint8_t
@@ -682,26 +682,26 @@ unsafe extern "C" fn mask_edges_intra(
         16 => {
             let const_val: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                 .wrapping_mul(thl4c as libc::c_ulonglong) as uint64_t;
-            (*(&mut *a.offset((0 as libc::c_int + 0) as isize)
+            (*(&mut *a.offset((0 + 0) as isize)
                 as *mut uint8_t as *mut alias64))
                 .u64_0 = const_val;
-            (*(&mut *a.offset((0 as libc::c_int + 8) as isize)
+            (*(&mut *a.offset((0 + 8) as isize)
                 as *mut uint8_t as *mut alias64))
                 .u64_0 = const_val;
         }
         32 => {
             let const_val_0: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                 .wrapping_mul(thl4c as libc::c_ulonglong) as uint64_t;
-            (*(&mut *a.offset((0 as libc::c_int + 0) as isize)
+            (*(&mut *a.offset((0 + 0) as isize)
                 as *mut uint8_t as *mut alias64))
                 .u64_0 = const_val_0;
-            (*(&mut *a.offset((0 as libc::c_int + 8) as isize)
+            (*(&mut *a.offset((0 + 8) as isize)
                 as *mut uint8_t as *mut alias64))
                 .u64_0 = const_val_0;
-            (*(&mut *a.offset((0 as libc::c_int + 16) as isize)
+            (*(&mut *a.offset((0 + 16) as isize)
                 as *mut uint8_t as *mut alias64))
                 .u64_0 = const_val_0;
-            (*(&mut *a.offset((0 as libc::c_int + 24) as isize)
+            (*(&mut *a.offset((0 + 24) as isize)
                 as *mut uint8_t as *mut alias64))
                 .u64_0 = const_val_0;
         }
@@ -712,12 +712,12 @@ unsafe extern "C" fn mask_edges_intra(
     match h4 {
         1 => {
             (*(&mut *l.offset(0) as *mut uint8_t as *mut alias8))
-                .u8_0 = (0x1 as libc::c_int * twl4c) as uint8_t;
+                .u8_0 = (0x1 * twl4c) as uint8_t;
         }
         2 => {
             (*(&mut *l.offset(0) as *mut uint8_t
                 as *mut alias16))
-                .u16_0 = (0x101 as libc::c_int * twl4c) as uint16_t;
+                .u16_0 = (0x101 * twl4c) as uint16_t;
         }
         4 => {
             (*(&mut *l.offset(0) as *mut uint8_t
@@ -733,26 +733,26 @@ unsafe extern "C" fn mask_edges_intra(
         16 => {
             let const_val_1: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                 .wrapping_mul(twl4c as libc::c_ulonglong) as uint64_t;
-            (*(&mut *l.offset((0 as libc::c_int + 0) as isize)
+            (*(&mut *l.offset((0 + 0) as isize)
                 as *mut uint8_t as *mut alias64))
                 .u64_0 = const_val_1;
-            (*(&mut *l.offset((0 as libc::c_int + 8) as isize)
+            (*(&mut *l.offset((0 + 8) as isize)
                 as *mut uint8_t as *mut alias64))
                 .u64_0 = const_val_1;
         }
         32 => {
             let const_val_2: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                 .wrapping_mul(twl4c as libc::c_ulonglong) as uint64_t;
-            (*(&mut *l.offset((0 as libc::c_int + 0) as isize)
+            (*(&mut *l.offset((0 + 0) as isize)
                 as *mut uint8_t as *mut alias64))
                 .u64_0 = const_val_2;
-            (*(&mut *l.offset((0 as libc::c_int + 8) as isize)
+            (*(&mut *l.offset((0 + 8) as isize)
                 as *mut uint8_t as *mut alias64))
                 .u64_0 = const_val_2;
-            (*(&mut *l.offset((0 as libc::c_int + 16) as isize)
+            (*(&mut *l.offset((0 + 16) as isize)
                 as *mut uint8_t as *mut alias64))
                 .u64_0 = const_val_2;
-            (*(&mut *l.offset((0 as libc::c_int + 24) as isize)
+            (*(&mut *l.offset((0 + 24) as isize)
                 as *mut uint8_t as *mut alias64))
                 .u64_0 = const_val_2;
         }
@@ -782,10 +782,10 @@ unsafe extern "C" fn mask_edges_chroma(
     let thl4c: libc::c_int = (thl4 != 0) as libc::c_int;
     let mut y: libc::c_int = 0;
     let mut x: libc::c_int = 0;
-    let vbits: libc::c_int = 4 as libc::c_int - ss_ver;
-    let hbits: libc::c_int = 4 as libc::c_int - ss_hor;
-    let vmask: libc::c_int = 16 as libc::c_int >> ss_ver;
-    let hmask: libc::c_int = 16 as libc::c_int >> ss_hor;
+    let vbits: libc::c_int = 4 - ss_ver;
+    let hbits: libc::c_int = 4 - ss_hor;
+    let vmask: libc::c_int = 16 >> ss_ver;
+    let hmask: libc::c_int = 16 >> ss_hor;
     let vmax: libc::c_uint = ((1 as libc::c_int) << vmask) as libc::c_uint;
     let hmax: libc::c_uint = ((1 as libc::c_int) << hmask) as libc::c_uint;
     let mut mask: libc::c_uint = (1 as libc::c_uint) << cby4;
@@ -873,12 +873,12 @@ unsafe extern "C" fn mask_edges_chroma(
     match cw4 {
         1 => {
             (*(&mut *a.offset(0) as *mut uint8_t as *mut alias8))
-                .u8_0 = (0x1 as libc::c_int * thl4c) as uint8_t;
+                .u8_0 = (0x1 * thl4c) as uint8_t;
         }
         2 => {
             (*(&mut *a.offset(0) as *mut uint8_t
                 as *mut alias16))
-                .u16_0 = (0x101 as libc::c_int * thl4c) as uint16_t;
+                .u16_0 = (0x101 * thl4c) as uint16_t;
         }
         4 => {
             (*(&mut *a.offset(0) as *mut uint8_t
@@ -894,26 +894,26 @@ unsafe extern "C" fn mask_edges_chroma(
         16 => {
             let const_val: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                 .wrapping_mul(thl4c as libc::c_ulonglong) as uint64_t;
-            (*(&mut *a.offset((0 as libc::c_int + 0) as isize)
+            (*(&mut *a.offset((0 + 0) as isize)
                 as *mut uint8_t as *mut alias64))
                 .u64_0 = const_val;
-            (*(&mut *a.offset((0 as libc::c_int + 8) as isize)
+            (*(&mut *a.offset((0 + 8) as isize)
                 as *mut uint8_t as *mut alias64))
                 .u64_0 = const_val;
         }
         32 => {
             let const_val_0: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                 .wrapping_mul(thl4c as libc::c_ulonglong) as uint64_t;
-            (*(&mut *a.offset((0 as libc::c_int + 0) as isize)
+            (*(&mut *a.offset((0 + 0) as isize)
                 as *mut uint8_t as *mut alias64))
                 .u64_0 = const_val_0;
-            (*(&mut *a.offset((0 as libc::c_int + 8) as isize)
+            (*(&mut *a.offset((0 + 8) as isize)
                 as *mut uint8_t as *mut alias64))
                 .u64_0 = const_val_0;
-            (*(&mut *a.offset((0 as libc::c_int + 16) as isize)
+            (*(&mut *a.offset((0 + 16) as isize)
                 as *mut uint8_t as *mut alias64))
                 .u64_0 = const_val_0;
-            (*(&mut *a.offset((0 as libc::c_int + 24) as isize)
+            (*(&mut *a.offset((0 + 24) as isize)
                 as *mut uint8_t as *mut alias64))
                 .u64_0 = const_val_0;
         }
@@ -924,12 +924,12 @@ unsafe extern "C" fn mask_edges_chroma(
     match ch4 {
         1 => {
             (*(&mut *l.offset(0) as *mut uint8_t as *mut alias8))
-                .u8_0 = (0x1 as libc::c_int * twl4c) as uint8_t;
+                .u8_0 = (0x1 * twl4c) as uint8_t;
         }
         2 => {
             (*(&mut *l.offset(0) as *mut uint8_t
                 as *mut alias16))
-                .u16_0 = (0x101 as libc::c_int * twl4c) as uint16_t;
+                .u16_0 = (0x101 * twl4c) as uint16_t;
         }
         4 => {
             (*(&mut *l.offset(0) as *mut uint8_t
@@ -945,26 +945,26 @@ unsafe extern "C" fn mask_edges_chroma(
         16 => {
             let const_val_1: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                 .wrapping_mul(twl4c as libc::c_ulonglong) as uint64_t;
-            (*(&mut *l.offset((0 as libc::c_int + 0) as isize)
+            (*(&mut *l.offset((0 + 0) as isize)
                 as *mut uint8_t as *mut alias64))
                 .u64_0 = const_val_1;
-            (*(&mut *l.offset((0 as libc::c_int + 8) as isize)
+            (*(&mut *l.offset((0 + 8) as isize)
                 as *mut uint8_t as *mut alias64))
                 .u64_0 = const_val_1;
         }
         32 => {
             let const_val_2: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                 .wrapping_mul(twl4c as libc::c_ulonglong) as uint64_t;
-            (*(&mut *l.offset((0 as libc::c_int + 0) as isize)
+            (*(&mut *l.offset((0 + 0) as isize)
                 as *mut uint8_t as *mut alias64))
                 .u64_0 = const_val_2;
-            (*(&mut *l.offset((0 as libc::c_int + 8) as isize)
+            (*(&mut *l.offset((0 + 8) as isize)
                 as *mut uint8_t as *mut alias64))
                 .u64_0 = const_val_2;
-            (*(&mut *l.offset((0 as libc::c_int + 16) as isize)
+            (*(&mut *l.offset((0 + 16) as isize)
                 as *mut uint8_t as *mut alias64))
                 .u64_0 = const_val_2;
-            (*(&mut *l.offset((0 as libc::c_int + 24) as isize)
+            (*(&mut *l.offset((0 + 24) as isize)
                 as *mut uint8_t as *mut alias64))
                 .u64_0 = const_val_2;
         }
@@ -1252,13 +1252,13 @@ pub unsafe extern "C" fn dav1d_calc_eih(
         let mut limit: libc::c_int = level;
         if sharp > 0 {
             limit >>= sharp + 3 >> 2;
-            limit = imin(limit, 9 as libc::c_int - sharp);
+            limit = imin(limit, 9 - sharp);
         }
         limit = imax(limit, 1 as libc::c_int);
         (*lim_lut).i[level as usize] = limit as uint8_t;
         (*lim_lut)
             .e[level
-            as usize] = (2 as libc::c_int * (level + 2) + limit)
+            as usize] = (2 * (level + 2) + limit)
             as uint8_t;
         level += 1;
     }
@@ -1268,7 +1268,7 @@ pub unsafe extern "C" fn dav1d_calc_eih(
     (*lim_lut)
         .sharp[1 as libc::c_int
         as usize] = (if sharp != 0 {
-        9 as libc::c_int - sharp
+        9 - sharp
     } else {
         0xff as libc::c_int
     }) as uint64_t;
@@ -1289,7 +1289,7 @@ unsafe extern "C" fn calc_lf_value(
         memset(
             lflvl_values as *mut libc::c_void,
             base,
-            (8 as libc::c_int * 2) as libc::c_ulong,
+            (8 * 2) as libc::c_ulong,
         );
     } else {
         let sh: libc::c_int = (base >= 32) as libc::c_int;
@@ -1337,7 +1337,7 @@ unsafe extern "C" fn calc_lf_value_chroma(
         memset(
             lflvl_values as *mut libc::c_void,
             0 as libc::c_int,
-            (8 as libc::c_int * 2) as libc::c_ulong,
+            (8 * 2) as libc::c_ulong,
         );
     } else {
         calc_lf_value(lflvl_values, base_lvl, lf_delta, seg_delta, mr_delta);
@@ -1360,7 +1360,7 @@ pub unsafe extern "C" fn dav1d_calc_lf_values(
         memset(
             lflvl_values as *mut libc::c_void,
             0 as libc::c_int,
-            (8 as libc::c_int * 4 * 2 * n_seg)
+            (8 * 4 * 2 * n_seg)
                 as libc::c_ulong,
         );
         return;

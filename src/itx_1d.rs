@@ -34,9 +34,9 @@ unsafe extern "C" fn inv_dct4_1d_internal_c(
         t0 = (in0 + in2) * 181 + 128 >> 8;
         t1 = (in0 - in2) * 181 + 128 >> 8;
         t2 = (in1 * 1567
-            - in3 * (3784 as libc::c_int - 4096) + 2048
+            - in3 * (3784 - 4096) + 2048
             >> 12) - in3;
-        t3 = (in1 * (3784 as libc::c_int - 4096)
+        t3 = (in1 * (3784 - 4096)
             + in3 * 1567 + 2048 >> 12)
             + in1;
     }
@@ -97,13 +97,13 @@ unsafe extern "C" fn inv_dct8_1d_internal_c(
         let in7: libc::c_int = *c
             .offset((7 * stride) as isize);
         t4a = (in1 * 799
-            - in7 * (4017 as libc::c_int - 4096) + 2048
+            - in7 * (4017 - 4096) + 2048
             >> 12) - in7;
         t5a = in5 * 1703 - in3 * 1138 + 1024
             >> 11;
         t6a = in5 * 1138 + in3 * 1703 + 1024
             >> 11;
-        t7a = (in1 * (4017 as libc::c_int - 4096)
+        t7a = (in1 * (4017 - 4096)
             + in7 * 799 + 2048 >> 12) + in1;
     }
     let t4: libc::c_int = iclip(t4a + t5a, min, max);
@@ -211,25 +211,25 @@ unsafe extern "C" fn inv_dct16_1d_internal_c(
         let in15: libc::c_int = *c
             .offset((15 * stride) as isize);
         t8a = (in1 * 401
-            - in15 * (4076 as libc::c_int - 4096) + 2048
+            - in15 * (4076 - 4096) + 2048
             >> 12) - in15;
         t9a = in9 * 1583 - in7 * 1299 + 1024
             >> 11;
         t10a = (in5 * 1931
-            - in11 * (3612 as libc::c_int - 4096) + 2048
+            - in11 * (3612 - 4096) + 2048
             >> 12) - in11;
-        t11a = (in13 * (3920 as libc::c_int - 4096)
+        t11a = (in13 * (3920 - 4096)
             - in3 * 1189 + 2048 >> 12)
             + in13;
         t12a = (in13 * 1189
-            + in3 * (3920 as libc::c_int - 4096) + 2048
+            + in3 * (3920 - 4096) + 2048
             >> 12) + in3;
-        t13a = (in5 * (3612 as libc::c_int - 4096)
+        t13a = (in5 * (3612 - 4096)
             + in11 * 1931 + 2048 >> 12)
             + in5;
         t14a = in9 * 1299 + in7 * 1583
             + 1024 >> 11;
-        t15a = (in1 * (4076 as libc::c_int - 4096)
+        t15a = (in1 * (4076 - 4096)
             + in15 * 401 + 2048 >> 12)
             + in1;
     }
@@ -241,13 +241,13 @@ unsafe extern "C" fn inv_dct16_1d_internal_c(
     let mut t13: libc::c_int = iclip(t12a - t13a, min, max);
     let mut t14: libc::c_int = iclip(t15a - t14a, min, max);
     let mut t15: libc::c_int = iclip(t15a + t14a, min, max);
-    t9a = (t14 * 1567 - t9 * (3784 as libc::c_int - 4096)
+    t9a = (t14 * 1567 - t9 * (3784 - 4096)
         + 2048 >> 12) - t9;
-    t14a = (t14 * (3784 as libc::c_int - 4096) + t9 * 1567
+    t14a = (t14 * (3784 - 4096) + t9 * 1567
         + 2048 >> 12) + t14;
-    t10a = (-(t13 * (3784 as libc::c_int - 4096)
+    t10a = (-(t13 * (3784 - 4096)
         + t10 * 1567) + 2048 >> 12) - t13;
-    t13a = (t13 * 1567 - t10 * (3784 as libc::c_int - 4096)
+    t13a = (t13 * 1567 - t10 * (3784 - 4096)
         + 2048 >> 12) - t10;
     t8a = iclip(t8 + t11, min, max);
     t9 = iclip(t9a + t10a, min, max);
@@ -430,49 +430,49 @@ unsafe extern "C" fn inv_dct32_1d_internal_c(
         let in31: libc::c_int = *c
             .offset((31 * stride) as isize);
         t16a = (in1 * 201
-            - in31 * (4091 as libc::c_int - 4096) + 2048
+            - in31 * (4091 - 4096) + 2048
             >> 12) - in31;
-        t17a = (in17 * (3035 as libc::c_int - 4096)
+        t17a = (in17 * (3035 - 4096)
             - in15 * 2751 + 2048 >> 12)
             + in17;
         t18a = (in9 * 1751
-            - in23 * (3703 as libc::c_int - 4096) + 2048
+            - in23 * (3703 - 4096) + 2048
             >> 12) - in23;
-        t19a = (in25 * (3857 as libc::c_int - 4096)
+        t19a = (in25 * (3857 - 4096)
             - in7 * 1380 + 2048 >> 12)
             + in25;
         t20a = (in5 * 995
-            - in27 * (3973 as libc::c_int - 4096) + 2048
+            - in27 * (3973 - 4096) + 2048
             >> 12) - in27;
-        t21a = (in21 * (3513 as libc::c_int - 4096)
+        t21a = (in21 * (3513 - 4096)
             - in11 * 2106 + 2048 >> 12)
             + in21;
         t22a = in13 * 1220 - in19 * 1645
             + 1024 >> 11;
-        t23a = (in29 * (4052 as libc::c_int - 4096)
+        t23a = (in29 * (4052 - 4096)
             - in3 * 601 + 2048 >> 12)
             + in29;
         t24a = (in29 * 601
-            + in3 * (4052 as libc::c_int - 4096) + 2048
+            + in3 * (4052 - 4096) + 2048
             >> 12) + in3;
         t25a = in13 * 1645 + in19 * 1220
             + 1024 >> 11;
         t26a = (in21 * 2106
-            + in11 * (3513 as libc::c_int - 4096) + 2048
+            + in11 * (3513 - 4096) + 2048
             >> 12) + in11;
-        t27a = (in5 * (3973 as libc::c_int - 4096)
+        t27a = (in5 * (3973 - 4096)
             + in27 * 995 + 2048 >> 12)
             + in5;
         t28a = (in25 * 1380
-            + in7 * (3857 as libc::c_int - 4096) + 2048
+            + in7 * (3857 - 4096) + 2048
             >> 12) + in7;
-        t29a = (in9 * (3703 as libc::c_int - 4096)
+        t29a = (in9 * (3703 - 4096)
             + in23 * 1751 + 2048 >> 12)
             + in9;
         t30a = (in17 * 2751
-            + in15 * (3035 as libc::c_int - 4096) + 2048
+            + in15 * (3035 - 4096) + 2048
             >> 12) + in15;
-        t31a = (in1 * (4091 as libc::c_int - 4096)
+        t31a = (in1 * (4091 - 4096)
             + in31 * 201 + 2048 >> 12)
             + in1;
     }
@@ -492,13 +492,13 @@ unsafe extern "C" fn inv_dct32_1d_internal_c(
     let mut t29: libc::c_int = iclip(t28a - t29a, min, max);
     let mut t30: libc::c_int = iclip(t31a - t30a, min, max);
     let mut t31: libc::c_int = iclip(t31a + t30a, min, max);
-    t17a = (t30 * 799 - t17 * (4017 as libc::c_int - 4096)
+    t17a = (t30 * 799 - t17 * (4017 - 4096)
         + 2048 >> 12) - t17;
-    t30a = (t30 * (4017 as libc::c_int - 4096) + t17 * 799
+    t30a = (t30 * (4017 - 4096) + t17 * 799
         + 2048 >> 12) + t30;
-    t18a = (-(t29 * (4017 as libc::c_int - 4096)
+    t18a = (-(t29 * (4017 - 4096)
         + t18 * 799) + 2048 >> 12) - t29;
-    t29a = (t29 * 799 - t18 * (4017 as libc::c_int - 4096)
+    t29a = (t29 * 799 - t18 * (4017 - 4096)
         + 2048 >> 12) - t18;
     t21a = t26 * 1703 - t21 * 1138 + 1024
         >> 11;
@@ -524,23 +524,23 @@ unsafe extern "C" fn inv_dct32_1d_internal_c(
     t29 = iclip(t30a - t29a, min, max);
     t30 = iclip(t30a + t29a, min, max);
     t31a = iclip(t31 + t28, min, max);
-    t18a = (t29 * 1567 - t18 * (3784 as libc::c_int - 4096)
+    t18a = (t29 * 1567 - t18 * (3784 - 4096)
         + 2048 >> 12) - t18;
-    t29a = (t29 * (3784 as libc::c_int - 4096) + t18 * 1567
+    t29a = (t29 * (3784 - 4096) + t18 * 1567
         + 2048 >> 12) + t29;
     t19 = (t28a * 1567
-        - t19a * (3784 as libc::c_int - 4096) + 2048
+        - t19a * (3784 - 4096) + 2048
         >> 12) - t19a;
-    t28 = (t28a * (3784 as libc::c_int - 4096)
+    t28 = (t28a * (3784 - 4096)
         + t19a * 1567 + 2048 >> 12) + t28a;
-    t20 = (-(t27a * (3784 as libc::c_int - 4096)
+    t20 = (-(t27a * (3784 - 4096)
         + t20a * 1567) + 2048 >> 12) - t27a;
     t27 = (t27a * 1567
-        - t20a * (3784 as libc::c_int - 4096) + 2048
+        - t20a * (3784 - 4096) + 2048
         >> 12) - t20a;
-    t21a = (-(t26 * (3784 as libc::c_int - 4096)
+    t21a = (-(t26 * (3784 - 4096)
         + t21 * 1567) + 2048 >> 12) - t26;
-    t26a = (t26 * 1567 - t21 * (3784 as libc::c_int - 4096)
+    t26a = (t26 * 1567 - t21 * (3784 - 4096)
         + 2048 >> 12) - t21;
     t16 = iclip(t16a + t23a, min, max);
     t17a = iclip(t17 + t22, min, max);
@@ -875,41 +875,41 @@ pub unsafe extern "C" fn dav1d_inv_dct64_1d_c(
     let mut t61: libc::c_int = iclip(t60a - t61a, min, max);
     let mut t62: libc::c_int = iclip(t63a - t62a, min, max);
     let mut t63: libc::c_int = iclip(t63a + t62a, min, max);
-    t33a = (t33 * (4096 as libc::c_int - 4076) + t62 * 401
+    t33a = (t33 * (4096 - 4076) + t62 * 401
         + 2048 >> 12) - t33;
     t34a = (t34 * -(401 as libc::c_int)
-        + t61 * (4096 as libc::c_int - 4076) + 2048
+        + t61 * (4096 - 4076) + 2048
         >> 12) - t61;
     t37a = t37 * -(1299 as libc::c_int) + t58 * 1583 + 1024
         >> 11;
     t38a = t38 * -(1583 as libc::c_int) + t57 * -(1299 as libc::c_int)
         + 1024 >> 11;
-    t41a = (t41 * (4096 as libc::c_int - 3612) + t54 * 1931
+    t41a = (t41 * (4096 - 3612) + t54 * 1931
         + 2048 >> 12) - t41;
     t42a = (t42 * -(1931 as libc::c_int)
-        + t53 * (4096 as libc::c_int - 3612) + 2048
+        + t53 * (4096 - 3612) + 2048
         >> 12) - t53;
     t45a = (t45 * -(1189 as libc::c_int)
-        + t50 * (3920 as libc::c_int - 4096) + 2048
+        + t50 * (3920 - 4096) + 2048
         >> 12) + t50;
-    t46a = (t46 * (4096 as libc::c_int - 3920)
+    t46a = (t46 * (4096 - 3920)
         + t49 * -(1189 as libc::c_int) + 2048 >> 12) - t46;
     t49a = (t46 * -(1189 as libc::c_int)
-        + t49 * (3920 as libc::c_int - 4096) + 2048
+        + t49 * (3920 - 4096) + 2048
         >> 12) + t49;
-    t50a = (t45 * (3920 as libc::c_int - 4096) + t50 * 1189
+    t50a = (t45 * (3920 - 4096) + t50 * 1189
         + 2048 >> 12) + t45;
-    t53a = (t42 * (4096 as libc::c_int - 3612) + t53 * 1931
+    t53a = (t42 * (4096 - 3612) + t53 * 1931
         + 2048 >> 12) - t42;
-    t54a = (t41 * 1931 + t54 * (3612 as libc::c_int - 4096)
+    t54a = (t41 * 1931 + t54 * (3612 - 4096)
         + 2048 >> 12) + t54;
     t57a = t38 * -(1299 as libc::c_int) + t57 * 1583 + 1024
         >> 11;
     t58a = t37 * 1583 + t58 * 1299 + 1024
         >> 11;
-    t61a = (t34 * (4096 as libc::c_int - 4076) + t61 * 401
+    t61a = (t34 * (4096 - 4076) + t61 * 401
         + 2048 >> 12) - t34;
-    t62a = (t33 * 401 + t62 * (4076 as libc::c_int - 4096)
+    t62a = (t33 * 401 + t62 * (4076 - 4096)
         + 2048 >> 12) + t62;
     t32a = iclip(t32 + t35, min, max);
     t33 = iclip(t33a + t34a, min, max);
@@ -943,15 +943,15 @@ pub unsafe extern "C" fn dav1d_inv_dct64_1d_c(
     t61 = iclip(t62a - t61a, min, max);
     t62 = iclip(t62a + t61a, min, max);
     t63a = iclip(t63 + t60, min, max);
-    t34a = (t34 * (4096 as libc::c_int - 4017) + t61 * 799
+    t34a = (t34 * (4096 - 4017) + t61 * 799
         + 2048 >> 12) - t34;
-    t35 = (t35a * (4096 as libc::c_int - 4017) + t60a * 799
+    t35 = (t35a * (4096 - 4017) + t60a * 799
         + 2048 >> 12) - t35a;
     t36 = (t36a * -(799 as libc::c_int)
-        + t59a * (4096 as libc::c_int - 4017) + 2048
+        + t59a * (4096 - 4017) + 2048
         >> 12) - t59a;
     t37a = (t37 * -(799 as libc::c_int)
-        + t58 * (4096 as libc::c_int - 4017) + 2048
+        + t58 * (4096 - 4017) + 2048
         >> 12) - t58;
     t42a = t42 * -(1138 as libc::c_int) + t53 * 1703 + 1024
         >> 11;
@@ -969,13 +969,13 @@ pub unsafe extern "C" fn dav1d_inv_dct64_1d_c(
         >> 11;
     t53a = t42 * 1703 + t53 * 1138 + 1024
         >> 11;
-    t58a = (t37 * (4096 as libc::c_int - 4017) + t58 * 799
+    t58a = (t37 * (4096 - 4017) + t58 * 799
         + 2048 >> 12) - t37;
-    t59 = (t36a * (4096 as libc::c_int - 4017) + t59a * 799
+    t59 = (t36a * (4096 - 4017) + t59a * 799
         + 2048 >> 12) - t36a;
-    t60 = (t35a * 799 + t60a * (4017 as libc::c_int - 4096)
+    t60 = (t35a * 799 + t60a * (4017 - 4096)
         + 2048 >> 12) + t60a;
-    t61a = (t34 * 799 + t61 * (4017 as libc::c_int - 4096)
+    t61a = (t34 * 799 + t61 * (4017 - 4096)
         + 2048 >> 12) + t61;
     t32 = iclip(t32a + t39a, min, max);
     t33a = iclip(t33 + t38, min, max);
@@ -1009,43 +1009,43 @@ pub unsafe extern "C" fn dav1d_inv_dct64_1d_c(
     t61 = iclip(t61a + t58a, min, max);
     t62a = iclip(t62 + t57, min, max);
     t63 = iclip(t63a + t56a, min, max);
-    t36 = (t36a * (4096 as libc::c_int - 3784)
+    t36 = (t36a * (4096 - 3784)
         + t59a * 1567 + 2048 >> 12) - t36a;
-    t37a = (t37 * (4096 as libc::c_int - 3784) + t58 * 1567
+    t37a = (t37 * (4096 - 3784) + t58 * 1567
         + 2048 >> 12) - t37;
-    t38 = (t38a * (4096 as libc::c_int - 3784)
+    t38 = (t38a * (4096 - 3784)
         + t57a * 1567 + 2048 >> 12) - t38a;
-    t39a = (t39 * (4096 as libc::c_int - 3784) + t56 * 1567
+    t39a = (t39 * (4096 - 3784) + t56 * 1567
         + 2048 >> 12) - t39;
     t40a = (t40 * -(1567 as libc::c_int)
-        + t55 * (4096 as libc::c_int - 3784) + 2048
+        + t55 * (4096 - 3784) + 2048
         >> 12) - t55;
     t41 = (t41a * -(1567 as libc::c_int)
-        + t54a * (4096 as libc::c_int - 3784) + 2048
+        + t54a * (4096 - 3784) + 2048
         >> 12) - t54a;
     t42a = (t42 * -(1567 as libc::c_int)
-        + t53 * (4096 as libc::c_int - 3784) + 2048
+        + t53 * (4096 - 3784) + 2048
         >> 12) - t53;
     t43 = (t43a * -(1567 as libc::c_int)
-        + t52a * (4096 as libc::c_int - 3784) + 2048
+        + t52a * (4096 - 3784) + 2048
         >> 12) - t52a;
-    t52 = (t43a * (4096 as libc::c_int - 3784)
+    t52 = (t43a * (4096 - 3784)
         + t52a * 1567 + 2048 >> 12) - t43a;
-    t53a = (t42 * (4096 as libc::c_int - 3784) + t53 * 1567
+    t53a = (t42 * (4096 - 3784) + t53 * 1567
         + 2048 >> 12) - t42;
-    t54 = (t41a * (4096 as libc::c_int - 3784)
+    t54 = (t41a * (4096 - 3784)
         + t54a * 1567 + 2048 >> 12) - t41a;
-    t55a = (t40 * (4096 as libc::c_int - 3784) + t55 * 1567
+    t55a = (t40 * (4096 - 3784) + t55 * 1567
         + 2048 >> 12) - t40;
-    t56a = (t39 * 1567 + t56 * (3784 as libc::c_int - 4096)
+    t56a = (t39 * 1567 + t56 * (3784 - 4096)
         + 2048 >> 12) + t56;
     t57 = (t38a * 1567
-        + t57a * (3784 as libc::c_int - 4096) + 2048
+        + t57a * (3784 - 4096) + 2048
         >> 12) + t57a;
-    t58a = (t37 * 1567 + t58 * (3784 as libc::c_int - 4096)
+    t58a = (t37 * 1567 + t58 * (3784 - 4096)
         + 2048 >> 12) + t58;
     t59 = (t36a * 1567
-        + t59a * (3784 as libc::c_int - 4096) + 2048
+        + t59a * (3784 - 4096) + 2048
         >> 12) + t59a;
     t32a = iclip(t32 + t47, min, max);
     t33 = iclip(t33a + t46a, min, max);
@@ -1441,29 +1441,29 @@ unsafe extern "C" fn inv_adst4_1d_internal_c(
     *out
         .offset(
             (0 * out_s) as isize,
-        ) = (1321 as libc::c_int * in0
-        + (3803 as libc::c_int - 4096) * in2
-        + (2482 as libc::c_int - 4096) * in3
-        + (3344 as libc::c_int - 4096) * in1 + 2048
+        ) = (1321 * in0
+        + (3803 - 4096) * in2
+        + (2482 - 4096) * in3
+        + (3344 - 4096) * in1 + 2048
         >> 12) + in2 + in3 + in1;
     *out
         .offset(
             (1 * out_s) as isize,
-        ) = ((2482 as libc::c_int - 4096) * in0
-        - 1321 * in2 - (3803 as libc::c_int - 4096) * in3
-        + (3344 as libc::c_int - 4096) * in1 + 2048
+        ) = ((2482 - 4096) * in0
+        - 1321 * in2 - (3803 - 4096) * in3
+        + (3344 - 4096) * in1 + 2048
         >> 12) + in0 - in3 + in1;
     *out
         .offset(
             (2 * out_s) as isize,
-        ) = 209 as libc::c_int * (in0 - in2 + in3) + 128
+        ) = 209 * (in0 - in2 + in3) + 128
         >> 8;
     *out
         .offset(
             (3 * out_s) as isize,
-        ) = ((3803 as libc::c_int - 4096) * in0
-        + (2482 as libc::c_int - 4096) * in2 - 1321 * in3
-        - (3344 as libc::c_int - 4096) * in1 + 2048
+        ) = ((3803 - 4096) * in0
+        + (2482 - 4096) * in2 - 1321 * in3
+        - (3344 - 4096) * in1 + 2048
         >> 12) + in0 + in2 - in1;
 }
 #[inline(never)]
@@ -1496,24 +1496,24 @@ unsafe extern "C" fn inv_adst8_1d_internal_c(
         .offset((6 * in_s) as isize);
     let in7: libc::c_int = *in_0
         .offset((7 * in_s) as isize);
-    let t0a: libc::c_int = ((4076 as libc::c_int - 4096) * in7
+    let t0a: libc::c_int = ((4076 - 4096) * in7
         + 401 * in0 + 2048 >> 12) + in7;
-    let t1a: libc::c_int = (401 as libc::c_int * in7
-        - (4076 as libc::c_int - 4096) * in0 + 2048
+    let t1a: libc::c_int = (401 * in7
+        - (4076 - 4096) * in0 + 2048
         >> 12) - in0;
-    let t2a: libc::c_int = ((3612 as libc::c_int - 4096) * in5
+    let t2a: libc::c_int = ((3612 - 4096) * in5
         + 1931 * in2 + 2048 >> 12) + in5;
-    let t3a: libc::c_int = (1931 as libc::c_int * in5
-        - (3612 as libc::c_int - 4096) * in2 + 2048
+    let t3a: libc::c_int = (1931 * in5
+        - (3612 - 4096) * in2 + 2048
         >> 12) - in2;
-    let mut t4a: libc::c_int = 1299 as libc::c_int * in3 + 1583 * in4
+    let mut t4a: libc::c_int = 1299 * in3 + 1583 * in4
         + 1024 >> 11;
-    let mut t5a: libc::c_int = 1583 as libc::c_int * in3 - 1299 * in4
+    let mut t5a: libc::c_int = 1583 * in3 - 1299 * in4
         + 1024 >> 11;
-    let mut t6a: libc::c_int = (1189 as libc::c_int * in1
-        + (3920 as libc::c_int - 4096) * in6 + 2048
+    let mut t6a: libc::c_int = (1189 * in1
+        + (3920 - 4096) * in6 + 2048
         >> 12) + in6;
-    let mut t7a: libc::c_int = ((3920 as libc::c_int - 4096) * in1
+    let mut t7a: libc::c_int = ((3920 - 4096) * in1
         - 1189 * in6 + 2048 >> 12) + in1;
     let t0: libc::c_int = iclip(t0a + t4a, min, max);
     let t1: libc::c_int = iclip(t1a + t5a, min, max);
@@ -1523,13 +1523,13 @@ unsafe extern "C" fn inv_adst8_1d_internal_c(
     let t5: libc::c_int = iclip(t1a - t5a, min, max);
     let mut t6: libc::c_int = iclip(t2a - t6a, min, max);
     let mut t7: libc::c_int = iclip(t3a - t7a, min, max);
-    t4a = ((3784 as libc::c_int - 4096) * t4 + 1567 * t5
+    t4a = ((3784 - 4096) * t4 + 1567 * t5
         + 2048 >> 12) + t4;
-    t5a = (1567 as libc::c_int * t4 - (3784 as libc::c_int - 4096) * t5
+    t5a = (1567 * t4 - (3784 - 4096) * t5
         + 2048 >> 12) - t5;
-    t6a = ((3784 as libc::c_int - 4096) * t7 - 1567 * t6
+    t6a = ((3784 - 4096) * t7 - 1567 * t6
         + 2048 >> 12) + t7;
-    t7a = (1567 as libc::c_int * t7 + (3784 as libc::c_int - 4096) * t6
+    t7a = (1567 * t7 + (3784 - 4096) * t6
         + 2048 >> 12) + t6;
     *out
         .offset(
@@ -1614,44 +1614,44 @@ unsafe extern "C" fn inv_adst16_1d_internal_c(
         .offset((14 * in_s) as isize);
     let in15: libc::c_int = *in_0
         .offset((15 * in_s) as isize);
-    let mut t0: libc::c_int = (in15 * (4091 as libc::c_int - 4096)
+    let mut t0: libc::c_int = (in15 * (4091 - 4096)
         + in0 * 201 + 2048 >> 12) + in15;
     let mut t1: libc::c_int = (in15 * 201
-        - in0 * (4091 as libc::c_int - 4096) + 2048
+        - in0 * (4091 - 4096) + 2048
         >> 12) - in0;
-    let mut t2: libc::c_int = (in13 * (3973 as libc::c_int - 4096)
+    let mut t2: libc::c_int = (in13 * (3973 - 4096)
         + in2 * 995 + 2048 >> 12) + in13;
     let mut t3: libc::c_int = (in13 * 995
-        - in2 * (3973 as libc::c_int - 4096) + 2048
+        - in2 * (3973 - 4096) + 2048
         >> 12) - in2;
-    let mut t4: libc::c_int = (in11 * (3703 as libc::c_int - 4096)
+    let mut t4: libc::c_int = (in11 * (3703 - 4096)
         + in4 * 1751 + 2048 >> 12) + in11;
     let mut t5: libc::c_int = (in11 * 1751
-        - in4 * (3703 as libc::c_int - 4096) + 2048
+        - in4 * (3703 - 4096) + 2048
         >> 12) - in4;
     let mut t6: libc::c_int = in9 * 1645 + in6 * 1220
         + 1024 >> 11;
     let mut t7: libc::c_int = in9 * 1220 - in6 * 1645
         + 1024 >> 11;
     let mut t8: libc::c_int = (in7 * 2751
-        + in8 * (3035 as libc::c_int - 4096) + 2048
+        + in8 * (3035 - 4096) + 2048
         >> 12) + in8;
-    let mut t9: libc::c_int = (in7 * (3035 as libc::c_int - 4096)
+    let mut t9: libc::c_int = (in7 * (3035 - 4096)
         - in8 * 2751 + 2048 >> 12) + in7;
     let mut t10: libc::c_int = (in5 * 2106
-        + in10 * (3513 as libc::c_int - 4096) + 2048
+        + in10 * (3513 - 4096) + 2048
         >> 12) + in10;
-    let mut t11: libc::c_int = (in5 * (3513 as libc::c_int - 4096)
+    let mut t11: libc::c_int = (in5 * (3513 - 4096)
         - in10 * 2106 + 2048 >> 12) + in5;
     let mut t12: libc::c_int = (in3 * 1380
-        + in12 * (3857 as libc::c_int - 4096) + 2048
+        + in12 * (3857 - 4096) + 2048
         >> 12) + in12;
-    let mut t13: libc::c_int = (in3 * (3857 as libc::c_int - 4096)
+    let mut t13: libc::c_int = (in3 * (3857 - 4096)
         - in12 * 1380 + 2048 >> 12) + in3;
     let mut t14: libc::c_int = (in1 * 601
-        + in14 * (4052 as libc::c_int - 4096) + 2048
+        + in14 * (4052 - 4096) + 2048
         >> 12) + in14;
-    let mut t15: libc::c_int = (in1 * (4052 as libc::c_int - 4096)
+    let mut t15: libc::c_int = (in1 * (4052 - 4096)
         - in14 * 601 + 2048 >> 12) + in1;
     let mut t0a: libc::c_int = iclip(t0 + t8, min, max);
     let mut t1a: libc::c_int = iclip(t1 + t9, min, max);
@@ -1669,23 +1669,23 @@ unsafe extern "C" fn inv_adst16_1d_internal_c(
     let mut t13a: libc::c_int = iclip(t5 - t13, min, max);
     let mut t14a: libc::c_int = iclip(t6 - t14, min, max);
     let mut t15a: libc::c_int = iclip(t7 - t15, min, max);
-    t8 = (t8a * (4017 as libc::c_int - 4096) + t9a * 799
+    t8 = (t8a * (4017 - 4096) + t9a * 799
         + 2048 >> 12) + t8a;
-    t9 = (t8a * 799 - t9a * (4017 as libc::c_int - 4096)
+    t9 = (t8a * 799 - t9a * (4017 - 4096)
         + 2048 >> 12) - t9a;
     t10 = (t10a * 2276
-        + t11a * (3406 as libc::c_int - 4096) + 2048
+        + t11a * (3406 - 4096) + 2048
         >> 12) + t11a;
-    t11 = (t10a * (3406 as libc::c_int - 4096)
+    t11 = (t10a * (3406 - 4096)
         - t11a * 2276 + 2048 >> 12) + t10a;
-    t12 = (t13a * (4017 as libc::c_int - 4096) - t12a * 799
+    t12 = (t13a * (4017 - 4096) - t12a * 799
         + 2048 >> 12) + t13a;
-    t13 = (t13a * 799 + t12a * (4017 as libc::c_int - 4096)
+    t13 = (t13a * 799 + t12a * (4017 - 4096)
         + 2048 >> 12) + t12a;
     t14 = (t15a * 2276
-        - t14a * (3406 as libc::c_int - 4096) + 2048
+        - t14a * (3406 - 4096) + 2048
         >> 12) - t14a;
-    t15 = (t15a * (3406 as libc::c_int - 4096)
+    t15 = (t15a * (3406 - 4096)
         + t14a * 2276 + 2048 >> 12) + t15a;
     t0 = iclip(t0a + t4a, min, max);
     t1 = iclip(t1a + t5a, min, max);
@@ -1703,23 +1703,23 @@ unsafe extern "C" fn inv_adst16_1d_internal_c(
     t13a = iclip(t9 - t13, min, max);
     t14a = iclip(t10 - t14, min, max);
     t15a = iclip(t11 - t15, min, max);
-    t4a = (t4 * (3784 as libc::c_int - 4096) + t5 * 1567
+    t4a = (t4 * (3784 - 4096) + t5 * 1567
         + 2048 >> 12) + t4;
-    t5a = (t4 * 1567 - t5 * (3784 as libc::c_int - 4096)
+    t5a = (t4 * 1567 - t5 * (3784 - 4096)
         + 2048 >> 12) - t5;
-    t6a = (t7 * (3784 as libc::c_int - 4096) - t6 * 1567
+    t6a = (t7 * (3784 - 4096) - t6 * 1567
         + 2048 >> 12) + t7;
-    t7a = (t7 * 1567 + t6 * (3784 as libc::c_int - 4096)
+    t7a = (t7 * 1567 + t6 * (3784 - 4096)
         + 2048 >> 12) + t6;
-    t12 = (t12a * (3784 as libc::c_int - 4096)
+    t12 = (t12a * (3784 - 4096)
         + t13a * 1567 + 2048 >> 12) + t12a;
     t13 = (t12a * 1567
-        - t13a * (3784 as libc::c_int - 4096) + 2048
+        - t13a * (3784 - 4096) + 2048
         >> 12) - t13a;
-    t14 = (t15a * (3784 as libc::c_int - 4096)
+    t14 = (t15a * (3784 - 4096)
         - t14a * 1567 + 2048 >> 12) + t15a;
     t15 = (t15a * 1567
-        + t14a * (3784 as libc::c_int - 4096) + 2048
+        + t14a * (3784 - 4096) + 2048
         >> 12) + t14a;
     *out
         .offset(
@@ -1809,7 +1809,7 @@ pub unsafe extern "C" fn dav1d_inv_flipadst4_1d_c(
         max,
         &mut *c
             .offset(
-                ((4 as libc::c_int - 1) as isize * stride) as isize,
+                ((4 - 1) as isize * stride) as isize,
             ),
         -stride,
     );
@@ -1846,7 +1846,7 @@ pub unsafe extern "C" fn dav1d_inv_flipadst8_1d_c(
         max,
         &mut *c
             .offset(
-                ((8 as libc::c_int - 1) as isize * stride) as isize,
+                ((8 - 1) as isize * stride) as isize,
             ),
         -stride,
     );
@@ -1865,7 +1865,7 @@ pub unsafe extern "C" fn dav1d_inv_flipadst16_1d_c(
         max,
         &mut *c
             .offset(
-                (16 as libc::c_int - 1) as isize * stride,
+                (16 - 1) as isize * stride,
             ),
         -stride,
     );
@@ -1933,7 +1933,7 @@ pub unsafe extern "C" fn dav1d_inv_identity16_1d_c(
         *c
             .offset(
                 (stride * i as isize) as isize,
-            ) = 2 as libc::c_int * in_0
+            ) = 2 * in_0
             + (in_0 * 1697 + 1024 >> 11);
         i += 1;
     }

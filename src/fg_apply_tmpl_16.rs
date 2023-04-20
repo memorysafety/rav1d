@@ -130,7 +130,7 @@ unsafe extern "C" fn generate_scaling(
             unreachable!();
         }
         let delta: libc::c_int = dy
-            * ((0x10000 as libc::c_int + (dx >> 1)) / dx);
+            * ((0x10000 + (dx >> 1)) / dx);
         let mut x = 0;
         let mut d: libc::c_int = 0x8000 as libc::c_int;
         while x < dx {
@@ -422,15 +422,15 @@ pub unsafe extern "C" fn dav1d_apply_grain_row_16bpc(
                 .expect(
                     "non-null function pointer",
                 )(
-                ((*out).data[(1 as libc::c_int + pl) as usize] as *mut pixel)
+                ((*out).data[(1 + pl) as usize] as *mut pixel)
                     .offset(uv_off as isize),
-                ((*in_0).data[(1 as libc::c_int + pl) as usize] as *const pixel)
+                ((*in_0).data[(1 + pl) as usize] as *const pixel)
                     .offset(uv_off as isize),
                 (*in_0).stride[1],
                 data,
                 cpw as size_t,
                 (*scaling.offset(0)).as_ptr(),
-                (*grain_lut.offset((1 as libc::c_int + pl) as isize)).as_ptr(),
+                (*grain_lut.offset((1 + pl) as isize)).as_ptr(),
                 bh_0,
                 row,
                 luma_src,
@@ -451,15 +451,15 @@ pub unsafe extern "C" fn dav1d_apply_grain_row_16bpc(
                     .expect(
                         "non-null function pointer",
                     )(
-                    ((*out).data[(1 as libc::c_int + pl_0) as usize] as *mut pixel)
+                    ((*out).data[(1 + pl_0) as usize] as *mut pixel)
                         .offset(uv_off as isize),
-                    ((*in_0).data[(1 as libc::c_int + pl_0) as usize] as *const pixel)
+                    ((*in_0).data[(1 + pl_0) as usize] as *const pixel)
                         .offset(uv_off as isize),
                     (*in_0).stride[1],
                     data,
                     cpw as size_t,
-                    (*scaling.offset((1 as libc::c_int + pl_0) as isize)).as_ptr(),
-                    (*grain_lut.offset((1 as libc::c_int + pl_0) as isize)).as_ptr(),
+                    (*scaling.offset((1 + pl_0) as isize)).as_ptr(),
+                    (*grain_lut.offset((1 + pl_0) as isize)).as_ptr(),
                     bh_0,
                     row,
                     luma_src,

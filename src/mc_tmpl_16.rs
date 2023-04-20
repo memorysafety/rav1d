@@ -2114,7 +2114,7 @@ unsafe extern "C" fn prep_c(
     bitdepth_max: libc::c_int,
 ) {
     let intermediate_bits: libc::c_int = 14 as libc::c_int
-        - (32 as libc::c_int - clz(bitdepth_max as libc::c_uint));
+        - (32 - clz(bitdepth_max as libc::c_uint));
     loop {
         let mut x = 0;
         while x < w {
@@ -2147,7 +2147,7 @@ unsafe extern "C" fn put_8tap_c(
     bitdepth_max: libc::c_int,
 ) {
     let intermediate_bits: libc::c_int = 14 as libc::c_int
-        - (32 as libc::c_int - clz(bitdepth_max as libc::c_uint));
+        - (32 - clz(bitdepth_max as libc::c_uint));
     let intermediate_rnd: libc::c_int = 32 as libc::c_int
         + ((1 as libc::c_int) << 6 - intermediate_bits
             >> 1);
@@ -2158,7 +2158,7 @@ unsafe extern "C" fn put_8tap_c(
             as usize][(mx - 1) as usize])
             .as_ptr()
     } else {
-        (dav1d_mc_subpel_filters[(3 as libc::c_int + (filter_type & 1))
+        (dav1d_mc_subpel_filters[(3 + (filter_type & 1))
             as usize][(mx - 1) as usize])
             .as_ptr()
     };
@@ -2238,7 +2238,7 @@ unsafe extern "C" fn put_8tap_c(
             }
             mid_ptr = mid
                 .as_mut_ptr()
-                .offset((128 as libc::c_int * 3) as isize);
+                .offset((128 * 3) as isize);
             loop {
                 let mut x_0 = 0;
                 while x_0 < w {
@@ -2452,7 +2452,7 @@ unsafe extern "C" fn put_8tap_scaled_c(
     bitdepth_max: libc::c_int,
 ) {
     let intermediate_bits: libc::c_int = 14 as libc::c_int
-        - (32 as libc::c_int - clz(bitdepth_max as libc::c_uint));
+        - (32 - clz(bitdepth_max as libc::c_uint));
     let intermediate_rnd: libc::c_int = (1 as libc::c_int) << intermediate_bits
         >> 1;
     let mut tmp_h: libc::c_int = ((h - 1) * dy + my >> 10)
@@ -2539,7 +2539,7 @@ unsafe extern "C" fn put_8tap_scaled_c(
             break;
         }
     }
-    mid_ptr = mid.as_mut_ptr().offset((128 as libc::c_int * 3) as isize);
+    mid_ptr = mid.as_mut_ptr().offset((128 * 3) as isize);
     let mut y = 0;
     while y < h {
         let mut x_0: libc::c_int = 0;
@@ -2638,7 +2638,7 @@ unsafe extern "C" fn prep_8tap_c(
     bitdepth_max: libc::c_int,
 ) {
     let intermediate_bits: libc::c_int = 14 as libc::c_int
-        - (32 as libc::c_int - clz(bitdepth_max as libc::c_uint));
+        - (32 - clz(bitdepth_max as libc::c_uint));
     let fh: *const int8_t = if mx == 0 {
         0 as *const int8_t
     } else if w > 4 {
@@ -2646,7 +2646,7 @@ unsafe extern "C" fn prep_8tap_c(
             as usize][(mx - 1) as usize])
             .as_ptr()
     } else {
-        (dav1d_mc_subpel_filters[(3 as libc::c_int + (filter_type & 1))
+        (dav1d_mc_subpel_filters[(3 + (filter_type & 1))
             as usize][(mx - 1) as usize])
             .as_ptr()
     };
@@ -2725,7 +2725,7 @@ unsafe extern "C" fn prep_8tap_c(
             }
             mid_ptr = mid
                 .as_mut_ptr()
-                .offset((128 as libc::c_int * 3) as isize);
+                .offset((128 * 3) as isize);
             loop {
                 let mut x_0 = 0;
                 while x_0 < w {
@@ -2933,7 +2933,7 @@ unsafe extern "C" fn prep_8tap_scaled_c(
     bitdepth_max: libc::c_int,
 ) {
     let intermediate_bits: libc::c_int = 14 as libc::c_int
-        - (32 as libc::c_int - clz(bitdepth_max as libc::c_uint));
+        - (32 - clz(bitdepth_max as libc::c_uint));
     let mut tmp_h: libc::c_int = ((h - 1) * dy + my >> 10)
         + 8;
     let mut mid: [int16_t; 33664] = [0; 33664];
@@ -3018,7 +3018,7 @@ unsafe extern "C" fn prep_8tap_scaled_c(
             break;
         }
     }
-    mid_ptr = mid.as_mut_ptr().offset((128 as libc::c_int * 3) as isize);
+    mid_ptr = mid.as_mut_ptr().offset((128 * 3) as isize);
     let mut y = 0;
     while y < h {
         let mut x_0: libc::c_int = 0;
@@ -4043,7 +4043,7 @@ unsafe extern "C" fn put_bilin_c(
     bitdepth_max: libc::c_int,
 ) {
     let intermediate_bits: libc::c_int = 14 as libc::c_int
-        - (32 as libc::c_int - clz(bitdepth_max as libc::c_uint));
+        - (32 - clz(bitdepth_max as libc::c_uint));
     let intermediate_rnd: libc::c_int = (1 as libc::c_int) << intermediate_bits
         >> 1;
     dst_stride = PXSTRIDE(dst_stride);
@@ -4059,7 +4059,7 @@ unsafe extern "C" fn put_bilin_c(
                     *mid_ptr
                         .offset(
                             x as isize,
-                        ) = (16 as libc::c_int * *src.offset(x as isize) as libc::c_int
+                        ) = (16 * *src.offset(x as isize) as libc::c_int
                         + mx
                             * (*src.offset((x + 1) as isize)
                                 as libc::c_int - *src.offset(x as isize) as libc::c_int)
@@ -4083,7 +4083,7 @@ unsafe extern "C" fn put_bilin_c(
                         .offset(
                             x_0 as isize,
                         ) = iclip(
-                        16 as libc::c_int * *mid_ptr.offset(x_0 as isize) as libc::c_int
+                        16 * *mid_ptr.offset(x_0 as isize) as libc::c_int
                             + my
                                 * (*mid_ptr.offset((x_0 + 128) as isize)
                                     as libc::c_int
@@ -4140,7 +4140,7 @@ unsafe extern "C" fn put_bilin_c(
                     .offset(
                         x_2 as isize,
                     ) = iclip(
-                    16 as libc::c_int * *src.offset(x_2 as isize) as libc::c_int
+                    16 * *src.offset(x_2 as isize) as libc::c_int
                         + my
                             * (*src.offset((x_2 as isize + src_stride) as isize)
                                 as libc::c_int - *src.offset(x_2 as isize) as libc::c_int)
@@ -4176,7 +4176,7 @@ unsafe extern "C" fn put_bilin_scaled_c(
     bitdepth_max: libc::c_int,
 ) {
     let intermediate_bits: libc::c_int = 14 as libc::c_int
-        - (32 as libc::c_int - clz(bitdepth_max as libc::c_uint));
+        - (32 - clz(bitdepth_max as libc::c_uint));
     let mut tmp_h: libc::c_int = ((h - 1) * dy + my >> 10)
         + 2;
     let mut mid: [int16_t; 32896] = [0; 32896];
@@ -4190,7 +4190,7 @@ unsafe extern "C" fn put_bilin_scaled_c(
             *mid_ptr
                 .offset(
                     x as isize,
-                ) = (16 as libc::c_int * *src.offset(ioff as isize) as libc::c_int
+                ) = (16 * *src.offset(ioff as isize) as libc::c_int
                 + (imx >> 6)
                     * (*src.offset((ioff + 1) as isize) as libc::c_int
                         - *src.offset(ioff as isize) as libc::c_int)
@@ -4218,7 +4218,7 @@ unsafe extern "C" fn put_bilin_scaled_c(
                 .offset(
                     x_0 as isize,
                 ) = iclip(
-                16 as libc::c_int * *mid_ptr.offset(x_0 as isize) as libc::c_int
+                16 * *mid_ptr.offset(x_0 as isize) as libc::c_int
                     + (my >> 6)
                         * (*mid_ptr.offset((x_0 + 128) as isize)
                             as libc::c_int
@@ -4252,7 +4252,7 @@ unsafe extern "C" fn prep_bilin_c(
     bitdepth_max: libc::c_int,
 ) {
     let intermediate_bits: libc::c_int = 14 as libc::c_int
-        - (32 as libc::c_int - clz(bitdepth_max as libc::c_uint));
+        - (32 - clz(bitdepth_max as libc::c_uint));
     src_stride = PXSTRIDE(src_stride);
     if mx != 0 {
         if my != 0 {
@@ -4265,7 +4265,7 @@ unsafe extern "C" fn prep_bilin_c(
                     *mid_ptr
                         .offset(
                             x as isize,
-                        ) = (16 as libc::c_int * *src.offset(x as isize) as libc::c_int
+                        ) = (16 * *src.offset(x as isize) as libc::c_int
                         + mx
                             * (*src.offset((x + 1) as isize)
                                 as libc::c_int - *src.offset(x as isize) as libc::c_int)
@@ -4337,7 +4337,7 @@ unsafe extern "C" fn prep_bilin_c(
                 *tmp
                     .offset(
                         x_2 as isize,
-                    ) = ((16 as libc::c_int * *src.offset(x_2 as isize) as libc::c_int
+                    ) = ((16 * *src.offset(x_2 as isize) as libc::c_int
                     + my
                         * (*src.offset((x_2 as isize + src_stride) as isize)
                             as libc::c_int - *src.offset(x_2 as isize) as libc::c_int)
@@ -4370,7 +4370,7 @@ unsafe extern "C" fn prep_bilin_scaled_c(
     bitdepth_max: libc::c_int,
 ) {
     let intermediate_bits: libc::c_int = 14 as libc::c_int
-        - (32 as libc::c_int - clz(bitdepth_max as libc::c_uint));
+        - (32 - clz(bitdepth_max as libc::c_uint));
     let mut tmp_h: libc::c_int = ((h - 1) * dy + my >> 10)
         + 2;
     let mut mid: [int16_t; 32896] = [0; 32896];
@@ -4384,7 +4384,7 @@ unsafe extern "C" fn prep_bilin_scaled_c(
             *mid_ptr
                 .offset(
                     x as isize,
-                ) = (16 as libc::c_int * *src.offset(ioff as isize) as libc::c_int
+                ) = (16 * *src.offset(ioff as isize) as libc::c_int
                 + (imx >> 6)
                     * (*src.offset((ioff + 1) as isize) as libc::c_int
                         - *src.offset(ioff as isize) as libc::c_int)
@@ -4411,7 +4411,7 @@ unsafe extern "C" fn prep_bilin_scaled_c(
             *tmp
                 .offset(
                     x_0 as isize,
-                ) = ((16 as libc::c_int * *mid_ptr.offset(x_0 as isize) as libc::c_int
+                ) = ((16 * *mid_ptr.offset(x_0 as isize) as libc::c_int
                 + (my >> 6)
                     * (*mid_ptr.offset((x_0 + 128) as isize)
                         as libc::c_int - *mid_ptr.offset(x_0 as isize) as libc::c_int)
@@ -4440,7 +4440,7 @@ unsafe extern "C" fn avg_c(
     bitdepth_max: libc::c_int,
 ) {
     let intermediate_bits: libc::c_int = 14 as libc::c_int
-        - (32 as libc::c_int - clz(bitdepth_max as libc::c_uint));
+        - (32 - clz(bitdepth_max as libc::c_uint));
     let sh: libc::c_int = intermediate_bits + 1;
     let rnd: libc::c_int = ((1 as libc::c_int) << intermediate_bits)
         + 8192 * 2;
@@ -4478,7 +4478,7 @@ unsafe extern "C" fn w_avg_c(
     bitdepth_max: libc::c_int,
 ) {
     let intermediate_bits: libc::c_int = 14 as libc::c_int
-        - (32 as libc::c_int - clz(bitdepth_max as libc::c_uint));
+        - (32 - clz(bitdepth_max as libc::c_uint));
     let sh: libc::c_int = intermediate_bits + 4;
     let rnd: libc::c_int = ((8 as libc::c_int) << intermediate_bits)
         + 8192 * 16;
@@ -4491,7 +4491,7 @@ unsafe extern "C" fn w_avg_c(
                 ) = iclip(
                 *tmp1.offset(x as isize) as libc::c_int * weight
                     + *tmp2.offset(x as isize) as libc::c_int
-                        * (16 as libc::c_int - weight) + rnd >> sh,
+                        * (16 - weight) + rnd >> sh,
                 0 as libc::c_int,
                 bitdepth_max,
             ) as pixel;
@@ -4517,7 +4517,7 @@ unsafe extern "C" fn mask_c(
     bitdepth_max: libc::c_int,
 ) {
     let intermediate_bits: libc::c_int = 14 as libc::c_int
-        - (32 as libc::c_int - clz(bitdepth_max as libc::c_uint));
+        - (32 - clz(bitdepth_max as libc::c_uint));
     let sh: libc::c_int = intermediate_bits + 6;
     let rnd: libc::c_int = ((32 as libc::c_int) << intermediate_bits)
         + 8192 * 64;
@@ -4531,7 +4531,7 @@ unsafe extern "C" fn mask_c(
                 *tmp1.offset(x as isize) as libc::c_int
                     * *mask.offset(x as isize) as libc::c_int
                     + *tmp2.offset(x as isize) as libc::c_int
-                        * (64 as libc::c_int - *mask.offset(x as isize) as libc::c_int)
+                        * (64 - *mask.offset(x as isize) as libc::c_int)
                     + rnd >> sh,
                 0 as libc::c_int,
                 bitdepth_max,
@@ -4563,7 +4563,7 @@ unsafe extern "C" fn blend_c(
                 .offset(
                     x as isize,
                 ) = (*dst.offset(x as isize) as libc::c_int
-                * (64 as libc::c_int - *mask.offset(x as isize) as libc::c_int)
+                * (64 - *mask.offset(x as isize) as libc::c_int)
                 + *tmp.offset(x as isize) as libc::c_int
                     * *mask.offset(x as isize) as libc::c_int + 32
                 >> 6) as pixel;
@@ -4594,7 +4594,7 @@ unsafe extern "C" fn blend_v_c(
                 .offset(
                     x as isize,
                 ) = (*dst.offset(x as isize) as libc::c_int
-                * (64 as libc::c_int - *mask.offset(x as isize) as libc::c_int)
+                * (64 - *mask.offset(x as isize) as libc::c_int)
                 + *tmp.offset(x as isize) as libc::c_int
                     * *mask.offset(x as isize) as libc::c_int + 32
                 >> 6) as pixel;
@@ -4627,7 +4627,7 @@ unsafe extern "C" fn blend_h_c(
             *dst
                 .offset(
                     x as isize,
-                ) = (*dst.offset(x as isize) as libc::c_int * (64 as libc::c_int - m)
+                ) = (*dst.offset(x as isize) as libc::c_int * (64 - m)
                 + *tmp.offset(x as isize) as libc::c_int * m + 32
                 >> 6) as pixel;
             x += 1;
@@ -4654,8 +4654,8 @@ unsafe extern "C" fn w_mask_c(
     bitdepth_max: libc::c_int,
 ) {
     let intermediate_bits: libc::c_int = 14 as libc::c_int
-        - (32 as libc::c_int - clz(bitdepth_max as libc::c_uint));
-    let bitdepth: libc::c_int = 32 as libc::c_int - clz(bitdepth_max as libc::c_uint);
+        - (32 - clz(bitdepth_max as libc::c_uint));
+    let bitdepth: libc::c_int = 32 - clz(bitdepth_max as libc::c_uint);
     let sh: libc::c_int = intermediate_bits + 6;
     let rnd: libc::c_int = ((32 as libc::c_int) << intermediate_bits)
         + 8192 * 64;
@@ -4677,7 +4677,7 @@ unsafe extern "C" fn w_mask_c(
                     x as isize,
                 ) = iclip(
                 *tmp1.offset(x as isize) as libc::c_int * m
-                    + *tmp2.offset(x as isize) as libc::c_int * (64 as libc::c_int - m)
+                    + *tmp2.offset(x as isize) as libc::c_int * (64 - m)
                     + rnd >> sh,
                 0 as libc::c_int,
                 bitdepth_max,
@@ -4698,7 +4698,7 @@ unsafe extern "C" fn w_mask_c(
                     ) = iclip(
                     *tmp1.offset(x as isize) as libc::c_int * n
                         + *tmp2.offset(x as isize) as libc::c_int
-                            * (64 as libc::c_int - n) + rnd >> sh,
+                            * (64 - n) + rnd >> sh,
                     0 as libc::c_int,
                     bitdepth_max,
                 ) as pixel;
@@ -4821,7 +4821,7 @@ unsafe extern "C" fn warp_affine_8x8_c(
     bitdepth_max: libc::c_int,
 ) {
     let intermediate_bits: libc::c_int = 14 as libc::c_int
-        - (32 as libc::c_int - clz(bitdepth_max as libc::c_uint));
+        - (32 - clz(bitdepth_max as libc::c_uint));
     let mut mid: [int16_t; 120] = [0; 120];
     let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
     src = src
@@ -4874,7 +4874,7 @@ unsafe extern "C" fn warp_affine_8x8_c(
     }
     mid_ptr = &mut *mid
         .as_mut_ptr()
-        .offset((3 as libc::c_int * 8) as isize) as *mut int16_t;
+        .offset((3 * 8) as isize) as *mut int16_t;
     let mut y_0 = 0;
     while y_0 < 8 {
         let mut x_0 = 0;
@@ -4944,7 +4944,7 @@ unsafe extern "C" fn warp_affine_8x8t_c(
     bitdepth_max: libc::c_int,
 ) {
     let intermediate_bits: libc::c_int = 14 as libc::c_int
-        - (32 as libc::c_int - clz(bitdepth_max as libc::c_uint));
+        - (32 - clz(bitdepth_max as libc::c_uint));
     let mut mid: [int16_t; 120] = [0; 120];
     let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
     src = src
@@ -4997,7 +4997,7 @@ unsafe extern "C" fn warp_affine_8x8t_c(
     }
     mid_ptr = &mut *mid
         .as_mut_ptr()
-        .offset((3 as libc::c_int * 8) as isize) as *mut int16_t;
+        .offset((3 * 8) as isize) as *mut int16_t;
     let mut y_0 = 0;
     while y_0 < 8 {
         let mut x_0 = 0;

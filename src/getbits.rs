@@ -174,14 +174,14 @@ unsafe extern "C" fn get_bits_subexp_u(
     let mut i = 0;
     loop {
         let b: libc::c_int = if i != 0 {
-            3 as libc::c_int + i - 1
+            3 + i - 1
         } else {
             3 as libc::c_int
         };
         if n
             < v
                 .wrapping_add(
-                    (3 as libc::c_int * ((1 as libc::c_int) << b)) as libc::c_uint,
+                    (3 * ((1 as libc::c_int) << b)) as libc::c_uint,
                 )
         {
             v = v

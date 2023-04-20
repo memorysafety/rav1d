@@ -347,11 +347,11 @@ unsafe extern "C" fn padding(
         & LR_HAVE_LEFT as libc::c_int as libc::c_uint != 0) as libc::c_int;
     let have_right: libc::c_int = (edges as libc::c_uint
         & LR_HAVE_RIGHT as libc::c_int as libc::c_uint != 0) as libc::c_int;
-    unit_w += 3 as libc::c_int * have_left + 3 * have_right;
+    unit_w += 3 * have_left + 3 * have_right;
     let mut dst_l: *mut pixel = dst
-        .offset((3 as libc::c_int * (have_left == 0) as libc::c_int) as isize);
-    p = p.offset(-((3 as libc::c_int * have_left) as isize));
-    lpf = lpf.offset(-((3 as libc::c_int * have_left) as isize));
+        .offset((3 * (have_left == 0) as libc::c_int) as isize);
+    p = p.offset(-((3 * have_left) as isize));
+    lpf = lpf.offset(-((3 * have_left) as isize));
     if edges as libc::c_uint & LR_HAVE_TOP as libc::c_int as libc::c_uint != 0 {
         let above_1: *const pixel = lpf;
         let above_2: *const pixel = above_1.offset(stride as isize);
@@ -366,7 +366,7 @@ unsafe extern "C" fn padding(
             unit_w as size_t,
         );
         memcpy(
-            dst_l.offset((2 as libc::c_int * 390) as isize)
+            dst_l.offset((2 * 390) as isize)
                 as *mut libc::c_void,
             above_2 as *const libc::c_void,
             unit_w as size_t,
@@ -383,7 +383,7 @@ unsafe extern "C" fn padding(
             unit_w as size_t,
         );
         memcpy(
-            dst_l.offset((2 as libc::c_int * 390) as isize)
+            dst_l.offset((2 * 390) as isize)
                 as *mut libc::c_void,
             p as *const libc::c_void,
             unit_w as size_t,
@@ -406,7 +406,7 @@ unsafe extern "C" fn padding(
                 3,
             );
             memcpy(
-                dst_l.offset((2 as libc::c_int * 390) as isize)
+                dst_l.offset((2 * 390) as isize)
                     as *mut libc::c_void,
                 &*(*left.offset(0))
                     .as_ptr()
@@ -417,7 +417,7 @@ unsafe extern "C" fn padding(
         }
     }
     let mut dst_tl: *mut pixel = dst_l
-        .offset((3 as libc::c_int * 390) as isize);
+        .offset((3 * 390) as isize);
     if edges as libc::c_uint & LR_HAVE_BOTTOM as libc::c_int as libc::c_uint != 0 {
         let below_1: *const pixel = lpf
             .offset((6 * stride) as isize);
@@ -496,8 +496,8 @@ unsafe extern "C" fn padding(
     let mut j = 0;
     while j < stripe_h {
         memcpy(
-            dst_tl.offset((3 as libc::c_int * have_left) as isize) as *mut libc::c_void,
-            p.offset((3 as libc::c_int * have_left) as isize) as *const libc::c_void,
+            dst_tl.offset((3 * have_left) as isize) as *mut libc::c_void,
+            p.offset((3 * have_left) as isize) as *const libc::c_void,
             (unit_w - 3 * have_left) as size_t,
         );
         dst_tl = dst_tl.offset(390);
@@ -533,7 +533,7 @@ unsafe extern "C" fn padding(
             j_1 += 1;
         }
     } else {
-        dst = dst.offset((3 as libc::c_int * 390) as isize);
+        dst = dst.offset((3 * 390) as isize);
         let mut j_2 = 0;
         while j_2 < stripe_h {
             memcpy(
@@ -701,7 +701,7 @@ unsafe extern "C" fn boxsum5(
         let mut sum_v: *mut coef = sum.offset(x as isize);
         let mut sumsq_v: *mut int32_t = sumsq.offset(x as isize);
         let mut s: *const pixel = src
-            .offset((3 as libc::c_int * 390) as isize)
+            .offset((3 * 390) as isize)
             .offset(x as isize);
         let mut a: libc::c_int = *s
             .offset((-(3 as libc::c_int) * 390) as isize) as libc::c_int;
@@ -787,12 +787,12 @@ unsafe extern "C" fn selfguided_filter(
     let mut sumsq: [int32_t; 26520] = [0; 26520];
     let mut A: *mut int32_t = sumsq
         .as_mut_ptr()
-        .offset((2 as libc::c_int * 390) as isize)
+        .offset((2 * 390) as isize)
         .offset(3);
     let mut sum: [coef; 26520] = [0; 26520];
     let mut B: *mut coef = sum
         .as_mut_ptr()
-        .offset((2 as libc::c_int * 390) as isize)
+        .offset((2 * 390) as isize)
         .offset(3);
     let step: libc::c_int = (n == 25) as libc::c_int + 1;
     if n == 25 {
@@ -812,7 +812,7 @@ unsafe extern "C" fn selfguided_filter(
             h + 6,
         );
     }
-    let bitdepth_min_8: libc::c_int = 8 as libc::c_int - 8;
+    let bitdepth_min_8: libc::c_int = 8 - 8;
     let mut AA: *mut int32_t = A.offset(-(390 as libc::c_int as isize));
     let mut BB: *mut coef = B.offset(-(390 as libc::c_int as isize));
     let mut j: libc::c_int = -(1 as libc::c_int);
@@ -850,7 +850,7 @@ unsafe extern "C" fn selfguided_filter(
         j += step;
     }
     src = src
-        .offset((3 as libc::c_int * 390 + 3) as isize);
+        .offset((3 * 390 + 3) as isize);
     if n == 25 {
         let mut j_0 = 0;
         while j_0 < h - 1 {
@@ -1267,7 +1267,7 @@ unsafe extern "C" fn dav1d_sgr_filter1_neon(
     let sumsq: *mut int32_t = &mut *sumsq_mem
         .as_mut_ptr()
         .offset(
-            ((384 as libc::c_int + 16) * 2
+            ((384 + 16) * 2
                 + 8) as isize,
         ) as *mut int32_t;
     let a: *mut int32_t = sumsq;
@@ -1275,7 +1275,7 @@ unsafe extern "C" fn dav1d_sgr_filter1_neon(
     let sum: *mut int16_t = &mut *sum_mem
         .as_mut_ptr()
         .offset(
-            ((384 as libc::c_int + 16) * 2
+            ((384 + 16) * 2
                 + 16) as isize,
         ) as *mut int16_t;
     let b: *mut int16_t = sum;
@@ -1284,12 +1284,12 @@ unsafe extern "C" fn dav1d_sgr_filter1_neon(
         dav1d_sgr_box3_h_8bpc_neon(
             &mut *sumsq
                 .offset(
-                    (-(2 as libc::c_int) * (384 as libc::c_int + 16))
+                    (-(2 as libc::c_int) * (384 + 16))
                         as isize,
                 ),
             &mut *sum
                 .offset(
-                    (-(2 as libc::c_int) * (384 as libc::c_int + 16))
+                    (-(2 as libc::c_int) * (384 + 16))
                         as isize,
                 ),
             0 as *const [pixel; 4],
@@ -1302,8 +1302,8 @@ unsafe extern "C" fn dav1d_sgr_filter1_neon(
     }
     if edges as libc::c_uint & LR_HAVE_BOTTOM as libc::c_int as libc::c_uint != 0 {
         dav1d_sgr_box3_h_8bpc_neon(
-            &mut *sumsq.offset((h * (384 as libc::c_int + 16)) as isize),
-            &mut *sum.offset((h * (384 as libc::c_int + 16)) as isize),
+            &mut *sumsq.offset((h * (384 + 16)) as isize),
+            &mut *sum.offset((h * (384 + 16)) as isize),
             0 as *const [pixel; 4],
             lpf.offset((6 * stride) as isize),
             stride,
@@ -1333,7 +1333,7 @@ unsafe extern "C" fn dav1d_sgr_filter2_neon(
     let sumsq: *mut int32_t = &mut *sumsq_mem
         .as_mut_ptr()
         .offset(
-            ((384 as libc::c_int + 16) * 2
+            ((384 + 16) * 2
                 + 8) as isize,
         ) as *mut int32_t;
     let a: *mut int32_t = sumsq;
@@ -1341,7 +1341,7 @@ unsafe extern "C" fn dav1d_sgr_filter2_neon(
     let sum: *mut int16_t = &mut *sum_mem
         .as_mut_ptr()
         .offset(
-            ((384 as libc::c_int + 16) * 2
+            ((384 + 16) * 2
                 + 16) as isize,
         ) as *mut int16_t;
     let b: *mut int16_t = sum;
@@ -1350,12 +1350,12 @@ unsafe extern "C" fn dav1d_sgr_filter2_neon(
         dav1d_sgr_box5_h_8bpc_neon(
             &mut *sumsq
                 .offset(
-                    (-(2 as libc::c_int) * (384 as libc::c_int + 16))
+                    (-(2 as libc::c_int) * (384 + 16))
                         as isize,
                 ),
             &mut *sum
                 .offset(
-                    (-(2 as libc::c_int) * (384 as libc::c_int + 16))
+                    (-(2 as libc::c_int) * (384 + 16))
                         as isize,
                 ),
             0 as *const [pixel; 4],
@@ -1368,8 +1368,8 @@ unsafe extern "C" fn dav1d_sgr_filter2_neon(
     }
     if edges as libc::c_uint & LR_HAVE_BOTTOM as libc::c_int as libc::c_uint != 0 {
         dav1d_sgr_box5_h_8bpc_neon(
-            &mut *sumsq.offset((h * (384 as libc::c_int + 16)) as isize),
-            &mut *sum.offset((h * (384 as libc::c_int + 16)) as isize),
+            &mut *sumsq.offset((h * (384 + 16)) as isize),
+            &mut *sum.offset((h * (384 + 16)) as isize),
             0 as *const [pixel; 4],
             lpf.offset((6 * stride) as isize),
             stride,

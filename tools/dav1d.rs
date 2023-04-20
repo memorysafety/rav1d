@@ -318,7 +318,7 @@ unsafe extern "C" fn picture_alloc(
         return -(12 as libc::c_int);
     }
     (*p).allocator_data = buf as *mut libc::c_void;
-    let align_m1: ptrdiff_t = (64 as libc::c_int - 1) as ptrdiff_t;
+    let align_m1: ptrdiff_t = (64 - 1) as ptrdiff_t;
     let data: *mut uint8_t = (buf as ptrdiff_t + align_m1 & !align_m1) as *mut uint8_t;
     (*p)
         .data[0 as libc::c_int

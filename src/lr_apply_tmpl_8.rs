@@ -745,7 +745,7 @@ unsafe extern "C" fn lr_stripe(
         )
         .offset(x as isize);
     let mut stripe_h: libc::c_int = imin(
-        64 as libc::c_int - 8 * (y == 0) as libc::c_int >> ss_ver,
+        64 - 8 * (y == 0) as libc::c_int >> ss_ver,
         row_h - y,
     );
     let mut lr_fn: looprestorationfilter_fn = None;
@@ -847,7 +847,7 @@ unsafe extern "C" fn lr_stripe(
             libc::c_uint,
             LrEdgeFlags,
         >(edges as libc::c_uint | LR_HAVE_TOP as libc::c_int as libc::c_uint);
-        stripe_h = imin(64 as libc::c_int >> ss_ver, row_h - y);
+        stripe_h = imin(64 >> ss_ver, row_h - y);
         if stripe_h == 0 {
             break;
         }
@@ -894,8 +894,8 @@ unsafe extern "C" fn lr_sbrow(
     let unit_size: libc::c_int = (1 as libc::c_int) << unit_size_log2;
     let half_unit_size: libc::c_int = unit_size >> 1;
     let max_unit_size: libc::c_int = unit_size + half_unit_size;
-    let row_y: libc::c_int = y + (8 as libc::c_int >> ss_ver) * (y != 0) as libc::c_int;
-    let shift_hor: libc::c_int = 7 as libc::c_int - ss_hor;
+    let row_y: libc::c_int = y + (8 >> ss_ver) * (y != 0) as libc::c_int;
+    let shift_hor: libc::c_int = 7 - ss_hor;
     let mut pre_lr_border: [[[pixel; 4]; 136]; 2] = [[[0; 4]; 136]; 2];
     let mut lr: [*const Av1RestorationUnit; 2] = [0 as *const Av1RestorationUnit; 2];
     let mut edges: LrEdgeFlags = ((if y > 0 {
@@ -994,7 +994,7 @@ pub unsafe extern "C" fn dav1d_lr_sbrow_8bpc(
     mut dst: *const *mut pixel,
     sby: libc::c_int,
 ) {
-    let offset_y: libc::c_int = 8 as libc::c_int * (sby != 0) as libc::c_int;
+    let offset_y: libc::c_int = 8 * (sby != 0) as libc::c_int;
     let dst_stride: *const ptrdiff_t = ((*f).sr_cur.p.stride).as_mut_ptr();
     let restore_planes: libc::c_int = (*f).lf.restore_planes;
     let not_last: libc::c_int = ((sby + 1) < (*f).sbh) as libc::c_int;
@@ -1031,7 +1031,7 @@ pub unsafe extern "C" fn dav1d_lr_sbrow_8bpc(
         let next_row_y_0: libc::c_int = (sby + 1)
             << 6 - ss_ver + (*(*f).seq_hdr).sb128;
         let row_h_0: libc::c_int = imin(
-            next_row_y_0 - (8 as libc::c_int >> ss_ver) * not_last,
+            next_row_y_0 - (8 >> ss_ver) * not_last,
             h_0,
         );
         let offset_uv: libc::c_int = offset_y >> ss_ver;

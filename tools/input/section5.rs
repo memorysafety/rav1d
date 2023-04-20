@@ -167,7 +167,7 @@ unsafe extern "C" fn section5_probe(mut data: *const uint8_t) -> libc::c_int {
     let mut type_0: Dav1dObuType = 0 as Dav1dObuType;
     ret = parse_obu_header(
         data.offset(cnt as isize),
-        2048 as libc::c_int - cnt,
+        2048 - cnt,
         &mut obu_size,
         &mut type_0,
         0 as libc::c_int,
@@ -183,7 +183,7 @@ unsafe extern "C" fn section5_probe(mut data: *const uint8_t) -> libc::c_int {
     while cnt < 2048 {
         ret = parse_obu_header(
             data.offset(cnt as isize),
-            2048 as libc::c_int - cnt,
+            2048 - cnt,
             &mut obu_size,
             &mut type_0,
             0 as libc::c_int,
@@ -329,7 +329,7 @@ unsafe extern "C" fn section5_read(
                 return -(1 as libc::c_int);
             }
             total_bytes = total_bytes.wrapping_add(
-                    ((1 as libc::c_int + has_extension + res) as size_t)
+                    ((1 + has_extension + res) as size_t)
                         .wrapping_add(len));
             fseeko64((*c).f, len as __off64_t, 1 as libc::c_int);
             first = 0 as libc::c_int;

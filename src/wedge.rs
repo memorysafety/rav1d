@@ -490,16 +490,16 @@ unsafe extern "C" fn insert_border(
         dst
             .offset(imax(ctr, 4 as libc::c_int) as isize)
             .offset(-(4 as libc::c_int as isize)) as *mut libc::c_void,
-        src.offset(imax(4 as libc::c_int - ctr, 0 as libc::c_int) as isize)
+        src.offset(imax(4 - ctr, 0 as libc::c_int) as isize)
             as *const libc::c_void,
-        imin(64 as libc::c_int - ctr, 8 as libc::c_int) as libc::c_ulong,
+        imin(64 - ctr, 8 as libc::c_int) as libc::c_ulong,
     );
     if ctr < 64 - 4 {
         memset(
             dst.offset(ctr as isize).offset(4)
                 as *mut libc::c_void,
             64 as libc::c_int,
-            (64 as libc::c_int - 4 - ctr) as libc::c_ulong,
+            (64 - 4 - ctr) as libc::c_ulong,
         );
     }
 }
@@ -603,7 +603,7 @@ unsafe extern "C" fn init_chroma(
         }
         luma = luma.offset((w << ss_ver) as isize);
         chroma = chroma.offset((w >> 1) as isize);
-        y += 1 as libc::c_int + ss_ver;
+        y += 1 + ss_ver;
     }
 }
 #[cold]
@@ -647,9 +647,9 @@ unsafe extern "C" fn fill2d_16x2(
     let n_stride_444: libc::c_int = w * h;
     let n_stride_422: libc::c_int = n_stride_444 >> 1;
     let n_stride_420: libc::c_int = n_stride_444 >> 2;
-    let sign_stride_444: libc::c_int = 16 as libc::c_int * n_stride_444;
-    let sign_stride_422: libc::c_int = 16 as libc::c_int * n_stride_422;
-    let sign_stride_420: libc::c_int = 16 as libc::c_int * n_stride_420;
+    let sign_stride_444: libc::c_int = 16 * n_stride_444;
+    let sign_stride_422: libc::c_int = 16 * n_stride_422;
+    let sign_stride_420: libc::c_int = 16 * n_stride_420;
     let mut n_1 = 0;
     while n_1 < 16 {
         let sign: libc::c_int = (signs >> n_1 & 1 as libc::c_uint)
@@ -1028,7 +1028,7 @@ pub unsafe extern "C" fn dav1d_init_interintra_masks() {
     memset(
         ii_dc_mask.as_mut_ptr() as *mut libc::c_void,
         32 as libc::c_int,
-        (32 as libc::c_int * 32) as libc::c_ulong,
+        (32 * 32) as libc::c_ulong,
     );
     build_nondc_ii_masks(
         (ii_nondc_mask_32x32[(II_VERT_PRED as libc::c_int - 1) as usize])
