@@ -418,15 +418,15 @@ unsafe fn add_temporal_candidate(
         }
         let mut n = 0;
         while n < last {
-            if mvstack[n as usize].mv.mv[0] == mv {
-                mvstack[n as usize].weight += 2;
+            if mvstack[n].mv.mv[0] == mv {
+                mvstack[n].weight += 2;
                 return;
             }
             n += 1;
         }
         if last < 8 {
-            mvstack[last as usize].mv.mv[0] = mv;
-            mvstack[last as usize].weight = 2;
+            mvstack[last].mv.mv[0] = mv;
+            mvstack[last].weight = 2;
             *cnt = last + 1;
         }
     } else {
@@ -441,17 +441,17 @@ unsafe fn add_temporal_candidate(
             ],
         };
         fix_mv_precision(&*rf.frm_hdr, &mut mvp.mv[1]);
-        let mut n_0 = 0;
-        while n_0 < last {
-            if mvstack[n_0 as usize].mv == mvp {
-                mvstack[n_0 as usize].weight += 2;
+        let mut n = 0;
+        while n < last {
+            if mvstack[n].mv == mvp {
+                mvstack[n].weight += 2;
                 return;
             }
-            n_0 += 1;
+            n += 1;
         }
         if last < 8 {
-            mvstack[last as usize].mv = mvp;
-            mvstack[last as usize].weight = 2;
+            mvstack[last].mv = mvp;
+            mvstack[last].weight = 2;
             *cnt = last + 1;
         }
     };
