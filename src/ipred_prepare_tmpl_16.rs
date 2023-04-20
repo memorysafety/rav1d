@@ -47,7 +47,7 @@ unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
 }
 #[inline]
 unsafe extern "C" fn pixel_set(dst: *mut pixel, val: libc::c_int, num: libc::c_int) {
-    let mut n: libc::c_int = 0 as libc::c_int;
+    let mut n = 0;
     while n < num {
         *dst.offset(n as isize) = val as pixel;
         n += 1;
@@ -162,7 +162,7 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_16bpc(
         let left: *mut pixel = &mut *topleft_out.offset(-sz as isize) as *mut pixel;
         if have_left != 0 {
             let px_have: libc::c_int = imin(sz, h - y << 2 as libc::c_int);
-            let mut i: libc::c_int = 0 as libc::c_int;
+            let mut i = 0;
             while i < px_have {
                 *left
                     .offset(
@@ -201,7 +201,7 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_16bpc(
             }) as libc::c_int;
             if have_bottomleft != 0 {
                 let px_have_0: libc::c_int = imin(sz, h - y - th << 2 as libc::c_int);
-                let mut i_0: libc::c_int = 0 as libc::c_int;
+                let mut i_0 = 0;
                 while i_0 < px_have_0 {
                     *left
                         .offset(

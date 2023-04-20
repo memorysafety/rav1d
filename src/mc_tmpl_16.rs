@@ -2075,7 +2075,7 @@ unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
 }
 #[inline]
 unsafe extern "C" fn pixel_set(dst: *mut pixel, val: libc::c_int, num: libc::c_int) {
-    let mut n: libc::c_int = 0 as libc::c_int;
+    let mut n = 0;
     while n < num {
         *dst.offset(n as isize) = val as pixel;
         n += 1;
@@ -2116,7 +2116,7 @@ unsafe extern "C" fn prep_c(
     let intermediate_bits: libc::c_int = 14 as libc::c_int
         - (32 as libc::c_int - clz(bitdepth_max as libc::c_uint));
     loop {
-        let mut x: libc::c_int = 0 as libc::c_int;
+        let mut x = 0;
         while x < w {
             *tmp
                 .offset(
@@ -2184,7 +2184,7 @@ unsafe extern "C" fn put_8tap_c(
             src = src
                 .offset(-((src_stride * 3) as isize));
             loop {
-                let mut x: libc::c_int = 0 as libc::c_int;
+                let mut x = 0;
                 while x < w {
                     *mid_ptr
                         .offset(
@@ -2240,7 +2240,7 @@ unsafe extern "C" fn put_8tap_c(
                 .as_mut_ptr()
                 .offset((128 as libc::c_int * 3 as libc::c_int) as isize);
             loop {
-                let mut x_0: libc::c_int = 0 as libc::c_int;
+                let mut x_0 = 0;
                 while x_0 < w {
                     *dst
                         .offset(
@@ -2303,7 +2303,7 @@ unsafe extern "C" fn put_8tap_c(
             }
         } else {
             loop {
-                let mut x_1: libc::c_int = 0 as libc::c_int;
+                let mut x_1 = 0;
                 while x_1 < w {
                     *dst
                         .offset(
@@ -2364,7 +2364,7 @@ unsafe extern "C" fn put_8tap_c(
         }
     } else if !fv.is_null() {
         loop {
-            let mut x_2: libc::c_int = 0 as libc::c_int;
+            let mut x_2 = 0;
             while x_2 < w {
                 *dst
                     .offset(
@@ -2464,7 +2464,7 @@ unsafe extern "C" fn put_8tap_scaled_c(
     loop {
         let mut x: libc::c_int = 0;
         let mut imx: libc::c_int = mx;
-        let mut ioff: libc::c_int = 0 as libc::c_int;
+        let mut ioff = 0;
         x = 0 as libc::c_int;
         while x < w {
             let fh: *const int8_t = if imx >> 6 as libc::c_int == 0 {
@@ -2540,7 +2540,7 @@ unsafe extern "C" fn put_8tap_scaled_c(
         }
     }
     mid_ptr = mid.as_mut_ptr().offset((128 as libc::c_int * 3 as libc::c_int) as isize);
-    let mut y: libc::c_int = 0 as libc::c_int;
+    let mut y = 0;
     while y < h {
         let mut x_0: libc::c_int = 0;
         let fv: *const int8_t = if my >> 6 as libc::c_int == 0 {
@@ -2671,7 +2671,7 @@ unsafe extern "C" fn prep_8tap_c(
             src = src
                 .offset(-((src_stride * 3) as isize));
             loop {
-                let mut x: libc::c_int = 0 as libc::c_int;
+                let mut x = 0;
                 while x < w {
                     *mid_ptr
                         .offset(
@@ -2727,7 +2727,7 @@ unsafe extern "C" fn prep_8tap_c(
                 .as_mut_ptr()
                 .offset((128 as libc::c_int * 3 as libc::c_int) as isize);
             loop {
-                let mut x_0: libc::c_int = 0 as libc::c_int;
+                let mut x_0 = 0;
                 while x_0 < w {
                     let mut t: libc::c_int = (*fv.offset(0)
                         as libc::c_int
@@ -2789,7 +2789,7 @@ unsafe extern "C" fn prep_8tap_c(
             }
         } else {
             loop {
-                let mut x_1: libc::c_int = 0 as libc::c_int;
+                let mut x_1 = 0;
                 while x_1 < w {
                     *tmp
                         .offset(
@@ -2849,7 +2849,7 @@ unsafe extern "C" fn prep_8tap_c(
         }
     } else if !fv.is_null() {
         loop {
-            let mut x_2: libc::c_int = 0 as libc::c_int;
+            let mut x_2 = 0;
             while x_2 < w {
                 *tmp
                     .offset(
@@ -2943,7 +2943,7 @@ unsafe extern "C" fn prep_8tap_scaled_c(
     loop {
         let mut x: libc::c_int = 0;
         let mut imx: libc::c_int = mx;
-        let mut ioff: libc::c_int = 0 as libc::c_int;
+        let mut ioff = 0;
         x = 0 as libc::c_int;
         while x < w {
             let fh: *const int8_t = if imx >> 6 as libc::c_int == 0 {
@@ -3019,7 +3019,7 @@ unsafe extern "C" fn prep_8tap_scaled_c(
         }
     }
     mid_ptr = mid.as_mut_ptr().offset((128 as libc::c_int * 3 as libc::c_int) as isize);
-    let mut y: libc::c_int = 0 as libc::c_int;
+    let mut y = 0;
     while y < h {
         let mut x_0: libc::c_int = 0;
         let fv: *const int8_t = if my >> 6 as libc::c_int == 0 {
@@ -4054,7 +4054,7 @@ unsafe extern "C" fn put_bilin_c(
             let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
             let mut tmp_h: libc::c_int = h + 1 as libc::c_int;
             loop {
-                let mut x: libc::c_int = 0 as libc::c_int;
+                let mut x = 0;
                 while x < w {
                     *mid_ptr
                         .offset(
@@ -4077,7 +4077,7 @@ unsafe extern "C" fn put_bilin_c(
             }
             mid_ptr = mid.as_mut_ptr();
             loop {
-                let mut x_0: libc::c_int = 0 as libc::c_int;
+                let mut x_0 = 0;
                 while x_0 < w {
                     *dst
                         .offset(
@@ -4105,7 +4105,7 @@ unsafe extern "C" fn put_bilin_c(
             }
         } else {
             loop {
-                let mut x_1: libc::c_int = 0 as libc::c_int;
+                let mut x_1 = 0;
                 while x_1 < w {
                     let px: libc::c_int = 16 as libc::c_int
                         * *src.offset(x_1 as isize) as libc::c_int
@@ -4134,7 +4134,7 @@ unsafe extern "C" fn put_bilin_c(
         }
     } else if my != 0 {
         loop {
-            let mut x_2: libc::c_int = 0 as libc::c_int;
+            let mut x_2 = 0;
             while x_2 < w {
                 *dst
                     .offset(
@@ -4184,7 +4184,7 @@ unsafe extern "C" fn put_bilin_scaled_c(
     loop {
         let mut x: libc::c_int = 0;
         let mut imx: libc::c_int = mx;
-        let mut ioff: libc::c_int = 0 as libc::c_int;
+        let mut ioff = 0;
         x = 0 as libc::c_int;
         while x < w {
             *mid_ptr
@@ -4260,7 +4260,7 @@ unsafe extern "C" fn prep_bilin_c(
             let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
             let mut tmp_h: libc::c_int = h + 1 as libc::c_int;
             loop {
-                let mut x: libc::c_int = 0 as libc::c_int;
+                let mut x = 0;
                 while x < w {
                     *mid_ptr
                         .offset(
@@ -4283,7 +4283,7 @@ unsafe extern "C" fn prep_bilin_c(
             }
             mid_ptr = mid.as_mut_ptr();
             loop {
-                let mut x_0: libc::c_int = 0 as libc::c_int;
+                let mut x_0 = 0;
                 while x_0 < w {
                     *tmp
                         .offset(
@@ -4307,7 +4307,7 @@ unsafe extern "C" fn prep_bilin_c(
             }
         } else {
             loop {
-                let mut x_1: libc::c_int = 0 as libc::c_int;
+                let mut x_1 = 0;
                 while x_1 < w {
                     *tmp
                         .offset(
@@ -4332,7 +4332,7 @@ unsafe extern "C" fn prep_bilin_c(
         }
     } else if my != 0 {
         loop {
-            let mut x_2: libc::c_int = 0 as libc::c_int;
+            let mut x_2 = 0;
             while x_2 < w {
                 *tmp
                     .offset(
@@ -4378,7 +4378,7 @@ unsafe extern "C" fn prep_bilin_scaled_c(
     loop {
         let mut x: libc::c_int = 0;
         let mut imx: libc::c_int = mx;
-        let mut ioff: libc::c_int = 0 as libc::c_int;
+        let mut ioff = 0;
         x = 0 as libc::c_int;
         while x < w {
             *mid_ptr
@@ -4445,7 +4445,7 @@ unsafe extern "C" fn avg_c(
     let rnd: libc::c_int = ((1 as libc::c_int) << intermediate_bits)
         + 8192 as libc::c_int * 2 as libc::c_int;
     loop {
-        let mut x: libc::c_int = 0 as libc::c_int;
+        let mut x = 0;
         while x < w {
             *dst
                 .offset(
@@ -4483,7 +4483,7 @@ unsafe extern "C" fn w_avg_c(
     let rnd: libc::c_int = ((8 as libc::c_int) << intermediate_bits)
         + 8192 as libc::c_int * 16 as libc::c_int;
     loop {
-        let mut x: libc::c_int = 0 as libc::c_int;
+        let mut x = 0;
         while x < w {
             *dst
                 .offset(
@@ -4522,7 +4522,7 @@ unsafe extern "C" fn mask_c(
     let rnd: libc::c_int = ((32 as libc::c_int) << intermediate_bits)
         + 8192 as libc::c_int * 64 as libc::c_int;
     loop {
-        let mut x: libc::c_int = 0 as libc::c_int;
+        let mut x = 0;
         while x < w {
             *dst
                 .offset(
@@ -4557,7 +4557,7 @@ unsafe extern "C" fn blend_c(
     mut mask: *const uint8_t,
 ) {
     loop {
-        let mut x: libc::c_int = 0 as libc::c_int;
+        let mut x = 0;
         while x < w {
             *dst
                 .offset(
@@ -4588,7 +4588,7 @@ unsafe extern "C" fn blend_v_c(
     let mask: *const uint8_t = &*dav1d_obmc_masks.as_ptr().offset(w as isize)
         as *const uint8_t;
     loop {
-        let mut x: libc::c_int = 0 as libc::c_int;
+        let mut x = 0;
         while x < w * 3 as libc::c_int >> 2 as libc::c_int {
             *dst
                 .offset(
@@ -4622,7 +4622,7 @@ unsafe extern "C" fn blend_h_c(
         let fresh0 = mask;
         mask = mask.offset(1);
         let m: libc::c_int = *fresh0 as libc::c_int;
-        let mut x: libc::c_int = 0 as libc::c_int;
+        let mut x = 0;
         while x < w {
             *dst
                 .offset(
@@ -4662,7 +4662,7 @@ unsafe extern "C" fn w_mask_c(
     let mask_sh: libc::c_int = bitdepth + intermediate_bits - 4 as libc::c_int;
     let mask_rnd: libc::c_int = (1 as libc::c_int) << mask_sh - 5 as libc::c_int;
     loop {
-        let mut x: libc::c_int = 0 as libc::c_int;
+        let mut x = 0;
         while x < w {
             let m: libc::c_int = imin(
                 38 as libc::c_int
@@ -4826,9 +4826,9 @@ unsafe extern "C" fn warp_affine_8x8_c(
     let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
     src = src
         .offset(-((3 * PXSTRIDE(src_stride)) as isize));
-    let mut y: libc::c_int = 0 as libc::c_int;
+    let mut y = 0;
     while y < 15 as libc::c_int {
-        let mut x: libc::c_int = 0 as libc::c_int;
+        let mut x = 0;
         let mut tmx: libc::c_int = mx;
         while x < 8 as libc::c_int {
             let filter: *const int8_t = (dav1d_mc_warp_filter[(64 as libc::c_int
@@ -4875,9 +4875,9 @@ unsafe extern "C" fn warp_affine_8x8_c(
     mid_ptr = &mut *mid
         .as_mut_ptr()
         .offset((3 as libc::c_int * 8 as libc::c_int) as isize) as *mut int16_t;
-    let mut y_0: libc::c_int = 0 as libc::c_int;
+    let mut y_0 = 0;
     while y_0 < 8 as libc::c_int {
-        let mut x_0: libc::c_int = 0 as libc::c_int;
+        let mut x_0 = 0;
         let mut tmy: libc::c_int = my;
         while x_0 < 8 as libc::c_int {
             let filter_0: *const int8_t = (dav1d_mc_warp_filter[(64 as libc::c_int
@@ -4949,9 +4949,9 @@ unsafe extern "C" fn warp_affine_8x8t_c(
     let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
     src = src
         .offset(-((3 * PXSTRIDE(src_stride)) as isize));
-    let mut y: libc::c_int = 0 as libc::c_int;
+    let mut y = 0;
     while y < 15 as libc::c_int {
-        let mut x: libc::c_int = 0 as libc::c_int;
+        let mut x = 0;
         let mut tmx: libc::c_int = mx;
         while x < 8 as libc::c_int {
             let filter: *const int8_t = (dav1d_mc_warp_filter[(64 as libc::c_int
@@ -4998,9 +4998,9 @@ unsafe extern "C" fn warp_affine_8x8t_c(
     mid_ptr = &mut *mid
         .as_mut_ptr()
         .offset((3 as libc::c_int * 8 as libc::c_int) as isize) as *mut int16_t;
-    let mut y_0: libc::c_int = 0 as libc::c_int;
+    let mut y_0 = 0;
     while y_0 < 8 as libc::c_int {
-        let mut x_0: libc::c_int = 0 as libc::c_int;
+        let mut x_0 = 0;
         let mut tmy: libc::c_int = my;
         while x_0 < 8 as libc::c_int {
             let filter_0: *const int8_t = (dav1d_mc_warp_filter[(64 as libc::c_int
@@ -5106,7 +5106,7 @@ unsafe extern "C" fn emu_edge_c(
         .offset((top_ext as isize * PXSTRIDE(dst_stride)) as isize);
     let center_w: libc::c_int = (bw - left_ext as isize - right_ext as isize) as libc::c_int;
     let center_h: libc::c_int = (bh - top_ext as isize - bottom_ext as isize) as libc::c_int;
-    let mut y_0: libc::c_int = 0 as libc::c_int;
+    let mut y_0 = 0;
     while y_0 < center_h {
         memcpy(
             blk.offset(left_ext as isize) as *mut libc::c_void,
@@ -5129,7 +5129,7 @@ unsafe extern "C" fn emu_edge_c(
         y_0 += 1;
     }
     blk = dst.offset((top_ext as isize * PXSTRIDE(dst_stride)) as isize);
-    let mut y_1: libc::c_int = 0 as libc::c_int;
+    let mut y_1 = 0;
     while y_1 < top_ext {
         memcpy(
             dst as *mut libc::c_void,
@@ -5140,7 +5140,7 @@ unsafe extern "C" fn emu_edge_c(
         y_1 += 1;
     }
     dst = dst.offset((center_h as isize * PXSTRIDE(dst_stride)) as isize);
-    let mut y_2: libc::c_int = 0 as libc::c_int;
+    let mut y_2 = 0;
     while y_2 < bottom_ext {
         memcpy(
             dst as *mut libc::c_void,
@@ -5171,7 +5171,7 @@ unsafe extern "C" fn resize_c(
     loop {
         let mut mx: libc::c_int = mx0;
         let mut src_x: libc::c_int = -(1 as libc::c_int);
-        let mut x: libc::c_int = 0 as libc::c_int;
+        let mut x = 0;
         while x < dst_w {
             let F: *const int8_t = (dav1d_resize_filter[(mx >> 8 as libc::c_int)
                 as usize])

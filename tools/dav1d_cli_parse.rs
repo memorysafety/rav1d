@@ -623,7 +623,7 @@ unsafe extern "C" fn parse_enum(
 ) -> libc::c_uint {
     let mut str: [libc::c_char; 1024] = [0; 1024];
     strcpy(str.as_mut_ptr(), b"any of \0" as *const u8 as *const libc::c_char);
-    let mut n: libc::c_int = 0 as libc::c_int;
+    let mut n = 0;
     while n < tbl_sz {
         if strcmp((*tbl.offset(n as isize)).str_0, optarg_0) == 0 {
             return (*tbl.offset(n as isize)).val as libc::c_uint;
@@ -679,7 +679,7 @@ pub unsafe extern "C" fn parse(
     );
     dav1d_default_settings(lib_settings);
     (*lib_settings).strict_std_compliance = 1 as libc::c_int;
-    let mut grain_specified: libc::c_int = 0 as libc::c_int;
+    let mut grain_specified = 0;
     loop {
         o = getopt_long(
             argc,

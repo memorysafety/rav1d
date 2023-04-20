@@ -177,7 +177,7 @@ unsafe extern "C" fn y4m2_write(
     let mut ptr: *mut uint8_t = 0 as *mut uint8_t;
     let hbd: libc::c_int = ((*p).p.bpc > 8 as libc::c_int) as libc::c_int;
     ptr = (*p).data[0] as *mut uint8_t;
-    let mut y: libc::c_int = 0 as libc::c_int;
+    let mut y = 0;
     loop {
         if !(y < (*p).p.h) {
             current_block = 11812396948646013369;
@@ -209,14 +209,14 @@ unsafe extern "C" fn y4m2_write(
                     as libc::c_int;
                 let cw: libc::c_int = (*p).p.w + ss_hor >> ss_hor;
                 let ch: libc::c_int = (*p).p.h + ss_ver >> ss_ver;
-                let mut pl: libc::c_int = 1 as libc::c_int;
+                let mut pl = 1;
                 's_64: loop {
                     if !(pl <= 2 as libc::c_int) {
                         current_block = 13797916685926291137;
                         break;
                     }
                     ptr = (*p).data[pl as usize] as *mut uint8_t;
-                    let mut y_0: libc::c_int = 0 as libc::c_int;
+                    let mut y_0 = 0;
                     while y_0 < ch {
                         if fwrite(
                             ptr as *const libc::c_void,

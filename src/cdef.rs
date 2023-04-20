@@ -30,9 +30,9 @@ pub unsafe extern "C" fn fill(
     w: libc::c_int,
     h: libc::c_int,
 ) {
-    let mut y: libc::c_int = 0 as libc::c_int;
+    let mut y = 0;
     while y < h {
-        let mut x: libc::c_int = 0 as libc::c_int;
+        let mut x = 0;
         while x < w {
             *tmp
                 .offset(

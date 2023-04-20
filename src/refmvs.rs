@@ -186,7 +186,7 @@ unsafe extern "C" fn add_spatial_candidate(
         return;
     }
     if r#ref.r#ref[1] as libc::c_int == -(1 as libc::c_int) {
-        let mut n: libc::c_int = 0 as libc::c_int;
+        let mut n = 0;
         while n < 2 as libc::c_int {
             if (*b).r#ref.r#ref[n as usize] as libc::c_int
                 == r#ref.r#ref[0] as libc::c_int
@@ -299,7 +299,7 @@ unsafe extern "C" fn scan_row(
         );
         return weight >> 1 as libc::c_int;
     }
-    let mut x: libc::c_int = 0 as libc::c_int;
+    let mut x = 0;
     loop {
         add_spatial_candidate(
             mvstack,
@@ -371,7 +371,7 @@ unsafe extern "C" fn scan_col(
         );
         return weight >> 1 as libc::c_int;
     }
-    let mut y: libc::c_int = 0 as libc::c_int;
+    let mut y = 0;
     loop {
         add_spatial_candidate(
             mvstack,
@@ -1080,7 +1080,7 @@ pub unsafe extern "C" fn dav1d_refmvs_tile_sbrow_init(
         ) as *mut refmvs_block;
     let sbsz: libc::c_int = (*rf).sbsz;
     let off: libc::c_int = sbsz * sby & 16 as libc::c_int;
-    let mut i: libc::c_int = 0 as libc::c_int;
+    let mut i = 0;
     while i < sbsz {
         (*rt).r[(off + 5 as libc::c_int + i) as usize] = r;
         i += 1;
@@ -1158,7 +1158,7 @@ pub unsafe extern "C" fn dav1d_refmvs_load_tmvs(
     }
     rp_proj = &mut *((*rf).rp_proj)
         .offset(16 * stride * tile_row_idx as isize) as *mut refmvs_temporal_block;
-    let mut n: libc::c_int = 0 as libc::c_int;
+    let mut n = 0;
     while n < (*rf).n_mfmvs {
         let ref2cur: libc::c_int = (*rf).mfmv_ref2cur[n as usize];
         if !(ref2cur == -(2147483647 as libc::c_int) - 1 as libc::c_int) {
@@ -1288,7 +1288,7 @@ pub unsafe extern "C" fn dav1d_refmvs_save_tmvs(
                             - 1 as libc::c_int) as isize,
                     ) as libc::c_int != 0
                 && (*cand_b).mv.mv[1].y.abs() | (*cand_b).mv.mv[1].x.abs() < 4096 {
-                let mut n: libc::c_int = 0 as libc::c_int;
+                let mut n = 0;
                 while n < bw8 {
                     *rp
                         .offset(
@@ -1311,7 +1311,7 @@ pub unsafe extern "C" fn dav1d_refmvs_save_tmvs(
                             - 1 as libc::c_int) as isize,
                     ) as libc::c_int != 0
                 && (*cand_b).mv.mv[0].y.abs() | (*cand_b).mv.mv[0].x.abs() < 4096 {
-                let mut n_0: libc::c_int = 0 as libc::c_int;
+                let mut n_0 = 0;
                 while n_0 < bw8 {
                     *rp
                         .offset(
@@ -1327,7 +1327,7 @@ pub unsafe extern "C" fn dav1d_refmvs_save_tmvs(
                     x += 1;
                 }
             } else {
-                let mut n_1: libc::c_int = 0 as libc::c_int;
+                let mut n_1 = 0;
                 while n_1 < bw8 {
                     (*rp.offset(x as isize)).r#ref = 0 as libc::c_int as int8_t;
                     n_1 += 1;
@@ -1415,7 +1415,7 @@ pub unsafe extern "C" fn dav1d_refmvs_init_frame(
     (*rf).rp = rp;
     (*rf).rp_ref = rp_ref;
     let poc: libc::c_uint = (*frm_hdr).frame_offset as libc::c_uint;
-    let mut i: libc::c_int = 0 as libc::c_int;
+    let mut i = 0;
     while i < 7 as libc::c_int {
         let poc_diff: libc::c_int = get_poc_diff(
             (*seq_hdr).order_hint_n_bits,
@@ -1443,7 +1443,7 @@ pub unsafe extern "C" fn dav1d_refmvs_init_frame(
     }
     (*rf).n_mfmvs = 0 as libc::c_int;
     if (*frm_hdr).use_ref_frame_mvs != 0 && (*seq_hdr).order_hint_n_bits != 0 {
-        let mut total: libc::c_int = 2 as libc::c_int;
+        let mut total = 2;
         if !(*rp_ref.offset(0)).is_null()
             && (*ref_ref_poc
                 .offset(0))[6]
@@ -1495,7 +1495,7 @@ pub unsafe extern "C" fn dav1d_refmvs_init_frame(
             (*rf).n_mfmvs = (*rf).n_mfmvs + 1;
             (*rf).mfmv_ref[fresh16 as usize] = 1 as libc::c_int as uint8_t;
         }
-        let mut n: libc::c_int = 0 as libc::c_int;
+        let mut n = 0;
         while n < (*rf).n_mfmvs {
             let rpoc: libc::c_uint = *ref_poc
                 .offset((*rf).mfmv_ref[n as usize] as isize);
@@ -1518,7 +1518,7 @@ pub unsafe extern "C" fn dav1d_refmvs_init_frame(
                 } else {
                     diff1
                 };
-                let mut m: libc::c_int = 0 as libc::c_int;
+                let mut m = 0;
                 while m < 7 as libc::c_int {
                     let rrpoc: libc::c_uint = (*ref_ref_poc
                         .offset((*rf).mfmv_ref[n as usize] as isize))[m as usize];
@@ -1573,7 +1573,7 @@ unsafe extern "C" fn splat_mv_c(
         let fresh17 = rr;
         rr = rr.offset(1);
         let r: *mut refmvs_block = (*fresh17).offset(bx4 as isize);
-        let mut x: libc::c_int = 0 as libc::c_int;
+        let mut x = 0;
         while x < bw4 {
             *r.offset(x as isize) = *rmv;
             x += 1;

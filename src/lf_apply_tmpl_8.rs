@@ -813,7 +813,7 @@ unsafe extern "C" fn backup_lpf(
         while row + stripe_h <= row_h {
             let n_lines_0: libc::c_int = 4 as libc::c_int
                 - (row + stripe_h + 1 as libc::c_int == h) as libc::c_int;
-            let mut i: libc::c_int = 0 as libc::c_int;
+            let mut i = 0;
             while i < 4 as libc::c_int {
                 memcpy(
                     dst as *mut libc::c_void,
@@ -1056,7 +1056,7 @@ unsafe extern "C" fn filter_plane_cols_y(
     endy4: libc::c_int,
 ) {
     let dsp: *const Dav1dDSPContext = (*f).dsp;
-    let mut x: libc::c_int = 0 as libc::c_int;
+    let mut x = 0;
     while x < w {
         if !(have_left == 0 && x == 0) {
             let mut hmask: [uint32_t; 4] = [0; 4];
@@ -1222,7 +1222,7 @@ unsafe extern "C" fn filter_plane_cols_uv(
     ss_ver: libc::c_int,
 ) {
     let dsp: *const Dav1dDSPContext = (*f).dsp;
-    let mut x: libc::c_int = 0 as libc::c_int;
+    let mut x = 0;
     while x < w {
         if !(have_left == 0 && x == 0) {
             let mut hmask: [uint32_t; 3] = [0; 3];
@@ -1415,7 +1415,7 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_8bpc(
         .as_ptr()
         .offset(1))
         .offset((sby << sbl2 - ss_ver) as isize) as *mut uint8_t;
-    let mut tile_col: libc::c_int = 1 as libc::c_int;
+    let mut tile_col = 1;
     loop {
         x = (*(*f).frame_hdr).tiling.col_start_sb[tile_col as usize] as libc::c_int;
         if x << sbl2 >= (*f).bw {

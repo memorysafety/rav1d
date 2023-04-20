@@ -1215,7 +1215,7 @@ unsafe extern "C" fn md5_write(
     let w: libc::c_int = (*p).p.w;
     let h: libc::c_int = (*p).p.h;
     let mut yptr: *mut uint8_t = (*p).data[0] as *mut uint8_t;
-    let mut y: libc::c_int = 0 as libc::c_int;
+    let mut y = 0;
     while y < h {
         md5_update(md5, yptr, (w << hbd) as libc::c_uint);
         yptr = yptr.offset((*p).stride[0] as isize);
@@ -1230,10 +1230,10 @@ unsafe extern "C" fn md5_write(
             != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint) as libc::c_int;
         let cw: libc::c_int = w + ss_hor >> ss_hor;
         let ch: libc::c_int = h + ss_ver >> ss_ver;
-        let mut pl: libc::c_int = 1 as libc::c_int;
+        let mut pl = 1;
         while pl <= 2 as libc::c_int {
             let mut uvptr: *mut uint8_t = (*p).data[pl as usize] as *mut uint8_t;
-            let mut y_0: libc::c_int = 0 as libc::c_int;
+            let mut y_0 = 0;
             while y_0 < ch {
                 md5_update(md5, uvptr, (cw << hbd) as libc::c_uint);
                 uvptr = uvptr.offset((*p).stride[1] as isize);
@@ -1272,7 +1272,7 @@ unsafe extern "C" fn md5_finish(md5: *mut MD5Context) {
 }
 unsafe extern "C" fn md5_close(md5: *mut MD5Context) {
     md5_finish(md5);
-    let mut i: libc::c_int = 0 as libc::c_int;
+    let mut i = 0;
     while i < 4 as libc::c_int {
         fprintf(
             (*md5).f,
@@ -1301,9 +1301,9 @@ unsafe extern "C" fn md5_verify(
     }
     let mut abcd: [uint32_t; 4] = [0 as libc::c_int as uint32_t, 0, 0, 0];
     let mut t: [libc::c_char; 3] = [0 as libc::c_int as libc::c_char, 0, 0];
-    let mut i: libc::c_int = 0 as libc::c_int;
+    let mut i = 0;
     while i < 4 as libc::c_int {
-        let mut j: libc::c_int = 0 as libc::c_int;
+        let mut j = 0;
         while j < 32 as libc::c_int {
             let mut ignore: *mut libc::c_char = 0 as *mut libc::c_char;
             memcpy(

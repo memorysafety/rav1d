@@ -349,7 +349,7 @@ unsafe extern "C" fn picture_release(p: *mut Dav1dPicture, _: *mut libc::c_void)
 }
 unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_int {
     let istty: libc::c_int = isatty(fileno(stderr));
-    let mut res: libc::c_int = 0 as libc::c_int;
+    let mut res = 0;
     let mut cli_settings: CLISettings = CLISettings {
         outputfile: 0 as *const libc::c_char,
         inputfile: 0 as *const libc::c_char,

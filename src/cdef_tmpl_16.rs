@@ -336,7 +336,7 @@ unsafe extern "C" fn padding(
         top = top.offset(PXSTRIDE(src_stride) as isize);
         y += 1;
     }
-    let mut y_0: libc::c_int = 0 as libc::c_int;
+    let mut y_0 = 0;
     while y_0 < h {
         let mut x_0: libc::c_int = x_start;
         while x_0 < 0 as libc::c_int {
@@ -349,7 +349,7 @@ unsafe extern "C" fn padding(
         }
         y_0 += 1;
     }
-    let mut y_1: libc::c_int = 0 as libc::c_int;
+    let mut y_1 = 0;
     while y_1 < h {
         let mut x_1: libc::c_int = if y_1 < h { 0 as libc::c_int } else { x_start };
         while x_1 < x_end {
@@ -412,14 +412,14 @@ unsafe extern "C" fn cdef_filter_block_c(
         if sec_strength != 0 {
             let sec_shift: libc::c_int = damping - ulog2(sec_strength as libc::c_uint);
             loop {
-                let mut x: libc::c_int = 0 as libc::c_int;
+                let mut x = 0;
                 while x < w {
                     let px: libc::c_int = *dst.offset(x as isize) as libc::c_int;
-                    let mut sum: libc::c_int = 0 as libc::c_int;
+                    let mut sum = 0;
                     let mut max: libc::c_int = px;
                     let mut min: libc::c_int = px;
                     let mut pri_tap_k: libc::c_int = pri_tap;
-                    let mut k: libc::c_int = 0 as libc::c_int;
+                    let mut k = 0;
                     while k < 2 as libc::c_int {
                         let off1: libc::c_int = dav1d_cdef_directions[(dir
                             + 2 as libc::c_int) as usize][k as usize] as libc::c_int;
@@ -488,12 +488,12 @@ unsafe extern "C" fn cdef_filter_block_c(
             }
         } else {
             loop {
-                let mut x_0: libc::c_int = 0 as libc::c_int;
+                let mut x_0 = 0;
                 while x_0 < w {
                     let px_0: libc::c_int = *dst.offset(x_0 as isize) as libc::c_int;
-                    let mut sum_0: libc::c_int = 0 as libc::c_int;
+                    let mut sum_0 = 0;
                     let mut pri_tap_k_0: libc::c_int = pri_tap;
-                    let mut k_0: libc::c_int = 0 as libc::c_int;
+                    let mut k_0 = 0;
                     while k_0 < 2 as libc::c_int {
                         let off: libc::c_int = dav1d_cdef_directions[(dir
                             + 2 as libc::c_int) as usize][k_0 as usize] as libc::c_int;
@@ -532,11 +532,11 @@ unsafe extern "C" fn cdef_filter_block_c(
         }
         let sec_shift_0: libc::c_int = damping - ulog2(sec_strength as libc::c_uint);
         loop {
-            let mut x_1: libc::c_int = 0 as libc::c_int;
+            let mut x_1 = 0;
             while x_1 < w {
                 let px_1: libc::c_int = *dst.offset(x_1 as isize) as libc::c_int;
-                let mut sum_1: libc::c_int = 0 as libc::c_int;
-                let mut k_1: libc::c_int = 0 as libc::c_int;
+                let mut sum_1 = 0;
+                let mut k_1 = 0;
                 while k_1 < 2 as libc::c_int {
                     let off1_0: libc::c_int = dav1d_cdef_directions[(dir
                         + 4 as libc::c_int) as usize][k_1 as usize] as libc::c_int;
@@ -687,9 +687,9 @@ unsafe extern "C" fn cdef_find_dir_c(
         [0; 11],
         [0; 11],
     ];
-    let mut y: libc::c_int = 0 as libc::c_int;
+    let mut y = 0;
     while y < 8 as libc::c_int {
-        let mut x: libc::c_int = 0 as libc::c_int;
+        let mut x = 0;
         while x < 8 as libc::c_int {
             let px: libc::c_int = (*img.offset(x as isize) as libc::c_int
                 >> bitdepth_min_8) - 128 as libc::c_int;
@@ -723,7 +723,7 @@ unsafe extern "C" fn cdef_find_dir_c(
         0,
         0,
     ];
-    let mut n: libc::c_int = 0 as libc::c_int;
+    let mut n = 0;
     while n < 8 as libc::c_int {
         cost[2 as libc::c_int
             as usize] = (cost[2])
@@ -756,7 +756,7 @@ unsafe extern "C" fn cdef_find_dir_c(
         140 as libc::c_int as uint16_t,
         120 as libc::c_int as uint16_t,
     ];
-    let mut n_0: libc::c_int = 0 as libc::c_int;
+    let mut n_0 = 0;
     while n_0 < 7 as libc::c_int {
         let d: libc::c_int = div_table[n_0 as usize] as libc::c_int;
         cost[0 as libc::c_int
@@ -797,13 +797,13 @@ unsafe extern "C" fn cdef_find_dir_c(
                 * partial_sum_diag[1][7]
                 * 105 as libc::c_int) as libc::c_uint,
         );
-    let mut n_1: libc::c_int = 0 as libc::c_int;
+    let mut n_1 = 0;
     while n_1 < 4 as libc::c_int {
         let cost_ptr: *mut libc::c_uint = &mut *cost
             .as_mut_ptr()
             .offset((n_1 * 2 as libc::c_int + 1 as libc::c_int) as isize)
             as *mut libc::c_uint;
-        let mut m: libc::c_int = 0 as libc::c_int;
+        let mut m = 0;
         while m < 5 as libc::c_int {
             *cost_ptr = (*cost_ptr)
                 .wrapping_add(
@@ -814,7 +814,7 @@ unsafe extern "C" fn cdef_find_dir_c(
             m += 1;
         }
         *cost_ptr = (*cost_ptr).wrapping_mul(105 as libc::c_int as libc::c_uint);
-        let mut m_0: libc::c_int = 0 as libc::c_int;
+        let mut m_0 = 0;
         while m_0 < 3 as libc::c_int {
             let d_0: libc::c_int = div_table[(2 as libc::c_int * m_0 + 1 as libc::c_int)
                 as usize] as libc::c_int;
@@ -832,9 +832,9 @@ unsafe extern "C" fn cdef_find_dir_c(
         }
         n_1 += 1;
     }
-    let mut best_dir: libc::c_int = 0 as libc::c_int;
+    let mut best_dir = 0;
     let mut best_cost: libc::c_uint = cost[0];
-    let mut n_2: libc::c_int = 1 as libc::c_int;
+    let mut n_2 = 1;
     while n_2 < 8 as libc::c_int {
         if cost[n_2 as usize] > best_cost {
             best_cost = cost[n_2 as usize];

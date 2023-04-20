@@ -151,7 +151,7 @@ pub unsafe extern "C" fn dav1d_get_vlc(c: *mut GetBits) -> libc::c_uint {
     if dav1d_get_bit(c) != 0 {
         return 0 as libc::c_int as libc::c_uint;
     }
-    let mut n_bits: libc::c_int = 0 as libc::c_int;
+    let mut n_bits = 0;
     loop {
         n_bits += 1;
         if n_bits == 32 as libc::c_int {
@@ -171,7 +171,7 @@ unsafe extern "C" fn get_bits_subexp_u(
     n: libc::c_uint,
 ) -> libc::c_uint {
     let mut v: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    let mut i: libc::c_int = 0 as libc::c_int;
+    let mut i = 0;
     loop {
         let b: libc::c_int = if i != 0 {
             3 as libc::c_int + i - 1 as libc::c_int

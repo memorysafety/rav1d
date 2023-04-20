@@ -1713,7 +1713,7 @@ unsafe extern "C" fn output_image(
     c: *mut Dav1dContext,
     out: *mut Dav1dPicture,
 ) -> libc::c_int {
-    let mut res: libc::c_int = 0 as libc::c_int;
+    let mut res = 0;
     let in_0: *mut Dav1dThreadPicture = if (*c).all_layers != 0
         || (*c).max_spatial_id == 0
     {
@@ -2111,7 +2111,7 @@ pub unsafe extern "C" fn dav1d_flush(c: *mut Dav1dContext) {
     }
     (*c).drain = 0 as libc::c_int;
     (*c).cached_error = 0 as libc::c_int;
-    let mut i: libc::c_int = 0 as libc::c_int;
+    let mut i = 0;
     while i < 8 as libc::c_int {
         if !((*c).refs[i as usize].p.p.frame_hdr).is_null() {
             dav1d_thread_picture_unref(
@@ -2354,13 +2354,13 @@ unsafe extern "C" fn close_internal(
         }
         free((*c).frame_thread.out_delayed as *mut libc::c_void);
     }
-    let mut n_3: libc::c_int = 0 as libc::c_int;
+    let mut n_3 = 0;
     while n_3 < (*c).n_tile_data {
         dav1d_data_unref_internal(&mut (*((*c).tile).offset(n_3 as isize)).data);
         n_3 += 1;
     }
     free((*c).tile as *mut libc::c_void);
-    let mut n_4: libc::c_int = 0 as libc::c_int;
+    let mut n_4 = 0;
     while n_4 < 8 as libc::c_int {
         dav1d_cdf_thread_unref(&mut *((*c).cdf).as_mut_ptr().offset(n_4 as isize));
         if !((*c).refs[n_4 as usize].p.p.frame_hdr).is_null() {

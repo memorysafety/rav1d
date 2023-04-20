@@ -112,7 +112,7 @@ pub unsafe extern "C" fn output_open(
     let mut c: *mut MuxerContext = 0 as *mut MuxerContext;
     let mut i: libc::c_uint = 0;
     let mut res: libc::c_int = 0;
-    let mut name_offset: libc::c_int = 0 as libc::c_int;
+    let mut name_offset = 0;
     if !name.is_null() {
         name_offset = 5 as libc::c_int
             * (strncmp(
@@ -184,7 +184,7 @@ pub unsafe extern "C" fn output_open(
     }
     (*c).impl_0 = impl_0;
     (*c).data = ((*c).priv_data).as_mut_ptr() as *mut MuxerPriv;
-    let mut have_num_pattern: libc::c_int = 0 as libc::c_int;
+    let mut have_num_pattern = 0;
     let mut ptr: *const libc::c_char = if !filename.is_null() {
         strchr(filename, '%' as i32)
     } else {

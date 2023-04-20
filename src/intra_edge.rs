@@ -296,7 +296,7 @@ unsafe extern "C" fn init_mode_node(
             })) as EdgeFlags,
     );
     if bl as libc::c_uint == BL_16X16 as libc::c_int as libc::c_uint {
-        let mut n: libc::c_int = 0 as libc::c_int;
+        let mut n = 0;
         while n < 4 as libc::c_int {
             let fresh0 = (*mem).nt;
             (*mem).nt = ((*mem).nt).offset(1);
@@ -327,7 +327,7 @@ unsafe extern "C" fn init_mode_node(
             n += 1;
         }
     } else {
-        let mut n_0: libc::c_int = 0 as libc::c_int;
+        let mut n_0 = 0;
         while n_0 < 4 as libc::c_int {
             let fresh1 = (*mem).nwc[bl as usize];
             (*mem).nwc[bl as usize] = ((*mem).nwc[bl as usize]).offset(1);

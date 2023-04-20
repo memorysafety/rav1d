@@ -459,7 +459,7 @@ pub unsafe extern "C" fn dav1d_find_affine_int(
     let dux: libc::c_int = sux + mv.x as libc::c_int;
     let isuy: libc::c_int = by4 * 4 as libc::c_int + rsuy;
     let isux: libc::c_int = bx4 * 4 as libc::c_int + rsux;
-    let mut i: libc::c_int = 0 as libc::c_int;
+    let mut i = 0;
     while i < np {
         let dx: libc::c_int = (*pts
             .offset(i as isize))[1][0]

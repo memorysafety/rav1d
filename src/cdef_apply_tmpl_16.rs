@@ -839,7 +839,7 @@ unsafe extern "C" fn backup2x8(
 ) {
     let mut y_off: ptrdiff_t = 0 as libc::c_int as ptrdiff_t;
     if flag as libc::c_uint & BACKUP_2X8_Y as libc::c_int as libc::c_uint != 0 {
-        let mut y: libc::c_int = 0 as libc::c_int;
+        let mut y = 0;
         while y < 8 as libc::c_int {
             memcpy(
                 ((*dst.offset(0))[y as usize]).as_mut_ptr()
@@ -866,7 +866,7 @@ unsafe extern "C" fn backup2x8(
         != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint) as libc::c_int;
     x_off >>= ss_hor;
     y_off = 0 as libc::c_int as ptrdiff_t;
-    let mut y_0: libc::c_int = 0 as libc::c_int;
+    let mut y_0 = 0;
     while y_0 < 8 as libc::c_int >> ss_ver {
         memcpy(
             ((*dst.offset(1))[y_0 as usize]).as_mut_ptr()
@@ -934,7 +934,7 @@ pub unsafe extern "C" fn dav1d_cdef_brow_16bpc(
         *p.offset(1),
         *p.offset(2),
     ];
-    let sbsz: libc::c_int = 16 as libc::c_int;
+    let sbsz = 16;
     let sb64w: libc::c_int = (*f).sb128w << 1 as libc::c_int;
     let damping: libc::c_int = (*(*f).frame_hdr).cdef.damping + bitdepth_min_8;
     let layout: Dav1dPixelLayout = (*f).cur.p.layout;
@@ -977,7 +977,7 @@ pub unsafe extern "C" fn dav1d_cdef_brow_16bpc(
         != (*(*f).frame_hdr).width[1]) as libc::c_int;
     let y_stride: ptrdiff_t = PXSTRIDE((*f).cur.stride[0]);
     let uv_stride: ptrdiff_t = PXSTRIDE((*f).cur.stride[1]);
-    let mut bit: libc::c_int = 0 as libc::c_int;
+    let mut bit = 0;
     let mut by: libc::c_int = by_start;
     while by < by_end {
         let tf: libc::c_int = (*tc).top_pre_cdef_toggle;
@@ -1043,8 +1043,8 @@ pub unsafe extern "C" fn dav1d_cdef_brow_16bpc(
             CdefEdgeFlags,
         >(edges as libc::c_uint | CDEF_HAVE_RIGHT as libc::c_int as libc::c_uint);
         let mut prev_flag: Backup2x8Flags = 0 as Backup2x8Flags;
-        let mut sbx: libc::c_int = 0 as libc::c_int;
-        let mut last_skip: libc::c_int = 1 as libc::c_int;
+        let mut sbx = 0;
+        let mut last_skip = 1;
         while sbx < sb64w {
             let mut noskip_row: *const [uint16_t; 2] = 0 as *const [uint16_t; 2];
             let mut noskip_mask: libc::c_uint = 0;
@@ -1297,7 +1297,7 @@ pub unsafe extern "C" fn dav1d_cdef_brow_16bpc(
                             } else {
                                 0 as libc::c_int
                             };
-                            let mut pl: libc::c_int = 1 as libc::c_int;
+                            let mut pl = 1;
                             while pl <= 2 as libc::c_int {
                                 let mut current_block_77: u64;
                                 if have_tt == 0 {

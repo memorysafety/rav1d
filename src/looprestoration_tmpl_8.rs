@@ -493,7 +493,7 @@ unsafe extern "C" fn padding(
             );
         }
     }
-    let mut j: libc::c_int = 0 as libc::c_int;
+    let mut j = 0;
     while j < stripe_h {
         memcpy(
             dst_tl.offset((3 as libc::c_int * have_left) as isize) as *mut libc::c_void,
@@ -508,7 +508,7 @@ unsafe extern "C" fn padding(
         let mut pad: *mut pixel = dst_l.offset(unit_w as isize);
         let mut row_last: *mut pixel = &mut *dst_l
             .offset((unit_w - 1 as libc::c_int) as isize) as *mut pixel;
-        let mut j_0: libc::c_int = 0 as libc::c_int;
+        let mut j_0 = 0;
         while j_0 < stripe_h + 6 as libc::c_int {
             memset(
                 pad as *mut libc::c_void,
@@ -521,7 +521,7 @@ unsafe extern "C" fn padding(
         }
     }
     if have_left == 0 {
-        let mut j_1: libc::c_int = 0 as libc::c_int;
+        let mut j_1 = 0;
         while j_1 < stripe_h + 6 as libc::c_int {
             memset(
                 dst as *mut libc::c_void,
@@ -534,7 +534,7 @@ unsafe extern "C" fn padding(
         }
     } else {
         dst = dst.offset((3 as libc::c_int * 390 as libc::c_int) as isize);
-        let mut j_2: libc::c_int = 0 as libc::c_int;
+        let mut j_2 = 0;
         while j_2 < stripe_h {
             memcpy(
                 dst as *mut libc::c_void,
@@ -563,22 +563,22 @@ unsafe extern "C" fn wiener_c(
     let mut hor: [uint16_t; 27300] = [0; 27300];
     let mut hor_ptr: *mut uint16_t = hor.as_mut_ptr();
     let filter: *const [int16_t; 8] = ((*params).filter.0).as_ptr();
-    let bitdepth: libc::c_int = 8 as libc::c_int;
+    let bitdepth = 8;
     let round_bits_h: libc::c_int = 3 as libc::c_int
         + (bitdepth == 12 as libc::c_int) as libc::c_int * 2 as libc::c_int;
     let rounding_off_h: libc::c_int = (1 as libc::c_int)
         << round_bits_h - 1 as libc::c_int;
     let clip_limit: libc::c_int = (1 as libc::c_int)
         << bitdepth + 1 as libc::c_int + 7 as libc::c_int - round_bits_h;
-    let mut j: libc::c_int = 0 as libc::c_int;
+    let mut j = 0;
     while j < h + 6 as libc::c_int {
-        let mut i: libc::c_int = 0 as libc::c_int;
+        let mut i = 0;
         while i < w {
             let mut sum: libc::c_int = (1 as libc::c_int) << bitdepth + 6 as libc::c_int;
             sum
                 += *tmp_ptr.offset((i + 3 as libc::c_int) as isize) as libc::c_int
                     * 128 as libc::c_int;
-            let mut k: libc::c_int = 0 as libc::c_int;
+            let mut k = 0;
             while k < 7 as libc::c_int {
                 sum
                     += *tmp_ptr.offset((i + k) as isize) as libc::c_int
@@ -606,12 +606,12 @@ unsafe extern "C" fn wiener_c(
         << round_bits_v - 1 as libc::c_int;
     let round_offset: libc::c_int = (1 as libc::c_int)
         << bitdepth + (round_bits_v - 1 as libc::c_int);
-    let mut j_0: libc::c_int = 0 as libc::c_int;
+    let mut j_0 = 0;
     while j_0 < h {
-        let mut i_0: libc::c_int = 0 as libc::c_int;
+        let mut i_0 = 0;
         while i_0 < w {
             let mut sum_0: libc::c_int = -round_offset;
-            let mut k_0: libc::c_int = 0 as libc::c_int;
+            let mut k_0 = 0;
             while k_0 < 7 as libc::c_int {
                 sum_0
                     += hor[((j_0 + k_0) * 390 as libc::c_int + i_0) as usize]
@@ -637,7 +637,7 @@ unsafe extern "C" fn boxsum3(
     h: libc::c_int,
 ) {
     src = src.offset(390);
-    let mut x: libc::c_int = 1 as libc::c_int;
+    let mut x = 1;
     while x < w - 1 as libc::c_int {
         let mut sum_v: *mut coef = sum.offset(x as isize);
         let mut sumsq_v: *mut int32_t = sumsq.offset(x as isize);
@@ -646,7 +646,7 @@ unsafe extern "C" fn boxsum3(
         let mut a2: libc::c_int = a * a;
         let mut b: libc::c_int = *s.offset(390) as libc::c_int;
         let mut b2: libc::c_int = b * b;
-        let mut y: libc::c_int = 2 as libc::c_int;
+        let mut y = 2;
         while y < h - 2 as libc::c_int {
             s = s.offset(390);
             let c: libc::c_int = *s.offset(390) as libc::c_int;
@@ -665,13 +665,13 @@ unsafe extern "C" fn boxsum3(
     }
     sum = sum.offset(390);
     sumsq = sumsq.offset(390);
-    let mut y_0: libc::c_int = 2 as libc::c_int;
+    let mut y_0 = 2;
     while y_0 < h - 2 as libc::c_int {
         let mut a_0: libc::c_int = *sum.offset(1) as libc::c_int;
         let mut a2_0: libc::c_int = *sumsq.offset(1);
         let mut b_0: libc::c_int = *sum.offset(2) as libc::c_int;
         let mut b2_0: libc::c_int = *sumsq.offset(2);
-        let mut x_0: libc::c_int = 2 as libc::c_int;
+        let mut x_0 = 2;
         while x_0 < w - 2 as libc::c_int {
             let c_0: libc::c_int = *sum.offset((x_0 + 1 as libc::c_int) as isize)
                 as libc::c_int;
@@ -696,7 +696,7 @@ unsafe extern "C" fn boxsum5(
     w: libc::c_int,
     h: libc::c_int,
 ) {
-    let mut x: libc::c_int = 0 as libc::c_int;
+    let mut x = 0;
     while x < w {
         let mut sum_v: *mut coef = sum.offset(x as isize);
         let mut sumsq_v: *mut int32_t = sumsq.offset(x as isize);
@@ -714,7 +714,7 @@ unsafe extern "C" fn boxsum5(
         let mut c2: libc::c_int = c * c;
         let mut d: libc::c_int = *s.offset(0) as libc::c_int;
         let mut d2: libc::c_int = d * d;
-        let mut y: libc::c_int = 2 as libc::c_int;
+        let mut y = 2;
         while y < h - 2 as libc::c_int {
             s = s.offset(390);
             let e: libc::c_int = *s as libc::c_int;
@@ -737,7 +737,7 @@ unsafe extern "C" fn boxsum5(
     }
     sum = sum.offset(390);
     sumsq = sumsq.offset(390);
-    let mut y_0: libc::c_int = 2 as libc::c_int;
+    let mut y_0 = 2;
     while y_0 < h - 2 as libc::c_int {
         let mut a_0: libc::c_int = *sum.offset(0) as libc::c_int;
         let mut a2_0: libc::c_int = *sumsq.offset(0);
@@ -747,7 +747,7 @@ unsafe extern "C" fn boxsum5(
         let mut c2_0: libc::c_int = *sumsq.offset(2);
         let mut d_0: libc::c_int = *sum.offset(3) as libc::c_int;
         let mut d2_0: libc::c_int = *sumsq.offset(3);
-        let mut x_0: libc::c_int = 2 as libc::c_int;
+        let mut x_0 = 2;
         while x_0 < w - 2 as libc::c_int {
             let e_0: libc::c_int = *sum.offset((x_0 + 2 as libc::c_int) as isize)
                 as libc::c_int;
@@ -852,9 +852,9 @@ unsafe extern "C" fn selfguided_filter(
     src = src
         .offset((3 as libc::c_int * 390 as libc::c_int + 3 as libc::c_int) as isize);
     if n == 25 as libc::c_int {
-        let mut j_0: libc::c_int = 0 as libc::c_int;
+        let mut j_0 = 0;
         while j_0 < h - 1 as libc::c_int {
-            let mut i_0: libc::c_int = 0 as libc::c_int;
+            let mut i_0 = 0;
             while i_0 < w {
                 let a_0: libc::c_int = (*B.offset((i_0 - 390 as libc::c_int) as isize)
                     as libc::c_int
@@ -901,7 +901,7 @@ unsafe extern "C" fn selfguided_filter(
             src = src.offset(390);
             B = B.offset(390);
             A = A.offset(390);
-            let mut i_1: libc::c_int = 0 as libc::c_int;
+            let mut i_1 = 0;
             while i_1 < w {
                 let a_1: libc::c_int = *B.offset(i_1 as isize) as libc::c_int
                     * 6 as libc::c_int
@@ -927,7 +927,7 @@ unsafe extern "C" fn selfguided_filter(
             j_0 += 2 as libc::c_int;
         }
         if j_0 + 1 as libc::c_int == h {
-            let mut i_2: libc::c_int = 0 as libc::c_int;
+            let mut i_2 = 0;
             while i_2 < w {
                 let a_2: libc::c_int = (*B.offset((i_2 - 390 as libc::c_int) as isize)
                     as libc::c_int
@@ -972,9 +972,9 @@ unsafe extern "C" fn selfguided_filter(
             }
         }
     } else {
-        let mut j_1: libc::c_int = 0 as libc::c_int;
+        let mut j_1 = 0;
         while j_1 < h {
-            let mut i_3: libc::c_int = 0 as libc::c_int;
+            let mut i_3 = 0;
             while i_3 < w {
                 let a_3: libc::c_int = (*B.offset(i_3 as isize) as libc::c_int
                     + *B.offset((i_3 - 1 as libc::c_int) as isize) as libc::c_int
@@ -1053,9 +1053,9 @@ unsafe extern "C" fn sgr_5x5_c(
         (*params).sgr.s0,
     );
     let w0: libc::c_int = (*params).sgr.w0 as libc::c_int;
-    let mut j: libc::c_int = 0 as libc::c_int;
+    let mut j = 0;
     while j < h {
-        let mut i: libc::c_int = 0 as libc::c_int;
+        let mut i = 0;
         while i < w {
             let v: libc::c_int = w0
                 * dst[(j * 384 as libc::c_int + i) as usize] as libc::c_int;
@@ -1096,9 +1096,9 @@ unsafe extern "C" fn sgr_3x3_c(
         (*params).sgr.s1,
     );
     let w1: libc::c_int = (*params).sgr.w1 as libc::c_int;
-    let mut j: libc::c_int = 0 as libc::c_int;
+    let mut j = 0;
     while j < h {
-        let mut i: libc::c_int = 0 as libc::c_int;
+        let mut i = 0;
         while i < w {
             let v: libc::c_int = w1
                 * dst[(j * 384 as libc::c_int + i) as usize] as libc::c_int;
@@ -1150,9 +1150,9 @@ unsafe extern "C" fn sgr_mix_c(
     );
     let w0: libc::c_int = (*params).sgr.w0 as libc::c_int;
     let w1: libc::c_int = (*params).sgr.w1 as libc::c_int;
-    let mut j: libc::c_int = 0 as libc::c_int;
+    let mut j = 0;
     while j < h {
-        let mut i: libc::c_int = 0 as libc::c_int;
+        let mut i = 0;
         while i < w {
             let v: libc::c_int = w0
                 * dst0[(j * 384 as libc::c_int + i) as usize] as libc::c_int

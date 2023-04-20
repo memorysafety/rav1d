@@ -95,7 +95,7 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
     filter_edge: libc::c_int,
     topleft_out: *mut pixel,
 ) -> IntraPredMode {
-    let bitdepth: libc::c_int = 8 as libc::c_int;
+    let bitdepth = 8;
     if !(y < h && x < w) {
         unreachable!();
     }
@@ -146,7 +146,7 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
         let left: *mut pixel = &mut *topleft_out.offset(-sz as isize) as *mut pixel;
         if have_left != 0 {
             let px_have: libc::c_int = imin(sz, h - y << 2 as libc::c_int);
-            let mut i: libc::c_int = 0 as libc::c_int;
+            let mut i = 0;
             while i < px_have {
                 *left
                     .offset(
@@ -186,7 +186,7 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
             }) as libc::c_int;
             if have_bottomleft != 0 {
                 let px_have_0: libc::c_int = imin(sz, h - y - th << 2 as libc::c_int);
-                let mut i_0: libc::c_int = 0 as libc::c_int;
+                let mut i_0 = 0;
                 while i_0 < px_have_0 {
                     *left
                         .offset(

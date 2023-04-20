@@ -504,11 +504,11 @@ unsafe extern "C" fn insert_border(
     }
 }
 unsafe extern "C" fn transpose(dst: *mut uint8_t, src: *const uint8_t) {
-    let mut y: libc::c_int = 0 as libc::c_int;
-    let mut y_off: libc::c_int = 0 as libc::c_int;
+    let mut y = 0;
+    let mut y_off = 0;
     while y < 64 as libc::c_int {
-        let mut x: libc::c_int = 0 as libc::c_int;
-        let mut x_off: libc::c_int = 0 as libc::c_int;
+        let mut x = 0;
+        let mut x_off = 0;
         while x < 64 as libc::c_int {
             *dst.offset((x_off + y) as isize) = *src.offset((y_off + x) as isize);
             x += 1;
@@ -519,10 +519,10 @@ unsafe extern "C" fn transpose(dst: *mut uint8_t, src: *const uint8_t) {
     }
 }
 unsafe extern "C" fn hflip(dst: *mut uint8_t, src: *const uint8_t) {
-    let mut y: libc::c_int = 0 as libc::c_int;
-    let mut y_off: libc::c_int = 0 as libc::c_int;
+    let mut y = 0;
+    let mut y_off = 0;
     while y < 64 as libc::c_int {
-        let mut x: libc::c_int = 0 as libc::c_int;
+        let mut x = 0;
         while x < 64 as libc::c_int {
             *dst
                 .offset(
@@ -540,10 +540,10 @@ unsafe extern "C" fn invert(
     w: libc::c_int,
     h: libc::c_int,
 ) {
-    let mut y: libc::c_int = 0 as libc::c_int;
-    let mut y_off: libc::c_int = 0 as libc::c_int;
+    let mut y = 0;
+    let mut y_off = 0;
     while y < h {
-        let mut x: libc::c_int = 0 as libc::c_int;
+        let mut x = 0;
         while x < w {
             *dst
                 .offset(
@@ -565,7 +565,7 @@ unsafe extern "C" fn copy2d(
     y_off: libc::c_int,
 ) {
     src = src.offset((y_off * 64 as libc::c_int + x_off) as isize);
-    let mut y: libc::c_int = 0 as libc::c_int;
+    let mut y = 0;
     while y < h {
         memcpy(dst as *mut libc::c_void, src as *const libc::c_void, w as libc::c_ulong);
         src = src.offset(64);
@@ -582,9 +582,9 @@ unsafe extern "C" fn init_chroma(
     h: libc::c_int,
     ss_ver: libc::c_int,
 ) {
-    let mut y: libc::c_int = 0 as libc::c_int;
+    let mut y = 0;
     while y < h {
-        let mut x: libc::c_int = 0 as libc::c_int;
+        let mut x = 0;
         while x < w {
             let mut sum: libc::c_int = *luma.offset(x as isize) as libc::c_int
                 + *luma.offset((x + 1 as libc::c_int) as isize) as libc::c_int
@@ -620,7 +620,7 @@ unsafe extern "C" fn fill2d_16x2(
     signs: libc::c_uint,
 ) {
     let mut ptr: *mut uint8_t = dst;
-    let mut n: libc::c_int = 0 as libc::c_int;
+    let mut n = 0;
     while n < 16 as libc::c_int {
         copy2d(
             ptr,
@@ -637,8 +637,8 @@ unsafe extern "C" fn fill2d_16x2(
         ptr = ptr.offset((w * h) as isize);
         n += 1;
     }
-    let mut n_0: libc::c_int = 0 as libc::c_int;
-    let mut off: libc::c_int = 0 as libc::c_int;
+    let mut n_0 = 0;
+    let mut off = 0;
     while n_0 < 16 as libc::c_int {
         invert(ptr.offset(off as isize), dst.offset(off as isize), w, h);
         n_0 += 1;
@@ -650,7 +650,7 @@ unsafe extern "C" fn fill2d_16x2(
     let sign_stride_444: libc::c_int = 16 as libc::c_int * n_stride_444;
     let sign_stride_422: libc::c_int = 16 as libc::c_int * n_stride_422;
     let sign_stride_420: libc::c_int = 16 as libc::c_int * n_stride_420;
-    let mut n_1: libc::c_int = 0 as libc::c_int;
+    let mut n_1 = 0;
     while n_1 < 16 as libc::c_int {
         let sign: libc::c_int = (signs >> n_1 & 1 as libc::c_int as libc::c_uint)
             as libc::c_int;
@@ -782,8 +782,8 @@ pub unsafe extern "C" fn dav1d_init_wedge_masks() {
         ],
     ];
     let mut master: [[uint8_t; 4096]; 6] = [[0; 4096]; 6];
-    let mut y: libc::c_int = 0 as libc::c_int;
-    let mut off: libc::c_int = 0 as libc::c_int;
+    let mut y = 0;
+    let mut off = 0;
     while y < 64 as libc::c_int {
         insert_border(
             &mut *(*master.as_mut_ptr().offset(WEDGE_VERTICAL as libc::c_int as isize))
@@ -796,9 +796,9 @@ pub unsafe extern "C" fn dav1d_init_wedge_masks() {
         y += 1;
         off += 64 as libc::c_int;
     }
-    let mut y_0: libc::c_int = 0 as libc::c_int;
-    let mut off_0: libc::c_int = 0 as libc::c_int;
-    let mut ctr: libc::c_int = 48 as libc::c_int;
+    let mut y_0 = 0;
+    let mut off_0 = 0;
+    let mut ctr = 48;
     while y_0 < 64 as libc::c_int {
         insert_border(
             &mut *(*master.as_mut_ptr().offset(WEDGE_OBLIQUE63 as libc::c_int as isize))
@@ -1001,15 +1001,15 @@ unsafe extern "C" fn build_nondc_ii_masks(
         1 as libc::c_int as uint8_t,
         1 as libc::c_int as uint8_t,
     ];
-    let mut y: libc::c_int = 0 as libc::c_int;
-    let mut off: libc::c_int = 0 as libc::c_int;
+    let mut y = 0;
+    let mut off = 0;
     while y < h {
         memset(
             &mut *mask_v.offset(off as isize) as *mut uint8_t as *mut libc::c_void,
             ii_weights_1d[(y * step) as usize] as libc::c_int,
             w as libc::c_ulong,
         );
-        let mut x: libc::c_int = 0 as libc::c_int;
+        let mut x = 0;
         while x < w {
             *mask_sm
                 .offset(

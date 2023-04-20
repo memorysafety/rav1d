@@ -223,7 +223,7 @@ unsafe extern "C" fn loop_filter(
     E <<= bitdepth_min_8;
     I <<= bitdepth_min_8;
     H <<= bitdepth_min_8;
-    let mut i: libc::c_int = 0 as libc::c_int;
+    let mut i = 0;
     while i < 4 as libc::c_int {
         let mut p6: libc::c_int = 0;
         let mut p5: libc::c_int = 0;

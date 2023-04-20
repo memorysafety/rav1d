@@ -1099,7 +1099,7 @@ unsafe extern "C" fn merge_pending_frame(f: *mut Dav1dFrameContext) -> libc::c_i
 }
 #[inline]
 unsafe extern "C" fn merge_pending(c: *const Dav1dContext) -> libc::c_int {
-    let mut res: libc::c_int = 0 as libc::c_int;
+    let mut res = 0;
     let mut i: libc::c_uint = 0 as libc::c_int as libc::c_uint;
     while i < (*c).n_fc {
         res |= merge_pending_frame(&mut *((*c).fc).offset(i as isize));
@@ -1240,7 +1240,7 @@ pub unsafe extern "C" fn dav1d_task_create_tile_sbrow(
         return -(1 as libc::c_int);
     }
     let mut prev_t: *mut Dav1dTask = 0 as *mut Dav1dTask;
-    let mut tile_idx: libc::c_int = 0 as libc::c_int;
+    let mut tile_idx = 0;
     while tile_idx < num_tasks {
         let ts: *mut Dav1dTileState = &mut *((*f).ts).offset(tile_idx as isize)
             as *mut Dav1dTileState;
@@ -1856,7 +1856,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                             match current_block {
                                                 5395695591151878490 => {}
                                                 _ => {
-                                                    let mut tc_0: libc::c_int = 0 as libc::c_int;
+                                                    let mut tc_0 = 0;
                                                     loop {
                                                         if !(tc_0 < (*(*f).frame_hdr).tiling.cols) {
                                                             current_block = 3222590281903869779;
@@ -2066,7 +2066,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                         if !((*c).n_fc > 1 as libc::c_int as libc::c_uint) {
                                             unreachable!();
                                         }
-                                        let mut p_0: libc::c_int = 1 as libc::c_int;
+                                        let mut p_0 = 1;
                                         while p_0 <= 2 as libc::c_int {
                                             let res_1: libc::c_int = dav1d_task_create_tile_sbrow(
                                                 f,

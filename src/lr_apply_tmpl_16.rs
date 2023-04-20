@@ -968,8 +968,8 @@ unsafe extern "C" fn lr_sbrow(
         .offset(unit_idx as isize) as *mut Av1RestorationUnit;
     let mut restore: libc::c_int = ((*lr[0]).type_0
         as libc::c_int != DAV1D_RESTORATION_NONE as libc::c_int) as libc::c_int;
-    let mut x: libc::c_int = 0 as libc::c_int;
-    let mut bit: libc::c_int = 0 as libc::c_int;
+    let mut x = 0;
+    let mut bit = 0;
     while x + max_unit_size <= w {
         let next_x: libc::c_int = x + unit_size;
         let next_u_idx: libc::c_int = unit_idx

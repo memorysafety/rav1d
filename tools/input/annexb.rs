@@ -158,7 +158,7 @@ unsafe extern "C" fn parse_obu_header(
 }
 unsafe extern "C" fn annexb_probe(mut data: *const uint8_t) -> libc::c_int {
     let mut ret: libc::c_int = 0;
-    let mut cnt: libc::c_int = 0 as libc::c_int;
+    let mut cnt = 0;
     let mut temporal_unit_size: size_t = 0;
     ret = leb(
         data.offset(cnt as isize),
@@ -211,7 +211,7 @@ unsafe extern "C" fn annexb_probe(mut data: *const uint8_t) -> libc::c_int {
         return 0 as libc::c_int;
     }
     cnt += obu_unit_size as libc::c_int;
-    let mut seq: libc::c_int = 0 as libc::c_int;
+    let mut seq = 0;
     while cnt < 2048 as libc::c_int {
         ret = leb(
             data.offset(cnt as isize),

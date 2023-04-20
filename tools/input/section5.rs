@@ -162,7 +162,7 @@ unsafe extern "C" fn leb128(f: *mut libc::FILE, len: *mut size_t) -> libc::c_int
 }
 unsafe extern "C" fn section5_probe(mut data: *const uint8_t) -> libc::c_int {
     let mut ret: libc::c_int = 0;
-    let mut cnt: libc::c_int = 0 as libc::c_int;
+    let mut cnt = 0;
     let mut obu_size: size_t = 0;
     let mut type_0: Dav1dObuType = 0 as Dav1dObuType;
     ret = parse_obu_header(
@@ -179,7 +179,7 @@ unsafe extern "C" fn section5_probe(mut data: *const uint8_t) -> libc::c_int {
         return 0 as libc::c_int;
     }
     cnt += ret;
-    let mut seq: libc::c_int = 0 as libc::c_int;
+    let mut seq = 0;
     while cnt < 2048 as libc::c_int {
         ret = parse_obu_header(
             data.offset(cnt as isize),
@@ -275,7 +275,7 @@ unsafe extern "C" fn section5_read(
     data: *mut Dav1dData,
 ) -> libc::c_int {
     let mut total_bytes: size_t = 0 as libc::c_int as size_t;
-    let mut first: libc::c_int = 1 as libc::c_int;
+    let mut first = 1;
     loop {
         let mut byte: [uint8_t; 2] = [0; 2];
         if fread(

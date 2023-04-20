@@ -22544,7 +22544,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
     dst: *mut CdfContext,
     src: *const CdfContext,
 ) {
-    let mut i: libc::c_int = 0 as libc::c_int;
+    let mut i = 0;
     while i < N_BS_SIZES as libc::c_int {
         (*dst)
             .m
@@ -22563,9 +22563,9 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         ::core::mem::size_of::<[uint16_t; 8]>() as libc::c_ulong,
     );
     (*dst).m.filter_intra[4] = 0 as libc::c_int as uint16_t;
-    let mut k: libc::c_int = 0 as libc::c_int;
+    let mut k = 0;
     while k < 2 as libc::c_int {
-        let mut j: libc::c_int = 0 as libc::c_int;
+        let mut j = 0;
         while j < N_INTRA_PRED_MODES as libc::c_int {
             memcpy(
                 ((*dst).m.uv_mode[k as usize][j as usize]).as_mut_ptr()
@@ -22584,7 +22584,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         }
         k += 1;
     }
-    let mut j_0: libc::c_int = 0 as libc::c_int;
+    let mut j_0 = 0;
     while j_0 < 8 as libc::c_int {
         memcpy(
             ((*dst).m.angle_delta[j_0 as usize]).as_mut_ptr() as *mut libc::c_void,
@@ -22597,9 +22597,9 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
             as usize][6] = 0 as libc::c_int as uint16_t;
         j_0 += 1;
     }
-    let mut k_0: libc::c_int = 0 as libc::c_int;
+    let mut k_0 = 0;
     while k_0 < N_TX_SIZES as libc::c_int - 1 as libc::c_int {
-        let mut j_1: libc::c_int = 0 as libc::c_int;
+        let mut j_1 = 0;
         while j_1 < 3 as libc::c_int {
             memcpy(
                 ((*dst).m.txsz[k_0 as usize][j_1 as usize]).as_mut_ptr()
@@ -22618,9 +22618,9 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         }
         k_0 += 1;
     }
-    let mut k_1: libc::c_int = 0 as libc::c_int;
+    let mut k_1 = 0;
     while k_1 < 2 as libc::c_int {
-        let mut j_2: libc::c_int = 0 as libc::c_int;
+        let mut j_2 = 0;
         while j_2 < N_INTRA_PRED_MODES as libc::c_int {
             memcpy(
                 ((*dst).m.txtp_intra1[k_1 as usize][j_2 as usize]).as_mut_ptr()
@@ -22638,9 +22638,9 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         }
         k_1 += 1;
     }
-    let mut k_2: libc::c_int = 0 as libc::c_int;
+    let mut k_2 = 0;
     while k_2 < 3 as libc::c_int {
-        let mut j_3: libc::c_int = 0 as libc::c_int;
+        let mut j_3 = 0;
         while j_3 < N_INTRA_PRED_MODES as libc::c_int {
             memcpy(
                 ((*dst).m.txtp_intra2[k_2 as usize][j_3 as usize]).as_mut_ptr()
@@ -22658,7 +22658,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         }
         k_2 += 1;
     }
-    let mut i_0: libc::c_int = 0 as libc::c_int;
+    let mut i_0 = 0;
     while i_0 < 3 as libc::c_int {
         (*dst)
             .m
@@ -22671,9 +22671,9 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
             as usize][1] = 0 as libc::c_int as uint16_t;
         i_0 += 1;
     }
-    let mut k_3: libc::c_int = 0 as libc::c_int;
+    let mut k_3 = 0;
     while k_3 < N_BL_LEVELS as libc::c_int {
-        let mut j_4: libc::c_int = 0 as libc::c_int;
+        let mut j_4 = 0;
         while j_4 < 4 as libc::c_int {
             memcpy(
                 ((*dst).m.partition[k_3 as usize][j_4 as usize]).as_mut_ptr()
@@ -22692,9 +22692,9 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         }
         k_3 += 1;
     }
-    let mut j_5: libc::c_int = 0 as libc::c_int;
+    let mut j_5 = 0;
     while j_5 < N_TX_SIZES as libc::c_int {
-        let mut i_1: libc::c_int = 0 as libc::c_int;
+        let mut i_1 = 0;
         while i_1 < 13 as libc::c_int {
             (*dst)
                 .coef
@@ -22713,9 +22713,9 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         }
         j_5 += 1;
     }
-    let mut k_4: libc::c_int = 0 as libc::c_int;
+    let mut k_4 = 0;
     while k_4 < 2 as libc::c_int {
-        let mut j_6: libc::c_int = 0 as libc::c_int;
+        let mut j_6 = 0;
         while j_6 < 2 as libc::c_int {
             memcpy(
                 ((*dst).coef.eob_bin_16[k_4 as usize][j_6 as usize]).as_mut_ptr()
@@ -22733,9 +22733,9 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         }
         k_4 += 1;
     }
-    let mut k_5: libc::c_int = 0 as libc::c_int;
+    let mut k_5 = 0;
     while k_5 < 2 as libc::c_int {
-        let mut j_7: libc::c_int = 0 as libc::c_int;
+        let mut j_7 = 0;
         while j_7 < 2 as libc::c_int {
             memcpy(
                 ((*dst).coef.eob_bin_32[k_5 as usize][j_7 as usize]).as_mut_ptr()
@@ -22753,9 +22753,9 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         }
         k_5 += 1;
     }
-    let mut k_6: libc::c_int = 0 as libc::c_int;
+    let mut k_6 = 0;
     while k_6 < 2 as libc::c_int {
-        let mut j_8: libc::c_int = 0 as libc::c_int;
+        let mut j_8 = 0;
         while j_8 < 2 as libc::c_int {
             memcpy(
                 ((*dst).coef.eob_bin_64[k_6 as usize][j_8 as usize]).as_mut_ptr()
@@ -22773,9 +22773,9 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         }
         k_6 += 1;
     }
-    let mut k_7: libc::c_int = 0 as libc::c_int;
+    let mut k_7 = 0;
     while k_7 < 2 as libc::c_int {
-        let mut j_9: libc::c_int = 0 as libc::c_int;
+        let mut j_9 = 0;
         while j_9 < 2 as libc::c_int {
             memcpy(
                 ((*dst).coef.eob_bin_128[k_7 as usize][j_9 as usize]).as_mut_ptr()
@@ -22793,9 +22793,9 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         }
         k_7 += 1;
     }
-    let mut k_8: libc::c_int = 0 as libc::c_int;
+    let mut k_8 = 0;
     while k_8 < 2 as libc::c_int {
-        let mut j_10: libc::c_int = 0 as libc::c_int;
+        let mut j_10 = 0;
         while j_10 < 2 as libc::c_int {
             memcpy(
                 ((*dst).coef.eob_bin_256[k_8 as usize][j_10 as usize]).as_mut_ptr()
@@ -22813,7 +22813,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         }
         k_8 += 1;
     }
-    let mut j_11: libc::c_int = 0 as libc::c_int;
+    let mut j_11 = 0;
     while j_11 < 2 as libc::c_int {
         memcpy(
             ((*dst).coef.eob_bin_512[j_11 as usize]).as_mut_ptr() as *mut libc::c_void,
@@ -22826,7 +22826,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
             as usize][9] = 0 as libc::c_int as uint16_t;
         j_11 += 1;
     }
-    let mut j_12: libc::c_int = 0 as libc::c_int;
+    let mut j_12 = 0;
     while j_12 < 2 as libc::c_int {
         memcpy(
             ((*dst).coef.eob_bin_1024[j_12 as usize]).as_mut_ptr() as *mut libc::c_void,
@@ -22839,11 +22839,11 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
             as usize][10] = 0 as libc::c_int as uint16_t;
         j_12 += 1;
     }
-    let mut k_9: libc::c_int = 0 as libc::c_int;
+    let mut k_9 = 0;
     while k_9 < N_TX_SIZES as libc::c_int {
-        let mut j_13: libc::c_int = 0 as libc::c_int;
+        let mut j_13 = 0;
         while j_13 < 2 as libc::c_int {
-            let mut i_2: libc::c_int = 0 as libc::c_int;
+            let mut i_2 = 0;
             while i_2 < 11 as libc::c_int {
                 (*dst)
                     .coef
@@ -22867,11 +22867,11 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         }
         k_9 += 1;
     }
-    let mut l: libc::c_int = 0 as libc::c_int;
+    let mut l = 0;
     while l < N_TX_SIZES as libc::c_int {
-        let mut k_10: libc::c_int = 0 as libc::c_int;
+        let mut k_10 = 0;
         while k_10 < 2 as libc::c_int {
-            let mut j_14: libc::c_int = 0 as libc::c_int;
+            let mut j_14 = 0;
             while j_14 < 4 as libc::c_int {
                 memcpy(
                     ((*dst).coef.eob_base_tok[l as usize][k_10 as usize][j_14 as usize])
@@ -22892,11 +22892,11 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         }
         l += 1;
     }
-    let mut l_0: libc::c_int = 0 as libc::c_int;
+    let mut l_0 = 0;
     while l_0 < N_TX_SIZES as libc::c_int {
-        let mut k_11: libc::c_int = 0 as libc::c_int;
+        let mut k_11 = 0;
         while k_11 < 2 as libc::c_int {
-            let mut j_15: libc::c_int = 0 as libc::c_int;
+            let mut j_15 = 0;
             while j_15 < 41 as libc::c_int {
                 memcpy(
                     ((*dst).coef.base_tok[l_0 as usize][k_11 as usize][j_15 as usize])
@@ -22917,9 +22917,9 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         }
         l_0 += 1;
     }
-    let mut j_16: libc::c_int = 0 as libc::c_int;
+    let mut j_16 = 0;
     while j_16 < 2 as libc::c_int {
-        let mut i_3: libc::c_int = 0 as libc::c_int;
+        let mut i_3 = 0;
         while i_3 < 3 as libc::c_int {
             (*dst)
                 .coef
@@ -22938,11 +22938,11 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         }
         j_16 += 1;
     }
-    let mut l_1: libc::c_int = 0 as libc::c_int;
+    let mut l_1 = 0;
     while l_1 < 4 as libc::c_int {
-        let mut k_12: libc::c_int = 0 as libc::c_int;
+        let mut k_12 = 0;
         while k_12 < 2 as libc::c_int {
-            let mut j_17: libc::c_int = 0 as libc::c_int;
+            let mut j_17 = 0;
             while j_17 < 21 as libc::c_int {
                 memcpy(
                     ((*dst).coef.br_tok[l_1 as usize][k_12 as usize][j_17 as usize])
@@ -22963,7 +22963,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         }
         l_1 += 1;
     }
-    let mut j_18: libc::c_int = 0 as libc::c_int;
+    let mut j_18 = 0;
     while j_18 < 3 as libc::c_int {
         memcpy(
             ((*dst).m.seg_id[j_18 as usize]).as_mut_ptr() as *mut libc::c_void,
@@ -22983,7 +22983,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         ::core::mem::size_of::<[uint16_t; 8]>() as libc::c_ulong,
     );
     (*dst).m.cfl_sign[7] = 0 as libc::c_int as uint16_t;
-    let mut j_19: libc::c_int = 0 as libc::c_int;
+    let mut j_19 = 0;
     while j_19 < 6 as libc::c_int {
         memcpy(
             ((*dst).m.cfl_alpha[j_19 as usize]).as_mut_ptr() as *mut libc::c_void,
@@ -23020,7 +23020,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         ::core::mem::size_of::<[uint16_t; 4]>() as libc::c_ulong,
     );
     (*dst).m.delta_q[3] = 0 as libc::c_int as uint16_t;
-    let mut j_20: libc::c_int = 0 as libc::c_int;
+    let mut j_20 = 0;
     while j_20 < 5 as libc::c_int {
         memcpy(
             ((*dst).m.delta_lf[j_20 as usize]).as_mut_ptr() as *mut libc::c_void,
@@ -23033,9 +23033,9 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
             as usize][3] = 0 as libc::c_int as uint16_t;
         j_20 += 1;
     }
-    let mut j_21: libc::c_int = 0 as libc::c_int;
+    let mut j_21 = 0;
     while j_21 < 7 as libc::c_int {
-        let mut i_4: libc::c_int = 0 as libc::c_int;
+        let mut i_4 = 0;
         while i_4 < 3 as libc::c_int {
             (*dst)
                 .m
@@ -23054,7 +23054,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         }
         j_21 += 1;
     }
-    let mut i_5: libc::c_int = 0 as libc::c_int;
+    let mut i_5 = 0;
     while i_5 < 2 as libc::c_int {
         (*dst)
             .m
@@ -23067,9 +23067,9 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
             as usize][1] = 0 as libc::c_int as uint16_t;
         i_5 += 1;
     }
-    let mut k_13: libc::c_int = 0 as libc::c_int;
+    let mut k_13 = 0;
     while k_13 < 2 as libc::c_int {
-        let mut j_22: libc::c_int = 0 as libc::c_int;
+        let mut j_22 = 0;
         while j_22 < 7 as libc::c_int {
             memcpy(
                 ((*dst).m.pal_sz[k_13 as usize][j_22 as usize]).as_mut_ptr()
@@ -23087,11 +23087,11 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         }
         k_13 += 1;
     }
-    let mut l_2: libc::c_int = 0 as libc::c_int;
+    let mut l_2 = 0;
     while l_2 < 2 as libc::c_int {
-        let mut k_14: libc::c_int = 0 as libc::c_int;
+        let mut k_14 = 0;
         while k_14 < 7 as libc::c_int {
-            let mut j_23: libc::c_int = 0 as libc::c_int;
+            let mut j_23 = 0;
             while j_23 < 5 as libc::c_int {
                 memcpy(
                     ((*dst).m.color_map[l_2 as usize][k_14 as usize][j_23 as usize])
@@ -23113,9 +23113,9 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         }
         l_2 += 1;
     }
-    let mut j_24: libc::c_int = 0 as libc::c_int;
+    let mut j_24 = 0;
     while j_24 < 7 as libc::c_int {
-        let mut i_6: libc::c_int = 0 as libc::c_int;
+        let mut i_6 = 0;
         while i_6 < 3 as libc::c_int {
             (*dst)
                 .m
@@ -23134,7 +23134,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         }
         j_24 += 1;
     }
-    let mut j_25: libc::c_int = 0 as libc::c_int;
+    let mut j_25 = 0;
     while j_25 < 2 as libc::c_int {
         memcpy(
             ((*dst).m.txtp_inter1[j_25 as usize]).as_mut_ptr() as *mut libc::c_void,
@@ -23153,7 +23153,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         ::core::mem::size_of::<[uint16_t; 16]>() as libc::c_ulong,
     );
     (*dst).m.txtp_inter2[11] = 0 as libc::c_int as uint16_t;
-    let mut i_7: libc::c_int = 0 as libc::c_int;
+    let mut i_7 = 0;
     while i_7 < 4 as libc::c_int {
         (*dst)
             .m
@@ -23181,7 +23181,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
             .dmv
             .joint[(N_MV_JOINTS as libc::c_int - 1 as libc::c_int)
             as usize] = 0 as libc::c_int as uint16_t;
-        let mut k_15: libc::c_int = 0 as libc::c_int;
+        let mut k_15 = 0;
         while k_15 < 2 as libc::c_int {
             memcpy(
                 ((*dst).dmv.comp[k_15 as usize].classes.0).as_mut_ptr()
@@ -23205,7 +23205,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
                 .dmv
                 .comp[k_15 as usize]
                 .class0[1] = 0 as libc::c_int as uint16_t;
-            let mut i_8: libc::c_int = 0 as libc::c_int;
+            let mut i_8 = 0;
             while i_8 < 10 as libc::c_int {
                 (*dst)
                     .dmv
@@ -23239,7 +23239,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         }
         return;
     }
-    let mut i_9: libc::c_int = 0 as libc::c_int;
+    let mut i_9 = 0;
     while i_9 < 3 as libc::c_int {
         (*dst)
             .m
@@ -23252,7 +23252,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
             as usize][1] = 0 as libc::c_int as uint16_t;
         i_9 += 1;
     }
-    let mut j_26: libc::c_int = 0 as libc::c_int;
+    let mut j_26 = 0;
     while j_26 < 4 as libc::c_int {
         memcpy(
             ((*dst).m.y_mode.0[j_26 as usize]).as_mut_ptr() as *mut libc::c_void,
@@ -23266,9 +23266,9 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
             as usize] = 0 as libc::c_int as uint16_t;
         j_26 += 1;
     }
-    let mut k_16: libc::c_int = 0 as libc::c_int;
+    let mut k_16 = 0;
     while k_16 < 2 as libc::c_int {
-        let mut j_27: libc::c_int = 0 as libc::c_int;
+        let mut j_27 = 0;
         while j_27 < 8 as libc::c_int {
             memcpy(
                 ((*dst).m.filter.0[k_16 as usize][j_27 as usize]).as_mut_ptr()
@@ -23287,7 +23287,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         }
         k_16 += 1;
     }
-    let mut i_10: libc::c_int = 0 as libc::c_int;
+    let mut i_10 = 0;
     while i_10 < 6 as libc::c_int {
         (*dst)
             .m
@@ -23300,7 +23300,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
             as usize][1] = 0 as libc::c_int as uint16_t;
         i_10 += 1;
     }
-    let mut i_11: libc::c_int = 0 as libc::c_int;
+    let mut i_11 = 0;
     while i_11 < 2 as libc::c_int {
         (*dst)
             .m
@@ -23313,7 +23313,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
             as usize][1] = 0 as libc::c_int as uint16_t;
         i_11 += 1;
     }
-    let mut i_12: libc::c_int = 0 as libc::c_int;
+    let mut i_12 = 0;
     while i_12 < 6 as libc::c_int {
         (*dst)
             .m
@@ -23326,7 +23326,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
             as usize][1] = 0 as libc::c_int as uint16_t;
         i_12 += 1;
     }
-    let mut i_13: libc::c_int = 0 as libc::c_int;
+    let mut i_13 = 0;
     while i_13 < 3 as libc::c_int {
         (*dst)
             .m
@@ -23339,7 +23339,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
             as usize][1] = 0 as libc::c_int as uint16_t;
         i_13 += 1;
     }
-    let mut j_28: libc::c_int = 0 as libc::c_int;
+    let mut j_28 = 0;
     while j_28 < 8 as libc::c_int {
         memcpy(
             ((*dst).m.comp_inter_mode.0[j_28 as usize]).as_mut_ptr() as *mut libc::c_void,
@@ -23353,7 +23353,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
             as usize] = 0 as libc::c_int as uint16_t;
         j_28 += 1;
     }
-    let mut i_14: libc::c_int = 0 as libc::c_int;
+    let mut i_14 = 0;
     while i_14 < 4 as libc::c_int {
         (*dst)
             .m
@@ -23366,7 +23366,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
             as usize][1] = 0 as libc::c_int as uint16_t;
         i_14 += 1;
     }
-    let mut i_15: libc::c_int = 0 as libc::c_int;
+    let mut i_15 = 0;
     while i_15 < 5 as libc::c_int {
         (*dst)
             .m
@@ -23379,7 +23379,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
             as usize][1] = 0 as libc::c_int as uint16_t;
         i_15 += 1;
     }
-    let mut i_16: libc::c_int = 0 as libc::c_int;
+    let mut i_16 = 0;
     while i_16 < 5 as libc::c_int {
         (*dst)
             .m
@@ -23392,7 +23392,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
             as usize][1] = 0 as libc::c_int as uint16_t;
         i_16 += 1;
     }
-    let mut i_17: libc::c_int = 0 as libc::c_int;
+    let mut i_17 = 0;
     while i_17 < 6 as libc::c_int {
         (*dst)
             .m
@@ -23405,7 +23405,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
             as usize][1] = 0 as libc::c_int as uint16_t;
         i_17 += 1;
     }
-    let mut i_18: libc::c_int = 0 as libc::c_int;
+    let mut i_18 = 0;
     while i_18 < 6 as libc::c_int {
         (*dst)
             .m
@@ -23418,7 +23418,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
             as usize][1] = 0 as libc::c_int as uint16_t;
         i_18 += 1;
     }
-    let mut i_19: libc::c_int = 0 as libc::c_int;
+    let mut i_19 = 0;
     while i_19 < 9 as libc::c_int {
         (*dst)
             .m
@@ -23431,7 +23431,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
             as usize][1] = 0 as libc::c_int as uint16_t;
         i_19 += 1;
     }
-    let mut j_29: libc::c_int = 0 as libc::c_int;
+    let mut j_29 = 0;
     while j_29 < 9 as libc::c_int {
         memcpy(
             ((*dst).m.wedge_idx.0[j_29 as usize]).as_mut_ptr() as *mut libc::c_void,
@@ -23444,9 +23444,9 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
             as usize][15] = 0 as libc::c_int as uint16_t;
         j_29 += 1;
     }
-    let mut j_30: libc::c_int = 0 as libc::c_int;
+    let mut j_30 = 0;
     while j_30 < 6 as libc::c_int {
-        let mut i_20: libc::c_int = 0 as libc::c_int;
+        let mut i_20 = 0;
         while i_20 < 3 as libc::c_int {
             (*dst)
                 .m
@@ -23465,9 +23465,9 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         }
         j_30 += 1;
     }
-    let mut j_31: libc::c_int = 0 as libc::c_int;
+    let mut j_31 = 0;
     while j_31 < 3 as libc::c_int {
-        let mut i_21: libc::c_int = 0 as libc::c_int;
+        let mut i_21 = 0;
         while i_21 < 3 as libc::c_int {
             (*dst)
                 .m
@@ -23486,9 +23486,9 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         }
         j_31 += 1;
     }
-    let mut j_32: libc::c_int = 0 as libc::c_int;
+    let mut j_32 = 0;
     while j_32 < 2 as libc::c_int {
-        let mut i_22: libc::c_int = 0 as libc::c_int;
+        let mut i_22 = 0;
         while i_22 < 3 as libc::c_int {
             (*dst)
                 .m
@@ -23507,9 +23507,9 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         }
         j_32 += 1;
     }
-    let mut j_33: libc::c_int = 0 as libc::c_int;
+    let mut j_33 = 0;
     while j_33 < 3 as libc::c_int {
-        let mut i_23: libc::c_int = 0 as libc::c_int;
+        let mut i_23 = 0;
         while i_23 < 3 as libc::c_int {
             (*dst)
                 .m
@@ -23528,7 +23528,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         }
         j_33 += 1;
     }
-    let mut i_24: libc::c_int = 0 as libc::c_int;
+    let mut i_24 = 0;
     while i_24 < 3 as libc::c_int {
         (*dst)
             .m
@@ -23541,7 +23541,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
             as usize][1] = 0 as libc::c_int as uint16_t;
         i_24 += 1;
     }
-    let mut i_25: libc::c_int = 0 as libc::c_int;
+    let mut i_25 = 0;
     while i_25 < 4 as libc::c_int {
         (*dst)
             .m
@@ -23554,7 +23554,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
             as usize][1] = 0 as libc::c_int as uint16_t;
         i_25 += 1;
     }
-    let mut i_26: libc::c_int = 0 as libc::c_int;
+    let mut i_26 = 0;
     while i_26 < 7 as libc::c_int {
         (*dst)
             .m
@@ -23569,7 +23569,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
             as usize][1] = 0 as libc::c_int as uint16_t;
         i_26 += 1;
     }
-    let mut j_34: libc::c_int = 0 as libc::c_int;
+    let mut j_34 = 0;
     while j_34 < 4 as libc::c_int {
         memcpy(
             ((*dst).m.interintra_mode[j_34 as usize]).as_mut_ptr() as *mut libc::c_void,
@@ -23582,7 +23582,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
             as usize][3] = 0 as libc::c_int as uint16_t;
         j_34 += 1;
     }
-    let mut j_35: libc::c_int = 0 as libc::c_int;
+    let mut j_35 = 0;
     while j_35 < N_BS_SIZES as libc::c_int {
         memcpy(
             ((*dst).m.motion_mode[j_35 as usize]).as_mut_ptr() as *mut libc::c_void,
@@ -23595,7 +23595,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
             as usize][2] = 0 as libc::c_int as uint16_t;
         j_35 += 1;
     }
-    let mut i_27: libc::c_int = 0 as libc::c_int;
+    let mut i_27 = 0;
     while i_27 < N_BS_SIZES as libc::c_int {
         (*dst)
             .m
@@ -23617,7 +23617,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         .mv
         .joint[(N_MV_JOINTS as libc::c_int - 1 as libc::c_int)
         as usize] = 0 as libc::c_int as uint16_t;
-    let mut k_17: libc::c_int = 0 as libc::c_int;
+    let mut k_17 = 0;
     while k_17 < 2 as libc::c_int {
         memcpy(
             ((*dst).mv.comp[k_17 as usize].classes.0).as_mut_ptr() as *mut libc::c_void,
@@ -23637,7 +23637,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
             .mv
             .comp[k_17 as usize]
             .class0[1] = 0 as libc::c_int as uint16_t;
-        let mut i_28: libc::c_int = 0 as libc::c_int;
+        let mut i_28 = 0;
         while i_28 < 10 as libc::c_int {
             (*dst)
                 .mv
@@ -23655,7 +23655,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
                 as usize][1] = 0 as libc::c_int as uint16_t;
             i_28 += 1;
         }
-        let mut j_36: libc::c_int = 0 as libc::c_int;
+        let mut j_36 = 0;
         while j_36 < 2 as libc::c_int {
             memcpy(
                 ((*dst).mv.comp[k_17 as usize].class0_fp[j_36 as usize]).as_mut_ptr()

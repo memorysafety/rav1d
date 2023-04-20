@@ -83,8 +83,8 @@ unsafe extern "C" fn generate_scaling(
     num: libc::c_int,
     mut scaling: *mut uint8_t,
 ) {
-    let shift_x: libc::c_int = 0 as libc::c_int;
-    let scaling_size: libc::c_int = 256 as libc::c_int;
+    let shift_x = 0;
+    let scaling_size = 256;
     if num == 0 as libc::c_int {
         memset(
             scaling as *mut libc::c_void,
@@ -100,7 +100,7 @@ unsafe extern "C" fn generate_scaling(
         (((*points.offset(0))[0]
             as libc::c_int) << shift_x) as libc::c_ulong,
     );
-    let mut i: libc::c_int = 0 as libc::c_int;
+    let mut i = 0;
     while i < num - 1 as libc::c_int {
         let bx: libc::c_int = (*points.offset(i as isize))[0]
             as libc::c_int;
@@ -119,7 +119,7 @@ unsafe extern "C" fn generate_scaling(
         }
         let delta: libc::c_int = dy
             * ((0x10000 as libc::c_int + (dx >> 1 as libc::c_int)) / dx);
-        let mut x: libc::c_int = 0 as libc::c_int;
+        let mut x = 0;
         let mut d: libc::c_int = 0x8000 as libc::c_int;
         while x < dx {
             *scaling
@@ -346,7 +346,7 @@ pub unsafe extern "C" fn dav1d_apply_grain_row_8bpc(
         + ss_y >> ss_y;
     if (*out).p.w & ss_x != 0 {
         let mut ptr: *mut pixel = luma_src;
-        let mut y: libc::c_int = 0 as libc::c_int;
+        let mut y = 0;
         while y < bh_0 {
             *ptr
                 .offset(
@@ -360,7 +360,7 @@ pub unsafe extern "C" fn dav1d_apply_grain_row_8bpc(
     let uv_off: ptrdiff_t = (row * 32 as libc::c_int) as isize
         * (*out).stride[1] >> ss_y;
     if (*data).chroma_scaling_from_luma != 0 {
-        let mut pl: libc::c_int = 0 as libc::c_int;
+        let mut pl = 0;
         while pl < 2 as libc::c_int {
             ((*dsp)
                 .fguv_32x32xn[((*in_0).p.layout as libc::c_uint)
@@ -387,7 +387,7 @@ pub unsafe extern "C" fn dav1d_apply_grain_row_8bpc(
             pl += 1;
         }
     } else {
-        let mut pl_0: libc::c_int = 0 as libc::c_int;
+        let mut pl_0 = 0;
         while pl_0 < 2 as libc::c_int {
             if (*data).num_uv_points[pl_0 as usize] != 0 {
                 ((*dsp)
@@ -427,7 +427,7 @@ pub unsafe extern "C" fn dav1d_apply_grain_8bpc(
     let mut scaling = Align64([[0; 256]; 3]);
     let rows: libc::c_int = (*out).p.h + 31 as libc::c_int >> 5 as libc::c_int;
     dav1d_prep_grain_8bpc(dsp, out, in_0, scaling.0.as_mut_ptr(), grain_lut.0.as_mut_ptr());
-    let mut row: libc::c_int = 0 as libc::c_int;
+    let mut row = 0;
     while row < rows {
         dav1d_apply_grain_row_8bpc(
             dsp,

@@ -1889,7 +1889,7 @@ pub unsafe extern "C" fn dav1d_inv_identity4_1d_c(
     if !(stride > 0) {
         unreachable!();
     }
-    let mut i: libc::c_int = 0 as libc::c_int;
+    let mut i = 0;
     while i < 4 as libc::c_int {
         let in_0: libc::c_int = *c.offset(stride * i as isize);
         *c
@@ -1910,7 +1910,7 @@ pub unsafe extern "C" fn dav1d_inv_identity8_1d_c(
     if !(stride > 0) {
         unreachable!();
     }
-    let mut i: libc::c_int = 0 as libc::c_int;
+    let mut i = 0;
     while i < 8 as libc::c_int {
         let ref mut fresh0 = *c.offset((stride * i as isize) as isize);
         *fresh0 *= 2 as libc::c_int;
@@ -1927,7 +1927,7 @@ pub unsafe extern "C" fn dav1d_inv_identity16_1d_c(
     if !(stride > 0) {
         unreachable!();
     }
-    let mut i: libc::c_int = 0 as libc::c_int;
+    let mut i = 0;
     while i < 16 as libc::c_int {
         let in_0: libc::c_int = *c.offset((stride * i as isize) as isize);
         *c
@@ -1948,7 +1948,7 @@ pub unsafe extern "C" fn dav1d_inv_identity32_1d_c(
     if !(stride > 0) {
         unreachable!();
     }
-    let mut i: libc::c_int = 0 as libc::c_int;
+    let mut i = 0;
     while i < 32 as libc::c_int {
         let ref mut fresh1 = *c.offset((stride * i as isize) as isize);
         *fresh1 *= 4 as libc::c_int;

@@ -47761,9 +47761,9 @@ unsafe extern "C" fn subsample(
     sz: libc::c_int,
     step: libc::c_int,
 ) {
-    let mut y: libc::c_int = 0 as libc::c_int;
+    let mut y = 0;
     while y < sz {
-        let mut x: libc::c_int = 0 as libc::c_int;
+        let mut x = 0;
         while x < sz {
             *dst
                 .offset(
@@ -47780,11 +47780,11 @@ unsafe extern "C" fn transpose(
     w: libc::c_int,
     h: libc::c_int,
 ) {
-    let mut y: libc::c_int = 0 as libc::c_int;
-    let mut y_off: libc::c_int = 0 as libc::c_int;
+    let mut y = 0;
+    let mut y_off = 0;
     while y < h {
-        let mut x: libc::c_int = 0 as libc::c_int;
-        let mut x_off: libc::c_int = 0 as libc::c_int;
+        let mut x = 0;
+        let mut x_off = 0;
         while x < w {
             *dst.offset((x_off + y) as isize) = *src.offset((y_off + x) as isize);
             x += 1;
@@ -47799,7 +47799,7 @@ unsafe extern "C" fn untriangle(
     mut src: *const uint8_t,
     sz: libc::c_int,
 ) {
-    let mut y: libc::c_int = 0 as libc::c_int;
+    let mut y = 0;
     while y < sz {
         memcpy(
             dst as *mut libc::c_void,
@@ -47821,9 +47821,9 @@ unsafe extern "C" fn untriangle(
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_init_qm_tables() {
-    let mut i: libc::c_int = 0 as libc::c_int;
+    let mut i = 0;
     while i < 15 as libc::c_int {
-        let mut j: libc::c_int = 0 as libc::c_int;
+        let mut j = 0;
         while j < 2 as libc::c_int {
             dav1d_qm_tbl[i
                 as usize][j

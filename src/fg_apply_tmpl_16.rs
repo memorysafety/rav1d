@@ -112,7 +112,7 @@ unsafe extern "C" fn generate_scaling(
         (((*points.offset(0))[0]
             as libc::c_int) << shift_x) as libc::c_ulong,
     );
-    let mut i: libc::c_int = 0 as libc::c_int;
+    let mut i = 0;
     while i < num - 1 as libc::c_int {
         let bx: libc::c_int = (*points.offset(i as isize))[0]
             as libc::c_int;
@@ -131,7 +131,7 @@ unsafe extern "C" fn generate_scaling(
         }
         let delta: libc::c_int = dy
             * ((0x10000 as libc::c_int + (dx >> 1 as libc::c_int)) / dx);
-        let mut x: libc::c_int = 0 as libc::c_int;
+        let mut x = 0;
         let mut d: libc::c_int = 0x8000 as libc::c_int;
         while x < dx {
             *scaling
@@ -154,7 +154,7 @@ unsafe extern "C" fn generate_scaling(
     );
     let pad: libc::c_int = (1 as libc::c_int) << shift_x;
     let rnd: libc::c_int = pad >> 1 as libc::c_int;
-    let mut i_0: libc::c_int = 0 as libc::c_int;
+    let mut i_0 = 0;
     while i_0 < num - 1 as libc::c_int {
         let bx_0: libc::c_int = ((*points
             .offset(i_0 as isize))[0] as libc::c_int) << shift_x;
@@ -162,11 +162,11 @@ unsafe extern "C" fn generate_scaling(
             .offset((i_0 + 1 as libc::c_int) as isize))[0]
             as libc::c_int) << shift_x;
         let dx_0: libc::c_int = ex_0 - bx_0;
-        let mut x_0: libc::c_int = 0 as libc::c_int;
+        let mut x_0 = 0;
         while x_0 < dx_0 {
             let range: libc::c_int = *scaling.offset((bx_0 + x_0 + pad) as isize)
                 as libc::c_int - *scaling.offset((bx_0 + x_0) as isize) as libc::c_int;
-            let mut n_0: libc::c_int = 1 as libc::c_int;
+            let mut n_0 = 1;
             let mut r: libc::c_int = rnd;
             while n_0 < pad {
                 r += range;
@@ -398,7 +398,7 @@ pub unsafe extern "C" fn dav1d_apply_grain_row_16bpc(
         + ss_y >> ss_y;
     if (*out).p.w & ss_x != 0 {
         let mut ptr: *mut pixel = luma_src;
-        let mut y: libc::c_int = 0 as libc::c_int;
+        let mut y = 0;
         while y < bh_0 {
             *ptr
                 .offset(
@@ -414,7 +414,7 @@ pub unsafe extern "C" fn dav1d_apply_grain_row_16bpc(
     }
     let uv_off: ptrdiff_t = (row * 32 as libc::c_int) as isize * PXSTRIDE((*out).stride[1]) >> ss_y;
     if (*data).chroma_scaling_from_luma != 0 {
-        let mut pl: libc::c_int = 0 as libc::c_int;
+        let mut pl = 0;
         while pl < 2 as libc::c_int {
             ((*dsp)
                 .fguv_32x32xn[((*in_0).p.layout as libc::c_uint)
@@ -442,7 +442,7 @@ pub unsafe extern "C" fn dav1d_apply_grain_row_16bpc(
             pl += 1;
         }
     } else {
-        let mut pl_0: libc::c_int = 0 as libc::c_int;
+        let mut pl_0 = 0;
         while pl_0 < 2 as libc::c_int {
             if (*data).num_uv_points[pl_0 as usize] != 0 {
                 ((*dsp)
@@ -483,7 +483,7 @@ pub unsafe extern "C" fn dav1d_apply_grain_16bpc(
     let mut scaling = Align64([[0; 4096]; 3]);
     let rows: libc::c_int = (*out).p.h + 31 as libc::c_int >> 5 as libc::c_int;
     dav1d_prep_grain_16bpc(dsp, out, in_0, scaling.0.as_mut_ptr(), grain_lut.0.as_mut_ptr());
-    let mut row: libc::c_int = 0 as libc::c_int;
+    let mut row = 0;
     while row < rows {
         dav1d_apply_grain_row_16bpc(
             dsp,

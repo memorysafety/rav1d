@@ -96,7 +96,7 @@ pub unsafe extern "C" fn input_open(
             return -(92 as libc::c_int);
         }
     } else {
-        let mut probe_sz: libc::c_int = 0 as libc::c_int;
+        let mut probe_sz = 0;
         i = 0 as libc::c_int;
         while !(demuxers[i as usize]).is_null() {
             probe_sz = imax(probe_sz, (*demuxers[i as usize]).probe_sz);
