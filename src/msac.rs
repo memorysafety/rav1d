@@ -347,19 +347,19 @@ pub unsafe extern "C" fn dav1d_msac_decode_bool_adapt_c(
 ) -> libc::c_uint {
     let bit: libc::c_uint = dav1d_msac_decode_bool(s, *cdf as libc::c_uint);
     if (*s).allow_update_cdf != 0 {
-        let count: libc::c_uint = *cdf.offset(1 as libc::c_int as isize) as libc::c_uint;
+        let count: libc::c_uint = *cdf.offset(1) as libc::c_uint;
         let rate: libc::c_int = (4 as libc::c_int as libc::c_uint)
             .wrapping_add(count >> 4 as libc::c_int) as libc::c_int;
         if bit != 0 {
-            let ref mut fresh4 = *cdf.offset(0 as libc::c_int as isize);
+            let ref mut fresh4 = *cdf.offset(0);
             *fresh4 = (*fresh4 as libc::c_int
                 + (32768 as libc::c_int
-                    - *cdf.offset(0 as libc::c_int as isize) as libc::c_int >> rate))
+                    - *cdf.offset(0) as libc::c_int >> rate))
                 as uint16_t;
         } else {
-            let ref mut fresh5 = *cdf.offset(0 as libc::c_int as isize);
+            let ref mut fresh5 = *cdf.offset(0);
             *fresh5 = (*fresh5 as libc::c_int
-                - (*cdf.offset(0 as libc::c_int as isize) as libc::c_int >> rate))
+                - (*cdf.offset(0) as libc::c_int >> rate))
                 as uint16_t;
         }
         *cdf

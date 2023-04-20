@@ -95,9 +95,9 @@ unsafe extern "C" fn generate_scaling(
     }
     memset(
         scaling as *mut libc::c_void,
-        (*points.offset(0 as libc::c_int as isize))[1]
+        (*points.offset(0))[1]
             as libc::c_int,
-        (((*points.offset(0 as libc::c_int as isize))[0]
+        (((*points.offset(0))[0]
             as libc::c_int) << shift_x) as libc::c_ulong,
     );
     let mut i: libc::c_int = 0 as libc::c_int;
@@ -153,7 +153,7 @@ pub unsafe extern "C" fn dav1d_prep_grain_8bpc(
     ((*dsp).generate_grain_y)
         .expect(
             "non-null function pointer",
-        )((*grain_lut.offset(0 as libc::c_int as isize)).as_mut_ptr(), data);
+        )((*grain_lut.offset(0)).as_mut_ptr(), data);
     if (*data).num_uv_points[0] != 0
         || (*data).chroma_scaling_from_luma != 0
     {
@@ -163,8 +163,8 @@ pub unsafe extern "C" fn dav1d_prep_grain_8bpc(
             .expect(
                 "non-null function pointer",
             )(
-            (*grain_lut.offset(1 as libc::c_int as isize)).as_mut_ptr(),
-            (*grain_lut.offset(0 as libc::c_int as isize)).as_mut_ptr()
+            (*grain_lut.offset(1)).as_mut_ptr(),
+            (*grain_lut.offset(0)).as_mut_ptr()
                 as *const [entry; 82],
             data,
             0 as libc::c_int as intptr_t,
@@ -179,8 +179,8 @@ pub unsafe extern "C" fn dav1d_prep_grain_8bpc(
             .expect(
                 "non-null function pointer",
             )(
-            (*grain_lut.offset(2 as libc::c_int as isize)).as_mut_ptr(),
-            (*grain_lut.offset(0 as libc::c_int as isize)).as_mut_ptr()
+            (*grain_lut.offset(2)).as_mut_ptr(),
+            (*grain_lut.offset(0)).as_mut_ptr()
                 as *const [entry; 82],
             data,
             1 as libc::c_int as intptr_t,
@@ -191,7 +191,7 @@ pub unsafe extern "C" fn dav1d_prep_grain_8bpc(
             (*in_0).p.bpc,
             ((*data).y_points).as_ptr(),
             (*data).num_y_points,
-            (*scaling.offset(0 as libc::c_int as isize)).as_mut_ptr(),
+            (*scaling.offset(0)).as_mut_ptr(),
         );
     }
     if (*data).num_uv_points[0] != 0 {
@@ -199,7 +199,7 @@ pub unsafe extern "C" fn dav1d_prep_grain_8bpc(
             (*in_0).p.bpc,
             ((*data).uv_points[0]).as_ptr(),
             (*data).num_uv_points[0],
-            (*scaling.offset(1 as libc::c_int as isize)).as_mut_ptr(),
+            (*scaling.offset(1)).as_mut_ptr(),
         );
     }
     if (*data).num_uv_points[1] != 0 {
@@ -207,7 +207,7 @@ pub unsafe extern "C" fn dav1d_prep_grain_8bpc(
             (*in_0).p.bpc,
             ((*data).uv_points[1]).as_ptr(),
             (*data).num_uv_points[1],
-            (*scaling.offset(2 as libc::c_int as isize)).as_mut_ptr(),
+            (*scaling.offset(2)).as_mut_ptr(),
         );
     }
     if !((*out).stride[0]
@@ -330,8 +330,8 @@ pub unsafe extern "C" fn dav1d_apply_grain_row_8bpc(
             (*out).stride[0],
             data,
             (*out).p.w as size_t,
-            (*scaling.offset(0 as libc::c_int as isize)).as_ptr(),
-            (*grain_lut.offset(0 as libc::c_int as isize)).as_ptr(),
+            (*scaling.offset(0)).as_ptr(),
+            (*grain_lut.offset(0)).as_ptr(),
             bh,
             row,
         );
@@ -375,7 +375,7 @@ pub unsafe extern "C" fn dav1d_apply_grain_row_8bpc(
                 (*in_0).stride[1],
                 data,
                 cpw as size_t,
-                (*scaling.offset(0 as libc::c_int as isize)).as_ptr(),
+                (*scaling.offset(0)).as_ptr(),
                 (*grain_lut.offset((1 as libc::c_int + pl) as isize)).as_ptr(),
                 bh_0,
                 row,

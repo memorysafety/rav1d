@@ -496,7 +496,7 @@ unsafe extern "C" fn insert_border(
     );
     if ctr < 64 as libc::c_int - 4 as libc::c_int {
         memset(
-            dst.offset(ctr as isize).offset(4 as libc::c_int as isize)
+            dst.offset(ctr as isize).offset(4)
                 as *mut libc::c_void,
             64 as libc::c_int,
             (64 as libc::c_int - 4 as libc::c_int - ctr) as libc::c_ulong,
@@ -568,7 +568,7 @@ unsafe extern "C" fn copy2d(
     let mut y: libc::c_int = 0 as libc::c_int;
     while y < h {
         memcpy(dst as *mut libc::c_void, src as *const libc::c_void, w as libc::c_ulong);
-        src = src.offset(64 as libc::c_int as isize);
+        src = src.offset(64);
         dst = dst.offset(w as isize);
         y += 1;
     }

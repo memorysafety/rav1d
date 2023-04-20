@@ -791,58 +791,58 @@ unsafe extern "C" fn lr_stripe(
     if (*lr).type_0 as libc::c_int == DAV1D_RESTORATION_WIENER as libc::c_int {
         let filter: *mut [int16_t; 8] = (params.filter.0).as_mut_ptr();
         let ref mut fresh0 = (*filter
-            .offset(0 as libc::c_int as isize))[6];
+            .offset(0))[6];
         *fresh0 = (*lr).filter_h[0] as int16_t;
-        (*filter.offset(0 as libc::c_int as isize))[0] = *fresh0;
+        (*filter.offset(0))[0] = *fresh0;
         let ref mut fresh1 = (*filter
-            .offset(0 as libc::c_int as isize))[5];
+            .offset(0))[5];
         *fresh1 = (*lr).filter_h[1] as int16_t;
-        (*filter.offset(0 as libc::c_int as isize))[1] = *fresh1;
+        (*filter.offset(0))[1] = *fresh1;
         let ref mut fresh2 = (*filter
-            .offset(0 as libc::c_int as isize))[4];
+            .offset(0))[4];
         *fresh2 = (*lr).filter_h[2] as int16_t;
-        (*filter.offset(0 as libc::c_int as isize))[2] = *fresh2;
+        (*filter.offset(0))[2] = *fresh2;
         (*filter
             .offset(
                 0 as libc::c_int as isize,
             ))[3 as libc::c_int
             as usize] = (-((*filter
-            .offset(0 as libc::c_int as isize))[0] as libc::c_int
-            + (*filter.offset(0 as libc::c_int as isize))[1]
+            .offset(0))[0] as libc::c_int
+            + (*filter.offset(0))[1]
                 as libc::c_int
-            + (*filter.offset(0 as libc::c_int as isize))[2]
+            + (*filter.offset(0))[2]
                 as libc::c_int) * 2 as libc::c_int) as int16_t;
         let ref mut fresh3 = (*filter
-            .offset(0 as libc::c_int as isize))[3];
+            .offset(0))[3];
         *fresh3 = (*fresh3 as libc::c_int + 128 as libc::c_int) as int16_t;
         let ref mut fresh4 = (*filter
-            .offset(1 as libc::c_int as isize))[6];
+            .offset(1))[6];
         *fresh4 = (*lr).filter_v[0] as int16_t;
-        (*filter.offset(1 as libc::c_int as isize))[0] = *fresh4;
+        (*filter.offset(1))[0] = *fresh4;
         let ref mut fresh5 = (*filter
-            .offset(1 as libc::c_int as isize))[5];
+            .offset(1))[5];
         *fresh5 = (*lr).filter_v[1] as int16_t;
-        (*filter.offset(1 as libc::c_int as isize))[1] = *fresh5;
+        (*filter.offset(1))[1] = *fresh5;
         let ref mut fresh6 = (*filter
-            .offset(1 as libc::c_int as isize))[4];
+            .offset(1))[4];
         *fresh6 = (*lr).filter_v[2] as int16_t;
-        (*filter.offset(1 as libc::c_int as isize))[2] = *fresh6;
+        (*filter.offset(1))[2] = *fresh6;
         (*filter
             .offset(
                 1 as libc::c_int as isize,
             ))[3 as libc::c_int
             as usize] = (128 as libc::c_int
-            - ((*filter.offset(1 as libc::c_int as isize))[0]
+            - ((*filter.offset(1))[0]
                 as libc::c_int
-                + (*filter.offset(1 as libc::c_int as isize))[1]
+                + (*filter.offset(1))[1]
                     as libc::c_int
-                + (*filter.offset(1 as libc::c_int as isize))[2]
+                + (*filter.offset(1))[2]
                     as libc::c_int) * 2 as libc::c_int) as int16_t;
         lr_fn = (*dsp)
             .lr
             .wiener[((*filter
-            .offset(0 as libc::c_int as isize))[0] as libc::c_int
-            | (*filter.offset(1 as libc::c_int as isize))[0]
+            .offset(0))[0] as libc::c_int
+            | (*filter.offset(1))[0]
                 as libc::c_int == 0) as libc::c_int as usize];
     } else {
         if !((*lr).type_0 as libc::c_int == DAV1D_RESTORATION_SGRPROJ as libc::c_int) {
@@ -850,8 +850,8 @@ unsafe extern "C" fn lr_stripe(
         }
         let sgr_params: *const uint16_t = (dav1d_sgr_params[(*lr).sgr_idx as usize])
             .as_ptr();
-        params.sgr.s0 = *sgr_params.offset(0 as libc::c_int as isize) as uint32_t;
-        params.sgr.s1 = *sgr_params.offset(1 as libc::c_int as isize) as uint32_t;
+        params.sgr.s0 = *sgr_params.offset(0) as uint32_t;
+        params.sgr.s1 = *sgr_params.offset(1) as uint32_t;
         params.sgr.w0 = (*lr).sgr_weights[0] as int16_t;
         params
             .sgr
@@ -861,8 +861,8 @@ unsafe extern "C" fn lr_stripe(
             as int16_t;
         lr_fn = (*dsp)
             .lr
-            .sgr[((*sgr_params.offset(0 as libc::c_int as isize) != 0) as libc::c_int
-            + (*sgr_params.offset(1 as libc::c_int as isize) != 0) as libc::c_int
+            .sgr[((*sgr_params.offset(0) != 0) as libc::c_int
+            + (*sgr_params.offset(1) != 0) as libc::c_int
                 * 2 as libc::c_int - 1 as libc::c_int) as usize];
     }
     while y + stripe_h <= row_h {
@@ -1057,9 +1057,9 @@ pub unsafe extern "C" fn dav1d_lr_sbrow_16bpc(
             - offset_y;
         lr_sbrow(
             f,
-            (*dst.offset(0 as libc::c_int as isize))
+            (*dst.offset(0))
                 .offset(
-                    -((offset_y as isize * PXSTRIDE(*dst_stride.offset(0 as libc::c_int as isize)))
+                    -((offset_y as isize * PXSTRIDE(*dst_stride.offset(0)))
                         as isize),
                 ),
             y_stripe,
@@ -1089,9 +1089,9 @@ pub unsafe extern "C" fn dav1d_lr_sbrow_16bpc(
         if restore_planes & LR_RESTORE_U as libc::c_int != 0 {
             lr_sbrow(
                 f,
-                (*dst.offset(1 as libc::c_int as isize))
+                (*dst.offset(1))
                     .offset(
-                        -((offset_uv as isize * PXSTRIDE(*dst_stride.offset(1 as libc::c_int as isize)))
+                        -((offset_uv as isize * PXSTRIDE(*dst_stride.offset(1)))
                             as isize),
                     ),
                 y_stripe_0,
@@ -1104,9 +1104,9 @@ pub unsafe extern "C" fn dav1d_lr_sbrow_16bpc(
         if restore_planes & LR_RESTORE_V as libc::c_int != 0 {
             lr_sbrow(
                 f,
-                (*dst.offset(2 as libc::c_int as isize))
+                (*dst.offset(2))
                     .offset(
-                        -((offset_uv as isize * PXSTRIDE(*dst_stride.offset(1 as libc::c_int as isize)))
+                        -((offset_uv as isize * PXSTRIDE(*dst_stride.offset(1)))
                             as isize),
                     ),
                 y_stripe_0,

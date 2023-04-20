@@ -970,7 +970,7 @@ pub unsafe extern "C" fn dav1d_thread_picture_alloc(
         (*c).itut_t35,
         (*c).itut_t35_ref,
         bpc,
-        &mut (*((*f).tile).offset(0 as libc::c_int as isize)).data.m,
+        &mut (*((*f).tile).offset(0)).data.m,
         &mut (*c).allocator,
         if have_frame_mt != 0 {
             (::core::mem::size_of::<atomic_int>())
@@ -1002,9 +1002,9 @@ pub unsafe extern "C" fn dav1d_thread_picture_alloc(
     (*p).visible = (*(*f).frame_hdr).show_frame;
     (*p).showable = (*(*f).frame_hdr).showable_frame;
     if have_frame_mt != 0 {
-        *(&mut *((*p).progress).offset(0 as libc::c_int as isize)
+        *(&mut *((*p).progress).offset(0)
             as *mut atomic_uint) = 0 as libc::c_int as libc::c_uint;
-        *(&mut *((*p).progress).offset(1 as libc::c_int as isize)
+        *(&mut *((*p).progress).offset(1)
             as *mut atomic_uint) = 0 as libc::c_int as libc::c_uint;
     }
     return res;

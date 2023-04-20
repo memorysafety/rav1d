@@ -1002,10 +1002,10 @@ unsafe extern "C" fn fguv_32x32xn_c(
                 let luma: *const pixel = luma_row
                     .offset((ly as isize * luma_stride) as isize)
                     .offset(lx as isize);
-                let mut avg: pixel = *luma.offset(0 as libc::c_int as isize);
+                let mut avg: pixel = *luma.offset(0);
                 if sx != 0 {
                     avg = (avg as libc::c_int
-                        + *luma.offset(1 as libc::c_int as isize) as libc::c_int
+                        + *luma.offset(1) as libc::c_int
                         + 1 as libc::c_int >> 1 as libc::c_int) as pixel;
                 }
                 let src: *const pixel = src_row
@@ -1067,10 +1067,10 @@ unsafe extern "C" fn fguv_32x32xn_c(
                 let luma_0: *const pixel = luma_row
                     .offset((ly_0 as isize * luma_stride) as isize)
                     .offset(lx_0 as isize);
-                let mut avg_0: pixel = *luma_0.offset(0 as libc::c_int as isize);
+                let mut avg_0: pixel = *luma_0.offset(0);
                 if sx != 0 {
                     avg_0 = (avg_0 as libc::c_int
-                        + *luma_0.offset(1 as libc::c_int as isize) as libc::c_int
+                        + *luma_0.offset(1) as libc::c_int
                         + 1 as libc::c_int >> 1 as libc::c_int) as pixel;
                 }
                 let src_0: *const pixel = src_row
@@ -1137,10 +1137,10 @@ unsafe extern "C" fn fguv_32x32xn_c(
                 let luma_1: *const pixel = luma_row
                     .offset((ly_1 as isize * luma_stride) as isize)
                     .offset(lx_1 as isize);
-                let mut avg_1: pixel = *luma_1.offset(0 as libc::c_int as isize);
+                let mut avg_1: pixel = *luma_1.offset(0);
                 if sx != 0 {
                     avg_1 = (avg_1 as libc::c_int
-                        + *luma_1.offset(1 as libc::c_int as isize) as libc::c_int
+                        + *luma_1.offset(1) as libc::c_int
                         + 1 as libc::c_int >> 1 as libc::c_int) as pixel;
                 }
                 let src_1: *const pixel = src_row
@@ -1236,10 +1236,10 @@ unsafe extern "C" fn fguv_32x32xn_c(
                 let luma_2: *const pixel = luma_row
                     .offset((ly_2 as isize * luma_stride) as isize)
                     .offset(lx_2 as isize);
-                let mut avg_2: pixel = *luma_2.offset(0 as libc::c_int as isize);
+                let mut avg_2: pixel = *luma_2.offset(0);
                 if sx != 0 {
                     avg_2 = (avg_2 as libc::c_int
-                        + *luma_2.offset(1 as libc::c_int as isize) as libc::c_int
+                        + *luma_2.offset(1) as libc::c_int
                         + 1 as libc::c_int >> 1 as libc::c_int) as pixel;
                 }
                 let src_2: *const pixel = src_row

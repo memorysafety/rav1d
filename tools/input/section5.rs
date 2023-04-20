@@ -220,15 +220,15 @@ unsafe extern "C" fn section5_open(
         );
         return -(1 as libc::c_int);
     }
-    *fps.offset(0 as libc::c_int as isize) = 25 as libc::c_int as libc::c_uint;
-    *fps.offset(1 as libc::c_int as isize) = 1 as libc::c_int as libc::c_uint;
-    *timebase.offset(0 as libc::c_int as isize) = 25 as libc::c_int as libc::c_uint;
-    *timebase.offset(1 as libc::c_int as isize) = 1 as libc::c_int as libc::c_uint;
+    *fps.offset(0) = 25 as libc::c_int as libc::c_uint;
+    *fps.offset(1) = 1 as libc::c_int as libc::c_uint;
+    *timebase.offset(0) = 25 as libc::c_int as libc::c_uint;
+    *timebase.offset(1) = 1 as libc::c_int as libc::c_uint;
     *num_frames = 0 as libc::c_int as libc::c_uint;
     loop {
         let mut byte: [uint8_t; 2] = [0; 2];
         if fread(
-            &mut *byte.as_mut_ptr().offset(0 as libc::c_int as isize) as *mut uint8_t
+            &mut *byte.as_mut_ptr().offset(0) as *mut uint8_t
                 as *mut libc::c_void,
             1,
             1,
@@ -251,7 +251,7 @@ unsafe extern "C" fn section5_open(
             & 0x4 as libc::c_int;
         if has_extension != 0
             && fread(
-                &mut *byte.as_mut_ptr().offset(1 as libc::c_int as isize) as *mut uint8_t
+                &mut *byte.as_mut_ptr().offset(1) as *mut uint8_t
                     as *mut libc::c_void,
                 1,
                 1,
@@ -279,7 +279,7 @@ unsafe extern "C" fn section5_read(
     loop {
         let mut byte: [uint8_t; 2] = [0; 2];
         if fread(
-            &mut *byte.as_mut_ptr().offset(0 as libc::c_int as isize) as *mut uint8_t
+            &mut *byte.as_mut_ptr().offset(0) as *mut uint8_t
                 as *mut libc::c_void,
             1,
             1,
@@ -314,7 +314,7 @@ unsafe extern "C" fn section5_read(
                 as libc::c_int & 0x4 as libc::c_int != 0) as libc::c_int;
             if has_extension != 0
                 && fread(
-                    &mut *byte.as_mut_ptr().offset(1 as libc::c_int as isize)
+                    &mut *byte.as_mut_ptr().offset(1)
                         as *mut uint8_t as *mut libc::c_void,
                     1,
                     1,

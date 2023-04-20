@@ -23798,7 +23798,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_alloc(
     (*cdf).data.cdf = (*(*cdf).r#ref).data as *mut CdfContext;
     if have_frame_mt != 0 {
         (*cdf)
-            .progress = &mut *((*cdf).data.cdf).offset(1 as libc::c_int as isize)
+            .progress = &mut *((*cdf).data.cdf).offset(1)
             as *mut CdfContext as *mut atomic_uint;
         *(*cdf).progress = 0 as libc::c_int as libc::c_uint;
     }

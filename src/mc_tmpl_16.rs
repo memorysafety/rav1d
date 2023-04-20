@@ -2189,38 +2189,38 @@ unsafe extern "C" fn put_8tap_c(
                     *mid_ptr
                         .offset(
                             x as isize,
-                        ) = (*fh.offset(0 as libc::c_int as isize) as libc::c_int
+                        ) = (*fh.offset(0) as libc::c_int
                         * *src
                             .offset(
                                 (x + -(3 as libc::c_int) * 1 as libc::c_int) as isize,
                             ) as libc::c_int
-                        + *fh.offset(1 as libc::c_int as isize) as libc::c_int
+                        + *fh.offset(1) as libc::c_int
                             * *src
                                 .offset(
                                     (x + -(2 as libc::c_int) * 1 as libc::c_int) as isize,
                                 ) as libc::c_int
-                        + *fh.offset(2 as libc::c_int as isize) as libc::c_int
+                        + *fh.offset(2) as libc::c_int
                             * *src
                                 .offset(
                                     (x + -(1 as libc::c_int) * 1 as libc::c_int) as isize,
                                 ) as libc::c_int
-                        + *fh.offset(3 as libc::c_int as isize) as libc::c_int
+                        + *fh.offset(3) as libc::c_int
                             * *src
                                 .offset((x + 0 as libc::c_int * 1 as libc::c_int) as isize)
                                 as libc::c_int
-                        + *fh.offset(4 as libc::c_int as isize) as libc::c_int
+                        + *fh.offset(4) as libc::c_int
                             * *src
                                 .offset((x + 1 as libc::c_int * 1 as libc::c_int) as isize)
                                 as libc::c_int
-                        + *fh.offset(5 as libc::c_int as isize) as libc::c_int
+                        + *fh.offset(5) as libc::c_int
                             * *src
                                 .offset((x + 2 as libc::c_int * 1 as libc::c_int) as isize)
                                 as libc::c_int
-                        + *fh.offset(6 as libc::c_int as isize) as libc::c_int
+                        + *fh.offset(6) as libc::c_int
                             * *src
                                 .offset((x + 3 as libc::c_int * 1 as libc::c_int) as isize)
                                 as libc::c_int
-                        + *fh.offset(7 as libc::c_int as isize) as libc::c_int
+                        + *fh.offset(7) as libc::c_int
                             * *src
                                 .offset((x + 4 as libc::c_int * 1 as libc::c_int) as isize)
                                 as libc::c_int
@@ -2229,7 +2229,7 @@ unsafe extern "C" fn put_8tap_c(
                         as int16_t;
                     x += 1;
                 }
-                mid_ptr = mid_ptr.offset(128 as libc::c_int as isize);
+                mid_ptr = mid_ptr.offset(128);
                 src = src.offset(src_stride as isize);
                 tmp_h -= 1;
                 if !(tmp_h != 0) {
@@ -2246,42 +2246,42 @@ unsafe extern "C" fn put_8tap_c(
                         .offset(
                             x_0 as isize,
                         ) = iclip(
-                        *fv.offset(0 as libc::c_int as isize) as libc::c_int
+                        *fv.offset(0) as libc::c_int
                             * *mid_ptr
                                 .offset(
                                     (x_0 + -(3 as libc::c_int) * 128 as libc::c_int) as isize,
                                 ) as libc::c_int
-                            + *fv.offset(1 as libc::c_int as isize) as libc::c_int
+                            + *fv.offset(1) as libc::c_int
                                 * *mid_ptr
                                     .offset(
                                         (x_0 + -(2 as libc::c_int) * 128 as libc::c_int) as isize,
                                     ) as libc::c_int
-                            + *fv.offset(2 as libc::c_int as isize) as libc::c_int
+                            + *fv.offset(2) as libc::c_int
                                 * *mid_ptr
                                     .offset(
                                         (x_0 + -(1 as libc::c_int) * 128 as libc::c_int) as isize,
                                     ) as libc::c_int
-                            + *fv.offset(3 as libc::c_int as isize) as libc::c_int
+                            + *fv.offset(3) as libc::c_int
                                 * *mid_ptr
                                     .offset(
                                         (x_0 + 0 as libc::c_int * 128 as libc::c_int) as isize,
                                     ) as libc::c_int
-                            + *fv.offset(4 as libc::c_int as isize) as libc::c_int
+                            + *fv.offset(4) as libc::c_int
                                 * *mid_ptr
                                     .offset(
                                         (x_0 + 1 as libc::c_int * 128 as libc::c_int) as isize,
                                     ) as libc::c_int
-                            + *fv.offset(5 as libc::c_int as isize) as libc::c_int
+                            + *fv.offset(5) as libc::c_int
                                 * *mid_ptr
                                     .offset(
                                         (x_0 + 2 as libc::c_int * 128 as libc::c_int) as isize,
                                     ) as libc::c_int
-                            + *fv.offset(6 as libc::c_int as isize) as libc::c_int
+                            + *fv.offset(6) as libc::c_int
                                 * *mid_ptr
                                     .offset(
                                         (x_0 + 3 as libc::c_int * 128 as libc::c_int) as isize,
                                     ) as libc::c_int
-                            + *fv.offset(7 as libc::c_int as isize) as libc::c_int
+                            + *fv.offset(7) as libc::c_int
                                 * *mid_ptr
                                     .offset(
                                         (x_0 + 4 as libc::c_int * 128 as libc::c_int) as isize,
@@ -2294,7 +2294,7 @@ unsafe extern "C" fn put_8tap_c(
                     ) as pixel;
                     x_0 += 1;
                 }
-                mid_ptr = mid_ptr.offset(128 as libc::c_int as isize);
+                mid_ptr = mid_ptr.offset(128);
                 dst = dst.offset(dst_stride as isize);
                 h -= 1;
                 if !(h != 0) {
@@ -2309,42 +2309,42 @@ unsafe extern "C" fn put_8tap_c(
                         .offset(
                             x_1 as isize,
                         ) = iclip(
-                        *fh.offset(0 as libc::c_int as isize) as libc::c_int
+                        *fh.offset(0) as libc::c_int
                             * *src
                                 .offset(
                                     (x_1 + -(3 as libc::c_int) * 1 as libc::c_int) as isize,
                                 ) as libc::c_int
-                            + *fh.offset(1 as libc::c_int as isize) as libc::c_int
+                            + *fh.offset(1) as libc::c_int
                                 * *src
                                     .offset(
                                         (x_1 + -(2 as libc::c_int) * 1 as libc::c_int) as isize,
                                     ) as libc::c_int
-                            + *fh.offset(2 as libc::c_int as isize) as libc::c_int
+                            + *fh.offset(2) as libc::c_int
                                 * *src
                                     .offset(
                                         (x_1 + -(1 as libc::c_int) * 1 as libc::c_int) as isize,
                                     ) as libc::c_int
-                            + *fh.offset(3 as libc::c_int as isize) as libc::c_int
+                            + *fh.offset(3) as libc::c_int
                                 * *src
                                     .offset(
                                         (x_1 + 0 as libc::c_int * 1 as libc::c_int) as isize,
                                     ) as libc::c_int
-                            + *fh.offset(4 as libc::c_int as isize) as libc::c_int
+                            + *fh.offset(4) as libc::c_int
                                 * *src
                                     .offset(
                                         (x_1 + 1 as libc::c_int * 1 as libc::c_int) as isize,
                                     ) as libc::c_int
-                            + *fh.offset(5 as libc::c_int as isize) as libc::c_int
+                            + *fh.offset(5) as libc::c_int
                                 * *src
                                     .offset(
                                         (x_1 + 2 as libc::c_int * 1 as libc::c_int) as isize,
                                     ) as libc::c_int
-                            + *fh.offset(6 as libc::c_int as isize) as libc::c_int
+                            + *fh.offset(6) as libc::c_int
                                 * *src
                                     .offset(
                                         (x_1 + 3 as libc::c_int * 1 as libc::c_int) as isize,
                                     ) as libc::c_int
-                            + *fh.offset(7 as libc::c_int as isize) as libc::c_int
+                            + *fh.offset(7) as libc::c_int
                                 * *src
                                     .offset(
                                         (x_1 + 4 as libc::c_int * 1 as libc::c_int) as isize,
@@ -2370,49 +2370,49 @@ unsafe extern "C" fn put_8tap_c(
                     .offset(
                         x_2 as isize,
                     ) = iclip(
-                    *fv.offset(0 as libc::c_int as isize) as libc::c_int
+                    *fv.offset(0) as libc::c_int
                         * *src
                             .offset(
                                 (x_2 as isize
                                     + -(3 as libc::c_int) as isize * src_stride) as isize,
                             ) as libc::c_int
-                        + *fv.offset(1 as libc::c_int as isize) as libc::c_int
+                        + *fv.offset(1) as libc::c_int
                             * *src
                                 .offset(
                                     (x_2 as isize
                                         + -(2 as libc::c_int) as isize * src_stride) as isize,
                                 ) as libc::c_int
-                        + *fv.offset(2 as libc::c_int as isize) as libc::c_int
+                        + *fv.offset(2) as libc::c_int
                             * *src
                                 .offset(
                                     (x_2 as isize
                                         + -(1 as libc::c_int) as isize * src_stride) as isize,
                                 ) as libc::c_int
-                        + *fv.offset(3 as libc::c_int as isize) as libc::c_int
+                        + *fv.offset(3) as libc::c_int
                             * *src
                                 .offset(
                                     (x_2 as isize
                                         + 0 * src_stride) as isize,
                                 ) as libc::c_int
-                        + *fv.offset(4 as libc::c_int as isize) as libc::c_int
+                        + *fv.offset(4) as libc::c_int
                             * *src
                                 .offset(
                                     (x_2 as isize
                                         + 1 * src_stride) as isize,
                                 ) as libc::c_int
-                        + *fv.offset(5 as libc::c_int as isize) as libc::c_int
+                        + *fv.offset(5) as libc::c_int
                             * *src
                                 .offset(
                                     (x_2 as isize
                                         + 2 * src_stride) as isize,
                                 ) as libc::c_int
-                        + *fv.offset(6 as libc::c_int as isize) as libc::c_int
+                        + *fv.offset(6) as libc::c_int
                             * *src
                                 .offset(
                                     (x_2 as isize
                                         + 3 * src_stride) as isize,
                                 ) as libc::c_int
-                        + *fv.offset(7 as libc::c_int as isize) as libc::c_int
+                        + *fv.offset(7) as libc::c_int
                             * *src
                                 .offset(
                                     (x_2 as isize
@@ -2483,41 +2483,41 @@ unsafe extern "C" fn put_8tap_scaled_c(
                 .offset(
                     x as isize,
                 ) = (if !fh.is_null() {
-                *fh.offset(0 as libc::c_int as isize) as libc::c_int
+                *fh.offset(0) as libc::c_int
                     * *src
                         .offset((ioff + -(3 as libc::c_int) * 1 as libc::c_int) as isize)
                         as libc::c_int
-                    + *fh.offset(1 as libc::c_int as isize) as libc::c_int
+                    + *fh.offset(1) as libc::c_int
                         * *src
                             .offset(
                                 (ioff + -(2 as libc::c_int) * 1 as libc::c_int) as isize,
                             ) as libc::c_int
-                    + *fh.offset(2 as libc::c_int as isize) as libc::c_int
+                    + *fh.offset(2) as libc::c_int
                         * *src
                             .offset(
                                 (ioff + -(1 as libc::c_int) * 1 as libc::c_int) as isize,
                             ) as libc::c_int
-                    + *fh.offset(3 as libc::c_int as isize) as libc::c_int
+                    + *fh.offset(3) as libc::c_int
                         * *src
                             .offset(
                                 (ioff + 0 as libc::c_int * 1 as libc::c_int) as isize,
                             ) as libc::c_int
-                    + *fh.offset(4 as libc::c_int as isize) as libc::c_int
+                    + *fh.offset(4) as libc::c_int
                         * *src
                             .offset(
                                 (ioff + 1 as libc::c_int * 1 as libc::c_int) as isize,
                             ) as libc::c_int
-                    + *fh.offset(5 as libc::c_int as isize) as libc::c_int
+                    + *fh.offset(5) as libc::c_int
                         * *src
                             .offset(
                                 (ioff + 2 as libc::c_int * 1 as libc::c_int) as isize,
                             ) as libc::c_int
-                    + *fh.offset(6 as libc::c_int as isize) as libc::c_int
+                    + *fh.offset(6) as libc::c_int
                         * *src
                             .offset(
                                 (ioff + 3 as libc::c_int * 1 as libc::c_int) as isize,
                             ) as libc::c_int
-                    + *fh.offset(7 as libc::c_int as isize) as libc::c_int
+                    + *fh.offset(7) as libc::c_int
                         * *src
                             .offset(
                                 (ioff + 4 as libc::c_int * 1 as libc::c_int) as isize,
@@ -2532,7 +2532,7 @@ unsafe extern "C" fn put_8tap_scaled_c(
             imx &= 0x3ff as libc::c_int;
             x += 1;
         }
-        mid_ptr = mid_ptr.offset(128 as libc::c_int as isize);
+        mid_ptr = mid_ptr.offset(128);
         src = src.offset(src_stride as isize);
         tmp_h -= 1;
         if !(tmp_h != 0) {
@@ -2562,42 +2562,42 @@ unsafe extern "C" fn put_8tap_scaled_c(
                     x_0 as isize,
                 ) = (if !fv.is_null() {
                 iclip(
-                    *fv.offset(0 as libc::c_int as isize) as libc::c_int
+                    *fv.offset(0) as libc::c_int
                         * *mid_ptr
                             .offset(
                                 (x_0 + -(3 as libc::c_int) * 128 as libc::c_int) as isize,
                             ) as libc::c_int
-                        + *fv.offset(1 as libc::c_int as isize) as libc::c_int
+                        + *fv.offset(1) as libc::c_int
                             * *mid_ptr
                                 .offset(
                                     (x_0 + -(2 as libc::c_int) * 128 as libc::c_int) as isize,
                                 ) as libc::c_int
-                        + *fv.offset(2 as libc::c_int as isize) as libc::c_int
+                        + *fv.offset(2) as libc::c_int
                             * *mid_ptr
                                 .offset(
                                     (x_0 + -(1 as libc::c_int) * 128 as libc::c_int) as isize,
                                 ) as libc::c_int
-                        + *fv.offset(3 as libc::c_int as isize) as libc::c_int
+                        + *fv.offset(3) as libc::c_int
                             * *mid_ptr
                                 .offset(
                                     (x_0 + 0 as libc::c_int * 128 as libc::c_int) as isize,
                                 ) as libc::c_int
-                        + *fv.offset(4 as libc::c_int as isize) as libc::c_int
+                        + *fv.offset(4) as libc::c_int
                             * *mid_ptr
                                 .offset(
                                     (x_0 + 1 as libc::c_int * 128 as libc::c_int) as isize,
                                 ) as libc::c_int
-                        + *fv.offset(5 as libc::c_int as isize) as libc::c_int
+                        + *fv.offset(5) as libc::c_int
                             * *mid_ptr
                                 .offset(
                                     (x_0 + 2 as libc::c_int * 128 as libc::c_int) as isize,
                                 ) as libc::c_int
-                        + *fv.offset(6 as libc::c_int as isize) as libc::c_int
+                        + *fv.offset(6) as libc::c_int
                             * *mid_ptr
                                 .offset(
                                     (x_0 + 3 as libc::c_int * 128 as libc::c_int) as isize,
                                 ) as libc::c_int
-                        + *fv.offset(7 as libc::c_int as isize) as libc::c_int
+                        + *fv.offset(7) as libc::c_int
                             * *mid_ptr
                                 .offset(
                                     (x_0 + 4 as libc::c_int * 128 as libc::c_int) as isize,
@@ -2676,38 +2676,38 @@ unsafe extern "C" fn prep_8tap_c(
                     *mid_ptr
                         .offset(
                             x as isize,
-                        ) = (*fh.offset(0 as libc::c_int as isize) as libc::c_int
+                        ) = (*fh.offset(0) as libc::c_int
                         * *src
                             .offset(
                                 (x + -(3 as libc::c_int) * 1 as libc::c_int) as isize,
                             ) as libc::c_int
-                        + *fh.offset(1 as libc::c_int as isize) as libc::c_int
+                        + *fh.offset(1) as libc::c_int
                             * *src
                                 .offset(
                                     (x + -(2 as libc::c_int) * 1 as libc::c_int) as isize,
                                 ) as libc::c_int
-                        + *fh.offset(2 as libc::c_int as isize) as libc::c_int
+                        + *fh.offset(2) as libc::c_int
                             * *src
                                 .offset(
                                     (x + -(1 as libc::c_int) * 1 as libc::c_int) as isize,
                                 ) as libc::c_int
-                        + *fh.offset(3 as libc::c_int as isize) as libc::c_int
+                        + *fh.offset(3) as libc::c_int
                             * *src
                                 .offset((x + 0 as libc::c_int * 1 as libc::c_int) as isize)
                                 as libc::c_int
-                        + *fh.offset(4 as libc::c_int as isize) as libc::c_int
+                        + *fh.offset(4) as libc::c_int
                             * *src
                                 .offset((x + 1 as libc::c_int * 1 as libc::c_int) as isize)
                                 as libc::c_int
-                        + *fh.offset(5 as libc::c_int as isize) as libc::c_int
+                        + *fh.offset(5) as libc::c_int
                             * *src
                                 .offset((x + 2 as libc::c_int * 1 as libc::c_int) as isize)
                                 as libc::c_int
-                        + *fh.offset(6 as libc::c_int as isize) as libc::c_int
+                        + *fh.offset(6) as libc::c_int
                             * *src
                                 .offset((x + 3 as libc::c_int * 1 as libc::c_int) as isize)
                                 as libc::c_int
-                        + *fh.offset(7 as libc::c_int as isize) as libc::c_int
+                        + *fh.offset(7) as libc::c_int
                             * *src
                                 .offset((x + 4 as libc::c_int * 1 as libc::c_int) as isize)
                                 as libc::c_int
@@ -2716,7 +2716,7 @@ unsafe extern "C" fn prep_8tap_c(
                         as int16_t;
                     x += 1;
                 }
-                mid_ptr = mid_ptr.offset(128 as libc::c_int as isize);
+                mid_ptr = mid_ptr.offset(128);
                 src = src.offset(src_stride as isize);
                 tmp_h -= 1;
                 if !(tmp_h != 0) {
@@ -2729,43 +2729,43 @@ unsafe extern "C" fn prep_8tap_c(
             loop {
                 let mut x_0: libc::c_int = 0 as libc::c_int;
                 while x_0 < w {
-                    let mut t: libc::c_int = (*fv.offset(0 as libc::c_int as isize)
+                    let mut t: libc::c_int = (*fv.offset(0)
                         as libc::c_int
                         * *mid_ptr
                             .offset(
                                 (x_0 + -(3 as libc::c_int) * 128 as libc::c_int) as isize,
                             ) as libc::c_int
-                        + *fv.offset(1 as libc::c_int as isize) as libc::c_int
+                        + *fv.offset(1) as libc::c_int
                             * *mid_ptr
                                 .offset(
                                     (x_0 + -(2 as libc::c_int) * 128 as libc::c_int) as isize,
                                 ) as libc::c_int
-                        + *fv.offset(2 as libc::c_int as isize) as libc::c_int
+                        + *fv.offset(2) as libc::c_int
                             * *mid_ptr
                                 .offset(
                                     (x_0 + -(1 as libc::c_int) * 128 as libc::c_int) as isize,
                                 ) as libc::c_int
-                        + *fv.offset(3 as libc::c_int as isize) as libc::c_int
+                        + *fv.offset(3) as libc::c_int
                             * *mid_ptr
                                 .offset(
                                     (x_0 + 0 as libc::c_int * 128 as libc::c_int) as isize,
                                 ) as libc::c_int
-                        + *fv.offset(4 as libc::c_int as isize) as libc::c_int
+                        + *fv.offset(4) as libc::c_int
                             * *mid_ptr
                                 .offset(
                                     (x_0 + 1 as libc::c_int * 128 as libc::c_int) as isize,
                                 ) as libc::c_int
-                        + *fv.offset(5 as libc::c_int as isize) as libc::c_int
+                        + *fv.offset(5) as libc::c_int
                             * *mid_ptr
                                 .offset(
                                     (x_0 + 2 as libc::c_int * 128 as libc::c_int) as isize,
                                 ) as libc::c_int
-                        + *fv.offset(6 as libc::c_int as isize) as libc::c_int
+                        + *fv.offset(6) as libc::c_int
                             * *mid_ptr
                                 .offset(
                                     (x_0 + 3 as libc::c_int * 128 as libc::c_int) as isize,
                                 ) as libc::c_int
-                        + *fv.offset(7 as libc::c_int as isize) as libc::c_int
+                        + *fv.offset(7) as libc::c_int
                             * *mid_ptr
                                 .offset(
                                     (x_0 + 4 as libc::c_int * 128 as libc::c_int) as isize,
@@ -2780,7 +2780,7 @@ unsafe extern "C" fn prep_8tap_c(
                     *tmp.offset(x_0 as isize) = t as int16_t;
                     x_0 += 1;
                 }
-                mid_ptr = mid_ptr.offset(128 as libc::c_int as isize);
+                mid_ptr = mid_ptr.offset(128);
                 tmp = tmp.offset(w as isize);
                 h -= 1;
                 if !(h != 0) {
@@ -2794,42 +2794,42 @@ unsafe extern "C" fn prep_8tap_c(
                     *tmp
                         .offset(
                             x_1 as isize,
-                        ) = ((*fh.offset(0 as libc::c_int as isize) as libc::c_int
+                        ) = ((*fh.offset(0) as libc::c_int
                         * *src
                             .offset(
                                 (x_1 + -(3 as libc::c_int) * 1 as libc::c_int) as isize,
                             ) as libc::c_int
-                        + *fh.offset(1 as libc::c_int as isize) as libc::c_int
+                        + *fh.offset(1) as libc::c_int
                             * *src
                                 .offset(
                                     (x_1 + -(2 as libc::c_int) * 1 as libc::c_int) as isize,
                                 ) as libc::c_int
-                        + *fh.offset(2 as libc::c_int as isize) as libc::c_int
+                        + *fh.offset(2) as libc::c_int
                             * *src
                                 .offset(
                                     (x_1 + -(1 as libc::c_int) * 1 as libc::c_int) as isize,
                                 ) as libc::c_int
-                        + *fh.offset(3 as libc::c_int as isize) as libc::c_int
+                        + *fh.offset(3) as libc::c_int
                             * *src
                                 .offset(
                                     (x_1 + 0 as libc::c_int * 1 as libc::c_int) as isize,
                                 ) as libc::c_int
-                        + *fh.offset(4 as libc::c_int as isize) as libc::c_int
+                        + *fh.offset(4) as libc::c_int
                             * *src
                                 .offset(
                                     (x_1 + 1 as libc::c_int * 1 as libc::c_int) as isize,
                                 ) as libc::c_int
-                        + *fh.offset(5 as libc::c_int as isize) as libc::c_int
+                        + *fh.offset(5) as libc::c_int
                             * *src
                                 .offset(
                                     (x_1 + 2 as libc::c_int * 1 as libc::c_int) as isize,
                                 ) as libc::c_int
-                        + *fh.offset(6 as libc::c_int as isize) as libc::c_int
+                        + *fh.offset(6) as libc::c_int
                             * *src
                                 .offset(
                                     (x_1 + 3 as libc::c_int * 1 as libc::c_int) as isize,
                                 ) as libc::c_int
-                        + *fh.offset(7 as libc::c_int as isize) as libc::c_int
+                        + *fh.offset(7) as libc::c_int
                             * *src
                                 .offset(
                                     (x_1 + 4 as libc::c_int * 1 as libc::c_int) as isize,
@@ -2860,43 +2860,43 @@ unsafe extern "C" fn prep_8tap_c(
                             (x_2 as isize
                                 + -(3 as libc::c_int) as isize * src_stride) as isize,
                         ) as libc::c_int
-                    + *fv.offset(1 as libc::c_int as isize) as libc::c_int
+                    + *fv.offset(1) as libc::c_int
                         * *src
                             .offset(
                                 (x_2 as isize
                                     + -(2 as libc::c_int) as isize * src_stride) as isize,
                             ) as libc::c_int
-                    + *fv.offset(2 as libc::c_int as isize) as libc::c_int
+                    + *fv.offset(2) as libc::c_int
                         * *src
                             .offset(
                                 (x_2 as isize
                                     + -(1 as libc::c_int) as isize * src_stride) as isize,
                             ) as libc::c_int
-                    + *fv.offset(3 as libc::c_int as isize) as libc::c_int
+                    + *fv.offset(3) as libc::c_int
                         * *src
                             .offset(
                                 (x_2 as isize
                                     + 0 * src_stride) as isize,
                             ) as libc::c_int
-                    + *fv.offset(4 as libc::c_int as isize) as libc::c_int
+                    + *fv.offset(4) as libc::c_int
                         * *src
                             .offset(
                                 (x_2 as isize
                                     + 1 * src_stride) as isize,
                             ) as libc::c_int
-                    + *fv.offset(5 as libc::c_int as isize) as libc::c_int
+                    + *fv.offset(5) as libc::c_int
                         * *src
                             .offset(
                                 (x_2 as isize
                                     + 2 * src_stride) as isize,
                             ) as libc::c_int
-                    + *fv.offset(6 as libc::c_int as isize) as libc::c_int
+                    + *fv.offset(6) as libc::c_int
                         * *src
                             .offset(
                                 (x_2 as isize
                                     + 3 * src_stride) as isize,
                             ) as libc::c_int
-                    + *fv.offset(7 as libc::c_int as isize) as libc::c_int
+                    + *fv.offset(7) as libc::c_int
                         * *src
                             .offset(
                                 (x_2 as isize
@@ -2962,41 +2962,41 @@ unsafe extern "C" fn prep_8tap_scaled_c(
                 .offset(
                     x as isize,
                 ) = (if !fh.is_null() {
-                *fh.offset(0 as libc::c_int as isize) as libc::c_int
+                *fh.offset(0) as libc::c_int
                     * *src
                         .offset((ioff + -(3 as libc::c_int) * 1 as libc::c_int) as isize)
                         as libc::c_int
-                    + *fh.offset(1 as libc::c_int as isize) as libc::c_int
+                    + *fh.offset(1) as libc::c_int
                         * *src
                             .offset(
                                 (ioff + -(2 as libc::c_int) * 1 as libc::c_int) as isize,
                             ) as libc::c_int
-                    + *fh.offset(2 as libc::c_int as isize) as libc::c_int
+                    + *fh.offset(2) as libc::c_int
                         * *src
                             .offset(
                                 (ioff + -(1 as libc::c_int) * 1 as libc::c_int) as isize,
                             ) as libc::c_int
-                    + *fh.offset(3 as libc::c_int as isize) as libc::c_int
+                    + *fh.offset(3) as libc::c_int
                         * *src
                             .offset(
                                 (ioff + 0 as libc::c_int * 1 as libc::c_int) as isize,
                             ) as libc::c_int
-                    + *fh.offset(4 as libc::c_int as isize) as libc::c_int
+                    + *fh.offset(4) as libc::c_int
                         * *src
                             .offset(
                                 (ioff + 1 as libc::c_int * 1 as libc::c_int) as isize,
                             ) as libc::c_int
-                    + *fh.offset(5 as libc::c_int as isize) as libc::c_int
+                    + *fh.offset(5) as libc::c_int
                         * *src
                             .offset(
                                 (ioff + 2 as libc::c_int * 1 as libc::c_int) as isize,
                             ) as libc::c_int
-                    + *fh.offset(6 as libc::c_int as isize) as libc::c_int
+                    + *fh.offset(6) as libc::c_int
                         * *src
                             .offset(
                                 (ioff + 3 as libc::c_int * 1 as libc::c_int) as isize,
                             ) as libc::c_int
-                    + *fh.offset(7 as libc::c_int as isize) as libc::c_int
+                    + *fh.offset(7) as libc::c_int
                         * *src
                             .offset(
                                 (ioff + 4 as libc::c_int * 1 as libc::c_int) as isize,
@@ -3011,7 +3011,7 @@ unsafe extern "C" fn prep_8tap_scaled_c(
             imx &= 0x3ff as libc::c_int;
             x += 1;
         }
-        mid_ptr = mid_ptr.offset(128 as libc::c_int as isize);
+        mid_ptr = mid_ptr.offset(128);
         src = src.offset(src_stride as isize);
         tmp_h -= 1;
         if !(tmp_h != 0) {
@@ -3040,42 +3040,42 @@ unsafe extern "C" fn prep_8tap_scaled_c(
                 .offset(
                     x_0 as isize,
                 ) = ((if !fv.is_null() {
-                *fv.offset(0 as libc::c_int as isize) as libc::c_int
+                *fv.offset(0) as libc::c_int
                     * *mid_ptr
                         .offset(
                             (x_0 + -(3 as libc::c_int) * 128 as libc::c_int) as isize,
                         ) as libc::c_int
-                    + *fv.offset(1 as libc::c_int as isize) as libc::c_int
+                    + *fv.offset(1) as libc::c_int
                         * *mid_ptr
                             .offset(
                                 (x_0 + -(2 as libc::c_int) * 128 as libc::c_int) as isize,
                             ) as libc::c_int
-                    + *fv.offset(2 as libc::c_int as isize) as libc::c_int
+                    + *fv.offset(2) as libc::c_int
                         * *mid_ptr
                             .offset(
                                 (x_0 + -(1 as libc::c_int) * 128 as libc::c_int) as isize,
                             ) as libc::c_int
-                    + *fv.offset(3 as libc::c_int as isize) as libc::c_int
+                    + *fv.offset(3) as libc::c_int
                         * *mid_ptr
                             .offset(
                                 (x_0 + 0 as libc::c_int * 128 as libc::c_int) as isize,
                             ) as libc::c_int
-                    + *fv.offset(4 as libc::c_int as isize) as libc::c_int
+                    + *fv.offset(4) as libc::c_int
                         * *mid_ptr
                             .offset(
                                 (x_0 + 1 as libc::c_int * 128 as libc::c_int) as isize,
                             ) as libc::c_int
-                    + *fv.offset(5 as libc::c_int as isize) as libc::c_int
+                    + *fv.offset(5) as libc::c_int
                         * *mid_ptr
                             .offset(
                                 (x_0 + 2 as libc::c_int * 128 as libc::c_int) as isize,
                             ) as libc::c_int
-                    + *fv.offset(6 as libc::c_int as isize) as libc::c_int
+                    + *fv.offset(6) as libc::c_int
                         * *mid_ptr
                             .offset(
                                 (x_0 + 3 as libc::c_int * 128 as libc::c_int) as isize,
                             ) as libc::c_int
-                    + *fv.offset(7 as libc::c_int as isize) as libc::c_int
+                    + *fv.offset(7) as libc::c_int
                         * *mid_ptr
                             .offset(
                                 (x_0 + 4 as libc::c_int * 128 as libc::c_int) as isize,
@@ -4068,7 +4068,7 @@ unsafe extern "C" fn put_bilin_c(
                         as int16_t;
                     x += 1;
                 }
-                mid_ptr = mid_ptr.offset(128 as libc::c_int as isize);
+                mid_ptr = mid_ptr.offset(128);
                 src = src.offset(src_stride as isize);
                 tmp_h -= 1;
                 if !(tmp_h != 0) {
@@ -4096,7 +4096,7 @@ unsafe extern "C" fn put_bilin_c(
                     ) as pixel;
                     x_0 += 1;
                 }
-                mid_ptr = mid_ptr.offset(128 as libc::c_int as isize);
+                mid_ptr = mid_ptr.offset(128);
                 dst = dst.offset(dst_stride as isize);
                 h -= 1;
                 if !(h != 0) {
@@ -4202,7 +4202,7 @@ unsafe extern "C" fn put_bilin_scaled_c(
             imx &= 0x3ff as libc::c_int;
             x += 1;
         }
-        mid_ptr = mid_ptr.offset(128 as libc::c_int as isize);
+        mid_ptr = mid_ptr.offset(128);
         src = src.offset(PXSTRIDE(src_stride) as isize);
         tmp_h -= 1;
         if !(tmp_h != 0) {
@@ -4274,7 +4274,7 @@ unsafe extern "C" fn prep_bilin_c(
                         as int16_t;
                     x += 1;
                 }
-                mid_ptr = mid_ptr.offset(128 as libc::c_int as isize);
+                mid_ptr = mid_ptr.offset(128);
                 src = src.offset(src_stride as isize);
                 tmp_h -= 1;
                 if !(tmp_h != 0) {
@@ -4298,7 +4298,7 @@ unsafe extern "C" fn prep_bilin_c(
                         >> 4 as libc::c_int) - 8192 as libc::c_int) as int16_t;
                     x_0 += 1;
                 }
-                mid_ptr = mid_ptr.offset(128 as libc::c_int as isize);
+                mid_ptr = mid_ptr.offset(128);
                 tmp = tmp.offset(w as isize);
                 h -= 1;
                 if !(h != 0) {
@@ -4396,7 +4396,7 @@ unsafe extern "C" fn prep_bilin_scaled_c(
             imx &= 0x3ff as libc::c_int;
             x += 1;
         }
-        mid_ptr = mid_ptr.offset(128 as libc::c_int as isize);
+        mid_ptr = mid_ptr.offset(128);
         src = src.offset(PXSTRIDE(src_stride) as isize);
         tmp_h -= 1;
         if !(tmp_h != 0) {
@@ -4837,40 +4837,40 @@ unsafe extern "C" fn warp_affine_8x8_c(
             *mid_ptr
                 .offset(
                     x as isize,
-                ) = (*filter.offset(0 as libc::c_int as isize) as libc::c_int
+                ) = (*filter.offset(0) as libc::c_int
                 * *src.offset((x - 3 as libc::c_int * 1 as libc::c_int) as isize)
                     as libc::c_int
-                + *filter.offset(1 as libc::c_int as isize) as libc::c_int
+                + *filter.offset(1) as libc::c_int
                     * *src.offset((x - 2 as libc::c_int * 1 as libc::c_int) as isize)
                         as libc::c_int
-                + *filter.offset(2 as libc::c_int as isize) as libc::c_int
+                + *filter.offset(2) as libc::c_int
                     * *src.offset((x - 1 as libc::c_int * 1 as libc::c_int) as isize)
                         as libc::c_int
-                + *filter.offset(3 as libc::c_int as isize) as libc::c_int
+                + *filter.offset(3) as libc::c_int
                     * *src.offset((x + 0 as libc::c_int * 1 as libc::c_int) as isize)
                         as libc::c_int
-                + *filter.offset(4 as libc::c_int as isize) as libc::c_int
+                + *filter.offset(4) as libc::c_int
                     * *src.offset((x + 1 as libc::c_int * 1 as libc::c_int) as isize)
                         as libc::c_int
-                + *filter.offset(5 as libc::c_int as isize) as libc::c_int
+                + *filter.offset(5) as libc::c_int
                     * *src.offset((x + 2 as libc::c_int * 1 as libc::c_int) as isize)
                         as libc::c_int
-                + *filter.offset(6 as libc::c_int as isize) as libc::c_int
+                + *filter.offset(6) as libc::c_int
                     * *src.offset((x + 3 as libc::c_int * 1 as libc::c_int) as isize)
                         as libc::c_int
-                + *filter.offset(7 as libc::c_int as isize) as libc::c_int
+                + *filter.offset(7) as libc::c_int
                     * *src.offset((x + 4 as libc::c_int * 1 as libc::c_int) as isize)
                         as libc::c_int
                 + ((1 as libc::c_int) << 7 as libc::c_int - intermediate_bits
                     >> 1 as libc::c_int) >> 7 as libc::c_int - intermediate_bits)
                 as int16_t;
             x += 1;
-            tmx += *abcd.offset(0 as libc::c_int as isize) as libc::c_int;
+            tmx += *abcd.offset(0) as libc::c_int;
         }
         src = src.offset(PXSTRIDE(src_stride) as isize);
-        mid_ptr = mid_ptr.offset(8 as libc::c_int as isize);
+        mid_ptr = mid_ptr.offset(8);
         y += 1;
-        mx += *abcd.offset(1 as libc::c_int as isize) as libc::c_int;
+        mx += *abcd.offset(1) as libc::c_int;
     }
     mid_ptr = &mut *mid
         .as_mut_ptr()
@@ -4887,35 +4887,35 @@ unsafe extern "C" fn warp_affine_8x8_c(
                 .offset(
                     x_0 as isize,
                 ) = iclip(
-                *filter_0.offset(0 as libc::c_int as isize) as libc::c_int
+                *filter_0.offset(0) as libc::c_int
                     * *mid_ptr
                         .offset((x_0 - 3 as libc::c_int * 8 as libc::c_int) as isize)
                         as libc::c_int
-                    + *filter_0.offset(1 as libc::c_int as isize) as libc::c_int
+                    + *filter_0.offset(1) as libc::c_int
                         * *mid_ptr
                             .offset((x_0 - 2 as libc::c_int * 8 as libc::c_int) as isize)
                             as libc::c_int
-                    + *filter_0.offset(2 as libc::c_int as isize) as libc::c_int
+                    + *filter_0.offset(2) as libc::c_int
                         * *mid_ptr
                             .offset((x_0 - 1 as libc::c_int * 8 as libc::c_int) as isize)
                             as libc::c_int
-                    + *filter_0.offset(3 as libc::c_int as isize) as libc::c_int
+                    + *filter_0.offset(3) as libc::c_int
                         * *mid_ptr
                             .offset((x_0 + 0 as libc::c_int * 8 as libc::c_int) as isize)
                             as libc::c_int
-                    + *filter_0.offset(4 as libc::c_int as isize) as libc::c_int
+                    + *filter_0.offset(4) as libc::c_int
                         * *mid_ptr
                             .offset((x_0 + 1 as libc::c_int * 8 as libc::c_int) as isize)
                             as libc::c_int
-                    + *filter_0.offset(5 as libc::c_int as isize) as libc::c_int
+                    + *filter_0.offset(5) as libc::c_int
                         * *mid_ptr
                             .offset((x_0 + 2 as libc::c_int * 8 as libc::c_int) as isize)
                             as libc::c_int
-                    + *filter_0.offset(6 as libc::c_int as isize) as libc::c_int
+                    + *filter_0.offset(6) as libc::c_int
                         * *mid_ptr
                             .offset((x_0 + 3 as libc::c_int * 8 as libc::c_int) as isize)
                             as libc::c_int
-                    + *filter_0.offset(7 as libc::c_int as isize) as libc::c_int
+                    + *filter_0.offset(7) as libc::c_int
                         * *mid_ptr
                             .offset((x_0 + 4 as libc::c_int * 8 as libc::c_int) as isize)
                             as libc::c_int
@@ -4925,12 +4925,12 @@ unsafe extern "C" fn warp_affine_8x8_c(
                 bitdepth_max,
             ) as pixel;
             x_0 += 1;
-            tmy += *abcd.offset(2 as libc::c_int as isize) as libc::c_int;
+            tmy += *abcd.offset(2) as libc::c_int;
         }
-        mid_ptr = mid_ptr.offset(8 as libc::c_int as isize);
+        mid_ptr = mid_ptr.offset(8);
         dst = dst.offset(PXSTRIDE(dst_stride) as isize);
         y_0 += 1;
-        my += *abcd.offset(3 as libc::c_int as isize) as libc::c_int;
+        my += *abcd.offset(3) as libc::c_int;
     }
 }
 unsafe extern "C" fn warp_affine_8x8t_c(
@@ -4960,40 +4960,40 @@ unsafe extern "C" fn warp_affine_8x8t_c(
             *mid_ptr
                 .offset(
                     x as isize,
-                ) = (*filter.offset(0 as libc::c_int as isize) as libc::c_int
+                ) = (*filter.offset(0) as libc::c_int
                 * *src.offset((x - 3 as libc::c_int * 1 as libc::c_int) as isize)
                     as libc::c_int
-                + *filter.offset(1 as libc::c_int as isize) as libc::c_int
+                + *filter.offset(1) as libc::c_int
                     * *src.offset((x - 2 as libc::c_int * 1 as libc::c_int) as isize)
                         as libc::c_int
-                + *filter.offset(2 as libc::c_int as isize) as libc::c_int
+                + *filter.offset(2) as libc::c_int
                     * *src.offset((x - 1 as libc::c_int * 1 as libc::c_int) as isize)
                         as libc::c_int
-                + *filter.offset(3 as libc::c_int as isize) as libc::c_int
+                + *filter.offset(3) as libc::c_int
                     * *src.offset((x + 0 as libc::c_int * 1 as libc::c_int) as isize)
                         as libc::c_int
-                + *filter.offset(4 as libc::c_int as isize) as libc::c_int
+                + *filter.offset(4) as libc::c_int
                     * *src.offset((x + 1 as libc::c_int * 1 as libc::c_int) as isize)
                         as libc::c_int
-                + *filter.offset(5 as libc::c_int as isize) as libc::c_int
+                + *filter.offset(5) as libc::c_int
                     * *src.offset((x + 2 as libc::c_int * 1 as libc::c_int) as isize)
                         as libc::c_int
-                + *filter.offset(6 as libc::c_int as isize) as libc::c_int
+                + *filter.offset(6) as libc::c_int
                     * *src.offset((x + 3 as libc::c_int * 1 as libc::c_int) as isize)
                         as libc::c_int
-                + *filter.offset(7 as libc::c_int as isize) as libc::c_int
+                + *filter.offset(7) as libc::c_int
                     * *src.offset((x + 4 as libc::c_int * 1 as libc::c_int) as isize)
                         as libc::c_int
                 + ((1 as libc::c_int) << 7 as libc::c_int - intermediate_bits
                     >> 1 as libc::c_int) >> 7 as libc::c_int - intermediate_bits)
                 as int16_t;
             x += 1;
-            tmx += *abcd.offset(0 as libc::c_int as isize) as libc::c_int;
+            tmx += *abcd.offset(0) as libc::c_int;
         }
         src = src.offset(PXSTRIDE(src_stride) as isize);
-        mid_ptr = mid_ptr.offset(8 as libc::c_int as isize);
+        mid_ptr = mid_ptr.offset(8);
         y += 1;
-        mx += *abcd.offset(1 as libc::c_int as isize) as libc::c_int;
+        mx += *abcd.offset(1) as libc::c_int;
     }
     mid_ptr = &mut *mid
         .as_mut_ptr()
@@ -5009,46 +5009,46 @@ unsafe extern "C" fn warp_affine_8x8t_c(
             *tmp
                 .offset(
                     x_0 as isize,
-                ) = ((*filter_0.offset(0 as libc::c_int as isize) as libc::c_int
+                ) = ((*filter_0.offset(0) as libc::c_int
                 * *mid_ptr.offset((x_0 - 3 as libc::c_int * 8 as libc::c_int) as isize)
                     as libc::c_int
-                + *filter_0.offset(1 as libc::c_int as isize) as libc::c_int
+                + *filter_0.offset(1) as libc::c_int
                     * *mid_ptr
                         .offset((x_0 - 2 as libc::c_int * 8 as libc::c_int) as isize)
                         as libc::c_int
-                + *filter_0.offset(2 as libc::c_int as isize) as libc::c_int
+                + *filter_0.offset(2) as libc::c_int
                     * *mid_ptr
                         .offset((x_0 - 1 as libc::c_int * 8 as libc::c_int) as isize)
                         as libc::c_int
-                + *filter_0.offset(3 as libc::c_int as isize) as libc::c_int
+                + *filter_0.offset(3) as libc::c_int
                     * *mid_ptr
                         .offset((x_0 + 0 as libc::c_int * 8 as libc::c_int) as isize)
                         as libc::c_int
-                + *filter_0.offset(4 as libc::c_int as isize) as libc::c_int
+                + *filter_0.offset(4) as libc::c_int
                     * *mid_ptr
                         .offset((x_0 + 1 as libc::c_int * 8 as libc::c_int) as isize)
                         as libc::c_int
-                + *filter_0.offset(5 as libc::c_int as isize) as libc::c_int
+                + *filter_0.offset(5) as libc::c_int
                     * *mid_ptr
                         .offset((x_0 + 2 as libc::c_int * 8 as libc::c_int) as isize)
                         as libc::c_int
-                + *filter_0.offset(6 as libc::c_int as isize) as libc::c_int
+                + *filter_0.offset(6) as libc::c_int
                     * *mid_ptr
                         .offset((x_0 + 3 as libc::c_int * 8 as libc::c_int) as isize)
                         as libc::c_int
-                + *filter_0.offset(7 as libc::c_int as isize) as libc::c_int
+                + *filter_0.offset(7) as libc::c_int
                     * *mid_ptr
                         .offset((x_0 + 4 as libc::c_int * 8 as libc::c_int) as isize)
                         as libc::c_int
                 + ((1 as libc::c_int) << 7 as libc::c_int >> 1 as libc::c_int)
                 >> 7 as libc::c_int) - 8192 as libc::c_int) as int16_t;
             x_0 += 1;
-            tmy += *abcd.offset(2 as libc::c_int as isize) as libc::c_int;
+            tmy += *abcd.offset(2) as libc::c_int;
         }
-        mid_ptr = mid_ptr.offset(8 as libc::c_int as isize);
+        mid_ptr = mid_ptr.offset(8);
         tmp = tmp.offset(tmp_stride as isize);
         y_0 += 1;
-        my += *abcd.offset(3 as libc::c_int as isize) as libc::c_int;
+        my += *abcd.offset(3) as libc::c_int;
     }
 }
 unsafe extern "C" fn emu_edge_c(
@@ -5180,7 +5180,7 @@ unsafe extern "C" fn resize_c(
                 .offset(
                     x as isize,
                 ) = iclip(
-                -(*F.offset(0 as libc::c_int as isize) as libc::c_int
+                -(*F.offset(0) as libc::c_int
                     * *src
                         .offset(
                             iclip(
@@ -5189,7 +5189,7 @@ unsafe extern "C" fn resize_c(
                                 src_w - 1 as libc::c_int,
                             ) as isize,
                         ) as libc::c_int
-                    + *F.offset(1 as libc::c_int as isize) as libc::c_int
+                    + *F.offset(1) as libc::c_int
                         * *src
                             .offset(
                                 iclip(
@@ -5198,7 +5198,7 @@ unsafe extern "C" fn resize_c(
                                     src_w - 1 as libc::c_int,
                                 ) as isize,
                             ) as libc::c_int
-                    + *F.offset(2 as libc::c_int as isize) as libc::c_int
+                    + *F.offset(2) as libc::c_int
                         * *src
                             .offset(
                                 iclip(
@@ -5207,7 +5207,7 @@ unsafe extern "C" fn resize_c(
                                     src_w - 1 as libc::c_int,
                                 ) as isize,
                             ) as libc::c_int
-                    + *F.offset(3 as libc::c_int as isize) as libc::c_int
+                    + *F.offset(3) as libc::c_int
                         * *src
                             .offset(
                                 iclip(
@@ -5216,7 +5216,7 @@ unsafe extern "C" fn resize_c(
                                     src_w - 1 as libc::c_int,
                                 ) as isize,
                             ) as libc::c_int
-                    + *F.offset(4 as libc::c_int as isize) as libc::c_int
+                    + *F.offset(4) as libc::c_int
                         * *src
                             .offset(
                                 iclip(
@@ -5225,7 +5225,7 @@ unsafe extern "C" fn resize_c(
                                     src_w - 1 as libc::c_int,
                                 ) as isize,
                             ) as libc::c_int
-                    + *F.offset(5 as libc::c_int as isize) as libc::c_int
+                    + *F.offset(5) as libc::c_int
                         * *src
                             .offset(
                                 iclip(
@@ -5234,7 +5234,7 @@ unsafe extern "C" fn resize_c(
                                     src_w - 1 as libc::c_int,
                                 ) as isize,
                             ) as libc::c_int
-                    + *F.offset(6 as libc::c_int as isize) as libc::c_int
+                    + *F.offset(6) as libc::c_int
                         * *src
                             .offset(
                                 iclip(
@@ -5243,7 +5243,7 @@ unsafe extern "C" fn resize_c(
                                     src_w - 1 as libc::c_int,
                                 ) as isize,
                             ) as libc::c_int
-                    + *F.offset(7 as libc::c_int as isize) as libc::c_int
+                    + *F.offset(7) as libc::c_int
                         * *src
                             .offset(
                                 iclip(

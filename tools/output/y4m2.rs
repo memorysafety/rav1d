@@ -79,8 +79,8 @@ unsafe extern "C" fn y4m2_open(
         }
     }
     (*c).first = 1 as libc::c_int;
-    (*c).fps[0] = *fps.offset(0 as libc::c_int as isize);
-    (*c).fps[1] = *fps.offset(1 as libc::c_int as isize);
+    (*c).fps[0] = *fps.offset(0);
+    (*c).fps[1] = *fps.offset(1);
     return 0 as libc::c_int;
 }
 unsafe extern "C" fn write_header(

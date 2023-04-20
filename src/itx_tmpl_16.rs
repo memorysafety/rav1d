@@ -4937,8 +4937,8 @@ unsafe extern "C" fn inv_txfm_add_c(
         (w * 2 as libc::c_int == h || h * 2 as libc::c_int == w) as libc::c_int;
     let rnd: libc::c_int = (1 as libc::c_int) << shift >> 1 as libc::c_int;
     if eob < has_dconly {
-        let mut dc: libc::c_int = *coeff.offset(0 as libc::c_int as isize);
-        *coeff.offset(0 as libc::c_int as isize) = 0 as libc::c_int;
+        let mut dc: libc::c_int = *coeff.offset(0);
+        *coeff.offset(0) = 0 as libc::c_int;
         if is_rect2 != 0 {
             dc = dc * 181 as libc::c_int + 128 as libc::c_int >> 8 as libc::c_int;
         }
@@ -9244,7 +9244,7 @@ unsafe extern "C" fn inv_txfm_add_wht_wht_4x4_c(
         }
         dav1d_inv_wht4_1d_c(c, 1 as libc::c_int as ptrdiff_t);
         y += 1;
-        c = c.offset(4 as libc::c_int as isize);
+        c = c.offset(4);
     }
     memset(
         coeff as *mut libc::c_void,

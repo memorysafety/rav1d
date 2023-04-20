@@ -1193,7 +1193,7 @@ unsafe extern "C" fn md5_update(
         (*md5)
             .len = ((*md5).len as libc::c_ulong)
             .wrapping_add(64 as libc::c_int as libc::c_ulong) as uint64_t as uint64_t;
-        data = data.offset(64 as libc::c_int as isize);
+        data = data.offset(64);
         len = len.wrapping_sub(64 as libc::c_int as libc::c_uint);
     }
     if len != 0 {
@@ -1253,14 +1253,14 @@ unsafe extern "C" fn md5_finish(md5: *mut MD5Context) {
     let len: uint64_t = (*md5).len << 3 as libc::c_int;
     md5_update(
         md5,
-        &*bit.as_ptr().offset(0 as libc::c_int as isize),
+        &*bit.as_ptr().offset(0),
         1 as libc::c_int as libc::c_uint,
     );
     while ((*md5).len & 63) != 56
     {
         md5_update(
             md5,
-            &*bit.as_ptr().offset(1 as libc::c_int as isize),
+            &*bit.as_ptr().offset(1),
             1 as libc::c_int as libc::c_uint,
         );
     }
@@ -1311,7 +1311,7 @@ unsafe extern "C" fn md5_verify(
                 md5_str as *const libc::c_void,
                 2 as libc::c_int as libc::c_ulong,
             );
-            md5_str = md5_str.offset(2 as libc::c_int as isize);
+            md5_str = md5_str.offset(2);
             abcd[i as usize]
                 |= (strtoul(t.as_mut_ptr(), &mut ignore, 16 as libc::c_int) as uint32_t)
                     << j;

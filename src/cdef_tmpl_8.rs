@@ -439,7 +439,7 @@ unsafe extern "C" fn cdef_filter_block_c(
     let mut tmp: *mut int16_t = tmp_buf
         .as_mut_ptr()
         .offset((2 * tmp_stride) as isize)
-        .offset(2 as libc::c_int as isize);
+        .offset(2);
     padding(tmp, tmp_stride, dst, dst_stride, left, top, bottom, w, h, edges);
     if pri_strength != 0 {
         let bitdepth_min_8: libc::c_int = 8 as libc::c_int - 8 as libc::c_int;

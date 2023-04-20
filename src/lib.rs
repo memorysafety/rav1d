@@ -1527,7 +1527,7 @@ pub unsafe extern "C" fn dav1d_open(
                                                                 .root[BL_128X128 as libc::c_int
                                                                 as usize] = &mut (*((*c).intra_edge.branch_sb128)
                                                                 .as_mut_ptr()
-                                                                .offset(0 as libc::c_int as isize))
+                                                                .offset(0))
                                                                 .node;
                                                             dav1d_init_mode_tree(
                                                                 (*c).intra_edge.root[BL_128X128 as libc::c_int as usize],
@@ -1539,7 +1539,7 @@ pub unsafe extern "C" fn dav1d_open(
                                                                 .root[BL_64X64 as libc::c_int
                                                                 as usize] = &mut (*((*c).intra_edge.branch_sb64)
                                                                 .as_mut_ptr()
-                                                                .offset(0 as libc::c_int as isize))
+                                                                .offset(0))
                                                                 .node;
                                                             dav1d_init_mode_tree(
                                                                 (*c).intra_edge.root[BL_64X64 as libc::c_int as usize],
@@ -1826,7 +1826,7 @@ unsafe extern "C" fn drain_picture(
         }
         if !((*out_delayed).p.data[0]).is_null() {
             let progress: libc::c_uint = ::core::intrinsics::atomic_load_relaxed(
-                &mut *((*out_delayed).progress).offset(1 as libc::c_int as isize)
+                &mut *((*out_delayed).progress).offset(1)
                     as *mut atomic_uint,
             );
             if ((*out_delayed).visible != 0 || (*c).output_invisible_frames != 0)
@@ -2072,7 +2072,7 @@ pub unsafe extern "C" fn dav1d_apply_grain(
                 #[cfg(feature = "bitdepth_8")]
                 8 => {
                     dav1d_apply_grain_8bpc(
-                        &mut (*((*c).dsp).as_mut_ptr().offset(0 as libc::c_int as isize))
+                        &mut (*((*c).dsp).as_mut_ptr().offset(0))
                             .fg,
                         out,
                         in_0,
@@ -2320,7 +2320,7 @@ unsafe extern "C" fn close_internal(
         freep(
             &mut *((*f).task_thread.tile_tasks)
                 .as_mut_ptr()
-                .offset(0 as libc::c_int as isize) as *mut *mut Dav1dTask
+                .offset(0) as *mut *mut Dav1dTask
                 as *mut libc::c_void,
         );
         dav1d_free_aligned((*f).ts as *mut libc::c_void);

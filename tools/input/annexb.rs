@@ -275,10 +275,10 @@ unsafe extern "C" fn annexb_open(
         );
         return -(1 as libc::c_int);
     }
-    *fps.offset(0 as libc::c_int as isize) = 25 as libc::c_int as libc::c_uint;
-    *fps.offset(1 as libc::c_int as isize) = 1 as libc::c_int as libc::c_uint;
-    *timebase.offset(0 as libc::c_int as isize) = 25 as libc::c_int as libc::c_uint;
-    *timebase.offset(1 as libc::c_int as isize) = 1 as libc::c_int as libc::c_uint;
+    *fps.offset(0) = 25 as libc::c_int as libc::c_uint;
+    *fps.offset(1) = 1 as libc::c_int as libc::c_uint;
+    *timebase.offset(0) = 25 as libc::c_int as libc::c_uint;
+    *timebase.offset(1) = 1 as libc::c_int as libc::c_uint;
     *num_frames = 0 as libc::c_int as libc::c_uint;
     loop {
         res = leb128((*c).f, &mut len);

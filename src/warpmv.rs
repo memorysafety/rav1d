@@ -299,25 +299,25 @@ pub unsafe extern "C" fn dav1d_get_shear_params(
     wm: *mut Dav1dWarpedMotionParams,
 ) -> libc::c_int {
     let mat: *const int32_t = ((*wm).matrix).as_mut_ptr();
-    if *mat.offset(2 as libc::c_int as isize) <= 0 as libc::c_int {
+    if *mat.offset(2) <= 0 as libc::c_int {
         return 1 as libc::c_int;
     }
     (*wm)
         .u
         .p
         .alpha = iclip_wmp(
-        *mat.offset(2 as libc::c_int as isize) - 0x10000 as libc::c_int,
+        *mat.offset(2) - 0x10000 as libc::c_int,
     ) as int16_t;
-    (*wm).u.p.beta = iclip_wmp(*mat.offset(3 as libc::c_int as isize)) as int16_t;
+    (*wm).u.p.beta = iclip_wmp(*mat.offset(3)) as int16_t;
     let mut shift: libc::c_int = 0;
     let y: libc::c_int = apply_sign(
         resolve_divisor_32(
-            (*mat.offset(2 as libc::c_int as isize)).abs() as libc::c_uint,
+            (*mat.offset(2)).abs() as libc::c_uint,
             &mut shift,
         ),
-        *mat.offset(2 as libc::c_int as isize),
+        *mat.offset(2),
     );
-    let v1: int64_t = *mat.offset(4 as libc::c_int as isize) as int64_t
+    let v1: int64_t = *mat.offset(4) as int64_t
         * 0x10000 * y as int64_t;
     let rnd: libc::c_int = (1 as libc::c_int) << shift >> 1 as libc::c_int;
     (*wm)
@@ -330,13 +330,13 @@ pub unsafe extern "C" fn dav1d_get_shear_params(
             v1,
         ),
     ) as int16_t;
-    let v2: int64_t = *mat.offset(3 as libc::c_int as isize) as int64_t
-        * *mat.offset(4 as libc::c_int as isize) as int64_t * y as int64_t;
+    let v2: int64_t = *mat.offset(3) as int64_t
+        * *mat.offset(4) as int64_t * y as int64_t;
     (*wm)
         .u
         .p
         .delta = iclip_wmp(
-        *mat.offset(5 as libc::c_int as isize)
+        *mat.offset(5)
             - apply_sign64(
                 ((v2 as libc::c_longlong).abs() + rnd as libc::c_longlong >> shift)
                     as libc::c_int,
@@ -416,8 +416,8 @@ pub unsafe extern "C" fn dav1d_set_affine_mv2d(
             0 as libc::c_int as isize,
         ) = iclip(
         mv.x as libc::c_int * 0x2000 as libc::c_int
-            - (isux * (*mat.offset(2 as libc::c_int as isize) - 0x10000 as libc::c_int)
-                + isuy * *mat.offset(3 as libc::c_int as isize)),
+            - (isux * (*mat.offset(2) - 0x10000 as libc::c_int)
+                + isuy * *mat.offset(3)),
         -(0x800000 as libc::c_int),
         0x7fffff as libc::c_int,
     );
@@ -426,9 +426,9 @@ pub unsafe extern "C" fn dav1d_set_affine_mv2d(
             1 as libc::c_int as isize,
         ) = iclip(
         mv.y as libc::c_int * 0x2000 as libc::c_int
-            - (isux * *mat.offset(4 as libc::c_int as isize)
+            - (isux * *mat.offset(4)
                 + isuy
-                    * (*mat.offset(5 as libc::c_int as isize) - 0x10000 as libc::c_int)),
+                    * (*mat.offset(5) - 0x10000 as libc::c_int)),
         -(0x800000 as libc::c_int),
         0x7fffff as libc::c_int,
     );
@@ -559,8 +559,8 @@ pub unsafe extern "C" fn dav1d_find_affine_int(
             0 as libc::c_int as isize,
         ) = iclip(
         mv.x as libc::c_int * 0x2000 as libc::c_int
-            - (isux * (*mat.offset(2 as libc::c_int as isize) - 0x10000 as libc::c_int)
-                + isuy * *mat.offset(3 as libc::c_int as isize)),
+            - (isux * (*mat.offset(2) - 0x10000 as libc::c_int)
+                + isuy * *mat.offset(3)),
         -(0x800000 as libc::c_int),
         0x7fffff as libc::c_int,
     );
@@ -569,9 +569,9 @@ pub unsafe extern "C" fn dav1d_find_affine_int(
             1 as libc::c_int as isize,
         ) = iclip(
         mv.y as libc::c_int * 0x2000 as libc::c_int
-            - (isux * *mat.offset(4 as libc::c_int as isize)
+            - (isux * *mat.offset(4)
                 + isuy
-                    * (*mat.offset(5 as libc::c_int as isize) - 0x10000 as libc::c_int)),
+                    * (*mat.offset(5) - 0x10000 as libc::c_int)),
         -(0x800000 as libc::c_int),
         0x7fffff as libc::c_int,
     );

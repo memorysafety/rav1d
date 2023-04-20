@@ -483,17 +483,17 @@ unsafe extern "C" fn loop_filter_h_sb128y_c(
     mut lut: *const Av1FilterLUT,
     _h: libc::c_int,
 ) {
-    let vm: libc::c_uint = *vmask.offset(0 as libc::c_int as isize)
-        | *vmask.offset(1 as libc::c_int as isize)
-        | *vmask.offset(2 as libc::c_int as isize);
+    let vm: libc::c_uint = *vmask.offset(0)
+        | *vmask.offset(1)
+        | *vmask.offset(2);
     let mut y: libc::c_uint = 1 as libc::c_int as libc::c_uint;
     while vm & !y.wrapping_sub(1 as libc::c_int as libc::c_uint) != 0 {
         if vm & y != 0 {
             let L: libc::c_int = if (*l
-                .offset(0 as libc::c_int as isize))[0]
+                .offset(0))[0]
                 as libc::c_int != 0
             {
-                (*l.offset(0 as libc::c_int as isize))[0]
+                (*l.offset(0))[0]
                     as libc::c_int
             } else {
                 (*l.offset(-(1 as libc::c_int) as isize))[0]
@@ -503,12 +503,12 @@ unsafe extern "C" fn loop_filter_h_sb128y_c(
                 let H: libc::c_int = L >> 4 as libc::c_int;
                 let E: libc::c_int = (*lut).e[L as usize] as libc::c_int;
                 let I: libc::c_int = (*lut).i[L as usize] as libc::c_int;
-                let idx: libc::c_int = if *vmask.offset(2 as libc::c_int as isize) & y
+                let idx: libc::c_int = if *vmask.offset(2) & y
                     != 0
                 {
                     2 as libc::c_int
                 } else {
-                    (*vmask.offset(1 as libc::c_int as isize) & y != 0) as libc::c_int
+                    (*vmask.offset(1) & y != 0) as libc::c_int
                 };
                 loop_filter(
                     dst,
@@ -535,17 +535,17 @@ unsafe extern "C" fn loop_filter_v_sb128y_c(
     mut lut: *const Av1FilterLUT,
     _w: libc::c_int,
 ) {
-    let vm: libc::c_uint = *vmask.offset(0 as libc::c_int as isize)
-        | *vmask.offset(1 as libc::c_int as isize)
-        | *vmask.offset(2 as libc::c_int as isize);
+    let vm: libc::c_uint = *vmask.offset(0)
+        | *vmask.offset(1)
+        | *vmask.offset(2);
     let mut x: libc::c_uint = 1 as libc::c_int as libc::c_uint;
     while vm & !x.wrapping_sub(1 as libc::c_int as libc::c_uint) != 0 {
         if vm & x != 0 {
             let L: libc::c_int = if (*l
-                .offset(0 as libc::c_int as isize))[0]
+                .offset(0))[0]
                 as libc::c_int != 0
             {
-                (*l.offset(0 as libc::c_int as isize))[0]
+                (*l.offset(0))[0]
                     as libc::c_int
             } else {
                 (*l.offset(-b4_stride as isize))[0]
@@ -555,12 +555,12 @@ unsafe extern "C" fn loop_filter_v_sb128y_c(
                 let H: libc::c_int = L >> 4 as libc::c_int;
                 let E: libc::c_int = (*lut).e[L as usize] as libc::c_int;
                 let I: libc::c_int = (*lut).i[L as usize] as libc::c_int;
-                let idx: libc::c_int = if *vmask.offset(2 as libc::c_int as isize) & x
+                let idx: libc::c_int = if *vmask.offset(2) & x
                     != 0
                 {
                     2 as libc::c_int
                 } else {
-                    (*vmask.offset(1 as libc::c_int as isize) & x != 0) as libc::c_int
+                    (*vmask.offset(1) & x != 0) as libc::c_int
                 };
                 loop_filter(
                     dst,
@@ -574,7 +574,7 @@ unsafe extern "C" fn loop_filter_v_sb128y_c(
             }
         }
         x <<= 1 as libc::c_int;
-        dst = dst.offset(4 as libc::c_int as isize);
+        dst = dst.offset(4);
         l = l.offset(1);
     }
 }
@@ -587,16 +587,16 @@ unsafe extern "C" fn loop_filter_h_sb128uv_c(
     mut lut: *const Av1FilterLUT,
     _h: libc::c_int,
 ) {
-    let vm: libc::c_uint = *vmask.offset(0 as libc::c_int as isize)
-        | *vmask.offset(1 as libc::c_int as isize);
+    let vm: libc::c_uint = *vmask.offset(0)
+        | *vmask.offset(1);
     let mut y: libc::c_uint = 1 as libc::c_int as libc::c_uint;
     while vm & !y.wrapping_sub(1 as libc::c_int as libc::c_uint) != 0 {
         if vm & y != 0 {
             let L: libc::c_int = if (*l
-                .offset(0 as libc::c_int as isize))[0]
+                .offset(0))[0]
                 as libc::c_int != 0
             {
-                (*l.offset(0 as libc::c_int as isize))[0]
+                (*l.offset(0))[0]
                     as libc::c_int
             } else {
                 (*l.offset(-(1 as libc::c_int) as isize))[0]
@@ -606,7 +606,7 @@ unsafe extern "C" fn loop_filter_h_sb128uv_c(
                 let H: libc::c_int = L >> 4 as libc::c_int;
                 let E: libc::c_int = (*lut).e[L as usize] as libc::c_int;
                 let I: libc::c_int = (*lut).i[L as usize] as libc::c_int;
-                let idx: libc::c_int = (*vmask.offset(1 as libc::c_int as isize) & y
+                let idx: libc::c_int = (*vmask.offset(1) & y
                     != 0) as libc::c_int;
                 loop_filter(
                     dst,
@@ -633,16 +633,16 @@ unsafe extern "C" fn loop_filter_v_sb128uv_c(
     mut lut: *const Av1FilterLUT,
     _w: libc::c_int,
 ) {
-    let vm: libc::c_uint = *vmask.offset(0 as libc::c_int as isize)
-        | *vmask.offset(1 as libc::c_int as isize);
+    let vm: libc::c_uint = *vmask.offset(0)
+        | *vmask.offset(1);
     let mut x: libc::c_uint = 1 as libc::c_int as libc::c_uint;
     while vm & !x.wrapping_sub(1 as libc::c_int as libc::c_uint) != 0 {
         if vm & x != 0 {
             let L: libc::c_int = if (*l
-                .offset(0 as libc::c_int as isize))[0]
+                .offset(0))[0]
                 as libc::c_int != 0
             {
-                (*l.offset(0 as libc::c_int as isize))[0]
+                (*l.offset(0))[0]
                     as libc::c_int
             } else {
                 (*l.offset(-b4_stride as isize))[0]
@@ -652,7 +652,7 @@ unsafe extern "C" fn loop_filter_v_sb128uv_c(
                 let H: libc::c_int = L >> 4 as libc::c_int;
                 let E: libc::c_int = (*lut).e[L as usize] as libc::c_int;
                 let I: libc::c_int = (*lut).i[L as usize] as libc::c_int;
-                let idx: libc::c_int = (*vmask.offset(1 as libc::c_int as isize) & x
+                let idx: libc::c_int = (*vmask.offset(1) & x
                     != 0) as libc::c_int;
                 loop_filter(
                     dst,
@@ -666,7 +666,7 @@ unsafe extern "C" fn loop_filter_v_sb128uv_c(
             }
         }
         x <<= 1 as libc::c_int;
-        dst = dst.offset(4 as libc::c_int as isize);
+        dst = dst.offset(4);
         l = l.offset(1);
     }
 }

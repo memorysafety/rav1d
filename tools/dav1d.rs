@@ -210,7 +210,7 @@ unsafe extern "C" fn print_stats(
 ) {
     let mut buf: [libc::c_char; 80] = [0; 80];
     let mut b: *mut libc::c_char = buf.as_mut_ptr();
-    let end: *mut libc::c_char = buf.as_mut_ptr().offset(80 as libc::c_int as isize);
+    let end: *mut libc::c_char = buf.as_mut_ptr().offset(80);
     if istty != 0 {
         let fresh0 = b;
         b = b.offset(1);

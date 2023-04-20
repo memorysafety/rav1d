@@ -208,7 +208,7 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
             } else {
                 memset(
                     left.offset(-(sz as isize)) as *mut libc::c_void,
-                    *left.offset(0 as libc::c_int as isize) as libc::c_int,
+                    *left.offset(0) as libc::c_int,
                     sz as libc::c_ulong,
                 );
             }
@@ -216,7 +216,7 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
     }
     if (av1_intra_prediction_edges[mode as usize]).needs_top() != 0 {
         let sz_0: libc::c_int = tw << 2 as libc::c_int;
-        let top: *mut pixel = &mut *topleft_out.offset(1 as libc::c_int as isize)
+        let top: *mut pixel = &mut *topleft_out.offset(1)
             as *mut pixel;
         if have_top != 0 {
             let px_have_1: libc::c_int = imin(sz_0, w - x << 2 as libc::c_int);
@@ -296,9 +296,9 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
         {
             *topleft_out = ((*topleft_out.offset(-(1 as libc::c_int) as isize)
                 as libc::c_int
-                + *topleft_out.offset(1 as libc::c_int as isize) as libc::c_int)
+                + *topleft_out.offset(1) as libc::c_int)
                 * 5 as libc::c_int
-                + *topleft_out.offset(0 as libc::c_int as isize) as libc::c_int
+                + *topleft_out.offset(0) as libc::c_int
                     * 6 as libc::c_int + 8 as libc::c_int >> 4 as libc::c_int) as pixel;
         }
     }

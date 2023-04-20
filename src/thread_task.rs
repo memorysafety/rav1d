@@ -1176,7 +1176,7 @@ unsafe extern "C" fn create_filter_sbrow(
     (*f)
         .frame_thread
         .next_tile_row[(pass & 1 as libc::c_int) as usize] = 0 as libc::c_int;
-    let mut t: *mut Dav1dTask = &mut *tasks.offset(0 as libc::c_int as isize)
+    let mut t: *mut Dav1dTask = &mut *tasks.offset(0)
         as *mut Dav1dTask;
     (*t).sby = 0 as libc::c_int;
     (*t).recon_progress = 1 as libc::c_int;
@@ -1289,10 +1289,10 @@ pub unsafe extern "C" fn dav1d_task_create_tile_sbrow(
         (*f)
             .task_thread
             .pending_tasks
-            .head = &mut *tasks.offset(0 as libc::c_int as isize) as *mut Dav1dTask;
+            .head = &mut *tasks.offset(0) as *mut Dav1dTask;
     } else {
         (*(*f).task_thread.pending_tasks.tail)
-            .next = &mut *tasks.offset(0 as libc::c_int as isize) as *mut Dav1dTask;
+            .next = &mut *tasks.offset(0) as *mut Dav1dTask;
     }
     (*f).task_thread.pending_tasks.tail = prev_t;
     ::core::intrinsics::atomic_store_seqcst(
@@ -1329,9 +1329,9 @@ pub unsafe extern "C" fn dav1d_task_delayed_fg(
     (*ttd).delayed_fg.in_0 = in_0;
     (*ttd).delayed_fg.out = out;
     (*ttd).delayed_fg.type_0 = DAV1D_TASK_TYPE_FG_PREP;
-    *(&mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(0 as libc::c_int as isize)
+    *(&mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(0)
         as *mut atomic_int) = 0 as libc::c_int;
-    *(&mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(1 as libc::c_int as isize)
+    *(&mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(1)
         as *mut atomic_int) = 0 as libc::c_int;
     pthread_mutex_lock(&mut (*ttd).lock);
     (*ttd).delayed_fg.exec = 1 as libc::c_int;
@@ -1383,7 +1383,7 @@ unsafe extern "C" fn check_tile(
     error |= ::core::intrinsics::atomic_or_seqcst(&mut (*f).task_thread.error, error);
     if error == 0 && frame_mt != 0 && tp == 0 {
         let p2: libc::c_int = ::core::intrinsics::atomic_load_seqcst(
-            &mut *((*ts).progress).as_mut_ptr().offset(1 as libc::c_int as isize)
+            &mut *((*ts).progress).as_mut_ptr().offset(1)
                 as *mut atomic_int,
         );
         if p2 <= (*t).sby {
@@ -1476,7 +1476,7 @@ unsafe extern "C" fn get_frame_progress(
 ) -> libc::c_int {
     let mut frame_prog: libc::c_uint = if (*c).n_fc > 1 as libc::c_int as libc::c_uint {
         ::core::intrinsics::atomic_load_seqcst(
-            &mut *((*f).sr_cur.progress).offset(1 as libc::c_int as isize)
+            &mut *((*f).sr_cur.progress).offset(1)
                 as *mut atomic_uint,
         )
     } else {
@@ -1524,17 +1524,17 @@ unsafe extern "C" fn abort_frame(f: *mut Dav1dFrameContext, error: libc::c_int) 
         0 as libc::c_int,
     );
     ::core::intrinsics::atomic_store_seqcst(
-        &mut *((*f).task_thread.done).as_mut_ptr().offset(0 as libc::c_int as isize)
+        &mut *((*f).task_thread.done).as_mut_ptr().offset(0)
             as *mut atomic_int,
         1 as libc::c_int,
     );
     ::core::intrinsics::atomic_store_seqcst(
-        &mut *((*f).task_thread.done).as_mut_ptr().offset(1 as libc::c_int as isize)
+        &mut *((*f).task_thread.done).as_mut_ptr().offset(1)
             as *mut atomic_int,
         1 as libc::c_int,
     );
     ::core::intrinsics::atomic_store_seqcst(
-        &mut *((*f).sr_cur.progress).offset(0 as libc::c_int as isize)
+        &mut *((*f).sr_cur.progress).offset(0)
             as *mut atomic_uint,
         (2147483647 as libc::c_int as libc::c_uint)
             .wrapping_mul(2 as libc::c_uint)
@@ -1542,7 +1542,7 @@ unsafe extern "C" fn abort_frame(f: *mut Dav1dFrameContext, error: libc::c_int) 
             .wrapping_sub(1 as libc::c_int as libc::c_uint),
     );
     ::core::intrinsics::atomic_store_seqcst(
-        &mut *((*f).sr_cur.progress).offset(1 as libc::c_int as isize)
+        &mut *((*f).sr_cur.progress).offset(1)
             as *mut atomic_uint,
         (2147483647 as libc::c_int as libc::c_uint)
             .wrapping_mul(2 as libc::c_uint)
@@ -1578,7 +1578,7 @@ unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThrea
                 #[cfg(feature = "bitdepth_8")]
                 8 => {
                     dav1d_prep_grain_8bpc(
-                        &(*((*c).dsp).as_ptr().offset(0 as libc::c_int as isize)).fg,
+                        &(*((*c).dsp).as_ptr().offset(0)).fg,
                         out,
                         in_0,
                         ((*ttd).delayed_fg.c2rust_unnamed.c2rust_unnamed.scaling_8bpc.0)
@@ -1617,7 +1617,7 @@ unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThrea
         }
     }
     row = ::core::intrinsics::atomic_xadd_seqcst(
-        &mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(0 as libc::c_int as isize)
+        &mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(0)
             as *mut atomic_int,
         1 as libc::c_int,
     );
@@ -1638,7 +1638,7 @@ unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThrea
             #[cfg(feature = "bitdepth_8")]
             8 => {
                 dav1d_apply_grain_row_8bpc(
-                    &(*((*c).dsp).as_ptr().offset(0 as libc::c_int as isize)).fg,
+                    &(*((*c).dsp).as_ptr().offset(0)).fg,
                     out,
                     in_0,
                     ((*ttd).delayed_fg.c2rust_unnamed.c2rust_unnamed.scaling_8bpc.0)
@@ -1668,13 +1668,13 @@ unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThrea
         row = ::core::intrinsics::atomic_xadd_seqcst(
             &mut *((*ttd).delayed_fg.progress)
                 .as_mut_ptr()
-                .offset(0 as libc::c_int as isize) as *mut atomic_int,
+                .offset(0) as *mut atomic_int,
             1 as libc::c_int,
         );
         done = ::core::intrinsics::atomic_xadd_seqcst(
             &mut *((*ttd).delayed_fg.progress)
                 .as_mut_ptr()
-                .offset(1 as libc::c_int as isize) as *mut atomic_int,
+                .offset(1) as *mut atomic_int,
             1 as libc::c_int,
         ) + 1 as libc::c_int;
         if row < progmax {
@@ -1685,12 +1685,12 @@ unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThrea
         break;
     }
     done = ::core::intrinsics::atomic_xadd_seqcst(
-        &mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(1 as libc::c_int as isize)
+        &mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(1)
             as *mut atomic_int,
         1 as libc::c_int,
     ) + 1 as libc::c_int;
     progmax = ::core::intrinsics::atomic_load_seqcst(
-        &mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(0 as libc::c_int as isize)
+        &mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(0)
             as *mut atomic_int,
     );
     if !(done < progmax) {
@@ -1885,7 +1885,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                                         _ => {
                                                             if ((*t).sby + 1 as libc::c_int) < (*f).sbh {
                                                                 let mut next_t: *mut Dav1dTask = &mut *t
-                                                                    .offset(1 as libc::c_int as isize) as *mut Dav1dTask;
+                                                                    .offset(1) as *mut Dav1dTask;
                                                                 *next_t = *t;
                                                                 (*next_t).sby += 1;
                                                                 let ntr: libc::c_int = (*f)
@@ -2104,7 +2104,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                                     && ::core::intrinsics::atomic_load_seqcst(
                                                         &mut *((*f).task_thread.done)
                                                             .as_mut_ptr()
-                                                            .offset(1 as libc::c_int as isize) as *mut atomic_int,
+                                                            .offset(1) as *mut atomic_int,
                                                     ) != 0
                                                 {
                                                     if ::core::intrinsics::atomic_load_seqcst(
@@ -2249,13 +2249,13 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                             && ::core::intrinsics::atomic_load_seqcst(
                                                 &mut *((*f).task_thread.done)
                                                     .as_mut_ptr()
-                                                    .offset(0 as libc::c_int as isize) as *mut atomic_int,
+                                                    .offset(0) as *mut atomic_int,
                                             ) != 0
                                             && (uses_2pass == 0
                                                 || ::core::intrinsics::atomic_load_seqcst(
                                                     &mut *((*f).task_thread.done)
                                                         .as_mut_ptr()
-                                                        .offset(1 as libc::c_int as isize) as *mut atomic_int,
+                                                        .offset(1) as *mut atomic_int,
                                                 ) != 0)
                                         {
                                             dav1d_decode_frame_exit(
@@ -2490,7 +2490,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                             {
                                 ::core::intrinsics::atomic_store_seqcst(
                                     &mut *((*f).sr_cur.progress)
-                                        .offset(0 as libc::c_int as isize) as *mut atomic_uint,
+                                        .offset(0) as *mut atomic_uint,
                                     if error_0 != 0 {
                                         (2147483647 as libc::c_int as libc::c_uint)
                                             .wrapping_mul(2 as libc::c_uint)
@@ -2513,7 +2513,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                 ::core::intrinsics::atomic_store_seqcst(
                                     &mut *((*f).task_thread.done)
                                         .as_mut_ptr()
-                                        .offset(1 as libc::c_int as isize) as *mut atomic_int,
+                                        .offset(1) as *mut atomic_int,
                                     1 as libc::c_int,
                                 );
                             }
@@ -2530,12 +2530,12 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                     && ::core::intrinsics::atomic_load_seqcst(
                                         &mut *((*f).task_thread.done)
                                             .as_mut_ptr()
-                                            .offset(0 as libc::c_int as isize) as *mut atomic_int,
+                                            .offset(0) as *mut atomic_int,
                                     ) != 0
                                     && ::core::intrinsics::atomic_load_seqcst(
                                         &mut *((*f).task_thread.done)
                                             .as_mut_ptr()
-                                            .offset(1 as libc::c_int as isize) as *mut atomic_int,
+                                            .offset(1) as *mut atomic_int,
                                     ) != 0
                                 {
                                     dav1d_decode_frame_exit(
@@ -2580,7 +2580,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                             {
                                 ::core::intrinsics::atomic_store_seqcst(
                                     &mut *((*f).sr_cur.progress)
-                                        .offset(1 as libc::c_int as isize) as *mut atomic_uint,
+                                        .offset(1) as *mut atomic_uint,
                                     if error_0 != 0 {
                                         (2147483647 as libc::c_int as libc::c_uint)
                                             .wrapping_mul(2 as libc::c_uint)
@@ -2596,7 +2596,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                 ::core::intrinsics::atomic_store_seqcst(
                                     &mut *((*f).task_thread.done)
                                         .as_mut_ptr()
-                                        .offset(0 as libc::c_int as isize) as *mut atomic_int,
+                                        .offset(0) as *mut atomic_int,
                                     1 as libc::c_int,
                                 );
                             }
@@ -2613,13 +2613,13 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                     && ::core::intrinsics::atomic_load_seqcst(
                                         &mut *((*f).task_thread.done)
                                             .as_mut_ptr()
-                                            .offset(0 as libc::c_int as isize) as *mut atomic_int,
+                                            .offset(0) as *mut atomic_int,
                                     ) != 0
                                     && (uses_2pass_0 == 0
                                         || ::core::intrinsics::atomic_load_seqcst(
                                             &mut *((*f).task_thread.done)
                                                 .as_mut_ptr()
-                                                .offset(1 as libc::c_int as isize) as *mut atomic_int,
+                                                .offset(1) as *mut atomic_int,
                                         ) != 0)
                                 {
                                     dav1d_decode_frame_exit(

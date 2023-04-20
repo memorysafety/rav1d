@@ -2716,7 +2716,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                                                     + 2 as libc::c_int
                                                                         * dav1d_get_bits_subexp(
                                                                             gb,
-                                                                            *ref_mat.offset(2 as libc::c_int as isize)
+                                                                            *ref_mat.offset(2)
                                                                                 - ((1 as libc::c_int) << 16 as libc::c_int)
                                                                                 >> 1 as libc::c_int,
                                                                             12 as libc::c_int as libc::c_uint,
@@ -2727,7 +2727,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                                                     ) = 2 as libc::c_int
                                                                     * dav1d_get_bits_subexp(
                                                                         gb,
-                                                                        *ref_mat.offset(3 as libc::c_int as isize)
+                                                                        *ref_mat.offset(3)
                                                                             >> 1 as libc::c_int,
                                                                         12 as libc::c_int as libc::c_uint,
                                                                     );
@@ -2746,7 +2746,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                                                     ) = 2 as libc::c_int
                                                                     * dav1d_get_bits_subexp(
                                                                         gb,
-                                                                        *ref_mat.offset(4 as libc::c_int as isize)
+                                                                        *ref_mat.offset(4)
                                                                             >> 1 as libc::c_int,
                                                                         12 as libc::c_int as libc::c_uint,
                                                                     );
@@ -2757,7 +2757,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                                                     + 2 as libc::c_int
                                                                         * dav1d_get_bits_subexp(
                                                                             gb,
-                                                                            *ref_mat.offset(5 as libc::c_int as isize)
+                                                                            *ref_mat.offset(5)
                                                                                 - ((1 as libc::c_int) << 16 as libc::c_int)
                                                                                 >> 1 as libc::c_int,
                                                                             12 as libc::c_int as libc::c_uint,
@@ -2766,18 +2766,18 @@ unsafe extern "C" fn parse_frame_hdr(
                                                                 *mat
                                                                     .offset(
                                                                         4 as libc::c_int as isize,
-                                                                    ) = -*mat.offset(3 as libc::c_int as isize);
+                                                                    ) = -*mat.offset(3);
                                                                 *mat
                                                                     .offset(
                                                                         5 as libc::c_int as isize,
-                                                                    ) = *mat.offset(2 as libc::c_int as isize);
+                                                                    ) = *mat.offset(2);
                                                             }
                                                             *mat
                                                                 .offset(
                                                                     0 as libc::c_int as isize,
                                                                 ) = dav1d_get_bits_subexp(
                                                                 gb,
-                                                                *ref_mat.offset(0 as libc::c_int as isize) >> shift,
+                                                                *ref_mat.offset(0) >> shift,
                                                                 bits as libc::c_uint,
                                                             ) * ((1 as libc::c_int) << shift);
                                                             *mat
@@ -2785,7 +2785,7 @@ unsafe extern "C" fn parse_frame_hdr(
                                                                     1 as libc::c_int as isize,
                                                                 ) = dav1d_get_bits_subexp(
                                                                 gb,
-                                                                *ref_mat.offset(1 as libc::c_int as isize) >> shift,
+                                                                *ref_mat.offset(1) >> shift,
                                                                 bits as libc::c_uint,
                                                             ) * ((1 as libc::c_int) << shift);
                                                         }
@@ -3421,7 +3421,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                         as *mut Dav1dITUTT35;
                                     (*itut_t35_metadata)
                                         .payload = &mut *itut_t35_metadata
-                                        .offset(1 as libc::c_int as isize) as *mut Dav1dITUTT35
+                                        .offset(1) as *mut Dav1dITUTT35
                                         as *mut uint8_t;
                                     (*itut_t35_metadata).country_code = country_code as uint8_t;
                                     (*itut_t35_metadata)
@@ -3846,7 +3846,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                                                 {
                                                                     let progress: libc::c_uint = ::core::intrinsics::atomic_load_relaxed(
                                                                         &mut *((*out_delayed).progress)
-                                                                            .offset(1 as libc::c_int as isize) as *mut atomic_uint,
+                                                                            .offset(1) as *mut atomic_uint,
                                                                     );
                                                                     if ((*out_delayed).visible != 0
                                                                         || (*c).output_invisible_frames != 0)
