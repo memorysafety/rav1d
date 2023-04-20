@@ -597,6 +597,7 @@ unsafe extern "C" fn add_compound_extended_candidate(
         n += 1;
     }
 }
+
 unsafe fn add_single_extended_candidate(
     mut mvstack: *mut refmvs_candidate,
     cnt: &mut usize,
@@ -604,21 +605,16 @@ unsafe fn add_single_extended_candidate(
     sign: libc::c_int,
     sign_bias: *const uint8_t,
 ) {
-    let mut n: libc::c_int = 0 as libc::c_int;
-    while n < 2 as libc::c_int {
-        let cand_ref: libc::c_int = (*cand_b).r#ref.r#ref[n as usize] as libc::c_int;
-        if cand_ref <= 0 as libc::c_int {
+    let mut n = 0;
+    while n < 2 {
+        let cand_ref = (*cand_b).r#ref.r#ref[n as usize] as libc::c_int;
+        if cand_ref <= 0 {
             break;
         }
-        let mut cand_mv: mv = (*cand_b).mv.mv[n as usize];
-        if sign
-            ^ *sign_bias.offset((cand_ref - 1 as libc::c_int) as isize) as libc::c_int
-            != 0
-        {
-            cand_mv
-                .y = -(cand_mv.y as libc::c_int) as int16_t;
-            cand_mv
-                .x = -(cand_mv.x as libc::c_int) as int16_t;
+        let mut cand_mv = (*cand_b).mv.mv[n as usize];
+        if (sign ^ *sign_bias.offset((cand_ref - 1) as isize) as libc::c_int) != 0 {
+            cand_mv.y = -cand_mv.y;
+            cand_mv.x = -cand_mv.x;
         }
         let mut m = 0;
         let last = *cnt;
@@ -631,7 +627,7 @@ unsafe fn add_single_extended_candidate(
         }
         if m == last {
             (*mvstack.offset(m as isize)).mv.mv[0] = cand_mv;
-            (*mvstack.offset(m as isize)).weight = 2 as libc::c_int;
+            (*mvstack.offset(m as isize)).weight = 2;
             *cnt = last + 1;
         }
         n += 1;
