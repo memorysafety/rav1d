@@ -191,9 +191,9 @@ unsafe fn add_spatial_candidate(
                 *have_refmv_match = 1;
                 *have_newmv_match |= (*b).mf as libc::c_int >> 1;
                 let last = *cnt;
-                for m in 0..last {
-                    if mvstack[m].mv.mv[0] == cand_mv {
-                        mvstack[m].weight += weight;
+                for cand in &mut mvstack[..last] {
+                    if cand.mv.mv[0] == cand_mv {
+                        cand.weight += weight;
                         return;
                     }
                 }
@@ -223,9 +223,9 @@ unsafe fn add_spatial_candidate(
         *have_refmv_match = 1;
         *have_newmv_match |= (*b).mf as libc::c_int >> 1;
         let last = *cnt;
-        for n in 0..last {
-            if mvstack[n].mv == cand_mv {
-                mvstack[n].weight += weight;
+        for cand in &mut mvstack[..last] {
+            if cand.mv == cand_mv {
+                cand.weight += weight;
                 return;
             }
         }
