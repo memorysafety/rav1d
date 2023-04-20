@@ -396,18 +396,18 @@ unsafe fn add_temporal_candidate(
     rf: &refmvs_frame,
     mvstack: &mut [refmvs_candidate],
     cnt: &mut usize,
-    rb: *const refmvs_temporal_block,
+    rb: &refmvs_temporal_block,
     r#ref: refmvs_refpair,
     globalmv_ctx: *mut libc::c_int,
     mut gmv: *const mv,
 ) {
-    if (*rb).mv == mv::INVALID {
+    if rb.mv == mv::INVALID {
         return;
     }
     let mut mv = mv_projection(
-        (*rb).mv,
+        rb.mv,
         rf.pocdiff[r#ref.r#ref[0] as usize - 1] as libc::c_int,
-        (*rb).r#ref as libc::c_int,
+        rb.r#ref as libc::c_int,
     );
     fix_mv_precision(&*rf.frm_hdr, &mut mv);
     let last = *cnt;
@@ -434,9 +434,9 @@ unsafe fn add_temporal_candidate(
             mv: [
                 mv,
                 mv_projection(
-                    (*rb).mv,
+                    rb.mv,
                     rf.pocdiff[r#ref.r#ref[1] as usize - 1] as libc::c_int,
-                    (*rb).r#ref as libc::c_int,
+                    rb.r#ref as libc::c_int,
                 ),
             ],
         };
