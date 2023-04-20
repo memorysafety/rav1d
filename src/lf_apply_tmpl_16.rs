@@ -1010,18 +1010,18 @@ unsafe extern "C" fn filter_plane_cols_y(
         if !(have_left == 0 && x == 0) {
             let mut hmask: [uint32_t; 4] = [0; 4];
             if starty4 == 0 {
-                hmask[0 as libc::c_int as usize] = (*mask.offset(x as isize))[0][0] as uint32_t;
-                hmask[1 as libc::c_int as usize] = (*mask.offset(x as isize))[1][0] as uint32_t;
-                hmask[2 as libc::c_int as usize] = (*mask.offset(x as isize))[2][0] as uint32_t;
+                hmask[0] = (*mask.offset(x as isize))[0][0] as uint32_t;
+                hmask[1] = (*mask.offset(x as isize))[1][0] as uint32_t;
+                hmask[2] = (*mask.offset(x as isize))[2][0] as uint32_t;
                 if endy4 > 16 {
                     hmask[0] |= ((*mask.offset(x as isize))[0][1] as libc::c_uint) << 16;
                     hmask[1] |= ((*mask.offset(x as isize))[1][1] as libc::c_uint) << 16;
                     hmask[2] |= ((*mask.offset(x as isize))[2][1] as libc::c_uint) << 16;
                 }
             } else {
-                hmask[0 as libc::c_int as usize] = (*mask.offset(x as isize))[0][1] as uint32_t;
-                hmask[1 as libc::c_int as usize] = (*mask.offset(x as isize))[1][1] as uint32_t;
-                hmask[2 as libc::c_int as usize] = (*mask.offset(x as isize))[2][1] as uint32_t;
+                hmask[0] = (*mask.offset(x as isize))[0][1] as uint32_t;
+                hmask[1] = (*mask.offset(x as isize))[1][1] as uint32_t;
+                hmask[2] = (*mask.offset(x as isize))[2][1] as uint32_t;
             }
             hmask[3] = 0 as libc::c_int as uint32_t;
             ((*dsp).lf.loop_filter_sb[0][0]).expect("non-null function pointer")(
@@ -1102,8 +1102,8 @@ unsafe extern "C" fn filter_plane_cols_uv(
         if !(have_left == 0 && x == 0) {
             let mut hmask: [uint32_t; 3] = [0; 3];
             if starty4 == 0 {
-                hmask[0 as libc::c_int as usize] = (*mask.offset(x as isize))[0][0] as uint32_t;
-                hmask[1 as libc::c_int as usize] = (*mask.offset(x as isize))[1][0] as uint32_t;
+                hmask[0] = (*mask.offset(x as isize))[0][0] as uint32_t;
+                hmask[1] = (*mask.offset(x as isize))[1][0] as uint32_t;
                 if endy4 > 16 >> ss_ver {
                     hmask[0] |=
                         ((*mask.offset(x as isize))[0][1] as libc::c_uint) << (16 >> ss_ver);
@@ -1111,8 +1111,8 @@ unsafe extern "C" fn filter_plane_cols_uv(
                         ((*mask.offset(x as isize))[1][1] as libc::c_uint) << (16 >> ss_ver);
                 }
             } else {
-                hmask[0 as libc::c_int as usize] = (*mask.offset(x as isize))[0][1] as uint32_t;
-                hmask[1 as libc::c_int as usize] = (*mask.offset(x as isize))[1][1] as uint32_t;
+                hmask[0] = (*mask.offset(x as isize))[0][1] as uint32_t;
+                hmask[1] = (*mask.offset(x as isize))[1][1] as uint32_t;
             }
             hmask[2] = 0 as libc::c_int as uint32_t;
             ((*dsp).lf.loop_filter_sb[1][0]).expect("non-null function pointer")(

@@ -544,13 +544,13 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             .wrapping_add(*data.offset((5 - 60 & 15) as isize)),
         21 as libc::c_int,
     ));
-    (*md5).abcd[0 as libc::c_int as usize] =
+    (*md5).abcd[0] =
         ((*md5).abcd[0] as libc::c_uint).wrapping_add(a) as uint32_t as uint32_t;
-    (*md5).abcd[1 as libc::c_int as usize] =
+    (*md5).abcd[1] =
         ((*md5).abcd[1] as libc::c_uint).wrapping_add(b) as uint32_t as uint32_t;
-    (*md5).abcd[2 as libc::c_int as usize] =
+    (*md5).abcd[2] =
         ((*md5).abcd[2] as libc::c_uint).wrapping_add(c) as uint32_t as uint32_t;
-    (*md5).abcd[3 as libc::c_int as usize] =
+    (*md5).abcd[3] =
         ((*md5).abcd[3] as libc::c_uint).wrapping_add(d) as uint32_t as uint32_t;
 }
 unsafe extern "C" fn md5_update(

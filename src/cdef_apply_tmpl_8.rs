@@ -1211,27 +1211,27 @@ pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
                         bit ^= 1 as libc::c_int;
                         last_skip = 0 as libc::c_int;
                     }
-                    bptrs[0 as libc::c_int as usize] = (bptrs[0]).offset(8);
-                    bptrs[1 as libc::c_int as usize] = (bptrs[1]).offset((8 >> ss_hor) as isize);
-                    bptrs[2 as libc::c_int as usize] = (bptrs[2]).offset((8 >> ss_hor) as isize);
+                    bptrs[0] = (bptrs[0]).offset(8);
+                    bptrs[1] = (bptrs[1]).offset((8 >> ss_hor) as isize);
+                    bptrs[2] = (bptrs[2]).offset((8 >> ss_hor) as isize);
                     bx += 2 as libc::c_int;
                     edges = ::core::mem::transmute::<libc::c_uint, CdefEdgeFlags>(
                         edges as libc::c_uint | CDEF_HAVE_LEFT as libc::c_int as libc::c_uint,
                     );
                 }
             }
-            iptrs[0 as libc::c_int as usize] = (iptrs[0]).offset((sbsz * 4) as isize);
-            iptrs[1 as libc::c_int as usize] = (iptrs[1]).offset((sbsz * 4 >> ss_hor) as isize);
-            iptrs[2 as libc::c_int as usize] = (iptrs[2]).offset((sbsz * 4 >> ss_hor) as isize);
+            iptrs[0] = (iptrs[0]).offset((sbsz * 4) as isize);
+            iptrs[1] = (iptrs[1]).offset((sbsz * 4 >> ss_hor) as isize);
+            iptrs[2] = (iptrs[2]).offset((sbsz * 4 >> ss_hor) as isize);
             sbx += 1;
             edges = ::core::mem::transmute::<libc::c_uint, CdefEdgeFlags>(
                 edges as libc::c_uint | CDEF_HAVE_LEFT as libc::c_int as libc::c_uint,
             );
         }
-        ptrs[0 as libc::c_int as usize] = (ptrs[0]).offset((8 * (*f).cur.stride[0]) as isize);
-        ptrs[1 as libc::c_int as usize] =
+        ptrs[0] = (ptrs[0]).offset((8 * (*f).cur.stride[0]) as isize);
+        ptrs[1] =
             (ptrs[1]).offset((8 * (*f).cur.stride[1] >> ss_ver) as isize);
-        ptrs[2 as libc::c_int as usize] =
+        ptrs[2] =
             (ptrs[2]).offset((8 * (*f).cur.stride[1] >> ss_ver) as isize);
         (*tc).top_pre_cdef_toggle ^= 1 as libc::c_int;
         by += 2 as libc::c_int;
