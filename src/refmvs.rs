@@ -180,17 +180,16 @@ unsafe fn add_spatial_candidate(
     if (*b).mv.mv[0].is_invalid() {
         return;
     }
-    if r#ref.r#ref[1] as libc::c_int == -(1 as libc::c_int) {
+    if r#ref.r#ref[1] == -1 {
         let mut n = 0;
         while n < 2 {
-            if (*b).r#ref.r#ref[n] as libc::c_int == r#ref.r#ref[0] as libc::c_int {
-                let cand_mv: mv =
-                    if (*b).mf as libc::c_int & 1 != 0 && (*gmv.offset(0)) != mv::INVALID {
-                        *gmv.offset(0)
-                    } else {
-                        (*b).mv.mv[n]
-                    };
-                *have_refmv_match = 1 as libc::c_int;
+            if (*b).r#ref.r#ref[n] == r#ref.r#ref[0] {
+                let cand_mv = if (*b).mf & 1 != 0 && (*gmv.offset(0)) != mv::INVALID {
+                    *gmv.offset(0)
+                } else {
+                    (*b).mv.mv[n]
+                };
+                *have_refmv_match = 1;
                 *have_newmv_match |= (*b).mf as libc::c_int >> 1;
                 let last = *cnt;
                 let mut m = 0;
@@ -211,21 +210,21 @@ unsafe fn add_spatial_candidate(
             n += 1;
         }
     } else if (*b).r#ref == r#ref {
-        let cand_mv_0: refmvs_mvpair = refmvs_mvpair {
+        let cand_mv_0 = refmvs_mvpair {
             mv: [
-                if (*b).mf as libc::c_int & 1 != 0 && (*gmv.offset(0)) != mv::INVALID {
+                if (*b).mf & 1 != 0 && (*gmv.offset(0)) != mv::INVALID {
                     *gmv.offset(0)
                 } else {
                     (*b).mv.mv[0]
                 },
-                if (*b).mf as libc::c_int & 1 != 0 && (*gmv.offset(1)) != mv::INVALID {
+                if (*b).mf & 1 != 0 && (*gmv.offset(1)) != mv::INVALID {
                     *gmv.offset(1)
                 } else {
                     (*b).mv.mv[1]
                 },
             ],
         };
-        *have_refmv_match = 1 as libc::c_int;
+        *have_refmv_match = 1;
         *have_newmv_match |= (*b).mf as libc::c_int >> 1;
         let last_0 = *cnt;
         let mut n_0 = 0;
