@@ -166,7 +166,8 @@ use crate::src::env::get_gmv_2d;
 use crate::src::mem::dav1d_freep_aligned;
 
 use crate::src::mem::dav1d_alloc_aligned;
-unsafe extern "C" fn add_spatial_candidate(
+
+unsafe fn add_spatial_candidate(
     mvstack: *mut refmvs_candidate,
     cnt: &mut usize,
     weight: libc::c_int,
@@ -242,6 +243,7 @@ unsafe extern "C" fn add_spatial_candidate(
         }
     }
 }
+
 unsafe extern "C" fn scan_row(
     mvstack: *mut refmvs_candidate,
     cnt: &mut usize,
@@ -442,7 +444,7 @@ unsafe fn add_temporal_candidate(
             ],
         };
         fix_mv_precision(&*rf.frm_hdr, &mut mvp.mv[1]);
-        
+
         for cand in &mut mvstack[..last] {
             if cand.mv == mvp {
                 cand.weight += 2;
