@@ -394,7 +394,7 @@ fn mv_projection(mv: mv, num: libc::c_int, den: libc::c_int) -> mv {
 
 unsafe fn add_temporal_candidate(
     rf: *const refmvs_frame,
-    mvstack: *mut refmvs_candidate,
+    mvstack: &mut [refmvs_candidate],
     cnt: &mut usize,
     rb: *const refmvs_temporal_block,
     r#ref: refmvs_refpair,
@@ -418,15 +418,15 @@ unsafe fn add_temporal_candidate(
         }
         let mut n = 0;
         while n < last {
-            if (*mvstack.offset(n as isize)).mv.mv[0] == mv {
-                (*mvstack.offset(n as isize)).weight += 2;
+            if mvstack[n as usize].mv.mv[0] == mv {
+                mvstack[n as usize].weight += 2;
                 return;
             }
             n += 1;
         }
         if last < 8 {
-            (*mvstack.offset(last as isize)).mv.mv[0] = mv;
-            (*mvstack.offset(last as isize)).weight = 2;
+            mvstack[last as usize].mv.mv[0] = mv;
+            mvstack[last as usize].weight = 2;
             *cnt = last + 1;
         }
     } else {
@@ -443,15 +443,15 @@ unsafe fn add_temporal_candidate(
         fix_mv_precision(&*(*rf).frm_hdr, &mut mvp.mv[1]);
         let mut n_0 = 0;
         while n_0 < last {
-            if (*mvstack.offset(n_0 as isize)).mv == mvp {
-                (*mvstack.offset(n_0 as isize)).weight += 2;
+            if mvstack[n_0 as usize].mv == mvp {
+                mvstack[n_0 as usize].weight += 2;
                 return;
             }
             n_0 += 1;
         }
         if last < 8 {
-            (*mvstack.offset(last as isize)).mv = mvp;
-            (*mvstack.offset(last as isize)).weight = 2;
+            mvstack[last as usize].mv = mvp;
+            mvstack[last as usize].weight = 2;
             *cnt = last + 1;
         }
     };
@@ -738,7 +738,7 @@ pub unsafe fn dav1d_refmvs_find(
             for x in (0..w8).step_by(step_h) {
                 add_temporal_candidate(
                     rf,
-                    mvstack.as_mut_ptr(),
+                    mvstack,
                     cnt,
                     &*rb.offset(x as isize),
                     r#ref,
@@ -761,7 +761,7 @@ pub unsafe fn dav1d_refmvs_find(
             if has_bottom != 0 && bx8 - 1 >= imax(rt.tile_col.start >> 1, bx8 & !7) {
                 add_temporal_candidate(
                     rf,
-                    mvstack.as_mut_ptr(),
+                    mvstack,
                     cnt,
                     &*rb.offset(-1),
                     r#ref,
@@ -773,7 +773,7 @@ pub unsafe fn dav1d_refmvs_find(
                 if has_bottom != 0 {
                     add_temporal_candidate(
                         rf,
-                        mvstack.as_mut_ptr(),
+                        mvstack,
                         cnt,
                         &*rb.offset(bw8 as isize),
                         r#ref,
@@ -784,7 +784,7 @@ pub unsafe fn dav1d_refmvs_find(
                 if (by8 + bh8 - 1) < imin(rt.tile_row.end >> 1, (by8 & !7) + 8) {
                     add_temporal_candidate(
                         rf,
-                        mvstack.as_mut_ptr(),
+                        mvstack,
                         cnt,
                         &*rb.offset(bw8 as isize - stride),
                         r#ref,
