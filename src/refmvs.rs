@@ -180,10 +180,11 @@ unsafe fn add_spatial_candidate(
     if b.mv.mv[0].is_invalid() {
         return;
     }
+    let mf_odd = b.mf & 1 != 0;
     if r#ref.r#ref[1] == -1 {
         for n in 0..2 {
             if b.r#ref.r#ref[n] == r#ref.r#ref[0] {
-                let cand_mv = if b.mf & 1 != 0 && gmv[0] != mv::INVALID {
+                let cand_mv = if mf_odd && gmv[0] != mv::INVALID {
                     gmv[0]
                 } else {
                     b.mv.mv[n]
@@ -209,12 +210,12 @@ unsafe fn add_spatial_candidate(
     } else if b.r#ref == r#ref {
         let cand_mv = refmvs_mvpair {
             mv: [
-                if b.mf & 1 != 0 && gmv[0] != mv::INVALID {
+                if mf_odd && gmv[0] != mv::INVALID {
                     gmv[0]
                 } else {
                     b.mv.mv[0]
                 },
-                if b.mf & 1 != 0 && gmv[1] != mv::INVALID {
+                if mf_odd && gmv[1] != mv::INVALID {
                     gmv[1]
                 } else {
                     b.mv.mv[1]
