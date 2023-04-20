@@ -173,7 +173,7 @@ unsafe fn add_spatial_candidate(
     weight: libc::c_int,
     b: &refmvs_block,
     r#ref: refmvs_refpair,
-    mut gmv: *const mv,
+    gmv: &[mv; 2],
     have_newmv_match: *mut libc::c_int,
     have_refmv_match: *mut libc::c_int,
 ) {
@@ -183,8 +183,8 @@ unsafe fn add_spatial_candidate(
     if r#ref.r#ref[1] == -1 {
         for n in 0..2 {
             if b.r#ref.r#ref[n] == r#ref.r#ref[0] {
-                let cand_mv = if b.mf & 1 != 0 && (*gmv.offset(0)) != mv::INVALID {
-                    *gmv.offset(0)
+                let cand_mv = if b.mf & 1 != 0 && gmv[0] != mv::INVALID {
+                    gmv[0]
                 } else {
                     b.mv.mv[n]
                 };
@@ -209,13 +209,13 @@ unsafe fn add_spatial_candidate(
     } else if b.r#ref == r#ref {
         let cand_mv = refmvs_mvpair {
             mv: [
-                if b.mf & 1 != 0 && (*gmv.offset(0)) != mv::INVALID {
-                    *gmv.offset(0)
+                if b.mf & 1 != 0 && gmv[0] != mv::INVALID {
+                    gmv[0]
                 } else {
                     b.mv.mv[0]
                 },
-                if b.mf & 1 != 0 && (*gmv.offset(1)) != mv::INVALID {
-                    *gmv.offset(1)
+                if b.mf & 1 != 0 && gmv[1] != mv::INVALID {
+                    gmv[1]
                 } else {
                     b.mv.mv[1]
                 },
@@ -243,7 +243,7 @@ unsafe fn scan_row(
     mvstack: &mut [refmvs_candidate],
     cnt: &mut usize,
     r#ref: refmvs_refpair,
-    mut gmv: *const mv,
+    gmv: &[mv; 2],
     mut b: *const refmvs_block,
     bw4: libc::c_int,
     w4: libc::c_int,
@@ -307,7 +307,7 @@ unsafe fn scan_col(
     mvstack: &mut [refmvs_candidate],
     cnt: &mut usize,
     r#ref: refmvs_refpair,
-    mut gmv: *const mv,
+    gmv: &[mv; 2],
     mut b: *const *mut refmvs_block,
     bh4: libc::c_int,
     h4: libc::c_int,
@@ -657,7 +657,7 @@ pub unsafe fn dav1d_refmvs_find(
             mvstack,
             cnt,
             r#ref,
-            gmv.as_ptr(),
+            &gmv,
             b_top,
             bw4,
             w4,
@@ -682,7 +682,7 @@ pub unsafe fn dav1d_refmvs_find(
             mvstack,
             cnt,
             r#ref,
-            gmv.as_ptr(),
+            &gmv,
             b_left,
             bh4,
             h4,
@@ -706,7 +706,7 @@ pub unsafe fn dav1d_refmvs_find(
             4,
             &*b_top.offset(bw4 as isize),
             r#ref,
-            gmv.as_ptr(),
+            &gmv,
             &mut have_newmv,
             &mut have_row_mvs,
         );
@@ -793,7 +793,7 @@ pub unsafe fn dav1d_refmvs_find(
             4,
             &*b_top.offset(-1),
             r#ref,
-            gmv.as_ptr(),
+            &gmv,
             &mut have_dummy_newmv_match,
             &mut have_row_mvs,
         );
@@ -807,7 +807,7 @@ pub unsafe fn dav1d_refmvs_find(
                 mvstack,
                 cnt,
                 r#ref,
-                gmv.as_ptr(),
+                &gmv,
                 &mut *(rt.r[(((by4 & 31) - 2 * n + 1 | 1) + 5) as usize]).offset(bx4 as isize | 1),
                 bw4,
                 w4,
@@ -824,7 +824,7 @@ pub unsafe fn dav1d_refmvs_find(
                 mvstack,
                 cnt,
                 r#ref,
-                gmv.as_ptr(),
+                &gmv,
                 &rt.r[(by4 as usize & 31 | 1) + 5],
                 bh4,
                 h4,
