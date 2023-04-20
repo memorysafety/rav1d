@@ -628,32 +628,25 @@ unsafe extern "C" fn fill2d_16x2(
     let mut n_1 = 0;
     while n_1 < 16 {
         let sign = (signs >> n_1 & 1 as libc::c_uint) as libc::c_int;
-        dav1d_wedge_masks[bs as usize][0][0]
-            [n_1 as usize] =
+        dav1d_wedge_masks[bs as usize][0][0][n_1 as usize] =
             &mut *masks_444.offset((sign * sign_stride_444) as isize) as *mut uint8_t;
-        dav1d_wedge_masks[bs as usize][0][1]
-            [n_1 as usize] =
+        dav1d_wedge_masks[bs as usize][0][1][n_1 as usize] =
             &mut *masks_444.offset((sign * sign_stride_444) as isize) as *mut uint8_t;
-        dav1d_wedge_masks[bs as usize][1][0]
-            [n_1 as usize] =
+        dav1d_wedge_masks[bs as usize][1][0][n_1 as usize] =
             &mut *masks_422.offset((sign * sign_stride_422) as isize) as *mut uint8_t;
-        dav1d_wedge_masks[bs as usize][1][1]
-            [n_1 as usize] = &mut *masks_422
+        dav1d_wedge_masks[bs as usize][1][1][n_1 as usize] = &mut *masks_422
             .offset(((sign == 0) as libc::c_int * sign_stride_422) as isize)
             as *mut uint8_t;
-        dav1d_wedge_masks[bs as usize][2][0]
-            [n_1 as usize] =
+        dav1d_wedge_masks[bs as usize][2][0][n_1 as usize] =
             &mut *masks_420.offset((sign * sign_stride_420) as isize) as *mut uint8_t;
-        dav1d_wedge_masks[bs as usize][2][1]
-            [n_1 as usize] = &mut *masks_420
+        dav1d_wedge_masks[bs as usize][2][1][n_1 as usize] = &mut *masks_420
             .offset(((sign == 0) as libc::c_int * sign_stride_420) as isize)
             as *mut uint8_t;
         masks_444 = masks_444.offset(n_stride_444 as isize);
         masks_422 = masks_422.offset(n_stride_422 as isize);
         masks_420 = masks_420.offset(n_stride_420 as isize);
         init_chroma(
-            dav1d_wedge_masks[bs as usize][1][0][n_1 as usize]
-                as *mut uint8_t,
+            dav1d_wedge_masks[bs as usize][1][0][n_1 as usize] as *mut uint8_t,
             dav1d_wedge_masks[bs as usize][0][0][n_1 as usize],
             0 as libc::c_int,
             w,
@@ -661,8 +654,7 @@ unsafe extern "C" fn fill2d_16x2(
             0 as libc::c_int,
         );
         init_chroma(
-            dav1d_wedge_masks[bs as usize][1][1][n_1 as usize]
-                as *mut uint8_t,
+            dav1d_wedge_masks[bs as usize][1][1][n_1 as usize] as *mut uint8_t,
             dav1d_wedge_masks[bs as usize][0][0][n_1 as usize],
             1 as libc::c_int,
             w,
@@ -670,8 +662,7 @@ unsafe extern "C" fn fill2d_16x2(
             0 as libc::c_int,
         );
         init_chroma(
-            dav1d_wedge_masks[bs as usize][2][0][n_1 as usize]
-                as *mut uint8_t,
+            dav1d_wedge_masks[bs as usize][2][0][n_1 as usize] as *mut uint8_t,
             dav1d_wedge_masks[bs as usize][0][0][n_1 as usize],
             0 as libc::c_int,
             w,
@@ -679,8 +670,7 @@ unsafe extern "C" fn fill2d_16x2(
             1 as libc::c_int,
         );
         init_chroma(
-            dav1d_wedge_masks[bs as usize][2][1][n_1 as usize]
-                as *mut uint8_t,
+            dav1d_wedge_masks[bs as usize][2][1][n_1 as usize] as *mut uint8_t,
             dav1d_wedge_masks[bs as usize][0][0][n_1 as usize],
             1 as libc::c_int,
             w,

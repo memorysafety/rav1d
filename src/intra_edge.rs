@@ -76,8 +76,7 @@ unsafe extern "C" fn init_edges(node: *mut EdgeNode, bl: BlockLevel, edge_flags:
             | EDGE_I420_TOP_HAS_RIGHT as libc::c_int
             | (EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int
                 | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int
-                | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int))
-            as EdgeFlags;
+                | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int)) as EdgeFlags;
         (*nt).split[1] = (edge_flags as libc::c_uint
             & (EDGE_I444_TOP_HAS_RIGHT as libc::c_int
                 | EDGE_I422_TOP_HAS_RIGHT as libc::c_int
@@ -121,8 +120,7 @@ unsafe extern "C" fn init_edges(node: *mut EdgeNode, bl: BlockLevel, edge_flags:
             as EdgeFlags;
         (*nwc).h4[2] = (EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int
             | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int
-            | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int)
-            as EdgeFlags;
+            | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int) as EdgeFlags;
         (*nwc).h4[1] = (*nwc).h4[2];
         (*nwc).h4[3] = (edge_flags as libc::c_uint
             & (EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int
@@ -143,8 +141,7 @@ unsafe extern "C" fn init_edges(node: *mut EdgeNode, bl: BlockLevel, edge_flags:
             as EdgeFlags;
         (*nwc).v4[2] = (EDGE_I444_TOP_HAS_RIGHT as libc::c_int
             | EDGE_I422_TOP_HAS_RIGHT as libc::c_int
-            | EDGE_I420_TOP_HAS_RIGHT as libc::c_int)
-            as EdgeFlags;
+            | EDGE_I420_TOP_HAS_RIGHT as libc::c_int) as EdgeFlags;
         (*nwc).v4[1] = (*nwc).v4[2];
         (*nwc).v4[3] = (edge_flags as libc::c_uint
             & (EDGE_I444_TOP_HAS_RIGHT as libc::c_int
@@ -165,8 +162,7 @@ unsafe extern "C" fn init_edges(node: *mut EdgeNode, bl: BlockLevel, edge_flags:
             | EDGE_I420_TOP_HAS_RIGHT as libc::c_int
             | (EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int
                 | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int
-                | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int))
-            as EdgeFlags;
+                | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int)) as EdgeFlags;
         (*nwc).tls[1] = (edge_flags as libc::c_uint
             & (EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int
                 | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int
@@ -193,8 +189,7 @@ unsafe extern "C" fn init_edges(node: *mut EdgeNode, bl: BlockLevel, edge_flags:
             | EDGE_I420_TOP_HAS_RIGHT as libc::c_int
             | (EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int
                 | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int
-                | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int))
-            as EdgeFlags;
+                | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int)) as EdgeFlags;
         (*nwc).tts[1] = (edge_flags as libc::c_uint
             & (EDGE_I444_TOP_HAS_RIGHT as libc::c_int
                 | EDGE_I422_TOP_HAS_RIGHT as libc::c_int

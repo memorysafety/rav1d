@@ -1259,12 +1259,9 @@ pub unsafe extern "C" fn dav1d_cdef_brow_16bpc(
                 edges as libc::c_uint | CDEF_HAVE_LEFT as libc::c_int as libc::c_uint,
             );
         }
-        ptrs[0] =
-            (ptrs[0]).offset((8 * PXSTRIDE((*f).cur.stride[0])) as isize);
-        ptrs[1] =
-            (ptrs[1]).offset((8 * PXSTRIDE((*f).cur.stride[1]) >> ss_ver) as isize);
-        ptrs[2] =
-            (ptrs[2]).offset((8 * PXSTRIDE((*f).cur.stride[1]) >> ss_ver) as isize);
+        ptrs[0] = (ptrs[0]).offset((8 * PXSTRIDE((*f).cur.stride[0])) as isize);
+        ptrs[1] = (ptrs[1]).offset((8 * PXSTRIDE((*f).cur.stride[1]) >> ss_ver) as isize);
+        ptrs[2] = (ptrs[2]).offset((8 * PXSTRIDE((*f).cur.stride[1]) >> ss_ver) as isize);
         (*tc).top_pre_cdef_toggle ^= 1 as libc::c_int;
         by += 2 as libc::c_int;
         edges = ::core::mem::transmute::<libc::c_uint, CdefEdgeFlags>(

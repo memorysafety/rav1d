@@ -1412,12 +1412,10 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
             (*hdr).frame_ref_short_signaling =
                 ((*seqhdr).order_hint != 0 && dav1d_get_bit(gb) != 0) as libc::c_int;
             if (*hdr).frame_ref_short_signaling != 0 {
-                (*hdr).refidx[0] =
-                    dav1d_get_bits(gb, 3 as libc::c_int) as libc::c_int;
+                (*hdr).refidx[0] = dav1d_get_bits(gb, 3 as libc::c_int) as libc::c_int;
                 (*hdr).refidx[2] = -(1 as libc::c_int);
                 (*hdr).refidx[1] = (*hdr).refidx[2];
-                (*hdr).refidx[3] =
-                    dav1d_get_bits(gb, 3 as libc::c_int) as libc::c_int;
+                (*hdr).refidx[3] = dav1d_get_bits(gb, 3 as libc::c_int) as libc::c_int;
                 (*hdr).refidx[6] = -(1 as libc::c_int);
                 (*hdr).refidx[5] = (*hdr).refidx[6];
                 (*hdr).refidx[4] = (*hdr).refidx[5];
@@ -1940,8 +1938,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
                                 }
                                 if (*hdr).all_lossless != 0 || (*hdr).allow_intrabc != 0 {
                                     (*hdr).loopfilter.level_y[1] = 0 as libc::c_int;
-                                    (*hdr).loopfilter.level_y[0] =
-                                        (*hdr).loopfilter.level_y[1];
+                                    (*hdr).loopfilter.level_y[0] = (*hdr).loopfilter.level_y[1];
                                     (*hdr).loopfilter.level_v = 0 as libc::c_int;
                                     (*hdr).loopfilter.level_u = (*hdr).loopfilter.level_v;
                                     (*hdr).loopfilter.sharpness = 0 as libc::c_int;
@@ -2063,33 +2060,28 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
                                                 dav1d_get_bits(gb, 2 as libc::c_int)
                                                     as Dav1dRestorationType;
                                             if (*seqhdr).monochrome == 0 {
-                                                (*hdr).restoration.type_0
-                                                    [1] =
+                                                (*hdr).restoration.type_0[1] =
                                                     dav1d_get_bits(gb, 2 as libc::c_int)
                                                         as Dav1dRestorationType;
-                                                (*hdr).restoration.type_0
-                                                    [2] =
+                                                (*hdr).restoration.type_0[2] =
                                                     dav1d_get_bits(gb, 2 as libc::c_int)
                                                         as Dav1dRestorationType;
                                             } else {
                                                 (*hdr).restoration.type_0[2] =
                                                     DAV1D_RESTORATION_NONE;
-                                                (*hdr).restoration.type_0
-                                                    [1] =
+                                                (*hdr).restoration.type_0[1] =
                                                     (*hdr).restoration.type_0[2];
                                             }
                                             if (*hdr).restoration.type_0[0] as libc::c_uint != 0
                                                 || (*hdr).restoration.type_0[1] as libc::c_uint != 0
                                                 || (*hdr).restoration.type_0[2] as libc::c_uint != 0
                                             {
-                                                (*hdr).restoration.unit_size
-                                                    [0] =
+                                                (*hdr).restoration.unit_size[0] =
                                                     6 + (*seqhdr).sb128;
                                                 if dav1d_get_bit(gb) != 0 {
                                                     (*hdr).restoration.unit_size[0] += 1;
                                                     if (*seqhdr).sb128 == 0 {
-                                                        (*hdr).restoration.unit_size
-                                                            [0] =
+                                                        (*hdr).restoration.unit_size[0] =
                                                             ((*hdr).restoration.unit_size[0]
                                                                 as libc::c_uint)
                                                                 .wrapping_add(dav1d_get_bit(gb))
@@ -2097,8 +2089,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
                                                                 as libc::c_int;
                                                     }
                                                 }
-                                                (*hdr).restoration.unit_size
-                                                    [1] =
+                                                (*hdr).restoration.unit_size[1] =
                                                     (*hdr).restoration.unit_size[0];
                                                 if ((*hdr).restoration.type_0[1] as libc::c_uint
                                                     != 0
@@ -2107,8 +2098,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
                                                     && (*seqhdr).ss_hor == 1
                                                     && (*seqhdr).ss_ver == 1
                                                 {
-                                                    (*hdr).restoration.unit_size
-                                                        [1] =
+                                                    (*hdr).restoration.unit_size[1] =
                                                         ((*hdr).restoration.unit_size[1]
                                                             as libc::c_uint)
                                                             .wrapping_sub(dav1d_get_bit(gb))
@@ -2212,11 +2202,9 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
                                                     if off_before != 0xffffffff as libc::c_uint
                                                         && off_after != -(1 as libc::c_int)
                                                     {
-                                                        (*hdr).skip_mode_refs
-                                                            [0] =
+                                                        (*hdr).skip_mode_refs[0] =
                                                             imin(off_before_idx, off_after_idx);
-                                                        (*hdr).skip_mode_refs
-                                                            [1] =
+                                                        (*hdr).skip_mode_refs[1] =
                                                             imax(off_before_idx, off_after_idx);
                                                         (*hdr).skip_mode_allowed = 1 as libc::c_int;
                                                         current_block = 2126221883176060805;
@@ -3038,11 +3026,9 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                     (*ref_2).data as *mut Dav1dMasteringDisplay;
                                 let mut i_1 = 0;
                                 while i_1 < 3 {
-                                    (*mastering_display).primaries[i_1 as usize]
-                                        [0] =
+                                    (*mastering_display).primaries[i_1 as usize][0] =
                                         dav1d_get_bits(&mut gb, 16 as libc::c_int) as uint16_t;
-                                    (*mastering_display).primaries[i_1 as usize]
-                                        [1] =
+                                    (*mastering_display).primaries[i_1 as usize][1] =
                                         dav1d_get_bits(&mut gb, 16 as libc::c_int) as uint16_t;
                                     i_1 += 1;
                                 }
