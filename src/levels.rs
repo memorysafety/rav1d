@@ -1,3 +1,5 @@
+use std::ops::Neg;
+
 use crate::include::stdint::int16_t;
 use crate::include::stdint::int8_t;
 use crate::include::stdint::uint16_t;
@@ -212,6 +214,17 @@ impl mv {
 
     pub fn is_valid(self) -> bool {
         !self.is_invalid()
+    }
+}
+
+impl Neg for mv {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        Self {
+            y: -self.y,
+            x: -self.x,
+        }
     }
 }
 

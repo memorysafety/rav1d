@@ -524,8 +524,7 @@ unsafe fn add_compound_extended_candidate(
             }
             if diff_count[1] < 2 {
                 if (sign1 ^ sign_bias) != 0 {
-                    cand_mv.y = -cand_mv.y;
-                    cand_mv.x = -cand_mv.x;
+                    cand_mv = -cand_mv;
                 }
                 diff[diff_count[1]].mv.mv[1] = cand_mv;
                 diff_count[1] += 1;
@@ -537,17 +536,13 @@ unsafe fn add_compound_extended_candidate(
             }
             if diff_count[0] < 2 {
                 if (sign0 ^ sign_bias) != 0 {
-                    cand_mv.y = -cand_mv.y;
-                    cand_mv.x = -cand_mv.x;
+                    cand_mv = -cand_mv;
                 }
                 diff[diff_count[0]].mv.mv[0] = cand_mv;
                 diff_count[0] += 1;
             }
         } else {
-            let mut i_cand_mv = mv {
-                y: -cand_mv.y,
-                x: -cand_mv.x,
-            };
+            let i_cand_mv = -cand_mv;
 
             if diff_count[0] < 2 {
                 diff[diff_count[0]].mv.mv[0] = 
@@ -585,8 +580,7 @@ fn add_single_extended_candidate(
 
         let mut cand_mv = cand_b.mv.mv[n];
         if (sign ^ sign_bias[cand_ref as usize - 1]) != 0 {
-            cand_mv.y = -cand_mv.y;
-            cand_mv.x = -cand_mv.x;
+            cand_mv = -cand_mv;
         }
 
         let last = *cnt;
