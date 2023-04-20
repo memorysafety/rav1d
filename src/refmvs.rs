@@ -392,7 +392,7 @@ fn mv_projection(mv: mv, num: libc::c_int, den: libc::c_int) -> mv {
     };
 }
 
-unsafe extern "C" fn add_temporal_candidate(
+unsafe fn add_temporal_candidate(
     rf: *const refmvs_frame,
     mvstack: *mut refmvs_candidate,
     cnt: &mut usize,
