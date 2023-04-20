@@ -498,8 +498,7 @@ unsafe fn add_compound_extended_candidate(
 ) {
     let diff = &mut *same.offset(2) as *mut refmvs_candidate;
     let diff_count = &mut *same_count.offset(2) as *mut libc::c_int;
-    let mut n = 0;
-    while n < 2 {
+    for n in 0..2 {
         let cand_ref = (*cand_b).r#ref.r#ref[n as usize] as libc::c_int;
         if cand_ref <= 0 {
             break;
@@ -567,7 +566,6 @@ unsafe fn add_compound_extended_candidate(
                     };
             }
         }
-        n += 1;
     }
 }
 
