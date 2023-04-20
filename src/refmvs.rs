@@ -625,8 +625,8 @@ unsafe fn add_single_extended_candidate(
 
         let last = *cnt;
         let mut broke_early = false;
-        for m in 0..last {
-            if cand_mv == mvstack[m].mv.mv[0] {
+        for cand in &mut mvstack[..last] {
+            if cand_mv == cand.mv.mv[0] {
                 broke_early = true;
                 break;
             }
