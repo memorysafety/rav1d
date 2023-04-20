@@ -767,11 +767,7 @@ use crate::src::cpu::dav1d_get_cpu_flags;
 #[inline(always)]
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
 unsafe extern "C" fn cdef_dsp_init_x86(c: *mut Dav1dCdefDSPContext) {
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX512ICL;
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE41;
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSSE3;
+    use crate::src::x86::cpu::*;
 
     let flags: libc::c_uint = dav1d_get_cpu_flags();
 
@@ -801,22 +797,25 @@ unsafe extern "C" fn cdef_dsp_init_x86(c: *mut Dav1dCdefDSPContext) {
     (*c).fb[1] = Some(dav1d_cdef_filter_4x8_8bpc_sse4);
     (*c).fb[2] = Some(dav1d_cdef_filter_4x4_8bpc_sse4);
 
-    if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
-        return;
+    #[cfg(target_arch = "x86_64")]
+    {
+        if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
+            return;
+        }
+
+        (*c).dir = Some(dav1d_cdef_dir_8bpc_avx2);
+        (*c).fb[0] = Some(dav1d_cdef_filter_8x8_8bpc_avx2);
+        (*c).fb[1] = Some(dav1d_cdef_filter_4x8_8bpc_avx2);
+        (*c).fb[2] = Some(dav1d_cdef_filter_4x4_8bpc_avx2);
+
+        if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
+            return;
+        }
+
+        (*c).fb[0] = Some(dav1d_cdef_filter_8x8_8bpc_avx512icl);
+        (*c).fb[1] = Some(dav1d_cdef_filter_4x8_8bpc_avx512icl);
+        (*c).fb[2] = Some(dav1d_cdef_filter_4x4_8bpc_avx512icl);
     }
-
-    (*c).dir = Some(dav1d_cdef_dir_8bpc_avx2);
-    (*c).fb[0] = Some(dav1d_cdef_filter_8x8_8bpc_avx2);
-    (*c).fb[1] = Some(dav1d_cdef_filter_4x8_8bpc_avx2);
-    (*c).fb[2] = Some(dav1d_cdef_filter_4x4_8bpc_avx2);
-
-    if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
-        return;
-    }
-
-    (*c).fb[0] = Some(dav1d_cdef_filter_8x8_8bpc_avx512icl);
-    (*c).fb[1] = Some(dav1d_cdef_filter_4x8_8bpc_avx512icl);
-    (*c).fb[2] = Some(dav1d_cdef_filter_4x4_8bpc_avx512icl);
 }
 
 #[inline(always)]

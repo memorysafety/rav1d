@@ -1513,9 +1513,7 @@ use crate::src::cpu::dav1d_get_cpu_flags;
 #[inline(always)]
 #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "asm"))]
 unsafe extern "C" fn refmvs_dsp_init_x86(c: *mut Dav1dRefmvsDSPContext) {
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX512ICL;
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
+    use crate::src::x86::cpu::*;
 
     let flags = dav1d_get_cpu_flags();
 
@@ -1525,17 +1523,20 @@ unsafe extern "C" fn refmvs_dsp_init_x86(c: *mut Dav1dRefmvsDSPContext) {
 
     (*c).splat_mv = Some(dav1d_splat_mv_sse2);
 
-    if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
-        return;
+    #[cfg(target_arch = "x86_64")]
+    {
+        if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
+            return;
+        }
+
+        (*c).splat_mv = Some(dav1d_splat_mv_avx2);
+
+        if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
+            return;
+        }
+
+        (*c).splat_mv = Some(dav1d_splat_mv_avx512icl);
     }
-
-    (*c).splat_mv = Some(dav1d_splat_mv_avx2);
-
-    if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
-        return;
-    }
-
-    (*c).splat_mv = Some(dav1d_splat_mv_avx512icl);
 }
 
 #[inline(always)]

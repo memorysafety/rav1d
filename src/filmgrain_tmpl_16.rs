@@ -1377,10 +1377,7 @@ use crate::src::cpu::dav1d_get_cpu_flags;
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
 #[inline(always)]
 unsafe extern "C" fn film_grain_dsp_init_x86(c: *mut Dav1dFilmGrainDSPContext) {
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX512ICL;
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SLOW_GATHER;
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSSE3;
+    use crate::src::x86::cpu::*;
 
     let flags = dav1d_get_cpu_flags();
 
@@ -1404,39 +1401,33 @@ unsafe extern "C" fn film_grain_dsp_init_x86(c: *mut Dav1dFilmGrainDSPContext) {
     (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
         Some(dav1d_fguv_32x32xn_i444_16bpc_ssse3);
 
-    if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
-        return;
+    #[cfg(target_arch = "x86_64")]
+    {
+        if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
+            return;
+        }
+
+        (*c).generate_grain_y = Some(dav1d_generate_grain_y_16bpc_avx2);
+        (*c).generate_grain_uv[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] = Some(dav1d_generate_grain_uv_420_16bpc_avx2);
+        (*c).generate_grain_uv[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] = Some(dav1d_generate_grain_uv_422_16bpc_avx2);
+        (*c).generate_grain_uv[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] = Some(dav1d_generate_grain_uv_444_16bpc_avx2);
+
+        if flags & DAV1D_X86_CPU_FLAG_SLOW_GATHER == 0 {
+            (*c).fgy_32x32xn = Some(dav1d_fgy_32x32xn_16bpc_avx2);
+            (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] = Some(dav1d_fguv_32x32xn_i420_16bpc_avx2);
+            (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] = Some(dav1d_fguv_32x32xn_i422_16bpc_avx2);
+            (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] = Some(dav1d_fguv_32x32xn_i444_16bpc_avx2);
+        }
+
+        if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
+            return;
+        }
+
+        (*c).fgy_32x32xn = Some(dav1d_fgy_32x32xn_16bpc_avx512icl);
+        (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] = Some(dav1d_fguv_32x32xn_i420_16bpc_avx512icl);
+        (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] = Some(dav1d_fguv_32x32xn_i422_16bpc_avx512icl);
+        (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] = Some(dav1d_fguv_32x32xn_i444_16bpc_avx512icl);
     }
-
-    (*c).generate_grain_y = Some(dav1d_generate_grain_y_16bpc_avx2);
-    (*c).generate_grain_uv[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
-        Some(dav1d_generate_grain_uv_420_16bpc_avx2);
-    (*c).generate_grain_uv[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
-        Some(dav1d_generate_grain_uv_422_16bpc_avx2);
-    (*c).generate_grain_uv[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
-        Some(dav1d_generate_grain_uv_444_16bpc_avx2);
-
-    if flags & DAV1D_X86_CPU_FLAG_SLOW_GATHER == 0 {
-        (*c).fgy_32x32xn = Some(dav1d_fgy_32x32xn_16bpc_avx2);
-        (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
-            Some(dav1d_fguv_32x32xn_i420_16bpc_avx2);
-        (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
-            Some(dav1d_fguv_32x32xn_i422_16bpc_avx2);
-        (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
-            Some(dav1d_fguv_32x32xn_i444_16bpc_avx2);
-    }
-
-    if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
-        return;
-    }
-
-    (*c).fgy_32x32xn = Some(dav1d_fgy_32x32xn_16bpc_avx512icl);
-    (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
-        Some(dav1d_fguv_32x32xn_i420_16bpc_avx512icl);
-    (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
-        Some(dav1d_fguv_32x32xn_i422_16bpc_avx512icl);
-    (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
-        Some(dav1d_fguv_32x32xn_i444_16bpc_avx512icl);
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]

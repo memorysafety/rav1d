@@ -1,3 +1,4 @@
+use core::panic;
 use std::env;
 use std::path::Path;
 
@@ -8,17 +9,21 @@ fn main() {
     {
         if arch == "x86_64" {
             println!("cargo:rustc-cfg={}", "nasm_x86_64");
-            build_nasm_files()
-        }
-        if arch == "aarch64" {
+            build_nasm_files(true)
+        } else if arch == "x86" {
+            println!("cargo:rustc-cfg={}", "nasm_x86");
+            build_nasm_files(false)
+        } else if arch == "aarch64" {
             println!("cargo:rustc-cfg={}", "asm_neon");
             build_asm_files()
+        } else {
+            panic!("unknown arch: {}", arch);
         }
     }
 }
 
 #[cfg(feature = "asm")]
-fn build_nasm_files() {
+fn build_nasm_files(x86_64: bool) {
     use std::fs::File;
     use std::io::Write;
     let out_dir = env::var("OUT_DIR").unwrap();
@@ -28,10 +33,16 @@ fn build_nasm_files() {
     config_file
         .write(b"%define private_prefix dav1d\n")
         .unwrap();
-    config_file.write(b"%define ARCH_X86_32 0\n").unwrap();
-    config_file.write(b"%define ARCH_X86_64 1\n").unwrap();
+   if x86_64 {
+        config_file.write(b"%define ARCH_X86_32 0\n").unwrap();
+        config_file.write(b"%define ARCH_X86_64 1\n").unwrap();
+        config_file.write(b"%define STACK_ALIGNMENT 16\n").unwrap();
+    } else {
+        config_file.write(b"%define ARCH_X86_32 1\n").unwrap();
+        config_file.write(b"%define ARCH_X86_64 0\n").unwrap();
+        config_file.write(b"%define STACK_ALIGNMENT 4\n").unwrap();
+    }
     config_file.write(b"%define PIC 1\n").unwrap();
-    config_file.write(b"%define STACK_ALIGNMENT 16\n").unwrap();
     config_file
         .write(b"%define FORCE_VEX_ENCODING 0\n")
         .unwrap();
