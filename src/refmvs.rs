@@ -516,37 +516,29 @@ unsafe fn add_compound_extended_candidate(
         let mut cand_mv = cand_b.mv.mv[n];
         if cand_ref == r#ref.r#ref[0] as libc::c_int {
             if same_count[0] < 2 {
-                let ref mut fresh0 = same_count[0];
-                let fresh1 = *fresh0;
-                *fresh0 = *fresh0 + 1;
-                (*same.offset(fresh1 as isize)).mv.mv[0] = cand_mv;
+                (*same.offset(same_count[0] as isize)).mv.mv[0] = cand_mv;
+                same_count[0] += 1;
             }
             if diff_count[1] < 2 {
                 if (sign1 ^ sign_bias[cand_ref as usize - 1]) != 0 {
                     cand_mv.y = -cand_mv.y;
                     cand_mv.x = -cand_mv.x;
                 }
-                let ref mut fresh2 = diff_count[1];
-                let fresh3 = *fresh2;
-                *fresh2 = *fresh2 + 1;
-                (*diff.offset(fresh3 as isize)).mv.mv[1] = cand_mv;
+                (*diff.offset(diff_count[1] as isize)).mv.mv[1] = cand_mv;
+                diff_count[1] += 1;
             }
         } else if cand_ref == r#ref.r#ref[1] as libc::c_int {
             if same_count[1] < 2 {
-                let ref mut fresh4 = same_count[1];
-                let fresh5 = *fresh4;
-                *fresh4 = *fresh4 + 1;
-                (*same.offset(fresh5 as isize)).mv.mv[1] = cand_mv;
+                (*same.offset(same_count[1] as isize)).mv.mv[1] = cand_mv;
+                same_count[1] += 1;
             }
             if diff_count[0] < 2 {
                 if (sign0 ^ sign_bias[cand_ref as usize - 1]) != 0 {
                     cand_mv.y = -cand_mv.y;
                     cand_mv.x = -cand_mv.x;
                 }
-                let ref mut fresh6 = diff_count[0];
-                let fresh7 = *fresh6;
-                *fresh6 = *fresh6 + 1;
-                (*diff.offset(fresh7 as isize)).mv.mv[0] = cand_mv;
+                (*diff.offset(diff_count[0] as isize)).mv.mv[0] = cand_mv;
+                diff_count[0] += 1;
             }
         } else {
             let mut i_cand_mv = mv {
@@ -554,26 +546,22 @@ unsafe fn add_compound_extended_candidate(
                 x: -cand_mv.x,
             };
             if diff_count[0] < 2 {
-                let ref mut fresh8 = diff_count[0];
-                let fresh9 = *fresh8;
-                *fresh8 = *fresh8 + 1;
-                (*diff.offset(fresh9 as isize)).mv.mv[0] = 
+                (*diff.offset(diff_count[0] as isize)).mv.mv[0] = 
                     if (sign0 ^ sign_bias[cand_ref as usize - 1]) != 0 {
                         i_cand_mv
                     } else {
                         cand_mv
                     };
+                diff_count[0] += 1;
             }
             if diff_count[1] < 2 {
-                let ref mut fresh10 = diff_count[1];
-                let fresh11 = *fresh10;
-                *fresh10 = *fresh10 + 1;
-                (*diff.offset(fresh11 as isize)).mv.mv[1] = 
+                (*diff.offset(diff_count[1] as isize)).mv.mv[1] = 
                     if (sign1 ^ sign_bias[cand_ref as usize - 1]) != 0 {
                         i_cand_mv
                     } else {
                         cand_mv
                     };
+                diff_count[1] += 1;
             }
         }
     }
