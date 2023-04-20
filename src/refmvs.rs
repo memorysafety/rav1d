@@ -499,11 +499,11 @@ unsafe fn add_compound_extended_candidate(
     let diff = &mut *same.offset(2) as *mut refmvs_candidate;
     let diff_count = &mut *same_count.offset(2) as *mut libc::c_int;
     for n in 0..2 {
-        let cand_ref = (*cand_b).r#ref.r#ref[n as usize] as libc::c_int;
+        let cand_ref = (*cand_b).r#ref.r#ref[n] as libc::c_int;
         if cand_ref <= 0 {
             break;
         }
-        let mut cand_mv = (*cand_b).mv.mv[n as usize];
+        let mut cand_mv = (*cand_b).mv.mv[n];
         if cand_ref == r#ref.r#ref[0] as libc::c_int {
             if *same_count.offset(0) < 2 {
                 let ref mut fresh0 = *same_count.offset(0);
