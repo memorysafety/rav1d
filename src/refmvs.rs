@@ -486,115 +486,67 @@ unsafe extern "C" fn add_temporal_candidate(
         }
     };
 }
-unsafe extern "C" fn add_compound_extended_candidate(
-    same: *mut refmvs_candidate,
-    same_count: *mut libc::c_int,
-    cand_b: *const refmvs_block,
-    sign0: libc::c_int,
-    sign1: libc::c_int,
+
+fn add_compound_extended_candidate(
+    same: &mut [refmvs_candidate],
+    same_count: &mut [usize; 4],
+    cand_b: &refmvs_block,
+    sign0: u8,
+    sign1: u8,
     r#ref: refmvs_refpair,
-    sign_bias: *const uint8_t,
+    sign_bias: &[u8; 7],
 ) {
-    let diff: *mut refmvs_candidate = &mut *same.offset(2 as libc::c_int as isize)
-        as *mut refmvs_candidate;
-    let diff_count: *mut libc::c_int = &mut *same_count.offset(2 as libc::c_int as isize)
-        as *mut libc::c_int;
-    let mut n: libc::c_int = 0 as libc::c_int;
-    while n < 2 as libc::c_int {
-        let cand_ref: libc::c_int = (*cand_b).r#ref.r#ref[n as usize] as libc::c_int;
-        if cand_ref <= 0 as libc::c_int {
+    let (same, diff) = same.split_at_mut(2);
+    let (same_count, diff_count) = same_count.split_at_mut(2);
+    
+    for n in 0..2 {
+        let cand_ref = cand_b.r#ref.r#ref[n];
+
+        if cand_ref <= 0 {
             break;
         }
-        let mut cand_mv: mv = (*cand_b).mv.mv[n as usize];
-        if cand_ref == r#ref.r#ref[0 as libc::c_int as usize] as libc::c_int {
-            if *same_count.offset(0 as libc::c_int as isize) < 2 as libc::c_int {
-                let ref mut fresh0 = *same_count.offset(0 as libc::c_int as isize);
-                let fresh1 = *fresh0;
-                *fresh0 = *fresh0 + 1;
-                (*same.offset(fresh1 as isize))
-                    .mv
-                    .mv[0 as libc::c_int as usize] = cand_mv;
+
+        let sign_bias = sign_bias[cand_ref as usize - 1];
+        let mut cand_mv = cand_b.mv.mv[n];
+        if cand_ref == r#ref.r#ref[0] {
+            if same_count[0] < 2 {
+                same[same_count[0]].mv.mv[0] = cand_mv;
+                same_count[0] += 1;
             }
-            if *diff_count.offset(1 as libc::c_int as isize) < 2 as libc::c_int {
-                if sign1
-                    ^ *sign_bias.offset((cand_ref - 1 as libc::c_int) as isize)
-                        as libc::c_int != 0
-                {
-                    cand_mv
-                        .y = -(cand_mv.y as libc::c_int) as int16_t;
-                    cand_mv
-                        .x = -(cand_mv.x as libc::c_int) as int16_t;
+            if diff_count[1] < 2 {
+                if (sign1 ^ sign_bias) != 0 {
+                    cand_mv = -cand_mv;
                 }
-                let ref mut fresh2 = *diff_count.offset(1 as libc::c_int as isize);
-                let fresh3 = *fresh2;
-                *fresh2 = *fresh2 + 1;
-                (*diff.offset(fresh3 as isize))
-                    .mv
-                    .mv[1 as libc::c_int as usize] = cand_mv;
+                diff[diff_count[1]].mv.mv[1] = cand_mv;
+                diff_count[1] += 1;
             }
-        } else if cand_ref == r#ref.r#ref[1 as libc::c_int as usize] as libc::c_int {
-            if *same_count.offset(1 as libc::c_int as isize) < 2 as libc::c_int {
-                let ref mut fresh4 = *same_count.offset(1 as libc::c_int as isize);
-                let fresh5 = *fresh4;
-                *fresh4 = *fresh4 + 1;
-                (*same.offset(fresh5 as isize))
-                    .mv
-                    .mv[1 as libc::c_int as usize] = cand_mv;
+        } else if cand_ref == r#ref.r#ref[1] {
+            if same_count[1] < 2 {
+                same[same_count[1]].mv.mv[1] = cand_mv;
+                same_count[1] += 1;
             }
-            if *diff_count.offset(0 as libc::c_int as isize) < 2 as libc::c_int {
-                if sign0
-                    ^ *sign_bias.offset((cand_ref - 1 as libc::c_int) as isize)
-                        as libc::c_int != 0
-                {
-                    cand_mv.y = -cand_mv.y;
-                    cand_mv.x = -cand_mv.x;
+            if diff_count[0] < 2 {
+                if (sign0 ^ sign_bias) != 0 {
+                    cand_mv = -cand_mv;
                 }
-                let ref mut fresh6 = *diff_count.offset(0 as libc::c_int as isize);
-                let fresh7 = *fresh6;
-                *fresh6 = *fresh6 + 1;
-                (*diff.offset(fresh7 as isize))
-                    .mv
-                    .mv[0 as libc::c_int as usize] = cand_mv;
+                diff[diff_count[0]].mv.mv[0] = cand_mv;
+                diff_count[0] += 1;
             }
         } else {
-            let mut i_cand_mv = mv {
-                y: -cand_mv.y,
-                x: -cand_mv.x,
-            };
-            if *diff_count.offset(0 as libc::c_int as isize) < 2 as libc::c_int {
-                let ref mut fresh8 = *diff_count.offset(0 as libc::c_int as isize);
-                let fresh9 = *fresh8;
-                *fresh8 = *fresh8 + 1;
-                (*diff.offset(fresh9 as isize))
-                    .mv
-                    .mv[0 as libc::c_int
-                    as usize] = if sign0
-                    ^ *sign_bias.offset((cand_ref - 1 as libc::c_int) as isize)
-                        as libc::c_int != 0
-                {
-                    i_cand_mv
-                } else {
-                    cand_mv
-                };
+            let i_cand_mv = -cand_mv;
+
+            if diff_count[0] < 2 {
+                diff[diff_count[0]].mv.mv[0] = 
+                    if (sign0 ^ sign_bias) != 0 { i_cand_mv } else { cand_mv };
+                diff_count[0] += 1;
             }
-            if *diff_count.offset(1 as libc::c_int as isize) < 2 as libc::c_int {
-                let ref mut fresh10 = *diff_count.offset(1 as libc::c_int as isize);
-                let fresh11 = *fresh10;
-                *fresh10 = *fresh10 + 1;
-                (*diff.offset(fresh11 as isize))
-                    .mv
-                    .mv[1 as libc::c_int
-                    as usize] = if sign1
-                    ^ *sign_bias.offset((cand_ref - 1 as libc::c_int) as isize)
-                        as libc::c_int != 0
-                {
-                    i_cand_mv
-                } else {
-                    cand_mv
-                };
+
+            if diff_count[1] < 2 {
+                diff[diff_count[1]].mv.mv[1] = 
+                    if (sign1 ^ sign_bias) != 0 { i_cand_mv } else { cand_mv };
+                diff_count[1] += 1;
             }
         }
-        n += 1;
     }
 }
 
@@ -619,8 +571,7 @@ fn add_single_extended_candidate(
 
         let mut cand_mv = cand_b.mv.mv[n];
         if (sign ^ sign_bias[cand_ref as usize - 1]) != 0 {
-            cand_mv.y = -cand_mv.y;
-            cand_mv.x = -cand_mv.x;
+            cand_mv = -cand_mv;
         }
 
         let last = *cnt;
@@ -922,8 +873,8 @@ pub unsafe fn dav1d_refmvs_find(
 
     if r#ref.r#ref[1] > 0 {
         if *cnt < 2 {
-            let sign0 = rf.sign_bias[r#ref.r#ref[0] as usize - 1] as libc::c_int;
-            let sign1 = rf.sign_bias[r#ref.r#ref[1] as usize - 1] as libc::c_int;
+            let sign0 = rf.sign_bias[r#ref.r#ref[0] as usize - 1];
+            let sign1 = rf.sign_bias[r#ref.r#ref[1] as usize - 1];
             let sz4 = imin(w4, h4);
             let cur_cnt = *cnt;
             let same = &mut mvstack[cur_cnt..];
@@ -933,17 +884,17 @@ pub unsafe fn dav1d_refmvs_find(
             if n_rows != !0 {
                 let mut x = 0;
                 while x < sz4 {
-                    let cand_b = &*b_top.offset(x as isize) as *const refmvs_block;
+                    let cand_b = &*b_top.offset(x as isize);
                     add_compound_extended_candidate(
-                        same.as_mut_ptr(),
-                        same_count.as_mut_ptr(),
+                        same,
+                        &mut same_count,
                         cand_b,
                         sign0,
                         sign1,
                         r#ref,
-                        rf.sign_bias.as_ptr(),
+                        &rf.sign_bias,
                     );
-                    x += dav1d_block_dimensions[(*cand_b).bs as usize][0] as libc::c_int;
+                    x += dav1d_block_dimensions[cand_b.bs as usize][0] as libc::c_int;
                 }
             }
 
@@ -951,18 +902,18 @@ pub unsafe fn dav1d_refmvs_find(
             if n_cols != !0 {
                 let mut y = 0;
                 while y < sz4 {
-                    let cand_b: *const refmvs_block = &mut *(*b_left.offset(y as isize))
-                        .offset(bx4 as isize - 1) as *mut refmvs_block;
+                    let cand_b = &*(*b_left.offset(y as isize))
+                        .offset(bx4 as isize - 1);
                     add_compound_extended_candidate(
-                        same.as_mut_ptr(),
-                        same_count.as_mut_ptr(),
+                        same,
+                        &mut same_count,
                         cand_b,
                         sign0,
                         sign1,
                         r#ref,
-                        rf.sign_bias.as_ptr(),
+                        &rf.sign_bias,
                     );
-                    y += dav1d_block_dimensions[(*cand_b).bs as usize][1] as libc::c_int;
+                    y += dav1d_block_dimensions[cand_b.bs as usize][1] as libc::c_int;
                 }
             }
             
@@ -974,7 +925,7 @@ pub unsafe fn dav1d_refmvs_find(
 
             // merge together
             for n in 0..2 {
-                let mut m = same_count[n] as usize;
+                let mut m = same_count[n];
 
                 if m >= 2 {
                     continue;
@@ -999,7 +950,7 @@ pub unsafe fn dav1d_refmvs_find(
 
             // if the first extended was the same as the non-extended one,
             // then replace it with the second extended one
-            let mut n = *cnt;
+            let n = *cnt;
             let same = &mvstack[cur_cnt..]; // need to reborrow to get a &, not &mut
             if n == 1 && mvstack[0].mv == same[0].mv {
                 mvstack[1].mv = mvstack[2].mv;
