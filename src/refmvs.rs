@@ -509,12 +509,12 @@ unsafe fn add_compound_extended_candidate(
     let (same_count, diff_count) = same_count.split_at_mut(2);
     
     for n in 0..2 {
-        let cand_ref = cand_b.r#ref.r#ref[n] as libc::c_int;
+        let cand_ref = cand_b.r#ref.r#ref[n];
         if cand_ref <= 0 {
             break;
         }
         let mut cand_mv = cand_b.mv.mv[n];
-        if cand_ref == r#ref.r#ref[0] as libc::c_int {
+        if cand_ref == r#ref.r#ref[0] {
             if same_count[0] < 2 {
                 same[same_count[0]].mv.mv[0] = cand_mv;
                 same_count[0] += 1;
@@ -527,7 +527,7 @@ unsafe fn add_compound_extended_candidate(
                 diff[diff_count[1]].mv.mv[1] = cand_mv;
                 diff_count[1] += 1;
             }
-        } else if cand_ref == r#ref.r#ref[1] as libc::c_int {
+        } else if cand_ref == r#ref.r#ref[1] {
             if same_count[1] < 2 {
                 same[same_count[1]].mv.mv[1] = cand_mv;
                 same_count[1] += 1;
