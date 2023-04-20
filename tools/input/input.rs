@@ -1,8 +1,7 @@
-
-use crate::include::stdint::*;
-use ::libc;
-use crate::stderr;
 use crate::errno_location;
+use crate::include::stdint::*;
+use crate::stderr;
+use ::libc;
 extern "C" {
     pub type Dav1dRef;
     pub type DemuxerPriv;
@@ -38,8 +37,8 @@ pub struct Demuxer {
     pub priv_data_size: libc::c_int,
     pub name: *const libc::c_char,
     pub probe_sz: libc::c_int,
-    pub probe: Option::<unsafe extern "C" fn(*const uint8_t) -> libc::c_int>,
-    pub open: Option::<
+    pub probe: Option<unsafe extern "C" fn(*const uint8_t) -> libc::c_int>,
+    pub open: Option<
         unsafe extern "C" fn(
             *mut DemuxerPriv,
             *const libc::c_char,
@@ -48,11 +47,9 @@ pub struct Demuxer {
             *mut libc::c_uint,
         ) -> libc::c_int,
     >,
-    pub read: Option::<
-        unsafe extern "C" fn(*mut DemuxerPriv, *mut Dav1dData) -> libc::c_int,
-    >,
-    pub seek: Option::<unsafe extern "C" fn(*mut DemuxerPriv, uint64_t) -> libc::c_int>,
-    pub close: Option::<unsafe extern "C" fn(*mut DemuxerPriv) -> ()>,
+    pub read: Option<unsafe extern "C" fn(*mut DemuxerPriv, *mut Dav1dData) -> libc::c_int>,
+    pub seek: Option<unsafe extern "C" fn(*mut DemuxerPriv, uint64_t) -> libc::c_int>,
+    pub close: Option<unsafe extern "C" fn(*mut DemuxerPriv) -> ()>,
 }
 use crate::include::common::intops::imax;
 static mut demuxers: [*const Demuxer; 4] = unsafe {
@@ -89,8 +86,7 @@ pub unsafe extern "C" fn input_open(
         if (demuxers[i as usize]).is_null() {
             fprintf(
                 stderr,
-                b"Failed to find demuxer named \"%s\"\n\0" as *const u8
-                    as *const libc::c_char,
+                b"Failed to find demuxer named \"%s\"\n\0" as *const u8 as *const libc::c_char,
                 name,
             );
             return -(92 as libc::c_int);
@@ -110,15 +106,11 @@ pub unsafe extern "C" fn input_open(
             );
             return -(12 as libc::c_int);
         }
-        let mut f: *mut libc::FILE = fopen(
-            filename,
-            b"rb\0" as *const u8 as *const libc::c_char,
-        );
+        let mut f: *mut libc::FILE = fopen(filename, b"rb\0" as *const u8 as *const libc::c_char);
         if f.is_null() {
             fprintf(
                 stderr,
-                b"Failed to open input file %s: %s\n\0" as *const u8
-                    as *const libc::c_char,
+                b"Failed to open input file %s: %s\n\0" as *const u8 as *const libc::c_char,
                 filename,
                 strerror(*errno_location()),
             );
@@ -149,8 +141,7 @@ pub unsafe extern "C" fn input_open(
         }
         i = 0 as libc::c_int;
         while !(demuxers[i as usize]).is_null() {
-            if ((*demuxers[i as usize]).probe)
-                .expect("non-null function pointer")(probe_data) != 0
+            if ((*demuxers[i as usize]).probe).expect("non-null function pointer")(probe_data) != 0
             {
                 impl_0 = demuxers[i as usize];
                 break;
@@ -162,8 +153,7 @@ pub unsafe extern "C" fn input_open(
         if (demuxers[i as usize]).is_null() {
             fprintf(
                 stderr,
-                b"Failed to probe demuxer for file %s\n\0" as *const u8
-                    as *const libc::c_char,
+                b"Failed to probe demuxer for file %s\n\0" as *const u8 as *const libc::c_char,
                 filename,
             );
             return -(92 as libc::c_int);
@@ -182,10 +172,13 @@ pub unsafe extern "C" fn input_open(
     }
     (*c).impl_0 = impl_0;
     (*c).data = ((*c).priv_data).as_mut_ptr() as *mut DemuxerPriv;
-    res = ((*impl_0).open)
-        .expect(
-            "non-null function pointer",
-        )((*c).data, filename, fps, num_frames, timebase);
+    res = ((*impl_0).open).expect("non-null function pointer")(
+        (*c).data,
+        filename,
+        fps,
+        num_frames,
+        timebase,
+    );
     if res < 0 {
         free(c as *mut libc::c_void);
         return res;
@@ -194,18 +187,11 @@ pub unsafe extern "C" fn input_open(
     return 0 as libc::c_int;
 }
 #[no_mangle]
-pub unsafe extern "C" fn input_read(
-    ctx: *mut DemuxerContext,
-    data: *mut Dav1dData,
-) -> libc::c_int {
-    return ((*(*ctx).impl_0).read)
-        .expect("non-null function pointer")((*ctx).data, data);
+pub unsafe extern "C" fn input_read(ctx: *mut DemuxerContext, data: *mut Dav1dData) -> libc::c_int {
+    return ((*(*ctx).impl_0).read).expect("non-null function pointer")((*ctx).data, data);
 }
 #[no_mangle]
-pub unsafe extern "C" fn input_seek(
-    ctx: *mut DemuxerContext,
-    pts: uint64_t,
-) -> libc::c_int {
+pub unsafe extern "C" fn input_seek(ctx: *mut DemuxerContext, pts: uint64_t) -> libc::c_int {
     return if ((*(*ctx).impl_0).seek).is_some() {
         ((*(*ctx).impl_0).seek).expect("non-null function pointer")((*ctx).data, pts)
     } else {

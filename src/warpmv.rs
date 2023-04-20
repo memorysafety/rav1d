@@ -1,13 +1,13 @@
-use crate::include::stdint::*;
-use ::libc;
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
+use crate::include::stdint::*;
 use crate::src::levels::mv;
+use ::libc;
 
 use crate::include::common::intops::apply_sign;
-use crate::include::common::intops::iclip;
 use crate::include::common::intops::apply_sign64;
-use crate::include::common::intops::ulog2;
+use crate::include::common::intops::iclip;
 use crate::include::common::intops::u64log2;
+use crate::include::common::intops::ulog2;
 static mut div_lut: [uint16_t; 257] = [
     16384 as libc::c_int as uint16_t,
     16320 as libc::c_int as uint16_t,
@@ -275,16 +275,11 @@ fn iclip_wmp(v: libc::c_int) -> libc::c_int {
 }
 
 #[inline]
-unsafe extern "C" fn resolve_divisor_32(
-    d: libc::c_uint,
-    shift: *mut libc::c_int,
-) -> libc::c_int {
+unsafe extern "C" fn resolve_divisor_32(d: libc::c_uint, shift: *mut libc::c_int) -> libc::c_int {
     *shift = ulog2(d);
-    let e = d.wrapping_sub(((1 as libc::c_int) << *shift) as libc::c_uint)
-        as libc::c_int;
+    let e = d.wrapping_sub(((1 as libc::c_int) << *shift) as libc::c_uint) as libc::c_int;
     let f = if *shift > 8 {
-        e + ((1 as libc::c_int) << *shift - 9)
-            >> *shift - 8
+        e + ((1 as libc::c_int) << *shift - 9) >> *shift - 8
     } else {
         e << 8 - *shift
     };
@@ -295,71 +290,45 @@ unsafe extern "C" fn resolve_divisor_32(
     return div_lut[f as usize] as libc::c_int;
 }
 #[no_mangle]
-pub unsafe extern "C" fn dav1d_get_shear_params(
-    wm: *mut Dav1dWarpedMotionParams,
-) -> libc::c_int {
+pub unsafe extern "C" fn dav1d_get_shear_params(wm: *mut Dav1dWarpedMotionParams) -> libc::c_int {
     let mat: *const int32_t = ((*wm).matrix).as_mut_ptr();
     if *mat.offset(2) <= 0 {
         return 1 as libc::c_int;
     }
-    (*wm)
-        .u
-        .p
-        .alpha = iclip_wmp(
-        *mat.offset(2) - 0x10000 as libc::c_int,
-    ) as int16_t;
+    (*wm).u.p.alpha = iclip_wmp(*mat.offset(2) - 0x10000 as libc::c_int) as int16_t;
     (*wm).u.p.beta = iclip_wmp(*mat.offset(3)) as int16_t;
     let mut shift = 0;
     let y = apply_sign(
-        resolve_divisor_32(
-            (*mat.offset(2)).abs() as libc::c_uint,
-            &mut shift,
-        ),
+        resolve_divisor_32((*mat.offset(2)).abs() as libc::c_uint, &mut shift),
         *mat.offset(2),
     );
-    let v1: int64_t = *mat.offset(4) as int64_t
-        * 0x10000 * y as int64_t;
+    let v1: int64_t = *mat.offset(4) as int64_t * 0x10000 * y as int64_t;
     let rnd = (1 as libc::c_int) << shift >> 1;
-    (*wm)
-        .u
-        .p
-        .gamma = iclip_wmp(
-        apply_sign64(
-            ((v1 as libc::c_longlong).abs() + rnd as libc::c_longlong >> shift)
-                as libc::c_int,
-            v1,
-        ),
-    ) as int16_t;
-    let v2: int64_t = *mat.offset(3) as int64_t
-        * *mat.offset(4) as int64_t * y as int64_t;
-    (*wm)
-        .u
-        .p
-        .delta = iclip_wmp(
+    (*wm).u.p.gamma = iclip_wmp(apply_sign64(
+        ((v1 as libc::c_longlong).abs() + rnd as libc::c_longlong >> shift) as libc::c_int,
+        v1,
+    )) as int16_t;
+    let v2: int64_t = *mat.offset(3) as int64_t * *mat.offset(4) as int64_t * y as int64_t;
+    (*wm).u.p.delta = iclip_wmp(
         *mat.offset(5)
             - apply_sign64(
-                ((v2 as libc::c_longlong).abs() + rnd as libc::c_longlong >> shift)
-                    as libc::c_int,
+                ((v2 as libc::c_longlong).abs() + rnd as libc::c_longlong >> shift) as libc::c_int,
                 v2,
-            ) - 0x10000 as libc::c_int,
+            )
+            - 0x10000 as libc::c_int,
     ) as int16_t;
-    return (4 * ((*wm).u.p.alpha as libc::c_int).abs()
-        + 7 * ((*wm).u.p.beta as libc::c_int).abs() >= 0x10000 as libc::c_int
-        || 4 * ((*wm).u.p.gamma as libc::c_int).abs()
-            + 4 * ((*wm).u.p.delta as libc::c_int).abs()
+    return (4 * ((*wm).u.p.alpha as libc::c_int).abs() + 7 * ((*wm).u.p.beta as libc::c_int).abs()
+        >= 0x10000 as libc::c_int
+        || 4 * ((*wm).u.p.gamma as libc::c_int).abs() + 4 * ((*wm).u.p.delta as libc::c_int).abs()
             >= 0x10000 as libc::c_int) as libc::c_int;
 }
-unsafe extern "C" fn resolve_divisor_64(
-    d: uint64_t,
-    shift: *mut libc::c_int,
-) -> libc::c_int {
+unsafe extern "C" fn resolve_divisor_64(d: uint64_t, shift: *mut libc::c_int) -> libc::c_int {
     *shift = u64log2(d);
     let e: int64_t = (d as libc::c_ulonglong)
         .wrapping_sub(((1 as libc::c_longlong) << *shift) as libc::c_ulonglong)
         as int64_t;
     let f: int64_t = (if *shift > 8 {
-        e as libc::c_longlong + ((1 as libc::c_longlong) << *shift - 9)
-            >> *shift - 8
+        e as libc::c_longlong + ((1 as libc::c_longlong) << *shift - 9) >> *shift - 8
     } else {
         (e << 8 - *shift) as libc::c_longlong
     }) as int64_t;
@@ -376,8 +345,7 @@ unsafe extern "C" fn get_mult_shift_ndiag(
 ) -> libc::c_int {
     let v1: int64_t = px * idet as int64_t;
     let v2 = apply_sign64(
-        ((v1 as libc::c_longlong).abs()
-            + ((1 as libc::c_longlong) << shift >> 1) >> shift)
+        ((v1 as libc::c_longlong).abs() + ((1 as libc::c_longlong) << shift >> 1) >> shift)
             as libc::c_int,
         v1,
     );
@@ -390,8 +358,7 @@ unsafe extern "C" fn get_mult_shift_diag(
 ) -> libc::c_int {
     let v1: int64_t = px * idet as int64_t;
     let v2 = apply_sign64(
-        ((v1 as libc::c_longlong).abs()
-            + ((1 as libc::c_longlong) << shift >> 1) >> shift)
+        ((v1 as libc::c_longlong).abs() + ((1 as libc::c_longlong) << shift >> 1) >> shift)
             as libc::c_int,
         v1,
     );
@@ -411,24 +378,15 @@ pub unsafe extern "C" fn dav1d_set_affine_mv2d(
     let rsux = 2 * bw4 - 1;
     let isuy = by4 * 4 + rsuy;
     let isux = bx4 * 4 + rsux;
-    *mat
-        .offset(
-            0 as libc::c_int as isize,
-        ) = iclip(
+    *mat.offset(0 as libc::c_int as isize) = iclip(
         mv.x as libc::c_int * 0x2000 as libc::c_int
-            - (isux * (*mat.offset(2) - 0x10000 as libc::c_int)
-                + isuy * *mat.offset(3)),
+            - (isux * (*mat.offset(2) - 0x10000 as libc::c_int) + isuy * *mat.offset(3)),
         -(0x800000 as libc::c_int),
         0x7fffff as libc::c_int,
     );
-    *mat
-        .offset(
-            1 as libc::c_int as isize,
-        ) = iclip(
+    *mat.offset(1 as libc::c_int as isize) = iclip(
         mv.y as libc::c_int * 0x2000 as libc::c_int
-            - (isux * *mat.offset(4)
-                + isuy
-                    * (*mat.offset(5) - 0x10000 as libc::c_int)),
+            - (isux * *mat.offset(4) + isuy * (*mat.offset(5) - 0x10000 as libc::c_int)),
         -(0x800000 as libc::c_int),
         0x7fffff as libc::c_int,
     );
@@ -461,42 +419,23 @@ pub unsafe extern "C" fn dav1d_find_affine_int(
     let isux = bx4 * 4 + rsux;
     let mut i = 0;
     while i < np {
-        let dx = (*pts
-            .offset(i as isize))[1][0]
-            - dux;
-        let dy = (*pts
-            .offset(i as isize))[1][1]
-            - duy;
-        let sx = (*pts
-            .offset(i as isize))[0][0]
-            - sux;
-        let sy = (*pts
-            .offset(i as isize))[0][1]
-            - suy;
+        let dx = (*pts.offset(i as isize))[1][0] - dux;
+        let dy = (*pts.offset(i as isize))[1][1] - duy;
+        let sx = (*pts.offset(i as isize))[0][0] - sux;
+        let sy = (*pts.offset(i as isize))[0][1] - suy;
         if (sx - dx).abs() < 256 && (sy - dy).abs() < 256 {
-            a[0][0]
-                += (sx * sx >> 2) + sx * 2
-                    + 8;
-            a[0][1]
-                += (sx * sy >> 2) + sx + sy + 4;
-            a[1][1]
-                += (sy * sy >> 2) + sy * 2
-                    + 8;
-            bx[0]
-                += (sx * dx >> 2) + sx + dx + 8;
-            bx[1]
-                += (sy * dx >> 2) + sy + dx + 4;
-            by[0]
-                += (sx * dy >> 2) + sx + dy + 4;
-            by[1]
-                += (sy * dy >> 2) + sy + dy + 8;
+            a[0][0] += (sx * sx >> 2) + sx * 2 + 8;
+            a[0][1] += (sx * sy >> 2) + sx + sy + 4;
+            a[1][1] += (sy * sy >> 2) + sy * 2 + 8;
+            bx[0] += (sx * dx >> 2) + sx + dx + 8;
+            bx[1] += (sy * dx >> 2) + sy + dx + 4;
+            by[0] += (sx * dy >> 2) + sx + dy + 4;
+            by[1] += (sy * dy >> 2) + sy + dy + 8;
         }
         i += 1;
     }
-    let det: int64_t = a[0][0] as int64_t
-        * a[1][1] as int64_t
-        - a[0][1] as int64_t
-            * a[0][1] as int64_t;
+    let det: int64_t =
+        a[0][0] as int64_t * a[1][1] as int64_t - a[0][1] as int64_t * a[0][1] as int64_t;
     if det == 0 {
         return 1 as libc::c_int;
     }
@@ -510,68 +449,35 @@ pub unsafe extern "C" fn dav1d_find_affine_int(
         idet <<= -shift;
         shift = 0 as libc::c_int;
     }
-    *mat
-        .offset(
-            2 as libc::c_int as isize,
-        ) = get_mult_shift_diag(
-        a[1][1] as int64_t
-            * bx[0] as int64_t
-            - a[0][1] as int64_t
-                * bx[1] as int64_t,
+    *mat.offset(2 as libc::c_int as isize) = get_mult_shift_diag(
+        a[1][1] as int64_t * bx[0] as int64_t - a[0][1] as int64_t * bx[1] as int64_t,
         idet,
         shift,
     );
-    *mat
-        .offset(
-            3 as libc::c_int as isize,
-        ) = get_mult_shift_ndiag(
-        a[0][0] as int64_t
-            * bx[1] as int64_t
-            - a[0][1] as int64_t
-                * bx[0] as int64_t,
+    *mat.offset(3 as libc::c_int as isize) = get_mult_shift_ndiag(
+        a[0][0] as int64_t * bx[1] as int64_t - a[0][1] as int64_t * bx[0] as int64_t,
         idet,
         shift,
     );
-    *mat
-        .offset(
-            4 as libc::c_int as isize,
-        ) = get_mult_shift_ndiag(
-        a[1][1] as int64_t
-            * by[0] as int64_t
-            - a[0][1] as int64_t
-                * by[1] as int64_t,
+    *mat.offset(4 as libc::c_int as isize) = get_mult_shift_ndiag(
+        a[1][1] as int64_t * by[0] as int64_t - a[0][1] as int64_t * by[1] as int64_t,
         idet,
         shift,
     );
-    *mat
-        .offset(
-            5 as libc::c_int as isize,
-        ) = get_mult_shift_diag(
-        a[0][0] as int64_t
-            * by[1] as int64_t
-            - a[0][1] as int64_t
-                * by[0] as int64_t,
+    *mat.offset(5 as libc::c_int as isize) = get_mult_shift_diag(
+        a[0][0] as int64_t * by[1] as int64_t - a[0][1] as int64_t * by[0] as int64_t,
         idet,
         shift,
     );
-    *mat
-        .offset(
-            0 as libc::c_int as isize,
-        ) = iclip(
+    *mat.offset(0 as libc::c_int as isize) = iclip(
         mv.x as libc::c_int * 0x2000 as libc::c_int
-            - (isux * (*mat.offset(2) - 0x10000 as libc::c_int)
-                + isuy * *mat.offset(3)),
+            - (isux * (*mat.offset(2) - 0x10000 as libc::c_int) + isuy * *mat.offset(3)),
         -(0x800000 as libc::c_int),
         0x7fffff as libc::c_int,
     );
-    *mat
-        .offset(
-            1 as libc::c_int as isize,
-        ) = iclip(
+    *mat.offset(1 as libc::c_int as isize) = iclip(
         mv.y as libc::c_int * 0x2000 as libc::c_int
-            - (isux * *mat.offset(4)
-                + isuy
-                    * (*mat.offset(5) - 0x10000 as libc::c_int)),
+            - (isux * *mat.offset(4) + isuy * (*mat.offset(5) - 0x10000 as libc::c_int)),
         -(0x800000 as libc::c_int),
         0x7fffff as libc::c_int,
     );

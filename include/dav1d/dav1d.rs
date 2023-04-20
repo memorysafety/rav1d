@@ -2,12 +2,8 @@
 #[repr(C)]
 pub struct Dav1dLogger {
     pub cookie: *mut libc::c_void,
-    pub callback: Option::<
-        unsafe extern "C" fn(
-            *mut libc::c_void,
-            *const libc::c_char,
-            ::core::ffi::VaList,
-        ) -> (),
+    pub callback: Option<
+        unsafe extern "C" fn(*mut libc::c_void, *const libc::c_char, ::core::ffi::VaList) -> (),
     >,
 }
 

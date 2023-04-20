@@ -1,30 +1,17 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
-use ::libc;
 use crate::stderr;
+use ::libc;
 extern "C" {
     pub type Dav1dRef;
     pub type MuxerPriv;
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
-    fn snprintf(
-        _: *mut libc::c_char,
-        _: size_t,
-        _: *const libc::c_char,
-        _: ...
-    ) -> libc::c_int;
+    fn snprintf(_: *mut libc::c_char, _: size_t, _: *const libc::c_char, _: ...) -> libc::c_int;
     fn malloc(_: size_t) -> *mut libc::c_void;
     fn free(_: *mut libc::c_void);
-    fn memcpy(
-        _: *mut libc::c_void,
-        _: *const libc::c_void,
-        _: size_t,
-    ) -> *mut libc::c_void;
+    fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: size_t) -> *mut libc::c_void;
     fn strcmp(_: *const libc::c_char, _: *const libc::c_char) -> libc::c_int;
-    fn strncmp(
-        _: *const libc::c_char,
-        _: *const libc::c_char,
-        _: size_t,
-    ) -> libc::c_int;
+    fn strncmp(_: *const libc::c_char, _: *const libc::c_char, _: size_t) -> libc::c_int;
     fn strchr(_: *const libc::c_char, _: libc::c_int) -> *mut libc::c_char;
     fn strlen(_: *const libc::c_char) -> size_t;
     static null_muxer: Muxer;
@@ -32,8 +19,8 @@ extern "C" {
     static yuv_muxer: Muxer;
     static y4m2_muxer: Muxer;
 }
-use crate::include::dav1d::picture::Dav1dPictureParameters;
 use crate::include::dav1d::picture::Dav1dPicture;
+use crate::include::dav1d::picture::Dav1dPictureParameters;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct MuxerContext {
@@ -51,7 +38,7 @@ pub struct Muxer {
     pub priv_data_size: libc::c_int,
     pub name: *const libc::c_char,
     pub extension: *const libc::c_char,
-    pub write_header: Option::<
+    pub write_header: Option<
         unsafe extern "C" fn(
             *mut MuxerPriv,
             *const libc::c_char,
@@ -59,13 +46,10 @@ pub struct Muxer {
             *const libc::c_uint,
         ) -> libc::c_int,
     >,
-    pub write_picture: Option::<
-        unsafe extern "C" fn(*mut MuxerPriv, *mut Dav1dPicture) -> libc::c_int,
-    >,
-    pub write_trailer: Option::<unsafe extern "C" fn(*mut MuxerPriv) -> ()>,
-    pub verify: Option::<
-        unsafe extern "C" fn(*mut MuxerPriv, *const libc::c_char) -> libc::c_int,
-    >,
+    pub write_picture:
+        Option<unsafe extern "C" fn(*mut MuxerPriv, *mut Dav1dPicture) -> libc::c_int>,
+    pub write_trailer: Option<unsafe extern "C" fn(*mut MuxerPriv) -> ()>,
+    pub verify: Option<unsafe extern "C" fn(*mut MuxerPriv, *const libc::c_char) -> libc::c_int>,
 }
 use crate::include::common::intops::imin;
 static mut muxers: [*const Muxer; 5] = unsafe {
@@ -82,9 +66,7 @@ unsafe extern "C" fn find_extension(f: *const libc::c_char) -> *const libc::c_ch
     if l == 0 {
         return 0 as *const libc::c_char;
     }
-    let end: *const libc::c_char = &*f
-        .offset(l.wrapping_sub(1) as isize)
-        as *const libc::c_char;
+    let end: *const libc::c_char = &*f.offset(l.wrapping_sub(1) as isize) as *const libc::c_char;
     let mut step: *const libc::c_char = end;
     while *step as libc::c_int >= 'a' as i32 && *step as libc::c_int <= 'z' as i32
         || *step as libc::c_int >= 'A' as i32 && *step as libc::c_int <= 'Z' as i32
@@ -92,7 +74,9 @@ unsafe extern "C" fn find_extension(f: *const libc::c_char) -> *const libc::c_ch
     {
         step = step.offset(-1);
     }
-    return if step < end && step > f && *step as libc::c_int == '.' as i32
+    return if step < end
+        && step > f
+        && *step as libc::c_int == '.' as i32
         && *step.offset(-(1 as libc::c_int) as isize) as libc::c_int != '/' as i32
     {
         &*step.offset(1) as *const libc::c_char
@@ -115,15 +99,14 @@ pub unsafe extern "C" fn output_open(
     let mut name_offset = 0;
     if !name.is_null() {
         name_offset = 5 as libc::c_int
-            * (strncmp(
-                name,
-                b"frame\0" as *const u8 as *const libc::c_char,
-                5,
-            ) == 0) as libc::c_int;
+            * (strncmp(name, b"frame\0" as *const u8 as *const libc::c_char, 5) == 0)
+                as libc::c_int;
         i = 0 as libc::c_int as libc::c_uint;
         while !(muxers[i as usize]).is_null() {
-            if strcmp((*muxers[i as usize]).name, &*name.offset(name_offset as isize))
-                == 0
+            if strcmp(
+                (*muxers[i as usize]).name,
+                &*name.offset(name_offset as isize),
+            ) == 0
             {
                 impl_0 = muxers[i as usize];
                 break;
@@ -134,8 +117,7 @@ pub unsafe extern "C" fn output_open(
         if (muxers[i as usize]).is_null() {
             fprintf(
                 stderr,
-                b"Failed to find muxer named \"%s\"\n\0" as *const u8
-                    as *const libc::c_char,
+                b"Failed to find muxer named \"%s\"\n\0" as *const u8 as *const libc::c_char,
                 name,
             );
             return -(92 as libc::c_int);
@@ -147,8 +129,7 @@ pub unsafe extern "C" fn output_open(
         if ext.is_null() {
             fprintf(
                 stderr,
-                b"No extension found for file %s\n\0" as *const u8
-                    as *const libc::c_char,
+                b"No extension found for file %s\n\0" as *const u8 as *const libc::c_char,
                 filename,
             );
             return -(1 as libc::c_int);
@@ -172,9 +153,8 @@ pub unsafe extern "C" fn output_open(
             return -(92 as libc::c_int);
         }
     }
-    c = malloc(
-        (48 as size_t).wrapping_add((*impl_0).priv_data_size as size_t),
-    ) as *mut MuxerContext;
+    c = malloc((48 as size_t).wrapping_add((*impl_0).priv_data_size as size_t))
+        as *mut MuxerContext;
     if c.is_null() {
         fprintf(
             stderr,
@@ -198,21 +178,22 @@ pub unsafe extern "C" fn output_open(
         have_num_pattern = (*ptr as libc::c_int == 'n' as i32) as libc::c_int;
         ptr = strchr(ptr, '%' as i32);
     }
-    (*c)
-        .one_file_per_frame = (name_offset != 0
-        || name.is_null() && have_num_pattern != 0) as libc::c_int;
+    (*c).one_file_per_frame =
+        (name_offset != 0 || name.is_null() && have_num_pattern != 0) as libc::c_int;
     if (*c).one_file_per_frame != 0 {
         (*c).fps[0] = *fps.offset(0);
         (*c).fps[1] = *fps.offset(1);
         (*c).filename = filename;
         (*c).framenum = 0 as libc::c_int;
-    } else if ((*impl_0).write_header).is_some()
-        && {
-            res = ((*impl_0).write_header)
-                .expect("non-null function pointer")((*c).data, filename, p, fps);
-            res < 0
-        }
-    {
+    } else if ((*impl_0).write_header).is_some() && {
+        res = ((*impl_0).write_header).expect("non-null function pointer")(
+            (*c).data,
+            filename,
+            p,
+            fps,
+        );
+        res < 0
+    } {
         free(c as *mut libc::c_void);
         return res;
     }
@@ -255,9 +236,7 @@ unsafe extern "C" fn assemble_field(
         unreachable!();
     }
     fmt_copy[0] = '%' as i32 as libc::c_char;
-    if *fmt.offset(1) as libc::c_int >= '1' as i32
-        && *fmt.offset(1) as libc::c_int <= '9' as i32
-    {
+    if *fmt.offset(1) as libc::c_int >= '1' as i32 && *fmt.offset(1) as libc::c_int <= '9' as i32 {
         fmt_copy[1] = '0' as i32 as libc::c_char;
         fmt_copy[2] = 0 as libc::c_int as libc::c_char;
     } else {
@@ -316,10 +295,8 @@ unsafe extern "C" fn assemble_filename(
             iptr.offset_from(ptr) as libc::c_long as libc::c_int,
         );
         ptr = iptr;
-        let mut iiptr: *const libc::c_char = &*iptr.offset(1)
-            as *const libc::c_char;
-        while *iiptr as libc::c_int >= '0' as i32 && *iiptr as libc::c_int <= '9' as i32
-        {
+        let mut iiptr: *const libc::c_char = &*iptr.offset(1) as *const libc::c_char;
+        while *iiptr as libc::c_int >= '0' as i32 && *iiptr as libc::c_int <= '9' as i32 {
             iiptr = iiptr.offset(1);
         }
         match *iiptr as libc::c_int {
@@ -366,24 +343,17 @@ unsafe extern "C" fn assemble_filename(
     safe_strncat(filename, filename_size, ptr, strlen(ptr) as libc::c_int);
 }
 #[no_mangle]
-pub unsafe extern "C" fn output_write(
-    ctx: *mut MuxerContext,
-    p: *mut Dav1dPicture,
-) -> libc::c_int {
+pub unsafe extern "C" fn output_write(ctx: *mut MuxerContext, p: *mut Dav1dPicture) -> libc::c_int {
     let mut res = 0;
     if (*ctx).one_file_per_frame != 0 && ((*(*ctx).impl_0).write_header).is_some() {
         let mut filename: [libc::c_char; 1024] = [0; 1024];
         assemble_filename(
             ctx,
             filename.as_mut_ptr(),
-            ::core::mem::size_of::<[libc::c_char; 1024]>() as libc::c_ulong
-                as libc::c_int,
+            ::core::mem::size_of::<[libc::c_char; 1024]>() as libc::c_ulong as libc::c_int,
             &mut (*p).p,
         );
-        res = ((*(*ctx).impl_0).write_header)
-            .expect(
-                "non-null function pointer",
-            )(
+        res = ((*(*ctx).impl_0).write_header).expect("non-null function pointer")(
             (*ctx).data,
             filename.as_mut_ptr(),
             &mut (*p).p,
@@ -393,22 +363,19 @@ pub unsafe extern "C" fn output_write(
             return res;
         }
     }
-    res = ((*(*ctx).impl_0).write_picture)
-        .expect("non-null function pointer")((*ctx).data, p);
+    res = ((*(*ctx).impl_0).write_picture).expect("non-null function pointer")((*ctx).data, p);
     if res < 0 {
         return res;
     }
     if (*ctx).one_file_per_frame != 0 && ((*(*ctx).impl_0).write_trailer).is_some() {
-        ((*(*ctx).impl_0).write_trailer)
-            .expect("non-null function pointer")((*ctx).data);
+        ((*(*ctx).impl_0).write_trailer).expect("non-null function pointer")((*ctx).data);
     }
     return 0 as libc::c_int;
 }
 #[no_mangle]
 pub unsafe extern "C" fn output_close(ctx: *mut MuxerContext) {
     if (*ctx).one_file_per_frame == 0 && ((*(*ctx).impl_0).write_trailer).is_some() {
-        ((*(*ctx).impl_0).write_trailer)
-            .expect("non-null function pointer")((*ctx).data);
+        ((*(*ctx).impl_0).write_trailer).expect("non-null function pointer")((*ctx).data);
     }
     free(ctx as *mut libc::c_void);
 }
@@ -418,8 +385,7 @@ pub unsafe extern "C" fn output_verify(
     md5_str: *const libc::c_char,
 ) -> libc::c_int {
     let res = if ((*(*ctx).impl_0).verify).is_some() {
-        ((*(*ctx).impl_0).verify)
-            .expect("non-null function pointer")((*ctx).data, md5_str)
+        ((*(*ctx).impl_0).verify).expect("non-null function pointer")((*ctx).data, md5_str)
     } else {
         0 as libc::c_int
     };

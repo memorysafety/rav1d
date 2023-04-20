@@ -1,33 +1,21 @@
 use crate::include::common::frame::is_inter_or_switch;
+use crate::include::dav1d::headers::DAV1D_MAX_SEGMENTS;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
-use ::libc;
 use crate::src::align::Align16;
-use crate::src::msac::MsacContext;
 use crate::src::cdf::{CdfContext, CdfMvComponent, CdfMvContext};
 use crate::src::ctx::{case_set, SetCtxFn};
-use crate::include::dav1d::headers::DAV1D_MAX_SEGMENTS;
+use crate::src::msac::MsacContext;
+use ::libc;
 
 extern "C" {
-    fn memcpy(
-        _: *mut libc::c_void,
-        _: *const libc::c_void,
-        _: libc::c_ulong,
-    ) -> *mut libc::c_void;
-    fn memset(
-        _: *mut libc::c_void,
-        _: libc::c_int,
-        _: size_t,
-    ) -> *mut libc::c_void;
-    fn memcmp(
-        _: *const libc::c_void,
-        _: *const libc::c_void,
-        _: libc::c_ulong,
-    ) -> libc::c_int;
+    fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
+    fn memset(_: *mut libc::c_void, _: libc::c_int, _: size_t) -> *mut libc::c_void;
+    fn memcmp(_: *const libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> libc::c_int;
     fn printf(_: *const libc::c_char, _: ...) -> libc::c_int;
-    #[cfg(feature="bitdepth_8")]
+    #[cfg(feature = "bitdepth_8")]
     fn dav1d_cdef_dsp_init_8bpc(c: *mut Dav1dCdefDSPContext);
-    #[cfg(feature="bitdepth_16")]
+    #[cfg(feature = "bitdepth_16")]
     fn dav1d_cdef_dsp_init_16bpc(c: *mut Dav1dCdefDSPContext);
     fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
     fn free(_: *mut libc::c_void);
@@ -39,14 +27,9 @@ extern "C" {
     fn pthread_mutex_lock(__mutex: *mut pthread_mutex_t) -> libc::c_int;
     fn pthread_mutex_unlock(__mutex: *mut pthread_mutex_t) -> libc::c_int;
     fn pthread_cond_signal(__cond: *mut pthread_cond_t) -> libc::c_int;
-    fn pthread_cond_wait(
-        __cond: *mut pthread_cond_t,
-        __mutex: *mut pthread_mutex_t,
-    ) -> libc::c_int;
-    fn dav1d_ref_create_using_pool(
-        pool: *mut Dav1dMemPool,
-        size: size_t,
-    ) -> *mut Dav1dRef;
+    fn pthread_cond_wait(__cond: *mut pthread_cond_t, __mutex: *mut pthread_mutex_t)
+        -> libc::c_int;
+    fn dav1d_ref_create_using_pool(pool: *mut Dav1dMemPool, size: size_t) -> *mut Dav1dRef;
     fn dav1d_ref_dec(r#ref: *mut *mut Dav1dRef);
     fn dav1d_cdf_thread_init_static(cdf: *mut CdfThreadContext, qidx: libc::c_int);
     fn dav1d_cdf_thread_alloc(
@@ -114,17 +97,17 @@ extern "C" {
         tile_row_idx: libc::c_int,
         pass: libc::c_int,
     );
-    #[cfg(feature="bitdepth_8")]
+    #[cfg(feature = "bitdepth_8")]
     fn dav1d_film_grain_dsp_init_8bpc(c: *mut Dav1dFilmGrainDSPContext);
-    #[cfg(feature="bitdepth_16")]
+    #[cfg(feature = "bitdepth_16")]
     fn dav1d_film_grain_dsp_init_16bpc(c: *mut Dav1dFilmGrainDSPContext);
-    #[cfg(feature="bitdepth_8")]
+    #[cfg(feature = "bitdepth_8")]
     fn dav1d_intra_pred_dsp_init_8bpc(c: *mut Dav1dIntraPredDSPContext);
-    #[cfg(feature="bitdepth_16")]
+    #[cfg(feature = "bitdepth_16")]
     fn dav1d_intra_pred_dsp_init_16bpc(c: *mut Dav1dIntraPredDSPContext);
-    #[cfg(feature="bitdepth_8")]
+    #[cfg(feature = "bitdepth_8")]
     fn dav1d_itx_dsp_init_8bpc(c: *mut Dav1dInvTxfmDSPContext, bpc: libc::c_int);
-    #[cfg(feature="bitdepth_16")]
+    #[cfg(feature = "bitdepth_16")]
     fn dav1d_itx_dsp_init_16bpc(c: *mut Dav1dInvTxfmDSPContext, bpc: libc::c_int);
     fn dav1d_create_lf_mask_intra(
         lflvl: *mut Av1Filter,
@@ -170,23 +153,23 @@ extern "C" {
         hdr: *const Dav1dFrameHeader,
         lf_delta: *const int8_t,
     );
-    #[cfg(feature="bitdepth_8")]
+    #[cfg(feature = "bitdepth_8")]
     fn dav1d_loop_filter_dsp_init_8bpc(c: *mut Dav1dLoopFilterDSPContext);
-    #[cfg(feature="bitdepth_16")]
+    #[cfg(feature = "bitdepth_16")]
     fn dav1d_loop_filter_dsp_init_16bpc(c: *mut Dav1dLoopFilterDSPContext);
-    #[cfg(feature="bitdepth_8")]
+    #[cfg(feature = "bitdepth_8")]
     fn dav1d_loop_restoration_dsp_init_8bpc(
         c: *mut Dav1dLoopRestorationDSPContext,
         bpc: libc::c_int,
     );
-    #[cfg(feature="bitdepth_16")]
+    #[cfg(feature = "bitdepth_16")]
     fn dav1d_loop_restoration_dsp_init_16bpc(
         c: *mut Dav1dLoopRestorationDSPContext,
         bpc: libc::c_int,
     );
-    #[cfg(feature="bitdepth_8")]
+    #[cfg(feature = "bitdepth_8")]
     fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext);
-    #[cfg(feature="bitdepth_16")]
+    #[cfg(feature = "bitdepth_16")]
     fn dav1d_mc_dsp_init_16bpc(c: *mut Dav1dMCDSPContext);
     fn dav1d_msac_init(
         s: *mut MsacContext,
@@ -215,10 +198,7 @@ extern "C" {
         cdf: *mut uint16_t,
         n_symbols: size_t,
     ) -> libc::c_uint;
-    fn dav1d_msac_decode_bool_adapt(
-        s: *mut MsacContext,
-        cdf: *mut uint16_t,
-    ) -> libc::c_uint;
+    fn dav1d_msac_decode_bool_adapt(s: *mut MsacContext, cdf: *mut uint16_t) -> libc::c_uint;
     fn dav1d_msac_decode_bool_equi(s: *mut MsacContext) -> libc::c_uint;
     fn dav1d_msac_decode_bool(s: *mut MsacContext, f: libc::c_uint) -> libc::c_uint;
     fn dav1d_thread_picture_alloc(
@@ -233,85 +213,68 @@ extern "C" {
         src: *const Dav1dPicture,
     ) -> libc::c_int;
     fn dav1d_picture_ref(dst: *mut Dav1dPicture, src: *const Dav1dPicture);
-    fn dav1d_thread_picture_ref(
-        dst: *mut Dav1dThreadPicture,
-        src: *const Dav1dThreadPicture,
-    );
+    fn dav1d_thread_picture_ref(dst: *mut Dav1dThreadPicture, src: *const Dav1dThreadPicture);
     fn dav1d_thread_picture_unref(p: *mut Dav1dThreadPicture);
     fn dav1d_picture_unref_internal(p: *mut Dav1dPicture);
     fn dav1d_picture_get_event_flags(p: *const Dav1dThreadPicture) -> Dav1dEventFlags;
-    #[cfg(feature="bitdepth_8")]
+    #[cfg(feature = "bitdepth_8")]
     fn dav1d_recon_b_intra_8bpc(
         t: *mut Dav1dTaskContext,
         bs: BlockSize,
         intra_edge_flags: EdgeFlags,
         b: *const Av1Block,
     );
-    #[cfg(feature="bitdepth_16")]
+    #[cfg(feature = "bitdepth_16")]
     fn dav1d_recon_b_intra_16bpc(
         t: *mut Dav1dTaskContext,
         bs: BlockSize,
         intra_edge_flags: EdgeFlags,
         b: *const Av1Block,
     );
-    #[cfg(feature="bitdepth_8")]
+    #[cfg(feature = "bitdepth_8")]
     fn dav1d_recon_b_inter_8bpc(
         t: *mut Dav1dTaskContext,
         bs: BlockSize,
         b: *const Av1Block,
     ) -> libc::c_int;
-    #[cfg(feature="bitdepth_16")]
+    #[cfg(feature = "bitdepth_16")]
     fn dav1d_recon_b_inter_16bpc(
         t: *mut Dav1dTaskContext,
         bs: BlockSize,
         b: *const Av1Block,
     ) -> libc::c_int;
-    #[cfg(feature="bitdepth_8")]
+    #[cfg(feature = "bitdepth_8")]
     fn dav1d_filter_sbrow_8bpc(f: *mut Dav1dFrameContext, sby: libc::c_int);
-    #[cfg(feature="bitdepth_16")]
+    #[cfg(feature = "bitdepth_16")]
     fn dav1d_filter_sbrow_16bpc(f: *mut Dav1dFrameContext, sby: libc::c_int);
-    #[cfg(feature="bitdepth_8")]
+    #[cfg(feature = "bitdepth_8")]
     fn dav1d_filter_sbrow_deblock_cols_8bpc(f: *mut Dav1dFrameContext, sby: libc::c_int);
-    #[cfg(feature="bitdepth_16")]
-    fn dav1d_filter_sbrow_deblock_cols_16bpc(
-        f: *mut Dav1dFrameContext,
-        sby: libc::c_int,
-    );
-    #[cfg(feature="bitdepth_8")]
+    #[cfg(feature = "bitdepth_16")]
+    fn dav1d_filter_sbrow_deblock_cols_16bpc(f: *mut Dav1dFrameContext, sby: libc::c_int);
+    #[cfg(feature = "bitdepth_8")]
     fn dav1d_filter_sbrow_deblock_rows_8bpc(f: *mut Dav1dFrameContext, sby: libc::c_int);
-    #[cfg(feature="bitdepth_16")]
-    fn dav1d_filter_sbrow_deblock_rows_16bpc(
-        f: *mut Dav1dFrameContext,
-        sby: libc::c_int,
-    );
-    #[cfg(feature="bitdepth_8")]
+    #[cfg(feature = "bitdepth_16")]
+    fn dav1d_filter_sbrow_deblock_rows_16bpc(f: *mut Dav1dFrameContext, sby: libc::c_int);
+    #[cfg(feature = "bitdepth_8")]
     fn dav1d_filter_sbrow_cdef_8bpc(tc: *mut Dav1dTaskContext, sby: libc::c_int);
-    #[cfg(feature="bitdepth_16")]
+    #[cfg(feature = "bitdepth_16")]
     fn dav1d_filter_sbrow_cdef_16bpc(tc: *mut Dav1dTaskContext, sby: libc::c_int);
-    #[cfg(feature="bitdepth_8")]
+    #[cfg(feature = "bitdepth_8")]
     fn dav1d_filter_sbrow_resize_8bpc(f: *mut Dav1dFrameContext, sby: libc::c_int);
-    #[cfg(feature="bitdepth_16")]
+    #[cfg(feature = "bitdepth_16")]
     fn dav1d_filter_sbrow_resize_16bpc(f: *mut Dav1dFrameContext, sby: libc::c_int);
-    #[cfg(feature="bitdepth_8")]
+    #[cfg(feature = "bitdepth_8")]
     fn dav1d_filter_sbrow_lr_8bpc(f: *mut Dav1dFrameContext, sby: libc::c_int);
-    #[cfg(feature="bitdepth_16")]
+    #[cfg(feature = "bitdepth_16")]
     fn dav1d_filter_sbrow_lr_16bpc(f: *mut Dav1dFrameContext, sby: libc::c_int);
-    #[cfg(feature="bitdepth_8")]
+    #[cfg(feature = "bitdepth_8")]
     fn dav1d_backup_ipred_edge_8bpc(t: *mut Dav1dTaskContext);
-    #[cfg(feature="bitdepth_16")]
+    #[cfg(feature = "bitdepth_16")]
     fn dav1d_backup_ipred_edge_16bpc(t: *mut Dav1dTaskContext);
-    #[cfg(feature="bitdepth_8")]
-    fn dav1d_read_coef_blocks_8bpc(
-        t: *mut Dav1dTaskContext,
-        bs: BlockSize,
-        b: *const Av1Block,
-    );
-    #[cfg(feature="bitdepth_16")]
-    fn dav1d_read_coef_blocks_16bpc(
-        t: *mut Dav1dTaskContext,
-        bs: BlockSize,
-        b: *const Av1Block,
-    );
+    #[cfg(feature = "bitdepth_8")]
+    fn dav1d_read_coef_blocks_8bpc(t: *mut Dav1dTaskContext, bs: BlockSize, b: *const Av1Block);
+    #[cfg(feature = "bitdepth_16")]
+    fn dav1d_read_coef_blocks_16bpc(t: *mut Dav1dTaskContext, bs: BlockSize, b: *const Av1Block);
     static dav1d_dq_tbl: [[[uint16_t; 2]; 256]; 3];
     fn dav1d_log(c: *mut Dav1dContext, format: *const libc::c_char, _: ...);
     static mut dav1d_qm_tbl: [[[*const uint8_t; 19]; 2]; 16];
@@ -344,14 +307,14 @@ extern "C" {
 
 use crate::src::refmvs::dav1d_refmvs_find;
 
-use crate::src::r#ref::Dav1dRef;
-use crate::include::stdatomic::atomic_int;
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
-use crate::src::ctx::alias64;
-use crate::src::ctx::alias32;
+use crate::include::stdatomic::atomic_int;
 use crate::src::ctx::alias16;
+use crate::src::ctx::alias32;
+use crate::src::ctx::alias64;
 use crate::src::ctx::alias8;
+use crate::src::r#ref::Dav1dRef;
 
 use crate::include::stdatomic::atomic_uint;
 #[derive(Copy, Clone)]
@@ -413,41 +376,41 @@ pub struct Dav1dFrameContext {
     pub task_thread: Dav1dFrameContext_task_thread,
     pub tile_thread: FrameTileThreadData,
 }
-use crate::src::internal::FrameTileThreadData;
-use crate::src::internal::Dav1dFrameContext_task_thread;
 use crate::include::pthread::pthread_mutex_t;
+use crate::src::internal::Dav1dFrameContext_task_thread;
+use crate::src::internal::FrameTileThreadData;
 
-use crate::src::internal::TaskThreadData;
-use crate::include::dav1d::picture::Dav1dPicture;
+use crate::include::dav1d::headers::Dav1dContentLightLevel;
 use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dMasteringDisplay;
-use crate::include::dav1d::headers::Dav1dContentLightLevel;
+use crate::include::dav1d::picture::Dav1dPicture;
+use crate::src::internal::TaskThreadData;
 
-use crate::include::dav1d::headers::Dav1dPixelLayout;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I422;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
+use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I422;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_AFFINE;
 
-use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
-use crate::include::dav1d::headers::DAV1D_WM_TYPE_IDENTITY;
 use crate::include::dav1d::headers::DAV1D_TX_SWITCHABLE;
+use crate::include::dav1d::headers::DAV1D_WM_TYPE_IDENTITY;
+use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
 
-use crate::include::dav1d::headers::Dav1dRestorationType;
-use crate::include::dav1d::headers::DAV1D_RESTORATION_SGRPROJ;
-use crate::include::dav1d::headers::DAV1D_RESTORATION_WIENER;
-use crate::include::dav1d::headers::DAV1D_RESTORATION_SWITCHABLE;
-use crate::include::dav1d::headers::DAV1D_RESTORATION_NONE;
+use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::Dav1dFilterMode;
+use crate::include::dav1d::headers::Dav1dRestorationType;
+use crate::include::dav1d::headers::Dav1dSequenceHeader;
+use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
 use crate::include::dav1d::headers::DAV1D_FILTER_SWITCHABLE;
 use crate::include::dav1d::headers::DAV1D_N_SWITCHABLE_FILTERS;
-use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
-use crate::include::dav1d::headers::Dav1dFilmGrainData;
-use crate::include::dav1d::headers::Dav1dSequenceHeader;
+use crate::include::dav1d::headers::DAV1D_RESTORATION_NONE;
+use crate::include::dav1d::headers::DAV1D_RESTORATION_SGRPROJ;
+use crate::include::dav1d::headers::DAV1D_RESTORATION_SWITCHABLE;
+use crate::include::dav1d::headers::DAV1D_RESTORATION_WIENER;
 
 use crate::include::pthread::pthread_cond_t;
 
@@ -511,12 +474,12 @@ use crate::src::levels::Av1Block;
 
 use crate::src::levels::mv;
 
-use crate::src::refmvs::refmvs_frame;
-use crate::src::refmvs::refmvs_block;
-use crate::src::refmvs::refmvs_refpair;
-use crate::src::refmvs::refmvs_mvpair;
-use crate::src::refmvs::refmvs_temporal_block;
 use crate::src::env::BlockContext;
+use crate::src::refmvs::refmvs_block;
+use crate::src::refmvs::refmvs_frame;
+use crate::src::refmvs::refmvs_mvpair;
+use crate::src::refmvs::refmvs_refpair;
+use crate::src::refmvs::refmvs_temporal_block;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext_bd_fn {
@@ -525,9 +488,7 @@ pub struct Dav1dFrameContext_bd_fn {
     pub filter_sbrow: filter_sbrow_fn,
     pub filter_sbrow_deblock_cols: filter_sbrow_fn,
     pub filter_sbrow_deblock_rows: filter_sbrow_fn,
-    pub filter_sbrow_cdef: Option::<
-        unsafe extern "C" fn(*mut Dav1dTaskContext, libc::c_int) -> (),
-    >,
+    pub filter_sbrow_cdef: Option<unsafe extern "C" fn(*mut Dav1dTaskContext, libc::c_int) -> ()>,
     pub filter_sbrow_resize: filter_sbrow_fn,
     pub filter_sbrow_lr: filter_sbrow_fn,
     pub backup_ipred_edge: backup_ipred_edge_fn,
@@ -555,29 +516,28 @@ impl Dav1dFrameContext_bd_fn {
     }
 }
 
-pub type read_coef_blocks_fn = Option::<
-    unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> (),
->;
+pub type read_coef_blocks_fn =
+    Option<unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> ()>;
 use crate::src::levels::BlockSize;
 
-use crate::src::levels::BS_4x4;
-use crate::src::levels::BS_4x8;
-use crate::src::levels::BS_4x16;
-use crate::src::levels::BS_8x4;
-use crate::src::levels::BS_8x8;
-use crate::src::levels::BS_8x16;
-use crate::src::levels::BS_8x32;
-use crate::src::levels::BS_16x4;
-use crate::src::levels::BS_16x8;
 use crate::src::levels::BS_16x16;
 use crate::src::levels::BS_16x32;
+use crate::src::levels::BS_16x4;
+use crate::src::levels::BS_16x8;
+use crate::src::levels::BS_4x16;
+use crate::src::levels::BS_4x4;
+use crate::src::levels::BS_4x8;
+use crate::src::levels::BS_8x16;
+use crate::src::levels::BS_8x32;
+use crate::src::levels::BS_8x4;
+use crate::src::levels::BS_8x8;
 
-use crate::src::levels::BS_32x8;
 use crate::src::levels::BS_32x16;
 use crate::src::levels::BS_32x32;
+use crate::src::levels::BS_32x8;
 
-use crate::src::levels::BS_64x64;
 use crate::src::levels::BS_128x128;
+use crate::src::levels::BS_64x64;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTaskContext {
@@ -602,14 +562,14 @@ pub struct Dav1dTaskContext {
     pub frame_thread: Dav1dTaskContext_frame_thread,
     pub task_thread: Dav1dTaskContext_task_thread,
 }
-use crate::src::internal::Dav1dTaskContext_task_thread;
 use crate::src::internal::Dav1dTaskContext_frame_thread;
+use crate::src::internal::Dav1dTaskContext_task_thread;
 use crate::src::levels::Filter2d;
 
 use crate::src::levels::FILTER_2D_BILINEAR;
 
-use crate::src::internal::Dav1dTaskContext_scratch;
 use crate::src::internal::Dav1dTaskContext_cf;
+use crate::src::internal::Dav1dTaskContext_scratch;
 use crate::src::refmvs::refmvs_tile;
 
 #[derive(Copy, Clone)]
@@ -696,8 +656,8 @@ pub struct Dav1dContext {
 }
 use crate::src::mem::Dav1dMemPool;
 
-use crate::include::dav1d::dav1d::Dav1dLogger;
 use crate::include::dav1d::dav1d::Dav1dEventFlags;
+use crate::include::dav1d::dav1d::Dav1dLogger;
 use crate::src::picture::PictureFlags;
 
 use crate::include::dav1d::dav1d::Dav1dDecodeFrameType;
@@ -705,12 +665,12 @@ use crate::include::dav1d::dav1d::Dav1dInloopFilterType;
 
 use crate::include::dav1d::picture::Dav1dPicAllocator;
 use crate::src::internal::Dav1dContext_intra_edge;
-use crate::src::intra_edge::EdgeTip;
 use crate::src::intra_edge::EdgeFlags;
+use crate::src::intra_edge::EdgeTip;
 
-use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
-use crate::src::intra_edge::EdgeNode;
 use crate::src::intra_edge::EdgeBranch;
+use crate::src::intra_edge::EdgeNode;
+use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 use crate::src::refmvs::Dav1dRefmvsDSPContext;
 
 #[derive(Copy, Clone)]
@@ -730,7 +690,7 @@ pub struct Dav1dLoopRestorationDSPContext {
     pub wiener: [looprestorationfilter_fn; 2],
     pub sgr: [looprestorationfilter_fn; 3],
 }
-pub type looprestorationfilter_fn = Option::<
+pub type looprestorationfilter_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -742,8 +702,8 @@ pub type looprestorationfilter_fn = Option::<
         LrEdgeFlags,
     ) -> (),
 >;
-use crate::src::looprestoration::LrEdgeFlags;
 use crate::src::looprestoration::LooprestorationParams;
+use crate::src::looprestoration::LrEdgeFlags;
 
 pub type const_left_pixel_row = *const libc::c_void;
 #[derive(Copy, Clone)]
@@ -752,7 +712,7 @@ pub struct Dav1dCdefDSPContext {
     pub dir: cdef_dir_fn,
     pub fb: [cdef_fn; 3],
 }
-pub type cdef_fn = Option::<
+pub type cdef_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -768,19 +728,14 @@ pub type cdef_fn = Option::<
 >;
 use crate::src::cdef::CdefEdgeFlags;
 pub type const_left_pixel_row_2px = *const libc::c_void;
-pub type cdef_dir_fn = Option::<
-    unsafe extern "C" fn(
-        *const libc::c_void,
-        ptrdiff_t,
-        *mut libc::c_uint,
-    ) -> libc::c_int,
->;
+pub type cdef_dir_fn =
+    Option<unsafe extern "C" fn(*const libc::c_void, ptrdiff_t, *mut libc::c_uint) -> libc::c_int>;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dLoopFilterDSPContext {
     pub loop_filter_sb: [[loopfilter_sb_fn; 2]; 2],
 }
-pub type loopfilter_sb_fn = Option::<
+pub type loopfilter_sb_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -796,13 +751,8 @@ pub type loopfilter_sb_fn = Option::<
 pub struct Dav1dInvTxfmDSPContext {
     pub itxfm_add: [[itxfm_fn; 17]; 19],
 }
-pub type itxfm_fn = Option::<
-    unsafe extern "C" fn(
-        *mut libc::c_void,
-        ptrdiff_t,
-        *mut libc::c_void,
-        libc::c_int,
-    ) -> (),
+pub type itxfm_fn = Option<
+    unsafe extern "C" fn(*mut libc::c_void, ptrdiff_t, *mut libc::c_void, libc::c_int) -> (),
 >;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -823,7 +773,7 @@ pub struct Dav1dMCDSPContext {
     pub emu_edge: emu_edge_fn,
     pub resize: resize_fn,
 }
-pub type resize_fn = Option::<
+pub type resize_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -836,7 +786,7 @@ pub type resize_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type emu_edge_fn = Option::<
+pub type emu_edge_fn = Option<
     unsafe extern "C" fn(
         intptr_t,
         intptr_t,
@@ -850,7 +800,7 @@ pub type emu_edge_fn = Option::<
         ptrdiff_t,
     ) -> (),
 >;
-pub type warp8x8t_fn = Option::<
+pub type warp8x8t_fn = Option<
     unsafe extern "C" fn(
         *mut int16_t,
         ptrdiff_t,
@@ -861,7 +811,7 @@ pub type warp8x8t_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type warp8x8_fn = Option::<
+pub type warp8x8_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -872,7 +822,7 @@ pub type warp8x8_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type blend_dir_fn = Option::<
+pub type blend_dir_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -881,7 +831,7 @@ pub type blend_dir_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type blend_fn = Option::<
+pub type blend_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -891,7 +841,7 @@ pub type blend_fn = Option::<
         *const uint8_t,
     ) -> (),
 >;
-pub type w_mask_fn = Option::<
+pub type w_mask_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -903,7 +853,7 @@ pub type w_mask_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type mask_fn = Option::<
+pub type mask_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -914,7 +864,7 @@ pub type mask_fn = Option::<
         *const uint8_t,
     ) -> (),
 >;
-pub type w_avg_fn = Option::<
+pub type w_avg_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -925,7 +875,7 @@ pub type w_avg_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type avg_fn = Option::<
+pub type avg_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -935,7 +885,7 @@ pub type avg_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type mct_scaled_fn = Option::<
+pub type mct_scaled_fn = Option<
     unsafe extern "C" fn(
         *mut int16_t,
         *const libc::c_void,
@@ -948,7 +898,7 @@ pub type mct_scaled_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type mct_fn = Option::<
+pub type mct_fn = Option<
     unsafe extern "C" fn(
         *mut int16_t,
         *const libc::c_void,
@@ -959,7 +909,7 @@ pub type mct_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type mc_scaled_fn = Option::<
+pub type mc_scaled_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -973,7 +923,7 @@ pub type mc_scaled_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type mc_fn = Option::<
+pub type mc_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -993,7 +943,7 @@ pub struct Dav1dIntraPredDSPContext {
     pub cfl_pred: [cfl_pred_fn; 6],
     pub pal_pred: pal_pred_fn,
 }
-pub type pal_pred_fn = Option::<
+pub type pal_pred_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -1003,7 +953,7 @@ pub type pal_pred_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type cfl_pred_fn = Option::<
+pub type cfl_pred_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -1014,7 +964,7 @@ pub type cfl_pred_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type cfl_ac_fn = Option::<
+pub type cfl_ac_fn = Option<
     unsafe extern "C" fn(
         *mut int16_t,
         *const libc::c_void,
@@ -1025,7 +975,7 @@ pub type cfl_ac_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type angular_ipred_fn = Option::<
+pub type angular_ipred_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -1045,7 +995,7 @@ pub struct Dav1dFilmGrainDSPContext {
     pub fgy_32x32xn: fgy_32x32xn_fn,
     pub fguv_32x32xn: [fguv_32x32xn_fn; 3],
 }
-pub type fguv_32x32xn_fn = Option::<
+pub type fguv_32x32xn_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         *const libc::c_void,
@@ -1063,7 +1013,7 @@ pub type fguv_32x32xn_fn = Option::<
     ) -> (),
 >;
 pub type entry = int8_t;
-pub type fgy_32x32xn_fn = Option::<
+pub type fgy_32x32xn_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         *const libc::c_void,
@@ -1076,7 +1026,7 @@ pub type fgy_32x32xn_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type generate_grain_uv_fn = Option::<
+pub type generate_grain_uv_fn = Option<
     unsafe extern "C" fn(
         *mut [entry; 82],
         *const [entry; 82],
@@ -1084,110 +1034,95 @@ pub type generate_grain_uv_fn = Option::<
         intptr_t,
     ) -> (),
 >;
-pub type generate_grain_y_fn = Option::<
-    unsafe extern "C" fn(*mut [entry; 82], *const Dav1dFilmGrainData) -> (),
->;
+pub type generate_grain_y_fn =
+    Option<unsafe extern "C" fn(*mut [entry; 82], *const Dav1dFilmGrainData) -> ()>;
 use crate::src::cdf::CdfThreadContext;
 
-use crate::src::internal::Dav1dContext_refs;
-use crate::src::picture::Dav1dThreadPicture;
 use crate::src::internal::Dav1dContext_frame_thread;
+use crate::src::internal::Dav1dContext_refs;
 use crate::src::internal::Dav1dTileGroup;
-pub type backup_ipred_edge_fn = Option::<
-    unsafe extern "C" fn(*mut Dav1dTaskContext) -> (),
->;
-pub type filter_sbrow_fn = Option::<
-    unsafe extern "C" fn(*mut Dav1dFrameContext, libc::c_int) -> (),
->;
-pub type recon_b_inter_fn = Option::<
-    unsafe extern "C" fn(
-        *mut Dav1dTaskContext,
-        BlockSize,
-        *const Av1Block,
-    ) -> libc::c_int,
->;
-pub type recon_b_intra_fn = Option::<
-    unsafe extern "C" fn(
-        *mut Dav1dTaskContext,
-        BlockSize,
-        EdgeFlags,
-        *const Av1Block,
-    ) -> (),
+use crate::src::picture::Dav1dThreadPicture;
+pub type backup_ipred_edge_fn = Option<unsafe extern "C" fn(*mut Dav1dTaskContext) -> ()>;
+pub type filter_sbrow_fn = Option<unsafe extern "C" fn(*mut Dav1dFrameContext, libc::c_int) -> ()>;
+pub type recon_b_inter_fn =
+    Option<unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> libc::c_int>;
+pub type recon_b_intra_fn = Option<
+    unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, EdgeFlags, *const Av1Block) -> (),
 >;
 use crate::src::internal::ScalableMotionParams;
+use crate::src::levels::BlockLevel;
+use crate::src::levels::TX_4X4;
 use crate::src::levels::TX_64X64;
 use crate::src::levels::TX_8X8;
-use crate::src::levels::TX_4X4;
-use crate::src::levels::BlockLevel;
 
-use crate::src::levels::BL_8X8;
-use crate::src::levels::BL_64X64;
-use crate::src::levels::BL_128X128;
-use crate::src::levels::RectTxfmSize;
-use crate::src::levels::N_RECT_TX_SIZES;
 use crate::src::levels::IntraPredMode;
+use crate::src::levels::RectTxfmSize;
+use crate::src::levels::BL_128X128;
+use crate::src::levels::BL_64X64;
+use crate::src::levels::BL_8X8;
 use crate::src::levels::FILTER_PRED;
+use crate::src::levels::N_RECT_TX_SIZES;
 
-use crate::src::levels::N_UV_INTRA_PRED_MODES;
 use crate::src::levels::CFL_PRED;
+use crate::src::levels::DC_PRED;
 use crate::src::levels::N_INTRA_PRED_MODES;
+use crate::src::levels::N_UV_INTRA_PRED_MODES;
 use crate::src::levels::VERT_LEFT_PRED;
 use crate::src::levels::VERT_PRED;
-use crate::src::levels::DC_PRED;
 
-use crate::src::levels::N_INTER_INTRA_PRED_MODES;
 use crate::src::levels::BlockPartition;
-use crate::src::levels::PARTITION_V4;
-use crate::src::levels::PARTITION_H4;
-use crate::src::levels::PARTITION_T_RIGHT_SPLIT;
-use crate::src::levels::PARTITION_T_LEFT_SPLIT;
-use crate::src::levels::PARTITION_T_BOTTOM_SPLIT;
-use crate::src::levels::PARTITION_T_TOP_SPLIT;
-use crate::src::levels::PARTITION_SPLIT;
-use crate::src::levels::PARTITION_V;
+use crate::src::levels::N_INTER_INTRA_PRED_MODES;
 use crate::src::levels::PARTITION_H;
+use crate::src::levels::PARTITION_H4;
 use crate::src::levels::PARTITION_NONE;
+use crate::src::levels::PARTITION_SPLIT;
+use crate::src::levels::PARTITION_T_BOTTOM_SPLIT;
+use crate::src::levels::PARTITION_T_LEFT_SPLIT;
+use crate::src::levels::PARTITION_T_RIGHT_SPLIT;
+use crate::src::levels::PARTITION_T_TOP_SPLIT;
+use crate::src::levels::PARTITION_V;
+use crate::src::levels::PARTITION_V4;
 
-use crate::src::levels::N_MV_JOINTS;
 use crate::src::levels::InterPredMode;
+use crate::src::levels::N_MV_JOINTS;
 
-use crate::src::levels::NEWMV;
 use crate::src::levels::GLOBALMV;
-use crate::src::levels::NEARMV;
 use crate::src::levels::NEARESTMV;
+use crate::src::levels::NEARMV;
+use crate::src::levels::NEWMV;
 
-use crate::src::levels::NEARISH_DRL;
-use crate::src::levels::NEAR_DRL;
+use crate::src::levels::CompInterPredMode;
+use crate::src::levels::GLOBALMV_GLOBALMV;
 use crate::src::levels::NEARER_DRL;
 use crate::src::levels::NEAREST_DRL;
-use crate::src::levels::CompInterPredMode;
-use crate::src::levels::N_COMP_INTER_PRED_MODES;
+use crate::src::levels::NEARISH_DRL;
+use crate::src::levels::NEAR_DRL;
 use crate::src::levels::NEWMV_NEWMV;
-use crate::src::levels::GLOBALMV_GLOBALMV;
+use crate::src::levels::N_COMP_INTER_PRED_MODES;
 
 use crate::src::levels::NEARESTMV_NEARESTMV;
 
-use crate::src::levels::COMP_INTER_WEDGE;
-use crate::src::levels::COMP_INTER_SEG;
 use crate::src::levels::COMP_INTER_AVG;
-use crate::src::levels::COMP_INTER_WEIGHTED_AVG;
 use crate::src::levels::COMP_INTER_NONE;
+use crate::src::levels::COMP_INTER_SEG;
+use crate::src::levels::COMP_INTER_WEDGE;
+use crate::src::levels::COMP_INTER_WEIGHTED_AVG;
 
-use crate::src::levels::INTER_INTRA_WEDGE;
 use crate::src::levels::INTER_INTRA_BLEND;
 use crate::src::levels::INTER_INTRA_NONE;
+use crate::src::levels::INTER_INTRA_WEDGE;
 
-use crate::src::levels::MM_WARP;
+use crate::include::common::attributes::ctz;
 use crate::src::levels::MM_OBMC;
 use crate::src::levels::MM_TRANSLATION;
-use crate::src::tables::TxfmInfo;
+use crate::src::levels::MM_WARP;
 use crate::src::refmvs::refmvs_candidate;
-use crate::include::common::attributes::ctz;
+use crate::src::tables::TxfmInfo;
 
-use crate::include::common::intops::imax;
-use crate::include::common::intops::imin;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
+use crate::include::common::intops::imax;
+use crate::include::common::intops::imin;
 
 use crate::include::common::intops::apply_sign64;
 use crate::include::common::intops::ulog2;
@@ -1196,8 +1131,8 @@ use crate::src::mem::dav1d_free_aligned;
 use crate::src::mem::dav1d_freep_aligned;
 use crate::src::mem::freep;
 use crate::src::r#ref::dav1d_ref_inc;
-static mut cfl_allowed_mask: libc::c_uint = ((1 as libc::c_int)
-    << BS_32x32 | (1 as libc::c_int) << BS_32x16 as libc::c_int
+static mut cfl_allowed_mask: libc::c_uint = ((1 as libc::c_int) << BS_32x32
+    | (1 as libc::c_int) << BS_32x16 as libc::c_int
     | (1 as libc::c_int) << BS_32x8 as libc::c_int
     | (1 as libc::c_int) << BS_16x32 as libc::c_int
     | (1 as libc::c_int) << BS_16x16 as libc::c_int
@@ -1209,23 +1144,26 @@ static mut cfl_allowed_mask: libc::c_uint = ((1 as libc::c_int)
     | (1 as libc::c_int) << BS_8x4 as libc::c_int
     | (1 as libc::c_int) << BS_4x16 as libc::c_int
     | (1 as libc::c_int) << BS_4x8 as libc::c_int
-    | (1 as libc::c_int) << BS_4x4 as libc::c_int) as libc::c_uint;
-static mut wedge_allowed_mask: libc::c_uint = ((1 as libc::c_int)
-    << BS_32x32 | (1 as libc::c_int) << BS_32x16 as libc::c_int
+    | (1 as libc::c_int) << BS_4x4 as libc::c_int)
+    as libc::c_uint;
+static mut wedge_allowed_mask: libc::c_uint = ((1 as libc::c_int) << BS_32x32
+    | (1 as libc::c_int) << BS_32x16 as libc::c_int
     | (1 as libc::c_int) << BS_32x8 as libc::c_int
     | (1 as libc::c_int) << BS_16x32 as libc::c_int
     | (1 as libc::c_int) << BS_16x16 as libc::c_int
     | (1 as libc::c_int) << BS_16x8 as libc::c_int
     | (1 as libc::c_int) << BS_8x32 as libc::c_int
     | (1 as libc::c_int) << BS_8x16 as libc::c_int
-    | (1 as libc::c_int) << BS_8x8 as libc::c_int) as libc::c_uint;
-static mut interintra_allowed_mask: libc::c_uint = ((1 as libc::c_int)
-    << BS_32x32 | (1 as libc::c_int) << BS_32x16 as libc::c_int
+    | (1 as libc::c_int) << BS_8x8 as libc::c_int)
+    as libc::c_uint;
+static mut interintra_allowed_mask: libc::c_uint = ((1 as libc::c_int) << BS_32x32
+    | (1 as libc::c_int) << BS_32x16 as libc::c_int
     | (1 as libc::c_int) << BS_16x32 as libc::c_int
     | (1 as libc::c_int) << BS_16x16 as libc::c_int
     | (1 as libc::c_int) << BS_16x8 as libc::c_int
     | (1 as libc::c_int) << BS_8x16 as libc::c_int
-    | (1 as libc::c_int) << BS_8x8 as libc::c_int) as libc::c_uint;
+    | (1 as libc::c_int) << BS_8x8 as libc::c_int)
+    as libc::c_uint;
 #[inline]
 unsafe extern "C" fn get_intra_ctx(
     a: *const BlockContext,
@@ -1237,18 +1175,18 @@ unsafe extern "C" fn get_intra_ctx(
 ) -> libc::c_int {
     if have_left != 0 {
         if have_top != 0 {
-            let ctx = (*l).intra[yb4 as usize] as libc::c_int
-                + (*a).intra[xb4 as usize] as libc::c_int;
+            let ctx =
+                (*l).intra[yb4 as usize] as libc::c_int + (*a).intra[xb4 as usize] as libc::c_int;
             return ctx + (ctx == 2) as libc::c_int;
         } else {
-            return (*l).intra[yb4 as usize] as libc::c_int * 2
+            return (*l).intra[yb4 as usize] as libc::c_int * 2;
         }
     } else {
         return if have_top != 0 {
             (*a).intra[xb4 as usize] as libc::c_int * 2
         } else {
             0 as libc::c_int
-        }
+        };
     };
 }
 #[inline]
@@ -1277,32 +1215,29 @@ unsafe extern "C" fn get_partition_ctx(
         & 1)
         + (((*l).partition[yb8 as usize] as libc::c_int
             >> (4 as libc::c_int as libc::c_uint).wrapping_sub(bl as libc::c_uint)
-            & 1) << 1);
+            & 1)
+            << 1);
 }
 #[inline]
 unsafe extern "C" fn gather_left_partition_prob(
     in_0: *const uint16_t,
     bl: BlockLevel,
 ) -> libc::c_uint {
-    let mut out: libc::c_uint = (*in_0
-        .offset((PARTITION_H as libc::c_int - 1) as isize) as libc::c_int
+    let mut out: libc::c_uint = (*in_0.offset((PARTITION_H as libc::c_int - 1) as isize)
+        as libc::c_int
         - *in_0.offset(PARTITION_H as libc::c_int as isize) as libc::c_int)
         as libc::c_uint;
-    out = out
-        .wrapping_add(
-            (*in_0.offset((PARTITION_SPLIT as libc::c_int - 1) as isize)
-                as libc::c_int
-                - *in_0.offset(PARTITION_T_LEFT_SPLIT as libc::c_int as isize)
-                    as libc::c_int) as libc::c_uint,
-        );
+    out = out.wrapping_add(
+        (*in_0.offset((PARTITION_SPLIT as libc::c_int - 1) as isize) as libc::c_int
+            - *in_0.offset(PARTITION_T_LEFT_SPLIT as libc::c_int as isize) as libc::c_int)
+            as libc::c_uint,
+    );
     if bl as libc::c_uint != BL_128X128 as libc::c_int as libc::c_uint {
-        out = out
-            .wrapping_add(
-                (*in_0.offset((PARTITION_H4 - 1) as isize)
-                    as libc::c_int
-                    - *in_0.offset(PARTITION_H4 as libc::c_int as isize) as libc::c_int)
-                    as libc::c_uint,
-            );
+        out = out.wrapping_add(
+            (*in_0.offset((PARTITION_H4 - 1) as isize) as libc::c_int
+                - *in_0.offset(PARTITION_H4 as libc::c_int as isize) as libc::c_int)
+                as libc::c_uint,
+        );
     }
     return out;
 }
@@ -1311,25 +1246,19 @@ unsafe extern "C" fn gather_top_partition_prob(
     in_0: *const uint16_t,
     bl: BlockLevel,
 ) -> libc::c_uint {
-    let mut out: libc::c_uint = (*in_0
-        .offset((PARTITION_V as libc::c_int - 1) as isize) as libc::c_int
+    let mut out: libc::c_uint = (*in_0.offset((PARTITION_V as libc::c_int - 1) as isize)
+        as libc::c_int
         - *in_0.offset(PARTITION_T_TOP_SPLIT as libc::c_int as isize) as libc::c_int)
         as libc::c_uint;
-    out = out
-        .wrapping_add(
-            *in_0
-                .offset(
-                    (PARTITION_T_LEFT_SPLIT as libc::c_int - 1) as isize,
-                ) as libc::c_uint,
-        );
+    out = out.wrapping_add(
+        *in_0.offset((PARTITION_T_LEFT_SPLIT as libc::c_int - 1) as isize) as libc::c_uint,
+    );
     if bl as libc::c_uint != BL_128X128 as libc::c_int as libc::c_uint {
-        out = out
-            .wrapping_add(
-                (*in_0.offset((PARTITION_V4 - 1) as isize)
-                    as libc::c_int
-                    - *in_0.offset(PARTITION_T_RIGHT_SPLIT as libc::c_int as isize)
-                        as libc::c_int) as libc::c_uint,
-            );
+        out = out.wrapping_add(
+            (*in_0.offset((PARTITION_V4 - 1) as isize) as libc::c_int
+                - *in_0.offset(PARTITION_T_RIGHT_SPLIT as libc::c_int as isize) as libc::c_int)
+                as libc::c_uint,
+        );
     }
     return out;
 }
@@ -1343,16 +1272,14 @@ unsafe extern "C" fn get_filter_ctx(
     yb4: libc::c_int,
     xb4: libc::c_int,
 ) -> libc::c_int {
-    let a_filter = if (*a).r#ref[0][xb4 as usize]
-        as libc::c_int == r#ref
+    let a_filter = if (*a).r#ref[0][xb4 as usize] as libc::c_int == r#ref
         || (*a).r#ref[1][xb4 as usize] as libc::c_int == r#ref
     {
         (*a).filter[dir as usize][xb4 as usize] as libc::c_int
     } else {
         DAV1D_N_SWITCHABLE_FILTERS as libc::c_int
     };
-    let l_filter = if (*l).r#ref[0][yb4 as usize]
-        as libc::c_int == r#ref
+    let l_filter = if (*l).r#ref[0][yb4 as usize] as libc::c_int == r#ref
         || (*l).r#ref[1][yb4 as usize] as libc::c_int == r#ref
     {
         (*l).filter[dir as usize][yb4 as usize] as libc::c_int
@@ -1360,13 +1287,13 @@ unsafe extern "C" fn get_filter_ctx(
         DAV1D_N_SWITCHABLE_FILTERS as libc::c_int
     };
     if a_filter == l_filter {
-        return comp * 4 + a_filter
+        return comp * 4 + a_filter;
     } else if a_filter == DAV1D_N_SWITCHABLE_FILTERS as libc::c_int {
-        return comp * 4 + l_filter
+        return comp * 4 + l_filter;
     } else if l_filter == DAV1D_N_SWITCHABLE_FILTERS as libc::c_int {
-        return comp * 4 + a_filter
+        return comp * 4 + a_filter;
     } else {
-        return comp * 4 + DAV1D_N_SWITCHABLE_FILTERS as libc::c_int
+        return comp * 4 + DAV1D_N_SWITCHABLE_FILTERS as libc::c_int;
     };
 }
 #[inline]
@@ -1382,39 +1309,35 @@ unsafe extern "C" fn get_comp_ctx(
         if have_left != 0 {
             if (*a).comp_type[xb4 as usize] != 0 {
                 if (*l).comp_type[yb4 as usize] != 0 {
-                    return 4 as libc::c_int
+                    return 4 as libc::c_int;
                 } else {
                     return 2 as libc::c_int
-                        + ((*l).r#ref[0][yb4 as usize]
-                            as libc::c_uint >= 4 as libc::c_uint) as libc::c_int
+                        + ((*l).r#ref[0][yb4 as usize] as libc::c_uint >= 4 as libc::c_uint)
+                            as libc::c_int;
                 }
             } else if (*l).comp_type[yb4 as usize] != 0 {
                 return 2 as libc::c_int
-                    + ((*a).r#ref[0][xb4 as usize]
-                        as libc::c_uint >= 4 as libc::c_uint) as libc::c_int
+                    + ((*a).r#ref[0][xb4 as usize] as libc::c_uint >= 4 as libc::c_uint)
+                        as libc::c_int;
             } else {
-                return ((*l).r#ref[0][yb4 as usize]
-                    as libc::c_int >= 4) as libc::c_int
-                    ^ ((*a).r#ref[0][xb4 as usize] as libc::c_int
-                        >= 4) as libc::c_int
+                return ((*l).r#ref[0][yb4 as usize] as libc::c_int >= 4) as libc::c_int
+                    ^ ((*a).r#ref[0][xb4 as usize] as libc::c_int >= 4) as libc::c_int;
             }
         } else {
             return if (*a).comp_type[xb4 as usize] as libc::c_int != 0 {
                 3 as libc::c_int
             } else {
-                ((*a).r#ref[0][xb4 as usize] as libc::c_int
-                    >= 4) as libc::c_int
-            }
+                ((*a).r#ref[0][xb4 as usize] as libc::c_int >= 4) as libc::c_int
+            };
         }
     } else if have_left != 0 {
         return if (*l).comp_type[yb4 as usize] as libc::c_int != 0 {
             3 as libc::c_int
         } else {
-            ((*l).r#ref[0][yb4 as usize] as libc::c_int
-                >= 4) as libc::c_int
-        }
+            ((*l).r#ref[0][yb4 as usize] as libc::c_int >= 4) as libc::c_int
+        };
     } else {
-        return 1 as libc::c_int
+        return 1 as libc::c_int;
     };
 }
 #[inline]
@@ -1435,56 +1358,40 @@ unsafe extern "C" fn get_comp_dir_ctx(
         if a_intra != 0 || l_intra != 0 {
             let edge: *const BlockContext = if a_intra != 0 { l } else { a };
             let off = if a_intra != 0 { yb4 } else { xb4 };
-            if (*edge).comp_type[off as usize] as libc::c_int
-                == COMP_INTER_NONE as libc::c_int
-            {
+            if (*edge).comp_type[off as usize] as libc::c_int == COMP_INTER_NONE as libc::c_int {
                 return 2 as libc::c_int;
             }
             return 1 as libc::c_int
-                + 2
-                    * ((((*edge).r#ref[0][off as usize]
-                        as libc::c_int) < 4) as libc::c_int
-                        == (((*edge).r#ref[1][off as usize]
-                            as libc::c_int) < 4) as libc::c_int)
-                        as libc::c_int;
+                + 2 * ((((*edge).r#ref[0][off as usize] as libc::c_int) < 4) as libc::c_int
+                    == (((*edge).r#ref[1][off as usize] as libc::c_int) < 4) as libc::c_int)
+                    as libc::c_int;
         }
-        let a_comp = ((*a).comp_type[xb4 as usize] as libc::c_int
-            != COMP_INTER_NONE as libc::c_int) as libc::c_int;
-        let l_comp = ((*l).comp_type[yb4 as usize] as libc::c_int
-            != COMP_INTER_NONE as libc::c_int) as libc::c_int;
-        let a_ref0 = (*a).r#ref[0][xb4 as usize]
+        let a_comp = ((*a).comp_type[xb4 as usize] as libc::c_int != COMP_INTER_NONE as libc::c_int)
             as libc::c_int;
-        let l_ref0 = (*l).r#ref[0][yb4 as usize]
+        let l_comp = ((*l).comp_type[yb4 as usize] as libc::c_int != COMP_INTER_NONE as libc::c_int)
             as libc::c_int;
+        let a_ref0 = (*a).r#ref[0][xb4 as usize] as libc::c_int;
+        let l_ref0 = (*l).r#ref[0][yb4 as usize] as libc::c_int;
         if a_comp == 0 && l_comp == 0 {
             return 1 as libc::c_int
-                + 2
-                    * ((a_ref0 >= 4) as libc::c_int
-                        == (l_ref0 >= 4) as libc::c_int) as libc::c_int
+                + 2 * ((a_ref0 >= 4) as libc::c_int == (l_ref0 >= 4) as libc::c_int) as libc::c_int;
         } else if a_comp == 0 || l_comp == 0 {
             let edge_0: *const BlockContext = if a_comp != 0 { a } else { l };
             let off_0 = if a_comp != 0 { xb4 } else { yb4 };
-            if !((((*edge_0).r#ref[0][off_0 as usize]
-                as libc::c_int) < 4) as libc::c_int
-                == (((*edge_0).r#ref[1][off_0 as usize]
-                    as libc::c_int) < 4) as libc::c_int)
+            if !((((*edge_0).r#ref[0][off_0 as usize] as libc::c_int) < 4) as libc::c_int
+                == (((*edge_0).r#ref[1][off_0 as usize] as libc::c_int) < 4) as libc::c_int)
             {
                 return 1 as libc::c_int;
             }
             return 3 as libc::c_int
-                + ((a_ref0 >= 4) as libc::c_int
-                    == (l_ref0 >= 4) as libc::c_int) as libc::c_int;
+                + ((a_ref0 >= 4) as libc::c_int == (l_ref0 >= 4) as libc::c_int) as libc::c_int;
         } else {
-            let a_uni = ((((*a)
-                .r#ref[0][xb4 as usize] as libc::c_int)
-                < 4) as libc::c_int
-                == (((*a).r#ref[1][xb4 as usize] as libc::c_int)
-                    < 4) as libc::c_int) as libc::c_int;
-            let l_uni = ((((*l)
-                .r#ref[0][yb4 as usize] as libc::c_int)
-                < 4) as libc::c_int
-                == (((*l).r#ref[1][yb4 as usize] as libc::c_int)
-                    < 4) as libc::c_int) as libc::c_int;
+            let a_uni = ((((*a).r#ref[0][xb4 as usize] as libc::c_int) < 4) as libc::c_int
+                == (((*a).r#ref[1][xb4 as usize] as libc::c_int) < 4) as libc::c_int)
+                as libc::c_int;
+            let l_uni = ((((*l).r#ref[0][yb4 as usize] as libc::c_int) < 4) as libc::c_int
+                == (((*l).r#ref[1][yb4 as usize] as libc::c_int) < 4) as libc::c_int)
+                as libc::c_int;
             if a_uni == 0 && l_uni == 0 {
                 return 0 as libc::c_int;
             }
@@ -1492,8 +1399,7 @@ unsafe extern "C" fn get_comp_dir_ctx(
                 return 2 as libc::c_int;
             }
             return 3 as libc::c_int
-                + ((a_ref0 == 4) as libc::c_int
-                    == (l_ref0 == 4) as libc::c_int) as libc::c_int;
+                + ((a_ref0 == 4) as libc::c_int == (l_ref0 == 4) as libc::c_int) as libc::c_int;
         }
     } else if have_top != 0 || have_left != 0 {
         let edge_1: *const BlockContext = if have_left != 0 { l } else { a };
@@ -1501,18 +1407,15 @@ unsafe extern "C" fn get_comp_dir_ctx(
         if (*edge_1).intra[off_1 as usize] != 0 {
             return 2 as libc::c_int;
         }
-        if (*edge_1).comp_type[off_1 as usize] as libc::c_int
-            == COMP_INTER_NONE as libc::c_int
-        {
+        if (*edge_1).comp_type[off_1 as usize] as libc::c_int == COMP_INTER_NONE as libc::c_int {
             return 2 as libc::c_int;
         }
         return 4 as libc::c_int
-            * ((((*edge_1).r#ref[0][off_1 as usize]
-                as libc::c_int) < 4) as libc::c_int
-                == (((*edge_1).r#ref[1][off_1 as usize]
-                    as libc::c_int) < 4) as libc::c_int) as libc::c_int;
+            * ((((*edge_1).r#ref[0][off_1 as usize] as libc::c_int) < 4) as libc::c_int
+                == (((*edge_1).r#ref[1][off_1 as usize] as libc::c_int) < 4) as libc::c_int)
+                as libc::c_int;
     } else {
-        return 2 as libc::c_int
+        return 2 as libc::c_int;
     };
 }
 use crate::src::env::get_poc_diff;
@@ -1527,17 +1430,23 @@ unsafe extern "C" fn get_jnt_comp_ctx(
     yb4: libc::c_int,
     xb4: libc::c_int,
 ) -> libc::c_int {
-    let d0: libc::c_uint = get_poc_diff(order_hint_n_bits, ref0poc as libc::c_int, poc as libc::c_int).abs() as libc::c_uint;
-    let d1: libc::c_uint = get_poc_diff(order_hint_n_bits, poc as libc::c_int, ref1poc as libc::c_int).abs() as libc::c_uint;
+    let d0: libc::c_uint = get_poc_diff(
+        order_hint_n_bits,
+        ref0poc as libc::c_int,
+        poc as libc::c_int,
+    )
+    .abs() as libc::c_uint;
+    let d1: libc::c_uint = get_poc_diff(
+        order_hint_n_bits,
+        poc as libc::c_int,
+        ref1poc as libc::c_int,
+    )
+    .abs() as libc::c_uint;
     let offset = (d0 == d1) as libc::c_int;
-    let a_ctx = ((*a).comp_type[xb4 as usize] as libc::c_int
-        >= COMP_INTER_AVG as libc::c_int
-        || (*a).r#ref[0][xb4 as usize] as libc::c_int
-            == 6) as libc::c_int;
-    let l_ctx = ((*l).comp_type[yb4 as usize] as libc::c_int
-        >= COMP_INTER_AVG as libc::c_int
-        || (*l).r#ref[0][yb4 as usize] as libc::c_int
-            == 6) as libc::c_int;
+    let a_ctx = ((*a).comp_type[xb4 as usize] as libc::c_int >= COMP_INTER_AVG as libc::c_int
+        || (*a).r#ref[0][xb4 as usize] as libc::c_int == 6) as libc::c_int;
+    let l_ctx = ((*l).comp_type[yb4 as usize] as libc::c_int >= COMP_INTER_AVG as libc::c_int
+        || (*l).r#ref[0][yb4 as usize] as libc::c_int == 6) as libc::c_int;
     return 3 * offset + a_ctx + l_ctx;
 }
 #[inline]
@@ -1547,24 +1456,16 @@ unsafe extern "C" fn get_mask_comp_ctx(
     yb4: libc::c_int,
     xb4: libc::c_int,
 ) -> libc::c_int {
-    let a_ctx = if (*a).comp_type[xb4 as usize] as libc::c_int
-        >= COMP_INTER_SEG as libc::c_int
-    {
+    let a_ctx = if (*a).comp_type[xb4 as usize] as libc::c_int >= COMP_INTER_SEG as libc::c_int {
         1 as libc::c_int
-    } else if (*a).r#ref[0][xb4 as usize] as libc::c_int
-        == 6
-    {
+    } else if (*a).r#ref[0][xb4 as usize] as libc::c_int == 6 {
         3 as libc::c_int
     } else {
         0 as libc::c_int
     };
-    let l_ctx = if (*l).comp_type[yb4 as usize] as libc::c_int
-        >= COMP_INTER_SEG as libc::c_int
-    {
+    let l_ctx = if (*l).comp_type[yb4 as usize] as libc::c_int >= COMP_INTER_SEG as libc::c_int {
         1 as libc::c_int
-    } else if (*l).r#ref[0][yb4 as usize] as libc::c_int
-        == 6
-    {
+    } else if (*l).r#ref[0][yb4 as usize] as libc::c_int == 6 {
         3 as libc::c_int
     } else {
         0 as libc::c_int
@@ -1582,19 +1483,15 @@ unsafe extern "C" fn av1_get_ref_ctx(
 ) -> libc::c_int {
     let mut cnt: [libc::c_int; 2] = [0 as libc::c_int, 0];
     if have_top != 0 && (*a).intra[xb4 as usize] == 0 {
-        cnt[((*a).r#ref[0][xb4 as usize] as libc::c_int
-            >= 4) as libc::c_int as usize] += 1;
+        cnt[((*a).r#ref[0][xb4 as usize] as libc::c_int >= 4) as libc::c_int as usize] += 1;
         if (*a).comp_type[xb4 as usize] != 0 {
-            cnt[((*a).r#ref[1][xb4 as usize] as libc::c_int
-                >= 4) as libc::c_int as usize] += 1;
+            cnt[((*a).r#ref[1][xb4 as usize] as libc::c_int >= 4) as libc::c_int as usize] += 1;
         }
     }
     if have_left != 0 && (*l).intra[yb4 as usize] == 0 {
-        cnt[((*l).r#ref[0][yb4 as usize] as libc::c_int
-            >= 4) as libc::c_int as usize] += 1;
+        cnt[((*l).r#ref[0][yb4 as usize] as libc::c_int >= 4) as libc::c_int as usize] += 1;
         if (*l).comp_type[yb4 as usize] != 0 {
-            cnt[((*l).r#ref[1][yb4 as usize] as libc::c_int
-                >= 4) as libc::c_int as usize] += 1;
+            cnt[((*l).r#ref[1][yb4 as usize] as libc::c_int >= 4) as libc::c_int as usize] += 1;
         }
     }
     return if cnt[0] == cnt[1] {
@@ -1616,27 +1513,21 @@ unsafe extern "C" fn av1_get_fwd_ref_ctx(
 ) -> libc::c_int {
     let mut cnt: [libc::c_int; 4] = [0 as libc::c_int, 0, 0, 0];
     if have_top != 0 && (*a).intra[xb4 as usize] == 0 {
-        if ((*a).r#ref[0][xb4 as usize] as libc::c_int)
-            < 4
-        {
+        if ((*a).r#ref[0][xb4 as usize] as libc::c_int) < 4 {
             cnt[(*a).r#ref[0][xb4 as usize] as usize] += 1;
         }
         if (*a).comp_type[xb4 as usize] as libc::c_int != 0
-            && ((*a).r#ref[1][xb4 as usize] as libc::c_int)
-                < 4
+            && ((*a).r#ref[1][xb4 as usize] as libc::c_int) < 4
         {
             cnt[(*a).r#ref[1][xb4 as usize] as usize] += 1;
         }
     }
     if have_left != 0 && (*l).intra[yb4 as usize] == 0 {
-        if ((*l).r#ref[0][yb4 as usize] as libc::c_int)
-            < 4
-        {
+        if ((*l).r#ref[0][yb4 as usize] as libc::c_int) < 4 {
             cnt[(*l).r#ref[0][yb4 as usize] as usize] += 1;
         }
         if (*l).comp_type[yb4 as usize] as libc::c_int != 0
-            && ((*l).r#ref[1][yb4 as usize] as libc::c_int)
-                < 4
+            && ((*l).r#ref[1][yb4 as usize] as libc::c_int) < 4
         {
             cnt[(*l).r#ref[1][yb4 as usize] as usize] += 1;
         }
@@ -1662,27 +1553,21 @@ unsafe extern "C" fn av1_get_fwd_ref_1_ctx(
 ) -> libc::c_int {
     let mut cnt: [libc::c_int; 2] = [0 as libc::c_int, 0];
     if have_top != 0 && (*a).intra[xb4 as usize] == 0 {
-        if ((*a).r#ref[0][xb4 as usize] as libc::c_int)
-            < 2
-        {
+        if ((*a).r#ref[0][xb4 as usize] as libc::c_int) < 2 {
             cnt[(*a).r#ref[0][xb4 as usize] as usize] += 1;
         }
         if (*a).comp_type[xb4 as usize] as libc::c_int != 0
-            && ((*a).r#ref[1][xb4 as usize] as libc::c_int)
-                < 2
+            && ((*a).r#ref[1][xb4 as usize] as libc::c_int) < 2
         {
             cnt[(*a).r#ref[1][xb4 as usize] as usize] += 1;
         }
     }
     if have_left != 0 && (*l).intra[yb4 as usize] == 0 {
-        if ((*l).r#ref[0][yb4 as usize] as libc::c_int)
-            < 2
-        {
+        if ((*l).r#ref[0][yb4 as usize] as libc::c_int) < 2 {
             cnt[(*l).r#ref[0][yb4 as usize] as usize] += 1;
         }
         if (*l).comp_type[yb4 as usize] as libc::c_int != 0
-            && ((*l).r#ref[1][yb4 as usize] as libc::c_int)
-                < 2
+            && ((*l).r#ref[1][yb4 as usize] as libc::c_int) < 2
         {
             cnt[(*l).r#ref[1][yb4 as usize] as usize] += 1;
         }
@@ -1706,33 +1591,23 @@ unsafe extern "C" fn av1_get_fwd_ref_2_ctx(
 ) -> libc::c_int {
     let mut cnt: [libc::c_int; 2] = [0 as libc::c_int, 0];
     if have_top != 0 && (*a).intra[xb4 as usize] == 0 {
-        if ((*a).r#ref[0][xb4 as usize] as libc::c_uint
-            ^ 2 as libc::c_uint) < 2 as libc::c_uint
-        {
-            cnt[((*a).r#ref[0][xb4 as usize] as libc::c_int
-                - 2) as usize] += 1;
+        if ((*a).r#ref[0][xb4 as usize] as libc::c_uint ^ 2 as libc::c_uint) < 2 as libc::c_uint {
+            cnt[((*a).r#ref[0][xb4 as usize] as libc::c_int - 2) as usize] += 1;
         }
         if (*a).comp_type[xb4 as usize] as libc::c_int != 0
-            && ((*a).r#ref[1][xb4 as usize] as libc::c_uint
-                ^ 2 as libc::c_uint) < 2 as libc::c_uint
+            && ((*a).r#ref[1][xb4 as usize] as libc::c_uint ^ 2 as libc::c_uint) < 2 as libc::c_uint
         {
-            cnt[((*a).r#ref[1][xb4 as usize] as libc::c_int
-                - 2) as usize] += 1;
+            cnt[((*a).r#ref[1][xb4 as usize] as libc::c_int - 2) as usize] += 1;
         }
     }
     if have_left != 0 && (*l).intra[yb4 as usize] == 0 {
-        if ((*l).r#ref[0][yb4 as usize] as libc::c_uint
-            ^ 2 as libc::c_uint) < 2 as libc::c_uint
-        {
-            cnt[((*l).r#ref[0][yb4 as usize] as libc::c_int
-                - 2) as usize] += 1;
+        if ((*l).r#ref[0][yb4 as usize] as libc::c_uint ^ 2 as libc::c_uint) < 2 as libc::c_uint {
+            cnt[((*l).r#ref[0][yb4 as usize] as libc::c_int - 2) as usize] += 1;
         }
         if (*l).comp_type[yb4 as usize] as libc::c_int != 0
-            && ((*l).r#ref[1][yb4 as usize] as libc::c_uint
-                ^ 2 as libc::c_uint) < 2 as libc::c_uint
+            && ((*l).r#ref[1][yb4 as usize] as libc::c_uint ^ 2 as libc::c_uint) < 2 as libc::c_uint
         {
-            cnt[((*l).r#ref[1][yb4 as usize] as libc::c_int
-                - 2) as usize] += 1;
+            cnt[((*l).r#ref[1][yb4 as usize] as libc::c_int - 2) as usize] += 1;
         }
     }
     return if cnt[0] == cnt[1] {
@@ -1754,33 +1629,23 @@ unsafe extern "C" fn av1_get_bwd_ref_ctx(
 ) -> libc::c_int {
     let mut cnt: [libc::c_int; 3] = [0 as libc::c_int, 0, 0];
     if have_top != 0 && (*a).intra[xb4 as usize] == 0 {
-        if (*a).r#ref[0][xb4 as usize] as libc::c_int
-            >= 4
-        {
-            cnt[((*a).r#ref[0][xb4 as usize] as libc::c_int
-                - 4) as usize] += 1;
+        if (*a).r#ref[0][xb4 as usize] as libc::c_int >= 4 {
+            cnt[((*a).r#ref[0][xb4 as usize] as libc::c_int - 4) as usize] += 1;
         }
         if (*a).comp_type[xb4 as usize] as libc::c_int != 0
-            && (*a).r#ref[1][xb4 as usize] as libc::c_int
-                >= 4
+            && (*a).r#ref[1][xb4 as usize] as libc::c_int >= 4
         {
-            cnt[((*a).r#ref[1][xb4 as usize] as libc::c_int
-                - 4) as usize] += 1;
+            cnt[((*a).r#ref[1][xb4 as usize] as libc::c_int - 4) as usize] += 1;
         }
     }
     if have_left != 0 && (*l).intra[yb4 as usize] == 0 {
-        if (*l).r#ref[0][yb4 as usize] as libc::c_int
-            >= 4
-        {
-            cnt[((*l).r#ref[0][yb4 as usize] as libc::c_int
-                - 4) as usize] += 1;
+        if (*l).r#ref[0][yb4 as usize] as libc::c_int >= 4 {
+            cnt[((*l).r#ref[0][yb4 as usize] as libc::c_int - 4) as usize] += 1;
         }
         if (*l).comp_type[yb4 as usize] as libc::c_int != 0
-            && (*l).r#ref[1][yb4 as usize] as libc::c_int
-                >= 4
+            && (*l).r#ref[1][yb4 as usize] as libc::c_int >= 4
         {
-            cnt[((*l).r#ref[1][yb4 as usize] as libc::c_int
-                - 4) as usize] += 1;
+            cnt[((*l).r#ref[1][yb4 as usize] as libc::c_int - 4) as usize] += 1;
         }
     }
     cnt[1] += cnt[0];
@@ -1803,33 +1668,23 @@ unsafe extern "C" fn av1_get_bwd_ref_1_ctx(
 ) -> libc::c_int {
     let mut cnt: [libc::c_int; 3] = [0 as libc::c_int, 0, 0];
     if have_top != 0 && (*a).intra[xb4 as usize] == 0 {
-        if (*a).r#ref[0][xb4 as usize] as libc::c_int
-            >= 4
-        {
-            cnt[((*a).r#ref[0][xb4 as usize] as libc::c_int
-                - 4) as usize] += 1;
+        if (*a).r#ref[0][xb4 as usize] as libc::c_int >= 4 {
+            cnt[((*a).r#ref[0][xb4 as usize] as libc::c_int - 4) as usize] += 1;
         }
         if (*a).comp_type[xb4 as usize] as libc::c_int != 0
-            && (*a).r#ref[1][xb4 as usize] as libc::c_int
-                >= 4
+            && (*a).r#ref[1][xb4 as usize] as libc::c_int >= 4
         {
-            cnt[((*a).r#ref[1][xb4 as usize] as libc::c_int
-                - 4) as usize] += 1;
+            cnt[((*a).r#ref[1][xb4 as usize] as libc::c_int - 4) as usize] += 1;
         }
     }
     if have_left != 0 && (*l).intra[yb4 as usize] == 0 {
-        if (*l).r#ref[0][yb4 as usize] as libc::c_int
-            >= 4
-        {
-            cnt[((*l).r#ref[0][yb4 as usize] as libc::c_int
-                - 4) as usize] += 1;
+        if (*l).r#ref[0][yb4 as usize] as libc::c_int >= 4 {
+            cnt[((*l).r#ref[0][yb4 as usize] as libc::c_int - 4) as usize] += 1;
         }
         if (*l).comp_type[yb4 as usize] as libc::c_int != 0
-            && (*l).r#ref[1][yb4 as usize] as libc::c_int
-                >= 4
+            && (*l).r#ref[1][yb4 as usize] as libc::c_int >= 4
         {
-            cnt[((*l).r#ref[1][yb4 as usize] as libc::c_int
-                - 4) as usize] += 1;
+            cnt[((*l).r#ref[1][yb4 as usize] as libc::c_int - 4) as usize] += 1;
         }
     }
     return if cnt[0] == cnt[1] {
@@ -1851,33 +1706,29 @@ unsafe extern "C" fn av1_get_uni_p1_ctx(
 ) -> libc::c_int {
     let mut cnt: [libc::c_int; 3] = [0 as libc::c_int, 0, 0];
     if have_top != 0 && (*a).intra[xb4 as usize] == 0 {
-        if ((*a).r#ref[0][xb4 as usize] as libc::c_uint)
-            .wrapping_sub(1 as libc::c_uint) < 3 as libc::c_uint
+        if ((*a).r#ref[0][xb4 as usize] as libc::c_uint).wrapping_sub(1 as libc::c_uint)
+            < 3 as libc::c_uint
         {
-            cnt[((*a).r#ref[0][xb4 as usize] as libc::c_int
-                - 1) as usize] += 1;
+            cnt[((*a).r#ref[0][xb4 as usize] as libc::c_int - 1) as usize] += 1;
         }
         if (*a).comp_type[xb4 as usize] as libc::c_int != 0
-            && ((*a).r#ref[1][xb4 as usize] as libc::c_uint)
-                .wrapping_sub(1 as libc::c_uint) < 3 as libc::c_uint
+            && ((*a).r#ref[1][xb4 as usize] as libc::c_uint).wrapping_sub(1 as libc::c_uint)
+                < 3 as libc::c_uint
         {
-            cnt[((*a).r#ref[1][xb4 as usize] as libc::c_int
-                - 1) as usize] += 1;
+            cnt[((*a).r#ref[1][xb4 as usize] as libc::c_int - 1) as usize] += 1;
         }
     }
     if have_left != 0 && (*l).intra[yb4 as usize] == 0 {
-        if ((*l).r#ref[0][yb4 as usize] as libc::c_uint)
-            .wrapping_sub(1 as libc::c_uint) < 3 as libc::c_uint
+        if ((*l).r#ref[0][yb4 as usize] as libc::c_uint).wrapping_sub(1 as libc::c_uint)
+            < 3 as libc::c_uint
         {
-            cnt[((*l).r#ref[0][yb4 as usize] as libc::c_int
-                - 1) as usize] += 1;
+            cnt[((*l).r#ref[0][yb4 as usize] as libc::c_int - 1) as usize] += 1;
         }
         if (*l).comp_type[yb4 as usize] as libc::c_int != 0
-            && ((*l).r#ref[1][yb4 as usize] as libc::c_uint)
-                .wrapping_sub(1 as libc::c_uint) < 3 as libc::c_uint
+            && ((*l).r#ref[1][yb4 as usize] as libc::c_uint).wrapping_sub(1 as libc::c_uint)
+                < 3 as libc::c_uint
         {
-            cnt[((*l).r#ref[1][yb4 as usize] as libc::c_int
-                - 1) as usize] += 1;
+            cnt[((*l).r#ref[1][yb4 as usize] as libc::c_int - 1) as usize] += 1;
         }
     }
     cnt[1] += cnt[2];
@@ -1895,12 +1746,9 @@ unsafe extern "C" fn get_drl_context(
     ref_idx: libc::c_int,
 ) -> libc::c_int {
     if (*ref_mv_stack.offset(ref_idx as isize)).weight >= 640 {
-        return ((*ref_mv_stack.offset((ref_idx + 1) as isize)).weight
-            < 640) as libc::c_int;
+        return ((*ref_mv_stack.offset((ref_idx + 1) as isize)).weight < 640) as libc::c_int;
     }
-    return if (*ref_mv_stack.offset((ref_idx + 1) as isize)).weight
-        < 640
-    {
+    return if (*ref_mv_stack.offset((ref_idx + 1) as isize)).weight < 640 {
         2 as libc::c_int
     } else {
         0 as libc::c_int
@@ -1916,15 +1764,11 @@ unsafe extern "C" fn get_cur_frame_segid(
     mut cur_seg_map: *const uint8_t,
     stride: ptrdiff_t,
 ) -> libc::c_uint {
-    cur_seg_map = cur_seg_map
-        .offset(bx as isize + by as isize * stride);
+    cur_seg_map = cur_seg_map.offset(bx as isize + by as isize * stride);
     if have_left != 0 && have_top != 0 {
-        let l = *cur_seg_map.offset(-(1 as libc::c_int) as isize)
-            as libc::c_int;
+        let l = *cur_seg_map.offset(-(1 as libc::c_int) as isize) as libc::c_int;
         let a = *cur_seg_map.offset(-stride as isize) as libc::c_int;
-        let al = *cur_seg_map
-            .offset(-(stride + 1) as isize)
-            as libc::c_int;
+        let al = *cur_seg_map.offset(-(stride + 1) as isize) as libc::c_int;
         if l == a && al == l {
             *seg_ctx = 2 as libc::c_int;
         } else if l == a || al == l || a == al {
@@ -1961,10 +1805,7 @@ unsafe extern "C" fn dav1d_msac_decode_uniform(
         unreachable!();
     }
     let m: libc::c_uint = (((1 as libc::c_int) << l) as libc::c_uint).wrapping_sub(n);
-    let v: libc::c_uint = dav1d_msac_decode_bools(
-        s,
-        (l - 1) as libc::c_uint,
-    );
+    let v: libc::c_uint = dav1d_msac_decode_bools(s, (l - 1) as libc::c_uint);
     return (if v < m {
         v
     } else {
@@ -2014,10 +1855,8 @@ unsafe extern "C" fn read_mv_component_diff(
     let ts: *mut Dav1dTileState = (*t).ts;
     let f: *const Dav1dFrameContext = (*t).f;
     let have_hp = (*(*f).frame_hdr).hp;
-    let sign = dav1d_msac_decode_bool_adapt(
-        &mut (*ts).msac,
-        ((*mv_comp).sign.0).as_mut_ptr(),
-    ) as libc::c_int;
+    let sign = dav1d_msac_decode_bool_adapt(&mut (*ts).msac, ((*mv_comp).sign.0).as_mut_ptr())
+        as libc::c_int;
     let cl = dav1d_msac_decode_symbol_adapt16(
         &mut (*ts).msac,
         ((*mv_comp).classes.0).as_mut_ptr(),
@@ -2027,10 +1866,8 @@ unsafe extern "C" fn read_mv_component_diff(
     let mut fp = 0;
     let mut hp = 0;
     if cl == 0 {
-        up = dav1d_msac_decode_bool_adapt(
-            &mut (*ts).msac,
-            ((*mv_comp).class0.0).as_mut_ptr(),
-        ) as libc::c_int;
+        up = dav1d_msac_decode_bool_adapt(&mut (*ts).msac, ((*mv_comp).class0.0).as_mut_ptr())
+            as libc::c_int;
         if have_fp != 0 {
             fp = dav1d_msac_decode_symbol_adapt4(
                 &mut (*ts).msac,
@@ -2038,10 +1875,7 @@ unsafe extern "C" fn read_mv_component_diff(
                 3 as libc::c_int as size_t,
             ) as libc::c_int;
             hp = (if have_hp != 0 {
-                dav1d_msac_decode_bool_adapt(
-                    &mut (*ts).msac,
-                    ((*mv_comp).class0_hp.0).as_mut_ptr(),
-                )
+                dav1d_msac_decode_bool_adapt(&mut (*ts).msac, ((*mv_comp).class0_hp.0).as_mut_ptr())
             } else {
                 1 as libc::c_int as libc::c_uint
             }) as libc::c_int;
@@ -2067,10 +1901,7 @@ unsafe extern "C" fn read_mv_component_diff(
                 3 as libc::c_int as size_t,
             ) as libc::c_int;
             hp = (if have_hp != 0 {
-                dav1d_msac_decode_bool_adapt(
-                    &mut (*ts).msac,
-                    ((*mv_comp).classN_hp.0).as_mut_ptr(),
-                )
+                dav1d_msac_decode_bool_adapt(&mut (*ts).msac, ((*mv_comp).classN_hp.0).as_mut_ptr())
             } else {
                 1 as libc::c_int as libc::c_uint
             }) as libc::c_int;
@@ -2079,8 +1910,7 @@ unsafe extern "C" fn read_mv_component_diff(
             hp = 1 as libc::c_int;
         }
     }
-    let diff = (up << 3 | fp << 1 | hp)
-        + 1;
+    let diff = (up << 3 | fp << 1 | hp) + 1;
     return if sign != 0 { -diff } else { diff };
 }
 unsafe extern "C" fn read_mv_residual(
@@ -2095,14 +1925,18 @@ unsafe extern "C" fn read_mv_residual(
         (N_MV_JOINTS as libc::c_int - 1) as size_t,
     ) {
         3 => {
-            (*ref_mv).y = (*ref_mv).y + read_mv_component_diff(t, &mut (*mv_cdf).comp[0], have_fp) as i16;
-            (*ref_mv).x = (*ref_mv).x + read_mv_component_diff(t, &mut (*mv_cdf).comp[1], have_fp) as i16;
+            (*ref_mv).y =
+                (*ref_mv).y + read_mv_component_diff(t, &mut (*mv_cdf).comp[0], have_fp) as i16;
+            (*ref_mv).x =
+                (*ref_mv).x + read_mv_component_diff(t, &mut (*mv_cdf).comp[1], have_fp) as i16;
         }
         1 => {
-            (*ref_mv).x = (*ref_mv).x + read_mv_component_diff(t, &mut (*mv_cdf).comp[1], have_fp) as i16;
+            (*ref_mv).x =
+                (*ref_mv).x + read_mv_component_diff(t, &mut (*mv_cdf).comp[1], have_fp) as i16;
         }
         2 => {
-            (*ref_mv).y = (*ref_mv).y + read_mv_component_diff(t, &mut (*mv_cdf).comp[0], have_fp) as i16;
+            (*ref_mv).y =
+                (*ref_mv).y + read_mv_component_diff(t, &mut (*mv_cdf).comp[0], have_fp) as i16;
         }
         _ => {}
     };
@@ -2118,79 +1952,46 @@ unsafe extern "C" fn read_tx_tree(
     let f: *const Dav1dFrameContext = (*t).f;
     let bx4 = (*t).bx & 31;
     let by4 = (*t).by & 31;
-    let t_dim: *const TxfmInfo = &*dav1d_txfm_dimensions.as_ptr().offset(from as isize)
-        as *const TxfmInfo;
+    let t_dim: *const TxfmInfo =
+        &*dav1d_txfm_dimensions.as_ptr().offset(from as isize) as *const TxfmInfo;
     let txw = (*t_dim).lw as libc::c_int;
     let txh = (*t_dim).lh as libc::c_int;
     let mut is_split = 0;
-    if depth < 2
-        && from as libc::c_uint > TX_4X4 as libc::c_int as libc::c_uint
-    {
-        let cat = 2 as libc::c_int
-            * (TX_64X64 as libc::c_int - (*t_dim).max as libc::c_int) - depth;
-        let a = (((*(*t).a).tx[bx4 as usize] as libc::c_int) < txw)
-            as libc::c_int;
-        let l = (((*t).l.tx[by4 as usize] as libc::c_int) < txh)
-            as libc::c_int;
+    if depth < 2 && from as libc::c_uint > TX_4X4 as libc::c_int as libc::c_uint {
+        let cat =
+            2 as libc::c_int * (TX_64X64 as libc::c_int - (*t_dim).max as libc::c_int) - depth;
+        let a = (((*(*t).a).tx[bx4 as usize] as libc::c_int) < txw) as libc::c_int;
+        let l = (((*t).l.tx[by4 as usize] as libc::c_int) < txh) as libc::c_int;
         is_split = dav1d_msac_decode_bool_adapt(
             &mut (*(*t).ts).msac,
             ((*(*t).ts).cdf.m.txpart[cat as usize][(a + l) as usize]).as_mut_ptr(),
         ) as libc::c_int;
         if is_split != 0 {
             let ref mut fresh1 = *masks.offset(depth as isize);
-            *fresh1 = (*fresh1 as libc::c_int
-                | (1 as libc::c_int) << y_off * 4 + x_off) as uint16_t;
+            *fresh1 =
+                (*fresh1 as libc::c_int | (1 as libc::c_int) << y_off * 4 + x_off) as uint16_t;
         }
     } else {
         is_split = 0 as libc::c_int;
     }
     if is_split != 0 && (*t_dim).max as libc::c_int > TX_8X8 as libc::c_int {
         let sub: RectTxfmSize = (*t_dim).sub as RectTxfmSize;
-        let sub_t_dim: *const TxfmInfo = &*dav1d_txfm_dimensions
-            .as_ptr()
-            .offset(sub as isize) as *const TxfmInfo;
+        let sub_t_dim: *const TxfmInfo =
+            &*dav1d_txfm_dimensions.as_ptr().offset(sub as isize) as *const TxfmInfo;
         let txsw = (*sub_t_dim).w as libc::c_int;
         let txsh = (*sub_t_dim).h as libc::c_int;
-        read_tx_tree(
-            t,
-            sub,
-            depth + 1,
-            masks,
-            x_off * 2 + 0,
-            y_off * 2 + 0,
-        );
+        read_tx_tree(t, sub, depth + 1, masks, x_off * 2 + 0, y_off * 2 + 0);
         (*t).bx += txsw;
         if txw >= txh && (*t).bx < (*f).bw {
-            read_tx_tree(
-                t,
-                sub,
-                depth + 1,
-                masks,
-                x_off * 2 + 1,
-                y_off * 2 + 0,
-            );
+            read_tx_tree(t, sub, depth + 1, masks, x_off * 2 + 1, y_off * 2 + 0);
         }
         (*t).bx -= txsw;
         (*t).by += txsh;
         if txh >= txw && (*t).by < (*f).bh {
-            read_tx_tree(
-                t,
-                sub,
-                depth + 1,
-                masks,
-                x_off * 2 + 0,
-                y_off * 2 + 1,
-            );
+            read_tx_tree(t, sub, depth + 1, masks, x_off * 2 + 0, y_off * 2 + 1);
             (*t).bx += txsw;
             if txw >= txh && (*t).bx < (*f).bw {
-                read_tx_tree(
-                    t,
-                    sub,
-                    depth + 1,
-                    masks,
-                    x_off * 2 + 1,
-                    y_off * 2 + 1,
-                );
+                read_tx_tree(t, sub, depth + 1, masks, x_off * 2 + 1, y_off * 2 + 1);
             }
             (*t).bx -= txsw;
         }
@@ -2230,25 +2031,19 @@ unsafe extern "C" fn read_tx_tree(
                     .u64_0 = (if is_split != 0 {
                     TX_4X4 as libc::c_int as libc::c_ulonglong
                 } else {
-                    (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(txh as libc::c_ulonglong)
+                    (0x101010101010101 as libc::c_ulonglong).wrapping_mul(txh as libc::c_ulonglong)
                 }) as uint64_t;
             }
             16 => {
                 let const_val: uint64_t = (if is_split != 0 {
                     TX_4X4 as libc::c_int as libc::c_ulonglong
                 } else {
-                    (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(txh as libc::c_ulonglong)
+                    (0x101010101010101 as libc::c_ulonglong).wrapping_mul(txh as libc::c_ulonglong)
                 }) as uint64_t;
-                (*(&mut *((*t).l.tx)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut int8_t
+                (*(&mut *((*t).l.tx).as_mut_ptr().offset((by4 + 0) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val;
-                (*(&mut *((*t).l.tx)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut int8_t
+                (*(&mut *((*t).l.tx).as_mut_ptr().offset((by4 + 8) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val;
             }
@@ -2288,25 +2083,19 @@ unsafe extern "C" fn read_tx_tree(
                     .u64_0 = (if is_split != 0 {
                     TX_4X4 as libc::c_int as libc::c_ulonglong
                 } else {
-                    (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(txw as libc::c_ulonglong)
+                    (0x101010101010101 as libc::c_ulonglong).wrapping_mul(txw as libc::c_ulonglong)
                 }) as uint64_t;
             }
             16 => {
                 let const_val_0: uint64_t = (if is_split != 0 {
                     TX_4X4 as libc::c_int as libc::c_ulonglong
                 } else {
-                    (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(txw as libc::c_ulonglong)
+                    (0x101010101010101 as libc::c_ulonglong).wrapping_mul(txw as libc::c_ulonglong)
                 }) as uint64_t;
-                (*(&mut *((*(*t).a).tx)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut int8_t
+                (*(&mut *((*(*t).a).tx).as_mut_ptr().offset((bx4 + 0) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_0;
-                (*(&mut *((*(*t).a).tx)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut int8_t
+                (*(&mut *((*(*t).a).tx).as_mut_ptr().offset((bx4 + 8) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_0;
             }
@@ -2359,31 +2148,28 @@ unsafe extern "C" fn find_matching_ref(
     r#ref: libc::c_int,
     mut masks: *mut uint64_t,
 ) {
-    let mut r: *const *mut refmvs_block = &*((*t).rt.r)
-        .as_ptr()
-        .offset((((*t).by & 31) + 5) as isize)
-        as *const *mut refmvs_block;
+    let mut r: *const *mut refmvs_block =
+        &*((*t).rt.r).as_ptr().offset((((*t).by & 31) + 5) as isize) as *const *mut refmvs_block;
     let mut count = 0;
     let mut have_topleft = (have_top != 0 && have_left != 0) as libc::c_int;
     let mut have_topright = (imax(bw4, bh4) < 32
-        && have_top != 0 && (*t).bx + bw4 < (*(*t).ts).tiling.col_end
+        && have_top != 0
+        && (*t).bx + bw4 < (*(*t).ts).tiling.col_end
         && intra_edge_flags as libc::c_uint
-            & EDGE_I444_TOP_HAS_RIGHT as libc::c_int as libc::c_uint != 0)
-        as libc::c_int;
+            & EDGE_I444_TOP_HAS_RIGHT as libc::c_int as libc::c_uint
+            != 0) as libc::c_int;
     if have_top != 0 {
         let mut r2: *const refmvs_block = &mut *(*r.offset(-(1 as libc::c_int) as isize))
-            .offset((*t).bx as isize) as *mut refmvs_block;
-        if (*r2).r#ref.r#ref[0] as libc::c_int
-            == r#ref + 1
-            && (*r2).r#ref.r#ref[1] as libc::c_int
-                == -(1 as libc::c_int)
+            .offset((*t).bx as isize)
+            as *mut refmvs_block;
+        if (*r2).r#ref.r#ref[0] as libc::c_int == r#ref + 1
+            && (*r2).r#ref.r#ref[1] as libc::c_int == -(1 as libc::c_int)
         {
             let ref mut fresh2 = *masks.offset(0);
             *fresh2 |= 1;
             count = 1 as libc::c_int;
         }
-        let mut aw4 = dav1d_block_dimensions[(*r2).bs
-            as usize][0] as libc::c_int;
+        let mut aw4 = dav1d_block_dimensions[(*r2).bs as usize][0] as libc::c_int;
         if aw4 >= bw4 {
             let off = (*t).bx & aw4 - 1;
             if off != 0 {
@@ -2397,10 +2183,8 @@ unsafe extern "C" fn find_matching_ref(
             let mut x = aw4;
             while x < w4 {
                 r2 = r2.offset(aw4 as isize);
-                if (*r2).r#ref.r#ref[0] as libc::c_int
-                    == r#ref + 1
-                    && (*r2).r#ref.r#ref[1] as libc::c_int
-                        == -(1 as libc::c_int)
+                if (*r2).r#ref.r#ref[0] as libc::c_int == r#ref + 1
+                    && (*r2).r#ref.r#ref[1] as libc::c_int == -(1 as libc::c_int)
                 {
                     let ref mut fresh3 = *masks.offset(0);
                     *fresh3 |= mask as uint64_t;
@@ -2409,8 +2193,7 @@ unsafe extern "C" fn find_matching_ref(
                         return;
                     }
                 }
-                aw4 = dav1d_block_dimensions[(*r2).bs
-                    as usize][0] as libc::c_int;
+                aw4 = dav1d_block_dimensions[(*r2).bs as usize][0] as libc::c_int;
                 mask <<= aw4;
                 x += aw4;
             }
@@ -2418,14 +2201,14 @@ unsafe extern "C" fn find_matching_ref(
     }
     if have_left != 0 {
         let mut r2_0: *const *mut refmvs_block = r;
-        if (*(*r2_0.offset(0))
-            .offset(((*t).bx - 1) as isize))
+        if (*(*r2_0.offset(0)).offset(((*t).bx - 1) as isize))
             .r#ref
-            .r#ref[0] as libc::c_int == r#ref + 1
-            && (*(*r2_0.offset(0))
-                .offset(((*t).bx - 1) as isize))
+            .r#ref[0] as libc::c_int
+            == r#ref + 1
+            && (*(*r2_0.offset(0)).offset(((*t).bx - 1) as isize))
                 .r#ref
-                .r#ref[1] as libc::c_int == -(1 as libc::c_int)
+                .r#ref[1] as libc::c_int
+                == -(1 as libc::c_int)
         {
             let ref mut fresh4 = *masks.offset(1);
             *fresh4 |= 1;
@@ -2434,10 +2217,9 @@ unsafe extern "C" fn find_matching_ref(
                 return;
             }
         }
-        let mut lh4 = dav1d_block_dimensions[(*(*r2_0
-            .offset(0))
-            .offset(((*t).bx - 1) as isize))
-            .bs as usize][1] as libc::c_int;
+        let mut lh4 = dav1d_block_dimensions
+            [(*(*r2_0.offset(0)).offset(((*t).bx - 1) as isize)).bs as usize][1]
+            as libc::c_int;
         if lh4 >= bh4 {
             if (*t).by & lh4 - 1 != 0 {
                 have_topleft = 0 as libc::c_int;
@@ -2447,13 +2229,11 @@ unsafe extern "C" fn find_matching_ref(
             let mut y = lh4;
             while y < h4 {
                 r2_0 = r2_0.offset(lh4 as isize);
-                if (*(*r2_0.offset(0))
-                    .offset(((*t).bx - 1) as isize))
+                if (*(*r2_0.offset(0)).offset(((*t).bx - 1) as isize))
                     .r#ref
                     .r#ref[0] as libc::c_int
                     == r#ref + 1
-                    && (*(*r2_0.offset(0))
-                        .offset(((*t).bx - 1) as isize))
+                    && (*(*r2_0.offset(0)).offset(((*t).bx - 1) as isize))
                         .r#ref
                         .r#ref[1] as libc::c_int
                         == -(1 as libc::c_int)
@@ -2465,27 +2245,26 @@ unsafe extern "C" fn find_matching_ref(
                         return;
                     }
                 }
-                lh4 = dav1d_block_dimensions[(*(*r2_0.offset(0))
-                    .offset(((*t).bx - 1) as isize))
-                    .bs as usize][1] as libc::c_int;
+                lh4 = dav1d_block_dimensions
+                    [(*(*r2_0.offset(0)).offset(((*t).bx - 1) as isize)).bs as usize][1]
+                    as libc::c_int;
                 mask_0 <<= lh4;
                 y += lh4;
             }
         }
     }
     if have_topleft != 0
-        && ((*(*r.offset(-(1 as libc::c_int) as isize))
-            .offset(((*t).bx - 1) as isize))
+        && ((*(*r.offset(-(1 as libc::c_int) as isize)).offset(((*t).bx - 1) as isize))
             .r#ref
-            .r#ref[0] as libc::c_int == r#ref + 1
-            && (*(*r.offset(-(1 as libc::c_int) as isize))
-                .offset(((*t).bx - 1) as isize))
+            .r#ref[0] as libc::c_int
+            == r#ref + 1
+            && (*(*r.offset(-(1 as libc::c_int) as isize)).offset(((*t).bx - 1) as isize))
                 .r#ref
-                .r#ref[1] as libc::c_int == -(1 as libc::c_int))
+                .r#ref[1] as libc::c_int
+                == -(1 as libc::c_int))
     {
         let ref mut fresh6 = *masks.offset(1);
-        *fresh6 = (*fresh6 as libc::c_ulonglong
-            | (1 as libc::c_ulonglong) << 32) as uint64_t;
+        *fresh6 = (*fresh6 as libc::c_ulonglong | (1 as libc::c_ulonglong) << 32) as uint64_t;
         count += 1;
         if count >= 8 {
             return;
@@ -2494,15 +2273,15 @@ unsafe extern "C" fn find_matching_ref(
     if have_topright != 0
         && ((*(*r.offset(-(1 as libc::c_int) as isize)).offset(((*t).bx + bw4) as isize))
             .r#ref
-            .r#ref[0] as libc::c_int == r#ref + 1
-            && (*(*r.offset(-(1 as libc::c_int) as isize))
-                .offset(((*t).bx + bw4) as isize))
+            .r#ref[0] as libc::c_int
+            == r#ref + 1
+            && (*(*r.offset(-(1 as libc::c_int) as isize)).offset(((*t).bx + bw4) as isize))
                 .r#ref
-                .r#ref[1] as libc::c_int == -(1 as libc::c_int))
+                .r#ref[1] as libc::c_int
+                == -(1 as libc::c_int))
     {
         let ref mut fresh7 = *masks.offset(0);
-        *fresh7 = (*fresh7 as libc::c_ulonglong
-            | (1 as libc::c_ulonglong) << 32) as uint64_t;
+        *fresh7 = (*fresh7 as libc::c_ulonglong | (1 as libc::c_ulonglong) << 32) as uint64_t;
     }
 }
 unsafe extern "C" fn derive_warpmv(
@@ -2515,53 +2294,37 @@ unsafe extern "C" fn derive_warpmv(
 ) {
     let mut pts: [[[libc::c_int; 2]; 2]; 8] = [[[0; 2]; 2]; 8];
     let mut np = 0;
-    let mut r: *const *mut refmvs_block = &*((*t).rt.r)
-        .as_ptr()
-        .offset((((*t).by & 31) + 5) as isize)
-        as *const *mut refmvs_block;
-    if *masks.offset(0) as libc::c_uint
-        == 1 as libc::c_uint
+    let mut r: *const *mut refmvs_block =
+        &*((*t).rt.r).as_ptr().offset((((*t).by & 31) + 5) as isize) as *const *mut refmvs_block;
+    if *masks.offset(0) as libc::c_uint == 1 as libc::c_uint
         && (*masks.offset(1)).wrapping_shr(32) == 0
     {
         let off = (*t).bx
-            & dav1d_block_dimensions[(*(*r.offset(-(1 as libc::c_int) as isize))
-                .offset((*t).bx as isize))
-                .bs as usize][0] as libc::c_int
+            & dav1d_block_dimensions
+                [(*(*r.offset(-(1 as libc::c_int) as isize)).offset((*t).bx as isize)).bs as usize]
+                [0] as libc::c_int
                 - 1;
-        pts[np
-            as usize][0 as libc::c_int
-            as usize][0 as libc::c_int
-            as usize] = 16 as libc::c_int
+        pts[np as usize][0 as libc::c_int as usize][0 as libc::c_int as usize] = 16 as libc::c_int
             * (2 * -off
-                + 1
-                    * dav1d_block_dimensions[(*(*r.offset(-(1 as libc::c_int) as isize))
-                        .offset((*t).bx as isize))
-                        .bs as usize][0] as libc::c_int)
+                + 1 * dav1d_block_dimensions[(*(*r.offset(-(1 as libc::c_int) as isize))
+                    .offset((*t).bx as isize))
+                .bs as usize][0] as libc::c_int)
             - 8;
-        pts[np
-            as usize][0 as libc::c_int
-            as usize][1 as libc::c_int
-            as usize] = 16 as libc::c_int
+        pts[np as usize][0 as libc::c_int as usize][1 as libc::c_int as usize] = 16 as libc::c_int
             * (2 * 0
                 + -(1 as libc::c_int)
                     * dav1d_block_dimensions[(*(*r.offset(-(1 as libc::c_int) as isize))
                         .offset((*t).bx as isize))
-                        .bs as usize][1] as libc::c_int)
+                    .bs as usize][1] as libc::c_int)
             - 8;
-        pts[np
-            as usize][1 as libc::c_int
-            as usize][0 as libc::c_int
-            as usize] = pts[np
-            as usize][0][0]
+        pts[np as usize][1 as libc::c_int as usize][0 as libc::c_int as usize] = pts[np as usize]
+            [0][0]
             + (*(*r.offset(-(1 as libc::c_int) as isize)).offset((*t).bx as isize))
                 .mv
                 .mv[0]
                 .x as libc::c_int;
-        pts[np
-            as usize][1 as libc::c_int
-            as usize][1 as libc::c_int
-            as usize] = pts[np
-            as usize][0][1]
+        pts[np as usize][1 as libc::c_int as usize][1 as libc::c_int as usize] = pts[np as usize]
+            [0][1]
             + (*(*r.offset(-(1 as libc::c_int) as isize)).offset((*t).bx as isize))
                 .mv
                 .mv[0]
@@ -2569,168 +2332,125 @@ unsafe extern "C" fn derive_warpmv(
         np += 1;
     } else {
         let mut off_0: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-        let mut xmask: libc::c_uint = *masks.offset(0)
-            as uint32_t;
+        let mut xmask: libc::c_uint = *masks.offset(0) as uint32_t;
         while np < 8 && xmask != 0 {
             let tz = ctz(xmask);
             off_0 = off_0.wrapping_add(tz as libc::c_uint);
             xmask >>= tz;
-            pts[np
-                as usize][0 as libc::c_int
-                as usize][0 as libc::c_int
-                as usize] = (16 as libc::c_int as libc::c_uint)
-                .wrapping_mul(
-                    (2 as libc::c_int as libc::c_uint)
-                        .wrapping_mul(off_0)
-                        .wrapping_add(
-                            (1 as libc::c_int
-                                * dav1d_block_dimensions[(*(*r
-                                    .offset(-(1 as libc::c_int) as isize))
-                                    .offset(
-                                        ((*t).bx as libc::c_uint).wrapping_add(off_0) as isize,
-                                    ))
-                                    .bs as usize][0] as libc::c_int)
-                                as libc::c_uint,
-                        ),
-                )
-                .wrapping_sub(8 as libc::c_int as libc::c_uint) as libc::c_int;
-            pts[np
-                as usize][0 as libc::c_int
-                as usize][1 as libc::c_int
-                as usize] = 16 as libc::c_int
+            pts[np as usize][0 as libc::c_int as usize][0 as libc::c_int as usize] =
+                (16 as libc::c_int as libc::c_uint)
+                    .wrapping_mul(
+                        (2 as libc::c_int as libc::c_uint)
+                            .wrapping_mul(off_0)
+                            .wrapping_add(
+                                (1 as libc::c_int
+                                    * dav1d_block_dimensions[(*(*r
+                                        .offset(-(1 as libc::c_int) as isize))
+                                    .offset(((*t).bx as libc::c_uint).wrapping_add(off_0) as isize))
+                                    .bs
+                                        as usize][0]
+                                        as libc::c_int)
+                                    as libc::c_uint,
+                            ),
+                    )
+                    .wrapping_sub(8 as libc::c_int as libc::c_uint) as libc::c_int;
+            pts[np as usize][0 as libc::c_int as usize][1 as libc::c_int as usize] = 16
+                as libc::c_int
                 * (2 * 0
                     + -(1 as libc::c_int)
-                        * dav1d_block_dimensions[(*(*r
-                            .offset(-(1 as libc::c_int) as isize))
-                            .offset(
-                                ((*t).bx as libc::c_uint).wrapping_add(off_0) as isize,
-                            ))
-                            .bs as usize][1] as libc::c_int)
+                        * dav1d_block_dimensions[(*(*r.offset(-(1 as libc::c_int) as isize))
+                            .offset(((*t).bx as libc::c_uint).wrapping_add(off_0) as isize))
+                        .bs as usize][1] as libc::c_int)
                 - 8;
-            pts[np
-                as usize][1 as libc::c_int
-                as usize][0 as libc::c_int
-                as usize] = pts[np
-                as usize][0][0]
+            pts[np as usize][1 as libc::c_int as usize][0 as libc::c_int as usize] = pts
+                [np as usize][0][0]
                 + (*(*r.offset(-(1 as libc::c_int) as isize))
                     .offset(((*t).bx as libc::c_uint).wrapping_add(off_0) as isize))
-                    .mv
-                    .mv[0]
+                .mv
+                .mv[0]
                     .x as libc::c_int;
-            pts[np
-                as usize][1 as libc::c_int
-                as usize][1 as libc::c_int
-                as usize] = pts[np
-                as usize][0][1]
+            pts[np as usize][1 as libc::c_int as usize][1 as libc::c_int as usize] = pts
+                [np as usize][0][1]
                 + (*(*r.offset(-(1 as libc::c_int) as isize))
                     .offset(((*t).bx as libc::c_uint).wrapping_add(off_0) as isize))
-                    .mv
-                    .mv[0]
+                .mv
+                .mv[0]
                     .y as libc::c_int;
             np += 1;
             xmask &= !(1 as libc::c_int) as libc::c_uint;
         }
     }
-    if np < 8
-        && *masks.offset(1) == 1
-    {
+    if np < 8 && *masks.offset(1) == 1 {
         let off_1 = (*t).by
-            & dav1d_block_dimensions[(*(*r.offset(0))
-                .offset(((*t).bx - 1) as isize))
-                .bs as usize][1] as libc::c_int
+            & dav1d_block_dimensions[(*(*r.offset(0)).offset(((*t).bx - 1) as isize)).bs as usize]
+                [1] as libc::c_int
                 - 1;
-        pts[np
-            as usize][0 as libc::c_int
-            as usize][0 as libc::c_int
-            as usize] = 16 as libc::c_int
+        pts[np as usize][0 as libc::c_int as usize][0 as libc::c_int as usize] = 16 as libc::c_int
             * (2 * 0
                 + -(1 as libc::c_int)
-                    * dav1d_block_dimensions[(*(*r.offset(-off_1 as isize))
-                        .offset(((*t).bx - 1) as isize))
-                        .bs as usize][0] as libc::c_int)
+                    * dav1d_block_dimensions
+                        [(*(*r.offset(-off_1 as isize)).offset(((*t).bx - 1) as isize)).bs as usize]
+                        [0] as libc::c_int)
             - 8;
-        pts[np
-            as usize][0 as libc::c_int
-            as usize][1 as libc::c_int
-            as usize] = 16 as libc::c_int
+        pts[np as usize][0 as libc::c_int as usize][1 as libc::c_int as usize] = 16 as libc::c_int
             * (2 * -off_1
-                + 1
-                    * dav1d_block_dimensions[(*(*r.offset(-off_1 as isize))
-                        .offset(((*t).bx - 1) as isize))
-                        .bs as usize][1] as libc::c_int)
+                + 1 * dav1d_block_dimensions
+                    [(*(*r.offset(-off_1 as isize)).offset(((*t).bx - 1) as isize)).bs as usize][1]
+                    as libc::c_int)
             - 8;
-        pts[np
-            as usize][1 as libc::c_int
-            as usize][0 as libc::c_int
-            as usize] = pts[np
-            as usize][0][0]
-            + (*(*r.offset(-off_1 as isize))
-                .offset(((*t).bx - 1) as isize))
+        pts[np as usize][1 as libc::c_int as usize][0 as libc::c_int as usize] = pts[np as usize]
+            [0][0]
+            + (*(*r.offset(-off_1 as isize)).offset(((*t).bx - 1) as isize))
                 .mv
                 .mv[0]
                 .x as libc::c_int;
-        pts[np
-            as usize][1 as libc::c_int
-            as usize][1 as libc::c_int
-            as usize] = pts[np
-            as usize][0][1]
-            + (*(*r.offset(-off_1 as isize))
-                .offset(((*t).bx - 1) as isize))
+        pts[np as usize][1 as libc::c_int as usize][1 as libc::c_int as usize] = pts[np as usize]
+            [0][1]
+            + (*(*r.offset(-off_1 as isize)).offset(((*t).bx - 1) as isize))
                 .mv
                 .mv[0]
                 .y as libc::c_int;
         np += 1;
     } else {
         let mut off_2: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-        let mut ymask: libc::c_uint = *masks.offset(1)
-            as uint32_t;
+        let mut ymask: libc::c_uint = *masks.offset(1) as uint32_t;
         while np < 8 && ymask != 0 {
             let tz_0 = ctz(ymask);
             off_2 = off_2.wrapping_add(tz_0 as libc::c_uint);
             ymask >>= tz_0;
-            pts[np
-                as usize][0 as libc::c_int
-                as usize][0 as libc::c_int
-                as usize] = 16 as libc::c_int
+            pts[np as usize][0 as libc::c_int as usize][0 as libc::c_int as usize] = 16
+                as libc::c_int
                 * (2 * 0
                     + -(1 as libc::c_int)
                         * dav1d_block_dimensions[(*(*r.offset(off_2 as isize))
                             .offset(((*t).bx - 1) as isize))
-                            .bs as usize][0] as libc::c_int)
+                        .bs as usize][0] as libc::c_int)
                 - 8;
-            pts[np
-                as usize][0 as libc::c_int
-                as usize][1 as libc::c_int
-                as usize] = (16 as libc::c_int as libc::c_uint)
-                .wrapping_mul(
-                    (2 as libc::c_int as libc::c_uint)
-                        .wrapping_mul(off_2)
-                        .wrapping_add(
-                            (1 as libc::c_int
-                                * dav1d_block_dimensions[(*(*r.offset(off_2 as isize))
-                                    .offset(((*t).bx - 1) as isize))
-                                    .bs as usize][1] as libc::c_int)
-                                as libc::c_uint,
-                        ),
-                )
-                .wrapping_sub(8 as libc::c_int as libc::c_uint) as libc::c_int;
-            pts[np
-                as usize][1 as libc::c_int
-                as usize][0 as libc::c_int
-                as usize] = pts[np
-                as usize][0][0]
-                + (*(*r.offset(off_2 as isize))
-                    .offset(((*t).bx - 1) as isize))
+            pts[np as usize][0 as libc::c_int as usize][1 as libc::c_int as usize] =
+                (16 as libc::c_int as libc::c_uint)
+                    .wrapping_mul(
+                        (2 as libc::c_int as libc::c_uint)
+                            .wrapping_mul(off_2)
+                            .wrapping_add(
+                                (1 as libc::c_int
+                                    * dav1d_block_dimensions[(*(*r.offset(off_2 as isize))
+                                        .offset(((*t).bx - 1) as isize))
+                                    .bs
+                                        as usize][1]
+                                        as libc::c_int)
+                                    as libc::c_uint,
+                            ),
+                    )
+                    .wrapping_sub(8 as libc::c_int as libc::c_uint) as libc::c_int;
+            pts[np as usize][1 as libc::c_int as usize][0 as libc::c_int as usize] = pts
+                [np as usize][0][0]
+                + (*(*r.offset(off_2 as isize)).offset(((*t).bx - 1) as isize))
                     .mv
                     .mv[0]
                     .x as libc::c_int;
-            pts[np
-                as usize][1 as libc::c_int
-                as usize][1 as libc::c_int
-                as usize] = pts[np
-                as usize][0][1]
-                + (*(*r.offset(off_2 as isize))
-                    .offset(((*t).bx - 1) as isize))
+            pts[np as usize][1 as libc::c_int as usize][1 as libc::c_int as usize] = pts
+                [np as usize][0][1]
+                + (*(*r.offset(off_2 as isize)).offset(((*t).bx - 1) as isize))
                     .mv
                     .mv[0]
                     .y as libc::c_int;
@@ -2738,90 +2458,58 @@ unsafe extern "C" fn derive_warpmv(
             ymask &= !(1 as libc::c_int) as libc::c_uint;
         }
     }
-    if np < 8 && (*masks.offset(1)).wrapping_shr(32) != 0
-    {
-        pts[np
-            as usize][0 as libc::c_int
-            as usize][0 as libc::c_int
-            as usize] = 16 as libc::c_int
+    if np < 8 && (*masks.offset(1)).wrapping_shr(32) != 0 {
+        pts[np as usize][0 as libc::c_int as usize][0 as libc::c_int as usize] = 16 as libc::c_int
             * (2 * 0
                 + -(1 as libc::c_int)
                     * dav1d_block_dimensions[(*(*r.offset(-(1 as libc::c_int) as isize))
                         .offset(((*t).bx - 1) as isize))
-                        .bs as usize][0] as libc::c_int)
+                    .bs as usize][0] as libc::c_int)
             - 8;
-        pts[np
-            as usize][0 as libc::c_int
-            as usize][1 as libc::c_int
-            as usize] = 16 as libc::c_int
+        pts[np as usize][0 as libc::c_int as usize][1 as libc::c_int as usize] = 16 as libc::c_int
             * (2 * 0
                 + -(1 as libc::c_int)
                     * dav1d_block_dimensions[(*(*r.offset(-(1 as libc::c_int) as isize))
                         .offset(((*t).bx - 1) as isize))
-                        .bs as usize][1] as libc::c_int)
+                    .bs as usize][1] as libc::c_int)
             - 8;
-        pts[np
-            as usize][1 as libc::c_int
-            as usize][0 as libc::c_int
-            as usize] = pts[np
-            as usize][0][0]
-            + (*(*r.offset(-(1 as libc::c_int) as isize))
-                .offset(((*t).bx - 1) as isize))
+        pts[np as usize][1 as libc::c_int as usize][0 as libc::c_int as usize] = pts[np as usize]
+            [0][0]
+            + (*(*r.offset(-(1 as libc::c_int) as isize)).offset(((*t).bx - 1) as isize))
                 .mv
                 .mv[0]
                 .x as libc::c_int;
-        pts[np
-            as usize][1 as libc::c_int
-            as usize][1 as libc::c_int
-            as usize] = pts[np
-            as usize][0][1]
-            + (*(*r.offset(-(1 as libc::c_int) as isize))
-                .offset(((*t).bx - 1) as isize))
+        pts[np as usize][1 as libc::c_int as usize][1 as libc::c_int as usize] = pts[np as usize]
+            [0][1]
+            + (*(*r.offset(-(1 as libc::c_int) as isize)).offset(((*t).bx - 1) as isize))
                 .mv
                 .mv[0]
                 .y as libc::c_int;
         np += 1;
     }
-    if np < 8
-        && (*masks.offset(0)).wrapping_shr(32) != 0
-    {
-        pts[np
-            as usize][0 as libc::c_int
-            as usize][0 as libc::c_int
-            as usize] = 16 as libc::c_int
+    if np < 8 && (*masks.offset(0)).wrapping_shr(32) != 0 {
+        pts[np as usize][0 as libc::c_int as usize][0 as libc::c_int as usize] = 16 as libc::c_int
             * (2 * bw4
-                + 1
-                    * dav1d_block_dimensions[(*(*r.offset(-(1 as libc::c_int) as isize))
-                        .offset(((*t).bx + bw4) as isize))
-                        .bs as usize][0] as libc::c_int)
+                + 1 * dav1d_block_dimensions[(*(*r.offset(-(1 as libc::c_int) as isize))
+                    .offset(((*t).bx + bw4) as isize))
+                .bs as usize][0] as libc::c_int)
             - 8;
-        pts[np
-            as usize][0 as libc::c_int
-            as usize][1 as libc::c_int
-            as usize] = 16 as libc::c_int
+        pts[np as usize][0 as libc::c_int as usize][1 as libc::c_int as usize] = 16 as libc::c_int
             * (2 * 0
                 + -(1 as libc::c_int)
                     * dav1d_block_dimensions[(*(*r.offset(-(1 as libc::c_int) as isize))
                         .offset(((*t).bx + bw4) as isize))
-                        .bs as usize][1] as libc::c_int)
+                    .bs as usize][1] as libc::c_int)
             - 8;
-        pts[np
-            as usize][1 as libc::c_int
-            as usize][0 as libc::c_int
-            as usize] = pts[np
-            as usize][0][0]
-            + (*(*r.offset(-(1 as libc::c_int) as isize))
-                .offset(((*t).bx + bw4) as isize))
+        pts[np as usize][1 as libc::c_int as usize][0 as libc::c_int as usize] = pts[np as usize]
+            [0][0]
+            + (*(*r.offset(-(1 as libc::c_int) as isize)).offset(((*t).bx + bw4) as isize))
                 .mv
                 .mv[0]
                 .x as libc::c_int;
-        pts[np
-            as usize][1 as libc::c_int
-            as usize][1 as libc::c_int
-            as usize] = pts[np
-            as usize][0][1]
-            + (*(*r.offset(-(1 as libc::c_int) as isize))
-                .offset(((*t).bx + bw4) as isize))
+        pts[np as usize][1 as libc::c_int as usize][1 as libc::c_int as usize] = pts[np as usize]
+            [0][1]
+            + (*(*r.offset(-(1 as libc::c_int) as isize)).offset(((*t).bx + bw4) as isize))
                 .mv
                 .mv[0]
                 .y as libc::c_int;
@@ -2832,22 +2520,12 @@ unsafe extern "C" fn derive_warpmv(
     }
     let mut mvd: [libc::c_int; 8] = [0; 8];
     let mut ret = 0;
-    let thresh = 4 as libc::c_int
-        * iclip(imax(bw4, bh4), 4 as libc::c_int, 28 as libc::c_int);
+    let thresh = 4 as libc::c_int * iclip(imax(bw4, bh4), 4 as libc::c_int, 28 as libc::c_int);
     let mut i = 0;
     while i < np {
-        mvd[i
-            as usize] = (
-            pts[i as usize][1][0]
-                - pts[i as usize][0][0]
-                - mv.x as libc::c_int
-        ).abs()
-            + (
-                pts[i as usize][1][1]
-                    - pts[i
-                        as usize][0][1]
-                    - mv.y as libc::c_int
-            ).abs();
+        mvd[i as usize] = (pts[i as usize][1][0] - pts[i as usize][0][0] - mv.x as libc::c_int)
+            .abs()
+            + (pts[i as usize][1][1] - pts[i as usize][0][1] - mv.y as libc::c_int).abs();
         if mvd[i as usize] > thresh {
             mvd[i as usize] = -(1 as libc::c_int);
         } else {
@@ -2894,7 +2572,8 @@ unsafe extern "C" fn derive_warpmv(
         wmp,
         (*t).bx,
         (*t).by,
-    ) == 0 && dav1d_get_shear_params(wmp) == 0
+    ) == 0
+        && dav1d_get_shear_params(wmp) == 0
     {
         (*wmp).type_0 = DAV1D_WM_TYPE_AFFINE;
     } else {
@@ -2904,8 +2583,7 @@ unsafe extern "C" fn derive_warpmv(
 
 #[inline]
 fn findoddzero(buf: &[u8]) -> bool {
-    buf
-        .iter()
+    buf.iter()
         .enumerate()
         .find(|(i, &e)| i & 1 == 1 && e == 0)
         .is_some()
@@ -2921,18 +2599,14 @@ unsafe extern "C" fn read_pal_plane(
 ) {
     let ts: *mut Dav1dTileState = (*t).ts;
     let f: *const Dav1dFrameContext = (*t).f;
-    (*b)
-        .c2rust_unnamed
-        .c2rust_unnamed
-        .pal_sz[pl
-        as usize] = (dav1d_msac_decode_symbol_adapt8(
+    (*b).c2rust_unnamed.c2rust_unnamed.pal_sz[pl as usize] = (dav1d_msac_decode_symbol_adapt8(
         &mut (*ts).msac,
         ((*ts).cdf.m.pal_sz[pl as usize][sz_ctx as usize]).as_mut_ptr(),
         6 as libc::c_int as size_t,
     ))
-        .wrapping_add(2 as libc::c_int as libc::c_uint) as uint8_t;
-    let pal_sz = (*b).c2rust_unnamed.c2rust_unnamed.pal_sz[pl as usize]
-        as libc::c_int;
+    .wrapping_add(2 as libc::c_int as libc::c_uint)
+        as uint8_t;
+    let pal_sz = (*b).c2rust_unnamed.c2rust_unnamed.pal_sz[pl as usize] as libc::c_int;
     let mut cache: [uint16_t; 16] = [0; 16];
     let mut used_cache: [uint16_t; 8] = [0; 8];
     let mut l_cache = if pl != 0 {
@@ -2950,18 +2624,11 @@ unsafe extern "C" fn read_pal_plane(
     } else {
         0 as libc::c_int
     };
-    let mut l: *const uint16_t = ((*t)
-        .al_pal[1][by4 as usize][pl as usize])
-        .as_mut_ptr();
-    let mut a: *const uint16_t = ((*t)
-        .al_pal[0][bx4 as usize][pl as usize])
-        .as_mut_ptr();
+    let mut l: *const uint16_t = ((*t).al_pal[1][by4 as usize][pl as usize]).as_mut_ptr();
+    let mut a: *const uint16_t = ((*t).al_pal[0][bx4 as usize][pl as usize]).as_mut_ptr();
     while l_cache != 0 && a_cache != 0 {
         if (*l as libc::c_int) < *a as libc::c_int {
-            if n_cache == 0
-                || cache[(n_cache - 1) as usize] as libc::c_int
-                    != *l as libc::c_int
-            {
+            if n_cache == 0 || cache[(n_cache - 1) as usize] as libc::c_int != *l as libc::c_int {
                 let fresh8 = n_cache;
                 n_cache = n_cache + 1;
                 cache[fresh8 as usize] = *l;
@@ -2973,10 +2640,7 @@ unsafe extern "C" fn read_pal_plane(
                 l = l.offset(1);
                 l_cache -= 1;
             }
-            if n_cache == 0
-                || cache[(n_cache - 1) as usize] as libc::c_int
-                    != *a as libc::c_int
-            {
+            if n_cache == 0 || cache[(n_cache - 1) as usize] as libc::c_int != *a as libc::c_int {
                 let fresh9 = n_cache;
                 n_cache = n_cache + 1;
                 cache[fresh9 as usize] = *a;
@@ -2987,10 +2651,7 @@ unsafe extern "C" fn read_pal_plane(
     }
     if l_cache != 0 {
         loop {
-            if n_cache == 0
-                || cache[(n_cache - 1) as usize] as libc::c_int
-                    != *l as libc::c_int
-            {
+            if n_cache == 0 || cache[(n_cache - 1) as usize] as libc::c_int != *l as libc::c_int {
                 let fresh10 = n_cache;
                 n_cache = n_cache + 1;
                 cache[fresh10 as usize] = *l;
@@ -3003,10 +2664,7 @@ unsafe extern "C" fn read_pal_plane(
         }
     } else if a_cache != 0 {
         loop {
-            if n_cache == 0
-                || cache[(n_cache - 1) as usize] as libc::c_int
-                    != *a as libc::c_int
-            {
+            if n_cache == 0 || cache[(n_cache - 1) as usize] as libc::c_int != *a as libc::c_int {
                 let fresh11 = n_cache;
                 n_cache = n_cache + 1;
                 cache[fresh11 as usize] = *a;
@@ -3030,13 +2688,10 @@ unsafe extern "C" fn read_pal_plane(
     }
     let n_used_cache = i;
     let pal: *mut uint16_t = if (*t).frame_thread.pass != 0 {
-        ((*((*f).frame_thread.pal)
-            .offset(
-                ((((*t).by >> 1) + ((*t).bx & 1))
-                    as isize * ((*f).b4_stride >> 1)
-                    + (((*t).bx >> 1) + ((*t).by & 1))
-                        as isize) as isize,
-            ))[pl as usize])
+        ((*((*f).frame_thread.pal).offset(
+            ((((*t).by >> 1) + ((*t).bx & 1)) as isize * ((*f).b4_stride >> 1)
+                + (((*t).bx >> 1) + ((*t).by & 1)) as isize) as isize,
+        ))[pl as usize])
             .as_mut_ptr()
     } else {
         ((*t).scratch.c2rust_unnamed_0.pal[pl as usize]).as_mut_ptr()
@@ -3045,32 +2700,21 @@ unsafe extern "C" fn read_pal_plane(
         let fresh13 = i;
         i = i + 1;
         let ref mut fresh14 = *pal.offset(fresh13 as isize);
-        *fresh14 = dav1d_msac_decode_bools(
-            &mut (*ts).msac,
-            (*f).cur.p.bpc as libc::c_uint,
-        ) as uint16_t;
+        *fresh14 =
+            dav1d_msac_decode_bools(&mut (*ts).msac, (*f).cur.p.bpc as libc::c_uint) as uint16_t;
         let mut prev = *fresh14 as libc::c_int;
         if i < pal_sz {
-            let mut bits = (((*f).cur.p.bpc - 3)
-                as libc::c_uint)
-                .wrapping_add(
-                    dav1d_msac_decode_bools(
-                        &mut (*ts).msac,
-                        2 as libc::c_int as libc::c_uint,
-                    ),
-                ) as libc::c_int;
-            let max = ((1 as libc::c_int) << (*f).cur.p.bpc)
-                - 1;
+            let mut bits = (((*f).cur.p.bpc - 3) as libc::c_uint).wrapping_add(
+                dav1d_msac_decode_bools(&mut (*ts).msac, 2 as libc::c_int as libc::c_uint),
+            ) as libc::c_int;
+            let max = ((1 as libc::c_int) << (*f).cur.p.bpc) - 1;
             loop {
-                let delta = dav1d_msac_decode_bools(
-                    &mut (*ts).msac,
-                    bits as libc::c_uint,
-                ) as libc::c_int;
+                let delta =
+                    dav1d_msac_decode_bools(&mut (*ts).msac, bits as libc::c_uint) as libc::c_int;
                 let fresh15 = i;
                 i = i + 1;
                 let ref mut fresh16 = *pal.offset(fresh15 as isize);
-                *fresh16 = imin(prev + delta + (pl == 0) as libc::c_int, max)
-                    as uint16_t;
+                *fresh16 = imin(prev + delta + (pl == 0) as libc::c_int, max) as uint16_t;
                 prev = *fresh16 as libc::c_int;
                 if prev + (pl == 0) as libc::c_int >= max {
                     while i < pal_sz {
@@ -3082,9 +2726,7 @@ unsafe extern "C" fn read_pal_plane(
                     bits = imin(
                         bits,
                         1 as libc::c_int
-                            + ulog2(
-                                (max - prev - (pl == 0) as libc::c_int) as libc::c_uint,
-                            ),
+                            + ulog2((max - prev - (pl == 0) as libc::c_int) as libc::c_uint),
                     );
                     if !(i < pal_sz) {
                         break;
@@ -3122,13 +2764,16 @@ unsafe extern "C" fn read_pal_plane(
                 .wrapping_mul(::core::mem::size_of::<uint16_t>() as libc::c_ulong),
         );
     }
-    if 0 as libc::c_int != 0 && (*(*f).frame_hdr).frame_offset == 2
-        && (*t).by >= 0 && (*t).by < 4
-        && (*t).bx >= 8 && (*t).bx < 12
+    if 0 as libc::c_int != 0
+        && (*(*f).frame_hdr).frame_offset == 2
+        && (*t).by >= 0
+        && (*t).by < 4
+        && (*t).bx >= 8
+        && (*t).bx < 12
     {
         printf(
-            b"Post-pal[pl=%d,sz=%d,cache_size=%d,used_cache=%d]: r=%d, cache=\0"
-                as *const u8 as *const libc::c_char,
+            b"Post-pal[pl=%d,sz=%d,cache_size=%d,used_cache=%d]: r=%d, cache=\0" as *const u8
+                as *const libc::c_char,
             pl,
             pal_sz,
             n_cache,
@@ -3175,41 +2820,28 @@ unsafe extern "C" fn read_pal_uv(
     let ts: *mut Dav1dTileState = (*t).ts;
     let f: *const Dav1dFrameContext = (*t).f;
     let pal: *mut uint16_t = if (*t).frame_thread.pass != 0 {
-        ((*((*f).frame_thread.pal)
-            .offset(
-                ((((*t).by >> 1) + ((*t).bx & 1))
-                    as isize * ((*f).b4_stride >> 1)
-                    + (((*t).bx >> 1) + ((*t).by & 1))
-                        as isize) as isize,
-            ))[2])
+        ((*((*f).frame_thread.pal).offset(
+            ((((*t).by >> 1) + ((*t).bx & 1)) as isize * ((*f).b4_stride >> 1)
+                + (((*t).bx >> 1) + ((*t).by & 1)) as isize) as isize,
+        ))[2])
             .as_mut_ptr()
     } else {
         ((*t).scratch.c2rust_unnamed_0.pal[2]).as_mut_ptr()
     };
     if dav1d_msac_decode_bool_equi(&mut (*ts).msac) != 0 {
-        let bits = (((*f).cur.p.bpc - 4) as libc::c_uint)
-            .wrapping_add(
-                dav1d_msac_decode_bools(
-                    &mut (*ts).msac,
-                    2 as libc::c_int as libc::c_uint,
-                ),
-            ) as libc::c_int;
-        let ref mut fresh19 = *pal.offset(0);
-        *fresh19 = dav1d_msac_decode_bools(
+        let bits = (((*f).cur.p.bpc - 4) as libc::c_uint).wrapping_add(dav1d_msac_decode_bools(
             &mut (*ts).msac,
-            (*f).cur.p.bpc as libc::c_uint,
-        ) as uint16_t;
+            2 as libc::c_int as libc::c_uint,
+        )) as libc::c_int;
+        let ref mut fresh19 = *pal.offset(0);
+        *fresh19 =
+            dav1d_msac_decode_bools(&mut (*ts).msac, (*f).cur.p.bpc as libc::c_uint) as uint16_t;
         let mut prev = *fresh19 as libc::c_int;
         let max = ((1 as libc::c_int) << (*f).cur.p.bpc) - 1;
         let mut i = 1;
-        while i
-            < (*b).c2rust_unnamed.c2rust_unnamed.pal_sz[1]
-                as libc::c_int
-        {
-            let mut delta = dav1d_msac_decode_bools(
-                &mut (*ts).msac,
-                bits as libc::c_uint,
-            ) as libc::c_int;
+        while i < (*b).c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int {
+            let mut delta =
+                dav1d_msac_decode_bools(&mut (*ts).msac, bits as libc::c_uint) as libc::c_int;
             if delta != 0 && dav1d_msac_decode_bool_equi(&mut (*ts).msac) != 0 {
                 delta = -delta;
             }
@@ -3220,33 +2852,26 @@ unsafe extern "C" fn read_pal_uv(
         }
     } else {
         let mut i_0 = 0;
-        while i_0
-            < (*b).c2rust_unnamed.c2rust_unnamed.pal_sz[1]
-                as libc::c_int
-        {
-            *pal
-                .offset(
-                    i_0 as isize,
-                ) = dav1d_msac_decode_bools(
-                &mut (*ts).msac,
-                (*f).cur.p.bpc as libc::c_uint,
-            ) as uint16_t;
+        while i_0 < (*b).c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int {
+            *pal.offset(i_0 as isize) =
+                dav1d_msac_decode_bools(&mut (*ts).msac, (*f).cur.p.bpc as libc::c_uint)
+                    as uint16_t;
             i_0 += 1;
         }
     }
-    if 0 as libc::c_int != 0 && (*(*f).frame_hdr).frame_offset == 2
-        && (*t).by >= 0 && (*t).by < 4
-        && (*t).bx >= 8 && (*t).bx < 12
+    if 0 as libc::c_int != 0
+        && (*(*f).frame_hdr).frame_offset == 2
+        && (*t).by >= 0
+        && (*t).by < 4
+        && (*t).bx >= 8
+        && (*t).bx < 12
     {
         printf(
             b"Post-pal[pl=2]: r=%d \0" as *const u8 as *const libc::c_char,
             (*ts).msac.rng,
         );
         let mut n = 0;
-        while n
-            < (*b).c2rust_unnamed.c2rust_unnamed.pal_sz[1]
-                as libc::c_int
-        {
+        while n < (*b).c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int {
             printf(
                 b"%c%02x\0" as *const u8 as *const libc::c_char,
                 if n != 0 { ' ' as i32 } else { '[' as i32 },
@@ -3270,8 +2895,7 @@ unsafe extern "C" fn order_palette(
     if pal_idx.is_null() {
         unreachable!();
     }
-    pal_idx = pal_idx
-        .offset((first as isize + (i - first) as isize * stride) as isize);
+    pal_idx = pal_idx.offset((first as isize + (i - first) as isize * stride) as isize);
     let mut j = first;
     let mut n = 0;
     while j >= last {
@@ -3293,8 +2917,7 @@ unsafe extern "C" fn order_palette(
             mask |= ((1 as libc::c_int) << v) as libc::c_uint;
         } else if have_top == 0 {
             *ctx.offset(n as isize) = 0 as libc::c_int as uint8_t;
-            let v_0 = *pal_idx.offset(-(1 as libc::c_int) as isize)
-                as libc::c_int;
+            let v_0 = *pal_idx.offset(-(1 as libc::c_int) as isize) as libc::c_int;
             if !((v_0 as libc::c_uint) < 8 as libc::c_uint) {
                 unreachable!();
             }
@@ -3303,12 +2926,9 @@ unsafe extern "C" fn order_palette(
             (*order.offset(n as isize))[fresh22 as usize] = v_0 as uint8_t;
             mask |= ((1 as libc::c_int) << v_0) as libc::c_uint;
         } else {
-            let l = *pal_idx.offset(-(1 as libc::c_int) as isize)
-                as libc::c_int;
+            let l = *pal_idx.offset(-(1 as libc::c_int) as isize) as libc::c_int;
             let t = *pal_idx.offset(-stride as isize) as libc::c_int;
-            let tl = *pal_idx
-                .offset(-(stride + 1) as isize)
-                as libc::c_int;
+            let tl = *pal_idx.offset(-(stride + 1) as isize) as libc::c_int;
             let same_t_l = (t == l) as libc::c_int;
             let same_t_tl = (t == tl) as libc::c_int;
             let same_l_tl = (l == tl) as libc::c_int;
@@ -3422,19 +3042,12 @@ unsafe extern "C" fn read_pal_indices(
     if pal_idx.is_null() {
         unreachable!();
     }
-    *pal_idx
-        .offset(
-            0 as libc::c_int as isize,
-        ) = dav1d_msac_decode_uniform(
+    *pal_idx.offset(0 as libc::c_int as isize) = dav1d_msac_decode_uniform(
         &mut (*ts).msac,
         (*b).c2rust_unnamed.c2rust_unnamed.pal_sz[pl as usize] as libc::c_uint,
     ) as uint8_t;
-    let color_map_cdf: *mut [uint16_t; 8] = ((*ts)
-        .cdf
-        .m
-        .color_map[pl
-        as usize][((*b).c2rust_unnamed.c2rust_unnamed.pal_sz[pl as usize] as libc::c_int
-        - 2) as usize])
+    let color_map_cdf: *mut [uint16_t; 8] = ((*ts).cdf.m.color_map[pl as usize]
+        [((*b).c2rust_unnamed.c2rust_unnamed.pal_sz[pl as usize] as libc::c_int - 2) as usize])
         .as_mut_ptr();
     let order: *mut [uint8_t; 8] = ((*t)
         .scratch
@@ -3453,10 +3066,7 @@ unsafe extern "C" fn read_pal_indices(
     let mut i = 1;
     while i < 4 * (w4 + h4) - 1 {
         let first = imin(i, w4 * 4 - 1);
-        let last = imax(
-            0 as libc::c_int,
-            i - h4 * 4 + 1,
-        );
+        let last = imax(0 as libc::c_int, i - h4 * 4 + 1);
         order_palette(pal_idx, stride, i, first, last, order, ctx);
         let mut j = first;
         let mut m = 0;
@@ -3464,13 +3074,11 @@ unsafe extern "C" fn read_pal_indices(
             let color_idx = dav1d_msac_decode_symbol_adapt8(
                 &mut (*ts).msac,
                 (*color_map_cdf.offset(*ctx.offset(m as isize) as isize)).as_mut_ptr(),
-                ((*b).c2rust_unnamed.c2rust_unnamed.pal_sz[pl as usize] as libc::c_int
-                    - 1) as size_t,
+                ((*b).c2rust_unnamed.c2rust_unnamed.pal_sz[pl as usize] as libc::c_int - 1)
+                    as size_t,
             ) as libc::c_int;
-            *pal_idx
-                .offset(
-                    ((i - j) as isize * stride + j as isize) as isize,
-                ) = (*order.offset(m as isize))[color_idx as usize];
+            *pal_idx.offset(((i - j) as isize * stride + j as isize) as isize) =
+                (*order.offset(m as isize))[color_idx as usize];
             j -= 1;
             m += 1;
         }
@@ -3480,29 +3088,23 @@ unsafe extern "C" fn read_pal_indices(
         let mut y = 0;
         while y < 4 * h4 {
             memset(
-                &mut *pal_idx
-                    .offset(
-                        (y as isize * stride + (4 * w4) as isize) as isize,
-                    ) as *mut uint8_t as *mut libc::c_void,
-                *pal_idx
-                    .offset(
-                        (y as isize * stride + (4 * w4) as isize - 1) as isize,
-                    ) as libc::c_int,
+                &mut *pal_idx.offset((y as isize * stride + (4 * w4) as isize) as isize)
+                    as *mut uint8_t as *mut libc::c_void,
+                *pal_idx.offset((y as isize * stride + (4 * w4) as isize - 1) as isize)
+                    as libc::c_int,
                 (4 * (bw4 - w4)) as size_t,
             );
             y += 1;
         }
     }
     if h4 < bh4 {
-        let src: *const uint8_t = &mut *pal_idx
-            .offset(
-                stride * (4 * h4 as isize - 1 ),
-            ) as *mut uint8_t;
+        let src: *const uint8_t =
+            &mut *pal_idx.offset(stride * (4 * h4 as isize - 1)) as *mut uint8_t;
         let mut y_0 = h4 * 4;
         while y_0 < bh4 * 4 {
             memcpy(
-                &mut *pal_idx.offset((y_0 as isize * stride) as isize)
-                    as *mut uint8_t as *mut libc::c_void,
+                &mut *pal_idx.offset((y_0 as isize * stride) as isize) as *mut uint8_t
+                    as *mut libc::c_void,
                 src as *const libc::c_void,
                 (bw4 * 4) as libc::c_ulong,
             );
@@ -3522,14 +3124,10 @@ unsafe extern "C" fn read_vartx_tree(
     let bw4 = *b_dim.offset(0) as libc::c_int;
     let bh4 = *b_dim.offset(1) as libc::c_int;
     let mut tx_split: [uint16_t; 2] = [0 as libc::c_int as uint16_t, 0];
-    (*b)
-        .c2rust_unnamed
-        .c2rust_unnamed_0
-        .max_ytx = dav1d_max_txfm_size_for_bs[bs as usize][0];
+    (*b).c2rust_unnamed.c2rust_unnamed_0.max_ytx = dav1d_max_txfm_size_for_bs[bs as usize][0];
     if (*b).skip == 0
         && ((*(*f).frame_hdr).segmentation.lossless[(*b).seg_id as usize] != 0
-            || (*b).c2rust_unnamed.c2rust_unnamed_0.max_ytx as libc::c_int
-                == TX_4X4 as libc::c_int)
+            || (*b).c2rust_unnamed.c2rust_unnamed_0.max_ytx as libc::c_int == TX_4X4 as libc::c_int)
     {
         (*b).uvtx = TX_4X4 as libc::c_int as uint8_t;
         (*b).c2rust_unnamed.c2rust_unnamed_0.max_ytx = (*b).uvtx;
@@ -3559,37 +3157,25 @@ unsafe extern "C" fn read_vartx_tree(
                 }
                 16 => {
                     let const_val: uint64_t = TX_4X4 as libc::c_int as uint64_t;
-                    (*(&mut *((*t).l.tx)
-                        .as_mut_ptr()
-                        .offset((by4 + 0) as isize) as *mut int8_t
+                    (*(&mut *((*t).l.tx).as_mut_ptr().offset((by4 + 0) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val;
-                    (*(&mut *((*t).l.tx)
-                        .as_mut_ptr()
-                        .offset((by4 + 8) as isize) as *mut int8_t
+                    (*(&mut *((*t).l.tx).as_mut_ptr().offset((by4 + 8) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val;
                 }
                 32 => {
                     let const_val_0: uint64_t = TX_4X4 as libc::c_int as uint64_t;
-                    (*(&mut *((*t).l.tx)
-                        .as_mut_ptr()
-                        .offset((by4 + 0) as isize) as *mut int8_t
+                    (*(&mut *((*t).l.tx).as_mut_ptr().offset((by4 + 0) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_0;
-                    (*(&mut *((*t).l.tx)
-                        .as_mut_ptr()
-                        .offset((by4 + 8) as isize) as *mut int8_t
+                    (*(&mut *((*t).l.tx).as_mut_ptr().offset((by4 + 8) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_0;
-                    (*(&mut *((*t).l.tx)
-                        .as_mut_ptr()
-                        .offset((by4 + 16) as isize) as *mut int8_t
+                    (*(&mut *((*t).l.tx).as_mut_ptr().offset((by4 + 16) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_0;
-                    (*(&mut *((*t).l.tx)
-                        .as_mut_ptr()
-                        .offset((by4 + 24) as isize) as *mut int8_t
+                    (*(&mut *((*t).l.tx).as_mut_ptr().offset((by4 + 24) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_0;
                 }
@@ -3597,23 +3183,23 @@ unsafe extern "C" fn read_vartx_tree(
             }
             match bw4 {
                 1 => {
-                    (*(&mut *((*(*t).a).tx).as_mut_ptr().offset(bx4 as isize)
-                        as *mut int8_t as *mut alias8))
+                    (*(&mut *((*(*t).a).tx).as_mut_ptr().offset(bx4 as isize) as *mut int8_t
+                        as *mut alias8))
                         .u8_0 = TX_4X4 as libc::c_int as uint8_t;
                 }
                 2 => {
-                    (*(&mut *((*(*t).a).tx).as_mut_ptr().offset(bx4 as isize)
-                        as *mut int8_t as *mut alias16))
+                    (*(&mut *((*(*t).a).tx).as_mut_ptr().offset(bx4 as isize) as *mut int8_t
+                        as *mut alias16))
                         .u16_0 = TX_4X4 as libc::c_int as uint16_t;
                 }
                 4 => {
-                    (*(&mut *((*(*t).a).tx).as_mut_ptr().offset(bx4 as isize)
-                        as *mut int8_t as *mut alias32))
+                    (*(&mut *((*(*t).a).tx).as_mut_ptr().offset(bx4 as isize) as *mut int8_t
+                        as *mut alias32))
                         .u32_0 = TX_4X4 as libc::c_int as uint32_t;
                 }
                 8 => {
-                    (*(&mut *((*(*t).a).tx).as_mut_ptr().offset(bx4 as isize)
-                        as *mut int8_t as *mut alias64))
+                    (*(&mut *((*(*t).a).tx).as_mut_ptr().offset(bx4 as isize) as *mut int8_t
+                        as *mut alias64))
                         .u64_0 = TX_4X4 as libc::c_int as uint64_t;
                 }
                 16 => {
@@ -3667,75 +3253,54 @@ unsafe extern "C" fn read_vartx_tree(
                     (*(&mut *((*t).l.tx).as_mut_ptr().offset(by4 as isize) as *mut int8_t
                         as *mut alias8))
                         .u8_0 = (0x1 as libc::c_int
-                        * *b_dim.offset((2 + 1) as isize)
-                            as libc::c_int) as uint8_t;
+                        * *b_dim.offset((2 + 1) as isize) as libc::c_int)
+                        as uint8_t;
                 }
                 2 => {
                     (*(&mut *((*t).l.tx).as_mut_ptr().offset(by4 as isize) as *mut int8_t
                         as *mut alias16))
                         .u16_0 = (0x101 as libc::c_int
-                        * *b_dim.offset((2 + 1) as isize)
-                            as libc::c_int) as uint16_t;
+                        * *b_dim.offset((2 + 1) as isize) as libc::c_int)
+                        as uint16_t;
                 }
                 4 => {
                     (*(&mut *((*t).l.tx).as_mut_ptr().offset(by4 as isize) as *mut int8_t
                         as *mut alias32))
                         .u32_0 = (0x1010101 as libc::c_uint)
-                        .wrapping_mul(
-                            *b_dim.offset((2 + 1) as isize)
-                                as libc::c_uint,
-                        );
+                        .wrapping_mul(*b_dim.offset((2 + 1) as isize) as libc::c_uint);
                 }
                 8 => {
                     (*(&mut *((*t).l.tx).as_mut_ptr().offset(by4 as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            *b_dim.offset((2 + 1) as isize)
-                                as libc::c_ulonglong,
-                        ) as uint64_t;
+                        .wrapping_mul(*b_dim.offset((2 + 1) as isize) as libc::c_ulonglong)
+                        as uint64_t;
                 }
                 16 => {
                     let const_val_3: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            *b_dim.offset((2 + 1) as isize)
-                                as libc::c_ulonglong,
-                        ) as uint64_t;
-                    (*(&mut *((*t).l.tx)
-                        .as_mut_ptr()
-                        .offset((by4 + 0) as isize) as *mut int8_t
+                        .wrapping_mul(*b_dim.offset((2 + 1) as isize) as libc::c_ulonglong)
+                        as uint64_t;
+                    (*(&mut *((*t).l.tx).as_mut_ptr().offset((by4 + 0) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_3;
-                    (*(&mut *((*t).l.tx)
-                        .as_mut_ptr()
-                        .offset((by4 + 8) as isize) as *mut int8_t
+                    (*(&mut *((*t).l.tx).as_mut_ptr().offset((by4 + 8) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_3;
                 }
                 32 => {
                     let const_val_4: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            *b_dim.offset((2 + 1) as isize)
-                                as libc::c_ulonglong,
-                        ) as uint64_t;
-                    (*(&mut *((*t).l.tx)
-                        .as_mut_ptr()
-                        .offset((by4 + 0) as isize) as *mut int8_t
+                        .wrapping_mul(*b_dim.offset((2 + 1) as isize) as libc::c_ulonglong)
+                        as uint64_t;
+                    (*(&mut *((*t).l.tx).as_mut_ptr().offset((by4 + 0) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_4;
-                    (*(&mut *((*t).l.tx)
-                        .as_mut_ptr()
-                        .offset((by4 + 8) as isize) as *mut int8_t
+                    (*(&mut *((*t).l.tx).as_mut_ptr().offset((by4 + 8) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_4;
-                    (*(&mut *((*t).l.tx)
-                        .as_mut_ptr()
-                        .offset((by4 + 16) as isize) as *mut int8_t
+                    (*(&mut *((*t).l.tx).as_mut_ptr().offset((by4 + 16) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_4;
-                    (*(&mut *((*t).l.tx)
-                        .as_mut_ptr()
-                        .offset((by4 + 24) as isize) as *mut int8_t
+                    (*(&mut *((*t).l.tx).as_mut_ptr().offset((by4 + 24) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_4;
                 }
@@ -3743,43 +3308,36 @@ unsafe extern "C" fn read_vartx_tree(
             }
             match bw4 {
                 1 => {
-                    (*(&mut *((*(*t).a).tx).as_mut_ptr().offset(bx4 as isize)
-                        as *mut int8_t as *mut alias8))
+                    (*(&mut *((*(*t).a).tx).as_mut_ptr().offset(bx4 as isize) as *mut int8_t
+                        as *mut alias8))
                         .u8_0 = (0x1 as libc::c_int
-                        * *b_dim.offset((2 + 0) as isize)
-                            as libc::c_int) as uint8_t;
+                        * *b_dim.offset((2 + 0) as isize) as libc::c_int)
+                        as uint8_t;
                 }
                 2 => {
-                    (*(&mut *((*(*t).a).tx).as_mut_ptr().offset(bx4 as isize)
-                        as *mut int8_t as *mut alias16))
+                    (*(&mut *((*(*t).a).tx).as_mut_ptr().offset(bx4 as isize) as *mut int8_t
+                        as *mut alias16))
                         .u16_0 = (0x101 as libc::c_int
-                        * *b_dim.offset((2 + 0) as isize)
-                            as libc::c_int) as uint16_t;
+                        * *b_dim.offset((2 + 0) as isize) as libc::c_int)
+                        as uint16_t;
                 }
                 4 => {
-                    (*(&mut *((*(*t).a).tx).as_mut_ptr().offset(bx4 as isize)
-                        as *mut int8_t as *mut alias32))
+                    (*(&mut *((*(*t).a).tx).as_mut_ptr().offset(bx4 as isize) as *mut int8_t
+                        as *mut alias32))
                         .u32_0 = (0x1010101 as libc::c_uint)
-                        .wrapping_mul(
-                            *b_dim.offset((2 + 0) as isize)
-                                as libc::c_uint,
-                        );
+                        .wrapping_mul(*b_dim.offset((2 + 0) as isize) as libc::c_uint);
                 }
                 8 => {
-                    (*(&mut *((*(*t).a).tx).as_mut_ptr().offset(bx4 as isize)
-                        as *mut int8_t as *mut alias64))
+                    (*(&mut *((*(*t).a).tx).as_mut_ptr().offset(bx4 as isize) as *mut int8_t
+                        as *mut alias64))
                         .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            *b_dim.offset((2 + 0) as isize)
-                                as libc::c_ulonglong,
-                        ) as uint64_t;
+                        .wrapping_mul(*b_dim.offset((2 + 0) as isize) as libc::c_ulonglong)
+                        as uint64_t;
                 }
                 16 => {
                     let const_val_5: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            *b_dim.offset((2 + 0) as isize)
-                                as libc::c_ulonglong,
-                        ) as uint64_t;
+                        .wrapping_mul(*b_dim.offset((2 + 0) as isize) as libc::c_ulonglong)
+                        as uint64_t;
                     (*(&mut *((*(*t).a).tx)
                         .as_mut_ptr()
                         .offset((bx4 + 0) as isize) as *mut int8_t
@@ -3793,10 +3351,8 @@ unsafe extern "C" fn read_vartx_tree(
                 }
                 32 => {
                     let const_val_6: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            *b_dim.offset((2 + 0) as isize)
-                                as libc::c_ulonglong,
-                        ) as uint64_t;
+                        .wrapping_mul(*b_dim.offset((2 + 0) as isize) as libc::c_ulonglong)
+                        as uint64_t;
                     (*(&mut *((*(*t).a).tx)
                         .as_mut_ptr()
                         .offset((bx4 + 0) as isize) as *mut int8_t
@@ -3823,7 +3379,8 @@ unsafe extern "C" fn read_vartx_tree(
         }
         (*b).uvtx = dav1d_max_txfm_size_for_bs[bs as usize][(*f).cur.p.layout as usize];
     } else {
-        if !(bw4 <= 16 || bh4 <= 16
+        if !(bw4 <= 16
+            || bh4 <= 16
             || (*b).c2rust_unnamed.c2rust_unnamed_0.max_ytx as libc::c_int
                 == TX_64X64 as libc::c_int)
         {
@@ -3861,9 +3418,12 @@ unsafe extern "C" fn read_vartx_tree(
             y_off += 1;
         }
         (*t).by -= y;
-        if 0 as libc::c_int != 0 && (*(*f).frame_hdr).frame_offset == 2
-            && (*t).by >= 0 && (*t).by < 4
-            && (*t).bx >= 8 && (*t).bx < 12
+        if 0 as libc::c_int != 0
+            && (*(*f).frame_hdr).frame_offset == 2
+            && (*t).by >= 0
+            && (*t).by < 4
+            && (*t).bx >= 8
+            && (*t).bx < 12
         {
             printf(
                 b"Post-vartxtree[%x/%x]: r=%d\n\0" as *const u8 as *const libc::c_char,
@@ -3877,10 +3437,7 @@ unsafe extern "C" fn read_vartx_tree(
     if tx_split[0] as libc::c_int & !(0x33 as libc::c_int) != 0 {
         unreachable!();
     }
-    (*b)
-        .c2rust_unnamed
-        .c2rust_unnamed_0
-        .tx_split0 = tx_split[0] as uint8_t;
+    (*b).c2rust_unnamed.c2rust_unnamed_0.tx_split0 = tx_split[0] as uint8_t;
     (*b).c2rust_unnamed.c2rust_unnamed_0.tx_split1 = tx_split[1];
 }
 #[inline]
@@ -3897,8 +3454,7 @@ unsafe extern "C" fn get_prev_frame_segid(
         unreachable!();
     }
     let mut seg_id: libc::c_uint = 8 as libc::c_int as libc::c_uint;
-    ref_seg_map = ref_seg_map
-        .offset((by as isize * stride + bx as isize) as isize);
+    ref_seg_map = ref_seg_map.offset((by as isize * stride + bx as isize) as isize);
     loop {
         let mut x = 0;
         while x < w4 {
@@ -3928,14 +3484,12 @@ unsafe extern "C" fn splat_oneref_mv(
     bw4: libc::c_int,
     bh4: libc::c_int,
 ) {
-    let mode: InterPredMode = (*b).c2rust_unnamed.c2rust_unnamed_0.inter_mode
-        as InterPredMode;
+    let mode: InterPredMode = (*b).c2rust_unnamed.c2rust_unnamed_0.inter_mode as InterPredMode;
     let tmpl: Align16<refmvs_block> = {
         let mut init = refmvs_block {
             mv: refmvs_mvpair {
                 mv: [
-                    (*b)
-                        .c2rust_unnamed
+                    (*b).c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
@@ -3945,14 +3499,8 @@ unsafe extern "C" fn splat_oneref_mv(
             },
             r#ref: refmvs_refpair {
                 r#ref: [
-                    ((*b)
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .r#ref[0] as libc::c_int
-                        + 1) as int8_t,
-                    (if (*b).c2rust_unnamed.c2rust_unnamed_0.interintra_type
-                        as libc::c_int != 0
-                    {
+                    ((*b).c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int + 1) as int8_t,
+                    (if (*b).c2rust_unnamed.c2rust_unnamed_0.interintra_type as libc::c_int != 0 {
                         0 as libc::c_int
                     } else {
                         -(1 as libc::c_int)
@@ -3962,15 +3510,12 @@ unsafe extern "C" fn splat_oneref_mv(
             bs: bs as uint8_t,
             mf: ((mode as libc::c_uint == GLOBALMV as libc::c_int as libc::c_uint
                 && imin(bw4, bh4) >= 2) as libc::c_int
-                | (mode as libc::c_uint == NEWMV as libc::c_int as libc::c_uint)
-                    as libc::c_int * 2) as uint8_t,
+                | (mode as libc::c_uint == NEWMV as libc::c_int as libc::c_uint) as libc::c_int * 2)
+                as uint8_t,
         };
         Align16(init)
     };
-    ((*c).refmvs_dsp.splat_mv)
-        .expect(
-            "non-null function pointer",
-        )(
+    ((*c).refmvs_dsp.splat_mv).expect("non-null function pointer")(
         &mut *((*t).rt.r)
             .as_mut_ptr()
             .offset((((*t).by & 31) + 5) as isize),
@@ -3993,8 +3538,7 @@ unsafe extern "C" fn splat_intrabc_mv(
         let mut init = refmvs_block {
             mv: refmvs_mvpair {
                 mv: [
-                    (*b)
-                        .c2rust_unnamed
+                    (*b).c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
@@ -4010,10 +3554,7 @@ unsafe extern "C" fn splat_intrabc_mv(
         };
         Align16(init)
     };
-    ((*c).refmvs_dsp.splat_mv)
-        .expect(
-            "non-null function pointer",
-        )(
+    ((*c).refmvs_dsp.splat_mv).expect("non-null function pointer")(
         &mut *((*t).rt.r)
             .as_mut_ptr()
             .offset((((*t).by & 31) + 5) as isize),
@@ -4035,20 +3576,18 @@ unsafe extern "C" fn splat_tworef_mv(
     if !(bw4 >= 2 && bh4 >= 2) {
         unreachable!();
     }
-    let mode: CompInterPredMode = (*b).c2rust_unnamed.c2rust_unnamed_0.inter_mode
-        as CompInterPredMode;
+    let mode: CompInterPredMode =
+        (*b).c2rust_unnamed.c2rust_unnamed_0.inter_mode as CompInterPredMode;
     let tmpl: Align16<refmvs_block> = {
         let mut init = refmvs_block {
             mv: refmvs_mvpair {
                 mv: [
-                    (*b)
-                        .c2rust_unnamed
+                    (*b).c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
                         .mv[0],
-                    (*b)
-                        .c2rust_unnamed
+                    (*b).c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
@@ -4057,30 +3596,20 @@ unsafe extern "C" fn splat_tworef_mv(
             },
             r#ref: refmvs_refpair {
                 r#ref: [
-                    ((*b)
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .r#ref[0] as libc::c_int
-                        + 1) as int8_t,
-                    ((*b)
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .r#ref[1] as libc::c_int
-                        + 1) as int8_t,
+                    ((*b).c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int + 1) as int8_t,
+                    ((*b).c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as libc::c_int + 1) as int8_t,
                 ],
             },
             bs: bs as uint8_t,
-            mf: ((mode as libc::c_uint
-                == GLOBALMV_GLOBALMV as libc::c_int as libc::c_uint) as libc::c_int
+            mf: ((mode as libc::c_uint == GLOBALMV_GLOBALMV as libc::c_int as libc::c_uint)
+                as libc::c_int
                 | ((1 as libc::c_int) << mode as libc::c_uint & 0xbc as libc::c_int != 0)
-                    as libc::c_int * 2) as uint8_t,
+                    as libc::c_int
+                    * 2) as uint8_t,
         };
         Align16(init)
     };
-    ((*c).refmvs_dsp.splat_mv)
-        .expect(
-            "non-null function pointer",
-        )(
+    ((*c).refmvs_dsp.splat_mv).expect("non-null function pointer")(
         &mut *((*t).rt.r)
             .as_mut_ptr()
             .offset((((*t).by & 31) + 5) as isize),
@@ -4101,10 +3630,7 @@ unsafe extern "C" fn splat_intraref(
     let tmpl: Align16<refmvs_block> = {
         let mut init = refmvs_block {
             mv: refmvs_mvpair {
-                mv: [
-                    mv::INVALID,
-                    mv::ZERO,
-                ],
+                mv: [mv::INVALID, mv::ZERO],
             },
             r#ref: refmvs_refpair {
                 r#ref: [0 as libc::c_int as int8_t, -(1 as libc::c_int) as int8_t],
@@ -4114,10 +3640,7 @@ unsafe extern "C" fn splat_intraref(
         };
         Align16(init)
     };
-    ((*c).refmvs_dsp.splat_mv)
-        .expect(
-            "non-null function pointer",
-        )(
+    ((*c).refmvs_dsp.splat_mv).expect("non-null function pointer")(
         &mut *((*t).rt.r)
             .as_mut_ptr()
             .offset((((*t).by & 31) + 5) as isize),
@@ -4145,7 +3668,7 @@ fn mc_lowest_px(
             (by4 + bh4) * v_mul + my + 4 * (dy != 0) as libc::c_int,
         );
     } else {
-        let mut y= (by4 * v_mul << 4) + mvy * (1 << (ss_ver == 0) as libc::c_int);
+        let mut y = (by4 * v_mul << 4) + mvy * (1 << (ss_ver == 0) as libc::c_int);
         let tmp = y as int64_t * smp.scale as int64_t + ((smp.scale - 0x4000) * 8) as int64_t;
         y = apply_sign64((tmp.abs() + 128 >> 8) as libc::c_int, tmp) + 32;
         let bottom = (y + (bh4 * v_mul - 1) * smp.step >> 10) + 1 + 4;
@@ -4164,8 +3687,9 @@ fn affine_lowest_px(
 ) {
     let h_mul = 4 >> ss_hor;
     let v_mul = 4 >> ss_ver;
-    assert!(!(b_dim[0] as libc::c_int * h_mul & 7 == 0
-        && b_dim[1] as libc::c_int * v_mul & 7 == 0));
+    assert!(
+        !(b_dim[0] as libc::c_int * h_mul & 7 == 0 && b_dim[1] as libc::c_int * v_mul & 7 == 0)
+    );
     let mat = &wmp.matrix;
     let y = b_dim[1] as libc::c_int * v_mul - 8;
     let src_y = t.by * 4 + ((y + 4) << ss_ver);
@@ -4230,8 +3754,9 @@ unsafe fn obmc_lowest_px(
     let ss_hor = (is_chroma && f.cur.p.layout != DAV1D_PIXEL_LAYOUT_I444) as libc::c_int;
     let h_mul = 4 >> ss_hor;
     let v_mul = 4 >> ss_ver;
-    if t.by > (*t.ts).tiling.row_start &&
-        (!is_chroma || b_dim[0] as libc::c_int * h_mul + b_dim[1] as libc::c_int * v_mul >= 16) {
+    if t.by > (*t.ts).tiling.row_start
+        && (!is_chroma || b_dim[0] as libc::c_int * h_mul + b_dim[1] as libc::c_int * v_mul >= 16)
+    {
         let mut i = 0;
         let mut x = 0;
         while x < w4 && i < imin(b_dim[2] as libc::c_int, 4) {
@@ -4278,14 +3803,14 @@ unsafe fn obmc_lowest_px(
 /* NOTE: DEBUG_BLOCK_INFO is a macro in recon.h so it should probably live in
  * one of the rust files generated from recon_tmpl.c once deduplicated.
  */
-unsafe fn DEBUG_BLOCK_INFO(
-    f: *const Dav1dFrameContext,
-    t: *const Dav1dTaskContext) -> bool {
+unsafe fn DEBUG_BLOCK_INFO(f: *const Dav1dFrameContext, t: *const Dav1dTaskContext) -> bool {
     /* TODO: add feature and compile-time guard around this code */
     0 != 0
         && (*(*f).frame_hdr).frame_offset == 2
-        && (*t).by >= 0 && (*t).by < 4
-        && (*t).bx >= 8 && (*t).bx < 12
+        && (*t).by >= 0
+        && (*t).by < 4
+        && (*t).bx >= 8
+        && (*t).bx < 12
     // true
 }
 
@@ -4313,7 +3838,10 @@ unsafe fn decode_b(
     let mut b_mem = Default::default();
 
     let b = if t.frame_thread.pass != 0 {
-        &mut *f.frame_thread.b.offset(t.by as isize * f.b4_stride + t.bx as isize)
+        &mut *f
+            .frame_thread
+            .b
+            .offset(t.by as isize * f.b4_stride + t.bx as isize)
     } else {
         &mut b_mem
     };
@@ -4357,10 +3885,8 @@ unsafe fn decode_b(
             case_set(bw4, &mut *t.a, bx4 as isize, set_ctx);
 
             if is_inter_or_switch(&*f.frame_hdr) {
-                let r: *mut refmvs_block = t
-                    .rt
-                    .r[((t.by & 31) + 5 + bh4 - 1) as usize]
-                    .offset(t.bx as isize);
+                let r: *mut refmvs_block =
+                    t.rt.r[((t.by & 31) + 5 + bh4 - 1) as usize].offset(t.bx as isize);
                 for x in 0..bw4 {
                     let block = &mut *r.offset(x as isize);
                     block.r#ref.r#ref[0] = 0;
@@ -4396,18 +3922,10 @@ unsafe fn decode_b(
                     t.warpmv.matrix[3] = b.matrix()[1] as int32_t;
                     t.warpmv.matrix[4] = b.matrix()[2] as int32_t;
                     t.warpmv.matrix[5] = b.matrix()[3] as int32_t + 0x10000;
-                    dav1d_set_affine_mv2d(
-                        bw4,
-                        bh4,
-                        *b.mv2d(),
-                        &mut t.warpmv,
-                        t.bx,
-                        t.by,
-                    );
+                    dav1d_set_affine_mv2d(bw4, bh4, *b.mv2d(), &mut t.warpmv, t.bx, t.by);
                     dav1d_get_shear_params(&mut t.warpmv);
 
-                    if DEBUG_BLOCK_INFO(f, t)
-                    {
+                    if DEBUG_BLOCK_INFO(f, t) {
                         println!(
                             "[ {} {} {}\n  {} {} {} ]\n\
                             alpha={}, beta={}, gamma={}, deta={}, mv=y:{},x:{}",
@@ -4443,10 +3961,8 @@ unsafe fn decode_b(
             case_set(bw4, &mut *t.a, bx4 as isize, set_ctx);
 
             if is_inter_or_switch(&*f.frame_hdr) {
-                let r: *mut refmvs_block = t
-                    .rt
-                    .r[((t.by & 31) + 5 + bh4 - 1) as usize]
-                    .offset(t.bx as isize);
+                let r: *mut refmvs_block =
+                    t.rt.r[((t.by & 31) + 5 + bh4 - 1) as usize].offset(t.bx as isize);
                 for x in 0..bw4 as isize {
                     (*r.offset(x)).r#ref.r#ref[0] = b.r#ref()[0] + 1;
                     (*r.offset(x)).mv.mv[0] = b.mv()[0];
@@ -4488,15 +4004,8 @@ unsafe fn decode_b(
     if (*f.frame_hdr).segmentation.enabled != 0 {
         if (*f.frame_hdr).segmentation.update_map == 0 {
             if !(f.prev_segmap).is_null() {
-                let mut seg_id = get_prev_frame_segid(
-                    f,
-                    t.by,
-                    t.bx,
-                    w4,
-                    h4,
-                    f.prev_segmap,
-                    f.b4_stride,
-                );
+                let mut seg_id =
+                    get_prev_frame_segid(f, t.by, t.bx, w4, h4, f.prev_segmap, f.b4_stride);
 
                 if seg_id >= 8 {
                     return -1;
@@ -4509,26 +4018,17 @@ unsafe fn decode_b(
 
             seg = Some(&(*f.frame_hdr).segmentation.seg_data.d[b.seg_id as usize]);
         } else if (*f.frame_hdr).segmentation.seg_data.preskip != 0 {
-            if (*f.frame_hdr).segmentation.temporal != 0
-                && {
-                    let index = (*t.a).seg_pred[bx4 as usize] + t.l.seg_pred[by4 as usize];
-                    seg_pred = dav1d_msac_decode_bool_adapt(
-                        &mut ts.msac,
-                        ts.cdf.m.seg_pred[index as usize].as_mut_ptr(),
-                    ) as libc::c_int;
-                    seg_pred != 0
-                }
-            {
+            if (*f.frame_hdr).segmentation.temporal != 0 && {
+                let index = (*t.a).seg_pred[bx4 as usize] + t.l.seg_pred[by4 as usize];
+                seg_pred = dav1d_msac_decode_bool_adapt(
+                    &mut ts.msac,
+                    ts.cdf.m.seg_pred[index as usize].as_mut_ptr(),
+                ) as libc::c_int;
+                seg_pred != 0
+            } {
                 if !(f.prev_segmap).is_null() {
-                    let mut seg_id = get_prev_frame_segid(
-                        f,
-                        t.by,
-                        t.bx,
-                        w4,
-                        h4,
-                        f.prev_segmap,
-                        f.b4_stride,
-                    );
+                    let mut seg_id =
+                        get_prev_frame_segid(f, t.by, t.bx, w4, h4, f.prev_segmap, f.b4_stride);
 
                     if seg_id >= 8 {
                         return -1;
@@ -4554,10 +4054,7 @@ unsafe fn decode_b(
                     (ts.cdf.m.seg_id[seg_ctx as usize]).as_mut_ptr(),
                     (DAV1D_MAX_SEGMENTS - 1) as size_t,
                 );
-                let last_active_seg_id = (*f.frame_hdr)
-                    .segmentation
-                    .seg_data
-                    .last_active_segid;
+                let last_active_seg_id = (*f.frame_hdr).segmentation.seg_data.last_active_segid;
 
                 b.seg_id = neg_deinterleave(
                     diff as libc::c_int,
@@ -4569,7 +4066,7 @@ unsafe fn decode_b(
                     b.seg_id = 0;
                 }
 
-                if b.seg_id  >= DAV1D_MAX_SEGMENTS {
+                if b.seg_id >= DAV1D_MAX_SEGMENTS {
                     b.seg_id = 0;
                 }
             }
@@ -4584,19 +4081,19 @@ unsafe fn decode_b(
         b.seg_id = 0 as libc::c_int as uint8_t;
     }
 
-    if seg.map(|seg| seg.globalmv == 0 && seg.r#ref == -1 && seg.skip == 0).unwrap_or(true)
+    if seg
+        .map(|seg| seg.globalmv == 0 && seg.r#ref == -1 && seg.skip == 0)
+        .unwrap_or(true)
         && (*f.frame_hdr).skip_mode_enabled != 0
         && imin(bw4, bh4) > 1
     {
         let smctx = (*t.a).skip_mode[bx4 as usize] as libc::c_int
             + t.l.skip_mode[by4 as usize] as libc::c_int;
-        b
-            .skip_mode = dav1d_msac_decode_bool_adapt(
+        b.skip_mode = dav1d_msac_decode_bool_adapt(
             &mut ts.msac,
             (ts.cdf.m.skip_mode[smctx as usize]).as_mut_ptr(),
         ) as uint8_t;
-        if DEBUG_BLOCK_INFO(f, t)
-        {
+        if DEBUG_BLOCK_INFO(f, t) {
             printf(
                 b"Post-skipmode[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
                 b.skip_mode as libc::c_int,
@@ -4609,15 +4106,11 @@ unsafe fn decode_b(
     if b.skip_mode as libc::c_int != 0 || seg.map(|seg| seg.skip != 0).unwrap_or(false) {
         b.skip = 1 as libc::c_int as uint8_t;
     } else {
-        let sctx = (*t.a).skip[bx4 as usize] as libc::c_int
-            + t.l.skip[by4 as usize] as libc::c_int;
-        b
-            .skip = dav1d_msac_decode_bool_adapt(
-            &mut ts.msac,
-            (ts.cdf.m.skip[sctx as usize]).as_mut_ptr(),
-        ) as uint8_t;
-        if DEBUG_BLOCK_INFO(f, t)
-        {
+        let sctx = (*t.a).skip[bx4 as usize] as libc::c_int + t.l.skip[by4 as usize] as libc::c_int;
+        b.skip =
+            dav1d_msac_decode_bool_adapt(&mut ts.msac, (ts.cdf.m.skip[sctx as usize]).as_mut_ptr())
+                as uint8_t;
+        if DEBUG_BLOCK_INFO(f, t) {
             printf(
                 b"Post-skip[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
                 b.skip as libc::c_int,
@@ -4629,30 +4122,19 @@ unsafe fn decode_b(
         && (*f.frame_hdr).segmentation.update_map != 0
         && (*f.frame_hdr).segmentation.seg_data.preskip == 0
     {
-        if b.skip == 0 && (*f.frame_hdr).segmentation.temporal != 0
-            && {
-                seg_pred = dav1d_msac_decode_bool_adapt(
-                    &mut ts.msac,
-                    (ts
-                        .cdf
-                        .m
-                        .seg_pred[((*t.a).seg_pred[bx4 as usize] as libc::c_int
-                        + t.l.seg_pred[by4 as usize] as libc::c_int) as usize])
-                        .as_mut_ptr(),
-                ) as libc::c_int;
-                seg_pred != 0
-            }
-        {
+        if b.skip == 0 && (*f.frame_hdr).segmentation.temporal != 0 && {
+            seg_pred = dav1d_msac_decode_bool_adapt(
+                &mut ts.msac,
+                (ts.cdf.m.seg_pred[((*t.a).seg_pred[bx4 as usize] as libc::c_int
+                    + t.l.seg_pred[by4 as usize] as libc::c_int)
+                    as usize])
+                    .as_mut_ptr(),
+            ) as libc::c_int;
+            seg_pred != 0
+        } {
             if !(f.prev_segmap).is_null() {
-                let mut seg_id_1: libc::c_uint = get_prev_frame_segid(
-                    f,
-                    t.by,
-                    t.bx,
-                    w4,
-                    h4,
-                    f.prev_segmap,
-                    f.b4_stride,
-                );
+                let mut seg_id_1: libc::c_uint =
+                    get_prev_frame_segid(f, t.by, t.bx, w4, h4, f.prev_segmap, f.b4_stride);
                 if seg_id_1 >= 8 as libc::c_uint {
                     return -(1 as libc::c_int);
                 }
@@ -4679,12 +4161,9 @@ unsafe fn decode_b(
                     (ts.cdf.m.seg_id[seg_ctx_0 as usize]).as_mut_ptr(),
                     (8 - 1) as size_t,
                 );
-                let last_active_seg_id_0: libc::c_uint = (*f.frame_hdr)
-                    .segmentation
-                    .seg_data
-                    .last_active_segid as libc::c_uint;
-                b
-                    .seg_id = neg_deinterleave(
+                let last_active_seg_id_0: libc::c_uint =
+                    (*f.frame_hdr).segmentation.seg_data.last_active_segid as libc::c_uint;
+                b.seg_id = neg_deinterleave(
                     diff_0 as libc::c_int,
                     pred_seg_id_0 as libc::c_int,
                     last_active_seg_id_0.wrapping_add(1 as libc::c_int as libc::c_uint)
@@ -4699,8 +4178,7 @@ unsafe fn decode_b(
             }
         }
         seg = Some(&(*f.frame_hdr).segmentation.seg_data.d[b.seg_id as usize]);
-        if DEBUG_BLOCK_INFO(f, t)
-        {
+        if DEBUG_BLOCK_INFO(f, t) {
             printf(
                 b"Post-segid[postskip;%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
                 b.seg_id as libc::c_int,
@@ -4710,33 +4188,25 @@ unsafe fn decode_b(
     }
     if b.skip == 0 {
         let idx = if (*f.seq_hdr).sb128 != 0 {
-            ((t.bx & 16) >> 4)
-                + ((t.by & 16) >> 3)
+            ((t.bx & 16) >> 4) + ((t.by & 16) >> 3)
         } else {
             0 as libc::c_int
         };
-        if *(t.cur_sb_cdef_idx_ptr).offset(idx as isize) as libc::c_int
-            == -(1 as libc::c_int)
-        {
-            let v = dav1d_msac_decode_bools(
-                &mut ts.msac,
-                (*f.frame_hdr).cdef.n_bits as libc::c_uint,
-            ) as libc::c_int;
+        if *(t.cur_sb_cdef_idx_ptr).offset(idx as isize) as libc::c_int == -(1 as libc::c_int) {
+            let v =
+                dav1d_msac_decode_bools(&mut ts.msac, (*f.frame_hdr).cdef.n_bits as libc::c_uint)
+                    as libc::c_int;
             *(t.cur_sb_cdef_idx_ptr).offset(idx as isize) = v as int8_t;
             if bw4 > 16 {
-                *(t.cur_sb_cdef_idx_ptr)
-                    .offset((idx + 1) as isize) = v as int8_t;
+                *(t.cur_sb_cdef_idx_ptr).offset((idx + 1) as isize) = v as int8_t;
             }
             if bh4 > 16 {
-                *(t.cur_sb_cdef_idx_ptr)
-                    .offset((idx + 2) as isize) = v as int8_t;
+                *(t.cur_sb_cdef_idx_ptr).offset((idx + 2) as isize) = v as int8_t;
             }
             if bw4 == 32 && bh4 == 32 {
-                *(t.cur_sb_cdef_idx_ptr)
-                    .offset((idx + 3) as isize) = v as int8_t;
+                *(t.cur_sb_cdef_idx_ptr).offset((idx + 3) as isize) = v as int8_t;
             }
-            if DEBUG_BLOCK_INFO(f, t)
-            {
+            if DEBUG_BLOCK_INFO(f, t) {
                 printf(
                     b"Post-cdef_idx[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
                     *t.cur_sb_cdef_idx_ptr as libc::c_int,
@@ -4746,8 +4216,7 @@ unsafe fn decode_b(
         }
     }
     if t.bx & 31 >> ((*f.seq_hdr).sb128 == 0) as libc::c_int == 0
-        && t.by & 31 >> ((*f.seq_hdr).sb128 == 0) as libc::c_int
-            == 0
+        && t.by & 31 >> ((*f.seq_hdr).sb128 == 0) as libc::c_int == 0
     {
         let prev_qidx = ts.last_qidx;
         let have_delta_q = ((*f.frame_hdr).delta.q.present != 0
@@ -4756,7 +4225,8 @@ unsafe fn decode_b(
                     BS_128x128 as libc::c_int
                 } else {
                     BS_64x64 as libc::c_int
-                }) as libc::c_uint || b.skip == 0)) as libc::c_int;
+                }) as libc::c_uint
+                || b.skip == 0)) as libc::c_int;
         let mut prev_delta_lf: [int8_t; 4] = [0; 4];
         memcpy(
             prev_delta_lf.as_mut_ptr() as *mut libc::c_void,
@@ -4770,17 +4240,10 @@ unsafe fn decode_b(
                 3 as libc::c_int as size_t,
             ) as libc::c_int;
             if delta_q == 3 {
-                let n_bits = (1 as libc::c_int as libc::c_uint)
-                    .wrapping_add(
-                        dav1d_msac_decode_bools(
-                            &mut ts.msac,
-                            3 as libc::c_int as libc::c_uint,
-                        ),
-                    ) as libc::c_int;
-                delta_q = (dav1d_msac_decode_bools(
-                    &mut ts.msac,
-                    n_bits as libc::c_uint,
-                ))
+                let n_bits = (1 as libc::c_int as libc::c_uint).wrapping_add(
+                    dav1d_msac_decode_bools(&mut ts.msac, 3 as libc::c_int as libc::c_uint),
+                ) as libc::c_int;
+                delta_q = (dav1d_msac_decode_bools(&mut ts.msac, n_bits as libc::c_uint))
                     .wrapping_add(1 as libc::c_int as libc::c_uint)
                     .wrapping_add(((1 as libc::c_int) << n_bits) as libc::c_uint)
                     as libc::c_int;
@@ -4791,17 +4254,10 @@ unsafe fn decode_b(
                 }
                 delta_q *= (1 as libc::c_int) << (*f.frame_hdr).delta.q.res_log2;
             }
-            ts
-                .last_qidx = iclip(
-                ts.last_qidx + delta_q,
-                1 as libc::c_int,
-                255 as libc::c_int,
-            );
-            if have_delta_q != 0 && DEBUG_BLOCK_INFO(f, t)
-            {
+            ts.last_qidx = iclip(ts.last_qidx + delta_q, 1 as libc::c_int, 255 as libc::c_int);
+            if have_delta_q != 0 && DEBUG_BLOCK_INFO(f, t) {
                 printf(
-                    b"Post-delta_q[%d->%d]: r=%d\n\0" as *const u8
-                        as *const libc::c_char,
+                    b"Post-delta_q[%d->%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
                     delta_q,
                     ts.last_qidx,
                     ts.msac.rng,
@@ -4823,49 +4279,33 @@ unsafe fn decode_b(
                 while i < n_lfs {
                     let mut delta_lf = dav1d_msac_decode_symbol_adapt4(
                         &mut ts.msac,
-                        (ts
-                            .cdf
-                            .m
-                            .delta_lf[(i + (*f.frame_hdr).delta.lf.multi) as usize])
+                        (ts.cdf.m.delta_lf[(i + (*f.frame_hdr).delta.lf.multi) as usize])
                             .as_mut_ptr(),
                         3 as libc::c_int as size_t,
                     ) as libc::c_int;
                     if delta_lf == 3 {
-                        let n_bits_0 = (1 as libc::c_int as libc::c_uint)
-                            .wrapping_add(
-                                dav1d_msac_decode_bools(
-                                    &mut ts.msac,
-                                    3 as libc::c_int as libc::c_uint,
-                                ),
-                            ) as libc::c_int;
-                        delta_lf = (dav1d_msac_decode_bools(
-                            &mut ts.msac,
-                            n_bits_0 as libc::c_uint,
-                        ))
+                        let n_bits_0 = (1 as libc::c_int as libc::c_uint).wrapping_add(
+                            dav1d_msac_decode_bools(&mut ts.msac, 3 as libc::c_int as libc::c_uint),
+                        ) as libc::c_int;
+                        delta_lf = (dav1d_msac_decode_bools(&mut ts.msac, n_bits_0 as libc::c_uint))
                             .wrapping_add(1 as libc::c_int as libc::c_uint)
-                            .wrapping_add(
-                                ((1 as libc::c_int) << n_bits_0) as libc::c_uint,
-                            ) as libc::c_int;
+                            .wrapping_add(((1 as libc::c_int) << n_bits_0) as libc::c_uint)
+                            as libc::c_int;
                     }
                     if delta_lf != 0 {
                         if dav1d_msac_decode_bool_equi(&mut ts.msac) != 0 {
                             delta_lf = -delta_lf;
                         }
-                        delta_lf
-                            *= (1 as libc::c_int) << (*f.frame_hdr).delta.lf.res_log2;
+                        delta_lf *= (1 as libc::c_int) << (*f.frame_hdr).delta.lf.res_log2;
                     }
-                    ts
-                        .last_delta_lf[i
-                        as usize] = iclip(
+                    ts.last_delta_lf[i as usize] = iclip(
                         ts.last_delta_lf[i as usize] as libc::c_int + delta_lf,
                         -(63 as libc::c_int),
                         63 as libc::c_int,
                     ) as int8_t;
-                    if have_delta_q != 0 && DEBUG_BLOCK_INFO(f, t)
-                    {
+                    if have_delta_q != 0 && DEBUG_BLOCK_INFO(f, t) {
                         printf(
-                            b"Post-delta_lf[%d:%d]: r=%d\n\0" as *const u8
-                                as *const libc::c_char,
+                            b"Post-delta_lf[%d:%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
                             i,
                             delta_lf,
                             ts.msac.rng,
@@ -4878,12 +4318,7 @@ unsafe fn decode_b(
         if ts.last_qidx == (*f.frame_hdr).quant.yac {
             ts.dq = (f.dq).as_ptr();
         } else if ts.last_qidx != prev_qidx {
-            init_quant_tables(
-                &*f.seq_hdr,
-                &*f.frame_hdr,
-                ts.last_qidx,
-                &mut ts.dqmem,
-            );
+            init_quant_tables(&*f.seq_hdr, &*f.frame_hdr, ts.last_qidx, &mut ts.dqmem);
             ts.dq = (ts.dqmem).as_mut_ptr() as *const [[uint16_t; 2]; 3];
         }
         if memcmp(
@@ -4894,7 +4329,7 @@ unsafe fn decode_b(
                 0 as libc::c_int as int8_t,
                 0 as libc::c_int as int8_t,
             ]
-                .as_mut_ptr() as *const libc::c_void,
+            .as_mut_ptr() as *const libc::c_void,
             4 as libc::c_int as libc::c_ulong,
         ) == 0
         {
@@ -4915,9 +4350,7 @@ unsafe fn decode_b(
     }
     if b.skip_mode != 0 {
         b.intra = 0 as libc::c_int as uint8_t;
-    } else if (*f.frame_hdr).frame_type as libc::c_uint
-        & 1 as libc::c_uint != 0
-    {
+    } else if (*f.frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint != 0 {
         if let Some(seg) = seg && (seg.r#ref >= 0 || seg.globalmv != 0) {
             b.intra = (seg.r#ref == 0) as uint8_t;
         } else {
@@ -4944,13 +4377,9 @@ unsafe fn decode_b(
             }
         }
     } else if (*f.frame_hdr).allow_intrabc != 0 {
-        b
-            .intra = (dav1d_msac_decode_bool_adapt(
-            &mut ts.msac,
-            (ts.cdf.m.intrabc.0).as_mut_ptr(),
-        ) == 0) as libc::c_int as uint8_t;
-        if DEBUG_BLOCK_INFO(f, t)
-        {
+        b.intra = (dav1d_msac_decode_bool_adapt(&mut ts.msac, (ts.cdf.m.intrabc.0).as_mut_ptr())
+            == 0) as libc::c_int as uint8_t;
+        if DEBUG_BLOCK_INFO(f, t) {
             printf(
                 b"Post-intrabcflag[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
                 b.intra as libc::c_int,
@@ -4961,88 +4390,59 @@ unsafe fn decode_b(
         b.intra = 1 as libc::c_int as uint8_t;
     }
     if b.intra != 0 {
-        let ymode_cdf: *mut uint16_t = if (*f.frame_hdr).frame_type as libc::c_uint
-            & 1 as libc::c_uint != 0
-        {
-            (ts.cdf.m.y_mode[dav1d_ymode_size_context[bs as usize] as usize])
-                .as_mut_ptr()
-        } else {
-            (ts
-                .cdf
-                .kfym[dav1d_intra_mode_context[(*t.a).mode[bx4 as usize] as usize]
-                as usize][dav1d_intra_mode_context[t.l.mode[by4 as usize] as usize]
-                as usize])
-                .as_mut_ptr()
-        };
-        b
-            .c2rust_unnamed
-            .c2rust_unnamed
-            .y_mode = dav1d_msac_decode_symbol_adapt16(
+        let ymode_cdf: *mut uint16_t =
+            if (*f.frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint != 0 {
+                (ts.cdf.m.y_mode[dav1d_ymode_size_context[bs as usize] as usize]).as_mut_ptr()
+            } else {
+                (ts.cdf.kfym[dav1d_intra_mode_context[(*t.a).mode[bx4 as usize] as usize] as usize]
+                    [dav1d_intra_mode_context[t.l.mode[by4 as usize] as usize] as usize])
+                    .as_mut_ptr()
+            };
+        b.c2rust_unnamed.c2rust_unnamed.y_mode = dav1d_msac_decode_symbol_adapt16(
             &mut ts.msac,
             ymode_cdf,
             (N_INTRA_PRED_MODES as libc::c_int - 1) as size_t,
         ) as uint8_t;
-        if DEBUG_BLOCK_INFO(f, t)
-        {
+        if DEBUG_BLOCK_INFO(f, t) {
             printf(
                 b"Post-ymode[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
                 b.c2rust_unnamed.c2rust_unnamed.y_mode as libc::c_int,
                 ts.msac.rng,
             );
         }
-        if *b_dim.offset(2) as libc::c_int
-            + *b_dim.offset(3) as libc::c_int >= 2
-            && b.c2rust_unnamed.c2rust_unnamed.y_mode as libc::c_int
-                >= VERT_PRED as libc::c_int
+        if *b_dim.offset(2) as libc::c_int + *b_dim.offset(3) as libc::c_int >= 2
+            && b.c2rust_unnamed.c2rust_unnamed.y_mode as libc::c_int >= VERT_PRED as libc::c_int
             && b.c2rust_unnamed.c2rust_unnamed.y_mode as libc::c_int
                 <= VERT_LEFT_PRED as libc::c_int
         {
-            let acdf: *mut uint16_t = (ts
-                .cdf
-                .m
-                .angle_delta[(b.c2rust_unnamed.c2rust_unnamed.y_mode as libc::c_int
-                - VERT_PRED as libc::c_int) as usize])
-                .as_mut_ptr();
-            let angle = dav1d_msac_decode_symbol_adapt8(
-                &mut ts.msac,
-                acdf,
-                6 as libc::c_int as size_t,
-            ) as libc::c_int;
-            b
-                .c2rust_unnamed
-                .c2rust_unnamed
-                .y_angle = (angle - 3) as int8_t;
+            let acdf: *mut uint16_t =
+                (ts.cdf.m.angle_delta[(b.c2rust_unnamed.c2rust_unnamed.y_mode as libc::c_int
+                    - VERT_PRED as libc::c_int) as usize])
+                    .as_mut_ptr();
+            let angle =
+                dav1d_msac_decode_symbol_adapt8(&mut ts.msac, acdf, 6 as libc::c_int as size_t)
+                    as libc::c_int;
+            b.c2rust_unnamed.c2rust_unnamed.y_angle = (angle - 3) as int8_t;
         } else {
             b.c2rust_unnamed.c2rust_unnamed.y_angle = 0 as libc::c_int as int8_t;
         }
         if has_chroma {
-            let cfl_allowed = if (*f.frame_hdr)
-                .segmentation
-                .lossless[b.seg_id as usize] != 0
-            {
+            let cfl_allowed = if (*f.frame_hdr).segmentation.lossless[b.seg_id as usize] != 0 {
                 (cbw4 == 1 && cbh4 == 1) as libc::c_int
             } else {
-                (cfl_allowed_mask
-                    & ((1 as libc::c_int) << bs as libc::c_uint) as libc::c_uint != 0)
+                (cfl_allowed_mask & ((1 as libc::c_int) << bs as libc::c_uint) as libc::c_uint != 0)
                     as libc::c_int
             };
-            let uvmode_cdf: *mut uint16_t = (ts
-                .cdf
-                .m
-                .uv_mode[cfl_allowed
-                as usize][b.c2rust_unnamed.c2rust_unnamed.y_mode as usize])
+            let uvmode_cdf: *mut uint16_t = (ts.cdf.m.uv_mode[cfl_allowed as usize]
+                [b.c2rust_unnamed.c2rust_unnamed.y_mode as usize])
                 .as_mut_ptr();
-            b
-                .c2rust_unnamed
-                .c2rust_unnamed
-                .uv_mode = dav1d_msac_decode_symbol_adapt16(
+            b.c2rust_unnamed.c2rust_unnamed.uv_mode = dav1d_msac_decode_symbol_adapt16(
                 &mut ts.msac,
                 uvmode_cdf,
-                (N_UV_INTRA_PRED_MODES as libc::c_int - 1
-                    - (cfl_allowed == 0) as libc::c_int) as size_t,
+                (N_UV_INTRA_PRED_MODES as libc::c_int - 1 - (cfl_allowed == 0) as libc::c_int)
+                    as size_t,
             ) as uint8_t;
-            if DEBUG_BLOCK_INFO(f, t)
-            {
+            if DEBUG_BLOCK_INFO(f, t) {
                 printf(
                     b"Post-uvmode[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
                     b.c2rust_unnamed.c2rust_unnamed.uv_mode as libc::c_int,
@@ -5050,154 +4450,98 @@ unsafe fn decode_b(
                 );
             }
             b.c2rust_unnamed.c2rust_unnamed.uv_angle = 0 as libc::c_int as int8_t;
-            if b.c2rust_unnamed.c2rust_unnamed.uv_mode as libc::c_int
-                == CFL_PRED as libc::c_int
-            {
+            if b.c2rust_unnamed.c2rust_unnamed.uv_mode as libc::c_int == CFL_PRED as libc::c_int {
                 let sign = (dav1d_msac_decode_symbol_adapt8(
                     &mut ts.msac,
                     (ts.cdf.m.cfl_sign.0).as_mut_ptr(),
                     7 as libc::c_int as size_t,
                 ))
-                    .wrapping_add(1 as libc::c_int as libc::c_uint) as libc::c_int;
+                .wrapping_add(1 as libc::c_int as libc::c_uint)
+                    as libc::c_int;
                 let sign_u = sign * 0x56 >> 8;
                 let sign_v = sign - sign_u * 3;
                 if !(sign_u == sign / 3) {
                     unreachable!();
                 }
                 if sign_u != 0 {
-                    let ctx = (sign_u == 2) as libc::c_int
-                        * 3 + sign_v;
-                    b
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .cfl_alpha[0 as libc::c_int
-                        as usize] = (dav1d_msac_decode_symbol_adapt16(
-                        &mut ts.msac,
-                        (ts.cdf.m.cfl_alpha[ctx as usize]).as_mut_ptr(),
-                        15 as libc::c_int as size_t,
-                    ))
-                        .wrapping_add(1 as libc::c_int as libc::c_uint) as int8_t;
-                    if sign_u == 1 {
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .cfl_alpha[0 as libc::c_int
-                            as usize] = -(b
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .cfl_alpha[0] as libc::c_int)
+                    let ctx = (sign_u == 2) as libc::c_int * 3 + sign_v;
+                    b.c2rust_unnamed.c2rust_unnamed.cfl_alpha[0 as libc::c_int as usize] =
+                        (dav1d_msac_decode_symbol_adapt16(
+                            &mut ts.msac,
+                            (ts.cdf.m.cfl_alpha[ctx as usize]).as_mut_ptr(),
+                            15 as libc::c_int as size_t,
+                        ))
+                        .wrapping_add(1 as libc::c_int as libc::c_uint)
                             as int8_t;
+                    if sign_u == 1 {
+                        b.c2rust_unnamed.c2rust_unnamed.cfl_alpha[0 as libc::c_int as usize] =
+                            -(b.c2rust_unnamed.c2rust_unnamed.cfl_alpha[0] as libc::c_int)
+                                as int8_t;
                     }
                 } else {
-                    b
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .cfl_alpha[0 as libc::c_int
-                        as usize] = 0 as libc::c_int as int8_t;
+                    b.c2rust_unnamed.c2rust_unnamed.cfl_alpha[0 as libc::c_int as usize] =
+                        0 as libc::c_int as int8_t;
                 }
                 if sign_v != 0 {
-                    let ctx_0 = (sign_v == 2) as libc::c_int
-                        * 3 + sign_u;
-                    b
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .cfl_alpha[1 as libc::c_int
-                        as usize] = (dav1d_msac_decode_symbol_adapt16(
-                        &mut ts.msac,
-                        (ts.cdf.m.cfl_alpha[ctx_0 as usize]).as_mut_ptr(),
-                        15 as libc::c_int as size_t,
-                    ))
-                        .wrapping_add(1 as libc::c_int as libc::c_uint) as int8_t;
-                    if sign_v == 1 {
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .cfl_alpha[1 as libc::c_int
-                            as usize] = -(b
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .cfl_alpha[1] as libc::c_int)
+                    let ctx_0 = (sign_v == 2) as libc::c_int * 3 + sign_u;
+                    b.c2rust_unnamed.c2rust_unnamed.cfl_alpha[1 as libc::c_int as usize] =
+                        (dav1d_msac_decode_symbol_adapt16(
+                            &mut ts.msac,
+                            (ts.cdf.m.cfl_alpha[ctx_0 as usize]).as_mut_ptr(),
+                            15 as libc::c_int as size_t,
+                        ))
+                        .wrapping_add(1 as libc::c_int as libc::c_uint)
                             as int8_t;
+                    if sign_v == 1 {
+                        b.c2rust_unnamed.c2rust_unnamed.cfl_alpha[1 as libc::c_int as usize] =
+                            -(b.c2rust_unnamed.c2rust_unnamed.cfl_alpha[1] as libc::c_int)
+                                as int8_t;
                     }
                 } else {
-                    b
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .cfl_alpha[1 as libc::c_int
-                        as usize] = 0 as libc::c_int as int8_t;
+                    b.c2rust_unnamed.c2rust_unnamed.cfl_alpha[1 as libc::c_int as usize] =
+                        0 as libc::c_int as int8_t;
                 }
-                if DEBUG_BLOCK_INFO(f, t)
-                {
+                if DEBUG_BLOCK_INFO(f, t) {
                     printf(
-                        b"Post-uvalphas[%d/%d]: r=%d\n\0" as *const u8
-                            as *const libc::c_char,
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .cfl_alpha[0] as libc::c_int,
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .cfl_alpha[1] as libc::c_int,
+                        b"Post-uvalphas[%d/%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
+                        b.c2rust_unnamed.c2rust_unnamed.cfl_alpha[0] as libc::c_int,
+                        b.c2rust_unnamed.c2rust_unnamed.cfl_alpha[1] as libc::c_int,
                         ts.msac.rng,
                     );
                 }
-            } else if *b_dim.offset(2) as libc::c_int
-                + *b_dim.offset(3) as libc::c_int
-                >= 2
+            } else if *b_dim.offset(2) as libc::c_int + *b_dim.offset(3) as libc::c_int >= 2
                 && b.c2rust_unnamed.c2rust_unnamed.uv_mode as libc::c_int
                     >= VERT_PRED as libc::c_int
                 && b.c2rust_unnamed.c2rust_unnamed.uv_mode as libc::c_int
                     <= VERT_LEFT_PRED as libc::c_int
             {
-                let acdf_0: *mut uint16_t = (ts
-                    .cdf
-                    .m
-                    .angle_delta[(b.c2rust_unnamed.c2rust_unnamed.uv_mode
-                    as libc::c_int - VERT_PRED as libc::c_int) as usize])
-                    .as_mut_ptr();
+                let acdf_0: *mut uint16_t =
+                    (ts.cdf.m.angle_delta[(b.c2rust_unnamed.c2rust_unnamed.uv_mode as libc::c_int
+                        - VERT_PRED as libc::c_int)
+                        as usize])
+                        .as_mut_ptr();
                 let angle_0 = dav1d_msac_decode_symbol_adapt8(
                     &mut ts.msac,
                     acdf_0,
                     6 as libc::c_int as size_t,
                 ) as libc::c_int;
-                b
-                    .c2rust_unnamed
-                    .c2rust_unnamed
-                    .uv_angle = (angle_0 - 3) as int8_t;
+                b.c2rust_unnamed.c2rust_unnamed.uv_angle = (angle_0 - 3) as int8_t;
             }
         }
-        b
-            .c2rust_unnamed
-            .c2rust_unnamed
-            .pal_sz[1] = 0 as libc::c_int as uint8_t;
-        b
-            .c2rust_unnamed
-            .c2rust_unnamed
-            .pal_sz[0 as libc::c_int
-            as usize] = b
-            .c2rust_unnamed
-            .c2rust_unnamed
-            .pal_sz[1];
-        if (*f.frame_hdr).allow_screen_content_tools != 0
-            && imax(bw4, bh4) <= 16 && bw4 + bh4 >= 4
+        b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] = 0 as libc::c_int as uint8_t;
+        b.c2rust_unnamed.c2rust_unnamed.pal_sz[0 as libc::c_int as usize] =
+            b.c2rust_unnamed.c2rust_unnamed.pal_sz[1];
+        if (*f.frame_hdr).allow_screen_content_tools != 0 && imax(bw4, bh4) <= 16 && bw4 + bh4 >= 4
         {
-            let sz_ctx = *b_dim.offset(2)
-                as libc::c_int + *b_dim.offset(3) as libc::c_int
-                - 2;
-            if b.c2rust_unnamed.c2rust_unnamed.y_mode as libc::c_int
-                == DC_PRED as libc::c_int
-            {
-                let pal_ctx = ((*t.a).pal_sz[bx4 as usize] as libc::c_int
-                    > 0) as libc::c_int
-                    + (t.l.pal_sz[by4 as usize] as libc::c_int > 0)
-                        as libc::c_int;
+            let sz_ctx = *b_dim.offset(2) as libc::c_int + *b_dim.offset(3) as libc::c_int - 2;
+            if b.c2rust_unnamed.c2rust_unnamed.y_mode as libc::c_int == DC_PRED as libc::c_int {
+                let pal_ctx = ((*t.a).pal_sz[bx4 as usize] as libc::c_int > 0) as libc::c_int
+                    + (t.l.pal_sz[by4 as usize] as libc::c_int > 0) as libc::c_int;
                 let use_y_pal = dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     (ts.cdf.m.pal_y[sz_ctx as usize][pal_ctx as usize]).as_mut_ptr(),
                 ) as libc::c_int;
-                if DEBUG_BLOCK_INFO(f, t)
-                {
+                if DEBUG_BLOCK_INFO(f, t) {
                     printf(
                         b"Post-y_pal[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
                         use_y_pal,
@@ -5209,20 +4553,15 @@ unsafe fn decode_b(
                 }
             }
             if has_chroma
-                && b.c2rust_unnamed.c2rust_unnamed.uv_mode as libc::c_int
-                    == DC_PRED as libc::c_int
+                && b.c2rust_unnamed.c2rust_unnamed.uv_mode as libc::c_int == DC_PRED as libc::c_int
             {
-                let pal_ctx_0 = (b
-                    .c2rust_unnamed
-                    .c2rust_unnamed
-                    .pal_sz[0] as libc::c_int > 0)
-                    as libc::c_int;
+                let pal_ctx_0 =
+                    (b.c2rust_unnamed.c2rust_unnamed.pal_sz[0] as libc::c_int > 0) as libc::c_int;
                 let use_uv_pal = dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     (ts.cdf.m.pal_uv[pal_ctx_0 as usize]).as_mut_ptr(),
                 ) as libc::c_int;
-                if DEBUG_BLOCK_INFO(f, t)
-                {
+                if DEBUG_BLOCK_INFO(f, t) {
                     printf(
                         b"Post-uv_pal[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
                         use_uv_pal,
@@ -5234,37 +4573,29 @@ unsafe fn decode_b(
                 }
             }
         }
-        if b.c2rust_unnamed.c2rust_unnamed.y_mode as libc::c_int
-            == DC_PRED as libc::c_int
+        if b.c2rust_unnamed.c2rust_unnamed.y_mode as libc::c_int == DC_PRED as libc::c_int
             && b.c2rust_unnamed.c2rust_unnamed.pal_sz[0] == 0
             && imax(
                 *b_dim.offset(2) as libc::c_int,
                 *b_dim.offset(3) as libc::c_int,
-            ) <= 3 && (*f.seq_hdr).filter_intra != 0
+            ) <= 3
+            && (*f.seq_hdr).filter_intra != 0
         {
             let is_filter = dav1d_msac_decode_bool_adapt(
                 &mut ts.msac,
                 (ts.cdf.m.use_filter_intra[bs as usize]).as_mut_ptr(),
             ) as libc::c_int;
             if is_filter != 0 {
-                b
-                    .c2rust_unnamed
-                    .c2rust_unnamed
-                    .y_mode = FILTER_PRED as libc::c_int as uint8_t;
-                b
-                    .c2rust_unnamed
-                    .c2rust_unnamed
-                    .y_angle = dav1d_msac_decode_symbol_adapt4(
+                b.c2rust_unnamed.c2rust_unnamed.y_mode = FILTER_PRED as libc::c_int as uint8_t;
+                b.c2rust_unnamed.c2rust_unnamed.y_angle = dav1d_msac_decode_symbol_adapt4(
                     &mut ts.msac,
                     (ts.cdf.m.filter_intra.0).as_mut_ptr(),
                     4 as libc::c_int as size_t,
                 ) as int8_t;
             }
-            if DEBUG_BLOCK_INFO(f, t)
-            {
+            if DEBUG_BLOCK_INFO(f, t) {
                 printf(
-                    b"Post-filterintramode[%d/%d]: r=%d\n\0" as *const u8
-                        as *const libc::c_char,
+                    b"Post-filterintramode[%d/%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
                     b.c2rust_unnamed.c2rust_unnamed.y_mode as libc::c_int,
                     b.c2rust_unnamed.c2rust_unnamed.y_angle as libc::c_int,
                     ts.msac.rng,
@@ -5279,26 +4610,20 @@ unsafe fn decode_b(
                     unreachable!();
                 }
                 pal_idx = ts.frame_thread[p as usize].pal_idx;
-                ts
-                    .frame_thread[p as usize]
-                    .pal_idx = (ts.frame_thread[p as usize].pal_idx)
-                    .offset((bw4 * bh4 * 16) as isize);
+                ts.frame_thread[p as usize].pal_idx =
+                    (ts.frame_thread[p as usize].pal_idx).offset((bw4 * bh4 * 16) as isize);
             } else {
                 pal_idx = (t.scratch.c2rust_unnamed_0.pal_idx).as_mut_ptr();
             }
             read_pal_indices(t, pal_idx, b, 0 as libc::c_int, w4, h4, bw4, bh4);
-            if DEBUG_BLOCK_INFO(f, t)
-            {
+            if DEBUG_BLOCK_INFO(f, t) {
                 printf(
                     b"Post-y-pal-indices: r=%d\n\0" as *const u8 as *const libc::c_char,
                     ts.msac.rng,
                 );
             }
         }
-        if has_chroma
-            && b.c2rust_unnamed.c2rust_unnamed.pal_sz[1]
-                as libc::c_int != 0
-        {
+        if has_chroma && b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int != 0 {
             let mut pal_idx_0: *mut uint8_t = 0 as *mut uint8_t;
             if t.frame_thread.pass != 0 {
                 let p_0 = t.frame_thread.pass & 1;
@@ -5306,18 +4631,15 @@ unsafe fn decode_b(
                     unreachable!();
                 }
                 pal_idx_0 = ts.frame_thread[p_0 as usize].pal_idx;
-                ts
-                    .frame_thread[p_0 as usize]
-                    .pal_idx = (ts.frame_thread[p_0 as usize].pal_idx)
-                    .offset((cbw4 * cbh4 * 16) as isize);
+                ts.frame_thread[p_0 as usize].pal_idx =
+                    (ts.frame_thread[p_0 as usize].pal_idx).offset((cbw4 * cbh4 * 16) as isize);
             } else {
                 pal_idx_0 = &mut *(t.scratch.c2rust_unnamed_0.pal_idx)
                     .as_mut_ptr()
                     .offset((bw4 * bh4 * 16) as isize) as *mut uint8_t;
             }
             read_pal_indices(t, pal_idx_0, b, 1 as libc::c_int, cw4, ch4, cbw4, cbh4);
-            if DEBUG_BLOCK_INFO(f, t)
-            {
+            if DEBUG_BLOCK_INFO(f, t) {
                 printf(
                     b"Post-uv-pal-indices: r=%d\n\0" as *const u8 as *const libc::c_char,
                     ts.msac.rng,
@@ -5332,13 +4654,8 @@ unsafe fn decode_b(
                 .as_ptr()
                 .offset(TX_4X4 as libc::c_int as isize) as *const TxfmInfo;
         } else {
-            b
-                .c2rust_unnamed
-                .c2rust_unnamed
-                .tx = dav1d_max_txfm_size_for_bs[bs as usize][0];
-            b
-                .uvtx = dav1d_max_txfm_size_for_bs[bs
-                as usize][f.cur.p.layout as usize];
+            b.c2rust_unnamed.c2rust_unnamed.tx = dav1d_max_txfm_size_for_bs[bs as usize][0];
+            b.uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
             t_dim = &*dav1d_txfm_dimensions
                 .as_ptr()
                 .offset(b.c2rust_unnamed.c2rust_unnamed.tx as isize)
@@ -5348,11 +4665,8 @@ unsafe fn decode_b(
                 && (*t_dim).max as libc::c_int > TX_4X4 as libc::c_int
             {
                 let tctx = get_tx_ctx(t.a, &mut t.l, t_dim, by4, bx4);
-                let tx_cdf: *mut uint16_t = (ts
-                    .cdf
-                    .m
-                    .txsz[((*t_dim).max as libc::c_int - 1)
-                    as usize][tctx as usize])
+                let tx_cdf: *mut uint16_t = (ts.cdf.m.txsz
+                    [((*t_dim).max as libc::c_int - 1) as usize][tctx as usize])
                     .as_mut_ptr();
                 let mut depth = dav1d_msac_decode_symbol_adapt4(
                     &mut ts.msac,
@@ -5372,8 +4686,7 @@ unsafe fn decode_b(
                         as *const TxfmInfo;
                 }
             }
-            if DEBUG_BLOCK_INFO(f, t)
-            {
+            if DEBUG_BLOCK_INFO(f, t) {
                 printf(
                     b"Post-tx[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
                     b.c2rust_unnamed.c2rust_unnamed.tx as libc::c_int,
@@ -5384,24 +4697,18 @@ unsafe fn decode_b(
         if t.frame_thread.pass == 1 {
             (f.bd_fn.read_coef_blocks).expect("non-null function pointer")(t, bs, b);
         } else {
-            (f.bd_fn.recon_b_intra)
-                .expect("non-null function pointer")(t, bs, intra_edge_flags, b);
+            (f.bd_fn.recon_b_intra).expect("non-null function pointer")(t, bs, intra_edge_flags, b);
         }
-        if (*f.frame_hdr).loopfilter.level_y[0] != 0
-            || (*f.frame_hdr).loopfilter.level_y[1] != 0
-        {
+        if (*f.frame_hdr).loopfilter.level_y[0] != 0 || (*f.frame_hdr).loopfilter.level_y[1] != 0 {
             dav1d_create_lf_mask_intra(
                 t.lf_mask,
                 f.lf.level,
                 f.b4_stride,
-                &*(*(*(*(ts.lflvl).offset(b.seg_id as isize))
+                &*(*(*(*(ts.lflvl).offset(b.seg_id as isize)).as_ptr().offset(0))
                     .as_ptr()
                     .offset(0))
-                    .as_ptr()
-                    .offset(0))
-                    .as_ptr()
-                    .offset(0) as *const uint8_t
-                    as *const [[uint8_t; 2]; 8],
+                .as_ptr()
+                .offset(0) as *const uint8_t as *const [[uint8_t; 2]; 8],
                 t.bx,
                 t.by,
                 f.w4,
@@ -5424,43 +4731,40 @@ unsafe fn decode_b(
                 },
             );
         }
-        let y_mode_nofilt_0: IntraPredMode = (if b
-            .c2rust_unnamed
-            .c2rust_unnamed
-            .y_mode as libc::c_int == FILTER_PRED as libc::c_int
-        {
-            DC_PRED as libc::c_int
-        } else {
-            b.c2rust_unnamed.c2rust_unnamed.y_mode as libc::c_int
-        }) as IntraPredMode;
+        let y_mode_nofilt_0: IntraPredMode =
+            (if b.c2rust_unnamed.c2rust_unnamed.y_mode as libc::c_int == FILTER_PRED as libc::c_int
+            {
+                DC_PRED as libc::c_int
+            } else {
+                b.c2rust_unnamed.c2rust_unnamed.y_mode as libc::c_int
+            }) as IntraPredMode;
         match bh4 {
             1 => {
-                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset(by4 as isize)
-                    as *mut int8_t as *mut alias8))
+                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset(by4 as isize) as *mut int8_t
+                    as *mut alias8))
                     .u8_0 = (0x1 as libc::c_int
-                    * *(&(*t_dim).lw as *const uint8_t as *mut uint8_t)
-                        .offset(1) as libc::c_int) as uint8_t;
+                    * *(&(*t_dim).lw as *const uint8_t as *mut uint8_t).offset(1) as libc::c_int)
+                    as uint8_t;
                 (*(&mut *(t.l.tx).as_mut_ptr().offset(by4 as isize) as *mut int8_t
                     as *mut alias8))
                     .u8_0 = (0x1 as libc::c_int
-                    * *(&(*t_dim).lw as *const uint8_t as *mut uint8_t)
-                        .offset(1) as libc::c_int) as uint8_t;
+                    * *(&(*t_dim).lw as *const uint8_t as *mut uint8_t).offset(1) as libc::c_int)
+                    as uint8_t;
                 (*(&mut *(t.l.mode).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias8))
                     .u8_0 = (0x1 as libc::c_int as libc::c_uint)
-                    .wrapping_mul(y_mode_nofilt_0 as libc::c_uint) as uint8_t;
-                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias8))
+                    .wrapping_mul(y_mode_nofilt_0 as libc::c_uint)
+                    as uint8_t;
+                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias8))
                     .u8_0 = (0x1 as libc::c_int
-                    * b
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .pal_sz[0] as libc::c_int) as uint8_t;
-                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias8))
+                    * b.c2rust_unnamed.c2rust_unnamed.pal_sz[0] as libc::c_int)
+                    as uint8_t;
+                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias8))
                     .u8_0 = (0x1 * seg_pred) as uint8_t;
-                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias8))
+                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias8))
                     .u8_0 = 0 as libc::c_int as uint8_t;
                 (*(&mut *(t.l.intra).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias8))
@@ -5468,276 +4772,221 @@ unsafe fn decode_b(
                 (*(&mut *(t.l.skip).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias8))
                     .u8_0 = (0x1 * b.skip as libc::c_int) as uint8_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset(by4 as isize) as *mut uint8_t as *mut alias8))
                     .u8_0 = (0x1 as libc::c_int
                     * (if has_chroma {
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .pal_sz[1] as libc::c_int
+                        b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int
                     } else {
                         0 as libc::c_int
                     })) as uint8_t;
-                if (*f.frame_hdr).frame_type as libc::c_uint
-                    & 1 as libc::c_uint != 0
-                {
-                    (*(&mut *(t.l.comp_type).as_mut_ptr().offset(by4 as isize)
-                        as *mut uint8_t as *mut alias8))
-                        .u8_0 = (0x1 * COMP_INTER_NONE as libc::c_int)
+                if (*f.frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint != 0 {
+                    (*(&mut *(t.l.comp_type).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                        as *mut alias8))
+                        .u8_0 = (0x1 * COMP_INTER_NONE as libc::c_int) as uint8_t;
+                    (*(&mut *(*(t.l.r#ref).as_mut_ptr().offset(0))
+                        .as_mut_ptr()
+                        .offset(by4 as isize) as *mut int8_t
+                        as *mut alias8))
+                        .u8_0 = (0x1 as libc::c_int * -(1 as libc::c_int) as uint8_t as libc::c_int)
                         as uint8_t;
-                    (*(&mut *(*(t.l.r#ref)
+                    (*(&mut *(*(t.l.r#ref).as_mut_ptr().offset(1))
                         .as_mut_ptr()
-                        .offset(0))
+                        .offset(by4 as isize) as *mut int8_t
+                        as *mut alias8))
+                        .u8_0 = (0x1 as libc::c_int * -(1 as libc::c_int) as uint8_t as libc::c_int)
+                        as uint8_t;
+                    (*(&mut *(*(t.l.filter).as_mut_ptr().offset(0))
                         .as_mut_ptr()
-                        .offset(by4 as isize) as *mut int8_t as *mut alias8))
-                        .u8_0 = (0x1 as libc::c_int
-                        * -(1 as libc::c_int) as uint8_t as libc::c_int) as uint8_t;
-                    (*(&mut *(*(t.l.r#ref)
+                        .offset(by4 as isize) as *mut uint8_t
+                        as *mut alias8))
+                        .u8_0 =
+                        (0x1 as libc::c_int * DAV1D_N_SWITCHABLE_FILTERS as libc::c_int) as uint8_t;
+                    (*(&mut *(*(t.l.filter).as_mut_ptr().offset(1))
                         .as_mut_ptr()
-                        .offset(1))
-                        .as_mut_ptr()
-                        .offset(by4 as isize) as *mut int8_t as *mut alias8))
-                        .u8_0 = (0x1 as libc::c_int
-                        * -(1 as libc::c_int) as uint8_t as libc::c_int) as uint8_t;
-                    (*(&mut *(*(t.l.filter)
-                        .as_mut_ptr()
-                        .offset(0))
-                        .as_mut_ptr()
-                        .offset(by4 as isize) as *mut uint8_t as *mut alias8))
-                        .u8_0 = (0x1 as libc::c_int
-                        * DAV1D_N_SWITCHABLE_FILTERS as libc::c_int) as uint8_t;
-                    (*(&mut *(*(t.l.filter)
-                        .as_mut_ptr()
-                        .offset(1))
-                        .as_mut_ptr()
-                        .offset(by4 as isize) as *mut uint8_t as *mut alias8))
-                        .u8_0 = (0x1 as libc::c_int
-                        * DAV1D_N_SWITCHABLE_FILTERS as libc::c_int) as uint8_t;
+                        .offset(by4 as isize) as *mut uint8_t
+                        as *mut alias8))
+                        .u8_0 =
+                        (0x1 as libc::c_int * DAV1D_N_SWITCHABLE_FILTERS as libc::c_int) as uint8_t;
                 }
             }
             2 => {
-                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset(by4 as isize)
-                    as *mut int8_t as *mut alias16))
+                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset(by4 as isize) as *mut int8_t
+                    as *mut alias16))
                     .u16_0 = (0x101 as libc::c_int
-                    * *(&(*t_dim).lw as *const uint8_t as *mut uint8_t)
-                        .offset(1) as libc::c_int) as uint16_t;
+                    * *(&(*t_dim).lw as *const uint8_t as *mut uint8_t).offset(1) as libc::c_int)
+                    as uint16_t;
                 (*(&mut *(t.l.tx).as_mut_ptr().offset(by4 as isize) as *mut int8_t
                     as *mut alias16))
                     .u16_0 = (0x101 as libc::c_int
-                    * *(&(*t_dim).lw as *const uint8_t as *mut uint8_t)
-                        .offset(1) as libc::c_int) as uint16_t;
+                    * *(&(*t_dim).lw as *const uint8_t as *mut uint8_t).offset(1) as libc::c_int)
+                    as uint16_t;
                 (*(&mut *(t.l.mode).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias16))
                     .u16_0 = (0x101 as libc::c_int as libc::c_uint)
-                    .wrapping_mul(y_mode_nofilt_0 as libc::c_uint) as uint16_t;
-                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias16))
+                    .wrapping_mul(y_mode_nofilt_0 as libc::c_uint)
+                    as uint16_t;
+                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias16))
                     .u16_0 = (0x101 as libc::c_int
-                    * b
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .pal_sz[0] as libc::c_int) as uint16_t;
-                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias16))
+                    * b.c2rust_unnamed.c2rust_unnamed.pal_sz[0] as libc::c_int)
+                    as uint16_t;
+                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias16))
                     .u16_0 = (0x101 * seg_pred) as uint16_t;
-                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias16))
+                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias16))
                     .u16_0 = 0 as libc::c_int as uint16_t;
                 (*(&mut *(t.l.intra).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias16))
                     .u16_0 = 0x101 as libc::c_int as uint16_t;
                 (*(&mut *(t.l.skip).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias16))
-                    .u16_0 = (0x101 * b.skip as libc::c_int)
-                    as uint16_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(1))
+                    .u16_0 = (0x101 * b.skip as libc::c_int) as uint16_t;
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset(by4 as isize) as *mut uint8_t as *mut alias16))
                     .u16_0 = (0x101 as libc::c_int
                     * (if has_chroma {
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .pal_sz[1] as libc::c_int
+                        b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int
                     } else {
                         0 as libc::c_int
                     })) as uint16_t;
-                if (*f.frame_hdr).frame_type as libc::c_uint
-                    & 1 as libc::c_uint != 0
-                {
-                    (*(&mut *(t.l.comp_type).as_mut_ptr().offset(by4 as isize)
-                        as *mut uint8_t as *mut alias16))
-                        .u16_0 = (0x101 * COMP_INTER_NONE as libc::c_int)
+                if (*f.frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint != 0 {
+                    (*(&mut *(t.l.comp_type).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                        as *mut alias16))
+                        .u16_0 = (0x101 * COMP_INTER_NONE as libc::c_int) as uint16_t;
+                    (*(&mut *(*(t.l.r#ref).as_mut_ptr().offset(0))
+                        .as_mut_ptr()
+                        .offset(by4 as isize) as *mut int8_t
+                        as *mut alias16))
+                        .u16_0 = (0x101 as libc::c_int
+                        * -(1 as libc::c_int) as uint8_t as libc::c_int)
                         as uint16_t;
-                    (*(&mut *(*(t.l.r#ref)
+                    (*(&mut *(*(t.l.r#ref).as_mut_ptr().offset(1))
                         .as_mut_ptr()
-                        .offset(0))
-                        .as_mut_ptr()
-                        .offset(by4 as isize) as *mut int8_t as *mut alias16))
+                        .offset(by4 as isize) as *mut int8_t
+                        as *mut alias16))
                         .u16_0 = (0x101 as libc::c_int
-                        * -(1 as libc::c_int) as uint8_t as libc::c_int) as uint16_t;
-                    (*(&mut *(*(t.l.r#ref)
+                        * -(1 as libc::c_int) as uint8_t as libc::c_int)
+                        as uint16_t;
+                    (*(&mut *(*(t.l.filter).as_mut_ptr().offset(0))
                         .as_mut_ptr()
-                        .offset(1))
+                        .offset(by4 as isize) as *mut uint8_t
+                        as *mut alias16))
+                        .u16_0 = (0x101 as libc::c_int * DAV1D_N_SWITCHABLE_FILTERS as libc::c_int)
+                        as uint16_t;
+                    (*(&mut *(*(t.l.filter).as_mut_ptr().offset(1))
                         .as_mut_ptr()
-                        .offset(by4 as isize) as *mut int8_t as *mut alias16))
-                        .u16_0 = (0x101 as libc::c_int
-                        * -(1 as libc::c_int) as uint8_t as libc::c_int) as uint16_t;
-                    (*(&mut *(*(t.l.filter)
-                        .as_mut_ptr()
-                        .offset(0))
-                        .as_mut_ptr()
-                        .offset(by4 as isize) as *mut uint8_t as *mut alias16))
-                        .u16_0 = (0x101 as libc::c_int
-                        * DAV1D_N_SWITCHABLE_FILTERS as libc::c_int) as uint16_t;
-                    (*(&mut *(*(t.l.filter)
-                        .as_mut_ptr()
-                        .offset(1))
-                        .as_mut_ptr()
-                        .offset(by4 as isize) as *mut uint8_t as *mut alias16))
-                        .u16_0 = (0x101 as libc::c_int
-                        * DAV1D_N_SWITCHABLE_FILTERS as libc::c_int) as uint16_t;
+                        .offset(by4 as isize) as *mut uint8_t
+                        as *mut alias16))
+                        .u16_0 = (0x101 as libc::c_int * DAV1D_N_SWITCHABLE_FILTERS as libc::c_int)
+                        as uint16_t;
                 }
             }
             4 => {
-                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset(by4 as isize)
-                    as *mut int8_t as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(
-                        *(&(*t_dim).lw as *const uint8_t as *mut uint8_t)
-                            .offset(1) as libc::c_uint,
-                    );
+                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset(by4 as isize) as *mut int8_t
+                    as *mut alias32))
+                    .u32_0 =
+                    (0x1010101 as libc::c_uint)
+                        .wrapping_mul(*(&(*t_dim).lw as *const uint8_t as *mut uint8_t).offset(1)
+                            as libc::c_uint);
                 (*(&mut *(t.l.tx).as_mut_ptr().offset(by4 as isize) as *mut int8_t
                     as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(
-                        *(&(*t_dim).lw as *const uint8_t as *mut uint8_t)
-                            .offset(1) as libc::c_uint,
-                    );
+                    .u32_0 =
+                    (0x1010101 as libc::c_uint)
+                        .wrapping_mul(*(&(*t_dim).lw as *const uint8_t as *mut uint8_t).offset(1)
+                            as libc::c_uint);
                 (*(&mut *(t.l.mode).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias32))
+                    .u32_0 =
+                    (0x1010101 as libc::c_uint).wrapping_mul(y_mode_nofilt_0 as libc::c_uint);
+                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias32))
                     .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(y_mode_nofilt_0 as libc::c_uint);
-                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .pal_sz[0] as libc::c_uint,
-                    );
-                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(seg_pred as libc::c_uint);
-                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias32))
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed.pal_sz[0] as libc::c_uint);
+                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias32))
+                    .u32_0 = (0x1010101 as libc::c_uint).wrapping_mul(seg_pred as libc::c_uint);
+                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias32))
                     .u32_0 = 0 as libc::c_int as uint32_t;
                 (*(&mut *(t.l.intra).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias32))
                     .u32_0 = 0x1010101 as libc::c_uint;
                 (*(&mut *(t.l.skip).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(b.skip as libc::c_uint);
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(1))
+                    .u32_0 = (0x1010101 as libc::c_uint).wrapping_mul(b.skip as libc::c_uint);
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset(by4 as isize) as *mut uint8_t as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(
-                        (if has_chroma {
-                            b
-                                .c2rust_unnamed
-                                .c2rust_unnamed
-                                .pal_sz[1] as libc::c_int
-                        } else {
-                            0 as libc::c_int
-                        }) as libc::c_uint,
-                    );
-                if (*f.frame_hdr).frame_type as libc::c_uint
-                    & 1 as libc::c_uint != 0
-                {
-                    (*(&mut *(t.l.comp_type).as_mut_ptr().offset(by4 as isize)
-                        as *mut uint8_t as *mut alias32))
+                    .u32_0 = (0x1010101 as libc::c_uint).wrapping_mul(
+                    (if has_chroma {
+                        b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int
+                    } else {
+                        0 as libc::c_int
+                    }) as libc::c_uint,
+                );
+                if (*f.frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint != 0 {
+                    (*(&mut *(t.l.comp_type).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                        as *mut alias32))
                         .u32_0 = (0x1010101 as libc::c_uint)
                         .wrapping_mul(COMP_INTER_NONE as libc::c_int as libc::c_uint);
-                    (*(&mut *(*(t.l.r#ref)
+                    (*(&mut *(*(t.l.r#ref).as_mut_ptr().offset(0))
                         .as_mut_ptr()
-                        .offset(0))
-                        .as_mut_ptr()
-                        .offset(by4 as isize) as *mut int8_t as *mut alias32))
+                        .offset(by4 as isize) as *mut int8_t
+                        as *mut alias32))
                         .u32_0 = (0x1010101 as libc::c_uint)
                         .wrapping_mul(-(1 as libc::c_int) as uint8_t as libc::c_uint);
-                    (*(&mut *(*(t.l.r#ref)
+                    (*(&mut *(*(t.l.r#ref).as_mut_ptr().offset(1))
                         .as_mut_ptr()
-                        .offset(1))
-                        .as_mut_ptr()
-                        .offset(by4 as isize) as *mut int8_t as *mut alias32))
+                        .offset(by4 as isize) as *mut int8_t
+                        as *mut alias32))
                         .u32_0 = (0x1010101 as libc::c_uint)
                         .wrapping_mul(-(1 as libc::c_int) as uint8_t as libc::c_uint);
-                    (*(&mut *(*(t.l.filter)
+                    (*(&mut *(*(t.l.filter).as_mut_ptr().offset(0))
                         .as_mut_ptr()
-                        .offset(0))
-                        .as_mut_ptr()
-                        .offset(by4 as isize) as *mut uint8_t as *mut alias32))
+                        .offset(by4 as isize) as *mut uint8_t
+                        as *mut alias32))
                         .u32_0 = (0x1010101 as libc::c_uint)
-                        .wrapping_mul(
-                            DAV1D_N_SWITCHABLE_FILTERS as libc::c_int as libc::c_uint,
-                        );
-                    (*(&mut *(*(t.l.filter)
+                        .wrapping_mul(DAV1D_N_SWITCHABLE_FILTERS as libc::c_int as libc::c_uint);
+                    (*(&mut *(*(t.l.filter).as_mut_ptr().offset(1))
                         .as_mut_ptr()
-                        .offset(1))
-                        .as_mut_ptr()
-                        .offset(by4 as isize) as *mut uint8_t as *mut alias32))
+                        .offset(by4 as isize) as *mut uint8_t
+                        as *mut alias32))
                         .u32_0 = (0x1010101 as libc::c_uint)
-                        .wrapping_mul(
-                            DAV1D_N_SWITCHABLE_FILTERS as libc::c_int as libc::c_uint,
-                        );
+                        .wrapping_mul(DAV1D_N_SWITCHABLE_FILTERS as libc::c_int as libc::c_uint);
                 }
             }
             8 => {
-                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset(by4 as isize)
-                    as *mut int8_t as *mut alias64))
+                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset(by4 as isize) as *mut int8_t
+                    as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        *(&(*t_dim).lw as *const uint8_t as *mut uint8_t)
-                            .offset(1) as libc::c_ulonglong,
-                    ) as uint64_t;
+                    .wrapping_mul(*(&(*t_dim).lw as *const uint8_t as *mut uint8_t).offset(1)
+                        as libc::c_ulonglong) as uint64_t;
                 (*(&mut *(t.l.tx).as_mut_ptr().offset(by4 as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        *(&(*t_dim).lw as *const uint8_t as *mut uint8_t)
-                            .offset(1) as libc::c_ulonglong,
-                    ) as uint64_t;
+                    .wrapping_mul(*(&(*t_dim).lw as *const uint8_t as *mut uint8_t).offset(1)
+                        as libc::c_ulonglong) as uint64_t;
                 (*(&mut *(t.l.mode).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(y_mode_nofilt_0 as libc::c_ulonglong) as uint64_t;
-                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias64))
+                    .wrapping_mul(y_mode_nofilt_0 as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .pal_sz[0] as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias64))
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed.pal_sz[0] as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(seg_pred as libc::c_ulonglong) as uint64_t;
-                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias64))
+                    .wrapping_mul(seg_pred as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias64))
                     .u64_0 = 0 as libc::c_int as uint64_t;
                 (*(&mut *(t.l.intra).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias64))
@@ -5745,211 +4994,146 @@ unsafe fn decode_b(
                 (*(&mut *(t.l.skip).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(b.skip as libc::c_ulonglong) as uint64_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(1))
+                    .wrapping_mul(b.skip as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset(by4 as isize) as *mut uint8_t as *mut alias64))
-                    .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        (if has_chroma {
-                            b
-                                .c2rust_unnamed
-                                .c2rust_unnamed
-                                .pal_sz[1] as libc::c_int
-                        } else {
-                            0 as libc::c_int
-                        }) as libc::c_ulonglong,
+                    .u64_0 = (0x101010101010101 as libc::c_ulonglong).wrapping_mul(
+                    (if has_chroma {
+                        b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int
+                    } else {
+                        0 as libc::c_int
+                    }) as libc::c_ulonglong,
+                ) as uint64_t;
+                if (*f.frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint != 0 {
+                    (*(&mut *(t.l.comp_type).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                        as *mut alias64))
+                        .u64_0 = (0x101010101010101 as libc::c_ulonglong)
+                        .wrapping_mul(COMP_INTER_NONE as libc::c_int as libc::c_ulonglong)
+                        as uint64_t;
+                    (*(&mut *(*(t.l.r#ref).as_mut_ptr().offset(0))
+                        .as_mut_ptr()
+                        .offset(by4 as isize) as *mut int8_t
+                        as *mut alias64))
+                        .u64_0 = (0x101010101010101 as libc::c_ulonglong)
+                        .wrapping_mul(-(1 as libc::c_int) as uint8_t as libc::c_ulonglong)
+                        as uint64_t;
+                    (*(&mut *(*(t.l.r#ref).as_mut_ptr().offset(1))
+                        .as_mut_ptr()
+                        .offset(by4 as isize) as *mut int8_t
+                        as *mut alias64))
+                        .u64_0 = (0x101010101010101 as libc::c_ulonglong)
+                        .wrapping_mul(-(1 as libc::c_int) as uint8_t as libc::c_ulonglong)
+                        as uint64_t;
+                    (*(&mut *(*(t.l.filter).as_mut_ptr().offset(0))
+                        .as_mut_ptr()
+                        .offset(by4 as isize) as *mut uint8_t
+                        as *mut alias64))
+                        .u64_0 = (0x101010101010101 as libc::c_ulonglong).wrapping_mul(
+                        DAV1D_N_SWITCHABLE_FILTERS as libc::c_int as libc::c_ulonglong,
                     ) as uint64_t;
-                if (*f.frame_hdr).frame_type as libc::c_uint
-                    & 1 as libc::c_uint != 0
-                {
-                    (*(&mut *(t.l.comp_type).as_mut_ptr().offset(by4 as isize)
-                        as *mut uint8_t as *mut alias64))
-                        .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            COMP_INTER_NONE as libc::c_int as libc::c_ulonglong,
-                        ) as uint64_t;
-                    (*(&mut *(*(t.l.r#ref)
+                    (*(&mut *(*(t.l.filter).as_mut_ptr().offset(1))
                         .as_mut_ptr()
-                        .offset(0))
-                        .as_mut_ptr()
-                        .offset(by4 as isize) as *mut int8_t as *mut alias64))
-                        .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            -(1 as libc::c_int) as uint8_t as libc::c_ulonglong,
-                        ) as uint64_t;
-                    (*(&mut *(*(t.l.r#ref)
-                        .as_mut_ptr()
-                        .offset(1))
-                        .as_mut_ptr()
-                        .offset(by4 as isize) as *mut int8_t as *mut alias64))
-                        .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            -(1 as libc::c_int) as uint8_t as libc::c_ulonglong,
-                        ) as uint64_t;
-                    (*(&mut *(*(t.l.filter)
-                        .as_mut_ptr()
-                        .offset(0))
-                        .as_mut_ptr()
-                        .offset(by4 as isize) as *mut uint8_t as *mut alias64))
-                        .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            DAV1D_N_SWITCHABLE_FILTERS as libc::c_int
-                                as libc::c_ulonglong,
-                        ) as uint64_t;
-                    (*(&mut *(*(t.l.filter)
-                        .as_mut_ptr()
-                        .offset(1))
-                        .as_mut_ptr()
-                        .offset(by4 as isize) as *mut uint8_t as *mut alias64))
-                        .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            DAV1D_N_SWITCHABLE_FILTERS as libc::c_int
-                                as libc::c_ulonglong,
-                        ) as uint64_t;
+                        .offset(by4 as isize) as *mut uint8_t
+                        as *mut alias64))
+                        .u64_0 = (0x101010101010101 as libc::c_ulonglong).wrapping_mul(
+                        DAV1D_N_SWITCHABLE_FILTERS as libc::c_int as libc::c_ulonglong,
+                    ) as uint64_t;
                 }
             }
             16 => {
                 let const_val_27: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        *(&(*t_dim).lw as *const uint8_t as *mut uint8_t)
-                            .offset(1) as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(t.l.tx_intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut int8_t
+                    .wrapping_mul(*(&(*t_dim).lw as *const uint8_t as *mut uint8_t).offset(1)
+                        as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset((by4 + 0) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_27;
-                (*(&mut *(t.l.tx_intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut int8_t
+                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset((by4 + 8) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_27;
                 let const_val_28: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        *(&(*t_dim).lw as *const uint8_t as *mut uint8_t)
-                            .offset(1) as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(t.l.tx)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut int8_t
+                    .wrapping_mul(*(&(*t_dim).lw as *const uint8_t as *mut uint8_t).offset(1)
+                        as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.tx).as_mut_ptr().offset((by4 + 0) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_28;
-                (*(&mut *(t.l.tx)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut int8_t
+                (*(&mut *(t.l.tx).as_mut_ptr().offset((by4 + 8) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_28;
                 let const_val_29: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(y_mode_nofilt_0 as libc::c_ulonglong) as uint64_t;
-                (*(&mut *(t.l.mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(y_mode_nofilt_0 as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.mode).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_29;
-                (*(&mut *(t.l.mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.mode).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_29;
                 let const_val_30: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .pal_sz[0] as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(t.l.pal_sz)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed.pal_sz[0] as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_30;
-                (*(&mut *(t.l.pal_sz)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_30;
                 let const_val_31: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(seg_pred as libc::c_ulonglong) as uint64_t;
-                (*(&mut *(t.l.seg_pred)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(seg_pred as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_31;
-                (*(&mut *(t.l.seg_pred)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_31;
                 let const_val_32: uint64_t = 0 as libc::c_int as uint64_t;
-                (*(&mut *(t.l.skip_mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_32;
-                (*(&mut *(t.l.skip_mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_32;
-                let const_val_33: uint64_t = 0x101010101010101 as libc::c_ulonglong
-                    as uint64_t;
-                (*(&mut *(t.l.intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                let const_val_33: uint64_t = 0x101010101010101 as libc::c_ulonglong as uint64_t;
+                (*(&mut *(t.l.intra).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_33;
-                (*(&mut *(t.l.intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.intra).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_33;
                 let const_val_34: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(b.skip as libc::c_ulonglong) as uint64_t;
-                (*(&mut *(t.l.skip)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(b.skip as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.skip).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_34;
-                (*(&mut *(t.l.skip)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_34;
-                let const_val_35: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        (if has_chroma {
-                            b
-                                .c2rust_unnamed
-                                .c2rust_unnamed
-                                .pal_sz[1] as libc::c_int
-                        } else {
-                            0 as libc::c_int
-                        }) as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(1))
+                let const_val_35: uint64_t = (0x101010101010101 as libc::c_ulonglong).wrapping_mul(
+                    (if has_chroma {
+                        b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int
+                    } else {
+                        0 as libc::c_int
+                    }) as libc::c_ulonglong,
+                ) as uint64_t;
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_35;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_35;
-                if (*f.frame_hdr).frame_type as libc::c_uint
-                    & 1 as libc::c_uint != 0
-                {
+                if (*f.frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint != 0 {
                     let const_val_36: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            COMP_INTER_NONE as libc::c_int as libc::c_ulonglong,
-                        ) as uint64_t;
+                        .wrapping_mul(COMP_INTER_NONE as libc::c_int as libc::c_ulonglong)
+                        as uint64_t;
                     (*(&mut *(t.l.comp_type)
                         .as_mut_ptr()
                         .offset((by4 + 0) as isize) as *mut uint8_t
@@ -5961,75 +5145,55 @@ unsafe fn decode_b(
                         as *mut alias64))
                         .u64_0 = const_val_36;
                     let const_val_37: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            -(1 as libc::c_int) as uint8_t as libc::c_ulonglong,
-                        ) as uint64_t;
-                    (*(&mut *(*(t.l.r#ref)
-                        .as_mut_ptr()
-                        .offset(0))
+                        .wrapping_mul(-(1 as libc::c_int) as uint8_t as libc::c_ulonglong)
+                        as uint64_t;
+                    (*(&mut *(*(t.l.r#ref).as_mut_ptr().offset(0))
                         .as_mut_ptr()
                         .offset((by4 + 0) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_37;
-                    (*(&mut *(*(t.l.r#ref)
-                        .as_mut_ptr()
-                        .offset(0))
+                    (*(&mut *(*(t.l.r#ref).as_mut_ptr().offset(0))
                         .as_mut_ptr()
                         .offset((by4 + 8) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_37;
                     let const_val_38: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            -(1 as libc::c_int) as uint8_t as libc::c_ulonglong,
-                        ) as uint64_t;
-                    (*(&mut *(*(t.l.r#ref)
-                        .as_mut_ptr()
-                        .offset(1))
+                        .wrapping_mul(-(1 as libc::c_int) as uint8_t as libc::c_ulonglong)
+                        as uint64_t;
+                    (*(&mut *(*(t.l.r#ref).as_mut_ptr().offset(1))
                         .as_mut_ptr()
                         .offset((by4 + 0) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_38;
-                    (*(&mut *(*(t.l.r#ref)
-                        .as_mut_ptr()
-                        .offset(1))
+                    (*(&mut *(*(t.l.r#ref).as_mut_ptr().offset(1))
                         .as_mut_ptr()
                         .offset((by4 + 8) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_38;
                     let const_val_39: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                         .wrapping_mul(
-                            DAV1D_N_SWITCHABLE_FILTERS as libc::c_int
-                                as libc::c_ulonglong,
+                            DAV1D_N_SWITCHABLE_FILTERS as libc::c_int as libc::c_ulonglong,
                         ) as uint64_t;
-                    (*(&mut *(*(t.l.filter)
-                        .as_mut_ptr()
-                        .offset(0))
+                    (*(&mut *(*(t.l.filter).as_mut_ptr().offset(0))
                         .as_mut_ptr()
                         .offset((by4 + 0) as isize) as *mut uint8_t
                         as *mut alias64))
                         .u64_0 = const_val_39;
-                    (*(&mut *(*(t.l.filter)
-                        .as_mut_ptr()
-                        .offset(0))
+                    (*(&mut *(*(t.l.filter).as_mut_ptr().offset(0))
                         .as_mut_ptr()
                         .offset((by4 + 8) as isize) as *mut uint8_t
                         as *mut alias64))
                         .u64_0 = const_val_39;
                     let const_val_40: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                         .wrapping_mul(
-                            DAV1D_N_SWITCHABLE_FILTERS as libc::c_int
-                                as libc::c_ulonglong,
+                            DAV1D_N_SWITCHABLE_FILTERS as libc::c_int as libc::c_ulonglong,
                         ) as uint64_t;
-                    (*(&mut *(*(t.l.filter)
-                        .as_mut_ptr()
-                        .offset(1))
+                    (*(&mut *(*(t.l.filter).as_mut_ptr().offset(1))
                         .as_mut_ptr()
                         .offset((by4 + 0) as isize) as *mut uint8_t
                         as *mut alias64))
                         .u64_0 = const_val_40;
-                    (*(&mut *(*(t.l.filter)
-                        .as_mut_ptr()
-                        .offset(1))
+                    (*(&mut *(*(t.l.filter).as_mut_ptr().offset(1))
                         .as_mut_ptr()
                         .offset((by4 + 8) as isize) as *mut uint8_t
                         as *mut alias64))
@@ -6038,237 +5202,154 @@ unsafe fn decode_b(
             }
             32 => {
                 let const_val_41: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        *(&(*t_dim).lw as *const uint8_t as *mut uint8_t)
-                            .offset(1) as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(t.l.tx_intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut int8_t
+                    .wrapping_mul(*(&(*t_dim).lw as *const uint8_t as *mut uint8_t).offset(1)
+                        as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset((by4 + 0) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_41;
-                (*(&mut *(t.l.tx_intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut int8_t
+                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset((by4 + 8) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_41;
-                (*(&mut *(t.l.tx_intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 16) as isize) as *mut int8_t
+                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset((by4 + 16) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_41;
-                (*(&mut *(t.l.tx_intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 24) as isize) as *mut int8_t
+                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset((by4 + 24) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_41;
                 let const_val_42: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        *(&(*t_dim).lw as *const uint8_t as *mut uint8_t)
-                            .offset(1) as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(t.l.tx)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut int8_t
+                    .wrapping_mul(*(&(*t_dim).lw as *const uint8_t as *mut uint8_t).offset(1)
+                        as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.tx).as_mut_ptr().offset((by4 + 0) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_42;
-                (*(&mut *(t.l.tx)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut int8_t
+                (*(&mut *(t.l.tx).as_mut_ptr().offset((by4 + 8) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_42;
-                (*(&mut *(t.l.tx)
-                    .as_mut_ptr()
-                    .offset((by4 + 16) as isize) as *mut int8_t
+                (*(&mut *(t.l.tx).as_mut_ptr().offset((by4 + 16) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_42;
-                (*(&mut *(t.l.tx)
-                    .as_mut_ptr()
-                    .offset((by4 + 24) as isize) as *mut int8_t
+                (*(&mut *(t.l.tx).as_mut_ptr().offset((by4 + 24) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_42;
                 let const_val_43: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(y_mode_nofilt_0 as libc::c_ulonglong) as uint64_t;
-                (*(&mut *(t.l.mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(y_mode_nofilt_0 as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.mode).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_43;
-                (*(&mut *(t.l.mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.mode).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_43;
-                (*(&mut *(t.l.mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 16) as isize) as *mut uint8_t
+                (*(&mut *(t.l.mode).as_mut_ptr().offset((by4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_43;
-                (*(&mut *(t.l.mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 24) as isize) as *mut uint8_t
+                (*(&mut *(t.l.mode).as_mut_ptr().offset((by4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_43;
                 let const_val_44: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .pal_sz[0] as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(t.l.pal_sz)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed.pal_sz[0] as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_44;
-                (*(&mut *(t.l.pal_sz)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_44;
-                (*(&mut *(t.l.pal_sz)
-                    .as_mut_ptr()
-                    .offset((by4 + 16) as isize) as *mut uint8_t
+                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset((by4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_44;
-                (*(&mut *(t.l.pal_sz)
-                    .as_mut_ptr()
-                    .offset((by4 + 24) as isize) as *mut uint8_t
+                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset((by4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_44;
                 let const_val_45: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(seg_pred as libc::c_ulonglong) as uint64_t;
-                (*(&mut *(t.l.seg_pred)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(seg_pred as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_45;
-                (*(&mut *(t.l.seg_pred)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_45;
-                (*(&mut *(t.l.seg_pred)
-                    .as_mut_ptr()
-                    .offset((by4 + 16) as isize) as *mut uint8_t
+                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset((by4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_45;
-                (*(&mut *(t.l.seg_pred)
-                    .as_mut_ptr()
-                    .offset((by4 + 24) as isize) as *mut uint8_t
+                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset((by4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_45;
                 let const_val_46: uint64_t = 0 as libc::c_int as uint64_t;
-                (*(&mut *(t.l.skip_mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_46;
-                (*(&mut *(t.l.skip_mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_46;
-                (*(&mut *(t.l.skip_mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 16) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset((by4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_46;
-                (*(&mut *(t.l.skip_mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 24) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset((by4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_46;
-                let const_val_47: uint64_t = 0x101010101010101 as libc::c_ulonglong
-                    as uint64_t;
-                (*(&mut *(t.l.intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                let const_val_47: uint64_t = 0x101010101010101 as libc::c_ulonglong as uint64_t;
+                (*(&mut *(t.l.intra).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_47;
-                (*(&mut *(t.l.intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.intra).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_47;
-                (*(&mut *(t.l.intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 16) as isize) as *mut uint8_t
+                (*(&mut *(t.l.intra).as_mut_ptr().offset((by4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_47;
-                (*(&mut *(t.l.intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 24) as isize) as *mut uint8_t
+                (*(&mut *(t.l.intra).as_mut_ptr().offset((by4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_47;
                 let const_val_48: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(b.skip as libc::c_ulonglong) as uint64_t;
-                (*(&mut *(t.l.skip)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(b.skip as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.skip).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_48;
-                (*(&mut *(t.l.skip)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_48;
-                (*(&mut *(t.l.skip)
-                    .as_mut_ptr()
-                    .offset((by4 + 16) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip).as_mut_ptr().offset((by4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_48;
-                (*(&mut *(t.l.skip)
-                    .as_mut_ptr()
-                    .offset((by4 + 24) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip).as_mut_ptr().offset((by4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_48;
-                let const_val_49: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        (if has_chroma {
-                            b
-                                .c2rust_unnamed
-                                .c2rust_unnamed
-                                .pal_sz[1] as libc::c_int
-                        } else {
-                            0 as libc::c_int
-                        }) as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(1))
+                let const_val_49: uint64_t = (0x101010101010101 as libc::c_ulonglong).wrapping_mul(
+                    (if has_chroma {
+                        b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int
+                    } else {
+                        0 as libc::c_int
+                    }) as libc::c_ulonglong,
+                ) as uint64_t;
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_49;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_49;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((by4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_49;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((by4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_49;
-                if (*f.frame_hdr).frame_type as libc::c_uint
-                    & 1 as libc::c_uint != 0
-                {
+                if (*f.frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint != 0 {
                     let const_val_50: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            COMP_INTER_NONE as libc::c_int as libc::c_ulonglong,
-                        ) as uint64_t;
+                        .wrapping_mul(COMP_INTER_NONE as libc::c_int as libc::c_ulonglong)
+                        as uint64_t;
                     (*(&mut *(t.l.comp_type)
                         .as_mut_ptr()
                         .offset((by4 + 0) as isize) as *mut uint8_t
@@ -6279,142 +5360,102 @@ unsafe fn decode_b(
                         .offset((by4 + 8) as isize) as *mut uint8_t
                         as *mut alias64))
                         .u64_0 = const_val_50;
-                    (*(&mut *(t.l.comp_type)
-                        .as_mut_ptr()
-                        .offset((by4 + 16) as isize) as *mut uint8_t
-                        as *mut alias64))
+                    (*(&mut *(t.l.comp_type).as_mut_ptr().offset((by4 + 16) as isize)
+                        as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_50;
-                    (*(&mut *(t.l.comp_type)
-                        .as_mut_ptr()
-                        .offset((by4 + 24) as isize) as *mut uint8_t
-                        as *mut alias64))
+                    (*(&mut *(t.l.comp_type).as_mut_ptr().offset((by4 + 24) as isize)
+                        as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_50;
                     let const_val_51: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            -(1 as libc::c_int) as uint8_t as libc::c_ulonglong,
-                        ) as uint64_t;
-                    (*(&mut *(*(t.l.r#ref)
-                        .as_mut_ptr()
-                        .offset(0))
+                        .wrapping_mul(-(1 as libc::c_int) as uint8_t as libc::c_ulonglong)
+                        as uint64_t;
+                    (*(&mut *(*(t.l.r#ref).as_mut_ptr().offset(0))
                         .as_mut_ptr()
                         .offset((by4 + 0) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_51;
-                    (*(&mut *(*(t.l.r#ref)
-                        .as_mut_ptr()
-                        .offset(0))
+                    (*(&mut *(*(t.l.r#ref).as_mut_ptr().offset(0))
                         .as_mut_ptr()
                         .offset((by4 + 8) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_51;
-                    (*(&mut *(*(t.l.r#ref)
-                        .as_mut_ptr()
-                        .offset(0))
+                    (*(&mut *(*(t.l.r#ref).as_mut_ptr().offset(0))
                         .as_mut_ptr()
                         .offset((by4 + 16) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_51;
-                    (*(&mut *(*(t.l.r#ref)
-                        .as_mut_ptr()
-                        .offset(0))
+                    (*(&mut *(*(t.l.r#ref).as_mut_ptr().offset(0))
                         .as_mut_ptr()
                         .offset((by4 + 24) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_51;
                     let const_val_52: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            -(1 as libc::c_int) as uint8_t as libc::c_ulonglong,
-                        ) as uint64_t;
-                    (*(&mut *(*(t.l.r#ref)
-                        .as_mut_ptr()
-                        .offset(1))
+                        .wrapping_mul(-(1 as libc::c_int) as uint8_t as libc::c_ulonglong)
+                        as uint64_t;
+                    (*(&mut *(*(t.l.r#ref).as_mut_ptr().offset(1))
                         .as_mut_ptr()
                         .offset((by4 + 0) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_52;
-                    (*(&mut *(*(t.l.r#ref)
-                        .as_mut_ptr()
-                        .offset(1))
+                    (*(&mut *(*(t.l.r#ref).as_mut_ptr().offset(1))
                         .as_mut_ptr()
                         .offset((by4 + 8) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_52;
-                    (*(&mut *(*(t.l.r#ref)
-                        .as_mut_ptr()
-                        .offset(1))
+                    (*(&mut *(*(t.l.r#ref).as_mut_ptr().offset(1))
                         .as_mut_ptr()
                         .offset((by4 + 16) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_52;
-                    (*(&mut *(*(t.l.r#ref)
-                        .as_mut_ptr()
-                        .offset(1))
+                    (*(&mut *(*(t.l.r#ref).as_mut_ptr().offset(1))
                         .as_mut_ptr()
                         .offset((by4 + 24) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_52;
                     let const_val_53: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                         .wrapping_mul(
-                            DAV1D_N_SWITCHABLE_FILTERS as libc::c_int
-                                as libc::c_ulonglong,
+                            DAV1D_N_SWITCHABLE_FILTERS as libc::c_int as libc::c_ulonglong,
                         ) as uint64_t;
-                    (*(&mut *(*(t.l.filter)
-                        .as_mut_ptr()
-                        .offset(0))
+                    (*(&mut *(*(t.l.filter).as_mut_ptr().offset(0))
                         .as_mut_ptr()
                         .offset((by4 + 0) as isize) as *mut uint8_t
                         as *mut alias64))
                         .u64_0 = const_val_53;
-                    (*(&mut *(*(t.l.filter)
-                        .as_mut_ptr()
-                        .offset(0))
+                    (*(&mut *(*(t.l.filter).as_mut_ptr().offset(0))
                         .as_mut_ptr()
                         .offset((by4 + 8) as isize) as *mut uint8_t
                         as *mut alias64))
                         .u64_0 = const_val_53;
-                    (*(&mut *(*(t.l.filter)
-                        .as_mut_ptr()
-                        .offset(0))
+                    (*(&mut *(*(t.l.filter).as_mut_ptr().offset(0))
                         .as_mut_ptr()
                         .offset((by4 + 16) as isize) as *mut uint8_t
                         as *mut alias64))
                         .u64_0 = const_val_53;
-                    (*(&mut *(*(t.l.filter)
-                        .as_mut_ptr()
-                        .offset(0))
+                    (*(&mut *(*(t.l.filter).as_mut_ptr().offset(0))
                         .as_mut_ptr()
                         .offset((by4 + 24) as isize) as *mut uint8_t
                         as *mut alias64))
                         .u64_0 = const_val_53;
                     let const_val_54: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                         .wrapping_mul(
-                            DAV1D_N_SWITCHABLE_FILTERS as libc::c_int
-                                as libc::c_ulonglong,
+                            DAV1D_N_SWITCHABLE_FILTERS as libc::c_int as libc::c_ulonglong,
                         ) as uint64_t;
-                    (*(&mut *(*(t.l.filter)
-                        .as_mut_ptr()
-                        .offset(1))
+                    (*(&mut *(*(t.l.filter).as_mut_ptr().offset(1))
                         .as_mut_ptr()
                         .offset((by4 + 0) as isize) as *mut uint8_t
                         as *mut alias64))
                         .u64_0 = const_val_54;
-                    (*(&mut *(*(t.l.filter)
-                        .as_mut_ptr()
-                        .offset(1))
+                    (*(&mut *(*(t.l.filter).as_mut_ptr().offset(1))
                         .as_mut_ptr()
                         .offset((by4 + 8) as isize) as *mut uint8_t
                         as *mut alias64))
                         .u64_0 = const_val_54;
-                    (*(&mut *(*(t.l.filter)
-                        .as_mut_ptr()
-                        .offset(1))
+                    (*(&mut *(*(t.l.filter).as_mut_ptr().offset(1))
                         .as_mut_ptr()
                         .offset((by4 + 16) as isize) as *mut uint8_t
                         as *mut alias64))
                         .u64_0 = const_val_54;
-                    (*(&mut *(*(t.l.filter)
-                        .as_mut_ptr()
-                        .offset(1))
+                    (*(&mut *(*(t.l.filter).as_mut_ptr().offset(1))
                         .as_mut_ptr()
                         .offset((by4 + 24) as isize) as *mut uint8_t
                         as *mut alias64))
@@ -6425,444 +5466,350 @@ unsafe fn decode_b(
         }
         match bw4 {
             1 => {
-                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset(bx4 as isize)
-                    as *mut int8_t as *mut alias8))
+                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset(bx4 as isize) as *mut int8_t
+                    as *mut alias8))
                     .u8_0 = (0x1 as libc::c_int
-                    * *(&(*t_dim).lw as *const uint8_t as *mut uint8_t)
-                        .offset(0) as libc::c_int) as uint8_t;
+                    * *(&(*t_dim).lw as *const uint8_t as *mut uint8_t).offset(0) as libc::c_int)
+                    as uint8_t;
                 (*(&mut *((*t.a).tx).as_mut_ptr().offset(bx4 as isize) as *mut int8_t
                     as *mut alias8))
                     .u8_0 = (0x1 as libc::c_int
-                    * *(&(*t_dim).lw as *const uint8_t as *mut uint8_t)
-                        .offset(0) as libc::c_int) as uint8_t;
-                (*(&mut *((*t.a).mode).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias8))
+                    * *(&(*t_dim).lw as *const uint8_t as *mut uint8_t).offset(0) as libc::c_int)
+                    as uint8_t;
+                (*(&mut *((*t.a).mode).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias8))
                     .u8_0 = (0x1 as libc::c_int as libc::c_uint)
-                    .wrapping_mul(y_mode_nofilt_0 as libc::c_uint) as uint8_t;
-                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias8))
+                    .wrapping_mul(y_mode_nofilt_0 as libc::c_uint)
+                    as uint8_t;
+                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias8))
                     .u8_0 = (0x1 as libc::c_int
-                    * b
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .pal_sz[0] as libc::c_int) as uint8_t;
-                (*(&mut *((*t.a).seg_pred).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias8))
+                    * b.c2rust_unnamed.c2rust_unnamed.pal_sz[0] as libc::c_int)
+                    as uint8_t;
+                (*(&mut *((*t.a).seg_pred).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias8))
                     .u8_0 = (0x1 * seg_pred) as uint8_t;
-                (*(&mut *((*t.a).skip_mode).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias8))
+                (*(&mut *((*t.a).skip_mode).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias8))
                     .u8_0 = 0 as libc::c_int as uint8_t;
-                (*(&mut *((*t.a).intra).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias8))
+                (*(&mut *((*t.a).intra).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias8))
                     .u8_0 = 0x1 as libc::c_int as uint8_t;
-                (*(&mut *((*t.a).skip).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias8))
+                (*(&mut *((*t.a).skip).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias8))
                     .u8_0 = (0x1 * b.skip as libc::c_int) as uint8_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset(bx4 as isize) as *mut uint8_t as *mut alias8))
                     .u8_0 = (0x1 as libc::c_int
                     * (if has_chroma {
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .pal_sz[1] as libc::c_int
+                        b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int
                     } else {
                         0 as libc::c_int
                     })) as uint8_t;
-                if (*f.frame_hdr).frame_type as libc::c_uint
-                    & 1 as libc::c_uint != 0
-                {
-                    (*(&mut *((*t.a).comp_type).as_mut_ptr().offset(bx4 as isize)
-                        as *mut uint8_t as *mut alias8))
-                        .u8_0 = (0x1 * COMP_INTER_NONE as libc::c_int)
+                if (*f.frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint != 0 {
+                    (*(&mut *((*t.a).comp_type).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                        as *mut alias8))
+                        .u8_0 = (0x1 * COMP_INTER_NONE as libc::c_int) as uint8_t;
+                    (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(0))
+                        .as_mut_ptr()
+                        .offset(bx4 as isize) as *mut int8_t
+                        as *mut alias8))
+                        .u8_0 = (0x1 as libc::c_int * -(1 as libc::c_int) as uint8_t as libc::c_int)
                         as uint8_t;
-                    (*(&mut *(*((*t.a).r#ref)
+                    (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(1))
                         .as_mut_ptr()
-                        .offset(0))
+                        .offset(bx4 as isize) as *mut int8_t
+                        as *mut alias8))
+                        .u8_0 = (0x1 as libc::c_int * -(1 as libc::c_int) as uint8_t as libc::c_int)
+                        as uint8_t;
+                    (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(0))
                         .as_mut_ptr()
-                        .offset(bx4 as isize) as *mut int8_t as *mut alias8))
-                        .u8_0 = (0x1 as libc::c_int
-                        * -(1 as libc::c_int) as uint8_t as libc::c_int) as uint8_t;
-                    (*(&mut *(*((*t.a).r#ref)
+                        .offset(bx4 as isize) as *mut uint8_t
+                        as *mut alias8))
+                        .u8_0 =
+                        (0x1 as libc::c_int * DAV1D_N_SWITCHABLE_FILTERS as libc::c_int) as uint8_t;
+                    (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(1))
                         .as_mut_ptr()
-                        .offset(1))
-                        .as_mut_ptr()
-                        .offset(bx4 as isize) as *mut int8_t as *mut alias8))
-                        .u8_0 = (0x1 as libc::c_int
-                        * -(1 as libc::c_int) as uint8_t as libc::c_int) as uint8_t;
-                    (*(&mut *(*((*t.a).filter)
-                        .as_mut_ptr()
-                        .offset(0))
-                        .as_mut_ptr()
-                        .offset(bx4 as isize) as *mut uint8_t as *mut alias8))
-                        .u8_0 = (0x1 as libc::c_int
-                        * DAV1D_N_SWITCHABLE_FILTERS as libc::c_int) as uint8_t;
-                    (*(&mut *(*((*t.a).filter)
-                        .as_mut_ptr()
-                        .offset(1))
-                        .as_mut_ptr()
-                        .offset(bx4 as isize) as *mut uint8_t as *mut alias8))
-                        .u8_0 = (0x1 as libc::c_int
-                        * DAV1D_N_SWITCHABLE_FILTERS as libc::c_int) as uint8_t;
+                        .offset(bx4 as isize) as *mut uint8_t
+                        as *mut alias8))
+                        .u8_0 =
+                        (0x1 as libc::c_int * DAV1D_N_SWITCHABLE_FILTERS as libc::c_int) as uint8_t;
                 }
             }
             2 => {
-                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset(bx4 as isize)
-                    as *mut int8_t as *mut alias16))
+                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset(bx4 as isize) as *mut int8_t
+                    as *mut alias16))
                     .u16_0 = (0x101 as libc::c_int
-                    * *(&(*t_dim).lw as *const uint8_t as *mut uint8_t)
-                        .offset(0) as libc::c_int) as uint16_t;
+                    * *(&(*t_dim).lw as *const uint8_t as *mut uint8_t).offset(0) as libc::c_int)
+                    as uint16_t;
                 (*(&mut *((*t.a).tx).as_mut_ptr().offset(bx4 as isize) as *mut int8_t
                     as *mut alias16))
                     .u16_0 = (0x101 as libc::c_int
-                    * *(&(*t_dim).lw as *const uint8_t as *mut uint8_t)
-                        .offset(0) as libc::c_int) as uint16_t;
-                (*(&mut *((*t.a).mode).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias16))
-                    .u16_0 = (0x101 as libc::c_int as libc::c_uint)
-                    .wrapping_mul(y_mode_nofilt_0 as libc::c_uint) as uint16_t;
-                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias16))
-                    .u16_0 = (0x101 as libc::c_int
-                    * b
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .pal_sz[0] as libc::c_int) as uint16_t;
-                (*(&mut *((*t.a).seg_pred).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias16))
-                    .u16_0 = (0x101 * seg_pred) as uint16_t;
-                (*(&mut *((*t.a).skip_mode).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias16))
-                    .u16_0 = 0 as libc::c_int as uint16_t;
-                (*(&mut *((*t.a).intra).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias16))
-                    .u16_0 = 0x101 as libc::c_int as uint16_t;
-                (*(&mut *((*t.a).skip).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias16))
-                    .u16_0 = (0x101 * b.skip as libc::c_int)
+                    * *(&(*t_dim).lw as *const uint8_t as *mut uint8_t).offset(0) as libc::c_int)
                     as uint16_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *((*t.a).mode).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias16))
+                    .u16_0 = (0x101 as libc::c_int as libc::c_uint)
+                    .wrapping_mul(y_mode_nofilt_0 as libc::c_uint)
+                    as uint16_t;
+                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias16))
+                    .u16_0 = (0x101 as libc::c_int
+                    * b.c2rust_unnamed.c2rust_unnamed.pal_sz[0] as libc::c_int)
+                    as uint16_t;
+                (*(&mut *((*t.a).seg_pred).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias16))
+                    .u16_0 = (0x101 * seg_pred) as uint16_t;
+                (*(&mut *((*t.a).skip_mode).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias16))
+                    .u16_0 = 0 as libc::c_int as uint16_t;
+                (*(&mut *((*t.a).intra).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias16))
+                    .u16_0 = 0x101 as libc::c_int as uint16_t;
+                (*(&mut *((*t.a).skip).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias16))
+                    .u16_0 = (0x101 * b.skip as libc::c_int) as uint16_t;
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset(bx4 as isize) as *mut uint8_t as *mut alias16))
                     .u16_0 = (0x101 as libc::c_int
                     * (if has_chroma {
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .pal_sz[1] as libc::c_int
+                        b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int
                     } else {
                         0 as libc::c_int
                     })) as uint16_t;
-                if (*f.frame_hdr).frame_type as libc::c_uint
-                    & 1 as libc::c_uint != 0
-                {
-                    (*(&mut *((*t.a).comp_type).as_mut_ptr().offset(bx4 as isize)
-                        as *mut uint8_t as *mut alias16))
-                        .u16_0 = (0x101 * COMP_INTER_NONE as libc::c_int)
+                if (*f.frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint != 0 {
+                    (*(&mut *((*t.a).comp_type).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                        as *mut alias16))
+                        .u16_0 = (0x101 * COMP_INTER_NONE as libc::c_int) as uint16_t;
+                    (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(0))
+                        .as_mut_ptr()
+                        .offset(bx4 as isize) as *mut int8_t
+                        as *mut alias16))
+                        .u16_0 = (0x101 as libc::c_int
+                        * -(1 as libc::c_int) as uint8_t as libc::c_int)
                         as uint16_t;
-                    (*(&mut *(*((*t.a).r#ref)
+                    (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(1))
                         .as_mut_ptr()
-                        .offset(0))
-                        .as_mut_ptr()
-                        .offset(bx4 as isize) as *mut int8_t as *mut alias16))
+                        .offset(bx4 as isize) as *mut int8_t
+                        as *mut alias16))
                         .u16_0 = (0x101 as libc::c_int
-                        * -(1 as libc::c_int) as uint8_t as libc::c_int) as uint16_t;
-                    (*(&mut *(*((*t.a).r#ref)
+                        * -(1 as libc::c_int) as uint8_t as libc::c_int)
+                        as uint16_t;
+                    (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(0))
                         .as_mut_ptr()
-                        .offset(1))
+                        .offset(bx4 as isize) as *mut uint8_t
+                        as *mut alias16))
+                        .u16_0 = (0x101 as libc::c_int * DAV1D_N_SWITCHABLE_FILTERS as libc::c_int)
+                        as uint16_t;
+                    (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(1))
                         .as_mut_ptr()
-                        .offset(bx4 as isize) as *mut int8_t as *mut alias16))
-                        .u16_0 = (0x101 as libc::c_int
-                        * -(1 as libc::c_int) as uint8_t as libc::c_int) as uint16_t;
-                    (*(&mut *(*((*t.a).filter)
-                        .as_mut_ptr()
-                        .offset(0))
-                        .as_mut_ptr()
-                        .offset(bx4 as isize) as *mut uint8_t as *mut alias16))
-                        .u16_0 = (0x101 as libc::c_int
-                        * DAV1D_N_SWITCHABLE_FILTERS as libc::c_int) as uint16_t;
-                    (*(&mut *(*((*t.a).filter)
-                        .as_mut_ptr()
-                        .offset(1))
-                        .as_mut_ptr()
-                        .offset(bx4 as isize) as *mut uint8_t as *mut alias16))
-                        .u16_0 = (0x101 as libc::c_int
-                        * DAV1D_N_SWITCHABLE_FILTERS as libc::c_int) as uint16_t;
+                        .offset(bx4 as isize) as *mut uint8_t
+                        as *mut alias16))
+                        .u16_0 = (0x101 as libc::c_int * DAV1D_N_SWITCHABLE_FILTERS as libc::c_int)
+                        as uint16_t;
                 }
             }
             4 => {
-                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset(bx4 as isize)
-                    as *mut int8_t as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(
-                        *(&(*t_dim).lw as *const uint8_t as *mut uint8_t)
-                            .offset(0) as libc::c_uint,
-                    );
+                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset(bx4 as isize) as *mut int8_t
+                    as *mut alias32))
+                    .u32_0 =
+                    (0x1010101 as libc::c_uint)
+                        .wrapping_mul(*(&(*t_dim).lw as *const uint8_t as *mut uint8_t).offset(0)
+                            as libc::c_uint);
                 (*(&mut *((*t.a).tx).as_mut_ptr().offset(bx4 as isize) as *mut int8_t
                     as *mut alias32))
+                    .u32_0 =
+                    (0x1010101 as libc::c_uint)
+                        .wrapping_mul(*(&(*t_dim).lw as *const uint8_t as *mut uint8_t).offset(0)
+                            as libc::c_uint);
+                (*(&mut *((*t.a).mode).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias32))
+                    .u32_0 =
+                    (0x1010101 as libc::c_uint).wrapping_mul(y_mode_nofilt_0 as libc::c_uint);
+                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias32))
                     .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(
-                        *(&(*t_dim).lw as *const uint8_t as *mut uint8_t)
-                            .offset(0) as libc::c_uint,
-                    );
-                (*(&mut *((*t.a).mode).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(y_mode_nofilt_0 as libc::c_uint);
-                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .pal_sz[0] as libc::c_uint,
-                    );
-                (*(&mut *((*t.a).seg_pred).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(seg_pred as libc::c_uint);
-                (*(&mut *((*t.a).skip_mode).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias32))
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed.pal_sz[0] as libc::c_uint);
+                (*(&mut *((*t.a).seg_pred).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias32))
+                    .u32_0 = (0x1010101 as libc::c_uint).wrapping_mul(seg_pred as libc::c_uint);
+                (*(&mut *((*t.a).skip_mode).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias32))
                     .u32_0 = 0 as libc::c_int as uint32_t;
-                (*(&mut *((*t.a).intra).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias32))
+                (*(&mut *((*t.a).intra).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias32))
                     .u32_0 = 0x1010101 as libc::c_uint;
-                (*(&mut *((*t.a).skip).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(b.skip as libc::c_uint);
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *((*t.a).skip).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias32))
+                    .u32_0 = (0x1010101 as libc::c_uint).wrapping_mul(b.skip as libc::c_uint);
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset(bx4 as isize) as *mut uint8_t as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(
-                        (if has_chroma {
-                            b
-                                .c2rust_unnamed
-                                .c2rust_unnamed
-                                .pal_sz[1] as libc::c_int
-                        } else {
-                            0 as libc::c_int
-                        }) as libc::c_uint,
-                    );
-                if (*f.frame_hdr).frame_type as libc::c_uint
-                    & 1 as libc::c_uint != 0
-                {
-                    (*(&mut *((*t.a).comp_type).as_mut_ptr().offset(bx4 as isize)
-                        as *mut uint8_t as *mut alias32))
+                    .u32_0 = (0x1010101 as libc::c_uint).wrapping_mul(
+                    (if has_chroma {
+                        b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int
+                    } else {
+                        0 as libc::c_int
+                    }) as libc::c_uint,
+                );
+                if (*f.frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint != 0 {
+                    (*(&mut *((*t.a).comp_type).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                        as *mut alias32))
                         .u32_0 = (0x1010101 as libc::c_uint)
                         .wrapping_mul(COMP_INTER_NONE as libc::c_int as libc::c_uint);
-                    (*(&mut *(*((*t.a).r#ref)
+                    (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(0))
                         .as_mut_ptr()
-                        .offset(0))
-                        .as_mut_ptr()
-                        .offset(bx4 as isize) as *mut int8_t as *mut alias32))
+                        .offset(bx4 as isize) as *mut int8_t
+                        as *mut alias32))
                         .u32_0 = (0x1010101 as libc::c_uint)
                         .wrapping_mul(-(1 as libc::c_int) as uint8_t as libc::c_uint);
-                    (*(&mut *(*((*t.a).r#ref)
+                    (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(1))
                         .as_mut_ptr()
-                        .offset(1))
-                        .as_mut_ptr()
-                        .offset(bx4 as isize) as *mut int8_t as *mut alias32))
+                        .offset(bx4 as isize) as *mut int8_t
+                        as *mut alias32))
                         .u32_0 = (0x1010101 as libc::c_uint)
                         .wrapping_mul(-(1 as libc::c_int) as uint8_t as libc::c_uint);
-                    (*(&mut *(*((*t.a).filter)
+                    (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(0))
                         .as_mut_ptr()
-                        .offset(0))
-                        .as_mut_ptr()
-                        .offset(bx4 as isize) as *mut uint8_t as *mut alias32))
+                        .offset(bx4 as isize) as *mut uint8_t
+                        as *mut alias32))
                         .u32_0 = (0x1010101 as libc::c_uint)
-                        .wrapping_mul(
-                            DAV1D_N_SWITCHABLE_FILTERS as libc::c_int as libc::c_uint,
-                        );
-                    (*(&mut *(*((*t.a).filter)
+                        .wrapping_mul(DAV1D_N_SWITCHABLE_FILTERS as libc::c_int as libc::c_uint);
+                    (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(1))
                         .as_mut_ptr()
-                        .offset(1))
-                        .as_mut_ptr()
-                        .offset(bx4 as isize) as *mut uint8_t as *mut alias32))
+                        .offset(bx4 as isize) as *mut uint8_t
+                        as *mut alias32))
                         .u32_0 = (0x1010101 as libc::c_uint)
-                        .wrapping_mul(
-                            DAV1D_N_SWITCHABLE_FILTERS as libc::c_int as libc::c_uint,
-                        );
+                        .wrapping_mul(DAV1D_N_SWITCHABLE_FILTERS as libc::c_int as libc::c_uint);
                 }
             }
             8 => {
-                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset(bx4 as isize)
-                    as *mut int8_t as *mut alias64))
+                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset(bx4 as isize) as *mut int8_t
+                    as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        *(&(*t_dim).lw as *const uint8_t as *mut uint8_t)
-                            .offset(0) as libc::c_ulonglong,
-                    ) as uint64_t;
+                    .wrapping_mul(*(&(*t_dim).lw as *const uint8_t as *mut uint8_t).offset(0)
+                        as libc::c_ulonglong) as uint64_t;
                 (*(&mut *((*t.a).tx).as_mut_ptr().offset(bx4 as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        *(&(*t_dim).lw as *const uint8_t as *mut uint8_t)
-                            .offset(0) as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *((*t.a).mode).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias64))
+                    .wrapping_mul(*(&(*t_dim).lw as *const uint8_t as *mut uint8_t).offset(0)
+                        as libc::c_ulonglong) as uint64_t;
+                (*(&mut *((*t.a).mode).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(y_mode_nofilt_0 as libc::c_ulonglong) as uint64_t;
-                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias64))
+                    .wrapping_mul(y_mode_nofilt_0 as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .pal_sz[0] as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *((*t.a).seg_pred).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias64))
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed.pal_sz[0] as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *((*t.a).seg_pred).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(seg_pred as libc::c_ulonglong) as uint64_t;
-                (*(&mut *((*t.a).skip_mode).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias64))
+                    .wrapping_mul(seg_pred as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *((*t.a).skip_mode).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias64))
                     .u64_0 = 0 as libc::c_int as uint64_t;
-                (*(&mut *((*t.a).intra).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias64))
+                (*(&mut *((*t.a).intra).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias64))
                     .u64_0 = 0x101010101010101 as libc::c_ulonglong as uint64_t;
-                (*(&mut *((*t.a).skip).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias64))
+                (*(&mut *((*t.a).skip).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(b.skip as libc::c_ulonglong) as uint64_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(0))
+                    .wrapping_mul(b.skip as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset(bx4 as isize) as *mut uint8_t as *mut alias64))
-                    .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        (if has_chroma {
-                            b
-                                .c2rust_unnamed
-                                .c2rust_unnamed
-                                .pal_sz[1] as libc::c_int
-                        } else {
-                            0 as libc::c_int
-                        }) as libc::c_ulonglong,
+                    .u64_0 = (0x101010101010101 as libc::c_ulonglong).wrapping_mul(
+                    (if has_chroma {
+                        b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int
+                    } else {
+                        0 as libc::c_int
+                    }) as libc::c_ulonglong,
+                ) as uint64_t;
+                if (*f.frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint != 0 {
+                    (*(&mut *((*t.a).comp_type).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                        as *mut alias64))
+                        .u64_0 = (0x101010101010101 as libc::c_ulonglong)
+                        .wrapping_mul(COMP_INTER_NONE as libc::c_int as libc::c_ulonglong)
+                        as uint64_t;
+                    (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(0))
+                        .as_mut_ptr()
+                        .offset(bx4 as isize) as *mut int8_t
+                        as *mut alias64))
+                        .u64_0 = (0x101010101010101 as libc::c_ulonglong)
+                        .wrapping_mul(-(1 as libc::c_int) as uint8_t as libc::c_ulonglong)
+                        as uint64_t;
+                    (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(1))
+                        .as_mut_ptr()
+                        .offset(bx4 as isize) as *mut int8_t
+                        as *mut alias64))
+                        .u64_0 = (0x101010101010101 as libc::c_ulonglong)
+                        .wrapping_mul(-(1 as libc::c_int) as uint8_t as libc::c_ulonglong)
+                        as uint64_t;
+                    (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(0))
+                        .as_mut_ptr()
+                        .offset(bx4 as isize) as *mut uint8_t
+                        as *mut alias64))
+                        .u64_0 = (0x101010101010101 as libc::c_ulonglong).wrapping_mul(
+                        DAV1D_N_SWITCHABLE_FILTERS as libc::c_int as libc::c_ulonglong,
                     ) as uint64_t;
-                if (*f.frame_hdr).frame_type as libc::c_uint
-                    & 1 as libc::c_uint != 0
-                {
-                    (*(&mut *((*t.a).comp_type).as_mut_ptr().offset(bx4 as isize)
-                        as *mut uint8_t as *mut alias64))
-                        .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            COMP_INTER_NONE as libc::c_int as libc::c_ulonglong,
-                        ) as uint64_t;
-                    (*(&mut *(*((*t.a).r#ref)
+                    (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(1))
                         .as_mut_ptr()
-                        .offset(0))
-                        .as_mut_ptr()
-                        .offset(bx4 as isize) as *mut int8_t as *mut alias64))
-                        .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            -(1 as libc::c_int) as uint8_t as libc::c_ulonglong,
-                        ) as uint64_t;
-                    (*(&mut *(*((*t.a).r#ref)
-                        .as_mut_ptr()
-                        .offset(1))
-                        .as_mut_ptr()
-                        .offset(bx4 as isize) as *mut int8_t as *mut alias64))
-                        .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            -(1 as libc::c_int) as uint8_t as libc::c_ulonglong,
-                        ) as uint64_t;
-                    (*(&mut *(*((*t.a).filter)
-                        .as_mut_ptr()
-                        .offset(0))
-                        .as_mut_ptr()
-                        .offset(bx4 as isize) as *mut uint8_t as *mut alias64))
-                        .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            DAV1D_N_SWITCHABLE_FILTERS as libc::c_int
-                                as libc::c_ulonglong,
-                        ) as uint64_t;
-                    (*(&mut *(*((*t.a).filter)
-                        .as_mut_ptr()
-                        .offset(1))
-                        .as_mut_ptr()
-                        .offset(bx4 as isize) as *mut uint8_t as *mut alias64))
-                        .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            DAV1D_N_SWITCHABLE_FILTERS as libc::c_int
-                                as libc::c_ulonglong,
-                        ) as uint64_t;
+                        .offset(bx4 as isize) as *mut uint8_t
+                        as *mut alias64))
+                        .u64_0 = (0x101010101010101 as libc::c_ulonglong).wrapping_mul(
+                        DAV1D_N_SWITCHABLE_FILTERS as libc::c_int as libc::c_ulonglong,
+                    ) as uint64_t;
                 }
             }
             16 => {
                 let const_val_55: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        *(&(*t_dim).lw as *const uint8_t as *mut uint8_t)
-                            .offset(0) as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *((*t.a).tx_intra)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut int8_t
+                    .wrapping_mul(*(&(*t_dim).lw as *const uint8_t as *mut uint8_t).offset(0)
+                        as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset((bx4 + 0) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_55;
-                (*(&mut *((*t.a).tx_intra)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut int8_t
+                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset((bx4 + 8) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_55;
                 let const_val_56: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        *(&(*t_dim).lw as *const uint8_t as *mut uint8_t)
-                            .offset(0) as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *((*t.a).tx)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut int8_t
+                    .wrapping_mul(*(&(*t_dim).lw as *const uint8_t as *mut uint8_t).offset(0)
+                        as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *((*t.a).tx).as_mut_ptr().offset((bx4 + 0) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_56;
-                (*(&mut *((*t.a).tx)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut int8_t
+                (*(&mut *((*t.a).tx).as_mut_ptr().offset((bx4 + 8) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_56;
                 let const_val_57: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(y_mode_nofilt_0 as libc::c_ulonglong) as uint64_t;
-                (*(&mut *((*t.a).mode)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(y_mode_nofilt_0 as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *((*t.a).mode).as_mut_ptr().offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_57;
-                (*(&mut *((*t.a).mode)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).mode).as_mut_ptr().offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_57;
                 let const_val_58: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .pal_sz[0] as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *((*t.a).pal_sz)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed.pal_sz[0] as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_58;
-                (*(&mut *((*t.a).pal_sz)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_58;
                 let const_val_59: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(seg_pred as libc::c_ulonglong) as uint64_t;
+                    .wrapping_mul(seg_pred as libc::c_ulonglong)
+                    as uint64_t;
                 (*(&mut *((*t.a).seg_pred)
                     .as_mut_ptr()
                     .offset((bx4 + 0) as isize) as *mut uint8_t
@@ -6884,142 +5831,99 @@ unsafe fn decode_b(
                     .offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_60;
-                let const_val_61: uint64_t = 0x101010101010101 as libc::c_ulonglong
-                    as uint64_t;
-                (*(&mut *((*t.a).intra)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut uint8_t
+                let const_val_61: uint64_t = 0x101010101010101 as libc::c_ulonglong as uint64_t;
+                (*(&mut *((*t.a).intra).as_mut_ptr().offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_61;
-                (*(&mut *((*t.a).intra)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).intra).as_mut_ptr().offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_61;
                 let const_val_62: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(b.skip as libc::c_ulonglong) as uint64_t;
-                (*(&mut *((*t.a).skip)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(b.skip as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *((*t.a).skip).as_mut_ptr().offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_62;
-                (*(&mut *((*t.a).skip)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).skip).as_mut_ptr().offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_62;
-                let const_val_63: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        (if has_chroma {
-                            b
-                                .c2rust_unnamed
-                                .c2rust_unnamed
-                                .pal_sz[1] as libc::c_int
-                        } else {
-                            0 as libc::c_int
-                        }) as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(0))
+                let const_val_63: uint64_t = (0x101010101010101 as libc::c_ulonglong).wrapping_mul(
+                    (if has_chroma {
+                        b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int
+                    } else {
+                        0 as libc::c_int
+                    }) as libc::c_ulonglong,
+                ) as uint64_t;
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_63;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_63;
-                if (*f.frame_hdr).frame_type as libc::c_uint
-                    & 1 as libc::c_uint != 0
-                {
+                if (*f.frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint != 0 {
                     let const_val_64: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            COMP_INTER_NONE as libc::c_int as libc::c_ulonglong,
-                        ) as uint64_t;
-                    (*(&mut *((*t.a).comp_type)
-                        .as_mut_ptr()
-                        .offset((bx4 + 0) as isize) as *mut uint8_t
-                        as *mut alias64))
+                        .wrapping_mul(COMP_INTER_NONE as libc::c_int as libc::c_ulonglong)
+                        as uint64_t;
+                    (*(&mut *((*t.a).comp_type).as_mut_ptr().offset((bx4 + 0) as isize)
+                        as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_64;
-                    (*(&mut *((*t.a).comp_type)
-                        .as_mut_ptr()
-                        .offset((bx4 + 8) as isize) as *mut uint8_t
-                        as *mut alias64))
+                    (*(&mut *((*t.a).comp_type).as_mut_ptr().offset((bx4 + 8) as isize)
+                        as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_64;
                     let const_val_65: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            -(1 as libc::c_int) as uint8_t as libc::c_ulonglong,
-                        ) as uint64_t;
-                    (*(&mut *(*((*t.a).r#ref)
-                        .as_mut_ptr()
-                        .offset(0))
+                        .wrapping_mul(-(1 as libc::c_int) as uint8_t as libc::c_ulonglong)
+                        as uint64_t;
+                    (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(0))
                         .as_mut_ptr()
                         .offset((bx4 + 0) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_65;
-                    (*(&mut *(*((*t.a).r#ref)
-                        .as_mut_ptr()
-                        .offset(0))
+                    (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(0))
                         .as_mut_ptr()
                         .offset((bx4 + 8) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_65;
                     let const_val_66: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            -(1 as libc::c_int) as uint8_t as libc::c_ulonglong,
-                        ) as uint64_t;
-                    (*(&mut *(*((*t.a).r#ref)
-                        .as_mut_ptr()
-                        .offset(1))
+                        .wrapping_mul(-(1 as libc::c_int) as uint8_t as libc::c_ulonglong)
+                        as uint64_t;
+                    (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(1))
                         .as_mut_ptr()
                         .offset((bx4 + 0) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_66;
-                    (*(&mut *(*((*t.a).r#ref)
-                        .as_mut_ptr()
-                        .offset(1))
+                    (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(1))
                         .as_mut_ptr()
                         .offset((bx4 + 8) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_66;
                     let const_val_67: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                         .wrapping_mul(
-                            DAV1D_N_SWITCHABLE_FILTERS as libc::c_int
-                                as libc::c_ulonglong,
+                            DAV1D_N_SWITCHABLE_FILTERS as libc::c_int as libc::c_ulonglong,
                         ) as uint64_t;
-                    (*(&mut *(*((*t.a).filter)
-                        .as_mut_ptr()
-                        .offset(0))
+                    (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(0))
                         .as_mut_ptr()
                         .offset((bx4 + 0) as isize) as *mut uint8_t
                         as *mut alias64))
                         .u64_0 = const_val_67;
-                    (*(&mut *(*((*t.a).filter)
-                        .as_mut_ptr()
-                        .offset(0))
+                    (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(0))
                         .as_mut_ptr()
                         .offset((bx4 + 8) as isize) as *mut uint8_t
                         as *mut alias64))
                         .u64_0 = const_val_67;
                     let const_val_68: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                         .wrapping_mul(
-                            DAV1D_N_SWITCHABLE_FILTERS as libc::c_int
-                                as libc::c_ulonglong,
+                            DAV1D_N_SWITCHABLE_FILTERS as libc::c_int as libc::c_ulonglong,
                         ) as uint64_t;
-                    (*(&mut *(*((*t.a).filter)
-                        .as_mut_ptr()
-                        .offset(1))
+                    (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(1))
                         .as_mut_ptr()
                         .offset((bx4 + 0) as isize) as *mut uint8_t
                         as *mut alias64))
                         .u64_0 = const_val_68;
-                    (*(&mut *(*((*t.a).filter)
-                        .as_mut_ptr()
-                        .offset(1))
+                    (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(1))
                         .as_mut_ptr()
                         .offset((bx4 + 8) as isize) as *mut uint8_t
                         as *mut alias64))
@@ -7028,18 +5932,13 @@ unsafe fn decode_b(
             }
             32 => {
                 let const_val_69: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        *(&(*t_dim).lw as *const uint8_t as *mut uint8_t)
-                            .offset(0) as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *((*t.a).tx_intra)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut int8_t
+                    .wrapping_mul(*(&(*t_dim).lw as *const uint8_t as *mut uint8_t).offset(0)
+                        as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset((bx4 + 0) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_69;
-                (*(&mut *((*t.a).tx_intra)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut int8_t
+                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset((bx4 + 8) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_69;
                 (*(&mut *((*t.a).tx_intra)
@@ -7053,81 +5952,54 @@ unsafe fn decode_b(
                     as *mut alias64))
                     .u64_0 = const_val_69;
                 let const_val_70: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        *(&(*t_dim).lw as *const uint8_t as *mut uint8_t)
-                            .offset(0) as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *((*t.a).tx)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut int8_t
+                    .wrapping_mul(*(&(*t_dim).lw as *const uint8_t as *mut uint8_t).offset(0)
+                        as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *((*t.a).tx).as_mut_ptr().offset((bx4 + 0) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_70;
-                (*(&mut *((*t.a).tx)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut int8_t
+                (*(&mut *((*t.a).tx).as_mut_ptr().offset((bx4 + 8) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_70;
-                (*(&mut *((*t.a).tx)
-                    .as_mut_ptr()
-                    .offset((bx4 + 16) as isize) as *mut int8_t
+                (*(&mut *((*t.a).tx).as_mut_ptr().offset((bx4 + 16) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_70;
-                (*(&mut *((*t.a).tx)
-                    .as_mut_ptr()
-                    .offset((bx4 + 24) as isize) as *mut int8_t
+                (*(&mut *((*t.a).tx).as_mut_ptr().offset((bx4 + 24) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_70;
                 let const_val_71: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(y_mode_nofilt_0 as libc::c_ulonglong) as uint64_t;
-                (*(&mut *((*t.a).mode)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(y_mode_nofilt_0 as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *((*t.a).mode).as_mut_ptr().offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_71;
-                (*(&mut *((*t.a).mode)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).mode).as_mut_ptr().offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_71;
-                (*(&mut *((*t.a).mode)
-                    .as_mut_ptr()
-                    .offset((bx4 + 16) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).mode).as_mut_ptr().offset((bx4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_71;
-                (*(&mut *((*t.a).mode)
-                    .as_mut_ptr()
-                    .offset((bx4 + 24) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).mode).as_mut_ptr().offset((bx4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_71;
                 let const_val_72: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .pal_sz[0] as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *((*t.a).pal_sz)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed.pal_sz[0] as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_72;
-                (*(&mut *((*t.a).pal_sz)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_72;
-                (*(&mut *((*t.a).pal_sz)
-                    .as_mut_ptr()
-                    .offset((bx4 + 16) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset((bx4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_72;
-                (*(&mut *((*t.a).pal_sz)
-                    .as_mut_ptr()
-                    .offset((bx4 + 24) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset((bx4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_72;
                 let const_val_73: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(seg_pred as libc::c_ulonglong) as uint64_t;
+                    .wrapping_mul(seg_pred as libc::c_ulonglong)
+                    as uint64_t;
                 (*(&mut *((*t.a).seg_pred)
                     .as_mut_ptr()
                     .offset((bx4 + 0) as isize) as *mut uint8_t
@@ -7169,242 +6041,167 @@ unsafe fn decode_b(
                     .offset((bx4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_74;
-                let const_val_75: uint64_t = 0x101010101010101 as libc::c_ulonglong
-                    as uint64_t;
-                (*(&mut *((*t.a).intra)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut uint8_t
+                let const_val_75: uint64_t = 0x101010101010101 as libc::c_ulonglong as uint64_t;
+                (*(&mut *((*t.a).intra).as_mut_ptr().offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_75;
-                (*(&mut *((*t.a).intra)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).intra).as_mut_ptr().offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_75;
-                (*(&mut *((*t.a).intra)
-                    .as_mut_ptr()
-                    .offset((bx4 + 16) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).intra).as_mut_ptr().offset((bx4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_75;
-                (*(&mut *((*t.a).intra)
-                    .as_mut_ptr()
-                    .offset((bx4 + 24) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).intra).as_mut_ptr().offset((bx4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_75;
                 let const_val_76: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(b.skip as libc::c_ulonglong) as uint64_t;
-                (*(&mut *((*t.a).skip)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(b.skip as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *((*t.a).skip).as_mut_ptr().offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_76;
-                (*(&mut *((*t.a).skip)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).skip).as_mut_ptr().offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_76;
-                (*(&mut *((*t.a).skip)
-                    .as_mut_ptr()
-                    .offset((bx4 + 16) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).skip).as_mut_ptr().offset((bx4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_76;
-                (*(&mut *((*t.a).skip)
-                    .as_mut_ptr()
-                    .offset((bx4 + 24) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).skip).as_mut_ptr().offset((bx4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_76;
-                let const_val_77: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        (if has_chroma {
-                            b
-                                .c2rust_unnamed
-                                .c2rust_unnamed
-                                .pal_sz[1] as libc::c_int
-                        } else {
-                            0 as libc::c_int
-                        }) as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(0))
+                let const_val_77: uint64_t = (0x101010101010101 as libc::c_ulonglong).wrapping_mul(
+                    (if has_chroma {
+                        b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int
+                    } else {
+                        0 as libc::c_int
+                    }) as libc::c_ulonglong,
+                ) as uint64_t;
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_77;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_77;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((bx4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_77;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((bx4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_77;
-                if (*f.frame_hdr).frame_type as libc::c_uint
-                    & 1 as libc::c_uint != 0
-                {
+                if (*f.frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint != 0 {
                     let const_val_78: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            COMP_INTER_NONE as libc::c_int as libc::c_ulonglong,
-                        ) as uint64_t;
-                    (*(&mut *((*t.a).comp_type)
-                        .as_mut_ptr()
-                        .offset((bx4 + 0) as isize) as *mut uint8_t
-                        as *mut alias64))
+                        .wrapping_mul(COMP_INTER_NONE as libc::c_int as libc::c_ulonglong)
+                        as uint64_t;
+                    (*(&mut *((*t.a).comp_type).as_mut_ptr().offset((bx4 + 0) as isize)
+                        as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_78;
-                    (*(&mut *((*t.a).comp_type)
-                        .as_mut_ptr()
-                        .offset((bx4 + 8) as isize) as *mut uint8_t
-                        as *mut alias64))
+                    (*(&mut *((*t.a).comp_type).as_mut_ptr().offset((bx4 + 8) as isize)
+                        as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_78;
-                    (*(&mut *((*t.a).comp_type)
-                        .as_mut_ptr()
-                        .offset((bx4 + 16) as isize) as *mut uint8_t
-                        as *mut alias64))
+                    (*(&mut *((*t.a).comp_type).as_mut_ptr().offset((bx4 + 16) as isize)
+                        as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_78;
-                    (*(&mut *((*t.a).comp_type)
-                        .as_mut_ptr()
-                        .offset((bx4 + 24) as isize) as *mut uint8_t
-                        as *mut alias64))
+                    (*(&mut *((*t.a).comp_type).as_mut_ptr().offset((bx4 + 24) as isize)
+                        as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_78;
                     let const_val_79: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            -(1 as libc::c_int) as uint8_t as libc::c_ulonglong,
-                        ) as uint64_t;
-                    (*(&mut *(*((*t.a).r#ref)
-                        .as_mut_ptr()
-                        .offset(0))
+                        .wrapping_mul(-(1 as libc::c_int) as uint8_t as libc::c_ulonglong)
+                        as uint64_t;
+                    (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(0))
                         .as_mut_ptr()
                         .offset((bx4 + 0) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_79;
-                    (*(&mut *(*((*t.a).r#ref)
-                        .as_mut_ptr()
-                        .offset(0))
+                    (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(0))
                         .as_mut_ptr()
                         .offset((bx4 + 8) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_79;
-                    (*(&mut *(*((*t.a).r#ref)
-                        .as_mut_ptr()
-                        .offset(0))
+                    (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(0))
                         .as_mut_ptr()
                         .offset((bx4 + 16) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_79;
-                    (*(&mut *(*((*t.a).r#ref)
-                        .as_mut_ptr()
-                        .offset(0))
+                    (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(0))
                         .as_mut_ptr()
                         .offset((bx4 + 24) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_79;
                     let const_val_80: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            -(1 as libc::c_int) as uint8_t as libc::c_ulonglong,
-                        ) as uint64_t;
-                    (*(&mut *(*((*t.a).r#ref)
-                        .as_mut_ptr()
-                        .offset(1))
+                        .wrapping_mul(-(1 as libc::c_int) as uint8_t as libc::c_ulonglong)
+                        as uint64_t;
+                    (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(1))
                         .as_mut_ptr()
                         .offset((bx4 + 0) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_80;
-                    (*(&mut *(*((*t.a).r#ref)
-                        .as_mut_ptr()
-                        .offset(1))
+                    (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(1))
                         .as_mut_ptr()
                         .offset((bx4 + 8) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_80;
-                    (*(&mut *(*((*t.a).r#ref)
-                        .as_mut_ptr()
-                        .offset(1))
+                    (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(1))
                         .as_mut_ptr()
                         .offset((bx4 + 16) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_80;
-                    (*(&mut *(*((*t.a).r#ref)
-                        .as_mut_ptr()
-                        .offset(1))
+                    (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(1))
                         .as_mut_ptr()
                         .offset((bx4 + 24) as isize) as *mut int8_t
                         as *mut alias64))
                         .u64_0 = const_val_80;
                     let const_val_81: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                         .wrapping_mul(
-                            DAV1D_N_SWITCHABLE_FILTERS as libc::c_int
-                                as libc::c_ulonglong,
+                            DAV1D_N_SWITCHABLE_FILTERS as libc::c_int as libc::c_ulonglong,
                         ) as uint64_t;
-                    (*(&mut *(*((*t.a).filter)
-                        .as_mut_ptr()
-                        .offset(0))
+                    (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(0))
                         .as_mut_ptr()
                         .offset((bx4 + 0) as isize) as *mut uint8_t
                         as *mut alias64))
                         .u64_0 = const_val_81;
-                    (*(&mut *(*((*t.a).filter)
-                        .as_mut_ptr()
-                        .offset(0))
+                    (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(0))
                         .as_mut_ptr()
                         .offset((bx4 + 8) as isize) as *mut uint8_t
                         as *mut alias64))
                         .u64_0 = const_val_81;
-                    (*(&mut *(*((*t.a).filter)
-                        .as_mut_ptr()
-                        .offset(0))
+                    (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(0))
                         .as_mut_ptr()
                         .offset((bx4 + 16) as isize) as *mut uint8_t
                         as *mut alias64))
                         .u64_0 = const_val_81;
-                    (*(&mut *(*((*t.a).filter)
-                        .as_mut_ptr()
-                        .offset(0))
+                    (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(0))
                         .as_mut_ptr()
                         .offset((bx4 + 24) as isize) as *mut uint8_t
                         as *mut alias64))
                         .u64_0 = const_val_81;
                     let const_val_82: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                         .wrapping_mul(
-                            DAV1D_N_SWITCHABLE_FILTERS as libc::c_int
-                                as libc::c_ulonglong,
+                            DAV1D_N_SWITCHABLE_FILTERS as libc::c_int as libc::c_ulonglong,
                         ) as uint64_t;
-                    (*(&mut *(*((*t.a).filter)
-                        .as_mut_ptr()
-                        .offset(1))
+                    (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(1))
                         .as_mut_ptr()
                         .offset((bx4 + 0) as isize) as *mut uint8_t
                         as *mut alias64))
                         .u64_0 = const_val_82;
-                    (*(&mut *(*((*t.a).filter)
-                        .as_mut_ptr()
-                        .offset(1))
+                    (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(1))
                         .as_mut_ptr()
                         .offset((bx4 + 8) as isize) as *mut uint8_t
                         as *mut alias64))
                         .u64_0 = const_val_82;
-                    (*(&mut *(*((*t.a).filter)
-                        .as_mut_ptr()
-                        .offset(1))
+                    (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(1))
                         .as_mut_ptr()
                         .offset((bx4 + 16) as isize) as *mut uint8_t
                         as *mut alias64))
                         .u64_0 = const_val_82;
-                    (*(&mut *(*((*t.a).filter)
-                        .as_mut_ptr()
-                        .offset(1))
+                    (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(1))
                         .as_mut_ptr()
                         .offset((bx4 + 24) as isize) as *mut uint8_t
                         as *mut alias64))
@@ -7415,25 +6212,19 @@ unsafe fn decode_b(
         }
         if b.c2rust_unnamed.c2rust_unnamed.pal_sz[0] != 0 {
             let pal: *mut uint16_t = if t.frame_thread.pass != 0 {
-                ((*(f.frame_thread.pal)
-                    .offset(
-                        (((t.by >> 1) + (t.bx & 1))
-                            as isize * (f.b4_stride >> 1)
-                            + ((t.bx >> 1)
-                                + (t.by & 1)) as isize) as isize,
-                    ))[0])
+                ((*(f.frame_thread.pal).offset(
+                    (((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
+                        + ((t.bx >> 1) + (t.by & 1)) as isize) as isize,
+                ))[0])
                     .as_mut_ptr()
             } else {
-                (t.scratch.c2rust_unnamed_0.pal[0])
-                    .as_mut_ptr()
+                (t.scratch.c2rust_unnamed_0.pal[0]).as_mut_ptr()
             };
             let mut x_1 = 0;
             while x_1 < bw4 {
                 memcpy(
-                    ((*t)
-                        .al_pal[0 as libc::c_int
-                        as usize][(bx4 + x_1) as usize][0])
-                        .as_mut_ptr() as *mut libc::c_void,
+                    ((*t).al_pal[0 as libc::c_int as usize][(bx4 + x_1) as usize][0]).as_mut_ptr()
+                        as *mut libc::c_void,
                     pal as *const libc::c_void,
                     16 as libc::c_int as libc::c_ulong,
                 );
@@ -7442,10 +6233,8 @@ unsafe fn decode_b(
             let mut y_1 = 0;
             while y_1 < bh4 {
                 memcpy(
-                    ((*t)
-                        .al_pal[1 as libc::c_int
-                        as usize][(by4 + y_1) as usize][0])
-                        .as_mut_ptr() as *mut libc::c_void,
+                    ((*t).al_pal[1 as libc::c_int as usize][(by4 + y_1) as usize][0]).as_mut_ptr()
+                        as *mut libc::c_void,
                     pal as *const libc::c_void,
                     16 as libc::c_int as libc::c_ulong,
                 );
@@ -7455,42 +6244,36 @@ unsafe fn decode_b(
         if has_chroma {
             match cbh4 {
                 1 => {
-                    (*(&mut *(t.l.uvmode).as_mut_ptr().offset(cby4 as isize)
-                        as *mut uint8_t as *mut alias8))
+                    (*(&mut *(t.l.uvmode).as_mut_ptr().offset(cby4 as isize) as *mut uint8_t
+                        as *mut alias8))
                         .u8_0 = (0x1 as libc::c_int
                         * b.c2rust_unnamed.c2rust_unnamed.uv_mode as libc::c_int)
                         as uint8_t;
                 }
                 2 => {
-                    (*(&mut *(t.l.uvmode).as_mut_ptr().offset(cby4 as isize)
-                        as *mut uint8_t as *mut alias16))
+                    (*(&mut *(t.l.uvmode).as_mut_ptr().offset(cby4 as isize) as *mut uint8_t
+                        as *mut alias16))
                         .u16_0 = (0x101 as libc::c_int
                         * b.c2rust_unnamed.c2rust_unnamed.uv_mode as libc::c_int)
                         as uint16_t;
                 }
                 4 => {
-                    (*(&mut *(t.l.uvmode).as_mut_ptr().offset(cby4 as isize)
-                        as *mut uint8_t as *mut alias32))
+                    (*(&mut *(t.l.uvmode).as_mut_ptr().offset(cby4 as isize) as *mut uint8_t
+                        as *mut alias32))
                         .u32_0 = (0x1010101 as libc::c_uint)
-                        .wrapping_mul(
-                            b.c2rust_unnamed.c2rust_unnamed.uv_mode as libc::c_uint,
-                        );
+                        .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed.uv_mode as libc::c_uint);
                 }
                 8 => {
-                    (*(&mut *(t.l.uvmode).as_mut_ptr().offset(cby4 as isize)
-                        as *mut uint8_t as *mut alias64))
+                    (*(&mut *(t.l.uvmode).as_mut_ptr().offset(cby4 as isize) as *mut uint8_t
+                        as *mut alias64))
                         .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            b.c2rust_unnamed.c2rust_unnamed.uv_mode
-                                as libc::c_ulonglong,
-                        ) as uint64_t;
+                        .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed.uv_mode as libc::c_ulonglong)
+                        as uint64_t;
                 }
                 16 => {
                     let const_val_83: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            b.c2rust_unnamed.c2rust_unnamed.uv_mode
-                                as libc::c_ulonglong,
-                        ) as uint64_t;
+                        .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed.uv_mode as libc::c_ulonglong)
+                        as uint64_t;
                     (*(&mut *(t.l.uvmode)
                         .as_mut_ptr()
                         .offset((cby4 + 0) as isize) as *mut uint8_t
@@ -7504,10 +6287,8 @@ unsafe fn decode_b(
                 }
                 32 => {
                     let const_val_84: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            b.c2rust_unnamed.c2rust_unnamed.uv_mode
-                                as libc::c_ulonglong,
-                        ) as uint64_t;
+                        .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed.uv_mode as libc::c_ulonglong)
+                        as uint64_t;
                     (*(&mut *(t.l.uvmode)
                         .as_mut_ptr()
                         .offset((cby4 + 0) as isize) as *mut uint8_t
@@ -7533,94 +6314,69 @@ unsafe fn decode_b(
             }
             match cbw4 {
                 1 => {
-                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset(cbx4 as isize)
-                        as *mut uint8_t as *mut alias8))
+                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset(cbx4 as isize) as *mut uint8_t
+                        as *mut alias8))
                         .u8_0 = (0x1 as libc::c_int
                         * b.c2rust_unnamed.c2rust_unnamed.uv_mode as libc::c_int)
                         as uint8_t;
                 }
                 2 => {
-                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset(cbx4 as isize)
-                        as *mut uint8_t as *mut alias16))
+                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset(cbx4 as isize) as *mut uint8_t
+                        as *mut alias16))
                         .u16_0 = (0x101 as libc::c_int
                         * b.c2rust_unnamed.c2rust_unnamed.uv_mode as libc::c_int)
                         as uint16_t;
                 }
                 4 => {
-                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset(cbx4 as isize)
-                        as *mut uint8_t as *mut alias32))
+                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset(cbx4 as isize) as *mut uint8_t
+                        as *mut alias32))
                         .u32_0 = (0x1010101 as libc::c_uint)
-                        .wrapping_mul(
-                            b.c2rust_unnamed.c2rust_unnamed.uv_mode as libc::c_uint,
-                        );
+                        .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed.uv_mode as libc::c_uint);
                 }
                 8 => {
-                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset(cbx4 as isize)
-                        as *mut uint8_t as *mut alias64))
+                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset(cbx4 as isize) as *mut uint8_t
+                        as *mut alias64))
                         .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            b.c2rust_unnamed.c2rust_unnamed.uv_mode
-                                as libc::c_ulonglong,
-                        ) as uint64_t;
+                        .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed.uv_mode as libc::c_ulonglong)
+                        as uint64_t;
                 }
                 16 => {
                     let const_val_85: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            b.c2rust_unnamed.c2rust_unnamed.uv_mode
-                                as libc::c_ulonglong,
-                        ) as uint64_t;
-                    (*(&mut *((*t.a).uvmode)
-                        .as_mut_ptr()
-                        .offset((cbx4 + 0) as isize) as *mut uint8_t
-                        as *mut alias64))
+                        .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed.uv_mode as libc::c_ulonglong)
+                        as uint64_t;
+                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset((cbx4 + 0) as isize)
+                        as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_85;
-                    (*(&mut *((*t.a).uvmode)
-                        .as_mut_ptr()
-                        .offset((cbx4 + 8) as isize) as *mut uint8_t
-                        as *mut alias64))
+                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset((cbx4 + 8) as isize)
+                        as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_85;
                 }
                 32 => {
                     let const_val_86: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(
-                            b.c2rust_unnamed.c2rust_unnamed.uv_mode
-                                as libc::c_ulonglong,
-                        ) as uint64_t;
-                    (*(&mut *((*t.a).uvmode)
-                        .as_mut_ptr()
-                        .offset((cbx4 + 0) as isize) as *mut uint8_t
-                        as *mut alias64))
+                        .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed.uv_mode as libc::c_ulonglong)
+                        as uint64_t;
+                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset((cbx4 + 0) as isize)
+                        as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_86;
-                    (*(&mut *((*t.a).uvmode)
-                        .as_mut_ptr()
-                        .offset((cbx4 + 8) as isize) as *mut uint8_t
-                        as *mut alias64))
+                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset((cbx4 + 8) as isize)
+                        as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_86;
-                    (*(&mut *((*t.a).uvmode)
-                        .as_mut_ptr()
-                        .offset((cbx4 + 16) as isize) as *mut uint8_t
-                        as *mut alias64))
+                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset((cbx4 + 16) as isize)
+                        as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_86;
-                    (*(&mut *((*t.a).uvmode)
-                        .as_mut_ptr()
-                        .offset((cbx4 + 24) as isize) as *mut uint8_t
-                        as *mut alias64))
+                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset((cbx4 + 24) as isize)
+                        as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_86;
                 }
                 _ => {}
             }
-            if b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] != 0
-            {
+            if b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] != 0 {
                 let pal_0: *const [uint16_t; 8] = (if t.frame_thread.pass != 0 {
-                    (*(f.frame_thread.pal)
-                        .offset(
-                            (((t.by >> 1)
-                                + (t.bx & 1)) as isize
-                                * (f.b4_stride >> 1)
-                                + ((t.bx >> 1)
-                                    + (t.by & 1)) as isize) as isize,
-                        ))
-                        .as_mut_ptr()
+                    (*(f.frame_thread.pal).offset(
+                        (((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
+                            + ((t.bx >> 1) + (t.by & 1)) as isize) as isize,
+                    ))
+                    .as_mut_ptr()
                 } else {
                     (t.scratch.c2rust_unnamed_0.pal).as_mut_ptr()
                 }) as *const [uint16_t; 8];
@@ -7629,9 +6385,8 @@ unsafe fn decode_b(
                     let mut x_2 = 0;
                     while x_2 < bw4 {
                         memcpy(
-                            ((*t)
-                                .al_pal[0 as libc::c_int
-                                as usize][(bx4 + x_2) as usize][pl as usize])
+                            ((*t).al_pal[0 as libc::c_int as usize][(bx4 + x_2) as usize]
+                                [pl as usize])
                                 .as_mut_ptr() as *mut libc::c_void,
                             (*pal_0.offset(pl as isize)).as_ptr() as *const libc::c_void,
                             16 as libc::c_int as libc::c_ulong,
@@ -7641,9 +6396,8 @@ unsafe fn decode_b(
                     let mut y_2 = 0;
                     while y_2 < bh4 {
                         memcpy(
-                            ((*t)
-                                .al_pal[1 as libc::c_int
-                                as usize][(by4 + y_2) as usize][pl as usize])
+                            ((*t).al_pal[1 as libc::c_int as usize][(by4 + y_2) as usize]
+                                [pl as usize])
                                 .as_mut_ptr() as *mut libc::c_void,
                             (*pal_0.offset(pl as isize)).as_ptr() as *const libc::c_void,
                             16 as libc::c_int as libc::c_ulong,
@@ -7654,19 +6408,14 @@ unsafe fn decode_b(
                 }
             }
         }
-        if (*f.frame_hdr).frame_type as libc::c_uint
-            & 1 as libc::c_uint != 0
+        if (*f.frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint != 0
             || (*f.frame_hdr).allow_intrabc != 0
         {
             splat_intraref(f.c, t, bs, bw4, bh4);
         }
-    } else if (*f.frame_hdr).frame_type as libc::c_uint
-        & 1 as libc::c_uint == 0
-    {
+    } else if (*f.frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint == 0 {
         let mut mvstack: [refmvs_candidate; 8] = [refmvs_candidate {
-            mv: refmvs_mvpair {
-                mv: [mv::ZERO; 2],
-            },
+            mv: refmvs_mvpair { mv: [mv::ZERO; 2] },
             weight: 0,
         }; 8];
         let mut n_mvs = 0;
@@ -7685,53 +6434,38 @@ unsafe fn decode_b(
             t.bx,
         );
         if mvstack[0].mv.mv[0] != mv::ZERO {
-            b
-                .c2rust_unnamed
+            b.c2rust_unnamed
                 .c2rust_unnamed_0
                 .c2rust_unnamed
                 .c2rust_unnamed
-                .mv[0 as libc::c_int
-                as usize] = mvstack[0]
-                .mv
-                .mv[0];
+                .mv[0 as libc::c_int as usize] = mvstack[0].mv.mv[0];
         } else if mvstack[1].mv.mv[0] != mv::ZERO {
-            b
-                .c2rust_unnamed
+            b.c2rust_unnamed
                 .c2rust_unnamed_0
                 .c2rust_unnamed
                 .c2rust_unnamed
-                .mv[0 as libc::c_int
-                as usize] = mvstack[1]
-                .mv
-                .mv[0];
-        } else if t.by - ((16 as libc::c_int) << (*f.seq_hdr).sb128)
-            < ts.tiling.row_start
-        {
-            b
-                .c2rust_unnamed
+                .mv[0 as libc::c_int as usize] = mvstack[1].mv.mv[0];
+        } else if t.by - ((16 as libc::c_int) << (*f.seq_hdr).sb128) < ts.tiling.row_start {
+            b.c2rust_unnamed
                 .c2rust_unnamed_0
                 .c2rust_unnamed
                 .c2rust_unnamed
                 .mv[0]
                 .y = 0 as libc::c_int as int16_t;
-            b
-                .c2rust_unnamed
+            b.c2rust_unnamed
                 .c2rust_unnamed_0
                 .c2rust_unnamed
                 .c2rust_unnamed
                 .mv[0]
-                .x = (-((512 as libc::c_int) << (*f.seq_hdr).sb128)
-                - 2048) as int16_t;
+                .x = (-((512 as libc::c_int) << (*f.seq_hdr).sb128) - 2048) as int16_t;
         } else {
-            b
-                .c2rust_unnamed
+            b.c2rust_unnamed
                 .c2rust_unnamed_0
                 .c2rust_unnamed
                 .c2rust_unnamed
                 .mv[0]
                 .y = -((512 as libc::c_int) << (*f.seq_hdr).sb128) as int16_t;
-            b
-                .c2rust_unnamed
+            b.c2rust_unnamed
                 .c2rust_unnamed_0
                 .c2rust_unnamed
                 .c2rust_unnamed
@@ -7746,7 +6480,12 @@ unsafe fn decode_b(
             .mv[0];
         read_mv_residual(
             t,
-            &mut *(b.c2rust_unnamed.c2rust_unnamed_0.c2rust_unnamed.c2rust_unnamed.mv)
+            &mut *(b
+                .c2rust_unnamed
+                .c2rust_unnamed_0
+                .c2rust_unnamed
+                .c2rust_unnamed
+                .mv)
                 .as_mut_ptr()
                 .offset(0),
             &mut ts.cdf.dmv,
@@ -7763,26 +6502,25 @@ unsafe fn decode_b(
             }
         }
         let mut src_left = t.bx * 4
-            + (b
-                .c2rust_unnamed
+            + (b.c2rust_unnamed
                 .c2rust_unnamed_0
                 .c2rust_unnamed
                 .c2rust_unnamed
                 .mv[0]
-                .x as libc::c_int >> 3);
+                .x as libc::c_int
+                >> 3);
         let mut src_top = t.by * 4
-            + (b
-                .c2rust_unnamed
+            + (b.c2rust_unnamed
                 .c2rust_unnamed_0
                 .c2rust_unnamed
                 .c2rust_unnamed
                 .mv[0]
-                .y as libc::c_int >> 3);
+                .y as libc::c_int
+                >> 3);
         let mut src_right = src_left + bw4 * 4;
         let mut src_bottom = src_top + bh4 * 4;
 
-        let border_right = (ts.tiling.col_end + (bw4 - 1)
-            & !(bw4 - 1)) * 4;
+        let border_right = (ts.tiling.col_end + (bw4 - 1) & !(bw4 - 1)) * 4;
         if src_left < border_left {
             src_right += border_left - src_left;
             src_left += border_left - src_left;
@@ -7794,12 +6532,9 @@ unsafe fn decode_b(
             src_bottom += border_top - src_top;
             src_top += border_top - src_top;
         }
-        let sbx = t.bx >> 4 + (*f.seq_hdr).sb128
-            << 6 + (*f.seq_hdr).sb128;
-        let sby = t.by >> 4 + (*f.seq_hdr).sb128
-            << 6 + (*f.seq_hdr).sb128;
-        let sb_size = (1 as libc::c_int)
-            << 6 + (*f.seq_hdr).sb128;
+        let sbx = t.bx >> 4 + (*f.seq_hdr).sb128 << 6 + (*f.seq_hdr).sb128;
+        let sby = t.by >> 4 + (*f.seq_hdr).sb128 << 6 + (*f.seq_hdr).sb128;
+        let sb_size = (1 as libc::c_int) << 6 + (*f.seq_hdr).sb128;
         if src_bottom > sby && src_right > sbx {
             if src_top - border_top >= src_bottom - sby {
                 src_top -= src_bottom - sby;
@@ -7816,34 +6551,28 @@ unsafe fn decode_b(
         if src_bottom > sby && src_right > sbx {
             return -(1 as libc::c_int);
         }
-        b
-            .c2rust_unnamed
+        b.c2rust_unnamed
             .c2rust_unnamed_0
             .c2rust_unnamed
             .c2rust_unnamed
             .mv[0]
             .x = ((src_left - t.bx * 4) * 8) as int16_t;
-        b
-            .c2rust_unnamed
+        b.c2rust_unnamed
             .c2rust_unnamed_0
             .c2rust_unnamed
             .c2rust_unnamed
             .mv[0]
             .y = ((src_top - t.by * 4) * 8) as int16_t;
-        if DEBUG_BLOCK_INFO(f, t)
-        {
+        if DEBUG_BLOCK_INFO(f, t) {
             printf(
-                b"Post-dmv[%d/%d,ref=%d/%d|%d/%d]: r=%d\n\0" as *const u8
-                    as *const libc::c_char,
-                b
-                    .c2rust_unnamed
+                b"Post-dmv[%d/%d,ref=%d/%d|%d/%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
+                b.c2rust_unnamed
                     .c2rust_unnamed_0
                     .c2rust_unnamed
                     .c2rust_unnamed
                     .mv[0]
                     .y as libc::c_int,
-                b
-                    .c2rust_unnamed
+                b.c2rust_unnamed
                     .c2rust_unnamed_0
                     .c2rust_unnamed
                     .c2rust_unnamed
@@ -7851,54 +6580,41 @@ unsafe fn decode_b(
                     .x as libc::c_int,
                 r#ref.y as libc::c_int,
                 r#ref.x as libc::c_int,
-                mvstack[0]
-                    .mv
-                    .mv[0]
-                    .y as libc::c_int,
-                mvstack[0]
-                    .mv
-                    .mv[0]
-                    .x as libc::c_int,
+                mvstack[0].mv.mv[0].y as libc::c_int,
+                mvstack[0].mv.mv[0].x as libc::c_int,
                 ts.msac.rng,
             );
         }
         read_vartx_tree(t, b, bs, bx4, by4);
         if t.frame_thread.pass == 1 {
             (f.bd_fn.read_coef_blocks).expect("non-null function pointer")(t, bs, b);
-            b
-                .c2rust_unnamed
-                .c2rust_unnamed_0
-                .filter2d = FILTER_2D_BILINEAR as libc::c_int as uint8_t;
-        } else if (f.bd_fn.recon_b_inter)
-            .expect("non-null function pointer")(t, bs, b) != 0
-        {
-            return -(1 as libc::c_int)
+            b.c2rust_unnamed.c2rust_unnamed_0.filter2d =
+                FILTER_2D_BILINEAR as libc::c_int as uint8_t;
+        } else if (f.bd_fn.recon_b_inter).expect("non-null function pointer")(t, bs, b) != 0 {
+            return -(1 as libc::c_int);
         }
         splat_intrabc_mv(f.c, t, bs, b, bw4, bh4);
         match bh4 {
             1 => {
-                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset(by4 as isize)
-                    as *mut int8_t as *mut alias8))
-                    .u8_0 = (0x1 as libc::c_int
-                    * *b_dim.offset((2 + 1) as isize)
-                        as libc::c_int) as uint8_t;
+                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset(by4 as isize) as *mut int8_t
+                    as *mut alias8))
+                    .u8_0 = (0x1 as libc::c_int * *b_dim.offset((2 + 1) as isize) as libc::c_int)
+                    as uint8_t;
                 (*(&mut *(t.l.mode).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias8))
                     .u8_0 = (0x1 * DC_PRED as libc::c_int) as uint8_t;
-                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias8))
+                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias8))
                     .u8_0 = 0 as libc::c_int as uint8_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset(by4 as isize) as *mut uint8_t as *mut alias8))
                     .u8_0 = 0 as libc::c_int as uint8_t;
-                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias8))
+                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias8))
                     .u8_0 = (0x1 * seg_pred) as uint8_t;
-                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias8))
+                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias8))
                     .u8_0 = 0 as libc::c_int as uint8_t;
                 (*(&mut *(t.l.intra).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias8))
@@ -7908,101 +6624,87 @@ unsafe fn decode_b(
                     .u8_0 = (0x1 * b.skip as libc::c_int) as uint8_t;
             }
             2 => {
-                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset(by4 as isize)
-                    as *mut int8_t as *mut alias16))
-                    .u16_0 = (0x101 as libc::c_int
-                    * *b_dim.offset((2 + 1) as isize)
-                        as libc::c_int) as uint16_t;
+                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset(by4 as isize) as *mut int8_t
+                    as *mut alias16))
+                    .u16_0 = (0x101 as libc::c_int * *b_dim.offset((2 + 1) as isize) as libc::c_int)
+                    as uint16_t;
                 (*(&mut *(t.l.mode).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias16))
                     .u16_0 = (0x101 * DC_PRED as libc::c_int) as uint16_t;
-                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias16))
+                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias16))
                     .u16_0 = 0 as libc::c_int as uint16_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset(by4 as isize) as *mut uint8_t as *mut alias16))
                     .u16_0 = 0 as libc::c_int as uint16_t;
-                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias16))
+                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias16))
                     .u16_0 = (0x101 * seg_pred) as uint16_t;
-                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias16))
+                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias16))
                     .u16_0 = 0 as libc::c_int as uint16_t;
                 (*(&mut *(t.l.intra).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias16))
                     .u16_0 = 0 as libc::c_int as uint16_t;
                 (*(&mut *(t.l.skip).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias16))
-                    .u16_0 = (0x101 * b.skip as libc::c_int)
-                    as uint16_t;
+                    .u16_0 = (0x101 * b.skip as libc::c_int) as uint16_t;
             }
             4 => {
-                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset(by4 as isize)
-                    as *mut int8_t as *mut alias32))
+                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset(by4 as isize) as *mut int8_t
+                    as *mut alias32))
                     .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(
-                        *b_dim.offset((2 + 1) as isize)
-                            as libc::c_uint,
-                    );
+                    .wrapping_mul(*b_dim.offset((2 + 1) as isize) as libc::c_uint);
                 (*(&mut *(t.l.mode).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias32))
                     .u32_0 = (0x1010101 as libc::c_uint)
                     .wrapping_mul(DC_PRED as libc::c_int as libc::c_uint);
-                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias32))
+                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias32))
                     .u32_0 = 0 as libc::c_int as uint32_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset(by4 as isize) as *mut uint8_t as *mut alias32))
                     .u32_0 = 0 as libc::c_int as uint32_t;
-                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(seg_pred as libc::c_uint);
-                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias32))
+                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias32))
+                    .u32_0 = (0x1010101 as libc::c_uint).wrapping_mul(seg_pred as libc::c_uint);
+                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias32))
                     .u32_0 = 0 as libc::c_int as uint32_t;
                 (*(&mut *(t.l.intra).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias32))
                     .u32_0 = 0 as libc::c_int as uint32_t;
                 (*(&mut *(t.l.skip).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(b.skip as libc::c_uint);
+                    .u32_0 = (0x1010101 as libc::c_uint).wrapping_mul(b.skip as libc::c_uint);
             }
             8 => {
-                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset(by4 as isize)
-                    as *mut int8_t as *mut alias64))
+                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset(by4 as isize) as *mut int8_t
+                    as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        *b_dim.offset((2 + 1) as isize)
-                            as libc::c_ulonglong,
-                    ) as uint64_t;
+                    .wrapping_mul(*b_dim.offset((2 + 1) as isize) as libc::c_ulonglong)
+                    as uint64_t;
                 (*(&mut *(t.l.mode).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
                     .wrapping_mul(DC_PRED as libc::c_int as libc::c_ulonglong)
                     as uint64_t;
-                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias64))
+                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias64))
                     .u64_0 = 0 as libc::c_int as uint64_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset(by4 as isize) as *mut uint8_t as *mut alias64))
                     .u64_0 = 0 as libc::c_int as uint64_t;
-                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias64))
+                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(seg_pred as libc::c_ulonglong) as uint64_t;
-                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias64))
+                    .wrapping_mul(seg_pred as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias64))
                     .u64_0 = 0 as libc::c_int as uint64_t;
                 (*(&mut *(t.l.intra).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias64))
@@ -8010,293 +6712,198 @@ unsafe fn decode_b(
                 (*(&mut *(t.l.skip).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(b.skip as libc::c_ulonglong) as uint64_t;
+                    .wrapping_mul(b.skip as libc::c_ulonglong)
+                    as uint64_t;
             }
             16 => {
                 let const_val_87: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        *b_dim.offset((2 + 1) as isize)
-                            as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(t.l.tx_intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut int8_t
+                    .wrapping_mul(*b_dim.offset((2 + 1) as isize) as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset((by4 + 0) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_87;
-                (*(&mut *(t.l.tx_intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut int8_t
+                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset((by4 + 8) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_87;
                 let const_val_88: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                     .wrapping_mul(DC_PRED as libc::c_int as libc::c_ulonglong)
                     as uint64_t;
-                (*(&mut *(t.l.mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                (*(&mut *(t.l.mode).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_88;
-                (*(&mut *(t.l.mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.mode).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_88;
                 let const_val_89: uint64_t = 0 as libc::c_int as uint64_t;
-                (*(&mut *(t.l.pal_sz)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_89;
-                (*(&mut *(t.l.pal_sz)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_89;
                 let const_val_90: uint64_t = 0 as libc::c_int as uint64_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_90;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_90;
                 let const_val_91: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(seg_pred as libc::c_ulonglong) as uint64_t;
-                (*(&mut *(t.l.seg_pred)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(seg_pred as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_91;
-                (*(&mut *(t.l.seg_pred)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_91;
                 let const_val_92: uint64_t = 0 as libc::c_int as uint64_t;
-                (*(&mut *(t.l.skip_mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_92;
-                (*(&mut *(t.l.skip_mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_92;
                 let const_val_93: uint64_t = 0 as libc::c_int as uint64_t;
-                (*(&mut *(t.l.intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                (*(&mut *(t.l.intra).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_93;
-                (*(&mut *(t.l.intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.intra).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_93;
                 let const_val_94: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(b.skip as libc::c_ulonglong) as uint64_t;
-                (*(&mut *(t.l.skip)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(b.skip as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.skip).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_94;
-                (*(&mut *(t.l.skip)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_94;
             }
             32 => {
                 let const_val_95: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        *b_dim.offset((2 + 1) as isize)
-                            as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(t.l.tx_intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut int8_t
+                    .wrapping_mul(*b_dim.offset((2 + 1) as isize) as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset((by4 + 0) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_95;
-                (*(&mut *(t.l.tx_intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut int8_t
+                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset((by4 + 8) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_95;
-                (*(&mut *(t.l.tx_intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 16) as isize) as *mut int8_t
+                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset((by4 + 16) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_95;
-                (*(&mut *(t.l.tx_intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 24) as isize) as *mut int8_t
+                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset((by4 + 24) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_95;
                 let const_val_96: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                     .wrapping_mul(DC_PRED as libc::c_int as libc::c_ulonglong)
                     as uint64_t;
-                (*(&mut *(t.l.mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                (*(&mut *(t.l.mode).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_96;
-                (*(&mut *(t.l.mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.mode).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_96;
-                (*(&mut *(t.l.mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 16) as isize) as *mut uint8_t
+                (*(&mut *(t.l.mode).as_mut_ptr().offset((by4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_96;
-                (*(&mut *(t.l.mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 24) as isize) as *mut uint8_t
+                (*(&mut *(t.l.mode).as_mut_ptr().offset((by4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_96;
                 let const_val_97: uint64_t = 0 as libc::c_int as uint64_t;
-                (*(&mut *(t.l.pal_sz)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_97;
-                (*(&mut *(t.l.pal_sz)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_97;
-                (*(&mut *(t.l.pal_sz)
-                    .as_mut_ptr()
-                    .offset((by4 + 16) as isize) as *mut uint8_t
+                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset((by4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_97;
-                (*(&mut *(t.l.pal_sz)
-                    .as_mut_ptr()
-                    .offset((by4 + 24) as isize) as *mut uint8_t
+                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset((by4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_97;
                 let const_val_98: uint64_t = 0 as libc::c_int as uint64_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_98;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_98;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((by4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_98;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((by4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_98;
                 let const_val_99: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(seg_pred as libc::c_ulonglong) as uint64_t;
-                (*(&mut *(t.l.seg_pred)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(seg_pred as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_99;
-                (*(&mut *(t.l.seg_pred)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_99;
-                (*(&mut *(t.l.seg_pred)
-                    .as_mut_ptr()
-                    .offset((by4 + 16) as isize) as *mut uint8_t
+                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset((by4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_99;
-                (*(&mut *(t.l.seg_pred)
-                    .as_mut_ptr()
-                    .offset((by4 + 24) as isize) as *mut uint8_t
+                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset((by4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_99;
                 let const_val_100: uint64_t = 0 as libc::c_int as uint64_t;
-                (*(&mut *(t.l.skip_mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_100;
-                (*(&mut *(t.l.skip_mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_100;
-                (*(&mut *(t.l.skip_mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 16) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset((by4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_100;
-                (*(&mut *(t.l.skip_mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 24) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset((by4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_100;
                 let const_val_101: uint64_t = 0 as libc::c_int as uint64_t;
-                (*(&mut *(t.l.intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                (*(&mut *(t.l.intra).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_101;
-                (*(&mut *(t.l.intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.intra).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_101;
-                (*(&mut *(t.l.intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 16) as isize) as *mut uint8_t
+                (*(&mut *(t.l.intra).as_mut_ptr().offset((by4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_101;
-                (*(&mut *(t.l.intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 24) as isize) as *mut uint8_t
+                (*(&mut *(t.l.intra).as_mut_ptr().offset((by4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_101;
                 let const_val_102: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(b.skip as libc::c_ulonglong) as uint64_t;
-                (*(&mut *(t.l.skip)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(b.skip as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.skip).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_102;
-                (*(&mut *(t.l.skip)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_102;
-                (*(&mut *(t.l.skip)
-                    .as_mut_ptr()
-                    .offset((by4 + 16) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip).as_mut_ptr().offset((by4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_102;
-                (*(&mut *(t.l.skip)
-                    .as_mut_ptr()
-                    .offset((by4 + 24) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip).as_mut_ptr().offset((by4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_102;
             }
@@ -8304,198 +6911,165 @@ unsafe fn decode_b(
         }
         match bw4 {
             1 => {
-                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset(bx4 as isize)
-                    as *mut int8_t as *mut alias8))
-                    .u8_0 = (0x1 as libc::c_int
-                    * *b_dim.offset((2 + 0) as isize)
-                        as libc::c_int) as uint8_t;
-                (*(&mut *((*t.a).mode).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias8))
+                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset(bx4 as isize) as *mut int8_t
+                    as *mut alias8))
+                    .u8_0 = (0x1 as libc::c_int * *b_dim.offset((2 + 0) as isize) as libc::c_int)
+                    as uint8_t;
+                (*(&mut *((*t.a).mode).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias8))
                     .u8_0 = (0x1 * DC_PRED as libc::c_int) as uint8_t;
-                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias8))
+                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias8))
                     .u8_0 = 0 as libc::c_int as uint8_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset(bx4 as isize) as *mut uint8_t as *mut alias8))
                     .u8_0 = 0 as libc::c_int as uint8_t;
-                (*(&mut *((*t.a).seg_pred).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias8))
+                (*(&mut *((*t.a).seg_pred).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias8))
                     .u8_0 = (0x1 * seg_pred) as uint8_t;
-                (*(&mut *((*t.a).skip_mode).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias8))
+                (*(&mut *((*t.a).skip_mode).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias8))
                     .u8_0 = 0 as libc::c_int as uint8_t;
-                (*(&mut *((*t.a).intra).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias8))
+                (*(&mut *((*t.a).intra).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias8))
                     .u8_0 = 0 as libc::c_int as uint8_t;
-                (*(&mut *((*t.a).skip).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias8))
+                (*(&mut *((*t.a).skip).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias8))
                     .u8_0 = (0x1 * b.skip as libc::c_int) as uint8_t;
             }
             2 => {
-                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset(bx4 as isize)
-                    as *mut int8_t as *mut alias16))
-                    .u16_0 = (0x101 as libc::c_int
-                    * *b_dim.offset((2 + 0) as isize)
-                        as libc::c_int) as uint16_t;
-                (*(&mut *((*t.a).mode).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias16))
+                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset(bx4 as isize) as *mut int8_t
+                    as *mut alias16))
+                    .u16_0 = (0x101 as libc::c_int * *b_dim.offset((2 + 0) as isize) as libc::c_int)
+                    as uint16_t;
+                (*(&mut *((*t.a).mode).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias16))
                     .u16_0 = (0x101 * DC_PRED as libc::c_int) as uint16_t;
-                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias16))
+                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias16))
                     .u16_0 = 0 as libc::c_int as uint16_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset(bx4 as isize) as *mut uint8_t as *mut alias16))
                     .u16_0 = 0 as libc::c_int as uint16_t;
-                (*(&mut *((*t.a).seg_pred).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias16))
+                (*(&mut *((*t.a).seg_pred).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias16))
                     .u16_0 = (0x101 * seg_pred) as uint16_t;
-                (*(&mut *((*t.a).skip_mode).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias16))
+                (*(&mut *((*t.a).skip_mode).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias16))
                     .u16_0 = 0 as libc::c_int as uint16_t;
-                (*(&mut *((*t.a).intra).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias16))
+                (*(&mut *((*t.a).intra).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias16))
                     .u16_0 = 0 as libc::c_int as uint16_t;
-                (*(&mut *((*t.a).skip).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias16))
-                    .u16_0 = (0x101 * b.skip as libc::c_int)
-                    as uint16_t;
+                (*(&mut *((*t.a).skip).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias16))
+                    .u16_0 = (0x101 * b.skip as libc::c_int) as uint16_t;
             }
             4 => {
-                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset(bx4 as isize)
-                    as *mut int8_t as *mut alias32))
+                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset(bx4 as isize) as *mut int8_t
+                    as *mut alias32))
                     .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(
-                        *b_dim.offset((2 + 0) as isize)
-                            as libc::c_uint,
-                    );
-                (*(&mut *((*t.a).mode).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias32))
+                    .wrapping_mul(*b_dim.offset((2 + 0) as isize) as libc::c_uint);
+                (*(&mut *((*t.a).mode).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias32))
                     .u32_0 = (0x1010101 as libc::c_uint)
                     .wrapping_mul(DC_PRED as libc::c_int as libc::c_uint);
-                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias32))
+                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias32))
                     .u32_0 = 0 as libc::c_int as uint32_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset(bx4 as isize) as *mut uint8_t as *mut alias32))
                     .u32_0 = 0 as libc::c_int as uint32_t;
-                (*(&mut *((*t.a).seg_pred).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(seg_pred as libc::c_uint);
-                (*(&mut *((*t.a).skip_mode).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias32))
+                (*(&mut *((*t.a).seg_pred).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias32))
+                    .u32_0 = (0x1010101 as libc::c_uint).wrapping_mul(seg_pred as libc::c_uint);
+                (*(&mut *((*t.a).skip_mode).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias32))
                     .u32_0 = 0 as libc::c_int as uint32_t;
-                (*(&mut *((*t.a).intra).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias32))
+                (*(&mut *((*t.a).intra).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias32))
                     .u32_0 = 0 as libc::c_int as uint32_t;
-                (*(&mut *((*t.a).skip).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(b.skip as libc::c_uint);
+                (*(&mut *((*t.a).skip).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias32))
+                    .u32_0 = (0x1010101 as libc::c_uint).wrapping_mul(b.skip as libc::c_uint);
             }
             8 => {
-                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset(bx4 as isize)
-                    as *mut int8_t as *mut alias64))
+                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset(bx4 as isize) as *mut int8_t
+                    as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        *b_dim.offset((2 + 0) as isize)
-                            as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *((*t.a).mode).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias64))
+                    .wrapping_mul(*b_dim.offset((2 + 0) as isize) as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *((*t.a).mode).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
                     .wrapping_mul(DC_PRED as libc::c_int as libc::c_ulonglong)
                     as uint64_t;
-                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias64))
+                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias64))
                     .u64_0 = 0 as libc::c_int as uint64_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset(bx4 as isize) as *mut uint8_t as *mut alias64))
                     .u64_0 = 0 as libc::c_int as uint64_t;
-                (*(&mut *((*t.a).seg_pred).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias64))
+                (*(&mut *((*t.a).seg_pred).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(seg_pred as libc::c_ulonglong) as uint64_t;
-                (*(&mut *((*t.a).skip_mode).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias64))
+                    .wrapping_mul(seg_pred as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *((*t.a).skip_mode).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias64))
                     .u64_0 = 0 as libc::c_int as uint64_t;
-                (*(&mut *((*t.a).intra).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias64))
+                (*(&mut *((*t.a).intra).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias64))
                     .u64_0 = 0 as libc::c_int as uint64_t;
-                (*(&mut *((*t.a).skip).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias64))
+                (*(&mut *((*t.a).skip).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(b.skip as libc::c_ulonglong) as uint64_t;
+                    .wrapping_mul(b.skip as libc::c_ulonglong)
+                    as uint64_t;
             }
             16 => {
                 let const_val_103: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        *b_dim.offset((2 + 0) as isize)
-                            as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *((*t.a).tx_intra)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut int8_t
+                    .wrapping_mul(*b_dim.offset((2 + 0) as isize) as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset((bx4 + 0) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_103;
-                (*(&mut *((*t.a).tx_intra)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut int8_t
+                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset((bx4 + 8) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_103;
                 let const_val_104: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                     .wrapping_mul(DC_PRED as libc::c_int as libc::c_ulonglong)
                     as uint64_t;
-                (*(&mut *((*t.a).mode)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).mode).as_mut_ptr().offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_104;
-                (*(&mut *((*t.a).mode)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).mode).as_mut_ptr().offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_104;
                 let const_val_105: uint64_t = 0 as libc::c_int as uint64_t;
-                (*(&mut *((*t.a).pal_sz)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_105;
-                (*(&mut *((*t.a).pal_sz)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_105;
                 let const_val_106: uint64_t = 0 as libc::c_int as uint64_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_106;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_106;
                 let const_val_107: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(seg_pred as libc::c_ulonglong) as uint64_t;
+                    .wrapping_mul(seg_pred as libc::c_ulonglong)
+                    as uint64_t;
                 (*(&mut *((*t.a).seg_pred)
                     .as_mut_ptr()
                     .offset((bx4 + 0) as isize) as *mut uint8_t
@@ -8518,43 +7092,30 @@ unsafe fn decode_b(
                     as *mut alias64))
                     .u64_0 = const_val_108;
                 let const_val_109: uint64_t = 0 as libc::c_int as uint64_t;
-                (*(&mut *((*t.a).intra)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).intra).as_mut_ptr().offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_109;
-                (*(&mut *((*t.a).intra)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).intra).as_mut_ptr().offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_109;
                 let const_val_110: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(b.skip as libc::c_ulonglong) as uint64_t;
-                (*(&mut *((*t.a).skip)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(b.skip as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *((*t.a).skip).as_mut_ptr().offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_110;
-                (*(&mut *((*t.a).skip)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).skip).as_mut_ptr().offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_110;
             }
             32 => {
                 let const_val_111: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        *b_dim.offset((2 + 0) as isize)
-                            as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *((*t.a).tx_intra)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut int8_t
+                    .wrapping_mul(*b_dim.offset((2 + 0) as isize) as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset((bx4 + 0) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_111;
-                (*(&mut *((*t.a).tx_intra)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut int8_t
+                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset((bx4 + 8) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_111;
                 (*(&mut *((*t.a).tx_intra)
@@ -8570,78 +7131,55 @@ unsafe fn decode_b(
                 let const_val_112: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                     .wrapping_mul(DC_PRED as libc::c_int as libc::c_ulonglong)
                     as uint64_t;
-                (*(&mut *((*t.a).mode)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).mode).as_mut_ptr().offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_112;
-                (*(&mut *((*t.a).mode)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).mode).as_mut_ptr().offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_112;
-                (*(&mut *((*t.a).mode)
-                    .as_mut_ptr()
-                    .offset((bx4 + 16) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).mode).as_mut_ptr().offset((bx4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_112;
-                (*(&mut *((*t.a).mode)
-                    .as_mut_ptr()
-                    .offset((bx4 + 24) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).mode).as_mut_ptr().offset((bx4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_112;
                 let const_val_113: uint64_t = 0 as libc::c_int as uint64_t;
-                (*(&mut *((*t.a).pal_sz)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_113;
-                (*(&mut *((*t.a).pal_sz)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_113;
-                (*(&mut *((*t.a).pal_sz)
-                    .as_mut_ptr()
-                    .offset((bx4 + 16) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset((bx4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_113;
-                (*(&mut *((*t.a).pal_sz)
-                    .as_mut_ptr()
-                    .offset((bx4 + 24) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset((bx4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_113;
                 let const_val_114: uint64_t = 0 as libc::c_int as uint64_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_114;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_114;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((bx4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_114;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((bx4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_114;
                 let const_val_115: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(seg_pred as libc::c_ulonglong) as uint64_t;
+                    .wrapping_mul(seg_pred as libc::c_ulonglong)
+                    as uint64_t;
                 (*(&mut *((*t.a).seg_pred)
                     .as_mut_ptr()
                     .offset((bx4 + 0) as isize) as *mut uint8_t
@@ -8684,46 +7222,31 @@ unsafe fn decode_b(
                     as *mut alias64))
                     .u64_0 = const_val_116;
                 let const_val_117: uint64_t = 0 as libc::c_int as uint64_t;
-                (*(&mut *((*t.a).intra)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).intra).as_mut_ptr().offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_117;
-                (*(&mut *((*t.a).intra)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).intra).as_mut_ptr().offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_117;
-                (*(&mut *((*t.a).intra)
-                    .as_mut_ptr()
-                    .offset((bx4 + 16) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).intra).as_mut_ptr().offset((bx4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_117;
-                (*(&mut *((*t.a).intra)
-                    .as_mut_ptr()
-                    .offset((bx4 + 24) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).intra).as_mut_ptr().offset((bx4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_117;
                 let const_val_118: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(b.skip as libc::c_ulonglong) as uint64_t;
-                (*(&mut *((*t.a).skip)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(b.skip as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *((*t.a).skip).as_mut_ptr().offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_118;
-                (*(&mut *((*t.a).skip)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).skip).as_mut_ptr().offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_118;
-                (*(&mut *((*t.a).skip)
-                    .as_mut_ptr()
-                    .offset((bx4 + 16) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).skip).as_mut_ptr().offset((bx4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_118;
-                (*(&mut *((*t.a).skip)
-                    .as_mut_ptr()
-                    .offset((bx4 + 24) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).skip).as_mut_ptr().offset((bx4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_118;
             }
@@ -8732,32 +7255,30 @@ unsafe fn decode_b(
         if has_chroma {
             match cbh4 {
                 1 => {
-                    (*(&mut *(t.l.uvmode).as_mut_ptr().offset(cby4 as isize)
-                        as *mut uint8_t as *mut alias8))
+                    (*(&mut *(t.l.uvmode).as_mut_ptr().offset(cby4 as isize) as *mut uint8_t
+                        as *mut alias8))
                         .u8_0 = (0x1 * DC_PRED as libc::c_int) as uint8_t;
                 }
                 2 => {
-                    (*(&mut *(t.l.uvmode).as_mut_ptr().offset(cby4 as isize)
-                        as *mut uint8_t as *mut alias16))
-                        .u16_0 = (0x101 * DC_PRED as libc::c_int)
-                        as uint16_t;
+                    (*(&mut *(t.l.uvmode).as_mut_ptr().offset(cby4 as isize) as *mut uint8_t
+                        as *mut alias16))
+                        .u16_0 = (0x101 * DC_PRED as libc::c_int) as uint16_t;
                 }
                 4 => {
-                    (*(&mut *(t.l.uvmode).as_mut_ptr().offset(cby4 as isize)
-                        as *mut uint8_t as *mut alias32))
+                    (*(&mut *(t.l.uvmode).as_mut_ptr().offset(cby4 as isize) as *mut uint8_t
+                        as *mut alias32))
                         .u32_0 = (0x1010101 as libc::c_uint)
                         .wrapping_mul(DC_PRED as libc::c_int as libc::c_uint);
                 }
                 8 => {
-                    (*(&mut *(t.l.uvmode).as_mut_ptr().offset(cby4 as isize)
-                        as *mut uint8_t as *mut alias64))
+                    (*(&mut *(t.l.uvmode).as_mut_ptr().offset(cby4 as isize) as *mut uint8_t
+                        as *mut alias64))
                         .u64_0 = (0x101010101010101 as libc::c_ulonglong)
                         .wrapping_mul(DC_PRED as libc::c_int as libc::c_ulonglong)
                         as uint64_t;
                 }
                 16 => {
-                    let const_val_119: uint64_t = (0x101010101010101
-                        as libc::c_ulonglong)
+                    let const_val_119: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                         .wrapping_mul(DC_PRED as libc::c_int as libc::c_ulonglong)
                         as uint64_t;
                     (*(&mut *(t.l.uvmode)
@@ -8772,8 +7293,7 @@ unsafe fn decode_b(
                         .u64_0 = const_val_119;
                 }
                 32 => {
-                    let const_val_120: uint64_t = (0x101010101010101
-                        as libc::c_ulonglong)
+                    let const_val_120: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                         .wrapping_mul(DC_PRED as libc::c_int as libc::c_ulonglong)
                         as uint64_t;
                     (*(&mut *(t.l.uvmode)
@@ -8801,69 +7321,54 @@ unsafe fn decode_b(
             }
             match cbw4 {
                 1 => {
-                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset(cbx4 as isize)
-                        as *mut uint8_t as *mut alias8))
+                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset(cbx4 as isize) as *mut uint8_t
+                        as *mut alias8))
                         .u8_0 = (0x1 * DC_PRED as libc::c_int) as uint8_t;
                 }
                 2 => {
-                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset(cbx4 as isize)
-                        as *mut uint8_t as *mut alias16))
-                        .u16_0 = (0x101 * DC_PRED as libc::c_int)
-                        as uint16_t;
+                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset(cbx4 as isize) as *mut uint8_t
+                        as *mut alias16))
+                        .u16_0 = (0x101 * DC_PRED as libc::c_int) as uint16_t;
                 }
                 4 => {
-                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset(cbx4 as isize)
-                        as *mut uint8_t as *mut alias32))
+                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset(cbx4 as isize) as *mut uint8_t
+                        as *mut alias32))
                         .u32_0 = (0x1010101 as libc::c_uint)
                         .wrapping_mul(DC_PRED as libc::c_int as libc::c_uint);
                 }
                 8 => {
-                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset(cbx4 as isize)
-                        as *mut uint8_t as *mut alias64))
+                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset(cbx4 as isize) as *mut uint8_t
+                        as *mut alias64))
                         .u64_0 = (0x101010101010101 as libc::c_ulonglong)
                         .wrapping_mul(DC_PRED as libc::c_int as libc::c_ulonglong)
                         as uint64_t;
                 }
                 16 => {
-                    let const_val_121: uint64_t = (0x101010101010101
-                        as libc::c_ulonglong)
+                    let const_val_121: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                         .wrapping_mul(DC_PRED as libc::c_int as libc::c_ulonglong)
                         as uint64_t;
-                    (*(&mut *((*t.a).uvmode)
-                        .as_mut_ptr()
-                        .offset((cbx4 + 0) as isize) as *mut uint8_t
-                        as *mut alias64))
+                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset((cbx4 + 0) as isize)
+                        as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_121;
-                    (*(&mut *((*t.a).uvmode)
-                        .as_mut_ptr()
-                        .offset((cbx4 + 8) as isize) as *mut uint8_t
-                        as *mut alias64))
+                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset((cbx4 + 8) as isize)
+                        as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_121;
                 }
                 32 => {
-                    let const_val_122: uint64_t = (0x101010101010101
-                        as libc::c_ulonglong)
+                    let const_val_122: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                         .wrapping_mul(DC_PRED as libc::c_int as libc::c_ulonglong)
                         as uint64_t;
-                    (*(&mut *((*t.a).uvmode)
-                        .as_mut_ptr()
-                        .offset((cbx4 + 0) as isize) as *mut uint8_t
-                        as *mut alias64))
+                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset((cbx4 + 0) as isize)
+                        as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_122;
-                    (*(&mut *((*t.a).uvmode)
-                        .as_mut_ptr()
-                        .offset((cbx4 + 8) as isize) as *mut uint8_t
-                        as *mut alias64))
+                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset((cbx4 + 8) as isize)
+                        as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_122;
-                    (*(&mut *((*t.a).uvmode)
-                        .as_mut_ptr()
-                        .offset((cbx4 + 16) as isize) as *mut uint8_t
-                        as *mut alias64))
+                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset((cbx4 + 16) as isize)
+                        as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_122;
-                    (*(&mut *((*t.a).uvmode)
-                        .as_mut_ptr()
-                        .offset((cbx4 + 24) as isize) as *mut uint8_t
-                        as *mut alias64))
+                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset((cbx4 + 24) as isize)
+                        as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_122;
                 }
                 _ => {}
@@ -8874,27 +7379,18 @@ unsafe fn decode_b(
         let mut has_subpel_filter = 0;
         if b.skip_mode != 0 {
             is_comp = 1 as libc::c_int;
-        } else if
-            seg
-                .map(|seg| seg.r#ref == -1 && seg.globalmv == 0 && seg.skip == 0)
-                .unwrap_or(true)
+        } else if seg
+            .map(|seg| seg.r#ref == -1 && seg.globalmv == 0 && seg.skip == 0)
+            .unwrap_or(true)
             && (*f.frame_hdr).switchable_comp_refs != 0
             && imin(bw4, bh4) > 1
         {
-            let ctx_2 = get_comp_ctx(
-                t.a,
-                &mut t.l,
-                by4,
-                bx4,
-                have_top,
-                have_left,
-            );
+            let ctx_2 = get_comp_ctx(t.a, &mut t.l, by4, bx4, have_top, have_left);
             is_comp = dav1d_msac_decode_bool_adapt(
                 &mut ts.msac,
                 (ts.cdf.m.comp[ctx_2 as usize]).as_mut_ptr(),
             ) as libc::c_int;
-            if DEBUG_BLOCK_INFO(f, t)
-            {
+            if DEBUG_BLOCK_INFO(f, t) {
                 printf(
                     b"Post-compflag[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
                     is_comp,
@@ -8905,35 +7401,17 @@ unsafe fn decode_b(
             is_comp = 0 as libc::c_int;
         }
         if b.skip_mode != 0 {
-            b
-                .c2rust_unnamed
-                .c2rust_unnamed_0
-                .r#ref[0 as libc::c_int
-                as usize] = (*f.frame_hdr).skip_mode_refs[0]
-                as int8_t;
-            b
-                .c2rust_unnamed
-                .c2rust_unnamed_0
-                .r#ref[1 as libc::c_int
-                as usize] = (*f.frame_hdr).skip_mode_refs[1]
-                as int8_t;
-            b
-                .c2rust_unnamed
-                .c2rust_unnamed_0
-                .comp_type = COMP_INTER_AVG as libc::c_int as uint8_t;
-            b
-                .c2rust_unnamed
-                .c2rust_unnamed_0
-                .inter_mode = NEARESTMV_NEARESTMV as libc::c_int as uint8_t;
-            b
-                .c2rust_unnamed
-                .c2rust_unnamed_0
-                .drl_idx = NEAREST_DRL as libc::c_int as uint8_t;
+            b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0 as libc::c_int as usize] =
+                (*f.frame_hdr).skip_mode_refs[0] as int8_t;
+            b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1 as libc::c_int as usize] =
+                (*f.frame_hdr).skip_mode_refs[1] as int8_t;
+            b.c2rust_unnamed.c2rust_unnamed_0.comp_type = COMP_INTER_AVG as libc::c_int as uint8_t;
+            b.c2rust_unnamed.c2rust_unnamed_0.inter_mode =
+                NEARESTMV_NEARESTMV as libc::c_int as uint8_t;
+            b.c2rust_unnamed.c2rust_unnamed_0.drl_idx = NEAREST_DRL as libc::c_int as uint8_t;
             has_subpel_filter = 0 as libc::c_int;
             let mut mvstack_0: [refmvs_candidate; 8] = [refmvs_candidate {
-                mv: refmvs_mvpair {
-                    mv: [mv::ZERO; 2],
-                },
+                mv: refmvs_mvpair { mv: [mv::ZERO; 2] },
                 weight: 0,
             }; 8];
             let mut n_mvs_0 = 0;
@@ -8945,16 +7423,8 @@ unsafe fn decode_b(
                 &mut ctx_3,
                 refmvs_refpair {
                     r#ref: [
-                        (b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[0] as libc::c_int
-                            + 1) as int8_t,
-                        (b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[1] as libc::c_int
-                            + 1) as int8_t,
+                        (b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int + 1) as int8_t,
+                        (b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as libc::c_int + 1) as int8_t,
                     ],
                 },
                 bs,
@@ -8962,285 +7432,138 @@ unsafe fn decode_b(
                 t.by,
                 t.bx,
             );
-            b
-                .c2rust_unnamed
+            b.c2rust_unnamed
                 .c2rust_unnamed_0
                 .c2rust_unnamed
                 .c2rust_unnamed
-                .mv[0 as libc::c_int
-                as usize] = mvstack_0[0]
-                .mv
-                .mv[0];
-            b
-                .c2rust_unnamed
+                .mv[0 as libc::c_int as usize] = mvstack_0[0].mv.mv[0];
+            b.c2rust_unnamed
                 .c2rust_unnamed_0
                 .c2rust_unnamed
                 .c2rust_unnamed
-                .mv[1 as libc::c_int
-                as usize] = mvstack_0[0]
-                .mv
-                .mv[1];
+                .mv[1 as libc::c_int as usize] = mvstack_0[0].mv.mv[1];
             fix_mv_precision(&*f.frame_hdr, &mut b.mv_mut()[0]);
             fix_mv_precision(&*f.frame_hdr, &mut b.mv_mut()[1]);
-            if DEBUG_BLOCK_INFO(f, t)
-            {
+            if DEBUG_BLOCK_INFO(f, t) {
                 printf(
-                    b"Post-skipmodeblock[mv=1:y=%d,x=%d,2:y=%d,x=%d,refs=%d+%d\n\0"
-                        as *const u8 as *const libc::c_char,
-                    b
-                        .c2rust_unnamed
+                    b"Post-skipmodeblock[mv=1:y=%d,x=%d,2:y=%d,x=%d,refs=%d+%d\n\0" as *const u8
+                        as *const libc::c_char,
+                    b.c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
                         .mv[0]
                         .y as libc::c_int,
-                    b
-                        .c2rust_unnamed
+                    b.c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
                         .mv[0]
                         .x as libc::c_int,
-                    b
-                        .c2rust_unnamed
+                    b.c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
                         .mv[1]
                         .y as libc::c_int,
-                    b
-                        .c2rust_unnamed
+                    b.c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
                         .mv[1]
                         .x as libc::c_int,
-                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0]
-                        as libc::c_int,
-                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1]
-                        as libc::c_int,
+                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int,
+                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as libc::c_int,
                 );
             }
         } else if is_comp != 0 {
-            let dir_ctx = get_comp_dir_ctx(
-                t.a,
-                &mut t.l,
-                by4,
-                bx4,
-                have_top,
-                have_left,
-            );
+            let dir_ctx = get_comp_dir_ctx(t.a, &mut t.l, by4, bx4, have_top, have_left);
             if dav1d_msac_decode_bool_adapt(
                 &mut ts.msac,
                 (ts.cdf.m.comp_dir[dir_ctx as usize]).as_mut_ptr(),
             ) != 0
             {
-                let ctx1 = av1_get_fwd_ref_ctx(
-                    t.a,
-                    &mut t.l,
-                    by4,
-                    bx4,
-                    have_top,
-                    have_left,
-                );
+                let ctx1 = av1_get_fwd_ref_ctx(t.a, &mut t.l, by4, bx4, have_top, have_left);
                 if dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
-                    (ts.cdf.m.comp_fwd_ref[0][ctx1 as usize])
-                        .as_mut_ptr(),
+                    (ts.cdf.m.comp_fwd_ref[0][ctx1 as usize]).as_mut_ptr(),
                 ) != 0
                 {
-                    let ctx2 = av1_get_fwd_ref_2_ctx(
-                        t.a,
-                        &mut t.l,
-                        by4,
-                        bx4,
-                        have_top,
-                        have_left,
-                    );
-                    b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .r#ref[0 as libc::c_int
-                        as usize] = (2 as libc::c_int as libc::c_uint)
-                        .wrapping_add(
+                    let ctx2 = av1_get_fwd_ref_2_ctx(t.a, &mut t.l, by4, bx4, have_top, have_left);
+                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0 as libc::c_int as usize] =
+                        (2 as libc::c_int as libc::c_uint).wrapping_add(
                             dav1d_msac_decode_bool_adapt(
                                 &mut ts.msac,
-                                (ts
-                                    .cdf
-                                    .m
-                                    .comp_fwd_ref[2][ctx2 as usize])
-                                    .as_mut_ptr(),
+                                (ts.cdf.m.comp_fwd_ref[2][ctx2 as usize]).as_mut_ptr(),
                             ),
                         ) as int8_t;
                 } else {
-                    let ctx2_0 = av1_get_fwd_ref_1_ctx(
-                        t.a,
-                        &mut t.l,
-                        by4,
-                        bx4,
-                        have_top,
-                        have_left,
-                    );
-                    b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .r#ref[0 as libc::c_int
-                        as usize] = dav1d_msac_decode_bool_adapt(
-                        &mut ts.msac,
-                        (ts
-                            .cdf
-                            .m
-                            .comp_fwd_ref[1][ctx2_0 as usize])
-                            .as_mut_ptr(),
-                    ) as int8_t;
+                    let ctx2_0 =
+                        av1_get_fwd_ref_1_ctx(t.a, &mut t.l, by4, bx4, have_top, have_left);
+                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0 as libc::c_int as usize] =
+                        dav1d_msac_decode_bool_adapt(
+                            &mut ts.msac,
+                            (ts.cdf.m.comp_fwd_ref[1][ctx2_0 as usize]).as_mut_ptr(),
+                        ) as int8_t;
                 }
-                let ctx3 = av1_get_bwd_ref_ctx(
-                    t.a,
-                    &mut t.l,
-                    by4,
-                    bx4,
-                    have_top,
-                    have_left,
-                );
+                let ctx3 = av1_get_bwd_ref_ctx(t.a, &mut t.l, by4, bx4, have_top, have_left);
                 if dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
-                    (ts.cdf.m.comp_bwd_ref[0][ctx3 as usize])
-                        .as_mut_ptr(),
+                    (ts.cdf.m.comp_bwd_ref[0][ctx3 as usize]).as_mut_ptr(),
                 ) != 0
                 {
-                    b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .r#ref[1] = 6 as libc::c_int as int8_t;
+                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] = 6 as libc::c_int as int8_t;
                 } else {
-                    let ctx4 = av1_get_bwd_ref_1_ctx(
-                        t.a,
-                        &mut t.l,
-                        by4,
-                        bx4,
-                        have_top,
-                        have_left,
-                    );
-                    b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .r#ref[1 as libc::c_int
-                        as usize] = (4 as libc::c_int as libc::c_uint)
-                        .wrapping_add(
+                    let ctx4 = av1_get_bwd_ref_1_ctx(t.a, &mut t.l, by4, bx4, have_top, have_left);
+                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1 as libc::c_int as usize] =
+                        (4 as libc::c_int as libc::c_uint).wrapping_add(
                             dav1d_msac_decode_bool_adapt(
                                 &mut ts.msac,
-                                (ts
-                                    .cdf
-                                    .m
-                                    .comp_bwd_ref[1][ctx4 as usize])
-                                    .as_mut_ptr(),
+                                (ts.cdf.m.comp_bwd_ref[1][ctx4 as usize]).as_mut_ptr(),
                             ),
                         ) as int8_t;
                 }
             } else {
-                let uctx_p = av1_get_ref_ctx(
-                    t.a,
-                    &mut t.l,
-                    by4,
-                    bx4,
-                    have_top,
-                    have_left,
-                );
+                let uctx_p = av1_get_ref_ctx(t.a, &mut t.l, by4, bx4, have_top, have_left);
                 if dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
-                    (ts
-                        .cdf
-                        .m
-                        .comp_uni_ref[0][uctx_p as usize])
-                        .as_mut_ptr(),
+                    (ts.cdf.m.comp_uni_ref[0][uctx_p as usize]).as_mut_ptr(),
                 ) != 0
                 {
-                    b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .r#ref[0] = 4 as libc::c_int as int8_t;
-                    b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .r#ref[1] = 6 as libc::c_int as int8_t;
+                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] = 4 as libc::c_int as int8_t;
+                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] = 6 as libc::c_int as int8_t;
                 } else {
-                    let uctx_p1 = av1_get_uni_p1_ctx(
-                        t.a,
-                        &mut t.l,
-                        by4,
-                        bx4,
-                        have_top,
-                        have_left,
-                    );
-                    b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .r#ref[0] = 0 as libc::c_int as int8_t;
-                    b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .r#ref[1 as libc::c_int
-                        as usize] = (1 as libc::c_int as libc::c_uint)
-                        .wrapping_add(
+                    let uctx_p1 = av1_get_uni_p1_ctx(t.a, &mut t.l, by4, bx4, have_top, have_left);
+                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] = 0 as libc::c_int as int8_t;
+                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1 as libc::c_int as usize] =
+                        (1 as libc::c_int as libc::c_uint).wrapping_add(
                             dav1d_msac_decode_bool_adapt(
                                 &mut ts.msac,
-                                (ts
-                                    .cdf
-                                    .m
-                                    .comp_uni_ref[1][uctx_p1 as usize])
-                                    .as_mut_ptr(),
+                                (ts.cdf.m.comp_uni_ref[1][uctx_p1 as usize]).as_mut_ptr(),
                             ),
                         ) as int8_t;
-                    if b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .r#ref[1] as libc::c_int
-                        == 2
-                    {
-                        let uctx_p2 = av1_get_fwd_ref_2_ctx(
-                            t.a,
-                            &mut t.l,
-                            by4,
-                            bx4,
-                            have_top,
-                            have_left,
-                        );
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[1 as libc::c_int
-                            as usize] = (b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[1] as libc::c_uint)
-                            .wrapping_add(
-                                dav1d_msac_decode_bool_adapt(
+                    if b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as libc::c_int == 2 {
+                        let uctx_p2 =
+                            av1_get_fwd_ref_2_ctx(t.a, &mut t.l, by4, bx4, have_top, have_left);
+                        b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1 as libc::c_int as usize] =
+                            (b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as libc::c_uint)
+                                .wrapping_add(dav1d_msac_decode_bool_adapt(
                                     &mut ts.msac,
-                                    (ts
-                                        .cdf
-                                        .m
-                                        .comp_uni_ref[2][uctx_p2 as usize])
-                                        .as_mut_ptr(),
-                                ),
-                            ) as int8_t as int8_t;
+                                    (ts.cdf.m.comp_uni_ref[2][uctx_p2 as usize]).as_mut_ptr(),
+                                )) as int8_t as int8_t;
                     }
                 }
             }
-            if DEBUG_BLOCK_INFO(f, t)
-            {
+            if DEBUG_BLOCK_INFO(f, t) {
                 printf(
                     b"Post-refs[%d/%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
-                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0]
-                        as libc::c_int,
-                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1]
-                        as libc::c_int,
+                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int,
+                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as libc::c_int,
                     ts.msac.rng,
                 );
             }
             let mut mvstack_1: [refmvs_candidate; 8] = [refmvs_candidate {
-                mv: refmvs_mvpair {
-                    mv: [mv::ZERO; 2],
-                },
+                mv: refmvs_mvpair { mv: [mv::ZERO; 2] },
                 weight: 0,
             }; 8];
             let mut n_mvs_1 = 0;
@@ -9252,16 +7575,8 @@ unsafe fn decode_b(
                 &mut ctx_4,
                 refmvs_refpair {
                     r#ref: [
-                        (b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[0] as libc::c_int
-                            + 1) as int8_t,
-                        (b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[1] as libc::c_int
-                            + 1) as int8_t,
+                        (b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int + 1) as int8_t,
+                        (b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as libc::c_int + 1) as int8_t,
                     ],
                 },
                 bs,
@@ -9269,16 +7584,12 @@ unsafe fn decode_b(
                 t.by,
                 t.bx,
             );
-            b
-                .c2rust_unnamed
-                .c2rust_unnamed_0
-                .inter_mode = dav1d_msac_decode_symbol_adapt8(
+            b.c2rust_unnamed.c2rust_unnamed_0.inter_mode = dav1d_msac_decode_symbol_adapt8(
                 &mut ts.msac,
                 (ts.cdf.m.comp_inter_mode[ctx_4 as usize]).as_mut_ptr(),
                 (N_COMP_INTER_PRED_MODES as libc::c_int - 1) as size_t,
             ) as uint8_t;
-            if DEBUG_BLOCK_INFO(f, t)
-            {
+            if DEBUG_BLOCK_INFO(f, t) {
                 printf(
                     b"Post-compintermode[%d,ctx=%d,n_mvs=%d]: r=%d\n\0" as *const u8
                         as *const libc::c_char,
@@ -9288,55 +7599,35 @@ unsafe fn decode_b(
                     ts.msac.rng,
                 );
             }
-            let im: *const uint8_t = (dav1d_comp_inter_pred_modes[b
-                .c2rust_unnamed
-                .c2rust_unnamed_0
-                .inter_mode as usize])
+            let im: *const uint8_t = (dav1d_comp_inter_pred_modes
+                [b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as usize])
                 .as_ptr();
-            b
-                .c2rust_unnamed
-                .c2rust_unnamed_0
-                .drl_idx = NEAREST_DRL as libc::c_int as uint8_t;
+            b.c2rust_unnamed.c2rust_unnamed_0.drl_idx = NEAREST_DRL as libc::c_int as uint8_t;
             if b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as libc::c_int
                 == NEWMV_NEWMV as libc::c_int
             {
                 if n_mvs_1 > 1 {
-                    let drl_ctx_v1 = get_drl_context(
-                        mvstack_1.as_mut_ptr(),
-                        0 as libc::c_int,
-                    );
-                    b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .drl_idx = (b.c2rust_unnamed.c2rust_unnamed_0.drl_idx
-                        as libc::c_uint)
-                        .wrapping_add(
+                    let drl_ctx_v1 = get_drl_context(mvstack_1.as_mut_ptr(), 0 as libc::c_int);
+                    b.c2rust_unnamed.c2rust_unnamed_0.drl_idx =
+                        (b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_uint).wrapping_add(
                             dav1d_msac_decode_bool_adapt(
                                 &mut ts.msac,
                                 (ts.cdf.m.drl_bit[drl_ctx_v1 as usize]).as_mut_ptr(),
                             ),
                         ) as uint8_t as uint8_t;
                     if b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_int
-                        == NEARER_DRL as libc::c_int && n_mvs_1 > 2
+                        == NEARER_DRL as libc::c_int
+                        && n_mvs_1 > 2
                     {
-                        let drl_ctx_v2 = get_drl_context(
-                            mvstack_1.as_mut_ptr(),
-                            1 as libc::c_int,
-                        );
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .drl_idx = (b.c2rust_unnamed.c2rust_unnamed_0.drl_idx
-                            as libc::c_uint)
-                            .wrapping_add(
-                                dav1d_msac_decode_bool_adapt(
+                        let drl_ctx_v2 = get_drl_context(mvstack_1.as_mut_ptr(), 1 as libc::c_int);
+                        b.c2rust_unnamed.c2rust_unnamed_0.drl_idx =
+                            (b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_uint)
+                                .wrapping_add(dav1d_msac_decode_bool_adapt(
                                     &mut ts.msac,
                                     (ts.cdf.m.drl_bit[drl_ctx_v2 as usize]).as_mut_ptr(),
-                                ),
-                            ) as uint8_t as uint8_t;
+                                )) as uint8_t as uint8_t;
                     }
-                    if DEBUG_BLOCK_INFO(f, t)
-                    {
+                    if DEBUG_BLOCK_INFO(f, t) {
                         printf(
                             b"Post-drlidx[%d,n_mvs=%d]: r=%d\n\0" as *const u8
                                 as *const libc::c_char,
@@ -9346,52 +7637,32 @@ unsafe fn decode_b(
                         );
                     }
                 }
-            } else if *im.offset(0) as libc::c_int
-                == NEARMV as libc::c_int
-                || *im.offset(1) as libc::c_int
-                    == NEARMV as libc::c_int
+            } else if *im.offset(0) as libc::c_int == NEARMV as libc::c_int
+                || *im.offset(1) as libc::c_int == NEARMV as libc::c_int
             {
-                b
-                    .c2rust_unnamed
-                    .c2rust_unnamed_0
-                    .drl_idx = NEARER_DRL as libc::c_int as uint8_t;
+                b.c2rust_unnamed.c2rust_unnamed_0.drl_idx = NEARER_DRL as libc::c_int as uint8_t;
                 if n_mvs_1 > 2 {
-                    let drl_ctx_v2_0 = get_drl_context(
-                        mvstack_1.as_mut_ptr(),
-                        1 as libc::c_int,
-                    );
-                    b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .drl_idx = (b.c2rust_unnamed.c2rust_unnamed_0.drl_idx
-                        as libc::c_uint)
-                        .wrapping_add(
+                    let drl_ctx_v2_0 = get_drl_context(mvstack_1.as_mut_ptr(), 1 as libc::c_int);
+                    b.c2rust_unnamed.c2rust_unnamed_0.drl_idx =
+                        (b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_uint).wrapping_add(
                             dav1d_msac_decode_bool_adapt(
                                 &mut ts.msac,
                                 (ts.cdf.m.drl_bit[drl_ctx_v2_0 as usize]).as_mut_ptr(),
                             ),
                         ) as uint8_t as uint8_t;
                     if b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_int
-                        == NEAR_DRL as libc::c_int && n_mvs_1 > 3
+                        == NEAR_DRL as libc::c_int
+                        && n_mvs_1 > 3
                     {
-                        let drl_ctx_v3 = get_drl_context(
-                            mvstack_1.as_mut_ptr(),
-                            2 as libc::c_int,
-                        );
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .drl_idx = (b.c2rust_unnamed.c2rust_unnamed_0.drl_idx
-                            as libc::c_uint)
-                            .wrapping_add(
-                                dav1d_msac_decode_bool_adapt(
+                        let drl_ctx_v3 = get_drl_context(mvstack_1.as_mut_ptr(), 2 as libc::c_int);
+                        b.c2rust_unnamed.c2rust_unnamed_0.drl_idx =
+                            (b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_uint)
+                                .wrapping_add(dav1d_msac_decode_bool_adapt(
                                     &mut ts.msac,
                                     (ts.cdf.m.drl_bit[drl_ctx_v3 as usize]).as_mut_ptr(),
-                                ),
-                            ) as uint8_t as uint8_t;
+                                )) as uint8_t as uint8_t;
                     }
-                    if DEBUG_BLOCK_INFO(f, t)
-                    {
+                    if DEBUG_BLOCK_INFO(f, t) {
                         printf(
                             b"Post-drlidx[%d,n_mvs=%d]: r=%d\n\0" as *const u8
                                 as *const libc::c_char,
@@ -9411,40 +7682,31 @@ unsafe fn decode_b(
             }
             has_subpel_filter = (imin(bw4, bh4) == 1
                 || b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as libc::c_int
-                    != GLOBALMV_GLOBALMV as libc::c_int) as libc::c_int;
+                    != GLOBALMV_GLOBALMV as libc::c_int)
+                as libc::c_int;
             match *im.offset(0) as libc::c_int {
                 1 | 0 => {
-                    b
-                        .c2rust_unnamed
+                    b.c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
-                        .mv[0 as libc::c_int
-                        as usize] = mvstack_1[b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .drl_idx as usize]
+                        .mv[0 as libc::c_int as usize] = mvstack_1
+                        [b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as usize]
                         .mv
                         .mv[0];
                     fix_mv_precision(&*f.frame_hdr, &mut b.mv_mut()[0]);
                 }
                 2 => {
-                    has_subpel_filter
-                        |= ((*f.frame_hdr)
-                            .gmv[b
-                                .c2rust_unnamed
-                                .c2rust_unnamed_0
-                                .r#ref[0] as usize]
-                            .type_0 as libc::c_uint
-                            == DAV1D_WM_TYPE_TRANSLATION as libc::c_int as libc::c_uint)
-                            as libc::c_int;
-                    b
-                        .c2rust_unnamed
+                    has_subpel_filter |= ((*f.frame_hdr).gmv
+                        [b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize]
+                        .type_0 as libc::c_uint
+                        == DAV1D_WM_TYPE_TRANSLATION as libc::c_int as libc::c_uint)
+                        as libc::c_int;
+                    b.c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
-                        .mv[0 as libc::c_int
-                        as usize] = get_gmv_2d(
+                        .mv[0 as libc::c_int as usize] = get_gmv_2d(
                         &(*f.frame_hdr).gmv[b.r#ref()[0] as usize],
                         t.bx,
                         t.by,
@@ -9454,16 +7716,12 @@ unsafe fn decode_b(
                     );
                 }
                 3 => {
-                    b
-                        .c2rust_unnamed
+                    b.c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
-                        .mv[0 as libc::c_int
-                        as usize] = mvstack_1[b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .drl_idx as usize]
+                        .mv[0 as libc::c_int as usize] = mvstack_1
+                        [b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as usize]
                         .mv
                         .mv[0];
                     read_mv_residual(
@@ -9484,37 +7742,27 @@ unsafe fn decode_b(
             }
             match *im.offset(1) as libc::c_int {
                 1 | 0 => {
-                    b
-                        .c2rust_unnamed
+                    b.c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
-                        .mv[1 as libc::c_int
-                        as usize] = mvstack_1[b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .drl_idx as usize]
+                        .mv[1 as libc::c_int as usize] = mvstack_1
+                        [b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as usize]
                         .mv
                         .mv[1];
                     fix_mv_precision(&*f.frame_hdr, &mut b.mv_mut()[1]);
                 }
                 2 => {
-                    has_subpel_filter
-                        |= ((*f.frame_hdr)
-                            .gmv[b
-                                .c2rust_unnamed
-                                .c2rust_unnamed_0
-                                .r#ref[1] as usize]
-                            .type_0 as libc::c_uint
-                            == DAV1D_WM_TYPE_TRANSLATION as libc::c_int as libc::c_uint)
-                            as libc::c_int;
-                    b
-                        .c2rust_unnamed
+                    has_subpel_filter |= ((*f.frame_hdr).gmv
+                        [b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as usize]
+                        .type_0 as libc::c_uint
+                        == DAV1D_WM_TYPE_TRANSLATION as libc::c_int as libc::c_uint)
+                        as libc::c_int;
+                    b.c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
-                        .mv[1 as libc::c_int
-                        as usize] = get_gmv_2d(
+                        .mv[1 as libc::c_int as usize] = get_gmv_2d(
                         &(*f.frame_hdr).gmv[b.r#ref()[1] as usize],
                         t.bx,
                         t.by,
@@ -9524,16 +7772,12 @@ unsafe fn decode_b(
                     );
                 }
                 3 => {
-                    b
-                        .c2rust_unnamed
+                    b.c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
-                        .mv[1 as libc::c_int
-                        as usize] = mvstack_1[b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .drl_idx as usize]
+                        .mv[1 as libc::c_int as usize] = mvstack_1
+                        [b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as usize]
                         .mv
                         .mv[1];
                     read_mv_residual(
@@ -9552,34 +7796,29 @@ unsafe fn decode_b(
                 }
                 _ => {}
             }
-            if DEBUG_BLOCK_INFO(f, t)
-            {
+            if DEBUG_BLOCK_INFO(f, t) {
                 printf(
                     b"Post-residual_mv[1:y=%d,x=%d,2:y=%d,x=%d]: r=%d\n\0" as *const u8
                         as *const libc::c_char,
-                    b
-                        .c2rust_unnamed
+                    b.c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
                         .mv[0]
                         .y as libc::c_int,
-                    b
-                        .c2rust_unnamed
+                    b.c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
                         .mv[0]
                         .x as libc::c_int,
-                    b
-                        .c2rust_unnamed
+                    b.c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
                         .mv[1]
                         .y as libc::c_int,
-                    b
-                        .c2rust_unnamed
+                    b.c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
@@ -9590,18 +7829,12 @@ unsafe fn decode_b(
             }
             let mut is_segwedge = 0;
             if (*f.seq_hdr).masked_compound != 0 {
-                let mask_ctx = get_mask_comp_ctx(
-                    t.a,
-                    &mut t.l,
-                    by4,
-                    bx4,
-                );
+                let mask_ctx = get_mask_comp_ctx(t.a, &mut t.l, by4, bx4);
                 is_segwedge = dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     (ts.cdf.m.mask_comp[mask_ctx as usize]).as_mut_ptr(),
                 ) as libc::c_int;
-                if DEBUG_BLOCK_INFO(f, t)
-                {
+                if DEBUG_BLOCK_INFO(f, t) {
                     printf(
                         b"Post-segwedge_vs_jntavg[%d,ctx=%d]: r=%d\n\0" as *const u8
                             as *const libc::c_char,
@@ -9616,19 +7849,11 @@ unsafe fn decode_b(
                     let jnt_ctx = get_jnt_comp_ctx(
                         (*f.seq_hdr).order_hint_n_bits,
                         (*f.cur.frame_hdr).frame_offset as libc::c_uint,
-                        (*f
-                            .refp[b
-                                .c2rust_unnamed
-                                .c2rust_unnamed_0
-                                .r#ref[0] as usize]
+                        (*f.refp[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize]
                             .p
                             .frame_hdr)
                             .frame_offset as libc::c_uint,
-                        (*f
-                            .refp[b
-                                .c2rust_unnamed
-                                .c2rust_unnamed_0
-                                .r#ref[1] as usize]
+                        (*f.refp[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as usize]
                             .p
                             .frame_hdr)
                             .frame_offset as libc::c_uint,
@@ -9637,62 +7862,48 @@ unsafe fn decode_b(
                         by4,
                         bx4,
                     );
-                    b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .comp_type = (COMP_INTER_WEIGHTED_AVG as libc::c_int
-                        as libc::c_uint)
-                        .wrapping_add(
+                    b.c2rust_unnamed.c2rust_unnamed_0.comp_type =
+                        (COMP_INTER_WEIGHTED_AVG as libc::c_int as libc::c_uint).wrapping_add(
                             dav1d_msac_decode_bool_adapt(
                                 &mut ts.msac,
                                 (ts.cdf.m.jnt_comp[jnt_ctx as usize]).as_mut_ptr(),
                             ),
                         ) as uint8_t;
-                    if DEBUG_BLOCK_INFO(f, t)
-                    {
+                    if DEBUG_BLOCK_INFO(f, t) {
                         printf(
                             b"Post-jnt_comp[%d,ctx=%d[ac:%d,ar:%d,lc:%d,lr:%d]]: r=%d\n\0"
                                 as *const u8 as *const libc::c_char,
-                            (b.c2rust_unnamed.c2rust_unnamed_0.comp_type
-                                as libc::c_int == COMP_INTER_AVG as libc::c_int)
+                            (b.c2rust_unnamed.c2rust_unnamed_0.comp_type as libc::c_int
+                                == COMP_INTER_AVG as libc::c_int)
                                 as libc::c_int,
                             jnt_ctx,
                             (*t.a).comp_type[bx4 as usize] as libc::c_int,
-                            (*t.a).r#ref[0][bx4 as usize]
-                                as libc::c_int,
+                            (*t.a).r#ref[0][bx4 as usize] as libc::c_int,
                             t.l.comp_type[by4 as usize] as libc::c_int,
-                            t.l.r#ref[0][by4 as usize]
-                                as libc::c_int,
+                            t.l.r#ref[0][by4 as usize] as libc::c_int,
                             ts.msac.rng,
                         );
                     }
                 } else {
-                    b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .comp_type = COMP_INTER_AVG as libc::c_int as uint8_t;
+                    b.c2rust_unnamed.c2rust_unnamed_0.comp_type =
+                        COMP_INTER_AVG as libc::c_int as uint8_t;
                 }
             } else {
-                if wedge_allowed_mask
-                    & ((1 as libc::c_int) << bs as libc::c_uint) as libc::c_uint != 0
+                if wedge_allowed_mask & ((1 as libc::c_int) << bs as libc::c_uint) as libc::c_uint
+                    != 0
                 {
-                    let ctx_5 = dav1d_wedge_ctx_lut[bs as usize]
-                        as libc::c_int;
-                    b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .comp_type = (COMP_INTER_WEDGE as libc::c_int as libc::c_uint)
-                        .wrapping_sub(
-                            dav1d_msac_decode_bool_adapt(
-                                &mut ts.msac,
-                                (ts.cdf.m.wedge_comp[ctx_5 as usize]).as_mut_ptr(),
-                            ),
-                        ) as uint8_t;
+                    let ctx_5 = dav1d_wedge_ctx_lut[bs as usize] as libc::c_int;
+                    b.c2rust_unnamed.c2rust_unnamed_0.comp_type = (COMP_INTER_WEDGE as libc::c_int
+                        as libc::c_uint)
+                        .wrapping_sub(dav1d_msac_decode_bool_adapt(
+                            &mut ts.msac,
+                            (ts.cdf.m.wedge_comp[ctx_5 as usize]).as_mut_ptr(),
+                        ))
+                        as uint8_t;
                     if b.c2rust_unnamed.c2rust_unnamed_0.comp_type as libc::c_int
                         == COMP_INTER_WEDGE as libc::c_int
                     {
-                        b
-                            .c2rust_unnamed
+                        b.c2rust_unnamed
                             .c2rust_unnamed_0
                             .c2rust_unnamed
                             .c2rust_unnamed
@@ -9703,33 +7914,27 @@ unsafe fn decode_b(
                         ) as uint8_t;
                     }
                 } else {
-                    b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .comp_type = COMP_INTER_SEG as libc::c_int as uint8_t;
+                    b.c2rust_unnamed.c2rust_unnamed_0.comp_type =
+                        COMP_INTER_SEG as libc::c_int as uint8_t;
                 }
-                b
-                    .c2rust_unnamed
+                b.c2rust_unnamed
                     .c2rust_unnamed_0
                     .c2rust_unnamed
                     .c2rust_unnamed
-                    .mask_sign = dav1d_msac_decode_bool_equi(&mut ts.msac)
-                    as uint8_t;
-                if DEBUG_BLOCK_INFO(f, t)
-                {
+                    .mask_sign = dav1d_msac_decode_bool_equi(&mut ts.msac) as uint8_t;
+                if DEBUG_BLOCK_INFO(f, t) {
                     printf(
                         b"Post-seg/wedge[%d,wedge_idx=%d,sign=%d]: r=%d\n\0" as *const u8
                             as *const libc::c_char,
                         (b.c2rust_unnamed.c2rust_unnamed_0.comp_type as libc::c_int
-                            == COMP_INTER_WEDGE as libc::c_int) as libc::c_int,
-                        b
-                            .c2rust_unnamed
+                            == COMP_INTER_WEDGE as libc::c_int)
+                            as libc::c_int,
+                        b.c2rust_unnamed
                             .c2rust_unnamed_0
                             .c2rust_unnamed
                             .c2rust_unnamed
                             .wedge_idx as libc::c_int,
-                        b
-                            .c2rust_unnamed
+                        b.c2rust_unnamed
                             .c2rust_unnamed_0
                             .c2rust_unnamed
                             .c2rust_unnamed
@@ -9739,10 +7944,7 @@ unsafe fn decode_b(
                 }
             }
         } else {
-            b
-                .c2rust_unnamed
-                .c2rust_unnamed_0
-                .comp_type = COMP_INTER_NONE as libc::c_int as uint8_t;
+            b.c2rust_unnamed.c2rust_unnamed_0.comp_type = COMP_INTER_NONE as libc::c_int as uint8_t;
             if let Some(seg) = seg && seg.r#ref > 0 {
                 b
                     .c2rust_unnamed
@@ -9886,14 +8088,9 @@ unsafe fn decode_b(
                     );
                 }
             }
-            b
-                .c2rust_unnamed
-                .c2rust_unnamed_0
-                .r#ref[1] = -(1 as libc::c_int) as int8_t;
+            b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] = -(1 as libc::c_int) as int8_t;
             let mut mvstack_2: [refmvs_candidate; 8] = [refmvs_candidate {
-                mv: refmvs_mvpair {
-                    mv: [mv::ZERO; 2],
-                },
+                mv: refmvs_mvpair { mv: [mv::ZERO; 2] },
                 weight: 0,
             }; 8];
             let mut n_mvs_2 = 0;
@@ -9905,11 +8102,7 @@ unsafe fn decode_b(
                 &mut ctx_6,
                 refmvs_refpair {
                     r#ref: [
-                        (b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[0] as libc::c_int
-                            + 1) as int8_t,
+                        (b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int + 1) as int8_t,
                         -(1 as libc::c_int) as int8_t,
                     ],
                 },
@@ -9918,35 +8111,29 @@ unsafe fn decode_b(
                 t.by,
                 t.bx,
             );
-            if seg.map(|seg| seg.skip != 0 || seg.globalmv != 0).unwrap_or(false)
+            if seg
+                .map(|seg| seg.skip != 0 || seg.globalmv != 0)
+                .unwrap_or(false)
                 || dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
-                    (ts.cdf.m.newmv_mode[(ctx_6 & 7) as usize])
-                        .as_mut_ptr(),
+                    (ts.cdf.m.newmv_mode[(ctx_6 & 7) as usize]).as_mut_ptr(),
                 ) != 0
             {
-                if seg.map(|seg| seg.skip != 0 || seg.globalmv != 0).unwrap_or(false)
+                if seg
+                    .map(|seg| seg.skip != 0 || seg.globalmv != 0)
+                    .unwrap_or(false)
                     || dav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
-                        (ts
-                            .cdf
-                            .m
-                            .globalmv_mode[(ctx_6 >> 3 & 1)
-                            as usize])
-                            .as_mut_ptr(),
+                        (ts.cdf.m.globalmv_mode[(ctx_6 >> 3 & 1) as usize]).as_mut_ptr(),
                     ) == 0
                 {
-                    b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .inter_mode = GLOBALMV as libc::c_int as uint8_t;
-                    b
-                        .c2rust_unnamed
+                    b.c2rust_unnamed.c2rust_unnamed_0.inter_mode =
+                        GLOBALMV as libc::c_int as uint8_t;
+                    b.c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
-                        .mv[0 as libc::c_int
-                        as usize] = get_gmv_2d(
+                        .mv[0 as libc::c_int as usize] = get_gmv_2d(
                         &(*f.frame_hdr).gmv[b.r#ref()[0] as usize],
                         t.bx,
                         t.by,
@@ -9955,11 +8142,7 @@ unsafe fn decode_b(
                         &*f.frame_hdr,
                     );
                     has_subpel_filter = (imin(bw4, bh4) == 1
-                        || (*f.frame_hdr)
-                            .gmv[b
-                                .c2rust_unnamed
-                                .c2rust_unnamed_0
-                                .r#ref[0] as usize]
+                        || (*f.frame_hdr).gmv[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize]
                             .type_0 as libc::c_uint
                             == DAV1D_WM_TYPE_TRANSLATION as libc::c_int as libc::c_uint)
                         as libc::c_int;
@@ -9967,68 +8150,42 @@ unsafe fn decode_b(
                     has_subpel_filter = 1 as libc::c_int;
                     if dav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
-                        (ts
-                            .cdf
-                            .m
-                            .refmv_mode[(ctx_6 >> 4 & 15)
-                            as usize])
-                            .as_mut_ptr(),
+                        (ts.cdf.m.refmv_mode[(ctx_6 >> 4 & 15) as usize]).as_mut_ptr(),
                     ) != 0
                     {
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .inter_mode = NEARMV as libc::c_int as uint8_t;
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .drl_idx = NEARER_DRL as libc::c_int as uint8_t;
+                        b.c2rust_unnamed.c2rust_unnamed_0.inter_mode =
+                            NEARMV as libc::c_int as uint8_t;
+                        b.c2rust_unnamed.c2rust_unnamed_0.drl_idx =
+                            NEARER_DRL as libc::c_int as uint8_t;
                         if n_mvs_2 > 2 {
-                            let drl_ctx_v2_1 = get_drl_context(
-                                mvstack_2.as_mut_ptr(),
-                                1 as libc::c_int,
-                            );
-                            b
-                                .c2rust_unnamed
-                                .c2rust_unnamed_0
-                                .drl_idx = (b.c2rust_unnamed.c2rust_unnamed_0.drl_idx
-                                as libc::c_uint)
-                                .wrapping_add(
-                                    dav1d_msac_decode_bool_adapt(
+                            let drl_ctx_v2_1 =
+                                get_drl_context(mvstack_2.as_mut_ptr(), 1 as libc::c_int);
+                            b.c2rust_unnamed.c2rust_unnamed_0.drl_idx =
+                                (b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_uint)
+                                    .wrapping_add(dav1d_msac_decode_bool_adapt(
                                         &mut ts.msac,
                                         (ts.cdf.m.drl_bit[drl_ctx_v2_1 as usize]).as_mut_ptr(),
-                                    ),
-                                ) as uint8_t as uint8_t;
-                            if b.c2rust_unnamed.c2rust_unnamed_0.drl_idx
-                                as libc::c_int == NEAR_DRL as libc::c_int
+                                    )) as uint8_t as uint8_t;
+                            if b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_int
+                                == NEAR_DRL as libc::c_int
                                 && n_mvs_2 > 3
                             {
-                                let drl_ctx_v3_0 = get_drl_context(
-                                    mvstack_2.as_mut_ptr(),
-                                    2 as libc::c_int,
-                                );
-                                b
-                                    .c2rust_unnamed
-                                    .c2rust_unnamed_0
-                                    .drl_idx = (b.c2rust_unnamed.c2rust_unnamed_0.drl_idx
-                                    as libc::c_uint)
-                                    .wrapping_add(
-                                        dav1d_msac_decode_bool_adapt(
+                                let drl_ctx_v3_0 =
+                                    get_drl_context(mvstack_2.as_mut_ptr(), 2 as libc::c_int);
+                                b.c2rust_unnamed.c2rust_unnamed_0.drl_idx =
+                                    (b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_uint)
+                                        .wrapping_add(dav1d_msac_decode_bool_adapt(
                                             &mut ts.msac,
                                             (ts.cdf.m.drl_bit[drl_ctx_v3_0 as usize]).as_mut_ptr(),
-                                        ),
-                                    ) as uint8_t as uint8_t;
+                                        )) as uint8_t
+                                        as uint8_t;
                             }
                         }
                     } else {
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .inter_mode = NEARESTMV as libc::c_int as uint8_t;
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .drl_idx = NEAREST_DRL as libc::c_int as uint8_t;
+                        b.c2rust_unnamed.c2rust_unnamed_0.inter_mode =
+                            NEARESTMV as libc::c_int as uint8_t;
+                        b.c2rust_unnamed.c2rust_unnamed_0.drl_idx =
+                            NEAREST_DRL as libc::c_int as uint8_t;
                     }
                     if !(b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_int
                         >= NEAREST_DRL as libc::c_int
@@ -10037,16 +8194,12 @@ unsafe fn decode_b(
                     {
                         unreachable!();
                     }
-                    b
-                        .c2rust_unnamed
+                    b.c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
-                        .mv[0 as libc::c_int
-                        as usize] = mvstack_2[b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .drl_idx as usize]
+                        .mv[0 as libc::c_int as usize] = mvstack_2
+                        [b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as usize]
                         .mv
                         .mv[0];
                     if (b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_int)
@@ -10055,22 +8208,19 @@ unsafe fn decode_b(
                         fix_mv_precision(&*f.frame_hdr, &mut b.mv_mut()[0]);
                     }
                 }
-                if DEBUG_BLOCK_INFO(f, t)
-                {
+                if DEBUG_BLOCK_INFO(f, t) {
                     printf(
-                        b"Post-intermode[%d,drl=%d,mv=y:%d,x:%d,n_mvs=%d]: r=%d\n\0"
-                            as *const u8 as *const libc::c_char,
+                        b"Post-intermode[%d,drl=%d,mv=y:%d,x:%d,n_mvs=%d]: r=%d\n\0" as *const u8
+                            as *const libc::c_char,
                         b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as libc::c_int,
                         b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_int,
-                        b
-                            .c2rust_unnamed
+                        b.c2rust_unnamed
                             .c2rust_unnamed_0
                             .c2rust_unnamed
                             .c2rust_unnamed
                             .mv[0]
                             .y as libc::c_int,
-                        b
-                            .c2rust_unnamed
+                        b.c2rust_unnamed
                             .c2rust_unnamed_0
                             .c2rust_unnamed
                             .c2rust_unnamed
@@ -10082,48 +8232,29 @@ unsafe fn decode_b(
                 }
             } else {
                 has_subpel_filter = 1 as libc::c_int;
-                b
-                    .c2rust_unnamed
-                    .c2rust_unnamed_0
-                    .inter_mode = NEWMV as libc::c_int as uint8_t;
-                b
-                    .c2rust_unnamed
-                    .c2rust_unnamed_0
-                    .drl_idx = NEAREST_DRL as libc::c_int as uint8_t;
+                b.c2rust_unnamed.c2rust_unnamed_0.inter_mode = NEWMV as libc::c_int as uint8_t;
+                b.c2rust_unnamed.c2rust_unnamed_0.drl_idx = NEAREST_DRL as libc::c_int as uint8_t;
                 if n_mvs_2 > 1 {
-                    let drl_ctx_v1_0 = get_drl_context(
-                        mvstack_2.as_mut_ptr(),
-                        0 as libc::c_int,
-                    );
-                    b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .drl_idx = (b.c2rust_unnamed.c2rust_unnamed_0.drl_idx
-                        as libc::c_uint)
-                        .wrapping_add(
+                    let drl_ctx_v1_0 = get_drl_context(mvstack_2.as_mut_ptr(), 0 as libc::c_int);
+                    b.c2rust_unnamed.c2rust_unnamed_0.drl_idx =
+                        (b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_uint).wrapping_add(
                             dav1d_msac_decode_bool_adapt(
                                 &mut ts.msac,
                                 (ts.cdf.m.drl_bit[drl_ctx_v1_0 as usize]).as_mut_ptr(),
                             ),
                         ) as uint8_t as uint8_t;
                     if b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_int
-                        == NEARER_DRL as libc::c_int && n_mvs_2 > 2
+                        == NEARER_DRL as libc::c_int
+                        && n_mvs_2 > 2
                     {
-                        let drl_ctx_v2_2 = get_drl_context(
-                            mvstack_2.as_mut_ptr(),
-                            1 as libc::c_int,
-                        );
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .drl_idx = (b.c2rust_unnamed.c2rust_unnamed_0.drl_idx
-                            as libc::c_uint)
-                            .wrapping_add(
-                                dav1d_msac_decode_bool_adapt(
+                        let drl_ctx_v2_2 =
+                            get_drl_context(mvstack_2.as_mut_ptr(), 1 as libc::c_int);
+                        b.c2rust_unnamed.c2rust_unnamed_0.drl_idx =
+                            (b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_uint)
+                                .wrapping_add(dav1d_msac_decode_bool_adapt(
                                     &mut ts.msac,
                                     (ts.cdf.m.drl_bit[drl_ctx_v2_2 as usize]).as_mut_ptr(),
-                                ),
-                            ) as uint8_t as uint8_t;
+                                )) as uint8_t as uint8_t;
                     }
                 }
                 if !(b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_int
@@ -10134,38 +8265,28 @@ unsafe fn decode_b(
                     unreachable!();
                 }
                 if n_mvs_2 > 1 {
-                    b
-                        .c2rust_unnamed
+                    b.c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
-                        .mv[0 as libc::c_int
-                        as usize] = mvstack_2[b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .drl_idx as usize]
+                        .mv[0 as libc::c_int as usize] = mvstack_2
+                        [b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as usize]
                         .mv
                         .mv[0];
                 } else {
                     if b.c2rust_unnamed.c2rust_unnamed_0.drl_idx != 0 {
                         unreachable!();
                     }
-                    b
-                        .c2rust_unnamed
+                    b.c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
-                        .mv[0 as libc::c_int
-                        as usize] = mvstack_2[0]
-                        .mv
-                        .mv[0];
+                        .mv[0 as libc::c_int as usize] = mvstack_2[0].mv.mv[0];
                     fix_mv_precision(&*f.frame_hdr, &mut b.mv_mut()[0]);
                 }
-                if DEBUG_BLOCK_INFO(f, t)
-                {
+                if DEBUG_BLOCK_INFO(f, t) {
                     printf(
-                        b"Post-intermode[%d,drl=%d]: r=%d\n\0" as *const u8
-                            as *const libc::c_char,
+                        b"Post-intermode[%d,drl=%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
                         b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as libc::c_int,
                         b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_int,
                         ts.msac.rng,
@@ -10184,20 +8305,17 @@ unsafe fn decode_b(
                     &mut ts.cdf.mv,
                     ((*f.frame_hdr).force_integer_mv == 0) as libc::c_int,
                 );
-                if DEBUG_BLOCK_INFO(f, t)
-                {
+                if DEBUG_BLOCK_INFO(f, t) {
                     printf(
                         b"Post-residualmv[mv=y:%d,x:%d]: r=%d\n\0" as *const u8
                             as *const libc::c_char,
-                        b
-                            .c2rust_unnamed
+                        b.c2rust_unnamed
                             .c2rust_unnamed_0
                             .c2rust_unnamed
                             .c2rust_unnamed
                             .mv[0]
                             .y as libc::c_int,
-                        b
-                            .c2rust_unnamed
+                        b.c2rust_unnamed
                             .c2rust_unnamed_0
                             .c2rust_unnamed
                             .c2rust_unnamed
@@ -10207,45 +8325,37 @@ unsafe fn decode_b(
                     );
                 }
             }
-            let ii_sz_grp = dav1d_ymode_size_context[bs as usize]
-                as libc::c_int;
+            let ii_sz_grp = dav1d_ymode_size_context[bs as usize] as libc::c_int;
             if (*f.seq_hdr).inter_intra != 0
                 && interintra_allowed_mask
-                    & ((1 as libc::c_int) << bs as libc::c_uint) as libc::c_uint != 0
+                    & ((1 as libc::c_int) << bs as libc::c_uint) as libc::c_uint
+                    != 0
                 && dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     (ts.cdf.m.interintra[ii_sz_grp as usize]).as_mut_ptr(),
                 ) != 0
             {
-                b
-                    .c2rust_unnamed
+                b.c2rust_unnamed
                     .c2rust_unnamed_0
                     .c2rust_unnamed
                     .c2rust_unnamed
                     .interintra_mode = dav1d_msac_decode_symbol_adapt4(
                     &mut ts.msac,
                     (ts.cdf.m.interintra_mode[ii_sz_grp as usize]).as_mut_ptr(),
-                    (N_INTER_INTRA_PRED_MODES as libc::c_int - 1)
-                        as size_t,
+                    (N_INTER_INTRA_PRED_MODES as libc::c_int - 1) as size_t,
                 ) as uint8_t;
-                let wedge_ctx = dav1d_wedge_ctx_lut[bs as usize]
-                    as libc::c_int;
-                b
-                    .c2rust_unnamed
-                    .c2rust_unnamed_0
-                    .interintra_type = (INTER_INTRA_BLEND as libc::c_int as libc::c_uint)
-                    .wrapping_add(
+                let wedge_ctx = dav1d_wedge_ctx_lut[bs as usize] as libc::c_int;
+                b.c2rust_unnamed.c2rust_unnamed_0.interintra_type =
+                    (INTER_INTRA_BLEND as libc::c_int as libc::c_uint).wrapping_add(
                         dav1d_msac_decode_bool_adapt(
                             &mut ts.msac,
-                            (ts.cdf.m.interintra_wedge[wedge_ctx as usize])
-                                .as_mut_ptr(),
+                            (ts.cdf.m.interintra_wedge[wedge_ctx as usize]).as_mut_ptr(),
                         ),
                     ) as uint8_t;
                 if b.c2rust_unnamed.c2rust_unnamed_0.interintra_type as libc::c_int
                     == INTER_INTRA_WEDGE as libc::c_int
                 {
-                    b
-                        .c2rust_unnamed
+                    b.c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
@@ -10256,28 +8366,25 @@ unsafe fn decode_b(
                     ) as uint8_t;
                 }
             } else {
-                b
-                    .c2rust_unnamed
-                    .c2rust_unnamed_0
-                    .interintra_type = INTER_INTRA_NONE as libc::c_int as uint8_t;
+                b.c2rust_unnamed.c2rust_unnamed_0.interintra_type =
+                    INTER_INTRA_NONE as libc::c_int as uint8_t;
             }
             if DEBUG_BLOCK_INFO(f, t)
                 && (*f.seq_hdr).inter_intra != 0
                 && interintra_allowed_mask
-                    & ((1 as libc::c_int) << bs as libc::c_uint) as libc::c_uint != 0
+                    & ((1 as libc::c_int) << bs as libc::c_uint) as libc::c_uint
+                    != 0
             {
                 printf(
                     b"Post-interintra[t=%d,m=%d,w=%d]: r=%d\n\0" as *const u8
                         as *const libc::c_char,
                     b.c2rust_unnamed.c2rust_unnamed_0.interintra_type as libc::c_int,
-                    b
-                        .c2rust_unnamed
+                    b.c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
                         .interintra_mode as libc::c_int,
-                    b
-                        .c2rust_unnamed
+                    b.c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
@@ -10292,20 +8399,14 @@ unsafe fn decode_b(
                 && !((*f.frame_hdr).force_integer_mv == 0
                     && b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as libc::c_int
                         == GLOBALMV as libc::c_int
-                    && (*f.frame_hdr)
-                        .gmv[b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[0] as usize]
+                    && (*f.frame_hdr).gmv[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize]
                         .type_0 as libc::c_uint
                         > DAV1D_WM_TYPE_TRANSLATION as libc::c_int as libc::c_uint)
                 && (have_left != 0 && findoddzero(&t.l.intra[by4 as usize..][..h4 as usize])
                     || have_top != 0 && findoddzero(&(*t.a).intra[bx4 as usize..][..w4 as usize]))
             {
-                let mut mask: [uint64_t; 2] = [
-                    0 as libc::c_int as uint64_t,
-                    0 as libc::c_int as uint64_t,
-                ];
+                let mut mask: [uint64_t; 2] =
+                    [0 as libc::c_int as uint64_t, 0 as libc::c_int as uint64_t];
                 find_matching_ref(
                     t,
                     intra_edge_flags,
@@ -10315,24 +8416,15 @@ unsafe fn decode_b(
                     h4,
                     have_left,
                     have_top,
-                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0]
-                        as libc::c_int,
+                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int,
                     mask.as_mut_ptr(),
                 );
-                let allow_warp = (f
-                    .svc[b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .r#ref[0]
-                        as usize][0]
-                    .scale == 0 && (*f.frame_hdr).force_integer_mv == 0
-                    && (*f.frame_hdr).warp_motion != 0
-                    && mask[0] | mask[1]
-                        != 0) as libc::c_int;
-                b
-                    .c2rust_unnamed
-                    .c2rust_unnamed_0
-                    .motion_mode = (if allow_warp != 0 {
+                let allow_warp =
+                    (f.svc[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize][0].scale == 0
+                        && (*f.frame_hdr).force_integer_mv == 0
+                        && (*f.frame_hdr).warp_motion != 0
+                        && mask[0] | mask[1] != 0) as libc::c_int;
+                b.c2rust_unnamed.c2rust_unnamed_0.motion_mode = (if allow_warp != 0 {
                     dav1d_msac_decode_symbol_adapt4(
                         &mut ts.msac,
                         (ts.cdf.m.motion_mode[bs as usize]).as_mut_ptr(),
@@ -10353,16 +8445,14 @@ unsafe fn decode_b(
                         bw4,
                         bh4,
                         mask.as_mut_ptr() as *const uint64_t,
-                        b
-                            .c2rust_unnamed
+                        b.c2rust_unnamed
                             .c2rust_unnamed_0
                             .c2rust_unnamed
                             .c2rust_unnamed
                             .mv[0],
                         &mut t.warpmv,
                     );
-                    if DEBUG_BLOCK_INFO(f, t)
-                    {
+                    if DEBUG_BLOCK_INFO(f, t) {
                         printf(
                             b"[ %c%x %c%x %c%x\n  %c%x %c%x %c%x ]\nalpha=%c%x, beta=%c%x, gamma=%c%x, delta=%c%x, mv=y:%d,x:%d\n\0"
                                 as *const u8 as *const libc::c_char,
@@ -10461,52 +8551,39 @@ unsafe fn decode_b(
                         if t.warpmv.type_0 as libc::c_uint
                             == DAV1D_WM_TYPE_AFFINE as libc::c_int as libc::c_uint
                         {
-                            b
-                                .c2rust_unnamed
+                            b.c2rust_unnamed
                                 .c2rust_unnamed_0
                                 .c2rust_unnamed
                                 .c2rust_unnamed_0
-                                .matrix[0 as libc::c_int
-                                as usize] = (t.warpmv.matrix[2]
-                                - 0x10000 as libc::c_int) as int16_t;
-                            b
-                                .c2rust_unnamed
+                                .matrix[0 as libc::c_int as usize] =
+                                (t.warpmv.matrix[2] - 0x10000 as libc::c_int) as int16_t;
+                            b.c2rust_unnamed
                                 .c2rust_unnamed_0
                                 .c2rust_unnamed
                                 .c2rust_unnamed_0
-                                .matrix[1 as libc::c_int
-                                as usize] = t.warpmv.matrix[3]
-                                as int16_t;
-                            b
-                                .c2rust_unnamed
+                                .matrix[1 as libc::c_int as usize] = t.warpmv.matrix[3] as int16_t;
+                            b.c2rust_unnamed
                                 .c2rust_unnamed_0
                                 .c2rust_unnamed
                                 .c2rust_unnamed_0
-                                .matrix[2 as libc::c_int
-                                as usize] = t.warpmv.matrix[4]
-                                as int16_t;
-                            b
-                                .c2rust_unnamed
+                                .matrix[2 as libc::c_int as usize] = t.warpmv.matrix[4] as int16_t;
+                            b.c2rust_unnamed
                                 .c2rust_unnamed_0
                                 .c2rust_unnamed
                                 .c2rust_unnamed_0
-                                .matrix[3 as libc::c_int
-                                as usize] = (t.warpmv.matrix[5]
-                                - 0x10000 as libc::c_int) as int16_t;
+                                .matrix[3 as libc::c_int as usize] =
+                                (t.warpmv.matrix[5] - 0x10000 as libc::c_int) as int16_t;
                         } else {
-                            b
-                                .c2rust_unnamed
+                            b.c2rust_unnamed
                                 .c2rust_unnamed_0
                                 .c2rust_unnamed
                                 .c2rust_unnamed_0
-                                .matrix[0 as libc::c_int
-                                as usize] = (-(32767 as libc::c_int) - 1)
-                                as int16_t;
+                                .matrix[0 as libc::c_int as usize] =
+                                (-(32767 as libc::c_int) - 1) as int16_t;
                         }
                     }
                 }
-                if DEBUG_BLOCK_INFO(f, t)
-                {
+                if DEBUG_BLOCK_INFO(f, t) {
                     printf(
                         b"Post-motionmode[%d]: r=%d [mask: 0x%lx/0x%lx]\n\0" as *const u8
                             as *const libc::c_char,
@@ -10517,10 +8594,8 @@ unsafe fn decode_b(
                     );
                 }
             } else {
-                b
-                    .c2rust_unnamed
-                    .c2rust_unnamed_0
-                    .motion_mode = MM_TRANSLATION as libc::c_int as uint8_t;
+                b.c2rust_unnamed.c2rust_unnamed_0.motion_mode =
+                    MM_TRANSLATION as libc::c_int as uint8_t;
             }
         }
         let mut filter_0: [Dav1dFilterMode; 2] = [DAV1D_FILTER_8TAP_REGULAR; 2];
@@ -10528,25 +8603,21 @@ unsafe fn decode_b(
             == DAV1D_FILTER_SWITCHABLE as libc::c_int as libc::c_uint
         {
             if has_subpel_filter != 0 {
-                let comp = (b.c2rust_unnamed.c2rust_unnamed_0.comp_type
-                    as libc::c_int != COMP_INTER_NONE as libc::c_int) as libc::c_int;
+                let comp = (b.c2rust_unnamed.c2rust_unnamed_0.comp_type as libc::c_int
+                    != COMP_INTER_NONE as libc::c_int) as libc::c_int;
                 let ctx1_1 = get_filter_ctx(
                     t.a,
                     &mut t.l,
                     comp,
                     0 as libc::c_int,
-                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0]
-                        as libc::c_int,
+                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int,
                     by4,
                     bx4,
                 );
-                filter_0[0 as libc::c_int
-                    as usize] = dav1d_msac_decode_symbol_adapt4(
+                filter_0[0 as libc::c_int as usize] = dav1d_msac_decode_symbol_adapt4(
                     &mut ts.msac,
-                    (ts.cdf.m.filter[0][ctx1_1 as usize])
-                        .as_mut_ptr(),
-                    (DAV1D_N_SWITCHABLE_FILTERS as libc::c_int - 1)
-                        as size_t,
+                    (ts.cdf.m.filter[0][ctx1_1 as usize]).as_mut_ptr(),
+                    (DAV1D_N_SWITCHABLE_FILTERS as libc::c_int - 1) as size_t,
                 ) as Dav1dFilterMode;
                 if (*f.seq_hdr).dual_filter != 0 {
                     let ctx2_3 = get_filter_ctx(
@@ -10554,15 +8625,11 @@ unsafe fn decode_b(
                         &mut t.l,
                         comp,
                         1 as libc::c_int,
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[0] as libc::c_int,
+                        b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int,
                         by4,
                         bx4,
                     );
-                    if DEBUG_BLOCK_INFO(f, t)
-                    {
+                    if DEBUG_BLOCK_INFO(f, t) {
                         printf(
                             b"Post-subpel_filter1[%d,ctx=%d]: r=%d\n\0" as *const u8
                                 as *const libc::c_char,
@@ -10571,16 +8638,12 @@ unsafe fn decode_b(
                             ts.msac.rng,
                         );
                     }
-                    filter_0[1 as libc::c_int
-                        as usize] = dav1d_msac_decode_symbol_adapt4(
+                    filter_0[1 as libc::c_int as usize] = dav1d_msac_decode_symbol_adapt4(
                         &mut ts.msac,
-                        (ts.cdf.m.filter[1][ctx2_3 as usize])
-                            .as_mut_ptr(),
-                        (DAV1D_N_SWITCHABLE_FILTERS as libc::c_int - 1)
-                            as size_t,
+                        (ts.cdf.m.filter[1][ctx2_3 as usize]).as_mut_ptr(),
+                        (DAV1D_N_SWITCHABLE_FILTERS as libc::c_int - 1) as size_t,
                     ) as Dav1dFilterMode;
-                    if DEBUG_BLOCK_INFO(f, t)
-                    {
+                    if DEBUG_BLOCK_INFO(f, t) {
                         printf(
                             b"Post-subpel_filter2[%d,ctx=%d]: r=%d\n\0" as *const u8
                                 as *const libc::c_char,
@@ -10590,10 +8653,8 @@ unsafe fn decode_b(
                         );
                     }
                 } else {
-                    filter_0[1 as libc::c_int
-                        as usize] = filter_0[0];
-                    if DEBUG_BLOCK_INFO(f, t)
-                    {
+                    filter_0[1 as libc::c_int as usize] = filter_0[0];
+                    if DEBUG_BLOCK_INFO(f, t) {
                         printf(
                             b"Post-subpel_filter[%d,ctx=%d]: r=%d\n\0" as *const u8
                                 as *const libc::c_char,
@@ -10605,58 +8666,44 @@ unsafe fn decode_b(
                 }
             } else {
                 filter_0[1] = DAV1D_FILTER_8TAP_REGULAR;
-                filter_0[0 as libc::c_int
-                    as usize] = filter_0[1];
+                filter_0[0 as libc::c_int as usize] = filter_0[1];
             }
         } else {
             filter_0[1] = (*f.frame_hdr).subpel_filter_mode;
             filter_0[0] = filter_0[1];
         }
-        b
-            .c2rust_unnamed
-            .c2rust_unnamed_0
-            .filter2d = dav1d_filter_2d[filter_0[1]
-            as usize][filter_0[0] as usize];
+        b.c2rust_unnamed.c2rust_unnamed_0.filter2d =
+            dav1d_filter_2d[filter_0[1] as usize][filter_0[0] as usize];
         read_vartx_tree(t, b, bs, bx4, by4);
         if t.frame_thread.pass == 1 {
             (f.bd_fn.read_coef_blocks).expect("non-null function pointer")(t, bs, b);
-        } else if (f.bd_fn.recon_b_inter)
-            .expect("non-null function pointer")(t, bs, b) != 0
-        {
-            return -(1 as libc::c_int)
+        } else if (f.bd_fn.recon_b_inter).expect("non-null function pointer")(t, bs, b) != 0 {
+            return -(1 as libc::c_int);
         }
-        if (*f.frame_hdr).loopfilter.level_y[0] != 0
-            || (*f.frame_hdr).loopfilter.level_y[1] != 0
-        {
-            let is_globalmv = (b
-                .c2rust_unnamed
-                .c2rust_unnamed_0
-                .inter_mode as libc::c_int
+        if (*f.frame_hdr).loopfilter.level_y[0] != 0 || (*f.frame_hdr).loopfilter.level_y[1] != 0 {
+            let is_globalmv = (b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as libc::c_int
                 == (if is_comp != 0 {
                     GLOBALMV_GLOBALMV as libc::c_int
                 } else {
                     GLOBALMV as libc::c_int
                 })) as libc::c_int;
-            let lf_lvls: *const [[uint8_t; 2]; 8] = &*(*(*(*(ts.lflvl)
-                .offset(b.seg_id as isize))
+            let lf_lvls: *const [[uint8_t; 2]; 8] =
+                &*(*(*(*(ts.lflvl).offset(b.seg_id as isize)).as_ptr().offset(0))
+                    .as_ptr()
+                    .offset(
+                        (*(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
+                            .as_mut_ptr()
+                            .offset(0) as libc::c_int
+                            + 1) as isize,
+                    ))
                 .as_ptr()
-                .offset(0))
-                .as_ptr()
-                .offset(
-                    (*(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
-                        .as_mut_ptr()
-                        .offset(0) as libc::c_int
-                        + 1) as isize,
-                ))
-                .as_ptr()
-                .offset((is_globalmv == 0) as libc::c_int as isize) as *const uint8_t
-                as *const [[uint8_t; 2]; 8];
+                .offset((is_globalmv == 0) as libc::c_int as isize)
+                    as *const uint8_t as *const [[uint8_t; 2]; 8];
             let tx_split: [uint16_t; 2] = [
                 b.c2rust_unnamed.c2rust_unnamed_0.tx_split0 as uint16_t,
                 b.c2rust_unnamed.c2rust_unnamed_0.tx_split1,
             ];
-            let mut ytx: RectTxfmSize = b.c2rust_unnamed.c2rust_unnamed_0.max_ytx
-                as RectTxfmSize;
+            let mut ytx: RectTxfmSize = b.c2rust_unnamed.c2rust_unnamed_0.max_ytx as RectTxfmSize;
             let mut uvtx: RectTxfmSize = b.uvtx as RectTxfmSize;
             if (*f.frame_hdr).segmentation.lossless[b.seg_id as usize] != 0 {
                 ytx = TX_4X4 as libc::c_int as RectTxfmSize;
@@ -10698,49 +8745,41 @@ unsafe fn decode_b(
         }
         match bh4 {
             1 => {
-                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias8))
+                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias8))
                     .u8_0 = (0x1 * seg_pred) as uint8_t;
-                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias8))
-                    .u8_0 = (0x1 * b.skip_mode as libc::c_int)
-                    as uint8_t;
+                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias8))
+                    .u8_0 = (0x1 * b.skip_mode as libc::c_int) as uint8_t;
                 (*(&mut *(t.l.intra).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias8))
                     .u8_0 = 0 as libc::c_int as uint8_t;
                 (*(&mut *(t.l.skip).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias8))
                     .u8_0 = (0x1 * b.skip as libc::c_int) as uint8_t;
-                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias8))
+                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias8))
                     .u8_0 = 0 as libc::c_int as uint8_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset(by4 as isize) as *mut uint8_t as *mut alias8))
                     .u8_0 = 0 as libc::c_int as uint8_t;
-                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset(by4 as isize)
-                    as *mut int8_t as *mut alias8))
-                    .u8_0 = (0x1 as libc::c_int
-                    * *b_dim.offset((2 + 1) as isize)
-                        as libc::c_int) as uint8_t;
-                (*(&mut *(t.l.comp_type).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias8))
+                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset(by4 as isize) as *mut int8_t
+                    as *mut alias8))
+                    .u8_0 = (0x1 as libc::c_int * *b_dim.offset((2 + 1) as isize) as libc::c_int)
+                    as uint8_t;
+                (*(&mut *(t.l.comp_type).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias8))
                     .u8_0 = (0x1 as libc::c_int
                     * b.c2rust_unnamed.c2rust_unnamed_0.comp_type as libc::c_int)
                     as uint8_t;
-                (*(&mut *(*(t.l.filter)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*(t.l.filter).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset(by4 as isize) as *mut uint8_t as *mut alias8))
                     .u8_0 = (0x1 as libc::c_int as libc::c_uint)
                     .wrapping_mul(filter_0[0] as libc::c_uint)
                     as uint8_t;
-                (*(&mut *(*(t.l.filter)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*(t.l.filter).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset(by4 as isize) as *mut uint8_t as *mut alias8))
                     .u8_0 = (0x1 as libc::c_int as libc::c_uint)
@@ -10755,65 +8794,51 @@ unsafe fn decode_b(
                     .as_mut_ptr()
                     .offset(by4 as isize) as *mut int8_t as *mut alias8))
                     .u8_0 = (0x1 as libc::c_int
-                    * b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .r#ref[0] as libc::c_int) as uint8_t;
+                    * b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int)
+                    as uint8_t;
                 (*(&mut *(*(t.l.r#ref).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset(by4 as isize) as *mut int8_t as *mut alias8))
                     .u8_0 = (0x1 as libc::c_int
-                    * b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .r#ref[1] as uint8_t as libc::c_int)
+                    * b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as uint8_t as libc::c_int)
                     as uint8_t;
             }
             2 => {
-                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias16))
+                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias16))
                     .u16_0 = (0x101 * seg_pred) as uint16_t;
-                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias16))
-                    .u16_0 = (0x101 * b.skip_mode as libc::c_int)
-                    as uint16_t;
+                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias16))
+                    .u16_0 = (0x101 * b.skip_mode as libc::c_int) as uint16_t;
                 (*(&mut *(t.l.intra).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias16))
                     .u16_0 = 0 as libc::c_int as uint16_t;
                 (*(&mut *(t.l.skip).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias16))
-                    .u16_0 = (0x101 * b.skip as libc::c_int)
-                    as uint16_t;
-                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias16))
+                    .u16_0 = (0x101 * b.skip as libc::c_int) as uint16_t;
+                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias16))
                     .u16_0 = 0 as libc::c_int as uint16_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset(by4 as isize) as *mut uint8_t as *mut alias16))
                     .u16_0 = 0 as libc::c_int as uint16_t;
-                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset(by4 as isize)
-                    as *mut int8_t as *mut alias16))
-                    .u16_0 = (0x101 as libc::c_int
-                    * *b_dim.offset((2 + 1) as isize)
-                        as libc::c_int) as uint16_t;
-                (*(&mut *(t.l.comp_type).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias16))
+                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset(by4 as isize) as *mut int8_t
+                    as *mut alias16))
+                    .u16_0 = (0x101 as libc::c_int * *b_dim.offset((2 + 1) as isize) as libc::c_int)
+                    as uint16_t;
+                (*(&mut *(t.l.comp_type).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias16))
                     .u16_0 = (0x101 as libc::c_int
                     * b.c2rust_unnamed.c2rust_unnamed_0.comp_type as libc::c_int)
                     as uint16_t;
-                (*(&mut *(*(t.l.filter)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*(t.l.filter).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset(by4 as isize) as *mut uint8_t as *mut alias16))
                     .u16_0 = (0x101 as libc::c_int as libc::c_uint)
                     .wrapping_mul(filter_0[0] as libc::c_uint)
                     as uint16_t;
-                (*(&mut *(*(t.l.filter)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*(t.l.filter).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset(by4 as isize) as *mut uint8_t as *mut alias16))
                     .u16_0 = (0x101 as libc::c_int as libc::c_uint)
@@ -10828,347 +8853,242 @@ unsafe fn decode_b(
                     .as_mut_ptr()
                     .offset(by4 as isize) as *mut int8_t as *mut alias16))
                     .u16_0 = (0x101 as libc::c_int
-                    * b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .r#ref[0] as libc::c_int) as uint16_t;
+                    * b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int)
+                    as uint16_t;
                 (*(&mut *(*(t.l.r#ref).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset(by4 as isize) as *mut int8_t as *mut alias16))
                     .u16_0 = (0x101 as libc::c_int
-                    * b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .r#ref[1] as uint8_t as libc::c_int)
+                    * b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as uint8_t as libc::c_int)
                     as uint16_t;
             }
             4 => {
-                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(seg_pred as libc::c_uint);
-                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(b.skip_mode as libc::c_uint);
+                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias32))
+                    .u32_0 = (0x1010101 as libc::c_uint).wrapping_mul(seg_pred as libc::c_uint);
+                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias32))
+                    .u32_0 = (0x1010101 as libc::c_uint).wrapping_mul(b.skip_mode as libc::c_uint);
                 (*(&mut *(t.l.intra).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias32))
                     .u32_0 = 0 as libc::c_int as uint32_t;
                 (*(&mut *(t.l.skip).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(b.skip as libc::c_uint);
-                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias32))
+                    .u32_0 = (0x1010101 as libc::c_uint).wrapping_mul(b.skip as libc::c_uint);
+                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias32))
                     .u32_0 = 0 as libc::c_int as uint32_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset(by4 as isize) as *mut uint8_t as *mut alias32))
                     .u32_0 = 0 as libc::c_int as uint32_t;
-                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset(by4 as isize)
-                    as *mut int8_t as *mut alias32))
+                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset(by4 as isize) as *mut int8_t
+                    as *mut alias32))
                     .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(
-                        *b_dim.offset((2 + 1) as isize)
-                            as libc::c_uint,
-                    );
-                (*(&mut *(t.l.comp_type).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias32))
+                    .wrapping_mul(*b_dim.offset((2 + 1) as isize) as libc::c_uint);
+                (*(&mut *(t.l.comp_type).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias32))
                     .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(
-                        b.c2rust_unnamed.c2rust_unnamed_0.comp_type as libc::c_uint,
-                    );
-                (*(&mut *(*(t.l.filter)
-                    .as_mut_ptr()
-                    .offset(0))
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed_0.comp_type as libc::c_uint);
+                (*(&mut *(*(t.l.filter).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset(by4 as isize) as *mut uint8_t as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(filter_0[0] as libc::c_uint);
-                (*(&mut *(*(t.l.filter)
-                    .as_mut_ptr()
-                    .offset(1))
+                    .u32_0 = (0x1010101 as libc::c_uint).wrapping_mul(filter_0[0] as libc::c_uint);
+                (*(&mut *(*(t.l.filter).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset(by4 as isize) as *mut uint8_t as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(filter_0[1] as libc::c_uint);
+                    .u32_0 = (0x1010101 as libc::c_uint).wrapping_mul(filter_0[1] as libc::c_uint);
                 (*(&mut *(t.l.mode).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias32))
                     .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(
-                        b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as libc::c_uint,
-                    );
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as libc::c_uint);
                 (*(&mut *(*(t.l.r#ref).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset(by4 as isize) as *mut int8_t as *mut alias32))
                     .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[0] as libc::c_uint,
-                    );
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_uint);
                 (*(&mut *(*(t.l.r#ref).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset(by4 as isize) as *mut int8_t as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[1] as uint8_t as libc::c_uint,
-                    );
+                    .u32_0 = (0x1010101 as libc::c_uint).wrapping_mul(
+                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as uint8_t as libc::c_uint,
+                );
             }
             8 => {
-                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias64))
+                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(seg_pred as libc::c_ulonglong) as uint64_t;
-                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias64))
+                    .wrapping_mul(seg_pred as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(b.skip_mode as libc::c_ulonglong) as uint64_t;
+                    .wrapping_mul(b.skip_mode as libc::c_ulonglong)
+                    as uint64_t;
                 (*(&mut *(t.l.intra).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = 0 as libc::c_int as uint64_t;
                 (*(&mut *(t.l.skip).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(b.skip as libc::c_ulonglong) as uint64_t;
-                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias64))
+                    .wrapping_mul(b.skip as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias64))
                     .u64_0 = 0 as libc::c_int as uint64_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset(by4 as isize) as *mut uint8_t as *mut alias64))
                     .u64_0 = 0 as libc::c_int as uint64_t;
-                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset(by4 as isize)
-                    as *mut int8_t as *mut alias64))
+                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset(by4 as isize) as *mut int8_t
+                    as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        *b_dim.offset((2 + 1) as isize)
-                            as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(t.l.comp_type).as_mut_ptr().offset(by4 as isize)
-                    as *mut uint8_t as *mut alias64))
+                    .wrapping_mul(*b_dim.offset((2 + 1) as isize) as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.comp_type).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                    as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        b.c2rust_unnamed.c2rust_unnamed_0.comp_type
-                            as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(*(t.l.filter)
-                    .as_mut_ptr()
-                    .offset(0))
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed_0.comp_type as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(*(t.l.filter).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset(by4 as isize) as *mut uint8_t as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        filter_0[0] as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(*(t.l.filter)
-                    .as_mut_ptr()
-                    .offset(1))
+                    .wrapping_mul(filter_0[0] as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(*(t.l.filter).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset(by4 as isize) as *mut uint8_t as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        filter_0[1] as libc::c_ulonglong,
-                    ) as uint64_t;
+                    .wrapping_mul(filter_0[1] as libc::c_ulonglong)
+                    as uint64_t;
                 (*(&mut *(t.l.mode).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        b.c2rust_unnamed.c2rust_unnamed_0.inter_mode
-                            as libc::c_ulonglong,
-                    ) as uint64_t;
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as libc::c_ulonglong)
+                    as uint64_t;
                 (*(&mut *(*(t.l.r#ref).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset(by4 as isize) as *mut int8_t as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[0] as libc::c_ulonglong,
-                    ) as uint64_t;
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_ulonglong)
+                    as uint64_t;
                 (*(&mut *(*(t.l.r#ref).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset(by4 as isize) as *mut int8_t as *mut alias64))
-                    .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[1] as uint8_t
-                            as libc::c_ulonglong,
-                    ) as uint64_t;
+                    .u64_0 = (0x101010101010101 as libc::c_ulonglong).wrapping_mul(
+                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as uint8_t as libc::c_ulonglong,
+                ) as uint64_t;
             }
             16 => {
                 let const_val_123: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(seg_pred as libc::c_ulonglong) as uint64_t;
-                (*(&mut *(t.l.seg_pred)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(seg_pred as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_123;
-                (*(&mut *(t.l.seg_pred)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_123;
                 let const_val_124: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(b.skip_mode as libc::c_ulonglong) as uint64_t;
-                (*(&mut *(t.l.skip_mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(b.skip_mode as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_124;
-                (*(&mut *(t.l.skip_mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_124;
                 let const_val_125: uint64_t = 0 as libc::c_int as uint64_t;
-                (*(&mut *(t.l.intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                (*(&mut *(t.l.intra).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_125;
-                (*(&mut *(t.l.intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.intra).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_125;
                 let const_val_126: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(b.skip as libc::c_ulonglong) as uint64_t;
-                (*(&mut *(t.l.skip)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(b.skip as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.skip).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_126;
-                (*(&mut *(t.l.skip)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_126;
                 let const_val_127: uint64_t = 0 as libc::c_int as uint64_t;
-                (*(&mut *(t.l.pal_sz)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_127;
-                (*(&mut *(t.l.pal_sz)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_127;
                 let const_val_128: uint64_t = 0 as libc::c_int as uint64_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_128;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_128;
                 let const_val_129: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        *b_dim.offset((2 + 1) as isize)
-                            as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(t.l.tx_intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut int8_t
+                    .wrapping_mul(*b_dim.offset((2 + 1) as isize) as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset((by4 + 0) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_129;
-                (*(&mut *(t.l.tx_intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut int8_t
+                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset((by4 + 8) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_129;
                 let const_val_130: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        b.c2rust_unnamed.c2rust_unnamed_0.comp_type
-                            as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(t.l.comp_type)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed_0.comp_type as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.comp_type).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_130;
-                (*(&mut *(t.l.comp_type)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.comp_type).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_130;
                 let const_val_131: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        filter_0[0] as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(*(t.l.filter)
-                    .as_mut_ptr()
-                    .offset(0))
+                    .wrapping_mul(filter_0[0] as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(*(t.l.filter).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_131;
-                (*(&mut *(*(t.l.filter)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*(t.l.filter).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_131;
                 let const_val_132: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        filter_0[1] as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(*(t.l.filter)
-                    .as_mut_ptr()
-                    .offset(1))
+                    .wrapping_mul(filter_0[1] as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(*(t.l.filter).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_132;
-                (*(&mut *(*(t.l.filter)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*(t.l.filter).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_132;
                 let const_val_133: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        b.c2rust_unnamed.c2rust_unnamed_0.inter_mode
-                            as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(t.l.mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.mode).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_133;
-                (*(&mut *(t.l.mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.mode).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_133;
                 let const_val_134: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[0] as libc::c_ulonglong,
-                    ) as uint64_t;
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_ulonglong)
+                    as uint64_t;
                 (*(&mut *(*(t.l.r#ref).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((by4 + 0) as isize) as *mut int8_t
@@ -11179,14 +9099,9 @@ unsafe fn decode_b(
                     .offset((by4 + 8) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_134;
-                let const_val_135: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[1] as uint8_t
-                            as libc::c_ulonglong,
-                    ) as uint64_t;
+                let const_val_135: uint64_t = (0x101010101010101 as libc::c_ulonglong).wrapping_mul(
+                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as uint8_t as libc::c_ulonglong,
+                ) as uint64_t;
                 (*(&mut *(*(t.l.r#ref).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((by4 + 0) as isize) as *mut int8_t
@@ -11200,288 +9115,191 @@ unsafe fn decode_b(
             }
             32 => {
                 let const_val_136: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(seg_pred as libc::c_ulonglong) as uint64_t;
-                (*(&mut *(t.l.seg_pred)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(seg_pred as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_136;
-                (*(&mut *(t.l.seg_pred)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_136;
-                (*(&mut *(t.l.seg_pred)
-                    .as_mut_ptr()
-                    .offset((by4 + 16) as isize) as *mut uint8_t
+                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset((by4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_136;
-                (*(&mut *(t.l.seg_pred)
-                    .as_mut_ptr()
-                    .offset((by4 + 24) as isize) as *mut uint8_t
+                (*(&mut *(t.l.seg_pred).as_mut_ptr().offset((by4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_136;
                 let const_val_137: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(b.skip_mode as libc::c_ulonglong) as uint64_t;
-                (*(&mut *(t.l.skip_mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(b.skip_mode as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_137;
-                (*(&mut *(t.l.skip_mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_137;
-                (*(&mut *(t.l.skip_mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 16) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset((by4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_137;
-                (*(&mut *(t.l.skip_mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 24) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip_mode).as_mut_ptr().offset((by4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_137;
                 let const_val_138: uint64_t = 0 as libc::c_int as uint64_t;
-                (*(&mut *(t.l.intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                (*(&mut *(t.l.intra).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_138;
-                (*(&mut *(t.l.intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.intra).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_138;
-                (*(&mut *(t.l.intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 16) as isize) as *mut uint8_t
+                (*(&mut *(t.l.intra).as_mut_ptr().offset((by4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_138;
-                (*(&mut *(t.l.intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 24) as isize) as *mut uint8_t
+                (*(&mut *(t.l.intra).as_mut_ptr().offset((by4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_138;
                 let const_val_139: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(b.skip as libc::c_ulonglong) as uint64_t;
-                (*(&mut *(t.l.skip)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(b.skip as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.skip).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_139;
-                (*(&mut *(t.l.skip)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_139;
-                (*(&mut *(t.l.skip)
-                    .as_mut_ptr()
-                    .offset((by4 + 16) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip).as_mut_ptr().offset((by4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_139;
-                (*(&mut *(t.l.skip)
-                    .as_mut_ptr()
-                    .offset((by4 + 24) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip).as_mut_ptr().offset((by4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_139;
                 let const_val_140: uint64_t = 0 as libc::c_int as uint64_t;
-                (*(&mut *(t.l.pal_sz)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_140;
-                (*(&mut *(t.l.pal_sz)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_140;
-                (*(&mut *(t.l.pal_sz)
-                    .as_mut_ptr()
-                    .offset((by4 + 16) as isize) as *mut uint8_t
+                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset((by4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_140;
-                (*(&mut *(t.l.pal_sz)
-                    .as_mut_ptr()
-                    .offset((by4 + 24) as isize) as *mut uint8_t
+                (*(&mut *(t.l.pal_sz).as_mut_ptr().offset((by4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_140;
                 let const_val_141: uint64_t = 0 as libc::c_int as uint64_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_141;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_141;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((by4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_141;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((by4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_141;
                 let const_val_142: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        *b_dim.offset((2 + 1) as isize)
-                            as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(t.l.tx_intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut int8_t
+                    .wrapping_mul(*b_dim.offset((2 + 1) as isize) as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset((by4 + 0) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_142;
-                (*(&mut *(t.l.tx_intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut int8_t
+                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset((by4 + 8) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_142;
-                (*(&mut *(t.l.tx_intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 16) as isize) as *mut int8_t
+                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset((by4 + 16) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_142;
-                (*(&mut *(t.l.tx_intra)
-                    .as_mut_ptr()
-                    .offset((by4 + 24) as isize) as *mut int8_t
+                (*(&mut *(t.l.tx_intra).as_mut_ptr().offset((by4 + 24) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_142;
                 let const_val_143: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        b.c2rust_unnamed.c2rust_unnamed_0.comp_type
-                            as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(t.l.comp_type)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed_0.comp_type as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.comp_type).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_143;
-                (*(&mut *(t.l.comp_type)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.comp_type).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_143;
-                (*(&mut *(t.l.comp_type)
-                    .as_mut_ptr()
-                    .offset((by4 + 16) as isize) as *mut uint8_t
+                (*(&mut *(t.l.comp_type).as_mut_ptr().offset((by4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_143;
-                (*(&mut *(t.l.comp_type)
-                    .as_mut_ptr()
-                    .offset((by4 + 24) as isize) as *mut uint8_t
+                (*(&mut *(t.l.comp_type).as_mut_ptr().offset((by4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_143;
                 let const_val_144: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        filter_0[0] as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(*(t.l.filter)
-                    .as_mut_ptr()
-                    .offset(0))
+                    .wrapping_mul(filter_0[0] as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(*(t.l.filter).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_144;
-                (*(&mut *(*(t.l.filter)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*(t.l.filter).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_144;
-                (*(&mut *(*(t.l.filter)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*(t.l.filter).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((by4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_144;
-                (*(&mut *(*(t.l.filter)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*(t.l.filter).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((by4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_144;
                 let const_val_145: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        filter_0[1] as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(*(t.l.filter)
-                    .as_mut_ptr()
-                    .offset(1))
+                    .wrapping_mul(filter_0[1] as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(*(t.l.filter).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_145;
-                (*(&mut *(*(t.l.filter)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*(t.l.filter).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_145;
-                (*(&mut *(*(t.l.filter)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*(t.l.filter).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((by4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_145;
-                (*(&mut *(*(t.l.filter)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*(t.l.filter).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((by4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_145;
                 let const_val_146: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        b.c2rust_unnamed.c2rust_unnamed_0.inter_mode
-                            as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(t.l.mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(t.l.mode).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_146;
-                (*(&mut *(t.l.mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.mode).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_146;
-                (*(&mut *(t.l.mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 16) as isize) as *mut uint8_t
+                (*(&mut *(t.l.mode).as_mut_ptr().offset((by4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_146;
-                (*(&mut *(t.l.mode)
-                    .as_mut_ptr()
-                    .offset((by4 + 24) as isize) as *mut uint8_t
+                (*(&mut *(t.l.mode).as_mut_ptr().offset((by4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_146;
                 let const_val_147: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[0] as libc::c_ulonglong,
-                    ) as uint64_t;
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_ulonglong)
+                    as uint64_t;
                 (*(&mut *(*(t.l.r#ref).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((by4 + 0) as isize) as *mut int8_t
@@ -11502,14 +9320,9 @@ unsafe fn decode_b(
                     .offset((by4 + 24) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_147;
-                let const_val_148: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[1] as uint8_t
-                            as libc::c_ulonglong,
-                    ) as uint64_t;
+                let const_val_148: uint64_t = (0x101010101010101 as libc::c_ulonglong).wrapping_mul(
+                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as uint8_t as libc::c_ulonglong,
+                ) as uint64_t;
                 (*(&mut *(*(t.l.r#ref).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((by4 + 0) as isize) as *mut int8_t
@@ -11535,334 +9348,245 @@ unsafe fn decode_b(
         }
         match bw4 {
             1 => {
-                (*(&mut *((*t.a).seg_pred).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias8))
+                (*(&mut *((*t.a).seg_pred).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias8))
                     .u8_0 = (0x1 * seg_pred) as uint8_t;
-                (*(&mut *((*t.a).skip_mode).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias8))
-                    .u8_0 = (0x1 * b.skip_mode as libc::c_int)
-                    as uint8_t;
-                (*(&mut *((*t.a).intra).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias8))
+                (*(&mut *((*t.a).skip_mode).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias8))
+                    .u8_0 = (0x1 * b.skip_mode as libc::c_int) as uint8_t;
+                (*(&mut *((*t.a).intra).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias8))
                     .u8_0 = 0 as libc::c_int as uint8_t;
-                (*(&mut *((*t.a).skip).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias8))
+                (*(&mut *((*t.a).skip).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias8))
                     .u8_0 = (0x1 * b.skip as libc::c_int) as uint8_t;
-                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias8))
+                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias8))
                     .u8_0 = 0 as libc::c_int as uint8_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset(bx4 as isize) as *mut uint8_t as *mut alias8))
                     .u8_0 = 0 as libc::c_int as uint8_t;
-                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset(bx4 as isize)
-                    as *mut int8_t as *mut alias8))
-                    .u8_0 = (0x1 as libc::c_int
-                    * *b_dim.offset((2 + 0) as isize)
-                        as libc::c_int) as uint8_t;
-                (*(&mut *((*t.a).comp_type).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias8))
+                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset(bx4 as isize) as *mut int8_t
+                    as *mut alias8))
+                    .u8_0 = (0x1 as libc::c_int * *b_dim.offset((2 + 0) as isize) as libc::c_int)
+                    as uint8_t;
+                (*(&mut *((*t.a).comp_type).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias8))
                     .u8_0 = (0x1 as libc::c_int
                     * b.c2rust_unnamed.c2rust_unnamed_0.comp_type as libc::c_int)
                     as uint8_t;
-                (*(&mut *(*((*t.a).filter)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset(bx4 as isize) as *mut uint8_t as *mut alias8))
                     .u8_0 = (0x1 as libc::c_int as libc::c_uint)
                     .wrapping_mul(filter_0[0] as libc::c_uint)
                     as uint8_t;
-                (*(&mut *(*((*t.a).filter)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset(bx4 as isize) as *mut uint8_t as *mut alias8))
                     .u8_0 = (0x1 as libc::c_int as libc::c_uint)
                     .wrapping_mul(filter_0[1] as libc::c_uint)
                     as uint8_t;
-                (*(&mut *((*t.a).mode).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias8))
+                (*(&mut *((*t.a).mode).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias8))
                     .u8_0 = (0x1 as libc::c_int
                     * b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as libc::c_int)
                     as uint8_t;
-                (*(&mut *(*((*t.a).r#ref)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset(bx4 as isize) as *mut int8_t as *mut alias8))
                     .u8_0 = (0x1 as libc::c_int
-                    * b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .r#ref[0] as libc::c_int) as uint8_t;
-                (*(&mut *(*((*t.a).r#ref)
-                    .as_mut_ptr()
-                    .offset(1))
+                    * b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int)
+                    as uint8_t;
+                (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset(bx4 as isize) as *mut int8_t as *mut alias8))
                     .u8_0 = (0x1 as libc::c_int
-                    * b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .r#ref[1] as uint8_t as libc::c_int)
+                    * b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as uint8_t as libc::c_int)
                     as uint8_t;
             }
             2 => {
-                (*(&mut *((*t.a).seg_pred).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias16))
+                (*(&mut *((*t.a).seg_pred).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias16))
                     .u16_0 = (0x101 * seg_pred) as uint16_t;
-                (*(&mut *((*t.a).skip_mode).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias16))
-                    .u16_0 = (0x101 * b.skip_mode as libc::c_int)
-                    as uint16_t;
-                (*(&mut *((*t.a).intra).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias16))
+                (*(&mut *((*t.a).skip_mode).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias16))
+                    .u16_0 = (0x101 * b.skip_mode as libc::c_int) as uint16_t;
+                (*(&mut *((*t.a).intra).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias16))
                     .u16_0 = 0 as libc::c_int as uint16_t;
-                (*(&mut *((*t.a).skip).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias16))
-                    .u16_0 = (0x101 * b.skip as libc::c_int)
-                    as uint16_t;
-                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias16))
+                (*(&mut *((*t.a).skip).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias16))
+                    .u16_0 = (0x101 * b.skip as libc::c_int) as uint16_t;
+                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias16))
                     .u16_0 = 0 as libc::c_int as uint16_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset(bx4 as isize) as *mut uint8_t as *mut alias16))
                     .u16_0 = 0 as libc::c_int as uint16_t;
-                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset(bx4 as isize)
-                    as *mut int8_t as *mut alias16))
-                    .u16_0 = (0x101 as libc::c_int
-                    * *b_dim.offset((2 + 0) as isize)
-                        as libc::c_int) as uint16_t;
-                (*(&mut *((*t.a).comp_type).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias16))
+                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset(bx4 as isize) as *mut int8_t
+                    as *mut alias16))
+                    .u16_0 = (0x101 as libc::c_int * *b_dim.offset((2 + 0) as isize) as libc::c_int)
+                    as uint16_t;
+                (*(&mut *((*t.a).comp_type).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias16))
                     .u16_0 = (0x101 as libc::c_int
                     * b.c2rust_unnamed.c2rust_unnamed_0.comp_type as libc::c_int)
                     as uint16_t;
-                (*(&mut *(*((*t.a).filter)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset(bx4 as isize) as *mut uint8_t as *mut alias16))
                     .u16_0 = (0x101 as libc::c_int as libc::c_uint)
                     .wrapping_mul(filter_0[0] as libc::c_uint)
                     as uint16_t;
-                (*(&mut *(*((*t.a).filter)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset(bx4 as isize) as *mut uint8_t as *mut alias16))
                     .u16_0 = (0x101 as libc::c_int as libc::c_uint)
                     .wrapping_mul(filter_0[1] as libc::c_uint)
                     as uint16_t;
-                (*(&mut *((*t.a).mode).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias16))
+                (*(&mut *((*t.a).mode).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias16))
                     .u16_0 = (0x101 as libc::c_int
                     * b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as libc::c_int)
                     as uint16_t;
-                (*(&mut *(*((*t.a).r#ref)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset(bx4 as isize) as *mut int8_t as *mut alias16))
                     .u16_0 = (0x101 as libc::c_int
-                    * b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .r#ref[0] as libc::c_int) as uint16_t;
-                (*(&mut *(*((*t.a).r#ref)
-                    .as_mut_ptr()
-                    .offset(1))
+                    * b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int)
+                    as uint16_t;
+                (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset(bx4 as isize) as *mut int8_t as *mut alias16))
                     .u16_0 = (0x101 as libc::c_int
-                    * b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .r#ref[1] as uint8_t as libc::c_int)
+                    * b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as uint8_t as libc::c_int)
                     as uint16_t;
             }
             4 => {
-                (*(&mut *((*t.a).seg_pred).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(seg_pred as libc::c_uint);
-                (*(&mut *((*t.a).skip_mode).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(b.skip_mode as libc::c_uint);
-                (*(&mut *((*t.a).intra).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias32))
+                (*(&mut *((*t.a).seg_pred).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias32))
+                    .u32_0 = (0x1010101 as libc::c_uint).wrapping_mul(seg_pred as libc::c_uint);
+                (*(&mut *((*t.a).skip_mode).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias32))
+                    .u32_0 = (0x1010101 as libc::c_uint).wrapping_mul(b.skip_mode as libc::c_uint);
+                (*(&mut *((*t.a).intra).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias32))
                     .u32_0 = 0 as libc::c_int as uint32_t;
-                (*(&mut *((*t.a).skip).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(b.skip as libc::c_uint);
-                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias32))
+                (*(&mut *((*t.a).skip).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias32))
+                    .u32_0 = (0x1010101 as libc::c_uint).wrapping_mul(b.skip as libc::c_uint);
+                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias32))
                     .u32_0 = 0 as libc::c_int as uint32_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset(bx4 as isize) as *mut uint8_t as *mut alias32))
                     .u32_0 = 0 as libc::c_int as uint32_t;
-                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset(bx4 as isize)
-                    as *mut int8_t as *mut alias32))
+                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset(bx4 as isize) as *mut int8_t
+                    as *mut alias32))
                     .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(
-                        *b_dim.offset((2 + 0) as isize)
-                            as libc::c_uint,
-                    );
-                (*(&mut *((*t.a).comp_type).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias32))
+                    .wrapping_mul(*b_dim.offset((2 + 0) as isize) as libc::c_uint);
+                (*(&mut *((*t.a).comp_type).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias32))
                     .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(
-                        b.c2rust_unnamed.c2rust_unnamed_0.comp_type as libc::c_uint,
-                    );
-                (*(&mut *(*((*t.a).filter)
-                    .as_mut_ptr()
-                    .offset(0))
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed_0.comp_type as libc::c_uint);
+                (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset(bx4 as isize) as *mut uint8_t as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(filter_0[0] as libc::c_uint);
-                (*(&mut *(*((*t.a).filter)
-                    .as_mut_ptr()
-                    .offset(1))
+                    .u32_0 = (0x1010101 as libc::c_uint).wrapping_mul(filter_0[0] as libc::c_uint);
+                (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset(bx4 as isize) as *mut uint8_t as *mut alias32))
+                    .u32_0 = (0x1010101 as libc::c_uint).wrapping_mul(filter_0[1] as libc::c_uint);
+                (*(&mut *((*t.a).mode).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias32))
                     .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(filter_0[1] as libc::c_uint);
-                (*(&mut *((*t.a).mode).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(
-                        b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as libc::c_uint,
-                    );
-                (*(&mut *(*((*t.a).r#ref)
-                    .as_mut_ptr()
-                    .offset(0))
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as libc::c_uint);
+                (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset(bx4 as isize) as *mut int8_t as *mut alias32))
                     .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[0] as libc::c_uint,
-                    );
-                (*(&mut *(*((*t.a).r#ref)
-                    .as_mut_ptr()
-                    .offset(1))
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_uint);
+                (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset(bx4 as isize) as *mut int8_t as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[1] as uint8_t as libc::c_uint,
-                    );
+                    .u32_0 = (0x1010101 as libc::c_uint).wrapping_mul(
+                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as uint8_t as libc::c_uint,
+                );
             }
             8 => {
-                (*(&mut *((*t.a).seg_pred).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias64))
+                (*(&mut *((*t.a).seg_pred).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(seg_pred as libc::c_ulonglong) as uint64_t;
-                (*(&mut *((*t.a).skip_mode).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias64))
+                    .wrapping_mul(seg_pred as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *((*t.a).skip_mode).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(b.skip_mode as libc::c_ulonglong) as uint64_t;
-                (*(&mut *((*t.a).intra).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias64))
+                    .wrapping_mul(b.skip_mode as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *((*t.a).intra).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias64))
                     .u64_0 = 0 as libc::c_int as uint64_t;
-                (*(&mut *((*t.a).skip).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias64))
+                (*(&mut *((*t.a).skip).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(b.skip as libc::c_ulonglong) as uint64_t;
-                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias64))
+                    .wrapping_mul(b.skip as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias64))
                     .u64_0 = 0 as libc::c_int as uint64_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset(bx4 as isize) as *mut uint8_t as *mut alias64))
                     .u64_0 = 0 as libc::c_int as uint64_t;
-                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset(bx4 as isize)
-                    as *mut int8_t as *mut alias64))
+                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset(bx4 as isize) as *mut int8_t
+                    as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        *b_dim.offset((2 + 0) as isize)
-                            as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *((*t.a).comp_type).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias64))
+                    .wrapping_mul(*b_dim.offset((2 + 0) as isize) as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *((*t.a).comp_type).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        b.c2rust_unnamed.c2rust_unnamed_0.comp_type
-                            as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(*((*t.a).filter)
-                    .as_mut_ptr()
-                    .offset(0))
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed_0.comp_type as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset(bx4 as isize) as *mut uint8_t as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        filter_0[0] as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(*((*t.a).filter)
-                    .as_mut_ptr()
-                    .offset(1))
+                    .wrapping_mul(filter_0[0] as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset(bx4 as isize) as *mut uint8_t as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        filter_0[1] as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *((*t.a).mode).as_mut_ptr().offset(bx4 as isize)
-                    as *mut uint8_t as *mut alias64))
+                    .wrapping_mul(filter_0[1] as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *((*t.a).mode).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                    as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        b.c2rust_unnamed.c2rust_unnamed_0.inter_mode
-                            as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(*((*t.a).r#ref)
-                    .as_mut_ptr()
-                    .offset(0))
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset(bx4 as isize) as *mut int8_t as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[0] as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(*((*t.a).r#ref)
-                    .as_mut_ptr()
-                    .offset(1))
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset(bx4 as isize) as *mut int8_t as *mut alias64))
-                    .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[1] as uint8_t
-                            as libc::c_ulonglong,
-                    ) as uint64_t;
+                    .u64_0 = (0x101010101010101 as libc::c_ulonglong).wrapping_mul(
+                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as uint8_t as libc::c_ulonglong,
+                ) as uint64_t;
             }
             16 => {
                 let const_val_149: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(seg_pred as libc::c_ulonglong) as uint64_t;
+                    .wrapping_mul(seg_pred as libc::c_ulonglong)
+                    as uint64_t;
                 (*(&mut *((*t.a).seg_pred)
                     .as_mut_ptr()
                     .offset((bx4 + 0) as isize) as *mut uint8_t
@@ -11874,7 +9598,8 @@ unsafe fn decode_b(
                     as *mut alias64))
                     .u64_0 = const_val_149;
                 let const_val_150: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(b.skip_mode as libc::c_ulonglong) as uint64_t;
+                    .wrapping_mul(b.skip_mode as libc::c_ulonglong)
+                    as uint64_t;
                 (*(&mut *((*t.a).skip_mode)
                     .as_mut_ptr()
                     .offset((bx4 + 0) as isize) as *mut uint8_t
@@ -11886,74 +9611,51 @@ unsafe fn decode_b(
                     as *mut alias64))
                     .u64_0 = const_val_150;
                 let const_val_151: uint64_t = 0 as libc::c_int as uint64_t;
-                (*(&mut *((*t.a).intra)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).intra).as_mut_ptr().offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_151;
-                (*(&mut *((*t.a).intra)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).intra).as_mut_ptr().offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_151;
                 let const_val_152: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(b.skip as libc::c_ulonglong) as uint64_t;
-                (*(&mut *((*t.a).skip)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(b.skip as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *((*t.a).skip).as_mut_ptr().offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_152;
-                (*(&mut *((*t.a).skip)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).skip).as_mut_ptr().offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_152;
                 let const_val_153: uint64_t = 0 as libc::c_int as uint64_t;
-                (*(&mut *((*t.a).pal_sz)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_153;
-                (*(&mut *((*t.a).pal_sz)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_153;
                 let const_val_154: uint64_t = 0 as libc::c_int as uint64_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_154;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_154;
                 let const_val_155: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        *b_dim.offset((2 + 0) as isize)
-                            as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *((*t.a).tx_intra)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut int8_t
+                    .wrapping_mul(*b_dim.offset((2 + 0) as isize) as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset((bx4 + 0) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_155;
-                (*(&mut *((*t.a).tx_intra)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut int8_t
+                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset((bx4 + 8) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_155;
                 let const_val_156: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        b.c2rust_unnamed.c2rust_unnamed_0.comp_type
-                            as libc::c_ulonglong,
-                    ) as uint64_t;
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed_0.comp_type as libc::c_ulonglong)
+                    as uint64_t;
                 (*(&mut *((*t.a).comp_type)
                     .as_mut_ptr()
                     .offset((bx4 + 0) as isize) as *mut uint8_t
@@ -11965,95 +9667,62 @@ unsafe fn decode_b(
                     as *mut alias64))
                     .u64_0 = const_val_156;
                 let const_val_157: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        filter_0[0] as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(*((*t.a).filter)
-                    .as_mut_ptr()
-                    .offset(0))
+                    .wrapping_mul(filter_0[0] as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_157;
-                (*(&mut *(*((*t.a).filter)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_157;
                 let const_val_158: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        filter_0[1] as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(*((*t.a).filter)
-                    .as_mut_ptr()
-                    .offset(1))
+                    .wrapping_mul(filter_0[1] as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_158;
-                (*(&mut *(*((*t.a).filter)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_158;
                 let const_val_159: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        b.c2rust_unnamed.c2rust_unnamed_0.inter_mode
-                            as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *((*t.a).mode)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *((*t.a).mode).as_mut_ptr().offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_159;
-                (*(&mut *((*t.a).mode)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).mode).as_mut_ptr().offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_159;
                 let const_val_160: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[0] as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(*((*t.a).r#ref)
-                    .as_mut_ptr()
-                    .offset(0))
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((bx4 + 0) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_160;
-                (*(&mut *(*((*t.a).r#ref)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((bx4 + 8) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_160;
-                let const_val_161: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[1] as uint8_t
-                            as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(*((*t.a).r#ref)
-                    .as_mut_ptr()
-                    .offset(1))
+                let const_val_161: uint64_t = (0x101010101010101 as libc::c_ulonglong).wrapping_mul(
+                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as uint8_t as libc::c_ulonglong,
+                ) as uint64_t;
+                (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((bx4 + 0) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_161;
-                (*(&mut *(*((*t.a).r#ref)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((bx4 + 8) as isize) as *mut int8_t
                     as *mut alias64))
@@ -12061,7 +9730,8 @@ unsafe fn decode_b(
             }
             32 => {
                 let const_val_162: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(seg_pred as libc::c_ulonglong) as uint64_t;
+                    .wrapping_mul(seg_pred as libc::c_ulonglong)
+                    as uint64_t;
                 (*(&mut *((*t.a).seg_pred)
                     .as_mut_ptr()
                     .offset((bx4 + 0) as isize) as *mut uint8_t
@@ -12083,7 +9753,8 @@ unsafe fn decode_b(
                     as *mut alias64))
                     .u64_0 = const_val_162;
                 let const_val_163: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(b.skip_mode as libc::c_ulonglong) as uint64_t;
+                    .wrapping_mul(b.skip_mode as libc::c_ulonglong)
+                    as uint64_t;
                 (*(&mut *((*t.a).skip_mode)
                     .as_mut_ptr()
                     .offset((bx4 + 0) as isize) as *mut uint8_t
@@ -12105,111 +9776,74 @@ unsafe fn decode_b(
                     as *mut alias64))
                     .u64_0 = const_val_163;
                 let const_val_164: uint64_t = 0 as libc::c_int as uint64_t;
-                (*(&mut *((*t.a).intra)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).intra).as_mut_ptr().offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_164;
-                (*(&mut *((*t.a).intra)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).intra).as_mut_ptr().offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_164;
-                (*(&mut *((*t.a).intra)
-                    .as_mut_ptr()
-                    .offset((bx4 + 16) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).intra).as_mut_ptr().offset((bx4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_164;
-                (*(&mut *((*t.a).intra)
-                    .as_mut_ptr()
-                    .offset((bx4 + 24) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).intra).as_mut_ptr().offset((bx4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_164;
                 let const_val_165: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(b.skip as libc::c_ulonglong) as uint64_t;
-                (*(&mut *((*t.a).skip)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(b.skip as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *((*t.a).skip).as_mut_ptr().offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_165;
-                (*(&mut *((*t.a).skip)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).skip).as_mut_ptr().offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_165;
-                (*(&mut *((*t.a).skip)
-                    .as_mut_ptr()
-                    .offset((bx4 + 16) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).skip).as_mut_ptr().offset((bx4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_165;
-                (*(&mut *((*t.a).skip)
-                    .as_mut_ptr()
-                    .offset((bx4 + 24) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).skip).as_mut_ptr().offset((bx4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_165;
                 let const_val_166: uint64_t = 0 as libc::c_int as uint64_t;
-                (*(&mut *((*t.a).pal_sz)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_166;
-                (*(&mut *((*t.a).pal_sz)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_166;
-                (*(&mut *((*t.a).pal_sz)
-                    .as_mut_ptr()
-                    .offset((bx4 + 16) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset((bx4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_166;
-                (*(&mut *((*t.a).pal_sz)
-                    .as_mut_ptr()
-                    .offset((bx4 + 24) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset((bx4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_166;
                 let const_val_167: uint64_t = 0 as libc::c_int as uint64_t;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_167;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_167;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((bx4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_167;
-                (*(&mut *(*(t.pal_sz_uv)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*(t.pal_sz_uv).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((bx4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_167;
                 let const_val_168: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        *b_dim.offset((2 + 0) as isize)
-                            as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *((*t.a).tx_intra)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut int8_t
+                    .wrapping_mul(*b_dim.offset((2 + 0) as isize) as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset((bx4 + 0) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_168;
-                (*(&mut *((*t.a).tx_intra)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut int8_t
+                (*(&mut *((*t.a).tx_intra).as_mut_ptr().offset((bx4 + 8) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_168;
                 (*(&mut *((*t.a).tx_intra)
@@ -12223,10 +9857,8 @@ unsafe fn decode_b(
                     as *mut alias64))
                     .u64_0 = const_val_168;
                 let const_val_169: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        b.c2rust_unnamed.c2rust_unnamed_0.comp_type
-                            as libc::c_ulonglong,
-                    ) as uint64_t;
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed_0.comp_type as libc::c_ulonglong)
+                    as uint64_t;
                 (*(&mut *((*t.a).comp_type)
                     .as_mut_ptr()
                     .offset((bx4 + 0) as isize) as *mut uint8_t
@@ -12248,161 +9880,108 @@ unsafe fn decode_b(
                     as *mut alias64))
                     .u64_0 = const_val_169;
                 let const_val_170: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        filter_0[0] as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(*((*t.a).filter)
-                    .as_mut_ptr()
-                    .offset(0))
+                    .wrapping_mul(filter_0[0] as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_170;
-                (*(&mut *(*((*t.a).filter)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_170;
-                (*(&mut *(*((*t.a).filter)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((bx4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_170;
-                (*(&mut *(*((*t.a).filter)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((bx4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_170;
                 let const_val_171: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        filter_0[1] as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(*((*t.a).filter)
-                    .as_mut_ptr()
-                    .offset(1))
+                    .wrapping_mul(filter_0[1] as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_171;
-                (*(&mut *(*((*t.a).filter)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_171;
-                (*(&mut *(*((*t.a).filter)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((bx4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_171;
-                (*(&mut *(*((*t.a).filter)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*((*t.a).filter).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((bx4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_171;
                 let const_val_172: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        b.c2rust_unnamed.c2rust_unnamed_0.inter_mode
-                            as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *((*t.a).mode)
-                    .as_mut_ptr()
-                    .offset((bx4 + 0) as isize) as *mut uint8_t
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *((*t.a).mode).as_mut_ptr().offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_172;
-                (*(&mut *((*t.a).mode)
-                    .as_mut_ptr()
-                    .offset((bx4 + 8) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).mode).as_mut_ptr().offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_172;
-                (*(&mut *((*t.a).mode)
-                    .as_mut_ptr()
-                    .offset((bx4 + 16) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).mode).as_mut_ptr().offset((bx4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_172;
-                (*(&mut *((*t.a).mode)
-                    .as_mut_ptr()
-                    .offset((bx4 + 24) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).mode).as_mut_ptr().offset((bx4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_172;
                 let const_val_173: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[0] as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(*((*t.a).r#ref)
-                    .as_mut_ptr()
-                    .offset(0))
+                    .wrapping_mul(b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_ulonglong)
+                    as uint64_t;
+                (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((bx4 + 0) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_173;
-                (*(&mut *(*((*t.a).r#ref)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((bx4 + 8) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_173;
-                (*(&mut *(*((*t.a).r#ref)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((bx4 + 16) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_173;
-                (*(&mut *(*((*t.a).r#ref)
-                    .as_mut_ptr()
-                    .offset(0))
+                (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset((bx4 + 24) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_173;
-                let const_val_174: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[1] as uint8_t
-                            as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *(*((*t.a).r#ref)
-                    .as_mut_ptr()
-                    .offset(1))
+                let const_val_174: uint64_t = (0x101010101010101 as libc::c_ulonglong).wrapping_mul(
+                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as uint8_t as libc::c_ulonglong,
+                ) as uint64_t;
+                (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((bx4 + 0) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_174;
-                (*(&mut *(*((*t.a).r#ref)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((bx4 + 8) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_174;
-                (*(&mut *(*((*t.a).r#ref)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((bx4 + 16) as isize) as *mut int8_t
                     as *mut alias64))
                     .u64_0 = const_val_174;
-                (*(&mut *(*((*t.a).r#ref)
-                    .as_mut_ptr()
-                    .offset(1))
+                (*(&mut *(*((*t.a).r#ref).as_mut_ptr().offset(1))
                     .as_mut_ptr()
                     .offset((bx4 + 24) as isize) as *mut int8_t
                     as *mut alias64))
@@ -12413,32 +9992,30 @@ unsafe fn decode_b(
         if has_chroma {
             match cbh4 {
                 1 => {
-                    (*(&mut *(t.l.uvmode).as_mut_ptr().offset(cby4 as isize)
-                        as *mut uint8_t as *mut alias8))
+                    (*(&mut *(t.l.uvmode).as_mut_ptr().offset(cby4 as isize) as *mut uint8_t
+                        as *mut alias8))
                         .u8_0 = (0x1 * DC_PRED as libc::c_int) as uint8_t;
                 }
                 2 => {
-                    (*(&mut *(t.l.uvmode).as_mut_ptr().offset(cby4 as isize)
-                        as *mut uint8_t as *mut alias16))
-                        .u16_0 = (0x101 * DC_PRED as libc::c_int)
-                        as uint16_t;
+                    (*(&mut *(t.l.uvmode).as_mut_ptr().offset(cby4 as isize) as *mut uint8_t
+                        as *mut alias16))
+                        .u16_0 = (0x101 * DC_PRED as libc::c_int) as uint16_t;
                 }
                 4 => {
-                    (*(&mut *(t.l.uvmode).as_mut_ptr().offset(cby4 as isize)
-                        as *mut uint8_t as *mut alias32))
+                    (*(&mut *(t.l.uvmode).as_mut_ptr().offset(cby4 as isize) as *mut uint8_t
+                        as *mut alias32))
                         .u32_0 = (0x1010101 as libc::c_uint)
                         .wrapping_mul(DC_PRED as libc::c_int as libc::c_uint);
                 }
                 8 => {
-                    (*(&mut *(t.l.uvmode).as_mut_ptr().offset(cby4 as isize)
-                        as *mut uint8_t as *mut alias64))
+                    (*(&mut *(t.l.uvmode).as_mut_ptr().offset(cby4 as isize) as *mut uint8_t
+                        as *mut alias64))
                         .u64_0 = (0x101010101010101 as libc::c_ulonglong)
                         .wrapping_mul(DC_PRED as libc::c_int as libc::c_ulonglong)
                         as uint64_t;
                 }
                 16 => {
-                    let const_val_175: uint64_t = (0x101010101010101
-                        as libc::c_ulonglong)
+                    let const_val_175: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                         .wrapping_mul(DC_PRED as libc::c_int as libc::c_ulonglong)
                         as uint64_t;
                     (*(&mut *(t.l.uvmode)
@@ -12453,8 +10030,7 @@ unsafe fn decode_b(
                         .u64_0 = const_val_175;
                 }
                 32 => {
-                    let const_val_176: uint64_t = (0x101010101010101
-                        as libc::c_ulonglong)
+                    let const_val_176: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                         .wrapping_mul(DC_PRED as libc::c_int as libc::c_ulonglong)
                         as uint64_t;
                     (*(&mut *(t.l.uvmode)
@@ -12482,91 +10058,70 @@ unsafe fn decode_b(
             }
             match cbw4 {
                 1 => {
-                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset(cbx4 as isize)
-                        as *mut uint8_t as *mut alias8))
+                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset(cbx4 as isize) as *mut uint8_t
+                        as *mut alias8))
                         .u8_0 = (0x1 * DC_PRED as libc::c_int) as uint8_t;
                 }
                 2 => {
-                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset(cbx4 as isize)
-                        as *mut uint8_t as *mut alias16))
-                        .u16_0 = (0x101 * DC_PRED as libc::c_int)
-                        as uint16_t;
+                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset(cbx4 as isize) as *mut uint8_t
+                        as *mut alias16))
+                        .u16_0 = (0x101 * DC_PRED as libc::c_int) as uint16_t;
                 }
                 4 => {
-                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset(cbx4 as isize)
-                        as *mut uint8_t as *mut alias32))
+                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset(cbx4 as isize) as *mut uint8_t
+                        as *mut alias32))
                         .u32_0 = (0x1010101 as libc::c_uint)
                         .wrapping_mul(DC_PRED as libc::c_int as libc::c_uint);
                 }
                 8 => {
-                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset(cbx4 as isize)
-                        as *mut uint8_t as *mut alias64))
+                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset(cbx4 as isize) as *mut uint8_t
+                        as *mut alias64))
                         .u64_0 = (0x101010101010101 as libc::c_ulonglong)
                         .wrapping_mul(DC_PRED as libc::c_int as libc::c_ulonglong)
                         as uint64_t;
                 }
                 16 => {
-                    let const_val_177: uint64_t = (0x101010101010101
-                        as libc::c_ulonglong)
+                    let const_val_177: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                         .wrapping_mul(DC_PRED as libc::c_int as libc::c_ulonglong)
                         as uint64_t;
-                    (*(&mut *((*t.a).uvmode)
-                        .as_mut_ptr()
-                        .offset((cbx4 + 0) as isize) as *mut uint8_t
-                        as *mut alias64))
+                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset((cbx4 + 0) as isize)
+                        as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_177;
-                    (*(&mut *((*t.a).uvmode)
-                        .as_mut_ptr()
-                        .offset((cbx4 + 8) as isize) as *mut uint8_t
-                        as *mut alias64))
+                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset((cbx4 + 8) as isize)
+                        as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_177;
                 }
                 32 => {
-                    let const_val_178: uint64_t = (0x101010101010101
-                        as libc::c_ulonglong)
+                    let const_val_178: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                         .wrapping_mul(DC_PRED as libc::c_int as libc::c_ulonglong)
                         as uint64_t;
-                    (*(&mut *((*t.a).uvmode)
-                        .as_mut_ptr()
-                        .offset((cbx4 + 0) as isize) as *mut uint8_t
-                        as *mut alias64))
+                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset((cbx4 + 0) as isize)
+                        as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_178;
-                    (*(&mut *((*t.a).uvmode)
-                        .as_mut_ptr()
-                        .offset((cbx4 + 8) as isize) as *mut uint8_t
-                        as *mut alias64))
+                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset((cbx4 + 8) as isize)
+                        as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_178;
-                    (*(&mut *((*t.a).uvmode)
-                        .as_mut_ptr()
-                        .offset((cbx4 + 16) as isize) as *mut uint8_t
-                        as *mut alias64))
+                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset((cbx4 + 16) as isize)
+                        as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_178;
-                    (*(&mut *((*t.a).uvmode)
-                        .as_mut_ptr()
-                        .offset((cbx4 + 24) as isize) as *mut uint8_t
-                        as *mut alias64))
+                    (*(&mut *((*t.a).uvmode).as_mut_ptr().offset((cbx4 + 24) as isize)
+                        as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_178;
                 }
                 _ => {}
             }
         }
     }
-    if (*f.frame_hdr).segmentation.enabled != 0
-        && (*f.frame_hdr).segmentation.update_map != 0
-    {
+    if (*f.frame_hdr).segmentation.enabled != 0 && (*f.frame_hdr).segmentation.update_map != 0 {
         let mut seg_ptr: *mut uint8_t = &mut *(f.cur_segmap)
-            .offset(
-                (t.by as isize * f.b4_stride + t.bx as isize)
-                    as isize,
-            ) as *mut uint8_t;
+            .offset((t.by as isize * f.b4_stride + t.bx as isize) as isize)
+            as *mut uint8_t;
         match bw4 {
             1 => {
                 let mut y_3 = 0;
                 while y_3 < bh4 {
-                    (*(&mut *seg_ptr.offset(0) as *mut uint8_t
-                        as *mut alias8))
-                        .u8_0 = (0x1 * b.seg_id as libc::c_int)
-                        as uint8_t;
+                    (*(&mut *seg_ptr.offset(0) as *mut uint8_t as *mut alias8)).u8_0 =
+                        (0x1 * b.seg_id as libc::c_int) as uint8_t;
                     seg_ptr = seg_ptr.offset(f.b4_stride as isize);
                     y_3 += 1;
                 }
@@ -12574,10 +10129,8 @@ unsafe fn decode_b(
             2 => {
                 let mut y_4 = 0;
                 while y_4 < bh4 {
-                    (*(&mut *seg_ptr.offset(0) as *mut uint8_t
-                        as *mut alias16))
-                        .u16_0 = (0x101 * b.seg_id as libc::c_int)
-                        as uint16_t;
+                    (*(&mut *seg_ptr.offset(0) as *mut uint8_t as *mut alias16)).u16_0 =
+                        (0x101 * b.seg_id as libc::c_int) as uint16_t;
                     seg_ptr = seg_ptr.offset(f.b4_stride as isize);
                     y_4 += 1;
                 }
@@ -12585,10 +10138,8 @@ unsafe fn decode_b(
             4 => {
                 let mut y_5 = 0;
                 while y_5 < bh4 {
-                    (*(&mut *seg_ptr.offset(0) as *mut uint8_t
-                        as *mut alias32))
-                        .u32_0 = (0x1010101 as libc::c_uint)
-                        .wrapping_mul(b.seg_id as libc::c_uint);
+                    (*(&mut *seg_ptr.offset(0) as *mut uint8_t as *mut alias32)).u32_0 =
+                        (0x1010101 as libc::c_uint).wrapping_mul(b.seg_id as libc::c_uint);
                     seg_ptr = seg_ptr.offset(f.b4_stride as isize);
                     y_5 += 1;
                 }
@@ -12596,10 +10147,10 @@ unsafe fn decode_b(
             8 => {
                 let mut y_6 = 0;
                 while y_6 < bh4 {
-                    (*(&mut *seg_ptr.offset(0) as *mut uint8_t
-                        as *mut alias64))
-                        .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(b.seg_id as libc::c_ulonglong) as uint64_t;
+                    (*(&mut *seg_ptr.offset(0) as *mut uint8_t as *mut alias64)).u64_0 =
+                        (0x101010101010101 as libc::c_ulonglong)
+                            .wrapping_mul(b.seg_id as libc::c_ulonglong)
+                            as uint64_t;
                     seg_ptr = seg_ptr.offset(f.b4_stride as isize);
                     y_6 += 1;
                 }
@@ -12607,16 +10158,12 @@ unsafe fn decode_b(
             16 => {
                 let mut y_7 = 0;
                 while y_7 < bh4 {
-                    let const_val_179: uint64_t = (0x101010101010101
-                        as libc::c_ulonglong)
-                        .wrapping_mul(b.seg_id as libc::c_ulonglong) as uint64_t;
-                    (*(&mut *seg_ptr
-                        .offset((0 + 0) as isize)
-                        as *mut uint8_t as *mut alias64))
+                    let const_val_179: uint64_t = (0x101010101010101 as libc::c_ulonglong)
+                        .wrapping_mul(b.seg_id as libc::c_ulonglong)
+                        as uint64_t;
+                    (*(&mut *seg_ptr.offset((0 + 0) as isize) as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_179;
-                    (*(&mut *seg_ptr
-                        .offset((0 + 8) as isize)
-                        as *mut uint8_t as *mut alias64))
+                    (*(&mut *seg_ptr.offset((0 + 8) as isize) as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_179;
                     seg_ptr = seg_ptr.offset(f.b4_stride as isize);
                     y_7 += 1;
@@ -12625,24 +10172,16 @@ unsafe fn decode_b(
             32 => {
                 let mut y_8 = 0;
                 while y_8 < bh4 {
-                    let const_val_180: uint64_t = (0x101010101010101
-                        as libc::c_ulonglong)
-                        .wrapping_mul(b.seg_id as libc::c_ulonglong) as uint64_t;
-                    (*(&mut *seg_ptr
-                        .offset((0 + 0) as isize)
-                        as *mut uint8_t as *mut alias64))
+                    let const_val_180: uint64_t = (0x101010101010101 as libc::c_ulonglong)
+                        .wrapping_mul(b.seg_id as libc::c_ulonglong)
+                        as uint64_t;
+                    (*(&mut *seg_ptr.offset((0 + 0) as isize) as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_180;
-                    (*(&mut *seg_ptr
-                        .offset((0 + 8) as isize)
-                        as *mut uint8_t as *mut alias64))
+                    (*(&mut *seg_ptr.offset((0 + 8) as isize) as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_180;
-                    (*(&mut *seg_ptr
-                        .offset((0 + 16) as isize)
-                        as *mut uint8_t as *mut alias64))
+                    (*(&mut *seg_ptr.offset((0 + 16) as isize) as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_180;
-                    (*(&mut *seg_ptr
-                        .offset((0 + 24) as isize)
-                        as *mut uint8_t as *mut alias64))
+                    (*(&mut *seg_ptr.offset((0 + 24) as isize) as *mut uint8_t as *mut alias64))
                         .u64_0 = const_val_180;
                     seg_ptr = seg_ptr.offset(f.b4_stride as isize);
                     y_8 += 1;
@@ -12654,27 +10193,25 @@ unsafe fn decode_b(
     if b.skip == 0 {
         let mut noskip_mask: *mut [uint16_t; 2] = &mut *((*t.lf_mask).noskip_mask)
             .as_mut_ptr()
-            .offset((by4 >> 1) as isize) as *mut [uint16_t; 2];
-        let mask_0: libc::c_uint = !(0 as libc::c_uint) >> 32 - bw4
-            << (bx4 & 15);
+            .offset((by4 >> 1) as isize)
+            as *mut [uint16_t; 2];
+        let mask_0: libc::c_uint = !(0 as libc::c_uint) >> 32 - bw4 << (bx4 & 15);
         let bx_idx = (bx4 & 16) >> 4;
         let mut y_9 = 0;
         while y_9 < bh4 {
-            (*noskip_mask)[bx_idx
-                as usize] = ((*noskip_mask)[bx_idx as usize] as libc::c_uint | mask_0)
-                as uint16_t;
+            (*noskip_mask)[bx_idx as usize] =
+                ((*noskip_mask)[bx_idx as usize] as libc::c_uint | mask_0) as uint16_t;
             if bw4 == 32 {
-                (*noskip_mask)[1 as libc::c_int
-                    as usize] = ((*noskip_mask)[1]
-                    as libc::c_uint | mask_0) as uint16_t;
+                (*noskip_mask)[1 as libc::c_int as usize] =
+                    ((*noskip_mask)[1] as libc::c_uint | mask_0) as uint16_t;
             }
             y_9 += 2 as libc::c_int;
             noskip_mask = noskip_mask.offset(1);
         }
     }
-    if t.frame_thread.pass == 1 && b.intra == 0
-        && (*f.frame_hdr).frame_type as libc::c_uint
-            & 1 as libc::c_uint != 0
+    if t.frame_thread.pass == 1
+        && b.intra == 0
+        && (*f.frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint != 0
     {
         let sby_0 = t.by - ts.tiling.row_start >> f.sb_shift;
         let lowest_px = &mut *ts.lowest_pixel.offset(sby_0 as isize);
@@ -12684,11 +10221,9 @@ unsafe fn decode_b(
             if imin(bw4, bh4) > 1
                 && (b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as libc::c_int
                     == GLOBALMV as libc::c_int
-                    && f
-                        .gmv_warp_allowed[b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .r#ref[0] as usize] as libc::c_int != 0
+                    && f.gmv_warp_allowed[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize]
+                        as libc::c_int
+                        != 0
                     || b.c2rust_unnamed.c2rust_unnamed_0.motion_mode as libc::c_int
                         == MM_WARP as libc::c_int
                         && t.warpmv.type_0 as libc::c_uint
@@ -12703,13 +10238,11 @@ unsafe fn decode_b(
                     {
                         &t.warpmv
                     } else {
-                        &mut *((*f.frame_hdr).gmv)
-                            .as_mut_ptr()
-                            .offset(
-                                *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
-                                    .as_mut_ptr()
-                                    .offset(0) as isize,
-                            )
+                        &mut *((*f.frame_hdr).gmv).as_mut_ptr().offset(
+                            *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
+                                .as_mut_ptr()
+                                .offset(0) as isize,
+                        )
                     },
                 );
             } else {
@@ -12717,75 +10250,54 @@ unsafe fn decode_b(
                     &mut lowest_px[b.r#ref()[0] as usize][0],
                     t.by,
                     bh4,
-                    b
-                        .c2rust_unnamed
+                    b.c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
                         .mv[0]
                         .y as libc::c_int,
                     0 as libc::c_int,
-                    &*(*(f.svc)
-                        .as_ptr()
-                        .offset(
-                            *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
-                                .as_mut_ptr()
-                                .offset(0) as isize,
-                        ))
-                        .as_ptr()
-                        .offset(1),
+                    &*(*(f.svc).as_ptr().offset(
+                        *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
+                            .as_mut_ptr()
+                            .offset(0) as isize,
+                    ))
+                    .as_ptr()
+                    .offset(1),
                 );
                 if b.c2rust_unnamed.c2rust_unnamed_0.motion_mode as libc::c_int
                     == MM_OBMC as libc::c_int
                 {
-                    obmc_lowest_px(
-                        t,
-                        lowest_px,
-                        false,
-                        b_dim_array,
-                        bx4,
-                        by4,
-                        w4,
-                        h4,
-                    );
+                    obmc_lowest_px(t, lowest_px, false, b_dim_array, bx4, by4, w4, h4);
                 }
             }
             if has_chroma {
-                let mut is_sub8x8 = (bw4 == ss_hor || bh4 == ss_ver)
-                    as libc::c_int;
+                let mut is_sub8x8 = (bw4 == ss_hor || bh4 == ss_ver) as libc::c_int;
                 let mut r_1: *const *mut refmvs_block = 0 as *const *mut refmvs_block;
                 if is_sub8x8 != 0 {
                     if !(ss_hor == 1) {
                         unreachable!();
                     }
-                    r_1 = &mut *(t.rt.r)
-                        .as_mut_ptr()
-                        .offset(
-                            ((t.by & 31) + 5) as isize,
-                        ) as *mut *mut refmvs_block;
+                    r_1 = &mut *(t.rt.r).as_mut_ptr().offset(((t.by & 31) + 5) as isize)
+                        as *mut *mut refmvs_block;
                     if bw4 == 1 {
-                        is_sub8x8
-                            &= ((*(*r_1.offset(0))
-                                .offset((t.bx - 1) as isize))
-                                .r#ref
-                                .r#ref[0] as libc::c_int
-                                > 0) as libc::c_int;
+                        is_sub8x8 &= ((*(*r_1.offset(0)).offset((t.bx - 1) as isize)).r#ref.r#ref[0]
+                            as libc::c_int
+                            > 0) as libc::c_int;
                     }
                     if bh4 == ss_ver {
-                        is_sub8x8
-                            &= ((*(*r_1.offset(-(1 as libc::c_int) as isize))
-                                .offset(t.bx as isize))
-                                .r#ref
-                                .r#ref[0] as libc::c_int
-                                > 0) as libc::c_int;
+                        is_sub8x8 &= ((*(*r_1.offset(-(1 as libc::c_int) as isize))
+                            .offset(t.bx as isize))
+                        .r#ref
+                        .r#ref[0] as libc::c_int
+                            > 0) as libc::c_int;
                     }
                     if bw4 == 1 && bh4 == ss_ver {
-                        is_sub8x8
-                            &= ((*(*r_1.offset(-(1 as libc::c_int) as isize))
-                                .offset((t.bx - 1) as isize))
-                                .r#ref
-                                .r#ref[0] as libc::c_int
-                                > 0) as libc::c_int;
+                        is_sub8x8 &= ((*(*r_1.offset(-(1 as libc::c_int) as isize))
+                            .offset((t.bx - 1) as isize))
+                        .r#ref
+                        .r#ref[0] as libc::c_int
+                            > 0) as libc::c_int;
                     }
                 }
                 if is_sub8x8 != 0 {
@@ -12795,107 +10307,84 @@ unsafe fn decode_b(
                     if bw4 == 1 && bh4 == ss_ver {
                         let rr_1: *const refmvs_block = &mut *(*r_1
                             .offset(-(1 as libc::c_int) as isize))
-                            .offset((t.bx - 1) as isize)
+                        .offset((t.bx - 1) as isize)
                             as *mut refmvs_block;
                         mc_lowest_px(
                             &mut lowest_px[(*rr_1).r#ref.r#ref[0] as usize - 1][1],
                             t.by - 1,
                             bh4,
-                            (*rr_1).mv.mv[0].y
-                                as libc::c_int,
+                            (*rr_1).mv.mv[0].y as libc::c_int,
                             ss_ver,
-                            &*(*(f.svc)
-                                .as_ptr()
-                                .offset(
-                                    (*((*rr_1).r#ref.r#ref)
-                                        .as_ptr()
-                                        .offset(0) as libc::c_int
-                                        - 1) as isize,
-                                ))
-                                .as_ptr()
-                                .offset(1),
+                            &*(*(f.svc).as_ptr().offset(
+                                (*((*rr_1).r#ref.r#ref).as_ptr().offset(0) as libc::c_int - 1)
+                                    as isize,
+                            ))
+                            .as_ptr()
+                            .offset(1),
                         );
                     }
                     if bw4 == 1 {
-                        let rr_2: *const refmvs_block = &mut *(*r_1
-                            .offset(0))
-                            .offset((t.bx - 1) as isize)
-                            as *mut refmvs_block;
+                        let rr_2: *const refmvs_block =
+                            &mut *(*r_1.offset(0)).offset((t.bx - 1) as isize) as *mut refmvs_block;
                         mc_lowest_px(
                             &mut lowest_px[(*rr_2).r#ref.r#ref[0] as usize - 1][1],
                             t.by,
                             bh4,
-                            (*rr_2).mv.mv[0].y
-                                as libc::c_int,
+                            (*rr_2).mv.mv[0].y as libc::c_int,
                             ss_ver,
-                            &*(*(f.svc)
-                                .as_ptr()
-                                .offset(
-                                    (*((*rr_2).r#ref.r#ref)
-                                        .as_ptr()
-                                        .offset(0) as libc::c_int
-                                        - 1) as isize,
-                                ))
-                                .as_ptr()
-                                .offset(1),
+                            &*(*(f.svc).as_ptr().offset(
+                                (*((*rr_2).r#ref.r#ref).as_ptr().offset(0) as libc::c_int - 1)
+                                    as isize,
+                            ))
+                            .as_ptr()
+                            .offset(1),
                         );
                     }
                     if bh4 == ss_ver {
-                        let rr_3: *const refmvs_block = &mut *(*r_1
-                            .offset(-(1 as libc::c_int) as isize))
-                            .offset(t.bx as isize) as *mut refmvs_block;
+                        let rr_3: *const refmvs_block =
+                            &mut *(*r_1.offset(-(1 as libc::c_int) as isize)).offset(t.bx as isize)
+                                as *mut refmvs_block;
                         mc_lowest_px(
                             &mut lowest_px[(*rr_3).r#ref.r#ref[0] as usize - 1][1],
                             t.by - 1,
                             bh4,
-                            (*rr_3).mv.mv[0].y
-                                as libc::c_int,
+                            (*rr_3).mv.mv[0].y as libc::c_int,
                             ss_ver,
-                            &*(*(f.svc)
-                                .as_ptr()
-                                .offset(
-                                    (*((*rr_3).r#ref.r#ref)
-                                        .as_ptr()
-                                        .offset(0) as libc::c_int
-                                        - 1) as isize,
-                                ))
-                                .as_ptr()
-                                .offset(1),
+                            &*(*(f.svc).as_ptr().offset(
+                                (*((*rr_3).r#ref.r#ref).as_ptr().offset(0) as libc::c_int - 1)
+                                    as isize,
+                            ))
+                            .as_ptr()
+                            .offset(1),
                         );
                     }
                     mc_lowest_px(
                         &mut lowest_px[b.r#ref()[0] as usize][1],
                         t.by,
                         bh4,
-                        b
-                            .c2rust_unnamed
+                        b.c2rust_unnamed
                             .c2rust_unnamed_0
                             .c2rust_unnamed
                             .c2rust_unnamed
                             .mv[0]
                             .y as libc::c_int,
                         ss_ver,
-                        &*(*(f.svc)
-                            .as_ptr()
-                            .offset(
-                                *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
-                                    .as_mut_ptr()
-                                    .offset(0) as isize,
-                            ))
-                            .as_ptr()
-                            .offset(1),
+                        &*(*(f.svc).as_ptr().offset(
+                            *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
+                                .as_mut_ptr()
+                                .offset(0) as isize,
+                        ))
+                        .as_ptr()
+                        .offset(1),
                     );
                 } else if imin(cbw4, cbh4) > 1
                     && (b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as libc::c_int
                         == GLOBALMV as libc::c_int
-                        && f
-                            .gmv_warp_allowed[b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[0] as usize] as libc::c_int
+                        && f.gmv_warp_allowed[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize]
+                            as libc::c_int
                             != 0
-                        || b.c2rust_unnamed.c2rust_unnamed_0.motion_mode
-                            as libc::c_int == MM_WARP as libc::c_int
+                        || b.c2rust_unnamed.c2rust_unnamed_0.motion_mode as libc::c_int
+                            == MM_WARP as libc::c_int
                             && t.warpmv.type_0 as libc::c_uint
                                 > DAV1D_WM_TYPE_TRANSLATION as libc::c_int as libc::c_uint)
                 {
@@ -12903,18 +10392,16 @@ unsafe fn decode_b(
                         t,
                         &mut lowest_px[b.r#ref()[0] as usize][1],
                         b_dim_array,
-                        if (*b).c2rust_unnamed.c2rust_unnamed_0.motion_mode
-                            as libc::c_int == MM_WARP as libc::c_int
+                        if (*b).c2rust_unnamed.c2rust_unnamed_0.motion_mode as libc::c_int
+                            == MM_WARP as libc::c_int
                         {
                             &t.warpmv
                         } else {
-                            &mut *((*f.frame_hdr).gmv)
-                                .as_mut_ptr()
-                                .offset(
-                                    *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
-                                        .as_mut_ptr()
-                                        .offset(0) as isize,
-                                )
+                            &mut *((*f.frame_hdr).gmv).as_mut_ptr().offset(
+                                *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
+                                    .as_mut_ptr()
+                                    .offset(0) as isize,
+                            )
                         },
                     );
                 } else {
@@ -12922,37 +10409,25 @@ unsafe fn decode_b(
                         &mut lowest_px[b.r#ref()[0] as usize][1],
                         t.by & !ss_ver,
                         bh4 << (bh4 == ss_ver) as libc::c_int,
-                        b
-                            .c2rust_unnamed
+                        b.c2rust_unnamed
                             .c2rust_unnamed_0
                             .c2rust_unnamed
                             .c2rust_unnamed
                             .mv[0]
                             .y as libc::c_int,
                         ss_ver,
-                        &*(*(f.svc)
-                            .as_ptr()
-                            .offset(
-                                *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
-                                    .as_mut_ptr()
-                                    .offset(0) as isize,
-                            ))
-                            .as_ptr()
-                            .offset(1),
+                        &*(*(f.svc).as_ptr().offset(
+                            *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
+                                .as_mut_ptr()
+                                .offset(0) as isize,
+                        ))
+                        .as_ptr()
+                        .offset(1),
                     );
                     if b.c2rust_unnamed.c2rust_unnamed_0.motion_mode as libc::c_int
                         == MM_OBMC as libc::c_int
                     {
-                        obmc_lowest_px(
-                            t,
-                            lowest_px,
-                            true,
-                            b_dim_array,
-                            bx4,
-                            by4,
-                            w4,
-                            h4,
-                        );
+                        obmc_lowest_px(t, lowest_px, true, b_dim_array, bx4, by4, w4, h4);
                     }
                 }
             }
@@ -12961,46 +10436,40 @@ unsafe fn decode_b(
             while i_0 < 2 {
                 if b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as libc::c_int
                     == GLOBALMV_GLOBALMV as libc::c_int
-                    && f
-                        .gmv_warp_allowed[b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .r#ref[i_0 as usize] as usize] as libc::c_int != 0
+                    && f.gmv_warp_allowed
+                        [b.c2rust_unnamed.c2rust_unnamed_0.r#ref[i_0 as usize] as usize]
+                        as libc::c_int
+                        != 0
                 {
                     affine_lowest_px_luma(
                         t,
                         &mut lowest_px[b.r#ref()[i_0 as usize] as usize][0],
                         b_dim_array,
-                        &mut *((*f.frame_hdr).gmv)
-                            .as_mut_ptr()
-                            .offset(
-                                *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
-                                    .as_mut_ptr()
-                                    .offset(i_0 as isize) as isize,
-                            ),
+                        &mut *((*f.frame_hdr).gmv).as_mut_ptr().offset(
+                            *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
+                                .as_mut_ptr()
+                                .offset(i_0 as isize) as isize,
+                        ),
                     );
                 } else {
                     mc_lowest_px(
                         &mut lowest_px[b.r#ref()[i_0 as usize] as usize][0],
                         t.by,
                         bh4,
-                        b
-                            .c2rust_unnamed
+                        b.c2rust_unnamed
                             .c2rust_unnamed_0
                             .c2rust_unnamed
                             .c2rust_unnamed
                             .mv[i_0 as usize]
                             .y as libc::c_int,
                         0 as libc::c_int,
-                        &*(*(f.svc)
-                            .as_ptr()
-                            .offset(
-                                *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
-                                    .as_mut_ptr()
-                                    .offset(i_0 as isize) as isize,
-                            ))
-                            .as_ptr()
-                            .offset(1),
+                        &*(*(f.svc).as_ptr().offset(
+                            *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
+                                .as_mut_ptr()
+                                .offset(i_0 as isize) as isize,
+                        ))
+                        .as_ptr()
+                        .offset(1),
                     );
                 }
                 i_0 += 1;
@@ -13011,46 +10480,40 @@ unsafe fn decode_b(
                     if b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as libc::c_int
                         == GLOBALMV_GLOBALMV as libc::c_int
                         && imin(cbw4, cbh4) > 1
-                        && f
-                            .gmv_warp_allowed[b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[i_1 as usize] as usize] as libc::c_int != 0
+                        && f.gmv_warp_allowed
+                            [b.c2rust_unnamed.c2rust_unnamed_0.r#ref[i_1 as usize] as usize]
+                            as libc::c_int
+                            != 0
                     {
                         affine_lowest_px_chroma(
                             t,
                             &mut lowest_px[b.r#ref()[i_1 as usize] as usize][1],
                             b_dim_array,
-                            &mut *((*f.frame_hdr).gmv)
-                                .as_mut_ptr()
-                                .offset(
-                                    *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
-                                        .as_mut_ptr()
-                                        .offset(i_1 as isize) as isize,
-                                ),
+                            &mut *((*f.frame_hdr).gmv).as_mut_ptr().offset(
+                                *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
+                                    .as_mut_ptr()
+                                    .offset(i_1 as isize) as isize,
+                            ),
                         );
                     } else {
                         mc_lowest_px(
                             &mut lowest_px[b.r#ref()[i_1 as usize] as usize][1],
                             t.by,
                             bh4,
-                            b
-                                .c2rust_unnamed
+                            b.c2rust_unnamed
                                 .c2rust_unnamed_0
                                 .c2rust_unnamed
                                 .c2rust_unnamed
                                 .mv[i_1 as usize]
                                 .y as libc::c_int,
                             ss_ver,
-                            &*(*(f.svc)
-                                .as_ptr()
-                                .offset(
-                                    *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
-                                        .as_mut_ptr()
-                                        .offset(i_1 as isize) as isize,
-                                ))
-                                .as_ptr()
-                                .offset(1),
+                            &*(*(f.svc).as_ptr().offset(
+                                *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
+                                    .as_mut_ptr()
+                                    .offset(i_1 as isize) as isize,
+                            ))
+                            .as_ptr()
+                            .offset(1),
                         );
                     }
                     i_1 += 1;
@@ -13076,8 +10539,7 @@ unsafe extern "C" fn decode_sb(
         }
         return decode_sb(
             t,
-            (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint)
-                as BlockLevel,
+            (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as BlockLevel,
             (*(node as *const EdgeBranch)).split[0],
         );
     }
@@ -13087,9 +10549,7 @@ unsafe extern "C" fn decode_sb(
     let mut bx8 = 0;
     let mut by8 = 0;
     if (*t).frame_thread.pass != 2 as libc::c_int {
-        if 0 as libc::c_int != 0
-            && bl as libc::c_uint == BL_64X64 as libc::c_int as libc::c_uint
-        {
+        if 0 as libc::c_int != 0 && bl as libc::c_uint == BL_64X64 as libc::c_int as libc::c_uint {
             printf(
                 b"poc=%d,y=%d,x=%d,bl=%d,r=%d\n\0" as *const u8 as *const libc::c_char,
                 (*(*f).frame_hdr).frame_offset,
@@ -13107,10 +10567,8 @@ unsafe extern "C" fn decode_sb(
     if have_h_split != 0 && have_v_split != 0 {
         if (*t).frame_thread.pass == 2 {
             let b: *const Av1Block = &mut *((*f).frame_thread.b)
-                .offset(
-                    ((*t).by as isize * (*f).b4_stride + (*t).bx as isize)
-                        as isize,
-                ) as *mut Av1Block;
+                .offset(((*t).by as isize * (*f).b4_stride + (*t).bx as isize) as isize)
+                as *mut Av1Block;
             bp = (if (*b).bl as libc::c_uint == bl as libc::c_uint {
                 (*b).bp as libc::c_int
             } else {
@@ -13126,15 +10584,12 @@ unsafe extern "C" fn decode_sb(
                 == DAV1D_PIXEL_LAYOUT_I422 as libc::c_int as libc::c_uint
                 && (bp as libc::c_uint == PARTITION_V as libc::c_int as libc::c_uint
                     || bp as libc::c_uint == PARTITION_V4 as libc::c_int as libc::c_uint
-                    || bp as libc::c_uint
-                        == PARTITION_T_LEFT_SPLIT as libc::c_int as libc::c_uint
-                    || bp as libc::c_uint
-                        == PARTITION_T_RIGHT_SPLIT as libc::c_int as libc::c_uint)
+                    || bp as libc::c_uint == PARTITION_T_LEFT_SPLIT as libc::c_int as libc::c_uint
+                    || bp as libc::c_uint == PARTITION_T_RIGHT_SPLIT as libc::c_int as libc::c_uint)
             {
                 return 1 as libc::c_int;
             }
-            if DEBUG_BLOCK_INFO(f, t)
-            {
+            if DEBUG_BLOCK_INFO(f, t) {
                 printf(
                     b"poc=%d,y=%d,x=%d,bl=%d,ctx=%d,bp=%d: r=%d\n\0" as *const u8
                         as *const libc::c_char,
@@ -13216,69 +10671,37 @@ unsafe extern "C" fn decode_sb(
                     if !(hsz == 1) {
                         unreachable!();
                     }
-                    if decode_b(
-                        &mut *t,
-                        bl,
-                        BS_4x4,
-                        PARTITION_SPLIT,
-                        (*tip).split[0],
-                    ) != 0
-                    {
+                    if decode_b(&mut *t, bl, BS_4x4, PARTITION_SPLIT, (*tip).split[0]) != 0 {
                         return -(1 as libc::c_int);
                     }
                     let tl_filter: Filter2d = (*t).tl_4x4_filter;
                     (*t).bx += 1;
-                    if decode_b(
-                        &mut *t,
-                        bl,
-                        BS_4x4,
-                        PARTITION_SPLIT,
-                        (*tip).split[1],
-                    ) != 0
-                    {
+                    if decode_b(&mut *t, bl, BS_4x4, PARTITION_SPLIT, (*tip).split[1]) != 0 {
                         return -(1 as libc::c_int);
                     }
                     (*t).bx -= 1;
                     (*t).by += 1;
-                    if decode_b(
-                        &mut *t,
-                        bl,
-                        BS_4x4,
-                        PARTITION_SPLIT,
-                        (*tip).split[2],
-                    ) != 0
-                    {
+                    if decode_b(&mut *t, bl, BS_4x4, PARTITION_SPLIT, (*tip).split[2]) != 0 {
                         return -(1 as libc::c_int);
                     }
                     (*t).bx += 1;
                     (*t).tl_4x4_filter = tl_filter;
-                    if decode_b(
-                        &mut *t,
-                        bl,
-                        BS_4x4,
-                        PARTITION_SPLIT,
-                        (*tip).split[3],
-                    ) != 0
-                    {
+                    if decode_b(&mut *t, bl, BS_4x4, PARTITION_SPLIT, (*tip).split[3]) != 0 {
                         return -(1 as libc::c_int);
                     }
                     (*t).bx -= 1;
                     (*t).by -= 1;
                     if (*t).frame_thread.pass != 0 {
                         let p = (*t).frame_thread.pass & 1;
-                        (*ts)
-                            .frame_thread[p as usize]
-                            .cf = (((*ts).frame_thread[p as usize].cf as uintptr_t)
-                            .wrapping_add(63)
-                            & !(63))
-                            as *mut libc::c_void;
+                        (*ts).frame_thread[p as usize].cf =
+                            (((*ts).frame_thread[p as usize].cf as uintptr_t).wrapping_add(63)
+                                & !(63)) as *mut libc::c_void;
                     }
                 } else {
                     let branch: *const EdgeBranch = node as *const EdgeBranch;
                     if decode_sb(
                         t,
-                        (bl as libc::c_uint)
-                            .wrapping_add(1 as libc::c_int as libc::c_uint)
+                        (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint)
                             as BlockLevel,
                         (*branch).split[0],
                     ) != 0
@@ -13288,8 +10711,7 @@ unsafe extern "C" fn decode_sb(
                     (*t).bx += hsz;
                     if decode_sb(
                         t,
-                        (bl as libc::c_uint)
-                            .wrapping_add(1 as libc::c_int as libc::c_uint)
+                        (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint)
                             as BlockLevel,
                         (*branch).split[1],
                     ) != 0
@@ -13300,8 +10722,7 @@ unsafe extern "C" fn decode_sb(
                     (*t).by += hsz;
                     if decode_sb(
                         t,
-                        (bl as libc::c_uint)
-                            .wrapping_add(1 as libc::c_int as libc::c_uint)
+                        (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint)
                             as BlockLevel,
                         (*branch).split[2],
                     ) != 0
@@ -13311,8 +10732,7 @@ unsafe extern "C" fn decode_sb(
                     (*t).bx += hsz;
                     if decode_sb(
                         t,
-                        (bl as libc::c_uint)
-                            .wrapping_add(1 as libc::c_int as libc::c_uint)
+                        (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint)
                             as BlockLevel,
                         (*branch).split[3],
                     ) != 0
@@ -13579,19 +10999,13 @@ unsafe extern "C" fn decode_sb(
         let mut is_split: libc::c_uint = 0;
         if (*t).frame_thread.pass == 2 {
             let b_1: *const Av1Block = &mut *((*f).frame_thread.b)
-                .offset(
-                    ((*t).by as isize * (*f).b4_stride + (*t).bx as isize)
-                        as isize,
-                ) as *mut Av1Block;
-            is_split = ((*b_1).bl as libc::c_uint != bl as libc::c_uint) as libc::c_int
-                as libc::c_uint;
+                .offset(((*t).by as isize * (*f).b4_stride + (*t).bx as isize) as isize)
+                as *mut Av1Block;
+            is_split =
+                ((*b_1).bl as libc::c_uint != bl as libc::c_uint) as libc::c_int as libc::c_uint;
         } else {
-            is_split = dav1d_msac_decode_bool(
-                &mut (*ts).msac,
-                gather_top_partition_prob(pc, bl),
-            );
-            if DEBUG_BLOCK_INFO(f, t)
-            {
+            is_split = dav1d_msac_decode_bool(&mut (*ts).msac, gather_top_partition_prob(pc, bl));
+            if DEBUG_BLOCK_INFO(f, t) {
                 printf(
                     b"poc=%d,y=%d,x=%d,bl=%d,ctx=%d,bp=%d: r=%d\n\0" as *const u8
                         as *const libc::c_char,
@@ -13617,8 +11031,7 @@ unsafe extern "C" fn decode_sb(
             bp = PARTITION_SPLIT;
             if decode_sb(
                 t,
-                (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint)
-                    as BlockLevel,
+                (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as BlockLevel,
                 (*branch_6).split[0],
             ) != 0
             {
@@ -13627,8 +11040,7 @@ unsafe extern "C" fn decode_sb(
             (*t).bx += hsz;
             if decode_sb(
                 t,
-                (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint)
-                    as BlockLevel,
+                (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as BlockLevel,
                 (*branch_6).split[1],
             ) != 0
             {
@@ -13640,9 +11052,7 @@ unsafe extern "C" fn decode_sb(
             if decode_b(
                 &mut *t,
                 bl,
-                dav1d_block_sizes[bl
-                    as usize][PARTITION_H as libc::c_int
-                    as usize][0] as BlockSize,
+                dav1d_block_sizes[bl as usize][PARTITION_H as libc::c_int as usize][0] as BlockSize,
                 PARTITION_H,
                 (*node).h[0],
             ) != 0
@@ -13657,25 +11067,20 @@ unsafe extern "C" fn decode_sb(
         let mut is_split_0: libc::c_uint = 0;
         if (*t).frame_thread.pass == 2 {
             let b_2: *const Av1Block = &mut *((*f).frame_thread.b)
-                .offset(
-                    ((*t).by as isize * (*f).b4_stride + (*t).bx as isize)
-                        as isize,
-                ) as *mut Av1Block;
-            is_split_0 = ((*b_2).bl as libc::c_uint != bl as libc::c_uint) as libc::c_int
-                as libc::c_uint;
+                .offset(((*t).by as isize * (*f).b4_stride + (*t).bx as isize) as isize)
+                as *mut Av1Block;
+            is_split_0 =
+                ((*b_2).bl as libc::c_uint != bl as libc::c_uint) as libc::c_int as libc::c_uint;
         } else {
-            is_split_0 = dav1d_msac_decode_bool(
-                &mut (*ts).msac,
-                gather_left_partition_prob(pc, bl),
-            );
+            is_split_0 =
+                dav1d_msac_decode_bool(&mut (*ts).msac, gather_left_partition_prob(pc, bl));
             if (*f).cur.p.layout as libc::c_uint
                 == DAV1D_PIXEL_LAYOUT_I422 as libc::c_int as libc::c_uint
                 && is_split_0 == 0
             {
                 return 1 as libc::c_int;
             }
-            if DEBUG_BLOCK_INFO(f, t)
-            {
+            if DEBUG_BLOCK_INFO(f, t) {
                 printf(
                     b"poc=%d,y=%d,x=%d,bl=%d,ctx=%d,bp=%d: r=%d\n\0" as *const u8
                         as *const libc::c_char,
@@ -13701,8 +11106,7 @@ unsafe extern "C" fn decode_sb(
             bp = PARTITION_SPLIT;
             if decode_sb(
                 t,
-                (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint)
-                    as BlockLevel,
+                (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as BlockLevel,
                 (*branch_7).split[0],
             ) != 0
             {
@@ -13711,8 +11115,7 @@ unsafe extern "C" fn decode_sb(
             (*t).by += hsz;
             if decode_sb(
                 t,
-                (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint)
-                    as BlockLevel,
+                (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as BlockLevel,
                 (*branch_7).split[2],
             ) != 0
             {
@@ -13724,9 +11127,7 @@ unsafe extern "C" fn decode_sb(
             if decode_b(
                 &mut *t,
                 bl,
-                dav1d_block_sizes[bl
-                    as usize][PARTITION_V as libc::c_int
-                    as usize][0] as BlockSize,
+                dav1d_block_sizes[bl as usize][PARTITION_V as libc::c_int as usize][0] as BlockSize,
                 PARTITION_V,
                 (*node).v[0],
             ) != 0
@@ -13741,67 +11142,62 @@ unsafe extern "C" fn decode_sb(
     {
         match hsz {
             1 => {
-                (*(&mut *((*(*t).a).partition).as_mut_ptr().offset(bx8 as isize)
-                    as *mut uint8_t as *mut alias8))
+                (*(&mut *((*(*t).a).partition).as_mut_ptr().offset(bx8 as isize) as *mut uint8_t
+                    as *mut alias8))
                     .u8_0 = (0x1 as libc::c_int
-                    * dav1d_al_part_ctx[0 as libc::c_int
-                        as usize][bl as usize][bp as usize] as libc::c_int) as uint8_t;
-                (*(&mut *((*t).l.partition).as_mut_ptr().offset(by8 as isize)
-                    as *mut uint8_t as *mut alias8))
+                    * dav1d_al_part_ctx[0 as libc::c_int as usize][bl as usize][bp as usize]
+                        as libc::c_int) as uint8_t;
+                (*(&mut *((*t).l.partition).as_mut_ptr().offset(by8 as isize) as *mut uint8_t
+                    as *mut alias8))
                     .u8_0 = (0x1 as libc::c_int
-                    * dav1d_al_part_ctx[1 as libc::c_int
-                        as usize][bl as usize][bp as usize] as libc::c_int) as uint8_t;
+                    * dav1d_al_part_ctx[1 as libc::c_int as usize][bl as usize][bp as usize]
+                        as libc::c_int) as uint8_t;
             }
             2 => {
-                (*(&mut *((*(*t).a).partition).as_mut_ptr().offset(bx8 as isize)
-                    as *mut uint8_t as *mut alias16))
+                (*(&mut *((*(*t).a).partition).as_mut_ptr().offset(bx8 as isize) as *mut uint8_t
+                    as *mut alias16))
                     .u16_0 = (0x101 as libc::c_int
-                    * dav1d_al_part_ctx[0 as libc::c_int
-                        as usize][bl as usize][bp as usize] as libc::c_int) as uint16_t;
-                (*(&mut *((*t).l.partition).as_mut_ptr().offset(by8 as isize)
-                    as *mut uint8_t as *mut alias16))
+                    * dav1d_al_part_ctx[0 as libc::c_int as usize][bl as usize][bp as usize]
+                        as libc::c_int) as uint16_t;
+                (*(&mut *((*t).l.partition).as_mut_ptr().offset(by8 as isize) as *mut uint8_t
+                    as *mut alias16))
                     .u16_0 = (0x101 as libc::c_int
-                    * dav1d_al_part_ctx[1 as libc::c_int
-                        as usize][bl as usize][bp as usize] as libc::c_int) as uint16_t;
+                    * dav1d_al_part_ctx[1 as libc::c_int as usize][bl as usize][bp as usize]
+                        as libc::c_int) as uint16_t;
             }
             4 => {
-                (*(&mut *((*(*t).a).partition).as_mut_ptr().offset(bx8 as isize)
-                    as *mut uint8_t as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(
-                        dav1d_al_part_ctx[0 as libc::c_int
-                            as usize][bl as usize][bp as usize] as libc::c_uint,
-                    );
-                (*(&mut *((*t).l.partition).as_mut_ptr().offset(by8 as isize)
-                    as *mut uint8_t as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(
-                        dav1d_al_part_ctx[1 as libc::c_int
-                            as usize][bl as usize][bp as usize] as libc::c_uint,
-                    );
+                (*(&mut *((*(*t).a).partition).as_mut_ptr().offset(bx8 as isize) as *mut uint8_t
+                    as *mut alias32))
+                    .u32_0 = (0x1010101 as libc::c_uint).wrapping_mul(
+                    dav1d_al_part_ctx[0 as libc::c_int as usize][bl as usize][bp as usize]
+                        as libc::c_uint,
+                );
+                (*(&mut *((*t).l.partition).as_mut_ptr().offset(by8 as isize) as *mut uint8_t
+                    as *mut alias32))
+                    .u32_0 = (0x1010101 as libc::c_uint).wrapping_mul(
+                    dav1d_al_part_ctx[1 as libc::c_int as usize][bl as usize][bp as usize]
+                        as libc::c_uint,
+                );
             }
             8 => {
-                (*(&mut *((*(*t).a).partition).as_mut_ptr().offset(bx8 as isize)
-                    as *mut uint8_t as *mut alias64))
-                    .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        dav1d_al_part_ctx[0 as libc::c_int
-                            as usize][bl as usize][bp as usize] as libc::c_ulonglong,
-                    ) as uint64_t;
-                (*(&mut *((*t).l.partition).as_mut_ptr().offset(by8 as isize)
-                    as *mut uint8_t as *mut alias64))
-                    .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        dav1d_al_part_ctx[1 as libc::c_int
-                            as usize][bl as usize][bp as usize] as libc::c_ulonglong,
-                    ) as uint64_t;
+                (*(&mut *((*(*t).a).partition).as_mut_ptr().offset(bx8 as isize) as *mut uint8_t
+                    as *mut alias64))
+                    .u64_0 = (0x101010101010101 as libc::c_ulonglong).wrapping_mul(
+                    dav1d_al_part_ctx[0 as libc::c_int as usize][bl as usize][bp as usize]
+                        as libc::c_ulonglong,
+                ) as uint64_t;
+                (*(&mut *((*t).l.partition).as_mut_ptr().offset(by8 as isize) as *mut uint8_t
+                    as *mut alias64))
+                    .u64_0 = (0x101010101010101 as libc::c_ulonglong).wrapping_mul(
+                    dav1d_al_part_ctx[1 as libc::c_int as usize][bl as usize][bp as usize]
+                        as libc::c_ulonglong,
+                ) as uint64_t;
             }
             16 => {
-                let const_val: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        dav1d_al_part_ctx[0 as libc::c_int
-                            as usize][bl as usize][bp as usize] as libc::c_ulonglong,
-                    ) as uint64_t;
+                let const_val: uint64_t = (0x101010101010101 as libc::c_ulonglong).wrapping_mul(
+                    dav1d_al_part_ctx[0 as libc::c_int as usize][bl as usize][bp as usize]
+                        as libc::c_ulonglong,
+                ) as uint64_t;
                 (*(&mut *((*(*t).a).partition)
                     .as_mut_ptr()
                     .offset((bx8 + 0) as isize) as *mut uint8_t
@@ -13812,11 +11208,10 @@ unsafe extern "C" fn decode_sb(
                     .offset((bx8 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val;
-                let const_val_0: uint64_t = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul(
-                        dav1d_al_part_ctx[1 as libc::c_int
-                            as usize][bl as usize][bp as usize] as libc::c_ulonglong,
-                    ) as uint64_t;
+                let const_val_0: uint64_t = (0x101010101010101 as libc::c_ulonglong).wrapping_mul(
+                    dav1d_al_part_ctx[1 as libc::c_int as usize][bl as usize][bp as usize]
+                        as libc::c_ulonglong,
+                ) as uint64_t;
                 (*(&mut *((*t).l.partition)
                     .as_mut_ptr()
                     .offset((by8 + 0) as isize) as *mut uint8_t
@@ -13951,48 +11346,29 @@ unsafe extern "C" fn setup_tile(
     tile_col: libc::c_int,
     tile_start_off: libc::c_int,
 ) {
-    let col_sb_start = (*(*f).frame_hdr)
-        .tiling
-        .col_start_sb[tile_col as usize] as libc::c_int;
-    let col_sb128_start = col_sb_start
-        >> ((*(*f).seq_hdr).sb128 == 0) as libc::c_int;
-    let col_sb_end = (*(*f).frame_hdr)
-        .tiling
-        .col_start_sb[(tile_col + 1) as usize] as libc::c_int;
-    let row_sb_start = (*(*f).frame_hdr)
-        .tiling
-        .row_start_sb[tile_row as usize] as libc::c_int;
-    let row_sb_end = (*(*f).frame_hdr)
-        .tiling
-        .row_start_sb[(tile_row + 1) as usize] as libc::c_int;
+    let col_sb_start = (*(*f).frame_hdr).tiling.col_start_sb[tile_col as usize] as libc::c_int;
+    let col_sb128_start = col_sb_start >> ((*(*f).seq_hdr).sb128 == 0) as libc::c_int;
+    let col_sb_end = (*(*f).frame_hdr).tiling.col_start_sb[(tile_col + 1) as usize] as libc::c_int;
+    let row_sb_start = (*(*f).frame_hdr).tiling.row_start_sb[tile_row as usize] as libc::c_int;
+    let row_sb_end = (*(*f).frame_hdr).tiling.row_start_sb[(tile_row + 1) as usize] as libc::c_int;
     let sb_shift = (*f).sb_shift;
     let size_mul: *const uint8_t = (ss_size_mul[(*f).cur.p.layout as usize]).as_ptr();
     let mut p = 0;
     while p < 2 {
-        (*ts)
-            .frame_thread[p as usize]
-            .pal_idx = if !((*f).frame_thread.pal_idx).is_null() {
-            &mut *((*f).frame_thread.pal_idx)
-                .offset(
-                    (tile_start_off as size_t)
-                        .wrapping_mul(
-                            *size_mul.offset(1) as size_t,
-                        )
-                        .wrapping_div(4) as isize,
-                ) as *mut uint8_t
+        (*ts).frame_thread[p as usize].pal_idx = if !((*f).frame_thread.pal_idx).is_null() {
+            &mut *((*f).frame_thread.pal_idx).offset(
+                (tile_start_off as size_t)
+                    .wrapping_mul(*size_mul.offset(1) as size_t)
+                    .wrapping_div(4) as isize,
+            ) as *mut uint8_t
         } else {
             0 as *mut uint8_t
         };
-        (*ts)
-            .frame_thread[p as usize]
-            .cf = (if !((*f).frame_thread.cf).is_null() {
-            ((*f).frame_thread.cf as *mut uint8_t)
-                .offset(
-                    ((tile_start_off as size_t)
-                        .wrapping_mul(
-                            *size_mul.offset(0) as size_t,
-                        ) >> ((*(*f).seq_hdr).hbd == 0) as libc::c_int) as isize,
-                )
+        (*ts).frame_thread[p as usize].cf = (if !((*f).frame_thread.cf).is_null() {
+            ((*f).frame_thread.cf as *mut uint8_t).offset(
+                ((tile_start_off as size_t).wrapping_mul(*size_mul.offset(0) as size_t)
+                    >> ((*(*f).seq_hdr).hbd == 0) as libc::c_int) as isize,
+            )
         } else {
             0 as *mut uint8_t
         }) as *mut libc::c_void;
@@ -14005,7 +11381,12 @@ unsafe extern "C" fn setup_tile(
         0 as libc::c_int,
         ::core::mem::size_of::<[int8_t; 4]>(),
     );
-    dav1d_msac_init(&mut (*ts).msac, data, sz, (*(*f).frame_hdr).disable_cdf_update);
+    dav1d_msac_init(
+        &mut (*ts).msac,
+        data,
+        sz,
+        (*(*f).frame_hdr).disable_cdf_update,
+    );
     (*ts).tiling.row = tile_row;
     (*ts).tiling.col = tile_col;
     (*ts).tiling.col_start = col_sb_start << sb_shift;
@@ -14014,61 +11395,47 @@ unsafe extern "C" fn setup_tile(
     (*ts).tiling.row_end = imin(row_sb_end << sb_shift, (*f).bh);
     let mut sb_idx = 0;
     let mut unit_idx = 0;
-    if (*(*f).frame_hdr).width[0]
-        != (*(*f).frame_hdr).width[1]
-    {
+    if (*(*f).frame_hdr).width[0] != (*(*f).frame_hdr).width[1] {
         sb_idx = ((*ts).tiling.row_start >> 5) * (*f).sr_sb128w;
         unit_idx = ((*ts).tiling.row_start & 16) >> 3;
     } else {
-        sb_idx = ((*ts).tiling.row_start >> 5) * (*f).sb128w
-            + col_sb128_start;
-        unit_idx = (((*ts).tiling.row_start & 16) >> 3)
-            + (((*ts).tiling.col_start & 16) >> 4);
+        sb_idx = ((*ts).tiling.row_start >> 5) * (*f).sb128w + col_sb128_start;
+        unit_idx = (((*ts).tiling.row_start & 16) >> 3) + (((*ts).tiling.col_start & 16) >> 4);
     }
     let mut current_block_31: u64;
     let mut p_0 = 0;
     while p_0 < 3 {
         if !(((*f).lf.restore_planes >> p_0) as libc::c_uint & 1 as libc::c_uint == 0) {
-            if (*(*f).frame_hdr).width[0]
-                != (*(*f).frame_hdr).width[1]
-            {
+            if (*(*f).frame_hdr).width[0] != (*(*f).frame_hdr).width[1] {
                 let ss_hor = (p_0 != 0
                     && (*f).cur.p.layout as libc::c_uint
                         != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint)
                     as libc::c_int;
                 let d = (*(*f).frame_hdr).super_res.width_scale_denominator;
-                let unit_size_log2 = (*(*f).frame_hdr)
-                    .restoration
-                    .unit_size[(p_0 != 0) as libc::c_int as usize];
-                let rnd = ((8 as libc::c_int) << unit_size_log2)
-                    - 1;
+                let unit_size_log2 =
+                    (*(*f).frame_hdr).restoration.unit_size[(p_0 != 0) as libc::c_int as usize];
+                let rnd = ((8 as libc::c_int) << unit_size_log2) - 1;
                 let shift = unit_size_log2 + 3;
-                let x = (4 * (*ts).tiling.col_start * d
-                    >> ss_hor) + rnd >> shift;
+                let x = (4 * (*ts).tiling.col_start * d >> ss_hor) + rnd >> shift;
                 let px_x = x << unit_size_log2 + ss_hor;
-                let u_idx = unit_idx
-                    + ((px_x & 64) >> 6);
+                let u_idx = unit_idx + ((px_x & 64) >> 6);
                 let sb128x = px_x >> 7;
                 if sb128x >= (*f).sr_sb128w {
                     current_block_31 = 2370887241019905314;
                 } else {
-                    (*ts)
-                        .lr_ref[p_0
-                        as usize] = &mut *(*((*((*f).lf.lr_mask)
-                        .offset((sb_idx + sb128x) as isize))
-                        .lr)
-                        .as_mut_ptr()
-                        .offset(p_0 as isize))
+                    (*ts).lr_ref[p_0 as usize] =
+                        &mut *(*((*((*f).lf.lr_mask).offset((sb_idx + sb128x) as isize)).lr)
+                            .as_mut_ptr()
+                            .offset(p_0 as isize))
                         .as_mut_ptr()
                         .offset(u_idx as isize) as *mut Av1RestorationUnit;
                     current_block_31 = 1608152415753874203;
                 }
             } else {
-                (*ts)
-                    .lr_ref[p_0
-                    as usize] = &mut *(*((*((*f).lf.lr_mask).offset(sb_idx as isize)).lr)
-                    .as_mut_ptr()
-                    .offset(p_0 as isize))
+                (*ts).lr_ref[p_0 as usize] =
+                    &mut *(*((*((*f).lf.lr_mask).offset(sb_idx as isize)).lr)
+                        .as_mut_ptr()
+                        .offset(p_0 as isize))
                     .as_mut_ptr()
                     .offset(unit_idx as isize) as *mut Av1RestorationUnit;
                 current_block_31 = 1608152415753874203;
@@ -14076,30 +11443,22 @@ unsafe extern "C" fn setup_tile(
             match current_block_31 {
                 2370887241019905314 => {}
                 _ => {
-                    (*(*ts).lr_ref[p_0 as usize])
-                        .filter_v[0 as libc::c_int
-                        as usize] = 3 as libc::c_int as int8_t;
-                    (*(*ts).lr_ref[p_0 as usize])
-                        .filter_v[1 as libc::c_int
-                        as usize] = -(7 as libc::c_int) as int8_t;
-                    (*(*ts).lr_ref[p_0 as usize])
-                        .filter_v[2 as libc::c_int
-                        as usize] = 15 as libc::c_int as int8_t;
-                    (*(*ts).lr_ref[p_0 as usize])
-                        .filter_h[0 as libc::c_int
-                        as usize] = 3 as libc::c_int as int8_t;
-                    (*(*ts).lr_ref[p_0 as usize])
-                        .filter_h[1 as libc::c_int
-                        as usize] = -(7 as libc::c_int) as int8_t;
-                    (*(*ts).lr_ref[p_0 as usize])
-                        .filter_h[2 as libc::c_int
-                        as usize] = 15 as libc::c_int as int8_t;
-                    (*(*ts).lr_ref[p_0 as usize])
-                        .sgr_weights[0 as libc::c_int
-                        as usize] = -(32 as libc::c_int) as int8_t;
-                    (*(*ts).lr_ref[p_0 as usize])
-                        .sgr_weights[1 as libc::c_int
-                        as usize] = 31 as libc::c_int as int8_t;
+                    (*(*ts).lr_ref[p_0 as usize]).filter_v[0 as libc::c_int as usize] =
+                        3 as libc::c_int as int8_t;
+                    (*(*ts).lr_ref[p_0 as usize]).filter_v[1 as libc::c_int as usize] =
+                        -(7 as libc::c_int) as int8_t;
+                    (*(*ts).lr_ref[p_0 as usize]).filter_v[2 as libc::c_int as usize] =
+                        15 as libc::c_int as int8_t;
+                    (*(*ts).lr_ref[p_0 as usize]).filter_h[0 as libc::c_int as usize] =
+                        3 as libc::c_int as int8_t;
+                    (*(*ts).lr_ref[p_0 as usize]).filter_h[1 as libc::c_int as usize] =
+                        -(7 as libc::c_int) as int8_t;
+                    (*(*ts).lr_ref[p_0 as usize]).filter_h[2 as libc::c_int as usize] =
+                        15 as libc::c_int as int8_t;
+                    (*(*ts).lr_ref[p_0 as usize]).sgr_weights[0 as libc::c_int as usize] =
+                        -(32 as libc::c_int) as int8_t;
+                    (*(*ts).lr_ref[p_0 as usize]).sgr_weights[1 as libc::c_int as usize] =
+                        31 as libc::c_int as int8_t;
                 }
             }
         }
@@ -14108,8 +11467,8 @@ unsafe extern "C" fn setup_tile(
     if (*(*f).c).n_tc > 1 as libc::c_uint {
         let mut p_1 = 0;
         while p_1 < 2 {
-            *(&mut *((*ts).progress).as_mut_ptr().offset(p_1 as isize)
-                as *mut atomic_int) = row_sb_start;
+            *(&mut *((*ts).progress).as_mut_ptr().offset(p_1 as isize) as *mut atomic_int) =
+                row_sb_start;
             p_1 += 1;
         }
     }
@@ -14122,16 +11481,13 @@ unsafe extern "C" fn read_restoration_info(
 ) {
     let f: *const Dav1dFrameContext = (*t).f;
     let ts: *mut Dav1dTileState = (*t).ts;
-    if frame_type as libc::c_uint
-        == DAV1D_RESTORATION_SWITCHABLE as libc::c_int as libc::c_uint
-    {
+    if frame_type as libc::c_uint == DAV1D_RESTORATION_SWITCHABLE as libc::c_int as libc::c_uint {
         let filter = dav1d_msac_decode_symbol_adapt4(
             &mut (*ts).msac,
             ((*ts).cdf.m.restore_switchable.0).as_mut_ptr(),
             2 as libc::c_int as size_t,
         ) as libc::c_int;
-        (*lr)
-            .type_0 = (if filter != 0 {
+        (*lr).type_0 = (if filter != 0 {
             if filter == 2 {
                 DAV1D_RESTORATION_SGRPROJ as libc::c_int
             } else {
@@ -14143,94 +11499,76 @@ unsafe extern "C" fn read_restoration_info(
     } else {
         let type_0: libc::c_uint = dav1d_msac_decode_bool_adapt(
             &mut (*ts).msac,
-            if frame_type as libc::c_uint
-                == DAV1D_RESTORATION_WIENER as libc::c_int as libc::c_uint
+            if frame_type as libc::c_uint == DAV1D_RESTORATION_WIENER as libc::c_int as libc::c_uint
             {
                 ((*ts).cdf.m.restore_wiener.0).as_mut_ptr()
             } else {
                 ((*ts).cdf.m.restore_sgrproj.0).as_mut_ptr()
             },
         );
-        (*lr)
-            .type_0 = (if type_0 != 0 {
+        (*lr).type_0 = (if type_0 != 0 {
             frame_type as libc::c_uint
         } else {
             DAV1D_RESTORATION_NONE as libc::c_int as libc::c_uint
         }) as uint8_t;
     }
     if (*lr).type_0 as libc::c_int == DAV1D_RESTORATION_WIENER as libc::c_int {
-        (*lr)
-            .filter_v[0 as libc::c_int
-            as usize] = (if p != 0 {
+        (*lr).filter_v[0 as libc::c_int as usize] = (if p != 0 {
             0 as libc::c_int
         } else {
             dav1d_msac_decode_subexp(
                 &mut (*ts).msac,
-                (*(*ts).lr_ref[p as usize]).filter_v[0]
-                    as libc::c_int + 5,
+                (*(*ts).lr_ref[p as usize]).filter_v[0] as libc::c_int + 5,
                 16 as libc::c_int,
                 1 as libc::c_int as libc::c_uint,
             ) - 5
         }) as int8_t;
-        (*lr)
-            .filter_v[1 as libc::c_int
-            as usize] = (dav1d_msac_decode_subexp(
+        (*lr).filter_v[1 as libc::c_int as usize] = (dav1d_msac_decode_subexp(
             &mut (*ts).msac,
-            (*(*ts).lr_ref[p as usize]).filter_v[1]
-                as libc::c_int + 23,
+            (*(*ts).lr_ref[p as usize]).filter_v[1] as libc::c_int + 23,
             32 as libc::c_int,
             2 as libc::c_int as libc::c_uint,
         ) - 23) as int8_t;
-        (*lr)
-            .filter_v[2 as libc::c_int
-            as usize] = (dav1d_msac_decode_subexp(
+        (*lr).filter_v[2 as libc::c_int as usize] = (dav1d_msac_decode_subexp(
             &mut (*ts).msac,
-            (*(*ts).lr_ref[p as usize]).filter_v[2]
-                as libc::c_int + 17,
+            (*(*ts).lr_ref[p as usize]).filter_v[2] as libc::c_int + 17,
             64 as libc::c_int,
             3 as libc::c_int as libc::c_uint,
         ) - 17) as int8_t;
-        (*lr)
-            .filter_h[0 as libc::c_int
-            as usize] = (if p != 0 {
+        (*lr).filter_h[0 as libc::c_int as usize] = (if p != 0 {
             0 as libc::c_int
         } else {
             dav1d_msac_decode_subexp(
                 &mut (*ts).msac,
-                (*(*ts).lr_ref[p as usize]).filter_h[0]
-                    as libc::c_int + 5,
+                (*(*ts).lr_ref[p as usize]).filter_h[0] as libc::c_int + 5,
                 16 as libc::c_int,
                 1 as libc::c_int as libc::c_uint,
             ) - 5
         }) as int8_t;
-        (*lr)
-            .filter_h[1 as libc::c_int
-            as usize] = (dav1d_msac_decode_subexp(
+        (*lr).filter_h[1 as libc::c_int as usize] = (dav1d_msac_decode_subexp(
             &mut (*ts).msac,
-            (*(*ts).lr_ref[p as usize]).filter_h[1]
-                as libc::c_int + 23,
+            (*(*ts).lr_ref[p as usize]).filter_h[1] as libc::c_int + 23,
             32 as libc::c_int,
             2 as libc::c_int as libc::c_uint,
         ) - 23) as int8_t;
-        (*lr)
-            .filter_h[2 as libc::c_int
-            as usize] = (dav1d_msac_decode_subexp(
+        (*lr).filter_h[2 as libc::c_int as usize] = (dav1d_msac_decode_subexp(
             &mut (*ts).msac,
-            (*(*ts).lr_ref[p as usize]).filter_h[2]
-                as libc::c_int + 17,
+            (*(*ts).lr_ref[p as usize]).filter_h[2] as libc::c_int + 17,
             64 as libc::c_int,
             3 as libc::c_int as libc::c_uint,
         ) - 17) as int8_t;
         memcpy(
             ((*lr).sgr_weights).as_mut_ptr() as *mut libc::c_void,
-            ((*(*ts).lr_ref[p as usize]).sgr_weights).as_mut_ptr()
-                as *const libc::c_void,
+            ((*(*ts).lr_ref[p as usize]).sgr_weights).as_mut_ptr() as *const libc::c_void,
             ::core::mem::size_of::<[int8_t; 2]>() as libc::c_ulong,
         );
         (*ts).lr_ref[p as usize] = lr;
-        if 0 as libc::c_int != 0 && (*(*f).frame_hdr).frame_offset == 2
-            && (*t).by >= 0 && (*t).by < 4
-            && (*t).bx >= 8 && (*t).bx < 12
+        if 0 as libc::c_int != 0
+            && (*(*f).frame_hdr).frame_offset == 2
+            && (*t).by >= 0
+            && (*t).by < 4
+            && (*t).bx >= 8
+            && (*t).bx < 12
         {
             printf(
                 b"Post-lr_wiener[pl=%d,v[%d,%d,%d],h[%d,%d,%d]]: r=%d\n\0" as *const u8
@@ -14246,36 +11584,26 @@ unsafe extern "C" fn read_restoration_info(
             );
         }
     } else if (*lr).type_0 as libc::c_int == DAV1D_RESTORATION_SGRPROJ as libc::c_int {
-        let idx: libc::c_uint = dav1d_msac_decode_bools(
-            &mut (*ts).msac,
-            4 as libc::c_int as libc::c_uint,
-        );
+        let idx: libc::c_uint =
+            dav1d_msac_decode_bools(&mut (*ts).msac, 4 as libc::c_int as libc::c_uint);
         let sgr_params: *const uint16_t = (dav1d_sgr_params[idx as usize]).as_ptr();
         (*lr).sgr_idx = idx as uint8_t;
-        (*lr)
-            .sgr_weights[0 as libc::c_int
-            as usize] = (if *sgr_params.offset(0) as libc::c_int
-            != 0
+        (*lr).sgr_weights[0 as libc::c_int as usize] = (if *sgr_params.offset(0) as libc::c_int != 0
         {
             dav1d_msac_decode_subexp(
                 &mut (*ts).msac,
-                (*(*ts).lr_ref[p as usize]).sgr_weights[0]
-                    as libc::c_int + 96,
+                (*(*ts).lr_ref[p as usize]).sgr_weights[0] as libc::c_int + 96,
                 128 as libc::c_int,
                 4 as libc::c_int as libc::c_uint,
             ) - 96
         } else {
             0 as libc::c_int
         }) as int8_t;
-        (*lr)
-            .sgr_weights[1 as libc::c_int
-            as usize] = (if *sgr_params.offset(1) as libc::c_int
-            != 0
+        (*lr).sgr_weights[1 as libc::c_int as usize] = (if *sgr_params.offset(1) as libc::c_int != 0
         {
             dav1d_msac_decode_subexp(
                 &mut (*ts).msac,
-                (*(*ts).lr_ref[p as usize]).sgr_weights[1]
-                    as libc::c_int + 32,
+                (*(*ts).lr_ref[p as usize]).sgr_weights[1] as libc::c_int + 32,
                 128 as libc::c_int,
                 4 as libc::c_int as libc::c_uint,
             ) - 32
@@ -14293,9 +11621,12 @@ unsafe extern "C" fn read_restoration_info(
             ::core::mem::size_of::<[int8_t; 3]>() as libc::c_ulong,
         );
         (*ts).lr_ref[p as usize] = lr;
-        if 0 as libc::c_int != 0 && (*(*f).frame_hdr).frame_offset == 2
-            && (*t).by >= 0 && (*t).by < 4
-            && (*t).bx >= 8 && (*t).bx < 12
+        if 0 as libc::c_int != 0
+            && (*(*f).frame_hdr).frame_offset == 2
+            && (*t).by >= 0
+            && (*t).by < 4
+            && (*t).bx >= 8
+            && (*t).bx < 12
         {
             printf(
                 b"Post-lr_sgrproj[pl=%d,idx=%d,w[%d,%d]]: r=%d\n\0" as *const u8
@@ -14310,9 +11641,7 @@ unsafe extern "C" fn read_restoration_info(
     }
 }
 #[no_mangle]
-pub unsafe extern "C" fn dav1d_decode_tile_sbrow(
-    t: *mut Dav1dTaskContext,
-) -> libc::c_int {
+pub unsafe extern "C" fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> libc::c_int {
     let f: *const Dav1dFrameContext = (*t).f;
     let root_bl: BlockLevel = (if (*(*f).seq_hdr).sb128 != 0 {
         BL_128X128 as libc::c_int
@@ -14324,13 +11653,10 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(
     let sb_step = (*f).sb_step;
     let tile_row = (*ts).tiling.row;
     let tile_col = (*ts).tiling.col;
-    let col_sb_start = (*(*f).frame_hdr)
-        .tiling
-        .col_start_sb[tile_col as usize] as libc::c_int;
-    let col_sb128_start = col_sb_start
-        >> ((*(*f).seq_hdr).sb128 == 0) as libc::c_int;
-    if (*(*f).frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint
-        != 0 || (*(*f).frame_hdr).allow_intrabc != 0
+    let col_sb_start = (*(*f).frame_hdr).tiling.col_start_sb[tile_col as usize] as libc::c_int;
+    let col_sb128_start = col_sb_start >> ((*(*f).seq_hdr).sb128 == 0) as libc::c_int;
+    if (*(*f).frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint != 0
+        || (*(*f).frame_hdr).allow_intrabc != 0
     {
         dav1d_refmvs_tile_sbrow_init(
             &mut (*t).rt,
@@ -14344,21 +11670,17 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(
             (*t).frame_thread.pass,
         );
     }
-    if (*(*f).frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint
-        != 0 && (*c).n_fc > 1 as libc::c_uint
+    if (*(*f).frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint != 0
+        && (*c).n_fc > 1 as libc::c_uint
     {
         let sby = (*t).by - (*ts).tiling.row_start >> (*f).sb_shift;
-        let lowest_px: *mut [libc::c_int; 2] = (*((*ts).lowest_pixel)
-            .offset(sby as isize))
-            .as_mut_ptr();
+        let lowest_px: *mut [libc::c_int; 2] =
+            (*((*ts).lowest_pixel).offset(sby as isize)).as_mut_ptr();
         let mut n = 0;
         while n < 7 {
             let mut m = 0;
             while m < 2 {
-                (*lowest_px
-                    .offset(
-                        n as isize,
-                    ))[m as usize] = -(2147483647 as libc::c_int) - 1;
+                (*lowest_px.offset(n as isize))[m as usize] = -(2147483647 as libc::c_int) - 1;
                 m += 1;
             }
             n += 1;
@@ -14366,8 +11688,7 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(
     }
     reset_context(
         &mut (*t).l,
-        ((*(*f).frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint
-            == 0) as libc::c_int,
+        ((*(*f).frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint == 0) as libc::c_int,
         (*t).frame_thread.pass,
     );
     if (*t).frame_thread.pass == 2 {
@@ -14377,8 +11698,7 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(
             0 as libc::c_int
         };
         (*t).bx = (*ts).tiling.col_start;
-        (*t)
-            .a = ((*f).a)
+        (*t).a = ((*f).a)
             .offset(off_2pass as isize)
             .offset(col_sb128_start as isize)
             .offset((tile_row * (*f).sb128w) as isize);
@@ -14400,9 +11720,7 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(
     if (*ts).msac.cnt < -(15 as libc::c_int) {
         return 1 as libc::c_int;
     }
-    if (*(*f).c).n_tc > 1 as libc::c_uint
-        && (*(*f).frame_hdr).use_ref_frame_mvs != 0
-    {
+    if (*(*f).c).n_tc > 1 as libc::c_uint && (*(*f).frame_hdr).use_ref_frame_mvs != 0 {
         dav1d_refmvs_load_tmvs(
             &(*f).rf,
             (*ts).tiling.row,
@@ -14419,12 +11737,10 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(
     );
     let sb128y = (*t).by >> 5;
     (*t).bx = (*ts).tiling.col_start;
-    (*t)
-        .a = ((*f).a)
+    (*t).a = ((*f).a)
         .offset(col_sb128_start as isize)
         .offset((tile_row * (*f).sb128w) as isize);
-    (*t)
-        .lf_mask = ((*f).lf.mask)
+    (*t).lf_mask = ((*f).lf.mask)
         .offset((sb128y * (*f).sb128w) as isize)
         .offset(col_sb128_start as isize);
     while (*t).bx < (*ts).tiling.col_end {
@@ -14433,29 +11749,20 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(
         }
         if root_bl as libc::c_uint == BL_128X128 as libc::c_int as libc::c_uint {
             (*t).cur_sb_cdef_idx_ptr = ((*(*t).lf_mask).cdef_idx).as_mut_ptr();
-            *((*t).cur_sb_cdef_idx_ptr)
-                .offset(0) = -(1 as libc::c_int) as int8_t;
-            *((*t).cur_sb_cdef_idx_ptr)
-                .offset(1) = -(1 as libc::c_int) as int8_t;
-            *((*t).cur_sb_cdef_idx_ptr)
-                .offset(2) = -(1 as libc::c_int) as int8_t;
-            *((*t).cur_sb_cdef_idx_ptr)
-                .offset(3) = -(1 as libc::c_int) as int8_t;
+            *((*t).cur_sb_cdef_idx_ptr).offset(0) = -(1 as libc::c_int) as int8_t;
+            *((*t).cur_sb_cdef_idx_ptr).offset(1) = -(1 as libc::c_int) as int8_t;
+            *((*t).cur_sb_cdef_idx_ptr).offset(2) = -(1 as libc::c_int) as int8_t;
+            *((*t).cur_sb_cdef_idx_ptr).offset(3) = -(1 as libc::c_int) as int8_t;
         } else {
-            (*t)
-                .cur_sb_cdef_idx_ptr = &mut *((*(*t).lf_mask).cdef_idx)
+            (*t).cur_sb_cdef_idx_ptr = &mut *((*(*t).lf_mask).cdef_idx)
                 .as_mut_ptr()
-                .offset(
-                    ((((*t).bx & 16) >> 4)
-                        + (((*t).by & 16) >> 3)) as isize,
-                ) as *mut int8_t;
-            *((*t).cur_sb_cdef_idx_ptr)
-                .offset(0) = -(1 as libc::c_int) as int8_t;
+                .offset(((((*t).bx & 16) >> 4) + (((*t).by & 16) >> 3)) as isize)
+                as *mut int8_t;
+            *((*t).cur_sb_cdef_idx_ptr).offset(0) = -(1 as libc::c_int) as int8_t;
         }
         let mut p = 0;
         while p < 3 {
-            if !(((*f).lf.restore_planes >> p) as libc::c_uint & 1 as libc::c_uint == 0)
-            {
+            if !(((*f).lf.restore_planes >> p) as libc::c_uint & 1 as libc::c_uint == 0) {
                 let ss_ver = (p != 0
                     && (*f).cur.p.layout as libc::c_uint
                         == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint)
@@ -14464,9 +11771,8 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(
                     && (*f).cur.p.layout as libc::c_uint
                         != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint)
                     as libc::c_int;
-                let unit_size_log2 = (*(*f).frame_hdr)
-                    .restoration
-                    .unit_size[(p != 0) as libc::c_int as usize];
+                let unit_size_log2 =
+                    (*(*f).frame_hdr).restoration.unit_size[(p != 0) as libc::c_int as usize];
                 let y = (*t).by * 4 >> ss_ver;
                 let h = (*f).cur.p.h + ss_ver >> ss_ver;
                 let unit_size = (1 as libc::c_int) << unit_size_log2;
@@ -14474,44 +11780,28 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(
                 if !(y as libc::c_uint & mask != 0) {
                     let half_unit = unit_size >> 1;
                     if !(y != 0 && y + half_unit > h) {
-                        let frame_type: Dav1dRestorationType = (*(*f).frame_hdr)
-                            .restoration
-                            .type_0[p as usize];
-                        if (*(*f).frame_hdr).width[0]
-                            != (*(*f).frame_hdr).width[1]
-                        {
+                        let frame_type: Dav1dRestorationType =
+                            (*(*f).frame_hdr).restoration.type_0[p as usize];
+                        if (*(*f).frame_hdr).width[0] != (*(*f).frame_hdr).width[1] {
                             let w = (*f).sr_cur.p.p.w + ss_hor >> ss_hor;
-                            let n_units = imax(
-                                1 as libc::c_int,
-                                w + half_unit >> unit_size_log2,
-                            );
-                            let d = (*(*f).frame_hdr)
-                                .super_res
-                                .width_scale_denominator;
-                            let rnd = unit_size * 8
-                                - 1;
+                            let n_units = imax(1 as libc::c_int, w + half_unit >> unit_size_log2);
+                            let d = (*(*f).frame_hdr).super_res.width_scale_denominator;
+                            let rnd = unit_size * 8 - 1;
                             let shift = unit_size_log2 + 3;
-                            let x0 = (4 * (*t).bx * d
-                                >> ss_hor) + rnd >> shift;
-                            let x1 = (4 * ((*t).bx + sb_step)
-                                * d >> ss_hor) + rnd >> shift;
+                            let x0 = (4 * (*t).bx * d >> ss_hor) + rnd >> shift;
+                            let x1 = (4 * ((*t).bx + sb_step) * d >> ss_hor) + rnd >> shift;
                             let mut x = x0;
                             while x < imin(x1, n_units) {
                                 let px_x = x << unit_size_log2 + ss_hor;
-                                let sb_idx = ((*t).by >> 5)
-                                    * (*f).sr_sb128w + (px_x >> 7);
-                                let unit_idx = (((*t).by & 16)
-                                    >> 3)
-                                    + ((px_x & 64) >> 6);
-                                let lr: *mut Av1RestorationUnit = &mut *(*((*((*f)
-                                    .lf
-                                    .lr_mask)
-                                    .offset(sb_idx as isize))
-                                    .lr)
+                                let sb_idx = ((*t).by >> 5) * (*f).sr_sb128w + (px_x >> 7);
+                                let unit_idx = (((*t).by & 16) >> 3) + ((px_x & 64) >> 6);
+                                let lr: *mut Av1RestorationUnit =
+                                    &mut *(*((*((*f).lf.lr_mask).offset(sb_idx as isize)).lr)
+                                        .as_mut_ptr()
+                                        .offset(p as isize))
                                     .as_mut_ptr()
-                                    .offset(p as isize))
-                                    .as_mut_ptr()
-                                    .offset(unit_idx as isize) as *mut Av1RestorationUnit;
+                                    .offset(unit_idx as isize)
+                                        as *mut Av1RestorationUnit;
                                 read_restoration_info(t, lr, p, frame_type);
                                 x += 1;
                             }
@@ -14520,20 +11810,15 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(
                             if !(x_0 as libc::c_uint & mask != 0) {
                                 let w_0 = (*f).cur.p.w + ss_hor >> ss_hor;
                                 if !(x_0 != 0 && x_0 + half_unit > w_0) {
-                                    let sb_idx_0 = ((*t).by >> 5)
-                                        * (*f).sr_sb128w + ((*t).bx >> 5);
-                                    let unit_idx_0 = (((*t).by & 16)
-                                        >> 3)
-                                        + (((*t).bx & 16) >> 4);
-                                    let lr_0: *mut Av1RestorationUnit = &mut *(*((*((*f)
-                                        .lf
-                                        .lr_mask)
-                                        .offset(sb_idx_0 as isize))
-                                        .lr)
+                                    let sb_idx_0 = ((*t).by >> 5) * (*f).sr_sb128w + ((*t).bx >> 5);
+                                    let unit_idx_0 = (((*t).by & 16) >> 3) + (((*t).bx & 16) >> 4);
+                                    let lr_0: *mut Av1RestorationUnit =
+                                        &mut *(*((*((*f).lf.lr_mask).offset(sb_idx_0 as isize)).lr)
+                                            .as_mut_ptr()
+                                            .offset(p as isize))
                                         .as_mut_ptr()
-                                        .offset(p as isize))
-                                        .as_mut_ptr()
-                                        .offset(unit_idx_0 as isize) as *mut Av1RestorationUnit;
+                                        .offset(unit_idx_0 as isize)
+                                            as *mut Av1RestorationUnit;
                                     read_restoration_info(t, lr_0, p, frame_type);
                                 }
                             }
@@ -14554,8 +11839,7 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(
     }
     if (*(*f).seq_hdr).ref_frame_mvs != 0
         && (*(*f).c).n_tc > 1 as libc::c_uint
-        && (*(*f).frame_hdr).frame_type as libc::c_uint
-            & 1 as libc::c_uint != 0
+        && (*(*f).frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint != 0
     {
         dav1d_refmvs_save_tmvs(
             &mut (*t).rt,
@@ -14575,17 +11859,17 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(
             as *mut libc::c_void,
         &mut *((*t).l.tx_lpf_y)
             .as_mut_ptr()
-            .offset(((*t).by & 16) as isize) as *mut uint8_t
-            as *const libc::c_void,
+            .offset(((*t).by & 16) as isize) as *mut uint8_t as *const libc::c_void,
         sb_step as libc::c_ulong,
     );
     let ss_ver_0 = ((*f).cur.p.layout as libc::c_uint
-        == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint) as libc::c_int;
+        == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint)
+        as libc::c_int;
     align_h >>= ss_ver_0;
     memcpy(
         &mut *(*((*f).lf.tx_lpf_right_edge).as_ptr().offset(1))
-            .offset((align_h * tile_col + ((*t).by >> ss_ver_0)) as isize)
-            as *mut uint8_t as *mut libc::c_void,
+            .offset((align_h * tile_col + ((*t).by >> ss_ver_0)) as isize) as *mut uint8_t
+            as *mut libc::c_void,
         &mut *((*t).l.tx_lpf_uv)
             .as_mut_ptr()
             .offset((((*t).by & 16) >> ss_ver_0) as isize) as *mut uint8_t
@@ -14595,9 +11879,7 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(
     return 0 as libc::c_int;
 }
 #[no_mangle]
-pub unsafe extern "C" fn dav1d_decode_frame_init(
-    f: *mut Dav1dFrameContext,
-) -> libc::c_int {
+pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> libc::c_int {
     let mut sby = 0;
     let mut n_ts = 0;
     let mut a_sz = 0;
@@ -14619,9 +11901,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
     let mut retval = -(12 as libc::c_int);
     if (*f).sbh > (*f).lf.start_of_tile_row_sz {
         free((*f).lf.start_of_tile_row as *mut libc::c_void);
-        (*f)
-            .lf
-            .start_of_tile_row = malloc(
+        (*f).lf.start_of_tile_row = malloc(
             ((*f).sbh as libc::c_ulong)
                 .wrapping_mul(::core::mem::size_of::<uint8_t>() as libc::c_ulong),
         ) as *mut uint8_t;
@@ -14642,18 +11922,14 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
             while tile_row < (*(*f).frame_hdr).tiling.rows {
                 let fresh33 = sby;
                 sby = sby + 1;
-                *((*f).lf.start_of_tile_row)
-                    .offset(fresh33 as isize) = tile_row as uint8_t;
+                *((*f).lf.start_of_tile_row).offset(fresh33 as isize) = tile_row as uint8_t;
                 while sby
-                    < (*(*f).frame_hdr)
-                        .tiling
-                        .row_start_sb[(tile_row + 1) as usize]
-                        as libc::c_int
+                    < (*(*f).frame_hdr).tiling.row_start_sb[(tile_row + 1) as usize] as libc::c_int
                 {
                     let fresh34 = sby;
                     sby = sby + 1;
-                    *((*f).lf.start_of_tile_row)
-                        .offset(fresh34 as isize) = 0 as libc::c_int as uint8_t;
+                    *((*f).lf.start_of_tile_row).offset(fresh34 as isize) =
+                        0 as libc::c_int as uint8_t;
                 }
                 tile_row += 1;
             }
@@ -14664,9 +11940,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                         &mut (*f).frame_thread.tile_start_off as *mut *mut libc::c_int
                             as *mut libc::c_void,
                     );
-                    (*f)
-                        .frame_thread
-                        .tile_start_off = malloc(
+                    (*f).frame_thread.tile_start_off = malloc(
                         (::core::mem::size_of::<libc::c_int>() as libc::c_ulong)
                             .wrapping_mul(n_ts as libc::c_ulong),
                     ) as *mut libc::c_int;
@@ -14683,10 +11957,8 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                     13495985911605184990 => {}
                     _ => {
                         dav1d_free_aligned((*f).ts as *mut libc::c_void);
-                        (*f)
-                            .ts = dav1d_alloc_aligned(
-                            ::core::mem::size_of::<Dav1dTileState>()
-                                .wrapping_mul(n_ts as size_t),
+                        (*f).ts = dav1d_alloc_aligned(
+                            ::core::mem::size_of::<Dav1dTileState>().wrapping_mul(n_ts as size_t),
                             32 as libc::c_int as size_t,
                         ) as *mut Dav1dTileState;
                         if ((*f).ts).is_null() {
@@ -14703,17 +11975,14 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
             match current_block {
                 13495985911605184990 => {}
                 _ => {
-                    a_sz = (*f).sb128w * (*(*f).frame_hdr).tiling.rows
+                    a_sz = (*f).sb128w
+                        * (*(*f).frame_hdr).tiling.rows
                         * (1 as libc::c_int
-                            + ((*c).n_fc > 1 as libc::c_uint
-                                && (*c).n_tc > 1 as libc::c_uint)
+                            + ((*c).n_fc > 1 as libc::c_uint && (*c).n_tc > 1 as libc::c_uint)
                                 as libc::c_int);
                     if a_sz != (*f).a_sz {
-                        freep(
-                            &mut (*f).a as *mut *mut BlockContext as *mut libc::c_void,
-                        );
-                        (*f)
-                            .a = malloc(
+                        freep(&mut (*f).a as *mut *mut BlockContext as *mut libc::c_void);
+                        (*f).a = malloc(
                             (::core::mem::size_of::<BlockContext>() as libc::c_ulong)
                                 .wrapping_mul(a_sz as libc::c_ulong),
                         ) as *mut BlockContext;
@@ -14731,57 +12000,51 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                         13495985911605184990 => {}
                         _ => {
                             num_sb128 = (*f).sb128w * (*f).sb128h;
-                            size_mul = (ss_size_mul[(*f).cur.p.layout as usize])
-                                .as_ptr();
+                            size_mul = (ss_size_mul[(*f).cur.p.layout as usize]).as_ptr();
                             hbd = ((*(*f).seq_hdr).hbd != 0) as libc::c_int;
                             if (*c).n_fc > 1 as libc::c_uint {
                                 let mut tile_idx = 0;
                                 let mut tile_row_0 = 0;
                                 while tile_row_0 < (*(*f).frame_hdr).tiling.rows {
-                                    let mut row_off = (*(*f).frame_hdr)
-                                        .tiling
-                                        .row_start_sb[tile_row_0 as usize] as libc::c_int
-                                        * (*f).sb_step * 4 * (*f).sb128w
+                                    let mut row_off = (*(*f).frame_hdr).tiling.row_start_sb
+                                        [tile_row_0 as usize]
+                                        as libc::c_int
+                                        * (*f).sb_step
+                                        * 4
+                                        * (*f).sb128w
                                         * 128;
-                                    let mut b_diff = ((*(*f).frame_hdr)
-                                        .tiling
-                                        .row_start_sb[(tile_row_0 + 1) as usize]
+                                    let mut b_diff = ((*(*f).frame_hdr).tiling.row_start_sb
+                                        [(tile_row_0 + 1) as usize]
                                         as libc::c_int
                                         - (*(*f).frame_hdr).tiling.row_start_sb[tile_row_0 as usize]
-                                            as libc::c_int) * (*f).sb_step * 4;
+                                            as libc::c_int)
+                                        * (*f).sb_step
+                                        * 4;
                                     let mut tile_col = 0;
                                     while tile_col < (*(*f).frame_hdr).tiling.cols {
                                         let fresh35 = tile_idx;
                                         tile_idx = tile_idx + 1;
                                         *((*f).frame_thread.tile_start_off)
-                                            .offset(
-                                                fresh35 as isize,
-                                            ) = row_off
+                                            .offset(fresh35 as isize) = row_off
                                             + b_diff
-                                                * (*(*f).frame_hdr).tiling.col_start_sb[tile_col as usize]
-                                                    as libc::c_int * (*f).sb_step * 4;
+                                                * (*(*f).frame_hdr).tiling.col_start_sb
+                                                    [tile_col as usize]
+                                                    as libc::c_int
+                                                * (*f).sb_step
+                                                * 4;
                                         tile_col += 1;
                                     }
                                     tile_row_0 += 1;
                                 }
-                                let lowest_pixel_mem_sz = (*(*f).frame_hdr)
-                                    .tiling
-                                    .cols * (*f).sbh;
-                                if lowest_pixel_mem_sz
-                                    != (*f).tile_thread.lowest_pixel_mem_sz
-                                {
-                                    free(
-                                        (*f).tile_thread.lowest_pixel_mem as *mut libc::c_void,
-                                    );
-                                    (*f)
-                                        .tile_thread
-                                        .lowest_pixel_mem = malloc(
-                                        (lowest_pixel_mem_sz as libc::c_ulong)
-                                            .wrapping_mul(
-                                                ::core::mem::size_of::<[[libc::c_int; 2]; 7]>()
-                                                    as libc::c_ulong,
-                                            ),
-                                    ) as *mut [[libc::c_int; 2]; 7];
+                                let lowest_pixel_mem_sz = (*(*f).frame_hdr).tiling.cols * (*f).sbh;
+                                if lowest_pixel_mem_sz != (*f).tile_thread.lowest_pixel_mem_sz {
+                                    free((*f).tile_thread.lowest_pixel_mem as *mut libc::c_void);
+                                    (*f).tile_thread.lowest_pixel_mem =
+                                        malloc((lowest_pixel_mem_sz as libc::c_ulong).wrapping_mul(
+                                            ::core::mem::size_of::<[[libc::c_int; 2]; 7]>()
+                                                as libc::c_ulong,
+                                        ))
+                                            as *mut [[libc::c_int; 2]; 7];
                                     if ((*f).tile_thread.lowest_pixel_mem).is_null() {
                                         (*f).tile_thread.lowest_pixel_mem_sz = 0 as libc::c_int;
                                         current_block = 13495985911605184990;
@@ -14795,42 +12058,39 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                                 match current_block {
                                     13495985911605184990 => {}
                                     _ => {
-                                        let mut lowest_pixel_ptr: *mut [[libc::c_int; 2]; 7] = (*f)
-                                            .tile_thread
-                                            .lowest_pixel_mem;
+                                        let mut lowest_pixel_ptr: *mut [[libc::c_int; 2]; 7] =
+                                            (*f).tile_thread.lowest_pixel_mem;
                                         let mut tile_row_1 = 0;
                                         let mut tile_row_base = 0;
                                         while tile_row_1 < (*(*f).frame_hdr).tiling.rows {
-                                            let tile_row_sb_h = (*(*f).frame_hdr)
-                                                .tiling
-                                                .row_start_sb[(tile_row_1 + 1) as usize]
-                                                as libc::c_int
-                                                - (*(*f).frame_hdr).tiling.row_start_sb[tile_row_1 as usize]
-                                                    as libc::c_int;
+                                            let tile_row_sb_h =
+                                                (*(*f).frame_hdr).tiling.row_start_sb
+                                                    [(tile_row_1 + 1) as usize]
+                                                    as libc::c_int
+                                                    - (*(*f).frame_hdr).tiling.row_start_sb
+                                                        [tile_row_1 as usize]
+                                                        as libc::c_int;
                                             let mut tile_col_0 = 0;
                                             while tile_col_0 < (*(*f).frame_hdr).tiling.cols {
                                                 let ref mut fresh36 = (*((*f).ts)
                                                     .offset((tile_row_base + tile_col_0) as isize))
-                                                    .lowest_pixel;
+                                                .lowest_pixel;
                                                 *fresh36 = lowest_pixel_ptr;
-                                                lowest_pixel_ptr = lowest_pixel_ptr
-                                                    .offset(tile_row_sb_h as isize);
+                                                lowest_pixel_ptr =
+                                                    lowest_pixel_ptr.offset(tile_row_sb_h as isize);
                                                 tile_col_0 += 1;
                                             }
                                             tile_row_1 += 1;
                                             tile_row_base += (*(*f).frame_hdr).tiling.cols;
                                         }
-                                        let cf_sz = (num_sb128
-                                            * *size_mul.offset(0)
-                                                as libc::c_int) << hbd;
+                                        let cf_sz =
+                                            (num_sb128 * *size_mul.offset(0) as libc::c_int) << hbd;
                                         if cf_sz != (*f).frame_thread.cf_sz {
                                             dav1d_freep_aligned(
                                                 &mut (*f).frame_thread.cf as *mut *mut libc::c_void
                                                     as *mut libc::c_void,
                                             );
-                                            (*f)
-                                                .frame_thread
-                                                .cf = dav1d_alloc_aligned(
+                                            (*f).frame_thread.cf = dav1d_alloc_aligned(
                                                 (cf_sz as size_t)
                                                     .wrapping_mul(128)
                                                     .wrapping_mul(128)
@@ -14858,23 +12118,28 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                                         match current_block {
                                             13495985911605184990 => {}
                                             _ => {
-                                                if (*(*f).frame_hdr).allow_screen_content_tools != 0 {
+                                                if (*(*f).frame_hdr).allow_screen_content_tools != 0
+                                                {
                                                     if num_sb128 != (*f).frame_thread.pal_sz {
                                                         dav1d_freep_aligned(
-                                                            &mut (*f).frame_thread.pal as *mut *mut [[uint16_t; 8]; 3]
+                                                            &mut (*f).frame_thread.pal
+                                                                as *mut *mut [[uint16_t; 8]; 3]
                                                                 as *mut libc::c_void,
                                                         );
-                                                        (*f)
-                                                            .frame_thread
-                                                            .pal = dav1d_alloc_aligned(
-                                                            ::core::mem::size_of::<[[uint16_t; 8]; 3]>()
-                                                                .wrapping_mul(num_sb128 as size_t)
-                                                                .wrapping_mul(16)
-                                                                .wrapping_mul(16),
+                                                        (*f).frame_thread.pal = dav1d_alloc_aligned(
+                                                            ::core::mem::size_of::<
+                                                                [[uint16_t; 8]; 3],
+                                                            >(
+                                                            )
+                                                            .wrapping_mul(num_sb128 as size_t)
+                                                            .wrapping_mul(16)
+                                                            .wrapping_mul(16),
                                                             64,
-                                                        ) as *mut [[uint16_t; 8]; 3];
+                                                        )
+                                                            as *mut [[uint16_t; 8]; 3];
                                                         if ((*f).frame_thread.pal).is_null() {
-                                                            (*f).frame_thread.pal_sz = 0 as libc::c_int;
+                                                            (*f).frame_thread.pal_sz =
+                                                                0 as libc::c_int;
                                                             current_block = 13495985911605184990;
                                                         } else {
                                                             (*f).frame_thread.pal_sz = num_sb128;
@@ -14889,27 +12154,41 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                                                             let pal_idx_sz = num_sb128
                                                                 * *size_mul.offset(1)
                                                                     as libc::c_int;
-                                                            if pal_idx_sz != (*f).frame_thread.pal_idx_sz {
+                                                            if pal_idx_sz
+                                                                != (*f).frame_thread.pal_idx_sz
+                                                            {
                                                                 dav1d_freep_aligned(
-                                                                    &mut (*f).frame_thread.pal_idx as *mut *mut uint8_t
+                                                                    &mut (*f).frame_thread.pal_idx
+                                                                        as *mut *mut uint8_t
                                                                         as *mut libc::c_void,
                                                                 );
-                                                                (*f)
-                                                                    .frame_thread
-                                                                    .pal_idx = dav1d_alloc_aligned(
-                                                                    ::core::mem::size_of::<uint8_t>()
-                                                                        .wrapping_mul(pal_idx_sz as size_t)
+                                                                (*f).frame_thread.pal_idx =
+                                                                    dav1d_alloc_aligned(
+                                                                        ::core::mem::size_of::<
+                                                                            uint8_t,
+                                                                        >(
+                                                                        )
+                                                                        .wrapping_mul(
+                                                                            pal_idx_sz as size_t,
+                                                                        )
                                                                         .wrapping_mul(128)
                                                                         .wrapping_mul(128)
                                                                         .wrapping_div(4),
-                                                                    64,
-                                                                ) as *mut uint8_t;
-                                                                if ((*f).frame_thread.pal_idx).is_null() {
-                                                                    (*f).frame_thread.pal_idx_sz = 0 as libc::c_int;
-                                                                    current_block = 13495985911605184990;
+                                                                        64,
+                                                                    )
+                                                                        as *mut uint8_t;
+                                                                if ((*f).frame_thread.pal_idx)
+                                                                    .is_null()
+                                                                {
+                                                                    (*f).frame_thread.pal_idx_sz =
+                                                                        0 as libc::c_int;
+                                                                    current_block =
+                                                                        13495985911605184990;
                                                                 } else {
-                                                                    (*f).frame_thread.pal_idx_sz = pal_idx_sz;
-                                                                    current_block = 7178192492338286402;
+                                                                    (*f).frame_thread.pal_idx_sz =
+                                                                        pal_idx_sz;
+                                                                    current_block =
+                                                                        7178192492338286402;
                                                                 }
                                                             } else {
                                                                 current_block = 7178192492338286402;
@@ -14919,15 +12198,19 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                                                 } else {
                                                     if !((*f).frame_thread.pal).is_null() {
                                                         dav1d_freep_aligned(
-                                                            &mut (*f).frame_thread.pal as *mut *mut [[uint16_t; 8]; 3]
+                                                            &mut (*f).frame_thread.pal
+                                                                as *mut *mut [[uint16_t; 8]; 3]
                                                                 as *mut libc::c_void,
                                                         );
                                                         dav1d_freep_aligned(
-                                                            &mut (*f).frame_thread.pal_idx as *mut *mut uint8_t
+                                                            &mut (*f).frame_thread.pal_idx
+                                                                as *mut *mut uint8_t
                                                                 as *mut libc::c_void,
                                                         );
-                                                        (*f).frame_thread.pal_idx_sz = 0 as libc::c_int;
-                                                        (*f).frame_thread.pal_sz = (*f).frame_thread.pal_idx_sz;
+                                                        (*f).frame_thread.pal_idx_sz =
+                                                            0 as libc::c_int;
+                                                        (*f).frame_thread.pal_sz =
+                                                            (*f).frame_thread.pal_idx_sz;
                                                     }
                                                     current_block = 7178192492338286402;
                                                 }
@@ -14943,21 +12226,16 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                                 _ => {
                                     y_stride = (*f).cur.stride[0];
                                     uv_stride = (*f).cur.stride[1];
-                                    has_resize = ((*(*f).frame_hdr)
-                                        .width[0]
+                                    has_resize = ((*(*f).frame_hdr).width[0]
                                         != (*(*f).frame_hdr).width[1])
                                         as libc::c_int;
-                                    need_cdef_lpf_copy = ((*c).n_tc
-                                        > 1 as libc::c_uint && has_resize != 0)
+                                    need_cdef_lpf_copy = ((*c).n_tc > 1 as libc::c_uint
+                                        && has_resize != 0)
                                         as libc::c_int;
-                                    if y_stride * (*f).sbh as isize
-                                        * 4
-                                        != (*f).lf.cdef_buf_plane_sz[0]
-                                            as isize
-                                        || uv_stride * (*f).sbh as isize
-                                            * 8
-                                            != (*f).lf.cdef_buf_plane_sz[1]
-                                                as isize
+                                    if y_stride * (*f).sbh as isize * 4
+                                        != (*f).lf.cdef_buf_plane_sz[0] as isize
+                                        || uv_stride * (*f).sbh as isize * 8
+                                            != (*f).lf.cdef_buf_plane_sz[1] as isize
                                         || need_cdef_lpf_copy != (*f).lf.need_cdef_lpf_copy
                                         || (*f).sbh != (*f).lf.cdef_buf_sbh
                                     {
@@ -14965,234 +12243,162 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                                             (*f).lf.cdef_line_buf as *mut libc::c_void,
                                         );
                                         let mut alloc_sz: size_t = 64 as libc::c_int as size_t;
-                                        alloc_sz = alloc_sz
-                                            .wrapping_add(
-                                                ((y_stride as libc::c_longlong).abs() as size_t)
-                                                    .wrapping_mul(4)
-                                                    .wrapping_mul((*f).sbh as size_t)
-                                                    << need_cdef_lpf_copy,
-                                            ) as size_t as size_t;
-                                        alloc_sz = alloc_sz
-                                            .wrapping_add(
-                                                ((uv_stride as libc::c_longlong).abs() as size_t)
-                                                    .wrapping_mul(8)
-                                                    .wrapping_mul((*f).sbh as size_t)
-                                                    << need_cdef_lpf_copy,
-                                            ) as size_t as size_t;
-                                        (*f)
-                                            .lf
-                                            .cdef_line_buf = dav1d_alloc_aligned(
+                                        alloc_sz = alloc_sz.wrapping_add(
+                                            ((y_stride as libc::c_longlong).abs() as size_t)
+                                                .wrapping_mul(4)
+                                                .wrapping_mul((*f).sbh as size_t)
+                                                << need_cdef_lpf_copy,
+                                        )
+                                            as size_t
+                                            as size_t;
+                                        alloc_sz = alloc_sz.wrapping_add(
+                                            ((uv_stride as libc::c_longlong).abs() as size_t)
+                                                .wrapping_mul(8)
+                                                .wrapping_mul((*f).sbh as size_t)
+                                                << need_cdef_lpf_copy,
+                                        )
+                                            as size_t
+                                            as size_t;
+                                        (*f).lf.cdef_line_buf = dav1d_alloc_aligned(
                                             alloc_sz,
                                             32 as libc::c_int as size_t,
-                                        ) as *mut uint8_t;
+                                        )
+                                            as *mut uint8_t;
                                         let mut ptr: *mut uint8_t = (*f).lf.cdef_line_buf;
                                         if ptr.is_null() {
-                                            (*f)
-                                                .lf
-                                                .cdef_buf_plane_sz[1 as libc::c_int
-                                                as usize] = 0 as libc::c_int;
-                                            (*f)
-                                                .lf
-                                                .cdef_buf_plane_sz[0 as libc::c_int
-                                                as usize] = (*f)
-                                                .lf
-                                                .cdef_buf_plane_sz[1];
+                                            (*f).lf.cdef_buf_plane_sz[1 as libc::c_int as usize] =
+                                                0 as libc::c_int;
+                                            (*f).lf.cdef_buf_plane_sz[0 as libc::c_int as usize] =
+                                                (*f).lf.cdef_buf_plane_sz[1];
                                             current_block = 13495985911605184990;
                                         } else {
                                             ptr = ptr.offset(32);
                                             if y_stride < 0 {
-                                                (*f)
-                                                    .lf
-                                                    .cdef_line[0 as libc::c_int
-                                                    as usize][0 as libc::c_int
-                                                    as usize] = ptr
-                                                    .offset(
-                                                        -((y_stride
-                                                            * ((*f).sbh * 4 - 1)
-                                                                as isize) as isize),
-                                                    ) as *mut libc::c_void;
-                                                (*f)
-                                                    .lf
-                                                    .cdef_line[1 as libc::c_int
-                                                    as usize][0 as libc::c_int
-                                                    as usize] = ptr
-                                                    .offset(
-                                                        -((y_stride
-                                                            * ((*f).sbh * 4 - 3)
-                                                                as isize) as isize),
-                                                    ) as *mut libc::c_void;
+                                                (*f).lf.cdef_line[0 as libc::c_int as usize]
+                                                    [0 as libc::c_int as usize] = ptr.offset(
+                                                    -((y_stride * ((*f).sbh * 4 - 1) as isize)
+                                                        as isize),
+                                                )
+                                                    as *mut libc::c_void;
+                                                (*f).lf.cdef_line[1 as libc::c_int as usize]
+                                                    [0 as libc::c_int as usize] = ptr.offset(
+                                                    -((y_stride * ((*f).sbh * 4 - 3) as isize)
+                                                        as isize),
+                                                )
+                                                    as *mut libc::c_void;
                                             } else {
-                                                (*f)
-                                                    .lf
-                                                    .cdef_line[0 as libc::c_int
-                                                    as usize][0 as libc::c_int
-                                                    as usize] = ptr
-                                                    .offset(
-                                                        (y_stride * 0) as isize,
-                                                    ) as *mut libc::c_void;
-                                                (*f)
-                                                    .lf
-                                                    .cdef_line[1 as libc::c_int
-                                                    as usize][0 as libc::c_int
-                                                    as usize] = ptr
-                                                    .offset(
-                                                        (y_stride * 2) as isize,
-                                                    ) as *mut libc::c_void;
+                                                (*f).lf.cdef_line[0 as libc::c_int as usize]
+                                                    [0 as libc::c_int as usize] = ptr
+                                                    .offset((y_stride * 0) as isize)
+                                                    as *mut libc::c_void;
+                                                (*f).lf.cdef_line[1 as libc::c_int as usize]
+                                                    [0 as libc::c_int as usize] = ptr
+                                                    .offset((y_stride * 2) as isize)
+                                                    as *mut libc::c_void;
                                             }
-                                            ptr = ptr
-                                                .offset(
-                                                    ((y_stride as libc::c_longlong).abs()
-                                                        * (*f).sbh as libc::c_longlong
-                                                        * 4 as libc::c_longlong) as isize,
-                                                );
+                                            ptr = ptr.offset(
+                                                ((y_stride as libc::c_longlong).abs()
+                                                    * (*f).sbh as libc::c_longlong
+                                                    * 4 as libc::c_longlong)
+                                                    as isize,
+                                            );
                                             if uv_stride < 0 {
-                                                (*f)
-                                                    .lf
-                                                    .cdef_line[0 as libc::c_int
-                                                    as usize][1 as libc::c_int
-                                                    as usize] = ptr
-                                                    .offset(
-                                                        -((uv_stride
-                                                            * ((*f).sbh * 8 - 1)
-                                                                as isize) as isize),
-                                                    ) as *mut libc::c_void;
-                                                (*f)
-                                                    .lf
-                                                    .cdef_line[0 as libc::c_int
-                                                    as usize][2 as libc::c_int
-                                                    as usize] = ptr
-                                                    .offset(
-                                                        -((uv_stride
-                                                            * ((*f).sbh * 8 - 3)
-                                                                as isize) as isize),
-                                                    ) as *mut libc::c_void;
-                                                (*f)
-                                                    .lf
-                                                    .cdef_line[1 as libc::c_int
-                                                    as usize][1 as libc::c_int
-                                                    as usize] = ptr
-                                                    .offset(
-                                                        -((uv_stride
-                                                            * ((*f).sbh * 8 - 5)
-                                                                as isize) as isize),
-                                                    ) as *mut libc::c_void;
-                                                (*f)
-                                                    .lf
-                                                    .cdef_line[1 as libc::c_int
-                                                    as usize][2 as libc::c_int
-                                                    as usize] = ptr
-                                                    .offset(
-                                                        -((uv_stride
-                                                            * ((*f).sbh * 8 - 7)
-                                                                as isize) as isize),
-                                                    ) as *mut libc::c_void;
+                                                (*f).lf.cdef_line[0 as libc::c_int as usize]
+                                                    [1 as libc::c_int as usize] = ptr.offset(
+                                                    -((uv_stride * ((*f).sbh * 8 - 1) as isize)
+                                                        as isize),
+                                                )
+                                                    as *mut libc::c_void;
+                                                (*f).lf.cdef_line[0 as libc::c_int as usize]
+                                                    [2 as libc::c_int as usize] = ptr.offset(
+                                                    -((uv_stride * ((*f).sbh * 8 - 3) as isize)
+                                                        as isize),
+                                                )
+                                                    as *mut libc::c_void;
+                                                (*f).lf.cdef_line[1 as libc::c_int as usize]
+                                                    [1 as libc::c_int as usize] = ptr.offset(
+                                                    -((uv_stride * ((*f).sbh * 8 - 5) as isize)
+                                                        as isize),
+                                                )
+                                                    as *mut libc::c_void;
+                                                (*f).lf.cdef_line[1 as libc::c_int as usize]
+                                                    [2 as libc::c_int as usize] = ptr.offset(
+                                                    -((uv_stride * ((*f).sbh * 8 - 7) as isize)
+                                                        as isize),
+                                                )
+                                                    as *mut libc::c_void;
                                             } else {
-                                                (*f)
-                                                    .lf
-                                                    .cdef_line[0 as libc::c_int
-                                                    as usize][1 as libc::c_int
-                                                    as usize] = ptr
-                                                    .offset(
-                                                        (uv_stride * 0) as isize,
-                                                    ) as *mut libc::c_void;
-                                                (*f)
-                                                    .lf
-                                                    .cdef_line[0 as libc::c_int
-                                                    as usize][2 as libc::c_int
-                                                    as usize] = ptr
-                                                    .offset(
-                                                        (uv_stride * 2) as isize,
-                                                    ) as *mut libc::c_void;
-                                                (*f)
-                                                    .lf
-                                                    .cdef_line[1 as libc::c_int
-                                                    as usize][1 as libc::c_int
-                                                    as usize] = ptr
-                                                    .offset(
-                                                        (uv_stride * 4) as isize,
-                                                    ) as *mut libc::c_void;
-                                                (*f)
-                                                    .lf
-                                                    .cdef_line[1 as libc::c_int
-                                                    as usize][2 as libc::c_int
-                                                    as usize] = ptr
-                                                    .offset(
-                                                        (uv_stride * 6) as isize,
-                                                    ) as *mut libc::c_void;
+                                                (*f).lf.cdef_line[0 as libc::c_int as usize]
+                                                    [1 as libc::c_int as usize] = ptr
+                                                    .offset((uv_stride * 0) as isize)
+                                                    as *mut libc::c_void;
+                                                (*f).lf.cdef_line[0 as libc::c_int as usize]
+                                                    [2 as libc::c_int as usize] = ptr
+                                                    .offset((uv_stride * 2) as isize)
+                                                    as *mut libc::c_void;
+                                                (*f).lf.cdef_line[1 as libc::c_int as usize]
+                                                    [1 as libc::c_int as usize] = ptr
+                                                    .offset((uv_stride * 4) as isize)
+                                                    as *mut libc::c_void;
+                                                (*f).lf.cdef_line[1 as libc::c_int as usize]
+                                                    [2 as libc::c_int as usize] = ptr
+                                                    .offset((uv_stride * 6) as isize)
+                                                    as *mut libc::c_void;
                                             }
                                             if need_cdef_lpf_copy != 0 {
-                                                ptr = ptr
-                                                    .offset(
-                                                        ((uv_stride as libc::c_longlong).abs()
-                                                            * (*f).sbh as libc::c_longlong
-                                                            * 8 as libc::c_longlong) as isize,
-                                                    );
+                                                ptr = ptr.offset(
+                                                    ((uv_stride as libc::c_longlong).abs()
+                                                        * (*f).sbh as libc::c_longlong
+                                                        * 8 as libc::c_longlong)
+                                                        as isize,
+                                                );
                                                 if y_stride < 0 {
-                                                    (*f)
-                                                        .lf
-                                                        .cdef_lpf_line[0 as libc::c_int
-                                                        as usize] = ptr
-                                                        .offset(
-                                                            -((y_stride
-                                                                * ((*f).sbh * 4 - 1)
-                                                                    as isize) as isize),
-                                                        ) as *mut libc::c_void;
+                                                    (*f).lf.cdef_lpf_line
+                                                        [0 as libc::c_int as usize] = ptr.offset(
+                                                        -((y_stride * ((*f).sbh * 4 - 1) as isize)
+                                                            as isize),
+                                                    )
+                                                        as *mut libc::c_void;
                                                 } else {
-                                                    (*f)
-                                                        .lf
-                                                        .cdef_lpf_line[0 as libc::c_int
-                                                        as usize] = ptr as *mut libc::c_void;
+                                                    (*f).lf.cdef_lpf_line
+                                                        [0 as libc::c_int as usize] =
+                                                        ptr as *mut libc::c_void;
                                                 }
-                                                ptr = ptr
-                                                    .offset(
-                                                        ((y_stride as libc::c_longlong).abs()
-                                                            * (*f).sbh as libc::c_longlong
-                                                            * 4 as libc::c_longlong) as isize,
-                                                    );
+                                                ptr = ptr.offset(
+                                                    ((y_stride as libc::c_longlong).abs()
+                                                        * (*f).sbh as libc::c_longlong
+                                                        * 4 as libc::c_longlong)
+                                                        as isize,
+                                                );
                                                 if uv_stride < 0 {
-                                                    (*f)
-                                                        .lf
-                                                        .cdef_lpf_line[1 as libc::c_int
-                                                        as usize] = ptr
-                                                        .offset(
-                                                            -((uv_stride
-                                                                * ((*f).sbh * 4 - 1)
-                                                                    as isize) as isize),
-                                                        ) as *mut libc::c_void;
-                                                    (*f)
-                                                        .lf
-                                                        .cdef_lpf_line[2 as libc::c_int
-                                                        as usize] = ptr
-                                                        .offset(
-                                                            -((uv_stride
-                                                                * ((*f).sbh * 8 - 1)
-                                                                    as isize) as isize),
-                                                        ) as *mut libc::c_void;
+                                                    (*f).lf.cdef_lpf_line
+                                                        [1 as libc::c_int as usize] = ptr.offset(
+                                                        -((uv_stride * ((*f).sbh * 4 - 1) as isize)
+                                                            as isize),
+                                                    )
+                                                        as *mut libc::c_void;
+                                                    (*f).lf.cdef_lpf_line
+                                                        [2 as libc::c_int as usize] = ptr.offset(
+                                                        -((uv_stride * ((*f).sbh * 8 - 1) as isize)
+                                                            as isize),
+                                                    )
+                                                        as *mut libc::c_void;
                                                 } else {
-                                                    (*f)
-                                                        .lf
-                                                        .cdef_lpf_line[1 as libc::c_int
-                                                        as usize] = ptr as *mut libc::c_void;
-                                                    (*f)
-                                                        .lf
-                                                        .cdef_lpf_line[2 as libc::c_int
-                                                        as usize] = ptr
-                                                        .offset(
-                                                            (uv_stride * (*f).sbh as isize
-                                                                * 4) as isize,
-                                                        ) as *mut libc::c_void;
+                                                    (*f).lf.cdef_lpf_line
+                                                        [1 as libc::c_int as usize] =
+                                                        ptr as *mut libc::c_void;
+                                                    (*f).lf.cdef_lpf_line
+                                                        [2 as libc::c_int as usize] = ptr.offset(
+                                                        (uv_stride * (*f).sbh as isize * 4)
+                                                            as isize,
+                                                    )
+                                                        as *mut libc::c_void;
                                                 }
                                             }
-                                            (*f)
-                                                .lf
-                                                .cdef_buf_plane_sz[0 as libc::c_int
-                                                as usize] = y_stride as libc::c_int * (*f).sbh
-                                                * 4;
-                                            (*f)
-                                                .lf
-                                                .cdef_buf_plane_sz[1 as libc::c_int
-                                                as usize] = uv_stride as libc::c_int * (*f).sbh
-                                                * 8;
+                                            (*f).lf.cdef_buf_plane_sz[0 as libc::c_int as usize] =
+                                                y_stride as libc::c_int * (*f).sbh * 4;
+                                            (*f).lf.cdef_buf_plane_sz[1 as libc::c_int as usize] =
+                                                uv_stride as libc::c_int * (*f).sbh * 8;
                                             (*f).lf.need_cdef_lpf_copy = need_cdef_lpf_copy;
                                             (*f).lf.cdef_buf_sbh = (*f).sbh;
                                             current_block = 8140372313878014523;
@@ -15204,8 +12410,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                                         13495985911605184990 => {}
                                         _ => {
                                             sb128 = (*(*f).seq_hdr).sb128;
-                                            num_lines = if (*c).n_tc > 1 as libc::c_uint
-                                            {
+                                            num_lines = if (*c).n_tc > 1 as libc::c_uint {
                                                 ((*f).sbh * 4) << sb128
                                             } else {
                                                 12 as libc::c_int
@@ -15214,106 +12419,95 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                                             uv_stride = (*f).sr_cur.p.stride[1];
                                             if y_stride * num_lines as isize
                                                 != (*f).lf.lr_buf_plane_sz[0] as isize
-                                                || uv_stride * num_lines as isize
-                                                    * 2 as isize
+                                                || uv_stride * num_lines as isize * 2 as isize
                                                     != (*f).lf.lr_buf_plane_sz[1] as isize
                                             {
                                                 dav1d_free_aligned(
                                                     (*f).lf.lr_line_buf as *mut libc::c_void,
                                                 );
-                                                let mut alloc_sz_0: size_t = 128 as libc::c_int as size_t;
-                                                alloc_sz_0 = alloc_sz_0
-                                                    .wrapping_add(
-                                                        ((y_stride as libc::c_longlong).abs() as size_t)
-                                                            .wrapping_mul(num_lines as size_t),
-                                                    );
-                                                alloc_sz_0 = alloc_sz_0
-                                                    .wrapping_add(
-                                                        ((uv_stride as libc::c_longlong).abs() as size_t)
-                                                            .wrapping_mul(num_lines as size_t)
-                                                            .wrapping_mul(2),
-                                                    );
-                                                (*f)
-                                                    .lf
-                                                    .lr_line_buf = dav1d_alloc_aligned(
+                                                let mut alloc_sz_0: size_t =
+                                                    128 as libc::c_int as size_t;
+                                                alloc_sz_0 = alloc_sz_0.wrapping_add(
+                                                    ((y_stride as libc::c_longlong).abs()
+                                                        as size_t)
+                                                        .wrapping_mul(num_lines as size_t),
+                                                );
+                                                alloc_sz_0 = alloc_sz_0.wrapping_add(
+                                                    ((uv_stride as libc::c_longlong).abs()
+                                                        as size_t)
+                                                        .wrapping_mul(num_lines as size_t)
+                                                        .wrapping_mul(2),
+                                                );
+                                                (*f).lf.lr_line_buf = dav1d_alloc_aligned(
                                                     alloc_sz_0,
                                                     64 as libc::c_int as size_t,
-                                                ) as *mut uint8_t;
+                                                )
+                                                    as *mut uint8_t;
                                                 let mut ptr_0: *mut uint8_t = (*f).lf.lr_line_buf;
                                                 if ptr_0.is_null() {
-                                                    (*f)
-                                                        .lf
-                                                        .lr_buf_plane_sz[1 as libc::c_int
-                                                        as usize] = 0 as libc::c_int;
-                                                    (*f)
-                                                        .lf
-                                                        .lr_buf_plane_sz[0 as libc::c_int
-                                                        as usize] = (*f)
-                                                        .lf
-                                                        .lr_buf_plane_sz[1];
+                                                    (*f).lf.lr_buf_plane_sz
+                                                        [1 as libc::c_int as usize] =
+                                                        0 as libc::c_int;
+                                                    (*f).lf.lr_buf_plane_sz
+                                                        [0 as libc::c_int as usize] =
+                                                        (*f).lf.lr_buf_plane_sz[1];
                                                     current_block = 13495985911605184990;
                                                 } else {
                                                     ptr_0 = ptr_0.offset(64);
                                                     if y_stride < 0 {
-                                                        (*f)
-                                                            .lf
-                                                            .lr_lpf_line[0 as libc::c_int
-                                                            as usize] = ptr_0
+                                                        (*f).lf.lr_lpf_line
+                                                            [0 as libc::c_int as usize] = ptr_0
                                                             .offset(
                                                                 -((y_stride
-                                                                    * (num_lines - 1) as isize) as isize),
-                                                            ) as *mut libc::c_void;
+                                                                    * (num_lines - 1) as isize)
+                                                                    as isize),
+                                                            )
+                                                            as *mut libc::c_void;
                                                     } else {
-                                                        (*f)
-                                                            .lf
-                                                            .lr_lpf_line[0 as libc::c_int
-                                                            as usize] = ptr_0 as *mut libc::c_void;
+                                                        (*f).lf.lr_lpf_line
+                                                            [0 as libc::c_int as usize] =
+                                                            ptr_0 as *mut libc::c_void;
                                                     }
-                                                    ptr_0 = ptr_0
-                                                        .offset(
-                                                            ((y_stride as libc::c_longlong).abs()
-                                                                * num_lines as libc::c_longlong) as isize,
-                                                        );
+                                                    ptr_0 = ptr_0.offset(
+                                                        ((y_stride as libc::c_longlong).abs()
+                                                            * num_lines as libc::c_longlong)
+                                                            as isize,
+                                                    );
                                                     if uv_stride < 0 {
-                                                        (*f)
-                                                            .lf
-                                                            .lr_lpf_line[1 as libc::c_int
-                                                            as usize] = ptr_0
+                                                        (*f).lf.lr_lpf_line
+                                                            [1 as libc::c_int as usize] = ptr_0
                                                             .offset(
                                                                 -((uv_stride
-                                                                    * (num_lines * 1 - 1)
-                                                                        as isize) as isize),
-                                                            ) as *mut libc::c_void;
-                                                        (*f)
-                                                            .lf
-                                                            .lr_lpf_line[2 as libc::c_int
-                                                            as usize] = ptr_0
+                                                                    * (num_lines * 1 - 1) as isize)
+                                                                    as isize),
+                                                            )
+                                                            as *mut libc::c_void;
+                                                        (*f).lf.lr_lpf_line
+                                                            [2 as libc::c_int as usize] = ptr_0
                                                             .offset(
                                                                 -((uv_stride
-                                                                    * (num_lines * 2 - 1)
-                                                                        as isize) as isize),
-                                                            ) as *mut libc::c_void;
+                                                                    * (num_lines * 2 - 1) as isize)
+                                                                    as isize),
+                                                            )
+                                                            as *mut libc::c_void;
                                                     } else {
-                                                        (*f)
-                                                            .lf
-                                                            .lr_lpf_line[1 as libc::c_int
-                                                            as usize] = ptr_0 as *mut libc::c_void;
-                                                        (*f)
-                                                            .lf
-                                                            .lr_lpf_line[2 as libc::c_int
-                                                            as usize] = ptr_0
-                                                            .offset((uv_stride * num_lines as isize) as isize)
+                                                        (*f).lf.lr_lpf_line
+                                                            [1 as libc::c_int as usize] =
+                                                            ptr_0 as *mut libc::c_void;
+                                                        (*f).lf.lr_lpf_line
+                                                            [2 as libc::c_int as usize] = ptr_0
+                                                            .offset(
+                                                                (uv_stride * num_lines as isize)
+                                                                    as isize,
+                                                            )
                                                             as *mut libc::c_void;
                                                     }
-                                                    (*f)
-                                                        .lf
-                                                        .lr_buf_plane_sz[0 as libc::c_int
-                                                        as usize] = y_stride as libc::c_int * num_lines;
-                                                    (*f)
-                                                        .lf
-                                                        .lr_buf_plane_sz[1 as libc::c_int
-                                                        as usize] = uv_stride as libc::c_int * num_lines
-                                                        * 2;
+                                                    (*f).lf.lr_buf_plane_sz
+                                                        [0 as libc::c_int as usize] =
+                                                        y_stride as libc::c_int * num_lines;
+                                                    (*f).lf.lr_buf_plane_sz
+                                                        [1 as libc::c_int as usize] =
+                                                        uv_stride as libc::c_int * num_lines * 2;
                                                     current_block = 15456862084301247793;
                                                 }
                                             } else {
@@ -15328,35 +12522,53 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                                                                 as *mut libc::c_void,
                                                         );
                                                         freep(
-                                                            &mut (*f).lf.level as *mut *mut [uint8_t; 4]
+                                                            &mut (*f).lf.level
+                                                                as *mut *mut [uint8_t; 4]
                                                                 as *mut libc::c_void,
                                                         );
-                                                        (*f)
-                                                            .lf
-                                                            .mask = malloc(
-                                                            (::core::mem::size_of::<Av1Filter>() as libc::c_ulong)
-                                                                .wrapping_mul(num_sb128 as libc::c_ulong),
-                                                        ) as *mut Av1Filter;
-                                                        (*f)
-                                                            .lf
-                                                            .level = malloc(
-                                                            (::core::mem::size_of::<[uint8_t; 4]>() as libc::c_ulong)
-                                                                .wrapping_mul(num_sb128 as libc::c_ulong)
-                                                                .wrapping_mul(32 as libc::c_int as libc::c_ulong)
-                                                                .wrapping_mul(32 as libc::c_int as libc::c_ulong)
-                                                                .wrapping_add(3 as libc::c_int as libc::c_ulong),
-                                                        ) as *mut [uint8_t; 4];
-                                                        if ((*f).lf.mask).is_null() || ((*f).lf.level).is_null() {
+                                                        (*f).lf.mask = malloc(
+                                                            (::core::mem::size_of::<Av1Filter>()
+                                                                as libc::c_ulong)
+                                                                .wrapping_mul(
+                                                                    num_sb128 as libc::c_ulong,
+                                                                ),
+                                                        )
+                                                            as *mut Av1Filter;
+                                                        (*f).lf.level = malloc(
+                                                            (::core::mem::size_of::<[uint8_t; 4]>()
+                                                                as libc::c_ulong)
+                                                                .wrapping_mul(
+                                                                    num_sb128 as libc::c_ulong,
+                                                                )
+                                                                .wrapping_mul(
+                                                                    32 as libc::c_int
+                                                                        as libc::c_ulong,
+                                                                )
+                                                                .wrapping_mul(
+                                                                    32 as libc::c_int
+                                                                        as libc::c_ulong,
+                                                                )
+                                                                .wrapping_add(
+                                                                    3 as libc::c_int
+                                                                        as libc::c_ulong,
+                                                                ),
+                                                        )
+                                                            as *mut [uint8_t; 4];
+                                                        if ((*f).lf.mask).is_null()
+                                                            || ((*f).lf.level).is_null()
+                                                        {
                                                             (*f).lf.mask_sz = 0 as libc::c_int;
                                                             current_block = 13495985911605184990;
                                                         } else {
                                                             if (*c).n_fc > 1 as libc::c_uint {
                                                                 freep(
-                                                                    &mut (*f).frame_thread.b as *mut *mut Av1Block
+                                                                    &mut (*f).frame_thread.b
+                                                                        as *mut *mut Av1Block
                                                                         as *mut libc::c_void,
                                                                 );
                                                                 freep(
-                                                                    &mut (*f).frame_thread.cbi as *mut *mut CodedBlockInfo
+                                                                    &mut (*f).frame_thread.cbi
+                                                                        as *mut *mut CodedBlockInfo
                                                                         as *mut libc::c_void,
                                                                 );
                                                                 (*f)
@@ -15367,21 +12579,37 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                                                                         .wrapping_mul(32 as libc::c_int as libc::c_ulong)
                                                                         .wrapping_mul(32 as libc::c_int as libc::c_ulong),
                                                                 ) as *mut Av1Block;
-                                                                (*f)
-                                                                    .frame_thread
-                                                                    .cbi = malloc(
-                                                                    (::core::mem::size_of::<CodedBlockInfo>() as libc::c_ulong)
-                                                                        .wrapping_mul(num_sb128 as libc::c_ulong)
-                                                                        .wrapping_mul(32 as libc::c_int as libc::c_ulong)
-                                                                        .wrapping_mul(32 as libc::c_int as libc::c_ulong),
-                                                                ) as *mut CodedBlockInfo;
+                                                                (*f).frame_thread.cbi = malloc(
+                                                                    (::core::mem::size_of::<
+                                                                        CodedBlockInfo,
+                                                                    >(
+                                                                    )
+                                                                        as libc::c_ulong)
+                                                                        .wrapping_mul(
+                                                                            num_sb128
+                                                                                as libc::c_ulong,
+                                                                        )
+                                                                        .wrapping_mul(
+                                                                            32 as libc::c_int
+                                                                                as libc::c_ulong,
+                                                                        )
+                                                                        .wrapping_mul(
+                                                                            32 as libc::c_int
+                                                                                as libc::c_ulong,
+                                                                        ),
+                                                                )
+                                                                    as *mut CodedBlockInfo;
                                                                 if ((*f).frame_thread.b).is_null()
-                                                                    || ((*f).frame_thread.cbi).is_null()
+                                                                    || ((*f).frame_thread.cbi)
+                                                                        .is_null()
                                                                 {
-                                                                    (*f).lf.mask_sz = 0 as libc::c_int;
-                                                                    current_block = 13495985911605184990;
+                                                                    (*f).lf.mask_sz =
+                                                                        0 as libc::c_int;
+                                                                    current_block =
+                                                                        13495985911605184990;
                                                                 } else {
-                                                                    current_block = 7923086311623215889;
+                                                                    current_block =
+                                                                        7923086311623215889;
                                                                 }
                                                             } else {
                                                                 current_block = 7923086311623215889;
@@ -15390,7 +12618,8 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                                                                 13495985911605184990 => {}
                                                                 _ => {
                                                                     (*f).lf.mask_sz = num_sb128;
-                                                                    current_block = 3024573345131975588;
+                                                                    current_block =
+                                                                        3024573345131975588;
                                                                 }
                                                             }
                                                         }
@@ -15400,30 +12629,41 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                                                     match current_block {
                                                         13495985911605184990 => {}
                                                         _ => {
-                                                            (*f)
-                                                                .sr_sb128w = (*f).sr_cur.p.p.w + 127
-                                                                >> 7;
-                                                            lr_mask_sz = (*f).sr_sb128w * (*f).sb128h;
+                                                            (*f).sr_sb128w =
+                                                                (*f).sr_cur.p.p.w + 127 >> 7;
+                                                            lr_mask_sz =
+                                                                (*f).sr_sb128w * (*f).sb128h;
                                                             if lr_mask_sz != (*f).lf.lr_mask_sz {
                                                                 freep(
-                                                                    &mut (*f).lf.lr_mask as *mut *mut Av1Restoration
+                                                                    &mut (*f).lf.lr_mask
+                                                                        as *mut *mut Av1Restoration
                                                                         as *mut libc::c_void,
                                                                 );
-                                                                (*f)
-                                                                    .lf
-                                                                    .lr_mask = malloc(
-                                                                    (::core::mem::size_of::<Av1Restoration>() as libc::c_ulong)
-                                                                        .wrapping_mul(lr_mask_sz as libc::c_ulong),
-                                                                ) as *mut Av1Restoration;
+                                                                (*f).lf.lr_mask = malloc(
+                                                                    (::core::mem::size_of::<
+                                                                        Av1Restoration,
+                                                                    >(
+                                                                    )
+                                                                        as libc::c_ulong)
+                                                                        .wrapping_mul(
+                                                                            lr_mask_sz
+                                                                                as libc::c_ulong,
+                                                                        ),
+                                                                )
+                                                                    as *mut Av1Restoration;
                                                                 if ((*f).lf.lr_mask).is_null() {
-                                                                    (*f).lf.lr_mask_sz = 0 as libc::c_int;
-                                                                    current_block = 13495985911605184990;
+                                                                    (*f).lf.lr_mask_sz =
+                                                                        0 as libc::c_int;
+                                                                    current_block =
+                                                                        13495985911605184990;
                                                                 } else {
                                                                     (*f).lf.lr_mask_sz = lr_mask_sz;
-                                                                    current_block = 16077153431071379266;
+                                                                    current_block =
+                                                                        16077153431071379266;
                                                                 }
                                                             } else {
-                                                                current_block = 16077153431071379266;
+                                                                current_block =
+                                                                    16077153431071379266;
                                                             }
                                                             match current_block {
                                                                 13495985911605184990 => {}
@@ -15445,53 +12685,78 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                                                                             .type_0[2] as libc::c_uint
                                                                             != DAV1D_RESTORATION_NONE as libc::c_int as libc::c_uint)
                                                                             as libc::c_int) << 2);
-                                                                    if (*(*f).frame_hdr).loopfilter.sharpness
+                                                                    if (*(*f).frame_hdr)
+                                                                        .loopfilter
+                                                                        .sharpness
                                                                         != (*f).lf.last_sharpness
                                                                     {
                                                                         dav1d_calc_eih(
                                                                             &mut (*f).lf.lim_lut.0,
-                                                                            (*(*f).frame_hdr).loopfilter.sharpness,
+                                                                            (*(*f).frame_hdr)
+                                                                                .loopfilter
+                                                                                .sharpness,
                                                                         );
-                                                                        (*f)
-                                                                            .lf
-                                                                            .last_sharpness = (*(*f).frame_hdr).loopfilter.sharpness;
+                                                                        (*f).lf.last_sharpness =
+                                                                            (*(*f).frame_hdr)
+                                                                                .loopfilter
+                                                                                .sharpness;
                                                                     }
                                                                     dav1d_calc_lf_values(
                                                                         ((*f).lf.lvl).as_mut_ptr(),
                                                                         (*f).frame_hdr,
                                                                         [
-                                                                            0 as libc::c_int as int8_t,
-                                                                            0 as libc::c_int as int8_t,
-                                                                            0 as libc::c_int as int8_t,
-                                                                            0 as libc::c_int as int8_t,
+                                                                            0 as libc::c_int
+                                                                                as int8_t,
+                                                                            0 as libc::c_int
+                                                                                as int8_t,
+                                                                            0 as libc::c_int
+                                                                                as int8_t,
+                                                                            0 as libc::c_int
+                                                                                as int8_t,
                                                                         ]
-                                                                            .as_mut_ptr() as *const int8_t,
+                                                                        .as_mut_ptr()
+                                                                            as *const int8_t,
                                                                     );
                                                                     memset(
-                                                                        (*f).lf.mask as *mut libc::c_void,
+                                                                        (*f).lf.mask
+                                                                            as *mut libc::c_void,
                                                                         0 as libc::c_int,
-                                                                        (::core::mem::size_of::<Av1Filter>())
-                                                                            .wrapping_mul(num_sb128 as size_t),
+                                                                        (::core::mem::size_of::<
+                                                                            Av1Filter,
+                                                                        >(
+                                                                        ))
+                                                                        .wrapping_mul(
+                                                                            num_sb128 as size_t,
+                                                                        ),
                                                                     );
-                                                                    ipred_edge_sz = (*f).sbh * (*f).sb128w << hbd;
-                                                                    if ipred_edge_sz != (*f).ipred_edge_sz {
+                                                                    ipred_edge_sz = (*f).sbh
+                                                                        * (*f).sb128w
+                                                                        << hbd;
+                                                                    if ipred_edge_sz
+                                                                        != (*f).ipred_edge_sz
+                                                                    {
                                                                         dav1d_freep_aligned(
                                                                             &mut *((*f).ipred_edge)
                                                                                 .as_mut_ptr()
                                                                                 .offset(0) as *mut *mut libc::c_void
                                                                                 as *mut libc::c_void,
                                                                         );
-                                                                        (*f)
-                                                                            .ipred_edge[0 as libc::c_int
-                                                                            as usize] = dav1d_alloc_aligned(
-                                                                            (ipred_edge_sz * 128 * 3)
-                                                                                as size_t,
-                                                                            64 as libc::c_int as size_t,
-                                                                        );
+                                                                        (*f).ipred_edge[0
+                                                                            as libc::c_int
+                                                                            as usize] =
+                                                                            dav1d_alloc_aligned(
+                                                                                (ipred_edge_sz
+                                                                                    * 128
+                                                                                    * 3)
+                                                                                    as size_t,
+                                                                                64 as libc::c_int
+                                                                                    as size_t,
+                                                                            );
                                                                         let mut ptr_1: *mut uint8_t = (*f)
                                                                             .ipred_edge[0] as *mut uint8_t;
                                                                         if ptr_1.is_null() {
-                                                                            (*f).ipred_edge_sz = 0 as libc::c_int;
+                                                                            (*f).ipred_edge_sz =
+                                                                                0 as libc::c_int;
                                                                             current_block = 13495985911605184990;
                                                                         } else {
                                                                             (*f)
@@ -15508,17 +12773,24 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
                                                                                     (ipred_edge_sz * 128 * 2)
                                                                                         as isize,
                                                                                 ) as *mut libc::c_void;
-                                                                            (*f).ipred_edge_sz = ipred_edge_sz;
+                                                                            (*f).ipred_edge_sz =
+                                                                                ipred_edge_sz;
                                                                             current_block = 10265667325682070567;
                                                                         }
                                                                     } else {
-                                                                        current_block = 10265667325682070567;
+                                                                        current_block =
+                                                                            10265667325682070567;
                                                                     }
                                                                     match current_block {
                                                                         13495985911605184990 => {}
                                                                         _ => {
-                                                                            re_sz = (*f).sb128h * (*(*f).frame_hdr).tiling.cols;
-                                                                            if re_sz != (*f).lf.re_sz {
+                                                                            re_sz = (*f).sb128h
+                                                                                * (*(*f).frame_hdr)
+                                                                                    .tiling
+                                                                                    .cols;
+                                                                            if re_sz
+                                                                                != (*f).lf.re_sz
+                                                                            {
                                                                                 freep(
                                                                                     &mut *((*f).lf.tx_lpf_right_edge)
                                                                                         .as_mut_ptr()
@@ -15765,9 +13037,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(
     return retval;
 }
 #[no_mangle]
-pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(
-    f: *mut Dav1dFrameContext,
-) -> libc::c_int {
+pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) -> libc::c_int {
     let mut current_block: u64;
     let c: *const Dav1dContext = (*f).c;
     let mut retval = -(22 as libc::c_int);
@@ -15831,9 +13101,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(
                 tile_col = 0 as libc::c_int;
                 tile_row += 1;
             }
-            if j == (*(*f).frame_hdr).tiling.update
-                && (*(*f).frame_hdr).refresh_context != 0
-            {
+            if j == (*(*f).frame_hdr).tiling.update && (*(*f).frame_hdr).refresh_context != 0 {
                 (*f).task_thread.update_set = 1 as libc::c_int;
             }
             data = data.offset(tile_sz as isize);
@@ -15845,21 +13113,16 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(
     match current_block {
         15768484401365413375 => {
             if (*c).n_tc > 1 as libc::c_uint {
-                let uses_2pass = ((*c).n_fc
-                    > 1 as libc::c_uint) as libc::c_int;
+                let uses_2pass = ((*c).n_fc > 1 as libc::c_uint) as libc::c_int;
                 let mut n = 0;
-                while n
-                    < (*f).sb128w * (*(*f).frame_hdr).tiling.rows
-                        * (1 + uses_2pass)
-                {
+                while n < (*f).sb128w * (*(*f).frame_hdr).tiling.rows * (1 + uses_2pass) {
                     reset_context(
                         &mut *((*f).a).offset(n as isize),
-                        ((*(*f).frame_hdr).frame_type as libc::c_uint
-                            & 1 as libc::c_uint == 0) as libc::c_int,
+                        ((*(*f).frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint == 0)
+                            as libc::c_int,
                         if uses_2pass != 0 {
                             1 as libc::c_int
-                                + (n >= (*f).sb128w * (*(*f).frame_hdr).tiling.rows)
-                                    as libc::c_int
+                                + (n >= (*f).sb128w * (*(*f).frame_hdr).tiling.rows) as libc::c_int
                         } else {
                             0 as libc::c_int
                         },
@@ -15874,26 +13137,22 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(
     return retval;
 }
 #[no_mangle]
-pub unsafe extern "C" fn dav1d_decode_frame_main(
-    f: *mut Dav1dFrameContext,
-) -> libc::c_int {
+pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> libc::c_int {
     let mut current_block: u64;
     let c: *const Dav1dContext = (*f).c;
     let mut retval = -(22 as libc::c_int);
     if !((*(*f).c).n_tc == 1 as libc::c_uint) {
         unreachable!();
     }
-    let t: *mut Dav1dTaskContext = &mut *((*c).tc)
-        .offset(f.offset_from((*c).fc) as isize)
-        as *mut Dav1dTaskContext;
+    let t: *mut Dav1dTaskContext =
+        &mut *((*c).tc).offset(f.offset_from((*c).fc) as isize) as *mut Dav1dTaskContext;
     (*t).f = f;
     (*t).frame_thread.pass = 0 as libc::c_int;
     let mut n = 0;
     while n < (*f).sb128w * (*(*f).frame_hdr).tiling.rows {
         reset_context(
             &mut *((*f).a).offset(n as isize),
-            ((*(*f).frame_hdr).frame_type as libc::c_uint
-                & 1 as libc::c_uint == 0) as libc::c_int,
+            ((*(*f).frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint == 0) as libc::c_int,
             0 as libc::c_int,
         );
         n += 1;
@@ -15905,13 +13164,10 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(
             break;
         }
         let sbh_end = imin(
-            (*(*f).frame_hdr).tiling.row_start_sb[(tile_row + 1) as usize]
-                as libc::c_int,
+            (*(*f).frame_hdr).tiling.row_start_sb[(tile_row + 1) as usize] as libc::c_int,
             (*f).sbh,
         );
-        let mut sby = (*(*f).frame_hdr)
-            .tiling
-            .row_start_sb[tile_row as usize] as libc::c_int;
+        let mut sby = (*(*f).frame_hdr).tiling.row_start_sb[tile_row as usize] as libc::c_int;
         while sby < sbh_end {
             (*t).by = sby << 4 + (*(*f).seq_hdr).sb128;
             let by_end = (*t).by + (*f).sb_step >> 1;
@@ -15927,20 +13183,16 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(
             }
             let mut tile_col = 0;
             while tile_col < (*(*f).frame_hdr).tiling.cols {
-                (*t)
-                    .ts = &mut *((*f).ts)
-                    .offset(
-                        (tile_row * (*(*f).frame_hdr).tiling.cols + tile_col) as isize,
-                    ) as *mut Dav1dTileState;
+                (*t).ts = &mut *((*f).ts)
+                    .offset((tile_row * (*(*f).frame_hdr).tiling.cols + tile_col) as isize)
+                    as *mut Dav1dTileState;
                 if dav1d_decode_tile_sbrow(t) != 0 {
                     current_block = 3839639024989683879;
                     break 's_44;
                 }
                 tile_col += 1;
             }
-            if (*(*f).frame_hdr).frame_type as libc::c_uint
-                & 1 as libc::c_uint != 0
-            {
+            if (*(*f).frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint != 0 {
                 dav1d_refmvs_save_tmvs(
                     &mut (*t).rt,
                     0 as libc::c_int,
@@ -15963,17 +13215,12 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(
     return retval;
 }
 #[no_mangle]
-pub unsafe extern "C" fn dav1d_decode_frame_exit(
-    f: *mut Dav1dFrameContext,
-    retval: libc::c_int,
-) {
+pub unsafe extern "C" fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retval: libc::c_int) {
     let c: *const Dav1dContext = (*f).c;
     if !((*f).sr_cur.p.data[0]).is_null() {
         *&mut (*f).task_thread.error = 0 as libc::c_int;
     }
-    if (*c).n_fc > 1 as libc::c_uint && retval != 0
-        && !((*f).frame_thread.cf).is_null()
-    {
+    if (*c).n_fc > 1 as libc::c_uint && retval != 0 && !((*f).frame_thread.cf).is_null() {
         memset(
             (*f).frame_thread.cf,
             0 as libc::c_int,
@@ -15986,9 +13233,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_exit(
     let mut i = 0;
     while i < 7 {
         if !((*f).refp[i as usize].p.frame_hdr).is_null() {
-            dav1d_thread_picture_unref(
-                &mut *((*f).refp).as_mut_ptr().offset(i as isize),
-            );
+            dav1d_thread_picture_unref(&mut *((*f).refp).as_mut_ptr().offset(i as isize));
         }
         dav1d_ref_dec(&mut *((*f).ref_mvs_ref).as_mut_ptr().offset(i as isize));
         i += 1;
@@ -16051,14 +13296,14 @@ pub unsafe extern "C" fn dav1d_decode_frame(f: *mut Dav1dFrameContext) -> libc::
             res = (*f).task_thread.retval;
         } else {
             res = dav1d_decode_frame_main(f);
-            if res == 0 && (*(*f).frame_hdr).refresh_context != 0
+            if res == 0
+                && (*(*f).frame_hdr).refresh_context != 0
                 && (*f).task_thread.update_set != 0
             {
                 dav1d_cdf_thread_update(
                     (*f).frame_hdr,
                     (*f).out_cdf.data.cdf,
-                    &mut (*((*f).ts).offset((*(*f).frame_hdr).tiling.update as isize))
-                        .cdf,
+                    &mut (*((*f).ts).offset((*(*f).frame_hdr).tiling.update as isize)).cdf,
                 );
             }
         }
@@ -16073,9 +13318,7 @@ unsafe extern "C" fn get_upscale_x0(
     step: libc::c_int,
 ) -> libc::c_int {
     let err = out_w * step - (in_w << 14);
-    let x0 = (-(out_w - in_w << 13)
-        + (out_w >> 1)) / out_w + 128
-        - err / 2;
+    let x0 = (-(out_w - in_w << 13) + (out_w >> 1)) / out_w + 128 - err / 2;
     return x0 & 0x3fff as libc::c_int;
 }
 #[no_mangle]
@@ -16101,16 +13344,15 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         while (*f).n_tile_data > 0 {
             pthread_cond_wait(&mut (*f).task_thread.cond, &mut (*c).task_thread.lock);
         }
-        out_delayed = &mut *((*c).frame_thread.out_delayed).offset(next as isize)
-            as *mut Dav1dThreadPicture;
+        out_delayed =
+            &mut *((*c).frame_thread.out_delayed).offset(next as isize) as *mut Dav1dThreadPicture;
         if !((*out_delayed).p.data[0]).is_null()
             || ::core::intrinsics::atomic_load_seqcst(
                 &mut (*f).task_thread.error as *mut atomic_int,
             ) != 0
         {
-            let mut first: libc::c_uint = ::core::intrinsics::atomic_load_seqcst(
-                &mut (*c).task_thread.first,
-            );
+            let mut first: libc::c_uint =
+                ::core::intrinsics::atomic_load_seqcst(&mut (*c).task_thread.first);
             if first.wrapping_add(1 as libc::c_uint) < (*c).n_fc {
                 ::core::intrinsics::atomic_xadd_seqcst(
                     &mut (*c).task_thread.first,
@@ -16143,8 +13385,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             dav1d_thread_picture_unref(out_delayed);
         } else if !((*out_delayed).p.data[0]).is_null() {
             let progress: libc::c_uint = ::core::intrinsics::atomic_load_relaxed(
-                &mut *((*out_delayed).progress).offset(1)
-                    as *mut atomic_uint,
+                &mut *((*out_delayed).progress).offset(1) as *mut atomic_uint,
             );
             if ((*out_delayed).visible != 0 || (*c).output_invisible_frames != 0)
                 && progress
@@ -16154,11 +13395,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                         .wrapping_sub(1 as libc::c_int as libc::c_uint)
             {
                 dav1d_thread_picture_ref(&mut (*c).out, out_delayed);
-                (*c)
-                    .event_flags = ::core::mem::transmute::<
-                    libc::c_uint,
-                    Dav1dEventFlags,
-                >(
+                (*c).event_flags = ::core::mem::transmute::<libc::c_uint, Dav1dEventFlags>(
                     (*c).event_flags as libc::c_uint
                         | dav1d_picture_get_event_flags(out_delayed) as libc::c_uint,
                 );
@@ -16175,16 +13412,15 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
     (*f).frame_hdr_ref = (*c).frame_hdr_ref;
     (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
     (*c).frame_hdr_ref = 0 as *mut Dav1dRef;
-    (*f)
-        .dsp = &mut *((*c).dsp).as_mut_ptr().offset((*(*f).seq_hdr).hbd as isize)
-        as *mut Dav1dDSPContext;
+    (*f).dsp =
+        &mut *((*c).dsp).as_mut_ptr().offset((*(*f).seq_hdr).hbd as isize) as *mut Dav1dDSPContext;
     let bpc = 8 + 2 * (*(*f).seq_hdr).hbd;
     if ((*(*f).dsp).ipred.intra_pred[DC_PRED as libc::c_int as usize]).is_none() {
-        let dsp: *mut Dav1dDSPContext = &mut *((*c).dsp)
-            .as_mut_ptr()
-            .offset((*(*f).seq_hdr).hbd as isize) as *mut Dav1dDSPContext;
+        let dsp: *mut Dav1dDSPContext =
+            &mut *((*c).dsp).as_mut_ptr().offset((*(*f).seq_hdr).hbd as isize)
+                as *mut Dav1dDSPContext;
         match bpc {
-            #[cfg(feature="bitdepth_8")]
+            #[cfg(feature = "bitdepth_8")]
             8 => {
                 dav1d_cdef_dsp_init_8bpc(&mut (*dsp).cdef);
                 dav1d_intra_pred_dsp_init_8bpc(&mut (*dsp).ipred);
@@ -16195,7 +13431,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 dav1d_film_grain_dsp_init_8bpc(&mut (*dsp).fg);
                 current_block = 313581471991351815;
             }
-            #[cfg(feature="bitdepth_16")]
+            #[cfg(feature = "bitdepth_16")]
             10 | 12 => {
                 dav1d_cdef_dsp_init_16bpc(&mut (*dsp).cdef);
                 dav1d_intra_pred_dsp_init_16bpc(&mut (*dsp).ipred);
@@ -16225,9 +13461,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             if (*(*f).seq_hdr).hbd == 0 {
                 #[cfg(feature = "bitdepth_8")]
                 {
-                    (*f)
-                        .bd_fn
-                        .recon_b_inter = Some(
+                    (*f).bd_fn.recon_b_inter = Some(
                         dav1d_recon_b_inter_8bpc
                             as unsafe extern "C" fn(
                                 *mut Dav1dTaskContext,
@@ -16235,9 +13469,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                 *const Av1Block,
                             ) -> libc::c_int,
                     );
-                    (*f)
-                        .bd_fn
-                        .recon_b_intra = Some(
+                    (*f).bd_fn.recon_b_intra = Some(
                         dav1d_recon_b_intra_8bpc
                             as unsafe extern "C" fn(
                                 *mut Dav1dTaskContext,
@@ -16246,66 +13478,35 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                 *const Av1Block,
                             ) -> (),
                     );
-                    (*f)
-                        .bd_fn
-                        .filter_sbrow = Some(
+                    (*f).bd_fn.filter_sbrow = Some(
                         dav1d_filter_sbrow_8bpc
-                            as unsafe extern "C" fn(
-                                *mut Dav1dFrameContext,
-                                libc::c_int,
-                            ) -> (),
+                            as unsafe extern "C" fn(*mut Dav1dFrameContext, libc::c_int) -> (),
                     );
-                    (*f)
-                        .bd_fn
-                        .filter_sbrow_deblock_cols = Some(
+                    (*f).bd_fn.filter_sbrow_deblock_cols = Some(
                         dav1d_filter_sbrow_deblock_cols_8bpc
-                            as unsafe extern "C" fn(
-                                *mut Dav1dFrameContext,
-                                libc::c_int,
-                            ) -> (),
+                            as unsafe extern "C" fn(*mut Dav1dFrameContext, libc::c_int) -> (),
                     );
-                    (*f)
-                        .bd_fn
-                        .filter_sbrow_deblock_rows = Some(
+                    (*f).bd_fn.filter_sbrow_deblock_rows = Some(
                         dav1d_filter_sbrow_deblock_rows_8bpc
-                            as unsafe extern "C" fn(
-                                *mut Dav1dFrameContext,
-                                libc::c_int,
-                            ) -> (),
+                            as unsafe extern "C" fn(*mut Dav1dFrameContext, libc::c_int) -> (),
                     );
-                    (*f)
-                        .bd_fn
-                        .filter_sbrow_cdef = Some(
+                    (*f).bd_fn.filter_sbrow_cdef = Some(
                         dav1d_filter_sbrow_cdef_8bpc
                             as unsafe extern "C" fn(*mut Dav1dTaskContext, libc::c_int) -> (),
                     );
-                    (*f)
-                        .bd_fn
-                        .filter_sbrow_resize = Some(
+                    (*f).bd_fn.filter_sbrow_resize = Some(
                         dav1d_filter_sbrow_resize_8bpc
-                            as unsafe extern "C" fn(
-                                *mut Dav1dFrameContext,
-                                libc::c_int,
-                            ) -> (),
+                            as unsafe extern "C" fn(*mut Dav1dFrameContext, libc::c_int) -> (),
                     );
-                    (*f)
-                        .bd_fn
-                        .filter_sbrow_lr = Some(
+                    (*f).bd_fn.filter_sbrow_lr = Some(
                         dav1d_filter_sbrow_lr_8bpc
-                            as unsafe extern "C" fn(
-                                *mut Dav1dFrameContext,
-                                libc::c_int,
-                            ) -> (),
+                            as unsafe extern "C" fn(*mut Dav1dFrameContext, libc::c_int) -> (),
                     );
-                    (*f)
-                        .bd_fn
-                        .backup_ipred_edge = Some(
+                    (*f).bd_fn.backup_ipred_edge = Some(
                         dav1d_backup_ipred_edge_8bpc
                             as unsafe extern "C" fn(*mut Dav1dTaskContext) -> (),
                     );
-                    (*f)
-                        .bd_fn
-                        .read_coef_blocks = Some(
+                    (*f).bd_fn.read_coef_blocks = Some(
                         dav1d_read_coef_blocks_8bpc
                             as unsafe extern "C" fn(
                                 *mut Dav1dTaskContext,
@@ -16317,9 +13518,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             } else {
                 #[cfg(feature = "bitdepth_16")]
                 {
-                    (*f)
-                        .bd_fn
-                        .recon_b_inter = Some(
+                    (*f).bd_fn.recon_b_inter = Some(
                         dav1d_recon_b_inter_16bpc
                             as unsafe extern "C" fn(
                                 *mut Dav1dTaskContext,
@@ -16327,9 +13526,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                 *const Av1Block,
                             ) -> libc::c_int,
                     );
-                    (*f)
-                        .bd_fn
-                        .recon_b_intra = Some(
+                    (*f).bd_fn.recon_b_intra = Some(
                         dav1d_recon_b_intra_16bpc
                             as unsafe extern "C" fn(
                                 *mut Dav1dTaskContext,
@@ -16338,66 +13535,35 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                 *const Av1Block,
                             ) -> (),
                     );
-                    (*f)
-                        .bd_fn
-                        .filter_sbrow = Some(
+                    (*f).bd_fn.filter_sbrow = Some(
                         dav1d_filter_sbrow_16bpc
-                            as unsafe extern "C" fn(
-                                *mut Dav1dFrameContext,
-                                libc::c_int,
-                            ) -> (),
+                            as unsafe extern "C" fn(*mut Dav1dFrameContext, libc::c_int) -> (),
                     );
-                    (*f)
-                        .bd_fn
-                        .filter_sbrow_deblock_cols = Some(
+                    (*f).bd_fn.filter_sbrow_deblock_cols = Some(
                         dav1d_filter_sbrow_deblock_cols_16bpc
-                            as unsafe extern "C" fn(
-                                *mut Dav1dFrameContext,
-                                libc::c_int,
-                            ) -> (),
+                            as unsafe extern "C" fn(*mut Dav1dFrameContext, libc::c_int) -> (),
                     );
-                    (*f)
-                        .bd_fn
-                        .filter_sbrow_deblock_rows = Some(
+                    (*f).bd_fn.filter_sbrow_deblock_rows = Some(
                         dav1d_filter_sbrow_deblock_rows_16bpc
-                            as unsafe extern "C" fn(
-                                *mut Dav1dFrameContext,
-                                libc::c_int,
-                            ) -> (),
+                            as unsafe extern "C" fn(*mut Dav1dFrameContext, libc::c_int) -> (),
                     );
-                    (*f)
-                        .bd_fn
-                        .filter_sbrow_cdef = Some(
+                    (*f).bd_fn.filter_sbrow_cdef = Some(
                         dav1d_filter_sbrow_cdef_16bpc
                             as unsafe extern "C" fn(*mut Dav1dTaskContext, libc::c_int) -> (),
                     );
-                    (*f)
-                        .bd_fn
-                        .filter_sbrow_resize = Some(
+                    (*f).bd_fn.filter_sbrow_resize = Some(
                         dav1d_filter_sbrow_resize_16bpc
-                            as unsafe extern "C" fn(
-                                *mut Dav1dFrameContext,
-                                libc::c_int,
-                            ) -> (),
+                            as unsafe extern "C" fn(*mut Dav1dFrameContext, libc::c_int) -> (),
                     );
-                    (*f)
-                        .bd_fn
-                        .filter_sbrow_lr = Some(
+                    (*f).bd_fn.filter_sbrow_lr = Some(
                         dav1d_filter_sbrow_lr_16bpc
-                            as unsafe extern "C" fn(
-                                *mut Dav1dFrameContext,
-                                libc::c_int,
-                            ) -> (),
+                            as unsafe extern "C" fn(*mut Dav1dFrameContext, libc::c_int) -> (),
                     );
-                    (*f)
-                        .bd_fn
-                        .backup_ipred_edge = Some(
+                    (*f).bd_fn.backup_ipred_edge = Some(
                         dav1d_backup_ipred_edge_16bpc
                             as unsafe extern "C" fn(*mut Dav1dTaskContext) -> (),
                     );
-                    (*f)
-                        .bd_fn
-                        .read_coef_blocks = Some(
+                    (*f).bd_fn.read_coef_blocks = Some(
                         dav1d_read_coef_blocks_16bpc
                             as unsafe extern "C" fn(
                                 *mut Dav1dTaskContext,
@@ -16408,15 +13574,11 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 }
             }
             ref_coded_width = [0; 7];
-            if (*(*f).frame_hdr).frame_type as libc::c_uint
-                & 1 as libc::c_uint != 0
-            {
+            if (*(*f).frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint != 0 {
                 if (*(*f).frame_hdr).primary_ref_frame != 7 as libc::c_int {
-                    let pri_ref = (*(*f).frame_hdr)
-                        .refidx[(*(*f).frame_hdr).primary_ref_frame as usize];
-                    if ((*c).refs[pri_ref as usize].p.p.data[0])
-                        .is_null()
-                    {
+                    let pri_ref =
+                        (*(*f).frame_hdr).refidx[(*(*f).frame_hdr).primary_ref_frame as usize];
+                    if ((*c).refs[pri_ref as usize].p.p.data[0]).is_null() {
                         res = -(22 as libc::c_int);
                         current_block = 9123693364129885070;
                     } else {
@@ -16434,16 +13596,10 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                 current_block = 14648606000749551097;
                                 break;
                             }
-                            let refidx = (*(*f).frame_hdr)
-                                .refidx[i as usize];
-                            if ((*c)
-                                .refs[refidx as usize]
-                                .p
-                                .p
-                                .data[0])
-                                .is_null()
-                                || ((*(*f).frame_hdr).width[0]
-                                    * 2) < (*c).refs[refidx as usize].p.p.p.w
+                            let refidx = (*(*f).frame_hdr).refidx[i as usize];
+                            if ((*c).refs[refidx as usize].p.p.data[0]).is_null()
+                                || ((*(*f).frame_hdr).width[0] * 2)
+                                    < (*c).refs[refidx as usize].p.p.p.w
                                 || ((*(*f).frame_hdr).height * 2)
                                     < (*c).refs[refidx as usize].p.p.p.h
                                 || (*(*f).frame_hdr).width[0]
@@ -16469,60 +13625,40 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                     &mut *((*f).refp).as_mut_ptr().offset(i as isize),
                                     &mut (*((*c).refs).as_mut_ptr().offset(refidx as isize)).p,
                                 );
-                                ref_coded_width[i
-                                    as usize] = (*(*c).refs[refidx as usize].p.p.frame_hdr)
-                                    .width[0];
-                                if (*(*f).frame_hdr).width[0]
-                                    != (*c).refs[refidx as usize].p.p.p.w
+                                ref_coded_width[i as usize] =
+                                    (*(*c).refs[refidx as usize].p.p.frame_hdr).width[0];
+                                if (*(*f).frame_hdr).width[0] != (*c).refs[refidx as usize].p.p.p.w
                                     || (*(*f).frame_hdr).height
                                         != (*c).refs[refidx as usize].p.p.p.h
                                 {
-                                    (*f)
-                                        .svc[i as usize][0]
-                                        .scale = (((*c).refs[refidx as usize].p.p.p.w
-                                        << 14)
-                                        + ((*(*f).frame_hdr).width[0]
-                                            >> 1))
-                                        / (*(*f).frame_hdr).width[0];
-                                    (*f)
-                                        .svc[i as usize][1]
-                                        .scale = (((*c).refs[refidx as usize].p.p.p.h
-                                        << 14)
-                                        + ((*(*f).frame_hdr).height >> 1))
-                                        / (*(*f).frame_hdr).height;
-                                    (*f)
-                                        .svc[i as usize][0]
-                                        .step = (*f)
-                                        .svc[i as usize][0]
-                                        .scale + 8 >> 4;
-                                    (*f)
-                                        .svc[i as usize][1]
-                                        .step = (*f)
-                                        .svc[i as usize][1]
-                                        .scale + 8 >> 4;
+                                    (*f).svc[i as usize][0].scale =
+                                        (((*c).refs[refidx as usize].p.p.p.w << 14)
+                                            + ((*(*f).frame_hdr).width[0] >> 1))
+                                            / (*(*f).frame_hdr).width[0];
+                                    (*f).svc[i as usize][1].scale =
+                                        (((*c).refs[refidx as usize].p.p.p.h << 14)
+                                            + ((*(*f).frame_hdr).height >> 1))
+                                            / (*(*f).frame_hdr).height;
+                                    (*f).svc[i as usize][0].step =
+                                        (*f).svc[i as usize][0].scale + 8 >> 4;
+                                    (*f).svc[i as usize][1].step =
+                                        (*f).svc[i as usize][1].scale + 8 >> 4;
                                 } else {
-                                    (*f)
-                                        .svc[i as usize][1]
-                                        .scale = 0 as libc::c_int;
-                                    (*f)
-                                        .svc[i as usize][0]
-                                        .scale = (*f)
-                                        .svc[i as usize][1]
-                                        .scale;
+                                    (*f).svc[i as usize][1].scale = 0 as libc::c_int;
+                                    (*f).svc[i as usize][0].scale = (*f).svc[i as usize][1].scale;
                                 }
-                                (*f)
-                                    .gmv_warp_allowed[i
-                                    as usize] = ((*(*f).frame_hdr).gmv[i as usize].type_0
-                                    as libc::c_uint
-                                    > DAV1D_WM_TYPE_TRANSLATION as libc::c_int as libc::c_uint
-                                    && (*(*f).frame_hdr).force_integer_mv == 0
-                                    && dav1d_get_shear_params(
-                                        &mut *((*(*f).frame_hdr).gmv)
-                                            .as_mut_ptr()
-                                            .offset(i as isize),
-                                    ) == 0
-                                    && (*f).svc[i as usize][0].scale
-                                        == 0) as libc::c_int as uint8_t;
+                                (*f).gmv_warp_allowed[i as usize] =
+                                    ((*(*f).frame_hdr).gmv[i as usize].type_0 as libc::c_uint
+                                        > DAV1D_WM_TYPE_TRANSLATION as libc::c_int as libc::c_uint
+                                        && (*(*f).frame_hdr).force_integer_mv == 0
+                                        && dav1d_get_shear_params(
+                                            &mut *((*(*f).frame_hdr).gmv)
+                                                .as_mut_ptr()
+                                                .offset(i as isize),
+                                        ) == 0
+                                        && (*f).svc[i as usize][0].scale == 0)
+                                        as libc::c_int
+                                        as uint8_t;
                                 i += 1;
                             }
                         }
@@ -16535,13 +13671,10 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 9123693364129885070 => {}
                 _ => {
                     if (*(*f).frame_hdr).primary_ref_frame == 7 {
-                        dav1d_cdf_thread_init_static(
-                            &mut (*f).in_cdf,
-                            (*(*f).frame_hdr).quant.yac,
-                        );
+                        dav1d_cdf_thread_init_static(&mut (*f).in_cdf, (*(*f).frame_hdr).quant.yac);
                     } else {
-                        let pri_ref_0 = (*(*f).frame_hdr)
-                            .refidx[(*(*f).frame_hdr).primary_ref_frame as usize];
+                        let pri_ref_0 =
+                            (*(*f).frame_hdr).refidx[(*(*f).frame_hdr).primary_ref_frame as usize];
                         dav1d_cdf_thread_ref(
                             &mut (*f).in_cdf,
                             &mut *((*c).cdf).as_mut_ptr().offset(pri_ref_0 as isize),
@@ -16566,8 +13699,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                         _ => {
                             if (*f).n_tile_data_alloc < (*c).n_tile_data {
                                 freep(
-                                    &mut (*f).tile as *mut *mut Dav1dTileGroup
-                                        as *mut libc::c_void,
+                                    &mut (*f).tile as *mut *mut Dav1dTileGroup as *mut libc::c_void,
                                 );
                                 if !((*c).n_tile_data
                                     < 2147483647
@@ -16576,13 +13708,12 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                 {
                                     unreachable!();
                                 }
-                                (*f)
-                                    .tile = malloc(
+                                (*f).tile = malloc(
                                     ((*c).n_tile_data as libc::c_ulong)
-                                        .wrapping_mul(
-                                            ::core::mem::size_of::<Dav1dTileGroup>() as libc::c_ulong,
-                                        ),
-                                ) as *mut Dav1dTileGroup;
+                                        .wrapping_mul(::core::mem::size_of::<Dav1dTileGroup>()
+                                            as libc::c_ulong),
+                                )
+                                    as *mut Dav1dTileGroup;
                                 if ((*f).tile).is_null() {
                                     (*f).n_tile_data = 0 as libc::c_int;
                                     (*f).n_tile_data_alloc = (*f).n_tile_data;
@@ -16602,21 +13733,20 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                         (*f).tile as *mut libc::c_void,
                                         (*c).tile as *const libc::c_void,
                                         ((*c).n_tile_data as libc::c_ulong)
-                                            .wrapping_mul(
-                                                ::core::mem::size_of::<Dav1dTileGroup>() as libc::c_ulong,
-                                            ),
+                                            .wrapping_mul(::core::mem::size_of::<Dav1dTileGroup>()
+                                                as libc::c_ulong),
                                     );
                                     memset(
                                         (*c).tile as *mut libc::c_void,
                                         0 as libc::c_int,
-                                        ((*c).n_tile_data as size_t).wrapping_mul(::core::mem::size_of::<Dav1dTileGroup>()),
+                                        ((*c).n_tile_data as size_t)
+                                            .wrapping_mul(::core::mem::size_of::<Dav1dTileGroup>()),
                                     );
                                     (*f).n_tile_data = (*c).n_tile_data;
                                     (*c).n_tile_data = 0 as libc::c_int;
                                     res = dav1d_thread_picture_alloc(c, f, bpc);
                                     if !(res < 0) {
-                                        if (*(*f).frame_hdr).width[0]
-                                            != (*(*f).frame_hdr).width[1]
+                                        if (*(*f).frame_hdr).width[0] != (*(*f).frame_hdr).width[1]
                                         {
                                             res = dav1d_picture_alloc_copy(
                                                 c,
@@ -16639,84 +13769,77 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                                 if (*(*f).frame_hdr).width[0]
                                                     != (*(*f).frame_hdr).width[1]
                                                 {
-                                                    (*f)
-                                                        .resize_step[0 as libc::c_int
-                                                        as usize] = (((*f).cur.p.w << 14)
-                                                        + ((*f).sr_cur.p.p.w >> 1))
-                                                        / (*f).sr_cur.p.p.w;
+                                                    (*f).resize_step[0 as libc::c_int as usize] =
+                                                        (((*f).cur.p.w << 14)
+                                                            + ((*f).sr_cur.p.p.w >> 1))
+                                                            / (*f).sr_cur.p.p.w;
                                                     let ss_hor = ((*f).cur.p.layout as libc::c_uint
-                                                        != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint)
+                                                        != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int
+                                                            as libc::c_uint)
                                                         as libc::c_int;
                                                     let in_cw = (*f).cur.p.w + ss_hor >> ss_hor;
-                                                    let out_cw = (*f).sr_cur.p.p.w + ss_hor
-                                                        >> ss_hor;
-                                                    (*f)
-                                                        .resize_step[1 as libc::c_int
-                                                        as usize] = ((in_cw << 14)
-                                                        + (out_cw >> 1)) / out_cw;
-                                                    (*f)
-                                                        .resize_start[0 as libc::c_int
-                                                        as usize] = get_upscale_x0(
-                                                        (*f).cur.p.w,
-                                                        (*f).sr_cur.p.p.w,
-                                                        (*f).resize_step[0],
-                                                    );
-                                                    (*f)
-                                                        .resize_start[1 as libc::c_int
-                                                        as usize] = get_upscale_x0(
-                                                        in_cw,
-                                                        out_cw,
-                                                        (*f).resize_step[1],
-                                                    );
+                                                    let out_cw =
+                                                        (*f).sr_cur.p.p.w + ss_hor >> ss_hor;
+                                                    (*f).resize_step[1 as libc::c_int as usize] =
+                                                        ((in_cw << 14) + (out_cw >> 1)) / out_cw;
+                                                    (*f).resize_start[0 as libc::c_int as usize] =
+                                                        get_upscale_x0(
+                                                            (*f).cur.p.w,
+                                                            (*f).sr_cur.p.p.w,
+                                                            (*f).resize_step[0],
+                                                        );
+                                                    (*f).resize_start[1 as libc::c_int as usize] =
+                                                        get_upscale_x0(
+                                                            in_cw,
+                                                            out_cw,
+                                                            (*f).resize_step[1],
+                                                        );
                                                 }
                                                 if (*c).n_fc == 1 as libc::c_uint {
                                                     if (*(*f).frame_hdr).show_frame != 0
                                                         || (*c).output_invisible_frames != 0
                                                     {
-                                                        dav1d_thread_picture_ref(&mut (*c).out, &mut (*f).sr_cur);
-                                                        (*c)
-                                                            .event_flags = ::core::mem::transmute::<
+                                                        dav1d_thread_picture_ref(
+                                                            &mut (*c).out,
+                                                            &mut (*f).sr_cur,
+                                                        );
+                                                        (*c).event_flags = ::core::mem::transmute::<
                                                             libc::c_uint,
                                                             Dav1dEventFlags,
                                                         >(
                                                             (*c).event_flags as libc::c_uint
-                                                                | dav1d_picture_get_event_flags(&mut (*f).sr_cur)
+                                                                | dav1d_picture_get_event_flags(
+                                                                    &mut (*f).sr_cur,
+                                                                )
                                                                     as libc::c_uint,
                                                         );
                                                     }
                                                 } else {
-                                                    dav1d_thread_picture_ref(out_delayed, &mut (*f).sr_cur);
+                                                    dav1d_thread_picture_ref(
+                                                        out_delayed,
+                                                        &mut (*f).sr_cur,
+                                                    );
                                                 }
-                                                (*f)
-                                                    .w4 = (*(*f).frame_hdr).width[0]
-                                                    + 3 >> 2;
-                                                (*f)
-                                                    .h4 = (*(*f).frame_hdr).height + 3
-                                                    >> 2;
-                                                (*f)
-                                                    .bw = ((*(*f).frame_hdr).width[0]
-                                                    + 7 >> 3) << 1;
-                                                (*f)
-                                                    .bh = ((*(*f).frame_hdr).height + 7
-                                                    >> 3) << 1;
-                                                (*f)
-                                                    .sb128w = (*f).bw + 31 >> 5;
-                                                (*f)
-                                                    .sb128h = (*f).bh + 31 >> 5;
+                                                (*f).w4 = (*(*f).frame_hdr).width[0] + 3 >> 2;
+                                                (*f).h4 = (*(*f).frame_hdr).height + 3 >> 2;
+                                                (*f).bw =
+                                                    ((*(*f).frame_hdr).width[0] + 7 >> 3) << 1;
+                                                (*f).bh = ((*(*f).frame_hdr).height + 7 >> 3) << 1;
+                                                (*f).sb128w = (*f).bw + 31 >> 5;
+                                                (*f).sb128h = (*f).bh + 31 >> 5;
                                                 (*f).sb_shift = 4 + (*(*f).seq_hdr).sb128;
-                                                (*f).sb_step = (16 as libc::c_int) << (*(*f).seq_hdr).sb128;
-                                                (*f)
-                                                    .sbh = (*f).bh + (*f).sb_step - 1
-                                                    >> (*f).sb_shift;
-                                                (*f)
-                                                    .b4_stride = ((*f).bw + 31
-                                                    & !(31 as libc::c_int)) as ptrdiff_t;
-                                                (*f)
-                                                    .bitdepth_max = ((1 as libc::c_int) << (*f).cur.p.bpc)
-                                                    - 1;
+                                                (*f).sb_step =
+                                                    (16 as libc::c_int) << (*(*f).seq_hdr).sb128;
+                                                (*f).sbh =
+                                                    (*f).bh + (*f).sb_step - 1 >> (*f).sb_shift;
+                                                (*f).b4_stride = ((*f).bw + 31
+                                                    & !(31 as libc::c_int))
+                                                    as ptrdiff_t;
+                                                (*f).bitdepth_max =
+                                                    ((1 as libc::c_int) << (*f).cur.p.bpc) - 1;
                                                 *&mut (*f).task_thread.error = 0 as libc::c_int;
-                                                uses_2pass = ((*c).n_fc > 1 as libc::c_uint)
-                                                    as libc::c_int;
+                                                uses_2pass =
+                                                    ((*c).n_fc > 1 as libc::c_uint) as libc::c_int;
                                                 cols = (*(*f).frame_hdr).tiling.cols;
                                                 rows = (*(*f).frame_hdr).tiling.rows;
                                                 ::core::intrinsics::atomic_store_seqcst(
@@ -16724,57 +13847,81 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                                     cols * rows + (*f).sbh << uses_2pass,
                                                 );
                                                 if (*(*f).frame_hdr).frame_type as libc::c_uint
-                                                    & 1 as libc::c_uint != 0
+                                                    & 1 as libc::c_uint
+                                                    != 0
                                                     || (*(*f).frame_hdr).allow_intrabc != 0
                                                 {
-                                                    (*f)
-                                                        .mvs_ref = dav1d_ref_create_using_pool(
+                                                    (*f).mvs_ref = dav1d_ref_create_using_pool(
                                                         (*c).refmvs_pool,
-                                                        (::core::mem::size_of::<refmvs_temporal_block>())
-                                                            .wrapping_mul((*f).sb128h as size_t)
-                                                            .wrapping_mul(16)
-                                                            .wrapping_mul(
-                                                                ((*f).b4_stride >> 1) as size_t,
-                                                            ),
+                                                        (::core::mem::size_of::<
+                                                            refmvs_temporal_block,
+                                                        >(
+                                                        ))
+                                                        .wrapping_mul((*f).sb128h as size_t)
+                                                        .wrapping_mul(16)
+                                                        .wrapping_mul(
+                                                            ((*f).b4_stride >> 1) as size_t,
+                                                        ),
                                                     );
                                                     if ((*f).mvs_ref).is_null() {
                                                         res = -(12 as libc::c_int);
                                                         current_block = 9123693364129885070;
                                                     } else {
-                                                        (*f)
-                                                            .mvs = (*(*f).mvs_ref).data as *mut refmvs_temporal_block;
+                                                        (*f).mvs = (*(*f).mvs_ref).data
+                                                            as *mut refmvs_temporal_block;
                                                         if (*(*f).frame_hdr).allow_intrabc == 0 {
                                                             let mut i_0 = 0;
                                                             while i_0 < 7 {
-                                                                (*f)
-                                                                    .refpoc[i_0
-                                                                    as usize] = (*(*f).refp[i_0 as usize].p.frame_hdr)
-                                                                    .frame_offset as libc::c_uint;
+                                                                (*f).refpoc[i_0 as usize] =
+                                                                    (*(*f).refp[i_0 as usize]
+                                                                        .p
+                                                                        .frame_hdr)
+                                                                        .frame_offset
+                                                                        as libc::c_uint;
                                                                 i_0 += 1;
                                                             }
                                                         } else {
                                                             memset(
-                                                                ((*f).refpoc).as_mut_ptr() as *mut libc::c_void,
+                                                                ((*f).refpoc).as_mut_ptr()
+                                                                    as *mut libc::c_void,
                                                                 0 as libc::c_int,
-                                                                ::core::mem::size_of::<[libc::c_uint; 7]>(),
+                                                                ::core::mem::size_of::<
+                                                                    [libc::c_uint; 7],
+                                                                >(
+                                                                ),
                                                             );
                                                         }
-                                                        if (*(*f).frame_hdr).use_ref_frame_mvs != 0 {
+                                                        if (*(*f).frame_hdr).use_ref_frame_mvs != 0
+                                                        {
                                                             let mut i_1 = 0;
                                                             while i_1 < 7 {
                                                                 let refidx_0 = (*(*f).frame_hdr)
-                                                                    .refidx[i_1 as usize];
-                                                                let ref_w = (ref_coded_width[i_1 as usize]
-                                                                    + 7 >> 3) << 1;
-                                                                let ref_h = ((*f).refp[i_1 as usize].p.p.h
-                                                                    + 7 >> 3) << 1;
-                                                                if !((*c).refs[refidx_0 as usize].refmvs).is_null()
-                                                                    && ref_w == (*f).bw && ref_h == (*f).bh
+                                                                    .refidx
+                                                                    [i_1 as usize];
+                                                                let ref_w = (ref_coded_width
+                                                                    [i_1 as usize]
+                                                                    + 7
+                                                                    >> 3)
+                                                                    << 1;
+                                                                let ref_h =
+                                                                    ((*f).refp[i_1 as usize].p.p.h
+                                                                        + 7
+                                                                        >> 3)
+                                                                        << 1;
+                                                                if !((*c).refs[refidx_0 as usize]
+                                                                    .refmvs)
+                                                                    .is_null()
+                                                                    && ref_w == (*f).bw
+                                                                    && ref_h == (*f).bh
                                                                 {
-                                                                    (*f)
-                                                                        .ref_mvs_ref[i_1
-                                                                        as usize] = (*c).refs[refidx_0 as usize].refmvs;
-                                                                    dav1d_ref_inc((*f).ref_mvs_ref[i_1 as usize]);
+                                                                    (*f).ref_mvs_ref
+                                                                        [i_1 as usize] = (*c).refs
+                                                                        [refidx_0 as usize]
+                                                                        .refmvs;
+                                                                    dav1d_ref_inc(
+                                                                        (*f).ref_mvs_ref
+                                                                            [i_1 as usize],
+                                                                    );
                                                                     (*f)
                                                                         .ref_mvs[i_1
                                                                         as usize] = (*(*c).refs[refidx_0 as usize].refmvs).data
@@ -16782,22 +13929,35 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                                                 } else {
                                                                     (*f)
                                                                         .ref_mvs[i_1 as usize] = 0 as *mut refmvs_temporal_block;
-                                                                    (*f).ref_mvs_ref[i_1 as usize] = 0 as *mut Dav1dRef;
+                                                                    (*f).ref_mvs_ref
+                                                                        [i_1 as usize] =
+                                                                        0 as *mut Dav1dRef;
                                                                 }
                                                                 memcpy(
-                                                                    ((*f).refrefpoc[i_1 as usize]).as_mut_ptr()
+                                                                    ((*f).refrefpoc[i_1 as usize])
+                                                                        .as_mut_ptr()
                                                                         as *mut libc::c_void,
-                                                                    ((*c).refs[refidx_0 as usize].refpoc).as_mut_ptr()
+                                                                    ((*c).refs[refidx_0 as usize]
+                                                                        .refpoc)
+                                                                        .as_mut_ptr()
                                                                         as *const libc::c_void,
-                                                                    ::core::mem::size_of::<[libc::c_uint; 7]>() as libc::c_ulong,
+                                                                    ::core::mem::size_of::<
+                                                                        [libc::c_uint; 7],
+                                                                    >(
+                                                                    )
+                                                                        as libc::c_ulong,
                                                                 );
                                                                 i_1 += 1;
                                                             }
                                                         } else {
                                                             memset(
-                                                                ((*f).ref_mvs_ref).as_mut_ptr() as *mut libc::c_void,
+                                                                ((*f).ref_mvs_ref).as_mut_ptr()
+                                                                    as *mut libc::c_void,
                                                                 0 as libc::c_int,
-                                                                ::core::mem::size_of::<[*mut Dav1dRef; 7]>(),
+                                                                ::core::mem::size_of::<
+                                                                    [*mut Dav1dRef; 7],
+                                                                >(
+                                                                ),
                                                             );
                                                         }
                                                         current_block = 2704538829018177290;
@@ -16805,125 +13965,201 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                                 } else {
                                                     (*f).mvs_ref = 0 as *mut Dav1dRef;
                                                     memset(
-                                                        ((*f).ref_mvs_ref).as_mut_ptr() as *mut libc::c_void,
+                                                        ((*f).ref_mvs_ref).as_mut_ptr()
+                                                            as *mut libc::c_void,
                                                         0 as libc::c_int,
-                                                        ::core::mem::size_of::<[*mut Dav1dRef; 7]>(),
+                                                        ::core::mem::size_of::<[*mut Dav1dRef; 7]>(
+                                                        ),
                                                     );
                                                     current_block = 2704538829018177290;
                                                 }
                                                 match current_block {
                                                     9123693364129885070 => {}
                                                     _ => {
-                                                        if (*(*f).frame_hdr).segmentation.enabled != 0 {
-                                                            (*f).prev_segmap_ref = 0 as *mut Dav1dRef;
+                                                        if (*(*f).frame_hdr).segmentation.enabled
+                                                            != 0
+                                                        {
+                                                            (*f).prev_segmap_ref =
+                                                                0 as *mut Dav1dRef;
                                                             (*f).prev_segmap = 0 as *const uint8_t;
-                                                            if (*(*f).frame_hdr).segmentation.temporal != 0
-                                                                || (*(*f).frame_hdr).segmentation.update_map == 0
+                                                            if (*(*f).frame_hdr)
+                                                                .segmentation
+                                                                .temporal
+                                                                != 0
+                                                                || (*(*f).frame_hdr)
+                                                                    .segmentation
+                                                                    .update_map
+                                                                    == 0
                                                             {
                                                                 let pri_ref_1 = (*(*f).frame_hdr)
                                                                     .primary_ref_frame;
-                                                                if !(pri_ref_1 != 7 as libc::c_int) {
+                                                                if !(pri_ref_1 != 7 as libc::c_int)
+                                                                {
                                                                     unreachable!();
                                                                 }
-                                                                let ref_w_0 = (ref_coded_width[pri_ref_1
-                                                                    as usize] + 7 >> 3)
+                                                                let ref_w_0 = (ref_coded_width
+                                                                    [pri_ref_1 as usize]
+                                                                    + 7
+                                                                    >> 3)
                                                                     << 1;
-                                                                let ref_h_0 = ((*f)
-                                                                    .refp[pri_ref_1 as usize]
+                                                                let ref_h_0 = ((*f).refp
+                                                                    [pri_ref_1 as usize]
                                                                     .p
                                                                     .p
-                                                                    .h + 7 >> 3)
+                                                                    .h
+                                                                    + 7
+                                                                    >> 3)
                                                                     << 1;
-                                                                if ref_w_0 == (*f).bw && ref_h_0 == (*f).bh {
-                                                                    (*f)
-                                                                        .prev_segmap_ref = (*c)
-                                                                        .refs[(*(*f).frame_hdr).refidx[pri_ref_1 as usize] as usize]
+                                                                if ref_w_0 == (*f).bw
+                                                                    && ref_h_0 == (*f).bh
+                                                                {
+                                                                    (*f).prev_segmap_ref = (*c)
+                                                                        .refs
+                                                                        [(*(*f).frame_hdr).refidx
+                                                                            [pri_ref_1 as usize]
+                                                                            as usize]
                                                                         .segmap;
-                                                                    if !((*f).prev_segmap_ref).is_null() {
-                                                                        dav1d_ref_inc((*f).prev_segmap_ref);
-                                                                        (*f)
-                                                                            .prev_segmap = (*(*f).prev_segmap_ref).data
+                                                                    if !((*f).prev_segmap_ref)
+                                                                        .is_null()
+                                                                    {
+                                                                        dav1d_ref_inc(
+                                                                            (*f).prev_segmap_ref,
+                                                                        );
+                                                                        (*f).prev_segmap = (*(*f)
+                                                                            .prev_segmap_ref)
+                                                                            .data
                                                                             as *const uint8_t;
                                                                     }
                                                                 }
                                                             }
-                                                            if (*(*f).frame_hdr).segmentation.update_map != 0 {
-                                                                (*f)
-                                                                    .cur_segmap_ref = dav1d_ref_create_using_pool(
-                                                                    (*c).segmap_pool,
-                                                                    (::core::mem::size_of::<uint8_t>())
-                                                                        .wrapping_mul((*f).b4_stride as size_t)
+                                                            if (*(*f).frame_hdr)
+                                                                .segmentation
+                                                                .update_map
+                                                                != 0
+                                                            {
+                                                                (*f).cur_segmap_ref =
+                                                                    dav1d_ref_create_using_pool(
+                                                                        (*c).segmap_pool,
+                                                                        (::core::mem::size_of::<
+                                                                            uint8_t,
+                                                                        >(
+                                                                        ))
+                                                                        .wrapping_mul(
+                                                                            (*f).b4_stride
+                                                                                as size_t,
+                                                                        )
                                                                         .wrapping_mul(32)
-                                                                        .wrapping_mul((*f).sb128h as size_t),
-                                                                );
+                                                                        .wrapping_mul(
+                                                                            (*f).sb128h as size_t,
+                                                                        ),
+                                                                    );
                                                                 if ((*f).cur_segmap_ref).is_null() {
-                                                                    dav1d_ref_dec(&mut (*f).prev_segmap_ref);
+                                                                    dav1d_ref_dec(
+                                                                        &mut (*f).prev_segmap_ref,
+                                                                    );
                                                                     res = -(12 as libc::c_int);
-                                                                    current_block = 9123693364129885070;
+                                                                    current_block =
+                                                                        9123693364129885070;
                                                                 } else {
-                                                                    (*f)
-                                                                        .cur_segmap = (*(*f).cur_segmap_ref).data as *mut uint8_t;
-                                                                    current_block = 10194589593280242392;
+                                                                    (*f).cur_segmap =
+                                                                        (*(*f).cur_segmap_ref).data
+                                                                            as *mut uint8_t;
+                                                                    current_block =
+                                                                        10194589593280242392;
                                                                 }
-                                                            } else if !((*f).prev_segmap_ref).is_null() {
-                                                                (*f).cur_segmap_ref = (*f).prev_segmap_ref;
+                                                            } else if !((*f).prev_segmap_ref)
+                                                                .is_null()
+                                                            {
+                                                                (*f).cur_segmap_ref =
+                                                                    (*f).prev_segmap_ref;
                                                                 dav1d_ref_inc((*f).cur_segmap_ref);
-                                                                (*f)
-                                                                    .cur_segmap = (*(*f).prev_segmap_ref).data as *mut uint8_t;
-                                                                current_block = 10194589593280242392;
+                                                                (*f).cur_segmap =
+                                                                    (*(*f).prev_segmap_ref).data
+                                                                        as *mut uint8_t;
+                                                                current_block =
+                                                                    10194589593280242392;
                                                             } else {
                                                                 let segmap_size: size_t = (::core::mem::size_of::<uint8_t>())
                                                                     .wrapping_mul((*f).b4_stride as size_t)
                                                                     .wrapping_mul(32)
                                                                     .wrapping_mul((*f).sb128h as size_t);
-                                                                (*f)
-                                                                    .cur_segmap_ref = dav1d_ref_create_using_pool(
-                                                                    (*c).segmap_pool,
-                                                                    segmap_size,
-                                                                );
+                                                                (*f).cur_segmap_ref =
+                                                                    dav1d_ref_create_using_pool(
+                                                                        (*c).segmap_pool,
+                                                                        segmap_size,
+                                                                    );
                                                                 if ((*f).cur_segmap_ref).is_null() {
                                                                     res = -(12 as libc::c_int);
-                                                                    current_block = 9123693364129885070;
+                                                                    current_block =
+                                                                        9123693364129885070;
                                                                 } else {
-                                                                    (*f)
-                                                                        .cur_segmap = (*(*f).cur_segmap_ref).data as *mut uint8_t;
+                                                                    (*f).cur_segmap =
+                                                                        (*(*f).cur_segmap_ref).data
+                                                                            as *mut uint8_t;
                                                                     memset(
-                                                                        (*f).cur_segmap as *mut libc::c_void,
+                                                                        (*f).cur_segmap
+                                                                            as *mut libc::c_void,
                                                                         0 as libc::c_int,
                                                                         segmap_size,
                                                                     );
-                                                                    current_block = 10194589593280242392;
+                                                                    current_block =
+                                                                        10194589593280242392;
                                                                 }
                                                             }
                                                         } else {
                                                             (*f).cur_segmap = 0 as *mut uint8_t;
-                                                            (*f).cur_segmap_ref = 0 as *mut Dav1dRef;
-                                                            (*f).prev_segmap_ref = 0 as *mut Dav1dRef;
+                                                            (*f).cur_segmap_ref =
+                                                                0 as *mut Dav1dRef;
+                                                            (*f).prev_segmap_ref =
+                                                                0 as *mut Dav1dRef;
                                                             current_block = 10194589593280242392;
                                                         }
                                                         match current_block {
                                                             9123693364129885070 => {}
                                                             _ => {
-                                                                refresh_frame_flags = (*(*f).frame_hdr).refresh_frame_flags
+                                                                refresh_frame_flags = (*(*f)
+                                                                    .frame_hdr)
+                                                                    .refresh_frame_flags
                                                                     as libc::c_uint;
                                                                 let mut i_2 = 0;
                                                                 while i_2 < 8 {
                                                                     if refresh_frame_flags
-                                                                        & ((1 as libc::c_int) << i_2) as libc::c_uint != 0
+                                                                        & ((1 as libc::c_int)
+                                                                            << i_2)
+                                                                            as libc::c_uint
+                                                                        != 0
                                                                     {
-                                                                        if !((*c).refs[i_2 as usize].p.p.frame_hdr).is_null() {
+                                                                        if !((*c).refs
+                                                                            [i_2 as usize]
+                                                                            .p
+                                                                            .p
+                                                                            .frame_hdr)
+                                                                            .is_null()
+                                                                        {
                                                                             dav1d_thread_picture_unref(
                                                                                 &mut (*((*c).refs).as_mut_ptr().offset(i_2 as isize)).p,
                                                                             );
                                                                         }
                                                                         dav1d_thread_picture_ref(
-                                                                            &mut (*((*c).refs).as_mut_ptr().offset(i_2 as isize)).p,
+                                                                            &mut (*((*c).refs)
+                                                                                .as_mut_ptr()
+                                                                                .offset(
+                                                                                    i_2 as isize,
+                                                                                ))
+                                                                            .p,
                                                                             &mut (*f).sr_cur,
                                                                         );
                                                                         dav1d_cdf_thread_unref(
-                                                                            &mut *((*c).cdf).as_mut_ptr().offset(i_2 as isize),
+                                                                            &mut *((*c).cdf)
+                                                                                .as_mut_ptr()
+                                                                                .offset(
+                                                                                    i_2 as isize,
+                                                                                ),
                                                                         );
-                                                                        if (*(*f).frame_hdr).refresh_context != 0 {
+                                                                        if (*(*f).frame_hdr)
+                                                                            .refresh_context
+                                                                            != 0
+                                                                        {
                                                                             dav1d_cdf_thread_ref(
                                                                                 &mut *((*c).cdf).as_mut_ptr().offset(i_2 as isize),
                                                                                 &mut (*f).out_cdf,
@@ -16935,19 +14171,45 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                                                             );
                                                                         }
                                                                         dav1d_ref_dec(
-                                                                            &mut (*((*c).refs).as_mut_ptr().offset(i_2 as isize)).segmap,
+                                                                            &mut (*((*c).refs)
+                                                                                .as_mut_ptr()
+                                                                                .offset(
+                                                                                    i_2 as isize,
+                                                                                ))
+                                                                            .segmap,
                                                                         );
-                                                                        (*c).refs[i_2 as usize].segmap = (*f).cur_segmap_ref;
-                                                                        if !((*f).cur_segmap_ref).is_null() {
-                                                                            dav1d_ref_inc((*f).cur_segmap_ref);
+                                                                        (*c).refs[i_2 as usize]
+                                                                            .segmap =
+                                                                            (*f).cur_segmap_ref;
+                                                                        if !((*f).cur_segmap_ref)
+                                                                            .is_null()
+                                                                        {
+                                                                            dav1d_ref_inc(
+                                                                                (*f).cur_segmap_ref,
+                                                                            );
                                                                         }
                                                                         dav1d_ref_dec(
-                                                                            &mut (*((*c).refs).as_mut_ptr().offset(i_2 as isize)).refmvs,
+                                                                            &mut (*((*c).refs)
+                                                                                .as_mut_ptr()
+                                                                                .offset(
+                                                                                    i_2 as isize,
+                                                                                ))
+                                                                            .refmvs,
                                                                         );
-                                                                        if (*(*f).frame_hdr).allow_intrabc == 0 {
-                                                                            (*c).refs[i_2 as usize].refmvs = (*f).mvs_ref;
-                                                                            if !((*f).mvs_ref).is_null() {
-                                                                                dav1d_ref_inc((*f).mvs_ref);
+                                                                        if (*(*f).frame_hdr)
+                                                                            .allow_intrabc
+                                                                            == 0
+                                                                        {
+                                                                            (*c).refs
+                                                                                [i_2 as usize]
+                                                                                .refmvs =
+                                                                                (*f).mvs_ref;
+                                                                            if !((*f).mvs_ref)
+                                                                                .is_null()
+                                                                            {
+                                                                                dav1d_ref_inc(
+                                                                                    (*f).mvs_ref,
+                                                                                );
                                                                             }
                                                                         }
                                                                         memcpy(
@@ -16962,13 +14224,25 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                                                 if (*c).n_fc == 1 as libc::c_uint {
                                                                     res = dav1d_decode_frame(f);
                                                                     if res < 0 {
-                                                                        dav1d_thread_picture_unref(&mut (*c).out);
+                                                                        dav1d_thread_picture_unref(
+                                                                            &mut (*c).out,
+                                                                        );
                                                                         let mut i_3 = 0;
                                                                         while i_3 < 8 {
                                                                             if refresh_frame_flags
-                                                                                & ((1 as libc::c_int) << i_3) as libc::c_uint != 0
+                                                                                & ((1
+                                                                                    as libc::c_int)
+                                                                                    << i_3)
+                                                                                    as libc::c_uint
+                                                                                != 0
                                                                             {
-                                                                                if !((*c).refs[i_3 as usize].p.p.frame_hdr).is_null() {
+                                                                                if !((*c).refs
+                                                                                    [i_3 as usize]
+                                                                                    .p
+                                                                                    .p
+                                                                                    .frame_hdr)
+                                                                                    .is_null()
+                                                                                {
                                                                                     dav1d_thread_picture_unref(
                                                                                         &mut (*((*c).refs).as_mut_ptr().offset(i_3 as isize)).p,
                                                                                     );
@@ -16985,14 +14259,19 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                                                             }
                                                                             i_3 += 1;
                                                                         }
-                                                                        current_block = 9123693364129885070;
+                                                                        current_block =
+                                                                            9123693364129885070;
                                                                     } else {
-                                                                        current_block = 8115217508953982058;
+                                                                        current_block =
+                                                                            8115217508953982058;
                                                                     }
                                                                 } else {
                                                                     dav1d_task_frame_init(f);
-                                                                    pthread_mutex_unlock(&mut (*c).task_thread.lock);
-                                                                    current_block = 8115217508953982058;
+                                                                    pthread_mutex_unlock(
+                                                                        &mut (*c).task_thread.lock,
+                                                                    );
+                                                                    current_block =
+                                                                        8115217508953982058;
                                                                 }
                                                                 match current_block {
                                                                     9123693364129885070 => {}
@@ -17022,9 +14301,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
     let mut i_4 = 0;
     while i_4 < 7 {
         if !((*f).refp[i_4 as usize].p.frame_hdr).is_null() {
-            dav1d_thread_picture_unref(
-                &mut *((*f).refp).as_mut_ptr().offset(i_4 as isize),
-            );
+            dav1d_thread_picture_unref(&mut *((*f).refp).as_mut_ptr().offset(i_4 as isize));
         }
         dav1d_ref_dec(&mut *((*f).ref_mvs_ref).as_mut_ptr().offset(i_4 as isize));
         i_4 += 1;

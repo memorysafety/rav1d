@@ -1,97 +1,97 @@
-use crate::include::stdint::*;
-use ::libc;
-use crate::src::align::Align64;
-use crate::include::dav1d::headers::DAV1D_FILTER_BILINEAR;
-use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SHARP;
-use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SMOOTH;
-use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
-use crate::include::dav1d::headers::DAV1D_WM_TYPE_IDENTITY;
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams_u;
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams_u_p;
-use crate::src::levels::TX_64X64;
-use crate::src::levels::TX_32X32;
-use crate::src::levels::TX_16X16;
-use crate::src::levels::TX_8X8;
-use crate::src::levels::TX_4X4;
-use crate::src::levels::RTX_64X16;
-use crate::src::levels::RTX_16X64;
-use crate::src::levels::RTX_32X8;
-use crate::src::levels::RTX_8X32;
-use crate::src::levels::RTX_16X4;
-use crate::src::levels::RTX_4X16;
-use crate::src::levels::RTX_64X32;
-use crate::src::levels::RTX_32X64;
-use crate::src::levels::RTX_32X16;
-use crate::src::levels::RTX_16X32;
-use crate::src::levels::RTX_16X8;
-use crate::src::levels::RTX_8X16;
-use crate::src::levels::RTX_8X4;
-use crate::src::levels::RTX_4X8;
-use crate::src::levels::H_FLIPADST;
-use crate::src::levels::V_FLIPADST;
-use crate::src::levels::H_ADST;
-use crate::src::levels::V_ADST;
-use crate::src::levels::H_DCT;
-use crate::src::levels::V_DCT;
-use crate::src::levels::IDTX;
-use crate::src::levels::FLIPADST_ADST;
-use crate::src::levels::ADST_FLIPADST;
-use crate::src::levels::FLIPADST_FLIPADST;
-use crate::src::levels::DCT_FLIPADST;
-use crate::src::levels::FLIPADST_DCT;
+use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
+use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SHARP;
+use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SMOOTH;
+use crate::include::dav1d::headers::DAV1D_FILTER_BILINEAR;
+use crate::include::dav1d::headers::DAV1D_WM_TYPE_IDENTITY;
+use crate::include::stdint::*;
+use crate::src::align::Align64;
 use crate::src::levels::ADST_ADST;
-use crate::src::levels::DCT_ADST;
 use crate::src::levels::ADST_DCT;
+use crate::src::levels::ADST_FLIPADST;
+use crate::src::levels::DCT_ADST;
 use crate::src::levels::DCT_DCT;
+use crate::src::levels::DCT_FLIPADST;
+use crate::src::levels::FLIPADST_ADST;
+use crate::src::levels::FLIPADST_DCT;
+use crate::src::levels::FLIPADST_FLIPADST;
+use crate::src::levels::H_ADST;
+use crate::src::levels::H_DCT;
+use crate::src::levels::H_FLIPADST;
+use crate::src::levels::IDTX;
+use crate::src::levels::RTX_16X32;
+use crate::src::levels::RTX_16X4;
+use crate::src::levels::RTX_16X64;
+use crate::src::levels::RTX_16X8;
+use crate::src::levels::RTX_32X16;
+use crate::src::levels::RTX_32X64;
+use crate::src::levels::RTX_32X8;
+use crate::src::levels::RTX_4X16;
+use crate::src::levels::RTX_4X8;
+use crate::src::levels::RTX_64X16;
+use crate::src::levels::RTX_64X32;
+use crate::src::levels::RTX_8X16;
+use crate::src::levels::RTX_8X32;
+use crate::src::levels::RTX_8X4;
+use crate::src::levels::TX_16X16;
+use crate::src::levels::TX_32X32;
+use crate::src::levels::TX_4X4;
+use crate::src::levels::TX_64X64;
+use crate::src::levels::TX_8X8;
+use crate::src::levels::V_ADST;
+use crate::src::levels::V_DCT;
+use crate::src::levels::V_FLIPADST;
+use ::libc;
 
-use crate::src::levels::TX_CLASS_V;
-use crate::src::levels::TX_CLASS_H;
-use crate::src::levels::TX_CLASS_2D;
 use crate::src::levels::HOR_DOWN_PRED;
+use crate::src::levels::TX_CLASS_2D;
+use crate::src::levels::TX_CLASS_H;
+use crate::src::levels::TX_CLASS_V;
 
+use crate::src::levels::DC_PRED;
 use crate::src::levels::HOR_PRED;
 use crate::src::levels::VERT_PRED;
-use crate::src::levels::DC_PRED;
 
-use crate::src::levels::N_SUB8X8_PARTITIONS;
-use crate::src::levels::N_PARTITIONS;
-use crate::src::levels::BS_4x4;
-use crate::src::levels::BS_4x8;
-use crate::src::levels::BS_4x16;
-use crate::src::levels::BS_8x4;
-use crate::src::levels::BS_8x8;
-use crate::src::levels::BS_8x16;
-use crate::src::levels::BS_8x32;
-use crate::src::levels::BS_16x4;
-use crate::src::levels::BS_16x8;
+use crate::src::levels::BS_128x128;
+use crate::src::levels::BS_128x64;
 use crate::src::levels::BS_16x16;
 use crate::src::levels::BS_16x32;
+use crate::src::levels::BS_16x4;
 use crate::src::levels::BS_16x64;
-use crate::src::levels::BS_32x8;
+use crate::src::levels::BS_16x8;
 use crate::src::levels::BS_32x16;
 use crate::src::levels::BS_32x32;
 use crate::src::levels::BS_32x64;
+use crate::src::levels::BS_32x8;
+use crate::src::levels::BS_4x16;
+use crate::src::levels::BS_4x4;
+use crate::src::levels::BS_4x8;
+use crate::src::levels::BS_64x128;
 use crate::src::levels::BS_64x16;
 use crate::src::levels::BS_64x32;
 use crate::src::levels::BS_64x64;
-use crate::src::levels::BS_64x128;
-use crate::src::levels::BS_128x64;
-use crate::src::levels::BS_128x128;
-use crate::src::levels::FILTER_2D_BILINEAR;
-use crate::src::levels::FILTER_2D_8TAP_SMOOTH_SHARP;
-use crate::src::levels::FILTER_2D_8TAP_SMOOTH;
-use crate::src::levels::FILTER_2D_8TAP_SMOOTH_REGULAR;
-use crate::src::levels::FILTER_2D_8TAP_SHARP;
-use crate::src::levels::FILTER_2D_8TAP_SHARP_SMOOTH;
-use crate::src::levels::FILTER_2D_8TAP_SHARP_REGULAR;
+use crate::src::levels::BS_8x16;
+use crate::src::levels::BS_8x32;
+use crate::src::levels::BS_8x4;
+use crate::src::levels::BS_8x8;
+use crate::src::levels::FILTER_2D_8TAP_REGULAR;
 use crate::src::levels::FILTER_2D_8TAP_REGULAR_SHARP;
 use crate::src::levels::FILTER_2D_8TAP_REGULAR_SMOOTH;
-use crate::src::levels::FILTER_2D_8TAP_REGULAR;
-use crate::src::levels::NEWMV;
+use crate::src::levels::FILTER_2D_8TAP_SHARP;
+use crate::src::levels::FILTER_2D_8TAP_SHARP_REGULAR;
+use crate::src::levels::FILTER_2D_8TAP_SHARP_SMOOTH;
+use crate::src::levels::FILTER_2D_8TAP_SMOOTH;
+use crate::src::levels::FILTER_2D_8TAP_SMOOTH_REGULAR;
+use crate::src::levels::FILTER_2D_8TAP_SMOOTH_SHARP;
+use crate::src::levels::FILTER_2D_BILINEAR;
 use crate::src::levels::GLOBALMV;
-use crate::src::levels::NEARMV;
 use crate::src::levels::NEARESTMV;
+use crate::src::levels::NEARMV;
+use crate::src::levels::NEWMV;
+use crate::src::levels::N_PARTITIONS;
+use crate::src::levels::N_SUB8X8_PARTITIONS;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -240,10 +240,22 @@ pub static mut dav1d_block_sizes: [[[uint8_t; 2]; 10]; 5] = [
         [BS_128x64 as libc::c_int as uint8_t, 0],
         [BS_64x128 as libc::c_int as uint8_t, 0],
         [0; 2],
-        [BS_64x64 as libc::c_int as uint8_t, BS_128x64 as libc::c_int as uint8_t],
-        [BS_128x64 as libc::c_int as uint8_t, BS_64x64 as libc::c_int as uint8_t],
-        [BS_64x64 as libc::c_int as uint8_t, BS_64x128 as libc::c_int as uint8_t],
-        [BS_64x128 as libc::c_int as uint8_t, BS_64x64 as libc::c_int as uint8_t],
+        [
+            BS_64x64 as libc::c_int as uint8_t,
+            BS_128x64 as libc::c_int as uint8_t,
+        ],
+        [
+            BS_128x64 as libc::c_int as uint8_t,
+            BS_64x64 as libc::c_int as uint8_t,
+        ],
+        [
+            BS_64x64 as libc::c_int as uint8_t,
+            BS_64x128 as libc::c_int as uint8_t,
+        ],
+        [
+            BS_64x128 as libc::c_int as uint8_t,
+            BS_64x64 as libc::c_int as uint8_t,
+        ],
         [0; 2],
         [0; 2],
     ],
@@ -252,10 +264,22 @@ pub static mut dav1d_block_sizes: [[[uint8_t; 2]; 10]; 5] = [
         [BS_64x32 as libc::c_int as uint8_t, 0],
         [BS_32x64 as libc::c_int as uint8_t, 0],
         [0; 2],
-        [BS_32x32 as libc::c_int as uint8_t, BS_64x32 as libc::c_int as uint8_t],
-        [BS_64x32 as libc::c_int as uint8_t, BS_32x32 as libc::c_int as uint8_t],
-        [BS_32x32 as libc::c_int as uint8_t, BS_32x64 as libc::c_int as uint8_t],
-        [BS_32x64 as libc::c_int as uint8_t, BS_32x32 as libc::c_int as uint8_t],
+        [
+            BS_32x32 as libc::c_int as uint8_t,
+            BS_64x32 as libc::c_int as uint8_t,
+        ],
+        [
+            BS_64x32 as libc::c_int as uint8_t,
+            BS_32x32 as libc::c_int as uint8_t,
+        ],
+        [
+            BS_32x32 as libc::c_int as uint8_t,
+            BS_32x64 as libc::c_int as uint8_t,
+        ],
+        [
+            BS_32x64 as libc::c_int as uint8_t,
+            BS_32x32 as libc::c_int as uint8_t,
+        ],
         [BS_64x16 as libc::c_int as uint8_t, 0],
         [BS_16x64 as libc::c_int as uint8_t, 0],
     ],
@@ -264,10 +288,22 @@ pub static mut dav1d_block_sizes: [[[uint8_t; 2]; 10]; 5] = [
         [BS_32x16 as libc::c_int as uint8_t, 0],
         [BS_16x32 as libc::c_int as uint8_t, 0],
         [0; 2],
-        [BS_16x16 as libc::c_int as uint8_t, BS_32x16 as libc::c_int as uint8_t],
-        [BS_32x16 as libc::c_int as uint8_t, BS_16x16 as libc::c_int as uint8_t],
-        [BS_16x16 as libc::c_int as uint8_t, BS_16x32 as libc::c_int as uint8_t],
-        [BS_16x32 as libc::c_int as uint8_t, BS_16x16 as libc::c_int as uint8_t],
+        [
+            BS_16x16 as libc::c_int as uint8_t,
+            BS_32x16 as libc::c_int as uint8_t,
+        ],
+        [
+            BS_32x16 as libc::c_int as uint8_t,
+            BS_16x16 as libc::c_int as uint8_t,
+        ],
+        [
+            BS_16x16 as libc::c_int as uint8_t,
+            BS_16x32 as libc::c_int as uint8_t,
+        ],
+        [
+            BS_16x32 as libc::c_int as uint8_t,
+            BS_16x16 as libc::c_int as uint8_t,
+        ],
         [BS_32x8 as libc::c_int as uint8_t, 0],
         [BS_8x32 as libc::c_int as uint8_t, 0],
     ],
@@ -276,10 +312,22 @@ pub static mut dav1d_block_sizes: [[[uint8_t; 2]; 10]; 5] = [
         [BS_16x8 as libc::c_int as uint8_t, 0],
         [BS_8x16 as libc::c_int as uint8_t, 0],
         [0; 2],
-        [BS_8x8 as libc::c_int as uint8_t, BS_16x8 as libc::c_int as uint8_t],
-        [BS_16x8 as libc::c_int as uint8_t, BS_8x8 as libc::c_int as uint8_t],
-        [BS_8x8 as libc::c_int as uint8_t, BS_8x16 as libc::c_int as uint8_t],
-        [BS_8x16 as libc::c_int as uint8_t, BS_8x8 as libc::c_int as uint8_t],
+        [
+            BS_8x8 as libc::c_int as uint8_t,
+            BS_16x8 as libc::c_int as uint8_t,
+        ],
+        [
+            BS_16x8 as libc::c_int as uint8_t,
+            BS_8x8 as libc::c_int as uint8_t,
+        ],
+        [
+            BS_8x8 as libc::c_int as uint8_t,
+            BS_8x16 as libc::c_int as uint8_t,
+        ],
+        [
+            BS_8x16 as libc::c_int as uint8_t,
+            BS_8x8 as libc::c_int as uint8_t,
+        ],
         [BS_16x4 as libc::c_int as uint8_t, 0],
         [BS_4x16 as libc::c_int as uint8_t, 0],
     ],
@@ -835,14 +883,38 @@ pub static mut dav1d_txtp_from_uvmode: [uint8_t; 14] = [
 ];
 #[no_mangle]
 pub static mut dav1d_comp_inter_pred_modes: [[uint8_t; 2]; 8] = [
-    [NEARESTMV as libc::c_int as uint8_t, NEARESTMV as libc::c_int as uint8_t],
-    [NEARMV as libc::c_int as uint8_t, NEARMV as libc::c_int as uint8_t],
-    [NEARESTMV as libc::c_int as uint8_t, NEWMV as libc::c_int as uint8_t],
-    [NEWMV as libc::c_int as uint8_t, NEARESTMV as libc::c_int as uint8_t],
-    [NEARMV as libc::c_int as uint8_t, NEWMV as libc::c_int as uint8_t],
-    [NEWMV as libc::c_int as uint8_t, NEARMV as libc::c_int as uint8_t],
-    [GLOBALMV as libc::c_int as uint8_t, GLOBALMV as libc::c_int as uint8_t],
-    [NEWMV as libc::c_int as uint8_t, NEWMV as libc::c_int as uint8_t],
+    [
+        NEARESTMV as libc::c_int as uint8_t,
+        NEARESTMV as libc::c_int as uint8_t,
+    ],
+    [
+        NEARMV as libc::c_int as uint8_t,
+        NEARMV as libc::c_int as uint8_t,
+    ],
+    [
+        NEARESTMV as libc::c_int as uint8_t,
+        NEWMV as libc::c_int as uint8_t,
+    ],
+    [
+        NEWMV as libc::c_int as uint8_t,
+        NEARESTMV as libc::c_int as uint8_t,
+    ],
+    [
+        NEARMV as libc::c_int as uint8_t,
+        NEWMV as libc::c_int as uint8_t,
+    ],
+    [
+        NEWMV as libc::c_int as uint8_t,
+        NEARMV as libc::c_int as uint8_t,
+    ],
+    [
+        GLOBALMV as libc::c_int as uint8_t,
+        GLOBALMV as libc::c_int as uint8_t,
+    ],
+    [
+        NEWMV as libc::c_int as uint8_t,
+        NEWMV as libc::c_int as uint8_t,
+    ],
 ];
 #[no_mangle]
 pub static mut dav1d_partition_type_count: [uint8_t; 5] = [
@@ -1234,14 +1306,8 @@ pub static mut dav1d_default_wm_params: Dav1dWarpedMotionParams = {
 };
 #[no_mangle]
 pub static mut dav1d_cdef_directions: [[int8_t; 2]; 12] = [
-    [
-        (1 * 12 + 0) as int8_t,
-        (2 * 12 + 0) as int8_t,
-    ],
-    [
-        (1 * 12 + 0) as int8_t,
-        (2 * 12 - 1) as int8_t,
-    ],
+    [(1 * 12 + 0) as int8_t, (2 * 12 + 0) as int8_t],
+    [(1 * 12 + 0) as int8_t, (2 * 12 - 1) as int8_t],
     [
         (-(1 as libc::c_int) * 12 + 1) as int8_t,
         (-(2 as libc::c_int) * 12 + 2) as int8_t,
@@ -1250,30 +1316,12 @@ pub static mut dav1d_cdef_directions: [[int8_t; 2]; 12] = [
         (0 * 12 + 1) as int8_t,
         (-(1 as libc::c_int) * 12 + 2) as int8_t,
     ],
-    [
-        (0 * 12 + 1) as int8_t,
-        (0 * 12 + 2) as int8_t,
-    ],
-    [
-        (0 * 12 + 1) as int8_t,
-        (1 * 12 + 2) as int8_t,
-    ],
-    [
-        (1 * 12 + 1) as int8_t,
-        (2 * 12 + 2) as int8_t,
-    ],
-    [
-        (1 * 12 + 0) as int8_t,
-        (2 * 12 + 1) as int8_t,
-    ],
-    [
-        (1 * 12 + 0) as int8_t,
-        (2 * 12 + 0) as int8_t,
-    ],
-    [
-        (1 * 12 + 0) as int8_t,
-        (2 * 12 - 1) as int8_t,
-    ],
+    [(0 * 12 + 1) as int8_t, (0 * 12 + 2) as int8_t],
+    [(0 * 12 + 1) as int8_t, (1 * 12 + 2) as int8_t],
+    [(1 * 12 + 1) as int8_t, (2 * 12 + 2) as int8_t],
+    [(1 * 12 + 0) as int8_t, (2 * 12 + 1) as int8_t],
+    [(1 * 12 + 0) as int8_t, (2 * 12 + 0) as int8_t],
+    [(1 * 12 + 0) as int8_t, (2 * 12 - 1) as int8_t],
     [
         (-(1 as libc::c_int) * 12 + 1) as int8_t,
         (-(2 as libc::c_int) * 12 + 2) as int8_t,
@@ -1285,19 +1333,58 @@ pub static mut dav1d_cdef_directions: [[int8_t; 2]; 12] = [
 ];
 #[no_mangle]
 pub static mut dav1d_sgr_params: [[uint16_t; 2]; 16] = [
-    [140 as libc::c_int as uint16_t, 3236 as libc::c_int as uint16_t],
-    [112 as libc::c_int as uint16_t, 2158 as libc::c_int as uint16_t],
-    [93 as libc::c_int as uint16_t, 1618 as libc::c_int as uint16_t],
-    [80 as libc::c_int as uint16_t, 1438 as libc::c_int as uint16_t],
-    [70 as libc::c_int as uint16_t, 1295 as libc::c_int as uint16_t],
-    [58 as libc::c_int as uint16_t, 1177 as libc::c_int as uint16_t],
-    [47 as libc::c_int as uint16_t, 1079 as libc::c_int as uint16_t],
-    [37 as libc::c_int as uint16_t, 996 as libc::c_int as uint16_t],
-    [30 as libc::c_int as uint16_t, 925 as libc::c_int as uint16_t],
-    [25 as libc::c_int as uint16_t, 863 as libc::c_int as uint16_t],
-    [0 as libc::c_int as uint16_t, 2589 as libc::c_int as uint16_t],
-    [0 as libc::c_int as uint16_t, 1618 as libc::c_int as uint16_t],
-    [0 as libc::c_int as uint16_t, 1177 as libc::c_int as uint16_t],
+    [
+        140 as libc::c_int as uint16_t,
+        3236 as libc::c_int as uint16_t,
+    ],
+    [
+        112 as libc::c_int as uint16_t,
+        2158 as libc::c_int as uint16_t,
+    ],
+    [
+        93 as libc::c_int as uint16_t,
+        1618 as libc::c_int as uint16_t,
+    ],
+    [
+        80 as libc::c_int as uint16_t,
+        1438 as libc::c_int as uint16_t,
+    ],
+    [
+        70 as libc::c_int as uint16_t,
+        1295 as libc::c_int as uint16_t,
+    ],
+    [
+        58 as libc::c_int as uint16_t,
+        1177 as libc::c_int as uint16_t,
+    ],
+    [
+        47 as libc::c_int as uint16_t,
+        1079 as libc::c_int as uint16_t,
+    ],
+    [
+        37 as libc::c_int as uint16_t,
+        996 as libc::c_int as uint16_t,
+    ],
+    [
+        30 as libc::c_int as uint16_t,
+        925 as libc::c_int as uint16_t,
+    ],
+    [
+        25 as libc::c_int as uint16_t,
+        863 as libc::c_int as uint16_t,
+    ],
+    [
+        0 as libc::c_int as uint16_t,
+        2589 as libc::c_int as uint16_t,
+    ],
+    [
+        0 as libc::c_int as uint16_t,
+        1618 as libc::c_int as uint16_t,
+    ],
+    [
+        0 as libc::c_int as uint16_t,
+        1177 as libc::c_int as uint16_t,
+    ],
     [0 as libc::c_int as uint16_t, 925 as libc::c_int as uint16_t],
     [56 as libc::c_int as uint16_t, 0 as libc::c_int as uint16_t],
     [22 as libc::c_int as uint16_t, 0 as libc::c_int as uint16_t],
@@ -5244,14 +5331,14 @@ macro_rules! f {
         $f5:literal,
         $f6:literal
     ) => {
-        $arr[2 * $idx + 0]  = $f0;
-        $arr[2 * $idx + 1]  = $f1;
+        $arr[2 * $idx + 0] = $f0;
+        $arr[2 * $idx + 1] = $f1;
         $arr[2 * $idx + 16] = $f2;
         $arr[2 * $idx + 17] = $f3;
         $arr[2 * $idx + 32] = $f4;
         $arr[2 * $idx + 33] = $f5;
         $arr[2 * $idx + 48] = $f6;
-    }
+    };
 }
 
 #[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
@@ -5267,78 +5354,78 @@ macro_rules! f {
         $f5:literal,
         $f6:literal
     ) => {
-        $arr[1 * $idx + 0]  = $f0;
-        $arr[1 * $idx + 8]  = $f1;
+        $arr[1 * $idx + 0] = $f0;
+        $arr[1 * $idx + 8] = $f1;
         $arr[1 * $idx + 16] = $f2;
         $arr[1 * $idx + 24] = $f3;
         $arr[1 * $idx + 32] = $f4;
         $arr[1 * $idx + 40] = $f5;
         $arr[1 * $idx + 48] = $f6;
-    }
+    };
 }
 
 #[no_mangle]
 pub static mut dav1d_filter_intra_taps: Align64<[[int8_t; 64]; 5]> = Align64([
     {
         let mut array = [0; 64];
-        f!(array, 0,  -6, 10,  0,  0,  0, 12,  0);
-        f!(array, 1,  -5,  2, 10,  0,  0,  9,  0);
-        f!(array, 2,  -3,  1,  1, 10,  0,  7,  0);
-        f!(array, 3,  -3,  1,  1,  2, 10,  5,  0);
-        f!(array, 4,  -4,  6,  0,  0,  0,  2, 12);
-        f!(array, 5,  -3,  2,  6,  0,  0,  2,  9);
-        f!(array, 6,  -3,  2,  2,  6,  0,  2,  7);
-        f!(array, 7,  -3,  1,  2,  2,  6,  3,  5);
+        f!(array, 0, -6, 10, 0, 0, 0, 12, 0);
+        f!(array, 1, -5, 2, 10, 0, 0, 9, 0);
+        f!(array, 2, -3, 1, 1, 10, 0, 7, 0);
+        f!(array, 3, -3, 1, 1, 2, 10, 5, 0);
+        f!(array, 4, -4, 6, 0, 0, 0, 2, 12);
+        f!(array, 5, -3, 2, 6, 0, 0, 2, 9);
+        f!(array, 6, -3, 2, 2, 6, 0, 2, 7);
+        f!(array, 7, -3, 1, 2, 2, 6, 3, 5);
         array
     },
     {
         let mut array = [0; 64];
-        f!(array, 0, -10, 16,  0,  0,  0, 10,  0);
-        f!(array, 1,  -6,  0, 16,  0,  0,  6,  0);
-        f!(array, 2,  -4,  0,  0, 16,  0,  4,  0);
-        f!(array, 3,  -2,  0,  0,  0, 16,  2,  0);
-        f!(array, 4, -10, 16,  0,  0,  0,  0, 10);
-        f!(array, 5,  -6,  0, 16,  0,  0,  0,  6);
-        f!(array, 6,  -4,  0,  0, 16,  0,  0,  4);
-        f!(array, 7,  -2,  0,  0,  0, 16,  0,  2);
+        f!(array, 0, -10, 16, 0, 0, 0, 10, 0);
+        f!(array, 1, -6, 0, 16, 0, 0, 6, 0);
+        f!(array, 2, -4, 0, 0, 16, 0, 4, 0);
+        f!(array, 3, -2, 0, 0, 0, 16, 2, 0);
+        f!(array, 4, -10, 16, 0, 0, 0, 0, 10);
+        f!(array, 5, -6, 0, 16, 0, 0, 0, 6);
+        f!(array, 6, -4, 0, 0, 16, 0, 0, 4);
+        f!(array, 7, -2, 0, 0, 0, 16, 0, 2);
         array
     },
     {
         let mut array = [0; 64];
-        f!(array, 0,  -8,  8,  0,  0,  0, 16,  0);
-        f!(array, 1,  -8,  0,  8,  0,  0, 16,  0);
-        f!(array, 2,  -8,  0,  0,  8,  0, 16,  0);
-        f!(array, 3,  -8,  0,  0,  0,  8, 16,  0);
-        f!(array, 4,  -4,  4,  0,  0,  0,  0, 16);
-        f!(array, 5,  -4,  0,  4,  0,  0,  0, 16);
-        f!(array, 6,  -4,  0,  0,  4,  0,  0, 16);
-        f!(array, 7,  -4,  0,  0,  0,  4,  0, 16);
+        f!(array, 0, -8, 8, 0, 0, 0, 16, 0);
+        f!(array, 1, -8, 0, 8, 0, 0, 16, 0);
+        f!(array, 2, -8, 0, 0, 8, 0, 16, 0);
+        f!(array, 3, -8, 0, 0, 0, 8, 16, 0);
+        f!(array, 4, -4, 4, 0, 0, 0, 0, 16);
+        f!(array, 5, -4, 0, 4, 0, 0, 0, 16);
+        f!(array, 6, -4, 0, 0, 4, 0, 0, 16);
+        f!(array, 7, -4, 0, 0, 0, 4, 0, 16);
         array
     },
     {
         let mut array = [0; 64];
-        f!(array, 0,  -2,  8,  0,  0,  0, 10,  0);
-        f!(array, 1,  -1,  3,  8,  0,  0,  6,  0);
-        f!(array, 2,  -1,  2,  3,  8,  0,  4,  0);
-        f!(array, 3,   0,  1,  2,  3,  8,  2,  0);
-        f!(array, 4,  -1,  4,  0,  0,  0,  3, 10);
-        f!(array, 5,  -1,  3,  4,  0,  0,  4,  6);
-        f!(array, 6,  -1,  2,  3,  4,  0,  4,  4);
-        f!(array, 7,  -1,  2,  2,  3,  4,  3,  3);
+        f!(array, 0, -2, 8, 0, 0, 0, 10, 0);
+        f!(array, 1, -1, 3, 8, 0, 0, 6, 0);
+        f!(array, 2, -1, 2, 3, 8, 0, 4, 0);
+        f!(array, 3, 0, 1, 2, 3, 8, 2, 0);
+        f!(array, 4, -1, 4, 0, 0, 0, 3, 10);
+        f!(array, 5, -1, 3, 4, 0, 0, 4, 6);
+        f!(array, 6, -1, 2, 3, 4, 0, 4, 4);
+        f!(array, 7, -1, 2, 2, 3, 4, 3, 3);
         array
     },
     {
         let mut array = [0; 64];
-        f!(array, 0, -12, 14,  0,  0,  0, 14,  0);
-        f!(array, 1, -10,  0, 14,  0,  0, 12,  0);
-        f!(array, 2,  -9,  0,  0, 14,  0, 11,  0);
-        f!(array, 3,  -8,  0,  0,  0, 14, 10,  0);
-        f!(array, 4, -10, 12,  0,  0,  0,  0, 14);
-        f!(array, 5,  -9,  1, 12,  0,  0,  0, 12);
-        f!(array, 6,  -8,  0,  0, 12,  0,  1, 11);
-        f!(array, 7,  -7,  0,  0,  1, 12,  1,  9);
+        f!(array, 0, -12, 14, 0, 0, 0, 14, 0);
+        f!(array, 1, -10, 0, 14, 0, 0, 12, 0);
+        f!(array, 2, -9, 0, 0, 14, 0, 11, 0);
+        f!(array, 3, -8, 0, 0, 0, 14, 10, 0);
+        f!(array, 4, -10, 12, 0, 0, 0, 0, 14);
+        f!(array, 5, -9, 1, 12, 0, 0, 0, 12);
+        f!(array, 6, -8, 0, 0, 12, 0, 1, 11);
+        f!(array, 7, -7, 0, 0, 1, 12, 1, 9);
         array
-    }
+    },
 ]);
 
 #[no_mangle]

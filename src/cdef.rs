@@ -1,8 +1,8 @@
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
-use crate::include::stdint::int16_t;
 use crate::include::stddef::ptrdiff_t;
+use crate::include::stdint::int16_t;
 
 pub type CdefEdgeFlags = libc::c_uint;
 pub const CDEF_HAVE_BOTTOM: CdefEdgeFlags = 8;
@@ -34,10 +34,7 @@ pub unsafe extern "C" fn fill(
     while y < h {
         let mut x = 0;
         while x < w {
-            *tmp
-                .offset(
-                    x as isize,
-                ) = (-(32767 as libc::c_int) - 1) as int16_t;
+            *tmp.offset(x as isize) = (-(32767 as libc::c_int) - 1) as int16_t;
             x += 1;
         }
         tmp = tmp.offset(stride as isize);

@@ -9,13 +9,13 @@ use crate::include::stdint::int32_t;
 use crate::include::stdint::int8_t;
 use crate::include::stdint::uint16_t;
 use crate::include::stdint::uint8_t;
+use crate::src::align::*;
 use crate::src::intra_edge::EdgeBranch;
 use crate::src::intra_edge::EdgeNode;
 use crate::src::intra_edge::EdgeTip;
 use crate::src::picture::Dav1dThreadPicture;
 use crate::src::r#ref::Dav1dRef;
 use crate::src::thread_data::thread_data;
-use crate::src::align::*;
 
 #[derive(Copy, Clone)]
 #[repr(C)]

@@ -28,5 +28,5 @@ pub unsafe extern "C" fn ac_dump(
         }
         buf = buf.offset(w as isize);
         printf(b"\n\0" as *const u8 as *const libc::c_char);
-    };
+    }
 }

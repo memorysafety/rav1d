@@ -3865,9 +3865,9 @@ pub struct Dav1dInvTxfmDSPContext {
 }
 pub type itx_1d_fn =
     Option<unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> ()>;
-use crate::include::common::intops::imin;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
+use crate::include::common::intops::imin;
 #[inline(never)]
 unsafe extern "C" fn inv_txfm_add_c(
     mut dst: *mut pixel,
@@ -3890,8 +3890,7 @@ unsafe extern "C" fn inv_txfm_add_c(
     if !(eob >= 0) {
         unreachable!();
     }
-    let is_rect2: libc::c_int =
-        (w * 2 == h || h * 2 == w) as libc::c_int;
+    let is_rect2: libc::c_int = (w * 2 == h || h * 2 == w) as libc::c_int;
     let rnd = (1 as libc::c_int) << shift >> 1;
     if eob < has_dconly {
         let mut dc = *coeff.offset(0) as libc::c_int;
@@ -3901,8 +3900,7 @@ unsafe extern "C" fn inv_txfm_add_c(
         }
         dc = dc * 181 + 128 >> 8;
         dc = dc + rnd >> shift;
-        dc =
-            dc * 181 + 128 + 2048 >> 12;
+        dc = dc * 181 + 128 + 2048 >> 12;
         let mut y = 0;
         while y < h {
             let mut x = 0;
@@ -3929,10 +3927,8 @@ unsafe extern "C" fn inv_txfm_add_c(
         if is_rect2 != 0 {
             let mut x_0 = 0;
             while x_0 < sw {
-                *c.offset(x_0 as isize) = *coeff.offset((y_0 + x_0 * sh) as isize) as libc::c_int
-                    * 181
-                    + 128
-                    >> 8;
+                *c.offset(x_0 as isize) =
+                    *coeff.offset((y_0 + x_0 * sh) as isize) as libc::c_int * 181 + 128 >> 8;
                 x_0 += 1;
             }
         } else {
@@ -3980,10 +3976,8 @@ unsafe extern "C" fn inv_txfm_add_c(
         while x_3 < w {
             let fresh0 = c;
             c = c.offset(1);
-            *dst.offset(x_3 as isize) = iclip_u8(
-                *dst.offset(x_3 as isize) as libc::c_int
-                    + (*fresh0 + 8 >> 4),
-            ) as pixel;
+            *dst.offset(x_3 as isize) =
+                iclip_u8(*dst.offset(x_3 as isize) as libc::c_int + (*fresh0 + 8 >> 4)) as pixel;
             x_3 += 1;
         }
         y_1 += 1;
@@ -7877,9 +7871,7 @@ unsafe extern "C" fn inv_txfm_add_wht_wht_4x4_c(
     while y < 4 {
         let mut x = 0;
         while x < 4 {
-            *c.offset(x as isize) = *coeff.offset((y + x * 4) as isize)
-                as libc::c_int
-                >> 2;
+            *c.offset(x as isize) = *coeff.offset((y + x * 4) as isize) as libc::c_int >> 2;
             x += 1;
         }
         dav1d_inv_wht4_1d_c(c, 1 as libc::c_int as ptrdiff_t);
