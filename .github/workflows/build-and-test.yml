@@ -2,6 +2,12 @@ name: build and test on x86-64
 on: [push, pull_request]
 jobs:
   test-on-ubuntu-latest:
+    strategy:
+      matrix:
+        target: [
+          "x86_64-unknown-linux-gnu",
+          "i686-unknown-linux-gnu"
+        ]
     runs-on: ubuntu-latest
     steps:
       - name: install prerequisites
@@ -34,27 +40,17 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - name: cargo build
-        run: |
-          # debug build to catch overflows
-          cargo build
-      - name: meson test
-        run: |
-          .github/workflows/test.sh -r ../target/debug/dav1d
-          cp ${{ github.workspace }}/build/meson-logs/testlog.txt \
-             ${{ github.workspace }}/build/meson-logs/testlog-$(uname -m).txt
-      - name: cargo build for i686 (assembly temporarily disabled)
+      - name: cargo build for ${{ matrix.target }}
         run: |
           cargo clean
-          rustup target add i686-unknown-linux-gnu --toolchain nightly-2022-08-08
+          rustup target add ${{ matrix.target }} --toolchain nightly-2022-08-08
           # debug build to catch overflows
-          cargo build --target i686-unknown-linux-gnu \
-              --no-default-features --features bitdepth_8,bitdepth_16
-      - name: meson test i686
+          cargo build --target ${{ matrix.target }}
+      - name: meson test for ${{ matrix.target }}
         run: |
-          .github/workflows/test.sh -r ../target/i686-unknown-linux-gnu/debug/dav1d
+          .github/workflows/test.sh -r ../target/${{ matrix.target }}/debug/dav1d
           cp ${{ github.workspace }}/build/meson-logs/testlog.txt \
-             ${{ github.workspace }}/build/meson-logs/testlog-i686.txt
+             ${{ github.workspace }}/build/meson-logs/testlog-${{ matrix.target }}.txt
       - name: upload build artifacts
         uses: actions/upload-artifact@v3
         with:
