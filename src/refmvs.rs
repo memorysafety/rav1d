@@ -599,7 +599,7 @@ unsafe extern "C" fn add_compound_extended_candidate(
 }
 
 unsafe fn add_single_extended_candidate(
-    mut mvstack: *mut refmvs_candidate,
+    mvstack: &mut [refmvs_candidate; 8],
     cnt: &mut usize,
     cand_b: *const refmvs_block,
     sign: libc::c_int,
@@ -620,14 +620,14 @@ unsafe fn add_single_extended_candidate(
         let last = *cnt;
         m = 0;
         while m < last {
-            if cand_mv == (*mvstack.offset(m as isize)).mv.mv[0] {
+            if cand_mv == mvstack[m].mv.mv[0] {
                 break;
             }
             m += 1;
         }
         if m == last {
-            (*mvstack.offset(m as isize)).mv.mv[0] = cand_mv;
-            (*mvstack.offset(m as isize)).weight = 2;
+            mvstack[m].mv.mv[0] = cand_mv;
+            mvstack[m].weight = 2;
             *cnt = last + 1;
         }
         n += 1;
@@ -1039,7 +1039,7 @@ pub unsafe fn dav1d_refmvs_find(
             while x < sz4 && *cnt < 2 {
                 let cand_b_1 = &*b_top.offset(x as isize) as *const refmvs_block;
                 add_single_extended_candidate(
-                    mvstack.as_mut_ptr(),
+                    mvstack,
                     cnt,
                     cand_b_1,
                     sign,
@@ -1056,7 +1056,7 @@ pub unsafe fn dav1d_refmvs_find(
                 let cand_b: *const refmvs_block = &mut *(*b_left.offset(y as isize))
                     .offset(bx4 as isize - 1) as *mut refmvs_block;
                 add_single_extended_candidate(
-                    mvstack.as_mut_ptr(),
+                    mvstack,
                     cnt,
                     cand_b,
                     sign,
