@@ -601,17 +601,17 @@ unsafe extern "C" fn add_compound_extended_candidate(
 unsafe fn add_single_extended_candidate(
     mvstack: &mut [refmvs_candidate; 8],
     cnt: &mut usize,
-    cand_b: *const refmvs_block,
+    cand_b: &refmvs_block,
     sign: libc::c_int,
     sign_bias: *const uint8_t,
 ) {
     let mut n = 0;
     while n < 2 {
-        let cand_ref = (*cand_b).r#ref.r#ref[n as usize] as libc::c_int;
+        let cand_ref = cand_b.r#ref.r#ref[n as usize] as libc::c_int;
         if cand_ref <= 0 {
             break;
         }
-        let mut cand_mv = (*cand_b).mv.mv[n as usize];
+        let mut cand_mv = cand_b.mv.mv[n as usize];
         if (sign ^ *sign_bias.offset((cand_ref - 1) as isize) as libc::c_int) != 0 {
             cand_mv.y = -cand_mv.y;
             cand_mv.x = -cand_mv.x;
@@ -1037,24 +1037,7 @@ pub unsafe fn dav1d_refmvs_find(
         if n_rows != !0 {
             let mut x = 0;
             while x < sz4 && *cnt < 2 {
-                let cand_b_1 = &*b_top.offset(x as isize) as *const refmvs_block;
-                add_single_extended_candidate(
-                    mvstack,
-                    cnt,
-                    cand_b_1,
-                    sign,
-                    rf.sign_bias.as_ptr(),
-                );
-                x += dav1d_block_dimensions[(*cand_b_1).bs as usize][0] as libc::c_int;
-            }
-        }
-
-        // non-self references in left
-        if n_cols != !0 {
-            let mut y = 0;
-            while y < sz4 && *cnt < 2 {
-                let cand_b: *const refmvs_block = &mut *(*b_left.offset(y as isize))
-                    .offset(bx4 as isize - 1) as *mut refmvs_block;
+                let cand_b = &*b_top.offset(x as isize);
                 add_single_extended_candidate(
                     mvstack,
                     cnt,
@@ -1062,7 +1045,24 @@ pub unsafe fn dav1d_refmvs_find(
                     sign,
                     rf.sign_bias.as_ptr(),
                 );
-                y += dav1d_block_dimensions[(*cand_b).bs as usize][1] as libc::c_int;
+                x += dav1d_block_dimensions[cand_b.bs as usize][0] as libc::c_int;
+            }
+        }
+
+        // non-self references in left
+        if n_cols != !0 {
+            let mut y = 0;
+            while y < sz4 && *cnt < 2 {
+                let cand_b = &*(*b_left.offset(y as isize))
+                    .offset(bx4 as isize - 1);
+                add_single_extended_candidate(
+                    mvstack,
+                    cnt,
+                    cand_b,
+                    sign,
+                    rf.sign_bias.as_ptr(),
+                );
+                y += dav1d_block_dimensions[cand_b.bs as usize][1] as libc::c_int;
             }
         }
     }
