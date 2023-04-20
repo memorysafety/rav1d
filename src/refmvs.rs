@@ -489,7 +489,7 @@ unsafe extern "C" fn add_temporal_candidate(
 
 unsafe fn add_compound_extended_candidate(
     same: *mut refmvs_candidate,
-    same_count: &mut [libc::c_int; 4],
+    same_count: &mut [usize; 4],
     cand_b: &refmvs_block,
     sign0: u8,
     sign1: u8,
@@ -501,9 +501,9 @@ unsafe fn add_compound_extended_candidate(
     // Alternative way with compile-time index checking
     // for the resulting array refs (rather than slices).
     //
-    // Safety: `[libc::c_int; 4]` and `[[libc::c_int; 2]; 2]` should be identical.
+    // Safety: `[usize; 4]` and `[[usize; 2]; 2]` should be identical.
     // let [same_count, diff_count] = unsafe { 
-    //     std::mem::transmute::<&mut [libc::c_int; 4], &mut [[libc::c_int; 2]; 2]>(same_count)
+    //     std::mem::transmute::<&mut [usize; 4], &mut [[usize; 2]; 2]>(same_count)
     // };
 
     let (same_count, diff_count) = same_count.split_at_mut(2);
@@ -955,7 +955,7 @@ pub unsafe fn dav1d_refmvs_find(
 
             // merge together
             for n in 0..2 {
-                let mut m = same_count[n] as usize;
+                let mut m = same_count[n];
 
                 if m >= 2 {
                     continue;
