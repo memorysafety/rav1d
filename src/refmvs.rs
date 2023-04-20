@@ -181,8 +181,7 @@ unsafe fn add_spatial_candidate(
         return;
     }
     if r#ref.r#ref[1] == -1 {
-        let mut n = 0;
-        while n < 2 {
+        for n in 0..2 {
             if (*b).r#ref.r#ref[n] == r#ref.r#ref[0] {
                 let cand_mv = if (*b).mf & 1 != 0 && (*gmv.offset(0)) != mv::INVALID {
                     *gmv.offset(0)
@@ -192,13 +191,11 @@ unsafe fn add_spatial_candidate(
                 *have_refmv_match = 1;
                 *have_newmv_match |= (*b).mf as libc::c_int >> 1;
                 let last = *cnt;
-                let mut m = 0;
-                while m < last {
+                for m in 0..last {
                     if mvstack[m].mv.mv[0] == cand_mv {
                         mvstack[m].weight += weight;
                         return;
                     }
-                    m += 1;
                 }
                 if last < 8 {
                     mvstack[last].mv.mv[0] = cand_mv;
@@ -207,7 +204,6 @@ unsafe fn add_spatial_candidate(
                 }
                 return;
             }
-            n += 1;
         }
     } else if (*b).r#ref == r#ref {
         let cand_mv = refmvs_mvpair {
@@ -227,13 +223,11 @@ unsafe fn add_spatial_candidate(
         *have_refmv_match = 1;
         *have_newmv_match |= (*b).mf as libc::c_int >> 1;
         let last = *cnt;
-        let mut n = 0;
-        while n < last {
+        for n in 0..last {
             if mvstack[n].mv == cand_mv {
                 mvstack[n].weight += weight;
                 return;
             }
-            n += 1;
         }
         if last < 8 {
             mvstack[last].mv = cand_mv;
