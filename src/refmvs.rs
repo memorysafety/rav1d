@@ -253,7 +253,7 @@ unsafe fn scan_row(
     cnt: &mut usize,
     r#ref: refmvs_refpair,
     gmv: &[mv; 2],
-    mut b: *const refmvs_block,
+    b: *const refmvs_block,
     bw4: libc::c_int,
     w4: libc::c_int,
     max_rows: libc::c_int,
@@ -261,20 +261,21 @@ unsafe fn scan_row(
     have_newmv_match: &mut libc::c_int,
     have_refmv_match: &mut libc::c_int,
 ) -> libc::c_int {
-    let mut cand_b: *const refmvs_block = b;
-    let first_cand_bs: BlockSize = (*cand_b).bs as BlockSize;
-    let first_cand_b_dim: *const uint8_t =
-        (dav1d_block_dimensions[first_cand_bs as usize]).as_ptr();
-    let mut cand_bw4 = *first_cand_b_dim.offset(0) as libc::c_int;
+    let mut cand_b = &*b;
+    let first_cand_bs = cand_b.bs as BlockSize;
+    let first_cand_b_dim = &dav1d_block_dimensions[first_cand_bs as usize];
+    let mut cand_bw4 = first_cand_b_dim[0] as libc::c_int;
     let mut len = imax(step, imin(bw4, cand_bw4));
+    
     if bw4 <= cand_bw4 {
+        // FIXME weight can be higher for odd blocks (bx4 & 1), but then the
+        // position of the first block has to be odd already, i.e. not just
+        // for row_offset=-3/-5
+        // FIXME why can this not be cand_bw4?
         let weight = if bw4 == 1 {
-            2 as libc::c_int
+            2
         } else {
-            imax(
-                2 as libc::c_int,
-                imin(2 * max_rows, *first_cand_b_dim.offset(1) as libc::c_int),
-            )
+            imax(2, imin(2 * max_rows, first_cand_b_dim[1] as libc::c_int))
         };
         add_spatial_candidate(
             mvstack,
@@ -288,8 +289,12 @@ unsafe fn scan_row(
         );
         return weight >> 1;
     }
+
     let mut x = 0;
     loop {
+        // FIXME if we overhang above, we could fill a bitmask so we don't have
+        // to repeat the add_spatial_candidate() for the next row, but just increase
+        // the weight here
         add_spatial_candidate(
             mvstack,
             cnt,
@@ -302,22 +307,21 @@ unsafe fn scan_row(
         );
         x += len;
         if x >= w4 {
-            return 1 as libc::c_int;
+            return 1;
         }
-        cand_b = &*b.offset(x as isize) as *const refmvs_block;
-        cand_bw4 = dav1d_block_dimensions[(*cand_b).bs as usize][0] as libc::c_int;
-        if !(cand_bw4 < bw4) {
-            unreachable!();
-        }
+        cand_b = &*b.offset(x as isize);
+        cand_bw4 = dav1d_block_dimensions[cand_b.bs as usize][0] as libc::c_int;
+        assert!(cand_bw4 < bw4);
         len = imax(step, cand_bw4);
     }
 }
+
 unsafe fn scan_col(
     mvstack: &mut [refmvs_candidate],
     cnt: &mut usize,
     r#ref: refmvs_refpair,
     gmv: &[mv; 2],
-    mut b: *const *mut refmvs_block,
+    b: *const *mut refmvs_block,
     bh4: libc::c_int,
     h4: libc::c_int,
     bx4: libc::c_int,
@@ -326,21 +330,21 @@ unsafe fn scan_col(
     have_newmv_match: &mut libc::c_int,
     have_refmv_match: &mut libc::c_int,
 ) -> libc::c_int {
-    let mut cand_b: *const refmvs_block =
-        &mut *(*b.offset(0)).offset(bx4 as isize) as *mut refmvs_block;
-    let first_cand_bs: BlockSize = (*cand_b).bs as BlockSize;
-    let first_cand_b_dim: *const uint8_t =
-        (dav1d_block_dimensions[first_cand_bs as usize]).as_ptr();
-    let mut cand_bh4 = *first_cand_b_dim.offset(1) as libc::c_int;
+    let mut cand_b = &*(*b.offset(0)).offset(bx4 as isize);
+    let first_cand_bs = cand_b.bs as BlockSize;
+    let first_cand_b_dim = &dav1d_block_dimensions[first_cand_bs as usize];
+    let mut cand_bh4 = first_cand_b_dim[1] as libc::c_int;
     let mut len = imax(step, imin(bh4, cand_bh4));
+    
     if bh4 <= cand_bh4 {
+        // FIXME weight can be higher for odd blocks (by4 & 1), but then the
+        // position of the first block has to be odd already, i.e. not just
+        // for col_offset=-3/-5
+        // FIXME why can this not be cand_bh4?
         let weight = if bh4 == 1 {
-            2 as libc::c_int
+            2
         } else {
-            imax(
-                2 as libc::c_int,
-                imin(2 * max_cols, *first_cand_b_dim.offset(0) as libc::c_int),
-            )
+            imax(2, imin(2 * max_cols, first_cand_b_dim[0] as libc::c_int))
         };
         add_spatial_candidate(
             mvstack,
@@ -354,8 +358,12 @@ unsafe fn scan_col(
         );
         return weight >> 1;
     }
+
     let mut y = 0;
     loop {
+        // FIXME if we overhang above, we could fill a bitmask so we don't have
+        // to repeat the add_spatial_candidate() for the next row, but just increase
+        // the weight here
         add_spatial_candidate(
             mvstack,
             cnt,
@@ -368,13 +376,11 @@ unsafe fn scan_col(
         );
         y += len;
         if y >= h4 {
-            return 1 as libc::c_int;
+            return 1;
         }
-        cand_b = &mut *(*b.offset(y as isize)).offset(bx4 as isize) as *mut refmvs_block;
-        cand_bh4 = dav1d_block_dimensions[(*cand_b).bs as usize][1] as libc::c_int;
-        if !(cand_bh4 < bh4) {
-            unreachable!();
-        }
+        cand_b = &*(*b.offset(y as isize)).offset(bx4 as isize);
+        cand_bh4 = dav1d_block_dimensions[cand_b.bs as usize][1] as libc::c_int;
+        assert!(cand_bh4 < bh4);
         len = imax(step, cand_bh4);
     }
 }
