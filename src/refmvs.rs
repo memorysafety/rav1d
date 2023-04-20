@@ -416,13 +416,11 @@ unsafe fn add_temporal_candidate(
             *globalmv_ctx = ((mv.x - (*gmv.offset(0)).x).abs() | (mv.y - (*gmv.offset(0)).y).abs()
                 >= 16) as libc::c_int;
         }
-        let mut n = 0;
-        while n < last {
+        for n in 0..last {
             if mvstack[n].mv.mv[0] == mv {
                 mvstack[n].weight += 2;
                 return;
             }
-            n += 1;
         }
         if last < 8 {
             mvstack[last].mv.mv[0] = mv;
@@ -441,13 +439,11 @@ unsafe fn add_temporal_candidate(
             ],
         };
         fix_mv_precision(&*rf.frm_hdr, &mut mvp.mv[1]);
-        let mut n = 0;
-        while n < last {
+        for n in 0..last {
             if mvstack[n].mv == mvp {
                 mvstack[n].weight += 2;
                 return;
             }
-            n += 1;
         }
         if last < 8 {
             mvstack[last].mv = mvp;
