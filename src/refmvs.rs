@@ -607,14 +607,22 @@ unsafe fn add_single_extended_candidate(
 ) {
     for n in 0..2 {
         let cand_ref = cand_b.r#ref.r#ref[n];
+
         if cand_ref <= 0 {
+            // we need to continue even if cand_ref == ref.ref[0], since
+            // the candidate could have been added as a globalmv variant,
+            // which changes the value
+            // FIXME if scan_{row,col}() returned a mask for the nearest
+            // edge, we could skip the appropriate ones here
             break;
         }
+
         let mut cand_mv = cand_b.mv.mv[n];
         if (sign ^ sign_bias[cand_ref as usize - 1] as libc::c_int) != 0 {
             cand_mv.y = -cand_mv.y;
             cand_mv.x = -cand_mv.x;
         }
+
         let mut m = 0;
         let last = *cnt;
         m = 0;
@@ -626,7 +634,7 @@ unsafe fn add_single_extended_candidate(
         }
         if m == last {
             mvstack[m].mv.mv[0] = cand_mv;
-            mvstack[m].weight = 2;
+            mvstack[m].weight = 2; // "minimal"
             *cnt = last + 1;
         }
     }
