@@ -489,7 +489,7 @@ unsafe extern "C" fn add_temporal_candidate(
 
 unsafe fn add_compound_extended_candidate(
     same: *mut refmvs_candidate,
-    same_count: *mut libc::c_int,
+    same_count: &mut [libc::c_int; 4],
     cand_b: &refmvs_block,
     sign0: u8,
     sign1: u8,
@@ -497,7 +497,9 @@ unsafe fn add_compound_extended_candidate(
     sign_bias: &[u8; 7],
 ) {
     let diff = &mut *same.offset(2) as *mut refmvs_candidate;
-    let diff_count = &mut *same_count.offset(2) as *mut libc::c_int;
+
+    let (same_count, diff_count) = same_count.split_at_mut(2);
+
     for n in 0..2 {
         let cand_ref = cand_b.r#ref.r#ref[n] as libc::c_int;
         if cand_ref <= 0 {
@@ -505,35 +507,35 @@ unsafe fn add_compound_extended_candidate(
         }
         let mut cand_mv = cand_b.mv.mv[n];
         if cand_ref == r#ref.r#ref[0] as libc::c_int {
-            if *same_count.offset(0) < 2 {
-                let ref mut fresh0 = *same_count.offset(0);
+            if same_count[0] < 2 {
+                let ref mut fresh0 = same_count[0];
                 let fresh1 = *fresh0;
                 *fresh0 = *fresh0 + 1;
                 (*same.offset(fresh1 as isize)).mv.mv[0] = cand_mv;
             }
-            if *diff_count.offset(1) < 2 {
+            if diff_count[1] < 2 {
                 if (sign1 ^ sign_bias[cand_ref as usize - 1]) != 0 {
                     cand_mv.y = -cand_mv.y;
                     cand_mv.x = -cand_mv.x;
                 }
-                let ref mut fresh2 = *diff_count.offset(1);
+                let ref mut fresh2 = diff_count[1];
                 let fresh3 = *fresh2;
                 *fresh2 = *fresh2 + 1;
                 (*diff.offset(fresh3 as isize)).mv.mv[1] = cand_mv;
             }
         } else if cand_ref == r#ref.r#ref[1] as libc::c_int {
-            if *same_count.offset(1) < 2 {
-                let ref mut fresh4 = *same_count.offset(1);
+            if same_count[1] < 2 {
+                let ref mut fresh4 = same_count[1];
                 let fresh5 = *fresh4;
                 *fresh4 = *fresh4 + 1;
                 (*same.offset(fresh5 as isize)).mv.mv[1] = cand_mv;
             }
-            if *diff_count.offset(0) < 2 {
+            if diff_count[0] < 2 {
                 if (sign0 ^ sign_bias[cand_ref as usize - 1]) != 0 {
                     cand_mv.y = -cand_mv.y;
                     cand_mv.x = -cand_mv.x;
                 }
-                let ref mut fresh6 = *diff_count.offset(0);
+                let ref mut fresh6 = diff_count[0];
                 let fresh7 = *fresh6;
                 *fresh6 = *fresh6 + 1;
                 (*diff.offset(fresh7 as isize)).mv.mv[0] = cand_mv;
@@ -543,8 +545,8 @@ unsafe fn add_compound_extended_candidate(
                 y: -cand_mv.y,
                 x: -cand_mv.x,
             };
-            if *diff_count.offset(0) < 2 {
-                let ref mut fresh8 = *diff_count.offset(0);
+            if diff_count[0] < 2 {
+                let ref mut fresh8 = diff_count[0];
                 let fresh9 = *fresh8;
                 *fresh8 = *fresh8 + 1;
                 (*diff.offset(fresh9 as isize)).mv.mv[0] = 
@@ -554,8 +556,8 @@ unsafe fn add_compound_extended_candidate(
                         cand_mv
                     };
             }
-            if *diff_count.offset(1) < 2 {
-                let ref mut fresh10 = *diff_count.offset(1);
+            if diff_count[1] < 2 {
+                let ref mut fresh10 = diff_count[1];
                 let fresh11 = *fresh10;
                 *fresh10 = *fresh10 + 1;
                 (*diff.offset(fresh11 as isize)).mv.mv[1] = 
@@ -907,7 +909,7 @@ pub unsafe fn dav1d_refmvs_find(
                     let cand_b = &*b_top.offset(x as isize);
                     add_compound_extended_candidate(
                         same.as_mut_ptr(),
-                        same_count.as_mut_ptr(),
+                        &mut same_count,
                         cand_b,
                         sign0,
                         sign1,
@@ -926,7 +928,7 @@ pub unsafe fn dav1d_refmvs_find(
                         .offset(bx4 as isize - 1);
                     add_compound_extended_candidate(
                         same.as_mut_ptr(),
-                        same_count.as_mut_ptr(),
+                        &mut same_count,
                         cand_b,
                         sign0,
                         sign1,
