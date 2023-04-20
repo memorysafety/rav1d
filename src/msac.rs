@@ -301,7 +301,7 @@ pub unsafe extern "C" fn dav1d_msac_decode_bool_adapt_c(
             *fresh5 =
                 (*fresh5 as libc::c_int - (*cdf.offset(0) as libc::c_int >> rate)) as uint16_t;
         }
-        *cdf.offset(1 as libc::c_int as isize) = count
+        *cdf.offset(1) = count
             .wrapping_add((count < 32 as libc::c_uint) as libc::c_int as libc::c_uint)
             as uint16_t;
     }

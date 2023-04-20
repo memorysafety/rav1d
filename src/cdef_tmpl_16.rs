@@ -625,13 +625,13 @@ unsafe extern "C" fn cdef_find_dir_c(
         while x < 8 {
             let px = (*img.offset(x as isize) as libc::c_int >> bitdepth_min_8) - 128;
             partial_sum_diag[0][(y + x) as usize] += px;
-            partial_sum_alt[0 as libc::c_int as usize][(y + (x >> 1)) as usize] += px;
+            partial_sum_alt[0][(y + (x >> 1)) as usize] += px;
             partial_sum_hv[0][y as usize] += px;
-            partial_sum_alt[1 as libc::c_int as usize][(3 + y - (x >> 1)) as usize] += px;
-            partial_sum_diag[1 as libc::c_int as usize][(7 + y - x) as usize] += px;
-            partial_sum_alt[2 as libc::c_int as usize][(3 - (y >> 1) + x) as usize] += px;
+            partial_sum_alt[1][(3 + y - (x >> 1)) as usize] += px;
+            partial_sum_diag[1][(7 + y - x) as usize] += px;
+            partial_sum_alt[2][(3 - (y >> 1) + x) as usize] += px;
             partial_sum_hv[1][x as usize] += px;
-            partial_sum_alt[3 as libc::c_int as usize][((y >> 1) + x) as usize] += px;
+            partial_sum_alt[3][((y >> 1) + x) as usize] += px;
             x += 1;
         }
         img = img.offset(PXSTRIDE(stride) as isize);
@@ -640,16 +640,16 @@ unsafe extern "C" fn cdef_find_dir_c(
     let mut cost: [libc::c_uint; 8] = [0 as libc::c_int as libc::c_uint, 0, 0, 0, 0, 0, 0, 0];
     let mut n = 0;
     while n < 8 {
-        cost[2 as libc::c_int as usize] = (cost[2]).wrapping_add(
+        cost[2] = (cost[2]).wrapping_add(
             (partial_sum_hv[0][n as usize] * partial_sum_hv[0][n as usize]) as libc::c_uint,
         );
-        cost[6 as libc::c_int as usize] = (cost[6]).wrapping_add(
+        cost[6] = (cost[6]).wrapping_add(
             (partial_sum_hv[1][n as usize] * partial_sum_hv[1][n as usize]) as libc::c_uint,
         );
         n += 1;
     }
-    cost[2 as libc::c_int as usize] = (cost[2]).wrapping_mul(105 as libc::c_int as libc::c_uint);
-    cost[6 as libc::c_int as usize] = (cost[6]).wrapping_mul(105 as libc::c_int as libc::c_uint);
+    cost[2] = (cost[2]).wrapping_mul(105 as libc::c_int as libc::c_uint);
+    cost[6] = (cost[6]).wrapping_mul(105 as libc::c_int as libc::c_uint);
     static mut div_table: [uint16_t; 7] = [
         840 as libc::c_int as uint16_t,
         420 as libc::c_int as uint16_t,
@@ -662,23 +662,23 @@ unsafe extern "C" fn cdef_find_dir_c(
     let mut n_0 = 0;
     while n_0 < 7 {
         let d = div_table[n_0 as usize] as libc::c_int;
-        cost[0 as libc::c_int as usize] = (cost[0]).wrapping_add(
+        cost[0] = (cost[0]).wrapping_add(
             ((partial_sum_diag[0][n_0 as usize] * partial_sum_diag[0][n_0 as usize]
-                + partial_sum_diag[0 as libc::c_int as usize][(14 - n_0) as usize]
-                    * partial_sum_diag[0 as libc::c_int as usize][(14 - n_0) as usize])
+                + partial_sum_diag[0][(14 - n_0) as usize]
+                    * partial_sum_diag[0][(14 - n_0) as usize])
                 * d) as libc::c_uint,
         );
-        cost[4 as libc::c_int as usize] = (cost[4]).wrapping_add(
+        cost[4] = (cost[4]).wrapping_add(
             ((partial_sum_diag[1][n_0 as usize] * partial_sum_diag[1][n_0 as usize]
-                + partial_sum_diag[1 as libc::c_int as usize][(14 - n_0) as usize]
-                    * partial_sum_diag[1 as libc::c_int as usize][(14 - n_0) as usize])
+                + partial_sum_diag[1][(14 - n_0) as usize]
+                    * partial_sum_diag[1][(14 - n_0) as usize])
                 * d) as libc::c_uint,
         );
         n_0 += 1;
     }
-    cost[0 as libc::c_int as usize] = (cost[0])
+    cost[0] = (cost[0])
         .wrapping_add((partial_sum_diag[0][7] * partial_sum_diag[0][7] * 105) as libc::c_uint);
-    cost[4 as libc::c_int as usize] = (cost[4])
+    cost[4] = (cost[4])
         .wrapping_add((partial_sum_diag[1][7] * partial_sum_diag[1][7] * 105) as libc::c_uint);
     let mut n_1 = 0;
     while n_1 < 4 {

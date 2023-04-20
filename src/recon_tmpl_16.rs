@@ -2330,7 +2330,7 @@ unsafe extern "C" fn decode_coefs(
             cul_level = dc_tok;
             dc_dq >>= dq_shift;
             dc_dq = umin(dc_dq as libc::c_uint, (cf_max + dc_sign) as libc::c_uint) as libc::c_int;
-            *cf.offset(0 as libc::c_int as isize) = if dc_sign != 0 { -dc_dq } else { dc_dq };
+            *cf.offset(0) = if dc_sign != 0 { -dc_dq } else { dc_dq };
             if rc != 0 {
                 current_block = 1669574575799829731;
             } else {
@@ -2361,7 +2361,7 @@ unsafe extern "C" fn decode_coefs(
                 }
             }
             cul_level = dc_tok;
-            *cf.offset(0 as libc::c_int as isize) = if dc_sign != 0 { -dc_dq } else { dc_dq };
+            *cf.offset(0) = if dc_sign != 0 { -dc_dq } else { dc_dq };
             if rc != 0 {
                 current_block = 2404388531445638768;
             } else {
@@ -3990,10 +3990,9 @@ unsafe extern "C" fn obmc(
                         (*((*a_r).r#ref.r#ref).as_ptr().offset(0) as libc::c_int - 1) as isize,
                     ),
                     (*a_r).r#ref.r#ref[0] as libc::c_int - 1,
-                    dav1d_filter_2d[(*(*t).a).filter[1 as libc::c_int as usize]
-                        [(bx4 + x + 1) as usize] as usize][(*(*t).a).filter
-                        [0 as libc::c_int as usize][(bx4 + x + 1) as usize]
-                        as usize] as Filter2d,
+                    dav1d_filter_2d[(*(*t).a).filter[1][(bx4 + x + 1) as usize] as usize]
+                        [(*(*t).a).filter[0][(bx4 + x + 1) as usize] as usize]
+                        as Filter2d,
                 );
                 if res != 0 {
                     return res;
@@ -4043,9 +4042,8 @@ unsafe extern "C" fn obmc(
                         (*((*l_r).r#ref.r#ref).as_ptr().offset(0) as libc::c_int - 1) as isize,
                     ),
                     (*l_r).r#ref.r#ref[0] as libc::c_int - 1,
-                    dav1d_filter_2d
-                        [(*t).l.filter[1 as libc::c_int as usize][(by4 + y + 1) as usize] as usize]
-                        [(*t).l.filter[0 as libc::c_int as usize][(by4 + y + 1) as usize] as usize]
+                    dav1d_filter_2d[(*t).l.filter[1][(by4 + y + 1) as usize] as usize]
+                        [(*t).l.filter[0][(by4 + y + 1) as usize] as usize]
                         as Filter2d,
                 );
                 if res != 0 {
@@ -5795,21 +5793,19 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_16bpc(
                 as libc::c_int
                 == INTER_INTRA_BLEND as libc::c_int
             {
-                dav1d_ii_masks[bs as usize][0 as libc::c_int as usize][(*b)
+                dav1d_ii_masks[bs as usize][0][(*b)
                     .c2rust_unnamed
                     .c2rust_unnamed_0
                     .c2rust_unnamed
                     .c2rust_unnamed
-                    .interintra_mode
-                    as usize]
+                    .interintra_mode as usize]
             } else {
-                dav1d_wedge_masks[bs as usize][0 as libc::c_int as usize][0 as libc::c_int as usize]
-                    [(*b)
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .wedge_idx as usize]
+                dav1d_wedge_masks[bs as usize][0][0][(*b)
+                    .c2rust_unnamed
+                    .c2rust_unnamed_0
+                    .c2rust_unnamed
+                    .c2rust_unnamed
+                    .wedge_idx as usize]
             };
             ((*dsp).mc.blend).expect("non-null function pointer")(
                 dst,
@@ -6142,8 +6138,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_16bpc(
                                 .interintra_mode
                                 as usize]
                         } else {
-                            dav1d_wedge_masks[bs as usize][chr_layout_idx as usize]
-                                [0 as libc::c_int as usize][(*b)
+                            dav1d_wedge_masks[bs as usize][chr_layout_idx as usize][0][(*b)
                                 .c2rust_unnamed
                                 .c2rust_unnamed_0
                                 .c2rust_unnamed
@@ -6379,13 +6374,13 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_16bpc(
                 mask = seg_mask;
             }
             4 => {
-                mask = dav1d_wedge_masks[bs as usize][0 as libc::c_int as usize]
-                    [0 as libc::c_int as usize][(*b)
+                mask = dav1d_wedge_masks[bs as usize][0][0][(*b)
                     .c2rust_unnamed
                     .c2rust_unnamed_0
                     .c2rust_unnamed
                     .c2rust_unnamed
-                    .wedge_idx as usize];
+                    .wedge_idx
+                    as usize];
                 ((*dsp).mc.mask).expect("non-null function pointer")(
                     dst,
                     (*f).cur.stride[0],

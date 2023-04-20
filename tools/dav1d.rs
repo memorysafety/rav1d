@@ -303,16 +303,15 @@ unsafe extern "C" fn picture_alloc(p: *mut Dav1dPicture, _: *mut libc::c_void) -
     (*p).allocator_data = buf as *mut libc::c_void;
     let align_m1: ptrdiff_t = (64 - 1) as ptrdiff_t;
     let data: *mut uint8_t = (buf as ptrdiff_t + align_m1 & !align_m1) as *mut uint8_t;
-    (*p).data[0 as libc::c_int as usize] =
-        data.offset(y_sz as isize).offset(-(y_stride as isize)) as *mut libc::c_void;
-    (*p).data[1 as libc::c_int as usize] = (if has_chroma != 0 {
+    (*p).data[0] = data.offset(y_sz as isize).offset(-(y_stride as isize)) as *mut libc::c_void;
+    (*p).data[1] = (if has_chroma != 0 {
         data.offset(y_sz as isize)
             .offset(uv_sz.wrapping_mul(1) as isize)
             .offset(-(uv_stride as isize))
     } else {
         0 as *mut uint8_t
     }) as *mut libc::c_void;
-    (*p).data[2 as libc::c_int as usize] = (if has_chroma != 0 {
+    (*p).data[2] = (if has_chroma != 0 {
         data.offset(y_sz as isize)
             .offset(uv_sz.wrapping_mul(2) as isize)
             .offset(-(uv_stride as isize))

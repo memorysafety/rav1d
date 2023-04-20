@@ -152,8 +152,8 @@ unsafe extern "C" fn ivf_open(
             }
         }
     }
-    *timebase.offset(0 as libc::c_int as isize) = rl32(&mut *hdr.as_mut_ptr().offset(16));
-    *timebase.offset(1 as libc::c_int as isize) = rl32(&mut *hdr.as_mut_ptr().offset(20));
+    *timebase.offset(0) = rl32(&mut *hdr.as_mut_ptr().offset(16));
+    *timebase.offset(1) = rl32(&mut *hdr.as_mut_ptr().offset(20));
     let duration: libc::c_uint = rl32(&mut *hdr.as_mut_ptr().offset(24));
     let mut data: [uint8_t; 8] = [0; 8];
     (*c).broken = 0 as libc::c_int;

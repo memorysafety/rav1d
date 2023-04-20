@@ -771,12 +771,12 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     (*p).allocator_data = buf as *mut libc::c_void;
     let data: *mut uint8_t = (*buf).data as *mut uint8_t;
     (*p).data[0] = data as *mut libc::c_void;
-    (*p).data[1 as libc::c_int as usize] = (if has_chroma != 0 {
+    (*p).data[1] = (if has_chroma != 0 {
         data.offset(y_sz as isize)
     } else {
         0 as *mut uint8_t
     }) as *mut libc::c_void;
-    (*p).data[2 as libc::c_int as usize] = (if has_chroma != 0 {
+    (*p).data[2] = (if has_chroma != 0 {
         data.offset(y_sz as isize).offset(uv_sz as isize)
     } else {
         0 as *mut uint8_t

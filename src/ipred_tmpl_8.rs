@@ -2094,7 +2094,7 @@ unsafe extern "C" fn ipred_z3_neon(
         0 as libc::c_int
     };
     if upsample_left != 0 {
-        flipped[0 as libc::c_int as usize] = *topleft_in.offset(0);
+        flipped[0] = *topleft_in.offset(0);
         dav1d_ipred_reverse_8bpc_neon(
             &mut *flipped.as_mut_ptr().offset(1),
             &*topleft_in.offset(0),
@@ -2115,7 +2115,7 @@ unsafe extern "C" fn ipred_z3_neon(
             0 as libc::c_int
         };
         if filter_strength != 0 {
-            flipped[0 as libc::c_int as usize] = *topleft_in.offset(0);
+            flipped[0] = *topleft_in.offset(0);
             dav1d_ipred_reverse_8bpc_neon(
                 &mut *flipped.as_mut_ptr().offset(1),
                 &*topleft_in.offset(0),

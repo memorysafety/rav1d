@@ -680,13 +680,13 @@ unsafe extern "C" fn fgy_32x32xn_c(
         if (*data).overlap_flag != 0 && bx != 0 {
             let mut i_0 = 0;
             while i_0 < rows {
-                offsets[1 as libc::c_int as usize][i_0 as usize] = offsets[0][i_0 as usize];
+                offsets[1][i_0 as usize] = offsets[0][i_0 as usize];
                 i_0 += 1;
             }
         }
         let mut i_1 = 0;
         while i_1 < rows {
-            offsets[0 as libc::c_int as usize][i_1 as usize] = get_random_number(
+            offsets[0][i_1 as usize] = get_random_number(
                 8 as libc::c_int,
                 &mut *seed.as_mut_ptr().offset(i_1 as isize),
             );
@@ -959,13 +959,13 @@ unsafe extern "C" fn fguv_32x32xn_c(
         if (*data).overlap_flag != 0 && bx != 0 {
             let mut i_0 = 0;
             while i_0 < rows {
-                offsets[1 as libc::c_int as usize][i_0 as usize] = offsets[0][i_0 as usize];
+                offsets[1][i_0 as usize] = offsets[0][i_0 as usize];
                 i_0 += 1;
             }
         }
         let mut i_1 = 0;
         while i_1 < rows {
-            offsets[0 as libc::c_int as usize][i_1 as usize] = get_random_number(
+            offsets[0][i_1 as usize] = get_random_number(
                 8 as libc::c_int,
                 &mut *seed.as_mut_ptr().offset(i_1 as isize),
             );
@@ -1492,13 +1492,13 @@ unsafe extern "C" fn fgy_32x32xn_neon(
         if (*data).overlap_flag != 0 && bx != 0 {
             let mut i_0 = 0;
             while i_0 < rows {
-                offsets[1 as libc::c_int as usize][i_0 as usize] = offsets[0][i_0 as usize];
+                offsets[1][i_0 as usize] = offsets[0][i_0 as usize];
                 i_0 += 1;
             }
         }
         let mut i_1 = 0;
         while i_1 < rows {
-            offsets[0 as libc::c_int as usize][i_1 as usize] = get_random_number(
+            offsets[0][i_1 as usize] = get_random_number(
                 8 as libc::c_int,
                 &mut *seed.as_mut_ptr().offset(i_1 as isize),
             );
@@ -1560,13 +1560,13 @@ unsafe extern "C" fn fguv_32x32xn_420_neon(
         if (*data).overlap_flag != 0 && bx != 0 {
             let mut i_0 = 0;
             while i_0 < rows {
-                offsets[1 as libc::c_int as usize][i_0 as usize] = offsets[0][i_0 as usize];
+                offsets[1][i_0 as usize] = offsets[0][i_0 as usize];
                 i_0 += 1;
             }
         }
         let mut i_1 = 0;
         while i_1 < rows {
-            offsets[0 as libc::c_int as usize][i_1 as usize] = get_random_number(
+            offsets[0][i_1 as usize] = get_random_number(
                 8 as libc::c_int,
                 &mut *seed.as_mut_ptr().offset(i_1 as isize),
             );
@@ -1634,13 +1634,13 @@ unsafe extern "C" fn fguv_32x32xn_422_neon(
         if (*data).overlap_flag != 0 && bx != 0 {
             let mut i_0 = 0;
             while i_0 < rows {
-                offsets[1 as libc::c_int as usize][i_0 as usize] = offsets[0][i_0 as usize];
+                offsets[1][i_0 as usize] = offsets[0][i_0 as usize];
                 i_0 += 1;
             }
         }
         let mut i_1 = 0;
         while i_1 < rows {
-            offsets[0 as libc::c_int as usize][i_1 as usize] = get_random_number(
+            offsets[0][i_1 as usize] = get_random_number(
                 8 as libc::c_int,
                 &mut *seed.as_mut_ptr().offset(i_1 as isize),
             );
@@ -1708,13 +1708,13 @@ unsafe extern "C" fn fguv_32x32xn_444_neon(
         if (*data).overlap_flag != 0 && bx != 0 {
             let mut i_0 = 0;
             while i_0 < rows {
-                offsets[1 as libc::c_int as usize][i_0 as usize] = offsets[0][i_0 as usize];
+                offsets[1][i_0 as usize] = offsets[0][i_0 as usize];
                 i_0 += 1;
             }
         }
         let mut i_1 = 0;
         while i_1 < rows {
-            offsets[0 as libc::c_int as usize][i_1 as usize] = get_random_number(
+            offsets[0][i_1 as usize] = get_random_number(
                 8 as libc::c_int,
                 &mut *seed.as_mut_ptr().offset(i_1 as isize),
             );
