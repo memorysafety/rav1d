@@ -959,7 +959,7 @@ pub unsafe fn dav1d_refmvs_find(
 
             // if the first extended was the same as the non-extended one,
             // then replace it with the second extended one
-            let mut n = *cnt;
+            let n = *cnt;
             let same = &mvstack[cur_cnt..]; // need to reborrow to get a &, not &mut
             if n == 1 && mvstack[0].mv == same[0].mv {
                 mvstack[1].mv = mvstack[2].mv;
