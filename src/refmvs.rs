@@ -487,7 +487,7 @@ unsafe extern "C" fn add_temporal_candidate(
     };
 }
 
-unsafe fn add_compound_extended_candidate(
+fn add_compound_extended_candidate(
     same: &mut [refmvs_candidate],
     same_count: &mut [usize; 4],
     cand_b: &refmvs_block,
