@@ -396,56 +396,28 @@ unsafe extern "C" fn scan_col(
         len = imax(step, cand_bh4);
     };
 }
+
 #[inline]
-unsafe extern "C" fn mv_projection(mv: mv, num: libc::c_int, den: libc::c_int) -> mv {
-    static mut div_mult: [uint16_t; 32] = [
-        0 as libc::c_int as uint16_t,
-        16384 as libc::c_int as uint16_t,
-        8192 as libc::c_int as uint16_t,
-        5461 as libc::c_int as uint16_t,
-        4096 as libc::c_int as uint16_t,
-        3276 as libc::c_int as uint16_t,
-        2730 as libc::c_int as uint16_t,
-        2340 as libc::c_int as uint16_t,
-        2048 as libc::c_int as uint16_t,
-        1820 as libc::c_int as uint16_t,
-        1638 as libc::c_int as uint16_t,
-        1489 as libc::c_int as uint16_t,
-        1365 as libc::c_int as uint16_t,
-        1260 as libc::c_int as uint16_t,
-        1170 as libc::c_int as uint16_t,
-        1092 as libc::c_int as uint16_t,
-        1024 as libc::c_int as uint16_t,
-        963 as libc::c_int as uint16_t,
-        910 as libc::c_int as uint16_t,
-        862 as libc::c_int as uint16_t,
-        819 as libc::c_int as uint16_t,
-        780 as libc::c_int as uint16_t,
-        744 as libc::c_int as uint16_t,
-        712 as libc::c_int as uint16_t,
-        682 as libc::c_int as uint16_t,
-        655 as libc::c_int as uint16_t,
-        630 as libc::c_int as uint16_t,
-        606 as libc::c_int as uint16_t,
-        585 as libc::c_int as uint16_t,
-        564 as libc::c_int as uint16_t,
-        546 as libc::c_int as uint16_t,
-        528 as libc::c_int as uint16_t,
+fn mv_projection(mv: mv, num: libc::c_int, den: libc::c_int) -> mv {
+    static div_mult: [u16; 32] = [
+           0, 16384, 8192, 5461, 4096, 3276, 2730, 2340,
+        2048,  1820, 1638, 1489, 1365, 1260, 1170, 1092,
+        1024,   963,  910,  862,  819,  780,  744,  712,
+         682,   655,  630,  606,  585,  564,  546,  528,
     ];
-    if !(den > 0 as libc::c_int && den < 32 as libc::c_int) {
-        unreachable!();
-    }
-    if !(num > -(32 as libc::c_int) && num < 32 as libc::c_int) {
-        unreachable!();
-    }
-    let frac: libc::c_int = num * div_mult[den as usize] as libc::c_int;
-    let y: libc::c_int = mv.y as libc::c_int * frac;
-    let x: libc::c_int = mv.x as libc::c_int * frac;
+    assert!(den > 0 && den < 32);
+    assert!(num > -32 && num < 32);
+    let frac = num * div_mult[den as usize] as libc::c_int;
+    let y = mv.y as libc::c_int * frac;
+    let x = mv.x as libc::c_int * frac;
+    // Round and clip according to AV1 spec section 7.9.3
+    let max = (1 << 14) - 1;
     return mv {
-        y: iclip(y + 8192 + (y >> 31) >> 14, -0x3fff, 0x3fff) as i16,
-        x: iclip(x + 8192 + (x >> 31) >> 14, -0x3fff, 0x3fff) as i16,
+        y: iclip(y + 8192 + (y >> 31) >> 14, -max, max) as i16,
+        x: iclip(x + 8192 + (x >> 31) >> 14, -max, max) as i16,
     };
 }
+
 unsafe extern "C" fn add_temporal_candidate(
     rf: *const refmvs_frame,
     mvstack: *mut refmvs_candidate,
