@@ -515,6 +515,7 @@ unsafe fn add_compound_extended_candidate(
             break;
         }
 
+        let sign_bias = sign_bias[cand_ref as usize - 1];
         let mut cand_mv = cand_b.mv.mv[n];
         if cand_ref == r#ref.r#ref[0] {
             if same_count[0] < 2 {
@@ -522,7 +523,7 @@ unsafe fn add_compound_extended_candidate(
                 same_count[0] += 1;
             }
             if diff_count[1] < 2 {
-                if (sign1 ^ sign_bias[cand_ref as usize - 1]) != 0 {
+                if (sign1 ^ sign_bias) != 0 {
                     cand_mv.y = -cand_mv.y;
                     cand_mv.x = -cand_mv.x;
                 }
@@ -535,7 +536,7 @@ unsafe fn add_compound_extended_candidate(
                 same_count[1] += 1;
             }
             if diff_count[0] < 2 {
-                if (sign0 ^ sign_bias[cand_ref as usize - 1]) != 0 {
+                if (sign0 ^ sign_bias) != 0 {
                     cand_mv.y = -cand_mv.y;
                     cand_mv.x = -cand_mv.x;
                 }
@@ -550,21 +551,13 @@ unsafe fn add_compound_extended_candidate(
 
             if diff_count[0] < 2 {
                 diff[diff_count[0]].mv.mv[0] = 
-                    if (sign0 ^ sign_bias[cand_ref as usize - 1]) != 0 {
-                        i_cand_mv
-                    } else {
-                        cand_mv
-                    };
+                    if (sign0 ^ sign_bias) != 0 { i_cand_mv } else { cand_mv };
                 diff_count[0] += 1;
             }
 
             if diff_count[1] < 2 {
                 diff[diff_count[1]].mv.mv[1] = 
-                    if (sign1 ^ sign_bias[cand_ref as usize - 1]) != 0 {
-                        i_cand_mv
-                    } else {
-                        cand_mv
-                    };
+                    if (sign1 ^ sign_bias) != 0 { i_cand_mv } else { cand_mv };
                 diff_count[1] += 1;
             }
         }
