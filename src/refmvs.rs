@@ -174,8 +174,8 @@ unsafe fn add_spatial_candidate(
     b: &refmvs_block,
     r#ref: refmvs_refpair,
     gmv: &[mv; 2],
-    have_newmv_match: *mut libc::c_int,
-    have_refmv_match: *mut libc::c_int,
+    have_newmv_match: &mut libc::c_int,
+    have_refmv_match: &mut libc::c_int,
 ) {
     if b.mv.mv[0].is_invalid() {
         return;
@@ -250,8 +250,8 @@ unsafe fn scan_row(
     w4: libc::c_int,
     max_rows: libc::c_int,
     step: libc::c_int,
-    have_newmv_match: *mut libc::c_int,
-    have_refmv_match: *mut libc::c_int,
+    have_newmv_match: &mut libc::c_int,
+    have_refmv_match: &mut libc::c_int,
 ) -> libc::c_int {
     let mut cand_b: *const refmvs_block = b;
     let first_cand_bs: BlockSize = (*cand_b).bs as BlockSize;
@@ -315,8 +315,8 @@ unsafe fn scan_col(
     bx4: libc::c_int,
     max_cols: libc::c_int,
     step: libc::c_int,
-    have_newmv_match: *mut libc::c_int,
-    have_refmv_match: *mut libc::c_int,
+    have_newmv_match: &mut libc::c_int,
+    have_refmv_match: &mut libc::c_int,
 ) -> libc::c_int {
     let mut cand_b: *const refmvs_block =
         &mut *(*b.offset(0)).offset(bx4 as isize) as *mut refmvs_block;
