@@ -198,8 +198,9 @@ unsafe fn add_spatial_candidate(
                     }
                 }
                 if last < 8 {
-                    mvstack[last].mv.mv[0] = cand_mv;
-                    mvstack[last].weight = weight;
+                    let cand = &mut mvstack[last];
+                    cand.mv.mv[0] = cand_mv;
+                    cand.weight = weight;
                     *cnt = last + 1;
                 }
                 return;
@@ -230,8 +231,9 @@ unsafe fn add_spatial_candidate(
             }
         }
         if last < 8 {
-            mvstack[last].mv = cand_mv;
-            mvstack[last].weight = weight;
+            let cand = &mut mvstack[last];
+            cand.mv = cand_mv;
+            cand.weight = weight;
             *cnt = last + 1;
         }
     }
