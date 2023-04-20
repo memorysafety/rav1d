@@ -496,103 +496,75 @@ unsafe fn add_compound_extended_candidate(
     r#ref: refmvs_refpair,
     sign_bias: *const uint8_t,
 ) {
-    let diff: *mut refmvs_candidate = &mut *same.offset(2 as libc::c_int as isize)
-        as *mut refmvs_candidate;
-    let diff_count: *mut libc::c_int = &mut *same_count.offset(2 as libc::c_int as isize)
-        as *mut libc::c_int;
-    let mut n: libc::c_int = 0 as libc::c_int;
-    while n < 2 as libc::c_int {
-        let cand_ref: libc::c_int = (*cand_b).r#ref.r#ref[n as usize] as libc::c_int;
-        if cand_ref <= 0 as libc::c_int {
+    let diff = &mut *same.offset(2) as *mut refmvs_candidate;
+    let diff_count = &mut *same_count.offset(2) as *mut libc::c_int;
+    let mut n = 0;
+    while n < 2 {
+        let cand_ref = (*cand_b).r#ref.r#ref[n as usize] as libc::c_int;
+        if cand_ref <= 0 {
             break;
         }
-        let mut cand_mv: mv = (*cand_b).mv.mv[n as usize];
-        if cand_ref == r#ref.r#ref[0 as libc::c_int as usize] as libc::c_int {
-            if *same_count.offset(0 as libc::c_int as isize) < 2 as libc::c_int {
-                let ref mut fresh0 = *same_count.offset(0 as libc::c_int as isize);
+        let mut cand_mv = (*cand_b).mv.mv[n as usize];
+        if cand_ref == r#ref.r#ref[0] as libc::c_int {
+            if *same_count.offset(0) < 2 {
+                let ref mut fresh0 = *same_count.offset(0);
                 let fresh1 = *fresh0;
                 *fresh0 = *fresh0 + 1;
-                (*same.offset(fresh1 as isize))
-                    .mv
-                    .mv[0 as libc::c_int as usize] = cand_mv;
+                (*same.offset(fresh1 as isize)).mv.mv[0] = cand_mv;
             }
-            if *diff_count.offset(1 as libc::c_int as isize) < 2 as libc::c_int {
-                if sign1
-                    ^ *sign_bias.offset((cand_ref - 1 as libc::c_int) as isize)
-                        as libc::c_int != 0
-                {
-                    cand_mv
-                        .y = -(cand_mv.y as libc::c_int) as int16_t;
-                    cand_mv
-                        .x = -(cand_mv.x as libc::c_int) as int16_t;
-                }
-                let ref mut fresh2 = *diff_count.offset(1 as libc::c_int as isize);
-                let fresh3 = *fresh2;
-                *fresh2 = *fresh2 + 1;
-                (*diff.offset(fresh3 as isize))
-                    .mv
-                    .mv[1 as libc::c_int as usize] = cand_mv;
-            }
-        } else if cand_ref == r#ref.r#ref[1 as libc::c_int as usize] as libc::c_int {
-            if *same_count.offset(1 as libc::c_int as isize) < 2 as libc::c_int {
-                let ref mut fresh4 = *same_count.offset(1 as libc::c_int as isize);
-                let fresh5 = *fresh4;
-                *fresh4 = *fresh4 + 1;
-                (*same.offset(fresh5 as isize))
-                    .mv
-                    .mv[1 as libc::c_int as usize] = cand_mv;
-            }
-            if *diff_count.offset(0 as libc::c_int as isize) < 2 as libc::c_int {
-                if sign0
-                    ^ *sign_bias.offset((cand_ref - 1 as libc::c_int) as isize)
-                        as libc::c_int != 0
-                {
+            if *diff_count.offset(1) < 2 {
+                if (sign1 ^ *sign_bias.offset((cand_ref - 1) as isize) as libc::c_int) != 0 {
                     cand_mv.y = -cand_mv.y;
                     cand_mv.x = -cand_mv.x;
                 }
-                let ref mut fresh6 = *diff_count.offset(0 as libc::c_int as isize);
+                let ref mut fresh2 = *diff_count.offset(1);
+                let fresh3 = *fresh2;
+                *fresh2 = *fresh2 + 1;
+                (*diff.offset(fresh3 as isize)).mv.mv[1] = cand_mv;
+            }
+        } else if cand_ref == r#ref.r#ref[1] as libc::c_int {
+            if *same_count.offset(1) < 2 {
+                let ref mut fresh4 = *same_count.offset(1);
+                let fresh5 = *fresh4;
+                *fresh4 = *fresh4 + 1;
+                (*same.offset(fresh5 as isize)).mv.mv[1] = cand_mv;
+            }
+            if *diff_count.offset(0) < 2 {
+                if (sign0 ^ *sign_bias.offset((cand_ref - 1) as isize) as libc::c_int) != 0 {
+                    cand_mv.y = -cand_mv.y;
+                    cand_mv.x = -cand_mv.x;
+                }
+                let ref mut fresh6 = *diff_count.offset(0);
                 let fresh7 = *fresh6;
                 *fresh6 = *fresh6 + 1;
-                (*diff.offset(fresh7 as isize))
-                    .mv
-                    .mv[0 as libc::c_int as usize] = cand_mv;
+                (*diff.offset(fresh7 as isize)).mv.mv[0] = cand_mv;
             }
         } else {
             let mut i_cand_mv = mv {
                 y: -cand_mv.y,
                 x: -cand_mv.x,
             };
-            if *diff_count.offset(0 as libc::c_int as isize) < 2 as libc::c_int {
-                let ref mut fresh8 = *diff_count.offset(0 as libc::c_int as isize);
+            if *diff_count.offset(0) < 2 {
+                let ref mut fresh8 = *diff_count.offset(0);
                 let fresh9 = *fresh8;
                 *fresh8 = *fresh8 + 1;
-                (*diff.offset(fresh9 as isize))
-                    .mv
-                    .mv[0 as libc::c_int
-                    as usize] = if sign0
-                    ^ *sign_bias.offset((cand_ref - 1 as libc::c_int) as isize)
-                        as libc::c_int != 0
-                {
-                    i_cand_mv
-                } else {
-                    cand_mv
-                };
+                (*diff.offset(fresh9 as isize)).mv.mv[0] = 
+                    if (sign0 ^ *sign_bias.offset((cand_ref - 1) as isize) as libc::c_int) != 0 {
+                        i_cand_mv
+                    } else {
+                        cand_mv
+                    };
             }
-            if *diff_count.offset(1 as libc::c_int as isize) < 2 as libc::c_int {
-                let ref mut fresh10 = *diff_count.offset(1 as libc::c_int as isize);
+            if *diff_count.offset(1) < 2 {
+                let ref mut fresh10 = *diff_count.offset(1);
                 let fresh11 = *fresh10;
                 *fresh10 = *fresh10 + 1;
-                (*diff.offset(fresh11 as isize))
-                    .mv
-                    .mv[1 as libc::c_int
-                    as usize] = if sign1
-                    ^ *sign_bias.offset((cand_ref - 1 as libc::c_int) as isize)
-                        as libc::c_int != 0
-                {
-                    i_cand_mv
-                } else {
-                    cand_mv
-                };
+                (*diff.offset(fresh11 as isize)).mv.mv[1] = 
+                    if (sign1 ^ *sign_bias.offset((cand_ref - 1) as isize) as libc::c_int) != 0 {
+                        i_cand_mv
+                    } else {
+                        cand_mv
+                    };
             }
         }
         n += 1;
