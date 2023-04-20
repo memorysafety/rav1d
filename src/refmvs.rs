@@ -490,7 +490,7 @@ unsafe extern "C" fn add_temporal_candidate(
 unsafe fn add_compound_extended_candidate(
     same: *mut refmvs_candidate,
     same_count: *mut libc::c_int,
-    cand_b: *const refmvs_block,
+    cand_b: &refmvs_block,
     sign0: u8,
     sign1: u8,
     r#ref: refmvs_refpair,
@@ -499,11 +499,11 @@ unsafe fn add_compound_extended_candidate(
     let diff = &mut *same.offset(2) as *mut refmvs_candidate;
     let diff_count = &mut *same_count.offset(2) as *mut libc::c_int;
     for n in 0..2 {
-        let cand_ref = (*cand_b).r#ref.r#ref[n] as libc::c_int;
+        let cand_ref = cand_b.r#ref.r#ref[n] as libc::c_int;
         if cand_ref <= 0 {
             break;
         }
-        let mut cand_mv = (*cand_b).mv.mv[n];
+        let mut cand_mv = cand_b.mv.mv[n];
         if cand_ref == r#ref.r#ref[0] as libc::c_int {
             if *same_count.offset(0) < 2 {
                 let ref mut fresh0 = *same_count.offset(0);
@@ -904,7 +904,7 @@ pub unsafe fn dav1d_refmvs_find(
             if n_rows != !0 {
                 let mut x = 0;
                 while x < sz4 {
-                    let cand_b = &*b_top.offset(x as isize) as *const refmvs_block;
+                    let cand_b = &*b_top.offset(x as isize);
                     add_compound_extended_candidate(
                         same.as_mut_ptr(),
                         same_count.as_mut_ptr(),
@@ -914,7 +914,7 @@ pub unsafe fn dav1d_refmvs_find(
                         r#ref,
                         &rf.sign_bias,
                     );
-                    x += dav1d_block_dimensions[(*cand_b).bs as usize][0] as libc::c_int;
+                    x += dav1d_block_dimensions[cand_b.bs as usize][0] as libc::c_int;
                 }
             }
 
@@ -922,8 +922,8 @@ pub unsafe fn dav1d_refmvs_find(
             if n_cols != !0 {
                 let mut y = 0;
                 while y < sz4 {
-                    let cand_b: *const refmvs_block = &mut *(*b_left.offset(y as isize))
-                        .offset(bx4 as isize - 1) as *mut refmvs_block;
+                    let cand_b = &*(*b_left.offset(y as isize))
+                        .offset(bx4 as isize - 1);
                     add_compound_extended_candidate(
                         same.as_mut_ptr(),
                         same_count.as_mut_ptr(),
@@ -933,7 +933,7 @@ pub unsafe fn dav1d_refmvs_find(
                         r#ref,
                         &rf.sign_bias,
                     );
-                    y += dav1d_block_dimensions[(*cand_b).bs as usize][1] as libc::c_int;
+                    y += dav1d_block_dimensions[cand_b.bs as usize][1] as libc::c_int;
                 }
             }
             
