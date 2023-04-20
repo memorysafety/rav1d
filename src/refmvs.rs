@@ -210,7 +210,7 @@ unsafe fn add_spatial_candidate(
             n += 1;
         }
     } else if (*b).r#ref == r#ref {
-        let cand_mv_0 = refmvs_mvpair {
+        let cand_mv = refmvs_mvpair {
             mv: [
                 if (*b).mf & 1 != 0 && (*gmv.offset(0)) != mv::INVALID {
                     *gmv.offset(0)
@@ -226,19 +226,19 @@ unsafe fn add_spatial_candidate(
         };
         *have_refmv_match = 1;
         *have_newmv_match |= (*b).mf as libc::c_int >> 1;
-        let last_0 = *cnt;
-        let mut n_0 = 0;
-        while n_0 < last_0 {
-            if mvstack[n_0].mv == cand_mv_0 {
-                mvstack[n_0].weight += weight;
+        let last = *cnt;
+        let mut n = 0;
+        while n < last {
+            if mvstack[n].mv == cand_mv {
+                mvstack[n].weight += weight;
                 return;
             }
-            n_0 += 1;
+            n += 1;
         }
-        if last_0 < 8 {
-            mvstack[last_0].mv = cand_mv_0;
-            mvstack[last_0].weight = weight;
-            *cnt = last_0 + 1;
+        if last < 8 {
+            mvstack[last].mv = cand_mv;
+            mvstack[last].weight = weight;
+            *cnt = last + 1;
         }
     }
 }
