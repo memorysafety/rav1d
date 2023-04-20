@@ -185,24 +185,24 @@ unsafe extern "C" fn add_spatial_candidate(
     if (*b).mv.mv[0].is_invalid() {
         return;
     }
-    if r#ref.r#ref[1 as libc::c_int as usize] as libc::c_int == -(1 as libc::c_int) {
-        let mut n: libc::c_int = 0 as libc::c_int;
-        while n < 2 as libc::c_int {
+    if r#ref.r#ref[1] as libc::c_int == -(1 as libc::c_int) {
+        let mut n = 0;
+        while n < 2 {
             if (*b).r#ref.r#ref[n as usize] as libc::c_int
-                == r#ref.r#ref[0 as libc::c_int as usize] as libc::c_int
+                == r#ref.r#ref[0] as libc::c_int
             {
-                let cand_mv: mv = if (*b).mf as libc::c_int & 1 as libc::c_int != 0
+                let cand_mv: mv = if (*b).mf as libc::c_int & 1 != 0
                     && (*gmv.offset(0)) != mv::INVALID {
                     *gmv.offset(0)
                 } else {
                     (*b).mv.mv[n as usize]
                 };
                 *have_refmv_match = 1 as libc::c_int;
-                *have_newmv_match |= (*b).mf as libc::c_int >> 1 as libc::c_int;
+                *have_newmv_match |= (*b).mf as libc::c_int >> 1;
                 let last = *cnt;
                 let mut m = 0;
                 while m < last {
-                    if (*mvstack.offset(m as isize)).mv.mv[0 as libc::c_int as usize] == cand_mv {
+                    if (*mvstack.offset(m as isize)).mv.mv[0] == cand_mv {
                         (*mvstack.offset(m as isize)).weight += weight;
                         return;
                     }
@@ -211,7 +211,7 @@ unsafe extern "C" fn add_spatial_candidate(
                 if last < 8 {
                     (*mvstack.offset(last as isize))
                         .mv
-                        .mv[0 as libc::c_int as usize] = cand_mv;
+                        .mv[0] = cand_mv;
                     (*mvstack.offset(last as isize)).weight = weight;
                     *cnt = last + 1;
                 }
@@ -222,13 +222,13 @@ unsafe extern "C" fn add_spatial_candidate(
     } else if (*b).r#ref == r#ref {
         let cand_mv_0: refmvs_mvpair = refmvs_mvpair {
             mv: [
-                if (*b).mf as libc::c_int & 1 as libc::c_int != 0
+                if (*b).mf as libc::c_int & 1 != 0
                     && (*gmv.offset(0)) != mv::INVALID {
                     *gmv.offset(0)
                 } else {
                     (*b).mv.mv[0]
                 },
-                if (*b).mf as libc::c_int & 1 as libc::c_int != 0
+                if (*b).mf as libc::c_int & 1 != 0
                     && (*gmv.offset(1)) != mv::INVALID {
                     *gmv.offset(1)
                 } else {
@@ -237,7 +237,7 @@ unsafe extern "C" fn add_spatial_candidate(
             ],
         };
         *have_refmv_match = 1 as libc::c_int;
-        *have_newmv_match |= (*b).mf as libc::c_int >> 1 as libc::c_int;
+        *have_newmv_match |= (*b).mf as libc::c_int >> 1;
         let last_0 = *cnt;
         let mut n_0 = 0;
         while n_0 < last_0 {
@@ -272,18 +272,18 @@ unsafe extern "C" fn scan_row(
     let first_cand_b_dim: *const uint8_t = (dav1d_block_dimensions[first_cand_bs
         as usize])
         .as_ptr();
-    let mut cand_bw4: libc::c_int = *first_cand_b_dim.offset(0 as libc::c_int as isize)
+    let mut cand_bw4 = *first_cand_b_dim.offset(0)
         as libc::c_int;
-    let mut len: libc::c_int = imax(step, imin(bw4, cand_bw4));
+    let mut len = imax(step, imin(bw4, cand_bw4));
     if bw4 <= cand_bw4 {
-        let weight: libc::c_int = if bw4 == 1 as libc::c_int {
+        let weight = if bw4 == 1 {
             2 as libc::c_int
         } else {
             imax(
                 2 as libc::c_int,
                 imin(
-                    2 as libc::c_int * max_rows,
-                    *first_cand_b_dim.offset(1 as libc::c_int as isize) as libc::c_int,
+                    2 * max_rows,
+                    *first_cand_b_dim.offset(1) as libc::c_int,
                 ),
             )
         };
@@ -297,14 +297,14 @@ unsafe extern "C" fn scan_row(
             have_newmv_match,
             have_refmv_match,
         );
-        return weight >> 1 as libc::c_int;
+        return weight >> 1;
     }
-    let mut x: libc::c_int = 0 as libc::c_int;
+    let mut x = 0;
     loop {
         add_spatial_candidate(
             mvstack,
             cnt,
-            len * 2 as libc::c_int,
+            len * 2,
             cand_b,
             r#ref,
             gmv,
@@ -317,7 +317,7 @@ unsafe extern "C" fn scan_row(
         }
         cand_b = &*b.offset(x as isize) as *const refmvs_block;
         cand_bw4 = dav1d_block_dimensions[(*cand_b).bs
-            as usize][0 as libc::c_int as usize] as libc::c_int;
+            as usize][0] as libc::c_int;
         if !(cand_bw4 < bw4) {
             unreachable!();
         }
@@ -338,24 +338,24 @@ unsafe extern "C" fn scan_col(
     have_newmv_match: *mut libc::c_int,
     have_refmv_match: *mut libc::c_int,
 ) -> libc::c_int {
-    let mut cand_b: *const refmvs_block = &mut *(*b.offset(0 as libc::c_int as isize))
+    let mut cand_b: *const refmvs_block = &mut *(*b.offset(0))
         .offset(bx4 as isize) as *mut refmvs_block;
     let first_cand_bs: BlockSize = (*cand_b).bs as BlockSize;
     let first_cand_b_dim: *const uint8_t = (dav1d_block_dimensions[first_cand_bs
         as usize])
         .as_ptr();
-    let mut cand_bh4: libc::c_int = *first_cand_b_dim.offset(1 as libc::c_int as isize)
+    let mut cand_bh4 = *first_cand_b_dim.offset(1)
         as libc::c_int;
-    let mut len: libc::c_int = imax(step, imin(bh4, cand_bh4));
+    let mut len = imax(step, imin(bh4, cand_bh4));
     if bh4 <= cand_bh4 {
-        let weight: libc::c_int = if bh4 == 1 as libc::c_int {
+        let weight = if bh4 == 1 {
             2 as libc::c_int
         } else {
             imax(
                 2 as libc::c_int,
                 imin(
-                    2 as libc::c_int * max_cols,
-                    *first_cand_b_dim.offset(0 as libc::c_int as isize) as libc::c_int,
+                    2 * max_cols,
+                    *first_cand_b_dim.offset(0) as libc::c_int,
                 ),
             )
         };
@@ -369,14 +369,14 @@ unsafe extern "C" fn scan_col(
             have_newmv_match,
             have_refmv_match,
         );
-        return weight >> 1 as libc::c_int;
+        return weight >> 1;
     }
-    let mut y: libc::c_int = 0 as libc::c_int;
+    let mut y = 0;
     loop {
         add_spatial_candidate(
             mvstack,
             cnt,
-            len * 2 as libc::c_int,
+            len * 2,
             cand_b,
             r#ref,
             gmv,
@@ -389,7 +389,7 @@ unsafe extern "C" fn scan_col(
         }
         cand_b = &mut *(*b.offset(y as isize)).offset(bx4 as isize) as *mut refmvs_block;
         cand_bh4 = dav1d_block_dimensions[(*cand_b).bs
-            as usize][1 as libc::c_int as usize] as libc::c_int;
+            as usize][1] as libc::c_int;
         if !(cand_bh4 < bh4) {
             unreachable!();
         }
@@ -433,16 +433,16 @@ unsafe extern "C" fn add_temporal_candidate(
     let mut mv: mv = mv_projection(
         (*rb).mv,
         (*rf)
-            .pocdiff[(r#ref.r#ref[0 as libc::c_int as usize] as libc::c_int
-            - 1 as libc::c_int) as usize] as libc::c_int,
+            .pocdiff[(r#ref.r#ref[0] as libc::c_int
+            - 1) as usize] as libc::c_int,
         (*rb).r#ref as libc::c_int,
     );
     fix_mv_precision(&*(*rf).frm_hdr, &mut mv);
     let last = *cnt;
-    if r#ref.r#ref[1 as libc::c_int as usize] as libc::c_int == -(1 as libc::c_int) {
+    if r#ref.r#ref[1] as libc::c_int == -(1 as libc::c_int) {
         if !globalmv_ctx.is_null() {
             *globalmv_ctx = ((mv.x as libc::c_int - (*gmv.offset(0)).x as libc::c_int).abs()
-                | (mv.y as libc::c_int - (*gmv.offset(0)).y as libc::c_int).abs() >= 16 as libc::c_int) as libc::c_int;
+                | (mv.y as libc::c_int - (*gmv.offset(0)).y as libc::c_int).abs() >= 16) as libc::c_int;
         }
         let mut n = 0;
         while n < last {
@@ -464,8 +464,8 @@ unsafe extern "C" fn add_temporal_candidate(
                 mv_projection(
                     (*rb).mv,
                     (*rf)
-                        .pocdiff[(r#ref.r#ref[1 as libc::c_int as usize] as libc::c_int
-                        - 1 as libc::c_int) as usize] as libc::c_int,
+                        .pocdiff[(r#ref.r#ref[1] as libc::c_int
+                        - 1) as usize] as libc::c_int,
                     (*rb).r#ref as libc::c_int,
                 ),
             ],
@@ -1060,16 +1060,16 @@ pub unsafe extern "C" fn dav1d_refmvs_tile_sbrow_init(
     mut tile_row_idx: libc::c_int,
     pass: libc::c_int,
 ) {
-    if (*rf).n_tile_threads == 1 as libc::c_int {
+    if (*rf).n_tile_threads == 1 {
         tile_row_idx = 0 as libc::c_int;
     }
     (*rt)
         .rp_proj = &mut *((*rf).rp_proj)
         .offset(16 * (*rf).rp_stride * tile_row_idx as isize,
         ) as *mut refmvs_temporal_block;
-    let uses_2pass: libc::c_int = ((*rf).n_tile_threads > 1 as libc::c_int
-        && (*rf).n_frame_threads > 1 as libc::c_int) as libc::c_int;
-    let pass_off: ptrdiff_t = if uses_2pass != 0 && pass == 2 as libc::c_int {
+    let uses_2pass = ((*rf).n_tile_threads > 1
+        && (*rf).n_frame_threads > 1) as libc::c_int;
+    let pass_off: ptrdiff_t = if uses_2pass != 0 && pass == 2 {
         35 * (*rf).r_stride * (*rf).n_tile_rows as isize
     } else {
         0
@@ -1078,40 +1078,40 @@ pub unsafe extern "C" fn dav1d_refmvs_tile_sbrow_init(
         .offset(
             35 * (*rf).r_stride * tile_row_idx as isize + pass_off,
         ) as *mut refmvs_block;
-    let sbsz: libc::c_int = (*rf).sbsz;
-    let off: libc::c_int = sbsz * sby & 16 as libc::c_int;
-    let mut i: libc::c_int = 0 as libc::c_int;
+    let sbsz = (*rf).sbsz;
+    let off = sbsz * sby & 16;
+    let mut i = 0;
     while i < sbsz {
-        (*rt).r[(off + 5 as libc::c_int + i) as usize] = r;
+        (*rt).r[(off + 5 + i) as usize] = r;
         i += 1;
         r = r.offset((*rf).r_stride as isize);
     }
-    (*rt).r[(off + 0 as libc::c_int) as usize] = r;
+    (*rt).r[(off + 0) as usize] = r;
     r = r.offset((*rf).r_stride as isize);
-    (*rt).r[(off + 1 as libc::c_int) as usize] = 0 as *mut refmvs_block;
-    (*rt).r[(off + 2 as libc::c_int) as usize] = r;
+    (*rt).r[(off + 1) as usize] = 0 as *mut refmvs_block;
+    (*rt).r[(off + 2) as usize] = r;
     r = r.offset((*rf).r_stride as isize);
-    (*rt).r[(off + 3 as libc::c_int) as usize] = 0 as *mut refmvs_block;
-    (*rt).r[(off + 4 as libc::c_int) as usize] = r;
-    if sby & 1 as libc::c_int != 0 {
-        let tmp: *mut libc::c_void = (*rt).r[(off + 0 as libc::c_int) as usize]
+    (*rt).r[(off + 3) as usize] = 0 as *mut refmvs_block;
+    (*rt).r[(off + 4) as usize] = r;
+    if sby & 1 != 0 {
+        let tmp: *mut libc::c_void = (*rt).r[(off + 0) as usize]
             as *mut libc::c_void;
         (*rt)
-            .r[(off + 0 as libc::c_int)
-            as usize] = (*rt).r[(off + sbsz + 0 as libc::c_int) as usize];
-        (*rt).r[(off + sbsz + 0 as libc::c_int) as usize] = tmp as *mut refmvs_block;
-        let tmp_0: *mut libc::c_void = (*rt).r[(off + 2 as libc::c_int) as usize]
+            .r[(off + 0)
+            as usize] = (*rt).r[(off + sbsz + 0) as usize];
+        (*rt).r[(off + sbsz + 0) as usize] = tmp as *mut refmvs_block;
+        let tmp_0: *mut libc::c_void = (*rt).r[(off + 2) as usize]
             as *mut libc::c_void;
         (*rt)
-            .r[(off + 2 as libc::c_int)
-            as usize] = (*rt).r[(off + sbsz + 2 as libc::c_int) as usize];
-        (*rt).r[(off + sbsz + 2 as libc::c_int) as usize] = tmp_0 as *mut refmvs_block;
-        let tmp_1: *mut libc::c_void = (*rt).r[(off + 4 as libc::c_int) as usize]
+            .r[(off + 2)
+            as usize] = (*rt).r[(off + sbsz + 2) as usize];
+        (*rt).r[(off + sbsz + 2) as usize] = tmp_0 as *mut refmvs_block;
+        let tmp_1: *mut libc::c_void = (*rt).r[(off + 4) as usize]
             as *mut libc::c_void;
         (*rt)
-            .r[(off + 4 as libc::c_int)
-            as usize] = (*rt).r[(off + sbsz + 4 as libc::c_int) as usize];
-        (*rt).r[(off + sbsz + 4 as libc::c_int) as usize] = tmp_1 as *mut refmvs_block;
+            .r[(off + 4)
+            as usize] = (*rt).r[(off + sbsz + 4) as usize];
+        (*rt).r[(off + sbsz + 4) as usize] = tmp_1 as *mut refmvs_block;
     }
     (*rt).rf = rf;
     (*rt).tile_row.start = tile_row_start4;
@@ -1128,27 +1128,27 @@ pub unsafe extern "C" fn dav1d_refmvs_load_tmvs(
     row_start8: libc::c_int,
     mut row_end8: libc::c_int,
 ) {
-    if (*rf).n_tile_threads == 1 as libc::c_int {
+    if (*rf).n_tile_threads == 1 {
         tile_row_idx = 0 as libc::c_int;
     }
-    if !(row_start8 >= 0 as libc::c_int) {
+    if !(row_start8 >= 0) {
         unreachable!();
     }
     if !((row_end8 - row_start8) as libc::c_uint <= 16 as libc::c_uint) {
         unreachable!();
     }
     row_end8 = imin(row_end8, (*rf).ih8);
-    let col_start8i: libc::c_int = imax(col_start8 - 8 as libc::c_int, 0 as libc::c_int);
-    let col_end8i: libc::c_int = imin(col_end8 + 8 as libc::c_int, (*rf).iw8);
+    let col_start8i = imax(col_start8 - 8, 0 as libc::c_int);
+    let col_end8i = imin(col_end8 + 8, (*rf).iw8);
     let stride: ptrdiff_t = (*rf).rp_stride;
     let mut rp_proj: *mut refmvs_temporal_block = &mut *((*rf).rp_proj)
         .offset(
             16  * stride * tile_row_idx as isize
                 + (row_start8 & 15) as isize * stride,
         ) as *mut refmvs_temporal_block;
-    let mut y: libc::c_int = row_start8;
+    let mut y = row_start8;
     while y < row_end8 {
-        let mut x: libc::c_int = col_start8;
+        let mut x = col_start8;
         while x < col_end8 {
             (*rp_proj.offset(x as isize)).mv = mv::INVALID;
             x += 1;
@@ -1158,54 +1158,54 @@ pub unsafe extern "C" fn dav1d_refmvs_load_tmvs(
     }
     rp_proj = &mut *((*rf).rp_proj)
         .offset(16 * stride * tile_row_idx as isize) as *mut refmvs_temporal_block;
-    let mut n: libc::c_int = 0 as libc::c_int;
+    let mut n = 0;
     while n < (*rf).n_mfmvs {
-        let ref2cur: libc::c_int = (*rf).mfmv_ref2cur[n as usize];
-        if !(ref2cur == -(2147483647 as libc::c_int) - 1 as libc::c_int) {
-            let r#ref: libc::c_int = (*rf).mfmv_ref[n as usize] as libc::c_int;
-            let ref_sign: libc::c_int = r#ref - 4 as libc::c_int;
+        let ref2cur = (*rf).mfmv_ref2cur[n as usize];
+        if !(ref2cur == -(2147483647 as libc::c_int) - 1) {
+            let r#ref = (*rf).mfmv_ref[n as usize] as libc::c_int;
+            let ref_sign = r#ref - 4;
             let mut r: *const refmvs_temporal_block = &mut *(*((*rf).rp_ref)
                 .offset(r#ref as isize))
                 .offset(row_start8 as isize * stride)
                 as *mut refmvs_temporal_block;
-            let mut y_0: libc::c_int = row_start8;
+            let mut y_0 = row_start8;
             while y_0 < row_end8 {
-                let y_sb_align: libc::c_int = y_0 & !(7 as libc::c_int);
-                let y_proj_start: libc::c_int = imax(y_sb_align, row_start8);
-                let y_proj_end: libc::c_int = imin(
-                    y_sb_align + 8 as libc::c_int,
+                let y_sb_align = y_0 & !(7 as libc::c_int);
+                let y_proj_start = imax(y_sb_align, row_start8);
+                let y_proj_end = imin(
+                    y_sb_align + 8,
                     row_end8,
                 );
-                let mut x_0: libc::c_int = col_start8i;
+                let mut x_0 = col_start8i;
                 while x_0 < col_end8i {
                     let mut rb: *const refmvs_temporal_block = &*r.offset(x_0 as isize)
                         as *const refmvs_temporal_block;
-                    let b_ref: libc::c_int = (*rb).r#ref as libc::c_int;
+                    let b_ref = (*rb).r#ref as libc::c_int;
                     if !(b_ref == 0) {
-                        let ref2ref: libc::c_int = (*rf)
+                        let ref2ref = (*rf)
                             .mfmv_ref2ref[n
-                            as usize][(b_ref - 1 as libc::c_int) as usize];
+                            as usize][(b_ref - 1) as usize];
                         if !(ref2ref == 0) {
                             let b_mv: mv = (*rb).mv;
                             let offset: mv = mv_projection(b_mv, ref2cur, ref2ref);
-                            let mut pos_x: libc::c_int = x_0
+                            let mut pos_x = x_0
                                 + apply_sign(
                                     (offset.x as libc::c_int).abs()
-                                        >> 6 as libc::c_int,
+                                        >> 6,
                                     offset.x as libc::c_int ^ ref_sign,
                                 );
-                            let pos_y: libc::c_int = y_0
+                            let pos_y = y_0
                                 + apply_sign(
                                     (offset.y as libc::c_int).abs()
-                                        >> 6 as libc::c_int,
+                                        >> 6,
                                     offset.y as libc::c_int ^ ref_sign,
                                 );
                             if pos_y >= y_proj_start && pos_y < y_proj_end {
                                 let pos: ptrdiff_t = (pos_y & 15) as isize * stride;
                                 loop {
-                                    let x_sb_align: libc::c_int = x_0 & !(7 as libc::c_int);
-                                    if pos_x >= imax(x_sb_align - 8 as libc::c_int, col_start8)
-                                        && pos_x < imin(x_sb_align + 16 as libc::c_int, col_end8)
+                                    let x_sb_align = x_0 & !(7 as libc::c_int);
+                                    if pos_x >= imax(x_sb_align - 8, col_start8)
+                                        && pos_x < imin(x_sb_align + 16, col_end8)
                                     {
                                         (*rp_proj.offset(pos + pos_x as isize))
                                             .mv = (*rb).mv;
@@ -1255,7 +1255,7 @@ pub unsafe extern "C" fn dav1d_refmvs_save_tmvs(
     mut row_end8: libc::c_int,
 ) {
     let rf: *const refmvs_frame = (*rt).rf;
-    if !(row_start8 >= 0 as libc::c_int) {
+    if !(row_start8 >= 0) {
         unreachable!();
     }
     if !((row_end8 - row_start8) as libc::c_uint <= 16 as libc::c_uint) {
@@ -1268,58 +1268,58 @@ pub unsafe extern "C" fn dav1d_refmvs_save_tmvs(
     let mut rp: *mut refmvs_temporal_block = &mut *((*rf).rp)
         .offset(row_start8 as isize * stride)
         as *mut refmvs_temporal_block;
-    let mut y: libc::c_int = row_start8;
+    let mut y = row_start8;
     while y < row_end8 {
         let b: *const refmvs_block = (*rt)
-            .r[(6 as libc::c_int + (y & 15 as libc::c_int) * 2 as libc::c_int) as usize];
-        let mut x: libc::c_int = col_start8;
+            .r[(6 + (y & 15) * 2) as usize];
+        let mut x = col_start8;
         while x < col_end8 {
             let cand_b: *const refmvs_block = &*b
-                .offset((x * 2 as libc::c_int + 1 as libc::c_int) as isize)
+                .offset((x * 2 + 1) as isize)
                 as *const refmvs_block;
-            let bw8: libc::c_int = dav1d_block_dimensions[(*cand_b).bs
-                as usize][0 as libc::c_int as usize] as libc::c_int + 1 as libc::c_int
-                >> 1 as libc::c_int;
-            if (*cand_b).r#ref.r#ref[1 as libc::c_int as usize] as libc::c_int
-                > 0 as libc::c_int
+            let bw8 = dav1d_block_dimensions[(*cand_b).bs
+                as usize][0] as libc::c_int + 1
+                >> 1;
+            if (*cand_b).r#ref.r#ref[1] as libc::c_int
+                > 0
                 && *ref_sign
                     .offset(
-                        ((*cand_b).r#ref.r#ref[1 as libc::c_int as usize] as libc::c_int
-                            - 1 as libc::c_int) as isize,
+                        ((*cand_b).r#ref.r#ref[1] as libc::c_int
+                            - 1) as isize,
                     ) as libc::c_int != 0
                 && (*cand_b).mv.mv[1].y.abs() | (*cand_b).mv.mv[1].x.abs() < 4096 {
-                let mut n: libc::c_int = 0 as libc::c_int;
+                let mut n = 0;
                 while n < bw8 {
                     *rp
                         .offset(
                             x as isize,
                         ) = {
                         let mut init = refmvs_temporal_block {
-                            mv: (*cand_b).mv.mv[1 as libc::c_int as usize],
-                            r#ref: (*cand_b).r#ref.r#ref[1 as libc::c_int as usize],
+                            mv: (*cand_b).mv.mv[1],
+                            r#ref: (*cand_b).r#ref.r#ref[1],
                         };
                         init
                     };
                     n += 1;
                     x += 1;
                 }
-            } else if (*cand_b).r#ref.r#ref[0 as libc::c_int as usize] as libc::c_int
-                > 0 as libc::c_int
+            } else if (*cand_b).r#ref.r#ref[0] as libc::c_int
+                > 0
                 && *ref_sign
                     .offset(
-                        ((*cand_b).r#ref.r#ref[0 as libc::c_int as usize] as libc::c_int
-                            - 1 as libc::c_int) as isize,
+                        ((*cand_b).r#ref.r#ref[0] as libc::c_int
+                            - 1) as isize,
                     ) as libc::c_int != 0
                 && (*cand_b).mv.mv[0].y.abs() | (*cand_b).mv.mv[0].x.abs() < 4096 {
-                let mut n_0: libc::c_int = 0 as libc::c_int;
+                let mut n_0 = 0;
                 while n_0 < bw8 {
                     *rp
                         .offset(
                             x as isize,
                         ) = {
                         let mut init = refmvs_temporal_block {
-                            mv: (*cand_b).mv.mv[0 as libc::c_int as usize],
-                            r#ref: (*cand_b).r#ref.r#ref[0 as libc::c_int as usize],
+                            mv: (*cand_b).mv.mv[0],
+                            r#ref: (*cand_b).r#ref.r#ref[0],
                         };
                         init
                     };
@@ -1327,7 +1327,7 @@ pub unsafe extern "C" fn dav1d_refmvs_save_tmvs(
                     x += 1;
                 }
             } else {
-                let mut n_1: libc::c_int = 0 as libc::c_int;
+                let mut n_1 = 0;
                 while n_1 < bw8 {
                     (*rp.offset(x as isize)).r#ref = 0 as libc::c_int as int8_t;
                     n_1 += 1;
@@ -1354,14 +1354,14 @@ pub unsafe extern "C" fn dav1d_refmvs_init_frame(
     (*rf).sbsz = (16 as libc::c_int) << (*seq_hdr).sb128;
     (*rf).frm_hdr = frm_hdr;
     (*rf)
-        .iw8 = (*frm_hdr).width[0 as libc::c_int as usize] + 7 as libc::c_int
-        >> 3 as libc::c_int;
-    (*rf).ih8 = (*frm_hdr).height + 7 as libc::c_int >> 3 as libc::c_int;
-    (*rf).iw4 = (*rf).iw8 << 1 as libc::c_int;
-    (*rf).ih4 = (*rf).ih8 << 1 as libc::c_int;
-    let r_stride: ptrdiff_t = (((*frm_hdr).width[0 as libc::c_int as usize]
-        + 127 as libc::c_int & !(127 as libc::c_int)) >> 2 as libc::c_int) as ptrdiff_t;
-    let n_tile_rows: libc::c_int = if n_tile_threads > 1 as libc::c_int {
+        .iw8 = (*frm_hdr).width[0] + 7
+        >> 3;
+    (*rf).ih8 = (*frm_hdr).height + 7 >> 3;
+    (*rf).iw4 = (*rf).iw8 << 1;
+    (*rf).ih4 = (*rf).ih8 << 1;
+    let r_stride: ptrdiff_t = (((*frm_hdr).width[0]
+        + 127 & !(127 as libc::c_int)) >> 2) as ptrdiff_t;
+    let n_tile_rows = if n_tile_threads > 1 {
         (*frm_hdr).tiling.rows
     } else {
         1 as libc::c_int
@@ -1372,8 +1372,8 @@ pub unsafe extern "C" fn dav1d_refmvs_init_frame(
                 &mut (*rf).r as *mut *mut refmvs_block as *mut libc::c_void,
             );
         }
-        let uses_2pass: libc::c_int = (n_tile_threads > 1 as libc::c_int
-            && n_frame_threads > 1 as libc::c_int) as libc::c_int;
+        let uses_2pass = (n_tile_threads > 1
+            && n_frame_threads > 1) as libc::c_int;
         (*rf)
             .r = dav1d_alloc_aligned(
             (::core::mem::size_of::<refmvs_block>())
@@ -1388,7 +1388,7 @@ pub unsafe extern "C" fn dav1d_refmvs_init_frame(
         }
         (*rf).r_stride = r_stride;
     }
-    let rp_stride: ptrdiff_t = r_stride >> 1 as libc::c_int;
+    let rp_stride: ptrdiff_t = r_stride >> 1;
     if rp_stride != (*rf).rp_stride || n_tile_rows != (*rf).n_tile_rows {
         if !((*rf).rp_proj).is_null() {
             dav1d_freep_aligned(
@@ -1415,19 +1415,19 @@ pub unsafe extern "C" fn dav1d_refmvs_init_frame(
     (*rf).rp = rp;
     (*rf).rp_ref = rp_ref;
     let poc: libc::c_uint = (*frm_hdr).frame_offset as libc::c_uint;
-    let mut i: libc::c_int = 0 as libc::c_int;
-    while i < 7 as libc::c_int {
-        let poc_diff: libc::c_int = get_poc_diff(
+    let mut i = 0;
+    while i < 7 {
+        let poc_diff = get_poc_diff(
             (*seq_hdr).order_hint_n_bits,
             *ref_poc.offset(i as isize) as libc::c_int,
             poc as libc::c_int,
         );
         (*rf)
             .sign_bias[i
-            as usize] = (poc_diff > 0 as libc::c_int) as libc::c_int as uint8_t;
+            as usize] = (poc_diff > 0) as libc::c_int as uint8_t;
         (*rf)
             .mfmv_sign[i
-            as usize] = (poc_diff < 0 as libc::c_int) as libc::c_int as uint8_t;
+            as usize] = (poc_diff < 0) as libc::c_int as uint8_t;
         (*rf)
             .pocdiff[i
             as usize] = iclip(
@@ -1443,86 +1443,86 @@ pub unsafe extern "C" fn dav1d_refmvs_init_frame(
     }
     (*rf).n_mfmvs = 0 as libc::c_int;
     if (*frm_hdr).use_ref_frame_mvs != 0 && (*seq_hdr).order_hint_n_bits != 0 {
-        let mut total: libc::c_int = 2 as libc::c_int;
-        if !(*rp_ref.offset(0 as libc::c_int as isize)).is_null()
+        let mut total = 2;
+        if !(*rp_ref.offset(0)).is_null()
             && (*ref_ref_poc
-                .offset(0 as libc::c_int as isize))[6 as libc::c_int as usize]
-                != *ref_poc.offset(3 as libc::c_int as isize)
+                .offset(0))[6]
+                != *ref_poc.offset(3)
         {
             let fresh12 = (*rf).n_mfmvs;
             (*rf).n_mfmvs = (*rf).n_mfmvs + 1;
             (*rf).mfmv_ref[fresh12 as usize] = 0 as libc::c_int as uint8_t;
             total = 3 as libc::c_int;
         }
-        if !(*rp_ref.offset(4 as libc::c_int as isize)).is_null()
+        if !(*rp_ref.offset(4)).is_null()
             && get_poc_diff(
                 (*seq_hdr).order_hint_n_bits,
-                *ref_poc.offset(4 as libc::c_int as isize) as libc::c_int,
+                *ref_poc.offset(4) as libc::c_int,
                 (*frm_hdr).frame_offset,
-            ) > 0 as libc::c_int
+            ) > 0
         {
             let fresh13 = (*rf).n_mfmvs;
             (*rf).n_mfmvs = (*rf).n_mfmvs + 1;
             (*rf).mfmv_ref[fresh13 as usize] = 4 as libc::c_int as uint8_t;
         }
-        if !(*rp_ref.offset(5 as libc::c_int as isize)).is_null()
+        if !(*rp_ref.offset(5)).is_null()
             && get_poc_diff(
                 (*seq_hdr).order_hint_n_bits,
-                *ref_poc.offset(5 as libc::c_int as isize) as libc::c_int,
+                *ref_poc.offset(5) as libc::c_int,
                 (*frm_hdr).frame_offset,
-            ) > 0 as libc::c_int
+            ) > 0
         {
             let fresh14 = (*rf).n_mfmvs;
             (*rf).n_mfmvs = (*rf).n_mfmvs + 1;
             (*rf).mfmv_ref[fresh14 as usize] = 5 as libc::c_int as uint8_t;
         }
         if (*rf).n_mfmvs < total
-            && !(*rp_ref.offset(6 as libc::c_int as isize)).is_null()
+            && !(*rp_ref.offset(6)).is_null()
             && get_poc_diff(
                 (*seq_hdr).order_hint_n_bits,
-                *ref_poc.offset(6 as libc::c_int as isize) as libc::c_int,
+                *ref_poc.offset(6) as libc::c_int,
                 (*frm_hdr).frame_offset,
-            ) > 0 as libc::c_int
+            ) > 0
         {
             let fresh15 = (*rf).n_mfmvs;
             (*rf).n_mfmvs = (*rf).n_mfmvs + 1;
             (*rf).mfmv_ref[fresh15 as usize] = 6 as libc::c_int as uint8_t;
         }
         if (*rf).n_mfmvs < total
-            && !(*rp_ref.offset(1 as libc::c_int as isize)).is_null()
+            && !(*rp_ref.offset(1)).is_null()
         {
             let fresh16 = (*rf).n_mfmvs;
             (*rf).n_mfmvs = (*rf).n_mfmvs + 1;
             (*rf).mfmv_ref[fresh16 as usize] = 1 as libc::c_int as uint8_t;
         }
-        let mut n: libc::c_int = 0 as libc::c_int;
+        let mut n = 0;
         while n < (*rf).n_mfmvs {
             let rpoc: libc::c_uint = *ref_poc
                 .offset((*rf).mfmv_ref[n as usize] as isize);
-            let diff1: libc::c_int = get_poc_diff(
+            let diff1 = get_poc_diff(
                 (*seq_hdr).order_hint_n_bits,
                 rpoc as libc::c_int,
                 (*frm_hdr).frame_offset,
             );
-            if diff1.abs() > 31 as libc::c_int {
+            if diff1.abs() > 31 {
                 (*rf)
                     .mfmv_ref2cur[n
-                    as usize] = -(2147483647 as libc::c_int) - 1 as libc::c_int;
+                    as usize] = -(2147483647 as libc::c_int) - 1;
             } else {
                 (*rf)
                     .mfmv_ref2cur[n
                     as usize] = if ((*rf).mfmv_ref[n as usize] as libc::c_int)
-                    < 4 as libc::c_int
+                    < 4
                 {
                     -diff1
                 } else {
                     diff1
                 };
-                let mut m: libc::c_int = 0 as libc::c_int;
-                while m < 7 as libc::c_int {
+                let mut m = 0;
+                while m < 7 {
                     let rrpoc: libc::c_uint = (*ref_ref_poc
                         .offset((*rf).mfmv_ref[n as usize] as isize))[m as usize];
-                    let diff2: libc::c_int = get_poc_diff(
+                    let diff2 = get_poc_diff(
                         (*seq_hdr).order_hint_n_bits,
                         rpoc as libc::c_int,
                         rrpoc as libc::c_int,
@@ -1541,7 +1541,7 @@ pub unsafe extern "C" fn dav1d_refmvs_init_frame(
             n += 1;
         }
     }
-    (*rf).use_ref_frame_mvs = ((*rf).n_mfmvs > 0 as libc::c_int) as libc::c_int;
+    (*rf).use_ref_frame_mvs = ((*rf).n_mfmvs > 0) as libc::c_int;
     return 0 as libc::c_int;
 }
 #[no_mangle]
@@ -1573,7 +1573,7 @@ unsafe extern "C" fn splat_mv_c(
         let fresh17 = rr;
         rr = rr.offset(1);
         let r: *mut refmvs_block = (*fresh17).offset(bx4 as isize);
-        let mut x: libc::c_int = 0 as libc::c_int;
+        let mut x = 0;
         while x < bw4 {
             *r.offset(x as isize) = *rmv;
             x += 1;

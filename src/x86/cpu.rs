@@ -59,7 +59,7 @@ pub unsafe extern "C" fn dav1d_get_cpu_flags_x86() -> libc::c_uint {
         0 as libc::c_int as libc::c_uint,
     );
     let mut flags: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    if cpu.c2rust_unnamed.max_leaf >= 1 as libc::c_int as libc::c_uint {
+    if cpu.c2rust_unnamed.max_leaf >= 1 as libc::c_uint {
         let mut r: CpuidRegisters = CpuidRegisters {
             eax: 0,
             ebx: 0,
@@ -71,15 +71,15 @@ pub unsafe extern "C" fn dav1d_get_cpu_flags_x86() -> libc::c_uint {
             1 as libc::c_int as libc::c_uint,
             0 as libc::c_int as libc::c_uint,
         );
-        let model: libc::c_uint = (r.eax >> 4 as libc::c_int
+        let model: libc::c_uint = (r.eax >> 4
             & 0xf as libc::c_int as libc::c_uint)
             .wrapping_add(
-                r.eax >> 12 as libc::c_int & 0xf0 as libc::c_int as libc::c_uint,
+                r.eax >> 12 & 0xf0 as libc::c_int as libc::c_uint,
             );
-        let family: libc::c_uint = (r.eax >> 8 as libc::c_int
+        let family: libc::c_uint = (r.eax >> 8
             & 0xf as libc::c_int as libc::c_uint)
             .wrapping_add(
-                r.eax >> 20 as libc::c_int & 0xff as libc::c_int as libc::c_uint,
+                r.eax >> 20 & 0xff as libc::c_int as libc::c_uint,
             );
         if r.edx & 0x6008000 as libc::c_int as libc::c_uint
             == 0x6008000 as libc::c_int as libc::c_uint
@@ -106,7 +106,7 @@ pub unsafe extern "C" fn dav1d_get_cpu_flags_x86() -> libc::c_uint {
             if xcr0 & 0x6 as libc::c_int as libc::c_ulong
                 == 0x6 as libc::c_int as libc::c_ulong
             {
-                if cpu.c2rust_unnamed.max_leaf >= 7 as libc::c_int as libc::c_uint {
+                if cpu.c2rust_unnamed.max_leaf >= 7 as libc::c_uint {
                     dav1d_cpu_cpuid(
                         &mut r,
                         7 as libc::c_int as libc::c_uint,

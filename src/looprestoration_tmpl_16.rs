@@ -338,7 +338,7 @@ use crate::include::common::intops::umin;
 use crate::include::common::intops::iclip;
 #[inline]
 unsafe extern "C" fn pixel_set(dst: *mut pixel, val: libc::c_int, num: libc::c_int) {
-    let mut n: libc::c_int = 0 as libc::c_int;
+    let mut n = 0;
     while n < num {
         *dst.offset(n as isize) = val as pixel;
         n += 1;
@@ -349,7 +349,7 @@ unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     if x & 1 != 0 {
         unreachable!();
     }
-    return x >> 1 as libc::c_int;
+    return x >> 1;
 }
 #[inline(never)]
 unsafe extern "C" fn padding(
@@ -362,201 +362,201 @@ unsafe extern "C" fn padding(
     stripe_h: libc::c_int,
     edges: LrEdgeFlags,
 ) {
-    let have_left: libc::c_int = (edges as libc::c_uint
+    let have_left = (edges as libc::c_uint
         & LR_HAVE_LEFT as libc::c_int as libc::c_uint != 0) as libc::c_int;
-    let have_right: libc::c_int = (edges as libc::c_uint
+    let have_right = (edges as libc::c_uint
         & LR_HAVE_RIGHT as libc::c_int as libc::c_uint != 0) as libc::c_int;
-    unit_w += 3 as libc::c_int * have_left + 3 as libc::c_int * have_right;
+    unit_w += 3 * have_left + 3 * have_right;
     let mut dst_l: *mut pixel = dst
-        .offset((3 as libc::c_int * (have_left == 0) as libc::c_int) as isize);
-    p = p.offset(-((3 as libc::c_int * have_left) as isize));
-    lpf = lpf.offset(-((3 as libc::c_int * have_left) as isize));
+        .offset((3 * (have_left == 0) as libc::c_int) as isize);
+    p = p.offset(-((3 * have_left) as isize));
+    lpf = lpf.offset(-((3 * have_left) as isize));
     if edges as libc::c_uint & LR_HAVE_TOP as libc::c_int as libc::c_uint != 0 {
         let above_1: *const pixel = lpf;
         let above_2: *const pixel = above_1.offset(PXSTRIDE(stride) as isize);
         memcpy(
             dst_l as *mut libc::c_void,
             above_1 as *const libc::c_void,
-            (unit_w << 1 as libc::c_int) as libc::c_ulong,
+            (unit_w << 1) as libc::c_ulong,
         );
         memcpy(
-            dst_l.offset(390 as libc::c_int as isize) as *mut libc::c_void,
+            dst_l.offset(390) as *mut libc::c_void,
             above_1 as *const libc::c_void,
-            (unit_w << 1 as libc::c_int) as libc::c_ulong,
+            (unit_w << 1) as libc::c_ulong,
         );
         memcpy(
-            dst_l.offset((2 as libc::c_int * 390 as libc::c_int) as isize)
+            dst_l.offset((2 * 390) as isize)
                 as *mut libc::c_void,
             above_2 as *const libc::c_void,
-            (unit_w << 1 as libc::c_int) as libc::c_ulong,
+            (unit_w << 1) as libc::c_ulong,
         );
     } else {
         memcpy(
             dst_l as *mut libc::c_void,
             p as *const libc::c_void,
-            (unit_w << 1 as libc::c_int) as libc::c_ulong,
+            (unit_w << 1) as libc::c_ulong,
         );
         memcpy(
-            dst_l.offset(390 as libc::c_int as isize) as *mut libc::c_void,
+            dst_l.offset(390) as *mut libc::c_void,
             p as *const libc::c_void,
-            (unit_w << 1 as libc::c_int) as libc::c_ulong,
+            (unit_w << 1) as libc::c_ulong,
         );
         memcpy(
-            dst_l.offset((2 as libc::c_int * 390 as libc::c_int) as isize)
+            dst_l.offset((2 * 390) as isize)
                 as *mut libc::c_void,
             p as *const libc::c_void,
-            (unit_w << 1 as libc::c_int) as libc::c_ulong,
+            (unit_w << 1) as libc::c_ulong,
         );
         if have_left != 0 {
             memcpy(
                 dst_l as *mut libc::c_void,
-                &*(*left.offset(0 as libc::c_int as isize))
+                &*(*left.offset(0))
                     .as_ptr()
-                    .offset(1 as libc::c_int as isize) as *const pixel
+                    .offset(1) as *const pixel
                     as *const libc::c_void,
-                ((3 as libc::c_int) << 1 as libc::c_int) as libc::c_ulong,
+                ((3 as libc::c_int) << 1) as libc::c_ulong,
             );
             memcpy(
-                dst_l.offset(390 as libc::c_int as isize) as *mut libc::c_void,
-                &*(*left.offset(0 as libc::c_int as isize))
+                dst_l.offset(390) as *mut libc::c_void,
+                &*(*left.offset(0))
                     .as_ptr()
-                    .offset(1 as libc::c_int as isize) as *const pixel
+                    .offset(1) as *const pixel
                     as *const libc::c_void,
-                ((3 as libc::c_int) << 1 as libc::c_int) as libc::c_ulong,
+                ((3 as libc::c_int) << 1) as libc::c_ulong,
             );
             memcpy(
-                dst_l.offset((2 as libc::c_int * 390 as libc::c_int) as isize)
+                dst_l.offset((2 * 390) as isize)
                     as *mut libc::c_void,
-                &*(*left.offset(0 as libc::c_int as isize))
+                &*(*left.offset(0))
                     .as_ptr()
-                    .offset(1 as libc::c_int as isize) as *const pixel
+                    .offset(1) as *const pixel
                     as *const libc::c_void,
-                ((3 as libc::c_int) << 1 as libc::c_int) as libc::c_ulong,
+                ((3 as libc::c_int) << 1) as libc::c_ulong,
             );
         }
     }
     let mut dst_tl: *mut pixel = dst_l
-        .offset((3 as libc::c_int * 390 as libc::c_int) as isize);
+        .offset((3 * 390) as isize);
     if edges as libc::c_uint & LR_HAVE_BOTTOM as libc::c_int as libc::c_uint != 0 {
         let below_1: *const pixel = lpf
             .offset(6 * PXSTRIDE(stride));
         let below_2: *const pixel = below_1.offset(PXSTRIDE(stride) as isize);
         memcpy(
-            dst_tl.offset((stripe_h * 390 as libc::c_int) as isize) as *mut libc::c_void,
+            dst_tl.offset((stripe_h * 390) as isize) as *mut libc::c_void,
             below_1 as *const libc::c_void,
-            (unit_w << 1 as libc::c_int) as libc::c_ulong,
+            (unit_w << 1) as libc::c_ulong,
         );
         memcpy(
-            dst_tl.offset(((stripe_h + 1 as libc::c_int) * 390 as libc::c_int) as isize)
+            dst_tl.offset(((stripe_h + 1) * 390) as isize)
                 as *mut libc::c_void,
             below_2 as *const libc::c_void,
-            (unit_w << 1 as libc::c_int) as libc::c_ulong,
+            (unit_w << 1) as libc::c_ulong,
         );
         memcpy(
-            dst_tl.offset(((stripe_h + 2 as libc::c_int) * 390 as libc::c_int) as isize)
+            dst_tl.offset(((stripe_h + 2) * 390) as isize)
                 as *mut libc::c_void,
             below_2 as *const libc::c_void,
-            (unit_w << 1 as libc::c_int) as libc::c_ulong,
+            (unit_w << 1) as libc::c_ulong,
         );
     } else {
         let src: *const pixel = p
             .offset(
-                ((stripe_h - 1 as libc::c_int) as isize * PXSTRIDE(stride))
+                ((stripe_h - 1) as isize * PXSTRIDE(stride))
                     as isize,
             );
         memcpy(
-            dst_tl.offset((stripe_h * 390 as libc::c_int) as isize) as *mut libc::c_void,
+            dst_tl.offset((stripe_h * 390) as isize) as *mut libc::c_void,
             src as *const libc::c_void,
-            (unit_w << 1 as libc::c_int) as libc::c_ulong,
+            (unit_w << 1) as libc::c_ulong,
         );
         memcpy(
-            dst_tl.offset(((stripe_h + 1 as libc::c_int) * 390 as libc::c_int) as isize)
+            dst_tl.offset(((stripe_h + 1) * 390) as isize)
                 as *mut libc::c_void,
             src as *const libc::c_void,
-            (unit_w << 1 as libc::c_int) as libc::c_ulong,
+            (unit_w << 1) as libc::c_ulong,
         );
         memcpy(
-            dst_tl.offset(((stripe_h + 2 as libc::c_int) * 390 as libc::c_int) as isize)
+            dst_tl.offset(((stripe_h + 2) * 390) as isize)
                 as *mut libc::c_void,
             src as *const libc::c_void,
-            (unit_w << 1 as libc::c_int) as libc::c_ulong,
+            (unit_w << 1) as libc::c_ulong,
         );
         if have_left != 0 {
             memcpy(
-                dst_tl.offset((stripe_h * 390 as libc::c_int) as isize)
+                dst_tl.offset((stripe_h * 390) as isize)
                     as *mut libc::c_void,
-                &*(*left.offset((stripe_h - 1 as libc::c_int) as isize))
+                &*(*left.offset((stripe_h - 1) as isize))
                     .as_ptr()
-                    .offset(1 as libc::c_int as isize) as *const pixel
+                    .offset(1) as *const pixel
                     as *const libc::c_void,
-                ((3 as libc::c_int) << 1 as libc::c_int) as libc::c_ulong,
+                ((3 as libc::c_int) << 1) as libc::c_ulong,
             );
             memcpy(
                 dst_tl
                     .offset(
-                        ((stripe_h + 1 as libc::c_int) * 390 as libc::c_int) as isize,
+                        ((stripe_h + 1) * 390) as isize,
                     ) as *mut libc::c_void,
-                &*(*left.offset((stripe_h - 1 as libc::c_int) as isize))
+                &*(*left.offset((stripe_h - 1) as isize))
                     .as_ptr()
-                    .offset(1 as libc::c_int as isize) as *const pixel
+                    .offset(1) as *const pixel
                     as *const libc::c_void,
-                ((3 as libc::c_int) << 1 as libc::c_int) as libc::c_ulong,
+                ((3 as libc::c_int) << 1) as libc::c_ulong,
             );
             memcpy(
                 dst_tl
                     .offset(
-                        ((stripe_h + 2 as libc::c_int) * 390 as libc::c_int) as isize,
+                        ((stripe_h + 2) * 390) as isize,
                     ) as *mut libc::c_void,
-                &*(*left.offset((stripe_h - 1 as libc::c_int) as isize))
+                &*(*left.offset((stripe_h - 1) as isize))
                     .as_ptr()
-                    .offset(1 as libc::c_int as isize) as *const pixel
+                    .offset(1) as *const pixel
                     as *const libc::c_void,
-                ((3 as libc::c_int) << 1 as libc::c_int) as libc::c_ulong,
+                ((3 as libc::c_int) << 1) as libc::c_ulong,
             );
         }
     }
-    let mut j: libc::c_int = 0 as libc::c_int;
+    let mut j = 0;
     while j < stripe_h {
         memcpy(
-            dst_tl.offset((3 as libc::c_int * have_left) as isize) as *mut libc::c_void,
-            p.offset((3 as libc::c_int * have_left) as isize) as *const libc::c_void,
-            (unit_w - 3 as libc::c_int * have_left << 1 as libc::c_int) as libc::c_ulong,
+            dst_tl.offset((3 * have_left) as isize) as *mut libc::c_void,
+            p.offset((3 * have_left) as isize) as *const libc::c_void,
+            (unit_w - 3 * have_left << 1) as libc::c_ulong,
         );
-        dst_tl = dst_tl.offset(390 as libc::c_int as isize);
+        dst_tl = dst_tl.offset(390);
         p = p.offset(PXSTRIDE(stride) as isize);
         j += 1;
     }
     if have_right == 0 {
         let mut pad: *mut pixel = dst_l.offset(unit_w as isize);
         let mut row_last: *mut pixel = &mut *dst_l
-            .offset((unit_w - 1 as libc::c_int) as isize) as *mut pixel;
-        let mut j_0: libc::c_int = 0 as libc::c_int;
-        while j_0 < stripe_h + 6 as libc::c_int {
+            .offset((unit_w - 1) as isize) as *mut pixel;
+        let mut j_0 = 0;
+        while j_0 < stripe_h + 6 {
             pixel_set(pad, *row_last as libc::c_int, 3 as libc::c_int);
-            pad = pad.offset(390 as libc::c_int as isize);
-            row_last = row_last.offset(390 as libc::c_int as isize);
+            pad = pad.offset(390);
+            row_last = row_last.offset(390);
             j_0 += 1;
         }
     }
     if have_left == 0 {
-        let mut j_1: libc::c_int = 0 as libc::c_int;
-        while j_1 < stripe_h + 6 as libc::c_int {
+        let mut j_1 = 0;
+        while j_1 < stripe_h + 6 {
             pixel_set(dst, *dst_l as libc::c_int, 3 as libc::c_int);
-            dst = dst.offset(390 as libc::c_int as isize);
-            dst_l = dst_l.offset(390 as libc::c_int as isize);
+            dst = dst.offset(390);
+            dst_l = dst_l.offset(390);
             j_1 += 1;
         }
     } else {
-        dst = dst.offset((3 as libc::c_int * 390 as libc::c_int) as isize);
-        let mut j_2: libc::c_int = 0 as libc::c_int;
+        dst = dst.offset((3 * 390) as isize);
+        let mut j_2 = 0;
         while j_2 < stripe_h {
             memcpy(
                 dst as *mut libc::c_void,
-                &*(*left.offset(j_2 as isize)).as_ptr().offset(1 as libc::c_int as isize)
+                &*(*left.offset(j_2 as isize)).as_ptr().offset(1)
                     as *const pixel as *const libc::c_void,
-                ((3 as libc::c_int) << 1 as libc::c_int) as libc::c_ulong,
+                ((3 as libc::c_int) << 1) as libc::c_ulong,
             );
-            dst = dst.offset(390 as libc::c_int as isize);
+            dst = dst.offset(390);
             j_2 += 1;
         }
     };
@@ -578,23 +578,23 @@ unsafe extern "C" fn wiener_c(
     let mut hor: [uint16_t; 27300] = [0; 27300];
     let mut hor_ptr: *mut uint16_t = hor.as_mut_ptr();
     let filter: *const [int16_t; 8] = ((*params).filter.0).as_ptr();
-    let bitdepth: libc::c_int = 32 as libc::c_int - clz(bitdepth_max as libc::c_uint);
-    let round_bits_h: libc::c_int = 3 as libc::c_int
-        + (bitdepth == 12 as libc::c_int) as libc::c_int * 2 as libc::c_int;
-    let rounding_off_h: libc::c_int = (1 as libc::c_int)
-        << round_bits_h - 1 as libc::c_int;
-    let clip_limit: libc::c_int = (1 as libc::c_int)
-        << bitdepth + 1 as libc::c_int + 7 as libc::c_int - round_bits_h;
-    let mut j: libc::c_int = 0 as libc::c_int;
-    while j < h + 6 as libc::c_int {
-        let mut i: libc::c_int = 0 as libc::c_int;
+    let bitdepth = 32 - clz(bitdepth_max as libc::c_uint);
+    let round_bits_h = 3 as libc::c_int
+        + (bitdepth == 12) as libc::c_int * 2;
+    let rounding_off_h = (1 as libc::c_int)
+        << round_bits_h - 1;
+    let clip_limit = (1 as libc::c_int)
+        << bitdepth + 1 + 7 - round_bits_h;
+    let mut j = 0;
+    while j < h + 6 {
+        let mut i = 0;
         while i < w {
-            let mut sum: libc::c_int = (1 as libc::c_int) << bitdepth + 6 as libc::c_int;
-            let mut k: libc::c_int = 0 as libc::c_int;
-            while k < 7 as libc::c_int {
+            let mut sum = (1 as libc::c_int) << bitdepth + 6;
+            let mut k = 0;
+            while k < 7 {
                 sum
                     += *tmp_ptr.offset((i + k) as isize) as libc::c_int
-                        * (*filter.offset(0 as libc::c_int as isize))[k as usize]
+                        * (*filter.offset(0))[k as usize]
                             as libc::c_int;
                 k += 1;
             }
@@ -604,31 +604,31 @@ unsafe extern "C" fn wiener_c(
                 ) = iclip(
                 sum + rounding_off_h >> round_bits_h,
                 0 as libc::c_int,
-                clip_limit - 1 as libc::c_int,
+                clip_limit - 1,
             ) as uint16_t;
             i += 1;
         }
-        tmp_ptr = tmp_ptr.offset(390 as libc::c_int as isize);
-        hor_ptr = hor_ptr.offset(390 as libc::c_int as isize);
+        tmp_ptr = tmp_ptr.offset(390);
+        hor_ptr = hor_ptr.offset(390);
         j += 1;
     }
-    let round_bits_v: libc::c_int = 11 as libc::c_int
-        - (bitdepth == 12 as libc::c_int) as libc::c_int * 2 as libc::c_int;
-    let rounding_off_v: libc::c_int = (1 as libc::c_int)
-        << round_bits_v - 1 as libc::c_int;
-    let round_offset: libc::c_int = (1 as libc::c_int)
-        << bitdepth + (round_bits_v - 1 as libc::c_int);
-    let mut j_0: libc::c_int = 0 as libc::c_int;
+    let round_bits_v = 11 as libc::c_int
+        - (bitdepth == 12) as libc::c_int * 2;
+    let rounding_off_v = (1 as libc::c_int)
+        << round_bits_v - 1;
+    let round_offset = (1 as libc::c_int)
+        << bitdepth + (round_bits_v - 1);
+    let mut j_0 = 0;
     while j_0 < h {
-        let mut i_0: libc::c_int = 0 as libc::c_int;
+        let mut i_0 = 0;
         while i_0 < w {
-            let mut sum_0: libc::c_int = -round_offset;
-            let mut k_0: libc::c_int = 0 as libc::c_int;
-            while k_0 < 7 as libc::c_int {
+            let mut sum_0 = -round_offset;
+            let mut k_0 = 0;
+            while k_0 < 7 {
                 sum_0
-                    += hor[((j_0 + k_0) * 390 as libc::c_int + i_0) as usize]
+                    += hor[((j_0 + k_0) * 390 + i_0) as usize]
                         as libc::c_int
-                        * (*filter.offset(1 as libc::c_int as isize))[k_0 as usize]
+                        * (*filter.offset(1))[k_0 as usize]
                             as libc::c_int;
                 k_0 += 1;
             }
@@ -652,23 +652,23 @@ unsafe extern "C" fn boxsum3(
     w: libc::c_int,
     h: libc::c_int,
 ) {
-    src = src.offset(390 as libc::c_int as isize);
-    let mut x: libc::c_int = 1 as libc::c_int;
-    while x < w - 1 as libc::c_int {
+    src = src.offset(390);
+    let mut x = 1;
+    while x < w - 1 {
         let mut sum_v: *mut coef = sum.offset(x as isize);
         let mut sumsq_v: *mut int32_t = sumsq.offset(x as isize);
         let mut s: *const pixel = src.offset(x as isize);
-        let mut a: libc::c_int = *s.offset(0 as libc::c_int as isize) as libc::c_int;
-        let mut a2: libc::c_int = a * a;
-        let mut b: libc::c_int = *s.offset(390 as libc::c_int as isize) as libc::c_int;
-        let mut b2: libc::c_int = b * b;
-        let mut y: libc::c_int = 2 as libc::c_int;
-        while y < h - 2 as libc::c_int {
-            s = s.offset(390 as libc::c_int as isize);
-            let c: libc::c_int = *s.offset(390 as libc::c_int as isize) as libc::c_int;
-            let c2: libc::c_int = c * c;
-            sum_v = sum_v.offset(390 as libc::c_int as isize);
-            sumsq_v = sumsq_v.offset(390 as libc::c_int as isize);
+        let mut a = *s.offset(0) as libc::c_int;
+        let mut a2 = a * a;
+        let mut b = *s.offset(390) as libc::c_int;
+        let mut b2 = b * b;
+        let mut y = 2;
+        while y < h - 2 {
+            s = s.offset(390);
+            let c = *s.offset(390) as libc::c_int;
+            let c2 = c * c;
+            sum_v = sum_v.offset(390);
+            sumsq_v = sumsq_v.offset(390);
             *sum_v = a + b + c;
             *sumsq_v = a2 + b2 + c2;
             a = b;
@@ -679,18 +679,18 @@ unsafe extern "C" fn boxsum3(
         }
         x += 1;
     }
-    sum = sum.offset(390 as libc::c_int as isize);
-    sumsq = sumsq.offset(390 as libc::c_int as isize);
-    let mut y_0: libc::c_int = 2 as libc::c_int;
-    while y_0 < h - 2 as libc::c_int {
-        let mut a_0: libc::c_int = *sum.offset(1 as libc::c_int as isize);
-        let mut a2_0: libc::c_int = *sumsq.offset(1 as libc::c_int as isize);
-        let mut b_0: libc::c_int = *sum.offset(2 as libc::c_int as isize);
-        let mut b2_0: libc::c_int = *sumsq.offset(2 as libc::c_int as isize);
-        let mut x_0: libc::c_int = 2 as libc::c_int;
-        while x_0 < w - 2 as libc::c_int {
-            let c_0: libc::c_int = *sum.offset((x_0 + 1 as libc::c_int) as isize);
-            let c2_0: libc::c_int = *sumsq.offset((x_0 + 1 as libc::c_int) as isize);
+    sum = sum.offset(390);
+    sumsq = sumsq.offset(390);
+    let mut y_0 = 2;
+    while y_0 < h - 2 {
+        let mut a_0 = *sum.offset(1);
+        let mut a2_0 = *sumsq.offset(1);
+        let mut b_0 = *sum.offset(2);
+        let mut b2_0 = *sumsq.offset(2);
+        let mut x_0 = 2;
+        while x_0 < w - 2 {
+            let c_0 = *sum.offset((x_0 + 1) as isize);
+            let c2_0 = *sumsq.offset((x_0 + 1) as isize);
             *sum.offset(x_0 as isize) = a_0 + b_0 + c_0;
             *sumsq.offset(x_0 as isize) = a2_0 + b2_0 + c2_0;
             a_0 = b_0;
@@ -699,8 +699,8 @@ unsafe extern "C" fn boxsum3(
             b2_0 = c2_0;
             x_0 += 1;
         }
-        sum = sum.offset(390 as libc::c_int as isize);
-        sumsq = sumsq.offset(390 as libc::c_int as isize);
+        sum = sum.offset(390);
+        sumsq = sumsq.offset(390);
         y_0 += 1;
     }
 }
@@ -711,31 +711,31 @@ unsafe extern "C" fn boxsum5(
     w: libc::c_int,
     h: libc::c_int,
 ) {
-    let mut x: libc::c_int = 0 as libc::c_int;
+    let mut x = 0;
     while x < w {
         let mut sum_v: *mut coef = sum.offset(x as isize);
         let mut sumsq_v: *mut int32_t = sumsq.offset(x as isize);
         let mut s: *const pixel = src
-            .offset((3 as libc::c_int * 390 as libc::c_int) as isize)
+            .offset((3 * 390) as isize)
             .offset(x as isize);
-        let mut a: libc::c_int = *s
-            .offset((-(3 as libc::c_int) * 390 as libc::c_int) as isize) as libc::c_int;
-        let mut a2: libc::c_int = a * a;
-        let mut b: libc::c_int = *s
-            .offset((-(2 as libc::c_int) * 390 as libc::c_int) as isize) as libc::c_int;
-        let mut b2: libc::c_int = b * b;
-        let mut c: libc::c_int = *s
-            .offset((-(1 as libc::c_int) * 390 as libc::c_int) as isize) as libc::c_int;
-        let mut c2: libc::c_int = c * c;
-        let mut d: libc::c_int = *s.offset(0 as libc::c_int as isize) as libc::c_int;
-        let mut d2: libc::c_int = d * d;
-        let mut y: libc::c_int = 2 as libc::c_int;
-        while y < h - 2 as libc::c_int {
-            s = s.offset(390 as libc::c_int as isize);
-            let e: libc::c_int = *s as libc::c_int;
-            let e2: libc::c_int = e * e;
-            sum_v = sum_v.offset(390 as libc::c_int as isize);
-            sumsq_v = sumsq_v.offset(390 as libc::c_int as isize);
+        let mut a = *s
+            .offset((-(3 as libc::c_int) * 390) as isize) as libc::c_int;
+        let mut a2 = a * a;
+        let mut b = *s
+            .offset((-(2 as libc::c_int) * 390) as isize) as libc::c_int;
+        let mut b2 = b * b;
+        let mut c = *s
+            .offset((-(1 as libc::c_int) * 390) as isize) as libc::c_int;
+        let mut c2 = c * c;
+        let mut d = *s.offset(0) as libc::c_int;
+        let mut d2 = d * d;
+        let mut y = 2;
+        while y < h - 2 {
+            s = s.offset(390);
+            let e = *s as libc::c_int;
+            let e2 = e * e;
+            sum_v = sum_v.offset(390);
+            sumsq_v = sumsq_v.offset(390);
             *sum_v = a + b + c + d + e;
             *sumsq_v = a2 + b2 + c2 + d2 + e2;
             a = b;
@@ -750,22 +750,22 @@ unsafe extern "C" fn boxsum5(
         }
         x += 1;
     }
-    sum = sum.offset(390 as libc::c_int as isize);
-    sumsq = sumsq.offset(390 as libc::c_int as isize);
-    let mut y_0: libc::c_int = 2 as libc::c_int;
-    while y_0 < h - 2 as libc::c_int {
-        let mut a_0: libc::c_int = *sum.offset(0 as libc::c_int as isize);
-        let mut a2_0: libc::c_int = *sumsq.offset(0 as libc::c_int as isize);
-        let mut b_0: libc::c_int = *sum.offset(1 as libc::c_int as isize);
-        let mut b2_0: libc::c_int = *sumsq.offset(1 as libc::c_int as isize);
-        let mut c_0: libc::c_int = *sum.offset(2 as libc::c_int as isize);
-        let mut c2_0: libc::c_int = *sumsq.offset(2 as libc::c_int as isize);
-        let mut d_0: libc::c_int = *sum.offset(3 as libc::c_int as isize);
-        let mut d2_0: libc::c_int = *sumsq.offset(3 as libc::c_int as isize);
-        let mut x_0: libc::c_int = 2 as libc::c_int;
-        while x_0 < w - 2 as libc::c_int {
-            let e_0: libc::c_int = *sum.offset((x_0 + 2 as libc::c_int) as isize);
-            let e2_0: libc::c_int = *sumsq.offset((x_0 + 2 as libc::c_int) as isize);
+    sum = sum.offset(390);
+    sumsq = sumsq.offset(390);
+    let mut y_0 = 2;
+    while y_0 < h - 2 {
+        let mut a_0 = *sum.offset(0);
+        let mut a2_0 = *sumsq.offset(0);
+        let mut b_0 = *sum.offset(1);
+        let mut b2_0 = *sumsq.offset(1);
+        let mut c_0 = *sum.offset(2);
+        let mut c2_0 = *sumsq.offset(2);
+        let mut d_0 = *sum.offset(3);
+        let mut d2_0 = *sumsq.offset(3);
+        let mut x_0 = 2;
+        while x_0 < w - 2 {
+            let e_0 = *sum.offset((x_0 + 2) as isize);
+            let e2_0 = *sumsq.offset((x_0 + 2) as isize);
             *sum.offset(x_0 as isize) = a_0 + b_0 + c_0 + d_0 + e_0;
             *sumsq.offset(x_0 as isize) = a2_0 + b2_0 + c2_0 + d2_0 + e2_0;
             a_0 = b_0;
@@ -778,8 +778,8 @@ unsafe extern "C" fn boxsum5(
             d2_0 = e2_0;
             x_0 += 1;
         }
-        sum = sum.offset(390 as libc::c_int as isize);
-        sumsq = sumsq.offset(390 as libc::c_int as isize);
+        sum = sum.offset(390);
+        sumsq = sumsq.offset(390);
         y_0 += 1;
     }
 }
@@ -794,7 +794,7 @@ unsafe extern "C" fn selfguided_filter(
     s: libc::c_uint,
     bitdepth_max: libc::c_int,
 ) {
-    let sgr_one_by_x: libc::c_uint = (if n == 25 as libc::c_int {
+    let sgr_one_by_x: libc::c_uint = (if n == 25 {
         164 as libc::c_int
     } else {
         455 as libc::c_int
@@ -802,50 +802,50 @@ unsafe extern "C" fn selfguided_filter(
     let mut sumsq: [int32_t; 26520] = [0; 26520];
     let mut A: *mut int32_t = sumsq
         .as_mut_ptr()
-        .offset((2 as libc::c_int * 390 as libc::c_int) as isize)
-        .offset(3 as libc::c_int as isize);
+        .offset((2 * 390) as isize)
+        .offset(3);
     let mut sum: [coef; 26520] = [0; 26520];
     let mut B: *mut coef = sum
         .as_mut_ptr()
-        .offset((2 as libc::c_int * 390 as libc::c_int) as isize)
-        .offset(3 as libc::c_int as isize);
-    let step: libc::c_int = (n == 25 as libc::c_int) as libc::c_int + 1 as libc::c_int;
-    if n == 25 as libc::c_int {
+        .offset((2 * 390) as isize)
+        .offset(3);
+    let step = (n == 25) as libc::c_int + 1;
+    if n == 25 {
         boxsum5(
             sumsq.as_mut_ptr(),
             sum.as_mut_ptr(),
             src,
-            w + 6 as libc::c_int,
-            h + 6 as libc::c_int,
+            w + 6,
+            h + 6,
         );
     } else {
         boxsum3(
             sumsq.as_mut_ptr(),
             sum.as_mut_ptr(),
             src,
-            w + 6 as libc::c_int,
-            h + 6 as libc::c_int,
+            w + 6,
+            h + 6,
         );
     }
-    let bitdepth_min_8: libc::c_int = 32 as libc::c_int
-        - clz(bitdepth_max as libc::c_uint) - 8 as libc::c_int;
+    let bitdepth_min_8 = 32 as libc::c_int
+        - clz(bitdepth_max as libc::c_uint) - 8;
     let mut AA: *mut int32_t = A.offset(-(390 as libc::c_int as isize));
     let mut BB: *mut coef = B.offset(-(390 as libc::c_int as isize));
-    let mut j: libc::c_int = -(1 as libc::c_int);
-    while j < h + 1 as libc::c_int {
-        let mut i: libc::c_int = -(1 as libc::c_int);
-        while i < w + 1 as libc::c_int {
-            let a: libc::c_int = *AA.offset(i as isize)
-                + ((1 as libc::c_int) << 2 as libc::c_int * bitdepth_min_8
-                    >> 1 as libc::c_int) >> 2 as libc::c_int * bitdepth_min_8;
-            let b: libc::c_int = *BB.offset(i as isize)
-                + ((1 as libc::c_int) << bitdepth_min_8 >> 1 as libc::c_int)
+    let mut j = -(1 as libc::c_int);
+    while j < h + 1 {
+        let mut i = -(1 as libc::c_int);
+        while i < w + 1 {
+            let a = *AA.offset(i as isize)
+                + ((1 as libc::c_int) << 2 * bitdepth_min_8
+                    >> 1) >> 2 * bitdepth_min_8;
+            let b = *BB.offset(i as isize)
+                + ((1 as libc::c_int) << bitdepth_min_8 >> 1)
                 >> bitdepth_min_8;
             let p: libc::c_uint = imax(a * n - b * b, 0 as libc::c_int) as libc::c_uint;
             let z: libc::c_uint = p
                 .wrapping_mul(s)
-                .wrapping_add(((1 as libc::c_int) << 19 as libc::c_int) as libc::c_uint)
-                >> 20 as libc::c_int;
+                .wrapping_add(((1 as libc::c_int) << 19) as libc::c_uint)
+                >> 20;
             let x: libc::c_uint = dav1d_sgr_x_by_x[umin(
                 z,
                 255 as libc::c_int as libc::c_uint,
@@ -856,179 +856,179 @@ unsafe extern "C" fn selfguided_filter(
                 ) = (x
                 .wrapping_mul(*BB.offset(i as isize) as libc::c_uint)
                 .wrapping_mul(sgr_one_by_x)
-                .wrapping_add(((1 as libc::c_int) << 11 as libc::c_int) as libc::c_uint)
-                >> 12 as libc::c_int) as int32_t;
+                .wrapping_add(((1 as libc::c_int) << 11) as libc::c_uint)
+                >> 12) as int32_t;
             *BB.offset(i as isize) = x as coef;
             i += 1;
         }
-        AA = AA.offset((step * 390 as libc::c_int) as isize);
-        BB = BB.offset((step * 390 as libc::c_int) as isize);
+        AA = AA.offset((step * 390) as isize);
+        BB = BB.offset((step * 390) as isize);
         j += step;
     }
     src = src
-        .offset((3 as libc::c_int * 390 as libc::c_int + 3 as libc::c_int) as isize);
-    if n == 25 as libc::c_int {
-        let mut j_0: libc::c_int = 0 as libc::c_int;
-        while j_0 < h - 1 as libc::c_int {
-            let mut i_0: libc::c_int = 0 as libc::c_int;
+        .offset((3 * 390 + 3) as isize);
+    if n == 25 {
+        let mut j_0 = 0;
+        while j_0 < h - 1 {
+            let mut i_0 = 0;
             while i_0 < w {
-                let a_0: libc::c_int = (*B.offset((i_0 - 390 as libc::c_int) as isize)
-                    + *B.offset((i_0 + 390 as libc::c_int) as isize)) * 6 as libc::c_int
-                    + (*B.offset((i_0 - 1 as libc::c_int - 390 as libc::c_int) as isize)
+                let a_0 = (*B.offset((i_0 - 390) as isize)
+                    + *B.offset((i_0 + 390) as isize)) * 6
+                    + (*B.offset((i_0 - 1 - 390) as isize)
                         + *B
                             .offset(
-                                (i_0 - 1 as libc::c_int + 390 as libc::c_int) as isize,
-                            )
-                        + *B
-                            .offset(
-                                (i_0 + 1 as libc::c_int - 390 as libc::c_int) as isize,
+                                (i_0 - 1 + 390) as isize,
                             )
                         + *B
                             .offset(
-                                (i_0 + 1 as libc::c_int + 390 as libc::c_int) as isize,
-                            )) * 5 as libc::c_int;
-                let b_0: libc::c_int = (*A.offset((i_0 - 390 as libc::c_int) as isize)
-                    + *A.offset((i_0 + 390 as libc::c_int) as isize)) * 6 as libc::c_int
-                    + (*A.offset((i_0 - 1 as libc::c_int - 390 as libc::c_int) as isize)
+                                (i_0 + 1 - 390) as isize,
+                            )
+                        + *B
+                            .offset(
+                                (i_0 + 1 + 390) as isize,
+                            )) * 5;
+                let b_0 = (*A.offset((i_0 - 390) as isize)
+                    + *A.offset((i_0 + 390) as isize)) * 6
+                    + (*A.offset((i_0 - 1 - 390) as isize)
                         + *A
                             .offset(
-                                (i_0 - 1 as libc::c_int + 390 as libc::c_int) as isize,
+                                (i_0 - 1 + 390) as isize,
                             )
                         + *A
                             .offset(
-                                (i_0 + 1 as libc::c_int - 390 as libc::c_int) as isize,
+                                (i_0 + 1 - 390) as isize,
                             )
                         + *A
                             .offset(
-                                (i_0 + 1 as libc::c_int + 390 as libc::c_int) as isize,
-                            )) * 5 as libc::c_int;
+                                (i_0 + 1 + 390) as isize,
+                            )) * 5;
                 *dst
                     .offset(
                         i_0 as isize,
                     ) = b_0 - a_0 * *src.offset(i_0 as isize) as libc::c_int
-                    + ((1 as libc::c_int) << 8 as libc::c_int) >> 9 as libc::c_int;
+                    + ((1 as libc::c_int) << 8) >> 9;
                 i_0 += 1;
             }
-            dst = dst.offset(384 as libc::c_int as isize);
-            src = src.offset(390 as libc::c_int as isize);
-            B = B.offset(390 as libc::c_int as isize);
-            A = A.offset(390 as libc::c_int as isize);
-            let mut i_1: libc::c_int = 0 as libc::c_int;
+            dst = dst.offset(384);
+            src = src.offset(390);
+            B = B.offset(390);
+            A = A.offset(390);
+            let mut i_1 = 0;
             while i_1 < w {
-                let a_1: libc::c_int = *B.offset(i_1 as isize) * 6 as libc::c_int
-                    + (*B.offset((i_1 - 1 as libc::c_int) as isize)
-                        + *B.offset((i_1 + 1 as libc::c_int) as isize))
-                        * 5 as libc::c_int;
-                let b_1: libc::c_int = *A.offset(i_1 as isize) * 6 as libc::c_int
-                    + (*A.offset((i_1 - 1 as libc::c_int) as isize)
-                        + *A.offset((i_1 + 1 as libc::c_int) as isize))
-                        * 5 as libc::c_int;
+                let a_1 = *B.offset(i_1 as isize) * 6
+                    + (*B.offset((i_1 - 1) as isize)
+                        + *B.offset((i_1 + 1) as isize))
+                        * 5;
+                let b_1 = *A.offset(i_1 as isize) * 6
+                    + (*A.offset((i_1 - 1) as isize)
+                        + *A.offset((i_1 + 1) as isize))
+                        * 5;
                 *dst
                     .offset(
                         i_1 as isize,
                     ) = b_1 - a_1 * *src.offset(i_1 as isize) as libc::c_int
-                    + ((1 as libc::c_int) << 7 as libc::c_int) >> 8 as libc::c_int;
+                    + ((1 as libc::c_int) << 7) >> 8;
                 i_1 += 1;
             }
-            dst = dst.offset(384 as libc::c_int as isize);
-            src = src.offset(390 as libc::c_int as isize);
-            B = B.offset(390 as libc::c_int as isize);
-            A = A.offset(390 as libc::c_int as isize);
+            dst = dst.offset(384);
+            src = src.offset(390);
+            B = B.offset(390);
+            A = A.offset(390);
             j_0 += 2 as libc::c_int;
         }
-        if j_0 + 1 as libc::c_int == h {
-            let mut i_2: libc::c_int = 0 as libc::c_int;
+        if j_0 + 1 == h {
+            let mut i_2 = 0;
             while i_2 < w {
-                let a_2: libc::c_int = (*B.offset((i_2 - 390 as libc::c_int) as isize)
-                    + *B.offset((i_2 + 390 as libc::c_int) as isize)) * 6 as libc::c_int
-                    + (*B.offset((i_2 - 1 as libc::c_int - 390 as libc::c_int) as isize)
+                let a_2 = (*B.offset((i_2 - 390) as isize)
+                    + *B.offset((i_2 + 390) as isize)) * 6
+                    + (*B.offset((i_2 - 1 - 390) as isize)
                         + *B
                             .offset(
-                                (i_2 - 1 as libc::c_int + 390 as libc::c_int) as isize,
-                            )
-                        + *B
-                            .offset(
-                                (i_2 + 1 as libc::c_int - 390 as libc::c_int) as isize,
+                                (i_2 - 1 + 390) as isize,
                             )
                         + *B
                             .offset(
-                                (i_2 + 1 as libc::c_int + 390 as libc::c_int) as isize,
-                            )) * 5 as libc::c_int;
-                let b_2: libc::c_int = (*A.offset((i_2 - 390 as libc::c_int) as isize)
-                    + *A.offset((i_2 + 390 as libc::c_int) as isize)) * 6 as libc::c_int
-                    + (*A.offset((i_2 - 1 as libc::c_int - 390 as libc::c_int) as isize)
+                                (i_2 + 1 - 390) as isize,
+                            )
+                        + *B
+                            .offset(
+                                (i_2 + 1 + 390) as isize,
+                            )) * 5;
+                let b_2 = (*A.offset((i_2 - 390) as isize)
+                    + *A.offset((i_2 + 390) as isize)) * 6
+                    + (*A.offset((i_2 - 1 - 390) as isize)
                         + *A
                             .offset(
-                                (i_2 - 1 as libc::c_int + 390 as libc::c_int) as isize,
+                                (i_2 - 1 + 390) as isize,
                             )
                         + *A
                             .offset(
-                                (i_2 + 1 as libc::c_int - 390 as libc::c_int) as isize,
+                                (i_2 + 1 - 390) as isize,
                             )
                         + *A
                             .offset(
-                                (i_2 + 1 as libc::c_int + 390 as libc::c_int) as isize,
-                            )) * 5 as libc::c_int;
+                                (i_2 + 1 + 390) as isize,
+                            )) * 5;
                 *dst
                     .offset(
                         i_2 as isize,
                     ) = b_2 - a_2 * *src.offset(i_2 as isize) as libc::c_int
-                    + ((1 as libc::c_int) << 8 as libc::c_int) >> 9 as libc::c_int;
+                    + ((1 as libc::c_int) << 8) >> 9;
                 i_2 += 1;
             }
         }
     } else {
-        let mut j_1: libc::c_int = 0 as libc::c_int;
+        let mut j_1 = 0;
         while j_1 < h {
-            let mut i_3: libc::c_int = 0 as libc::c_int;
+            let mut i_3 = 0;
             while i_3 < w {
-                let a_3: libc::c_int = (*B.offset(i_3 as isize)
-                    + *B.offset((i_3 - 1 as libc::c_int) as isize)
-                    + *B.offset((i_3 + 1 as libc::c_int) as isize)
-                    + *B.offset((i_3 - 390 as libc::c_int) as isize)
-                    + *B.offset((i_3 + 390 as libc::c_int) as isize)) * 4 as libc::c_int
-                    + (*B.offset((i_3 - 1 as libc::c_int - 390 as libc::c_int) as isize)
+                let a_3 = (*B.offset(i_3 as isize)
+                    + *B.offset((i_3 - 1) as isize)
+                    + *B.offset((i_3 + 1) as isize)
+                    + *B.offset((i_3 - 390) as isize)
+                    + *B.offset((i_3 + 390) as isize)) * 4
+                    + (*B.offset((i_3 - 1 - 390) as isize)
                         + *B
                             .offset(
-                                (i_3 - 1 as libc::c_int + 390 as libc::c_int) as isize,
-                            )
-                        + *B
-                            .offset(
-                                (i_3 + 1 as libc::c_int - 390 as libc::c_int) as isize,
+                                (i_3 - 1 + 390) as isize,
                             )
                         + *B
                             .offset(
-                                (i_3 + 1 as libc::c_int + 390 as libc::c_int) as isize,
-                            )) * 3 as libc::c_int;
-                let b_3: libc::c_int = (*A.offset(i_3 as isize)
-                    + *A.offset((i_3 - 1 as libc::c_int) as isize)
-                    + *A.offset((i_3 + 1 as libc::c_int) as isize)
-                    + *A.offset((i_3 - 390 as libc::c_int) as isize)
-                    + *A.offset((i_3 + 390 as libc::c_int) as isize)) * 4 as libc::c_int
-                    + (*A.offset((i_3 - 1 as libc::c_int - 390 as libc::c_int) as isize)
+                                (i_3 + 1 - 390) as isize,
+                            )
+                        + *B
+                            .offset(
+                                (i_3 + 1 + 390) as isize,
+                            )) * 3;
+                let b_3 = (*A.offset(i_3 as isize)
+                    + *A.offset((i_3 - 1) as isize)
+                    + *A.offset((i_3 + 1) as isize)
+                    + *A.offset((i_3 - 390) as isize)
+                    + *A.offset((i_3 + 390) as isize)) * 4
+                    + (*A.offset((i_3 - 1 - 390) as isize)
                         + *A
                             .offset(
-                                (i_3 - 1 as libc::c_int + 390 as libc::c_int) as isize,
+                                (i_3 - 1 + 390) as isize,
                             )
                         + *A
                             .offset(
-                                (i_3 + 1 as libc::c_int - 390 as libc::c_int) as isize,
+                                (i_3 + 1 - 390) as isize,
                             )
                         + *A
                             .offset(
-                                (i_3 + 1 as libc::c_int + 390 as libc::c_int) as isize,
-                            )) * 3 as libc::c_int;
+                                (i_3 + 1 + 390) as isize,
+                            )) * 3;
                 *dst
                     .offset(
                         i_3 as isize,
                     ) = b_3 - a_3 * *src.offset(i_3 as isize) as libc::c_int
-                    + ((1 as libc::c_int) << 8 as libc::c_int) >> 9 as libc::c_int;
+                    + ((1 as libc::c_int) << 8) >> 9;
                 i_3 += 1;
             }
-            dst = dst.offset(384 as libc::c_int as isize);
-            src = src.offset(390 as libc::c_int as isize);
-            B = B.offset(390 as libc::c_int as isize);
-            A = A.offset(390 as libc::c_int as isize);
+            dst = dst.offset(384);
+            src = src.offset(390);
+            B = B.offset(390);
+            A = A.offset(390);
             j_1 += 1;
         }
     };
@@ -1057,19 +1057,19 @@ unsafe extern "C" fn sgr_5x5_c(
         (*params).sgr.s0,
         bitdepth_max,
     );
-    let w0: libc::c_int = (*params).sgr.w0 as libc::c_int;
-    let mut j: libc::c_int = 0 as libc::c_int;
+    let w0 = (*params).sgr.w0 as libc::c_int;
+    let mut j = 0;
     while j < h {
-        let mut i: libc::c_int = 0 as libc::c_int;
+        let mut i = 0;
         while i < w {
-            let v: libc::c_int = w0 * dst[(j * 384 as libc::c_int + i) as usize];
+            let v = w0 * dst[(j * 384 + i) as usize];
             *p
                 .offset(
                     i as isize,
                 ) = iclip(
                 *p.offset(i as isize) as libc::c_int
-                    + (v + ((1 as libc::c_int) << 10 as libc::c_int)
-                        >> 11 as libc::c_int),
+                    + (v + ((1 as libc::c_int) << 10)
+                        >> 11),
                 0 as libc::c_int,
                 bitdepth_max,
             ) as pixel;
@@ -1103,19 +1103,19 @@ unsafe extern "C" fn sgr_3x3_c(
         (*params).sgr.s1,
         bitdepth_max,
     );
-    let w1: libc::c_int = (*params).sgr.w1 as libc::c_int;
-    let mut j: libc::c_int = 0 as libc::c_int;
+    let w1 = (*params).sgr.w1 as libc::c_int;
+    let mut j = 0;
     while j < h {
-        let mut i: libc::c_int = 0 as libc::c_int;
+        let mut i = 0;
         while i < w {
-            let v: libc::c_int = w1 * dst[(j * 384 as libc::c_int + i) as usize];
+            let v = w1 * dst[(j * 384 + i) as usize];
             *p
                 .offset(
                     i as isize,
                 ) = iclip(
                 *p.offset(i as isize) as libc::c_int
-                    + (v + ((1 as libc::c_int) << 10 as libc::c_int)
-                        >> 11 as libc::c_int),
+                    + (v + ((1 as libc::c_int) << 10)
+                        >> 11),
                 0 as libc::c_int,
                 bitdepth_max,
             ) as pixel;
@@ -1160,21 +1160,21 @@ unsafe extern "C" fn sgr_mix_c(
         (*params).sgr.s1,
         bitdepth_max,
     );
-    let w0: libc::c_int = (*params).sgr.w0 as libc::c_int;
-    let w1: libc::c_int = (*params).sgr.w1 as libc::c_int;
-    let mut j: libc::c_int = 0 as libc::c_int;
+    let w0 = (*params).sgr.w0 as libc::c_int;
+    let w1 = (*params).sgr.w1 as libc::c_int;
+    let mut j = 0;
     while j < h {
-        let mut i: libc::c_int = 0 as libc::c_int;
+        let mut i = 0;
         while i < w {
-            let v: libc::c_int = w0 * dst0[(j * 384 as libc::c_int + i) as usize]
-                + w1 * dst1[(j * 384 as libc::c_int + i) as usize];
+            let v = w0 * dst0[(j * 384 + i) as usize]
+                + w1 * dst1[(j * 384 + i) as usize];
             *p
                 .offset(
                     i as isize,
                 ) = iclip(
                 *p.offset(i as isize) as libc::c_int
-                    + (v + ((1 as libc::c_int) << 10 as libc::c_int)
-                        >> 11 as libc::c_int),
+                    + (v + ((1 as libc::c_int) << 10)
+                        >> 11),
                 0 as libc::c_int,
                 bitdepth_max,
             ) as pixel;
@@ -1324,16 +1324,16 @@ unsafe extern "C" fn dav1d_sgr_filter1_neon(
     let sumsq: *mut int32_t = &mut *sumsq_mem
         .as_mut_ptr()
         .offset(
-            ((384 as libc::c_int + 16 as libc::c_int) * 2 as libc::c_int
-                + 8 as libc::c_int) as isize,
+            ((384 + 16) * 2
+                + 8) as isize,
         ) as *mut int32_t;
     let a: *mut int32_t = sumsq;
     let mut sum_mem: [int16_t; 27216] = [0; 27216];
     let sum: *mut int16_t = &mut *sum_mem
         .as_mut_ptr()
         .offset(
-            ((384 as libc::c_int + 16 as libc::c_int) * 2 as libc::c_int
-                + 16 as libc::c_int) as isize,
+            ((384 + 16) * 2
+                + 16) as isize,
         ) as *mut int16_t;
     let b: *mut int16_t = sum;
     dav1d_sgr_box3_h_16bpc_neon(sumsq, sum, left, src, stride, w, h, edges);
@@ -1341,12 +1341,12 @@ unsafe extern "C" fn dav1d_sgr_filter1_neon(
         dav1d_sgr_box3_h_16bpc_neon(
             &mut *sumsq
                 .offset(
-                    (-(2 as libc::c_int) * (384 as libc::c_int + 16 as libc::c_int))
+                    (-(2 as libc::c_int) * (384 + 16))
                         as isize,
                 ),
             &mut *sum
                 .offset(
-                    (-(2 as libc::c_int) * (384 as libc::c_int + 16 as libc::c_int))
+                    (-(2 as libc::c_int) * (384 + 16))
                         as isize,
                 ),
             0 as *const [pixel; 4],
@@ -1359,8 +1359,8 @@ unsafe extern "C" fn dav1d_sgr_filter1_neon(
     }
     if edges as libc::c_uint & LR_HAVE_BOTTOM as libc::c_int as libc::c_uint != 0 {
         dav1d_sgr_box3_h_16bpc_neon(
-            &mut *sumsq.offset((h * (384 as libc::c_int + 16 as libc::c_int)) as isize),
-            &mut *sum.offset((h * (384 as libc::c_int + 16 as libc::c_int)) as isize),
+            &mut *sumsq.offset((h * (384 + 16)) as isize),
+            &mut *sum.offset((h * (384 + 16)) as isize),
             0 as *const [pixel; 4],
             lpf.offset((6 * PXSTRIDE(stride)) as isize),
             stride,
@@ -1391,16 +1391,16 @@ unsafe extern "C" fn dav1d_sgr_filter2_neon(
     let sumsq: *mut int32_t = &mut *sumsq_mem
         .as_mut_ptr()
         .offset(
-            ((384 as libc::c_int + 16 as libc::c_int) * 2 as libc::c_int
-                + 8 as libc::c_int) as isize,
+            ((384 + 16) * 2
+                + 8) as isize,
         ) as *mut int32_t;
     let a: *mut int32_t = sumsq;
     let mut sum_mem: [int16_t; 27216] = [0; 27216];
     let sum: *mut int16_t = &mut *sum_mem
         .as_mut_ptr()
         .offset(
-            ((384 as libc::c_int + 16 as libc::c_int) * 2 as libc::c_int
-                + 16 as libc::c_int) as isize,
+            ((384 + 16) * 2
+                + 16) as isize,
         ) as *mut int16_t;
     let b: *mut int16_t = sum;
     dav1d_sgr_box5_h_16bpc_neon(sumsq, sum, left, src, stride, w, h, edges);
@@ -1408,12 +1408,12 @@ unsafe extern "C" fn dav1d_sgr_filter2_neon(
         dav1d_sgr_box5_h_16bpc_neon(
             &mut *sumsq
                 .offset(
-                    (-(2 as libc::c_int) * (384 as libc::c_int + 16 as libc::c_int))
+                    (-(2 as libc::c_int) * (384 + 16))
                         as isize,
                 ),
             &mut *sum
                 .offset(
-                    (-(2 as libc::c_int) * (384 as libc::c_int + 16 as libc::c_int))
+                    (-(2 as libc::c_int) * (384 + 16))
                         as isize,
                 ),
             0 as *const [pixel; 4],
@@ -1426,8 +1426,8 @@ unsafe extern "C" fn dav1d_sgr_filter2_neon(
     }
     if edges as libc::c_uint & LR_HAVE_BOTTOM as libc::c_int as libc::c_uint != 0 {
         dav1d_sgr_box5_h_16bpc_neon(
-            &mut *sumsq.offset((h * (384 as libc::c_int + 16 as libc::c_int)) as isize),
-            &mut *sum.offset((h * (384 as libc::c_int + 16 as libc::c_int)) as isize),
+            &mut *sumsq.offset((h * (384 + 16)) as isize),
+            &mut *sum.offset((h * (384 + 16)) as isize),
             0 as *const [pixel; 4],
             lpf.offset((6 * PXSTRIDE(stride)) as isize),
             stride,

@@ -86,12 +86,12 @@ pub unsafe extern "C" fn dav1d_mem_pool_push(
 ) {
     pthread_mutex_lock(&mut (*pool).lock);
     (*pool).ref_cnt -= 1;
-    let ref_cnt: libc::c_int = (*pool).ref_cnt;
+    let ref_cnt = (*pool).ref_cnt;
     if (*pool).end == 0 {
         (*buf).next = (*pool).buf;
         (*pool).buf = buf;
         pthread_mutex_unlock(&mut (*pool).lock);
-        if !(ref_cnt > 0 as libc::c_int) {
+        if !(ref_cnt > 0) {
             unreachable!();
         }
     } else {
@@ -143,7 +143,7 @@ pub unsafe extern "C" fn dav1d_mem_pool_pop(
             if data.is_null() {
                 pthread_mutex_lock(&mut (*pool).lock);
                 (*pool).ref_cnt -= 1;
-                let ref_cnt: libc::c_int = (*pool).ref_cnt;
+                let ref_cnt = (*pool).ref_cnt;
                 pthread_mutex_unlock(&mut (*pool).lock);
                 if ref_cnt == 0 {
                     mem_pool_destroy(pool);
@@ -185,7 +185,7 @@ pub unsafe extern "C" fn dav1d_mem_pool_end(pool: *mut Dav1dMemPool) {
         pthread_mutex_lock(&mut (*pool).lock);
         let mut buf: *mut Dav1dMemPoolBuffer = (*pool).buf;
         (*pool).ref_cnt -= 1;
-        let ref_cnt: libc::c_int = (*pool).ref_cnt;
+        let ref_cnt = (*pool).ref_cnt;
         (*pool).buf = 0 as *mut Dav1dMemPoolBuffer;
         (*pool).end = 1 as libc::c_int;
         pthread_mutex_unlock(&mut (*pool).lock);

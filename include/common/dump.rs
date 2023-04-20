@@ -18,7 +18,7 @@ pub unsafe extern "C" fn ac_dump(
         if !(fresh1 != 0) {
             break;
         }
-        let mut x: libc::c_int = 0 as libc::c_int;
+        let mut x = 0;
         while x < w {
             printf(
                 b" %03d\0" as *const u8 as *const libc::c_char,

@@ -74,8 +74,8 @@ pub unsafe extern "C" fn input_open(
 ) -> libc::c_int {
     let mut impl_0: *const Demuxer = 0 as *const Demuxer;
     let mut c: *mut DemuxerContext = 0 as *mut DemuxerContext;
-    let mut res: libc::c_int = 0;
-    let mut i: libc::c_int = 0;
+    let mut res = 0;
+    let mut i = 0;
     if !name.is_null() {
         i = 0 as libc::c_int;
         while !(demuxers[i as usize]).is_null() {
@@ -96,7 +96,7 @@ pub unsafe extern "C" fn input_open(
             return -(92 as libc::c_int);
         }
     } else {
-        let mut probe_sz: libc::c_int = 0 as libc::c_int;
+        let mut probe_sz = 0;
         i = 0 as libc::c_int;
         while !(demuxers[i as usize]).is_null() {
             probe_sz = imax(probe_sz, (*demuxers[i as usize]).probe_sz);
@@ -186,7 +186,7 @@ pub unsafe extern "C" fn input_open(
         .expect(
             "non-null function pointer",
         )((*c).data, filename, fps, num_frames, timebase);
-    if res < 0 as libc::c_int {
+    if res < 0 {
         free(c as *mut libc::c_void);
         return res;
     }

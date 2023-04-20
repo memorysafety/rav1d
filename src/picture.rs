@@ -767,18 +767,18 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     cookie: *mut libc::c_void,
 ) -> libc::c_int {
     if !(::core::mem::size_of::<Dav1dMemPoolBuffer>() as libc::c_ulong
-        <= 64 as libc::c_int as libc::c_ulong)
+        <= 64 as libc::c_ulong)
     {
         unreachable!();
     }
-    let hbd: libc::c_int = ((*p).p.bpc > 8 as libc::c_int) as libc::c_int;
-    let aligned_w: libc::c_int = (*p).p.w + 127 as libc::c_int & !(127 as libc::c_int);
-    let aligned_h: libc::c_int = (*p).p.h + 127 as libc::c_int & !(127 as libc::c_int);
-    let has_chroma: libc::c_int = ((*p).p.layout as libc::c_uint
+    let hbd = ((*p).p.bpc > 8) as libc::c_int;
+    let aligned_w = (*p).p.w + 127 & !(127 as libc::c_int);
+    let aligned_h = (*p).p.h + 127 & !(127 as libc::c_int);
+    let has_chroma = ((*p).p.layout as libc::c_uint
         != DAV1D_PIXEL_LAYOUT_I400 as libc::c_int as libc::c_uint) as libc::c_int;
-    let ss_ver: libc::c_int = ((*p).p.layout as libc::c_uint
+    let ss_ver = ((*p).p.layout as libc::c_uint
         == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint) as libc::c_int;
-    let ss_hor: libc::c_int = ((*p).p.layout as libc::c_uint
+    let ss_hor = ((*p).p.layout as libc::c_uint
         != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint) as libc::c_int;
     let mut y_stride: ptrdiff_t = (aligned_w << hbd) as ptrdiff_t;
     let mut uv_stride: ptrdiff_t = if has_chroma != 0 {
@@ -792,8 +792,8 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     if uv_stride & 1023 == 0 && has_chroma != 0 {
         uv_stride += 64;
     }
-    (*p).stride[0 as libc::c_int as usize] = y_stride;
-    (*p).stride[1 as libc::c_int as usize] = uv_stride;
+    (*p).stride[0] = y_stride;
+    (*p).stride[1] = uv_stride;
     let y_sz: size_t = (y_stride * aligned_h as isize) as size_t;
     let uv_sz: size_t = (uv_stride * (aligned_h >> ss_ver) as isize) as size_t;
     let pic_size: size_t = y_sz
@@ -809,7 +809,7 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     }
     (*p).allocator_data = buf as *mut libc::c_void;
     let data: *mut uint8_t = (*buf).data as *mut uint8_t;
-    (*p).data[0 as libc::c_int as usize] = data as *mut libc::c_void;
+    (*p).data[0] = data as *mut libc::c_void;
     (*p)
         .data[1 as libc::c_int
         as usize] = (if has_chroma != 0 {
@@ -865,14 +865,14 @@ unsafe extern "C" fn picture_alloc_with_edges(
     extra: size_t,
     extra_ptr: *mut *mut libc::c_void,
 ) -> libc::c_int {
-    if !((*p).data[0 as libc::c_int as usize]).is_null() {
+    if !((*p).data[0]).is_null() {
         dav1d_log(
             c,
             b"Picture already allocated!\n\0" as *const u8 as *const libc::c_char,
         );
         return -(1 as libc::c_int);
     }
-    if !(bpc > 0 as libc::c_int && bpc <= 16 as libc::c_int) {
+    if !(bpc > 0 && bpc <= 16) {
         unreachable!();
     }
     let mut pic_ctx: *mut pic_ctx_context = malloc(
@@ -891,9 +891,9 @@ unsafe extern "C" fn picture_alloc_with_edges(
     (*p).p.layout = (*seq_hdr).layout;
     (*p).p.bpc = bpc;
     dav1d_data_props_set_defaults(&mut (*p).m);
-    let res: libc::c_int = ((*p_allocator).alloc_picture_callback)
+    let res = ((*p_allocator).alloc_picture_callback)
         .expect("non-null function pointer")(p, (*p_allocator).cookie);
-    if res < 0 as libc::c_int {
+    if res < 0 {
         free(pic_ctx as *mut libc::c_void);
         return res;
     }
@@ -901,7 +901,7 @@ unsafe extern "C" fn picture_alloc_with_edges(
     (*pic_ctx).pic = *p;
     (*p)
         .r#ref = dav1d_ref_wrap(
-        (*p).data[0 as libc::c_int as usize] as *const uint8_t,
+        (*p).data[0] as *const uint8_t,
         Some(
             free_buffer as unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> (),
         ),
@@ -952,12 +952,12 @@ pub unsafe extern "C" fn dav1d_thread_picture_alloc(
     bpc: libc::c_int,
 ) -> libc::c_int {
     let p: *mut Dav1dThreadPicture = &mut (*f).sr_cur;
-    let have_frame_mt: libc::c_int = ((*c).n_fc > 1 as libc::c_int as libc::c_uint)
+    let have_frame_mt = ((*c).n_fc > 1 as libc::c_uint)
         as libc::c_int;
-    let res: libc::c_int = picture_alloc_with_edges(
+    let res = picture_alloc_with_edges(
         c,
         &mut (*p).p,
-        (*(*f).frame_hdr).width[1 as libc::c_int as usize],
+        (*(*f).frame_hdr).width[1],
         (*(*f).frame_hdr).height,
         (*f).seq_hdr,
         (*f).seq_hdr_ref,
@@ -970,7 +970,7 @@ pub unsafe extern "C" fn dav1d_thread_picture_alloc(
         (*c).itut_t35,
         (*c).itut_t35_ref,
         bpc,
-        &mut (*((*f).tile).offset(0 as libc::c_int as isize)).data.m,
+        &mut (*((*f).tile).offset(0)).data.m,
         &mut (*c).allocator,
         if have_frame_mt != 0 {
             (::core::mem::size_of::<atomic_int>())
@@ -985,7 +985,7 @@ pub unsafe extern "C" fn dav1d_thread_picture_alloc(
     }
     dav1d_ref_dec(&mut (*c).itut_t35_ref);
     (*c).itut_t35 = 0 as *mut Dav1dITUTT35;
-    let flags_mask: libc::c_int = if (*(*f).frame_hdr).show_frame != 0
+    let flags_mask = if (*(*f).frame_hdr).show_frame != 0
         || (*c).output_invisible_frames != 0
     {
         0 as libc::c_int
@@ -1002,9 +1002,9 @@ pub unsafe extern "C" fn dav1d_thread_picture_alloc(
     (*p).visible = (*(*f).frame_hdr).show_frame;
     (*p).showable = (*(*f).frame_hdr).showable_frame;
     if have_frame_mt != 0 {
-        *(&mut *((*p).progress).offset(0 as libc::c_int as isize)
+        *(&mut *((*p).progress).offset(0)
             as *mut atomic_uint) = 0 as libc::c_int as libc::c_uint;
-        *(&mut *((*p).progress).offset(1 as libc::c_int as isize)
+        *(&mut *((*p).progress).offset(1)
             as *mut atomic_uint) = 0 as libc::c_int as libc::c_uint;
     }
     return res;
@@ -1018,7 +1018,7 @@ pub unsafe extern "C" fn dav1d_picture_alloc_copy(
 ) -> libc::c_int {
     let pic_ctx: *mut pic_ctx_context = (*(*src).r#ref).user_data
         as *mut pic_ctx_context;
-    let res: libc::c_int = picture_alloc_with_edges(
+    let res = picture_alloc_with_edges(
         c,
         dst,
         w,
@@ -1060,7 +1060,7 @@ pub unsafe extern "C" fn dav1d_picture_ref(
         );
         return;
     }
-    if !((*dst).data[0 as libc::c_int as usize]).is_null() {
+    if !((*dst).data[0]).is_null() {
         fprintf(
             stderr,
             b"Input validation check '%s' failed in %s!\n\0" as *const u8
@@ -1089,7 +1089,7 @@ pub unsafe extern "C" fn dav1d_picture_ref(
         return;
     }
     if !((*src).r#ref).is_null() {
-        if ((*src).data[0 as libc::c_int as usize]).is_null() {
+        if ((*src).data[0]).is_null() {
             fprintf(
                 stderr,
                 b"Input validation check '%s' failed in %s!\n\0" as *const u8
@@ -1144,7 +1144,7 @@ pub unsafe extern "C" fn dav1d_picture_move_ref(
         );
         return;
     }
-    if !((*dst).data[0 as libc::c_int as usize]).is_null() {
+    if !((*dst).data[0]).is_null() {
         fprintf(
             stderr,
             b"Input validation check '%s' failed in %s!\n\0" as *const u8
@@ -1173,7 +1173,7 @@ pub unsafe extern "C" fn dav1d_picture_move_ref(
         return;
     }
     if !((*src).r#ref).is_null() {
-        if ((*src).data[0 as libc::c_int as usize]).is_null() {
+        if ((*src).data[0]).is_null() {
             fprintf(
                 stderr,
                 b"Input validation check '%s' failed in %s!\n\0" as *const u8
@@ -1239,7 +1239,7 @@ pub unsafe extern "C" fn dav1d_picture_unref_internal(p: *mut Dav1dPicture) {
         return;
     }
     if !((*p).r#ref).is_null() {
-        if ((*p).data[0 as libc::c_int as usize]).is_null() {
+        if ((*p).data[0]).is_null() {
             fprintf(
                 stderr,
                 b"Input validation check '%s' failed in %s!\n\0" as *const u8

@@ -395,7 +395,7 @@ unsafe extern "C" fn error(
     shouldbe: *const libc::c_char,
 ) {
     let mut optname: [libc::c_char; 256] = [0; 256];
-    let mut n: libc::c_int = 0;
+    let mut n = 0;
     n = 0 as libc::c_int;
     while !(long_opts[n as usize].name).is_null() {
         if long_opts[n as usize].val == option {
@@ -406,7 +406,7 @@ unsafe extern "C" fn error(
     if (long_opts[n as usize].name).is_null() {
         unreachable!();
     }
-    if long_opts[n as usize].val < 256 as libc::c_int {
+    if long_opts[n as usize].val < 256 {
         sprintf(
             optname.as_mut_ptr(),
             b"-%c/--%s\0" as *const u8 as *const libc::c_char,
@@ -459,7 +459,7 @@ unsafe extern "C" fn parse_optional_fraction(
     let mut end: *mut libc::c_char = 0 as *mut libc::c_char;
     *value = strtod(optarg_0, &mut end);
     if *end as libc::c_int == '/' as i32 && end != optarg_0 as *mut libc::c_char {
-        let mut optarg2: *const libc::c_char = end.offset(1 as libc::c_int as isize);
+        let mut optarg2: *const libc::c_char = end.offset(1);
         *value /= strtod(optarg2, &mut end);
         if *end as libc::c_int != 0 || end == optarg2 as *mut libc::c_char {
             error(
@@ -623,13 +623,13 @@ unsafe extern "C" fn parse_enum(
 ) -> libc::c_uint {
     let mut str: [libc::c_char; 1024] = [0; 1024];
     strcpy(str.as_mut_ptr(), b"any of \0" as *const u8 as *const libc::c_char);
-    let mut n: libc::c_int = 0 as libc::c_int;
+    let mut n = 0;
     while n < tbl_sz {
         if strcmp((*tbl.offset(n as isize)).str_0, optarg_0) == 0 {
             return (*tbl.offset(n as isize)).val as libc::c_uint;
         }
         if n != 0 {
-            if n < tbl_sz - 1 as libc::c_int {
+            if n < tbl_sz - 1 {
                 strcat(str.as_mut_ptr(), b", \0" as *const u8 as *const libc::c_char);
             } else {
                 strcat(str.as_mut_ptr(), b" or \0" as *const u8 as *const libc::c_char);
@@ -647,7 +647,7 @@ unsafe extern "C" fn parse_enum(
     ) == 0
     {
         res = strtoul(
-            &mut *optarg_0.offset(2 as libc::c_int as isize),
+            &mut *optarg_0.offset(2),
             &mut end,
             16 as libc::c_int,
         ) as libc::c_uint;
@@ -671,7 +671,7 @@ pub unsafe extern "C" fn parse(
     cli_settings: *mut CLISettings,
     lib_settings: *mut Dav1dSettings,
 ) {
-    let mut o: libc::c_int = 0;
+    let mut o = 0;
     memset(
         cli_settings as *mut libc::c_void,
         0 as libc::c_int,
@@ -679,7 +679,7 @@ pub unsafe extern "C" fn parse(
     );
     dav1d_default_settings(lib_settings);
     (*lib_settings).strict_std_compliance = 1 as libc::c_int;
-    let mut grain_specified: libc::c_int = 0 as libc::c_int;
+    let mut grain_specified = 0;
     loop {
         o = getopt_long(
             argc,
@@ -706,7 +706,7 @@ pub unsafe extern "C" fn parse(
                     .limit = parse_unsigned(
                     optarg,
                     'l' as i32,
-                    *argv.offset(0 as libc::c_int as isize),
+                    *argv.offset(0),
                 );
             }
             115 => {
@@ -714,7 +714,7 @@ pub unsafe extern "C" fn parse(
                     .skip = parse_unsigned(
                     optarg,
                     's' as i32,
-                    *argv.offset(0 as libc::c_int as isize),
+                    *argv.offset(0),
                 );
             }
             256 => {
@@ -729,7 +729,7 @@ pub unsafe extern "C" fn parse(
             259 => {
                 if optarg.is_null() && optind < argc
                     && !(*argv.offset(optind as isize)).is_null()
-                    && *(*argv.offset(optind as isize)).offset(0 as libc::c_int as isize)
+                    && *(*argv.offset(optind as isize)).offset(0)
                         as libc::c_int != '-' as i32
                 {
                     optarg = *argv.offset(optind as isize);
@@ -740,7 +740,7 @@ pub unsafe extern "C" fn parse(
                     + parse_optional_fraction(
                         optarg,
                         ARG_REALTIME as libc::c_int,
-                        *argv.offset(0 as libc::c_int as isize),
+                        *argv.offset(0),
                         &mut (*cli_settings).realtime_fps,
                     )) as CLISettings_realtime;
             }
@@ -749,7 +749,7 @@ pub unsafe extern "C" fn parse(
                     .realtime_cache = parse_unsigned(
                     optarg,
                     ARG_REALTIME_CACHE as libc::c_int,
-                    *argv.offset(0 as libc::c_int as isize),
+                    *argv.offset(0),
                 );
             }
             262 => {
@@ -757,7 +757,7 @@ pub unsafe extern "C" fn parse(
                     .max_frame_delay = parse_unsigned(
                     optarg,
                     ARG_FRAME_DELAY as libc::c_int,
-                    *argv.offset(0 as libc::c_int as isize),
+                    *argv.offset(0),
                 ) as libc::c_int;
             }
             261 => {
@@ -765,7 +765,7 @@ pub unsafe extern "C" fn parse(
                     .n_threads = parse_unsigned(
                     optarg,
                     ARG_THREADS as libc::c_int,
-                    *argv.offset(0 as libc::c_int as isize),
+                    *argv.offset(0),
                 ) as libc::c_int;
             }
             263 => {
@@ -776,7 +776,7 @@ pub unsafe extern "C" fn parse(
                     .apply_grain = (parse_unsigned(
                     optarg,
                     ARG_FILM_GRAIN as libc::c_int,
-                    *argv.offset(0 as libc::c_int as isize),
+                    *argv.offset(0),
                 ) != 0) as libc::c_int;
                 grain_specified = 1 as libc::c_int;
             }
@@ -785,7 +785,7 @@ pub unsafe extern "C" fn parse(
                     .operating_point = parse_unsigned(
                     optarg,
                     ARG_OPPOINT as libc::c_int,
-                    *argv.offset(0 as libc::c_int as isize),
+                    *argv.offset(0),
                 ) as libc::c_int;
             }
             266 => {
@@ -793,7 +793,7 @@ pub unsafe extern "C" fn parse(
                     .all_layers = (parse_unsigned(
                     optarg,
                     ARG_ALL_LAYERS as libc::c_int,
-                    *argv.offset(0 as libc::c_int as isize),
+                    *argv.offset(0),
                 ) != 0) as libc::c_int;
             }
             267 => {
@@ -801,7 +801,7 @@ pub unsafe extern "C" fn parse(
                 let mut end: *mut libc::c_char = 0 as *mut libc::c_char;
                 let mut res: uint64_t = strtoul(arg, &mut end, 0) as uint64_t;
                 if *end as libc::c_int == 'x' as i32 {
-                    arg = end.offset(1 as libc::c_int as isize);
+                    arg = end.offset(1);
                     res = (res as libc::c_ulong)
                         .wrapping_mul(strtoul(arg, &mut end, 0))
                         as uint64_t as uint64_t;
@@ -810,7 +810,7 @@ pub unsafe extern "C" fn parse(
                     || res >= u32::MAX as uint64_t
                 {
                     error(
-                        *argv.offset(0 as libc::c_int as isize),
+                        *argv.offset(0),
                         optarg,
                         ARG_SIZE_LIMIT as libc::c_int,
                         b"an integer or dimension\0" as *const u8 as *const libc::c_char,
@@ -823,7 +823,7 @@ pub unsafe extern "C" fn parse(
                     .strict_std_compliance = parse_unsigned(
                     optarg,
                     ARG_STRICT_STD_COMPLIANCE as libc::c_int,
-                    *argv.offset(0 as libc::c_int as isize),
+                    *argv.offset(0),
                 ) as libc::c_int;
             }
             118 => {
@@ -844,7 +844,7 @@ pub unsafe extern "C" fn parse(
                                 ::core::mem::size_of::<EnumParseTable>() as libc::c_ulong,
                             ) as libc::c_int,
                         ARG_CPU_MASK as libc::c_int,
-                        *argv.offset(0 as libc::c_int as isize),
+                        *argv.offset(0),
                     ),
                 );
             }
@@ -856,7 +856,7 @@ pub unsafe extern "C" fn parse(
                     .output_invisible_frames = (parse_unsigned(
                     optarg,
                     ARG_OUTPUT_INVISIBLE as libc::c_int,
-                    *argv.offset(0 as libc::c_int as isize),
+                    *argv.offset(0),
                 ) != 0) as libc::c_int;
             }
             272 => {
@@ -869,7 +869,7 @@ pub unsafe extern "C" fn parse(
                             ::core::mem::size_of::<EnumParseTable>() as libc::c_ulong,
                         ) as libc::c_int,
                     ARG_INLOOP_FILTERS as libc::c_int,
-                    *argv.offset(0 as libc::c_int as isize),
+                    *argv.offset(0),
                 ) as Dav1dInloopFilterType;
             }
             273 => {
@@ -882,17 +882,17 @@ pub unsafe extern "C" fn parse(
                             ::core::mem::size_of::<EnumParseTable>() as libc::c_ulong,
                         ) as libc::c_int,
                     ARG_DECODE_FRAME_TYPE as libc::c_int,
-                    *argv.offset(0 as libc::c_int as isize),
+                    *argv.offset(0),
                 ) as Dav1dDecodeFrameType;
             }
             _ => {
-                usage(*argv.offset(0 as libc::c_int as isize), 0 as *const libc::c_char);
+                usage(*argv.offset(0), 0 as *const libc::c_char);
             }
         }
     }
     if optind < argc {
         usage(
-            *argv.offset(0 as libc::c_int as isize),
+            *argv.offset(0),
             b"Extra/unused arguments found, e.g. '%s'\n\0" as *const u8
                 as *const libc::c_char,
             *argv.offset(optind as isize),
@@ -901,7 +901,7 @@ pub unsafe extern "C" fn parse(
     if !((*cli_settings).verify).is_null() {
         if !((*cli_settings).outputfile).is_null() {
             usage(
-                *argv.offset(0 as libc::c_int as isize),
+                *argv.offset(0),
                 b"Verification (--verify) requires output file (-o/--output) to not set\0"
                     as *const u8 as *const libc::c_char,
             );
@@ -917,7 +917,7 @@ pub unsafe extern "C" fn parse(
             ) != 0
         {
             usage(
-                *argv.offset(0 as libc::c_int as isize),
+                *argv.offset(0),
                 b"Verification (--verify) requires a checksum muxer (md5 or xxh3)\0"
                     as *const u8 as *const libc::c_char,
             );
@@ -939,7 +939,7 @@ pub unsafe extern "C" fn parse(
     }
     if ((*cli_settings).inputfile).is_null() {
         usage(
-            *argv.offset(0 as libc::c_int as isize),
+            *argv.offset(0),
             b"Input file (-i/--input) is required\0" as *const u8 as *const libc::c_char,
         );
     }
@@ -948,7 +948,7 @@ pub unsafe extern "C" fn parse(
             != 0) && ((*cli_settings).outputfile).is_null()
     {
         usage(
-            *argv.offset(0 as libc::c_int as isize),
+            *argv.offset(0),
             b"Output file (-o/--output) is required\0" as *const u8
                 as *const libc::c_char,
         );

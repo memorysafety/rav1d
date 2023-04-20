@@ -846,11 +846,11 @@ pub static mut dav1d_comp_inter_pred_modes: [[uint8_t; 2]; 8] = [
 ];
 #[no_mangle]
 pub static mut dav1d_partition_type_count: [uint8_t; 5] = [
-    (N_PARTITIONS as libc::c_int - 3 as libc::c_int) as uint8_t,
-    (N_PARTITIONS as libc::c_int - 1 as libc::c_int) as uint8_t,
-    (N_PARTITIONS as libc::c_int - 1 as libc::c_int) as uint8_t,
-    (N_PARTITIONS as libc::c_int - 1 as libc::c_int) as uint8_t,
-    (N_SUB8X8_PARTITIONS as libc::c_int - 1 as libc::c_int) as uint8_t,
+    (N_PARTITIONS as libc::c_int - 3) as uint8_t,
+    (N_PARTITIONS as libc::c_int - 1) as uint8_t,
+    (N_PARTITIONS as libc::c_int - 1) as uint8_t,
+    (N_PARTITIONS as libc::c_int - 1) as uint8_t,
+    (N_SUB8X8_PARTITIONS as libc::c_int - 1) as uint8_t,
 ];
 #[no_mangle]
 pub static mut dav1d_tx_types_per_set: [uint8_t; 40] = [
@@ -1213,10 +1213,10 @@ pub static mut dav1d_default_wm_params: Dav1dWarpedMotionParams = {
         matrix: [
             0 as libc::c_int,
             0 as libc::c_int,
-            (1 as libc::c_int) << 16 as libc::c_int,
+            (1 as libc::c_int) << 16,
             0 as libc::c_int,
             0 as libc::c_int,
-            (1 as libc::c_int) << 16 as libc::c_int,
+            (1 as libc::c_int) << 16,
         ],
         u: Dav1dWarpedMotionParams_u {
             p: {
@@ -1235,52 +1235,52 @@ pub static mut dav1d_default_wm_params: Dav1dWarpedMotionParams = {
 #[no_mangle]
 pub static mut dav1d_cdef_directions: [[int8_t; 2]; 12] = [
     [
-        (1 as libc::c_int * 12 as libc::c_int + 0 as libc::c_int) as int8_t,
-        (2 as libc::c_int * 12 as libc::c_int + 0 as libc::c_int) as int8_t,
+        (1 * 12 + 0) as int8_t,
+        (2 * 12 + 0) as int8_t,
     ],
     [
-        (1 as libc::c_int * 12 as libc::c_int + 0 as libc::c_int) as int8_t,
-        (2 as libc::c_int * 12 as libc::c_int - 1 as libc::c_int) as int8_t,
+        (1 * 12 + 0) as int8_t,
+        (2 * 12 - 1) as int8_t,
     ],
     [
-        (-(1 as libc::c_int) * 12 as libc::c_int + 1 as libc::c_int) as int8_t,
-        (-(2 as libc::c_int) * 12 as libc::c_int + 2 as libc::c_int) as int8_t,
+        (-(1 as libc::c_int) * 12 + 1) as int8_t,
+        (-(2 as libc::c_int) * 12 + 2) as int8_t,
     ],
     [
-        (0 as libc::c_int * 12 as libc::c_int + 1 as libc::c_int) as int8_t,
-        (-(1 as libc::c_int) * 12 as libc::c_int + 2 as libc::c_int) as int8_t,
+        (0 * 12 + 1) as int8_t,
+        (-(1 as libc::c_int) * 12 + 2) as int8_t,
     ],
     [
-        (0 as libc::c_int * 12 as libc::c_int + 1 as libc::c_int) as int8_t,
-        (0 as libc::c_int * 12 as libc::c_int + 2 as libc::c_int) as int8_t,
+        (0 * 12 + 1) as int8_t,
+        (0 * 12 + 2) as int8_t,
     ],
     [
-        (0 as libc::c_int * 12 as libc::c_int + 1 as libc::c_int) as int8_t,
-        (1 as libc::c_int * 12 as libc::c_int + 2 as libc::c_int) as int8_t,
+        (0 * 12 + 1) as int8_t,
+        (1 * 12 + 2) as int8_t,
     ],
     [
-        (1 as libc::c_int * 12 as libc::c_int + 1 as libc::c_int) as int8_t,
-        (2 as libc::c_int * 12 as libc::c_int + 2 as libc::c_int) as int8_t,
+        (1 * 12 + 1) as int8_t,
+        (2 * 12 + 2) as int8_t,
     ],
     [
-        (1 as libc::c_int * 12 as libc::c_int + 0 as libc::c_int) as int8_t,
-        (2 as libc::c_int * 12 as libc::c_int + 1 as libc::c_int) as int8_t,
+        (1 * 12 + 0) as int8_t,
+        (2 * 12 + 1) as int8_t,
     ],
     [
-        (1 as libc::c_int * 12 as libc::c_int + 0 as libc::c_int) as int8_t,
-        (2 as libc::c_int * 12 as libc::c_int + 0 as libc::c_int) as int8_t,
+        (1 * 12 + 0) as int8_t,
+        (2 * 12 + 0) as int8_t,
     ],
     [
-        (1 as libc::c_int * 12 as libc::c_int + 0 as libc::c_int) as int8_t,
-        (2 as libc::c_int * 12 as libc::c_int - 1 as libc::c_int) as int8_t,
+        (1 * 12 + 0) as int8_t,
+        (2 * 12 - 1) as int8_t,
     ],
     [
-        (-(1 as libc::c_int) * 12 as libc::c_int + 1 as libc::c_int) as int8_t,
-        (-(2 as libc::c_int) * 12 as libc::c_int + 2 as libc::c_int) as int8_t,
+        (-(1 as libc::c_int) * 12 + 1) as int8_t,
+        (-(2 as libc::c_int) * 12 + 2) as int8_t,
     ],
     [
-        (0 as libc::c_int * 12 as libc::c_int + 1 as libc::c_int) as int8_t,
-        (-(1 as libc::c_int) * 12 as libc::c_int + 2 as libc::c_int) as int8_t,
+        (0 * 12 + 1) as int8_t,
+        (-(1 as libc::c_int) * 12 + 2) as int8_t,
     ],
 ];
 #[no_mangle]

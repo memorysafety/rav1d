@@ -87,15 +87,15 @@ unsafe extern "C" fn ivf_probe(data: *const uint8_t) -> libc::c_int {
     ) == 0) as libc::c_int;
 }
 unsafe extern "C" fn rl32(p: *const uint8_t) -> libc::c_uint {
-    return (*p.offset(3 as libc::c_int as isize) as uint32_t) << 24 as libc::c_uint
-        | ((*p.offset(2 as libc::c_int as isize) as libc::c_int) << 16 as libc::c_uint)
+    return (*p.offset(3) as uint32_t) << 24 as libc::c_uint
+        | ((*p.offset(2) as libc::c_int) << 16 as libc::c_uint)
             as libc::c_uint
-        | ((*p.offset(1 as libc::c_int as isize) as libc::c_int) << 8 as libc::c_uint)
-            as libc::c_uint | *p.offset(0 as libc::c_int as isize) as libc::c_uint;
+        | ((*p.offset(1) as libc::c_int) << 8 as libc::c_uint)
+            as libc::c_uint | *p.offset(0) as libc::c_uint;
 }
 unsafe extern "C" fn rl64(p: *const uint8_t) -> int64_t {
-    return ((rl32(&*p.offset(4 as libc::c_int as isize)) as uint64_t)
-        << 32 as libc::c_int | rl32(p) as uint64_t) as int64_t;
+    return ((rl32(&*p.offset(4)) as uint64_t)
+        << 32 | rl32(p) as uint64_t) as int64_t;
 }
 unsafe extern "C" fn ivf_open(
     c: *mut IvfInputContext,
@@ -143,16 +143,16 @@ unsafe extern "C" fn ivf_open(
                         as *const u8 as *const libc::c_char,
                     file,
                     hdr.as_mut_ptr(),
-                    hdr[0 as libc::c_int as usize] as libc::c_int,
-                    hdr[1 as libc::c_int as usize] as libc::c_int,
-                    hdr[2 as libc::c_int as usize] as libc::c_int,
-                    hdr[3 as libc::c_int as usize] as libc::c_int,
+                    hdr[0] as libc::c_int,
+                    hdr[1] as libc::c_int,
+                    hdr[2] as libc::c_int,
+                    hdr[3] as libc::c_int,
                 );
                 fclose((*c).f);
                 return -(1 as libc::c_int);
             } else {
                 if memcmp(
-                    &mut *hdr.as_mut_ptr().offset(8 as libc::c_int as isize)
+                    &mut *hdr.as_mut_ptr().offset(8)
                         as *mut uint8_t as *const libc::c_void,
                     b"AV01\0" as *const u8 as *const libc::c_char as *const libc::c_void,
                     4,
@@ -163,12 +163,12 @@ unsafe extern "C" fn ivf_open(
                         b"%s is not an AV1 file [tag=%.4s|0x%02x%02x%02x%02x]\n\0"
                             as *const u8 as *const libc::c_char,
                         file,
-                        &mut *hdr.as_mut_ptr().offset(8 as libc::c_int as isize)
+                        &mut *hdr.as_mut_ptr().offset(8)
                             as *mut uint8_t,
-                        hdr[8 as libc::c_int as usize] as libc::c_int,
-                        hdr[9 as libc::c_int as usize] as libc::c_int,
-                        hdr[10 as libc::c_int as usize] as libc::c_int,
-                        hdr[11 as libc::c_int as usize] as libc::c_int,
+                        hdr[8] as libc::c_int,
+                        hdr[9] as libc::c_int,
+                        hdr[10] as libc::c_int,
+                        hdr[11] as libc::c_int,
                     );
                     fclose((*c).f);
                     return -(1 as libc::c_int);
@@ -179,13 +179,13 @@ unsafe extern "C" fn ivf_open(
     *timebase
         .offset(
             0 as libc::c_int as isize,
-        ) = rl32(&mut *hdr.as_mut_ptr().offset(16 as libc::c_int as isize));
+        ) = rl32(&mut *hdr.as_mut_ptr().offset(16));
     *timebase
         .offset(
             1 as libc::c_int as isize,
-        ) = rl32(&mut *hdr.as_mut_ptr().offset(20 as libc::c_int as isize));
+        ) = rl32(&mut *hdr.as_mut_ptr().offset(20));
     let duration: libc::c_uint = rl32(
-        &mut *hdr.as_mut_ptr().offset(24 as libc::c_int as isize),
+        &mut *hdr.as_mut_ptr().offset(24),
     );
     let mut data: [uint8_t; 8] = [0; 8];
     (*c).broken = 0 as libc::c_int;
@@ -235,21 +235,21 @@ unsafe extern "C" fn ivf_open(
         fps_den = fps_den.wrapping_div(gcd);
         while fps_num | fps_den > u32::MAX as u64
         {
-            fps_num >>= 1 as libc::c_int;
-            fps_den >>= 1 as libc::c_int;
+            fps_num >>= 1;
+            fps_den >>= 1;
         }
     }
     if fps_num != 0 && fps_den != 0 {
-        *fps.offset(0 as libc::c_int as isize) = fps_num as libc::c_uint;
-        *fps.offset(1 as libc::c_int as isize) = fps_den as libc::c_uint;
+        *fps.offset(0) = fps_num as libc::c_uint;
+        *fps.offset(1) = fps_den as libc::c_uint;
     } else {
-        let ref mut fresh0 = *fps.offset(1 as libc::c_int as isize);
+        let ref mut fresh0 = *fps.offset(1);
         *fresh0 = 0 as libc::c_int as libc::c_uint;
-        *fps.offset(0 as libc::c_int as isize) = *fresh0;
+        *fps.offset(0) = *fresh0;
     }
     (*c)
-        .timebase = *timebase.offset(0 as libc::c_int as isize) as libc::c_double
-        / *timebase.offset(1 as libc::c_int as isize) as libc::c_double;
+        .timebase = *timebase.offset(0) as libc::c_double
+        / *timebase.offset(1) as libc::c_double;
     (*c).step = duration.wrapping_div(*num_frames) as uint64_t;
     fseeko64((*c).f, 32, 0);
     (*c).last_ts = 0 as libc::c_int as uint64_t;

@@ -160,30 +160,30 @@ unsafe extern "C" fn md5_open(
             return -(1 as libc::c_int);
         }
     }
-    (*md5).abcd[0 as libc::c_int as usize] = 0x67452301 as libc::c_int as uint32_t;
-    (*md5).abcd[1 as libc::c_int as usize] = 0xefcdab89 as libc::c_uint;
-    (*md5).abcd[2 as libc::c_int as usize] = 0x98badcfe as libc::c_uint;
-    (*md5).abcd[3 as libc::c_int as usize] = 0x10325476 as libc::c_int as uint32_t;
+    (*md5).abcd[0] = 0x67452301 as libc::c_int as uint32_t;
+    (*md5).abcd[1] = 0xefcdab89 as libc::c_uint;
+    (*md5).abcd[2] = 0x98badcfe as libc::c_uint;
+    (*md5).abcd[3] = 0x10325476 as libc::c_int as uint32_t;
     (*md5).len = 0 as libc::c_int as uint64_t;
     return 0 as libc::c_int;
 }
 #[inline]
 unsafe extern "C" fn leftrotate(x: uint32_t, c: libc::c_int) -> uint32_t {
-    return x << c | x >> 32 as libc::c_int - c;
+    return x << c | x >> 32 - c;
 }
 unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
-    let mut a: uint32_t = (*md5).abcd[0 as libc::c_int as usize];
-    let mut b: uint32_t = (*md5).abcd[1 as libc::c_int as usize];
-    let mut c: uint32_t = (*md5).abcd[2 as libc::c_int as usize];
-    let mut d: uint32_t = (*md5).abcd[3 as libc::c_int as usize];
+    let mut a: uint32_t = (*md5).abcd[0];
+    let mut b: uint32_t = (*md5).abcd[1];
+    let mut c: uint32_t = (*md5).abcd[2];
+    let mut d: uint32_t = (*md5).abcd[3];
     a = b
         .wrapping_add(
             leftrotate(
                 a
                     .wrapping_add(b & c | !b & d)
-                    .wrapping_add(k[(0 as libc::c_int + 0 as libc::c_int) as usize])
+                    .wrapping_add(k[(0 + 0) as usize])
                     .wrapping_add(
-                        *data.offset((0 as libc::c_int + 0 as libc::c_int) as isize),
+                        *data.offset((0 + 0) as isize),
                     ),
                 7 as libc::c_int,
             ),
@@ -193,9 +193,9 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 d
                     .wrapping_add(a & b | !a & c)
-                    .wrapping_add(k[(0 as libc::c_int + 1 as libc::c_int) as usize])
+                    .wrapping_add(k[(0 + 1) as usize])
                     .wrapping_add(
-                        *data.offset((0 as libc::c_int + 1 as libc::c_int) as isize),
+                        *data.offset((0 + 1) as isize),
                     ),
                 12 as libc::c_int,
             ),
@@ -205,9 +205,9 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 c
                     .wrapping_add(d & a | !d & b)
-                    .wrapping_add(k[(0 as libc::c_int + 2 as libc::c_int) as usize])
+                    .wrapping_add(k[(0 + 2) as usize])
                     .wrapping_add(
-                        *data.offset((0 as libc::c_int + 2 as libc::c_int) as isize),
+                        *data.offset((0 + 2) as isize),
                     ),
                 17 as libc::c_int,
             ),
@@ -217,9 +217,9 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 b
                     .wrapping_add(c & d | !c & a)
-                    .wrapping_add(k[(0 as libc::c_int + 3 as libc::c_int) as usize])
+                    .wrapping_add(k[(0 + 3) as usize])
                     .wrapping_add(
-                        *data.offset((0 as libc::c_int + 3 as libc::c_int) as isize),
+                        *data.offset((0 + 3) as isize),
                     ),
                 22 as libc::c_int,
             ),
@@ -229,9 +229,9 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 a
                     .wrapping_add(b & c | !b & d)
-                    .wrapping_add(k[(4 as libc::c_int + 0 as libc::c_int) as usize])
+                    .wrapping_add(k[(4 + 0) as usize])
                     .wrapping_add(
-                        *data.offset((4 as libc::c_int + 0 as libc::c_int) as isize),
+                        *data.offset((4 + 0) as isize),
                     ),
                 7 as libc::c_int,
             ),
@@ -241,9 +241,9 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 d
                     .wrapping_add(a & b | !a & c)
-                    .wrapping_add(k[(4 as libc::c_int + 1 as libc::c_int) as usize])
+                    .wrapping_add(k[(4 + 1) as usize])
                     .wrapping_add(
-                        *data.offset((4 as libc::c_int + 1 as libc::c_int) as isize),
+                        *data.offset((4 + 1) as isize),
                     ),
                 12 as libc::c_int,
             ),
@@ -253,9 +253,9 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 c
                     .wrapping_add(d & a | !d & b)
-                    .wrapping_add(k[(4 as libc::c_int + 2 as libc::c_int) as usize])
+                    .wrapping_add(k[(4 + 2) as usize])
                     .wrapping_add(
-                        *data.offset((4 as libc::c_int + 2 as libc::c_int) as isize),
+                        *data.offset((4 + 2) as isize),
                     ),
                 17 as libc::c_int,
             ),
@@ -265,9 +265,9 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 b
                     .wrapping_add(c & d | !c & a)
-                    .wrapping_add(k[(4 as libc::c_int + 3 as libc::c_int) as usize])
+                    .wrapping_add(k[(4 + 3) as usize])
                     .wrapping_add(
-                        *data.offset((4 as libc::c_int + 3 as libc::c_int) as isize),
+                        *data.offset((4 + 3) as isize),
                     ),
                 22 as libc::c_int,
             ),
@@ -277,9 +277,9 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 a
                     .wrapping_add(b & c | !b & d)
-                    .wrapping_add(k[(8 as libc::c_int + 0 as libc::c_int) as usize])
+                    .wrapping_add(k[(8 + 0) as usize])
                     .wrapping_add(
-                        *data.offset((8 as libc::c_int + 0 as libc::c_int) as isize),
+                        *data.offset((8 + 0) as isize),
                     ),
                 7 as libc::c_int,
             ),
@@ -289,9 +289,9 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 d
                     .wrapping_add(a & b | !a & c)
-                    .wrapping_add(k[(8 as libc::c_int + 1 as libc::c_int) as usize])
+                    .wrapping_add(k[(8 + 1) as usize])
                     .wrapping_add(
-                        *data.offset((8 as libc::c_int + 1 as libc::c_int) as isize),
+                        *data.offset((8 + 1) as isize),
                     ),
                 12 as libc::c_int,
             ),
@@ -301,9 +301,9 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 c
                     .wrapping_add(d & a | !d & b)
-                    .wrapping_add(k[(8 as libc::c_int + 2 as libc::c_int) as usize])
+                    .wrapping_add(k[(8 + 2) as usize])
                     .wrapping_add(
-                        *data.offset((8 as libc::c_int + 2 as libc::c_int) as isize),
+                        *data.offset((8 + 2) as isize),
                     ),
                 17 as libc::c_int,
             ),
@@ -313,9 +313,9 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 b
                     .wrapping_add(c & d | !c & a)
-                    .wrapping_add(k[(8 as libc::c_int + 3 as libc::c_int) as usize])
+                    .wrapping_add(k[(8 + 3) as usize])
                     .wrapping_add(
-                        *data.offset((8 as libc::c_int + 3 as libc::c_int) as isize),
+                        *data.offset((8 + 3) as isize),
                     ),
                 22 as libc::c_int,
             ),
@@ -325,9 +325,9 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 a
                     .wrapping_add(b & c | !b & d)
-                    .wrapping_add(k[(12 as libc::c_int + 0 as libc::c_int) as usize])
+                    .wrapping_add(k[(12 + 0) as usize])
                     .wrapping_add(
-                        *data.offset((12 as libc::c_int + 0 as libc::c_int) as isize),
+                        *data.offset((12 + 0) as isize),
                     ),
                 7 as libc::c_int,
             ),
@@ -337,9 +337,9 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 d
                     .wrapping_add(a & b | !a & c)
-                    .wrapping_add(k[(12 as libc::c_int + 1 as libc::c_int) as usize])
+                    .wrapping_add(k[(12 + 1) as usize])
                     .wrapping_add(
-                        *data.offset((12 as libc::c_int + 1 as libc::c_int) as isize),
+                        *data.offset((12 + 1) as isize),
                     ),
                 12 as libc::c_int,
             ),
@@ -349,9 +349,9 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 c
                     .wrapping_add(d & a | !d & b)
-                    .wrapping_add(k[(12 as libc::c_int + 2 as libc::c_int) as usize])
+                    .wrapping_add(k[(12 + 2) as usize])
                     .wrapping_add(
-                        *data.offset((12 as libc::c_int + 2 as libc::c_int) as isize),
+                        *data.offset((12 + 2) as isize),
                     ),
                 17 as libc::c_int,
             ),
@@ -361,9 +361,9 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 b
                     .wrapping_add(c & d | !c & a)
-                    .wrapping_add(k[(12 as libc::c_int + 3 as libc::c_int) as usize])
+                    .wrapping_add(k[(12 + 3) as usize])
                     .wrapping_add(
-                        *data.offset((12 as libc::c_int + 3 as libc::c_int) as isize),
+                        *data.offset((12 + 3) as isize),
                     ),
                 22 as libc::c_int,
             ),
@@ -373,11 +373,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 a
                     .wrapping_add(d & b | !d & c)
-                    .wrapping_add(k[(16 as libc::c_int + 0 as libc::c_int) as usize])
+                    .wrapping_add(k[(16 + 0) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (16 as libc::c_int + 1 as libc::c_int & 15 as libc::c_int)
+                                (16 + 1 & 15)
                                     as isize,
                             ),
                     ),
@@ -389,11 +389,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 d
                     .wrapping_add(c & a | !c & b)
-                    .wrapping_add(k[(16 as libc::c_int + 1 as libc::c_int) as usize])
+                    .wrapping_add(k[(16 + 1) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (16 as libc::c_int + 6 as libc::c_int & 15 as libc::c_int)
+                                (16 + 6 & 15)
                                     as isize,
                             ),
                     ),
@@ -405,11 +405,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 c
                     .wrapping_add(b & d | !b & a)
-                    .wrapping_add(k[(16 as libc::c_int + 2 as libc::c_int) as usize])
+                    .wrapping_add(k[(16 + 2) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (16 as libc::c_int + 11 as libc::c_int & 15 as libc::c_int)
+                                (16 + 11 & 15)
                                     as isize,
                             ),
                     ),
@@ -421,11 +421,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 b
                     .wrapping_add(a & c | !a & d)
-                    .wrapping_add(k[(16 as libc::c_int + 3 as libc::c_int) as usize])
+                    .wrapping_add(k[(16 + 3) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (16 as libc::c_int + 0 as libc::c_int & 15 as libc::c_int)
+                                (16 + 0 & 15)
                                     as isize,
                             ),
                     ),
@@ -437,11 +437,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 a
                     .wrapping_add(d & b | !d & c)
-                    .wrapping_add(k[(20 as libc::c_int + 0 as libc::c_int) as usize])
+                    .wrapping_add(k[(20 + 0) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (20 as libc::c_int + 1 as libc::c_int & 15 as libc::c_int)
+                                (20 + 1 & 15)
                                     as isize,
                             ),
                     ),
@@ -453,11 +453,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 d
                     .wrapping_add(c & a | !c & b)
-                    .wrapping_add(k[(20 as libc::c_int + 1 as libc::c_int) as usize])
+                    .wrapping_add(k[(20 + 1) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (20 as libc::c_int + 6 as libc::c_int & 15 as libc::c_int)
+                                (20 + 6 & 15)
                                     as isize,
                             ),
                     ),
@@ -469,11 +469,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 c
                     .wrapping_add(b & d | !b & a)
-                    .wrapping_add(k[(20 as libc::c_int + 2 as libc::c_int) as usize])
+                    .wrapping_add(k[(20 + 2) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (20 as libc::c_int + 11 as libc::c_int & 15 as libc::c_int)
+                                (20 + 11 & 15)
                                     as isize,
                             ),
                     ),
@@ -485,11 +485,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 b
                     .wrapping_add(a & c | !a & d)
-                    .wrapping_add(k[(20 as libc::c_int + 3 as libc::c_int) as usize])
+                    .wrapping_add(k[(20 + 3) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (20 as libc::c_int + 0 as libc::c_int & 15 as libc::c_int)
+                                (20 + 0 & 15)
                                     as isize,
                             ),
                     ),
@@ -501,11 +501,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 a
                     .wrapping_add(d & b | !d & c)
-                    .wrapping_add(k[(24 as libc::c_int + 0 as libc::c_int) as usize])
+                    .wrapping_add(k[(24 + 0) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (24 as libc::c_int + 1 as libc::c_int & 15 as libc::c_int)
+                                (24 + 1 & 15)
                                     as isize,
                             ),
                     ),
@@ -517,11 +517,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 d
                     .wrapping_add(c & a | !c & b)
-                    .wrapping_add(k[(24 as libc::c_int + 1 as libc::c_int) as usize])
+                    .wrapping_add(k[(24 + 1) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (24 as libc::c_int + 6 as libc::c_int & 15 as libc::c_int)
+                                (24 + 6 & 15)
                                     as isize,
                             ),
                     ),
@@ -533,11 +533,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 c
                     .wrapping_add(b & d | !b & a)
-                    .wrapping_add(k[(24 as libc::c_int + 2 as libc::c_int) as usize])
+                    .wrapping_add(k[(24 + 2) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (24 as libc::c_int + 11 as libc::c_int & 15 as libc::c_int)
+                                (24 + 11 & 15)
                                     as isize,
                             ),
                     ),
@@ -549,11 +549,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 b
                     .wrapping_add(a & c | !a & d)
-                    .wrapping_add(k[(24 as libc::c_int + 3 as libc::c_int) as usize])
+                    .wrapping_add(k[(24 + 3) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (24 as libc::c_int + 0 as libc::c_int & 15 as libc::c_int)
+                                (24 + 0 & 15)
                                     as isize,
                             ),
                     ),
@@ -565,11 +565,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 a
                     .wrapping_add(d & b | !d & c)
-                    .wrapping_add(k[(28 as libc::c_int + 0 as libc::c_int) as usize])
+                    .wrapping_add(k[(28 + 0) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (28 as libc::c_int + 1 as libc::c_int & 15 as libc::c_int)
+                                (28 + 1 & 15)
                                     as isize,
                             ),
                     ),
@@ -581,11 +581,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 d
                     .wrapping_add(c & a | !c & b)
-                    .wrapping_add(k[(28 as libc::c_int + 1 as libc::c_int) as usize])
+                    .wrapping_add(k[(28 + 1) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (28 as libc::c_int + 6 as libc::c_int & 15 as libc::c_int)
+                                (28 + 6 & 15)
                                     as isize,
                             ),
                     ),
@@ -597,11 +597,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 c
                     .wrapping_add(b & d | !b & a)
-                    .wrapping_add(k[(28 as libc::c_int + 2 as libc::c_int) as usize])
+                    .wrapping_add(k[(28 + 2) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (28 as libc::c_int + 11 as libc::c_int & 15 as libc::c_int)
+                                (28 + 11 & 15)
                                     as isize,
                             ),
                     ),
@@ -613,11 +613,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 b
                     .wrapping_add(a & c | !a & d)
-                    .wrapping_add(k[(28 as libc::c_int + 3 as libc::c_int) as usize])
+                    .wrapping_add(k[(28 + 3) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (28 as libc::c_int + 0 as libc::c_int & 15 as libc::c_int)
+                                (28 + 0 & 15)
                                     as isize,
                             ),
                     ),
@@ -629,11 +629,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 a
                     .wrapping_add(b ^ c ^ d)
-                    .wrapping_add(k[(32 as libc::c_int + 0 as libc::c_int) as usize])
+                    .wrapping_add(k[(32 + 0) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (5 as libc::c_int - 32 as libc::c_int & 15 as libc::c_int)
+                                (5 - 32 & 15)
                                     as isize,
                             ),
                     ),
@@ -645,11 +645,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 d
                     .wrapping_add(a ^ b ^ c)
-                    .wrapping_add(k[(32 as libc::c_int + 1 as libc::c_int) as usize])
+                    .wrapping_add(k[(32 + 1) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (8 as libc::c_int - 32 as libc::c_int & 15 as libc::c_int)
+                                (8 - 32 & 15)
                                     as isize,
                             ),
                     ),
@@ -661,11 +661,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 c
                     .wrapping_add(d ^ a ^ b)
-                    .wrapping_add(k[(32 as libc::c_int + 2 as libc::c_int) as usize])
+                    .wrapping_add(k[(32 + 2) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (11 as libc::c_int - 32 as libc::c_int & 15 as libc::c_int)
+                                (11 - 32 & 15)
                                     as isize,
                             ),
                     ),
@@ -677,11 +677,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 b
                     .wrapping_add(c ^ d ^ a)
-                    .wrapping_add(k[(32 as libc::c_int + 3 as libc::c_int) as usize])
+                    .wrapping_add(k[(32 + 3) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (14 as libc::c_int - 32 as libc::c_int & 15 as libc::c_int)
+                                (14 - 32 & 15)
                                     as isize,
                             ),
                     ),
@@ -693,11 +693,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 a
                     .wrapping_add(b ^ c ^ d)
-                    .wrapping_add(k[(36 as libc::c_int + 0 as libc::c_int) as usize])
+                    .wrapping_add(k[(36 + 0) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (5 as libc::c_int - 36 as libc::c_int & 15 as libc::c_int)
+                                (5 - 36 & 15)
                                     as isize,
                             ),
                     ),
@@ -709,11 +709,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 d
                     .wrapping_add(a ^ b ^ c)
-                    .wrapping_add(k[(36 as libc::c_int + 1 as libc::c_int) as usize])
+                    .wrapping_add(k[(36 + 1) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (8 as libc::c_int - 36 as libc::c_int & 15 as libc::c_int)
+                                (8 - 36 & 15)
                                     as isize,
                             ),
                     ),
@@ -725,11 +725,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 c
                     .wrapping_add(d ^ a ^ b)
-                    .wrapping_add(k[(36 as libc::c_int + 2 as libc::c_int) as usize])
+                    .wrapping_add(k[(36 + 2) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (11 as libc::c_int - 36 as libc::c_int & 15 as libc::c_int)
+                                (11 - 36 & 15)
                                     as isize,
                             ),
                     ),
@@ -741,11 +741,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 b
                     .wrapping_add(c ^ d ^ a)
-                    .wrapping_add(k[(36 as libc::c_int + 3 as libc::c_int) as usize])
+                    .wrapping_add(k[(36 + 3) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (14 as libc::c_int - 36 as libc::c_int & 15 as libc::c_int)
+                                (14 - 36 & 15)
                                     as isize,
                             ),
                     ),
@@ -757,11 +757,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 a
                     .wrapping_add(b ^ c ^ d)
-                    .wrapping_add(k[(40 as libc::c_int + 0 as libc::c_int) as usize])
+                    .wrapping_add(k[(40 + 0) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (5 as libc::c_int - 40 as libc::c_int & 15 as libc::c_int)
+                                (5 - 40 & 15)
                                     as isize,
                             ),
                     ),
@@ -773,11 +773,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 d
                     .wrapping_add(a ^ b ^ c)
-                    .wrapping_add(k[(40 as libc::c_int + 1 as libc::c_int) as usize])
+                    .wrapping_add(k[(40 + 1) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (8 as libc::c_int - 40 as libc::c_int & 15 as libc::c_int)
+                                (8 - 40 & 15)
                                     as isize,
                             ),
                     ),
@@ -789,11 +789,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 c
                     .wrapping_add(d ^ a ^ b)
-                    .wrapping_add(k[(40 as libc::c_int + 2 as libc::c_int) as usize])
+                    .wrapping_add(k[(40 + 2) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (11 as libc::c_int - 40 as libc::c_int & 15 as libc::c_int)
+                                (11 - 40 & 15)
                                     as isize,
                             ),
                     ),
@@ -805,11 +805,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 b
                     .wrapping_add(c ^ d ^ a)
-                    .wrapping_add(k[(40 as libc::c_int + 3 as libc::c_int) as usize])
+                    .wrapping_add(k[(40 + 3) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (14 as libc::c_int - 40 as libc::c_int & 15 as libc::c_int)
+                                (14 - 40 & 15)
                                     as isize,
                             ),
                     ),
@@ -821,11 +821,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 a
                     .wrapping_add(b ^ c ^ d)
-                    .wrapping_add(k[(44 as libc::c_int + 0 as libc::c_int) as usize])
+                    .wrapping_add(k[(44 + 0) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (5 as libc::c_int - 44 as libc::c_int & 15 as libc::c_int)
+                                (5 - 44 & 15)
                                     as isize,
                             ),
                     ),
@@ -837,11 +837,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 d
                     .wrapping_add(a ^ b ^ c)
-                    .wrapping_add(k[(44 as libc::c_int + 1 as libc::c_int) as usize])
+                    .wrapping_add(k[(44 + 1) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (8 as libc::c_int - 44 as libc::c_int & 15 as libc::c_int)
+                                (8 - 44 & 15)
                                     as isize,
                             ),
                     ),
@@ -853,11 +853,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 c
                     .wrapping_add(d ^ a ^ b)
-                    .wrapping_add(k[(44 as libc::c_int + 2 as libc::c_int) as usize])
+                    .wrapping_add(k[(44 + 2) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (11 as libc::c_int - 44 as libc::c_int & 15 as libc::c_int)
+                                (11 - 44 & 15)
                                     as isize,
                             ),
                     ),
@@ -869,11 +869,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 b
                     .wrapping_add(c ^ d ^ a)
-                    .wrapping_add(k[(44 as libc::c_int + 3 as libc::c_int) as usize])
+                    .wrapping_add(k[(44 + 3) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (14 as libc::c_int - 44 as libc::c_int & 15 as libc::c_int)
+                                (14 - 44 & 15)
                                     as isize,
                             ),
                     ),
@@ -885,11 +885,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 a
                     .wrapping_add(c ^ (b | !d))
-                    .wrapping_add(k[(48 as libc::c_int + 0 as libc::c_int) as usize])
+                    .wrapping_add(k[(48 + 0) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (0 as libc::c_int - 48 as libc::c_int & 15 as libc::c_int)
+                                (0 - 48 & 15)
                                     as isize,
                             ),
                     ),
@@ -901,11 +901,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 d
                     .wrapping_add(b ^ (a | !c))
-                    .wrapping_add(k[(48 as libc::c_int + 1 as libc::c_int) as usize])
+                    .wrapping_add(k[(48 + 1) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (7 as libc::c_int - 48 as libc::c_int & 15 as libc::c_int)
+                                (7 - 48 & 15)
                                     as isize,
                             ),
                     ),
@@ -917,11 +917,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 c
                     .wrapping_add(a ^ (d | !b))
-                    .wrapping_add(k[(48 as libc::c_int + 2 as libc::c_int) as usize])
+                    .wrapping_add(k[(48 + 2) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (14 as libc::c_int - 48 as libc::c_int & 15 as libc::c_int)
+                                (14 - 48 & 15)
                                     as isize,
                             ),
                     ),
@@ -933,11 +933,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 b
                     .wrapping_add(d ^ (c | !a))
-                    .wrapping_add(k[(48 as libc::c_int + 3 as libc::c_int) as usize])
+                    .wrapping_add(k[(48 + 3) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (5 as libc::c_int - 48 as libc::c_int & 15 as libc::c_int)
+                                (5 - 48 & 15)
                                     as isize,
                             ),
                     ),
@@ -949,11 +949,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 a
                     .wrapping_add(c ^ (b | !d))
-                    .wrapping_add(k[(52 as libc::c_int + 0 as libc::c_int) as usize])
+                    .wrapping_add(k[(52 + 0) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (0 as libc::c_int - 52 as libc::c_int & 15 as libc::c_int)
+                                (0 - 52 & 15)
                                     as isize,
                             ),
                     ),
@@ -965,11 +965,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 d
                     .wrapping_add(b ^ (a | !c))
-                    .wrapping_add(k[(52 as libc::c_int + 1 as libc::c_int) as usize])
+                    .wrapping_add(k[(52 + 1) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (7 as libc::c_int - 52 as libc::c_int & 15 as libc::c_int)
+                                (7 - 52 & 15)
                                     as isize,
                             ),
                     ),
@@ -981,11 +981,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 c
                     .wrapping_add(a ^ (d | !b))
-                    .wrapping_add(k[(52 as libc::c_int + 2 as libc::c_int) as usize])
+                    .wrapping_add(k[(52 + 2) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (14 as libc::c_int - 52 as libc::c_int & 15 as libc::c_int)
+                                (14 - 52 & 15)
                                     as isize,
                             ),
                     ),
@@ -997,11 +997,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 b
                     .wrapping_add(d ^ (c | !a))
-                    .wrapping_add(k[(52 as libc::c_int + 3 as libc::c_int) as usize])
+                    .wrapping_add(k[(52 + 3) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (5 as libc::c_int - 52 as libc::c_int & 15 as libc::c_int)
+                                (5 - 52 & 15)
                                     as isize,
                             ),
                     ),
@@ -1013,11 +1013,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 a
                     .wrapping_add(c ^ (b | !d))
-                    .wrapping_add(k[(56 as libc::c_int + 0 as libc::c_int) as usize])
+                    .wrapping_add(k[(56 + 0) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (0 as libc::c_int - 56 as libc::c_int & 15 as libc::c_int)
+                                (0 - 56 & 15)
                                     as isize,
                             ),
                     ),
@@ -1029,11 +1029,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 d
                     .wrapping_add(b ^ (a | !c))
-                    .wrapping_add(k[(56 as libc::c_int + 1 as libc::c_int) as usize])
+                    .wrapping_add(k[(56 + 1) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (7 as libc::c_int - 56 as libc::c_int & 15 as libc::c_int)
+                                (7 - 56 & 15)
                                     as isize,
                             ),
                     ),
@@ -1045,11 +1045,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 c
                     .wrapping_add(a ^ (d | !b))
-                    .wrapping_add(k[(56 as libc::c_int + 2 as libc::c_int) as usize])
+                    .wrapping_add(k[(56 + 2) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (14 as libc::c_int - 56 as libc::c_int & 15 as libc::c_int)
+                                (14 - 56 & 15)
                                     as isize,
                             ),
                     ),
@@ -1061,11 +1061,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 b
                     .wrapping_add(d ^ (c | !a))
-                    .wrapping_add(k[(56 as libc::c_int + 3 as libc::c_int) as usize])
+                    .wrapping_add(k[(56 + 3) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (5 as libc::c_int - 56 as libc::c_int & 15 as libc::c_int)
+                                (5 - 56 & 15)
                                     as isize,
                             ),
                     ),
@@ -1077,11 +1077,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 a
                     .wrapping_add(c ^ (b | !d))
-                    .wrapping_add(k[(60 as libc::c_int + 0 as libc::c_int) as usize])
+                    .wrapping_add(k[(60 + 0) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (0 as libc::c_int - 60 as libc::c_int & 15 as libc::c_int)
+                                (0 - 60 & 15)
                                     as isize,
                             ),
                     ),
@@ -1093,11 +1093,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 d
                     .wrapping_add(b ^ (a | !c))
-                    .wrapping_add(k[(60 as libc::c_int + 1 as libc::c_int) as usize])
+                    .wrapping_add(k[(60 + 1) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (7 as libc::c_int - 60 as libc::c_int & 15 as libc::c_int)
+                                (7 - 60 & 15)
                                     as isize,
                             ),
                     ),
@@ -1109,11 +1109,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 c
                     .wrapping_add(a ^ (d | !b))
-                    .wrapping_add(k[(60 as libc::c_int + 2 as libc::c_int) as usize])
+                    .wrapping_add(k[(60 + 2) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (14 as libc::c_int - 60 as libc::c_int & 15 as libc::c_int)
+                                (14 - 60 & 15)
                                     as isize,
                             ),
                     ),
@@ -1125,11 +1125,11 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             leftrotate(
                 b
                     .wrapping_add(d ^ (c | !a))
-                    .wrapping_add(k[(60 as libc::c_int + 3 as libc::c_int) as usize])
+                    .wrapping_add(k[(60 + 3) as usize])
                     .wrapping_add(
                         *data
                             .offset(
-                                (5 as libc::c_int - 60 as libc::c_int & 15 as libc::c_int)
+                                (5 - 60 & 15)
                                     as isize,
                             ),
                     ),
@@ -1138,19 +1138,19 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
         );
     (*md5)
         .abcd[0 as libc::c_int
-        as usize] = ((*md5).abcd[0 as libc::c_int as usize] as libc::c_uint)
+        as usize] = ((*md5).abcd[0] as libc::c_uint)
         .wrapping_add(a) as uint32_t as uint32_t;
     (*md5)
         .abcd[1 as libc::c_int
-        as usize] = ((*md5).abcd[1 as libc::c_int as usize] as libc::c_uint)
+        as usize] = ((*md5).abcd[1] as libc::c_uint)
         .wrapping_add(b) as uint32_t as uint32_t;
     (*md5)
         .abcd[2 as libc::c_int
-        as usize] = ((*md5).abcd[2 as libc::c_int as usize] as libc::c_uint)
+        as usize] = ((*md5).abcd[2] as libc::c_uint)
         .wrapping_add(c) as uint32_t as uint32_t;
     (*md5)
         .abcd[3 as libc::c_int
-        as usize] = ((*md5).abcd[3 as libc::c_int as usize] as libc::c_uint)
+        as usize] = ((*md5).abcd[3] as libc::c_uint)
         .wrapping_add(d) as uint32_t as uint32_t;
 }
 unsafe extern "C" fn md5_update(
@@ -1183,7 +1183,7 @@ unsafe extern "C" fn md5_update(
             md5_body(md5, ((*md5).c2rust_unnamed.data32).as_mut_ptr());
         }
     }
-    while len >= 64 as libc::c_int as libc::c_uint {
+    while len >= 64 as libc::c_uint {
         memcpy(
             ((*md5).c2rust_unnamed.data).as_mut_ptr() as *mut libc::c_void,
             data as *const libc::c_void,
@@ -1193,7 +1193,7 @@ unsafe extern "C" fn md5_update(
         (*md5)
             .len = ((*md5).len as libc::c_ulong)
             .wrapping_add(64 as libc::c_int as libc::c_ulong) as uint64_t as uint64_t;
-        data = data.offset(64 as libc::c_int as isize);
+        data = data.offset(64);
         len = len.wrapping_sub(64 as libc::c_int as libc::c_uint);
     }
     if len != 0 {
@@ -1211,32 +1211,32 @@ unsafe extern "C" fn md5_write(
     md5: *mut MD5Context,
     p: *mut Dav1dPicture,
 ) -> libc::c_int {
-    let hbd: libc::c_int = ((*p).p.bpc > 8 as libc::c_int) as libc::c_int;
-    let w: libc::c_int = (*p).p.w;
-    let h: libc::c_int = (*p).p.h;
-    let mut yptr: *mut uint8_t = (*p).data[0 as libc::c_int as usize] as *mut uint8_t;
-    let mut y: libc::c_int = 0 as libc::c_int;
+    let hbd = ((*p).p.bpc > 8) as libc::c_int;
+    let w = (*p).p.w;
+    let h = (*p).p.h;
+    let mut yptr: *mut uint8_t = (*p).data[0] as *mut uint8_t;
+    let mut y = 0;
     while y < h {
         md5_update(md5, yptr, (w << hbd) as libc::c_uint);
-        yptr = yptr.offset((*p).stride[0 as libc::c_int as usize] as isize);
+        yptr = yptr.offset((*p).stride[0] as isize);
         y += 1;
     }
     if (*p).p.layout as libc::c_uint
         != DAV1D_PIXEL_LAYOUT_I400 as libc::c_int as libc::c_uint
     {
-        let ss_ver: libc::c_int = ((*p).p.layout as libc::c_uint
+        let ss_ver = ((*p).p.layout as libc::c_uint
             == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint) as libc::c_int;
-        let ss_hor: libc::c_int = ((*p).p.layout as libc::c_uint
+        let ss_hor = ((*p).p.layout as libc::c_uint
             != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint) as libc::c_int;
-        let cw: libc::c_int = w + ss_hor >> ss_hor;
-        let ch: libc::c_int = h + ss_ver >> ss_ver;
-        let mut pl: libc::c_int = 1 as libc::c_int;
-        while pl <= 2 as libc::c_int {
+        let cw = w + ss_hor >> ss_hor;
+        let ch = h + ss_ver >> ss_ver;
+        let mut pl = 1;
+        while pl <= 2 {
             let mut uvptr: *mut uint8_t = (*p).data[pl as usize] as *mut uint8_t;
-            let mut y_0: libc::c_int = 0 as libc::c_int;
+            let mut y_0 = 0;
             while y_0 < ch {
                 md5_update(md5, uvptr, (cw << hbd) as libc::c_uint);
-                uvptr = uvptr.offset((*p).stride[1 as libc::c_int as usize] as isize);
+                uvptr = uvptr.offset((*p).stride[1] as isize);
                 y_0 += 1;
             }
             pl += 1;
@@ -1250,17 +1250,17 @@ unsafe extern "C" fn md5_finish(md5: *mut MD5Context) {
         0x80 as libc::c_int as uint8_t,
         0 as libc::c_int as uint8_t,
     ];
-    let len: uint64_t = (*md5).len << 3 as libc::c_int;
+    let len: uint64_t = (*md5).len << 3;
     md5_update(
         md5,
-        &*bit.as_ptr().offset(0 as libc::c_int as isize),
+        &*bit.as_ptr().offset(0),
         1 as libc::c_int as libc::c_uint,
     );
     while ((*md5).len & 63) != 56
     {
         md5_update(
             md5,
-            &*bit.as_ptr().offset(1 as libc::c_int as isize),
+            &*bit.as_ptr().offset(1),
             1 as libc::c_int as libc::c_uint,
         );
     }
@@ -1272,17 +1272,17 @@ unsafe extern "C" fn md5_finish(md5: *mut MD5Context) {
 }
 unsafe extern "C" fn md5_close(md5: *mut MD5Context) {
     md5_finish(md5);
-    let mut i: libc::c_int = 0 as libc::c_int;
-    while i < 4 as libc::c_int {
+    let mut i = 0;
+    while i < 4 {
         fprintf(
             (*md5).f,
             b"%2.2x%2.2x%2.2x%2.2x\0" as *const u8 as *const libc::c_char,
             (*md5).abcd[i as usize] & 0xff as libc::c_int as libc::c_uint,
-            (*md5).abcd[i as usize] >> 8 as libc::c_int
+            (*md5).abcd[i as usize] >> 8
                 & 0xff as libc::c_int as libc::c_uint,
-            (*md5).abcd[i as usize] >> 16 as libc::c_int
+            (*md5).abcd[i as usize] >> 16
                 & 0xff as libc::c_int as libc::c_uint,
-            (*md5).abcd[i as usize] >> 24 as libc::c_int,
+            (*md5).abcd[i as usize] >> 24,
         );
         i += 1;
     }
@@ -1296,22 +1296,22 @@ unsafe extern "C" fn md5_verify(
     mut md5_str: *const libc::c_char,
 ) -> libc::c_int {
     md5_finish(md5);
-    if strlen(md5_str) < 32 as libc::c_int as libc::c_ulong {
+    if strlen(md5_str) < 32 as libc::c_ulong {
         return -(1 as libc::c_int);
     }
     let mut abcd: [uint32_t; 4] = [0 as libc::c_int as uint32_t, 0, 0, 0];
     let mut t: [libc::c_char; 3] = [0 as libc::c_int as libc::c_char, 0, 0];
-    let mut i: libc::c_int = 0 as libc::c_int;
-    while i < 4 as libc::c_int {
-        let mut j: libc::c_int = 0 as libc::c_int;
-        while j < 32 as libc::c_int {
+    let mut i = 0;
+    while i < 4 {
+        let mut j = 0;
+        while j < 32 {
             let mut ignore: *mut libc::c_char = 0 as *mut libc::c_char;
             memcpy(
                 t.as_mut_ptr() as *mut libc::c_void,
                 md5_str as *const libc::c_void,
                 2 as libc::c_int as libc::c_ulong,
             );
-            md5_str = md5_str.offset(2 as libc::c_int as isize);
+            md5_str = md5_str.offset(2);
             abcd[i as usize]
                 |= (strtoul(t.as_mut_ptr(), &mut ignore, 16 as libc::c_int) as uint32_t)
                     << j;

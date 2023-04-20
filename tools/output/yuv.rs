@@ -82,9 +82,9 @@ unsafe extern "C" fn yuv_write(
 ) -> libc::c_int {
     let mut current_block: u64;
     let mut ptr: *mut uint8_t = 0 as *mut uint8_t;
-    let hbd: libc::c_int = ((*p).p.bpc > 8 as libc::c_int) as libc::c_int;
-    ptr = (*p).data[0 as libc::c_int as usize] as *mut uint8_t;
-    let mut y: libc::c_int = 0 as libc::c_int;
+    let hbd = ((*p).p.bpc > 8) as libc::c_int;
+    ptr = (*p).data[0] as *mut uint8_t;
+    let mut y = 0;
     loop {
         if !(y < (*p).p.h) {
             current_block = 7095457783677275021;
@@ -100,7 +100,7 @@ unsafe extern "C" fn yuv_write(
             current_block = 11680617278722171943;
             break;
         }
-        ptr = ptr.offset((*p).stride[0 as libc::c_int as usize] as isize);
+        ptr = ptr.offset((*p).stride[0] as isize);
         y += 1;
     }
     match current_block {
@@ -108,22 +108,22 @@ unsafe extern "C" fn yuv_write(
             if (*p).p.layout as libc::c_uint
                 != DAV1D_PIXEL_LAYOUT_I400 as libc::c_int as libc::c_uint
             {
-                let ss_ver: libc::c_int = ((*p).p.layout as libc::c_uint
+                let ss_ver = ((*p).p.layout as libc::c_uint
                     == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint)
                     as libc::c_int;
-                let ss_hor: libc::c_int = ((*p).p.layout as libc::c_uint
+                let ss_hor = ((*p).p.layout as libc::c_uint
                     != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint)
                     as libc::c_int;
-                let cw: libc::c_int = (*p).p.w + ss_hor >> ss_hor;
-                let ch: libc::c_int = (*p).p.h + ss_ver >> ss_ver;
-                let mut pl: libc::c_int = 1 as libc::c_int;
+                let cw = (*p).p.w + ss_hor >> ss_hor;
+                let ch = (*p).p.h + ss_ver >> ss_ver;
+                let mut pl = 1;
                 's_40: loop {
-                    if !(pl <= 2 as libc::c_int) {
+                    if !(pl <= 2) {
                         current_block = 7976072742316086414;
                         break;
                     }
                     ptr = (*p).data[pl as usize] as *mut uint8_t;
-                    let mut y_0: libc::c_int = 0 as libc::c_int;
+                    let mut y_0 = 0;
                     while y_0 < ch {
                         if fwrite(
                             ptr as *const libc::c_void,
@@ -136,7 +136,7 @@ unsafe extern "C" fn yuv_write(
                             break 's_40;
                         }
                         ptr = ptr
-                            .offset((*p).stride[1 as libc::c_int as usize] as isize);
+                            .offset((*p).stride[1] as isize);
                         y_0 += 1;
                     }
                     pl += 1;
