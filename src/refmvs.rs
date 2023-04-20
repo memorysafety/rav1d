@@ -602,7 +602,7 @@ unsafe fn add_single_extended_candidate(
     mvstack: &mut [refmvs_candidate; 8],
     cnt: &mut usize,
     cand_b: &refmvs_block,
-    sign: libc::c_int,
+    sign: u8,
     sign_bias: &[u8; 7],
 ) {
     for n in 0..2 {
@@ -618,7 +618,7 @@ unsafe fn add_single_extended_candidate(
         }
 
         let mut cand_mv = cand_b.mv.mv[n];
-        if (sign ^ sign_bias[cand_ref as usize - 1] as libc::c_int) != 0 {
+        if (sign ^ sign_bias[cand_ref as usize - 1]) != 0 {
             cand_mv.y = -cand_mv.y;
             cand_mv.x = -cand_mv.x;
         }
@@ -1035,7 +1035,7 @@ pub unsafe fn dav1d_refmvs_find(
 
         return;
     } else if *cnt < 2 && r#ref.r#ref[0] > 0 {
-        let sign = rf.sign_bias[r#ref.r#ref[0] as usize - 1] as libc::c_int;
+        let sign = rf.sign_bias[r#ref.r#ref[0] as usize - 1];
         let sz4 = imin(w4, h4);
 
         // non-self references in top
