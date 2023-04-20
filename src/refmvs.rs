@@ -623,18 +623,17 @@ unsafe fn add_single_extended_candidate(
             cand_mv.x = -cand_mv.x;
         }
 
-        let mut m = 0;
         let last = *cnt;
-        m = 0;
-        while m < last {
+        let mut broke_early = false;
+        for m in 0..last {
             if cand_mv == mvstack[m].mv.mv[0] {
+                broke_early = true;
                 break;
             }
-            m += 1;
         }
-        if m == last {
-            mvstack[m].mv.mv[0] = cand_mv;
-            mvstack[m].weight = 2; // "minimal"
+        if !broke_early {
+            mvstack[last].mv.mv[0] = cand_mv;
+            mvstack[last].weight = 2; // "minimal"
             *cnt = last + 1;
         }
     }
