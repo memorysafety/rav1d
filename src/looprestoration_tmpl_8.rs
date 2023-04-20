@@ -992,10 +992,7 @@ unsafe extern "C" fn loop_restoration_dsp_init_x86(
     c: *mut Dav1dLoopRestorationDSPContext,
     _bpc: libc::c_int,
 ) {
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX512ICL;
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSSE3;
+    use crate::src::x86::cpu::*;
 
     let flags = dav1d_get_cpu_flags();
 
@@ -1017,27 +1014,30 @@ unsafe extern "C" fn loop_restoration_dsp_init_x86(
     (*c).sgr[1] = Some(dav1d_sgr_filter_3x3_8bpc_ssse3);
     (*c).sgr[2] = Some(dav1d_sgr_filter_mix_8bpc_ssse3);
 
-    if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
-        return;
+    #[cfg(target_arch = "x86_64")]
+    {
+        if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
+            return;
+        }
+
+        (*c).wiener[0] = Some(dav1d_wiener_filter7_8bpc_avx2);
+        (*c).wiener[1] = Some(dav1d_wiener_filter5_8bpc_avx2);
+
+        (*c).sgr[0] = Some(dav1d_sgr_filter_5x5_8bpc_avx2);
+        (*c).sgr[1] = Some(dav1d_sgr_filter_3x3_8bpc_avx2);
+        (*c).sgr[2] = Some(dav1d_sgr_filter_mix_8bpc_avx2);
+
+        if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
+            return;
+        }
+
+        (*c).wiener[0] = Some(dav1d_wiener_filter7_8bpc_avx512icl);
+        (*c).wiener[1] = (*c).wiener[0];
+
+        (*c).sgr[0] = Some(dav1d_sgr_filter_5x5_8bpc_avx512icl);
+        (*c).sgr[1] = Some(dav1d_sgr_filter_3x3_8bpc_avx512icl);
+        (*c).sgr[2] = Some(dav1d_sgr_filter_mix_8bpc_avx512icl);
     }
-
-    (*c).wiener[0] = Some(dav1d_wiener_filter7_8bpc_avx2);
-    (*c).wiener[1] = Some(dav1d_wiener_filter5_8bpc_avx2);
-
-    (*c).sgr[0] = Some(dav1d_sgr_filter_5x5_8bpc_avx2);
-    (*c).sgr[1] = Some(dav1d_sgr_filter_3x3_8bpc_avx2);
-    (*c).sgr[2] = Some(dav1d_sgr_filter_mix_8bpc_avx2);
-
-    if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
-        return;
-    }
-
-    (*c).wiener[0] = Some(dav1d_wiener_filter7_8bpc_avx512icl);
-    (*c).wiener[1] = (*c).wiener[0];
-
-    (*c).sgr[0] = Some(dav1d_sgr_filter_5x5_8bpc_avx512icl);
-    (*c).sgr[1] = Some(dav1d_sgr_filter_3x3_8bpc_avx512icl);
-    (*c).sgr[2] = Some(dav1d_sgr_filter_mix_8bpc_avx512icl);
 }
 
 #[cfg(feature = "asm")]

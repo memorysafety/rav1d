@@ -4648,11 +4648,7 @@ use crate::src::cpu::dav1d_get_cpu_flags;
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 #[inline(always)]
 unsafe extern "C" fn mc_dsp_init_x86(c: *mut Dav1dMCDSPContext) {
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX512ICL;
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE41;
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSSE3;
+    use crate::src::x86::cpu::*;
 
     let flags = dav1d_get_cpu_flags();
 
@@ -4749,143 +4745,112 @@ unsafe extern "C" fn mc_dsp_init_x86(c: *mut Dav1dMCDSPContext) {
         return;
     }
 
-    if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
-        return;
+    #[cfg(target_arch = "x86_64")] {
+        if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
+            return;
+        }
+
+        (*c).mc[FILTER_2D_8TAP_REGULAR as usize] = Some(dav1d_put_8tap_regular_16bpc_avx2);
+        (*c).mc[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = Some(dav1d_put_8tap_regular_smooth_16bpc_avx2);
+        (*c).mc[FILTER_2D_8TAP_REGULAR_SHARP as usize] = Some(dav1d_put_8tap_regular_sharp_16bpc_avx2);
+        (*c).mc[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = Some(dav1d_put_8tap_smooth_regular_16bpc_avx2);
+        (*c).mc[FILTER_2D_8TAP_SMOOTH as usize] = Some(dav1d_put_8tap_smooth_16bpc_avx2);
+        (*c).mc[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(dav1d_put_8tap_smooth_sharp_16bpc_avx2);
+        (*c).mc[FILTER_2D_8TAP_SHARP_REGULAR as usize] = Some(dav1d_put_8tap_sharp_regular_16bpc_avx2);
+        (*c).mc[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(dav1d_put_8tap_sharp_smooth_16bpc_avx2);
+        (*c).mc[FILTER_2D_8TAP_SHARP as usize] = Some(dav1d_put_8tap_sharp_16bpc_avx2);
+        (*c).mc[FILTER_2D_BILINEAR as usize] = Some(dav1d_put_bilin_16bpc_avx2);
+
+        (*c).mct[FILTER_2D_8TAP_REGULAR as usize] = Some(dav1d_prep_8tap_regular_16bpc_avx2);
+        (*c).mct[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = Some(dav1d_prep_8tap_regular_smooth_16bpc_avx2);
+        (*c).mct[FILTER_2D_8TAP_REGULAR_SHARP as usize] = Some(dav1d_prep_8tap_regular_sharp_16bpc_avx2);
+        (*c).mct[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = Some(dav1d_prep_8tap_smooth_regular_16bpc_avx2);
+        (*c).mct[FILTER_2D_8TAP_SMOOTH as usize] = Some(dav1d_prep_8tap_smooth_16bpc_avx2);
+        (*c).mct[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(dav1d_prep_8tap_smooth_sharp_16bpc_avx2);
+        (*c).mct[FILTER_2D_8TAP_SHARP_REGULAR as usize] = Some(dav1d_prep_8tap_sharp_regular_16bpc_avx2);
+        (*c).mct[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(dav1d_prep_8tap_sharp_smooth_16bpc_avx2);
+        (*c).mct[FILTER_2D_8TAP_SHARP as usize] = Some(dav1d_prep_8tap_sharp_16bpc_avx2);
+        (*c).mct[FILTER_2D_BILINEAR as usize] = Some(dav1d_prep_bilin_16bpc_avx2);
+
+        (*c).mc_scaled[FILTER_2D_8TAP_REGULAR as usize] = Some(dav1d_put_8tap_scaled_regular_16bpc_avx2);
+        (*c).mc_scaled[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = Some(dav1d_put_8tap_scaled_regular_smooth_16bpc_avx2);
+        (*c).mc_scaled[FILTER_2D_8TAP_REGULAR_SHARP as usize] = Some(dav1d_put_8tap_scaled_regular_sharp_16bpc_avx2);
+        (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = Some(dav1d_put_8tap_scaled_smooth_regular_16bpc_avx2);
+        (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH as usize] = Some(dav1d_put_8tap_scaled_smooth_16bpc_avx2);
+        (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(dav1d_put_8tap_scaled_smooth_sharp_16bpc_avx2);
+        (*c).mc_scaled[FILTER_2D_8TAP_SHARP_REGULAR as usize] = Some(dav1d_put_8tap_scaled_sharp_regular_16bpc_avx2);
+        (*c).mc_scaled[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(dav1d_put_8tap_scaled_sharp_smooth_16bpc_avx2);
+        (*c).mc_scaled[FILTER_2D_8TAP_SHARP as usize] = Some(dav1d_put_8tap_scaled_sharp_16bpc_avx2);
+        (*c).mc_scaled[FILTER_2D_BILINEAR as usize] = Some(dav1d_put_bilin_scaled_16bpc_avx2);
+
+        (*c).mct_scaled[FILTER_2D_8TAP_REGULAR as usize] = Some(dav1d_prep_8tap_scaled_regular_16bpc_avx2);
+        (*c).mct_scaled[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = Some(dav1d_prep_8tap_scaled_regular_smooth_16bpc_avx2);
+        (*c).mct_scaled[FILTER_2D_8TAP_REGULAR_SHARP as usize] = Some(dav1d_prep_8tap_scaled_regular_sharp_16bpc_avx2);
+        (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = Some(dav1d_prep_8tap_scaled_smooth_regular_16bpc_avx2);
+        (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH as usize] = Some(dav1d_prep_8tap_scaled_smooth_16bpc_avx2);
+        (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(dav1d_prep_8tap_scaled_smooth_sharp_16bpc_avx2);
+        (*c).mct_scaled[FILTER_2D_8TAP_SHARP_REGULAR as usize] = Some(dav1d_prep_8tap_scaled_sharp_regular_16bpc_avx2);
+        (*c).mct_scaled[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(dav1d_prep_8tap_scaled_sharp_smooth_16bpc_avx2);
+        (*c).mct_scaled[FILTER_2D_8TAP_SHARP as usize] = Some(dav1d_prep_8tap_scaled_sharp_16bpc_avx2);
+        (*c).mct_scaled[FILTER_2D_BILINEAR as usize] = Some(dav1d_prep_bilin_scaled_16bpc_avx2);
+
+        (*c).avg = Some(dav1d_avg_16bpc_avx2);
+        (*c).w_avg = Some(dav1d_w_avg_16bpc_avx2);
+        (*c).mask = Some(dav1d_mask_16bpc_avx2);
+
+        (*c).w_mask[0] = Some(dav1d_w_mask_444_16bpc_avx2);
+        (*c).w_mask[1] = Some(dav1d_w_mask_422_16bpc_avx2);
+        (*c).w_mask[2] = Some(dav1d_w_mask_420_16bpc_avx2);
+
+        (*c).blend = Some(dav1d_blend_16bpc_avx2);
+        (*c).blend_v = Some(dav1d_blend_v_16bpc_avx2);
+        (*c).blend_h = Some(dav1d_blend_h_16bpc_avx2);
+        (*c).warp8x8 = Some(dav1d_warp_affine_8x8_16bpc_avx2);
+        (*c).warp8x8t = Some(dav1d_warp_affine_8x8t_16bpc_avx2);
+        (*c).emu_edge = Some(dav1d_emu_edge_16bpc_avx2);
+        (*c).resize = Some(dav1d_resize_16bpc_avx2);
+
+        if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
+            return;
+        }
+
+        (*c).mc[FILTER_2D_8TAP_REGULAR as usize] = Some(dav1d_put_8tap_regular_16bpc_avx512icl);
+        (*c).mc[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = Some(dav1d_put_8tap_regular_smooth_16bpc_avx512icl);
+        (*c).mc[FILTER_2D_8TAP_REGULAR_SHARP as usize] = Some(dav1d_put_8tap_regular_sharp_16bpc_avx512icl);
+        (*c).mc[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = Some(dav1d_put_8tap_smooth_regular_16bpc_avx512icl);
+        (*c).mc[FILTER_2D_8TAP_SMOOTH as usize] = Some(dav1d_put_8tap_smooth_16bpc_avx512icl);
+        (*c).mc[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(dav1d_put_8tap_smooth_sharp_16bpc_avx512icl);
+        (*c).mc[FILTER_2D_8TAP_SHARP_REGULAR as usize] = Some(dav1d_put_8tap_sharp_regular_16bpc_avx512icl);
+        (*c).mc[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(dav1d_put_8tap_sharp_smooth_16bpc_avx512icl);
+        (*c).mc[FILTER_2D_8TAP_SHARP as usize] = Some(dav1d_put_8tap_sharp_16bpc_avx512icl);
+        (*c).mc[FILTER_2D_BILINEAR as usize] = Some(dav1d_put_bilin_16bpc_avx512icl);
+
+        (*c).mct[FILTER_2D_8TAP_REGULAR as usize] = Some(dav1d_prep_8tap_regular_16bpc_avx512icl);
+        (*c).mct[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = Some(dav1d_prep_8tap_regular_smooth_16bpc_avx512icl);
+        (*c).mct[FILTER_2D_8TAP_REGULAR_SHARP as usize] = Some(dav1d_prep_8tap_regular_sharp_16bpc_avx512icl);
+        (*c).mct[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = Some(dav1d_prep_8tap_smooth_regular_16bpc_avx512icl);
+        (*c).mct[FILTER_2D_8TAP_SMOOTH as usize] = Some(dav1d_prep_8tap_smooth_16bpc_avx512icl);
+        (*c).mct[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(dav1d_prep_8tap_smooth_sharp_16bpc_avx512icl);
+        (*c).mct[FILTER_2D_8TAP_SHARP_REGULAR as usize] = Some(dav1d_prep_8tap_sharp_regular_16bpc_avx512icl);
+        (*c).mct[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(dav1d_prep_8tap_sharp_smooth_16bpc_avx512icl);
+        (*c).mct[FILTER_2D_8TAP_SHARP as usize] = Some(dav1d_prep_8tap_sharp_16bpc_avx512icl);
+        (*c).mct[FILTER_2D_BILINEAR as usize] = Some(dav1d_prep_bilin_16bpc_avx512icl);
+
+        (*c).avg = Some(dav1d_avg_16bpc_avx512icl);
+        (*c).w_avg = Some(dav1d_w_avg_16bpc_avx512icl);
+        (*c).mask = Some(dav1d_mask_16bpc_avx512icl);
+
+        (*c).w_mask[0] = Some(dav1d_w_mask_444_16bpc_avx512icl);
+        (*c).w_mask[1] = Some(dav1d_w_mask_422_16bpc_avx512icl);
+        (*c).w_mask[2] = Some(dav1d_w_mask_420_16bpc_avx512icl);
+
+        (*c).blend = Some(dav1d_blend_16bpc_avx512icl);
+        (*c).blend_v = Some(dav1d_blend_v_16bpc_avx512icl);
+        (*c).blend_h = Some(dav1d_blend_h_16bpc_avx512icl);
+        (*c).warp8x8 = Some(dav1d_warp_affine_8x8_16bpc_avx512icl);
+        (*c).warp8x8t = Some(dav1d_warp_affine_8x8t_16bpc_avx512icl);
+        (*c).resize = Some(dav1d_resize_16bpc_avx512icl);
     }
-
-    (*c).mc[FILTER_2D_8TAP_REGULAR as usize] = Some(dav1d_put_8tap_regular_16bpc_avx2);
-    (*c).mc[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] =
-        Some(dav1d_put_8tap_regular_smooth_16bpc_avx2);
-    (*c).mc[FILTER_2D_8TAP_REGULAR_SHARP as usize] = Some(dav1d_put_8tap_regular_sharp_16bpc_avx2);
-    (*c).mc[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] =
-        Some(dav1d_put_8tap_smooth_regular_16bpc_avx2);
-    (*c).mc[FILTER_2D_8TAP_SMOOTH as usize] = Some(dav1d_put_8tap_smooth_16bpc_avx2);
-    (*c).mc[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(dav1d_put_8tap_smooth_sharp_16bpc_avx2);
-    (*c).mc[FILTER_2D_8TAP_SHARP_REGULAR as usize] = Some(dav1d_put_8tap_sharp_regular_16bpc_avx2);
-    (*c).mc[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(dav1d_put_8tap_sharp_smooth_16bpc_avx2);
-    (*c).mc[FILTER_2D_8TAP_SHARP as usize] = Some(dav1d_put_8tap_sharp_16bpc_avx2);
-    (*c).mc[FILTER_2D_BILINEAR as usize] = Some(dav1d_put_bilin_16bpc_avx2);
-
-    (*c).mct[FILTER_2D_8TAP_REGULAR as usize] = Some(dav1d_prep_8tap_regular_16bpc_avx2);
-    (*c).mct[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] =
-        Some(dav1d_prep_8tap_regular_smooth_16bpc_avx2);
-    (*c).mct[FILTER_2D_8TAP_REGULAR_SHARP as usize] =
-        Some(dav1d_prep_8tap_regular_sharp_16bpc_avx2);
-    (*c).mct[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] =
-        Some(dav1d_prep_8tap_smooth_regular_16bpc_avx2);
-    (*c).mct[FILTER_2D_8TAP_SMOOTH as usize] = Some(dav1d_prep_8tap_smooth_16bpc_avx2);
-    (*c).mct[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(dav1d_prep_8tap_smooth_sharp_16bpc_avx2);
-    (*c).mct[FILTER_2D_8TAP_SHARP_REGULAR as usize] =
-        Some(dav1d_prep_8tap_sharp_regular_16bpc_avx2);
-    (*c).mct[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(dav1d_prep_8tap_sharp_smooth_16bpc_avx2);
-    (*c).mct[FILTER_2D_8TAP_SHARP as usize] = Some(dav1d_prep_8tap_sharp_16bpc_avx2);
-    (*c).mct[FILTER_2D_BILINEAR as usize] = Some(dav1d_prep_bilin_16bpc_avx2);
-
-    (*c).mc_scaled[FILTER_2D_8TAP_REGULAR as usize] =
-        Some(dav1d_put_8tap_scaled_regular_16bpc_avx2);
-    (*c).mc_scaled[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] =
-        Some(dav1d_put_8tap_scaled_regular_smooth_16bpc_avx2);
-    (*c).mc_scaled[FILTER_2D_8TAP_REGULAR_SHARP as usize] =
-        Some(dav1d_put_8tap_scaled_regular_sharp_16bpc_avx2);
-    (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] =
-        Some(dav1d_put_8tap_scaled_smooth_regular_16bpc_avx2);
-    (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH as usize] = Some(dav1d_put_8tap_scaled_smooth_16bpc_avx2);
-    (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH_SHARP as usize] =
-        Some(dav1d_put_8tap_scaled_smooth_sharp_16bpc_avx2);
-    (*c).mc_scaled[FILTER_2D_8TAP_SHARP_REGULAR as usize] =
-        Some(dav1d_put_8tap_scaled_sharp_regular_16bpc_avx2);
-    (*c).mc_scaled[FILTER_2D_8TAP_SHARP_SMOOTH as usize] =
-        Some(dav1d_put_8tap_scaled_sharp_smooth_16bpc_avx2);
-    (*c).mc_scaled[FILTER_2D_8TAP_SHARP as usize] = Some(dav1d_put_8tap_scaled_sharp_16bpc_avx2);
-    (*c).mc_scaled[FILTER_2D_BILINEAR as usize] = Some(dav1d_put_bilin_scaled_16bpc_avx2);
-
-    (*c).mct_scaled[FILTER_2D_8TAP_REGULAR as usize] =
-        Some(dav1d_prep_8tap_scaled_regular_16bpc_avx2);
-    (*c).mct_scaled[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] =
-        Some(dav1d_prep_8tap_scaled_regular_smooth_16bpc_avx2);
-    (*c).mct_scaled[FILTER_2D_8TAP_REGULAR_SHARP as usize] =
-        Some(dav1d_prep_8tap_scaled_regular_sharp_16bpc_avx2);
-    (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] =
-        Some(dav1d_prep_8tap_scaled_smooth_regular_16bpc_avx2);
-    (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH as usize] =
-        Some(dav1d_prep_8tap_scaled_smooth_16bpc_avx2);
-    (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH_SHARP as usize] =
-        Some(dav1d_prep_8tap_scaled_smooth_sharp_16bpc_avx2);
-    (*c).mct_scaled[FILTER_2D_8TAP_SHARP_REGULAR as usize] =
-        Some(dav1d_prep_8tap_scaled_sharp_regular_16bpc_avx2);
-    (*c).mct_scaled[FILTER_2D_8TAP_SHARP_SMOOTH as usize] =
-        Some(dav1d_prep_8tap_scaled_sharp_smooth_16bpc_avx2);
-    (*c).mct_scaled[FILTER_2D_8TAP_SHARP as usize] = Some(dav1d_prep_8tap_scaled_sharp_16bpc_avx2);
-    (*c).mct_scaled[FILTER_2D_BILINEAR as usize] = Some(dav1d_prep_bilin_scaled_16bpc_avx2);
-
-    (*c).avg = Some(dav1d_avg_16bpc_avx2);
-    (*c).w_avg = Some(dav1d_w_avg_16bpc_avx2);
-    (*c).mask = Some(dav1d_mask_16bpc_avx2);
-
-    (*c).w_mask[0] = Some(dav1d_w_mask_444_16bpc_avx2);
-    (*c).w_mask[1] = Some(dav1d_w_mask_422_16bpc_avx2);
-    (*c).w_mask[2] = Some(dav1d_w_mask_420_16bpc_avx2);
-
-    (*c).blend = Some(dav1d_blend_16bpc_avx2);
-    (*c).blend_v = Some(dav1d_blend_v_16bpc_avx2);
-    (*c).blend_h = Some(dav1d_blend_h_16bpc_avx2);
-    (*c).warp8x8 = Some(dav1d_warp_affine_8x8_16bpc_avx2);
-    (*c).warp8x8t = Some(dav1d_warp_affine_8x8t_16bpc_avx2);
-    (*c).emu_edge = Some(dav1d_emu_edge_16bpc_avx2);
-    (*c).resize = Some(dav1d_resize_16bpc_avx2);
-
-    if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
-        return;
-    }
-
-    (*c).mc[FILTER_2D_8TAP_REGULAR as usize] = Some(dav1d_put_8tap_regular_16bpc_avx512icl);
-    (*c).mc[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] =
-        Some(dav1d_put_8tap_regular_smooth_16bpc_avx512icl);
-    (*c).mc[FILTER_2D_8TAP_REGULAR_SHARP as usize] =
-        Some(dav1d_put_8tap_regular_sharp_16bpc_avx512icl);
-    (*c).mc[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] =
-        Some(dav1d_put_8tap_smooth_regular_16bpc_avx512icl);
-    (*c).mc[FILTER_2D_8TAP_SMOOTH as usize] = Some(dav1d_put_8tap_smooth_16bpc_avx512icl);
-    (*c).mc[FILTER_2D_8TAP_SMOOTH_SHARP as usize] =
-        Some(dav1d_put_8tap_smooth_sharp_16bpc_avx512icl);
-    (*c).mc[FILTER_2D_8TAP_SHARP_REGULAR as usize] =
-        Some(dav1d_put_8tap_sharp_regular_16bpc_avx512icl);
-    (*c).mc[FILTER_2D_8TAP_SHARP_SMOOTH as usize] =
-        Some(dav1d_put_8tap_sharp_smooth_16bpc_avx512icl);
-    (*c).mc[FILTER_2D_8TAP_SHARP as usize] = Some(dav1d_put_8tap_sharp_16bpc_avx512icl);
-    (*c).mc[FILTER_2D_BILINEAR as usize] = Some(dav1d_put_bilin_16bpc_avx512icl);
-
-    (*c).mct[FILTER_2D_8TAP_REGULAR as usize] = Some(dav1d_prep_8tap_regular_16bpc_avx512icl);
-    (*c).mct[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] =
-        Some(dav1d_prep_8tap_regular_smooth_16bpc_avx512icl);
-    (*c).mct[FILTER_2D_8TAP_REGULAR_SHARP as usize] =
-        Some(dav1d_prep_8tap_regular_sharp_16bpc_avx512icl);
-    (*c).mct[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] =
-        Some(dav1d_prep_8tap_smooth_regular_16bpc_avx512icl);
-    (*c).mct[FILTER_2D_8TAP_SMOOTH as usize] = Some(dav1d_prep_8tap_smooth_16bpc_avx512icl);
-    (*c).mct[FILTER_2D_8TAP_SMOOTH_SHARP as usize] =
-        Some(dav1d_prep_8tap_smooth_sharp_16bpc_avx512icl);
-    (*c).mct[FILTER_2D_8TAP_SHARP_REGULAR as usize] =
-        Some(dav1d_prep_8tap_sharp_regular_16bpc_avx512icl);
-    (*c).mct[FILTER_2D_8TAP_SHARP_SMOOTH as usize] =
-        Some(dav1d_prep_8tap_sharp_smooth_16bpc_avx512icl);
-    (*c).mct[FILTER_2D_8TAP_SHARP as usize] = Some(dav1d_prep_8tap_sharp_16bpc_avx512icl);
-    (*c).mct[FILTER_2D_BILINEAR as usize] = Some(dav1d_prep_bilin_16bpc_avx512icl);
-
-    (*c).avg = Some(dav1d_avg_16bpc_avx512icl);
-    (*c).w_avg = Some(dav1d_w_avg_16bpc_avx512icl);
-    (*c).mask = Some(dav1d_mask_16bpc_avx512icl);
-
-    (*c).w_mask[0] = Some(dav1d_w_mask_444_16bpc_avx512icl);
-    (*c).w_mask[1] = Some(dav1d_w_mask_422_16bpc_avx512icl);
-    (*c).w_mask[2] = Some(dav1d_w_mask_420_16bpc_avx512icl);
-
-    (*c).blend = Some(dav1d_blend_16bpc_avx512icl);
-    (*c).blend_v = Some(dav1d_blend_v_16bpc_avx512icl);
-    (*c).blend_h = Some(dav1d_blend_h_16bpc_avx512icl);
-    (*c).warp8x8 = Some(dav1d_warp_affine_8x8_16bpc_avx512icl);
-    (*c).warp8x8t = Some(dav1d_warp_affine_8x8t_16bpc_avx512icl);
-    (*c).resize = Some(dav1d_resize_16bpc_avx512icl);
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]

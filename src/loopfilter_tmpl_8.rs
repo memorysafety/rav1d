@@ -527,9 +527,7 @@ use crate::src::cpu::dav1d_get_cpu_flags;
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 #[inline(always)]
 unsafe extern "C" fn loop_filter_dsp_init_x86(c: *mut Dav1dLoopFilterDSPContext) {
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX512ICL;
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSSE3;
+    use crate::src::x86::cpu::*;
 
     let flags = dav1d_get_cpu_flags();
 
@@ -542,23 +540,26 @@ unsafe extern "C" fn loop_filter_dsp_init_x86(c: *mut Dav1dLoopFilterDSPContext)
     (*c).loop_filter_sb[1][0] = Some(dav1d_lpf_h_sb_uv_8bpc_ssse3);
     (*c).loop_filter_sb[1][1] = Some(dav1d_lpf_v_sb_uv_8bpc_ssse3);
 
-    if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
-        return;
+    #[cfg(target_arch = "x86_64")]
+    {
+        if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
+            return;
+        }
+
+        (*c).loop_filter_sb[0][0] = Some(dav1d_lpf_h_sb_y_8bpc_avx2);
+        (*c).loop_filter_sb[0][1] = Some(dav1d_lpf_v_sb_y_8bpc_avx2);
+        (*c).loop_filter_sb[1][0] = Some(dav1d_lpf_h_sb_uv_8bpc_avx2);
+        (*c).loop_filter_sb[1][1] = Some(dav1d_lpf_v_sb_uv_8bpc_avx2);
+
+        if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
+            return;
+        }
+
+        (*c).loop_filter_sb[0][0] = Some(dav1d_lpf_h_sb_y_8bpc_avx512icl);
+        (*c).loop_filter_sb[0][1] = Some(dav1d_lpf_v_sb_y_8bpc_avx512icl);
+        (*c).loop_filter_sb[1][0] = Some(dav1d_lpf_h_sb_uv_8bpc_avx512icl);
+        (*c).loop_filter_sb[1][1] = Some(dav1d_lpf_v_sb_uv_8bpc_avx512icl);
     }
-
-    (*c).loop_filter_sb[0][0] = Some(dav1d_lpf_h_sb_y_8bpc_avx2);
-    (*c).loop_filter_sb[0][1] = Some(dav1d_lpf_v_sb_y_8bpc_avx2);
-    (*c).loop_filter_sb[1][0] = Some(dav1d_lpf_h_sb_uv_8bpc_avx2);
-    (*c).loop_filter_sb[1][1] = Some(dav1d_lpf_v_sb_uv_8bpc_avx2);
-
-    if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
-        return;
-    }
-
-    (*c).loop_filter_sb[0][0] = Some(dav1d_lpf_h_sb_y_8bpc_avx512icl);
-    (*c).loop_filter_sb[0][1] = Some(dav1d_lpf_v_sb_y_8bpc_avx512icl);
-    (*c).loop_filter_sb[1][0] = Some(dav1d_lpf_h_sb_uv_8bpc_avx512icl);
-    (*c).loop_filter_sb[1][1] = Some(dav1d_lpf_v_sb_uv_8bpc_avx512icl);
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]

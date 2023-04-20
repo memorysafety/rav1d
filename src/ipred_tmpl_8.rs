@@ -1973,53 +1973,56 @@ unsafe extern "C" fn intra_pred_dsp_init_x86(c: *mut Dav1dIntraPredDSPContext) {
 
     (*c).pal_pred = Some(dav1d_pal_pred_8bpc_ssse3);
 
-    if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
-        return;
+    #[cfg(target_arch = "x86_64")]
+    {
+        if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
+            return;
+        }
+
+        (*c).intra_pred[DC_PRED as usize] = Some(dav1d_ipred_dc_8bpc_avx2);
+        (*c).intra_pred[DC_128_PRED as usize] = Some(dav1d_ipred_dc_128_8bpc_avx2);
+        (*c).intra_pred[TOP_DC_PRED as usize] = Some(dav1d_ipred_dc_top_8bpc_avx2);
+        (*c).intra_pred[LEFT_DC_PRED as usize] = Some(dav1d_ipred_dc_left_8bpc_avx2);
+        (*c).intra_pred[HOR_PRED as usize] = Some(dav1d_ipred_h_8bpc_avx2);
+        (*c).intra_pred[VERT_PRED as usize] = Some(dav1d_ipred_v_8bpc_avx2);
+        (*c).intra_pred[PAETH_PRED as usize] = Some(dav1d_ipred_paeth_8bpc_avx2);
+        (*c).intra_pred[SMOOTH_PRED as usize] = Some(dav1d_ipred_smooth_8bpc_avx2);
+        (*c).intra_pred[SMOOTH_H_PRED as usize] = Some(dav1d_ipred_smooth_h_8bpc_avx2);
+        (*c).intra_pred[SMOOTH_V_PRED as usize] = Some(dav1d_ipred_smooth_v_8bpc_avx2);
+        (*c).intra_pred[Z1_PRED as usize] = Some(dav1d_ipred_z1_8bpc_avx2);
+        (*c).intra_pred[Z2_PRED as usize] = Some(dav1d_ipred_z2_8bpc_avx2);
+        (*c).intra_pred[Z3_PRED as usize] = Some(dav1d_ipred_z3_8bpc_avx2);
+        (*c).intra_pred[FILTER_PRED as usize] = Some(dav1d_ipred_filter_8bpc_avx2);
+
+        (*c).cfl_pred[DC_PRED as usize] = Some(dav1d_ipred_cfl_8bpc_avx2);
+        (*c).cfl_pred[DC_128_PRED as usize] = Some(dav1d_ipred_cfl_128_8bpc_avx2);
+        (*c).cfl_pred[TOP_DC_PRED as usize] = Some(dav1d_ipred_cfl_top_8bpc_avx2);
+        (*c).cfl_pred[LEFT_DC_PRED as usize] = Some(dav1d_ipred_cfl_left_8bpc_avx2);
+
+        (*c).cfl_ac[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] = Some(dav1d_ipred_cfl_ac_420_8bpc_avx2);
+        (*c).cfl_ac[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] = Some(dav1d_ipred_cfl_ac_422_8bpc_avx2);
+        (*c).cfl_ac[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] = Some(dav1d_ipred_cfl_ac_444_8bpc_avx2);
+
+        (*c).pal_pred = Some(dav1d_pal_pred_8bpc_avx2);
+
+        if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
+            return;
+        }
+
+        (*c).intra_pred[DC_PRED as usize] = Some(dav1d_ipred_dc_8bpc_avx512icl);
+        (*c).intra_pred[DC_128_PRED as usize] = Some(dav1d_ipred_dc_128_8bpc_avx512icl);
+        (*c).intra_pred[TOP_DC_PRED as usize] = Some(dav1d_ipred_dc_top_8bpc_avx512icl);
+        (*c).intra_pred[LEFT_DC_PRED as usize] = Some(dav1d_ipred_dc_left_8bpc_avx512icl);
+        (*c).intra_pred[HOR_PRED as usize] = Some(dav1d_ipred_h_8bpc_avx512icl);
+        (*c).intra_pred[VERT_PRED as usize] = Some(dav1d_ipred_v_8bpc_avx512icl);
+        (*c).intra_pred[PAETH_PRED as usize] = Some(dav1d_ipred_paeth_8bpc_avx512icl);
+        (*c).intra_pred[SMOOTH_PRED as usize] = Some(dav1d_ipred_smooth_8bpc_avx512icl);
+        (*c).intra_pred[SMOOTH_H_PRED as usize] = Some(dav1d_ipred_smooth_h_8bpc_avx512icl);
+        (*c).intra_pred[SMOOTH_V_PRED as usize] = Some(dav1d_ipred_smooth_v_8bpc_avx512icl);
+        (*c).intra_pred[FILTER_PRED as usize] = Some(dav1d_ipred_filter_8bpc_avx512icl);
+
+        (*c).pal_pred = Some(dav1d_pal_pred_8bpc_avx512icl);
     }
-
-    (*c).intra_pred[DC_PRED as usize] = Some(dav1d_ipred_dc_8bpc_avx2);
-    (*c).intra_pred[DC_128_PRED as usize] = Some(dav1d_ipred_dc_128_8bpc_avx2);
-    (*c).intra_pred[TOP_DC_PRED as usize] = Some(dav1d_ipred_dc_top_8bpc_avx2);
-    (*c).intra_pred[LEFT_DC_PRED as usize] = Some(dav1d_ipred_dc_left_8bpc_avx2);
-    (*c).intra_pred[HOR_PRED as usize] = Some(dav1d_ipred_h_8bpc_avx2);
-    (*c).intra_pred[VERT_PRED as usize] = Some(dav1d_ipred_v_8bpc_avx2);
-    (*c).intra_pred[PAETH_PRED as usize] = Some(dav1d_ipred_paeth_8bpc_avx2);
-    (*c).intra_pred[SMOOTH_PRED as usize] = Some(dav1d_ipred_smooth_8bpc_avx2);
-    (*c).intra_pred[SMOOTH_H_PRED as usize] = Some(dav1d_ipred_smooth_h_8bpc_avx2);
-    (*c).intra_pred[SMOOTH_V_PRED as usize] = Some(dav1d_ipred_smooth_v_8bpc_avx2);
-    (*c).intra_pred[Z1_PRED as usize] = Some(dav1d_ipred_z1_8bpc_avx2);
-    (*c).intra_pred[Z2_PRED as usize] = Some(dav1d_ipred_z2_8bpc_avx2);
-    (*c).intra_pred[Z3_PRED as usize] = Some(dav1d_ipred_z3_8bpc_avx2);
-    (*c).intra_pred[FILTER_PRED as usize] = Some(dav1d_ipred_filter_8bpc_avx2);
-
-    (*c).cfl_pred[DC_PRED as usize] = Some(dav1d_ipred_cfl_8bpc_avx2);
-    (*c).cfl_pred[DC_128_PRED as usize] = Some(dav1d_ipred_cfl_128_8bpc_avx2);
-    (*c).cfl_pred[TOP_DC_PRED as usize] = Some(dav1d_ipred_cfl_top_8bpc_avx2);
-    (*c).cfl_pred[LEFT_DC_PRED as usize] = Some(dav1d_ipred_cfl_left_8bpc_avx2);
-
-    (*c).cfl_ac[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] = Some(dav1d_ipred_cfl_ac_420_8bpc_avx2);
-    (*c).cfl_ac[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] = Some(dav1d_ipred_cfl_ac_422_8bpc_avx2);
-    (*c).cfl_ac[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] = Some(dav1d_ipred_cfl_ac_444_8bpc_avx2);
-
-    (*c).pal_pred = Some(dav1d_pal_pred_8bpc_avx2);
-
-    if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
-        return;
-    }
-
-    (*c).intra_pred[DC_PRED as usize] = Some(dav1d_ipred_dc_8bpc_avx512icl);
-    (*c).intra_pred[DC_128_PRED as usize] = Some(dav1d_ipred_dc_128_8bpc_avx512icl);
-    (*c).intra_pred[TOP_DC_PRED as usize] = Some(dav1d_ipred_dc_top_8bpc_avx512icl);
-    (*c).intra_pred[LEFT_DC_PRED as usize] = Some(dav1d_ipred_dc_left_8bpc_avx512icl);
-    (*c).intra_pred[HOR_PRED as usize] = Some(dav1d_ipred_h_8bpc_avx512icl);
-    (*c).intra_pred[VERT_PRED as usize] = Some(dav1d_ipred_v_8bpc_avx512icl);
-    (*c).intra_pred[PAETH_PRED as usize] = Some(dav1d_ipred_paeth_8bpc_avx512icl);
-    (*c).intra_pred[SMOOTH_PRED as usize] = Some(dav1d_ipred_smooth_8bpc_avx512icl);
-    (*c).intra_pred[SMOOTH_H_PRED as usize] = Some(dav1d_ipred_smooth_h_8bpc_avx512icl);
-    (*c).intra_pred[SMOOTH_V_PRED as usize] = Some(dav1d_ipred_smooth_v_8bpc_avx512icl);
-    (*c).intra_pred[FILTER_PRED as usize] = Some(dav1d_ipred_filter_8bpc_avx512icl);
-
-    (*c).pal_pred = Some(dav1d_pal_pred_8bpc_avx512icl);
 }
 
 #[cfg(feature = "asm")]

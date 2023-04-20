@@ -1024,10 +1024,7 @@ unsafe extern "C" fn loop_restoration_dsp_init_x86(
     c: *mut Dav1dLoopRestorationDSPContext,
     bpc: libc::c_int,
 ) {
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX512ICL;
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSSE3;
+    use crate::src::x86::cpu::*;
 
     let flags = dav1d_get_cpu_flags();
 
@@ -1048,30 +1045,33 @@ unsafe extern "C" fn loop_restoration_dsp_init_x86(
         (*c).sgr[2] = Some(dav1d_sgr_filter_mix_16bpc_ssse3);
     }
 
-    if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
-        return;
-    }
+    #[cfg(target_arch = "x86_64")]
+    {
+        if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
+            return;
+        }
 
-    (*c).wiener[0] = Some(dav1d_wiener_filter7_16bpc_avx2);
-    (*c).wiener[1] = Some(dav1d_wiener_filter5_16bpc_avx2);
+        (*c).wiener[0] = Some(dav1d_wiener_filter7_16bpc_avx2);
+        (*c).wiener[1] = Some(dav1d_wiener_filter5_16bpc_avx2);
 
-    if bpc == 10 {
-        (*c).sgr[0] = Some(dav1d_sgr_filter_5x5_16bpc_avx2);
-        (*c).sgr[1] = Some(dav1d_sgr_filter_3x3_16bpc_avx2);
-        (*c).sgr[2] = Some(dav1d_sgr_filter_mix_16bpc_avx2);
-    }
+        if bpc == 10 {
+            (*c).sgr[0] = Some(dav1d_sgr_filter_5x5_16bpc_avx2);
+            (*c).sgr[1] = Some(dav1d_sgr_filter_3x3_16bpc_avx2);
+            (*c).sgr[2] = Some(dav1d_sgr_filter_mix_16bpc_avx2);
+        }
 
-    if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
-        return;
-    }
+        if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
+            return;
+        }
 
-    (*c).wiener[0] = Some(dav1d_wiener_filter7_16bpc_avx512icl);
-    (*c).wiener[1] = Some(dav1d_wiener_filter5_16bpc_avx512icl);
+        (*c).wiener[0] = Some(dav1d_wiener_filter7_16bpc_avx512icl);
+        (*c).wiener[1] = Some(dav1d_wiener_filter5_16bpc_avx512icl);
 
-    if bpc == 10 {
-        (*c).sgr[0] = Some(dav1d_sgr_filter_5x5_16bpc_avx512icl);
-        (*c).sgr[1] = Some(dav1d_sgr_filter_3x3_16bpc_avx512icl);
-        (*c).sgr[2] = Some(dav1d_sgr_filter_mix_16bpc_avx512icl);
+        if bpc == 10 {
+            (*c).sgr[0] = Some(dav1d_sgr_filter_5x5_16bpc_avx512icl);
+            (*c).sgr[1] = Some(dav1d_sgr_filter_3x3_16bpc_avx512icl);
+            (*c).sgr[2] = Some(dav1d_sgr_filter_mix_16bpc_avx512icl);
+        }
     }
 }
 
