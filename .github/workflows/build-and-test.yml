@@ -52,6 +52,7 @@ jobs:
           cp ${{ github.workspace }}/build/meson-logs/testlog.txt \
              ${{ github.workspace }}/build/meson-logs/testlog-${{ matrix.target }}.txt
       - name: upload build artifacts
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v3
         with:
           name: meson-test-logs

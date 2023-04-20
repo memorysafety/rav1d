@@ -54,6 +54,7 @@ jobs:
             .github/workflows/test.sh -t 2 \
                 -r ../target/armv7-unknown-linux-gnueabihf/release/dav1d
       - name: upload build artifacts
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v3
         with:
           name: meson-test-logs
