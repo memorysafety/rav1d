@@ -398,7 +398,7 @@ unsafe fn add_temporal_candidate(
     cnt: &mut usize,
     rb: &refmvs_temporal_block,
     r#ref: refmvs_refpair,
-    globalmv_ctx: *mut libc::c_int,
+    globalmv_ctx: Option<&mut libc::c_int>,
     mut gmv: *const mv,
 ) {
     if rb.mv == mv::INVALID {
@@ -412,7 +412,7 @@ unsafe fn add_temporal_candidate(
     fix_mv_precision(&*rf.frm_hdr, &mut mv);
     let last = *cnt;
     if r#ref.r#ref[1] == -1 {
-        if !globalmv_ctx.is_null() {
+        if let Some(globalmv_ctx) = globalmv_ctx {
             *globalmv_ctx = ((mv.x - (*gmv.offset(0)).x).abs() | (mv.y - (*gmv.offset(0)).y).abs()
                 >= 16) as libc::c_int;
         }
@@ -741,9 +741,9 @@ pub unsafe fn dav1d_refmvs_find(
                     &*rb.offset(x as isize),
                     r#ref,
                     if x | y == 0 {
-                        &mut globalmv_ctx
+                        Some(&mut globalmv_ctx)
                     } else {
-                        std::ptr::null_mut()
+                        None
                     },
                     tgmv.as_ptr(),
                 );
@@ -763,7 +763,7 @@ pub unsafe fn dav1d_refmvs_find(
                     cnt,
                     &*rb.offset(-1),
                     r#ref,
-                    std::ptr::null_mut(),
+                    None,
                     std::ptr::null(),
                 );
             }
@@ -775,7 +775,7 @@ pub unsafe fn dav1d_refmvs_find(
                         cnt,
                         &*rb.offset(bw8 as isize),
                         r#ref,
-                        std::ptr::null_mut(),
+                        None,
                         std::ptr::null(),
                     );
                 }
@@ -786,7 +786,7 @@ pub unsafe fn dav1d_refmvs_find(
                         cnt,
                         &*rb.offset(bw8 as isize - stride),
                         r#ref,
-                        std::ptr::null_mut(),
+                        None,
                         std::ptr::null(),
                     );
                 }
