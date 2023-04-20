@@ -171,25 +171,25 @@ unsafe fn add_spatial_candidate(
     mvstack: &mut [refmvs_candidate],
     cnt: &mut usize,
     weight: libc::c_int,
-    b: *const refmvs_block,
+    b: &refmvs_block,
     r#ref: refmvs_refpair,
     mut gmv: *const mv,
     have_newmv_match: *mut libc::c_int,
     have_refmv_match: *mut libc::c_int,
 ) {
-    if (*b).mv.mv[0].is_invalid() {
+    if b.mv.mv[0].is_invalid() {
         return;
     }
     if r#ref.r#ref[1] == -1 {
         for n in 0..2 {
-            if (*b).r#ref.r#ref[n] == r#ref.r#ref[0] {
-                let cand_mv = if (*b).mf & 1 != 0 && (*gmv.offset(0)) != mv::INVALID {
+            if b.r#ref.r#ref[n] == r#ref.r#ref[0] {
+                let cand_mv = if b.mf & 1 != 0 && (*gmv.offset(0)) != mv::INVALID {
                     *gmv.offset(0)
                 } else {
-                    (*b).mv.mv[n]
+                    b.mv.mv[n]
                 };
                 *have_refmv_match = 1;
-                *have_newmv_match |= (*b).mf as libc::c_int >> 1;
+                *have_newmv_match |= b.mf as libc::c_int >> 1;
                 let last = *cnt;
                 for cand in &mut mvstack[..last] {
                     if cand.mv.mv[0] == cand_mv {
@@ -206,23 +206,23 @@ unsafe fn add_spatial_candidate(
                 return;
             }
         }
-    } else if (*b).r#ref == r#ref {
+    } else if b.r#ref == r#ref {
         let cand_mv = refmvs_mvpair {
             mv: [
-                if (*b).mf & 1 != 0 && (*gmv.offset(0)) != mv::INVALID {
+                if b.mf & 1 != 0 && (*gmv.offset(0)) != mv::INVALID {
                     *gmv.offset(0)
                 } else {
-                    (*b).mv.mv[0]
+                    b.mv.mv[0]
                 },
-                if (*b).mf & 1 != 0 && (*gmv.offset(1)) != mv::INVALID {
+                if b.mf & 1 != 0 && (*gmv.offset(1)) != mv::INVALID {
                     *gmv.offset(1)
                 } else {
-                    (*b).mv.mv[1]
+                    b.mv.mv[1]
                 },
             ],
         };
         *have_refmv_match = 1;
-        *have_newmv_match |= (*b).mf as libc::c_int >> 1;
+        *have_newmv_match |= b.mf as libc::c_int >> 1;
         let last = *cnt;
         for cand in &mut mvstack[..last] {
             if cand.mv == cand_mv {
@@ -271,7 +271,7 @@ unsafe fn scan_row(
             mvstack,
             cnt,
             len * weight,
-            cand_b,
+            &*cand_b,
             r#ref,
             gmv,
             have_newmv_match,
@@ -285,7 +285,7 @@ unsafe fn scan_row(
             mvstack,
             cnt,
             len * 2,
-            cand_b,
+            &*cand_b,
             r#ref,
             gmv,
             have_newmv_match,
@@ -337,7 +337,7 @@ unsafe fn scan_col(
             mvstack,
             cnt,
             len * weight,
-            cand_b,
+            &*cand_b,
             r#ref,
             gmv,
             have_newmv_match,
@@ -351,7 +351,7 @@ unsafe fn scan_col(
             mvstack,
             cnt,
             len * 2,
-            cand_b,
+            &*cand_b,
             r#ref,
             gmv,
             have_newmv_match,
