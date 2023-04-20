@@ -2330,7 +2330,7 @@ unsafe extern "C" fn decode_coefs(
             cul_level = dc_tok;
             dc_dq >>= dq_shift;
             dc_dq = umin(dc_dq as libc::c_uint, (cf_max + dc_sign) as libc::c_uint) as libc::c_int;
-            *cf.offset(0 as libc::c_int as isize) = if dc_sign != 0 { -dc_dq } else { dc_dq };
+            *cf.offset(0) = if dc_sign != 0 { -dc_dq } else { dc_dq };
             if rc != 0 {
                 current_block = 1669574575799829731;
             } else {
@@ -2361,7 +2361,7 @@ unsafe extern "C" fn decode_coefs(
                 }
             }
             cul_level = dc_tok;
-            *cf.offset(0 as libc::c_int as isize) = if dc_sign != 0 { -dc_dq } else { dc_dq };
+            *cf.offset(0) = if dc_sign != 0 { -dc_dq } else { dc_dq };
             if rc != 0 {
                 current_block = 2404388531445638768;
             } else {

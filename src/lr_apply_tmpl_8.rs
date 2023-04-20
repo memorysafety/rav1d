@@ -731,7 +731,7 @@ unsafe extern "C" fn lr_stripe(
         let ref mut fresh2 = (*filter.offset(0))[4];
         *fresh2 = (*lr).filter_h[2] as int16_t;
         (*filter.offset(0))[2] = *fresh2;
-        (*filter.offset(0 as libc::c_int as isize))[3] =
+        (*filter.offset(0))[3] =
             (-((*filter.offset(0))[0] as libc::c_int
                 + (*filter.offset(0))[1] as libc::c_int
                 + (*filter.offset(0))[2] as libc::c_int)
@@ -745,7 +745,7 @@ unsafe extern "C" fn lr_stripe(
         let ref mut fresh5 = (*filter.offset(1))[4];
         *fresh5 = (*lr).filter_v[2] as int16_t;
         (*filter.offset(1))[2] = *fresh5;
-        (*filter.offset(1 as libc::c_int as isize))[3] =
+        (*filter.offset(1))[3] =
             (128 as libc::c_int
                 - ((*filter.offset(1))[0] as libc::c_int
                     + (*filter.offset(1))[1] as libc::c_int

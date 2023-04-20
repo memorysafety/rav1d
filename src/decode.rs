@@ -3042,7 +3042,7 @@ unsafe extern "C" fn read_pal_indices(
     if pal_idx.is_null() {
         unreachable!();
     }
-    *pal_idx.offset(0 as libc::c_int as isize) = dav1d_msac_decode_uniform(
+    *pal_idx.offset(0) = dav1d_msac_decode_uniform(
         &mut (*ts).msac,
         (*b).c2rust_unnamed.c2rust_unnamed.pal_sz[pl as usize] as libc::c_uint,
     ) as uint8_t;
