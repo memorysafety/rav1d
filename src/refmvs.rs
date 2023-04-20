@@ -167,7 +167,7 @@ use crate::src::mem::dav1d_freep_aligned;
 
 use crate::src::mem::dav1d_alloc_aligned;
 
-unsafe fn add_spatial_candidate(
+fn add_spatial_candidate(
     mvstack: &mut [refmvs_candidate],
     cnt: &mut usize,
     weight: libc::c_int,
