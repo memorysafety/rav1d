@@ -393,7 +393,7 @@ fn mv_projection(mv: mv, num: libc::c_int, den: libc::c_int) -> mv {
 }
 
 unsafe fn add_temporal_candidate(
-    rf: *const refmvs_frame,
+    rf: &refmvs_frame,
     mvstack: &mut [refmvs_candidate],
     cnt: &mut usize,
     rb: *const refmvs_temporal_block,
@@ -406,10 +406,10 @@ unsafe fn add_temporal_candidate(
     }
     let mut mv = mv_projection(
         (*rb).mv,
-        (*rf).pocdiff[r#ref.r#ref[0] as usize - 1] as libc::c_int,
+        rf.pocdiff[r#ref.r#ref[0] as usize - 1] as libc::c_int,
         (*rb).r#ref as libc::c_int,
     );
-    fix_mv_precision(&*(*rf).frm_hdr, &mut mv);
+    fix_mv_precision(&*rf.frm_hdr, &mut mv);
     let last = *cnt;
     if r#ref.r#ref[1] == -1 {
         if !globalmv_ctx.is_null() {
@@ -435,12 +435,12 @@ unsafe fn add_temporal_candidate(
                 mv,
                 mv_projection(
                     (*rb).mv,
-                    (*rf).pocdiff[r#ref.r#ref[1] as usize - 1] as libc::c_int,
+                    rf.pocdiff[r#ref.r#ref[1] as usize - 1] as libc::c_int,
                     (*rb).r#ref as libc::c_int,
                 ),
             ],
         };
-        fix_mv_precision(&*(*rf).frm_hdr, &mut mvp.mv[1]);
+        fix_mv_precision(&*rf.frm_hdr, &mut mvp.mv[1]);
         let mut n_0 = 0;
         while n_0 < last {
             if mvstack[n_0 as usize].mv == mvp {
