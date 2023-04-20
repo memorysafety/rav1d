@@ -494,7 +494,7 @@ unsafe fn add_compound_extended_candidate(
     sign0: libc::c_int,
     sign1: libc::c_int,
     r#ref: refmvs_refpair,
-    sign_bias: *const uint8_t,
+    sign_bias: &[u8; 7],
 ) {
     let diff = &mut *same.offset(2) as *mut refmvs_candidate;
     let diff_count = &mut *same_count.offset(2) as *mut libc::c_int;
@@ -512,7 +512,7 @@ unsafe fn add_compound_extended_candidate(
                 (*same.offset(fresh1 as isize)).mv.mv[0] = cand_mv;
             }
             if *diff_count.offset(1) < 2 {
-                if (sign1 ^ *sign_bias.offset((cand_ref - 1) as isize) as libc::c_int) != 0 {
+                if (sign1 ^ sign_bias[cand_ref as usize - 1] as libc::c_int) != 0 {
                     cand_mv.y = -cand_mv.y;
                     cand_mv.x = -cand_mv.x;
                 }
@@ -529,7 +529,7 @@ unsafe fn add_compound_extended_candidate(
                 (*same.offset(fresh5 as isize)).mv.mv[1] = cand_mv;
             }
             if *diff_count.offset(0) < 2 {
-                if (sign0 ^ *sign_bias.offset((cand_ref - 1) as isize) as libc::c_int) != 0 {
+                if (sign0 ^ sign_bias[cand_ref as usize - 1] as libc::c_int) != 0 {
                     cand_mv.y = -cand_mv.y;
                     cand_mv.x = -cand_mv.x;
                 }
@@ -548,7 +548,7 @@ unsafe fn add_compound_extended_candidate(
                 let fresh9 = *fresh8;
                 *fresh8 = *fresh8 + 1;
                 (*diff.offset(fresh9 as isize)).mv.mv[0] = 
-                    if (sign0 ^ *sign_bias.offset((cand_ref - 1) as isize) as libc::c_int) != 0 {
+                    if (sign0 ^ sign_bias[cand_ref as usize - 1] as libc::c_int) != 0 {
                         i_cand_mv
                     } else {
                         cand_mv
@@ -559,7 +559,7 @@ unsafe fn add_compound_extended_candidate(
                 let fresh11 = *fresh10;
                 *fresh10 = *fresh10 + 1;
                 (*diff.offset(fresh11 as isize)).mv.mv[1] = 
-                    if (sign1 ^ *sign_bias.offset((cand_ref - 1) as isize) as libc::c_int) != 0 {
+                    if (sign1 ^ sign_bias[cand_ref as usize - 1] as libc::c_int) != 0 {
                         i_cand_mv
                     } else {
                         cand_mv
@@ -912,7 +912,7 @@ pub unsafe fn dav1d_refmvs_find(
                         sign0,
                         sign1,
                         r#ref,
-                        rf.sign_bias.as_ptr(),
+                        &rf.sign_bias,
                     );
                     x += dav1d_block_dimensions[(*cand_b).bs as usize][0] as libc::c_int;
                 }
@@ -931,7 +931,7 @@ pub unsafe fn dav1d_refmvs_find(
                         sign0,
                         sign1,
                         r#ref,
-                        rf.sign_bias.as_ptr(),
+                        &rf.sign_bias,
                     );
                     y += dav1d_block_dimensions[(*cand_b).bs as usize][1] as libc::c_int;
                 }
