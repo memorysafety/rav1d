@@ -261,8 +261,8 @@ unsafe fn scan_row(
     have_newmv_match: &mut libc::c_int,
     have_refmv_match: &mut libc::c_int,
 ) -> libc::c_int {
-    let mut cand_b = b;
-    let first_cand_bs = (*cand_b).bs as BlockSize;
+    let mut cand_b = &*b;
+    let first_cand_bs = cand_b.bs as BlockSize;
     let first_cand_b_dim = &dav1d_block_dimensions[first_cand_bs as usize];
     let mut cand_bw4 = first_cand_b_dim[0] as libc::c_int;
     let mut len = imax(step, imin(bw4, cand_bw4));
@@ -301,7 +301,7 @@ unsafe fn scan_row(
             return 1;
         }
         cand_b = &*b.offset(x as isize);
-        cand_bw4 = dav1d_block_dimensions[(*cand_b).bs as usize][0] as libc::c_int;
+        cand_bw4 = dav1d_block_dimensions[cand_b.bs as usize][0] as libc::c_int;
         assert!(cand_bw4 < bw4);
         len = imax(step, cand_bw4);
     }
@@ -322,7 +322,7 @@ unsafe fn scan_col(
     have_refmv_match: &mut libc::c_int,
 ) -> libc::c_int {
     let mut cand_b = &*(*b.offset(0)).offset(bx4 as isize);
-    let first_cand_bs = (*cand_b).bs as BlockSize;
+    let first_cand_bs = cand_b.bs as BlockSize;
     let first_cand_b_dim = &dav1d_block_dimensions[first_cand_bs as usize];
     let mut cand_bh4 = first_cand_b_dim[1] as libc::c_int;
     let mut len = imax(step, imin(bh4, cand_bh4));
@@ -361,7 +361,7 @@ unsafe fn scan_col(
             return 1;
         }
         cand_b = &*(*b.offset(y as isize)).offset(bx4 as isize);
-        cand_bh4 = dav1d_block_dimensions[(*cand_b).bs as usize][1] as libc::c_int;
+        cand_bh4 = dav1d_block_dimensions[cand_b.bs as usize][1] as libc::c_int;
         assert!(cand_bh4 < bh4);
         len = imax(step, cand_bh4);
     }
