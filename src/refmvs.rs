@@ -488,7 +488,7 @@ unsafe extern "C" fn add_temporal_candidate(
 }
 
 unsafe fn add_compound_extended_candidate(
-    same: *mut refmvs_candidate,
+    same: &mut [refmvs_candidate],
     same_count: &mut [usize; 4],
     cand_b: &refmvs_block,
     sign0: u8,
@@ -496,7 +496,7 @@ unsafe fn add_compound_extended_candidate(
     r#ref: refmvs_refpair,
     sign_bias: &[u8; 7],
 ) {
-    let diff = &mut *same.offset(2) as *mut refmvs_candidate;
+    let (same, diff) = same.split_at_mut(2);
 
     // Alternative way with compile-time index checking
     // for the resulting array refs (rather than slices).
@@ -516,7 +516,7 @@ unsafe fn add_compound_extended_candidate(
         let mut cand_mv = cand_b.mv.mv[n];
         if cand_ref == r#ref.r#ref[0] as libc::c_int {
             if same_count[0] < 2 {
-                (*same.offset(same_count[0] as isize)).mv.mv[0] = cand_mv;
+                same[same_count[0]].mv.mv[0] = cand_mv;
                 same_count[0] += 1;
             }
             if diff_count[1] < 2 {
@@ -524,12 +524,12 @@ unsafe fn add_compound_extended_candidate(
                     cand_mv.y = -cand_mv.y;
                     cand_mv.x = -cand_mv.x;
                 }
-                (*diff.offset(diff_count[1] as isize)).mv.mv[1] = cand_mv;
+                diff[diff_count[1]].mv.mv[1] = cand_mv;
                 diff_count[1] += 1;
             }
         } else if cand_ref == r#ref.r#ref[1] as libc::c_int {
             if same_count[1] < 2 {
-                (*same.offset(same_count[1] as isize)).mv.mv[1] = cand_mv;
+                same[same_count[1]].mv.mv[1] = cand_mv;
                 same_count[1] += 1;
             }
             if diff_count[0] < 2 {
@@ -537,7 +537,7 @@ unsafe fn add_compound_extended_candidate(
                     cand_mv.y = -cand_mv.y;
                     cand_mv.x = -cand_mv.x;
                 }
-                (*diff.offset(diff_count[0] as isize)).mv.mv[0] = cand_mv;
+                diff[diff_count[0]].mv.mv[0] = cand_mv;
                 diff_count[0] += 1;
             }
         } else {
@@ -546,7 +546,7 @@ unsafe fn add_compound_extended_candidate(
                 x: -cand_mv.x,
             };
             if diff_count[0] < 2 {
-                (*diff.offset(diff_count[0] as isize)).mv.mv[0] = 
+                diff[diff_count[0]].mv.mv[0] = 
                     if (sign0 ^ sign_bias[cand_ref as usize - 1]) != 0 {
                         i_cand_mv
                     } else {
@@ -555,7 +555,7 @@ unsafe fn add_compound_extended_candidate(
                 diff_count[0] += 1;
             }
             if diff_count[1] < 2 {
-                (*diff.offset(diff_count[1] as isize)).mv.mv[1] = 
+                diff[diff_count[1]].mv.mv[1] = 
                     if (sign1 ^ sign_bias[cand_ref as usize - 1]) != 0 {
                         i_cand_mv
                     } else {
@@ -904,7 +904,7 @@ pub unsafe fn dav1d_refmvs_find(
                 while x < sz4 {
                     let cand_b = &*b_top.offset(x as isize);
                     add_compound_extended_candidate(
-                        same.as_mut_ptr(),
+                        same,
                         &mut same_count,
                         cand_b,
                         sign0,
@@ -923,7 +923,7 @@ pub unsafe fn dav1d_refmvs_find(
                     let cand_b = &*(*b_left.offset(y as isize))
                         .offset(bx4 as isize - 1);
                     add_compound_extended_candidate(
-                        same.as_mut_ptr(),
+                        same,
                         &mut same_count,
                         cand_b,
                         sign0,
