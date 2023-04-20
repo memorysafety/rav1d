@@ -261,18 +261,17 @@ unsafe fn scan_row(
     have_newmv_match: &mut libc::c_int,
     have_refmv_match: &mut libc::c_int,
 ) -> libc::c_int {
-    let mut cand_b: *const refmvs_block = b;
-    let first_cand_bs: BlockSize = (*cand_b).bs as BlockSize;
-    let first_cand_b_dim: *const uint8_t =
-        (dav1d_block_dimensions[first_cand_bs as usize]).as_ptr();
+    let mut cand_b = b;
+    let first_cand_bs = (*cand_b).bs as BlockSize;
+    let first_cand_b_dim = (dav1d_block_dimensions[first_cand_bs as usize]).as_ptr();
     let mut cand_bw4 = *first_cand_b_dim.offset(0) as libc::c_int;
     let mut len = imax(step, imin(bw4, cand_bw4));
     if bw4 <= cand_bw4 {
         let weight = if bw4 == 1 {
-            2 as libc::c_int
+            2
         } else {
             imax(
-                2 as libc::c_int,
+                2,
                 imin(2 * max_rows, *first_cand_b_dim.offset(1) as libc::c_int),
             )
         };
@@ -302,9 +301,9 @@ unsafe fn scan_row(
         );
         x += len;
         if x >= w4 {
-            return 1 as libc::c_int;
+            return 1;
         }
-        cand_b = &*b.offset(x as isize) as *const refmvs_block;
+        cand_b = &*b.offset(x as isize);
         cand_bw4 = dav1d_block_dimensions[(*cand_b).bs as usize][0] as libc::c_int;
         if !(cand_bw4 < bw4) {
             unreachable!();
@@ -312,6 +311,7 @@ unsafe fn scan_row(
         len = imax(step, cand_bw4);
     }
 }
+
 unsafe fn scan_col(
     mvstack: &mut [refmvs_candidate],
     cnt: &mut usize,
@@ -326,19 +326,17 @@ unsafe fn scan_col(
     have_newmv_match: &mut libc::c_int,
     have_refmv_match: &mut libc::c_int,
 ) -> libc::c_int {
-    let mut cand_b: *const refmvs_block =
-        &mut *(*b.offset(0)).offset(bx4 as isize) as *mut refmvs_block;
-    let first_cand_bs: BlockSize = (*cand_b).bs as BlockSize;
-    let first_cand_b_dim: *const uint8_t =
-        (dav1d_block_dimensions[first_cand_bs as usize]).as_ptr();
+    let mut cand_b = &*(*b.offset(0)).offset(bx4 as isize);
+    let first_cand_bs = (*cand_b).bs as BlockSize;
+    let first_cand_b_dim = (dav1d_block_dimensions[first_cand_bs as usize]).as_ptr();
     let mut cand_bh4 = *first_cand_b_dim.offset(1) as libc::c_int;
     let mut len = imax(step, imin(bh4, cand_bh4));
     if bh4 <= cand_bh4 {
         let weight = if bh4 == 1 {
-            2 as libc::c_int
+            2
         } else {
             imax(
-                2 as libc::c_int,
+                2,
                 imin(2 * max_cols, *first_cand_b_dim.offset(0) as libc::c_int),
             )
         };
@@ -368,9 +366,9 @@ unsafe fn scan_col(
         );
         y += len;
         if y >= h4 {
-            return 1 as libc::c_int;
+            return 1;
         }
-        cand_b = &mut *(*b.offset(y as isize)).offset(bx4 as isize) as *mut refmvs_block;
+        cand_b = &*(*b.offset(y as isize)).offset(bx4 as isize);
         cand_bh4 = dav1d_block_dimensions[(*cand_b).bs as usize][1] as libc::c_int;
         if !(cand_bh4 < bh4) {
             unreachable!();
