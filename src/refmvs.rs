@@ -183,12 +183,12 @@ unsafe fn add_spatial_candidate(
     if r#ref.r#ref[1] as libc::c_int == -(1 as libc::c_int) {
         let mut n = 0;
         while n < 2 {
-            if (*b).r#ref.r#ref[n as usize] as libc::c_int == r#ref.r#ref[0] as libc::c_int {
+            if (*b).r#ref.r#ref[n] as libc::c_int == r#ref.r#ref[0] as libc::c_int {
                 let cand_mv: mv =
                     if (*b).mf as libc::c_int & 1 != 0 && (*gmv.offset(0)) != mv::INVALID {
                         *gmv.offset(0)
                     } else {
-                        (*b).mv.mv[n as usize]
+                        (*b).mv.mv[n]
                     };
                 *have_refmv_match = 1 as libc::c_int;
                 *have_newmv_match |= (*b).mf as libc::c_int >> 1;
