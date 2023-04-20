@@ -398,8 +398,7 @@ unsafe fn add_temporal_candidate(
     cnt: &mut usize,
     rb: &refmvs_temporal_block,
     r#ref: refmvs_refpair,
-    globalmv_ctx: Option<&mut libc::c_int>,
-    mut gmv: *const mv,
+    globalmv: Option<(&mut libc::c_int, &[mv; 2])>,
 ) {
     if rb.mv == mv::INVALID {
         return;
@@ -412,9 +411,9 @@ unsafe fn add_temporal_candidate(
     fix_mv_precision(&*rf.frm_hdr, &mut mv);
     let last = *cnt;
     if r#ref.r#ref[1] == -1 {
-        if let Some(globalmv_ctx) = globalmv_ctx {
-            *globalmv_ctx = ((mv.x - (*gmv.offset(0)).x).abs() | (mv.y - (*gmv.offset(0)).y).abs()
-                >= 16) as libc::c_int;
+        if let Some((globalmv_ctx, gmv)) = globalmv {
+            *globalmv_ctx =
+                ((mv.x - gmv[0].x).abs() | (mv.y - gmv[0].y).abs() >= 16) as libc::c_int;
         }
         for cand in &mut mvstack[..last] {
             if cand.mv.mv[0] == mv {
@@ -741,11 +740,10 @@ pub unsafe fn dav1d_refmvs_find(
                     &*rb.offset(x as isize),
                     r#ref,
                     if x | y == 0 {
-                        Some(&mut globalmv_ctx)
+                        Some((&mut globalmv_ctx, &tgmv))
                     } else {
                         None
                     },
-                    tgmv.as_ptr(),
                 );
             }
             rb = rb.offset(stride * step_v as isize);
@@ -757,15 +755,7 @@ pub unsafe fn dav1d_refmvs_find(
             let has_bottom =
                 (by8 + bh8 < imin(rt.tile_row.end >> 1, (by8 & !7) + 8)) as libc::c_int;
             if has_bottom != 0 && bx8 - 1 >= imax(rt.tile_col.start >> 1, bx8 & !7) {
-                add_temporal_candidate(
-                    rf,
-                    mvstack,
-                    cnt,
-                    &*rb.offset(-1),
-                    r#ref,
-                    None,
-                    std::ptr::null(),
-                );
+                add_temporal_candidate(rf, mvstack, cnt, &*rb.offset(-1), r#ref, None);
             }
             if bx8 + bw8 < imin(rt.tile_col.end >> 1, (bx8 & !7) + 8) {
                 if has_bottom != 0 {
@@ -776,7 +766,6 @@ pub unsafe fn dav1d_refmvs_find(
                         &*rb.offset(bw8 as isize),
                         r#ref,
                         None,
-                        std::ptr::null(),
                     );
                 }
                 if (by8 + bh8 - 1) < imin(rt.tile_row.end >> 1, (by8 & !7) + 8) {
@@ -787,7 +776,6 @@ pub unsafe fn dav1d_refmvs_find(
                         &*rb.offset(bw8 as isize - stride),
                         r#ref,
                         None,
-                        std::ptr::null(),
                     );
                 }
             }
