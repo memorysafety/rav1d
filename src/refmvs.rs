@@ -263,17 +263,14 @@ unsafe fn scan_row(
 ) -> libc::c_int {
     let mut cand_b = b;
     let first_cand_bs = (*cand_b).bs as BlockSize;
-    let first_cand_b_dim = (dav1d_block_dimensions[first_cand_bs as usize]).as_ptr();
-    let mut cand_bw4 = *first_cand_b_dim.offset(0) as libc::c_int;
+    let first_cand_b_dim = &dav1d_block_dimensions[first_cand_bs as usize];
+    let mut cand_bw4 = first_cand_b_dim[0] as libc::c_int;
     let mut len = imax(step, imin(bw4, cand_bw4));
     if bw4 <= cand_bw4 {
         let weight = if bw4 == 1 {
             2
         } else {
-            imax(
-                2,
-                imin(2 * max_rows, *first_cand_b_dim.offset(1) as libc::c_int),
-            )
+            imax(2, imin(2 * max_rows, first_cand_b_dim[1] as libc::c_int))
         };
         add_spatial_candidate(
             mvstack,
@@ -328,17 +325,14 @@ unsafe fn scan_col(
 ) -> libc::c_int {
     let mut cand_b = &*(*b.offset(0)).offset(bx4 as isize);
     let first_cand_bs = (*cand_b).bs as BlockSize;
-    let first_cand_b_dim = (dav1d_block_dimensions[first_cand_bs as usize]).as_ptr();
-    let mut cand_bh4 = *first_cand_b_dim.offset(1) as libc::c_int;
+    let first_cand_b_dim = &dav1d_block_dimensions[first_cand_bs as usize];
+    let mut cand_bh4 = first_cand_b_dim[1] as libc::c_int;
     let mut len = imax(step, imin(bh4, cand_bh4));
     if bh4 <= cand_bh4 {
         let weight = if bh4 == 1 {
             2
         } else {
-            imax(
-                2,
-                imin(2 * max_cols, *first_cand_b_dim.offset(0) as libc::c_int),
-            )
+            imax(2, imin(2 * max_cols, first_cand_b_dim[0] as libc::c_int))
         };
         add_spatial_candidate(
             mvstack,
