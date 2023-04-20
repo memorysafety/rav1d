@@ -498,8 +498,16 @@ unsafe fn add_compound_extended_candidate(
 ) {
     let diff = &mut *same.offset(2) as *mut refmvs_candidate;
 
-    let (same_count, diff_count) = same_count.split_at_mut(2);
+    // Alternative way with compile-time index checking
+    // for the resulting array refs (rather than slices).
+    //
+    // Safety: `[libc::c_int; 4]` and `[[libc::c_int; 2]; 2]` should be identical.
+    // let [same_count, diff_count] = unsafe { 
+    //     std::mem::transmute::<&mut [libc::c_int; 4], &mut [[libc::c_int; 2]; 2]>(same_count)
+    // };
 
+    let (same_count, diff_count) = same_count.split_at_mut(2);
+    
     for n in 0..2 {
         let cand_ref = cand_b.r#ref.r#ref[n] as libc::c_int;
         if cand_ref <= 0 {
