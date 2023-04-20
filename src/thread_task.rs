@@ -1122,7 +1122,7 @@ unsafe extern "C" fn create_filter_sbrow(
         != (*(*f).frame_hdr).width[1]) as libc::c_int;
     let has_lr: libc::c_int = (*f).lf.restore_planes;
     let mut tasks: *mut Dav1dTask = (*f).task_thread.tasks;
-    let uses_2pass: libc::c_int = ((*(*f).c).n_fc > 1 as libc::c_int as libc::c_uint)
+    let uses_2pass: libc::c_int = ((*(*f).c).n_fc > 1 as libc::c_uint)
         as libc::c_int;
     let mut num_tasks: libc::c_int = (*f).sbh * (1 as libc::c_int + uses_2pass);
     if num_tasks > (*f).task_thread.num_tasks {
@@ -1137,12 +1137,12 @@ unsafe extern "C" fn create_filter_sbrow(
         (*f).task_thread.tasks = tasks;
         (*f).task_thread.num_tasks = num_tasks;
     }
-    tasks = tasks.offset(((*f).sbh * (pass & 1 as libc::c_int)) as isize);
-    if pass & 1 as libc::c_int != 0 {
+    tasks = tasks.offset(((*f).sbh * (pass & 1)) as isize);
+    if pass & 1 != 0 {
         (*f).frame_thread.entropy_progress = 0 as libc::c_int;
     } else {
-        let prog_sz: libc::c_int = ((*f).sbh + 31 as libc::c_int & !(31 as libc::c_int))
-            >> 5 as libc::c_int;
+        let prog_sz: libc::c_int = ((*f).sbh + 31 & !(31 as libc::c_int))
+            >> 5;
         if prog_sz > (*f).frame_thread.prog_sz {
             let prog: *mut atomic_uint = realloc(
                 (*f).frame_thread.frame_progress as *mut libc::c_void,
@@ -1175,14 +1175,14 @@ unsafe extern "C" fn create_filter_sbrow(
     }
     (*f)
         .frame_thread
-        .next_tile_row[(pass & 1 as libc::c_int) as usize] = 0 as libc::c_int;
+        .next_tile_row[(pass & 1) as usize] = 0 as libc::c_int;
     let mut t: *mut Dav1dTask = &mut *tasks.offset(0)
         as *mut Dav1dTask;
     (*t).sby = 0 as libc::c_int;
     (*t).recon_progress = 1 as libc::c_int;
     (*t).deblock_progress = 0 as libc::c_int;
     (*t)
-        .type_0 = (if pass == 1 as libc::c_int {
+        .type_0 = (if pass == 1 {
         DAV1D_TASK_TYPE_ENTROPY_PROGRESS as libc::c_int
     } else if has_deblock != 0 {
         DAV1D_TASK_TYPE_DEBLOCK_COLS as libc::c_int
@@ -1208,11 +1208,11 @@ pub unsafe extern "C" fn dav1d_task_create_tile_sbrow(
     let mut tasks: *mut Dav1dTask = (*f)
         .task_thread
         .tile_tasks[0];
-    let uses_2pass: libc::c_int = ((*(*f).c).n_fc > 1 as libc::c_int as libc::c_uint)
+    let uses_2pass: libc::c_int = ((*(*f).c).n_fc > 1 as libc::c_uint)
         as libc::c_int;
     let num_tasks: libc::c_int = (*(*f).frame_hdr).tiling.cols
         * (*(*f).frame_hdr).tiling.rows;
-    if pass < 2 as libc::c_int {
+    if pass < 2 {
         let mut alloc_num_tasks: libc::c_int = num_tasks
             * (1 as libc::c_int + uses_2pass);
         if alloc_num_tasks > (*f).task_thread.num_tile_tasks {
@@ -1234,7 +1234,7 @@ pub unsafe extern "C" fn dav1d_task_create_tile_sbrow(
             .task_thread
             .tile_tasks[1] = tasks.offset(num_tasks as isize);
     }
-    tasks = tasks.offset((num_tasks * (pass & 1 as libc::c_int)) as isize);
+    tasks = tasks.offset((num_tasks * (pass & 1)) as isize);
     let mut pf_t: *mut Dav1dTask = 0 as *mut Dav1dTask;
     if create_filter_sbrow(f, pass, &mut pf_t) != 0 {
         return -(1 as libc::c_int);
@@ -1278,11 +1278,11 @@ pub unsafe extern "C" fn dav1d_task_create_tile_sbrow(
     ::core::intrinsics::atomic_store_seqcst(
         &mut *((*f).task_thread.done)
             .as_mut_ptr()
-            .offset((pass & 1 as libc::c_int) as isize) as *mut atomic_int,
+            .offset((pass & 1) as isize) as *mut atomic_int,
         0 as libc::c_int,
     );
     pthread_mutex_lock(&mut (*f).task_thread.pending_tasks.lock);
-    if !(((*f).task_thread.pending_tasks.head).is_null() || pass == 2 as libc::c_int) {
+    if !(((*f).task_thread.pending_tasks.head).is_null() || pass == 2) {
         unreachable!();
     }
     if ((*f).task_thread.pending_tasks.head).is_null() {
@@ -1378,7 +1378,7 @@ unsafe extern "C" fn check_tile(
     if p1 < (*t).sby {
         return 1 as libc::c_int;
     }
-    let mut error: libc::c_int = (p1 == 2147483647 as libc::c_int - 1 as libc::c_int)
+    let mut error: libc::c_int = (p1 == 2147483647 - 1)
         as libc::c_int;
     error |= ::core::intrinsics::atomic_or_seqcst(&mut (*f).task_thread.error, error);
     if error == 0 && frame_mt != 0 && tp == 0 {
@@ -1389,26 +1389,26 @@ unsafe extern "C" fn check_tile(
         if p2 <= (*t).sby {
             return 1 as libc::c_int;
         }
-        error = (p2 == 2147483647 as libc::c_int - 1 as libc::c_int) as libc::c_int;
+        error = (p2 == 2147483647 - 1) as libc::c_int;
         error
             |= ::core::intrinsics::atomic_or_seqcst(&mut (*f).task_thread.error, error);
     }
     if error == 0 && frame_mt != 0
         && (*(*f).frame_hdr).frame_type as libc::c_uint
-            & 1 as libc::c_int as libc::c_uint != 0
+            & 1 as libc::c_uint != 0
     {
         let mut p: *const Dav1dThreadPicture = &mut (*f).sr_cur;
         let ss_ver: libc::c_int = ((*p).p.p.layout as libc::c_uint
             == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint) as libc::c_int;
-        let p_b: libc::c_uint = (((*t).sby + 1 as libc::c_int)
-            << (*f).sb_shift + 2 as libc::c_int) as libc::c_uint;
+        let p_b: libc::c_uint = (((*t).sby + 1)
+            << (*f).sb_shift + 2) as libc::c_uint;
         let tile_sby: libc::c_int = (*t).sby - ((*ts).tiling.row_start >> (*f).sb_shift);
         let lowest_px: *const [libc::c_int; 2] = (*((*ts).lowest_pixel)
             .offset(tile_sby as isize))
             .as_mut_ptr() as *const [libc::c_int; 2];
         let mut current_block_14: u64;
         let mut n: libc::c_int = (*t).deps_skip;
-        while n < 7 as libc::c_int {
+        while n < 7 {
             let mut lowest: libc::c_uint = 0;
             if tp != 0 {
                 lowest = p_b;
@@ -1416,24 +1416,24 @@ unsafe extern "C" fn check_tile(
             } else {
                 let y: libc::c_int = if (*lowest_px
                     .offset(n as isize))[0]
-                    == -(2147483647 as libc::c_int) - 1 as libc::c_int
+                    == -(2147483647 as libc::c_int) - 1
                 {
-                    -(2147483647 as libc::c_int) - 1 as libc::c_int
+                    -(2147483647 as libc::c_int) - 1
                 } else {
                     (*lowest_px.offset(n as isize))[0]
-                        + 8 as libc::c_int
+                        + 8
                 };
                 let uv: libc::c_int = if (*lowest_px
                     .offset(n as isize))[1]
-                    == -(2147483647 as libc::c_int) - 1 as libc::c_int
+                    == -(2147483647 as libc::c_int) - 1
                 {
-                    -(2147483647 as libc::c_int) - 1 as libc::c_int
+                    -(2147483647 as libc::c_int) - 1
                 } else {
                     (*lowest_px.offset(n as isize))[1]
-                        * ((1 as libc::c_int) << ss_ver) + 8 as libc::c_int
+                        * ((1 as libc::c_int) << ss_ver) + 8
                 };
                 let max: libc::c_int = imax(y, uv);
-                if max == -(2147483647 as libc::c_int) - 1 as libc::c_int {
+                if max == -(2147483647 as libc::c_int) - 1 {
                     current_block_14 = 7651349459974463963;
                 } else {
                     lowest = iclip(max, 1 as libc::c_int, (*f).refp[n as usize].p.p.h)
@@ -1474,7 +1474,7 @@ unsafe extern "C" fn get_frame_progress(
     c: *const Dav1dContext,
     f: *const Dav1dFrameContext,
 ) -> libc::c_int {
-    let mut frame_prog: libc::c_uint = if (*c).n_fc > 1 as libc::c_int as libc::c_uint {
+    let mut frame_prog: libc::c_uint = if (*c).n_fc > 1 as libc::c_uint {
         ::core::intrinsics::atomic_load_seqcst(
             &mut *((*f).sr_cur.progress).offset(1)
                 as *mut atomic_uint,
@@ -1488,9 +1488,9 @@ unsafe extern "C" fn get_frame_progress(
             .wrapping_add(1 as libc::c_uint)
             .wrapping_sub(1 as libc::c_int as libc::c_uint)
     {
-        return (*f).sbh - 1 as libc::c_int;
+        return (*f).sbh - 1;
     }
-    let mut idx: libc::c_int = (frame_prog >> (*f).sb_shift + 7 as libc::c_int)
+    let mut idx: libc::c_int = (frame_prog >> (*f).sb_shift + 7)
         as libc::c_int;
     let mut prog: libc::c_int = 0;
     loop {
@@ -1507,7 +1507,7 @@ unsafe extern "C" fn get_frame_progress(
             break;
         }
     }
-    return (idx << 5 as libc::c_int | prog) - 1 as libc::c_int;
+    return (idx << 5 | prog) - 1;
 }
 #[inline]
 unsafe extern "C" fn abort_frame(f: *mut Dav1dFrameContext, error: libc::c_int) {
@@ -1559,7 +1559,7 @@ unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThrea
     let out: *mut Dav1dPicture = (*ttd).delayed_fg.out;
     let mut off: libc::c_int = 0;
     if (*out).p.bpc != 8 as libc::c_int {
-        off = ((*out).p.bpc >> 1 as libc::c_int) - 4 as libc::c_int;
+        off = ((*out).p.bpc >> 1) - 4;
     }
     let mut row: libc::c_int = 0;
     let mut progmax: libc::c_int = 0;
@@ -1622,11 +1622,11 @@ unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThrea
         1 as libc::c_int,
     );
     pthread_mutex_unlock(&mut (*ttd).lock);
-    progmax = (*out).p.h + 31 as libc::c_int >> 5 as libc::c_int;
+    progmax = (*out).p.h + 31 >> 5;
     loop {
-        if (row + 1 as libc::c_int) < progmax {
+        if (row + 1) < progmax {
             pthread_cond_signal(&mut (*ttd).cond);
-        } else if row + 1 as libc::c_int >= progmax {
+        } else if row + 1 >= progmax {
             pthread_mutex_lock(&mut (*ttd).lock);
             (*ttd).delayed_fg.exec = 0 as libc::c_int;
             if row >= progmax {
@@ -1676,7 +1676,7 @@ unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThrea
                 .as_mut_ptr()
                 .offset(1) as *mut atomic_int,
             1 as libc::c_int,
-        ) + 1 as libc::c_int;
+        ) + 1;
         if row < progmax {
             continue;
         }
@@ -1688,7 +1688,7 @@ unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThrea
         &mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(1)
             as *mut atomic_int,
         1 as libc::c_int,
-    ) + 1 as libc::c_int;
+    ) + 1;
     progmax = ::core::intrinsics::atomic_load_seqcst(
         &mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(0)
             as *mut atomic_int,
@@ -1723,7 +1723,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                 f = 0 as *mut Dav1dFrameContext;
                 t = 0 as *mut Dav1dTask;
                 prev_t = 0 as *mut Dav1dTask;
-                if (*c).n_fc > 1 as libc::c_int as libc::c_uint {
+                if (*c).n_fc > 1 as libc::c_uint {
                     let mut i: libc::c_uint = 0 as libc::c_int as libc::c_uint;
                     loop {
                         if !(i < (*c).n_fc) {
@@ -1761,7 +1761,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                     if p1 != 0 {
                                         ::core::intrinsics::atomic_or_seqcst(
                                             &mut (*f).task_thread.error,
-                                            (p1 == 2147483647 as libc::c_int - 1 as libc::c_int)
+                                            (p1 == 2147483647 - 1)
                                                 as libc::c_int,
                                         );
                                         current_block = 7012560550443761033;
@@ -1808,7 +1808,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                             if check_tile(
                                                 t,
                                                 f,
-                                                ((*c).n_fc > 1 as libc::c_int as libc::c_uint)
+                                                ((*c).n_fc > 1 as libc::c_uint)
                                                     as libc::c_int,
                                             ) == 0
                                             {
@@ -1845,7 +1845,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                                 } else {
                                                     ::core::intrinsics::atomic_or_seqcst(
                                                         &mut (*f).task_thread.error,
-                                                        (p1_0 == 2147483647 as libc::c_int - 1 as libc::c_int)
+                                                        (p1_0 == 2147483647 - 1)
                                                             as libc::c_int,
                                                     );
                                                     current_block = 14832935472441733737;
@@ -1875,7 +1875,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                                         }
                                                         ::core::intrinsics::atomic_or_seqcst(
                                                             &mut (*f).task_thread.error,
-                                                            (p2 == 2147483647 as libc::c_int - 1 as libc::c_int)
+                                                            (p2 == 2147483647 - 1)
                                                                 as libc::c_int,
                                                         );
                                                         tc_0 += 1;
@@ -1883,21 +1883,21 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                                     match current_block {
                                                         5395695591151878490 => {}
                                                         _ => {
-                                                            if ((*t).sby + 1 as libc::c_int) < (*f).sbh {
+                                                            if ((*t).sby + 1) < (*f).sbh {
                                                                 let mut next_t: *mut Dav1dTask = &mut *t
                                                                     .offset(1) as *mut Dav1dTask;
                                                                 *next_t = *t;
                                                                 (*next_t).sby += 1;
                                                                 let ntr: libc::c_int = (*f)
                                                                     .frame_thread
-                                                                    .next_tile_row[p as usize] + 1 as libc::c_int;
+                                                                    .next_tile_row[p as usize] + 1;
                                                                 let start: libc::c_int = (*(*f).frame_hdr)
                                                                     .tiling
                                                                     .row_start_sb[ntr as usize] as libc::c_int;
                                                                 if (*next_t).sby == start {
                                                                     (*f).frame_thread.next_tile_row[p as usize] = ntr;
                                                                 }
-                                                                (*next_t).recon_progress = (*next_t).sby + 1 as libc::c_int;
+                                                                (*next_t).recon_progress = (*next_t).sby + 1;
                                                                 insert_task(f, next_t, 0 as libc::c_int);
                                                             }
                                                             current_block = 7012560550443761033;
@@ -1915,12 +1915,12 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                             let p1_1: libc::c_int = ::core::intrinsics::atomic_load_seqcst(
                                                 &mut *prog_0
                                                     .offset(
-                                                        ((*t).sby - 1 as libc::c_int >> 5 as libc::c_int) as isize,
+                                                        ((*t).sby - 1 >> 5) as isize,
                                                     ) as *mut atomic_uint,
                                             ) as libc::c_int;
                                             if p1_1 as libc::c_uint
                                                 & (1 as libc::c_uint)
-                                                    << ((*t).sby - 1 as libc::c_int & 31 as libc::c_int) != 0
+                                                    << ((*t).sby - 1 & 31) != 0
                                             {
                                                 current_block = 7012560550443761033;
                                                 continue 's_107;
@@ -1935,7 +1935,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                             if p1_2 >= (*t).deblock_progress {
                                                 ::core::intrinsics::atomic_or_seqcst(
                                                     &mut (*f).task_thread.error,
-                                                    (p1_2 == 2147483647 as libc::c_int - 1 as libc::c_int)
+                                                    (p1_2 == 2147483647 - 1)
                                                         as libc::c_int,
                                                 );
                                                 current_block = 7012560550443761033;
@@ -2008,7 +2008,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                             sby = (*t).sby;
                             match (*t).type_0 as libc::c_uint {
                                 0 => {
-                                    if !((*c).n_fc > 1 as libc::c_int as libc::c_uint) {
+                                    if !((*c).n_fc > 1 as libc::c_uint) {
                                         unreachable!();
                                     }
                                     let mut res: libc::c_int = dav1d_decode_frame_init(f);
@@ -2020,7 +2020,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                         1 as libc::c_int as libc::c_uint
                                     }) as libc::c_int;
                                     if res != 0
-                                        || p1_3 == 2147483647 as libc::c_int - 1 as libc::c_int
+                                        || p1_3 == 2147483647 - 1
                                     {
                                         pthread_mutex_lock(&mut (*ttd).lock);
                                         abort_frame(
@@ -2040,7 +2040,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                     }
                                 }
                                 1 => {
-                                    if !((*c).n_fc > 1 as libc::c_int as libc::c_uint) {
+                                    if !((*c).n_fc > 1 as libc::c_uint) {
                                         unreachable!();
                                     }
                                     let mut res_0: libc::c_int = -(22 as libc::c_int);
@@ -2055,19 +2055,19 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                     {
                                         ::core::intrinsics::atomic_store_seqcst(
                                             (*f).out_cdf.progress,
-                                            (if res_0 < 0 as libc::c_int {
-                                                2147483647 as libc::c_int - 1 as libc::c_int
+                                            (if res_0 < 0 {
+                                                2147483647 as libc::c_int - 1
                                             } else {
                                                 1 as libc::c_int
                                             }) as libc::c_uint,
                                         );
                                     }
                                     if res_0 == 0 {
-                                        if !((*c).n_fc > 1 as libc::c_int as libc::c_uint) {
+                                        if !((*c).n_fc > 1 as libc::c_uint) {
                                             unreachable!();
                                         }
                                         let mut p_0 = 1;
-                                        while p_0 <= 2 as libc::c_int {
+                                        while p_0 <= 2 {
                                             let res_1: libc::c_int = dav1d_task_create_tile_sbrow(
                                                 f,
                                                 p_0,
@@ -2093,14 +2093,14 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                                 );
                                                 ::core::intrinsics::atomic_store_seqcst(
                                                     &mut *((*f).sr_cur.progress)
-                                                        .offset((p_0 - 1 as libc::c_int) as isize)
+                                                        .offset((p_0 - 1) as isize)
                                                         as *mut atomic_uint,
                                                     (2147483647 as libc::c_int as libc::c_uint)
                                                         .wrapping_mul(2 as libc::c_uint)
                                                         .wrapping_add(1 as libc::c_uint)
                                                         .wrapping_sub(1 as libc::c_int as libc::c_uint),
                                                 );
-                                                if p_0 == 2 as libc::c_int
+                                                if p_0 == 2
                                                     && ::core::intrinsics::atomic_load_seqcst(
                                                         &mut *((*f).task_thread.done)
                                                             .as_mut_ptr()
@@ -2154,7 +2154,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                     (*tc).ts = ts_0;
                                     (*tc).by = sby << (*f).sb_shift;
                                     let uses_2pass: libc::c_int = ((*c).n_fc
-                                        > 1 as libc::c_int as libc::c_uint) as libc::c_int;
+                                        > 1 as libc::c_uint) as libc::c_int;
                                     (*tc)
                                         .frame_thread
                                         .pass = if uses_2pass == 0 {
@@ -2169,7 +2169,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                         error_0 = dav1d_decode_tile_sbrow(tc);
                                     }
                                     let progress: libc::c_int = if error_0 != 0 {
-                                        2147483647 as libc::c_int - 1 as libc::c_int
+                                        2147483647 as libc::c_int - 1
                                     } else {
                                         1 as libc::c_int + sby
                                     };
@@ -2177,7 +2177,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                         &mut (*f).task_thread.error,
                                         error_0,
                                     );
-                                    if (sby + 1 as libc::c_int) << (*f).sb_shift
+                                    if (sby + 1) << (*f).sb_shift
                                         < (*ts_0).tiling.row_end
                                     {
                                         (*t).sby += 1;
@@ -2218,7 +2218,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                             &mut (*f).task_thread.error,
                                         );
                                         if (*(*f).frame_hdr).refresh_context != 0
-                                            && (*tc).frame_thread.pass <= 1 as libc::c_int
+                                            && (*tc).frame_thread.pass <= 1
                                             && (*f).task_thread.update_set != 0
                                             && (*(*f).frame_hdr).tiling.update == tile_idx
                                         {
@@ -2231,11 +2231,11 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                                         .cdf,
                                                 );
                                             }
-                                            if (*c).n_fc > 1 as libc::c_int as libc::c_uint {
+                                            if (*c).n_fc > 1 as libc::c_uint {
                                                 ::core::intrinsics::atomic_store_seqcst(
                                                     (*f).out_cdf.progress,
                                                     (if error_0 != 0 {
-                                                        2147483647 as libc::c_int - 1 as libc::c_int
+                                                        2147483647 as libc::c_int - 1
                                                     } else {
                                                         1 as libc::c_int
                                                     }) as libc::c_uint,
@@ -2245,7 +2245,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                         if ::core::intrinsics::atomic_xsub_seqcst(
                                             &mut (*f).task_thread.task_counter as *mut atomic_int,
                                             1 as libc::c_int,
-                                        ) - 1 as libc::c_int == 0 as libc::c_int
+                                        ) - 1 == 0
                                             && ::core::intrinsics::atomic_load_seqcst(
                                                 &mut *((*f).task_thread.done)
                                                     .as_mut_ptr()
@@ -2260,7 +2260,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                         {
                                             dav1d_decode_frame_exit(
                                                 f,
-                                                if error_0 == 1 as libc::c_int {
+                                                if error_0 == 1 {
                                                     -(22 as libc::c_int)
                                                 } else if error_0 != 0 {
                                                     -(12 as libc::c_int)
@@ -2273,7 +2273,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                         }
                                         if !(::core::intrinsics::atomic_load_seqcst(
                                             &mut (*f).task_thread.task_counter as *mut atomic_int,
-                                        ) >= 0 as libc::c_int)
+                                        ) >= 0)
                                         {
                                             unreachable!();
                                         }
@@ -2361,9 +2361,9 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                     ::core::intrinsics::atomic_store_seqcst(
                                         &mut (*f).frame_thread.deblock_progress,
                                         if error_0 != 0 {
-                                            2147483647 as libc::c_int - 1 as libc::c_int
+                                            2147483647 as libc::c_int - 1
                                         } else {
-                                            sby + 1 as libc::c_int
+                                            sby + 1
                                         },
                                     );
                                     reset_task_cur_async(ttd, (*t).frame_idx, (*c).n_fc);
@@ -2379,20 +2379,20 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                 {
                                     ::core::intrinsics::atomic_or_seqcst(
                                         &mut *((*f).frame_thread.copy_lpf_progress)
-                                            .offset((sby >> 5 as libc::c_int) as isize)
+                                            .offset((sby >> 5) as isize)
                                             as *mut atomic_uint,
-                                        (1 as libc::c_uint) << (sby & 31 as libc::c_int),
+                                        (1 as libc::c_uint) << (sby & 31),
                                     );
                                     if sby != 0 {
                                         let mut prog_1: libc::c_int = ::core::intrinsics::atomic_load_seqcst(
                                             &mut *((*f).frame_thread.copy_lpf_progress)
                                                 .offset(
-                                                    (sby - 1 as libc::c_int >> 5 as libc::c_int) as isize,
+                                                    (sby - 1 >> 5) as isize,
                                                 ) as *mut atomic_uint,
                                         ) as libc::c_int;
                                         if !prog_1 as libc::c_uint
                                             & (1 as libc::c_uint)
-                                                << (sby - 1 as libc::c_int & 31 as libc::c_int) != 0
+                                                << (sby - 1 & 31) != 0
                                         {
                                             (*t).type_0 = DAV1D_TASK_TYPE_CDEF;
                                             (*t).deblock_progress = 0 as libc::c_int;
@@ -2465,9 +2465,9 @@ pub unsafe extern "C" fn dav1d_worker_task(
                             _ => {}
                         }
                         let uses_2pass_0: libc::c_int = ((*c).n_fc
-                            > 1 as libc::c_int as libc::c_uint) as libc::c_int;
+                            > 1 as libc::c_uint) as libc::c_int;
                         let sbh: libc::c_int = (*f).sbh;
-                        let sbsz: libc::c_int = (*f).sb_step * 4 as libc::c_int;
+                        let sbsz: libc::c_int = (*f).sb_step * 4;
                         if (*t).type_0 as libc::c_uint
                             == DAV1D_TASK_TYPE_ENTROPY_PROGRESS as libc::c_int
                                 as libc::c_uint
@@ -2475,15 +2475,15 @@ pub unsafe extern "C" fn dav1d_worker_task(
                             error_0 = ::core::intrinsics::atomic_load_seqcst(
                                 &mut (*f).task_thread.error,
                             );
-                            let y: libc::c_uint = if sby + 1 as libc::c_int == sbh {
+                            let y: libc::c_uint = if sby + 1 == sbh {
                                 (2147483647 as libc::c_int as libc::c_uint)
                                     .wrapping_mul(2 as libc::c_uint)
                                     .wrapping_add(1 as libc::c_uint)
                             } else {
-                                ((sby + 1 as libc::c_int) as libc::c_uint)
+                                ((sby + 1) as libc::c_uint)
                                     .wrapping_mul(sbsz as libc::c_uint)
                             };
-                            if !((*c).n_fc > 1 as libc::c_int as libc::c_uint) {
+                            if !((*c).n_fc > 1 as libc::c_uint) {
                                 unreachable!();
                             }
                             if !((*f).sr_cur.p.data[0]).is_null()
@@ -2504,12 +2504,12 @@ pub unsafe extern "C" fn dav1d_worker_task(
                             ::core::intrinsics::atomic_store_seqcst(
                                 &mut (*f).frame_thread.entropy_progress,
                                 if error_0 != 0 {
-                                    2147483647 as libc::c_int - 1 as libc::c_int
+                                    2147483647 as libc::c_int - 1
                                 } else {
-                                    sby + 1 as libc::c_int
+                                    sby + 1
                                 },
                             );
-                            if sby + 1 as libc::c_int == sbh {
+                            if sby + 1 == sbh {
                                 ::core::intrinsics::atomic_store_seqcst(
                                     &mut *((*f).task_thread.done)
                                         .as_mut_ptr()
@@ -2521,8 +2521,8 @@ pub unsafe extern "C" fn dav1d_worker_task(
                             let num_tasks: libc::c_int = ::core::intrinsics::atomic_xsub_seqcst(
                                 &mut (*f).task_thread.task_counter,
                                 1 as libc::c_int,
-                            ) - 1 as libc::c_int;
-                            if (sby + 1 as libc::c_int) < sbh && num_tasks != 0 {
+                            ) - 1;
+                            if (sby + 1) < sbh && num_tasks != 0 {
                                 reset_task_cur(c, ttd, (*t).frame_idx);
                                 continue;
                             } else {
@@ -2540,7 +2540,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                 {
                                     dav1d_decode_frame_exit(
                                         f,
-                                        if error_0 == 1 as libc::c_int {
+                                        if error_0 == 1 {
                                             -(22 as libc::c_int)
                                         } else if error_0 != 0 {
                                             -(12 as libc::c_int)
@@ -2557,24 +2557,24 @@ pub unsafe extern "C" fn dav1d_worker_task(
                         } else {
                             ::core::intrinsics::atomic_or_seqcst(
                                 &mut *((*f).frame_thread.frame_progress)
-                                    .offset((sby >> 5 as libc::c_int) as isize)
+                                    .offset((sby >> 5) as isize)
                                     as *mut atomic_uint,
-                                (1 as libc::c_uint) << (sby & 31 as libc::c_int),
+                                (1 as libc::c_uint) << (sby & 31),
                             );
                             pthread_mutex_lock(&mut (*f).task_thread.lock);
                             sby = get_frame_progress(c, f);
                             error_0 = ::core::intrinsics::atomic_load_seqcst(
                                 &mut (*f).task_thread.error,
                             );
-                            let y_0: libc::c_uint = if sby + 1 as libc::c_int == sbh {
+                            let y_0: libc::c_uint = if sby + 1 == sbh {
                                 (2147483647 as libc::c_int as libc::c_uint)
                                     .wrapping_mul(2 as libc::c_uint)
                                     .wrapping_add(1 as libc::c_uint)
                             } else {
-                                ((sby + 1 as libc::c_int) as libc::c_uint)
+                                ((sby + 1) as libc::c_uint)
                                     .wrapping_mul(sbsz as libc::c_uint)
                             };
-                            if (*c).n_fc > 1 as libc::c_int as libc::c_uint
+                            if (*c).n_fc > 1 as libc::c_uint
                                 && !((*f).sr_cur.p.data[0])
                                     .is_null()
                             {
@@ -2592,7 +2592,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                 );
                             }
                             pthread_mutex_unlock(&mut (*f).task_thread.lock);
-                            if sby + 1 as libc::c_int == sbh {
+                            if sby + 1 == sbh {
                                 ::core::intrinsics::atomic_store_seqcst(
                                     &mut *((*f).task_thread.done)
                                         .as_mut_ptr()
@@ -2604,8 +2604,8 @@ pub unsafe extern "C" fn dav1d_worker_task(
                             let num_tasks_0: libc::c_int = ::core::intrinsics::atomic_xsub_seqcst(
                                 &mut (*f).task_thread.task_counter,
                                 1 as libc::c_int,
-                            ) - 1 as libc::c_int;
-                            if (sby + 1 as libc::c_int) < sbh && num_tasks_0 != 0 {
+                            ) - 1;
+                            if (sby + 1) < sbh && num_tasks_0 != 0 {
                                 reset_task_cur(c, ttd, (*t).frame_idx);
                                 continue;
                             } else {
@@ -2624,7 +2624,7 @@ pub unsafe extern "C" fn dav1d_worker_task(
                                 {
                                     dav1d_decode_frame_exit(
                                         f,
-                                        if error_0 == 1 as libc::c_int {
+                                        if error_0 == 1 {
                                             -(22 as libc::c_int)
                                         } else if error_0 != 0 {
                                             -(12 as libc::c_int)

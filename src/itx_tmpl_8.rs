@@ -3881,28 +3881,28 @@ unsafe extern "C" fn inv_txfm_add_c(
     second_1d_fn: itx_1d_fn,
     has_dconly: libc::c_int,
 ) {
-    if !(w >= 4 as libc::c_int && w <= 64 as libc::c_int) {
+    if !(w >= 4 && w <= 64) {
         unreachable!();
     }
-    if !(h >= 4 as libc::c_int && h <= 64 as libc::c_int) {
+    if !(h >= 4 && h <= 64) {
         unreachable!();
     }
-    if !(eob >= 0 as libc::c_int) {
+    if !(eob >= 0) {
         unreachable!();
     }
     let is_rect2: libc::c_int =
-        (w * 2 as libc::c_int == h || h * 2 as libc::c_int == w) as libc::c_int;
-    let rnd: libc::c_int = (1 as libc::c_int) << shift >> 1 as libc::c_int;
+        (w * 2 == h || h * 2 == w) as libc::c_int;
+    let rnd: libc::c_int = (1 as libc::c_int) << shift >> 1;
     if eob < has_dconly {
         let mut dc: libc::c_int = *coeff.offset(0) as libc::c_int;
         *coeff.offset(0) = 0 as libc::c_int as coef;
         if is_rect2 != 0 {
-            dc = dc * 181 as libc::c_int + 128 as libc::c_int >> 8 as libc::c_int;
+            dc = dc * 181 + 128 >> 8;
         }
-        dc = dc * 181 as libc::c_int + 128 as libc::c_int >> 8 as libc::c_int;
+        dc = dc * 181 + 128 >> 8;
         dc = dc + rnd >> shift;
         dc =
-            dc * 181 as libc::c_int + 128 as libc::c_int + 2048 as libc::c_int >> 12 as libc::c_int;
+            dc * 181 + 128 + 2048 >> 12;
         let mut y = 0;
         while y < h {
             let mut x = 0;
@@ -3918,8 +3918,8 @@ unsafe extern "C" fn inv_txfm_add_c(
     }
     let sh: libc::c_int = imin(h, 32 as libc::c_int);
     let sw: libc::c_int = imin(w, 32 as libc::c_int);
-    let row_clip_min: libc::c_int = -(32767 as libc::c_int) - 1 as libc::c_int;
-    let col_clip_min: libc::c_int = -(32767 as libc::c_int) - 1 as libc::c_int;
+    let row_clip_min: libc::c_int = -(32767 as libc::c_int) - 1;
+    let col_clip_min: libc::c_int = -(32767 as libc::c_int) - 1;
     let row_clip_max: libc::c_int = !row_clip_min;
     let col_clip_max: libc::c_int = !col_clip_min;
     let mut tmp: [int32_t; 4096] = [0; 4096];
@@ -3930,9 +3930,9 @@ unsafe extern "C" fn inv_txfm_add_c(
             let mut x_0 = 0;
             while x_0 < sw {
                 *c.offset(x_0 as isize) = *coeff.offset((y_0 + x_0 * sh) as isize) as libc::c_int
-                    * 181 as libc::c_int
-                    + 128 as libc::c_int
-                    >> 8 as libc::c_int;
+                    * 181
+                    + 128
+                    >> 8;
                 x_0 += 1;
             }
         } else {
@@ -3982,7 +3982,7 @@ unsafe extern "C" fn inv_txfm_add_c(
             c = c.offset(1);
             *dst.offset(x_3 as isize) = iclip_u8(
                 *dst.offset(x_3 as isize) as libc::c_int
-                    + (*fresh0 + 8 as libc::c_int >> 4 as libc::c_int),
+                    + (*fresh0 + 8 >> 4),
             ) as pixel;
             x_3 += 1;
         }
@@ -7874,12 +7874,12 @@ unsafe extern "C" fn inv_txfm_add_wht_wht_4x4_c(
     let mut tmp: [int32_t; 16] = [0; 16];
     let mut c: *mut int32_t = tmp.as_mut_ptr();
     let mut y = 0;
-    while y < 4 as libc::c_int {
+    while y < 4 {
         let mut x = 0;
-        while x < 4 as libc::c_int {
-            *c.offset(x as isize) = *coeff.offset((y + x * 4 as libc::c_int) as isize)
+        while x < 4 {
+            *c.offset(x as isize) = *coeff.offset((y + x * 4) as isize)
                 as libc::c_int
-                >> 2 as libc::c_int;
+                >> 2;
             x += 1;
         }
         dav1d_inv_wht4_1d_c(c, 1 as libc::c_int as ptrdiff_t);
@@ -7894,7 +7894,7 @@ unsafe extern "C" fn inv_txfm_add_wht_wht_4x4_c(
             .wrapping_mul(4 as libc::c_int as libc::c_ulong),
     );
     let mut x_0 = 0;
-    while x_0 < 4 as libc::c_int {
+    while x_0 < 4 {
         dav1d_inv_wht4_1d_c(
             &mut *tmp.as_mut_ptr().offset(x_0 as isize),
             4 as libc::c_int as ptrdiff_t,
@@ -7903,9 +7903,9 @@ unsafe extern "C" fn inv_txfm_add_wht_wht_4x4_c(
     }
     c = tmp.as_mut_ptr();
     let mut y_0 = 0;
-    while y_0 < 4 as libc::c_int {
+    while y_0 < 4 {
         let mut x_1 = 0;
-        while x_1 < 4 as libc::c_int {
+        while x_1 < 4 {
             let fresh1 = c;
             c = c.offset(1);
             *dst.offset(x_1 as isize) =

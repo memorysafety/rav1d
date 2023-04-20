@@ -82,7 +82,7 @@ unsafe extern "C" fn yuv_write(
 ) -> libc::c_int {
     let mut current_block: u64;
     let mut ptr: *mut uint8_t = 0 as *mut uint8_t;
-    let hbd: libc::c_int = ((*p).p.bpc > 8 as libc::c_int) as libc::c_int;
+    let hbd: libc::c_int = ((*p).p.bpc > 8) as libc::c_int;
     ptr = (*p).data[0] as *mut uint8_t;
     let mut y = 0;
     loop {
@@ -118,7 +118,7 @@ unsafe extern "C" fn yuv_write(
                 let ch: libc::c_int = (*p).p.h + ss_ver >> ss_ver;
                 let mut pl = 1;
                 's_40: loop {
-                    if !(pl <= 2 as libc::c_int) {
+                    if !(pl <= 2) {
                         current_block = 7976072742316086414;
                         break;
                     }

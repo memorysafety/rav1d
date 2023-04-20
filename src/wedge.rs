@@ -479,11 +479,11 @@ unsafe extern "C" fn insert_border(
     src: *const uint8_t,
     ctr: libc::c_int,
 ) {
-    if ctr > 4 as libc::c_int {
+    if ctr > 4 {
         memset(
             dst as *mut libc::c_void,
             0 as libc::c_int,
-            (ctr - 4 as libc::c_int) as libc::c_ulong,
+            (ctr - 4) as libc::c_ulong,
         );
     }
     memcpy(
@@ -494,22 +494,22 @@ unsafe extern "C" fn insert_border(
             as *const libc::c_void,
         imin(64 as libc::c_int - ctr, 8 as libc::c_int) as libc::c_ulong,
     );
-    if ctr < 64 as libc::c_int - 4 as libc::c_int {
+    if ctr < 64 - 4 {
         memset(
             dst.offset(ctr as isize).offset(4)
                 as *mut libc::c_void,
             64 as libc::c_int,
-            (64 as libc::c_int - 4 as libc::c_int - ctr) as libc::c_ulong,
+            (64 as libc::c_int - 4 - ctr) as libc::c_ulong,
         );
     }
 }
 unsafe extern "C" fn transpose(dst: *mut uint8_t, src: *const uint8_t) {
     let mut y = 0;
     let mut y_off = 0;
-    while y < 64 as libc::c_int {
+    while y < 64 {
         let mut x = 0;
         let mut x_off = 0;
-        while x < 64 as libc::c_int {
+        while x < 64 {
             *dst.offset((x_off + y) as isize) = *src.offset((y_off + x) as isize);
             x += 1;
             x_off += 64 as libc::c_int;
@@ -521,12 +521,12 @@ unsafe extern "C" fn transpose(dst: *mut uint8_t, src: *const uint8_t) {
 unsafe extern "C" fn hflip(dst: *mut uint8_t, src: *const uint8_t) {
     let mut y = 0;
     let mut y_off = 0;
-    while y < 64 as libc::c_int {
+    while y < 64 {
         let mut x = 0;
-        while x < 64 as libc::c_int {
+        while x < 64 {
             *dst
                 .offset(
-                    (y_off + 64 as libc::c_int - 1 as libc::c_int - x) as isize,
+                    (y_off + 64 - 1 - x) as isize,
                 ) = *src.offset((y_off + x) as isize);
             x += 1;
         }
@@ -564,7 +564,7 @@ unsafe extern "C" fn copy2d(
     x_off: libc::c_int,
     y_off: libc::c_int,
 ) {
-    src = src.offset((y_off * 64 as libc::c_int + x_off) as isize);
+    src = src.offset((y_off * 64 + x_off) as isize);
     let mut y = 0;
     while y < h {
         memcpy(dst as *mut libc::c_void, src as *const libc::c_void, w as libc::c_ulong);
@@ -587,22 +587,22 @@ unsafe extern "C" fn init_chroma(
         let mut x = 0;
         while x < w {
             let mut sum: libc::c_int = *luma.offset(x as isize) as libc::c_int
-                + *luma.offset((x + 1 as libc::c_int) as isize) as libc::c_int
-                + 1 as libc::c_int;
+                + *luma.offset((x + 1) as isize) as libc::c_int
+                + 1;
             if ss_ver != 0 {
                 sum
                     += *luma.offset((w + x) as isize) as libc::c_int
-                        + *luma.offset((w + x + 1 as libc::c_int) as isize)
-                            as libc::c_int + 1 as libc::c_int;
+                        + *luma.offset((w + x + 1) as isize)
+                            as libc::c_int + 1;
             }
             *chroma
                 .offset(
-                    (x >> 1 as libc::c_int) as isize,
-                ) = (sum - sign >> 1 as libc::c_int + ss_ver) as uint8_t;
+                    (x >> 1) as isize,
+                ) = (sum - sign >> 1 + ss_ver) as uint8_t;
             x += 2 as libc::c_int;
         }
         luma = luma.offset((w << ss_ver) as isize);
-        chroma = chroma.offset((w >> 1 as libc::c_int) as isize);
+        chroma = chroma.offset((w >> 1) as isize);
         y += 1 as libc::c_int + ss_ver;
     }
 }
@@ -621,7 +621,7 @@ unsafe extern "C" fn fill2d_16x2(
 ) {
     let mut ptr: *mut uint8_t = dst;
     let mut n = 0;
-    while n < 16 as libc::c_int {
+    while n < 16 {
         copy2d(
             ptr,
             (*master.offset((*cb.offset(n as isize)).direction as isize)).as_ptr(),
@@ -629,30 +629,30 @@ unsafe extern "C" fn fill2d_16x2(
             h,
             32 as libc::c_int
                 - (w * (*cb.offset(n as isize)).x_offset as libc::c_int
-                    >> 3 as libc::c_int),
+                    >> 3),
             32 as libc::c_int
                 - (h * (*cb.offset(n as isize)).y_offset as libc::c_int
-                    >> 3 as libc::c_int),
+                    >> 3),
         );
         ptr = ptr.offset((w * h) as isize);
         n += 1;
     }
     let mut n_0 = 0;
     let mut off = 0;
-    while n_0 < 16 as libc::c_int {
+    while n_0 < 16 {
         invert(ptr.offset(off as isize), dst.offset(off as isize), w, h);
         n_0 += 1;
         off += w * h;
     }
     let n_stride_444: libc::c_int = w * h;
-    let n_stride_422: libc::c_int = n_stride_444 >> 1 as libc::c_int;
-    let n_stride_420: libc::c_int = n_stride_444 >> 2 as libc::c_int;
+    let n_stride_422: libc::c_int = n_stride_444 >> 1;
+    let n_stride_420: libc::c_int = n_stride_444 >> 2;
     let sign_stride_444: libc::c_int = 16 as libc::c_int * n_stride_444;
     let sign_stride_422: libc::c_int = 16 as libc::c_int * n_stride_422;
     let sign_stride_420: libc::c_int = 16 as libc::c_int * n_stride_420;
     let mut n_1 = 0;
-    while n_1 < 16 as libc::c_int {
-        let sign: libc::c_int = (signs >> n_1 & 1 as libc::c_int as libc::c_uint)
+    while n_1 < 16 {
+        let sign: libc::c_int = (signs >> n_1 & 1 as libc::c_uint)
             as libc::c_int;
         dav1d_wedge_masks[bs
             as usize][0 as libc::c_int
@@ -784,7 +784,7 @@ pub unsafe extern "C" fn dav1d_init_wedge_masks() {
     let mut master: [[uint8_t; 4096]; 6] = [[0; 4096]; 6];
     let mut y = 0;
     let mut off = 0;
-    while y < 64 as libc::c_int {
+    while y < 64 {
         insert_border(
             &mut *(*master.as_mut_ptr().offset(WEDGE_VERTICAL as libc::c_int as isize))
                 .as_mut_ptr()
@@ -799,7 +799,7 @@ pub unsafe extern "C" fn dav1d_init_wedge_masks() {
     let mut y_0 = 0;
     let mut off_0 = 0;
     let mut ctr = 48;
-    while y_0 < 64 as libc::c_int {
+    while y_0 < 64 {
         insert_border(
             &mut *(*master.as_mut_ptr().offset(WEDGE_OBLIQUE63 as libc::c_int as isize))
                 .as_mut_ptr()
@@ -811,10 +811,10 @@ pub unsafe extern "C" fn dav1d_init_wedge_masks() {
         insert_border(
             &mut *(*master.as_mut_ptr().offset(WEDGE_OBLIQUE63 as libc::c_int as isize))
                 .as_mut_ptr()
-                .offset((off_0 + 64 as libc::c_int) as isize),
+                .offset((off_0 + 64) as isize),
             (wedge_master_border[WEDGE_MASTER_LINE_ODD as libc::c_int as usize])
                 .as_ptr(),
-            ctr - 1 as libc::c_int,
+            ctr - 1,
         );
         y_0 += 2 as libc::c_int;
         off_0 += 128 as libc::c_int;
@@ -1028,14 +1028,14 @@ pub unsafe extern "C" fn dav1d_init_interintra_masks() {
     memset(
         ii_dc_mask.as_mut_ptr() as *mut libc::c_void,
         32 as libc::c_int,
-        (32 as libc::c_int * 32 as libc::c_int) as libc::c_ulong,
+        (32 as libc::c_int * 32) as libc::c_ulong,
     );
     build_nondc_ii_masks(
-        (ii_nondc_mask_32x32[(II_VERT_PRED as libc::c_int - 1 as libc::c_int) as usize])
+        (ii_nondc_mask_32x32[(II_VERT_PRED as libc::c_int - 1) as usize])
             .as_mut_ptr(),
-        (ii_nondc_mask_32x32[(II_HOR_PRED as libc::c_int - 1 as libc::c_int) as usize])
+        (ii_nondc_mask_32x32[(II_HOR_PRED as libc::c_int - 1) as usize])
             .as_mut_ptr(),
-        (ii_nondc_mask_32x32[(II_SMOOTH_PRED as libc::c_int - 1 as libc::c_int)
+        (ii_nondc_mask_32x32[(II_SMOOTH_PRED as libc::c_int - 1)
             as usize])
             .as_mut_ptr(),
         32 as libc::c_int,
@@ -1043,11 +1043,11 @@ pub unsafe extern "C" fn dav1d_init_interintra_masks() {
         1 as libc::c_int,
     );
     build_nondc_ii_masks(
-        (ii_nondc_mask_16x32[(II_VERT_PRED as libc::c_int - 1 as libc::c_int) as usize])
+        (ii_nondc_mask_16x32[(II_VERT_PRED as libc::c_int - 1) as usize])
             .as_mut_ptr(),
-        (ii_nondc_mask_16x32[(II_HOR_PRED as libc::c_int - 1 as libc::c_int) as usize])
+        (ii_nondc_mask_16x32[(II_HOR_PRED as libc::c_int - 1) as usize])
             .as_mut_ptr(),
-        (ii_nondc_mask_16x32[(II_SMOOTH_PRED as libc::c_int - 1 as libc::c_int)
+        (ii_nondc_mask_16x32[(II_SMOOTH_PRED as libc::c_int - 1)
             as usize])
             .as_mut_ptr(),
         16 as libc::c_int,
@@ -1055,11 +1055,11 @@ pub unsafe extern "C" fn dav1d_init_interintra_masks() {
         1 as libc::c_int,
     );
     build_nondc_ii_masks(
-        (ii_nondc_mask_16x16[(II_VERT_PRED as libc::c_int - 1 as libc::c_int) as usize])
+        (ii_nondc_mask_16x16[(II_VERT_PRED as libc::c_int - 1) as usize])
             .as_mut_ptr(),
-        (ii_nondc_mask_16x16[(II_HOR_PRED as libc::c_int - 1 as libc::c_int) as usize])
+        (ii_nondc_mask_16x16[(II_HOR_PRED as libc::c_int - 1) as usize])
             .as_mut_ptr(),
-        (ii_nondc_mask_16x16[(II_SMOOTH_PRED as libc::c_int - 1 as libc::c_int)
+        (ii_nondc_mask_16x16[(II_SMOOTH_PRED as libc::c_int - 1)
             as usize])
             .as_mut_ptr(),
         16 as libc::c_int,
@@ -1067,66 +1067,66 @@ pub unsafe extern "C" fn dav1d_init_interintra_masks() {
         2 as libc::c_int,
     );
     build_nondc_ii_masks(
-        (ii_nondc_mask_8x32[(II_VERT_PRED as libc::c_int - 1 as libc::c_int) as usize])
+        (ii_nondc_mask_8x32[(II_VERT_PRED as libc::c_int - 1) as usize])
             .as_mut_ptr(),
-        (ii_nondc_mask_8x32[(II_HOR_PRED as libc::c_int - 1 as libc::c_int) as usize])
+        (ii_nondc_mask_8x32[(II_HOR_PRED as libc::c_int - 1) as usize])
             .as_mut_ptr(),
-        (ii_nondc_mask_8x32[(II_SMOOTH_PRED as libc::c_int - 1 as libc::c_int) as usize])
+        (ii_nondc_mask_8x32[(II_SMOOTH_PRED as libc::c_int - 1) as usize])
             .as_mut_ptr(),
         8 as libc::c_int,
         32 as libc::c_int,
         1 as libc::c_int,
     );
     build_nondc_ii_masks(
-        (ii_nondc_mask_8x16[(II_VERT_PRED as libc::c_int - 1 as libc::c_int) as usize])
+        (ii_nondc_mask_8x16[(II_VERT_PRED as libc::c_int - 1) as usize])
             .as_mut_ptr(),
-        (ii_nondc_mask_8x16[(II_HOR_PRED as libc::c_int - 1 as libc::c_int) as usize])
+        (ii_nondc_mask_8x16[(II_HOR_PRED as libc::c_int - 1) as usize])
             .as_mut_ptr(),
-        (ii_nondc_mask_8x16[(II_SMOOTH_PRED as libc::c_int - 1 as libc::c_int) as usize])
+        (ii_nondc_mask_8x16[(II_SMOOTH_PRED as libc::c_int - 1) as usize])
             .as_mut_ptr(),
         8 as libc::c_int,
         16 as libc::c_int,
         2 as libc::c_int,
     );
     build_nondc_ii_masks(
-        (ii_nondc_mask_8x8[(II_VERT_PRED as libc::c_int - 1 as libc::c_int) as usize])
+        (ii_nondc_mask_8x8[(II_VERT_PRED as libc::c_int - 1) as usize])
             .as_mut_ptr(),
-        (ii_nondc_mask_8x8[(II_HOR_PRED as libc::c_int - 1 as libc::c_int) as usize])
+        (ii_nondc_mask_8x8[(II_HOR_PRED as libc::c_int - 1) as usize])
             .as_mut_ptr(),
-        (ii_nondc_mask_8x8[(II_SMOOTH_PRED as libc::c_int - 1 as libc::c_int) as usize])
+        (ii_nondc_mask_8x8[(II_SMOOTH_PRED as libc::c_int - 1) as usize])
             .as_mut_ptr(),
         8 as libc::c_int,
         8 as libc::c_int,
         4 as libc::c_int,
     );
     build_nondc_ii_masks(
-        (ii_nondc_mask_4x16[(II_VERT_PRED as libc::c_int - 1 as libc::c_int) as usize])
+        (ii_nondc_mask_4x16[(II_VERT_PRED as libc::c_int - 1) as usize])
             .as_mut_ptr(),
-        (ii_nondc_mask_4x16[(II_HOR_PRED as libc::c_int - 1 as libc::c_int) as usize])
+        (ii_nondc_mask_4x16[(II_HOR_PRED as libc::c_int - 1) as usize])
             .as_mut_ptr(),
-        (ii_nondc_mask_4x16[(II_SMOOTH_PRED as libc::c_int - 1 as libc::c_int) as usize])
+        (ii_nondc_mask_4x16[(II_SMOOTH_PRED as libc::c_int - 1) as usize])
             .as_mut_ptr(),
         4 as libc::c_int,
         16 as libc::c_int,
         2 as libc::c_int,
     );
     build_nondc_ii_masks(
-        (ii_nondc_mask_4x8[(II_VERT_PRED as libc::c_int - 1 as libc::c_int) as usize])
+        (ii_nondc_mask_4x8[(II_VERT_PRED as libc::c_int - 1) as usize])
             .as_mut_ptr(),
-        (ii_nondc_mask_4x8[(II_HOR_PRED as libc::c_int - 1 as libc::c_int) as usize])
+        (ii_nondc_mask_4x8[(II_HOR_PRED as libc::c_int - 1) as usize])
             .as_mut_ptr(),
-        (ii_nondc_mask_4x8[(II_SMOOTH_PRED as libc::c_int - 1 as libc::c_int) as usize])
+        (ii_nondc_mask_4x8[(II_SMOOTH_PRED as libc::c_int - 1) as usize])
             .as_mut_ptr(),
         4 as libc::c_int,
         8 as libc::c_int,
         4 as libc::c_int,
     );
     build_nondc_ii_masks(
-        (ii_nondc_mask_4x4[(II_VERT_PRED as libc::c_int - 1 as libc::c_int) as usize])
+        (ii_nondc_mask_4x4[(II_VERT_PRED as libc::c_int - 1) as usize])
             .as_mut_ptr(),
-        (ii_nondc_mask_4x4[(II_HOR_PRED as libc::c_int - 1 as libc::c_int) as usize])
+        (ii_nondc_mask_4x4[(II_HOR_PRED as libc::c_int - 1) as usize])
             .as_mut_ptr(),
-        (ii_nondc_mask_4x4[(II_SMOOTH_PRED as libc::c_int - 1 as libc::c_int) as usize])
+        (ii_nondc_mask_4x4[(II_SMOOTH_PRED as libc::c_int - 1) as usize])
             .as_mut_ptr(),
         4 as libc::c_int,
         4 as libc::c_int,
@@ -1145,115 +1145,37 @@ unsafe extern "C" fn run_static_initializers() {
         [
             [
                 ii_dc_mask.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_32x32[(II_VERT_PRED as libc::c_int - 1 as libc::c_int)
+                (ii_nondc_mask_32x32[(II_VERT_PRED as libc::c_int - 1)
                     as usize])
                     .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_32x32[(II_HOR_PRED as libc::c_int - 1 as libc::c_int)
+                (ii_nondc_mask_32x32[(II_HOR_PRED as libc::c_int - 1)
                     as usize])
                     .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_32x32[(II_SMOOTH_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-            ],
-            [
-                ii_dc_mask.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_16x32[(II_VERT_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_16x32[(II_HOR_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_16x32[(II_SMOOTH_PRED as libc::c_int - 1 as libc::c_int)
+                (ii_nondc_mask_32x32[(II_SMOOTH_PRED as libc::c_int - 1)
                     as usize])
                     .as_mut_ptr() as *const uint8_t,
             ],
             [
                 ii_dc_mask.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_16x16[(II_VERT_PRED as libc::c_int - 1 as libc::c_int)
+                (ii_nondc_mask_16x32[(II_VERT_PRED as libc::c_int - 1)
                     as usize])
                     .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_16x16[(II_HOR_PRED as libc::c_int - 1 as libc::c_int)
+                (ii_nondc_mask_16x32[(II_HOR_PRED as libc::c_int - 1)
                     as usize])
                     .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_16x16[(II_SMOOTH_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-            ],
-        ],
-        [
-            [
-                ii_dc_mask.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_32x32[(II_VERT_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_32x32[(II_HOR_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_32x32[(II_SMOOTH_PRED as libc::c_int - 1 as libc::c_int)
+                (ii_nondc_mask_16x32[(II_SMOOTH_PRED as libc::c_int - 1)
                     as usize])
                     .as_mut_ptr() as *const uint8_t,
             ],
             [
                 ii_dc_mask.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_16x16[(II_VERT_PRED as libc::c_int - 1 as libc::c_int)
+                (ii_nondc_mask_16x16[(II_VERT_PRED as libc::c_int - 1)
                     as usize])
                     .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_16x16[(II_HOR_PRED as libc::c_int - 1 as libc::c_int)
+                (ii_nondc_mask_16x16[(II_HOR_PRED as libc::c_int - 1)
                     as usize])
                     .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_16x16[(II_SMOOTH_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-            ],
-            [
-                ii_dc_mask.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_16x16[(II_VERT_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_16x16[(II_HOR_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_16x16[(II_SMOOTH_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-            ],
-        ],
-        [[0 as *const uint8_t; 4]; 3],
-        [[0 as *const uint8_t; 4]; 3],
-        [
-            [
-                ii_dc_mask.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_16x32[(II_VERT_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_16x32[(II_HOR_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_16x32[(II_SMOOTH_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-            ],
-            [
-                ii_dc_mask.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x32[(II_VERT_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x32[(II_HOR_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x32[(II_SMOOTH_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-            ],
-            [
-                ii_dc_mask.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x16[(II_VERT_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x16[(II_HOR_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x16[(II_SMOOTH_PRED as libc::c_int - 1 as libc::c_int)
+                (ii_nondc_mask_16x16[(II_SMOOTH_PRED as libc::c_int - 1)
                     as usize])
                     .as_mut_ptr() as *const uint8_t,
             ],
@@ -1261,75 +1183,37 @@ unsafe extern "C" fn run_static_initializers() {
         [
             [
                 ii_dc_mask.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_16x16[(II_VERT_PRED as libc::c_int - 1 as libc::c_int)
+                (ii_nondc_mask_32x32[(II_VERT_PRED as libc::c_int - 1)
                     as usize])
                     .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_16x16[(II_HOR_PRED as libc::c_int - 1 as libc::c_int)
+                (ii_nondc_mask_32x32[(II_HOR_PRED as libc::c_int - 1)
                     as usize])
                     .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_16x16[(II_SMOOTH_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-            ],
-            [
-                ii_dc_mask.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x16[(II_VERT_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x16[(II_HOR_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x16[(II_SMOOTH_PRED as libc::c_int - 1 as libc::c_int)
+                (ii_nondc_mask_32x32[(II_SMOOTH_PRED as libc::c_int - 1)
                     as usize])
                     .as_mut_ptr() as *const uint8_t,
             ],
             [
                 ii_dc_mask.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x8[(II_VERT_PRED as libc::c_int - 1 as libc::c_int)
+                (ii_nondc_mask_16x16[(II_VERT_PRED as libc::c_int - 1)
                     as usize])
                     .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x8[(II_HOR_PRED as libc::c_int - 1 as libc::c_int)
+                (ii_nondc_mask_16x16[(II_HOR_PRED as libc::c_int - 1)
                     as usize])
                     .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x8[(II_SMOOTH_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-            ],
-        ],
-        [
-            [
-                ii_dc_mask.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_16x16[(II_VERT_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_16x16[(II_HOR_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_16x16[(II_SMOOTH_PRED as libc::c_int - 1 as libc::c_int)
+                (ii_nondc_mask_16x16[(II_SMOOTH_PRED as libc::c_int - 1)
                     as usize])
                     .as_mut_ptr() as *const uint8_t,
             ],
             [
                 ii_dc_mask.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x8[(II_VERT_PRED as libc::c_int - 1 as libc::c_int)
+                (ii_nondc_mask_16x16[(II_VERT_PRED as libc::c_int - 1)
                     as usize])
                     .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x8[(II_HOR_PRED as libc::c_int - 1 as libc::c_int)
+                (ii_nondc_mask_16x16[(II_HOR_PRED as libc::c_int - 1)
                     as usize])
                     .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x8[(II_SMOOTH_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-            ],
-            [
-                ii_dc_mask.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x8[(II_VERT_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x8[(II_HOR_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x8[(II_SMOOTH_PRED as libc::c_int - 1 as libc::c_int)
+                (ii_nondc_mask_16x16[(II_SMOOTH_PRED as libc::c_int - 1)
                     as usize])
                     .as_mut_ptr() as *const uint8_t,
             ],
@@ -1339,37 +1223,37 @@ unsafe extern "C" fn run_static_initializers() {
         [
             [
                 ii_dc_mask.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x16[(II_VERT_PRED as libc::c_int - 1 as libc::c_int)
+                (ii_nondc_mask_16x32[(II_VERT_PRED as libc::c_int - 1)
                     as usize])
                     .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x16[(II_HOR_PRED as libc::c_int - 1 as libc::c_int)
+                (ii_nondc_mask_16x32[(II_HOR_PRED as libc::c_int - 1)
                     as usize])
                     .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x16[(II_SMOOTH_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-            ],
-            [
-                ii_dc_mask.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_4x16[(II_VERT_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_4x16[(II_HOR_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_4x16[(II_SMOOTH_PRED as libc::c_int - 1 as libc::c_int)
+                (ii_nondc_mask_16x32[(II_SMOOTH_PRED as libc::c_int - 1)
                     as usize])
                     .as_mut_ptr() as *const uint8_t,
             ],
             [
                 ii_dc_mask.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_4x8[(II_VERT_PRED as libc::c_int - 1 as libc::c_int)
+                (ii_nondc_mask_8x32[(II_VERT_PRED as libc::c_int - 1)
                     as usize])
                     .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_4x8[(II_HOR_PRED as libc::c_int - 1 as libc::c_int)
+                (ii_nondc_mask_8x32[(II_HOR_PRED as libc::c_int - 1)
                     as usize])
                     .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_4x8[(II_SMOOTH_PRED as libc::c_int - 1 as libc::c_int)
+                (ii_nondc_mask_8x32[(II_SMOOTH_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+            ],
+            [
+                ii_dc_mask.as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_8x16[(II_VERT_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_8x16[(II_HOR_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_8x16[(II_SMOOTH_PRED as libc::c_int - 1)
                     as usize])
                     .as_mut_ptr() as *const uint8_t,
             ],
@@ -1377,37 +1261,153 @@ unsafe extern "C" fn run_static_initializers() {
         [
             [
                 ii_dc_mask.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x8[(II_VERT_PRED as libc::c_int - 1 as libc::c_int)
+                (ii_nondc_mask_16x16[(II_VERT_PRED as libc::c_int - 1)
                     as usize])
                     .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x8[(II_HOR_PRED as libc::c_int - 1 as libc::c_int)
+                (ii_nondc_mask_16x16[(II_HOR_PRED as libc::c_int - 1)
                     as usize])
                     .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x8[(II_SMOOTH_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-            ],
-            [
-                ii_dc_mask.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_4x8[(II_VERT_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_4x8[(II_HOR_PRED as libc::c_int - 1 as libc::c_int)
-                    as usize])
-                    .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_4x8[(II_SMOOTH_PRED as libc::c_int - 1 as libc::c_int)
+                (ii_nondc_mask_16x16[(II_SMOOTH_PRED as libc::c_int - 1)
                     as usize])
                     .as_mut_ptr() as *const uint8_t,
             ],
             [
                 ii_dc_mask.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_4x4[(II_VERT_PRED as libc::c_int - 1 as libc::c_int)
+                (ii_nondc_mask_8x16[(II_VERT_PRED as libc::c_int - 1)
                     as usize])
                     .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_4x4[(II_HOR_PRED as libc::c_int - 1 as libc::c_int)
+                (ii_nondc_mask_8x16[(II_HOR_PRED as libc::c_int - 1)
                     as usize])
                     .as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_4x4[(II_SMOOTH_PRED as libc::c_int - 1 as libc::c_int)
+                (ii_nondc_mask_8x16[(II_SMOOTH_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+            ],
+            [
+                ii_dc_mask.as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_8x8[(II_VERT_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_8x8[(II_HOR_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_8x8[(II_SMOOTH_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+            ],
+        ],
+        [
+            [
+                ii_dc_mask.as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_16x16[(II_VERT_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_16x16[(II_HOR_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_16x16[(II_SMOOTH_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+            ],
+            [
+                ii_dc_mask.as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_8x8[(II_VERT_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_8x8[(II_HOR_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_8x8[(II_SMOOTH_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+            ],
+            [
+                ii_dc_mask.as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_8x8[(II_VERT_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_8x8[(II_HOR_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_8x8[(II_SMOOTH_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+            ],
+        ],
+        [[0 as *const uint8_t; 4]; 3],
+        [[0 as *const uint8_t; 4]; 3],
+        [
+            [
+                ii_dc_mask.as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_8x16[(II_VERT_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_8x16[(II_HOR_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_8x16[(II_SMOOTH_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+            ],
+            [
+                ii_dc_mask.as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_4x16[(II_VERT_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_4x16[(II_HOR_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_4x16[(II_SMOOTH_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+            ],
+            [
+                ii_dc_mask.as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_4x8[(II_VERT_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_4x8[(II_HOR_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_4x8[(II_SMOOTH_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+            ],
+        ],
+        [
+            [
+                ii_dc_mask.as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_8x8[(II_VERT_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_8x8[(II_HOR_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_8x8[(II_SMOOTH_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+            ],
+            [
+                ii_dc_mask.as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_4x8[(II_VERT_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_4x8[(II_HOR_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_4x8[(II_SMOOTH_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+            ],
+            [
+                ii_dc_mask.as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_4x4[(II_VERT_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_4x4[(II_HOR_PRED as libc::c_int - 1)
+                    as usize])
+                    .as_mut_ptr() as *const uint8_t,
+                (ii_nondc_mask_4x4[(II_SMOOTH_PRED as libc::c_int - 1)
                     as usize])
                     .as_mut_ptr() as *const uint8_t,
             ],

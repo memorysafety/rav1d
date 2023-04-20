@@ -285,9 +285,9 @@ unsafe extern "C" fn picture_alloc(
     p: *mut Dav1dPicture,
     _: *mut libc::c_void,
 ) -> libc::c_int {
-    let hbd: libc::c_int = ((*p).p.bpc > 8 as libc::c_int) as libc::c_int;
-    let aligned_w: libc::c_int = (*p).p.w + 127 as libc::c_int & !(127 as libc::c_int);
-    let aligned_h: libc::c_int = (*p).p.h + 127 as libc::c_int & !(127 as libc::c_int);
+    let hbd: libc::c_int = ((*p).p.bpc > 8) as libc::c_int;
+    let aligned_w: libc::c_int = (*p).p.w + 127 & !(127 as libc::c_int);
+    let aligned_h: libc::c_int = (*p).p.h + 127 & !(127 as libc::c_int);
     let has_chroma: libc::c_int = ((*p).p.layout as libc::c_uint
         != DAV1D_PIXEL_LAYOUT_I400 as libc::c_int as libc::c_uint) as libc::c_int;
     let ss_ver: libc::c_int = ((*p).p.layout as libc::c_uint
@@ -318,7 +318,7 @@ unsafe extern "C" fn picture_alloc(
         return -(12 as libc::c_int);
     }
     (*p).allocator_data = buf as *mut libc::c_void;
-    let align_m1: ptrdiff_t = (64 as libc::c_int - 1 as libc::c_int) as ptrdiff_t;
+    let align_m1: ptrdiff_t = (64 as libc::c_int - 1) as ptrdiff_t;
     let data: *mut uint8_t = (buf as ptrdiff_t + align_m1 & !align_m1) as *mut uint8_t;
     (*p)
         .data[0 as libc::c_int
@@ -486,13 +486,13 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
         &mut total,
         timebase.as_mut_ptr(),
     );
-    if res < 0 as libc::c_int {
+    if res < 0 {
         return 1 as libc::c_int;
     }
     let mut i: libc::c_uint = 0 as libc::c_int as libc::c_uint;
     while i <= cli_settings.skip {
         res = input_read(in_0, &mut data);
-        if res < 0 as libc::c_int {
+        if res < 0 {
             input_close(in_0);
             return 1 as libc::c_int;
         }
@@ -579,7 +579,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
         let mut seq_skip: libc::c_uint = 0 as libc::c_int as libc::c_uint;
         while dav1d_parse_sequence_header(&mut seq, data.data, data.sz) != 0 {
             res = input_read(in_0, &mut data);
-            if res < 0 as libc::c_int {
+            if res < 0 {
                 input_close(in_0);
                 return 1 as libc::c_int;
             }
@@ -612,7 +612,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
     if cli_settings.realtime as libc::c_uint
         != REALTIME_CUSTOM as libc::c_int as libc::c_uint
     {
-        if fps[1] == 0 as libc::c_int as libc::c_uint {
+        if fps[1] == 0 as libc::c_uint {
             i_fps = 0 as libc::c_int as libc::c_double;
             nspf = 0 as libc::c_int as uint64_t;
         } else {
@@ -635,7 +635,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
             ::core::mem::size_of::<Dav1dPicture>(),
         );
         res = dav1d_send_data(c, &mut data);
-        if res < 0 as libc::c_int {
+        if res < 0 {
             if res != -(11 as libc::c_int) {
                 dav1d_data_unref(&mut data);
                 fprintf(
@@ -649,7 +649,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
             }
         }
         res = dav1d_get_picture(c, &mut p);
-        if res < 0 as libc::c_int {
+        if res < 0 {
             if res != -(11 as libc::c_int) {
                 fprintf(
                     stderr,
@@ -670,7 +670,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
                     &mut p.p,
                     fps.as_mut_ptr() as *const libc::c_uint,
                 );
-                if res < 0 as libc::c_int {
+                if res < 0 {
                     if !frametimes.is_null() {
                         fclose(frametimes);
                     }
@@ -678,7 +678,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
                 }
             }
             res = output_write(out, &mut p);
-            if res < 0 as libc::c_int {
+            if res < 0 {
                 break;
             }
             n_out = n_out.wrapping_add(1);
@@ -709,10 +709,10 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
     if data.sz > 0 {
         dav1d_data_unref(&mut data);
     }
-    if res == 0 as libc::c_int {
+    if res == 0 {
         while cli_settings.limit == 0 || n_out < cli_settings.limit {
             res = dav1d_get_picture(c, &mut p);
-            if res < 0 as libc::c_int {
+            if res < 0 {
                 if res != -(11 as libc::c_int) {
                     fprintf(
                         stderr,
@@ -736,7 +736,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
                         &mut p.p,
                         fps.as_mut_ptr() as *const libc::c_uint,
                     );
-                    if res < 0 as libc::c_int {
+                    if res < 0 {
                         if !frametimes.is_null() {
                             fclose(frametimes);
                         }
@@ -744,7 +744,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
                     }
                 }
                 res = output_write(out, &mut p);
-                if res < 0 as libc::c_int {
+                if res < 0 {
                     break;
                 }
                 n_out = n_out.wrapping_add(1);
@@ -783,7 +783,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
         res = 1 as libc::c_int;
     }
     dav1d_close(&mut c);
-    return if res == 0 as libc::c_int { 0 as libc::c_int } else { 1 as libc::c_int };
+    return if res == 0 { 0 as libc::c_int } else { 1 as libc::c_int };
 }
 pub fn main() {
     let mut args: Vec::<*mut libc::c_char> = Vec::new();

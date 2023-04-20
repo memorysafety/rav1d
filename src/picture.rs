@@ -767,13 +767,13 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     cookie: *mut libc::c_void,
 ) -> libc::c_int {
     if !(::core::mem::size_of::<Dav1dMemPoolBuffer>() as libc::c_ulong
-        <= 64 as libc::c_int as libc::c_ulong)
+        <= 64 as libc::c_ulong)
     {
         unreachable!();
     }
-    let hbd: libc::c_int = ((*p).p.bpc > 8 as libc::c_int) as libc::c_int;
-    let aligned_w: libc::c_int = (*p).p.w + 127 as libc::c_int & !(127 as libc::c_int);
-    let aligned_h: libc::c_int = (*p).p.h + 127 as libc::c_int & !(127 as libc::c_int);
+    let hbd: libc::c_int = ((*p).p.bpc > 8) as libc::c_int;
+    let aligned_w: libc::c_int = (*p).p.w + 127 & !(127 as libc::c_int);
+    let aligned_h: libc::c_int = (*p).p.h + 127 & !(127 as libc::c_int);
     let has_chroma: libc::c_int = ((*p).p.layout as libc::c_uint
         != DAV1D_PIXEL_LAYOUT_I400 as libc::c_int as libc::c_uint) as libc::c_int;
     let ss_ver: libc::c_int = ((*p).p.layout as libc::c_uint
@@ -872,7 +872,7 @@ unsafe extern "C" fn picture_alloc_with_edges(
         );
         return -(1 as libc::c_int);
     }
-    if !(bpc > 0 as libc::c_int && bpc <= 16 as libc::c_int) {
+    if !(bpc > 0 && bpc <= 16) {
         unreachable!();
     }
     let mut pic_ctx: *mut pic_ctx_context = malloc(
@@ -893,7 +893,7 @@ unsafe extern "C" fn picture_alloc_with_edges(
     dav1d_data_props_set_defaults(&mut (*p).m);
     let res: libc::c_int = ((*p_allocator).alloc_picture_callback)
         .expect("non-null function pointer")(p, (*p_allocator).cookie);
-    if res < 0 as libc::c_int {
+    if res < 0 {
         free(pic_ctx as *mut libc::c_void);
         return res;
     }
@@ -952,7 +952,7 @@ pub unsafe extern "C" fn dav1d_thread_picture_alloc(
     bpc: libc::c_int,
 ) -> libc::c_int {
     let p: *mut Dav1dThreadPicture = &mut (*f).sr_cur;
-    let have_frame_mt: libc::c_int = ((*c).n_fc > 1 as libc::c_int as libc::c_uint)
+    let have_frame_mt: libc::c_int = ((*c).n_fc > 1 as libc::c_uint)
         as libc::c_int;
     let res: libc::c_int = picture_alloc_with_edges(
         c,

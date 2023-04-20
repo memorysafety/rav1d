@@ -192,13 +192,13 @@ unsafe extern "C" fn loop_filter(
     strideb: ptrdiff_t,
     wd: libc::c_int,
 ) {
-    let bitdepth_min_8: libc::c_int = 8 as libc::c_int - 8 as libc::c_int;
+    let bitdepth_min_8: libc::c_int = 8 as libc::c_int - 8;
     let F: libc::c_int = (1 as libc::c_int) << bitdepth_min_8;
     E <<= bitdepth_min_8;
     I <<= bitdepth_min_8;
     H <<= bitdepth_min_8;
     let mut i = 0;
-    while i < 4 as libc::c_int {
+    while i < 4 {
         let mut p6: libc::c_int = 0;
         let mut p5: libc::c_int = 0;
         let mut p4: libc::c_int = 0;
@@ -225,15 +225,15 @@ unsafe extern "C" fn loop_filter(
         let mut flat8out: libc::c_int = 0;
         let mut flat8in: libc::c_int = 0;
         fm = ((p1 - p0).abs() <= I && (q1 - q0).abs() <= I
-            && (p0 - q0).abs() * 2 as libc::c_int + ((p1 - q1).abs() >> 1 as libc::c_int) <= E)
+            && (p0 - q0).abs() * 2 + ((p1 - q1).abs() >> 1) <= E)
             as libc::c_int;
-        if wd > 4 as libc::c_int {
+        if wd > 4 {
             p2 = *dst.offset((strideb * -(3 as libc::c_int) as isize) as isize)
                 as libc::c_int;
             q2 = *dst.offset((strideb * 2) as isize)
                 as libc::c_int;
             fm &= ((p2 - p1).abs() <= I && (q2 - q1).abs() <= I) as libc::c_int;
-            if wd > 6 as libc::c_int {
+            if wd > 6 {
                 p3 = *dst
                     .offset((strideb * -(4 as libc::c_int) as isize) as isize)
                     as libc::c_int;
@@ -243,7 +243,7 @@ unsafe extern "C" fn loop_filter(
             }
         }
         if !(fm == 0) {
-            if wd >= 16 as libc::c_int {
+            if wd >= 16 {
                 p6 = *dst
                     .offset((strideb * -(7 as libc::c_int) as isize) as isize)
                     as libc::c_int;
@@ -263,141 +263,141 @@ unsafe extern "C" fn loop_filter(
                     && (q4 - q0).abs() <= F && (q5 - q0).abs() <= F && (q6 - q0).abs() <= F)
                     as libc::c_int;
             }
-            if wd >= 6 as libc::c_int {
+            if wd >= 6 {
                 flat8in = ((p2 - p0).abs() <= F && (p1 - p0).abs() <= F && (q1 - q0).abs() <= F
                     && (q2 - q0).abs() <= F) as libc::c_int;
             }
-            if wd >= 8 as libc::c_int {
+            if wd >= 8 {
                 flat8in &= ((p3 - p0).abs() <= F && (q3 - q0).abs() <= F) as libc::c_int;
             }
-            if wd >= 16 as libc::c_int && flat8out & flat8in != 0 {
+            if wd >= 16 && flat8out & flat8in != 0 {
                 *dst
                     .offset(
                         (strideb * -(6 as libc::c_int) as isize) as isize,
-                    ) = (p6 + p6 + p6 + p6 + p6 + p6 * 2 as libc::c_int
-                    + p5 * 2 as libc::c_int + p4 * 2 as libc::c_int + p3 + p2 + p1 + p0
-                    + q0 + 8 as libc::c_int >> 4 as libc::c_int) as pixel;
+                    ) = (p6 + p6 + p6 + p6 + p6 + p6 * 2
+                    + p5 * 2 + p4 * 2 + p3 + p2 + p1 + p0
+                    + q0 + 8 >> 4) as pixel;
                 *dst
                     .offset(
                         (strideb * -(5 as libc::c_int) as isize) as isize,
-                    ) = (p6 + p6 + p6 + p6 + p6 + p5 * 2 as libc::c_int
-                    + p4 * 2 as libc::c_int + p3 * 2 as libc::c_int + p2 + p1 + p0 + q0
-                    + q1 + 8 as libc::c_int >> 4 as libc::c_int) as pixel;
+                    ) = (p6 + p6 + p6 + p6 + p6 + p5 * 2
+                    + p4 * 2 + p3 * 2 + p2 + p1 + p0 + q0
+                    + q1 + 8 >> 4) as pixel;
                 *dst
                     .offset(
                         (strideb * -(4 as libc::c_int) as isize) as isize,
-                    ) = (p6 + p6 + p6 + p6 + p5 + p4 * 2 as libc::c_int
-                    + p3 * 2 as libc::c_int + p2 * 2 as libc::c_int + p1 + p0 + q0 + q1
-                    + q2 + 8 as libc::c_int >> 4 as libc::c_int) as pixel;
+                    ) = (p6 + p6 + p6 + p6 + p5 + p4 * 2
+                    + p3 * 2 + p2 * 2 + p1 + p0 + q0 + q1
+                    + q2 + 8 >> 4) as pixel;
                 *dst
                     .offset(
                         (strideb * -(3 as libc::c_int) as isize) as isize,
-                    ) = (p6 + p6 + p6 + p5 + p4 + p3 * 2 as libc::c_int
-                    + p2 * 2 as libc::c_int + p1 * 2 as libc::c_int + p0 + q0 + q1 + q2
-                    + q3 + 8 as libc::c_int >> 4 as libc::c_int) as pixel;
+                    ) = (p6 + p6 + p6 + p5 + p4 + p3 * 2
+                    + p2 * 2 + p1 * 2 + p0 + q0 + q1 + q2
+                    + q3 + 8 >> 4) as pixel;
                 *dst
                     .offset(
                         (strideb * -(2 as libc::c_int) as isize) as isize,
-                    ) = (p6 + p6 + p5 + p4 + p3 + p2 * 2 as libc::c_int
-                    + p1 * 2 as libc::c_int + p0 * 2 as libc::c_int + q0 + q1 + q2 + q3
-                    + q4 + 8 as libc::c_int >> 4 as libc::c_int) as pixel;
+                    ) = (p6 + p6 + p5 + p4 + p3 + p2 * 2
+                    + p1 * 2 + p0 * 2 + q0 + q1 + q2 + q3
+                    + q4 + 8 >> 4) as pixel;
                 *dst
                     .offset(
                         (strideb * -(1 as libc::c_int) as isize) as isize,
-                    ) = (p6 + p5 + p4 + p3 + p2 + p1 * 2 as libc::c_int
-                    + p0 * 2 as libc::c_int + q0 * 2 as libc::c_int + q1 + q2 + q3 + q4
-                    + q5 + 8 as libc::c_int >> 4 as libc::c_int) as pixel;
+                    ) = (p6 + p5 + p4 + p3 + p2 + p1 * 2
+                    + p0 * 2 + q0 * 2 + q1 + q2 + q3 + q4
+                    + q5 + 8 >> 4) as pixel;
                 *dst
                     .offset(
                         (strideb * 0) as isize,
-                    ) = (p5 + p4 + p3 + p2 + p1 + p0 * 2 as libc::c_int
-                    + q0 * 2 as libc::c_int + q1 * 2 as libc::c_int + q2 + q3 + q4 + q5
-                    + q6 + 8 as libc::c_int >> 4 as libc::c_int) as pixel;
+                    ) = (p5 + p4 + p3 + p2 + p1 + p0 * 2
+                    + q0 * 2 + q1 * 2 + q2 + q3 + q4 + q5
+                    + q6 + 8 >> 4) as pixel;
                 *dst
                     .offset(
                         (strideb * 1) as isize,
-                    ) = (p4 + p3 + p2 + p1 + p0 + q0 * 2 as libc::c_int
-                    + q1 * 2 as libc::c_int + q2 * 2 as libc::c_int + q3 + q4 + q5 + q6
-                    + q6 + 8 as libc::c_int >> 4 as libc::c_int) as pixel;
+                    ) = (p4 + p3 + p2 + p1 + p0 + q0 * 2
+                    + q1 * 2 + q2 * 2 + q3 + q4 + q5 + q6
+                    + q6 + 8 >> 4) as pixel;
                 *dst
                     .offset(
                         (strideb * 2) as isize,
-                    ) = (p3 + p2 + p1 + p0 + q0 + q1 * 2 as libc::c_int
-                    + q2 * 2 as libc::c_int + q3 * 2 as libc::c_int + q4 + q5 + q6 + q6
-                    + q6 + 8 as libc::c_int >> 4 as libc::c_int) as pixel;
+                    ) = (p3 + p2 + p1 + p0 + q0 + q1 * 2
+                    + q2 * 2 + q3 * 2 + q4 + q5 + q6 + q6
+                    + q6 + 8 >> 4) as pixel;
                 *dst
                     .offset(
                         (strideb * 3) as isize,
-                    ) = (p2 + p1 + p0 + q0 + q1 + q2 * 2 as libc::c_int
-                    + q3 * 2 as libc::c_int + q4 * 2 as libc::c_int + q5 + q6 + q6 + q6
-                    + q6 + 8 as libc::c_int >> 4 as libc::c_int) as pixel;
+                    ) = (p2 + p1 + p0 + q0 + q1 + q2 * 2
+                    + q3 * 2 + q4 * 2 + q5 + q6 + q6 + q6
+                    + q6 + 8 >> 4) as pixel;
                 *dst
                     .offset(
                         (strideb * 4) as isize,
-                    ) = (p1 + p0 + q0 + q1 + q2 + q3 * 2 as libc::c_int
-                    + q4 * 2 as libc::c_int + q5 * 2 as libc::c_int + q6 + q6 + q6 + q6
-                    + q6 + 8 as libc::c_int >> 4 as libc::c_int) as pixel;
+                    ) = (p1 + p0 + q0 + q1 + q2 + q3 * 2
+                    + q4 * 2 + q5 * 2 + q6 + q6 + q6 + q6
+                    + q6 + 8 >> 4) as pixel;
                 *dst
                     .offset(
                         (strideb * 5) as isize,
-                    ) = (p0 + q0 + q1 + q2 + q3 + q4 * 2 as libc::c_int
-                    + q5 * 2 as libc::c_int + q6 * 2 as libc::c_int + q6 + q6 + q6 + q6
-                    + q6 + 8 as libc::c_int >> 4 as libc::c_int) as pixel;
-            } else if wd >= 8 as libc::c_int && flat8in != 0 {
+                    ) = (p0 + q0 + q1 + q2 + q3 + q4 * 2
+                    + q5 * 2 + q6 * 2 + q6 + q6 + q6 + q6
+                    + q6 + 8 >> 4) as pixel;
+            } else if wd >= 8 && flat8in != 0 {
                 *dst
                     .offset(
                         (strideb * -(3 as libc::c_int) as isize) as isize,
-                    ) = (p3 + p3 + p3 + 2 as libc::c_int * p2 + p1 + p0 + q0
-                    + 4 as libc::c_int >> 3 as libc::c_int) as pixel;
+                    ) = (p3 + p3 + p3 + 2 * p2 + p1 + p0 + q0
+                    + 4 >> 3) as pixel;
                 *dst
                     .offset(
                         (strideb * -(2 as libc::c_int) as isize) as isize,
-                    ) = (p3 + p3 + p2 + 2 as libc::c_int * p1 + p0 + q0 + q1
-                    + 4 as libc::c_int >> 3 as libc::c_int) as pixel;
+                    ) = (p3 + p3 + p2 + 2 * p1 + p0 + q0 + q1
+                    + 4 >> 3) as pixel;
                 *dst
                     .offset(
                         (strideb * -(1 as libc::c_int) as isize) as isize,
-                    ) = (p3 + p2 + p1 + 2 as libc::c_int * p0 + q0 + q1 + q2
-                    + 4 as libc::c_int >> 3 as libc::c_int) as pixel;
+                    ) = (p3 + p2 + p1 + 2 * p0 + q0 + q1 + q2
+                    + 4 >> 3) as pixel;
                 *dst
                     .offset(
                         (strideb * 0) as isize,
-                    ) = (p2 + p1 + p0 + 2 as libc::c_int * q0 + q1 + q2 + q3
-                    + 4 as libc::c_int >> 3 as libc::c_int) as pixel;
+                    ) = (p2 + p1 + p0 + 2 * q0 + q1 + q2 + q3
+                    + 4 >> 3) as pixel;
                 *dst
                     .offset(
                         (strideb * 1) as isize,
-                    ) = (p1 + p0 + q0 + 2 as libc::c_int * q1 + q2 + q3 + q3
-                    + 4 as libc::c_int >> 3 as libc::c_int) as pixel;
+                    ) = (p1 + p0 + q0 + 2 * q1 + q2 + q3 + q3
+                    + 4 >> 3) as pixel;
                 *dst
                     .offset(
                         (strideb * 2) as isize,
-                    ) = (p0 + q0 + q1 + 2 as libc::c_int * q2 + q3 + q3 + q3
-                    + 4 as libc::c_int >> 3 as libc::c_int) as pixel;
-            } else if wd == 6 as libc::c_int && flat8in != 0 {
+                    ) = (p0 + q0 + q1 + 2 * q2 + q3 + q3 + q3
+                    + 4 >> 3) as pixel;
+            } else if wd == 6 && flat8in != 0 {
                 *dst
                     .offset(
                         (strideb * -(2 as libc::c_int) as isize) as isize,
-                    ) = (p2 + 2 as libc::c_int * p2 + 2 as libc::c_int * p1
-                    + 2 as libc::c_int * p0 + q0 + 4 as libc::c_int >> 3 as libc::c_int)
+                    ) = (p2 + 2 * p2 + 2 * p1
+                    + 2 * p0 + q0 + 4 >> 3)
                     as pixel;
                 *dst
                     .offset(
                         (strideb * -(1 as libc::c_int) as isize) as isize,
-                    ) = (p2 + 2 as libc::c_int * p1 + 2 as libc::c_int * p0
-                    + 2 as libc::c_int * q0 + q1 + 4 as libc::c_int >> 3 as libc::c_int)
+                    ) = (p2 + 2 * p1 + 2 * p0
+                    + 2 * q0 + q1 + 4 >> 3)
                     as pixel;
                 *dst
                     .offset(
                         (strideb * 0) as isize,
-                    ) = (p1 + 2 as libc::c_int * p0 + 2 as libc::c_int * q0
-                    + 2 as libc::c_int * q1 + q2 + 4 as libc::c_int >> 3 as libc::c_int)
+                    ) = (p1 + 2 * p0 + 2 * q0
+                    + 2 * q1 + q2 + 4 >> 3)
                     as pixel;
                 *dst
                     .offset(
                         (strideb * 1) as isize,
-                    ) = (p0 + 2 as libc::c_int * q0 + 2 as libc::c_int * q1
-                    + 2 as libc::c_int * q2 + q2 + 4 as libc::c_int >> 3 as libc::c_int)
+                    ) = (p0 + 2 * q0 + 2 * q1
+                    + 2 * q2 + q2 + 4 >> 3)
                     as pixel;
             } else {
                 let hev: libc::c_int = ((p1 - p0).abs() > H || (q1 - q0).abs() > H)
@@ -407,7 +407,7 @@ unsafe extern "C" fn loop_filter(
                         p1 - q1,
                         -(128 as libc::c_int) * ((1 as libc::c_int) << bitdepth_min_8),
                         128 as libc::c_int * ((1 as libc::c_int) << bitdepth_min_8)
-                            - 1 as libc::c_int,
+                            - 1,
                     );
                     let mut f1: libc::c_int = 0;
                     let mut f2: libc::c_int = 0;
@@ -415,16 +415,16 @@ unsafe extern "C" fn loop_filter(
                         3 as libc::c_int * (q0 - p0) + f,
                         -(128 as libc::c_int) * ((1 as libc::c_int) << bitdepth_min_8),
                         128 as libc::c_int * ((1 as libc::c_int) << bitdepth_min_8)
-                            - 1 as libc::c_int,
+                            - 1,
                     );
                     f1 = imin(
-                        f + 4 as libc::c_int,
-                        ((128 as libc::c_int) << bitdepth_min_8) - 1 as libc::c_int,
-                    ) >> 3 as libc::c_int;
+                        f + 4,
+                        ((128 as libc::c_int) << bitdepth_min_8) - 1,
+                    ) >> 3;
                     f2 = imin(
-                        f + 3 as libc::c_int,
-                        ((128 as libc::c_int) << bitdepth_min_8) - 1 as libc::c_int,
-                    ) >> 3 as libc::c_int;
+                        f + 3,
+                        ((128 as libc::c_int) << bitdepth_min_8) - 1,
+                    ) >> 3;
                     *dst
                         .offset(
                             (strideb * -(1 as libc::c_int) as isize) as isize,
@@ -438,18 +438,18 @@ unsafe extern "C" fn loop_filter(
                         3 as libc::c_int * (q0 - p0),
                         -(128 as libc::c_int) * ((1 as libc::c_int) << bitdepth_min_8),
                         128 as libc::c_int * ((1 as libc::c_int) << bitdepth_min_8)
-                            - 1 as libc::c_int,
+                            - 1,
                     );
                     let mut f1_0: libc::c_int = 0;
                     let mut f2_0: libc::c_int = 0;
                     f1_0 = imin(
-                        f_0 + 4 as libc::c_int,
-                        ((128 as libc::c_int) << bitdepth_min_8) - 1 as libc::c_int,
-                    ) >> 3 as libc::c_int;
+                        f_0 + 4,
+                        ((128 as libc::c_int) << bitdepth_min_8) - 1,
+                    ) >> 3;
                     f2_0 = imin(
-                        f_0 + 3 as libc::c_int,
-                        ((128 as libc::c_int) << bitdepth_min_8) - 1 as libc::c_int,
-                    ) >> 3 as libc::c_int;
+                        f_0 + 3,
+                        ((128 as libc::c_int) << bitdepth_min_8) - 1,
+                    ) >> 3;
                     *dst
                         .offset(
                             (strideb * -(1 as libc::c_int) as isize) as isize,
@@ -458,7 +458,7 @@ unsafe extern "C" fn loop_filter(
                         .offset(
                             (strideb * 0) as isize,
                         ) = iclip_u8(q0 - f1_0) as pixel;
-                    f_0 = f1_0 + 1 as libc::c_int >> 1 as libc::c_int;
+                    f_0 = f1_0 + 1 >> 1;
                     *dst
                         .offset(
                             (strideb * -(2 as libc::c_int) as isize) as isize,
@@ -500,7 +500,7 @@ unsafe extern "C" fn loop_filter_h_sb128y_c(
                     as libc::c_int
             };
             if !(L == 0) {
-                let H: libc::c_int = L >> 4 as libc::c_int;
+                let H: libc::c_int = L >> 4;
                 let E: libc::c_int = (*lut).e[L as usize] as libc::c_int;
                 let I: libc::c_int = (*lut).i[L as usize] as libc::c_int;
                 let idx: libc::c_int = if *vmask.offset(2) & y
@@ -521,7 +521,7 @@ unsafe extern "C" fn loop_filter_h_sb128y_c(
                 );
             }
         }
-        y <<= 1 as libc::c_int;
+        y <<= 1;
         dst = dst.offset((4 * stride) as isize);
         l = l.offset(b4_stride as isize);
     }
@@ -552,7 +552,7 @@ unsafe extern "C" fn loop_filter_v_sb128y_c(
                     as libc::c_int
             };
             if !(L == 0) {
-                let H: libc::c_int = L >> 4 as libc::c_int;
+                let H: libc::c_int = L >> 4;
                 let E: libc::c_int = (*lut).e[L as usize] as libc::c_int;
                 let I: libc::c_int = (*lut).i[L as usize] as libc::c_int;
                 let idx: libc::c_int = if *vmask.offset(2) & x
@@ -573,7 +573,7 @@ unsafe extern "C" fn loop_filter_v_sb128y_c(
                 );
             }
         }
-        x <<= 1 as libc::c_int;
+        x <<= 1;
         dst = dst.offset(4);
         l = l.offset(1);
     }
@@ -603,7 +603,7 @@ unsafe extern "C" fn loop_filter_h_sb128uv_c(
                     as libc::c_int
             };
             if !(L == 0) {
-                let H: libc::c_int = L >> 4 as libc::c_int;
+                let H: libc::c_int = L >> 4;
                 let E: libc::c_int = (*lut).e[L as usize] as libc::c_int;
                 let I: libc::c_int = (*lut).i[L as usize] as libc::c_int;
                 let idx: libc::c_int = (*vmask.offset(1) & y
@@ -615,11 +615,11 @@ unsafe extern "C" fn loop_filter_h_sb128uv_c(
                     H,
                     stride,
                     1 as libc::c_int as ptrdiff_t,
-                    4 as libc::c_int + 2 as libc::c_int * idx,
+                    4 as libc::c_int + 2 * idx,
                 );
             }
         }
-        y <<= 1 as libc::c_int;
+        y <<= 1;
         dst = dst.offset((4 * stride) as isize);
         l = l.offset(b4_stride as isize);
     }
@@ -649,7 +649,7 @@ unsafe extern "C" fn loop_filter_v_sb128uv_c(
                     as libc::c_int
             };
             if !(L == 0) {
-                let H: libc::c_int = L >> 4 as libc::c_int;
+                let H: libc::c_int = L >> 4;
                 let E: libc::c_int = (*lut).e[L as usize] as libc::c_int;
                 let I: libc::c_int = (*lut).i[L as usize] as libc::c_int;
                 let idx: libc::c_int = (*vmask.offset(1) & x
@@ -661,11 +661,11 @@ unsafe extern "C" fn loop_filter_v_sb128uv_c(
                     H,
                     1 as libc::c_int as ptrdiff_t,
                     stride,
-                    4 as libc::c_int + 2 as libc::c_int * idx,
+                    4 as libc::c_int + 2 * idx,
                 );
             }
         }
-        x <<= 1 as libc::c_int;
+        x <<= 1;
         dst = dst.offset(4);
         l = l.offset(1);
     }

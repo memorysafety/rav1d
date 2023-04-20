@@ -43,7 +43,7 @@ unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     if x & 1 != 0 {
         unreachable!();
     }
-    return x >> 1 as libc::c_int;
+    return x >> 1;
 }
 #[inline]
 unsafe extern "C" fn pixel_set(dst: *mut pixel, val: libc::c_int, num: libc::c_int) {
@@ -115,17 +115,17 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_16bpc(
         1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 => {
             *angle = av1_mode_to_angle_map[(mode as libc::c_uint)
                 .wrapping_sub(VERT_PRED as libc::c_int as libc::c_uint) as usize]
-                as libc::c_int + 3 as libc::c_int * *angle;
-            if *angle <= 90 as libc::c_int {
-                mode = (if *angle < 90 as libc::c_int && have_top != 0 {
+                as libc::c_int + 3 * *angle;
+            if *angle <= 90 {
+                mode = (if *angle < 90 && have_top != 0 {
                     Z1_PRED as libc::c_int
                 } else {
                     VERT_PRED as libc::c_int
                 }) as IntraPredMode;
-            } else if *angle < 180 as libc::c_int {
+            } else if *angle < 180 {
                 mode = Z2_PRED;
             } else {
-                mode = (if *angle > 180 as libc::c_int && have_left != 0 {
+                mode = (if *angle > 180 && have_left != 0 {
                     Z3_PRED as libc::c_int
                 } else {
                     HOR_PRED as libc::c_int
@@ -148,7 +148,7 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_16bpc(
     {
         if !prefilter_toplevel_sb_edge.is_null() {
             dst_top = &*prefilter_toplevel_sb_edge
-                .offset((x * 4 as libc::c_int) as isize) as *const pixel;
+                .offset((x * 4) as isize) as *const pixel;
         } else {
             dst_top = &*dst
                 .offset(
@@ -158,15 +158,15 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_16bpc(
         }
     }
     if (av1_intra_prediction_edges[mode as usize]).needs_left() != 0 {
-        let sz: libc::c_int = th << 2 as libc::c_int;
+        let sz: libc::c_int = th << 2;
         let left: *mut pixel = &mut *topleft_out.offset(-sz as isize) as *mut pixel;
         if have_left != 0 {
-            let px_have: libc::c_int = imin(sz, h - y << 2 as libc::c_int);
+            let px_have: libc::c_int = imin(sz, h - y << 2);
             let mut i = 0;
             while i < px_have {
                 *left
                     .offset(
-                        (sz - 1 as libc::c_int - i) as isize,
+                        (sz - 1 - i) as isize,
                     ) = *dst
                     .offset(
                         PXSTRIDE(stride) * i as isize - 1,
@@ -186,8 +186,8 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_16bpc(
                 if have_top != 0 {
                     *dst_top as libc::c_int
                 } else {
-                    ((1 as libc::c_int) << bitdepth >> 1 as libc::c_int)
-                        + 1 as libc::c_int
+                    ((1 as libc::c_int) << bitdepth >> 1)
+                        + 1
                 },
                 sz,
             );
@@ -200,16 +200,16 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_16bpc(
                     & EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int as libc::c_uint
             }) as libc::c_int;
             if have_bottomleft != 0 {
-                let px_have_0: libc::c_int = imin(sz, h - y - th << 2 as libc::c_int);
+                let px_have_0: libc::c_int = imin(sz, h - y - th << 2);
                 let mut i_0 = 0;
                 while i_0 < px_have_0 {
                     *left
                         .offset(
-                            -(i_0 + 1 as libc::c_int) as isize,
+                            -(i_0 + 1) as isize,
                         ) = *dst
                         .offset(
                             ((sz + i_0) as isize * PXSTRIDE(stride)
-                                - 1 as libc::c_int as isize) as isize,
+                                - 1 as isize) as isize,
                         );
                     i_0 += 1;
                 }
@@ -230,20 +230,20 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_16bpc(
         }
     }
     if (av1_intra_prediction_edges[mode as usize]).needs_top() != 0 {
-        let sz_0: libc::c_int = tw << 2 as libc::c_int;
+        let sz_0: libc::c_int = tw << 2;
         let top: *mut pixel = &mut *topleft_out.offset(1)
             as *mut pixel;
         if have_top != 0 {
-            let px_have_1: libc::c_int = imin(sz_0, w - x << 2 as libc::c_int);
+            let px_have_1: libc::c_int = imin(sz_0, w - x << 2);
             memcpy(
                 top as *mut libc::c_void,
                 dst_top as *const libc::c_void,
-                (px_have_1 << 1 as libc::c_int) as libc::c_ulong,
+                (px_have_1 << 1) as libc::c_ulong,
             );
             if px_have_1 < sz_0 {
                 pixel_set(
                     top.offset(px_have_1 as isize),
-                    *top.offset((px_have_1 - 1 as libc::c_int) as isize) as libc::c_int,
+                    *top.offset((px_have_1 - 1) as isize) as libc::c_int,
                     sz_0 - px_have_1,
                 );
             }
@@ -253,8 +253,8 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_16bpc(
                 if have_left != 0 {
                     *dst.offset(-(1 as libc::c_int) as isize) as libc::c_int
                 } else {
-                    ((1 as libc::c_int) << bitdepth >> 1 as libc::c_int)
-                        - 1 as libc::c_int
+                    ((1 as libc::c_int) << bitdepth >> 1)
+                        - 1
                 },
                 sz_0,
             );
@@ -267,17 +267,17 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_16bpc(
                     & EDGE_I444_TOP_HAS_RIGHT as libc::c_int as libc::c_uint
             }) as libc::c_int;
             if have_topright != 0 {
-                let px_have_2: libc::c_int = imin(sz_0, w - x - tw << 2 as libc::c_int);
+                let px_have_2: libc::c_int = imin(sz_0, w - x - tw << 2);
                 memcpy(
                     top.offset(sz_0 as isize) as *mut libc::c_void,
                     &*dst_top.offset(sz_0 as isize) as *const pixel
                         as *const libc::c_void,
-                    (px_have_2 << 1 as libc::c_int) as libc::c_ulong,
+                    (px_have_2 << 1) as libc::c_ulong,
                 );
                 if px_have_2 < sz_0 {
                     pixel_set(
                         top.offset(sz_0 as isize).offset(px_have_2 as isize),
-                        *top.offset((sz_0 + px_have_2 - 1 as libc::c_int) as isize)
+                        *top.offset((sz_0 + px_have_2 - 1) as isize)
                             as libc::c_int,
                         sz_0 - px_have_2,
                     );
@@ -285,7 +285,7 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_16bpc(
             } else {
                 pixel_set(
                     top.offset(sz_0 as isize),
-                    *top.offset((sz_0 - 1 as libc::c_int) as isize) as libc::c_int,
+                    *top.offset((sz_0 - 1) as isize) as libc::c_int,
                     sz_0,
                 );
             }
@@ -302,18 +302,18 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_16bpc(
             *topleft_out = (if have_top != 0 {
                 *dst_top as libc::c_int
             } else {
-                (1 as libc::c_int) << bitdepth >> 1 as libc::c_int
+                (1 as libc::c_int) << bitdepth >> 1
             }) as pixel;
         }
         if mode as libc::c_uint == Z2_PRED as libc::c_int as libc::c_uint
-            && tw + th >= 6 as libc::c_int && filter_edge != 0
+            && tw + th >= 6 && filter_edge != 0
         {
             *topleft_out = ((*topleft_out.offset(-(1 as libc::c_int) as isize)
                 as libc::c_int
                 + *topleft_out.offset(1) as libc::c_int)
-                * 5 as libc::c_int
+                * 5
                 + *topleft_out.offset(0) as libc::c_int
-                    * 6 as libc::c_int + 8 as libc::c_int >> 4 as libc::c_int) as pixel;
+                    * 6 + 8 >> 4) as pixel;
         }
     }
     return mode;

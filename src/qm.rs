@@ -47804,17 +47804,17 @@ unsafe extern "C" fn untriangle(
         memcpy(
             dst as *mut libc::c_void,
             src as *const libc::c_void,
-            (y + 1 as libc::c_int) as libc::c_ulong,
+            (y + 1) as libc::c_ulong,
         );
         let mut src_ptr: *const uint8_t = &*src.offset(y as isize) as *const uint8_t;
-        let mut x: libc::c_int = y + 1 as libc::c_int;
+        let mut x: libc::c_int = y + 1;
         while x < sz {
             src_ptr = src_ptr.offset(x as isize);
             *dst.offset(x as isize) = *src_ptr;
             x += 1;
         }
         dst = dst.offset(sz as isize);
-        src = src.offset((y + 1 as libc::c_int) as isize);
+        src = src.offset((y + 1) as isize);
         y += 1;
     }
 }
@@ -47822,9 +47822,9 @@ unsafe extern "C" fn untriangle(
 #[cold]
 pub unsafe extern "C" fn dav1d_init_qm_tables() {
     let mut i = 0;
-    while i < 15 as libc::c_int {
+    while i < 15 {
         let mut j = 0;
-        while j < 2 as libc::c_int {
+        while j < 2 {
             dav1d_qm_tbl[i
                 as usize][j
                 as usize][RTX_4X8 as libc::c_int

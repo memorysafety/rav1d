@@ -37,7 +37,7 @@ pub unsafe extern "C" fn fill(
             *tmp
                 .offset(
                     x as isize,
-                ) = (-(32767 as libc::c_int) - 1 as libc::c_int) as int16_t;
+                ) = (-(32767 as libc::c_int) - 1) as int16_t;
             x += 1;
         }
         tmp = tmp.offset(stride as isize);

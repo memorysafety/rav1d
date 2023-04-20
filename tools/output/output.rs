@@ -210,7 +210,7 @@ pub unsafe extern "C" fn output_open(
         && {
             res = ((*impl_0).write_header)
                 .expect("non-null function pointer")((*c).data, filename, p, fps);
-            res < 0 as libc::c_int
+            res < 0
         }
     {
         free(c as *mut libc::c_void);
@@ -232,7 +232,7 @@ unsafe extern "C" fn safe_strncat(
     if !(dst_fill < dst_len) {
         unreachable!();
     }
-    let to_copy: libc::c_int = imin(src_len, dst_len - dst_fill - 1 as libc::c_int);
+    let to_copy: libc::c_int = imin(src_len, dst_len - dst_fill - 1);
     if to_copy == 0 {
         return;
     }
@@ -267,7 +267,7 @@ unsafe extern "C" fn assemble_field(
         fmt_copy.as_mut_ptr(),
         ::core::mem::size_of::<[libc::c_char; 32]>() as libc::c_ulong as libc::c_int,
         &*fmt.offset(1),
-        fmt_len - 1 as libc::c_int,
+        fmt_len - 1,
     );
     safe_strncat(
         fmt_copy.as_mut_ptr(),
@@ -389,13 +389,13 @@ pub unsafe extern "C" fn output_write(
             &mut (*p).p,
             ((*ctx).fps).as_mut_ptr() as *const libc::c_uint,
         );
-        if res < 0 as libc::c_int {
+        if res < 0 {
             return res;
         }
     }
     res = ((*(*ctx).impl_0).write_picture)
         .expect("non-null function pointer")((*ctx).data, p);
-    if res < 0 as libc::c_int {
+    if res < 0 {
         return res;
     }
     if (*ctx).one_file_per_frame != 0 && ((*(*ctx).impl_0).write_trailer).is_some() {

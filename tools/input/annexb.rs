@@ -71,7 +71,7 @@ unsafe extern "C" fn leb128(f: *mut libc::FILE, len: *mut size_t) -> libc::c_int
             |= ((v as libc::c_int & 0x7f as libc::c_int) as uint64_t)
                 << i.wrapping_mul(7 as libc::c_int as libc::c_uint);
         i = i.wrapping_add(1);
-        if !(more != 0 && i < 8 as libc::c_int as libc::c_uint) {
+        if !(more != 0 && i < 8 as libc::c_uint) {
             break;
         }
     }
@@ -104,7 +104,7 @@ unsafe extern "C" fn leb(
             |= ((v & 0x7f as libc::c_int) as uint64_t)
                 << i.wrapping_mul(7 as libc::c_int as libc::c_uint);
         i = i.wrapping_add(1);
-        if !(more != 0 && i < 8 as libc::c_int as libc::c_uint) {
+        if !(more != 0 && i < 8 as libc::c_uint) {
             break;
         }
     }
@@ -132,10 +132,10 @@ unsafe extern "C" fn parse_obu_header(
     if *buf as libc::c_int & 0x80 as libc::c_int != 0 {
         return -(1 as libc::c_int);
     }
-    *type_0 = ((*buf as libc::c_int & 0x78 as libc::c_int) >> 3 as libc::c_int)
+    *type_0 = ((*buf as libc::c_int & 0x78 as libc::c_int) >> 3)
         as Dav1dObuType;
-    extension_flag = (*buf as libc::c_int & 0x4 as libc::c_int) >> 2 as libc::c_int;
-    has_size_flag = (*buf as libc::c_int & 0x2 as libc::c_int) >> 1 as libc::c_int;
+    extension_flag = (*buf as libc::c_int & 0x4 as libc::c_int) >> 2;
+    has_size_flag = (*buf as libc::c_int & 0x2 as libc::c_int) >> 1;
     buf = buf.offset(1);
     buf_size -= 1;
     if extension_flag != 0 {
@@ -144,17 +144,17 @@ unsafe extern "C" fn parse_obu_header(
     }
     if has_size_flag != 0 {
         ret = leb(buf, buf_size, obu_size);
-        if ret < 0 as libc::c_int {
+        if ret < 0 {
             return -(1 as libc::c_int);
         }
-        return *obu_size as libc::c_int + ret + 1 as libc::c_int + extension_flag;
+        return *obu_size as libc::c_int + ret + 1 + extension_flag;
     } else {
         if allow_implicit_size == 0 {
             return -(1 as libc::c_int);
         }
     }
     *obu_size = buf_size as size_t;
-    return buf_size + 1 as libc::c_int + extension_flag;
+    return buf_size + 1 + extension_flag;
 }
 unsafe extern "C" fn annexb_probe(mut data: *const uint8_t) -> libc::c_int {
     let mut ret: libc::c_int = 0;
@@ -165,7 +165,7 @@ unsafe extern "C" fn annexb_probe(mut data: *const uint8_t) -> libc::c_int {
         2048 as libc::c_int - cnt,
         &mut temporal_unit_size,
     );
-    if ret < 0 as libc::c_int {
+    if ret < 0 {
         return 0 as libc::c_int;
     }
     cnt += ret;
@@ -175,7 +175,7 @@ unsafe extern "C" fn annexb_probe(mut data: *const uint8_t) -> libc::c_int {
         2048 as libc::c_int - cnt,
         &mut frame_unit_size,
     );
-    if ret < 0 as libc::c_int
+    if ret < 0
         || frame_unit_size.wrapping_add(ret as size_t) > temporal_unit_size
     {
         return 0 as libc::c_int;
@@ -185,7 +185,7 @@ unsafe extern "C" fn annexb_probe(mut data: *const uint8_t) -> libc::c_int {
         .wrapping_sub(ret as libc::c_ulong) as size_t as size_t;
     let mut obu_unit_size: size_t = 0;
     ret = leb(data.offset(cnt as isize), 2048 as libc::c_int - cnt, &mut obu_unit_size);
-    if ret < 0 as libc::c_int
+    if ret < 0
         || obu_unit_size.wrapping_add(ret as size_t) >= frame_unit_size
     {
         return 0 as libc::c_int;
@@ -204,7 +204,7 @@ unsafe extern "C" fn annexb_probe(mut data: *const uint8_t) -> libc::c_int {
         &mut type_0,
         1 as libc::c_int,
     );
-    if ret < 0 as libc::c_int
+    if ret < 0
         || type_0 as libc::c_uint != DAV1D_OBU_TD as libc::c_int as libc::c_uint
         || obu_size > 0
     {
@@ -212,13 +212,13 @@ unsafe extern "C" fn annexb_probe(mut data: *const uint8_t) -> libc::c_int {
     }
     cnt += obu_unit_size as libc::c_int;
     let mut seq = 0;
-    while cnt < 2048 as libc::c_int {
+    while cnt < 2048 {
         ret = leb(
             data.offset(cnt as isize),
             2048 as libc::c_int - cnt,
             &mut obu_unit_size,
         );
-        if ret < 0 as libc::c_int
+        if ret < 0
             || obu_unit_size.wrapping_add(ret as size_t) > frame_unit_size
         {
             return 0 as libc::c_int;
@@ -235,7 +235,7 @@ unsafe extern "C" fn annexb_probe(mut data: *const uint8_t) -> libc::c_int {
             &mut type_0,
             1 as libc::c_int,
         );
-        if ret < 0 as libc::c_int {
+        if ret < 0 {
             return 0 as libc::c_int;
         }
         cnt += obu_unit_size as libc::c_int;
@@ -282,7 +282,7 @@ unsafe extern "C" fn annexb_open(
     *num_frames = 0 as libc::c_int as libc::c_uint;
     loop {
         res = leb128((*c).f, &mut len);
-        if res < 0 as libc::c_int {
+        if res < 0 {
             break;
         }
         fseeko64((*c).f, len as __off64_t, 1 as libc::c_int);
@@ -299,13 +299,13 @@ unsafe extern "C" fn annexb_read(
     let mut res: libc::c_int = 0;
     if (*c).temporal_unit_size == 0 {
         res = leb128((*c).f, &mut (*c).temporal_unit_size);
-        if res < 0 as libc::c_int {
+        if res < 0 {
             return -(1 as libc::c_int);
         }
     }
     if (*c).frame_unit_size == 0 {
         res = leb128((*c).f, &mut (*c).frame_unit_size);
-        if res < 0 as libc::c_int
+        if res < 0
             || ((*c).frame_unit_size).wrapping_add(res as size_t)
                 > (*c).temporal_unit_size
         {
@@ -316,7 +316,7 @@ unsafe extern "C" fn annexb_read(
             .wrapping_sub(res as libc::c_ulong) as size_t as size_t;
     }
     res = leb128((*c).f, &mut len);
-    if res < 0 as libc::c_int
+    if res < 0
         || len.wrapping_add(res as size_t) > (*c).frame_unit_size
     {
         return -(1 as libc::c_int);

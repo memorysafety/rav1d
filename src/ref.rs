@@ -147,7 +147,7 @@ pub unsafe extern "C" fn dav1d_ref_dec(pref: *mut *mut Dav1dRef) {
     if ::core::intrinsics::atomic_xsub_seqcst(
         &mut (*r#ref).ref_cnt as *mut atomic_int,
         1 as libc::c_int,
-    ) == 1 as libc::c_int
+    ) == 1
     {
         let free_ref: libc::c_int = (*r#ref).free_ref;
         ((*r#ref).free_callback)
@@ -163,5 +163,5 @@ pub unsafe extern "C" fn dav1d_ref_dec(pref: *mut *mut Dav1dRef) {
 pub unsafe extern "C" fn dav1d_ref_is_writable(r#ref: *mut Dav1dRef) -> libc::c_int {
     return (::core::intrinsics::atomic_load_seqcst(
         &mut (*r#ref).ref_cnt as *mut atomic_int,
-    ) == 1 as libc::c_int && !((*r#ref).data).is_null()) as libc::c_int;
+    ) == 1 && !((*r#ref).data).is_null()) as libc::c_int;
 }

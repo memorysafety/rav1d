@@ -95,7 +95,7 @@ unsafe extern "C" fn rl32(p: *const uint8_t) -> libc::c_uint {
 }
 unsafe extern "C" fn rl64(p: *const uint8_t) -> int64_t {
     return ((rl32(&*p.offset(4)) as uint64_t)
-        << 32 as libc::c_int | rl32(p) as uint64_t) as int64_t;
+        << 32 | rl32(p) as uint64_t) as int64_t;
 }
 unsafe extern "C" fn ivf_open(
     c: *mut IvfInputContext,
@@ -235,8 +235,8 @@ unsafe extern "C" fn ivf_open(
         fps_den = fps_den.wrapping_div(gcd);
         while fps_num | fps_den > u32::MAX as u64
         {
-            fps_num >>= 1 as libc::c_int;
-            fps_den >>= 1 as libc::c_int;
+            fps_num >>= 1;
+            fps_den >>= 1;
         }
     }
     if fps_num != 0 && fps_den != 0 {

@@ -739,7 +739,7 @@ unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     if x & 1 != 0 {
         unreachable!();
     }
-    return x >> 1 as libc::c_int;
+    return x >> 1;
 }
 unsafe extern "C" fn backup_lpf(
     f: *const Dav1dFrameContext,
@@ -763,13 +763,13 @@ unsafe extern "C" fn backup_lpf(
         src_w
     };
     let mut stripe_h: libc::c_int = ((64 as libc::c_int) << (cdef_backup & sb128))
-        - 8 as libc::c_int * (row == 0) as libc::c_int >> ss_ver;
+        - 8 * (row == 0) as libc::c_int >> ss_ver;
     src = src
         .offset(
-            ((stripe_h - 2 as libc::c_int) as isize * PXSTRIDE(src_stride))
+            ((stripe_h - 2) as isize * PXSTRIDE(src_stride))
                 as isize,
         );
-    if (*(*f).c).n_tc == 1 as libc::c_int as libc::c_uint {
+    if (*(*f).c).n_tc == 1 as libc::c_uint {
         if row != 0 {
             let top: libc::c_int = (4 as libc::c_int) << sb128;
             memcpy(
@@ -777,7 +777,7 @@ unsafe extern "C" fn backup_lpf(
                     .offset(
                         ((PXSTRIDE
                             as unsafe extern "C" fn(ptrdiff_t) -> ptrdiff_t)(dst_stride)
-                            * 0 as libc::c_int as isize) as isize,
+                            * 0 as isize) as isize,
                     ) as *mut pixel as *mut libc::c_void,
                 &mut *dst
                     .offset(
@@ -785,52 +785,52 @@ unsafe extern "C" fn backup_lpf(
                             as unsafe extern "C" fn(ptrdiff_t) -> ptrdiff_t)(dst_stride)
                             * top as isize) as isize,
                     ) as *mut pixel as *const libc::c_void,
-                (dst_w << 1 as libc::c_int) as size_t,
+                (dst_w << 1) as size_t,
             );
             memcpy(
                 &mut *dst
                     .offset(
                         ((PXSTRIDE
                             as unsafe extern "C" fn(ptrdiff_t) -> ptrdiff_t)(dst_stride)
-                            * 1 as libc::c_int as isize) as isize,
+                            * 1 as isize) as isize,
                     ) as *mut pixel as *mut libc::c_void,
                 &mut *dst
                     .offset(
                         ((PXSTRIDE
                             as unsafe extern "C" fn(ptrdiff_t) -> ptrdiff_t)(dst_stride)
-                            * (top + 1 as libc::c_int) as isize) as isize,
+                            * (top + 1) as isize) as isize,
                     ) as *mut pixel as *const libc::c_void,
-                (dst_w << 1 as libc::c_int) as size_t,
+                (dst_w << 1) as size_t,
             );
             memcpy(
                 &mut *dst
                     .offset(
                         ((PXSTRIDE
                             as unsafe extern "C" fn(ptrdiff_t) -> ptrdiff_t)(dst_stride)
-                            * 2 as libc::c_int as isize) as isize,
+                            * 2 as isize) as isize,
                     ) as *mut pixel as *mut libc::c_void,
                 &mut *dst
                     .offset(
                         ((PXSTRIDE
                             as unsafe extern "C" fn(ptrdiff_t) -> ptrdiff_t)(dst_stride)
-                            * (top + 2 as libc::c_int) as isize) as isize,
+                            * (top + 2) as isize) as isize,
                     ) as *mut pixel as *const libc::c_void,
-                (dst_w << 1 as libc::c_int) as size_t,
+                (dst_w << 1) as size_t,
             );
             memcpy(
                 &mut *dst
                     .offset(
                         ((PXSTRIDE
                             as unsafe extern "C" fn(ptrdiff_t) -> ptrdiff_t)(dst_stride)
-                            * 3 as libc::c_int as isize) as isize,
+                            * 3 as isize) as isize,
                     ) as *mut pixel as *mut libc::c_void,
                 &mut *dst
                     .offset(
                         ((PXSTRIDE
                             as unsafe extern "C" fn(ptrdiff_t) -> ptrdiff_t)(dst_stride)
-                            * (top + 3 as libc::c_int) as isize) as isize,
+                            * (top + 3) as isize) as isize,
                     ) as *mut pixel as *const libc::c_void,
-                (dst_w << 1 as libc::c_int) as size_t,
+                (dst_w << 1) as size_t,
             );
         }
         dst = dst
@@ -842,7 +842,7 @@ unsafe extern "C" fn backup_lpf(
     {
         while row + stripe_h <= row_h {
             let n_lines: libc::c_int = 4 as libc::c_int
-                - (row + stripe_h + 1 as libc::c_int == h) as libc::c_int;
+                - (row + stripe_h + 1 == h) as libc::c_int;
             ((*(*f).dsp).mc.resize)
                 .expect(
                     "non-null function pointer",
@@ -862,7 +862,7 @@ unsafe extern "C" fn backup_lpf(
             stripe_h = 64 as libc::c_int >> ss_ver;
             src = src.offset((stripe_h as isize * PXSTRIDE(src_stride)) as isize);
             dst = dst.offset((n_lines as isize * PXSTRIDE(dst_stride)) as isize);
-            if n_lines == 3 as libc::c_int {
+            if n_lines == 3 {
                 memcpy(
                     dst as *mut libc::c_void,
                     &mut *dst
@@ -871,7 +871,7 @@ unsafe extern "C" fn backup_lpf(
                                 as unsafe extern "C" fn(ptrdiff_t) -> ptrdiff_t)(dst_stride)
                                 as isize,
                         ) as *mut pixel as *const libc::c_void,
-                    (dst_w << 1 as libc::c_int) as size_t,
+                    (dst_w << 1) as size_t,
                 );
                 dst = dst.offset(PXSTRIDE(dst_stride) as isize);
             }
@@ -879,9 +879,9 @@ unsafe extern "C" fn backup_lpf(
     } else {
         while row + stripe_h <= row_h {
             let n_lines_0: libc::c_int = 4 as libc::c_int
-                - (row + stripe_h + 1 as libc::c_int == h) as libc::c_int;
+                - (row + stripe_h + 1 == h) as libc::c_int;
             let mut i = 0;
-            while i < 4 as libc::c_int {
+            while i < 4 {
                 memcpy(
                     dst as *mut libc::c_void,
                     (if i == n_lines_0 {
@@ -894,7 +894,7 @@ unsafe extern "C" fn backup_lpf(
                     } else {
                         src
                     }) as *const libc::c_void,
-                    (src_w << 1 as libc::c_int) as size_t,
+                    (src_w << 1) as size_t,
                 );
                 dst = dst.offset(PXSTRIDE(dst_stride) as isize);
                 src = src.offset(PXSTRIDE(src_stride) as isize);
@@ -904,7 +904,7 @@ unsafe extern "C" fn backup_lpf(
             stripe_h = 64 as libc::c_int >> ss_ver;
             src = src
                 .offset(
-                    ((stripe_h - 4 as libc::c_int) as isize
+                    ((stripe_h - 4) as isize
                         * PXSTRIDE(src_stride)) as isize,
                 );
         }
@@ -916,7 +916,7 @@ pub unsafe extern "C" fn dav1d_copy_lpf_16bpc(
     mut src: *const *mut pixel,
     sby: libc::c_int,
 ) {
-    let have_tt: libc::c_int = ((*(*f).c).n_tc > 1 as libc::c_int as libc::c_uint)
+    let have_tt: libc::c_int = ((*(*f).c).n_tc > 1 as libc::c_uint)
         as libc::c_int;
     let resize: libc::c_int = ((*(*f).frame_hdr).width[0]
         != (*(*f).frame_hdr).width[1]) as libc::c_int;
@@ -945,12 +945,12 @@ pub unsafe extern "C" fn dav1d_copy_lpf_16bpc(
     let restore_planes: libc::c_int = (*f).lf.restore_planes;
     if (*(*f).seq_hdr).cdef != 0 || restore_planes & LR_RESTORE_Y as libc::c_int != 0 {
         let h: libc::c_int = (*f).cur.p.h;
-        let w: libc::c_int = (*f).bw << 2 as libc::c_int;
+        let w: libc::c_int = (*f).bw << 2;
         let row_h: libc::c_int = imin(
-            (sby + 1 as libc::c_int) << 6 as libc::c_int + (*(*f).seq_hdr).sb128,
-            h - 1 as libc::c_int,
+            (sby + 1) << 6 + (*(*f).seq_hdr).sb128,
+            h - 1,
         );
-        let y_stripe: libc::c_int = (sby << 6 as libc::c_int + (*(*f).seq_hdr).sb128)
+        let y_stripe: libc::c_int = (sby << 6 + (*(*f).seq_hdr).sb128)
             - offset;
         if restore_planes & LR_RESTORE_Y as libc::c_int != 0 || resize == 0 {
             backup_lpf(
@@ -975,7 +975,7 @@ pub unsafe extern "C" fn dav1d_copy_lpf_16bpc(
             );
         }
         if have_tt != 0 && resize != 0 {
-            let cdef_off_y: ptrdiff_t = (sby * 4 as libc::c_int) as isize
+            let cdef_off_y: ptrdiff_t = (sby * 4) as isize
                 * PXSTRIDE(*src_stride.offset(0));
             backup_lpf(
                 f,
@@ -1011,15 +1011,15 @@ pub unsafe extern "C" fn dav1d_copy_lpf_16bpc(
         let ss_hor: libc::c_int = ((*f).sr_cur.p.p.layout as libc::c_uint
             != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint) as libc::c_int;
         let h_0: libc::c_int = (*f).cur.p.h + ss_ver >> ss_ver;
-        let w_0: libc::c_int = (*f).bw << 2 as libc::c_int - ss_hor;
+        let w_0: libc::c_int = (*f).bw << 2 - ss_hor;
         let row_h_0: libc::c_int = imin(
-            (sby + 1 as libc::c_int)
-                << 6 as libc::c_int - ss_ver + (*(*f).seq_hdr).sb128,
-            h_0 - 1 as libc::c_int,
+            (sby + 1)
+                << 6 - ss_ver + (*(*f).seq_hdr).sb128,
+            h_0 - 1,
         );
         let offset_uv: libc::c_int = offset >> ss_ver;
         let y_stripe_0: libc::c_int = (sby
-            << 6 as libc::c_int - ss_ver + (*(*f).seq_hdr).sb128) - offset_uv;
+            << 6 - ss_ver + (*(*f).seq_hdr).sb128) - offset_uv;
         let cdef_off_uv: ptrdiff_t = sby as isize * 4
             * PXSTRIDE(*src_stride.offset(1));
         if (*(*f).seq_hdr).cdef != 0 || restore_planes & LR_RESTORE_U as libc::c_int != 0
@@ -1147,25 +1147,25 @@ unsafe extern "C" fn filter_plane_cols_y(
                     .offset(
                         x as isize,
                     ))[2][0] as uint32_t;
-                if endy4 > 16 as libc::c_int {
+                if endy4 > 16 {
                     hmask[0]
                         |= ((*mask
                             .offset(
                                 x as isize,
                             ))[0][1]
-                            as libc::c_uint) << 16 as libc::c_int;
+                            as libc::c_uint) << 16;
                     hmask[1]
                         |= ((*mask
                             .offset(
                                 x as isize,
                             ))[1][1]
-                            as libc::c_uint) << 16 as libc::c_int;
+                            as libc::c_uint) << 16;
                     hmask[2]
                         |= ((*mask
                             .offset(
                                 x as isize,
                             ))[2][1]
-                            as libc::c_uint) << 16 as libc::c_int;
+                            as libc::c_uint) << 16;
                 }
             } else {
                 hmask[0 as libc::c_int
@@ -1191,7 +1191,7 @@ unsafe extern "C" fn filter_plane_cols_y(
                 .expect(
                     "non-null function pointer",
                 )(
-                &mut *dst.offset((x * 4 as libc::c_int) as isize),
+                &mut *dst.offset((x * 4) as isize),
                 ls,
                 hmask.as_mut_ptr(),
                 &*(*lvl.offset(x as isize)).as_ptr().offset(0)
@@ -1232,7 +1232,7 @@ unsafe extern "C" fn filter_plane_rows_y(
                         .offset(
                             y as isize,
                         ))[0][1]
-                        as libc::c_uint) << 16 as libc::c_int,
+                        as libc::c_uint) << 16,
                 (*mask
                     .offset(
                         y as isize,
@@ -1242,7 +1242,7 @@ unsafe extern "C" fn filter_plane_rows_y(
                         .offset(
                             y as isize,
                         ))[1][1]
-                        as libc::c_uint) << 16 as libc::c_int,
+                        as libc::c_uint) << 16,
                 (*mask
                     .offset(
                         y as isize,
@@ -1252,7 +1252,7 @@ unsafe extern "C" fn filter_plane_rows_y(
                         .offset(
                             y as isize,
                         ))[2][1]
-                        as libc::c_uint) << 16 as libc::c_int,
+                        as libc::c_uint) << 16,
                 0 as libc::c_int as uint32_t,
             ];
             ((*dsp)
@@ -1310,7 +1310,7 @@ unsafe extern "C" fn filter_plane_cols_uv(
                     .offset(
                         x as isize,
                     ))[1][0] as uint32_t;
-                if endy4 > 16 as libc::c_int >> ss_ver {
+                if endy4 > 16 >> ss_ver {
                     hmask[0]
                         |= ((*mask
                             .offset(
@@ -1343,7 +1343,7 @@ unsafe extern "C" fn filter_plane_cols_uv(
                 .expect(
                     "non-null function pointer",
                 )(
-                &mut *u.offset((x * 4 as libc::c_int) as isize),
+                &mut *u.offset((x * 4) as isize),
                 ls,
                 hmask.as_mut_ptr(),
                 &*(*lvl.offset(x as isize)).as_ptr().offset(2)
@@ -1359,7 +1359,7 @@ unsafe extern "C" fn filter_plane_cols_uv(
                 .expect(
                     "non-null function pointer",
                 )(
-                &mut *v.offset((x * 4 as libc::c_int) as isize),
+                &mut *v.offset((x * 4) as isize),
                 ls,
                 hmask.as_mut_ptr(),
                 &*(*lvl.offset(x as isize)).as_ptr().offset(3)
@@ -1469,10 +1469,10 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_16bpc(
     let mut x: libc::c_int = 0;
     let mut have_left: libc::c_int = 0;
     let is_sb64: libc::c_int = ((*(*f).seq_hdr).sb128 == 0) as libc::c_int;
-    let starty4: libc::c_int = (sby & is_sb64) << 4 as libc::c_int;
+    let starty4: libc::c_int = (sby & is_sb64) << 4;
     let sbsz: libc::c_int = 32 as libc::c_int >> is_sb64;
     let sbl2: libc::c_int = 5 as libc::c_int - is_sb64;
-    let halign: libc::c_int = (*f).bh + 31 as libc::c_int & !(31 as libc::c_int);
+    let halign: libc::c_int = (*f).bh + 31 & !(31 as libc::c_int);
     let ss_ver: libc::c_int = ((*f).cur.p.layout as libc::c_uint
         == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint) as libc::c_int;
     let ss_hor: libc::c_int = ((*f).cur.p.layout as libc::c_uint
@@ -1512,7 +1512,7 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_16bpc(
         let mut mask: libc::c_uint = ((1 as libc::c_int) << y) as libc::c_uint;
         while y < endy4 {
             let sidx: libc::c_int = (mask >= 0x10000 as libc::c_uint) as libc::c_int;
-            let smask: libc::c_uint = mask >> (sidx << 4 as libc::c_int);
+            let smask: libc::c_uint = mask >> (sidx << 4);
             let idx: libc::c_int = 2 as libc::c_int
                 * ((*y_hmask.offset(2))[sidx as usize]
                     as libc::c_uint & smask != 0) as libc::c_int
@@ -1537,7 +1537,7 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_16bpc(
                 ))[sidx as usize];
             *fresh3 = (*fresh3 as libc::c_uint | smask) as uint16_t;
             y = y.wrapping_add(1);
-            mask <<= 1 as libc::c_int;
+            mask <<= 1;
         }
         if (*f).cur.p.layout as libc::c_uint
             != DAV1D_PIXEL_LAYOUT_I400 as libc::c_int as libc::c_uint
@@ -1550,7 +1550,7 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_16bpc(
             while y_0 < uv_endy4 {
                 let sidx_0: libc::c_int = (uv_mask >= vmax) as libc::c_int;
                 let smask_0: libc::c_uint = uv_mask
-                    >> (sidx_0 << 4 as libc::c_int - ss_ver);
+                    >> (sidx_0 << 4 - ss_ver);
                 let idx_0: libc::c_int = ((*uv_hmask
                     .offset(1))[sidx_0 as usize] as libc::c_uint
                     & smask_0 != 0) as libc::c_int;
@@ -1573,7 +1573,7 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_16bpc(
                     ))[sidx_0 as usize];
                 *fresh6 = (*fresh6 as libc::c_uint | smask_0) as uint16_t;
                 y_0 = y_0.wrapping_add(1);
-                uv_mask <<= 1 as libc::c_int;
+                uv_mask <<= 1;
             }
         }
         lpf_y = lpf_y.offset(halign as isize);
@@ -1584,7 +1584,7 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_16bpc(
         let mut a: *const BlockContext = 0 as *const BlockContext;
         x = 0 as libc::c_int;
         a = &mut *((*f).a)
-            .offset(((*f).sb128w * (start_of_tile_row - 1 as libc::c_int)) as isize)
+            .offset(((*f).sb128w * (start_of_tile_row - 1)) as isize)
             as *mut BlockContext;
         while x < (*f).sb128w {
             let y_vmask: *mut [uint16_t; 2] = ((*lflvl.offset(x as isize))
@@ -1592,14 +1592,14 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_16bpc(
                 .as_mut_ptr();
             let w: libc::c_uint = imin(
                 32 as libc::c_int,
-                (*f).w4 - (x << 5 as libc::c_int),
+                (*f).w4 - (x << 5),
             ) as libc::c_uint;
             let mut mask_0: libc::c_uint = 1 as libc::c_int as libc::c_uint;
             let mut i: libc::c_uint = 0 as libc::c_int as libc::c_uint;
             while i < w {
                 let sidx_1: libc::c_int = (mask_0 >= 0x10000 as libc::c_uint)
                     as libc::c_int;
-                let smask_1: libc::c_uint = mask_0 >> (sidx_1 << 4 as libc::c_int);
+                let smask_1: libc::c_uint = mask_0 >> (sidx_1 << 4);
                 let idx_1: libc::c_int = 2 as libc::c_int
                     * ((*y_vmask.offset(2))[sidx_1 as usize]
                         as libc::c_uint & smask_1 != 0) as libc::c_int
@@ -1619,7 +1619,7 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_16bpc(
                         imin(idx_1, (*a).tx_lpf_y[i as usize] as libc::c_int) as isize,
                     ))[sidx_1 as usize];
                 *fresh10 = (*fresh10 as libc::c_uint | smask_1) as uint16_t;
-                mask_0 <<= 1 as libc::c_int;
+                mask_0 <<= 1;
                 i = i.wrapping_add(1);
             }
             if (*f).cur.p.layout as libc::c_uint
@@ -1634,7 +1634,7 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_16bpc(
                 while i_0 < cw {
                     let sidx_2: libc::c_int = (uv_mask_0 >= hmax) as libc::c_int;
                     let smask_2: libc::c_uint = uv_mask_0
-                        >> (sidx_2 << 4 as libc::c_int - ss_hor);
+                        >> (sidx_2 << 4 - ss_hor);
                     let idx_2: libc::c_int = ((*uv_vmask
                         .offset(1))[sidx_2 as usize]
                         as libc::c_uint & smask_2 != 0) as libc::c_int;
@@ -1650,7 +1650,7 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_16bpc(
                                 as isize,
                         ))[sidx_2 as usize];
                     *fresh13 = (*fresh13 as libc::c_uint | smask_2) as uint16_t;
-                    uv_mask_0 <<= 1 as libc::c_int;
+                    uv_mask_0 <<= 1;
                     i_0 = i_0.wrapping_add(1);
                 }
             }
@@ -1674,7 +1674,7 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_16bpc(
                 .as_mut_ptr() as *const [[uint16_t; 2]; 3],
             ptr,
             (*f).cur.stride[0],
-            imin(32 as libc::c_int, (*f).w4 - x * 32 as libc::c_int),
+            imin(32 as libc::c_int, (*f).w4 - x * 32),
             starty4,
             endy4 as libc::c_int,
         );
@@ -1705,7 +1705,7 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_16bpc(
             &mut *(*p.offset(1)).offset(uv_off as isize),
             &mut *(*p.offset(2)).offset(uv_off as isize),
             (*f).cur.stride[1],
-            imin(32 as libc::c_int, (*f).w4 - x * 32 as libc::c_int) + ss_hor >> ss_hor,
+            imin(32 as libc::c_int, (*f).w4 - x * 32) + ss_hor >> ss_hor,
             starty4 >> ss_ver,
             uv_endy4 as libc::c_int,
             ss_ver,
@@ -1724,9 +1724,9 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_rows_16bpc(
     mut sby: libc::c_int,
 ) {
     let mut x: libc::c_int = 0;
-    let have_top: libc::c_int = (sby > 0 as libc::c_int) as libc::c_int;
+    let have_top: libc::c_int = (sby > 0) as libc::c_int;
     let is_sb64: libc::c_int = ((*(*f).seq_hdr).sb128 == 0) as libc::c_int;
-    let starty4: libc::c_int = (sby & is_sb64) << 4 as libc::c_int;
+    let starty4: libc::c_int = (sby & is_sb64) << 4;
     let sbsz: libc::c_int = 32 as libc::c_int >> is_sb64;
     let ss_ver: libc::c_int = ((*f).cur.p.layout as libc::c_uint
         == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint) as libc::c_int;
@@ -1750,7 +1750,7 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_rows_16bpc(
                 .as_mut_ptr() as *const [[uint16_t; 2]; 3],
             ptr,
             (*f).cur.stride[0],
-            imin(32 as libc::c_int, (*f).w4 - x * 32 as libc::c_int),
+            imin(32 as libc::c_int, (*f).w4 - x * 32),
             starty4,
             endy4 as libc::c_int,
         );
@@ -1779,7 +1779,7 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_rows_16bpc(
             &mut *(*p.offset(1)).offset(uv_off as isize),
             &mut *(*p.offset(2)).offset(uv_off as isize),
             (*f).cur.stride[1],
-            imin(32 as libc::c_int, (*f).w4 - x * 32 as libc::c_int) + ss_hor >> ss_hor,
+            imin(32 as libc::c_int, (*f).w4 - x * 32) + ss_hor >> ss_hor,
             starty4 >> ss_ver,
             uv_endy4 as libc::c_int,
             ss_hor,

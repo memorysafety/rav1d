@@ -91,7 +91,7 @@ pub unsafe extern "C" fn dav1d_mem_pool_push(
         (*buf).next = (*pool).buf;
         (*pool).buf = buf;
         pthread_mutex_unlock(&mut (*pool).lock);
-        if !(ref_cnt > 0 as libc::c_int) {
+        if !(ref_cnt > 0) {
             unreachable!();
         }
     } else {

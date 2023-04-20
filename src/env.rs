@@ -4,8 +4,8 @@ use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 use crate::include::stdint::int8_t;
 use crate::include::stdint::uint8_t;
 use crate::src::levels::mv;
-use crate::src::levels::TxfmType;
 use crate::src::levels::TxfmSize;
+use crate::src::levels::TxfmType;
 use crate::src::levels::DCT_DCT;
 use crate::src::levels::H_ADST;
 use crate::src::levels::H_FLIPADST;
@@ -39,19 +39,14 @@ pub struct BlockContext {
 }
 
 #[inline]
-pub fn get_uv_inter_txtp(
-    uvt_dim: &TxfmInfo,
-    ytxtp: TxfmType,
-) -> TxfmType {
+pub fn get_uv_inter_txtp(uvt_dim: &TxfmInfo, ytxtp: TxfmType) -> TxfmType {
     if (*uvt_dim).max as TxfmSize == TX_32X32 {
-        return if ytxtp == IDTX {
-            IDTX
-        } else {
-            DCT_DCT
-        };
+        return if ytxtp == IDTX { IDTX } else { DCT_DCT };
     }
     if (*uvt_dim).min as TxfmSize == TX_16X16
-        && ((1 << ytxtp) & ((1 << H_FLIPADST) | (1 << V_FLIPADST) | (1 << H_ADST) | (1 << V_ADST))) != 0 {
+        && ((1 << ytxtp) & ((1 << H_FLIPADST) | (1 << V_FLIPADST) | (1 << H_ADST) | (1 << V_ADST)))
+            != 0
+    {
         return DCT_DCT;
     }
 
@@ -124,8 +119,14 @@ pub fn get_gmv_2d(
     let shift = 16 - (3 - (hdr.hp == 0) as libc::c_int);
     let round = 1 << shift >> 1;
     let mut res = mv {
-        y: apply_sign(yc.abs() + round >> shift << (hdr.hp == 0) as libc::c_int, yc) as i16,
-        x: apply_sign(xc.abs() + round >> shift << (hdr.hp == 0) as libc::c_int, xc) as i16,
+        y: apply_sign(
+            yc.abs() + round >> shift << (hdr.hp == 0) as libc::c_int,
+            yc,
+        ) as i16,
+        x: apply_sign(
+            xc.abs() + round >> shift << (hdr.hp == 0) as libc::c_int,
+            xc,
+        ) as i16,
     };
     if hdr.force_integer_mv != 0 {
         fix_int_mv_precision(&mut res);

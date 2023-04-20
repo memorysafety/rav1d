@@ -116,10 +116,10 @@ unsafe extern "C" fn write_header(
     ];
     let ss_name: *const libc::c_char = if (*p).p.layout as libc::c_uint
         == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint
-        && (*p).p.bpc == 8 as libc::c_int
+        && (*p).p.bpc == 8
     {
         chr_names_8bpc_i420[(if (*(*p).seq_hdr).chr as libc::c_uint
-            > 2 as libc::c_int as libc::c_uint
+            > 2 as libc::c_uint
         {
             DAV1D_CHR_UNKNOWN as libc::c_int as libc::c_uint
         } else {
@@ -169,13 +169,13 @@ unsafe extern "C" fn y4m2_write(
     if (*c).first != 0 {
         (*c).first = 0 as libc::c_int;
         let res: libc::c_int = write_header(c, p);
-        if res < 0 as libc::c_int {
+        if res < 0 {
             return res;
         }
     }
     fprintf((*c).f, b"FRAME\n\0" as *const u8 as *const libc::c_char);
     let mut ptr: *mut uint8_t = 0 as *mut uint8_t;
-    let hbd: libc::c_int = ((*p).p.bpc > 8 as libc::c_int) as libc::c_int;
+    let hbd: libc::c_int = ((*p).p.bpc > 8) as libc::c_int;
     ptr = (*p).data[0] as *mut uint8_t;
     let mut y = 0;
     loop {
@@ -211,7 +211,7 @@ unsafe extern "C" fn y4m2_write(
                 let ch: libc::c_int = (*p).p.h + ss_ver >> ss_ver;
                 let mut pl = 1;
                 's_64: loop {
-                    if !(pl <= 2 as libc::c_int) {
+                    if !(pl <= 2) {
                         current_block = 13797916685926291137;
                         break;
                     }

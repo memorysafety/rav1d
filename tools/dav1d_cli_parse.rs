@@ -406,7 +406,7 @@ unsafe extern "C" fn error(
     if (long_opts[n as usize].name).is_null() {
         unreachable!();
     }
-    if long_opts[n as usize].val < 256 as libc::c_int {
+    if long_opts[n as usize].val < 256 {
         sprintf(
             optname.as_mut_ptr(),
             b"-%c/--%s\0" as *const u8 as *const libc::c_char,
@@ -629,7 +629,7 @@ unsafe extern "C" fn parse_enum(
             return (*tbl.offset(n as isize)).val as libc::c_uint;
         }
         if n != 0 {
-            if n < tbl_sz - 1 as libc::c_int {
+            if n < tbl_sz - 1 {
                 strcat(str.as_mut_ptr(), b", \0" as *const u8 as *const libc::c_char);
             } else {
                 strcat(str.as_mut_ptr(), b" or \0" as *const u8 as *const libc::c_char);

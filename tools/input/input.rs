@@ -186,7 +186,7 @@ pub unsafe extern "C" fn input_open(
         .expect(
             "non-null function pointer",
         )((*c).data, filename, fps, num_frames, timebase);
-    if res < 0 as libc::c_int {
+    if res < 0 {
         free(c as *mut libc::c_void);
         return res;
     }
