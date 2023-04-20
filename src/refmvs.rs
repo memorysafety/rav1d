@@ -404,39 +404,38 @@ unsafe fn add_temporal_candidate(
     if (*rb).mv == mv::INVALID {
         return;
     }
-    let mut mv: mv = mv_projection(
+    let mut mv = mv_projection(
         (*rb).mv,
-        (*rf).pocdiff[(r#ref.r#ref[0] as libc::c_int - 1) as usize] as libc::c_int,
+        (*rf).pocdiff[r#ref.r#ref[0] as usize - 1] as libc::c_int,
         (*rb).r#ref as libc::c_int,
     );
     fix_mv_precision(&*(*rf).frm_hdr, &mut mv);
     let last = *cnt;
-    if r#ref.r#ref[1] as libc::c_int == -(1 as libc::c_int) {
+    if r#ref.r#ref[1] == -1 {
         if !globalmv_ctx.is_null() {
-            *globalmv_ctx = ((mv.x as libc::c_int - (*gmv.offset(0)).x as libc::c_int).abs()
-                | (mv.y as libc::c_int - (*gmv.offset(0)).y as libc::c_int).abs()
+            *globalmv_ctx = ((mv.x - (*gmv.offset(0)).x).abs() | (mv.y - (*gmv.offset(0)).y).abs()
                 >= 16) as libc::c_int;
         }
         let mut n = 0;
         while n < last {
             if (*mvstack.offset(n as isize)).mv.mv[0] == mv {
-                (*mvstack.offset(n as isize)).weight += 2 as libc::c_int;
+                (*mvstack.offset(n as isize)).weight += 2;
                 return;
             }
             n += 1;
         }
         if last < 8 {
             (*mvstack.offset(last as isize)).mv.mv[0] = mv;
-            (*mvstack.offset(last as isize)).weight = 2 as libc::c_int;
+            (*mvstack.offset(last as isize)).weight = 2;
             *cnt = last + 1;
         }
     } else {
-        let mut mvp: refmvs_mvpair = refmvs_mvpair {
+        let mut mvp = refmvs_mvpair {
             mv: [
                 mv,
                 mv_projection(
                     (*rb).mv,
-                    (*rf).pocdiff[(r#ref.r#ref[1] as libc::c_int - 1) as usize] as libc::c_int,
+                    (*rf).pocdiff[r#ref.r#ref[1] as usize - 1] as libc::c_int,
                     (*rb).r#ref as libc::c_int,
                 ),
             ],
@@ -445,14 +444,14 @@ unsafe fn add_temporal_candidate(
         let mut n_0 = 0;
         while n_0 < last {
             if (*mvstack.offset(n_0 as isize)).mv == mvp {
-                (*mvstack.offset(n_0 as isize)).weight += 2 as libc::c_int;
+                (*mvstack.offset(n_0 as isize)).weight += 2;
                 return;
             }
             n_0 += 1;
         }
         if last < 8 {
             (*mvstack.offset(last as isize)).mv = mvp;
-            (*mvstack.offset(last as isize)).weight = 2 as libc::c_int;
+            (*mvstack.offset(last as isize)).weight = 2;
             *cnt = last + 1;
         }
     };
