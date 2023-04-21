@@ -3991,7 +3991,7 @@ unsafe fn decode_b(
                 let mut seg_id =
                     get_prev_frame_segid(f, t.by, t.bx, w4, h4, f.prev_segmap, f.b4_stride);
 
-                if seg_id >= 8 {
+                if seg_id >= DAV1D_MAX_SEGMENTS.into() {
                     return -1;
                 }
 
@@ -4014,13 +4014,13 @@ unsafe fn decode_b(
                     let mut seg_id =
                         get_prev_frame_segid(f, t.by, t.bx, w4, h4, f.prev_segmap, f.b4_stride);
 
-                    if seg_id >= 8 {
+                    if seg_id >= DAV1D_MAX_SEGMENTS.into() {
                         return -1;
                     }
 
                     b.seg_id = seg_id as uint8_t;
                 } else {
-                    b.seg_id = 0 as libc::c_int as uint8_t;
+                    b.seg_id = 0;
                 }
             } else {
                 let mut seg_ctx = 0;
@@ -4062,116 +4062,125 @@ unsafe fn decode_b(
             seg = Some(&frame_hdr.segmentation.seg_data.d[b.seg_id as usize]);
         }
     } else {
-        b.seg_id = 0 as libc::c_int as uint8_t;
+        b.seg_id = 0;
     }
 
-    if seg
-        .map(|seg| seg.globalmv == 0 && seg.r#ref == -1 && seg.skip == 0)
-        .unwrap_or(true)
-        && frame_hdr.skip_mode_enabled != 0
+    // skip_mode
+    if seg.map(|seg| seg.globalmv == 0 && seg.r#ref == -1 && seg.skip == 0).unwrap_or(true)
+        && (*f.frame_hdr).skip_mode_enabled != 0
         && imin(bw4, bh4) > 1
     {
-        let smctx = (*t.a).skip_mode[bx4 as usize] as libc::c_int
-            + t.l.skip_mode[by4 as usize] as libc::c_int;
+        let smctx = (*t.a).skip_mode[bx4 as usize] + t.l.skip_mode[by4 as usize];
         b.skip_mode = dav1d_msac_decode_bool_adapt(
             &mut ts.msac,
             (ts.cdf.m.skip_mode[smctx as usize]).as_mut_ptr(),
         ) as uint8_t;
+
         if DEBUG_BLOCK_INFO(f, t) {
-            printf(
-                b"Post-skipmode[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
-                b.skip_mode as libc::c_int,
-                ts.msac.rng,
-            );
+            println!("Post-skipmode[{}]: r={}", b.skip_mode, ts.msac.rng);
         }
     } else {
-        b.skip_mode = 0 as libc::c_int as uint8_t;
+        b.skip_mode = 0;
     }
-    if b.skip_mode as libc::c_int != 0 || seg.map(|seg| seg.skip != 0).unwrap_or(false) {
-        b.skip = 1 as libc::c_int as uint8_t;
+
+    // skip
+    if b.skip_mode != 0 || seg.map(|seg| seg.skip != 0).unwrap_or(false) {
+        b.skip = 1;
     } else {
-        let sctx = (*t.a).skip[bx4 as usize] as libc::c_int + t.l.skip[by4 as usize] as libc::c_int;
-        b.skip =
-            dav1d_msac_decode_bool_adapt(&mut ts.msac, (ts.cdf.m.skip[sctx as usize]).as_mut_ptr())
-                as uint8_t;
+        let sctx = (*t.a).skip[bx4 as usize] + t.l.skip[by4 as usize];
+        b.skip = dav1d_msac_decode_bool_adapt(
+            &mut ts.msac,
+            (ts.cdf.m.skip[sctx as usize]).as_mut_ptr(),
+        ) as uint8_t;
+
         if DEBUG_BLOCK_INFO(f, t) {
-            printf(
-                b"Post-skip[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
-                b.skip as libc::c_int,
-                ts.msac.rng,
-            );
+            println!("Post-skip[{}]: r={}", b.skip, ts.msac.rng);
         }
     }
-    if frame_hdr.segmentation.enabled != 0
-        && frame_hdr.segmentation.update_map != 0
-        && frame_hdr.segmentation.seg_data.preskip == 0
+
+    // segment_id
+    if (*f.frame_hdr).segmentation.enabled != 0
+        && (*f.frame_hdr).segmentation.update_map != 0
+        && (*f.frame_hdr).segmentation.seg_data.preskip == 0
     {
-        if b.skip == 0 && frame_hdr.segmentation.temporal != 0 && {
-            seg_pred = dav1d_msac_decode_bool_adapt(
-                &mut ts.msac,
-                (ts.cdf.m.seg_pred[((*t.a).seg_pred[bx4 as usize] as libc::c_int
-                    + t.l.seg_pred[by4 as usize] as libc::c_int)
-                    as usize])
-                    .as_mut_ptr(),
-            ) as libc::c_int;
-            seg_pred != 0
-        } {
+        if b.skip == 0 && (*f.frame_hdr).segmentation.temporal != 0
+            && {
+                let index = (*t.a).seg_pred[bx4 as usize] + t.l.seg_pred[by4 as usize];
+                seg_pred = dav1d_msac_decode_bool_adapt(
+                    &mut ts.msac,
+                    ts.cdf.m.seg_pred[index as usize].as_mut_ptr(),
+                ) as libc::c_int;
+                seg_pred != 0
+            }
+        {
+            // temporal predicted seg_id
             if !(f.prev_segmap).is_null() {
-                let mut seg_id_1: libc::c_uint =
-                    get_prev_frame_segid(f, t.by, t.bx, w4, h4, f.prev_segmap, f.b4_stride);
-                if seg_id_1 >= 8 as libc::c_uint {
-                    return -(1 as libc::c_int);
+                let mut seg_id = get_prev_frame_segid(
+                    f,
+                    t.by,
+                    t.bx,
+                    w4,
+                    h4,
+                    f.prev_segmap,
+                    f.b4_stride,
+                );
+
+                if seg_id >= DAV1D_MAX_SEGMENTS.into() {
+                    return -1;
                 }
-                b.seg_id = seg_id_1 as uint8_t;
+
+                b.seg_id = seg_id as uint8_t;
             } else {
-                b.seg_id = 0 as libc::c_int as uint8_t;
+                b.seg_id = 0;
             }
         } else {
-            let mut seg_ctx_0 = 0;
-            let pred_seg_id_0: libc::c_uint = get_cur_frame_segid(
+            let mut seg_ctx = 0;
+            let pred_seg_id = get_cur_frame_segid(
                 t.by,
                 t.bx,
                 have_top,
                 have_left,
-                &mut seg_ctx_0,
+                &mut seg_ctx,
                 f.cur_segmap,
                 f.b4_stride,
             );
+
             if b.skip != 0 {
-                b.seg_id = pred_seg_id_0 as uint8_t;
+                b.seg_id = pred_seg_id as uint8_t;
             } else {
-                let diff_0: libc::c_uint = dav1d_msac_decode_symbol_adapt8(
+                let diff = dav1d_msac_decode_symbol_adapt8(
                     &mut ts.msac,
-                    (ts.cdf.m.seg_id[seg_ctx_0 as usize]).as_mut_ptr(),
-                    (8 - 1) as size_t,
+                    ts.cdf.m.seg_id[seg_ctx as usize].as_mut_ptr(),
+                    (DAV1D_MAX_SEGMENTS - 1) as size_t,
                 );
-                let last_active_seg_id_0: libc::c_uint =
-                    frame_hdr.segmentation.seg_data.last_active_segid as libc::c_uint;
+                let last_active_seg_id = (*f.frame_hdr)
+                    .segmentation
+                    .seg_data
+                    .last_active_segid;
+
                 b.seg_id = neg_deinterleave(
-                    diff_0 as libc::c_int,
-                    pred_seg_id_0 as libc::c_int,
-                    last_active_seg_id_0.wrapping_add(1 as libc::c_int as libc::c_uint)
-                        as libc::c_int,
+                    diff as libc::c_int,
+                    pred_seg_id as libc::c_int,
+                    last_active_seg_id + 1,
                 ) as uint8_t;
-                if b.seg_id as libc::c_uint > last_active_seg_id_0 {
-                    b.seg_id = 0 as libc::c_int as uint8_t;
+
+                if b.seg_id as i32 > last_active_seg_id {
+                    b.seg_id = 0;
                 }
             }
-            if b.seg_id as libc::c_int >= 8 {
-                b.seg_id = 0 as libc::c_int as uint8_t;
+
+            if b.seg_id >= DAV1D_MAX_SEGMENTS {
+                b.seg_id = 0;
             }
         }
-        seg = Some(&frame_hdr.segmentation.seg_data.d[b.seg_id as usize]);
+
+        seg = Some(&(*f.frame_hdr).segmentation.seg_data.d[b.seg_id as usize]);
+
         if DEBUG_BLOCK_INFO(f, t) {
-            printf(
-                b"Post-segid[postskip;%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
-                b.seg_id as libc::c_int,
-                ts.msac.rng,
-            );
+            println!("Post-segid[postskip;{}]: r={}", b.seg_id, ts.msac.rng);
         }
     }
 
-    // cdef index
     if b.skip == 0 {
         let idx = if (*f.seq_hdr).sb128 != 0 {
             ((t.bx & 16) >> 4) + ((t.by & 16) >> 3)
