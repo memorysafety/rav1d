@@ -6,7 +6,6 @@ use cfg_if::cfg_if;
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: size_t) -> *mut libc::c_void;
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: size_t) -> *mut libc::c_void;
-    static dav1d_sgr_x_by_x: [uint8_t; 256];
 }
 
 #[cfg(feature = "asm")]
@@ -291,6 +290,8 @@ extern "C" {
         edges: LrEdgeFlags,
     );
 }
+
+use crate::src::tables::dav1d_sgr_x_by_x;
 
 pub type pixel = uint8_t;
 pub type coef = int16_t;
