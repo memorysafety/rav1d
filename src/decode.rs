@@ -275,7 +275,6 @@ extern "C" {
     fn dav1d_read_coef_blocks_8bpc(t: *mut Dav1dTaskContext, bs: BlockSize, b: *const Av1Block);
     #[cfg(feature = "bitdepth_16")]
     fn dav1d_read_coef_blocks_16bpc(t: *mut Dav1dTaskContext, bs: BlockSize, b: *const Av1Block);
-    static dav1d_dq_tbl: [[[uint16_t; 2]; 256]; 3];
     fn dav1d_log(c: *mut Dav1dContext, format: *const libc::c_char, _: ...);
     static mut dav1d_qm_tbl: [[[*const uint8_t; 19]; 2]; 16];
     fn dav1d_task_create_tile_sbrow(
@@ -305,6 +304,7 @@ extern "C" {
     );
 }
 
+use crate::src::dequant_tables::dav1d_dq_tbl;
 use crate::src::refmvs::dav1d_refmvs_find;
 
 use crate::include::dav1d::common::Dav1dDataProps;
