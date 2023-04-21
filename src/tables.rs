@@ -106,7 +106,7 @@ pub struct TxfmInfo {
     pub ctx: uint8_t,
 }
 
-pub static mut dav1d_al_part_ctx: [[[uint8_t; 10]; 5]; 2] = [
+pub static dav1d_al_part_ctx: [[[uint8_t; 10]; 5]; 2] = [
     [
         [
             0 as libc::c_int as uint8_t,
@@ -233,7 +233,7 @@ pub static mut dav1d_al_part_ctx: [[[uint8_t; 10]; 5]; 2] = [
     ],
 ];
 
-pub static mut dav1d_block_sizes: [[[uint8_t; 2]; 10]; 5] = [
+pub static dav1d_block_sizes: [[[uint8_t; 2]; 10]; 5] = [
     [
         [BS_128x128 as libc::c_int as uint8_t, 0],
         [BS_128x64 as libc::c_int as uint8_t, 0],
@@ -344,7 +344,7 @@ pub static mut dav1d_block_sizes: [[[uint8_t; 2]; 10]; 5] = [
     ],
 ];
 
-pub static mut dav1d_block_dimensions: [[uint8_t; 4]; 22] = [
+pub static dav1d_block_dimensions: [[uint8_t; 4]; 22] = [
     [
         32 as libc::c_int as uint8_t,
         32 as libc::c_int as uint8_t,
@@ -479,7 +479,7 @@ pub static mut dav1d_block_dimensions: [[uint8_t; 4]; 22] = [
     ],
 ];
 
-pub static mut dav1d_txfm_dimensions: [TxfmInfo; 19] = [
+pub static dav1d_txfm_dimensions: [TxfmInfo; 19] = [
     {
         let mut init = TxfmInfo {
             w: 1 as libc::c_int as uint8_t,
@@ -729,7 +729,7 @@ pub static mut dav1d_txfm_dimensions: [TxfmInfo; 19] = [
     },
 ];
 
-pub static mut dav1d_max_txfm_size_for_bs: [[uint8_t; 4]; 22] = [
+pub static dav1d_max_txfm_size_for_bs: [[uint8_t; 4]; 22] = [
     [
         TX_64X64 as libc::c_int as uint8_t,
         TX_32X32 as libc::c_int as uint8_t,
@@ -864,7 +864,7 @@ pub static mut dav1d_max_txfm_size_for_bs: [[uint8_t; 4]; 22] = [
     ],
 ];
 
-pub static mut dav1d_txtp_from_uvmode: [uint8_t; 14] = [
+pub static dav1d_txtp_from_uvmode: [uint8_t; 14] = [
     DCT_DCT as libc::c_int as uint8_t,
     ADST_DCT as libc::c_int as uint8_t,
     DCT_ADST as libc::c_int as uint8_t,
@@ -881,7 +881,7 @@ pub static mut dav1d_txtp_from_uvmode: [uint8_t; 14] = [
     0,
 ];
 
-pub static mut dav1d_comp_inter_pred_modes: [[uint8_t; 2]; 8] = [
+pub static dav1d_comp_inter_pred_modes: [[uint8_t; 2]; 8] = [
     [
         NEARESTMV as libc::c_int as uint8_t,
         NEARESTMV as libc::c_int as uint8_t,
@@ -916,7 +916,7 @@ pub static mut dav1d_comp_inter_pred_modes: [[uint8_t; 2]; 8] = [
     ],
 ];
 
-pub static mut dav1d_partition_type_count: [uint8_t; 5] = [
+pub static dav1d_partition_type_count: [uint8_t; 5] = [
     (N_PARTITIONS as libc::c_int - 3) as uint8_t,
     (N_PARTITIONS as libc::c_int - 1) as uint8_t,
     (N_PARTITIONS as libc::c_int - 1) as uint8_t,
@@ -924,7 +924,7 @@ pub static mut dav1d_partition_type_count: [uint8_t; 5] = [
     (N_SUB8X8_PARTITIONS as libc::c_int - 1) as uint8_t,
 ];
 
-pub static mut dav1d_tx_types_per_set: [uint8_t; 40] = [
+pub static dav1d_tx_types_per_set: [uint8_t; 40] = [
     IDTX as libc::c_int as uint8_t,
     DCT_DCT as libc::c_int as uint8_t,
     ADST_ADST as libc::c_int as uint8_t,
@@ -967,7 +967,7 @@ pub static mut dav1d_tx_types_per_set: [uint8_t; 40] = [
     FLIPADST_ADST as libc::c_int as uint8_t,
 ];
 
-pub static mut dav1d_ymode_size_context: [uint8_t; 22] = [
+pub static dav1d_ymode_size_context: [uint8_t; 22] = [
     3 as libc::c_int as uint8_t,
     3 as libc::c_int as uint8_t,
     3 as libc::c_int as uint8_t,
@@ -992,7 +992,7 @@ pub static mut dav1d_ymode_size_context: [uint8_t; 22] = [
     0 as libc::c_int as uint8_t,
 ];
 
-pub static mut dav1d_lo_ctx_offsets: [[[uint8_t; 5]; 5]; 3] = [
+pub static dav1d_lo_ctx_offsets: [[[uint8_t; 5]; 5]; 3] = [
     [
         [
             0 as libc::c_int as uint8_t,
@@ -1106,7 +1106,7 @@ pub static mut dav1d_lo_ctx_offsets: [[[uint8_t; 5]; 5]; 3] = [
     ],
 ];
 
-pub static mut dav1d_skip_ctx: [[uint8_t; 5]; 5] = [
+pub static dav1d_skip_ctx: [[uint8_t; 5]; 5] = [
     [
         1 as libc::c_int as uint8_t,
         2 as libc::c_int as uint8_t,
@@ -1144,7 +1144,7 @@ pub static mut dav1d_skip_ctx: [[uint8_t; 5]; 5] = [
     ],
 ];
 
-pub static mut dav1d_tx_type_class: [uint8_t; 17] = [
+pub static dav1d_tx_type_class: [uint8_t; 17] = [
     TX_CLASS_2D as libc::c_int as uint8_t,
     TX_CLASS_2D as libc::c_int as uint8_t,
     TX_CLASS_2D as libc::c_int as uint8_t,
@@ -1164,7 +1164,7 @@ pub static mut dav1d_tx_type_class: [uint8_t; 17] = [
     TX_CLASS_2D as libc::c_int as uint8_t,
 ];
 
-pub static mut dav1d_filter_2d: [[uint8_t; 4]; 4] = [
+pub static dav1d_filter_2d: [[uint8_t; 4]; 4] = [
     [
         FILTER_2D_8TAP_REGULAR as libc::c_int as uint8_t,
         FILTER_2D_8TAP_REGULAR_SMOOTH as libc::c_int as uint8_t,
@@ -1186,7 +1186,7 @@ pub static mut dav1d_filter_2d: [[uint8_t; 4]; 4] = [
     [0, 0, 0, FILTER_2D_BILINEAR as libc::c_int as uint8_t],
 ];
 
-pub static mut dav1d_filter_dir: [[uint8_t; 2]; 10] = [
+pub static dav1d_filter_dir: [[uint8_t; 2]; 10] = [
     [
         DAV1D_FILTER_8TAP_REGULAR as libc::c_int as uint8_t,
         DAV1D_FILTER_8TAP_REGULAR as libc::c_int as uint8_t,
@@ -1229,7 +1229,7 @@ pub static mut dav1d_filter_dir: [[uint8_t; 2]; 10] = [
     ],
 ];
 
-pub static mut dav1d_filter_mode_to_y_mode: [uint8_t; 5] = [
+pub static dav1d_filter_mode_to_y_mode: [uint8_t; 5] = [
     DC_PRED as libc::c_int as uint8_t,
     VERT_PRED as libc::c_int as uint8_t,
     HOR_PRED as libc::c_int as uint8_t,
@@ -1237,7 +1237,7 @@ pub static mut dav1d_filter_mode_to_y_mode: [uint8_t; 5] = [
     DC_PRED as libc::c_int as uint8_t,
 ];
 
-pub static mut dav1d_intra_mode_context: [uint8_t; 13] = [
+pub static dav1d_intra_mode_context: [uint8_t; 13] = [
     0 as libc::c_int as uint8_t,
     1 as libc::c_int as uint8_t,
     2 as libc::c_int as uint8_t,
@@ -1253,7 +1253,7 @@ pub static mut dav1d_intra_mode_context: [uint8_t; 13] = [
     0 as libc::c_int as uint8_t,
 ];
 
-pub static mut dav1d_wedge_ctx_lut: [uint8_t; 22] = [
+pub static dav1d_wedge_ctx_lut: [uint8_t; 22] = [
     0,
     0,
     0,
@@ -1278,7 +1278,7 @@ pub static mut dav1d_wedge_ctx_lut: [uint8_t; 22] = [
     0,
 ];
 
-pub static mut dav1d_default_wm_params: Dav1dWarpedMotionParams = {
+pub static dav1d_default_wm_params: Dav1dWarpedMotionParams = {
     let mut init = Dav1dWarpedMotionParams {
         type_0: DAV1D_WM_TYPE_IDENTITY,
         matrix: [
@@ -1304,7 +1304,7 @@ pub static mut dav1d_default_wm_params: Dav1dWarpedMotionParams = {
     init
 };
 
-pub static mut dav1d_cdef_directions: [[int8_t; 2]; 12] = [
+pub static dav1d_cdef_directions: [[int8_t; 2]; 12] = [
     [(1 * 12 + 0) as int8_t, (2 * 12 + 0) as int8_t],
     [(1 * 12 + 0) as int8_t, (2 * 12 - 1) as int8_t],
     [
@@ -1331,7 +1331,7 @@ pub static mut dav1d_cdef_directions: [[int8_t; 2]; 12] = [
     ],
 ];
 
-pub static mut dav1d_sgr_params: [[uint16_t; 2]; 16] = [
+pub static dav1d_sgr_params: [[uint16_t; 2]; 16] = [
     [
         140 as libc::c_int as uint16_t,
         3236 as libc::c_int as uint16_t,
@@ -1390,7 +1390,7 @@ pub static mut dav1d_sgr_params: [[uint16_t; 2]; 16] = [
 ];
 
 #[no_mangle]
-pub static mut dav1d_sgr_x_by_x: Align64<[uint8_t; 256]> = Align64([
+pub static dav1d_sgr_x_by_x: Align64<[uint8_t; 256]> = Align64([
     255 as libc::c_int as uint8_t,
     128 as libc::c_int as uint8_t,
     85 as libc::c_int as uint8_t,
@@ -1650,7 +1650,7 @@ pub static mut dav1d_sgr_x_by_x: Align64<[uint8_t; 256]> = Align64([
 ]);
 
 #[no_mangle]
-pub static mut dav1d_mc_subpel_filters: [[[int8_t; 8]; 15]; 6] = [
+pub static dav1d_mc_subpel_filters: [[[int8_t; 8]; 15]; 6] = [
     [
         [
             0 as libc::c_int as int8_t,
@@ -2566,7 +2566,7 @@ pub static mut dav1d_mc_subpel_filters: [[[int8_t; 8]; 15]; 6] = [
 ];
 
 #[no_mangle]
-pub static mut dav1d_mc_warp_filter: [[int8_t; 8]; 193] = [
+pub static dav1d_mc_warp_filter: [[int8_t; 8]; 193] = [
     [
         0 as libc::c_int as int8_t,
         0 as libc::c_int as int8_t,
@@ -4500,7 +4500,7 @@ pub static mut dav1d_mc_warp_filter: [[int8_t; 8]; 193] = [
 ];
 
 #[no_mangle]
-pub static mut dav1d_resize_filter: [[int8_t; 8]; 64] = [
+pub static dav1d_resize_filter: [[int8_t; 8]; 64] = [
     [
         0 as libc::c_int as int8_t,
         0 as libc::c_int as int8_t,
@@ -5144,7 +5144,7 @@ pub static mut dav1d_resize_filter: [[int8_t; 8]; 64] = [
 ];
 
 #[no_mangle]
-pub static mut dav1d_sm_weights: [uint8_t; 128] = [
+pub static dav1d_sm_weights: [uint8_t; 128] = [
     0 as libc::c_int as uint8_t,
     0 as libc::c_int as uint8_t,
     255 as libc::c_int as uint8_t,
@@ -5276,7 +5276,7 @@ pub static mut dav1d_sm_weights: [uint8_t; 128] = [
 ];
 
 #[no_mangle]
-pub static mut dav1d_dr_intra_derivative: [uint16_t; 44] = [
+pub static dav1d_dr_intra_derivative: [uint16_t; 44] = [
     0 as libc::c_int as uint16_t,
     1023 as libc::c_int as uint16_t,
     0 as libc::c_int as uint16_t,
@@ -5370,7 +5370,7 @@ macro_rules! f {
 }
 
 #[no_mangle]
-pub static mut dav1d_filter_intra_taps: Align64<[[int8_t; 64]; 5]> = Align64([
+pub static dav1d_filter_intra_taps: Align64<[[int8_t; 64]; 5]> = Align64([
     {
         let mut array = [0; 64];
         f!(array, 0, -6, 10, 0, 0, 0, 12, 0);
@@ -5434,7 +5434,7 @@ pub static mut dav1d_filter_intra_taps: Align64<[[int8_t; 64]; 5]> = Align64([
 ]);
 
 #[no_mangle]
-pub static mut dav1d_obmc_masks: [uint8_t; 64] = [
+pub static dav1d_obmc_masks: [uint8_t; 64] = [
     0 as libc::c_int as uint8_t,
     0 as libc::c_int as uint8_t,
     19 as libc::c_int as uint8_t,
@@ -5502,7 +5502,7 @@ pub static mut dav1d_obmc_masks: [uint8_t; 64] = [
 ];
 
 #[no_mangle]
-pub static mut dav1d_gaussian_sequence: [int16_t; 2048] = [
+pub static dav1d_gaussian_sequence: [int16_t; 2048] = [
     56 as libc::c_int as int16_t,
     568 as libc::c_int as int16_t,
     -(180 as libc::c_int) as int16_t,
