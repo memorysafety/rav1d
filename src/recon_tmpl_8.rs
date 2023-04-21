@@ -10,7 +10,6 @@ extern "C" {
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::size_t) -> *mut libc::c_void;
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
     fn printf(_: *const libc::c_char, _: ...) -> libc::c_int;
-    static dav1d_tx_types_per_set: [uint8_t; 40];
     static dav1d_filter_mode_to_y_mode: [uint8_t; 5];
     static dav1d_lo_ctx_offsets: [[[uint8_t; 5]; 5]; 3];
     static dav1d_skip_ctx: [[uint8_t; 5]; 5];
@@ -82,6 +81,7 @@ extern "C" {
 }
 
 use crate::src::tables::dav1d_block_dimensions;
+use crate::src::tables::dav1d_tx_types_per_set;
 use crate::src::tables::dav1d_txfm_dimensions;
 use crate::src::tables::dav1d_txtp_from_uvmode;
 
