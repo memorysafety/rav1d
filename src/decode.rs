@@ -47,7 +47,6 @@ extern "C" {
     );
     fn dav1d_data_props_copy(dst: *mut Dav1dDataProps, src: *const Dav1dDataProps);
     fn dav1d_data_unref_internal(buf: *mut Dav1dData);
-    static dav1d_txfm_dimensions: [TxfmInfo; 19];
     static dav1d_max_txfm_size_for_bs: [[uint8_t; 4]; 22];
     static dav1d_comp_inter_pred_modes: [[uint8_t; 2]; 8];
     static dav1d_partition_type_count: [uint8_t; 5];
@@ -306,6 +305,7 @@ use crate::src::refmvs::dav1d_refmvs_find;
 use crate::src::tables::dav1d_al_part_ctx;
 use crate::src::tables::dav1d_block_dimensions;
 use crate::src::tables::dav1d_block_sizes;
+use crate::src::tables::dav1d_txfm_dimensions;
 
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
