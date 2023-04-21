@@ -207,252 +207,195 @@ pub static dav1d_block_dimensions: [[u8; 4]; 22] = [
 ];
 
 pub static dav1d_txfm_dimensions: [TxfmInfo; 19] = [
-    {
-        let mut init = TxfmInfo {
-            w: 1,
-            h: 1,
-            lw: 0,
-            lh: 0,
-            min: 0,
-            max: 0,
-            sub: 0,
-            ctx: 0,
-        };
-        init
+    TxfmInfo {
+        w: 1,
+        h: 1,
+        lw: 0,
+        lh: 0,
+        min: 0,
+        max: 0,
+        sub: 0,
+        ctx: 0,
     },
-    {
-        let mut init = TxfmInfo {
-            w: 2,
-            h: 2,
-            lw: 1,
-            lh: 1,
-            min: 1,
-            max: 1,
-            sub: TX_4X4 as u8,
-            ctx: 1,
-        };
-        init
+    TxfmInfo {
+        w: 2,
+        h: 2,
+        lw: 1,
+        lh: 1,
+        min: 1,
+        max: 1,
+        sub: TX_4X4 as u8,
+        ctx: 1,
     },
-    {
-        let mut init = TxfmInfo {
-            w: 4,
-            h: 4,
-            lw: 2,
-            lh: 2,
-            min: 2,
-            max: 2,
-            sub: TX_8X8 as u8,
-            ctx: 2,
-        };
-        init
+    TxfmInfo {
+        w: 4,
+        h: 4,
+        lw: 2,
+        lh: 2,
+        min: 2,
+        max: 2,
+        sub: TX_8X8 as u8,
+        ctx: 2,
     },
-    {
-        let mut init = TxfmInfo {
-            w: 8,
-            h: 8,
-            lw: 3,
-            lh: 3,
-            min: 3,
-            max: 3,
-            sub: TX_16X16 as u8,
-            ctx: 3,
-        };
-        init
+    TxfmInfo {
+        w: 8,
+        h: 8,
+        lw: 3,
+        lh: 3,
+        min: 3,
+        max: 3,
+        sub: TX_16X16 as u8,
+        ctx: 3,
     },
-    {
-        let mut init = TxfmInfo {
-            w: 16,
-            h: 16,
-            lw: 4,
-            lh: 4,
-            min: 4,
-            max: 4,
-            sub: TX_32X32 as u8,
-            ctx: 4,
-        };
-        init
+    TxfmInfo {
+        w: 16,
+        h: 16,
+        lw: 4,
+        lh: 4,
+        min: 4,
+        max: 4,
+        sub: TX_32X32 as u8,
+        ctx: 4,
     },
-    {
-        let mut init = TxfmInfo {
-            w: 1,
-            h: 2,
-            lw: 0,
-            lh: 1,
-            min: 0,
-            max: 1,
-            sub: TX_4X4 as u8,
-            ctx: 1,
-        };
-        init
+    TxfmInfo {
+        w: 1,
+        h: 2,
+        lw: 0,
+        lh: 1,
+        min: 0,
+        max: 1,
+        sub: TX_4X4 as u8,
+        ctx: 1,
     },
-    {
-        let mut init = TxfmInfo {
-            w: 2,
-            h: 1,
-            lw: 1,
-            lh: 0,
-            min: 0,
-            max: 1,
-            sub: TX_4X4 as u8,
-            ctx: 1,
-        };
-        init
+    TxfmInfo {
+        w: 2,
+        h: 1,
+        lw: 1,
+        lh: 0,
+        min: 0,
+        max: 1,
+        sub: TX_4X4 as u8,
+        ctx: 1,
     },
-    {
-        let mut init = TxfmInfo {
-            w: 2,
-            h: 4,
-            lw: 1,
-            lh: 2,
-            min: 1,
-            max: 2,
-            sub: TX_8X8 as u8,
-            ctx: 2,
-        };
-        init
+    TxfmInfo {
+        w: 2,
+        h: 4,
+        lw: 1,
+        lh: 2,
+        min: 1,
+        max: 2,
+        sub: TX_8X8 as u8,
+        ctx: 2,
     },
-    {
-        let mut init = TxfmInfo {
-            w: 4,
-            h: 2,
-            lw: 2,
-            lh: 1,
-            min: 1,
-            max: 2,
-            sub: TX_8X8 as u8,
-            ctx: 2,
-        };
-        init
+    TxfmInfo {
+        w: 4,
+        h: 2,
+        lw: 2,
+        lh: 1,
+        min: 1,
+        max: 2,
+        sub: TX_8X8 as u8,
+        ctx: 2,
     },
-    {
-        let mut init = TxfmInfo {
-            w: 4,
-            h: 8,
-            lw: 2,
-            lh: 3,
-            min: 2,
-            max: 3,
-            sub: TX_16X16 as u8,
-            ctx: 3,
-        };
-        init
+    TxfmInfo {
+        w: 4,
+        h: 8,
+        lw: 2,
+        lh: 3,
+        min: 2,
+        max: 3,
+        sub: TX_16X16 as u8,
+        ctx: 3,
     },
-    {
-        let mut init = TxfmInfo {
-            w: 8,
-            h: 4,
-            lw: 3,
-            lh: 2,
-            min: 2,
-            max: 3,
-            sub: TX_16X16 as u8,
-            ctx: 3,
-        };
-        init
+    TxfmInfo {
+        w: 8,
+        h: 4,
+        lw: 3,
+        lh: 2,
+        min: 2,
+        max: 3,
+        sub: TX_16X16 as u8,
+        ctx: 3,
     },
-    {
-        let mut init = TxfmInfo {
-            w: 8,
-            h: 16,
-            lw: 3,
-            lh: 4,
-            min: 3,
-            max: 4,
-            sub: TX_32X32 as u8,
-            ctx: 4,
-        };
-        init
+    TxfmInfo {
+        w: 8,
+        h: 16,
+        lw: 3,
+        lh: 4,
+        min: 3,
+        max: 4,
+        sub: TX_32X32 as u8,
+        ctx: 4,
     },
-    {
-        let mut init = TxfmInfo {
-            w: 16,
-            h: 8,
-            lw: 4,
-            lh: 3,
-            min: 3,
-            max: 4,
-            sub: TX_32X32 as u8,
-            ctx: 4,
-        };
-        init
+    TxfmInfo {
+        w: 16,
+        h: 8,
+        lw: 4,
+        lh: 3,
+        min: 3,
+        max: 4,
+        sub: TX_32X32 as u8,
+        ctx: 4,
     },
-    {
-        let mut init = TxfmInfo {
-            w: 1,
-            h: 4,
-            lw: 0,
-            lh: 2,
-            min: 0,
-            max: 2,
-            sub: RTX_4X8 as u8,
-            ctx: 1,
-        };
-        init
+    TxfmInfo {
+        w: 1,
+        h: 4,
+        lw: 0,
+        lh: 2,
+        min: 0,
+        max: 2,
+        sub: RTX_4X8 as u8,
+        ctx: 1,
     },
-    {
-        let mut init = TxfmInfo {
-            w: 4,
-            h: 1,
-            lw: 2,
-            lh: 0,
-            min: 0,
-            max: 2,
-            sub: RTX_8X4 as u8,
-            ctx: 1,
-        };
-        init
+    TxfmInfo {
+        w: 4,
+        h: 1,
+        lw: 2,
+        lh: 0,
+        min: 0,
+        max: 2,
+        sub: RTX_8X4 as u8,
+        ctx: 1,
     },
-    {
-        let mut init = TxfmInfo {
-            w: 2,
-            h: 8,
-            lw: 1,
-            lh: 3,
-            min: 1,
-            max: 3,
-            sub: RTX_8X16 as u8,
-            ctx: 2,
-        };
-        init
+    TxfmInfo {
+        w: 2,
+        h: 8,
+        lw: 1,
+        lh: 3,
+        min: 1,
+        max: 3,
+        sub: RTX_8X16 as u8,
+        ctx: 2,
     },
-    {
-        let mut init = TxfmInfo {
-            w: 8,
-            h: 2,
-            lw: 3,
-            lh: 1,
-            min: 1,
-            max: 3,
-            sub: RTX_16X8 as u8,
-            ctx: 2,
-        };
-        init
+    TxfmInfo {
+        w: 8,
+        h: 2,
+        lw: 3,
+        lh: 1,
+        min: 1,
+        max: 3,
+        sub: RTX_16X8 as u8,
+        ctx: 2,
     },
-    {
-        let mut init = TxfmInfo {
-            w: 4,
-            h: 16,
-            lw: 2,
-            lh: 4,
-            min: 2,
-            max: 4,
-            sub: RTX_16X32 as u8,
-            ctx: 3,
-        };
-        init
+    TxfmInfo {
+        w: 4,
+        h: 16,
+        lw: 2,
+        lh: 4,
+        min: 2,
+        max: 4,
+        sub: RTX_16X32 as u8,
+        ctx: 3,
     },
-    {
-        let mut init = TxfmInfo {
-            w: 16,
-            h: 4,
-            lw: 4,
-            lh: 2,
-            min: 2,
-            max: 4,
-            sub: RTX_32X16 as u8,
-            ctx: 3,
-        };
-        init
+    TxfmInfo {
+        w: 16,
+        h: 4,
+        lw: 4,
+        lh: 2,
+        min: 2,
+        max: 4,
+        sub: RTX_32X16 as u8,
+        ctx: 3,
     },
 ];
 
