@@ -1822,9 +1822,7 @@ fn init_quant_tables(
     qidx: libc::c_int,
     mut dq: &mut [[[uint16_t; 2]; 3]],
 ) {
-    // Safety: `dav1d_dq_tbl: [[[u16; 2]; 256]; 3]` is valid for all bit patterns,
-    // as ultimately they're all `u16`s.
-    let tbl = unsafe { &dav1d_dq_tbl };
+    let tbl = &dav1d_dq_tbl;
 
     let segmentation_is_enabled = frame_hdr.segmentation.enabled != 0;
     let len = if segmentation_is_enabled { 8 } else { 1 };
