@@ -47,7 +47,6 @@ extern "C" {
     );
     fn dav1d_data_props_copy(dst: *mut Dav1dDataProps, src: *const Dav1dDataProps);
     fn dav1d_data_unref_internal(buf: *mut Dav1dData);
-    static dav1d_ymode_size_context: [uint8_t; 22];
     static dav1d_filter_2d: [[uint8_t; 4]; 4];
     static dav1d_filter_dir: [[uint8_t; 2]; 10];
     static dav1d_intra_mode_context: [uint8_t; 13];
@@ -306,6 +305,7 @@ use crate::src::tables::dav1d_comp_inter_pred_modes;
 use crate::src::tables::dav1d_max_txfm_size_for_bs;
 use crate::src::tables::dav1d_partition_type_count;
 use crate::src::tables::dav1d_txfm_dimensions;
+use crate::src::tables::dav1d_ymode_size_context;
 
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
