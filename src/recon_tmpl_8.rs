@@ -11,7 +11,6 @@ extern "C" {
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
     fn printf(_: *const libc::c_char, _: ...) -> libc::c_int;
     static dav1d_filter_mode_to_y_mode: [uint8_t; 5];
-    static dav1d_skip_ctx: [[uint8_t; 5]; 5];
     static dav1d_tx_type_class: [uint8_t; 17];
     static dav1d_filter_2d: [[uint8_t; 4]; 4];
     fn dav1d_msac_decode_symbol_adapt4(
@@ -81,6 +80,7 @@ extern "C" {
 
 use crate::src::tables::dav1d_block_dimensions;
 use crate::src::tables::dav1d_lo_ctx_offsets;
+use crate::src::tables::dav1d_skip_ctx;
 use crate::src::tables::dav1d_tx_types_per_set;
 use crate::src::tables::dav1d_txfm_dimensions;
 use crate::src::tables::dav1d_txtp_from_uvmode;
