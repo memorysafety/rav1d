@@ -4316,69 +4316,62 @@ unsafe fn decode_b(
     }
 
     if b.skip_mode != 0 {
-        b.intra = 0 as libc::c_int as uint8_t;
-    } else if frame_hdr.frame_type as libc::c_uint & 1 as libc::c_uint != 0 {
+        b.intra = 0;
+    } else if is_inter_or_switch(frame_hdr) {
         if let Some(seg) = seg && (seg.r#ref >= 0 || seg.globalmv != 0) {
             b.intra = (seg.r#ref == 0) as uint8_t;
         } else {
-            let ictx = get_intra_ctx(
-                t.a,
-                &mut t.l,
-                by4,
-                bx4,
-                have_top,
-                have_left,
-            );
-            b
-                .intra = (dav1d_msac_decode_bool_adapt(
+            let ictx = get_intra_ctx(t.a, &mut t.l, by4, bx4, have_top, have_left);
+            b.intra = (dav1d_msac_decode_bool_adapt(
                 &mut ts.msac,
-                (ts.cdf.m.intra[ictx as usize]).as_mut_ptr(),
-            ) == 0) as libc::c_int as uint8_t;
-            if DEBUG_BLOCK_INFO(f, t)
-            {
-                printf(
-                    b"Post-intra[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
-                    b.intra as libc::c_int,
-                    ts.msac.rng,
-                );
+                ts.cdf.m.intra[ictx as usize].as_mut_ptr(),
+            ) == 0) as uint8_t;
+
+            if DEBUG_BLOCK_INFO(f, t) {
+                println!("Post-intra[{}]: r={}", b.intra, ts.msac.rng);
             }
         }
     } else if frame_hdr.allow_intrabc != 0 {
-        b.intra = (dav1d_msac_decode_bool_adapt(&mut ts.msac, (ts.cdf.m.intrabc.0).as_mut_ptr())
-            == 0) as libc::c_int as uint8_t;
+        b.intra = (dav1d_msac_decode_bool_adapt(
+            &mut ts.msac,
+            ts.cdf.m.intrabc.0.as_mut_ptr(),
+        ) == 0)  as uint8_t;
+
         if DEBUG_BLOCK_INFO(f, t) {
-            printf(
-                b"Post-intrabcflag[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
-                b.intra as libc::c_int,
-                ts.msac.rng,
-            );
+            println!("Post-intrabcflag[{}]: r={}", b.intra, ts.msac.rng);
         }
     } else {
-        b.intra = 1 as libc::c_int as uint8_t;
+        b.intra = 1;
     }
+
+    // intra/inter-specific stuff
     if b.intra != 0 {
-        let ymode_cdf: *mut uint16_t =
-            if frame_hdr.frame_type as libc::c_uint & 1 as libc::c_uint != 0 {
-                (ts.cdf.m.y_mode[dav1d_ymode_size_context[bs as usize] as usize]).as_mut_ptr()
-            } else {
-                (ts.cdf.kfym[dav1d_intra_mode_context[(*t.a).mode[bx4 as usize] as usize] as usize]
-                    [dav1d_intra_mode_context[t.l.mode[by4 as usize] as usize] as usize])
-                    .as_mut_ptr()
-            };
-        b.c2rust_unnamed.c2rust_unnamed.y_mode = dav1d_msac_decode_symbol_adapt16(
+        let ymode_cdf = if frame_hdr.frame_type & 1 != 0 {
+            ts.cdf.m.y_mode[dav1d_ymode_size_context[bs as usize] as usize].as_mut_ptr()
+        } else {
+            ts
+                .cdf
+                .kfym
+                [dav1d_intra_mode_context[(*t.a).mode[bx4 as usize] as usize] as usize]
+                [dav1d_intra_mode_context[t.l.mode[by4 as usize] as usize] as usize]
+                .as_mut_ptr()
+        };
+
+        *b.y_mode_mut() = dav1d_msac_decode_symbol_adapt16(
             &mut ts.msac,
             ymode_cdf,
-            (N_INTRA_PRED_MODES as libc::c_int - 1) as size_t,
+            (N_INTRA_PRED_MODES - 1) as size_t,
         ) as uint8_t;
+
         if DEBUG_BLOCK_INFO(f, t) {
-            printf(
-                b"Post-ymode[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
-                b.c2rust_unnamed.c2rust_unnamed.y_mode as libc::c_int,
-                ts.msac.rng,
-            );
+            println!("Post-ymode[{}]: r={}", b.y_mode(), ts.msac.rng);
         }
-        if *b_dim.offset(2) as libc::c_int + *b_dim.offset(3) as libc::c_int >= 2
-            && b.c2rust_unnamed.c2rust_unnamed.y_mode as libc::c_int >= VERT_PRED as libc::c_int
+
+        // angle delta
+        if *b_dim.offset(2 as libc::c_int as isize) as libc::c_int
+            + *b_dim.offset(3 as libc::c_int as isize) as libc::c_int >= 2 as libc::c_int
+            && b.c2rust_unnamed.c2rust_unnamed.y_mode as libc::c_int
+                >= VERT_PRED as libc::c_int
             && b.c2rust_unnamed.c2rust_unnamed.y_mode as libc::c_int
                 <= VERT_LEFT_PRED as libc::c_int
         {

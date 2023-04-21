@@ -315,6 +315,10 @@ impl Av1Block {
         self.c2rust_unnamed.c2rust_unnamed.y_mode
     }
 
+    pub unsafe fn y_mode_mut(&mut self) -> &mut u8 {
+        &mut self.c2rust_unnamed.c2rust_unnamed.y_mode
+    }
+
     pub unsafe fn matrix(&self) -> &[i16; 4] {
         &self
             .c2rust_unnamed
