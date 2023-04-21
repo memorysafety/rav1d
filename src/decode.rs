@@ -4220,7 +4220,7 @@ unsafe fn decode_b(
                     BS_64x64
                 })
                 || b.skip == 0);
-        let mut prev_delta_lf = ts.last_delta_lf;
+        let prev_delta_lf = ts.last_delta_lf;
 
         if have_delta_q {
             let mut delta_q =
@@ -4229,9 +4229,8 @@ unsafe fn decode_b(
 
             if delta_q == 3 {
                 let n_bits = 1 + dav1d_msac_decode_bools(&mut ts.msac, 3);
-                delta_q = dav1d_msac_decode_bools(&mut ts.msac, n_bits) as libc::c_int
-                    + 1
-                    + (1 << n_bits);
+                delta_q = (dav1d_msac_decode_bools(&mut ts.msac, n_bits) + 1 + (1 << n_bits))
+                    as libc::c_int;
             }
 
             if delta_q != 0 {
@@ -4271,10 +4270,9 @@ unsafe fn decode_b(
 
                     if delta_lf == 3 {
                         let n_bits = 1 + dav1d_msac_decode_bools(&mut ts.msac, 3);
-                        delta_lf = dav1d_msac_decode_bools(&mut ts.msac, n_bits as libc::c_uint)
-                            as libc::c_int
+                        delta_lf = (dav1d_msac_decode_bools(&mut ts.msac, n_bits as libc::c_uint)
                             + 1
-                            + (1 << n_bits);
+                            + (1 << n_bits)) as libc::c_int;
                     }
 
                     if delta_lf != 0 {
