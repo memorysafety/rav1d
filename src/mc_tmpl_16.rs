@@ -4,7 +4,6 @@ use ::libc;
 use cfg_if::cfg_if;
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
-    static dav1d_mc_warp_filter: [[int8_t; 8]; 193];
     static dav1d_resize_filter: [[int8_t; 8]; 64];
     static dav1d_obmc_masks: [uint8_t; 64];
 }
@@ -1852,6 +1851,7 @@ extern "C" {
 }
 
 use crate::src::tables::dav1d_mc_subpel_filters;
+use crate::src::tables::dav1d_mc_warp_filter;
 
 pub type pixel = uint16_t;
 
