@@ -1,7 +1,7 @@
 use crate::include::stdint::*;
 use ::libc;
 
-pub static mut dav1d_dq_tbl: [[[uint16_t; 2]; 256]; 3] = [
+pub static dav1d_dq_tbl: [[[uint16_t; 2]; 256]; 3] = [
     [
         [4 as libc::c_int as uint16_t, 4 as libc::c_int as uint16_t],
         [8 as libc::c_int as uint16_t, 8 as libc::c_int as uint16_t],
