@@ -5,7 +5,6 @@ use cfg_if::cfg_if;
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
-    static dav1d_sm_weights: [uint8_t; 128];
     static dav1d_dr_intra_derivative: [uint16_t; 44];
     static dav1d_filter_intra_taps: [[int8_t; 64]; 5];
 }
@@ -774,6 +773,8 @@ extern "C" {
         h: libc::c_int,
     );
 }
+
+use crate::src::tables::dav1d_sm_weights;
 
 pub const DAV1D_X86_CPU_FLAG_AVX512ICL: CpuFlags = 16;
 pub const DAV1D_X86_CPU_FLAG_SSE2: CpuFlags = 1;
