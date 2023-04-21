@@ -2,9 +2,6 @@ use crate::include::stddef::*;
 use crate::include::stdint::*;
 use ::libc;
 use cfg_if::cfg_if;
-extern "C" {
-    static dav1d_cdef_directions: [[int8_t; 2]; 12];
-}
 
 #[cfg(feature = "asm")]
 extern "C" {
@@ -261,6 +258,8 @@ extern "C" {
         edges: size_t,
     );
 }
+
+use crate::src::tables::dav1d_cdef_directions;
 
 pub type pixel = uint8_t;
 use crate::src::cdef::CdefEdgeFlags;
