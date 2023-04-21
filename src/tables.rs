@@ -6,7 +6,6 @@ use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SHARP;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SMOOTH;
 use crate::include::dav1d::headers::DAV1D_FILTER_BILINEAR;
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_IDENTITY;
-use crate::include::stdint::*;
 use crate::src::align::Align64;
 use crate::src::levels::ADST_ADST;
 use crate::src::levels::ADST_DCT;
@@ -95,17 +94,17 @@ use crate::src::levels::N_SUB8X8_PARTITIONS;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct TxfmInfo {
-    pub w: uint8_t,
-    pub h: uint8_t,
-    pub lw: uint8_t,
-    pub lh: uint8_t,
-    pub min: uint8_t,
-    pub max: uint8_t,
-    pub sub: uint8_t,
-    pub ctx: uint8_t,
+    pub w: u8,
+    pub h: u8,
+    pub lw: u8,
+    pub lh: u8,
+    pub min: u8,
+    pub max: u8,
+    pub sub: u8,
+    pub ctx: u8,
 }
 
-pub static dav1d_al_part_ctx: [[[uint8_t; 10]; 5]; 2] = [
+pub static dav1d_al_part_ctx: [[[u8; 10]; 5]; 2] = [
     [
         [0x00, 0x00, 0x10, 0xff, 0x00, 0x10, 0x10, 0x10, 0xff, 0xff],
         [0x10, 0x10, 0x18, 0xff, 0x10, 0x18, 0x18, 0x18, 0x10, 0x1c],
@@ -122,60 +121,60 @@ pub static dav1d_al_part_ctx: [[[uint8_t; 10]; 5]; 2] = [
     ],
 ];
 
-pub static dav1d_block_sizes: [[[uint8_t; 2]; 10]; 5] = [
+pub static dav1d_block_sizes: [[[u8; 2]; 10]; 5] = [
     [
-        [BS_128x128 as uint8_t, 0],
-        [BS_128x64 as uint8_t, 0],
-        [BS_64x128 as uint8_t, 0],
+        [BS_128x128 as u8, 0],
+        [BS_128x64 as u8, 0],
+        [BS_64x128 as u8, 0],
         [0; 2],
-        [BS_64x64 as uint8_t, BS_128x64 as uint8_t],
-        [BS_128x64 as uint8_t, BS_64x64 as uint8_t],
-        [BS_64x64 as uint8_t, BS_64x128 as uint8_t],
-        [BS_64x128 as uint8_t, BS_64x64 as uint8_t],
+        [BS_64x64 as u8, BS_128x64 as u8],
+        [BS_128x64 as u8, BS_64x64 as u8],
+        [BS_64x64 as u8, BS_64x128 as u8],
+        [BS_64x128 as u8, BS_64x64 as u8],
         [0; 2],
         [0; 2],
     ],
     [
-        [BS_64x64 as uint8_t, 0],
-        [BS_64x32 as uint8_t, 0],
-        [BS_32x64 as uint8_t, 0],
+        [BS_64x64 as u8, 0],
+        [BS_64x32 as u8, 0],
+        [BS_32x64 as u8, 0],
         [0; 2],
-        [BS_32x32 as uint8_t, BS_64x32 as uint8_t],
-        [BS_64x32 as uint8_t, BS_32x32 as uint8_t],
-        [BS_32x32 as uint8_t, BS_32x64 as uint8_t],
-        [BS_32x64 as uint8_t, BS_32x32 as uint8_t],
-        [BS_64x16 as uint8_t, 0],
-        [BS_16x64 as uint8_t, 0],
+        [BS_32x32 as u8, BS_64x32 as u8],
+        [BS_64x32 as u8, BS_32x32 as u8],
+        [BS_32x32 as u8, BS_32x64 as u8],
+        [BS_32x64 as u8, BS_32x32 as u8],
+        [BS_64x16 as u8, 0],
+        [BS_16x64 as u8, 0],
     ],
     [
-        [BS_32x32 as uint8_t, 0],
-        [BS_32x16 as uint8_t, 0],
-        [BS_16x32 as uint8_t, 0],
+        [BS_32x32 as u8, 0],
+        [BS_32x16 as u8, 0],
+        [BS_16x32 as u8, 0],
         [0; 2],
-        [BS_16x16 as uint8_t, BS_32x16 as uint8_t],
-        [BS_32x16 as uint8_t, BS_16x16 as uint8_t],
-        [BS_16x16 as uint8_t, BS_16x32 as uint8_t],
-        [BS_16x32 as uint8_t, BS_16x16 as uint8_t],
-        [BS_32x8 as uint8_t, 0],
-        [BS_8x32 as uint8_t, 0],
+        [BS_16x16 as u8, BS_32x16 as u8],
+        [BS_32x16 as u8, BS_16x16 as u8],
+        [BS_16x16 as u8, BS_16x32 as u8],
+        [BS_16x32 as u8, BS_16x16 as u8],
+        [BS_32x8 as u8, 0],
+        [BS_8x32 as u8, 0],
     ],
     [
-        [BS_16x16 as uint8_t, 0],
-        [BS_16x8 as uint8_t, 0],
-        [BS_8x16 as uint8_t, 0],
+        [BS_16x16 as u8, 0],
+        [BS_16x8 as u8, 0],
+        [BS_8x16 as u8, 0],
         [0; 2],
-        [BS_8x8 as uint8_t, BS_16x8 as uint8_t],
-        [BS_16x8 as uint8_t, BS_8x8 as uint8_t],
-        [BS_8x8 as uint8_t, BS_8x16 as uint8_t],
-        [BS_8x16 as uint8_t, BS_8x8 as uint8_t],
-        [BS_16x4 as uint8_t, 0],
-        [BS_4x16 as uint8_t, 0],
+        [BS_8x8 as u8, BS_16x8 as u8],
+        [BS_16x8 as u8, BS_8x8 as u8],
+        [BS_8x8 as u8, BS_8x16 as u8],
+        [BS_8x16 as u8, BS_8x8 as u8],
+        [BS_16x4 as u8, 0],
+        [BS_4x16 as u8, 0],
     ],
     [
-        [BS_8x8 as uint8_t, 0],
-        [BS_8x4 as uint8_t, 0],
-        [BS_4x8 as uint8_t, 0],
-        [BS_4x4 as uint8_t, 0],
+        [BS_8x8 as u8, 0],
+        [BS_8x4 as u8, 0],
+        [BS_4x8 as u8, 0],
+        [BS_4x4 as u8, 0],
         [0; 2],
         [0; 2],
         [0; 2],
@@ -185,7 +184,7 @@ pub static dav1d_block_sizes: [[[uint8_t; 2]; 10]; 5] = [
     ],
 ];
 
-pub static dav1d_block_dimensions: [[uint8_t; 4]; 22] = [
+pub static dav1d_block_dimensions: [[u8; 4]; 22] = [
     [32, 32, 5, 5],
     [32, 16, 5, 4],
     [16, 32, 4, 5],
@@ -232,7 +231,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; 19] = [
             lh: 1,
             min: 1,
             max: 1,
-            sub: TX_4X4 as uint8_t,
+            sub: TX_4X4 as u8,
             ctx: 1,
         };
         init
@@ -245,7 +244,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; 19] = [
             lh: 2,
             min: 2,
             max: 2,
-            sub: TX_8X8 as uint8_t,
+            sub: TX_8X8 as u8,
             ctx: 2,
         };
         init
@@ -258,7 +257,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; 19] = [
             lh: 3,
             min: 3,
             max: 3,
-            sub: TX_16X16 as uint8_t,
+            sub: TX_16X16 as u8,
             ctx: 3,
         };
         init
@@ -271,7 +270,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; 19] = [
             lh: 4,
             min: 4,
             max: 4,
-            sub: TX_32X32 as uint8_t,
+            sub: TX_32X32 as u8,
             ctx: 4,
         };
         init
@@ -284,7 +283,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; 19] = [
             lh: 1,
             min: 0,
             max: 1,
-            sub: TX_4X4 as uint8_t,
+            sub: TX_4X4 as u8,
             ctx: 1,
         };
         init
@@ -297,7 +296,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; 19] = [
             lh: 0,
             min: 0,
             max: 1,
-            sub: TX_4X4 as uint8_t,
+            sub: TX_4X4 as u8,
             ctx: 1,
         };
         init
@@ -310,7 +309,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; 19] = [
             lh: 2,
             min: 1,
             max: 2,
-            sub: TX_8X8 as uint8_t,
+            sub: TX_8X8 as u8,
             ctx: 2,
         };
         init
@@ -323,7 +322,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; 19] = [
             lh: 1,
             min: 1,
             max: 2,
-            sub: TX_8X8 as uint8_t,
+            sub: TX_8X8 as u8,
             ctx: 2,
         };
         init
@@ -336,7 +335,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; 19] = [
             lh: 3,
             min: 2,
             max: 3,
-            sub: TX_16X16 as uint8_t,
+            sub: TX_16X16 as u8,
             ctx: 3,
         };
         init
@@ -349,7 +348,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; 19] = [
             lh: 2,
             min: 2,
             max: 3,
-            sub: TX_16X16 as uint8_t,
+            sub: TX_16X16 as u8,
             ctx: 3,
         };
         init
@@ -362,7 +361,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; 19] = [
             lh: 4,
             min: 3,
             max: 4,
-            sub: TX_32X32 as uint8_t,
+            sub: TX_32X32 as u8,
             ctx: 4,
         };
         init
@@ -375,7 +374,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; 19] = [
             lh: 3,
             min: 3,
             max: 4,
-            sub: TX_32X32 as uint8_t,
+            sub: TX_32X32 as u8,
             ctx: 4,
         };
         init
@@ -388,7 +387,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; 19] = [
             lh: 2,
             min: 0,
             max: 2,
-            sub: RTX_4X8 as uint8_t,
+            sub: RTX_4X8 as u8,
             ctx: 1,
         };
         init
@@ -401,7 +400,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; 19] = [
             lh: 0,
             min: 0,
             max: 2,
-            sub: RTX_8X4 as uint8_t,
+            sub: RTX_8X4 as u8,
             ctx: 1,
         };
         init
@@ -414,7 +413,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; 19] = [
             lh: 3,
             min: 1,
             max: 3,
-            sub: RTX_8X16 as uint8_t,
+            sub: RTX_8X16 as u8,
             ctx: 2,
         };
         init
@@ -427,7 +426,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; 19] = [
             lh: 1,
             min: 1,
             max: 3,
-            sub: RTX_16X8 as uint8_t,
+            sub: RTX_16X8 as u8,
             ctx: 2,
         };
         init
@@ -440,7 +439,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; 19] = [
             lh: 4,
             min: 2,
             max: 4,
-            sub: RTX_16X32 as uint8_t,
+            sub: RTX_16X32 as u8,
             ctx: 3,
         };
         init
@@ -453,227 +452,162 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; 19] = [
             lh: 2,
             min: 2,
             max: 4,
-            sub: RTX_32X16 as uint8_t,
+            sub: RTX_32X16 as u8,
             ctx: 3,
         };
         init
     },
 ];
 
-pub static dav1d_max_txfm_size_for_bs: [[uint8_t; 4]; 22] = [
+pub static dav1d_max_txfm_size_for_bs: [[u8; 4]; 22] = [
     [
-        TX_64X64 as uint8_t,
-        TX_32X32 as uint8_t,
-        TX_32X32 as uint8_t,
-        TX_32X32 as uint8_t,
+        TX_64X64 as u8,
+        TX_32X32 as u8,
+        TX_32X32 as u8,
+        TX_32X32 as u8,
     ],
     [
-        TX_64X64 as uint8_t,
-        TX_32X32 as uint8_t,
-        TX_32X32 as uint8_t,
-        TX_32X32 as uint8_t,
+        TX_64X64 as u8,
+        TX_32X32 as u8,
+        TX_32X32 as u8,
+        TX_32X32 as u8,
+    ],
+    [TX_64X64 as u8, TX_32X32 as u8, 0, TX_32X32 as u8],
+    [
+        TX_64X64 as u8,
+        TX_32X32 as u8,
+        TX_32X32 as u8,
+        TX_32X32 as u8,
     ],
     [
-        TX_64X64 as uint8_t,
-        TX_32X32 as uint8_t,
-        0,
-        TX_32X32 as uint8_t,
+        RTX_64X32 as u8,
+        RTX_32X16 as u8,
+        TX_32X32 as u8,
+        TX_32X32 as u8,
     ],
     [
-        TX_64X64 as uint8_t,
-        TX_32X32 as uint8_t,
-        TX_32X32 as uint8_t,
-        TX_32X32 as uint8_t,
+        RTX_64X16 as u8,
+        RTX_32X8 as u8,
+        RTX_32X16 as u8,
+        RTX_32X16 as u8,
+    ],
+    [RTX_32X64 as u8, RTX_16X32 as u8, 0, TX_32X32 as u8],
+    [
+        TX_32X32 as u8,
+        TX_16X16 as u8,
+        RTX_16X32 as u8,
+        TX_32X32 as u8,
     ],
     [
-        RTX_64X32 as uint8_t,
-        RTX_32X16 as uint8_t,
-        TX_32X32 as uint8_t,
-        TX_32X32 as uint8_t,
+        RTX_32X16 as u8,
+        RTX_16X8 as u8,
+        TX_16X16 as u8,
+        RTX_32X16 as u8,
     ],
     [
-        RTX_64X16 as uint8_t,
-        RTX_32X8 as uint8_t,
-        RTX_32X16 as uint8_t,
-        RTX_32X16 as uint8_t,
+        RTX_32X8 as u8,
+        RTX_16X4 as u8,
+        RTX_16X8 as u8,
+        RTX_32X8 as u8,
     ],
-    [
-        RTX_32X64 as uint8_t,
-        RTX_16X32 as uint8_t,
-        0,
-        TX_32X32 as uint8_t,
-    ],
-    [
-        TX_32X32 as uint8_t,
-        TX_16X16 as uint8_t,
-        RTX_16X32 as uint8_t,
-        TX_32X32 as uint8_t,
-    ],
-    [
-        RTX_32X16 as uint8_t,
-        RTX_16X8 as uint8_t,
-        TX_16X16 as uint8_t,
-        RTX_32X16 as uint8_t,
-    ],
-    [
-        RTX_32X8 as uint8_t,
-        RTX_16X4 as uint8_t,
-        RTX_16X8 as uint8_t,
-        RTX_32X8 as uint8_t,
-    ],
-    [
-        RTX_16X64 as uint8_t,
-        RTX_8X32 as uint8_t,
-        0,
-        RTX_16X32 as uint8_t,
-    ],
-    [
-        RTX_16X32 as uint8_t,
-        RTX_8X16 as uint8_t,
-        0,
-        RTX_16X32 as uint8_t,
-    ],
-    [
-        TX_16X16 as uint8_t,
-        TX_8X8 as uint8_t,
-        RTX_8X16 as uint8_t,
-        TX_16X16 as uint8_t,
-    ],
-    [
-        RTX_16X8 as uint8_t,
-        RTX_8X4 as uint8_t,
-        TX_8X8 as uint8_t,
-        RTX_16X8 as uint8_t,
-    ],
-    [
-        RTX_16X4 as uint8_t,
-        RTX_8X4 as uint8_t,
-        RTX_8X4 as uint8_t,
-        RTX_16X4 as uint8_t,
-    ],
-    [
-        RTX_8X32 as uint8_t,
-        RTX_4X16 as uint8_t,
-        0,
-        RTX_8X32 as uint8_t,
-    ],
-    [
-        RTX_8X16 as uint8_t,
-        RTX_4X8 as uint8_t,
-        0,
-        RTX_8X16 as uint8_t,
-    ],
-    [
-        TX_8X8 as uint8_t,
-        TX_4X4 as uint8_t,
-        RTX_4X8 as uint8_t,
-        TX_8X8 as uint8_t,
-    ],
-    [
-        RTX_8X4 as uint8_t,
-        TX_4X4 as uint8_t,
-        TX_4X4 as uint8_t,
-        RTX_8X4 as uint8_t,
-    ],
-    [
-        RTX_4X16 as uint8_t,
-        RTX_4X8 as uint8_t,
-        0,
-        RTX_4X16 as uint8_t,
-    ],
-    [RTX_4X8 as uint8_t, TX_4X4 as uint8_t, 0, RTX_4X8 as uint8_t],
-    [
-        TX_4X4 as uint8_t,
-        TX_4X4 as uint8_t,
-        TX_4X4 as uint8_t,
-        TX_4X4 as uint8_t,
-    ],
+    [RTX_16X64 as u8, RTX_8X32 as u8, 0, RTX_16X32 as u8],
+    [RTX_16X32 as u8, RTX_8X16 as u8, 0, RTX_16X32 as u8],
+    [TX_16X16 as u8, TX_8X8 as u8, RTX_8X16 as u8, TX_16X16 as u8],
+    [RTX_16X8 as u8, RTX_8X4 as u8, TX_8X8 as u8, RTX_16X8 as u8],
+    [RTX_16X4 as u8, RTX_8X4 as u8, RTX_8X4 as u8, RTX_16X4 as u8],
+    [RTX_8X32 as u8, RTX_4X16 as u8, 0, RTX_8X32 as u8],
+    [RTX_8X16 as u8, RTX_4X8 as u8, 0, RTX_8X16 as u8],
+    [TX_8X8 as u8, TX_4X4 as u8, RTX_4X8 as u8, TX_8X8 as u8],
+    [RTX_8X4 as u8, TX_4X4 as u8, TX_4X4 as u8, RTX_8X4 as u8],
+    [RTX_4X16 as u8, RTX_4X8 as u8, 0, RTX_4X16 as u8],
+    [RTX_4X8 as u8, TX_4X4 as u8, 0, RTX_4X8 as u8],
+    [TX_4X4 as u8, TX_4X4 as u8, TX_4X4 as u8, TX_4X4 as u8],
 ];
 
-pub static dav1d_txtp_from_uvmode: [uint8_t; 14] = [
-    DCT_DCT as uint8_t,
-    ADST_DCT as uint8_t,
-    DCT_ADST as uint8_t,
-    DCT_DCT as uint8_t,
-    ADST_ADST as uint8_t,
-    ADST_DCT as uint8_t,
-    DCT_ADST as uint8_t,
-    DCT_ADST as uint8_t,
-    ADST_DCT as uint8_t,
-    ADST_ADST as uint8_t,
-    ADST_DCT as uint8_t,
-    DCT_ADST as uint8_t,
-    ADST_ADST as uint8_t,
+pub static dav1d_txtp_from_uvmode: [u8; 14] = [
+    DCT_DCT as u8,
+    ADST_DCT as u8,
+    DCT_ADST as u8,
+    DCT_DCT as u8,
+    ADST_ADST as u8,
+    ADST_DCT as u8,
+    DCT_ADST as u8,
+    DCT_ADST as u8,
+    ADST_DCT as u8,
+    ADST_ADST as u8,
+    ADST_DCT as u8,
+    DCT_ADST as u8,
+    ADST_ADST as u8,
     0,
 ];
 
-pub static dav1d_comp_inter_pred_modes: [[uint8_t; 2]; 8] = [
-    [NEARESTMV as uint8_t, NEARESTMV as uint8_t],
-    [NEARMV as uint8_t, NEARMV as uint8_t],
-    [NEARESTMV as uint8_t, NEWMV as uint8_t],
-    [NEWMV as uint8_t, NEARESTMV as uint8_t],
-    [NEARMV as uint8_t, NEWMV as uint8_t],
-    [NEWMV as uint8_t, NEARMV as uint8_t],
-    [GLOBALMV as uint8_t, GLOBALMV as uint8_t],
-    [NEWMV as uint8_t, NEWMV as uint8_t],
+pub static dav1d_comp_inter_pred_modes: [[u8; 2]; 8] = [
+    [NEARESTMV as u8, NEARESTMV as u8],
+    [NEARMV as u8, NEARMV as u8],
+    [NEARESTMV as u8, NEWMV as u8],
+    [NEWMV as u8, NEARESTMV as u8],
+    [NEARMV as u8, NEWMV as u8],
+    [NEWMV as u8, NEARMV as u8],
+    [GLOBALMV as u8, GLOBALMV as u8],
+    [NEWMV as u8, NEWMV as u8],
 ];
 
-pub static dav1d_partition_type_count: [uint8_t; 5] = [
-    N_PARTITIONS as uint8_t - 3,
-    N_PARTITIONS as uint8_t - 1,
-    N_PARTITIONS as uint8_t - 1,
-    N_PARTITIONS as uint8_t - 1,
-    N_SUB8X8_PARTITIONS as uint8_t - 1,
+pub static dav1d_partition_type_count: [u8; 5] = [
+    N_PARTITIONS as u8 - 3,
+    N_PARTITIONS as u8 - 1,
+    N_PARTITIONS as u8 - 1,
+    N_PARTITIONS as u8 - 1,
+    N_SUB8X8_PARTITIONS as u8 - 1,
 ];
 
-pub static dav1d_tx_types_per_set: [uint8_t; 40] = [
-    IDTX as uint8_t,
-    DCT_DCT as uint8_t,
-    ADST_ADST as uint8_t,
-    ADST_DCT as uint8_t,
-    DCT_ADST as uint8_t,
-    IDTX as uint8_t,
-    DCT_DCT as uint8_t,
-    V_DCT as uint8_t,
-    H_DCT as uint8_t,
-    ADST_ADST as uint8_t,
-    ADST_DCT as uint8_t,
-    DCT_ADST as uint8_t,
-    IDTX as uint8_t,
-    V_DCT as uint8_t,
-    H_DCT as uint8_t,
-    DCT_DCT as uint8_t,
-    ADST_DCT as uint8_t,
-    DCT_ADST as uint8_t,
-    FLIPADST_DCT as uint8_t,
-    DCT_FLIPADST as uint8_t,
-    ADST_ADST as uint8_t,
-    FLIPADST_FLIPADST as uint8_t,
-    ADST_FLIPADST as uint8_t,
-    FLIPADST_ADST as uint8_t,
-    IDTX as uint8_t,
-    V_DCT as uint8_t,
-    H_DCT as uint8_t,
-    V_ADST as uint8_t,
-    H_ADST as uint8_t,
-    V_FLIPADST as uint8_t,
-    H_FLIPADST as uint8_t,
-    DCT_DCT as uint8_t,
-    ADST_DCT as uint8_t,
-    DCT_ADST as uint8_t,
-    FLIPADST_DCT as uint8_t,
-    DCT_FLIPADST as uint8_t,
-    ADST_ADST as uint8_t,
-    FLIPADST_FLIPADST as uint8_t,
-    ADST_FLIPADST as uint8_t,
-    FLIPADST_ADST as uint8_t,
+pub static dav1d_tx_types_per_set: [u8; 40] = [
+    IDTX as u8,
+    DCT_DCT as u8,
+    ADST_ADST as u8,
+    ADST_DCT as u8,
+    DCT_ADST as u8,
+    IDTX as u8,
+    DCT_DCT as u8,
+    V_DCT as u8,
+    H_DCT as u8,
+    ADST_ADST as u8,
+    ADST_DCT as u8,
+    DCT_ADST as u8,
+    IDTX as u8,
+    V_DCT as u8,
+    H_DCT as u8,
+    DCT_DCT as u8,
+    ADST_DCT as u8,
+    DCT_ADST as u8,
+    FLIPADST_DCT as u8,
+    DCT_FLIPADST as u8,
+    ADST_ADST as u8,
+    FLIPADST_FLIPADST as u8,
+    ADST_FLIPADST as u8,
+    FLIPADST_ADST as u8,
+    IDTX as u8,
+    V_DCT as u8,
+    H_DCT as u8,
+    V_ADST as u8,
+    H_ADST as u8,
+    V_FLIPADST as u8,
+    H_FLIPADST as u8,
+    DCT_DCT as u8,
+    ADST_DCT as u8,
+    DCT_ADST as u8,
+    FLIPADST_DCT as u8,
+    DCT_FLIPADST as u8,
+    ADST_ADST as u8,
+    FLIPADST_FLIPADST as u8,
+    ADST_FLIPADST as u8,
+    FLIPADST_ADST as u8,
 ];
 
-pub static dav1d_ymode_size_context: [uint8_t; 22] = [
+pub static dav1d_ymode_size_context: [u8; 22] = [
     3, 3, 3, 3, 3, 2, 3, 3, 2, 1, 2, 2, 2, 1, 0, 1, 1, 1, 0, 0, 0, 0,
 ];
 
-pub static dav1d_lo_ctx_offsets: [[[uint8_t; 5]; 5]; 3] = [
+pub static dav1d_lo_ctx_offsets: [[[u8; 5]; 5]; 3] = [
     [
         [0, 1, 6, 6, 21],
         [1, 6, 6, 21, 21],
@@ -697,7 +631,7 @@ pub static dav1d_lo_ctx_offsets: [[[uint8_t; 5]; 5]; 3] = [
     ],
 ];
 
-pub static dav1d_skip_ctx: [[uint8_t; 5]; 5] = [
+pub static dav1d_skip_ctx: [[u8; 5]; 5] = [
     [1, 2, 2, 2, 3],
     [2, 4, 4, 4, 5],
     [2, 4, 4, 4, 5],
@@ -705,102 +639,96 @@ pub static dav1d_skip_ctx: [[uint8_t; 5]; 5] = [
     [3, 5, 5, 5, 6],
 ];
 
-pub static dav1d_tx_type_class: [uint8_t; 17] = [
-    TX_CLASS_2D as uint8_t,
-    TX_CLASS_2D as uint8_t,
-    TX_CLASS_2D as uint8_t,
-    TX_CLASS_2D as uint8_t,
-    TX_CLASS_2D as uint8_t,
-    TX_CLASS_2D as uint8_t,
-    TX_CLASS_2D as uint8_t,
-    TX_CLASS_2D as uint8_t,
-    TX_CLASS_2D as uint8_t,
-    TX_CLASS_2D as uint8_t,
-    TX_CLASS_V as uint8_t,
-    TX_CLASS_H as uint8_t,
-    TX_CLASS_V as uint8_t,
-    TX_CLASS_H as uint8_t,
-    TX_CLASS_V as uint8_t,
-    TX_CLASS_H as uint8_t,
-    TX_CLASS_2D as uint8_t,
+pub static dav1d_tx_type_class: [u8; 17] = [
+    TX_CLASS_2D as u8,
+    TX_CLASS_2D as u8,
+    TX_CLASS_2D as u8,
+    TX_CLASS_2D as u8,
+    TX_CLASS_2D as u8,
+    TX_CLASS_2D as u8,
+    TX_CLASS_2D as u8,
+    TX_CLASS_2D as u8,
+    TX_CLASS_2D as u8,
+    TX_CLASS_2D as u8,
+    TX_CLASS_V as u8,
+    TX_CLASS_H as u8,
+    TX_CLASS_V as u8,
+    TX_CLASS_H as u8,
+    TX_CLASS_V as u8,
+    TX_CLASS_H as u8,
+    TX_CLASS_2D as u8,
 ];
 
-pub static dav1d_filter_2d: [[uint8_t; 4]; 4] = [
+pub static dav1d_filter_2d: [[u8; 4]; 4] = [
     [
-        FILTER_2D_8TAP_REGULAR as uint8_t,
-        FILTER_2D_8TAP_REGULAR_SMOOTH as uint8_t,
-        FILTER_2D_8TAP_REGULAR_SHARP as uint8_t,
+        FILTER_2D_8TAP_REGULAR as u8,
+        FILTER_2D_8TAP_REGULAR_SMOOTH as u8,
+        FILTER_2D_8TAP_REGULAR_SHARP as u8,
         0,
     ],
     [
-        FILTER_2D_8TAP_SMOOTH_REGULAR as uint8_t,
-        FILTER_2D_8TAP_SMOOTH as uint8_t,
-        FILTER_2D_8TAP_SMOOTH_SHARP as uint8_t,
+        FILTER_2D_8TAP_SMOOTH_REGULAR as u8,
+        FILTER_2D_8TAP_SMOOTH as u8,
+        FILTER_2D_8TAP_SMOOTH_SHARP as u8,
         0,
     ],
     [
-        FILTER_2D_8TAP_SHARP_REGULAR as uint8_t,
-        FILTER_2D_8TAP_SHARP_SMOOTH as uint8_t,
-        FILTER_2D_8TAP_SHARP as uint8_t,
+        FILTER_2D_8TAP_SHARP_REGULAR as u8,
+        FILTER_2D_8TAP_SHARP_SMOOTH as u8,
+        FILTER_2D_8TAP_SHARP as u8,
         0,
     ],
-    [0, 0, 0, FILTER_2D_BILINEAR as uint8_t],
+    [0, 0, 0, FILTER_2D_BILINEAR as u8],
 ];
 
-pub static dav1d_filter_dir: [[uint8_t; 2]; 10] = [
+pub static dav1d_filter_dir: [[u8; 2]; 10] = [
     [
-        DAV1D_FILTER_8TAP_REGULAR as uint8_t,
-        DAV1D_FILTER_8TAP_REGULAR as uint8_t,
+        DAV1D_FILTER_8TAP_REGULAR as u8,
+        DAV1D_FILTER_8TAP_REGULAR as u8,
     ],
     [
-        DAV1D_FILTER_8TAP_SMOOTH as uint8_t,
-        DAV1D_FILTER_8TAP_REGULAR as uint8_t,
+        DAV1D_FILTER_8TAP_SMOOTH as u8,
+        DAV1D_FILTER_8TAP_REGULAR as u8,
     ],
     [
-        DAV1D_FILTER_8TAP_SHARP as uint8_t,
-        DAV1D_FILTER_8TAP_REGULAR as uint8_t,
+        DAV1D_FILTER_8TAP_SHARP as u8,
+        DAV1D_FILTER_8TAP_REGULAR as u8,
     ],
     [
-        DAV1D_FILTER_8TAP_REGULAR as uint8_t,
-        DAV1D_FILTER_8TAP_SHARP as uint8_t,
+        DAV1D_FILTER_8TAP_REGULAR as u8,
+        DAV1D_FILTER_8TAP_SHARP as u8,
     ],
     [
-        DAV1D_FILTER_8TAP_SMOOTH as uint8_t,
-        DAV1D_FILTER_8TAP_SHARP as uint8_t,
+        DAV1D_FILTER_8TAP_SMOOTH as u8,
+        DAV1D_FILTER_8TAP_SHARP as u8,
+    ],
+    [DAV1D_FILTER_8TAP_SHARP as u8, DAV1D_FILTER_8TAP_SHARP as u8],
+    [
+        DAV1D_FILTER_8TAP_REGULAR as u8,
+        DAV1D_FILTER_8TAP_SMOOTH as u8,
     ],
     [
-        DAV1D_FILTER_8TAP_SHARP as uint8_t,
-        DAV1D_FILTER_8TAP_SHARP as uint8_t,
+        DAV1D_FILTER_8TAP_SMOOTH as u8,
+        DAV1D_FILTER_8TAP_SMOOTH as u8,
     ],
     [
-        DAV1D_FILTER_8TAP_REGULAR as uint8_t,
-        DAV1D_FILTER_8TAP_SMOOTH as uint8_t,
+        DAV1D_FILTER_8TAP_SHARP as u8,
+        DAV1D_FILTER_8TAP_SMOOTH as u8,
     ],
-    [
-        DAV1D_FILTER_8TAP_SMOOTH as uint8_t,
-        DAV1D_FILTER_8TAP_SMOOTH as uint8_t,
-    ],
-    [
-        DAV1D_FILTER_8TAP_SHARP as uint8_t,
-        DAV1D_FILTER_8TAP_SMOOTH as uint8_t,
-    ],
-    [
-        DAV1D_FILTER_BILINEAR as uint8_t,
-        DAV1D_FILTER_BILINEAR as uint8_t,
-    ],
+    [DAV1D_FILTER_BILINEAR as u8, DAV1D_FILTER_BILINEAR as u8],
 ];
 
-pub static dav1d_filter_mode_to_y_mode: [uint8_t; 5] = [
-    DC_PRED as uint8_t,
-    VERT_PRED as uint8_t,
-    HOR_PRED as uint8_t,
-    HOR_DOWN_PRED as uint8_t,
-    DC_PRED as uint8_t,
+pub static dav1d_filter_mode_to_y_mode: [u8; 5] = [
+    DC_PRED as u8,
+    VERT_PRED as u8,
+    HOR_PRED as u8,
+    HOR_DOWN_PRED as u8,
+    DC_PRED as u8,
 ];
 
-pub static dav1d_intra_mode_context: [uint8_t; 13] = [0, 1, 2, 3, 4, 4, 4, 4, 3, 0, 1, 2, 0];
+pub static dav1d_intra_mode_context: [u8; 13] = [0, 1, 2, 3, 4, 4, 4, 4, 3, 0, 1, 2, 0];
 
-pub static dav1d_wedge_ctx_lut: [uint8_t; 22] = [
+pub static dav1d_wedge_ctx_lut: [u8; 22] = [
     0, 0, 0, 0, 0, 0, 0, 6, 5, 8, 0, 4, 3, 2, 0, 7, 1, 0, 0, 0, 0, 0,
 ];
 
@@ -823,7 +751,7 @@ pub static dav1d_default_wm_params: Dav1dWarpedMotionParams = {
     init
 };
 
-pub static dav1d_cdef_directions: [[int8_t; 2]; 12] = [
+pub static dav1d_cdef_directions: [[i8; 2]; 12] = [
     [1 * 12 + 0, 2 * 12 + 0],
     [1 * 12 + 0, 2 * 12 - 1],
     [-1 * 12 + 1, -2 * 12 + 2],
@@ -838,7 +766,7 @@ pub static dav1d_cdef_directions: [[int8_t; 2]; 12] = [
     [0 * 12 + 1, -1 * 12 + 2],
 ];
 
-pub static dav1d_sgr_params: [[uint16_t; 2]; 16] = [
+pub static dav1d_sgr_params: [[u16; 2]; 16] = [
     [140, 3236],
     [112, 2158],
     [93, 1618],
@@ -858,7 +786,7 @@ pub static dav1d_sgr_params: [[uint16_t; 2]; 16] = [
 ];
 
 #[no_mangle]
-pub static dav1d_sgr_x_by_x: Align64<[uint8_t; 256]> = Align64([
+pub static dav1d_sgr_x_by_x: Align64<[u8; 256]> = Align64([
     255, 128, 85, 64, 51, 43, 37, 32, 28, 26, 23, 21, 20, 18, 17, 16, 15, 14, 13, 13, 12, 12, 11,
     11, 10, 10, 9, 9, 9, 9, 8, 8, 8, 8, 7, 7, 7, 7, 7, 6, 6, 6, 6, 6, 6, 6, 5, 5, 5, 5, 5, 5, 5, 5,
     5, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
@@ -871,7 +799,7 @@ pub static dav1d_sgr_x_by_x: Align64<[uint8_t; 256]> = Align64([
 ]);
 
 #[no_mangle]
-pub static dav1d_mc_subpel_filters: [[[int8_t; 8]; 15]; 6] = [
+pub static dav1d_mc_subpel_filters: [[[i8; 8]; 15]; 6] = [
     [
         [0, 1, -3, 63, 4, -1, 0, 0],
         [0, 1, -5, 61, 9, -2, 0, 0],
@@ -977,7 +905,7 @@ pub static dav1d_mc_subpel_filters: [[[int8_t; 8]; 15]; 6] = [
 ];
 
 #[no_mangle]
-pub static dav1d_mc_warp_filter: [[int8_t; 8]; 193] = [
+pub static dav1d_mc_warp_filter: [[i8; 8]; 193] = [
     [0, 0, 127, 1, 0, 0, 0, 0],
     [0, -1, 127, 2, 0, 0, 0, 0],
     [1, -3, 127, 4, -1, 0, 0, 0],
@@ -1174,7 +1102,7 @@ pub static dav1d_mc_warp_filter: [[int8_t; 8]; 193] = [
 ];
 
 #[no_mangle]
-pub static dav1d_resize_filter: [[int8_t; 8]; 64] = [
+pub static dav1d_resize_filter: [[i8; 8]; 64] = [
     [0, 0, 0, -128, 0, 0, 0, 0],
     [0, 0, 1, -128, -2, 1, 0, 0],
     [0, -1, 3, -127, -4, 2, -1, 0],
@@ -1242,7 +1170,7 @@ pub static dav1d_resize_filter: [[int8_t; 8]; 64] = [
 ];
 
 #[no_mangle]
-pub static dav1d_sm_weights: [uint8_t; 128] = [
+pub static dav1d_sm_weights: [u8; 128] = [
     0, 0, 255, 128, 255, 149, 85, 64, 255, 197, 146, 105, 73, 50, 37, 32, 255, 225, 196, 170, 145,
     123, 102, 84, 68, 54, 43, 33, 26, 20, 17, 16, 255, 240, 225, 210, 196, 182, 169, 157, 145, 133,
     122, 111, 101, 92, 83, 74, 66, 59, 52, 45, 39, 34, 29, 25, 21, 17, 14, 12, 10, 9, 8, 8, 255,
@@ -1252,7 +1180,7 @@ pub static dav1d_sm_weights: [uint8_t; 128] = [
 ];
 
 #[no_mangle]
-pub static dav1d_dr_intra_derivative: [uint16_t; 44] = [
+pub static dav1d_dr_intra_derivative: [u16; 44] = [
     0, 1023, 0, 547, 372, 0, 0, 273, 215, 0, 178, 151, 0, 132, 116, 0, 102, 0, 90, 80, 0, 71, 64,
     0, 57, 51, 0, 45, 0, 40, 35, 0, 31, 27, 0, 23, 19, 0, 15, 0, 11, 0, 7, 3,
 ];
@@ -1304,7 +1232,7 @@ macro_rules! f {
 }
 
 #[no_mangle]
-pub static dav1d_filter_intra_taps: Align64<[[int8_t; 64]; 5]> = Align64([
+pub static dav1d_filter_intra_taps: Align64<[[i8; 64]; 5]> = Align64([
     {
         let mut array = [0; 64];
         f!(array, 0, -6, 10, 0, 0, 0, 12, 0);
@@ -1368,14 +1296,14 @@ pub static dav1d_filter_intra_taps: Align64<[[int8_t; 64]; 5]> = Align64([
 ]);
 
 #[no_mangle]
-pub static dav1d_obmc_masks: [uint8_t; 64] = [
+pub static dav1d_obmc_masks: [u8; 64] = [
     0, 0, 19, 0, 25, 14, 5, 0, 28, 22, 16, 11, 7, 3, 0, 0, 30, 27, 24, 21, 18, 15, 12, 10, 8, 6, 4,
     3, 0, 0, 0, 0, 31, 29, 28, 26, 24, 23, 21, 20, 19, 17, 16, 14, 13, 12, 11, 9, 8, 7, 6, 5, 4, 4,
     3, 2, 0, 0, 0, 0, 0, 0, 0, 0,
 ];
 
 #[no_mangle]
-pub static dav1d_gaussian_sequence: [int16_t; 2048] = [
+pub static dav1d_gaussian_sequence: [i16; 2048] = [
     56, 568, -180, 172, 124, -84, 172, -64, -900, 24, 820, 224, 1248, 996, 272, -8, -916, -388,
     -732, -104, -188, 800, 112, -652, -320, -376, 140, -252, 492, -168, 44, -788, 588, -584, 500,
     -228, 12, 680, 272, -476, 972, -100, 652, 368, 432, -196, -720, -192, 1000, -332, 652, -136,
