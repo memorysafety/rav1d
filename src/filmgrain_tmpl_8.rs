@@ -1,10 +1,6 @@
 use ::libc;
 use cfg_if::cfg_if;
 
-extern "C" {
-    static dav1d_gaussian_sequence: [int16_t; 2048];
-}
-
 #[cfg(feature = "asm")]
 extern "C" {
     static mut dav1d_cpu_flags: libc::c_uint;
@@ -300,6 +296,9 @@ extern "C" {
         type_0: ptrdiff_t,
     );
 }
+
+use crate::src::tables::dav1d_gaussian_sequence;
+
 pub type pixel = uint8_t;
 
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
@@ -308,7 +307,6 @@ use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I422;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 use crate::include::stddef::ptrdiff_t;
 use crate::include::stddef::size_t;
-use crate::include::stdint::int16_t;
 use crate::include::stdint::int8_t;
 use crate::include::stdint::intptr_t;
 use crate::include::stdint::uint64_t;
