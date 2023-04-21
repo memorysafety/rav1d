@@ -47,7 +47,6 @@ extern "C" {
     );
     fn dav1d_data_props_copy(dst: *mut Dav1dDataProps, src: *const Dav1dDataProps);
     fn dav1d_data_unref_internal(buf: *mut Dav1dData);
-    static dav1d_sgr_params: [[uint16_t; 2]; 16];
     fn dav1d_refmvs_init_frame(
         rf: *mut refmvs_frame,
         seq_hdr: *const Dav1dSequenceHeader,
@@ -303,6 +302,7 @@ use crate::src::tables::dav1d_filter_dir;
 use crate::src::tables::dav1d_intra_mode_context;
 use crate::src::tables::dav1d_max_txfm_size_for_bs;
 use crate::src::tables::dav1d_partition_type_count;
+use crate::src::tables::dav1d_sgr_params;
 use crate::src::tables::dav1d_txfm_dimensions;
 use crate::src::tables::dav1d_wedge_ctx_lut;
 use crate::src::tables::dav1d_ymode_size_context;
