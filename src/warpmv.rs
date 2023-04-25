@@ -46,9 +46,7 @@ unsafe fn resolve_divisor_32(d: libc::c_uint, shift: *mut libc::c_int) -> libc::
     } else {
         e << 8 - *shift
     };
-    if !(f <= 256) {
-        unreachable!();
-    }
+    assert!(f <= 256);
     *shift += 14 as libc::c_int;
     return div_lut[f as usize] as libc::c_int;
 }
@@ -97,9 +95,7 @@ unsafe fn resolve_divisor_64(d: uint64_t, shift: *mut libc::c_int) -> libc::c_in
     } else {
         (e << 8 - *shift) as libc::c_longlong
     }) as int64_t;
-    if !(f <= 256) {
-        unreachable!();
-    }
+    assert!(f <= 256);
     *shift += 14 as libc::c_int;
     return div_lut[f as usize] as libc::c_int;
 }
