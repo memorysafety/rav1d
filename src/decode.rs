@@ -2556,7 +2556,7 @@ unsafe extern "C" fn derive_warpmv(
         (*t).bx,
         (*t).by,
     ) == 0
-        && dav1d_get_shear_params(&mut *wmp) == 0
+        && !dav1d_get_shear_params(&mut *wmp)
     {
         (*wmp).type_0 = DAV1D_WM_TYPE_AFFINE;
     } else {
@@ -13510,11 +13510,11 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                     ((*(*f).frame_hdr).gmv[i as usize].type_0 as libc::c_uint
                                         > DAV1D_WM_TYPE_TRANSLATION as libc::c_int as libc::c_uint
                                         && (*(*f).frame_hdr).force_integer_mv == 0
-                                        && dav1d_get_shear_params(
+                                        && !dav1d_get_shear_params(
                                             &mut *((*(*f).frame_hdr).gmv)
                                                 .as_mut_ptr()
                                                 .offset(i as isize),
-                                        ) == 0
+                                        )
                                         && (*f).svc[i as usize][0].scale == 0)
                                         as libc::c_int
                                         as uint8_t;

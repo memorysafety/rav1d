@@ -50,10 +50,10 @@ fn resolve_divisor_32(d: u32) -> (libc::c_int, libc::c_int) {
     (shift + 14, div_lut[f as usize] as libc::c_int)
 }
 
-pub unsafe fn dav1d_get_shear_params(wm: &mut Dav1dWarpedMotionParams) -> libc::c_int {
+pub unsafe fn dav1d_get_shear_params(wm: &mut Dav1dWarpedMotionParams) -> bool {
     let mat = &wm.matrix;
     if mat[2] <= 0 {
-        return 1;
+        return true;
     }
     wm.u.p.alpha = iclip_wmp(mat[2] - 0x10000) as i16;
     wm.u.p.beta = iclip_wmp(mat[3]) as i16;
@@ -69,9 +69,8 @@ pub unsafe fn dav1d_get_shear_params(wm: &mut Dav1dWarpedMotionParams) -> libc::
     wm.u.p.delta = iclip_wmp(
         mat[5] - apply_sign64((v2.abs() + rnd as i64 >> shift) as libc::c_int, v2) - 0x10000,
     ) as i16;
-    return (4 * (wm.u.p.alpha as i32).abs() + 7 * (wm.u.p.beta as i32).abs() >= 0x10000
-        || 4 * (wm.u.p.gamma as i32).abs() + 4 * (wm.u.p.delta as i32).abs() >= 0x10000)
-        as libc::c_int;
+    4 * (wm.u.p.alpha as i32).abs() + 7 * (wm.u.p.beta as i32).abs() >= 0x10000
+        || 4 * (wm.u.p.gamma as i32).abs() + 4 * (wm.u.p.delta as i32).abs() >= 0x10000
 }
 
 fn resolve_divisor_64(d: u64) -> (libc::c_int, libc::c_int) {
