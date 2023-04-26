@@ -90,13 +90,13 @@ fn resolve_divisor_64(d: u64) -> (libc::c_int, libc::c_int) {
     (shift + 14, div_lut[f as usize] as libc::c_int)
 }
 
-unsafe fn get_mult_shift_ndiag(px: int64_t, idet: libc::c_int, shift: libc::c_int) -> libc::c_int {
+fn get_mult_shift_ndiag(px: int64_t, idet: libc::c_int, shift: libc::c_int) -> libc::c_int {
     let v1 = px * idet as int64_t;
     let v2 = apply_sign64((v1.abs() + (1 << shift >> 1) >> shift) as libc::c_int, v1);
     return iclip(v2, -0x1fff, 0x1fff);
 }
 
-unsafe fn get_mult_shift_diag(px: int64_t, idet: libc::c_int, shift: libc::c_int) -> libc::c_int {
+fn get_mult_shift_diag(px: int64_t, idet: libc::c_int, shift: libc::c_int) -> libc::c_int {
     let v1 = px * idet as int64_t;
     let v2 = apply_sign64((v1.abs() + (1 << shift >> 1) >> shift) as libc::c_int, v1);
     return iclip(v2, 0xe001, 0x11fff);
