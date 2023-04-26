@@ -270,16 +270,6 @@ extern "C" {
         cond_signal: libc::c_int,
     ) -> libc::c_int;
     fn dav1d_task_frame_init(f: *mut Dav1dFrameContext);
-    fn dav1d_find_affine_int(
-        pts: *const [[libc::c_int; 2]; 2],
-        np: libc::c_int,
-        bw4: libc::c_int,
-        bh4: libc::c_int,
-        mv: mv,
-        wm: *mut Dav1dWarpedMotionParams,
-        bx: libc::c_int,
-        by: libc::c_int,
-    ) -> libc::c_int;
 }
 
 use crate::src::dequant_tables::dav1d_dq_tbl;
@@ -297,6 +287,7 @@ use crate::src::tables::dav1d_sgr_params;
 use crate::src::tables::dav1d_txfm_dimensions;
 use crate::src::tables::dav1d_wedge_ctx_lut;
 use crate::src::tables::dav1d_ymode_size_context;
+use crate::src::warpmv::dav1d_find_affine_int;
 use crate::src::warpmv::dav1d_get_shear_params;
 use crate::src::warpmv::dav1d_set_affine_mv2d;
 

@@ -128,8 +128,7 @@ pub fn dav1d_set_affine_mv2d(
     );
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_find_affine_int(
+pub unsafe fn dav1d_find_affine_int(
     mut pts: *const [[libc::c_int; 2]; 2],
     np: libc::c_int,
     bw4: libc::c_int,
