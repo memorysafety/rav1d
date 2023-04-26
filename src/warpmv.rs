@@ -110,22 +110,20 @@ pub unsafe fn dav1d_set_affine_mv2d(
     bx4: libc::c_int,
     by4: libc::c_int,
 ) {
-    let mat: *mut int32_t = ((*wm).matrix).as_mut_ptr();
+    let mat = ((*wm).matrix).as_mut_ptr();
     let rsuy = 2 * bh4 - 1;
     let rsux = 2 * bw4 - 1;
     let isuy = by4 * 4 + rsuy;
     let isux = bx4 * 4 + rsux;
     *mat.offset(0) = iclip(
-        mv.x as libc::c_int * 0x2000 as libc::c_int
-            - (isux * (*mat.offset(2) - 0x10000 as libc::c_int) + isuy * *mat.offset(3)),
-        -(0x800000 as libc::c_int),
-        0x7fffff as libc::c_int,
+        mv.x as libc::c_int * 0x2000 - (isux * (*mat.offset(2) - 0x10000) + isuy * *mat.offset(3)),
+        -0x800000,
+        0x7fffff,
     );
     *mat.offset(1) = iclip(
-        mv.y as libc::c_int * 0x2000 as libc::c_int
-            - (isux * *mat.offset(4) + isuy * (*mat.offset(5) - 0x10000 as libc::c_int)),
-        -(0x800000 as libc::c_int),
-        0x7fffff as libc::c_int,
+        mv.y as libc::c_int * 0x2000 - (isux * *mat.offset(4) + isuy * (*mat.offset(5) - 0x10000)),
+        -0x800000,
+        0x7fffff,
     );
 }
 
