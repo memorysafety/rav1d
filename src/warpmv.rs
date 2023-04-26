@@ -51,23 +51,23 @@ fn resolve_divisor_32(d: u32) -> (libc::c_int, libc::c_int) {
 }
 
 pub unsafe fn dav1d_get_shear_params(wm: &mut Dav1dWarpedMotionParams) -> libc::c_int {
-    let mat = (wm.matrix).as_mut_ptr();
-    if *mat.offset(2) <= 0 {
+    let mat = &wm.matrix;
+    if mat[2] <= 0 {
         return 1;
     }
-    wm.u.p.alpha = iclip_wmp(*mat.offset(2) - 0x10000) as int16_t;
-    wm.u.p.beta = iclip_wmp(*mat.offset(3)) as int16_t;
-    let (mut shift, y) = resolve_divisor_32((*mat.offset(2)).abs() as u32);
-    let y = apply_sign(y, *mat.offset(2));
-    let v1 = *mat.offset(4) as int64_t * 0x10000 * y as int64_t;
+    wm.u.p.alpha = iclip_wmp(mat[2] - 0x10000) as int16_t;
+    wm.u.p.beta = iclip_wmp(mat[3]) as int16_t;
+    let (mut shift, y) = resolve_divisor_32((mat[2]).abs() as u32);
+    let y = apply_sign(y, mat[2]);
+    let v1 = mat[4] as int64_t * 0x10000 * y as int64_t;
     let rnd = 1 << shift >> 1;
     wm.u.p.gamma = iclip_wmp(apply_sign64(
         (v1.abs() + rnd as libc::c_longlong >> shift) as libc::c_int,
         v1,
     )) as int16_t;
-    let v2 = *mat.offset(3) as int64_t * *mat.offset(4) as int64_t * y as int64_t;
+    let v2 = mat[3] as int64_t * mat[4] as int64_t * y as int64_t;
     wm.u.p.delta = iclip_wmp(
-        *mat.offset(5)
+        mat[5]
             - apply_sign64(
                 (v2.abs() + rnd as libc::c_longlong >> shift) as libc::c_int,
                 v2,
