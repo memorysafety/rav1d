@@ -46,6 +46,7 @@ fn resolve_divisor_32(d: u32) -> (libc::c_int, libc::c_int) {
     } else {
         e << 8 - shift
     };
+    // Use f as lookup into the precomputed table of multipliers
     (shift + 14, div_lut[f as usize] as libc::c_int)
 }
 
@@ -88,6 +89,7 @@ fn resolve_divisor_64(d: u64) -> (libc::c_int, libc::c_int) {
     } else {
         e << 8 - shift
     };
+    // Use f as lookup into the precomputed table of multipliers
     (shift + 14, div_lut[f as usize] as libc::c_int)
 }
 
