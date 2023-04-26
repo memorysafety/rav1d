@@ -209,5 +209,5 @@ pub fn dav1d_find_affine_int(
         0x7fffff,
     );
 
-    return false;
+    false
 }
