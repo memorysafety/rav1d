@@ -2556,7 +2556,7 @@ unsafe extern "C" fn derive_warpmv(
         (*t).bx,
         (*t).by,
     ) == 0
-        && dav1d_get_shear_params(wmp) == 0
+        && dav1d_get_shear_params(&mut *wmp) == 0
     {
         (*wmp).type_0 = DAV1D_WM_TYPE_AFFINE;
     } else {
