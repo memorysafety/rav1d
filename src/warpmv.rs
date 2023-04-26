@@ -115,6 +115,7 @@ pub fn dav1d_set_affine_mv2d(
     let rsux = 2 * bw4 - 1;
     let isuy = by4 * 4 + rsuy;
     let isux = bx4 * 4 + rsux;
+
     mat[0] = iclip(
         mv.x as i32 * 0x2000 - (isux * (mat[2] - 0x10000) + isuy * mat[3]),
         -0x800000,
