@@ -1,6 +1,4 @@
 use crate::include::stddef::size_t;
-use crate::include::stdint::int16_t;
-use crate::include::stdint::int32_t;
 use crate::include::stdint::int8_t;
 use crate::include::stdint::uint16_t;
 use crate::include::stdint::uint32_t;
@@ -43,27 +41,31 @@ pub const DAV1D_WM_TYPE_AFFINE: Dav1dWarpedMotionType = 3;
 pub const DAV1D_WM_TYPE_ROT_ZOOM: Dav1dWarpedMotionType = 2;
 pub const DAV1D_WM_TYPE_TRANSLATION: Dav1dWarpedMotionType = 1;
 pub const DAV1D_WM_TYPE_IDENTITY: Dav1dWarpedMotionType = 0;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dWarpedMotionParams_u_p {
-    pub alpha: int16_t,
-    pub beta: int16_t,
-    pub gamma: int16_t,
-    pub delta: int16_t,
+    pub alpha: i16,
+    pub beta: i16,
+    pub gamma: i16,
+    pub delta: i16,
 }
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union Dav1dWarpedMotionParams_u {
     pub p: Dav1dWarpedMotionParams_u_p,
-    pub abcd: [int16_t; 4],
+    pub abcd: [i16; 4],
 }
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dWarpedMotionParams {
     pub type_0: Dav1dWarpedMotionType,
-    pub matrix: [int32_t; 6],
+    pub matrix: [i32; 6],
     pub u: Dav1dWarpedMotionParams_u,
 }
+
 pub type Dav1dPixelLayout = libc::c_uint;
 pub const DAV1D_PIXEL_LAYOUT_I444: Dav1dPixelLayout = 3;
 pub const DAV1D_PIXEL_LAYOUT_I422: Dav1dPixelLayout = 2;

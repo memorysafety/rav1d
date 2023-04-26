@@ -55,29 +55,23 @@ pub unsafe fn dav1d_get_shear_params(wm: &mut Dav1dWarpedMotionParams) -> libc::
     if mat[2] <= 0 {
         return 1;
     }
-    wm.u.p.alpha = iclip_wmp(mat[2] - 0x10000) as int16_t;
-    wm.u.p.beta = iclip_wmp(mat[3]) as int16_t;
+    wm.u.p.alpha = iclip_wmp(mat[2] - 0x10000) as i16;
+    wm.u.p.beta = iclip_wmp(mat[3]) as i16;
     let (mut shift, y) = resolve_divisor_32((mat[2]).abs() as u32);
     let y = apply_sign(y, mat[2]);
-    let v1 = mat[4] as int64_t * 0x10000 * y as int64_t;
+    let v1 = mat[4] as i64 * 0x10000 * y as i64;
     let rnd = 1 << shift >> 1;
     wm.u.p.gamma = iclip_wmp(apply_sign64(
-        (v1.abs() + rnd as libc::c_longlong >> shift) as libc::c_int,
+        (v1.abs() + rnd as i64 >> shift) as libc::c_int,
         v1,
-    )) as int16_t;
-    let v2 = mat[3] as int64_t * mat[4] as int64_t * y as int64_t;
+    )) as i16;
+    let v2 = mat[3] as i64 * mat[4] as i64 * y as i64;
     wm.u.p.delta = iclip_wmp(
-        mat[5]
-            - apply_sign64(
-                (v2.abs() + rnd as libc::c_longlong >> shift) as libc::c_int,
-                v2,
-            )
-            - 0x10000,
-    ) as int16_t;
-    return (4 * (wm.u.p.alpha as libc::c_int).abs() + 7 * (wm.u.p.beta as libc::c_int).abs()
-        >= 0x10000
-        || 4 * (wm.u.p.gamma as libc::c_int).abs() + 4 * (wm.u.p.delta as libc::c_int).abs()
-            >= 0x10000) as libc::c_int;
+        mat[5] - apply_sign64((v2.abs() + rnd as i64 >> shift) as libc::c_int, v2) - 0x10000,
+    ) as i16;
+    return (4 * (wm.u.p.alpha as i32).abs() + 7 * (wm.u.p.beta as i32).abs() >= 0x10000
+        || 4 * (wm.u.p.gamma as i32).abs() + 4 * (wm.u.p.delta as i32).abs() >= 0x10000)
+        as libc::c_int;
 }
 
 fn resolve_divisor_64(d: u64) -> (libc::c_int, libc::c_int) {
