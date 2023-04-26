@@ -1,13 +1,10 @@
-use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
-use crate::include::stdint::*;
-use crate::src::levels::mv;
-use ::libc;
-
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::apply_sign64;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::u64log2;
 use crate::include::common::intops::ulog2;
+use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
+use crate::src::levels::mv;
 
 static div_lut: [u16; 257] = [
     16384, 16320, 16257, 16194, 16132, 16070, 16009, 15948, 15888, 15828, 15768, 15709, 15650,
@@ -165,7 +162,7 @@ pub fn dav1d_find_affine_int(
             by[1] += (sy * dy >> 2) + sy + dy + 8;
         }
     }
-    let det = a[0][0] as int64_t * a[1][1] as int64_t - a[0][1] as int64_t * a[0][1] as int64_t;
+    let det = a[0][0] as i64 * a[1][1] as i64 - a[0][1] as i64 * a[0][1] as i64;
     if det == 0 {
         return true;
     }
@@ -177,32 +174,32 @@ pub fn dav1d_find_affine_int(
         shift = 0;
     }
     mat[2] = get_mult_shift_diag(
-        a[1][1] as int64_t * bx[0] as int64_t - a[0][1] as int64_t * bx[1] as int64_t,
+        a[1][1] as i64 * bx[0] as i64 - a[0][1] as i64 * bx[1] as i64,
         idet,
         shift,
     );
     mat[3] = get_mult_shift_ndiag(
-        a[0][0] as int64_t * bx[1] as int64_t - a[0][1] as int64_t * bx[0] as int64_t,
+        a[0][0] as i64 * bx[1] as i64 - a[0][1] as i64 * bx[0] as i64,
         idet,
         shift,
     );
     mat[4] = get_mult_shift_ndiag(
-        a[1][1] as int64_t * by[0] as int64_t - a[0][1] as int64_t * by[1] as int64_t,
+        a[1][1] as i64 * by[0] as i64 - a[0][1] as i64 * by[1] as i64,
         idet,
         shift,
     );
     mat[5] = get_mult_shift_diag(
-        a[0][0] as int64_t * by[1] as int64_t - a[0][1] as int64_t * by[0] as int64_t,
+        a[0][0] as i64 * by[1] as i64 - a[0][1] as i64 * by[0] as i64,
         idet,
         shift,
     );
     mat[0] = iclip(
-        mv.x as libc::c_int * 0x2000 - (isux * (mat[2] - 0x10000) + isuy * mat[3]),
+        mv.x as i32 * 0x2000 - (isux * (mat[2] - 0x10000) + isuy * mat[3]),
         -0x800000,
         0x7fffff,
     );
     mat[1] = iclip(
-        mv.y as libc::c_int * 0x2000 - (isux * mat[4] + isuy * (mat[5] - 0x10000)),
+        mv.y as i32 * 0x2000 - (isux * mat[4] + isuy * (mat[5] - 0x10000)),
         -0x800000,
         0x7fffff,
     );
