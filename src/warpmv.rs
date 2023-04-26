@@ -38,16 +38,15 @@ fn iclip_wmp(v: libc::c_int) -> libc::c_int {
 }
 
 #[inline]
-fn resolve_divisor_32(d: u32, shift: &mut libc::c_int) -> libc::c_int {
-    *shift = ulog2(d);
-    let e = d - (1 << *shift);
-    let f = if *shift > 8 {
-        e + (1 << *shift - 9) >> *shift - 8
+fn resolve_divisor_32(d: u32) -> (libc::c_int, libc::c_int) {
+    let shift = ulog2(d);
+    let e = d - (1 << shift);
+    let f = if shift > 8 {
+        e + (1 << shift - 9) >> shift - 8
     } else {
-        e << 8 - *shift
+        e << 8 - shift
     };
-    *shift += 14;
-    return div_lut[f as usize] as libc::c_int;
+    (shift + 14, div_lut[f as usize] as libc::c_int)
 }
 
 #[no_mangle]
@@ -58,11 +57,8 @@ pub unsafe extern "C" fn dav1d_get_shear_params(wm: *mut Dav1dWarpedMotionParams
     }
     (*wm).u.p.alpha = iclip_wmp(*mat.offset(2) - 0x10000 as libc::c_int) as int16_t;
     (*wm).u.p.beta = iclip_wmp(*mat.offset(3)) as int16_t;
-    let mut shift = 0;
-    let y = apply_sign(
-        resolve_divisor_32((*mat.offset(2)).abs() as libc::c_uint, &mut shift),
-        *mat.offset(2),
-    );
+    let (mut shift, y) = resolve_divisor_32((*mat.offset(2)).abs() as u32);
+    let y = apply_sign(y, *mat.offset(2));
     let v1: int64_t = *mat.offset(4) as int64_t * 0x10000 * y as int64_t;
     let rnd = (1 as libc::c_int) << shift >> 1;
     (*wm).u.p.gamma = iclip_wmp(apply_sign64(
@@ -84,16 +80,15 @@ pub unsafe extern "C" fn dav1d_get_shear_params(wm: *mut Dav1dWarpedMotionParams
             >= 0x10000 as libc::c_int) as libc::c_int;
 }
 
-fn resolve_divisor_64(d: u64, shift: &mut libc::c_int) -> libc::c_int {
-    *shift = u64log2(d);
-    let e = d - (1 << *shift);
-    let f = if *shift > 8 {
-        e + (1 << *shift - 9) >> *shift - 8
+fn resolve_divisor_64(d: u64) -> (libc::c_int, libc::c_int) {
+    let shift = u64log2(d);
+    let e = d - (1 << shift);
+    let f = if shift > 8 {
+        e + (1 << shift - 9) >> shift - 8
     } else {
-        e << 8 - *shift
+        e << 8 - shift
     };
-    *shift += 14;
-    return div_lut[f as usize] as libc::c_int;
+    (shift + 14, div_lut[f as usize] as libc::c_int)
 }
 
 unsafe extern "C" fn get_mult_shift_ndiag(
@@ -197,11 +192,8 @@ pub unsafe extern "C" fn dav1d_find_affine_int(
     if det == 0 {
         return 1 as libc::c_int;
     }
-    let mut shift = 0;
-    let mut idet = apply_sign64(
-        resolve_divisor_64((det as libc::c_longlong).abs() as uint64_t, &mut shift),
-        det,
-    );
+    let (mut shift, idet) = resolve_divisor_64((det as libc::c_longlong).abs() as u64);
+    let mut idet = apply_sign64(idet, det);
     shift -= 16 as libc::c_int;
     if shift < 0 {
         idet <<= -shift;
