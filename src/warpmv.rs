@@ -90,7 +90,7 @@ fn resolve_divisor_64(d: u64) -> (libc::c_int, libc::c_int) {
     (shift + 14, div_lut[f as usize] as libc::c_int)
 }
 
-unsafe extern "C" fn get_mult_shift_ndiag(
+unsafe fn get_mult_shift_ndiag(
     px: int64_t,
     idet: libc::c_int,
     shift: libc::c_int,
@@ -103,7 +103,8 @@ unsafe extern "C" fn get_mult_shift_ndiag(
     );
     return iclip(v2, -(0x1fff as libc::c_int), 0x1fff as libc::c_int);
 }
-unsafe extern "C" fn get_mult_shift_diag(
+
+unsafe fn get_mult_shift_diag(
     px: int64_t,
     idet: libc::c_int,
     shift: libc::c_int,
@@ -116,6 +117,7 @@ unsafe extern "C" fn get_mult_shift_diag(
     );
     return iclip(v2, 0xe001 as libc::c_int, 0x11fff as libc::c_int);
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_set_affine_mv2d(
     bw4: libc::c_int,
