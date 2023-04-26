@@ -52,11 +52,14 @@ fn resolve_divisor_32(d: u32) -> (libc::c_int, libc::c_int) {
 
 pub fn dav1d_get_shear_params(wm: &mut Dav1dWarpedMotionParams) -> bool {
     let mat = &wm.matrix;
+
     if mat[2] <= 0 {
         return true;
     }
+
     let alpha = iclip_wmp(mat[2] - 0x10000) as i16;
     let beta = iclip_wmp(mat[3]) as i16;
+
     let (mut shift, y) = resolve_divisor_32((mat[2]).abs() as u32);
     let y = apply_sign(y, mat[2]);
     let v1 = mat[4] as i64 * 0x10000 * y as i64;
@@ -70,6 +73,7 @@ pub fn dav1d_get_shear_params(wm: &mut Dav1dWarpedMotionParams) -> bool {
         mat[5] - apply_sign64((v2.abs() + rnd as i64 >> shift) as libc::c_int, v2) - 0x10000,
     ) as i16;
     wm.abcd = [alpha, beta, gamma, delta];
+
     4 * (alpha as i32).abs() + 7 * (beta as i32).abs() >= 0x10000
         || 4 * (gamma as i32).abs() + 4 * (delta as i32).abs() >= 0x10000
 }
