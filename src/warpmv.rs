@@ -138,7 +138,7 @@ pub unsafe fn dav1d_find_affine_int(
     bx4: libc::c_int,
     by4: libc::c_int,
 ) -> libc::c_int {
-    let mat = wm.matrix.as_mut_ptr();
+    let mat = &mut wm.matrix;
     let mut a = [[0, 0], [0, 0]];
     let mut bx = [0, 0];
     let mut by = [0, 0];
@@ -178,33 +178,33 @@ pub unsafe fn dav1d_find_affine_int(
         idet <<= -shift;
         shift = 0;
     }
-    *mat.offset(2) = get_mult_shift_diag(
+    mat[2] = get_mult_shift_diag(
         a[1][1] as int64_t * bx[0] as int64_t - a[0][1] as int64_t * bx[1] as int64_t,
         idet,
         shift,
     );
-    *mat.offset(3) = get_mult_shift_ndiag(
+    mat[3] = get_mult_shift_ndiag(
         a[0][0] as int64_t * bx[1] as int64_t - a[0][1] as int64_t * bx[0] as int64_t,
         idet,
         shift,
     );
-    *mat.offset(4) = get_mult_shift_ndiag(
+    mat[4] = get_mult_shift_ndiag(
         a[1][1] as int64_t * by[0] as int64_t - a[0][1] as int64_t * by[1] as int64_t,
         idet,
         shift,
     );
-    *mat.offset(5) = get_mult_shift_diag(
+    mat[5] = get_mult_shift_diag(
         a[0][0] as int64_t * by[1] as int64_t - a[0][1] as int64_t * by[0] as int64_t,
         idet,
         shift,
     );
-    *mat.offset(0) = iclip(
-        mv.x as libc::c_int * 0x2000 - (isux * (*mat.offset(2) - 0x10000) + isuy * *mat.offset(3)),
+    mat[0] = iclip(
+        mv.x as libc::c_int * 0x2000 - (isux * (mat[2] - 0x10000) + isuy * mat[3]),
         -0x800000,
         0x7fffff,
     );
-    *mat.offset(1) = iclip(
-        mv.y as libc::c_int * 0x2000 - (isux * *mat.offset(4) + isuy * (*mat.offset(5) - 0x10000)),
+    mat[1] = iclip(
+        mv.y as libc::c_int * 0x2000 - (isux * mat[4] + isuy * (mat[5] - 0x10000)),
         -0x800000,
         0x7fffff,
     );
