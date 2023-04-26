@@ -102,7 +102,7 @@ fn get_mult_shift_diag(px: i64, idet: libc::c_int, shift: libc::c_int) -> libc::
     iclip(v2, 0xe001, 0x11fff)
 }
 
-pub unsafe fn dav1d_set_affine_mv2d(
+pub fn dav1d_set_affine_mv2d(
     bw4: libc::c_int,
     bh4: libc::c_int,
     mv: mv,
