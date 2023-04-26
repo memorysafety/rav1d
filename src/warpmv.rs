@@ -46,7 +46,6 @@ fn resolve_divisor_32(d: u32, shift: &mut libc::c_int) -> libc::c_int {
     } else {
         e << 8 - *shift
     };
-    assert!(f <= 256);
     *shift += 14;
     return div_lut[f as usize] as libc::c_int;
 }
@@ -93,7 +92,6 @@ fn resolve_divisor_64(d: u64, shift: &mut libc::c_int) -> libc::c_int {
     } else {
         e << 8 - *shift
     };
-    assert!(f <= 256);
     *shift += 14;
     return div_lut[f as usize] as libc::c_int;
 }
