@@ -38,11 +38,11 @@ fn iclip_wmp(v: libc::c_int) -> libc::c_int {
 }
 
 #[inline]
-fn resolve_divisor_32(d: libc::c_uint, shift: &mut libc::c_int) -> libc::c_int {
+fn resolve_divisor_32(d: u32, shift: &mut libc::c_int) -> libc::c_int {
     *shift = ulog2(d);
-    let e = d.wrapping_sub(((1 as libc::c_int) << *shift) as libc::c_uint) as libc::c_int;
+    let e = d.wrapping_sub((1i32 << *shift) as u32) as i32;
     let f = if *shift > 8 {
-        e + ((1 as libc::c_int) << *shift - 9) >> *shift - 8
+        e + (1i32 << *shift - 9) >> *shift - 8
     } else {
         e << 8 - *shift
     };
@@ -85,16 +85,14 @@ pub unsafe extern "C" fn dav1d_get_shear_params(wm: *mut Dav1dWarpedMotionParams
             >= 0x10000 as libc::c_int) as libc::c_int;
 }
 
-fn resolve_divisor_64(d: uint64_t, shift: &mut libc::c_int) -> libc::c_int {
+fn resolve_divisor_64(d: u64, shift: &mut libc::c_int) -> libc::c_int {
     *shift = u64log2(d);
-    let e = (d as libc::c_ulonglong)
-        .wrapping_sub(((1 as libc::c_longlong) << *shift) as libc::c_ulonglong)
-        as int64_t;
-    let f = (if *shift > 8 {
-        e as libc::c_longlong + ((1 as libc::c_longlong) << *shift - 9) >> *shift - 8
+    let e = d.wrapping_sub((1i64 << *shift) as u64) as i64;
+    let f = if *shift > 8 {
+        e + (1i64 << *shift - 9) >> *shift - 8
     } else {
-        (e << 8 - *shift) as libc::c_longlong
-    }) as int64_t;
+        e << 8 - *shift
+    };
     assert!(f <= 256);
     *shift += 14;
     return div_lut[f as usize] as libc::c_int;
