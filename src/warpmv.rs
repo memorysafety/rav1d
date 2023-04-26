@@ -40,9 +40,9 @@ fn iclip_wmp(v: libc::c_int) -> libc::c_int {
 #[inline]
 fn resolve_divisor_32(d: u32, shift: &mut libc::c_int) -> libc::c_int {
     *shift = ulog2(d);
-    let e = d.wrapping_sub((1i32 << *shift) as u32) as i32;
+    let e = d.wrapping_sub(1u32 << *shift) as i32;
     let f = if *shift > 8 {
-        e + (1i32 << *shift - 9) >> *shift - 8
+        e + (1 << *shift - 9) >> *shift - 8
     } else {
         e << 8 - *shift
     };
@@ -87,9 +87,9 @@ pub unsafe extern "C" fn dav1d_get_shear_params(wm: *mut Dav1dWarpedMotionParams
 
 fn resolve_divisor_64(d: u64, shift: &mut libc::c_int) -> libc::c_int {
     *shift = u64log2(d);
-    let e = d.wrapping_sub((1i64 << *shift) as u64) as i64;
+    let e = d.wrapping_sub(1u64 << *shift) as i64;
     let f = if *shift > 8 {
-        e + (1i64 << *shift - 9) >> *shift - 8
+        e + (1 << *shift - 9) >> *shift - 8
     } else {
         e << 8 - *shift
     };
