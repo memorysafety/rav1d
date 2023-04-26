@@ -50,7 +50,7 @@ fn resolve_divisor_32(d: u32) -> (libc::c_int, libc::c_int) {
     (shift + 14, div_lut[f as usize] as libc::c_int)
 }
 
-pub unsafe fn dav1d_get_shear_params(wm: &mut Dav1dWarpedMotionParams) -> bool {
+pub fn dav1d_get_shear_params(wm: &mut Dav1dWarpedMotionParams) -> bool {
     let mat = &wm.matrix;
     if mat[2] <= 0 {
         return true;
