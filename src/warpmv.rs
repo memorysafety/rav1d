@@ -130,7 +130,7 @@ pub fn dav1d_set_affine_mv2d(
 
 pub unsafe fn dav1d_find_affine_int(
     pts: &[[[libc::c_int; 2]; 2]; 8],
-    np: libc::c_int,
+    np: usize,
     bw4: libc::c_int,
     bh4: libc::c_int,
     mv: mv,
@@ -151,10 +151,10 @@ pub unsafe fn dav1d_find_affine_int(
     let isuy = by4 * 4 + rsuy;
     let isux = bx4 * 4 + rsux;
     for i in 0..np {
-        let dx = pts[i as usize][1][0] - dux;
-        let dy = pts[i as usize][1][1] - duy;
-        let sx = pts[i as usize][0][0] - sux;
-        let sy = pts[i as usize][0][1] - suy;
+        let dx = pts[i][1][0] - dux;
+        let dy = pts[i][1][1] - duy;
+        let sx = pts[i][0][0] - sux;
+        let sy = pts[i][0][1] - suy;
         if (sx - dx).abs() < 256 && (sy - dy).abs() < 256 {
             a[0][0] += (sx * sx >> 2) + sx * 2 + 8;
             a[0][1] += (sx * sy >> 2) + sx + sy + 4;

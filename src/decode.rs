@@ -2501,7 +2501,7 @@ unsafe extern "C" fn derive_warpmv(
         i += 1;
     }
     if ret == 0 {
-        ret = 1 as libc::c_int;
+        ret = 1;
     } else {
         let mut i_0 = 0;
         let mut j = np - 1;
