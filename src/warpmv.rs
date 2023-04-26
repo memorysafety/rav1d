@@ -102,8 +102,7 @@ fn get_mult_shift_diag(px: i64, idet: libc::c_int, shift: libc::c_int) -> libc::
     iclip(v2, 0xe001, 0x11fff)
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_set_affine_mv2d(
+pub unsafe fn dav1d_set_affine_mv2d(
     bw4: libc::c_int,
     bh4: libc::c_int,
     mv: mv,
@@ -129,6 +128,7 @@ pub unsafe extern "C" fn dav1d_set_affine_mv2d(
         0x7fffff as libc::c_int,
     );
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_find_affine_int(
     mut pts: *const [[libc::c_int; 2]; 2],
