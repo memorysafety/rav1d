@@ -2531,7 +2531,7 @@ unsafe extern "C" fn derive_warpmv(
         }
     }
     if dav1d_find_affine_int(
-        pts.as_mut_ptr() as *const [[libc::c_int; 2]; 2],
+        &pts,
         ret,
         bw4,
         bh4,
