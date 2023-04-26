@@ -106,11 +106,11 @@ pub unsafe fn dav1d_set_affine_mv2d(
     bw4: libc::c_int,
     bh4: libc::c_int,
     mv: mv,
-    wm: *mut Dav1dWarpedMotionParams,
+    wm: &mut Dav1dWarpedMotionParams,
     bx4: libc::c_int,
     by4: libc::c_int,
 ) {
-    let mat = ((*wm).matrix).as_mut_ptr();
+    let mat = wm.matrix.as_mut_ptr();
     let rsuy = 2 * bh4 - 1;
     let rsux = 2 * bw4 - 1;
     let isuy = by4 * 4 + rsuy;
