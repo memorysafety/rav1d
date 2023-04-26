@@ -138,13 +138,10 @@ pub unsafe fn dav1d_find_affine_int(
     bx4: libc::c_int,
     by4: libc::c_int,
 ) -> libc::c_int {
-    let mat: *mut int32_t = ((*wm).matrix).as_mut_ptr();
-    let mut a: [[libc::c_int; 2]; 2] = [
-        [0 as libc::c_int, 0 as libc::c_int],
-        [0 as libc::c_int, 0 as libc::c_int],
-    ];
-    let mut bx: [libc::c_int; 2] = [0 as libc::c_int, 0 as libc::c_int];
-    let mut by: [libc::c_int; 2] = [0 as libc::c_int, 0 as libc::c_int];
+    let mat = ((*wm).matrix).as_mut_ptr();
+    let mut a = [[0, 0], [0, 0]];
+    let mut bx = [0, 0];
+    let mut by = [0, 0];
     let rsuy = 2 * bh4 - 1;
     let rsux = 2 * bw4 - 1;
     let suy = rsuy * 8;
@@ -170,17 +167,16 @@ pub unsafe fn dav1d_find_affine_int(
         }
         i += 1;
     }
-    let det: int64_t =
-        a[0][0] as int64_t * a[1][1] as int64_t - a[0][1] as int64_t * a[0][1] as int64_t;
+    let det = a[0][0] as int64_t * a[1][1] as int64_t - a[0][1] as int64_t * a[0][1] as int64_t;
     if det == 0 {
-        return 1 as libc::c_int;
+        return 1;
     }
-    let (mut shift, idet) = resolve_divisor_64((det as libc::c_longlong).abs() as u64);
+    let (mut shift, idet) = resolve_divisor_64(det.abs() as u64);
     let mut idet = apply_sign64(idet, det);
-    shift -= 16 as libc::c_int;
+    shift -= 16;
     if shift < 0 {
         idet <<= -shift;
-        shift = 0 as libc::c_int;
+        shift = 0;
     }
     *mat.offset(2) = get_mult_shift_diag(
         a[1][1] as int64_t * bx[0] as int64_t - a[0][1] as int64_t * bx[1] as int64_t,
@@ -203,16 +199,14 @@ pub unsafe fn dav1d_find_affine_int(
         shift,
     );
     *mat.offset(0) = iclip(
-        mv.x as libc::c_int * 0x2000 as libc::c_int
-            - (isux * (*mat.offset(2) - 0x10000 as libc::c_int) + isuy * *mat.offset(3)),
-        -(0x800000 as libc::c_int),
-        0x7fffff as libc::c_int,
+        mv.x as libc::c_int * 0x2000 - (isux * (*mat.offset(2) - 0x10000) + isuy * *mat.offset(3)),
+        -0x800000,
+        0x7fffff,
     );
     *mat.offset(1) = iclip(
-        mv.y as libc::c_int * 0x2000 as libc::c_int
-            - (isux * *mat.offset(4) + isuy * (*mat.offset(5) - 0x10000 as libc::c_int)),
-        -(0x800000 as libc::c_int),
-        0x7fffff as libc::c_int,
+        mv.y as libc::c_int * 0x2000 - (isux * *mat.offset(4) + isuy * (*mat.offset(5) - 0x10000)),
+        -0x800000,
+        0x7fffff,
     );
-    return 0 as libc::c_int;
+    return 0;
 }
