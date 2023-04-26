@@ -128,7 +128,7 @@ pub fn dav1d_set_affine_mv2d(
     );
 }
 
-pub unsafe fn dav1d_find_affine_int(
+pub fn dav1d_find_affine_int(
     pts: &[[[libc::c_int; 2]; 2]; 8],
     np: usize,
     bw4: libc::c_int,
