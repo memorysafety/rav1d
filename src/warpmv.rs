@@ -147,6 +147,7 @@ pub fn dav1d_find_affine_int(
     let dux = sux + mv.x as libc::c_int;
     let isuy = by4 * 4 + rsuy;
     let isux = bx4 * 4 + rsux;
+
     for pts in &pts[..np] {
         let dx = pts[1][0] - dux;
         let dy = pts[1][1] - duy;
@@ -162,6 +163,8 @@ pub fn dav1d_find_affine_int(
             by[1] += (sy * dy >> 2) + sy + dy + 8;
         }
     }
+
+    // compute determinant of a
     let det = a[0][0] as i64 * a[1][1] as i64 - a[0][1] as i64 * a[0][1] as i64;
     if det == 0 {
         return true;
@@ -173,6 +176,8 @@ pub fn dav1d_find_affine_int(
         idet <<= -shift;
         shift = 0;
     }
+
+    // solve the least-squares
     mat[2] = get_mult_shift_diag(
         a[1][1] as i64 * bx[0] as i64 - a[0][1] as i64 * bx[1] as i64,
         idet,
@@ -203,5 +208,6 @@ pub fn dav1d_find_affine_int(
         -0x800000,
         0x7fffff,
     );
+
     return false;
 }
