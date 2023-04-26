@@ -3918,10 +3918,10 @@ unsafe fn decode_b(
                             SignAbs(t.warpmv.matrix[3]),
                             SignAbs(t.warpmv.matrix[4]),
                             SignAbs(t.warpmv.matrix[5]),
-                            SignAbs(t.warpmv.u.p.alpha.into()),
-                            SignAbs(t.warpmv.u.p.beta.into()),
-                            SignAbs(t.warpmv.u.p.gamma.into()),
-                            SignAbs(t.warpmv.u.p.delta.into()),
+                            SignAbs(t.warpmv.alpha().into()),
+                            SignAbs(t.warpmv.beta().into()),
+                            SignAbs(t.warpmv.gamma().into()),
+                            SignAbs(t.warpmv.delta().into()),
                             b.mv2d().y,
                             b.mv2d().x,
                         );
@@ -8424,33 +8424,33 @@ unsafe fn decode_b(
                                 ' ' as i32
                             },
                             (t.warpmv.matrix[5]).abs(),
-                            if (t.warpmv.u.p.alpha as libc::c_int) < 0
+                            if (t.warpmv.alpha() as libc::c_int) < 0
                             {
                                 '-' as i32
                             } else {
                                 ' ' as i32
                             },
-                            (t.warpmv.u.p.alpha as libc::c_int).abs(),
-                            if (t.warpmv.u.p.beta as libc::c_int) < 0 {
+                            (t.warpmv.alpha() as libc::c_int).abs(),
+                            if (t.warpmv.beta() as libc::c_int) < 0 {
                                 '-' as i32
                             } else {
                                 ' ' as i32
                             },
-                            (t.warpmv.u.p.beta as libc::c_int).abs(),
-                            if (t.warpmv.u.p.gamma as libc::c_int) < 0
+                            (t.warpmv.beta() as libc::c_int).abs(),
+                            if (t.warpmv.gamma() as libc::c_int) < 0
                             {
                                 '-' as i32
                             } else {
                                 ' ' as i32
                             },
-                            (t.warpmv.u.p.gamma as libc::c_int).abs(),
-                            if (t.warpmv.u.p.delta as libc::c_int) < 0
+                            (t.warpmv.gamma() as libc::c_int).abs(),
+                            if (t.warpmv.delta() as libc::c_int) < 0
                             {
                                 '-' as i32
                             } else {
                                 ' ' as i32
                             },
-                            (t.warpmv.u.p.delta as libc::c_int).abs(),
+                            (t.warpmv.delta() as libc::c_int).abs(),
                             b
                                 .c2rust_unnamed
                                 .c2rust_unnamed_0
