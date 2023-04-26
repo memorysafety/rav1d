@@ -150,8 +150,7 @@ pub unsafe fn dav1d_find_affine_int(
     let dux = sux + mv.x as libc::c_int;
     let isuy = by4 * 4 + rsuy;
     let isux = bx4 * 4 + rsux;
-    let mut i = 0;
-    while i < np {
+    for i in 0..np {
         let dx = pts[i as usize][1][0] - dux;
         let dy = pts[i as usize][1][1] - duy;
         let sx = pts[i as usize][0][0] - sux;
@@ -165,7 +164,6 @@ pub unsafe fn dav1d_find_affine_int(
             by[0] += (sx * dy >> 2) + sx + dy + 4;
             by[1] += (sy * dy >> 2) + sy + dy + 8;
         }
-        i += 1;
     }
     let det = a[0][0] as int64_t * a[1][1] as int64_t - a[0][1] as int64_t * a[0][1] as int64_t;
     if det == 0 {
