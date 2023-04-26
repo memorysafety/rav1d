@@ -116,12 +116,12 @@ pub unsafe fn dav1d_set_affine_mv2d(
     let isuy = by4 * 4 + rsuy;
     let isux = bx4 * 4 + rsux;
     mat[0] = iclip(
-        mv.x as libc::c_int * 0x2000 - (isux * (mat[2] - 0x10000) + isuy * mat[3]),
+        mv.x as i32 * 0x2000 - (isux * (mat[2] - 0x10000) + isuy * mat[3]),
         -0x800000,
         0x7fffff,
     );
     mat[1] = iclip(
-        mv.y as libc::c_int * 0x2000 - (isux * mat[4] + isuy * (mat[5] - 0x10000)),
+        mv.y as i32 * 0x2000 - (isux * mat[4] + isuy * (mat[5] - 0x10000)),
         -0x800000,
         0x7fffff,
     );
