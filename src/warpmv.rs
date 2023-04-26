@@ -47,7 +47,7 @@ fn resolve_divisor_32(d: libc::c_uint, shift: &mut libc::c_int) -> libc::c_int {
         e << 8 - *shift
     };
     assert!(f <= 256);
-    *shift += 14 as libc::c_int;
+    *shift += 14;
     return div_lut[f as usize] as libc::c_int;
 }
 
@@ -87,16 +87,16 @@ pub unsafe extern "C" fn dav1d_get_shear_params(wm: *mut Dav1dWarpedMotionParams
 
 fn resolve_divisor_64(d: uint64_t, shift: &mut libc::c_int) -> libc::c_int {
     *shift = u64log2(d);
-    let e: int64_t = (d as libc::c_ulonglong)
+    let e = (d as libc::c_ulonglong)
         .wrapping_sub(((1 as libc::c_longlong) << *shift) as libc::c_ulonglong)
         as int64_t;
-    let f: int64_t = (if *shift > 8 {
+    let f = (if *shift > 8 {
         e as libc::c_longlong + ((1 as libc::c_longlong) << *shift - 9) >> *shift - 8
     } else {
         (e << 8 - *shift) as libc::c_longlong
     }) as int64_t;
     assert!(f <= 256);
-    *shift += 14 as libc::c_int;
+    *shift += 14;
     return div_lut[f as usize] as libc::c_int;
 }
 
