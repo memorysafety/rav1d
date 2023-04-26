@@ -150,11 +150,11 @@ pub unsafe fn dav1d_find_affine_int(
     let dux = sux + mv.x as libc::c_int;
     let isuy = by4 * 4 + rsuy;
     let isux = bx4 * 4 + rsux;
-    for i in 0..np {
-        let dx = pts[i][1][0] - dux;
-        let dy = pts[i][1][1] - duy;
-        let sx = pts[i][0][0] - sux;
-        let sy = pts[i][0][1] - suy;
+    for pts in &pts[..np] {
+        let dx = pts[1][0] - dux;
+        let dy = pts[1][1] - duy;
+        let sx = pts[0][0] - sux;
+        let sy = pts[0][1] - suy;
         if (sx - dx).abs() < 256 && (sy - dy).abs() < 256 {
             a[0][0] += (sx * sx >> 2) + sx * 2 + 8;
             a[0][1] += (sx * sy >> 2) + sx + sy + 4;
