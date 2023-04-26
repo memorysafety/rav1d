@@ -2530,16 +2530,7 @@ unsafe extern "C" fn derive_warpmv(
             j -= 1;
         }
     }
-    if dav1d_find_affine_int(
-        &pts,
-        ret,
-        bw4,
-        bh4,
-        mv,
-        &mut *wmp,
-        (*t).bx,
-        (*t).by,
-    ) == 0
+    if !dav1d_find_affine_int(&pts, ret, bw4, bh4, mv, &mut *wmp, (*t).bx, (*t).by)
         && !dav1d_get_shear_params(&mut *wmp)
     {
         (*wmp).type_0 = DAV1D_WM_TYPE_AFFINE;

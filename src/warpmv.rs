@@ -137,7 +137,7 @@ pub fn dav1d_find_affine_int(
     wm: &mut Dav1dWarpedMotionParams,
     bx4: libc::c_int,
     by4: libc::c_int,
-) -> libc::c_int {
+) -> bool {
     let mat = &mut wm.matrix;
     let mut a = [[0, 0], [0, 0]];
     let mut bx = [0, 0];
@@ -167,7 +167,7 @@ pub fn dav1d_find_affine_int(
     }
     let det = a[0][0] as int64_t * a[1][1] as int64_t - a[0][1] as int64_t * a[0][1] as int64_t;
     if det == 0 {
-        return 1;
+        return true;
     }
     let (mut shift, idet) = resolve_divisor_64(det.abs() as u64);
     let mut idet = apply_sign64(idet, det);
@@ -206,5 +206,5 @@ pub fn dav1d_find_affine_int(
         -0x800000,
         0x7fffff,
     );
-    return 0;
+    return false;
 }
