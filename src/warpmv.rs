@@ -134,11 +134,11 @@ pub unsafe fn dav1d_find_affine_int(
     bw4: libc::c_int,
     bh4: libc::c_int,
     mv: mv,
-    wm: *mut Dav1dWarpedMotionParams,
+    wm: &mut Dav1dWarpedMotionParams,
     bx4: libc::c_int,
     by4: libc::c_int,
 ) -> libc::c_int {
-    let mat = ((*wm).matrix).as_mut_ptr();
+    let mat = wm.matrix.as_mut_ptr();
     let mut a = [[0, 0], [0, 0]];
     let mut bx = [0, 0];
     let mut by = [0, 0];

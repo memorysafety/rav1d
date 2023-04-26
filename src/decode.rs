@@ -2536,7 +2536,7 @@ unsafe extern "C" fn derive_warpmv(
         bw4,
         bh4,
         mv,
-        wmp,
+        &mut *wmp,
         (*t).bx,
         (*t).by,
     ) == 0
