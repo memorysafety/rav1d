@@ -1,0 +1,38 @@
+name: build and test on x86-64
+on: [push, pull_request]
+jobs:
+  cargo-fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - name: install prerequisites
+        run: |
+          # make sure we don't silently continue
+          set -euo pipefail
+          sudo apt-get update --quiet=2
+          sudo apt-get install --yes meson nasm gcc-multilib
+        env:
+          DEBIAN_FRONTEND: noninteractive
+      - name: git checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: cache rust toolchain
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.rustup/toolchains
+            ~/.rustup/update-hashes
+            ~/.rustup/settings.toml
+          key: ${{ runner.os }}-rust-toolchain-${{ hashFiles('rust-toolchain', 'rust-toolchain.toml') }}
+      - name: cache rust crates
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Check formatting
+        run: cargo fmt --check
