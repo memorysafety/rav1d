@@ -266,7 +266,7 @@ unsafe fn scan_row(
     let first_cand_b_dim = &dav1d_block_dimensions[first_cand_bs as usize];
     let mut cand_bw4 = first_cand_b_dim[0] as libc::c_int;
     let mut len = imax(step, imin(bw4, cand_bw4));
-    
+
     if bw4 <= cand_bw4 {
         // FIXME weight can be higher for odd blocks (bx4 & 1), but then the
         // position of the first block has to be odd already, i.e. not just
@@ -335,7 +335,7 @@ unsafe fn scan_col(
     let first_cand_b_dim = &dav1d_block_dimensions[first_cand_bs as usize];
     let mut cand_bh4 = first_cand_b_dim[1] as libc::c_int;
     let mut len = imax(step, imin(bh4, cand_bh4));
-    
+
     if bh4 <= cand_bh4 {
         // FIXME weight can be higher for odd blocks (by4 & 1), but then the
         // position of the first block has to be odd already, i.e. not just

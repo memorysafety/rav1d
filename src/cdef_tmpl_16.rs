@@ -744,7 +744,8 @@ unsafe extern "C" fn cdef_dsp_init_x86(c: *mut Dav1dCdefDSPContext) {
 
     (*c).dir = Some(dav1d_cdef_dir_16bpc_sse4);
 
-    #[cfg(target_arch = "x86_64")] {
+    #[cfg(target_arch = "x86_64")]
+    {
         if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
             return;
         }

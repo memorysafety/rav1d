@@ -1408,15 +1408,21 @@ unsafe extern "C" fn film_grain_dsp_init_x86(c: *mut Dav1dFilmGrainDSPContext) {
         }
 
         (*c).generate_grain_y = Some(dav1d_generate_grain_y_16bpc_avx2);
-        (*c).generate_grain_uv[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] = Some(dav1d_generate_grain_uv_420_16bpc_avx2);
-        (*c).generate_grain_uv[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] = Some(dav1d_generate_grain_uv_422_16bpc_avx2);
-        (*c).generate_grain_uv[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] = Some(dav1d_generate_grain_uv_444_16bpc_avx2);
+        (*c).generate_grain_uv[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
+            Some(dav1d_generate_grain_uv_420_16bpc_avx2);
+        (*c).generate_grain_uv[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
+            Some(dav1d_generate_grain_uv_422_16bpc_avx2);
+        (*c).generate_grain_uv[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
+            Some(dav1d_generate_grain_uv_444_16bpc_avx2);
 
         if flags & DAV1D_X86_CPU_FLAG_SLOW_GATHER == 0 {
             (*c).fgy_32x32xn = Some(dav1d_fgy_32x32xn_16bpc_avx2);
-            (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] = Some(dav1d_fguv_32x32xn_i420_16bpc_avx2);
-            (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] = Some(dav1d_fguv_32x32xn_i422_16bpc_avx2);
-            (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] = Some(dav1d_fguv_32x32xn_i444_16bpc_avx2);
+            (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
+                Some(dav1d_fguv_32x32xn_i420_16bpc_avx2);
+            (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
+                Some(dav1d_fguv_32x32xn_i422_16bpc_avx2);
+            (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
+                Some(dav1d_fguv_32x32xn_i444_16bpc_avx2);
         }
 
         if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
@@ -1424,9 +1430,12 @@ unsafe extern "C" fn film_grain_dsp_init_x86(c: *mut Dav1dFilmGrainDSPContext) {
         }
 
         (*c).fgy_32x32xn = Some(dav1d_fgy_32x32xn_16bpc_avx512icl);
-        (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] = Some(dav1d_fguv_32x32xn_i420_16bpc_avx512icl);
-        (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] = Some(dav1d_fguv_32x32xn_i422_16bpc_avx512icl);
-        (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] = Some(dav1d_fguv_32x32xn_i444_16bpc_avx512icl);
+        (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
+            Some(dav1d_fguv_32x32xn_i420_16bpc_avx512icl);
+        (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
+            Some(dav1d_fguv_32x32xn_i422_16bpc_avx512icl);
+        (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
+            Some(dav1d_fguv_32x32xn_i444_16bpc_avx512icl);
     }
 }
 
