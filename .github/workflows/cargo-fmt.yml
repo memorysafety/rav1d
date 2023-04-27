@@ -35,4 +35,6 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: Check formatting
-        run: cargo fmt --check
+        run: |
+          rustup component add rustfmt
+          cargo fmt --check
