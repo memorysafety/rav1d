@@ -2336,11 +2336,11 @@ unsafe fn derive_warpmv(
     let mut mvd = [0; 8];
     let mut ret = 0;
     let thresh = 4 * iclip(imax(bw4, bh4), 4, 28);
-    for i in 0..np {
-        mvd[i] = (pts[i][1][0] - pts[i][0][0] - mv.x as libc::c_int).abs()
-            + (pts[i][1][1] - pts[i][0][1] - mv.y as libc::c_int).abs();
-        if mvd[i] > thresh {
-            mvd[i] = -1;
+    for (mvd, pts) in std::iter::zip(&mut mvd[..np], &pts[..np]) {
+        *mvd = (pts[1][0] - pts[0][0] - mv.x as i32).abs()
+            + (pts[1][1] - pts[0][1] - mv.y as i32).abs();
+        if *mvd > thresh {
+            *mvd = -1;
         } else {
             ret += 1;
         }
