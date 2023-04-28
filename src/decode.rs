@@ -2276,7 +2276,7 @@ unsafe fn derive_warpmv(
     mv: mv,
     wmp: *mut Dav1dWarpedMotionParams,
 ) {
-    let mut pts = [[[0; 2]; 2]; 8];
+    let mut pts = [[[0; 2 /* x, y */]; 2 /* in, out */]; 8];
     let mut np = 0;
     let r = |i: isize| {
         // Need to use a closure here vs. a slice because `i` can be negative
@@ -2298,6 +2298,7 @@ unsafe fn derive_warpmv(
         np + 1
     };
 
+    // use masks[] to find the projectable motion vectors in the edges
     if masks[0] as u32 == 1 && masks[1] >> 32 == 0 {
         let off = (*t).bx & bs(rp(-1, (*t).bx))[0] as i32 - 1;
         np = add_sample(np, -off, 0, 1, -1, rp(-1, (*t).bx));
@@ -2327,12 +2328,16 @@ unsafe fn derive_warpmv(
         }
     }
     if np < 8 && masks[1] >> 32 != 0 {
+        // top/left
         np = add_sample(np, 0, 0, -1, -1, rp(-1, (*t).bx - 1));
     }
     if np < 8 && masks[0] >> 32 != 0 {
+        // top/right
         np = add_sample(np, bw4, 0, 1, -1, rp(-1, (*t).bx + bw4));
     }
     assert!(np > 0 && np <= 8);
+
+    // select according to motion vector difference against a threshold
     let mut mvd = [0; 8];
     let mut ret = 0;
     let thresh = 4 * iclip(imax(bw4, bh4), 4, 28);
@@ -2361,12 +2366,14 @@ unsafe fn derive_warpmv(
             if i > j {
                 break;
             }
+            // replace the discarded samples;
             mvd[i] = mvd[j];
             pts[i] = pts[j];
             i += 1;
             j -= 1;
         }
     }
+
     (*wmp).type_0 = if !dav1d_find_affine_int(&pts, ret, bw4, bh4, mv, &mut *wmp, (*t).bx, (*t).by)
         && !dav1d_get_shear_params(&mut *wmp)
     {
