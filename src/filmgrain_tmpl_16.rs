@@ -3,10 +3,6 @@ use crate::include::stdint::*;
 use ::libc;
 use cfg_if::cfg_if;
 
-extern "C" {
-    static dav1d_gaussian_sequence: [int16_t; 2048];
-}
-
 #[cfg(feature = "asm")]
 extern "C" {
     static mut dav1d_cpu_flags: libc::c_uint;
@@ -339,6 +335,8 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
 }
+
+use crate::src::tables::dav1d_gaussian_sequence;
 
 pub type pixel = uint16_t;
 

@@ -5,8 +5,9 @@ use crate::src::msac::MsacContext;
 use ::libc;
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
-    static dav1d_sgr_params: [[uint16_t; 2]; 16];
 }
+
+use crate::src::tables::dav1d_sgr_params;
 
 pub type pixel = uint8_t;
 pub type coef = int16_t;

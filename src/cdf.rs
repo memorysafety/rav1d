@@ -8,8 +8,9 @@ extern "C" {
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
     fn dav1d_ref_create_using_pool(pool: *mut Dav1dMemPool, size: size_t) -> *mut Dav1dRef;
     fn dav1d_ref_dec(r#ref: *mut *mut Dav1dRef);
-    static dav1d_partition_type_count: [uint8_t; 5];
 }
+
+use crate::src::tables::dav1d_partition_type_count;
 
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;

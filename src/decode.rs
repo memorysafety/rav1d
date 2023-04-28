@@ -47,19 +47,6 @@ extern "C" {
     );
     fn dav1d_data_props_copy(dst: *mut Dav1dDataProps, src: *const Dav1dDataProps);
     fn dav1d_data_unref_internal(buf: *mut Dav1dData);
-    static dav1d_al_part_ctx: [[[uint8_t; 10]; 5]; 2];
-    static dav1d_block_sizes: [[[uint8_t; 2]; 10]; 5];
-    static dav1d_block_dimensions: [[uint8_t; 4]; 22];
-    static dav1d_txfm_dimensions: [TxfmInfo; 19];
-    static dav1d_max_txfm_size_for_bs: [[uint8_t; 4]; 22];
-    static dav1d_comp_inter_pred_modes: [[uint8_t; 2]; 8];
-    static dav1d_partition_type_count: [uint8_t; 5];
-    static dav1d_ymode_size_context: [uint8_t; 22];
-    static dav1d_filter_2d: [[uint8_t; 4]; 4];
-    static dav1d_filter_dir: [[uint8_t; 2]; 10];
-    static dav1d_intra_mode_context: [uint8_t; 13];
-    static dav1d_wedge_ctx_lut: [uint8_t; 22];
-    static dav1d_sgr_params: [[uint16_t; 2]; 16];
     fn dav1d_refmvs_init_frame(
         rf: *mut refmvs_frame,
         seq_hdr: *const Dav1dSequenceHeader,
@@ -306,6 +293,19 @@ extern "C" {
 
 use crate::src::dequant_tables::dav1d_dq_tbl;
 use crate::src::refmvs::dav1d_refmvs_find;
+use crate::src::tables::dav1d_al_part_ctx;
+use crate::src::tables::dav1d_block_dimensions;
+use crate::src::tables::dav1d_block_sizes;
+use crate::src::tables::dav1d_comp_inter_pred_modes;
+use crate::src::tables::dav1d_filter_2d;
+use crate::src::tables::dav1d_filter_dir;
+use crate::src::tables::dav1d_intra_mode_context;
+use crate::src::tables::dav1d_max_txfm_size_for_bs;
+use crate::src::tables::dav1d_partition_type_count;
+use crate::src::tables::dav1d_sgr_params;
+use crate::src::tables::dav1d_txfm_dimensions;
+use crate::src::tables::dav1d_wedge_ctx_lut;
+use crate::src::tables::dav1d_ymode_size_context;
 
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;

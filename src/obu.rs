@@ -20,7 +20,6 @@ extern "C" {
     fn dav1d_data_ref(dst: *mut Dav1dData, src: *const Dav1dData);
     fn dav1d_data_props_copy(dst: *mut Dav1dDataProps, src: *const Dav1dDataProps);
     fn dav1d_data_unref_internal(buf: *mut Dav1dData);
-    static dav1d_default_wm_params: Dav1dWarpedMotionParams;
     fn dav1d_thread_picture_ref(dst: *mut Dav1dThreadPicture, src: *const Dav1dThreadPicture);
     fn dav1d_thread_picture_unref(p: *mut Dav1dThreadPicture);
     fn dav1d_picture_get_event_flags(p: *const Dav1dThreadPicture) -> Dav1dEventFlags;
@@ -35,6 +34,8 @@ extern "C" {
     fn dav1d_bytealign_get_bits(c: *mut GetBits);
     fn dav1d_log(c: *mut Dav1dContext, format: *const libc::c_char, _: ...);
 }
+
+use crate::src::tables::dav1d_default_wm_params;
 
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;

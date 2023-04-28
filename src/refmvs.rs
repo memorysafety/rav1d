@@ -9,7 +9,6 @@ extern "C" {
         __alignment: size_t,
         __size: size_t,
     ) -> libc::c_int;
-    static dav1d_block_dimensions: [[uint8_t; 4]; 22];
 }
 
 #[cfg(feature = "asm")]
@@ -53,6 +52,9 @@ extern "C" {
         bh4: libc::c_int,
     );
 }
+
+use crate::src::tables::dav1d_block_dimensions;
+
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
 
 use crate::include::dav1d::headers::Dav1dFrameHeader;

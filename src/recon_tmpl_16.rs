@@ -10,15 +10,6 @@ extern "C" {
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::size_t) -> *mut libc::c_void;
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
     fn printf(_: *const libc::c_char, _: ...) -> libc::c_int;
-    static dav1d_block_dimensions: [[uint8_t; 4]; 22];
-    static dav1d_txfm_dimensions: [TxfmInfo; 19];
-    static dav1d_txtp_from_uvmode: [uint8_t; 14];
-    static dav1d_tx_types_per_set: [uint8_t; 40];
-    static dav1d_filter_mode_to_y_mode: [uint8_t; 5];
-    static dav1d_lo_ctx_offsets: [[[uint8_t; 5]; 5]; 3];
-    static dav1d_skip_ctx: [[uint8_t; 5]; 5];
-    static dav1d_tx_type_class: [uint8_t; 17];
-    static dav1d_filter_2d: [[uint8_t; 4]; 4];
     fn dav1d_msac_decode_symbol_adapt4(
         s: *mut MsacContext,
         cdf: *mut uint16_t,
@@ -84,6 +75,17 @@ extern "C" {
     static mut dav1d_wedge_masks: [[[[*const uint8_t; 16]; 2]; 3]; 22];
     static mut dav1d_ii_masks: [[[*const uint8_t; 4]; 3]; 22];
 }
+
+use crate::src::tables::dav1d_block_dimensions;
+use crate::src::tables::dav1d_filter_2d;
+use crate::src::tables::dav1d_filter_mode_to_y_mode;
+use crate::src::tables::dav1d_lo_ctx_offsets;
+use crate::src::tables::dav1d_skip_ctx;
+use crate::src::tables::dav1d_tx_type_class;
+use crate::src::tables::dav1d_tx_types_per_set;
+use crate::src::tables::dav1d_txfm_dimensions;
+use crate::src::tables::dav1d_txtp_from_uvmode;
+
 pub type pixel = uint16_t;
 pub type coef = int32_t;
 use crate::include::stdatomic::atomic_int;
