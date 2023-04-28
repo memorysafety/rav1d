@@ -2281,7 +2281,7 @@ unsafe fn derive_warpmv(
     let r = |i: isize| {
         // Need to use a closure here vs. a slice because `i` can be negative
         // (and not just by a constant -1).
-        // See `off_1: i32` below.
+        // See `-off` below.
         let offset = ((*t).by & 31) + 5;
         (*t).rt.r[(offset as isize + i) as usize]
     };
@@ -2302,27 +2302,27 @@ unsafe fn derive_warpmv(
         let off = (*t).bx & bs(rp(-1, (*t).bx))[0] as i32 - 1;
         np = add_sample(np, -off, 0, 1, -1, rp(-1, (*t).bx));
     } else {
-        let mut off_0 = 0;
+        let mut off = 0;
         let mut xmask = masks[0] as u32;
         while np < 8 && xmask != 0 {
             let tz = ctz(xmask);
-            off_0 += tz;
+            off += tz;
             xmask >>= tz;
-            np = add_sample(np, off_0, 0, 1, -1, rp(-1, (*t).bx + off_0));
+            np = add_sample(np, off, 0, 1, -1, rp(-1, (*t).bx + off));
             xmask &= !1;
         }
     }
     if np < 8 && masks[1] as u32 == 1 {
-        let off_1 = (*t).by & bs(rp(0, (*t).bx - 1))[1] as i32 - 1;
-        np = add_sample(np, 0, -off_1, -1, 1, rp(-off_1, (*t).bx - 1));
+        let off = (*t).by & bs(rp(0, (*t).bx - 1))[1] as i32 - 1;
+        np = add_sample(np, 0, -off, -1, 1, rp(-off, (*t).bx - 1));
     } else {
-        let mut off_2 = 0;
+        let mut off = 0;
         let mut ymask = masks[1] as u32;
         while np < 8 && ymask != 0 {
-            let tz_0 = ctz(ymask);
-            off_2 += tz_0;
-            ymask >>= tz_0;
-            np = add_sample(np, 0, off_2, -1, 1, rp(off_2, (*t).bx - 1));
+            let tz = ctz(ymask);
+            off += tz;
+            ymask >>= tz;
+            np = add_sample(np, 0, off, -1, 1, rp(off, (*t).bx - 1));
             ymask &= !1;
         }
     }
@@ -2348,26 +2348,26 @@ unsafe fn derive_warpmv(
     if ret == 0 {
         ret = 1;
     } else {
-        let mut i_0 = 0;
+        let mut i = 0;
         let mut j = np - 1;
         for _ in 0..np - ret {
-            while mvd[i_0] != -1 {
-                i_0 += 1;
+            while mvd[i] != -1 {
+                i += 1;
             }
             while mvd[j] == -1 {
                 j -= 1;
             }
-            assert!(i_0 != j);
-            if i_0 > j {
+            assert!(i != j);
+            if i > j {
                 break;
             }
-            mvd[i_0] = mvd[j];
+            mvd[i] = mvd[j];
             memcpy(
-                pts[i_0].as_mut_ptr() as *mut libc::c_void,
+                pts[i].as_mut_ptr() as *mut libc::c_void,
                 pts[j].as_mut_ptr() as *const libc::c_void,
                 ::core::mem::size_of::<[[libc::c_int; 2]; 2]>() as libc::c_ulong,
             );
-            i_0 += 1;
+            i += 1;
             j -= 1;
         }
     }
