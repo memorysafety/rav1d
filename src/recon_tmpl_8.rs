@@ -4322,13 +4322,13 @@ unsafe extern "C" fn warp_affine(
             let mvy: int64_t = *mat.offset(4) as int64_t * src_x as int64_t + mat5_y >> ss_ver;
             let dx = (mvx >> 16) as libc::c_int - 4;
             let mx = (mvx as libc::c_int & 0xffff as libc::c_int)
-                - (*wmp).u.p.alpha as libc::c_int * 4
-                - (*wmp).u.p.beta as libc::c_int * 7
+                - (*wmp).alpha() as libc::c_int * 4
+                - (*wmp).beta() as libc::c_int * 7
                 & !(0x3f as libc::c_int);
             let dy = (mvy >> 16) as libc::c_int - 4;
             let my = (mvy as libc::c_int & 0xffff as libc::c_int)
-                - (*wmp).u.p.gamma as libc::c_int * 4
-                - (*wmp).u.p.delta as libc::c_int * 4
+                - (*wmp).gamma() as libc::c_int * 4
+                - (*wmp).delta() as libc::c_int * 4
                 & !(0x3f as libc::c_int);
             let mut ref_ptr: *const pixel = 0 as *const pixel;
             let mut ref_stride: ptrdiff_t = (*refp).p.stride[(pl != 0) as libc::c_int as usize];
@@ -4364,7 +4364,7 @@ unsafe extern "C" fn warp_affine(
                     dstride,
                     ref_ptr,
                     ref_stride,
-                    ((*wmp).u.abcd).as_ptr(),
+                    ((*wmp).abcd).as_ptr(),
                     mx,
                     my,
                 );
@@ -4374,7 +4374,7 @@ unsafe extern "C" fn warp_affine(
                     dstride,
                     ref_ptr,
                     ref_stride,
-                    ((*wmp).u.abcd).as_ptr(),
+                    ((*wmp).abcd).as_ptr(),
                     mx,
                     my,
                 );

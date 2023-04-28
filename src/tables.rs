@@ -1,6 +1,4 @@
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
-use crate::include::dav1d::headers::Dav1dWarpedMotionParams_u;
-use crate::include::dav1d::headers::Dav1dWarpedMotionParams_u_p;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SHARP;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SMOOTH;
@@ -672,23 +670,10 @@ pub static dav1d_wedge_ctx_lut: [u8; 22] = [
     0, 0, 0, 0, 0, 0, 0, 6, 5, 8, 0, 4, 3, 2, 0, 7, 1, 0, 0, 0, 0, 0,
 ];
 
-pub static dav1d_default_wm_params: Dav1dWarpedMotionParams = {
-    let mut init = Dav1dWarpedMotionParams {
-        type_0: DAV1D_WM_TYPE_IDENTITY,
-        matrix: [0, 0, 1 << 16, 0, 0, 1 << 16],
-        u: Dav1dWarpedMotionParams_u {
-            p: {
-                let mut init = Dav1dWarpedMotionParams_u_p {
-                    alpha: 0,
-                    beta: 0,
-                    gamma: 0,
-                    delta: 0,
-                };
-                init
-            },
-        },
-    };
-    init
+pub static dav1d_default_wm_params: Dav1dWarpedMotionParams = Dav1dWarpedMotionParams {
+    type_0: DAV1D_WM_TYPE_IDENTITY,
+    matrix: [0, 0, 1 << 16, 0, 0, 1 << 16],
+    abcd: [0; 4],
 };
 
 pub static dav1d_cdef_directions: [[i8; 2]; 12] = [
