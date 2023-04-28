@@ -2286,11 +2286,11 @@ unsafe fn derive_warpmv(
         (*t).rt.r[(offset as isize + i) as usize]
     };
 
-    let rp = |i: i32, j: i32| r(i as isize).offset(j as isize);
+    let rp = |i: i32, j: i32| &*r(i as isize).offset(j as isize);
 
-    let bs = |rp: *mut refmvs_block| dav1d_block_dimensions[(*rp).bs as usize];
+    let bs = |rp: &refmvs_block| dav1d_block_dimensions[(*rp).bs as usize];
 
-    let mut add_sample = |np: usize, dx: i32, dy: i32, sx: i32, sy: i32, rp: *mut refmvs_block| {
+    let mut add_sample = |np: usize, dx: i32, dy: i32, sx: i32, sy: i32, rp: &refmvs_block| {
         pts[np][0][0] = 16 * (2 * dx + sx * bs(rp)[0] as i32) - 8;
         pts[np][0][1] = 16 * (2 * dy + sy * bs(rp)[1] as i32) - 8;
         pts[np][1][0] = pts[np][0][0] + (*rp).mv.mv[0].x as i32;
