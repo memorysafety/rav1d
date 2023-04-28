@@ -2269,21 +2269,21 @@ unsafe extern "C" fn find_matching_ref(
 }
 
 unsafe fn derive_warpmv(
-    t: *const Dav1dTaskContext,
+    t: &Dav1dTaskContext,
     bw4: libc::c_int,
     bh4: libc::c_int,
     masks: &[u64; 2],
     mv: mv,
-    wmp: *mut Dav1dWarpedMotionParams,
-) {
+    mut wmp: Dav1dWarpedMotionParams,
+) -> Dav1dWarpedMotionParams {
     let mut pts = [[[0; 2 /* x, y */]; 2 /* in, out */]; 8];
     let mut np = 0;
     let r = |i: isize| {
         // Need to use a closure here vs. a slice because `i` can be negative
         // (and not just by a constant -1).
         // See `-off` below.
-        let offset = ((*t).by & 31) + 5;
-        (*t).rt.r[(offset as isize + i) as usize]
+        let offset = (t.by & 31) + 5;
+        t.rt.r[(offset as isize + i) as usize]
     };
 
     let rp = |i: i32, j: i32| &*r(i as isize).offset(j as isize);
@@ -2300,8 +2300,8 @@ unsafe fn derive_warpmv(
 
     // use masks[] to find the projectable motion vectors in the edges
     if masks[0] as u32 == 1 && masks[1] >> 32 == 0 {
-        let off = (*t).bx & bs(rp(-1, (*t).bx))[0] as i32 - 1;
-        np = add_sample(np, -off, 0, 1, -1, rp(-1, (*t).bx));
+        let off = t.bx & bs(rp(-1, t.bx))[0] as i32 - 1;
+        np = add_sample(np, -off, 0, 1, -1, rp(-1, t.bx));
     } else {
         let mut off = 0;
         let mut xmask = masks[0] as u32;
@@ -2309,13 +2309,13 @@ unsafe fn derive_warpmv(
             let tz = ctz(xmask);
             off += tz;
             xmask >>= tz;
-            np = add_sample(np, off, 0, 1, -1, rp(-1, (*t).bx + off));
+            np = add_sample(np, off, 0, 1, -1, rp(-1, t.bx + off));
             xmask &= !1;
         }
     }
     if np < 8 && masks[1] as u32 == 1 {
-        let off = (*t).by & bs(rp(0, (*t).bx - 1))[1] as i32 - 1;
-        np = add_sample(np, 0, -off, -1, 1, rp(-off, (*t).bx - 1));
+        let off = t.by & bs(rp(0, t.bx - 1))[1] as i32 - 1;
+        np = add_sample(np, 0, -off, -1, 1, rp(-off, t.bx - 1));
     } else {
         let mut off = 0;
         let mut ymask = masks[1] as u32;
@@ -2323,17 +2323,17 @@ unsafe fn derive_warpmv(
             let tz = ctz(ymask);
             off += tz;
             ymask >>= tz;
-            np = add_sample(np, 0, off, -1, 1, rp(off, (*t).bx - 1));
+            np = add_sample(np, 0, off, -1, 1, rp(off, t.bx - 1));
             ymask &= !1;
         }
     }
     if np < 8 && masks[1] >> 32 != 0 {
         // top/left
-        np = add_sample(np, 0, 0, -1, -1, rp(-1, (*t).bx - 1));
+        np = add_sample(np, 0, 0, -1, -1, rp(-1, t.bx - 1));
     }
     if np < 8 && masks[0] >> 32 != 0 {
         // top/right
-        np = add_sample(np, bw4, 0, 1, -1, rp(-1, (*t).bx + bw4));
+        np = add_sample(np, bw4, 0, 1, -1, rp(-1, t.bx + bw4));
     }
     assert!(np > 0 && np <= 8);
 
@@ -2374,13 +2374,14 @@ unsafe fn derive_warpmv(
         }
     }
 
-    (*wmp).type_0 = if !dav1d_find_affine_int(&pts, ret, bw4, bh4, mv, &mut *wmp, (*t).bx, (*t).by)
-        && !dav1d_get_shear_params(&mut *wmp)
+    wmp.type_0 = if !dav1d_find_affine_int(&pts, ret, bw4, bh4, mv, &mut wmp, t.bx, t.by)
+        && !dav1d_get_shear_params(&mut wmp)
     {
         DAV1D_WM_TYPE_AFFINE
     } else {
         DAV1D_WM_TYPE_IDENTITY
     };
+    wmp
 }
 
 #[inline]
@@ -8179,7 +8180,7 @@ unsafe fn decode_b(
                     == MM_WARP as libc::c_int
                 {
                     has_subpel_filter = 0 as libc::c_int;
-                    derive_warpmv(
+                    t.warpmv = derive_warpmv(
                         t,
                         bw4,
                         bh4,
@@ -8189,7 +8190,7 @@ unsafe fn decode_b(
                             .c2rust_unnamed
                             .c2rust_unnamed
                             .mv[0],
-                        &mut t.warpmv,
+                        t.warpmv.clone(),
                     );
                     if DEBUG_BLOCK_INFO(f, t) {
                         printf(
