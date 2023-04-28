@@ -2362,11 +2362,7 @@ unsafe fn derive_warpmv(
                 break;
             }
             mvd[i] = mvd[j];
-            memcpy(
-                pts[i].as_mut_ptr() as *mut libc::c_void,
-                pts[j].as_mut_ptr() as *const libc::c_void,
-                ::core::mem::size_of::<[[libc::c_int; 2]; 2]>() as libc::c_ulong,
-            );
+            pts[i] = pts[j];
             i += 1;
             j -= 1;
         }
