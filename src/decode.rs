@@ -2272,7 +2272,7 @@ unsafe fn derive_warpmv(
     t: *const Dav1dTaskContext,
     bw4: libc::c_int,
     bh4: libc::c_int,
-    mut masks: *const uint64_t,
+    masks: &[u64; 2],
     mv: mv,
     wmp: *mut Dav1dWarpedMotionParams,
 ) {
@@ -2280,7 +2280,7 @@ unsafe fn derive_warpmv(
     let mut np = 0;
     let mut r =
         &*((*t).rt.r).as_ptr().offset((((*t).by & 31) + 5) as isize) as *const *mut refmvs_block;
-    if *masks.offset(0) as libc::c_uint == 1 && (*masks.offset(1)).wrapping_shr(32) == 0 {
+    if masks[0] as u32 == 1 && masks[1].wrapping_shr(32) == 0 {
         let off = (*t).bx
             & dav1d_block_dimensions[(*(*r.offset(-1)).offset((*t).bx as isize)).bs as usize][0]
                 as libc::c_int
@@ -2304,7 +2304,7 @@ unsafe fn derive_warpmv(
         np += 1;
     } else {
         let mut off_0 = 0 as libc::c_uint;
-        let mut xmask = *masks.offset(0) as uint32_t;
+        let mut xmask = masks[0] as u32;
         while np < 8 && xmask != 0 {
             let tz = ctz(xmask);
             off_0 = off_0.wrapping_add(tz as libc::c_uint);
@@ -2340,7 +2340,7 @@ unsafe fn derive_warpmv(
             xmask &= !1;
         }
     }
-    if np < 8 && *masks.offset(1) as libc::c_uint == 1 {
+    if np < 8 && masks[1] as u32 == 1 {
         let off_1 = (*t).by
             & dav1d_block_dimensions[(*(*r.offset(0)).offset(((*t).bx - 1) as isize)).bs as usize]
                 [1] as libc::c_int
@@ -2370,7 +2370,7 @@ unsafe fn derive_warpmv(
         np += 1;
     } else {
         let mut off_2 = 0 as libc::c_uint;
-        let mut ymask = *masks.offset(1) as uint32_t;
+        let mut ymask = masks[1] as u32;
         while np < 8 && ymask != 0 {
             let tz_0 = ctz(ymask);
             off_2 = off_2.wrapping_add(tz_0 as libc::c_uint);
@@ -2402,7 +2402,7 @@ unsafe fn derive_warpmv(
             ymask &= !1;
         }
     }
-    if np < 8 && (*masks.offset(1)).wrapping_shr(32) != 0 {
+    if np < 8 && masks[1].wrapping_shr(32) != 0 {
         pts[np][0][0] = 16
             * (2 * 0
                 + -1 * dav1d_block_dimensions
@@ -2421,7 +2421,7 @@ unsafe fn derive_warpmv(
             + (*(*r.offset(-1)).offset(((*t).bx - 1) as isize)).mv.mv[0].y as libc::c_int;
         np += 1;
     }
-    if np < 8 && (*masks.offset(0)).wrapping_shr(32) != 0 {
+    if np < 8 && masks[0].wrapping_shr(32) != 0 {
         pts[np][0][0] = 16
             * (2 * bw4
                 + 1 * dav1d_block_dimensions
@@ -8296,7 +8296,7 @@ unsafe fn decode_b(
                         t,
                         bw4,
                         bh4,
-                        mask.as_mut_ptr() as *const uint64_t,
+                        &mask,
                         b.c2rust_unnamed
                             .c2rust_unnamed_0
                             .c2rust_unnamed
