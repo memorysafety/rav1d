@@ -34,7 +34,7 @@ static div_lut: [u16; 257] = [
 #[inline]
 fn iclip_wmp(v: libc::c_int) -> libc::c_int {
     let cv = iclip(v, i16::MIN.into(), i16::MAX.into());
-    return apply_sign(cv.abs() + 32 >> 6, cv) * (1 << 6);
+    apply_sign(cv.abs() + 32 >> 6, cv) * (1 << 6)
 }
 
 #[inline]
@@ -90,32 +90,18 @@ fn resolve_divisor_64(d: u64) -> (libc::c_int, libc::c_int) {
     (shift + 14, div_lut[f as usize] as libc::c_int)
 }
 
-unsafe extern "C" fn get_mult_shift_ndiag(
-    px: int64_t,
-    idet: libc::c_int,
-    shift: libc::c_int,
-) -> libc::c_int {
-    let v1: int64_t = px * idet as int64_t;
-    let v2 = apply_sign64(
-        ((v1 as libc::c_longlong).abs() + ((1 as libc::c_longlong) << shift >> 1) >> shift)
-            as libc::c_int,
-        v1,
-    );
-    return iclip(v2, -(0x1fff as libc::c_int), 0x1fff as libc::c_int);
+fn get_mult_shift_ndiag(px: i64, idet: libc::c_int, shift: libc::c_int) -> libc::c_int {
+    let v1 = px * idet as i64;
+    let v2 = apply_sign64((v1.abs() + (1 << shift >> 1) >> shift) as libc::c_int, v1);
+    iclip(v2, -0x1fff, 0x1fff)
 }
-unsafe extern "C" fn get_mult_shift_diag(
-    px: int64_t,
-    idet: libc::c_int,
-    shift: libc::c_int,
-) -> libc::c_int {
-    let v1: int64_t = px * idet as int64_t;
-    let v2 = apply_sign64(
-        ((v1 as libc::c_longlong).abs() + ((1 as libc::c_longlong) << shift >> 1) >> shift)
-            as libc::c_int,
-        v1,
-    );
-    return iclip(v2, 0xe001 as libc::c_int, 0x11fff as libc::c_int);
+
+fn get_mult_shift_diag(px: i64, idet: libc::c_int, shift: libc::c_int) -> libc::c_int {
+    let v1 = px * idet as i64;
+    let v2 = apply_sign64((v1.abs() + (1 << shift >> 1) >> shift) as libc::c_int, v1);
+    iclip(v2, 0xe001, 0x11fff)
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_set_affine_mv2d(
     bw4: libc::c_int,
