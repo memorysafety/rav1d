@@ -9,5 +9,4 @@ jobs:
         with:
           fetch-depth: 1
       - name: Check formatting
-        run: |
-          cargo fmt --check
+        run: cargo fmt --check
