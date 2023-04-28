@@ -2286,19 +2286,18 @@ unsafe fn derive_warpmv(
         (*t).rt.r[(offset as isize + i) as usize]
     };
 
+    let bs = |rp: *mut refmvs_block| dav1d_block_dimensions[(*rp).bs as usize];
+
     let mut add_sample = |np: usize, dx: i32, dy: i32, sx: i32, sy: i32, rp: *mut refmvs_block| {
-        pts[np][0][0] =
-            16 * (2 * dx + sx * dav1d_block_dimensions[(*rp).bs as usize][0] as i32) - 8;
-        pts[np][0][1] =
-            16 * (2 * dy + sy * dav1d_block_dimensions[(*rp).bs as usize][1] as i32) - 8;
+        pts[np][0][0] = 16 * (2 * dx + sx * bs(rp)[0] as i32) - 8;
+        pts[np][0][1] = 16 * (2 * dy + sy * bs(rp)[1] as i32) - 8;
         pts[np][1][0] = pts[np][0][0] + (*rp).mv.mv[0].x as i32;
         pts[np][1][1] = pts[np][0][1] + (*rp).mv.mv[0].y as i32;
         np + 1
     };
 
     if masks[0] as u32 == 1 && masks[1] >> 32 == 0 {
-        let off = (*t).bx
-            & dav1d_block_dimensions[(*r(-1).offset((*t).bx as isize)).bs as usize][0] as i32 - 1;
+        let off = (*t).bx & bs(r(-1).offset((*t).bx as isize))[0] as i32 - 1;
         np = add_sample(np, -off, 0, 1, -1, r(-1).offset((*t).bx as isize));
     } else {
         let mut off_0 = 0;
@@ -2319,9 +2318,7 @@ unsafe fn derive_warpmv(
         }
     }
     if np < 8 && masks[1] as u32 == 1 {
-        let off_1 = (*t).by
-            & dav1d_block_dimensions[(*r(0).offset(((*t).bx - 1) as isize)).bs as usize][1] as i32
-                - 1;
+        let off_1 = (*t).by & bs(r(0).offset(((*t).bx - 1) as isize))[1] as i32 - 1;
         np = add_sample(
             np,
             0,
