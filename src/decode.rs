@@ -270,16 +270,6 @@ extern "C" {
         cond_signal: libc::c_int,
     ) -> libc::c_int;
     fn dav1d_task_frame_init(f: *mut Dav1dFrameContext);
-    fn dav1d_find_affine_int(
-        pts: *const [[libc::c_int; 2]; 2],
-        np: libc::c_int,
-        bw4: libc::c_int,
-        bh4: libc::c_int,
-        mv: mv,
-        wm: *mut Dav1dWarpedMotionParams,
-        bx: libc::c_int,
-        by: libc::c_int,
-    ) -> libc::c_int;
 }
 
 use crate::src::dequant_tables::dav1d_dq_tbl;
@@ -297,6 +287,7 @@ use crate::src::tables::dav1d_sgr_params;
 use crate::src::tables::dav1d_txfm_dimensions;
 use crate::src::tables::dav1d_wedge_ctx_lut;
 use crate::src::tables::dav1d_ymode_size_context;
+use crate::src::warpmv::dav1d_find_affine_int;
 use crate::src::warpmv::dav1d_get_shear_params;
 use crate::src::warpmv::dav1d_set_affine_mv2d;
 
@@ -2510,7 +2501,7 @@ unsafe extern "C" fn derive_warpmv(
         i += 1;
     }
     if ret == 0 {
-        ret = 1 as libc::c_int;
+        ret = 1;
     } else {
         let mut i_0 = 0;
         let mut j = np - 1;
@@ -2539,16 +2530,7 @@ unsafe extern "C" fn derive_warpmv(
             j -= 1;
         }
     }
-    if dav1d_find_affine_int(
-        pts.as_mut_ptr() as *const [[libc::c_int; 2]; 2],
-        ret,
-        bw4,
-        bh4,
-        mv,
-        wmp,
-        (*t).bx,
-        (*t).by,
-    ) == 0
+    if !dav1d_find_affine_int(&pts, ret, bw4, bh4, mv, &mut *wmp, (*t).bx, (*t).by)
         && !dav1d_get_shear_params(&mut *wmp)
     {
         (*wmp).type_0 = DAV1D_WM_TYPE_AFFINE;
