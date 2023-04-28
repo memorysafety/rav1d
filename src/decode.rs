@@ -2332,9 +2332,7 @@ unsafe fn derive_warpmv(
     if np < 8 && masks[0] >> 32 != 0 {
         np = add_sample(np, bw4, 0, 1, -1, rp(-1, (*t).bx + bw4));
     }
-    if !(np > 0 && np <= 8) {
-        unreachable!();
-    }
+    assert!(np > 0 && np <= 8);
     let mut mvd = [0; 8];
     let mut ret = 0;
     let thresh = 4 * iclip(imax(bw4, bh4), 4, 28);
@@ -2362,9 +2360,7 @@ unsafe fn derive_warpmv(
             while mvd[j] == -1 {
                 j -= 1;
             }
-            if !(i_0 != j) {
-                unreachable!();
-            }
+            assert!(i_0 != j);
             if i_0 > j {
                 break;
             }
