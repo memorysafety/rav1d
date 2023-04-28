@@ -2280,7 +2280,7 @@ unsafe fn derive_warpmv(
     let mut np = 0;
     let mut r =
         &*((*t).rt.r).as_ptr().offset((((*t).by & 31) + 5) as isize) as *const *mut refmvs_block;
-    if masks[0] as u32 == 1 && masks[1].wrapping_shr(32) == 0 {
+    if masks[0] as u32 == 1 && masks[1] >> 32 == 0 {
         let off = (*t).bx
             & dav1d_block_dimensions[(*(*r.offset(-1)).offset((*t).bx as isize)).bs as usize][0]
                 as libc::c_int
@@ -2402,7 +2402,7 @@ unsafe fn derive_warpmv(
             ymask &= !1;
         }
     }
-    if np < 8 && masks[1].wrapping_shr(32) != 0 {
+    if np < 8 && masks[1] >> 32 != 0 {
         pts[np][0][0] = 16
             * (2 * 0
                 + -1 * dav1d_block_dimensions
@@ -2421,7 +2421,7 @@ unsafe fn derive_warpmv(
             + (*(*r.offset(-1)).offset(((*t).bx - 1) as isize)).mv.mv[0].y as libc::c_int;
         np += 1;
     }
-    if np < 8 && masks[0].wrapping_shr(32) != 0 {
+    if np < 8 && masks[0] >> 32 != 0 {
         pts[np][0][0] = 16
             * (2 * bw4
                 + 1 * dav1d_block_dimensions
