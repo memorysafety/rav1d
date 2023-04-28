@@ -2336,8 +2336,7 @@ unsafe fn derive_warpmv(
     let mut mvd = [0; 8];
     let mut ret = 0;
     let thresh = 4 * iclip(imax(bw4, bh4), 4, 28);
-    let mut i = 0;
-    while i < np {
+    for i in 0..np {
         mvd[i] = (pts[i][1][0] - pts[i][0][0] - mv.x as libc::c_int).abs()
             + (pts[i][1][1] - pts[i][0][1] - mv.y as libc::c_int).abs();
         if mvd[i] > thresh {
@@ -2345,15 +2344,13 @@ unsafe fn derive_warpmv(
         } else {
             ret += 1;
         }
-        i += 1;
     }
     if ret == 0 {
         ret = 1;
     } else {
         let mut i_0 = 0;
         let mut j = np - 1;
-        let mut k = 0;
-        while k < np - ret {
+        for _ in 0..np - ret {
             while mvd[i_0] != -1 {
                 i_0 += 1;
             }
@@ -2370,7 +2367,6 @@ unsafe fn derive_warpmv(
                 pts[j].as_mut_ptr() as *const libc::c_void,
                 ::core::mem::size_of::<[[libc::c_int; 2]; 2]>() as libc::c_ulong,
             );
-            k += 1;
             i_0 += 1;
             j -= 1;
         }
