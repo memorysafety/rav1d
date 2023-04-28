@@ -2267,276 +2267,121 @@ unsafe extern "C" fn find_matching_ref(
         *fresh7 = (*fresh7 as libc::c_ulonglong | (1 as libc::c_ulonglong) << 32) as uint64_t;
     }
 }
-unsafe extern "C" fn derive_warpmv(
-    t: *const Dav1dTaskContext,
+
+unsafe fn derive_warpmv(
+    t: &Dav1dTaskContext,
     bw4: libc::c_int,
     bh4: libc::c_int,
-    mut masks: *const uint64_t,
+    masks: &[u64; 2],
     mv: mv,
-    wmp: *mut Dav1dWarpedMotionParams,
-) {
-    let mut pts: [[[libc::c_int; 2]; 2]; 8] = [[[0; 2]; 2]; 8];
+    mut wmp: Dav1dWarpedMotionParams,
+) -> Dav1dWarpedMotionParams {
+    let mut pts = [[[0; 2 /* x, y */]; 2 /* in, out */]; 8];
     let mut np = 0;
-    let mut r: *const *mut refmvs_block =
-        &*((*t).rt.r).as_ptr().offset((((*t).by & 31) + 5) as isize) as *const *mut refmvs_block;
-    if *masks.offset(0) as libc::c_uint == 1 as libc::c_uint
-        && (*masks.offset(1)).wrapping_shr(32) == 0
-    {
-        let off = (*t).bx
-            & dav1d_block_dimensions
-                [(*(*r.offset(-(1 as libc::c_int) as isize)).offset((*t).bx as isize)).bs as usize]
-                [0] as libc::c_int
-                - 1;
-        pts[np as usize][0][0] = 16 as libc::c_int
-            * (2 * -off
-                + 1 * dav1d_block_dimensions[(*(*r.offset(-(1 as libc::c_int) as isize))
-                    .offset((*t).bx as isize))
-                .bs as usize][0] as libc::c_int)
-            - 8;
-        pts[np as usize][0][1] = 16 as libc::c_int
-            * (2 * 0
-                + -(1 as libc::c_int)
-                    * dav1d_block_dimensions[(*(*r.offset(-(1 as libc::c_int) as isize))
-                        .offset((*t).bx as isize))
-                    .bs as usize][1] as libc::c_int)
-            - 8;
-        pts[np as usize][1][0] = pts[np as usize][0][0]
-            + (*(*r.offset(-(1 as libc::c_int) as isize)).offset((*t).bx as isize))
-                .mv
-                .mv[0]
-                .x as libc::c_int;
-        pts[np as usize][1][1] = pts[np as usize][0][1]
-            + (*(*r.offset(-(1 as libc::c_int) as isize)).offset((*t).bx as isize))
-                .mv
-                .mv[0]
-                .y as libc::c_int;
-        np += 1;
+    let r = |i: isize| {
+        // Need to use a closure here vs. a slice because `i` can be negative
+        // (and not just by a constant -1).
+        // See `-off` below.
+        let offset = (t.by & 31) + 5;
+        t.rt.r[(offset as isize + i) as usize]
+    };
+
+    let rp = |i: i32, j: i32| &*r(i as isize).offset(j as isize);
+
+    let bs = |rp: &refmvs_block| dav1d_block_dimensions[(*rp).bs as usize];
+
+    let mut add_sample = |np: usize, dx: i32, dy: i32, sx: i32, sy: i32, rp: &refmvs_block| {
+        pts[np][0][0] = 16 * (2 * dx + sx * bs(rp)[0] as i32) - 8;
+        pts[np][0][1] = 16 * (2 * dy + sy * bs(rp)[1] as i32) - 8;
+        pts[np][1][0] = pts[np][0][0] + (*rp).mv.mv[0].x as i32;
+        pts[np][1][1] = pts[np][0][1] + (*rp).mv.mv[0].y as i32;
+        np + 1
+    };
+
+    // use masks[] to find the projectable motion vectors in the edges
+    if masks[0] as u32 == 1 && masks[1] >> 32 == 0 {
+        let off = t.bx & bs(rp(-1, t.bx))[0] as i32 - 1;
+        np = add_sample(np, -off, 0, 1, -1, rp(-1, t.bx));
     } else {
-        let mut off_0: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-        let mut xmask: libc::c_uint = *masks.offset(0) as uint32_t;
+        let mut off = 0;
+        let mut xmask = masks[0] as u32;
         while np < 8 && xmask != 0 {
             let tz = ctz(xmask);
-            off_0 = off_0.wrapping_add(tz as libc::c_uint);
+            off += tz;
             xmask >>= tz;
-            pts[np as usize][0][0] = (16 as libc::c_int as libc::c_uint)
-                .wrapping_mul(
-                    (2 as libc::c_int as libc::c_uint)
-                        .wrapping_mul(off_0)
-                        .wrapping_add(
-                            (1 as libc::c_int
-                                * dav1d_block_dimensions[(*(*r
-                                    .offset(-(1 as libc::c_int) as isize))
-                                .offset(((*t).bx as libc::c_uint).wrapping_add(off_0) as isize))
-                                .bs
-                                    as usize][0] as libc::c_int)
-                                as libc::c_uint,
-                        ),
-                )
-                .wrapping_sub(8 as libc::c_int as libc::c_uint)
-                as libc::c_int;
-            pts[np as usize][0][1] = 16 as libc::c_int
-                * (2 * 0
-                    + -(1 as libc::c_int)
-                        * dav1d_block_dimensions[(*(*r.offset(-(1 as libc::c_int) as isize))
-                            .offset(((*t).bx as libc::c_uint).wrapping_add(off_0) as isize))
-                        .bs as usize][1] as libc::c_int)
-                - 8;
-            pts[np as usize][1][0] = pts[np as usize][0][0]
-                + (*(*r.offset(-(1 as libc::c_int) as isize))
-                    .offset(((*t).bx as libc::c_uint).wrapping_add(off_0) as isize))
-                .mv
-                .mv[0]
-                    .x as libc::c_int;
-            pts[np as usize][1][1] = pts[np as usize][0][1]
-                + (*(*r.offset(-(1 as libc::c_int) as isize))
-                    .offset(((*t).bx as libc::c_uint).wrapping_add(off_0) as isize))
-                .mv
-                .mv[0]
-                    .y as libc::c_int;
-            np += 1;
-            xmask &= !(1 as libc::c_int) as libc::c_uint;
+            np = add_sample(np, off, 0, 1, -1, rp(-1, t.bx + off));
+            xmask &= !1;
         }
     }
-    if np < 8 && *masks.offset(1) == 1 {
-        let off_1 = (*t).by
-            & dav1d_block_dimensions[(*(*r.offset(0)).offset(((*t).bx - 1) as isize)).bs as usize]
-                [1] as libc::c_int
-                - 1;
-        pts[np as usize][0][0] = 16 as libc::c_int
-            * (2 * 0
-                + -(1 as libc::c_int)
-                    * dav1d_block_dimensions
-                        [(*(*r.offset(-off_1 as isize)).offset(((*t).bx - 1) as isize)).bs as usize]
-                        [0] as libc::c_int)
-            - 8;
-        pts[np as usize][0][1] = 16 as libc::c_int
-            * (2 * -off_1
-                + 1 * dav1d_block_dimensions
-                    [(*(*r.offset(-off_1 as isize)).offset(((*t).bx - 1) as isize)).bs as usize][1]
-                    as libc::c_int)
-            - 8;
-        pts[np as usize][1][0] = pts[np as usize][0][0]
-            + (*(*r.offset(-off_1 as isize)).offset(((*t).bx - 1) as isize))
-                .mv
-                .mv[0]
-                .x as libc::c_int;
-        pts[np as usize][1][1] = pts[np as usize][0][1]
-            + (*(*r.offset(-off_1 as isize)).offset(((*t).bx - 1) as isize))
-                .mv
-                .mv[0]
-                .y as libc::c_int;
-        np += 1;
+    if np < 8 && masks[1] as u32 == 1 {
+        let off = t.by & bs(rp(0, t.bx - 1))[1] as i32 - 1;
+        np = add_sample(np, 0, -off, -1, 1, rp(-off, t.bx - 1));
     } else {
-        let mut off_2: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-        let mut ymask: libc::c_uint = *masks.offset(1) as uint32_t;
+        let mut off = 0;
+        let mut ymask = masks[1] as u32;
         while np < 8 && ymask != 0 {
-            let tz_0 = ctz(ymask);
-            off_2 = off_2.wrapping_add(tz_0 as libc::c_uint);
-            ymask >>= tz_0;
-            pts[np as usize][0][0] = 16 as libc::c_int
-                * (2 * 0
-                    + -(1 as libc::c_int)
-                        * dav1d_block_dimensions[(*(*r.offset(off_2 as isize))
-                            .offset(((*t).bx - 1) as isize))
-                        .bs as usize][0] as libc::c_int)
-                - 8;
-            pts[np as usize][0][1] = (16 as libc::c_int as libc::c_uint)
-                .wrapping_mul(
-                    (2 as libc::c_int as libc::c_uint)
-                        .wrapping_mul(off_2)
-                        .wrapping_add(
-                            (1 as libc::c_int
-                                * dav1d_block_dimensions[(*(*r.offset(off_2 as isize))
-                                    .offset(((*t).bx - 1) as isize))
-                                .bs
-                                    as usize][1] as libc::c_int)
-                                as libc::c_uint,
-                        ),
-                )
-                .wrapping_sub(8 as libc::c_int as libc::c_uint)
-                as libc::c_int;
-            pts[np as usize][1][0] = pts[np as usize][0][0]
-                + (*(*r.offset(off_2 as isize)).offset(((*t).bx - 1) as isize))
-                    .mv
-                    .mv[0]
-                    .x as libc::c_int;
-            pts[np as usize][1][1] = pts[np as usize][0][1]
-                + (*(*r.offset(off_2 as isize)).offset(((*t).bx - 1) as isize))
-                    .mv
-                    .mv[0]
-                    .y as libc::c_int;
-            np += 1;
-            ymask &= !(1 as libc::c_int) as libc::c_uint;
+            let tz = ctz(ymask);
+            off += tz;
+            ymask >>= tz;
+            np = add_sample(np, 0, off, -1, 1, rp(off, t.bx - 1));
+            ymask &= !1;
         }
     }
-    if np < 8 && (*masks.offset(1)).wrapping_shr(32) != 0 {
-        pts[np as usize][0][0] = 16 as libc::c_int
-            * (2 * 0
-                + -(1 as libc::c_int)
-                    * dav1d_block_dimensions[(*(*r.offset(-(1 as libc::c_int) as isize))
-                        .offset(((*t).bx - 1) as isize))
-                    .bs as usize][0] as libc::c_int)
-            - 8;
-        pts[np as usize][0][1] = 16 as libc::c_int
-            * (2 * 0
-                + -(1 as libc::c_int)
-                    * dav1d_block_dimensions[(*(*r.offset(-(1 as libc::c_int) as isize))
-                        .offset(((*t).bx - 1) as isize))
-                    .bs as usize][1] as libc::c_int)
-            - 8;
-        pts[np as usize][1][0] = pts[np as usize][0][0]
-            + (*(*r.offset(-(1 as libc::c_int) as isize)).offset(((*t).bx - 1) as isize))
-                .mv
-                .mv[0]
-                .x as libc::c_int;
-        pts[np as usize][1][1] = pts[np as usize][0][1]
-            + (*(*r.offset(-(1 as libc::c_int) as isize)).offset(((*t).bx - 1) as isize))
-                .mv
-                .mv[0]
-                .y as libc::c_int;
-        np += 1;
+    if np < 8 && masks[1] >> 32 != 0 {
+        // top/left
+        np = add_sample(np, 0, 0, -1, -1, rp(-1, t.bx - 1));
     }
-    if np < 8 && (*masks.offset(0)).wrapping_shr(32) != 0 {
-        pts[np as usize][0][0] = 16 as libc::c_int
-            * (2 * bw4
-                + 1 * dav1d_block_dimensions[(*(*r.offset(-(1 as libc::c_int) as isize))
-                    .offset(((*t).bx + bw4) as isize))
-                .bs as usize][0] as libc::c_int)
-            - 8;
-        pts[np as usize][0][1] = 16 as libc::c_int
-            * (2 * 0
-                + -(1 as libc::c_int)
-                    * dav1d_block_dimensions[(*(*r.offset(-(1 as libc::c_int) as isize))
-                        .offset(((*t).bx + bw4) as isize))
-                    .bs as usize][1] as libc::c_int)
-            - 8;
-        pts[np as usize][1][0] = pts[np as usize][0][0]
-            + (*(*r.offset(-(1 as libc::c_int) as isize)).offset(((*t).bx + bw4) as isize))
-                .mv
-                .mv[0]
-                .x as libc::c_int;
-        pts[np as usize][1][1] = pts[np as usize][0][1]
-            + (*(*r.offset(-(1 as libc::c_int) as isize)).offset(((*t).bx + bw4) as isize))
-                .mv
-                .mv[0]
-                .y as libc::c_int;
-        np += 1;
+    if np < 8 && masks[0] >> 32 != 0 {
+        // top/right
+        np = add_sample(np, bw4, 0, 1, -1, rp(-1, t.bx + bw4));
     }
-    if !(np > 0 && np <= 8) {
-        unreachable!();
-    }
-    let mut mvd: [libc::c_int; 8] = [0; 8];
+    assert!(np > 0 && np <= 8);
+
+    // select according to motion vector difference against a threshold
+    let mut mvd = [0; 8];
     let mut ret = 0;
-    let thresh = 4 as libc::c_int * iclip(imax(bw4, bh4), 4 as libc::c_int, 28 as libc::c_int);
-    let mut i = 0;
-    while i < np {
-        mvd[i as usize] = (pts[i as usize][1][0] - pts[i as usize][0][0] - mv.x as libc::c_int)
-            .abs()
-            + (pts[i as usize][1][1] - pts[i as usize][0][1] - mv.y as libc::c_int).abs();
-        if mvd[i as usize] > thresh {
-            mvd[i as usize] = -(1 as libc::c_int);
+    let thresh = 4 * iclip(imax(bw4, bh4), 4, 28);
+    for (mvd, pts) in std::iter::zip(&mut mvd[..np], &pts[..np]) {
+        *mvd = (pts[1][0] - pts[0][0] - mv.x as i32).abs()
+            + (pts[1][1] - pts[0][1] - mv.y as i32).abs();
+        if *mvd > thresh {
+            *mvd = -1;
         } else {
             ret += 1;
         }
-        i += 1;
     }
     if ret == 0 {
         ret = 1;
     } else {
-        let mut i_0 = 0;
+        let mut i = 0;
         let mut j = np - 1;
-        let mut k = 0;
-        while k < np - ret {
-            while mvd[i_0 as usize] != -(1 as libc::c_int) {
-                i_0 += 1;
+        for _ in 0..np - ret {
+            while mvd[i] != -1 {
+                i += 1;
             }
-            while mvd[j as usize] == -(1 as libc::c_int) {
+            while mvd[j] == -1 {
                 j -= 1;
             }
-            if !(i_0 != j) {
-                unreachable!();
-            }
-            if i_0 > j {
+            assert!(i != j);
+            if i > j {
                 break;
             }
-            mvd[i_0 as usize] = mvd[j as usize];
-            memcpy(
-                (pts[i_0 as usize]).as_mut_ptr() as *mut libc::c_void,
-                (pts[j as usize]).as_mut_ptr() as *const libc::c_void,
-                ::core::mem::size_of::<[[libc::c_int; 2]; 2]>() as libc::c_ulong,
-            );
-            k += 1;
-            i_0 += 1;
+            // replace the discarded samples;
+            mvd[i] = mvd[j];
+            pts[i] = pts[j];
+            i += 1;
             j -= 1;
         }
     }
-    if !dav1d_find_affine_int(&pts, ret, bw4, bh4, mv, &mut *wmp, (*t).bx, (*t).by)
-        && !dav1d_get_shear_params(&mut *wmp)
+
+    wmp.type_0 = if !dav1d_find_affine_int(&pts, ret, bw4, bh4, mv, &mut wmp, t.bx, t.by)
+        && !dav1d_get_shear_params(&mut wmp)
     {
-        (*wmp).type_0 = DAV1D_WM_TYPE_AFFINE;
+        DAV1D_WM_TYPE_AFFINE
     } else {
-        (*wmp).type_0 = DAV1D_WM_TYPE_IDENTITY;
+        DAV1D_WM_TYPE_IDENTITY
     };
+    wmp
 }
 
 #[inline]
@@ -8335,17 +8180,17 @@ unsafe fn decode_b(
                     == MM_WARP as libc::c_int
                 {
                     has_subpel_filter = 0 as libc::c_int;
-                    derive_warpmv(
+                    t.warpmv = derive_warpmv(
                         t,
                         bw4,
                         bh4,
-                        mask.as_mut_ptr() as *const uint64_t,
+                        &mask,
                         b.c2rust_unnamed
                             .c2rust_unnamed_0
                             .c2rust_unnamed
                             .c2rust_unnamed
                             .mv[0],
-                        &mut t.warpmv,
+                        t.warpmv.clone(),
                     );
                     if DEBUG_BLOCK_INFO(f, t) {
                         printf(
