@@ -2267,7 +2267,8 @@ unsafe extern "C" fn find_matching_ref(
         *fresh7 = (*fresh7 as libc::c_ulonglong | (1 as libc::c_ulonglong) << 32) as uint64_t;
     }
 }
-unsafe extern "C" fn derive_warpmv(
+
+unsafe fn derive_warpmv(
     t: *const Dav1dTaskContext,
     bw4: libc::c_int,
     bh4: libc::c_int,
