@@ -2286,6 +2286,8 @@ unsafe fn derive_warpmv(
         (*t).rt.r[(offset as isize + i) as usize]
     };
 
+    let rp = |i: i32, j: i32| r(i as isize).offset(j as isize);
+
     let bs = |rp: *mut refmvs_block| dav1d_block_dimensions[(*rp).bs as usize];
 
     let mut add_sample = |np: usize, dx: i32, dy: i32, sx: i32, sy: i32, rp: *mut refmvs_block| {
@@ -2297,8 +2299,8 @@ unsafe fn derive_warpmv(
     };
 
     if masks[0] as u32 == 1 && masks[1] >> 32 == 0 {
-        let off = (*t).bx & bs(r(-1).offset((*t).bx as isize))[0] as i32 - 1;
-        np = add_sample(np, -off, 0, 1, -1, r(-1).offset((*t).bx as isize));
+        let off = (*t).bx & bs(rp(-1, (*t).bx))[0] as i32 - 1;
+        np = add_sample(np, -off, 0, 1, -1, rp(-1, (*t).bx));
     } else {
         let mut off_0 = 0;
         let mut xmask = masks[0] as u32;
@@ -2306,27 +2308,13 @@ unsafe fn derive_warpmv(
             let tz = ctz(xmask);
             off_0 += tz;
             xmask >>= tz;
-            np = add_sample(
-                np,
-                off_0,
-                0,
-                1,
-                -1,
-                r(-1).offset(((*t).bx + off_0) as isize),
-            );
+            np = add_sample(np, off_0, 0, 1, -1, rp(-1, (*t).bx + off_0));
             xmask &= !1;
         }
     }
     if np < 8 && masks[1] as u32 == 1 {
-        let off_1 = (*t).by & bs(r(0).offset(((*t).bx - 1) as isize))[1] as i32 - 1;
-        np = add_sample(
-            np,
-            0,
-            -off_1,
-            -1,
-            1,
-            r(-off_1 as isize).offset(((*t).bx - 1) as isize),
-        );
+        let off_1 = (*t).by & bs(rp(0, (*t).bx - 1))[1] as i32 - 1;
+        np = add_sample(np, 0, -off_1, -1, 1, rp(-off_1, (*t).bx - 1));
     } else {
         let mut off_2 = 0;
         let mut ymask = masks[1] as u32;
@@ -2334,22 +2322,15 @@ unsafe fn derive_warpmv(
             let tz_0 = ctz(ymask);
             off_2 += tz_0;
             ymask >>= tz_0;
-            np = add_sample(
-                np,
-                0,
-                off_2,
-                -1,
-                1,
-                r(off_2 as isize).offset(((*t).bx - 1) as isize),
-            );
+            np = add_sample(np, 0, off_2, -1, 1, rp(off_2, (*t).bx - 1));
             ymask &= !1;
         }
     }
     if np < 8 && masks[1] >> 32 != 0 {
-        np = add_sample(np, 0, 0, -1, -1, r(-1).offset(((*t).bx - 1) as isize));
+        np = add_sample(np, 0, 0, -1, -1, rp(-1, (*t).bx - 1));
     }
     if np < 8 && masks[0] >> 32 != 0 {
-        np = add_sample(np, bw4, 0, 1, -1, r(-1).offset(((*t).bx + bw4) as isize));
+        np = add_sample(np, bw4, 0, 1, -1, rp(-1, (*t).bx + bw4));
     }
     if !(np > 0 && np <= 8) {
         unreachable!();
