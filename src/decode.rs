@@ -1725,20 +1725,18 @@ unsafe extern "C" fn av1_get_uni_p1_ctx(
         2 as libc::c_int
     };
 }
+
 #[inline]
-unsafe extern "C" fn get_drl_context(
-    ref_mv_stack: *const refmvs_candidate,
-    ref_idx: libc::c_int,
-) -> libc::c_int {
-    if (*ref_mv_stack.offset(ref_idx as isize)).weight >= 640 {
-        return ((*ref_mv_stack.offset((ref_idx + 1) as isize)).weight < 640) as libc::c_int;
-    }
-    return if (*ref_mv_stack.offset((ref_idx + 1) as isize)).weight < 640 {
-        2 as libc::c_int
+fn get_drl_context(ref_mv_stack: &[refmvs_candidate; 8], ref_idx: usize) -> libc::c_int {
+    if ref_mv_stack[ref_idx].weight >= 640 {
+        (ref_mv_stack[ref_idx + 1].weight < 640) as libc::c_int
+    } else if ref_mv_stack[ref_idx + 1].weight < 640 {
+        2
     } else {
-        0 as libc::c_int
-    };
+        0
+    }
 }
+
 #[inline]
 unsafe extern "C" fn get_cur_frame_segid(
     by: libc::c_int,
@@ -7353,7 +7351,7 @@ unsafe fn decode_b(
                 == NEWMV_NEWMV as libc::c_int
             {
                 if n_mvs_1 > 1 {
-                    let drl_ctx_v1 = get_drl_context(mvstack_1.as_mut_ptr(), 0 as libc::c_int);
+                    let drl_ctx_v1 = get_drl_context(&mvstack_1, 0);
                     b.c2rust_unnamed.c2rust_unnamed_0.drl_idx =
                         (b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_uint).wrapping_add(
                             dav1d_msac_decode_bool_adapt(
@@ -7365,7 +7363,7 @@ unsafe fn decode_b(
                         == NEARER_DRL as libc::c_int
                         && n_mvs_1 > 2
                     {
-                        let drl_ctx_v2 = get_drl_context(mvstack_1.as_mut_ptr(), 1 as libc::c_int);
+                        let drl_ctx_v2 = get_drl_context(&mvstack_1, 1);
                         b.c2rust_unnamed.c2rust_unnamed_0.drl_idx =
                             (b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_uint)
                                 .wrapping_add(dav1d_msac_decode_bool_adapt(
@@ -7388,7 +7386,7 @@ unsafe fn decode_b(
             {
                 b.c2rust_unnamed.c2rust_unnamed_0.drl_idx = NEARER_DRL as libc::c_int as uint8_t;
                 if n_mvs_1 > 2 {
-                    let drl_ctx_v2_0 = get_drl_context(mvstack_1.as_mut_ptr(), 1 as libc::c_int);
+                    let drl_ctx_v2_0 = get_drl_context(&mvstack_1, 1);
                     b.c2rust_unnamed.c2rust_unnamed_0.drl_idx =
                         (b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_uint).wrapping_add(
                             dav1d_msac_decode_bool_adapt(
@@ -7400,7 +7398,7 @@ unsafe fn decode_b(
                         == NEAR_DRL as libc::c_int
                         && n_mvs_1 > 3
                     {
-                        let drl_ctx_v3 = get_drl_context(mvstack_1.as_mut_ptr(), 2 as libc::c_int);
+                        let drl_ctx_v3 = get_drl_context(&mvstack_1, 2);
                         b.c2rust_unnamed.c2rust_unnamed_0.drl_idx =
                             (b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_uint)
                                 .wrapping_add(dav1d_msac_decode_bool_adapt(
@@ -7900,8 +7898,7 @@ unsafe fn decode_b(
                         b.c2rust_unnamed.c2rust_unnamed_0.drl_idx =
                             NEARER_DRL as libc::c_int as uint8_t;
                         if n_mvs_2 > 2 {
-                            let drl_ctx_v2_1 =
-                                get_drl_context(mvstack_2.as_mut_ptr(), 1 as libc::c_int);
+                            let drl_ctx_v2_1 = get_drl_context(&mvstack_2, 1);
                             b.c2rust_unnamed.c2rust_unnamed_0.drl_idx =
                                 (b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_uint)
                                     .wrapping_add(dav1d_msac_decode_bool_adapt(
@@ -7912,8 +7909,7 @@ unsafe fn decode_b(
                                 == NEAR_DRL as libc::c_int
                                 && n_mvs_2 > 3
                             {
-                                let drl_ctx_v3_0 =
-                                    get_drl_context(mvstack_2.as_mut_ptr(), 2 as libc::c_int);
+                                let drl_ctx_v3_0 = get_drl_context(&mvstack_2, 2);
                                 b.c2rust_unnamed.c2rust_unnamed_0.drl_idx =
                                     (b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_uint)
                                         .wrapping_add(dav1d_msac_decode_bool_adapt(
@@ -7976,7 +7972,7 @@ unsafe fn decode_b(
                 b.c2rust_unnamed.c2rust_unnamed_0.inter_mode = NEWMV as libc::c_int as uint8_t;
                 b.c2rust_unnamed.c2rust_unnamed_0.drl_idx = NEAREST_DRL as libc::c_int as uint8_t;
                 if n_mvs_2 > 1 {
-                    let drl_ctx_v1_0 = get_drl_context(mvstack_2.as_mut_ptr(), 0 as libc::c_int);
+                    let drl_ctx_v1_0 = get_drl_context(&mvstack_2, 0);
                     b.c2rust_unnamed.c2rust_unnamed_0.drl_idx =
                         (b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_uint).wrapping_add(
                             dav1d_msac_decode_bool_adapt(
@@ -7988,8 +7984,7 @@ unsafe fn decode_b(
                         == NEARER_DRL as libc::c_int
                         && n_mvs_2 > 2
                     {
-                        let drl_ctx_v2_2 =
-                            get_drl_context(mvstack_2.as_mut_ptr(), 1 as libc::c_int);
+                        let drl_ctx_v2_2 = get_drl_context(&mvstack_2, 1);
                         b.c2rust_unnamed.c2rust_unnamed_0.drl_idx =
                             (b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_uint)
                                 .wrapping_add(dav1d_msac_decode_bool_adapt(
