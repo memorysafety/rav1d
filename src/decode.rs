@@ -280,14 +280,6 @@ extern "C" {
         bx: libc::c_int,
         by: libc::c_int,
     ) -> libc::c_int;
-    fn dav1d_set_affine_mv2d(
-        bw4: libc::c_int,
-        bh4: libc::c_int,
-        mv: mv,
-        wm: *mut Dav1dWarpedMotionParams,
-        bx: libc::c_int,
-        by: libc::c_int,
-    );
 }
 
 use crate::src::dequant_tables::dav1d_dq_tbl;
@@ -306,6 +298,7 @@ use crate::src::tables::dav1d_txfm_dimensions;
 use crate::src::tables::dav1d_wedge_ctx_lut;
 use crate::src::tables::dav1d_ymode_size_context;
 use crate::src::warpmv::dav1d_get_shear_params;
+use crate::src::warpmv::dav1d_set_affine_mv2d;
 
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
