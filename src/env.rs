@@ -259,10 +259,10 @@ pub fn get_comp_dir_ctx(
         if !a_comp && !l_comp {
             return 1 + 2 * ((a_ref0 >= 4) == (l_ref0 >= 4)) as libc::c_int;
         } else if !a_comp || !l_comp {
-            let edge_0 = if a_comp { a } else { l };
-            let off_0 = if a_comp { xb4 } else { yb4 };
+            let edge = if a_comp { a } else { l };
+            let off = if a_comp { xb4 } else { yb4 };
 
-            if !((edge_0.r#ref[0][off_0 as usize] < 4) == (edge_0.r#ref[1][off_0 as usize] < 4)) {
+            if !((edge.r#ref[0][off as usize] < 4) == (edge.r#ref[1][off as usize] < 4)) {
                 return 1;
             }
             return 3 + ((a_ref0 >= 4) == (l_ref0 >= 4)) as libc::c_int;
@@ -279,17 +279,17 @@ pub fn get_comp_dir_ctx(
             return 3 + ((a_ref0 == 4) == (l_ref0 == 4)) as libc::c_int;
         }
     } else if have_top || have_left {
-        let edge_1 = if have_left { l } else { a };
-        let off_1 = if have_left { yb4 } else { xb4 };
+        let edge = if have_left { l } else { a };
+        let off = if have_left { yb4 } else { xb4 };
 
-        if edge_1.intra[off_1 as usize] != 0 {
+        if edge.intra[off as usize] != 0 {
             return 2;
         }
-        if edge_1.comp_type[off_1 as usize] == COMP_INTER_NONE as u8 {
+        if edge.comp_type[off as usize] == COMP_INTER_NONE as u8 {
             return 2;
         }
         return 4
-            * ((edge_1.r#ref[0][off_1 as usize] < 4) == (edge_1.r#ref[1][off_1 as usize] < 4))
+            * ((edge.r#ref[0][off as usize] < 4) == (edge.r#ref[1][off as usize] < 4))
                 as libc::c_int;
     } else {
         return 2;
