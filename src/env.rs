@@ -617,7 +617,7 @@ pub unsafe fn get_cur_frame_segid(
     have_left: bool,
     mut cur_seg_map: *const uint8_t,
     stride: ptrdiff_t,
-) -> (libc::c_uint, libc::c_int) {
+) -> (u8, u8) {
     cur_seg_map = cur_seg_map.offset(bx as isize + by as isize * stride);
     if have_left && have_top {
         let l = *cur_seg_map.offset(-1);
@@ -630,7 +630,7 @@ pub unsafe fn get_cur_frame_segid(
         } else {
             0
         };
-        let seg_id = if a == al { a } else { l } as libc::c_uint;
+        let seg_id = if a == al { a } else { l };
         (seg_id, seg_ctx)
     } else {
         let seg_ctx = 0;
@@ -640,7 +640,7 @@ pub unsafe fn get_cur_frame_segid(
             *cur_seg_map.offset(-stride as isize)
         } else {
             0
-        } as libc::c_uint;
+        };
         (seg_id, seg_ctx)
     }
 }
