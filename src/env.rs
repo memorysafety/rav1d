@@ -615,7 +615,12 @@ pub unsafe fn get_cur_frame_segid(
     bx: libc::c_int,
     have_top: bool,
     have_left: bool,
-    mut cur_seg_map: *const uint8_t,
+    // It's very difficult to make this safe (a slice),
+    // as it is negatively indexed
+    // and it comes from [`Dav1dFrameContext::cur_segmap`],
+    // which is set to [`Dav1dFrameContext::cur_segmap_ref`] and [`Dav1dFrameContext::prev_segmap_ref`],
+    // which are [`Dav1dRef`]s, which have no size and are refcounted.
+    mut cur_seg_map: *const u8,
     stride: ptrdiff_t,
 ) -> (u8, u8) {
     cur_seg_map = cur_seg_map.offset(bx as isize + by as isize * stride);
