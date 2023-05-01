@@ -2058,25 +2058,25 @@ unsafe fn order_palette(
         let have_left = j > 0;
         assert!(have_left || have_top);
 
-        let mut mask = 0 as libc::c_uint;
+        let mut mask = 0u32;
         let mut o_idx = 0;
-        let mut add = |v: libc::c_int| {
-            assert!((v as libc::c_uint) < 8);
-            order[o_idx as usize] = v as u8;
+        let mut add = |v: u8| {
+            assert!(v < 8);
+            order[o_idx as usize] = v;
             o_idx += 1;
-            mask |= (1 << v) as libc::c_uint;
+            mask |= 1 << v;
         };
 
         if !have_left {
             *ctx = 0;
-            add(*pal_idx.offset(-stride) as libc::c_int);
+            add(*pal_idx.offset(-stride));
         } else if !have_top {
             *ctx = 0;
-            add(*pal_idx.offset(-1) as libc::c_int);
+            add(*pal_idx.offset(-1));
         } else {
-            let l = *pal_idx.offset(-1) as libc::c_int;
-            let t = *pal_idx.offset(-stride) as libc::c_int;
-            let tl = *pal_idx.offset(-(stride + 1)) as libc::c_int;
+            let l = *pal_idx.offset(-1);
+            let t = *pal_idx.offset(-stride);
+            let tl = *pal_idx.offset(-(stride + 1));
             let same_t_l = t == l;
             let same_t_tl = t == tl;
             let same_l_tl = l == tl;
@@ -2094,16 +2094,16 @@ unsafe fn order_palette(
                 add(if same_t_tl { l } else { t });
             } else {
                 *ctx = 1;
-                add(imin(t, l));
-                add(imax(t, l));
+                add(std::cmp::min(t, l));
+                add(std::cmp::max(t, l));
                 add(tl);
             }
         }
-        let mut m = 1 as libc::c_uint;
-        let mut bit = 0 as libc::c_uint;
+        let mut m = 1;
+        let mut bit = 0;
         while m < 0x100 {
             if mask & m == 0 {
-                order[o_idx as usize] = bit as uint8_t;
+                order[o_idx as usize] = bit;
                 o_idx += 1;
             }
             m <<= 1;
