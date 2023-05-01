@@ -6489,7 +6489,7 @@ unsafe fn decode_b(
             && frame_hdr.switchable_comp_refs != 0
             && imin(bw4, bh4) > 1
         {
-            let ctx_2 = get_comp_ctx(t.a, &mut t.l, by4, bx4, have_top, have_left);
+            let ctx_2 = get_comp_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
             is_comp = dav1d_msac_decode_bool_adapt(
                 &mut ts.msac,
                 (ts.cdf.m.comp[ctx_2 as usize]).as_mut_ptr(),
@@ -6579,19 +6579,19 @@ unsafe fn decode_b(
                 );
             }
         } else if is_comp != 0 {
-            let dir_ctx = get_comp_dir_ctx(t.a, &mut t.l, by4, bx4, have_top, have_left);
+            let dir_ctx = get_comp_dir_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
             if dav1d_msac_decode_bool_adapt(
                 &mut ts.msac,
                 (ts.cdf.m.comp_dir[dir_ctx as usize]).as_mut_ptr(),
             ) != 0
             {
-                let ctx1 = av1_get_fwd_ref_ctx(t.a, &mut t.l, by4, bx4, have_top, have_left);
+                let ctx1 = av1_get_fwd_ref_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
                 if dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     (ts.cdf.m.comp_fwd_ref[0][ctx1 as usize]).as_mut_ptr(),
                 ) != 0
                 {
-                    let ctx2 = av1_get_fwd_ref_2_ctx(t.a, &mut t.l, by4, bx4, have_top, have_left);
+                    let ctx2 = av1_get_fwd_ref_2_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
                     b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] = (2 as libc::c_int as libc::c_uint)
                         .wrapping_add(dav1d_msac_decode_bool_adapt(
                             &mut ts.msac,
@@ -6599,14 +6599,13 @@ unsafe fn decode_b(
                         ))
                         as int8_t;
                 } else {
-                    let ctx2_0 =
-                        av1_get_fwd_ref_1_ctx(t.a, &mut t.l, by4, bx4, have_top, have_left);
+                    let ctx2_0 = av1_get_fwd_ref_1_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
                     b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] = dav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
                         (ts.cdf.m.comp_fwd_ref[1][ctx2_0 as usize]).as_mut_ptr(),
                     ) as int8_t;
                 }
-                let ctx3 = av1_get_bwd_ref_ctx(t.a, &mut t.l, by4, bx4, have_top, have_left);
+                let ctx3 = av1_get_bwd_ref_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
                 if dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     (ts.cdf.m.comp_bwd_ref[0][ctx3 as usize]).as_mut_ptr(),
@@ -6614,7 +6613,7 @@ unsafe fn decode_b(
                 {
                     b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] = 6 as libc::c_int as int8_t;
                 } else {
-                    let ctx4 = av1_get_bwd_ref_1_ctx(t.a, &mut t.l, by4, bx4, have_top, have_left);
+                    let ctx4 = av1_get_bwd_ref_1_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
                     b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] = (4 as libc::c_int as libc::c_uint)
                         .wrapping_add(dav1d_msac_decode_bool_adapt(
                             &mut ts.msac,
@@ -6623,7 +6622,7 @@ unsafe fn decode_b(
                         as int8_t;
                 }
             } else {
-                let uctx_p = av1_get_ref_ctx(t.a, &mut t.l, by4, bx4, have_top, have_left);
+                let uctx_p = av1_get_ref_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
                 if dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     (ts.cdf.m.comp_uni_ref[0][uctx_p as usize]).as_mut_ptr(),
@@ -6632,7 +6631,7 @@ unsafe fn decode_b(
                     b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] = 4 as libc::c_int as int8_t;
                     b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] = 6 as libc::c_int as int8_t;
                 } else {
-                    let uctx_p1 = av1_get_uni_p1_ctx(t.a, &mut t.l, by4, bx4, have_top, have_left);
+                    let uctx_p1 = av1_get_uni_p1_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
                     b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] = 0 as libc::c_int as int8_t;
                     b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] = (1 as libc::c_int as libc::c_uint)
                         .wrapping_add(dav1d_msac_decode_bool_adapt(
@@ -6642,7 +6641,7 @@ unsafe fn decode_b(
                         as int8_t;
                     if b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as libc::c_int == 2 {
                         let uctx_p2 =
-                            av1_get_fwd_ref_2_ctx(t.a, &mut t.l, by4, bx4, have_top, have_left);
+                            av1_get_fwd_ref_2_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
                         b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] =
                             (b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as libc::c_uint)
                                 .wrapping_add(dav1d_msac_decode_bool_adapt(
@@ -6923,7 +6922,7 @@ unsafe fn decode_b(
             }
             let mut is_segwedge = 0;
             if (*f.seq_hdr).masked_compound != 0 {
-                let mask_ctx = get_mask_comp_ctx(t.a, &mut t.l, by4, bx4);
+                let mask_ctx = get_mask_comp_ctx(&*t.a, &t.l, by4, bx4);
                 is_segwedge = dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     (ts.cdf.m.mask_comp[mask_ctx as usize]).as_mut_ptr(),
@@ -6951,8 +6950,8 @@ unsafe fn decode_b(
                             .p
                             .frame_hdr)
                             .frame_offset as libc::c_uint,
-                        t.a,
-                        &mut t.l,
+                        &*t.a,
+                        &t.l,
                         by4,
                         bx4,
                     );
@@ -7052,8 +7051,8 @@ unsafe fn decode_b(
                     .r#ref[0] = 0 as libc::c_int as int8_t;
             } else {
                 let ctx1_0 = av1_get_ref_ctx(
-                    t.a,
-                    &mut t.l,
+                    &*t.a,
+                    &t.l,
                     by4,
                     bx4,
                     have_top,
@@ -7066,8 +7065,8 @@ unsafe fn decode_b(
                 ) != 0
                 {
                     let ctx2_1 = av1_get_bwd_ref_ctx(
-                        t.a,
-                        &mut t.l,
+                        &*t.a,
+                        &t.l,
                         by4,
                         bx4,
                         have_top,
@@ -7086,8 +7085,8 @@ unsafe fn decode_b(
                             as usize] = 6 as libc::c_int as int8_t;
                     } else {
                         let ctx3_0 = av1_get_bwd_ref_1_ctx(
-                            t.a,
-                            &mut t.l,
+                            &*t.a,
+                            &t.l,
                             by4,
                             bx4,
                             have_top,
@@ -7111,8 +7110,8 @@ unsafe fn decode_b(
                     }
                 } else {
                     let ctx2_2 = av1_get_fwd_ref_ctx(
-                        t.a,
-                        &mut t.l,
+                        &*t.a,
+                        &t.l,
                         by4,
                         bx4,
                         have_top,
@@ -7125,8 +7124,8 @@ unsafe fn decode_b(
                     ) != 0
                     {
                         let ctx3_1 = av1_get_fwd_ref_2_ctx(
-                            t.a,
-                            &mut t.l,
+                            &*t.a,
+                            &t.l,
                             by4,
                             bx4,
                             have_top,
@@ -7149,8 +7148,8 @@ unsafe fn decode_b(
                             ) as int8_t;
                     } else {
                         let ctx3_2 = av1_get_fwd_ref_1_ctx(
-                            t.a,
-                            &mut t.l,
+                            &*t.a,
+                            &t.l,
                             by4,
                             bx4,
                             have_top,
@@ -7694,8 +7693,8 @@ unsafe fn decode_b(
                 let comp = (b.c2rust_unnamed.c2rust_unnamed_0.comp_type as libc::c_int
                     != COMP_INTER_NONE as libc::c_int) as libc::c_int;
                 let ctx1_1 = get_filter_ctx(
-                    t.a,
-                    &mut t.l,
+                    &*t.a,
+                    &t.l,
                     comp,
                     0 as libc::c_int,
                     b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int,
@@ -7709,8 +7708,8 @@ unsafe fn decode_b(
                 ) as Dav1dFilterMode;
                 if (*f.seq_hdr).dual_filter != 0 {
                     let ctx2_3 = get_filter_ctx(
-                        t.a,
-                        &mut t.l,
+                        &*t.a,
+                        &t.l,
                         comp,
                         1 as libc::c_int,
                         b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int,

@@ -151,25 +151,25 @@ pub fn get_uv_inter_txtp(uvt_dim: &TxfmInfo, ytxtp: TxfmType) -> TxfmType {
 
 #[inline]
 pub unsafe fn get_filter_ctx(
-    a: *const BlockContext,
-    l: *const BlockContext,
+    a: &BlockContext,
+    l: &BlockContext,
     comp: libc::c_int,
     dir: libc::c_int,
     r#ref: libc::c_int,
     yb4: libc::c_int,
     xb4: libc::c_int,
 ) -> libc::c_int {
-    let a_filter = if (*a).r#ref[0][xb4 as usize] as libc::c_int == r#ref
-        || (*a).r#ref[1][xb4 as usize] as libc::c_int == r#ref
+    let a_filter = if a.r#ref[0][xb4 as usize] as libc::c_int == r#ref
+        || a.r#ref[1][xb4 as usize] as libc::c_int == r#ref
     {
-        (*a).filter[dir as usize][xb4 as usize] as libc::c_int
+        a.filter[dir as usize][xb4 as usize] as libc::c_int
     } else {
         DAV1D_N_SWITCHABLE_FILTERS as libc::c_int
     };
-    let l_filter = if (*l).r#ref[0][yb4 as usize] as libc::c_int == r#ref
-        || (*l).r#ref[1][yb4 as usize] as libc::c_int == r#ref
+    let l_filter = if l.r#ref[0][yb4 as usize] as libc::c_int == r#ref
+        || l.r#ref[1][yb4 as usize] as libc::c_int == r#ref
     {
-        (*l).filter[dir as usize][yb4 as usize] as libc::c_int
+        l.filter[dir as usize][yb4 as usize] as libc::c_int
     } else {
         DAV1D_N_SWITCHABLE_FILTERS as libc::c_int
     };
@@ -186,8 +186,8 @@ pub unsafe fn get_filter_ctx(
 
 #[inline]
 pub unsafe fn get_comp_ctx(
-    a: *const BlockContext,
-    l: *const BlockContext,
+    a: &BlockContext,
+    l: &BlockContext,
     yb4: libc::c_int,
     xb4: libc::c_int,
     have_top: libc::c_int,
@@ -195,34 +195,34 @@ pub unsafe fn get_comp_ctx(
 ) -> libc::c_int {
     if have_top != 0 {
         if have_left != 0 {
-            if (*a).comp_type[xb4 as usize] != 0 {
-                if (*l).comp_type[yb4 as usize] != 0 {
+            if a.comp_type[xb4 as usize] != 0 {
+                if l.comp_type[yb4 as usize] != 0 {
                     return 4 as libc::c_int;
                 } else {
                     return 2 as libc::c_int
-                        + ((*l).r#ref[0][yb4 as usize] as libc::c_uint >= 4 as libc::c_uint)
+                        + (l.r#ref[0][yb4 as usize] as libc::c_uint >= 4 as libc::c_uint)
                             as libc::c_int;
                 }
-            } else if (*l).comp_type[yb4 as usize] != 0 {
+            } else if l.comp_type[yb4 as usize] != 0 {
                 return 2 as libc::c_int
-                    + ((*a).r#ref[0][xb4 as usize] as libc::c_uint >= 4 as libc::c_uint)
+                    + (a.r#ref[0][xb4 as usize] as libc::c_uint >= 4 as libc::c_uint)
                         as libc::c_int;
             } else {
-                return ((*l).r#ref[0][yb4 as usize] as libc::c_int >= 4) as libc::c_int
-                    ^ ((*a).r#ref[0][xb4 as usize] as libc::c_int >= 4) as libc::c_int;
+                return (l.r#ref[0][yb4 as usize] as libc::c_int >= 4) as libc::c_int
+                    ^ (a.r#ref[0][xb4 as usize] as libc::c_int >= 4) as libc::c_int;
             }
         } else {
-            return if (*a).comp_type[xb4 as usize] as libc::c_int != 0 {
+            return if a.comp_type[xb4 as usize] as libc::c_int != 0 {
                 3 as libc::c_int
             } else {
-                ((*a).r#ref[0][xb4 as usize] as libc::c_int >= 4) as libc::c_int
+                (a.r#ref[0][xb4 as usize] as libc::c_int >= 4) as libc::c_int
             };
         }
     } else if have_left != 0 {
-        return if (*l).comp_type[yb4 as usize] as libc::c_int != 0 {
+        return if l.comp_type[yb4 as usize] as libc::c_int != 0 {
             3 as libc::c_int
         } else {
-            ((*l).r#ref[0][yb4 as usize] as libc::c_int >= 4) as libc::c_int
+            (l.r#ref[0][yb4 as usize] as libc::c_int >= 4) as libc::c_int
         };
     } else {
         return 1 as libc::c_int;
@@ -231,16 +231,16 @@ pub unsafe fn get_comp_ctx(
 
 #[inline]
 pub unsafe fn get_comp_dir_ctx(
-    a: *const BlockContext,
-    l: *const BlockContext,
+    a: &BlockContext,
+    l: &BlockContext,
     yb4: libc::c_int,
     xb4: libc::c_int,
     have_top: libc::c_int,
     have_left: libc::c_int,
 ) -> libc::c_int {
     if have_top != 0 && have_left != 0 {
-        let a_intra = (*a).intra[xb4 as usize] as libc::c_int;
-        let l_intra = (*l).intra[yb4 as usize] as libc::c_int;
+        let a_intra = a.intra[xb4 as usize] as libc::c_int;
+        let l_intra = l.intra[yb4 as usize] as libc::c_int;
         if a_intra != 0 && l_intra != 0 {
             return 2 as libc::c_int;
         }
@@ -255,12 +255,12 @@ pub unsafe fn get_comp_dir_ctx(
                     == (((*edge).r#ref[1][off as usize] as libc::c_int) < 4) as libc::c_int)
                     as libc::c_int;
         }
-        let a_comp = ((*a).comp_type[xb4 as usize] as libc::c_int != COMP_INTER_NONE as libc::c_int)
+        let a_comp = (a.comp_type[xb4 as usize] as libc::c_int != COMP_INTER_NONE as libc::c_int)
             as libc::c_int;
-        let l_comp = ((*l).comp_type[yb4 as usize] as libc::c_int != COMP_INTER_NONE as libc::c_int)
+        let l_comp = (l.comp_type[yb4 as usize] as libc::c_int != COMP_INTER_NONE as libc::c_int)
             as libc::c_int;
-        let a_ref0 = (*a).r#ref[0][xb4 as usize] as libc::c_int;
-        let l_ref0 = (*l).r#ref[0][yb4 as usize] as libc::c_int;
+        let a_ref0 = a.r#ref[0][xb4 as usize] as libc::c_int;
+        let l_ref0 = l.r#ref[0][yb4 as usize] as libc::c_int;
         if a_comp == 0 && l_comp == 0 {
             return 1 as libc::c_int
                 + 2 * ((a_ref0 >= 4) as libc::c_int == (l_ref0 >= 4) as libc::c_int)
@@ -276,11 +276,11 @@ pub unsafe fn get_comp_dir_ctx(
             return 3 as libc::c_int
                 + ((a_ref0 >= 4) as libc::c_int == (l_ref0 >= 4) as libc::c_int) as libc::c_int;
         } else {
-            let a_uni = ((((*a).r#ref[0][xb4 as usize] as libc::c_int) < 4) as libc::c_int
-                == (((*a).r#ref[1][xb4 as usize] as libc::c_int) < 4) as libc::c_int)
+            let a_uni = (((a.r#ref[0][xb4 as usize] as libc::c_int) < 4) as libc::c_int
+                == ((a.r#ref[1][xb4 as usize] as libc::c_int) < 4) as libc::c_int)
                 as libc::c_int;
-            let l_uni = ((((*l).r#ref[0][yb4 as usize] as libc::c_int) < 4) as libc::c_int
-                == (((*l).r#ref[1][yb4 as usize] as libc::c_int) < 4) as libc::c_int)
+            let l_uni = (((l.r#ref[0][yb4 as usize] as libc::c_int) < 4) as libc::c_int
+                == ((l.r#ref[1][yb4 as usize] as libc::c_int) < 4) as libc::c_int)
                 as libc::c_int;
             if a_uni == 0 && l_uni == 0 {
                 return 0 as libc::c_int;
@@ -329,8 +329,8 @@ pub unsafe fn get_jnt_comp_ctx(
     poc: libc::c_uint,
     ref0poc: libc::c_uint,
     ref1poc: libc::c_uint,
-    a: *const BlockContext,
-    l: *const BlockContext,
+    a: &BlockContext,
+    l: &BlockContext,
     yb4: libc::c_int,
     xb4: libc::c_int,
 ) -> libc::c_int {
@@ -347,30 +347,30 @@ pub unsafe fn get_jnt_comp_ctx(
     )
     .abs() as libc::c_uint;
     let offset = (d0 == d1) as libc::c_int;
-    let a_ctx = ((*a).comp_type[xb4 as usize] as libc::c_int >= COMP_INTER_AVG as libc::c_int
-        || (*a).r#ref[0][xb4 as usize] as libc::c_int == 6) as libc::c_int;
-    let l_ctx = ((*l).comp_type[yb4 as usize] as libc::c_int >= COMP_INTER_AVG as libc::c_int
-        || (*l).r#ref[0][yb4 as usize] as libc::c_int == 6) as libc::c_int;
+    let a_ctx = (a.comp_type[xb4 as usize] as libc::c_int >= COMP_INTER_AVG as libc::c_int
+        || a.r#ref[0][xb4 as usize] as libc::c_int == 6) as libc::c_int;
+    let l_ctx = (l.comp_type[yb4 as usize] as libc::c_int >= COMP_INTER_AVG as libc::c_int
+        || l.r#ref[0][yb4 as usize] as libc::c_int == 6) as libc::c_int;
     return 3 * offset + a_ctx + l_ctx;
 }
 
 #[inline]
 pub unsafe fn get_mask_comp_ctx(
-    a: *const BlockContext,
-    l: *const BlockContext,
+    a: &BlockContext,
+    l: &BlockContext,
     yb4: libc::c_int,
     xb4: libc::c_int,
 ) -> libc::c_int {
-    let a_ctx = if (*a).comp_type[xb4 as usize] as libc::c_int >= COMP_INTER_SEG as libc::c_int {
+    let a_ctx = if a.comp_type[xb4 as usize] as libc::c_int >= COMP_INTER_SEG as libc::c_int {
         1 as libc::c_int
-    } else if (*a).r#ref[0][xb4 as usize] as libc::c_int == 6 {
+    } else if a.r#ref[0][xb4 as usize] as libc::c_int == 6 {
         3 as libc::c_int
     } else {
         0 as libc::c_int
     };
-    let l_ctx = if (*l).comp_type[yb4 as usize] as libc::c_int >= COMP_INTER_SEG as libc::c_int {
+    let l_ctx = if l.comp_type[yb4 as usize] as libc::c_int >= COMP_INTER_SEG as libc::c_int {
         1 as libc::c_int
-    } else if (*l).r#ref[0][yb4 as usize] as libc::c_int == 6 {
+    } else if l.r#ref[0][yb4 as usize] as libc::c_int == 6 {
         3 as libc::c_int
     } else {
         0 as libc::c_int
@@ -380,24 +380,24 @@ pub unsafe fn get_mask_comp_ctx(
 
 #[inline]
 pub unsafe fn av1_get_ref_ctx(
-    a: *const BlockContext,
-    l: *const BlockContext,
+    a: &BlockContext,
+    l: &BlockContext,
     yb4: libc::c_int,
     xb4: libc::c_int,
     mut have_top: libc::c_int,
     mut have_left: libc::c_int,
 ) -> libc::c_int {
     let mut cnt: [libc::c_int; 2] = [0 as libc::c_int, 0];
-    if have_top != 0 && (*a).intra[xb4 as usize] == 0 {
-        cnt[((*a).r#ref[0][xb4 as usize] as libc::c_int >= 4) as libc::c_int as usize] += 1;
-        if (*a).comp_type[xb4 as usize] != 0 {
-            cnt[((*a).r#ref[1][xb4 as usize] as libc::c_int >= 4) as libc::c_int as usize] += 1;
+    if have_top != 0 && a.intra[xb4 as usize] == 0 {
+        cnt[(a.r#ref[0][xb4 as usize] as libc::c_int >= 4) as libc::c_int as usize] += 1;
+        if a.comp_type[xb4 as usize] != 0 {
+            cnt[(a.r#ref[1][xb4 as usize] as libc::c_int >= 4) as libc::c_int as usize] += 1;
         }
     }
-    if have_left != 0 && (*l).intra[yb4 as usize] == 0 {
-        cnt[((*l).r#ref[0][yb4 as usize] as libc::c_int >= 4) as libc::c_int as usize] += 1;
-        if (*l).comp_type[yb4 as usize] != 0 {
-            cnt[((*l).r#ref[1][yb4 as usize] as libc::c_int >= 4) as libc::c_int as usize] += 1;
+    if have_left != 0 && l.intra[yb4 as usize] == 0 {
+        cnt[(l.r#ref[0][yb4 as usize] as libc::c_int >= 4) as libc::c_int as usize] += 1;
+        if l.comp_type[yb4 as usize] != 0 {
+            cnt[(l.r#ref[1][yb4 as usize] as libc::c_int >= 4) as libc::c_int as usize] += 1;
         }
     }
     return if cnt[0] == cnt[1] {
@@ -411,32 +411,32 @@ pub unsafe fn av1_get_ref_ctx(
 
 #[inline]
 pub unsafe fn av1_get_fwd_ref_ctx(
-    a: *const BlockContext,
-    l: *const BlockContext,
+    a: &BlockContext,
+    l: &BlockContext,
     yb4: libc::c_int,
     xb4: libc::c_int,
     have_top: libc::c_int,
     have_left: libc::c_int,
 ) -> libc::c_int {
     let mut cnt: [libc::c_int; 4] = [0 as libc::c_int, 0, 0, 0];
-    if have_top != 0 && (*a).intra[xb4 as usize] == 0 {
-        if ((*a).r#ref[0][xb4 as usize] as libc::c_int) < 4 {
-            cnt[(*a).r#ref[0][xb4 as usize] as usize] += 1;
+    if have_top != 0 && a.intra[xb4 as usize] == 0 {
+        if (a.r#ref[0][xb4 as usize] as libc::c_int) < 4 {
+            cnt[a.r#ref[0][xb4 as usize] as usize] += 1;
         }
-        if (*a).comp_type[xb4 as usize] as libc::c_int != 0
-            && ((*a).r#ref[1][xb4 as usize] as libc::c_int) < 4
+        if a.comp_type[xb4 as usize] as libc::c_int != 0
+            && (a.r#ref[1][xb4 as usize] as libc::c_int) < 4
         {
-            cnt[(*a).r#ref[1][xb4 as usize] as usize] += 1;
+            cnt[a.r#ref[1][xb4 as usize] as usize] += 1;
         }
     }
-    if have_left != 0 && (*l).intra[yb4 as usize] == 0 {
-        if ((*l).r#ref[0][yb4 as usize] as libc::c_int) < 4 {
-            cnt[(*l).r#ref[0][yb4 as usize] as usize] += 1;
+    if have_left != 0 && l.intra[yb4 as usize] == 0 {
+        if (l.r#ref[0][yb4 as usize] as libc::c_int) < 4 {
+            cnt[l.r#ref[0][yb4 as usize] as usize] += 1;
         }
-        if (*l).comp_type[yb4 as usize] as libc::c_int != 0
-            && ((*l).r#ref[1][yb4 as usize] as libc::c_int) < 4
+        if l.comp_type[yb4 as usize] as libc::c_int != 0
+            && (l.r#ref[1][yb4 as usize] as libc::c_int) < 4
         {
-            cnt[(*l).r#ref[1][yb4 as usize] as usize] += 1;
+            cnt[l.r#ref[1][yb4 as usize] as usize] += 1;
         }
     }
     cnt[0] += cnt[1];
@@ -452,32 +452,32 @@ pub unsafe fn av1_get_fwd_ref_ctx(
 
 #[inline]
 pub unsafe fn av1_get_fwd_ref_1_ctx(
-    a: *const BlockContext,
-    l: *const BlockContext,
+    a: &BlockContext,
+    l: &BlockContext,
     yb4: libc::c_int,
     xb4: libc::c_int,
     have_top: libc::c_int,
     have_left: libc::c_int,
 ) -> libc::c_int {
     let mut cnt: [libc::c_int; 2] = [0 as libc::c_int, 0];
-    if have_top != 0 && (*a).intra[xb4 as usize] == 0 {
-        if ((*a).r#ref[0][xb4 as usize] as libc::c_int) < 2 {
-            cnt[(*a).r#ref[0][xb4 as usize] as usize] += 1;
+    if have_top != 0 && a.intra[xb4 as usize] == 0 {
+        if (a.r#ref[0][xb4 as usize] as libc::c_int) < 2 {
+            cnt[a.r#ref[0][xb4 as usize] as usize] += 1;
         }
-        if (*a).comp_type[xb4 as usize] as libc::c_int != 0
-            && ((*a).r#ref[1][xb4 as usize] as libc::c_int) < 2
+        if a.comp_type[xb4 as usize] as libc::c_int != 0
+            && (a.r#ref[1][xb4 as usize] as libc::c_int) < 2
         {
-            cnt[(*a).r#ref[1][xb4 as usize] as usize] += 1;
+            cnt[a.r#ref[1][xb4 as usize] as usize] += 1;
         }
     }
-    if have_left != 0 && (*l).intra[yb4 as usize] == 0 {
-        if ((*l).r#ref[0][yb4 as usize] as libc::c_int) < 2 {
-            cnt[(*l).r#ref[0][yb4 as usize] as usize] += 1;
+    if have_left != 0 && l.intra[yb4 as usize] == 0 {
+        if (l.r#ref[0][yb4 as usize] as libc::c_int) < 2 {
+            cnt[l.r#ref[0][yb4 as usize] as usize] += 1;
         }
-        if (*l).comp_type[yb4 as usize] as libc::c_int != 0
-            && ((*l).r#ref[1][yb4 as usize] as libc::c_int) < 2
+        if l.comp_type[yb4 as usize] as libc::c_int != 0
+            && (l.r#ref[1][yb4 as usize] as libc::c_int) < 2
         {
-            cnt[(*l).r#ref[1][yb4 as usize] as usize] += 1;
+            cnt[l.r#ref[1][yb4 as usize] as usize] += 1;
         }
     }
     return if cnt[0] == cnt[1] {
@@ -491,32 +491,32 @@ pub unsafe fn av1_get_fwd_ref_1_ctx(
 
 #[inline]
 pub unsafe fn av1_get_fwd_ref_2_ctx(
-    a: *const BlockContext,
-    l: *const BlockContext,
+    a: &BlockContext,
+    l: &BlockContext,
     yb4: libc::c_int,
     xb4: libc::c_int,
     have_top: libc::c_int,
     have_left: libc::c_int,
 ) -> libc::c_int {
     let mut cnt: [libc::c_int; 2] = [0 as libc::c_int, 0];
-    if have_top != 0 && (*a).intra[xb4 as usize] == 0 {
-        if ((*a).r#ref[0][xb4 as usize] as libc::c_uint ^ 2 as libc::c_uint) < 2 as libc::c_uint {
-            cnt[((*a).r#ref[0][xb4 as usize] as libc::c_int - 2) as usize] += 1;
+    if have_top != 0 && a.intra[xb4 as usize] == 0 {
+        if (a.r#ref[0][xb4 as usize] as libc::c_uint ^ 2 as libc::c_uint) < 2 as libc::c_uint {
+            cnt[(a.r#ref[0][xb4 as usize] as libc::c_int - 2) as usize] += 1;
         }
-        if (*a).comp_type[xb4 as usize] as libc::c_int != 0
-            && ((*a).r#ref[1][xb4 as usize] as libc::c_uint ^ 2 as libc::c_uint) < 2 as libc::c_uint
+        if a.comp_type[xb4 as usize] as libc::c_int != 0
+            && (a.r#ref[1][xb4 as usize] as libc::c_uint ^ 2 as libc::c_uint) < 2 as libc::c_uint
         {
-            cnt[((*a).r#ref[1][xb4 as usize] as libc::c_int - 2) as usize] += 1;
+            cnt[(a.r#ref[1][xb4 as usize] as libc::c_int - 2) as usize] += 1;
         }
     }
-    if have_left != 0 && (*l).intra[yb4 as usize] == 0 {
-        if ((*l).r#ref[0][yb4 as usize] as libc::c_uint ^ 2 as libc::c_uint) < 2 as libc::c_uint {
-            cnt[((*l).r#ref[0][yb4 as usize] as libc::c_int - 2) as usize] += 1;
+    if have_left != 0 && l.intra[yb4 as usize] == 0 {
+        if (l.r#ref[0][yb4 as usize] as libc::c_uint ^ 2 as libc::c_uint) < 2 as libc::c_uint {
+            cnt[(l.r#ref[0][yb4 as usize] as libc::c_int - 2) as usize] += 1;
         }
-        if (*l).comp_type[yb4 as usize] as libc::c_int != 0
-            && ((*l).r#ref[1][yb4 as usize] as libc::c_uint ^ 2 as libc::c_uint) < 2 as libc::c_uint
+        if l.comp_type[yb4 as usize] as libc::c_int != 0
+            && (l.r#ref[1][yb4 as usize] as libc::c_uint ^ 2 as libc::c_uint) < 2 as libc::c_uint
         {
-            cnt[((*l).r#ref[1][yb4 as usize] as libc::c_int - 2) as usize] += 1;
+            cnt[(l.r#ref[1][yb4 as usize] as libc::c_int - 2) as usize] += 1;
         }
     }
     return if cnt[0] == cnt[1] {
@@ -530,32 +530,32 @@ pub unsafe fn av1_get_fwd_ref_2_ctx(
 
 #[inline]
 pub unsafe fn av1_get_bwd_ref_ctx(
-    a: *const BlockContext,
-    l: *const BlockContext,
+    a: &BlockContext,
+    l: &BlockContext,
     yb4: libc::c_int,
     xb4: libc::c_int,
     have_top: libc::c_int,
     have_left: libc::c_int,
 ) -> libc::c_int {
     let mut cnt: [libc::c_int; 3] = [0 as libc::c_int, 0, 0];
-    if have_top != 0 && (*a).intra[xb4 as usize] == 0 {
-        if (*a).r#ref[0][xb4 as usize] as libc::c_int >= 4 {
-            cnt[((*a).r#ref[0][xb4 as usize] as libc::c_int - 4) as usize] += 1;
+    if have_top != 0 && a.intra[xb4 as usize] == 0 {
+        if a.r#ref[0][xb4 as usize] as libc::c_int >= 4 {
+            cnt[(a.r#ref[0][xb4 as usize] as libc::c_int - 4) as usize] += 1;
         }
-        if (*a).comp_type[xb4 as usize] as libc::c_int != 0
-            && (*a).r#ref[1][xb4 as usize] as libc::c_int >= 4
+        if a.comp_type[xb4 as usize] as libc::c_int != 0
+            && a.r#ref[1][xb4 as usize] as libc::c_int >= 4
         {
-            cnt[((*a).r#ref[1][xb4 as usize] as libc::c_int - 4) as usize] += 1;
+            cnt[(a.r#ref[1][xb4 as usize] as libc::c_int - 4) as usize] += 1;
         }
     }
-    if have_left != 0 && (*l).intra[yb4 as usize] == 0 {
-        if (*l).r#ref[0][yb4 as usize] as libc::c_int >= 4 {
-            cnt[((*l).r#ref[0][yb4 as usize] as libc::c_int - 4) as usize] += 1;
+    if have_left != 0 && l.intra[yb4 as usize] == 0 {
+        if l.r#ref[0][yb4 as usize] as libc::c_int >= 4 {
+            cnt[(l.r#ref[0][yb4 as usize] as libc::c_int - 4) as usize] += 1;
         }
-        if (*l).comp_type[yb4 as usize] as libc::c_int != 0
-            && (*l).r#ref[1][yb4 as usize] as libc::c_int >= 4
+        if l.comp_type[yb4 as usize] as libc::c_int != 0
+            && l.r#ref[1][yb4 as usize] as libc::c_int >= 4
         {
-            cnt[((*l).r#ref[1][yb4 as usize] as libc::c_int - 4) as usize] += 1;
+            cnt[(l.r#ref[1][yb4 as usize] as libc::c_int - 4) as usize] += 1;
         }
     }
     cnt[1] += cnt[0];
@@ -570,32 +570,32 @@ pub unsafe fn av1_get_bwd_ref_ctx(
 
 #[inline]
 pub unsafe fn av1_get_bwd_ref_1_ctx(
-    a: *const BlockContext,
-    l: *const BlockContext,
+    a: &BlockContext,
+    l: &BlockContext,
     yb4: libc::c_int,
     xb4: libc::c_int,
     have_top: libc::c_int,
     have_left: libc::c_int,
 ) -> libc::c_int {
     let mut cnt: [libc::c_int; 3] = [0 as libc::c_int, 0, 0];
-    if have_top != 0 && (*a).intra[xb4 as usize] == 0 {
-        if (*a).r#ref[0][xb4 as usize] as libc::c_int >= 4 {
-            cnt[((*a).r#ref[0][xb4 as usize] as libc::c_int - 4) as usize] += 1;
+    if have_top != 0 && a.intra[xb4 as usize] == 0 {
+        if a.r#ref[0][xb4 as usize] as libc::c_int >= 4 {
+            cnt[(a.r#ref[0][xb4 as usize] as libc::c_int - 4) as usize] += 1;
         }
-        if (*a).comp_type[xb4 as usize] as libc::c_int != 0
-            && (*a).r#ref[1][xb4 as usize] as libc::c_int >= 4
+        if a.comp_type[xb4 as usize] as libc::c_int != 0
+            && a.r#ref[1][xb4 as usize] as libc::c_int >= 4
         {
-            cnt[((*a).r#ref[1][xb4 as usize] as libc::c_int - 4) as usize] += 1;
+            cnt[(a.r#ref[1][xb4 as usize] as libc::c_int - 4) as usize] += 1;
         }
     }
-    if have_left != 0 && (*l).intra[yb4 as usize] == 0 {
-        if (*l).r#ref[0][yb4 as usize] as libc::c_int >= 4 {
-            cnt[((*l).r#ref[0][yb4 as usize] as libc::c_int - 4) as usize] += 1;
+    if have_left != 0 && l.intra[yb4 as usize] == 0 {
+        if l.r#ref[0][yb4 as usize] as libc::c_int >= 4 {
+            cnt[(l.r#ref[0][yb4 as usize] as libc::c_int - 4) as usize] += 1;
         }
-        if (*l).comp_type[yb4 as usize] as libc::c_int != 0
-            && (*l).r#ref[1][yb4 as usize] as libc::c_int >= 4
+        if l.comp_type[yb4 as usize] as libc::c_int != 0
+            && l.r#ref[1][yb4 as usize] as libc::c_int >= 4
         {
-            cnt[((*l).r#ref[1][yb4 as usize] as libc::c_int - 4) as usize] += 1;
+            cnt[(l.r#ref[1][yb4 as usize] as libc::c_int - 4) as usize] += 1;
         }
     }
     return if cnt[0] == cnt[1] {
@@ -609,38 +609,38 @@ pub unsafe fn av1_get_bwd_ref_1_ctx(
 
 #[inline]
 pub unsafe fn av1_get_uni_p1_ctx(
-    a: *const BlockContext,
-    l: *const BlockContext,
+    a: &BlockContext,
+    l: &BlockContext,
     yb4: libc::c_int,
     xb4: libc::c_int,
     have_top: libc::c_int,
     have_left: libc::c_int,
 ) -> libc::c_int {
     let mut cnt: [libc::c_int; 3] = [0 as libc::c_int, 0, 0];
-    if have_top != 0 && (*a).intra[xb4 as usize] == 0 {
-        if ((*a).r#ref[0][xb4 as usize] as libc::c_uint).wrapping_sub(1 as libc::c_uint)
+    if have_top != 0 && a.intra[xb4 as usize] == 0 {
+        if (a.r#ref[0][xb4 as usize] as libc::c_uint).wrapping_sub(1 as libc::c_uint)
             < 3 as libc::c_uint
         {
-            cnt[((*a).r#ref[0][xb4 as usize] as libc::c_int - 1) as usize] += 1;
+            cnt[(a.r#ref[0][xb4 as usize] as libc::c_int - 1) as usize] += 1;
         }
-        if (*a).comp_type[xb4 as usize] as libc::c_int != 0
-            && ((*a).r#ref[1][xb4 as usize] as libc::c_uint).wrapping_sub(1 as libc::c_uint)
+        if a.comp_type[xb4 as usize] as libc::c_int != 0
+            && (a.r#ref[1][xb4 as usize] as libc::c_uint).wrapping_sub(1 as libc::c_uint)
                 < 3 as libc::c_uint
         {
-            cnt[((*a).r#ref[1][xb4 as usize] as libc::c_int - 1) as usize] += 1;
+            cnt[(a.r#ref[1][xb4 as usize] as libc::c_int - 1) as usize] += 1;
         }
     }
-    if have_left != 0 && (*l).intra[yb4 as usize] == 0 {
-        if ((*l).r#ref[0][yb4 as usize] as libc::c_uint).wrapping_sub(1 as libc::c_uint)
+    if have_left != 0 && l.intra[yb4 as usize] == 0 {
+        if (l.r#ref[0][yb4 as usize] as libc::c_uint).wrapping_sub(1 as libc::c_uint)
             < 3 as libc::c_uint
         {
-            cnt[((*l).r#ref[0][yb4 as usize] as libc::c_int - 1) as usize] += 1;
+            cnt[(l.r#ref[0][yb4 as usize] as libc::c_int - 1) as usize] += 1;
         }
-        if (*l).comp_type[yb4 as usize] as libc::c_int != 0
-            && ((*l).r#ref[1][yb4 as usize] as libc::c_uint).wrapping_sub(1 as libc::c_uint)
+        if l.comp_type[yb4 as usize] as libc::c_int != 0
+            && (l.r#ref[1][yb4 as usize] as libc::c_uint).wrapping_sub(1 as libc::c_uint)
                 < 3 as libc::c_uint
         {
-            cnt[((*l).r#ref[1][yb4 as usize] as libc::c_int - 1) as usize] += 1;
+            cnt[(l.r#ref[1][yb4 as usize] as libc::c_int - 1) as usize] += 1;
         }
     }
     cnt[1] += cnt[2];
