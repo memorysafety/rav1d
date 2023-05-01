@@ -353,7 +353,7 @@ pub fn get_mask_comp_ctx(
     imin(a_ctx + l_ctx, 5)
 }
 
-fn cmp_counts(c1: i32, c2: i32) -> i32 {
+fn cmp_counts(c1: u8, c2: u8) -> u8 {
     use Ordering::*;
     match c1.cmp(&c2) {
         Less => 0,
@@ -370,7 +370,7 @@ pub fn av1_get_ref_ctx(
     xb4: libc::c_int,
     mut have_top: bool,
     mut have_left: bool,
-) -> libc::c_int {
+) -> u8 {
     let mut cnt = [0; 2];
     if have_top && a.intra[xb4 as usize] == 0 {
         cnt[(a.r#ref[0][xb4 as usize] >= 4) as usize] += 1;
@@ -395,7 +395,7 @@ pub fn av1_get_fwd_ref_ctx(
     xb4: libc::c_int,
     have_top: bool,
     have_left: bool,
-) -> libc::c_int {
+) -> u8 {
     let mut cnt = [0; 4];
     if have_top && a.intra[xb4 as usize] == 0 {
         if a.r#ref[0][xb4 as usize] < 4 {
@@ -426,7 +426,7 @@ pub fn av1_get_fwd_ref_1_ctx(
     xb4: libc::c_int,
     have_top: bool,
     have_left: bool,
-) -> libc::c_int {
+) -> u8 {
     let mut cnt = [0; 2];
     if have_top && a.intra[xb4 as usize] == 0 {
         if a.r#ref[0][xb4 as usize] < 2 {
@@ -455,7 +455,7 @@ pub fn av1_get_fwd_ref_2_ctx(
     xb4: libc::c_int,
     have_top: bool,
     have_left: bool,
-) -> libc::c_int {
+) -> u8 {
     let mut cnt = [0; 2];
     if have_top && a.intra[xb4 as usize] == 0 {
         if (a.r#ref[0][xb4 as usize] ^ 2) < 2 {
@@ -484,7 +484,7 @@ pub fn av1_get_bwd_ref_ctx(
     xb4: libc::c_int,
     have_top: bool,
     have_left: bool,
-) -> libc::c_int {
+) -> u8 {
     let mut cnt = [0; 3];
     if have_top && a.intra[xb4 as usize] == 0 {
         if a.r#ref[0][xb4 as usize] >= 4 {
@@ -514,7 +514,7 @@ pub fn av1_get_bwd_ref_1_ctx(
     xb4: libc::c_int,
     have_top: bool,
     have_left: bool,
-) -> libc::c_int {
+) -> u8 {
     let mut cnt = [0; 3];
     if have_top && a.intra[xb4 as usize] == 0 {
         if a.r#ref[0][xb4 as usize] >= 4 {
@@ -543,7 +543,7 @@ pub fn av1_get_uni_p1_ctx(
     xb4: libc::c_int,
     have_top: bool,
     have_left: bool,
-) -> libc::c_int {
+) -> u8 {
     let mut cnt = [0; 3];
     if have_top && a.intra[xb4 as usize] == 0 {
         if let Some(cnt) = cnt.get_mut((a.r#ref[0][xb4 as usize] - 1) as usize) {
