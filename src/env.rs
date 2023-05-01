@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::imin;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
@@ -354,6 +356,15 @@ pub fn get_mask_comp_ctx(
     imin(a_ctx + l_ctx, 5)
 }
 
+fn cmp_counts(c1: i32, c2: i32) -> i32 {
+    use Ordering::*;
+    match c1.cmp(&c2) {
+        Less => 0,
+        Equal => 1,
+        Greater => 2,
+    }
+}
+
 #[inline]
 pub fn av1_get_ref_ctx(
     a: &BlockContext,
@@ -376,13 +387,7 @@ pub fn av1_get_ref_ctx(
             cnt[(l.r#ref[1][yb4 as usize] >= 4) as usize] += 1;
         }
     }
-    if cnt[0] == cnt[1] {
-        1
-    } else if cnt[0] < cnt[1] {
-        0
-    } else {
-        2
-    }
+    cmp_counts(cnt[0], cnt[1])
 }
 
 #[inline]
@@ -413,13 +418,7 @@ pub fn av1_get_fwd_ref_ctx(
     }
     cnt[0] += cnt[1];
     cnt[2] += cnt[3];
-    if cnt[0] == cnt[2] {
-        1
-    } else if cnt[0] < cnt[2] {
-        0
-    } else {
-        2
-    }
+    cmp_counts(cnt[0], cnt[2])
 }
 
 #[inline]
@@ -448,13 +447,7 @@ pub fn av1_get_fwd_ref_1_ctx(
             cnt[l.r#ref[1][yb4 as usize] as usize] += 1;
         }
     }
-    if cnt[0] == cnt[1] {
-        1
-    } else if cnt[0] < cnt[1] {
-        0
-    } else {
-        2
-    }
+    cmp_counts(cnt[0], cnt[1])
 }
 
 #[inline]
@@ -483,13 +476,7 @@ pub fn av1_get_fwd_ref_2_ctx(
             cnt[(l.r#ref[1][yb4 as usize] - 2) as usize] += 1;
         }
     }
-    if cnt[0] == cnt[1] {
-        1
-    } else if cnt[0] < cnt[1] {
-        0
-    } else {
-        2
-    }
+    cmp_counts(cnt[0], cnt[1])
 }
 
 #[inline]
@@ -519,13 +506,7 @@ pub fn av1_get_bwd_ref_ctx(
         }
     }
     cnt[1] += cnt[0];
-    if cnt[2] == cnt[1] {
-        1
-    } else if cnt[1] < cnt[2] {
-        0
-    } else {
-        2
-    }
+    cmp_counts(cnt[1], cnt[2])
 }
 
 #[inline]
@@ -554,13 +535,7 @@ pub fn av1_get_bwd_ref_1_ctx(
             cnt[(l.r#ref[1][yb4 as usize] - 4) as usize] += 1;
         }
     }
-    if cnt[0] == cnt[1] {
-        1
-    } else if cnt[0] < cnt[1] {
-        0
-    } else {
-        2
-    }
+    cmp_counts(cnt[0], cnt[1])
 }
 
 #[inline]
@@ -594,13 +569,7 @@ pub fn av1_get_uni_p1_ctx(
         }
     }
     cnt[1] += cnt[2];
-    if cnt[0] == cnt[1] {
-        1
-    } else if cnt[0] < cnt[1] {
-        0
-    } else {
-        2
-    }
+    cmp_counts(cnt[0], cnt[1])
 }
 
 #[inline]
