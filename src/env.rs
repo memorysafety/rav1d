@@ -621,25 +621,25 @@ pub unsafe fn get_cur_frame_segid(
 ) -> libc::c_uint {
     cur_seg_map = cur_seg_map.offset(bx as isize + by as isize * stride);
     if have_left && have_top {
-        let l = *cur_seg_map.offset(-(1 as libc::c_int) as isize) as libc::c_int;
-        let a = *cur_seg_map.offset(-stride as isize) as libc::c_int;
-        let al = *cur_seg_map.offset(-(stride + 1) as isize) as libc::c_int;
+        let l = *cur_seg_map.offset(-1);
+        let a = *cur_seg_map.offset(-stride as isize);
+        let al = *cur_seg_map.offset(-(stride + 1) as isize);
         if l == a && al == l {
-            *seg_ctx = 2 as libc::c_int;
+            *seg_ctx = 2;
         } else if l == a || al == l || a == al {
-            *seg_ctx = 1 as libc::c_int;
+            *seg_ctx = 1;
         } else {
-            *seg_ctx = 0 as libc::c_int;
+            *seg_ctx = 0;
         }
         return (if a == al { a } else { l }) as libc::c_uint;
     } else {
-        *seg_ctx = 0 as libc::c_int;
+        *seg_ctx = 0;
         return (if have_left {
-            *cur_seg_map.offset(-(1 as libc::c_int) as isize) as libc::c_int
+            *cur_seg_map.offset(-1)
         } else if have_top {
-            *cur_seg_map.offset(-stride as isize) as libc::c_int
+            *cur_seg_map.offset(-stride as isize)
         } else {
-            0 as libc::c_int
+            0
         }) as libc::c_uint;
     };
 }
