@@ -171,6 +171,7 @@ pub fn get_filter_ctx(
     } else {
         DAV1D_N_SWITCHABLE_FILTERS as u8
     };
+
     (comp as u8) * 4
         + if a_filter == l_filter {
             a_filter
@@ -198,9 +199,11 @@ pub fn get_comp_ctx(
                 if l.comp_type[yb4 as usize] != 0 {
                     4
                 } else {
+                    // 4U means intra (-1) or bwd (>= 4)
                     2 + (l.r#ref[0][yb4 as usize] as libc::c_uint >= 4) as libc::c_int
                 }
             } else if l.comp_type[yb4 as usize] != 0 {
+                // 4U means intra (-1) or bwd (>= 4)
                 2 + (a.r#ref[0][xb4 as usize] as libc::c_uint >= 4) as libc::c_int
             } else {
                 ((l.r#ref[0][yb4 as usize] >= 4) ^ (a.r#ref[0][xb4 as usize] >= 4)) as libc::c_int
@@ -235,12 +238,14 @@ pub fn get_comp_dir_ctx(
     if have_top && have_left {
         let a_intra = a.intra[xb4 as usize] != 0;
         let l_intra = l.intra[yb4 as usize] != 0;
+
         if a_intra && l_intra {
             return 2;
         }
         if a_intra || l_intra {
             let edge = if a_intra { l } else { a };
             let off = if a_intra { yb4 } else { xb4 };
+
             if edge.comp_type[off as usize] == COMP_INTER_NONE as u8 {
                 return 2;
             }
@@ -248,15 +253,18 @@ pub fn get_comp_dir_ctx(
                 * ((edge.r#ref[0][off as usize] < 4) == (edge.r#ref[1][off as usize] < 4))
                     as libc::c_int;
         }
+
         let a_comp = a.comp_type[xb4 as usize] != COMP_INTER_NONE as u8;
         let l_comp = l.comp_type[yb4 as usize] != COMP_INTER_NONE as u8;
         let a_ref0 = a.r#ref[0][xb4 as usize];
         let l_ref0 = l.r#ref[0][yb4 as usize];
+
         if !a_comp && !l_comp {
             return 1 + 2 * ((a_ref0 >= 4) == (l_ref0 >= 4)) as libc::c_int;
         } else if !a_comp || !l_comp {
             let edge_0 = if a_comp { a } else { l };
             let off_0 = if a_comp { xb4 } else { yb4 };
+
             if !((edge_0.r#ref[0][off_0 as usize] < 4) == (edge_0.r#ref[1][off_0 as usize] < 4)) {
                 return 1;
             }
@@ -264,6 +272,7 @@ pub fn get_comp_dir_ctx(
         } else {
             let a_uni = (a.r#ref[0][xb4 as usize] < 4) == (a.r#ref[1][xb4 as usize] < 4);
             let l_uni = (l.r#ref[0][yb4 as usize] < 4) == (l.r#ref[1][yb4 as usize] < 4);
+
             if !a_uni && !l_uni {
                 return 0;
             }
@@ -275,6 +284,7 @@ pub fn get_comp_dir_ctx(
     } else if have_top || have_left {
         let edge_1 = if have_left { l } else { a };
         let off_1 = if have_left { yb4 } else { xb4 };
+
         if edge_1.intra[off_1 as usize] != 0 {
             return 2;
         }
@@ -331,6 +341,7 @@ pub fn get_jnt_comp_ctx(
         (al.comp_type[b4 as usize] >= COMP_INTER_AVG as u8 || al.r#ref[0][b4 as usize] == 6)
             as libc::c_int
     });
+
     3 * offset + a_ctx + l_ctx
 }
 
@@ -350,6 +361,7 @@ pub fn get_mask_comp_ctx(
             0
         }
     });
+
     imin(a_ctx + l_ctx, 5)
 }
 
@@ -372,18 +384,21 @@ pub fn av1_get_ref_ctx(
     mut have_left: bool,
 ) -> u8 {
     let mut cnt = [0; 2];
+
     if have_top && a.intra[xb4 as usize] == 0 {
         cnt[(a.r#ref[0][xb4 as usize] >= 4) as usize] += 1;
         if a.comp_type[xb4 as usize] != 0 {
             cnt[(a.r#ref[1][xb4 as usize] >= 4) as usize] += 1;
         }
     }
+
     if have_left && l.intra[yb4 as usize] == 0 {
         cnt[(l.r#ref[0][yb4 as usize] >= 4) as usize] += 1;
         if l.comp_type[yb4 as usize] != 0 {
             cnt[(l.r#ref[1][yb4 as usize] >= 4) as usize] += 1;
         }
     }
+
     cmp_counts(cnt[0], cnt[1])
 }
 
@@ -397,6 +412,7 @@ pub fn av1_get_fwd_ref_ctx(
     have_left: bool,
 ) -> u8 {
     let mut cnt = [0; 4];
+
     if have_top && a.intra[xb4 as usize] == 0 {
         if a.r#ref[0][xb4 as usize] < 4 {
             cnt[a.r#ref[0][xb4 as usize] as usize] += 1;
@@ -405,6 +421,7 @@ pub fn av1_get_fwd_ref_ctx(
             cnt[a.r#ref[1][xb4 as usize] as usize] += 1;
         }
     }
+
     if have_left && l.intra[yb4 as usize] == 0 {
         if l.r#ref[0][yb4 as usize] < 4 {
             cnt[l.r#ref[0][yb4 as usize] as usize] += 1;
@@ -413,8 +430,10 @@ pub fn av1_get_fwd_ref_ctx(
             cnt[l.r#ref[1][yb4 as usize] as usize] += 1;
         }
     }
+
     cnt[0] += cnt[1];
     cnt[2] += cnt[3];
+
     cmp_counts(cnt[0], cnt[2])
 }
 
@@ -428,6 +447,7 @@ pub fn av1_get_fwd_ref_1_ctx(
     have_left: bool,
 ) -> u8 {
     let mut cnt = [0; 2];
+
     if have_top && a.intra[xb4 as usize] == 0 {
         if a.r#ref[0][xb4 as usize] < 2 {
             cnt[a.r#ref[0][xb4 as usize] as usize] += 1;
@@ -436,6 +456,7 @@ pub fn av1_get_fwd_ref_1_ctx(
             cnt[a.r#ref[1][xb4 as usize] as usize] += 1;
         }
     }
+
     if have_left && l.intra[yb4 as usize] == 0 {
         if l.r#ref[0][yb4 as usize] < 2 {
             cnt[l.r#ref[0][yb4 as usize] as usize] += 1;
@@ -444,6 +465,7 @@ pub fn av1_get_fwd_ref_1_ctx(
             cnt[l.r#ref[1][yb4 as usize] as usize] += 1;
         }
     }
+
     cmp_counts(cnt[0], cnt[1])
 }
 
@@ -457,6 +479,7 @@ pub fn av1_get_fwd_ref_2_ctx(
     have_left: bool,
 ) -> u8 {
     let mut cnt = [0; 2];
+
     if have_top && a.intra[xb4 as usize] == 0 {
         if (a.r#ref[0][xb4 as usize] ^ 2) < 2 {
             cnt[(a.r#ref[0][xb4 as usize] - 2) as usize] += 1;
@@ -465,6 +488,7 @@ pub fn av1_get_fwd_ref_2_ctx(
             cnt[(a.r#ref[1][xb4 as usize] - 2) as usize] += 1;
         }
     }
+
     if have_left && l.intra[yb4 as usize] == 0 {
         if (l.r#ref[0][yb4 as usize] ^ 2) < 2 {
             cnt[(l.r#ref[0][yb4 as usize] - 2) as usize] += 1;
@@ -473,6 +497,7 @@ pub fn av1_get_fwd_ref_2_ctx(
             cnt[(l.r#ref[1][yb4 as usize] - 2) as usize] += 1;
         }
     }
+
     cmp_counts(cnt[0], cnt[1])
 }
 
@@ -486,6 +511,7 @@ pub fn av1_get_bwd_ref_ctx(
     have_left: bool,
 ) -> u8 {
     let mut cnt = [0; 3];
+
     if have_top && a.intra[xb4 as usize] == 0 {
         if a.r#ref[0][xb4 as usize] >= 4 {
             cnt[(a.r#ref[0][xb4 as usize] - 4) as usize] += 1;
@@ -494,6 +520,7 @@ pub fn av1_get_bwd_ref_ctx(
             cnt[(a.r#ref[1][xb4 as usize] - 4) as usize] += 1;
         }
     }
+
     if have_left && l.intra[yb4 as usize] == 0 {
         if l.r#ref[0][yb4 as usize] >= 4 {
             cnt[(l.r#ref[0][yb4 as usize] - 4) as usize] += 1;
@@ -502,7 +529,9 @@ pub fn av1_get_bwd_ref_ctx(
             cnt[(l.r#ref[1][yb4 as usize] - 4) as usize] += 1;
         }
     }
+
     cnt[1] += cnt[0];
+
     cmp_counts(cnt[1], cnt[2])
 }
 
@@ -516,6 +545,7 @@ pub fn av1_get_bwd_ref_1_ctx(
     have_left: bool,
 ) -> u8 {
     let mut cnt = [0; 3];
+
     if have_top && a.intra[xb4 as usize] == 0 {
         if a.r#ref[0][xb4 as usize] >= 4 {
             cnt[(a.r#ref[0][xb4 as usize] - 4) as usize] += 1;
@@ -524,6 +554,7 @@ pub fn av1_get_bwd_ref_1_ctx(
             cnt[(a.r#ref[1][xb4 as usize] - 4) as usize] += 1;
         }
     }
+
     if have_left && l.intra[yb4 as usize] == 0 {
         if l.r#ref[0][yb4 as usize] >= 4 {
             cnt[(l.r#ref[0][yb4 as usize] - 4) as usize] += 1;
@@ -532,6 +563,7 @@ pub fn av1_get_bwd_ref_1_ctx(
             cnt[(l.r#ref[1][yb4 as usize] - 4) as usize] += 1;
         }
     }
+
     cmp_counts(cnt[0], cnt[1])
 }
 
@@ -545,6 +577,7 @@ pub fn av1_get_uni_p1_ctx(
     have_left: bool,
 ) -> u8 {
     let mut cnt = [0; 3];
+
     if have_top && a.intra[xb4 as usize] == 0 {
         if let Some(cnt) = cnt.get_mut((a.r#ref[0][xb4 as usize] - 1) as usize) {
             *cnt += 1;
@@ -554,6 +587,7 @@ pub fn av1_get_uni_p1_ctx(
             *cnt += 1;
         }
     }
+
     if have_left && l.intra[yb4 as usize] == 0 {
         if let Some(cnt) = cnt.get_mut((l.r#ref[0][yb4 as usize] - 1) as usize) {
             *cnt += 1;
@@ -563,7 +597,9 @@ pub fn av1_get_uni_p1_ctx(
             *cnt += 1;
         }
     }
+
     cnt[1] += cnt[2];
+
     cmp_counts(cnt[0], cnt[1])
 }
 
