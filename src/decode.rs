@@ -504,23 +504,8 @@ pub type read_coef_blocks_fn =
     Option<unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> ()>;
 use crate::src::levels::BlockSize;
 
-use crate::src::levels::BS_16x16;
-use crate::src::levels::BS_16x32;
-use crate::src::levels::BS_16x4;
-use crate::src::levels::BS_16x8;
-use crate::src::levels::BS_4x16;
-use crate::src::levels::BS_4x4;
-use crate::src::levels::BS_4x8;
-use crate::src::levels::BS_8x16;
-use crate::src::levels::BS_8x32;
-use crate::src::levels::BS_8x4;
-use crate::src::levels::BS_8x8;
-
-use crate::src::levels::BS_32x16;
-use crate::src::levels::BS_32x32;
-use crate::src::levels::BS_32x8;
-
 use crate::src::levels::BS_128x128;
+use crate::src::levels::BS_4x4;
 use crate::src::levels::BS_64x64;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -1115,39 +1100,11 @@ use crate::src::mem::dav1d_free_aligned;
 use crate::src::mem::dav1d_freep_aligned;
 use crate::src::mem::freep;
 use crate::src::r#ref::dav1d_ref_inc;
-static mut cfl_allowed_mask: libc::c_uint = ((1 as libc::c_int) << BS_32x32
-    | (1 as libc::c_int) << BS_32x16 as libc::c_int
-    | (1 as libc::c_int) << BS_32x8 as libc::c_int
-    | (1 as libc::c_int) << BS_16x32 as libc::c_int
-    | (1 as libc::c_int) << BS_16x16 as libc::c_int
-    | (1 as libc::c_int) << BS_16x8 as libc::c_int
-    | (1 as libc::c_int) << BS_16x4 as libc::c_int
-    | (1 as libc::c_int) << BS_8x32 as libc::c_int
-    | (1 as libc::c_int) << BS_8x16 as libc::c_int
-    | (1 as libc::c_int) << BS_8x8 as libc::c_int
-    | (1 as libc::c_int) << BS_8x4 as libc::c_int
-    | (1 as libc::c_int) << BS_4x16 as libc::c_int
-    | (1 as libc::c_int) << BS_4x8 as libc::c_int
-    | (1 as libc::c_int) << BS_4x4 as libc::c_int)
-    as libc::c_uint;
-static mut wedge_allowed_mask: libc::c_uint = ((1 as libc::c_int) << BS_32x32
-    | (1 as libc::c_int) << BS_32x16 as libc::c_int
-    | (1 as libc::c_int) << BS_32x8 as libc::c_int
-    | (1 as libc::c_int) << BS_16x32 as libc::c_int
-    | (1 as libc::c_int) << BS_16x16 as libc::c_int
-    | (1 as libc::c_int) << BS_16x8 as libc::c_int
-    | (1 as libc::c_int) << BS_8x32 as libc::c_int
-    | (1 as libc::c_int) << BS_8x16 as libc::c_int
-    | (1 as libc::c_int) << BS_8x8 as libc::c_int)
-    as libc::c_uint;
-static mut interintra_allowed_mask: libc::c_uint = ((1 as libc::c_int) << BS_32x32
-    | (1 as libc::c_int) << BS_32x16 as libc::c_int
-    | (1 as libc::c_int) << BS_16x32 as libc::c_int
-    | (1 as libc::c_int) << BS_16x16 as libc::c_int
-    | (1 as libc::c_int) << BS_16x8 as libc::c_int
-    | (1 as libc::c_int) << BS_8x16 as libc::c_int
-    | (1 as libc::c_int) << BS_8x8 as libc::c_int)
-    as libc::c_uint;
+
+use crate::src::tables::cfl_allowed_mask;
+use crate::src::tables::interintra_allowed_mask;
+use crate::src::tables::wedge_allowed_mask;
+
 #[inline]
 unsafe extern "C" fn get_intra_ctx(
     a: *const BlockContext,

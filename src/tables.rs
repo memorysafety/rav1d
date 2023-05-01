@@ -670,6 +670,45 @@ pub static dav1d_wedge_ctx_lut: [u8; 22] = [
     0, 0, 0, 0, 0, 0, 0, 6, 5, 8, 0, 4, 3, 2, 0, 7, 1, 0, 0, 0, 0, 0,
 ];
 
+pub const cfl_allowed_mask: libc::c_uint = 0
+    | 1 << BS_32x32
+    | 1 << BS_32x16
+    | 1 << BS_32x8
+    | 1 << BS_16x32
+    | 1 << BS_16x16
+    | 1 << BS_16x8
+    | 1 << BS_16x4
+    | 1 << BS_8x32
+    | 1 << BS_8x16
+    | 1 << BS_8x8
+    | 1 << BS_8x4
+    | 1 << BS_4x16
+    | 1 << BS_4x8
+    | 1 << BS_4x4
+    | 0;
+
+pub const wedge_allowed_mask: libc::c_uint = 0
+    | 1 << BS_32x32
+    | 1 << BS_32x16
+    | 1 << BS_32x8
+    | 1 << BS_16x32
+    | 1 << BS_16x16
+    | 1 << BS_16x8
+    | 1 << BS_8x32
+    | 1 << BS_8x16
+    | 1 << BS_8x8
+    | 0;
+
+pub const interintra_allowed_mask: libc::c_uint = 0
+    | 1 << BS_32x32
+    | 1 << BS_32x16
+    | 1 << BS_16x32
+    | 1 << BS_16x16
+    | 1 << BS_16x8
+    | 1 << BS_8x16
+    | 1 << BS_8x8
+    | 0;
+
 pub static dav1d_default_wm_params: Dav1dWarpedMotionParams = Dav1dWarpedMotionParams {
     type_0: DAV1D_WM_TYPE_IDENTITY,
     matrix: [0, 0, 1 << 16, 0, 0, 1 << 16],
