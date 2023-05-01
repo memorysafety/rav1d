@@ -1131,7 +1131,7 @@ fn get_intra_ctx(
 }
 
 #[inline]
-unsafe extern "C" fn get_tx_ctx(
+unsafe fn get_tx_ctx(
     a: *const BlockContext,
     l: *const BlockContext,
     max_tx: *const TxfmInfo,
@@ -1143,6 +1143,7 @@ unsafe extern "C" fn get_tx_ctx(
         + ((*a).tx_intra[xb4 as usize] as libc::c_int >= (*max_tx).lw as libc::c_int)
             as libc::c_int;
 }
+
 #[inline]
 unsafe extern "C" fn get_partition_ctx(
     a: *const BlockContext,
