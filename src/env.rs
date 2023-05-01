@@ -371,7 +371,7 @@ pub fn av1_get_ref_ctx(
     mut have_top: bool,
     mut have_left: bool,
 ) -> libc::c_int {
-    let mut cnt = [0, 0];
+    let mut cnt = [0; 2];
     if have_top && a.intra[xb4 as usize] == 0 {
         cnt[(a.r#ref[0][xb4 as usize] >= 4) as usize] += 1;
         if a.comp_type[xb4 as usize] != 0 {
@@ -396,7 +396,7 @@ pub fn av1_get_fwd_ref_ctx(
     have_top: bool,
     have_left: bool,
 ) -> libc::c_int {
-    let mut cnt = [0, 0, 0, 0];
+    let mut cnt = [0; 4];
     if have_top && a.intra[xb4 as usize] == 0 {
         if a.r#ref[0][xb4 as usize] < 4 {
             cnt[a.r#ref[0][xb4 as usize] as usize] += 1;
@@ -427,7 +427,7 @@ pub fn av1_get_fwd_ref_1_ctx(
     have_top: bool,
     have_left: bool,
 ) -> libc::c_int {
-    let mut cnt = [0, 0];
+    let mut cnt = [0; 2];
     if have_top && a.intra[xb4 as usize] == 0 {
         if a.r#ref[0][xb4 as usize] < 2 {
             cnt[a.r#ref[0][xb4 as usize] as usize] += 1;
@@ -456,7 +456,7 @@ pub fn av1_get_fwd_ref_2_ctx(
     have_top: bool,
     have_left: bool,
 ) -> libc::c_int {
-    let mut cnt = [0, 0];
+    let mut cnt = [0; 2];
     if have_top && a.intra[xb4 as usize] == 0 {
         if (a.r#ref[0][xb4 as usize] ^ 2) < 2 {
             cnt[(a.r#ref[0][xb4 as usize] - 2) as usize] += 1;
@@ -485,7 +485,7 @@ pub fn av1_get_bwd_ref_ctx(
     have_top: bool,
     have_left: bool,
 ) -> libc::c_int {
-    let mut cnt = [0, 0, 0];
+    let mut cnt = [0; 3];
     if have_top && a.intra[xb4 as usize] == 0 {
         if a.r#ref[0][xb4 as usize] >= 4 {
             cnt[(a.r#ref[0][xb4 as usize] - 4) as usize] += 1;
@@ -515,7 +515,7 @@ pub fn av1_get_bwd_ref_1_ctx(
     have_top: bool,
     have_left: bool,
 ) -> libc::c_int {
-    let mut cnt = [0, 0, 0];
+    let mut cnt = [0; 3];
     if have_top && a.intra[xb4 as usize] == 0 {
         if a.r#ref[0][xb4 as usize] >= 4 {
             cnt[(a.r#ref[0][xb4 as usize] - 4) as usize] += 1;
@@ -544,7 +544,7 @@ pub fn av1_get_uni_p1_ctx(
     have_top: bool,
     have_left: bool,
 ) -> libc::c_int {
-    let mut cnt = [0, 0, 0];
+    let mut cnt = [0; 3];
     if have_top && a.intra[xb4 as usize] == 0 {
         if (a.r#ref[0][xb4 as usize] as libc::c_uint).wrapping_sub(1) < 3 {
             cnt[(a.r#ref[0][xb4 as usize] - 1) as usize] += 1;
