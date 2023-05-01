@@ -1154,20 +1154,14 @@ fn get_partition_ctx(
 }
 
 #[inline]
-unsafe fn gather_left_partition_prob(
-    in_0: *const uint16_t,
-    bl: BlockLevel,
-) -> libc::c_uint {
-    let mut out: libc::c_uint = (*in_0.offset((PARTITION_H as libc::c_int - 1) as isize)
-        as libc::c_int
-        - *in_0.offset(PARTITION_H as libc::c_int as isize) as libc::c_int)
-        as libc::c_uint;
+unsafe fn gather_left_partition_prob(in_0: *const uint16_t, bl: BlockLevel) -> libc::c_uint {
+    let mut out = (*in_0.offset((PARTITION_H - 1) as isize) as libc::c_int
+        - *in_0.offset(PARTITION_H as isize) as libc::c_int) as libc::c_uint;
     out = out.wrapping_add(
-        (*in_0.offset((PARTITION_SPLIT as libc::c_int - 1) as isize) as libc::c_int
-            - *in_0.offset(PARTITION_T_LEFT_SPLIT as libc::c_int as isize) as libc::c_int)
-            as libc::c_uint,
+        (*in_0.offset((PARTITION_SPLIT - 1) as isize) as libc::c_int
+            - *in_0.offset(PARTITION_T_LEFT_SPLIT as isize) as libc::c_int) as libc::c_uint,
     );
-    if bl as libc::c_uint != BL_128X128 as libc::c_int as libc::c_uint {
+    if bl != BL_128X128 {
         out = out.wrapping_add(
             (*in_0.offset((PARTITION_H4 - 1) as isize) as libc::c_int
                 - *in_0.offset(PARTITION_H4 as libc::c_int as isize) as libc::c_int)
@@ -1178,21 +1172,15 @@ unsafe fn gather_left_partition_prob(
 }
 
 #[inline]
-unsafe fn gather_top_partition_prob(
-    in_0: *const uint16_t,
-    bl: BlockLevel,
-) -> libc::c_uint {
-    let mut out: libc::c_uint = (*in_0.offset((PARTITION_V as libc::c_int - 1) as isize)
-        as libc::c_int
-        - *in_0.offset(PARTITION_T_TOP_SPLIT as libc::c_int as isize) as libc::c_int)
+unsafe fn gather_top_partition_prob(in_0: *const uint16_t, bl: BlockLevel) -> libc::c_uint {
+    let mut out = (*in_0.offset((PARTITION_V - 1) as isize) as libc::c_int
+        - *in_0.offset(PARTITION_T_TOP_SPLIT as isize) as libc::c_int)
         as libc::c_uint;
-    out = out.wrapping_add(
-        *in_0.offset((PARTITION_T_LEFT_SPLIT as libc::c_int - 1) as isize) as libc::c_uint,
-    );
-    if bl as libc::c_uint != BL_128X128 as libc::c_int as libc::c_uint {
+    out = out.wrapping_add(*in_0.offset((PARTITION_T_LEFT_SPLIT - 1) as isize) as libc::c_uint);
+    if bl != BL_128X128 {
         out = out.wrapping_add(
             (*in_0.offset((PARTITION_V4 - 1) as isize) as libc::c_int
-                - *in_0.offset(PARTITION_T_RIGHT_SPLIT as libc::c_int as isize) as libc::c_int)
+                - *in_0.offset(PARTITION_T_RIGHT_SPLIT as isize) as libc::c_int)
                 as libc::c_uint,
         );
     }
