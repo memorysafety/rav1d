@@ -155,20 +155,16 @@ pub fn get_filter_ctx(
     l: &BlockContext,
     comp: libc::c_int,
     dir: libc::c_int,
-    r#ref: libc::c_int,
+    r#ref: i8,
     yb4: libc::c_int,
     xb4: libc::c_int,
 ) -> libc::c_int {
-    let a_filter = if a.r#ref[0][xb4 as usize] as libc::c_int == r#ref
-        || a.r#ref[1][xb4 as usize] as libc::c_int == r#ref
-    {
+    let a_filter = if a.r#ref[0][xb4 as usize] == r#ref || a.r#ref[1][xb4 as usize] == r#ref {
         a.filter[dir as usize][xb4 as usize] as libc::c_int
     } else {
         DAV1D_N_SWITCHABLE_FILTERS as libc::c_int
     };
-    let l_filter = if l.r#ref[0][yb4 as usize] as libc::c_int == r#ref
-        || l.r#ref[1][yb4 as usize] as libc::c_int == r#ref
-    {
+    let l_filter = if l.r#ref[0][yb4 as usize] == r#ref || l.r#ref[1][yb4 as usize] == r#ref {
         l.filter[dir as usize][yb4 as usize] as libc::c_int
     } else {
         DAV1D_N_SWITCHABLE_FILTERS as libc::c_int

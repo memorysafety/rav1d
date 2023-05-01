@@ -7697,7 +7697,7 @@ unsafe fn decode_b(
                     &t.l,
                     comp,
                     0 as libc::c_int,
-                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int,
+                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0],
                     by4,
                     bx4,
                 );
@@ -7712,7 +7712,7 @@ unsafe fn decode_b(
                         &t.l,
                         comp,
                         1 as libc::c_int,
-                        b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int,
+                        b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0],
                         by4,
                         bx4,
                     );
