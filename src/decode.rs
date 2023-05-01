@@ -1143,21 +1143,16 @@ fn get_tx_ctx(
 }
 
 #[inline]
-unsafe extern "C" fn get_partition_ctx(
-    a: *const BlockContext,
-    l: *const BlockContext,
+fn get_partition_ctx(
+    a: &BlockContext,
+    l: &BlockContext,
     bl: BlockLevel,
     yb8: libc::c_int,
     xb8: libc::c_int,
-) -> libc::c_int {
-    return ((*a).partition[xb8 as usize] as libc::c_int
-        >> (4 as libc::c_int as libc::c_uint).wrapping_sub(bl as libc::c_uint)
-        & 1)
-        + (((*l).partition[yb8 as usize] as libc::c_int
-            >> (4 as libc::c_int as libc::c_uint).wrapping_sub(bl as libc::c_uint)
-            & 1)
-            << 1);
+) -> u8 {
+    (a.partition[xb8 as usize] >> (4 - bl) & 1) + ((l.partition[yb8 as usize] >> (4 - bl) & 1) << 1)
 }
+
 #[inline]
 unsafe extern "C" fn gather_left_partition_prob(
     in_0: *const uint16_t,
@@ -10244,7 +10239,7 @@ unsafe extern "C" fn decode_sb(
         }
         bx8 = ((*t).bx & 31) >> 1;
         by8 = ((*t).by & 31) >> 1;
-        ctx = get_partition_ctx((*t).a, &mut (*t).l, bl, by8, bx8);
+        ctx = get_partition_ctx(&*(*t).a, &(*t).l, bl, by8, bx8);
         pc = ((*ts).cdf.m.partition[bl as usize][ctx as usize]).as_mut_ptr();
     }
     if have_h_split != 0 && have_v_split != 0 {
@@ -10280,7 +10275,7 @@ unsafe extern "C" fn decode_sb(
                     (*t).by,
                     (*t).bx,
                     bl as libc::c_uint,
-                    ctx,
+                    ctx as libc::c_int,
                     bp as libc::c_uint,
                     (*ts).msac.rng,
                 );
@@ -10696,7 +10691,7 @@ unsafe extern "C" fn decode_sb(
                     (*t).by,
                     (*t).bx,
                     bl as libc::c_uint,
-                    ctx,
+                    ctx as libc::c_int,
                     if is_split != 0 {
                         PARTITION_SPLIT as libc::c_int
                     } else {
@@ -10771,7 +10766,7 @@ unsafe extern "C" fn decode_sb(
                     (*t).by,
                     (*t).bx,
                     bl as libc::c_uint,
-                    ctx,
+                    ctx as libc::c_int,
                     if is_split_0 != 0 {
                         PARTITION_SPLIT as libc::c_int
                     } else {
