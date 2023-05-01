@@ -3525,280 +3525,231 @@ unsafe fn decode_b(
 
         // angle delta
         if b_dim[2] + b_dim[3] >= 2
-            && b.c2rust_unnamed.c2rust_unnamed.y_mode as libc::c_int >= VERT_PRED as libc::c_int
-            && b.c2rust_unnamed.c2rust_unnamed.y_mode as libc::c_int
-                <= VERT_LEFT_PRED as libc::c_int
+            && b.y_mode() as IntraPredMode >= VERT_PRED
+            && b.y_mode() as IntraPredMode <= VERT_LEFT_PRED
         {
-            let acdf: *mut uint16_t =
-                (ts.cdf.m.angle_delta[(b.c2rust_unnamed.c2rust_unnamed.y_mode as libc::c_int
-                    - VERT_PRED as libc::c_int) as usize])
-                    .as_mut_ptr();
-            let angle =
-                dav1d_msac_decode_symbol_adapt8(&mut ts.msac, acdf, 6 as libc::c_int as size_t)
-                    as libc::c_int;
-            b.c2rust_unnamed.c2rust_unnamed.y_angle = (angle - 3) as int8_t;
+            let acdf = &mut ts.cdf.m.angle_delta[b.y_mode() as usize - VERT_PRED as usize];
+            let angle = dav1d_msac_decode_symbol_adapt8(&mut ts.msac, acdf.as_mut_ptr(), 6);
+            *b.y_angle_mut() = angle as int8_t - 3;
         } else {
-            b.c2rust_unnamed.c2rust_unnamed.y_angle = 0 as libc::c_int as int8_t;
+            *b.y_angle_mut() = 0;
         }
+
         if has_chroma {
             let cfl_allowed = if frame_hdr.segmentation.lossless[b.seg_id as usize] != 0 {
-                (cbw4 == 1 && cbh4 == 1) as libc::c_int
+                cbw4 == 1 && cbh4 == 1
             } else {
-                (cfl_allowed_mask & ((1 as libc::c_int) << bs as libc::c_uint) as libc::c_uint != 0)
-                    as libc::c_int
+                cfl_allowed_mask & (1 << bs) != 0
             };
-            let uvmode_cdf: *mut uint16_t = (ts.cdf.m.uv_mode[cfl_allowed as usize]
-                [b.c2rust_unnamed.c2rust_unnamed.y_mode as usize])
-                .as_mut_ptr();
+
+            let uvmode_cdf = &mut ts.cdf.m.uv_mode[cfl_allowed as usize][b.y_mode() as usize];
             b.c2rust_unnamed.c2rust_unnamed.uv_mode = dav1d_msac_decode_symbol_adapt16(
                 &mut ts.msac,
-                uvmode_cdf,
-                (N_UV_INTRA_PRED_MODES as libc::c_int - 1 - (cfl_allowed == 0) as libc::c_int)
-                    as size_t,
+                uvmode_cdf.as_mut_ptr(),
+                N_UV_INTRA_PRED_MODES as size_t - 1 - (!cfl_allowed) as size_t,
             ) as uint8_t;
+
             if DEBUG_BLOCK_INFO(f, t) {
-                printf(
-                    b"Post-uvmode[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
-                    b.c2rust_unnamed.c2rust_unnamed.uv_mode as libc::c_int,
-                    ts.msac.rng,
-                );
+                println!("Post-uvmode[{}]: r={}", b.uv_mode(), ts.msac.rng);
             }
-            b.c2rust_unnamed.c2rust_unnamed.uv_angle = 0 as libc::c_int as int8_t;
-            if b.c2rust_unnamed.c2rust_unnamed.uv_mode as libc::c_int == CFL_PRED as libc::c_int {
-                let sign = (dav1d_msac_decode_symbol_adapt8(
+
+            *b.uv_angle_mut() = 0;
+            if b.uv_mode() as u32 == CFL_PRED {
+                let sign = dav1d_msac_decode_symbol_adapt8(
                     &mut ts.msac,
-                    (ts.cdf.m.cfl_sign.0).as_mut_ptr(),
-                    7 as libc::c_int as size_t,
-                ))
-                .wrapping_add(1 as libc::c_int as libc::c_uint)
-                    as libc::c_int;
+                    ts.cdf.m.cfl_sign.0.as_mut_ptr(),
+                    7,
+                ) + 1;
                 let sign_u = sign * 0x56 >> 8;
                 let sign_v = sign - sign_u * 3;
-                if !(sign_u == sign / 3) {
-                    unreachable!();
-                }
+
+                assert!(sign_u == sign / 3);
+
                 if sign_u != 0 {
-                    let ctx = (sign_u == 2) as libc::c_int * 3 + sign_v;
-                    b.c2rust_unnamed.c2rust_unnamed.cfl_alpha[0] =
-                        (dav1d_msac_decode_symbol_adapt16(
-                            &mut ts.msac,
-                            (ts.cdf.m.cfl_alpha[ctx as usize]).as_mut_ptr(),
-                            15 as libc::c_int as size_t,
-                        ))
-                        .wrapping_add(1 as libc::c_int as libc::c_uint)
-                            as int8_t;
+                    let ctx = (sign_u == 2) as usize * 3 + sign_v as usize;
+                    b.cfl_alpha_mut()[0] = 1 + dav1d_msac_decode_symbol_adapt16(
+                        &mut ts.msac,
+                        ts.cdf.m.cfl_alpha[ctx].as_mut_ptr(),
+                        15,
+                    ) as i8;
+
                     if sign_u == 1 {
-                        b.c2rust_unnamed.c2rust_unnamed.cfl_alpha[0] =
-                            -(b.c2rust_unnamed.c2rust_unnamed.cfl_alpha[0] as libc::c_int)
-                                as int8_t;
+                        b.cfl_alpha_mut()[0] = -b.cfl_alpha()[0];
                     }
                 } else {
-                    b.c2rust_unnamed.c2rust_unnamed.cfl_alpha[0] = 0 as libc::c_int as int8_t;
+                    b.cfl_alpha_mut()[0] = 0;
                 }
+
                 if sign_v != 0 {
-                    let ctx_0 = (sign_v == 2) as libc::c_int * 3 + sign_u;
-                    b.c2rust_unnamed.c2rust_unnamed.cfl_alpha[1] =
-                        (dav1d_msac_decode_symbol_adapt16(
-                            &mut ts.msac,
-                            (ts.cdf.m.cfl_alpha[ctx_0 as usize]).as_mut_ptr(),
-                            15 as libc::c_int as size_t,
-                        ))
-                        .wrapping_add(1 as libc::c_int as libc::c_uint)
-                            as int8_t;
+                    let ctx = (sign_v == 2) as usize * 3 + sign_u as usize;
+                    b.cfl_alpha_mut()[1] = 1 + dav1d_msac_decode_symbol_adapt16(
+                        &mut ts.msac,
+                        (ts.cdf.m.cfl_alpha[ctx]).as_mut_ptr(),
+                        15 as libc::c_int as size_t,
+                    ) as i8;
+
                     if sign_v == 1 {
-                        b.c2rust_unnamed.c2rust_unnamed.cfl_alpha[1] =
-                            -(b.c2rust_unnamed.c2rust_unnamed.cfl_alpha[1] as libc::c_int)
-                                as int8_t;
+                        b.cfl_alpha_mut()[1] = -b.cfl_alpha()[1];
                     }
                 } else {
-                    b.c2rust_unnamed.c2rust_unnamed.cfl_alpha[1] = 0 as libc::c_int as int8_t;
+                    b.cfl_alpha_mut()[1] = 0;
                 }
+
                 if DEBUG_BLOCK_INFO(f, t) {
-                    printf(
-                        b"Post-uvalphas[%d/%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
-                        b.c2rust_unnamed.c2rust_unnamed.cfl_alpha[0] as libc::c_int,
-                        b.c2rust_unnamed.c2rust_unnamed.cfl_alpha[1] as libc::c_int,
+                    println!(
+                        "Post-uvalphas[{}/{}]: r={}",
+                        b.cfl_alpha()[0],
+                        b.cfl_alpha()[1],
                         ts.msac.rng,
                     );
                 }
             } else if b_dim[2] + b_dim[3] >= 2
-                && b.c2rust_unnamed.c2rust_unnamed.uv_mode as libc::c_int
-                    >= VERT_PRED as libc::c_int
-                && b.c2rust_unnamed.c2rust_unnamed.uv_mode as libc::c_int
-                    <= VERT_LEFT_PRED as libc::c_int
+                && b.uv_mode() >= VERT_PRED as u8
+                && b.uv_mode() <= VERT_LEFT_PRED as u8
             {
-                let acdf_0: *mut uint16_t =
-                    (ts.cdf.m.angle_delta[(b.c2rust_unnamed.c2rust_unnamed.uv_mode as libc::c_int
-                        - VERT_PRED as libc::c_int)
-                        as usize])
-                        .as_mut_ptr();
-                let angle_0 = dav1d_msac_decode_symbol_adapt8(
-                    &mut ts.msac,
-                    acdf_0,
-                    6 as libc::c_int as size_t,
-                ) as libc::c_int;
-                b.c2rust_unnamed.c2rust_unnamed.uv_angle = (angle_0 - 3) as int8_t;
+                let acdf = &mut ts.cdf.m.angle_delta[b.uv_mode() as usize - VERT_PRED as usize];
+                let angle = dav1d_msac_decode_symbol_adapt8(&mut ts.msac, acdf.as_mut_ptr(), 6)
+                    as libc::c_int;
+                *b.uv_angle_mut() = (angle - 3) as int8_t;
             }
         }
-        b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] = 0 as libc::c_int as uint8_t;
-        b.c2rust_unnamed.c2rust_unnamed.pal_sz[0] = b.c2rust_unnamed.c2rust_unnamed.pal_sz[1];
+
+        *b.pal_sz_mut() = [0, 0];
         if frame_hdr.allow_screen_content_tools != 0 && imax(bw4, bh4) <= 16 && bw4 + bh4 >= 4 {
-            let sz_ctx = (b_dim[2] + b_dim[3] - 2) as libc::c_int;
-            if b.c2rust_unnamed.c2rust_unnamed.y_mode as libc::c_int == DC_PRED as libc::c_int {
-                let pal_ctx = ((*t.a).pal_sz[bx4 as usize] as libc::c_int > 0) as libc::c_int
-                    + (t.l.pal_sz[by4 as usize] as libc::c_int > 0) as libc::c_int;
+            let sz_ctx = b_dim[2] + b_dim[3] - 2;
+            if b.y_mode() == DC_PRED as u8 {
+                let pal_ctx = ((*t.a).pal_sz[bx4 as usize] > 0) as usize
+                    + (t.l.pal_sz[by4 as usize] > 0) as usize;
                 let use_y_pal = dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
-                    (ts.cdf.m.pal_y[sz_ctx as usize][pal_ctx as usize]).as_mut_ptr(),
-                ) as libc::c_int;
+                    ts.cdf.m.pal_y[sz_ctx as usize][pal_ctx].as_mut_ptr(),
+                ) != 0;
+
                 if DEBUG_BLOCK_INFO(f, t) {
-                    printf(
-                        b"Post-y_pal[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
-                        use_y_pal,
-                        ts.msac.rng,
-                    );
+                    println!("Post-y_pal[{}]: r={}", use_y_pal, ts.msac.rng);
                 }
-                if use_y_pal != 0 {
-                    read_pal_plane(t, b, 0 as libc::c_int, sz_ctx, bx4, by4);
+
+                if use_y_pal {
+                    read_pal_plane(t, b, 0, sz_ctx as i32, bx4, by4);
                 }
             }
-            if has_chroma
-                && b.c2rust_unnamed.c2rust_unnamed.uv_mode as libc::c_int == DC_PRED as libc::c_int
-            {
-                let pal_ctx_0 =
-                    (b.c2rust_unnamed.c2rust_unnamed.pal_sz[0] as libc::c_int > 0) as libc::c_int;
+
+            if has_chroma && b.uv_mode() == DC_PRED as u8 {
+                let pal_ctx = b.pal_sz()[0] > 0;
                 let use_uv_pal = dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
-                    (ts.cdf.m.pal_uv[pal_ctx_0 as usize]).as_mut_ptr(),
-                ) as libc::c_int;
+                    ts.cdf.m.pal_uv[pal_ctx as usize].as_mut_ptr(),
+                ) != 0;
+
                 if DEBUG_BLOCK_INFO(f, t) {
-                    printf(
-                        b"Post-uv_pal[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
-                        use_uv_pal,
-                        ts.msac.rng,
-                    );
+                    println!("Post-uv_pal[{}]: r={}", use_uv_pal, ts.msac.rng);
                 }
-                if use_uv_pal != 0 {
-                    read_pal_uv(t, b, sz_ctx, bx4, by4);
+
+                if use_uv_pal {
+                    read_pal_uv(t, b, sz_ctx as i32, bx4, by4);
                 }
             }
         }
-        if b.c2rust_unnamed.c2rust_unnamed.y_mode as libc::c_int == DC_PRED as libc::c_int
-            && b.c2rust_unnamed.c2rust_unnamed.pal_sz[0] == 0
+
+        if b.y_mode() == DC_PRED as u8
+            && b.pal_sz()[0] == 0
             && imax(b_dim[2] as libc::c_int, b_dim[3] as libc::c_int) <= 3
             && (*f.seq_hdr).filter_intra != 0
         {
             let is_filter = dav1d_msac_decode_bool_adapt(
                 &mut ts.msac,
-                (ts.cdf.m.use_filter_intra[bs as usize]).as_mut_ptr(),
-            ) as libc::c_int;
-            if is_filter != 0 {
-                b.c2rust_unnamed.c2rust_unnamed.y_mode = FILTER_PRED as libc::c_int as uint8_t;
-                b.c2rust_unnamed.c2rust_unnamed.y_angle = dav1d_msac_decode_symbol_adapt4(
+                ts.cdf.m.use_filter_intra[bs as usize].as_mut_ptr(),
+            ) != 0;
+
+            if is_filter {
+                *b.y_mode_mut() = FILTER_PRED as uint8_t;
+                *b.y_angle_mut() = dav1d_msac_decode_symbol_adapt4(
                     &mut ts.msac,
                     (ts.cdf.m.filter_intra.0).as_mut_ptr(),
-                    4 as libc::c_int as size_t,
+                    4,
                 ) as int8_t;
             }
+
             if DEBUG_BLOCK_INFO(f, t) {
-                printf(
-                    b"Post-filterintramode[%d/%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
-                    b.c2rust_unnamed.c2rust_unnamed.y_mode as libc::c_int,
-                    b.c2rust_unnamed.c2rust_unnamed.y_angle as libc::c_int,
+                println!(
+                    "Post-filterintramode[{}/{}]: r={}",
+                    b.y_mode(),
+                    b.y_angle(),
                     ts.msac.rng,
                 );
             }
         }
-        if b.c2rust_unnamed.c2rust_unnamed.pal_sz[0] != 0 {
-            let mut pal_idx: *mut uint8_t = 0 as *mut uint8_t;
+
+        if b.pal_sz()[0] != 0 {
+            let mut pal_idx;
             if t.frame_thread.pass != 0 {
                 let p = t.frame_thread.pass & 1;
-                if (ts.frame_thread[p as usize].pal_idx).is_null() {
-                    unreachable!();
-                }
-                pal_idx = ts.frame_thread[p as usize].pal_idx;
-                ts.frame_thread[p as usize].pal_idx =
-                    (ts.frame_thread[p as usize].pal_idx).offset((bw4 * bh4 * 16) as isize);
+                let frame_thread = &mut ts.frame_thread[p as usize];
+                assert!(!frame_thread.pal_idx.is_null());
+                pal_idx = frame_thread.pal_idx;
+                frame_thread.pal_idx = frame_thread.pal_idx.offset((bw4 * bh4 * 16) as isize);
             } else {
-                pal_idx = (t.scratch.c2rust_unnamed_0.pal_idx).as_mut_ptr();
+                pal_idx = t.scratch.c2rust_unnamed_0.pal_idx.as_mut_ptr();
             }
-            read_pal_indices(t, pal_idx, b, 0 as libc::c_int, w4, h4, bw4, bh4);
+
+            read_pal_indices(t, pal_idx, b, 0, w4, h4, bw4, bh4);
+
             if DEBUG_BLOCK_INFO(f, t) {
-                printf(
-                    b"Post-y-pal-indices: r=%d\n\0" as *const u8 as *const libc::c_char,
-                    ts.msac.rng,
-                );
+                println!("Post-y-pal-indices: r={}", ts.msac.rng);
             }
         }
-        if has_chroma && b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int != 0 {
-            let mut pal_idx_0: *mut uint8_t = 0 as *mut uint8_t;
+
+        if has_chroma && b.pal_sz()[1] != 0 {
+            let mut pal_idx;
             if t.frame_thread.pass != 0 {
-                let p_0 = t.frame_thread.pass & 1;
-                if (ts.frame_thread[p_0 as usize].pal_idx).is_null() {
-                    unreachable!();
-                }
-                pal_idx_0 = ts.frame_thread[p_0 as usize].pal_idx;
-                ts.frame_thread[p_0 as usize].pal_idx =
-                    (ts.frame_thread[p_0 as usize].pal_idx).offset((cbw4 * cbh4 * 16) as isize);
+                let p = t.frame_thread.pass & 1;
+                let frame_thread = &mut ts.frame_thread[p as usize];
+                assert!(!(frame_thread.pal_idx).is_null());
+                pal_idx = frame_thread.pal_idx;
+                frame_thread.pal_idx = frame_thread.pal_idx.offset((cbw4 * cbh4 * 16) as isize);
             } else {
-                pal_idx_0 = &mut *(t.scratch.c2rust_unnamed_0.pal_idx)
+                pal_idx = t
+                    .scratch
+                    .c2rust_unnamed_0
+                    .pal_idx
                     .as_mut_ptr()
-                    .offset((bw4 * bh4 * 16) as isize) as *mut uint8_t;
+                    .offset((bw4 * bh4 * 16) as isize);
             }
-            read_pal_indices(t, pal_idx_0, b, 1 as libc::c_int, cw4, ch4, cbw4, cbh4);
+
+            read_pal_indices(t, pal_idx, b, 1, cw4, ch4, cbw4, cbh4);
+
             if DEBUG_BLOCK_INFO(f, t) {
-                printf(
-                    b"Post-uv-pal-indices: r=%d\n\0" as *const u8 as *const libc::c_char,
-                    ts.msac.rng,
-                );
+                println!("Post-uv-pal-indices: r={}", ts.msac.rng);
             }
         }
-        let mut t_dim: *const TxfmInfo = 0 as *const TxfmInfo;
+
+        let mut t_dim: *const TxfmInfo;
         if frame_hdr.segmentation.lossless[b.seg_id as usize] != 0 {
-            b.uvtx = TX_4X4 as libc::c_int as uint8_t;
-            b.c2rust_unnamed.c2rust_unnamed.tx = b.uvtx;
-            t_dim = &*dav1d_txfm_dimensions
-                .as_ptr()
-                .offset(TX_4X4 as libc::c_int as isize) as *const TxfmInfo;
+            b.uvtx = TX_4X4 as uint8_t;
+            *b.tx_mut() = b.uvtx;
+            t_dim = &dav1d_txfm_dimensions[TX_4X4 as usize];
         } else {
-            b.c2rust_unnamed.c2rust_unnamed.tx = dav1d_max_txfm_size_for_bs[bs as usize][0];
+            *b.tx_mut() = dav1d_max_txfm_size_for_bs[bs as usize][0];
             b.uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
-            t_dim = &*dav1d_txfm_dimensions
-                .as_ptr()
-                .offset(b.c2rust_unnamed.c2rust_unnamed.tx as isize)
-                as *const TxfmInfo;
-            if frame_hdr.txfm_mode as libc::c_uint
-                == DAV1D_TX_SWITCHABLE as libc::c_int as libc::c_uint
-                && (*t_dim).max as libc::c_int > TX_4X4 as libc::c_int
-            {
+            t_dim = &dav1d_txfm_dimensions[b.tx() as usize];
+
+            if frame_hdr.txfm_mode == DAV1D_TX_SWITCHABLE && (*t_dim).max > TX_4X4 as u8 {
                 let tctx = get_tx_ctx(&*t.a, &t.l, &*t_dim, by4, bx4);
-                let tx_cdf: *mut uint16_t = (ts.cdf.m.txsz
-                    [((*t_dim).max as libc::c_int - 1) as usize][tctx as usize])
-                    .as_mut_ptr();
+                let tx_cdf = &mut ts.cdf.m.txsz[((*t_dim).max - 1) as usize][tctx as usize];
                 let mut depth = dav1d_msac_decode_symbol_adapt4(
                     &mut ts.msac,
-                    tx_cdf,
+                    tx_cdf.as_mut_ptr(),
                     imin((*t_dim).max as libc::c_int, 2 as libc::c_int) as size_t,
                 ) as libc::c_int;
-                loop {
-                    let fresh32 = depth;
-                    depth = depth - 1;
-                    if !(fresh32 != 0) {
-                        break;
-                    }
-                    b.c2rust_unnamed.c2rust_unnamed.tx = (*t_dim).sub;
-                    t_dim = &*dav1d_txfm_dimensions
-                        .as_ptr()
-                        .offset(b.c2rust_unnamed.c2rust_unnamed.tx as isize)
-                        as *const TxfmInfo;
+
+                for _ in 0..depth {
+                    *b.tx_mut() = (*t_dim).sub;
+                    t_dim = &dav1d_txfm_dimensions[b.tx() as usize];
                 }
             }
+
             if DEBUG_BLOCK_INFO(f, t) {
-                printf(
-                    b"Post-tx[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
-                    b.c2rust_unnamed.c2rust_unnamed.tx as libc::c_int,
-                    ts.msac.rng,
-                );
+                println!("Post-tx[{}]: r={}", b.tx(), ts.msac.rng);
             }
         }
         if t.frame_thread.pass == 1 {
