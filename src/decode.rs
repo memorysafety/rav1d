@@ -7721,7 +7721,7 @@ unsafe fn decode_b(
                             b"Post-subpel_filter1[%d,ctx=%d]: r=%d\n\0" as *const u8
                                 as *const libc::c_char,
                             filter_0[0] as libc::c_uint,
-                            ctx1_1,
+                            ctx1_1 as libc::c_int,
                             ts.msac.rng,
                         );
                     }
@@ -7735,7 +7735,7 @@ unsafe fn decode_b(
                             b"Post-subpel_filter2[%d,ctx=%d]: r=%d\n\0" as *const u8
                                 as *const libc::c_char,
                             filter_0[1] as libc::c_uint,
-                            ctx2_3,
+                            ctx2_3 as libc::c_int,
                             ts.msac.rng,
                         );
                     }
@@ -7746,7 +7746,7 @@ unsafe fn decode_b(
                             b"Post-subpel_filter[%d,ctx=%d]: r=%d\n\0" as *const u8
                                 as *const libc::c_char,
                             filter_0[0] as libc::c_uint,
-                            ctx1_1,
+                            ctx1_1 as libc::c_int,
                             ts.msac.rng,
                         );
                     }
