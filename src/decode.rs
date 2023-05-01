@@ -2613,19 +2613,19 @@ unsafe fn get_prev_frame_segid(
     let w4 = usize::try_from(w4).unwrap();
     let h4 = usize::try_from(h4).unwrap();
     let stride = usize::try_from(stride).unwrap();
-
+    
     let mut prev_seg_id = 8;
     let mut ref_seg_map = std::slice::from_raw_parts(
         ref_seg_map.offset(by as isize * stride as isize + bx as isize),
         h4 * stride,
     );
 
-    for _ in 0..h4 {
+    assert!(w4 <= stride);
+    for ref_seg_map in ref_seg_map.chunks_exact(stride) {
         prev_seg_id = ref_seg_map[..w4]
             .iter()
             .copied()
             .fold(prev_seg_id, std::cmp::min);
-        ref_seg_map = &ref_seg_map[stride..];
         if prev_seg_id == 0 {
             break;
         }
