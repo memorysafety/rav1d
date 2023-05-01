@@ -2605,14 +2605,14 @@ unsafe fn get_prev_frame_segid(
     h4: libc::c_int,
     mut ref_seg_map: *const uint8_t,
     stride: ptrdiff_t,
-) -> libc::c_uint {
+) -> u8 {
     assert!((*(*f).frame_hdr).primary_ref_frame != 7);
 
     let mut prev_seg_id = 8;
     ref_seg_map = ref_seg_map.offset((by as isize * stride + bx as isize) as isize);
     for _ in 0..h4 {
         for &seg_id in std::slice::from_raw_parts(ref_seg_map, w4 as usize) {
-            prev_seg_id = std::cmp::min(prev_seg_id, seg_id as libc::c_uint);
+            prev_seg_id = std::cmp::min(prev_seg_id, seg_id);
         }
         ref_seg_map = ref_seg_map.offset(stride as isize);
         if prev_seg_id == 0 {
@@ -3160,7 +3160,7 @@ unsafe fn decode_b(
                     return -1;
                 }
 
-                b.seg_id = seg_id as uint8_t;
+                b.seg_id = seg_id;
             } else {
                 b.seg_id = 0;
             }
@@ -3183,7 +3183,7 @@ unsafe fn decode_b(
                         return -1;
                     }
 
-                    b.seg_id = seg_id as uint8_t;
+                    b.seg_id = seg_id;
                 } else {
                     b.seg_id = 0;
                 }
@@ -3278,7 +3278,7 @@ unsafe fn decode_b(
                     return -1;
                 }
 
-                b.seg_id = seg_id as uint8_t;
+                b.seg_id = seg_id;
             } else {
                 b.seg_id = 0;
             }
