@@ -33,7 +33,7 @@ fn build_nasm_files(x86_64: bool) {
     config_file
         .write(b"%define private_prefix dav1d\n")
         .unwrap();
-   if x86_64 {
+    if x86_64 {
         config_file.write(b"%define ARCH_X86_32 0\n").unwrap();
         config_file.write(b"%define ARCH_X86_64 1\n").unwrap();
         config_file.write(b"%define STACK_ALIGNMENT 16\n").unwrap();

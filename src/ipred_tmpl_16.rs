@@ -1998,9 +1998,12 @@ unsafe extern "C" fn intra_pred_dsp_init_x86(c: *mut Dav1dIntraPredDSPContext) {
         (*c).cfl_pred[TOP_DC_PRED as usize] = Some(dav1d_ipred_cfl_top_16bpc_avx2);
         (*c).cfl_pred[LEFT_DC_PRED as usize] = Some(dav1d_ipred_cfl_left_16bpc_avx2);
 
-        (*c).cfl_ac[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] = Some(dav1d_ipred_cfl_ac_420_16bpc_avx2);
-        (*c).cfl_ac[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] = Some(dav1d_ipred_cfl_ac_422_16bpc_avx2);
-        (*c).cfl_ac[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] = Some(dav1d_ipred_cfl_ac_444_16bpc_avx2);
+        (*c).cfl_ac[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
+            Some(dav1d_ipred_cfl_ac_420_16bpc_avx2);
+        (*c).cfl_ac[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
+            Some(dav1d_ipred_cfl_ac_422_16bpc_avx2);
+        (*c).cfl_ac[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
+            Some(dav1d_ipred_cfl_ac_444_16bpc_avx2);
 
         (*c).pal_pred = Some(dav1d_pal_pred_16bpc_avx2);
 
