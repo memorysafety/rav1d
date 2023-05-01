@@ -2595,8 +2595,9 @@ unsafe extern "C" fn read_vartx_tree(
     (*b).c2rust_unnamed.c2rust_unnamed_0.tx_split0 = tx_split[0] as uint8_t;
     (*b).c2rust_unnamed.c2rust_unnamed_0.tx_split1 = tx_split[1];
 }
+
 #[inline]
-unsafe extern "C" fn get_prev_frame_segid(
+unsafe fn get_prev_frame_segid(
     f: *const Dav1dFrameContext,
     by: libc::c_int,
     bx: libc::c_int,
@@ -2630,6 +2631,7 @@ unsafe extern "C" fn get_prev_frame_segid(
     }
     return seg_id;
 }
+
 #[inline]
 unsafe extern "C" fn splat_oneref_mv(
     c: *const Dav1dContext,
