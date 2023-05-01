@@ -2044,7 +2044,7 @@ unsafe fn order_palette(
     i: libc::c_int,
     first: libc::c_int,
     last: libc::c_int,
-    order: &mut [[u8; 8]; 64],
+    order: &mut [[u8; u8::BITS as usize]; 64],
     ctx: &mut [u8; 64],
 ) {
     let mut have_top = i > first;
@@ -2061,7 +2061,7 @@ unsafe fn order_palette(
         let mut mask = 0u8;
         let mut o_idx = 0;
         let mut add = |v: u8| {
-            assert!(v < 8);
+            assert!(v < u8::BITS as u8);
             order[o_idx] = v;
             o_idx += 1;
             mask |= 1 << v;
@@ -2105,7 +2105,7 @@ unsafe fn order_palette(
                 o_idx += 1;
             }
         }
-        assert!(o_idx == 8);
+        assert!(o_idx == u8::BITS as usize);
         have_top = true;
         pal_idx = pal_idx.offset(stride - 1);
     }
