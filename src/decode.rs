@@ -1106,7 +1106,7 @@ use crate::src::tables::interintra_allowed_mask;
 use crate::src::tables::wedge_allowed_mask;
 
 #[inline]
-unsafe fn get_intra_ctx(
+fn get_intra_ctx(
     a: &BlockContext,
     l: &BlockContext,
     yb4: libc::c_int,
