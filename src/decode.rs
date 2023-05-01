@@ -2632,7 +2632,7 @@ unsafe fn get_prev_frame_segid(
     }
     assert!(prev_seg_id < 8);
 
-    return prev_seg_id;
+    prev_seg_id
 }
 
 #[inline]
