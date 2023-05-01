@@ -2608,23 +2608,23 @@ unsafe fn get_prev_frame_segid(
 ) -> libc::c_uint {
     assert!((*(*f).frame_hdr).primary_ref_frame != 7);
 
-    let mut seg_id = 8;
+    let mut prev_seg_id = 8;
     ref_seg_map = ref_seg_map.offset((by as isize * stride + bx as isize) as isize);
     for _ in 0..h4 {
-        for x in 0..w4 {
-            seg_id = imin(
+        for &seg_id in std::slice::from_raw_parts(ref_seg_map, w4 as usize) {
+            prev_seg_id = imin(
+                prev_seg_id as libc::c_int,
                 seg_id as libc::c_int,
-                *ref_seg_map.offset(x as isize) as libc::c_int,
             ) as libc::c_uint;
         }
         ref_seg_map = ref_seg_map.offset(stride as isize);
-        if seg_id == 0 {
+        if prev_seg_id == 0 {
             break;
         }
     }
-    assert!(seg_id < 8);
+    assert!(prev_seg_id < 8);
 
-    return seg_id;
+    return prev_seg_id;
 }
 
 #[inline]
