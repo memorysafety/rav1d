@@ -2595,41 +2595,50 @@ unsafe extern "C" fn read_vartx_tree(
     (*b).c2rust_unnamed.c2rust_unnamed_0.tx_split0 = tx_split[0] as uint8_t;
     (*b).c2rust_unnamed.c2rust_unnamed_0.tx_split1 = tx_split[1];
 }
+
 #[inline]
-unsafe extern "C" fn get_prev_frame_segid(
-    f: *const Dav1dFrameContext,
+unsafe fn get_prev_frame_segid(
+    f: &Dav1dFrameContext,
     by: libc::c_int,
     bx: libc::c_int,
     w4: libc::c_int,
-    mut h4: libc::c_int,
-    mut ref_seg_map: *const uint8_t,
+    h4: libc::c_int,
+    // It's very difficult to make this safe (a slice),
+    // as it comes from [`Dav1dFrameContext::prev_segmap`],
+    // which is set to [`Dav1dFrameContext::prev_segmap_ref`],
+    // which is a [`Dav1dRef`], which has no size and is refcounted.
+    ref_seg_map: *const u8,
     stride: ptrdiff_t,
-) -> libc::c_uint {
-    if !((*(*f).frame_hdr).primary_ref_frame != 7 as libc::c_int) {
-        unreachable!();
-    }
-    let mut seg_id: libc::c_uint = 8 as libc::c_int as libc::c_uint;
-    ref_seg_map = ref_seg_map.offset((by as isize * stride + bx as isize) as isize);
-    loop {
-        let mut x = 0;
-        while x < w4 {
-            seg_id = imin(
-                seg_id as libc::c_int,
-                *ref_seg_map.offset(x as isize) as libc::c_int,
-            ) as libc::c_uint;
-            x += 1;
-        }
-        ref_seg_map = ref_seg_map.offset(stride as isize);
-        h4 -= 1;
-        if !(h4 > 0 && seg_id != 0) {
+) -> u8 {
+    assert!((*f.frame_hdr).primary_ref_frame != 7);
+
+    // Need checked casts here because an overflowing cast
+    // would give a too large `len` to [`std::slice::from_raw_parts`], which would UB.
+    let w4 = usize::try_from(w4).unwrap();
+    let h4 = usize::try_from(h4).unwrap();
+    let stride = usize::try_from(stride).unwrap();
+
+    let mut prev_seg_id = 8;
+    let ref_seg_map = std::slice::from_raw_parts(
+        ref_seg_map.offset(by as isize * stride as isize + bx as isize),
+        h4 * stride,
+    );
+
+    assert!(w4 <= stride);
+    for ref_seg_map in ref_seg_map.chunks_exact(stride) {
+        prev_seg_id = ref_seg_map[..w4]
+            .iter()
+            .copied()
+            .fold(prev_seg_id, std::cmp::min);
+        if prev_seg_id == 0 {
             break;
         }
     }
-    if !(seg_id < 8 as libc::c_uint) {
-        unreachable!();
-    }
-    return seg_id;
+    assert!(prev_seg_id < 8);
+
+    prev_seg_id
 }
+
 #[inline]
 unsafe extern "C" fn splat_oneref_mv(
     c: *const Dav1dContext,
@@ -3166,7 +3175,7 @@ unsafe fn decode_b(
                     return -1;
                 }
 
-                b.seg_id = seg_id as uint8_t;
+                b.seg_id = seg_id;
             } else {
                 b.seg_id = 0;
             }
@@ -3189,7 +3198,7 @@ unsafe fn decode_b(
                         return -1;
                     }
 
-                    b.seg_id = seg_id as uint8_t;
+                    b.seg_id = seg_id;
                 } else {
                     b.seg_id = 0;
                 }
@@ -3284,7 +3293,7 @@ unsafe fn decode_b(
                     return -1;
                 }
 
-                b.seg_id = seg_id as uint8_t;
+                b.seg_id = seg_id;
             } else {
                 b.seg_id = 0;
             }
