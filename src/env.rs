@@ -169,15 +169,15 @@ pub fn get_filter_ctx(
     } else {
         DAV1D_N_SWITCHABLE_FILTERS as libc::c_int
     };
-    if a_filter == l_filter {
-        return comp * 4 + a_filter;
+    comp * 4 + if a_filter == l_filter {
+        a_filter
     } else if a_filter == DAV1D_N_SWITCHABLE_FILTERS as libc::c_int {
-        return comp * 4 + l_filter;
+        l_filter
     } else if l_filter == DAV1D_N_SWITCHABLE_FILTERS as libc::c_int {
-        return comp * 4 + a_filter;
+        a_filter
     } else {
-        return comp * 4 + DAV1D_N_SWITCHABLE_FILTERS as libc::c_int;
-    };
+        DAV1D_N_SWITCHABLE_FILTERS as libc::c_int
+    }
 }
 
 #[inline]
