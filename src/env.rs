@@ -1,5 +1,6 @@
+use std::cmp::Ordering;
+
 use crate::include::common::intops::apply_sign;
-use crate::include::common::intops::imin;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 use crate::include::dav1d::headers::DAV1D_N_SWITCHABLE_FILTERS;
@@ -159,25 +160,24 @@ pub fn get_filter_ctx(
     yb4: libc::c_int,
     xb4: libc::c_int,
 ) -> u8 {
-    let a_filter = if a.r#ref[0][xb4 as usize] == r#ref || a.r#ref[1][xb4 as usize] == r#ref {
-        a.filter[dir as usize][xb4 as usize]
-    } else {
-        DAV1D_N_SWITCHABLE_FILTERS as u8
-    };
-    let l_filter = if l.r#ref[0][yb4 as usize] == r#ref || l.r#ref[1][yb4 as usize] == r#ref {
-        l.filter[dir as usize][yb4 as usize]
-    } else {
-        DAV1D_N_SWITCHABLE_FILTERS as u8
-    };
-    (comp as u8) * 4 + if a_filter == l_filter {
-        a_filter
-    } else if a_filter == DAV1D_N_SWITCHABLE_FILTERS as u8 {
-        l_filter
-    } else if l_filter == DAV1D_N_SWITCHABLE_FILTERS as u8 {
-        a_filter
-    } else {
-        DAV1D_N_SWITCHABLE_FILTERS as u8
-    }
+    let [a_filter, l_filter] = [(a, xb4), (l, yb4)].map(|(al, b4)| {
+        if al.r#ref[0][b4 as usize] == r#ref || al.r#ref[1][b4 as usize] == r#ref {
+            al.filter[dir as usize][b4 as usize]
+        } else {
+            DAV1D_N_SWITCHABLE_FILTERS as u8
+        }
+    });
+
+    (comp as u8) * 4
+        + if a_filter == l_filter {
+            a_filter
+        } else if a_filter == DAV1D_N_SWITCHABLE_FILTERS as u8 {
+            l_filter
+        } else if l_filter == DAV1D_N_SWITCHABLE_FILTERS as u8 {
+            a_filter
+        } else {
+            DAV1D_N_SWITCHABLE_FILTERS as u8
+        }
 }
 
 #[inline]
@@ -188,41 +188,38 @@ pub fn get_comp_ctx(
     xb4: libc::c_int,
     have_top: bool,
     have_left: bool,
-) -> libc::c_int {
+) -> u8 {
     if have_top {
         if have_left {
             if a.comp_type[xb4 as usize] != 0 {
                 if l.comp_type[yb4 as usize] != 0 {
-                    return 4 as libc::c_int;
+                    4
                 } else {
-                    return 2 as libc::c_int
-                        + (l.r#ref[0][yb4 as usize] as libc::c_uint >= 4 as libc::c_uint)
-                            as libc::c_int;
+                    // 4U means intra (-1) or bwd (>= 4)
+                    2 + (l.r#ref[0][yb4 as usize] as libc::c_uint >= 4) as u8
                 }
             } else if l.comp_type[yb4 as usize] != 0 {
-                return 2 as libc::c_int
-                    + (a.r#ref[0][xb4 as usize] as libc::c_uint >= 4 as libc::c_uint)
-                        as libc::c_int;
+                // 4U means intra (-1) or bwd (>= 4)
+                2 + (a.r#ref[0][xb4 as usize] as libc::c_uint >= 4) as u8
             } else {
-                return (l.r#ref[0][yb4 as usize] as libc::c_int >= 4) as libc::c_int
-                    ^ (a.r#ref[0][xb4 as usize] as libc::c_int >= 4) as libc::c_int;
+                ((l.r#ref[0][yb4 as usize] >= 4) ^ (a.r#ref[0][xb4 as usize] >= 4)) as u8
             }
         } else {
-            return if a.comp_type[xb4 as usize] as libc::c_int != 0 {
-                3 as libc::c_int
+            if a.comp_type[xb4 as usize] != 0 {
+                3
             } else {
-                (a.r#ref[0][xb4 as usize] as libc::c_int >= 4) as libc::c_int
-            };
+                (a.r#ref[0][xb4 as usize] >= 4) as u8
+            }
         }
     } else if have_left {
-        return if l.comp_type[yb4 as usize] as libc::c_int != 0 {
-            3 as libc::c_int
+        if l.comp_type[yb4 as usize] != 0 {
+            3
         } else {
-            (l.r#ref[0][yb4 as usize] as libc::c_int >= 4) as libc::c_int
-        };
+            (l.r#ref[0][yb4 as usize] >= 4) as u8
+        }
     } else {
-        return 1 as libc::c_int;
-    };
+        1
+    }
 }
 
 #[inline]
@@ -233,75 +230,68 @@ pub fn get_comp_dir_ctx(
     xb4: libc::c_int,
     have_top: bool,
     have_left: bool,
-) -> libc::c_int {
+) -> u8 {
+    let has_uni_comp = |edge: &BlockContext, off| {
+        (edge.r#ref[0][off as usize] < 4) == (edge.r#ref[1][off as usize] < 4)
+    };
+
     if have_top && have_left {
-        let a_intra = a.intra[xb4 as usize] as libc::c_int;
-        let l_intra = l.intra[yb4 as usize] as libc::c_int;
-        if a_intra != 0 && l_intra != 0 {
-            return 2 as libc::c_int;
+        let a_intra = a.intra[xb4 as usize] != 0;
+        let l_intra = l.intra[yb4 as usize] != 0;
+
+        if a_intra && l_intra {
+            return 2;
         }
-        if a_intra != 0 || l_intra != 0 {
-            let edge = if a_intra != 0 { l } else { a };
-            let off = if a_intra != 0 { yb4 } else { xb4 };
-            if edge.comp_type[off as usize] as libc::c_int == COMP_INTER_NONE as libc::c_int {
-                return 2 as libc::c_int;
+        if a_intra || l_intra {
+            let edge = if a_intra { l } else { a };
+            let off = if a_intra { yb4 } else { xb4 };
+
+            if edge.comp_type[off as usize] == COMP_INTER_NONE as u8 {
+                return 2;
             }
-            return 1 as libc::c_int
-                + 2 * (((edge.r#ref[0][off as usize] as libc::c_int) < 4) as libc::c_int
-                    == ((edge.r#ref[1][off as usize] as libc::c_int) < 4) as libc::c_int)
-                    as libc::c_int;
+            return 1 + 2 * has_uni_comp(edge, off) as u8;
         }
-        let a_comp = (a.comp_type[xb4 as usize] as libc::c_int != COMP_INTER_NONE as libc::c_int)
-            as libc::c_int;
-        let l_comp = (l.comp_type[yb4 as usize] as libc::c_int != COMP_INTER_NONE as libc::c_int)
-            as libc::c_int;
-        let a_ref0 = a.r#ref[0][xb4 as usize] as libc::c_int;
-        let l_ref0 = l.r#ref[0][yb4 as usize] as libc::c_int;
-        if a_comp == 0 && l_comp == 0 {
-            return 1 as libc::c_int
-                + 2 * ((a_ref0 >= 4) as libc::c_int == (l_ref0 >= 4) as libc::c_int)
-                    as libc::c_int;
-        } else if a_comp == 0 || l_comp == 0 {
-            let edge_0 = if a_comp != 0 { a } else { l };
-            let off_0 = if a_comp != 0 { xb4 } else { yb4 };
-            if !(((edge_0.r#ref[0][off_0 as usize] as libc::c_int) < 4) as libc::c_int
-                == ((edge_0.r#ref[1][off_0 as usize] as libc::c_int) < 4) as libc::c_int)
-            {
-                return 1 as libc::c_int;
+
+        let a_comp = a.comp_type[xb4 as usize] != COMP_INTER_NONE as u8;
+        let l_comp = l.comp_type[yb4 as usize] != COMP_INTER_NONE as u8;
+        let a_ref0 = a.r#ref[0][xb4 as usize];
+        let l_ref0 = l.r#ref[0][yb4 as usize];
+
+        if !a_comp && !l_comp {
+            return 1 + 2 * ((a_ref0 >= 4) == (l_ref0 >= 4)) as u8;
+        } else if !a_comp || !l_comp {
+            let edge = if a_comp { a } else { l };
+            let off = if a_comp { xb4 } else { yb4 };
+
+            if !has_uni_comp(edge, off) {
+                return 1;
             }
-            return 3 as libc::c_int
-                + ((a_ref0 >= 4) as libc::c_int == (l_ref0 >= 4) as libc::c_int) as libc::c_int;
+            return 3 + ((a_ref0 >= 4) == (l_ref0 >= 4)) as u8;
         } else {
-            let a_uni = (((a.r#ref[0][xb4 as usize] as libc::c_int) < 4) as libc::c_int
-                == ((a.r#ref[1][xb4 as usize] as libc::c_int) < 4) as libc::c_int)
-                as libc::c_int;
-            let l_uni = (((l.r#ref[0][yb4 as usize] as libc::c_int) < 4) as libc::c_int
-                == ((l.r#ref[1][yb4 as usize] as libc::c_int) < 4) as libc::c_int)
-                as libc::c_int;
-            if a_uni == 0 && l_uni == 0 {
-                return 0 as libc::c_int;
+            let a_uni = has_uni_comp(a, xb4);
+            let l_uni = has_uni_comp(l, yb4);
+
+            if !a_uni && !l_uni {
+                return 0;
             }
-            if a_uni == 0 || l_uni == 0 {
-                return 2 as libc::c_int;
+            if !a_uni || !l_uni {
+                return 2;
             }
-            return 3 as libc::c_int
-                + ((a_ref0 == 4) as libc::c_int == (l_ref0 == 4) as libc::c_int) as libc::c_int;
+            return 3 + ((a_ref0 == 4) == (l_ref0 == 4)) as u8;
         }
     } else if have_top || have_left {
-        let edge_1 = if have_left { l } else { a };
-        let off_1 = if have_left { yb4 } else { xb4 };
-        if edge_1.intra[off_1 as usize] != 0 {
-            return 2 as libc::c_int;
+        let edge = if have_left { l } else { a };
+        let off = if have_left { yb4 } else { xb4 };
+
+        if edge.intra[off as usize] != 0 {
+            return 2;
         }
-        if edge_1.comp_type[off_1 as usize] as libc::c_int == COMP_INTER_NONE as libc::c_int {
-            return 2 as libc::c_int;
+        if edge.comp_type[off as usize] == COMP_INTER_NONE as u8 {
+            return 2;
         }
-        return 4 as libc::c_int
-            * (((edge_1.r#ref[0][off_1 as usize] as libc::c_int) < 4) as libc::c_int
-                == ((edge_1.r#ref[1][off_1 as usize] as libc::c_int) < 4) as libc::c_int)
-                as libc::c_int;
+        return 4 * has_uni_comp(edge, off) as u8;
     } else {
-        return 2 as libc::c_int;
+        return 2;
     };
 }
 
@@ -329,25 +319,25 @@ pub fn get_jnt_comp_ctx(
     l: &BlockContext,
     yb4: libc::c_int,
     xb4: libc::c_int,
-) -> libc::c_int {
-    let d0: libc::c_uint = get_poc_diff(
+) -> u8 {
+    let d0 = get_poc_diff(
         order_hint_n_bits,
         ref0poc as libc::c_int,
         poc as libc::c_int,
     )
-    .abs() as libc::c_uint;
-    let d1: libc::c_uint = get_poc_diff(
+    .abs();
+    let d1 = get_poc_diff(
         order_hint_n_bits,
         poc as libc::c_int,
         ref1poc as libc::c_int,
     )
-    .abs() as libc::c_uint;
-    let offset = (d0 == d1) as libc::c_int;
-    let a_ctx = (a.comp_type[xb4 as usize] as libc::c_int >= COMP_INTER_AVG as libc::c_int
-        || a.r#ref[0][xb4 as usize] as libc::c_int == 6) as libc::c_int;
-    let l_ctx = (l.comp_type[yb4 as usize] as libc::c_int >= COMP_INTER_AVG as libc::c_int
-        || l.r#ref[0][yb4 as usize] as libc::c_int == 6) as libc::c_int;
-    return 3 * offset + a_ctx + l_ctx;
+    .abs();
+    let offset = (d0 == d1) as u8;
+    let [a_ctx, l_ctx] = [(a, xb4), (l, yb4)].map(|(al, b4)| {
+        (al.comp_type[b4 as usize] >= COMP_INTER_AVG as u8 || al.r#ref[0][b4 as usize] == 6) as u8
+    });
+
+    3 * offset + a_ctx + l_ctx
 }
 
 #[inline]
@@ -356,22 +346,27 @@ pub fn get_mask_comp_ctx(
     l: &BlockContext,
     yb4: libc::c_int,
     xb4: libc::c_int,
-) -> libc::c_int {
-    let a_ctx = if a.comp_type[xb4 as usize] as libc::c_int >= COMP_INTER_SEG as libc::c_int {
-        1 as libc::c_int
-    } else if a.r#ref[0][xb4 as usize] as libc::c_int == 6 {
-        3 as libc::c_int
-    } else {
-        0 as libc::c_int
-    };
-    let l_ctx = if l.comp_type[yb4 as usize] as libc::c_int >= COMP_INTER_SEG as libc::c_int {
-        1 as libc::c_int
-    } else if l.r#ref[0][yb4 as usize] as libc::c_int == 6 {
-        3 as libc::c_int
-    } else {
-        0 as libc::c_int
-    };
-    return imin(a_ctx + l_ctx, 5 as libc::c_int);
+) -> u8 {
+    let [a_ctx, l_ctx] = [(a, xb4), (l, yb4)].map(|(al, b4)| {
+        if al.comp_type[b4 as usize] >= COMP_INTER_SEG as u8 {
+            1
+        } else if al.r#ref[0][b4 as usize] == 6 {
+            3
+        } else {
+            0
+        }
+    });
+
+    std::cmp::min(a_ctx + l_ctx, 5)
+}
+
+fn cmp_counts(c1: u8, c2: u8) -> u8 {
+    use Ordering::*;
+    match c1.cmp(&c2) {
+        Less => 0,
+        Equal => 1,
+        Greater => 2,
+    }
 }
 
 #[inline]
@@ -382,27 +377,24 @@ pub fn av1_get_ref_ctx(
     xb4: libc::c_int,
     mut have_top: bool,
     mut have_left: bool,
-) -> libc::c_int {
-    let mut cnt: [libc::c_int; 2] = [0 as libc::c_int, 0];
+) -> u8 {
+    let mut cnt = [0; 2];
+
     if have_top && a.intra[xb4 as usize] == 0 {
-        cnt[(a.r#ref[0][xb4 as usize] as libc::c_int >= 4) as libc::c_int as usize] += 1;
+        cnt[(a.r#ref[0][xb4 as usize] >= 4) as usize] += 1;
         if a.comp_type[xb4 as usize] != 0 {
-            cnt[(a.r#ref[1][xb4 as usize] as libc::c_int >= 4) as libc::c_int as usize] += 1;
+            cnt[(a.r#ref[1][xb4 as usize] >= 4) as usize] += 1;
         }
     }
+
     if have_left && l.intra[yb4 as usize] == 0 {
-        cnt[(l.r#ref[0][yb4 as usize] as libc::c_int >= 4) as libc::c_int as usize] += 1;
+        cnt[(l.r#ref[0][yb4 as usize] >= 4) as usize] += 1;
         if l.comp_type[yb4 as usize] != 0 {
-            cnt[(l.r#ref[1][yb4 as usize] as libc::c_int >= 4) as libc::c_int as usize] += 1;
+            cnt[(l.r#ref[1][yb4 as usize] >= 4) as usize] += 1;
         }
     }
-    return if cnt[0] == cnt[1] {
-        1 as libc::c_int
-    } else if cnt[0] < cnt[1] {
-        0 as libc::c_int
-    } else {
-        2 as libc::c_int
-    };
+
+    cmp_counts(cnt[0], cnt[1])
 }
 
 #[inline]
@@ -413,37 +405,31 @@ pub fn av1_get_fwd_ref_ctx(
     xb4: libc::c_int,
     have_top: bool,
     have_left: bool,
-) -> libc::c_int {
-    let mut cnt: [libc::c_int; 4] = [0 as libc::c_int, 0, 0, 0];
+) -> u8 {
+    let mut cnt = [0; 4];
+
     if have_top && a.intra[xb4 as usize] == 0 {
-        if (a.r#ref[0][xb4 as usize] as libc::c_int) < 4 {
+        if a.r#ref[0][xb4 as usize] < 4 {
             cnt[a.r#ref[0][xb4 as usize] as usize] += 1;
         }
-        if a.comp_type[xb4 as usize] as libc::c_int != 0
-            && (a.r#ref[1][xb4 as usize] as libc::c_int) < 4
-        {
+        if a.comp_type[xb4 as usize] != 0 && a.r#ref[1][xb4 as usize] < 4 {
             cnt[a.r#ref[1][xb4 as usize] as usize] += 1;
         }
     }
+
     if have_left && l.intra[yb4 as usize] == 0 {
-        if (l.r#ref[0][yb4 as usize] as libc::c_int) < 4 {
+        if l.r#ref[0][yb4 as usize] < 4 {
             cnt[l.r#ref[0][yb4 as usize] as usize] += 1;
         }
-        if l.comp_type[yb4 as usize] as libc::c_int != 0
-            && (l.r#ref[1][yb4 as usize] as libc::c_int) < 4
-        {
+        if l.comp_type[yb4 as usize] != 0 && l.r#ref[1][yb4 as usize] < 4 {
             cnt[l.r#ref[1][yb4 as usize] as usize] += 1;
         }
     }
+
     cnt[0] += cnt[1];
     cnt[2] += cnt[3];
-    return if cnt[0] == cnt[2] {
-        1 as libc::c_int
-    } else if cnt[0] < cnt[2] {
-        0 as libc::c_int
-    } else {
-        2 as libc::c_int
-    };
+
+    cmp_counts(cnt[0], cnt[2])
 }
 
 #[inline]
@@ -454,35 +440,28 @@ pub fn av1_get_fwd_ref_1_ctx(
     xb4: libc::c_int,
     have_top: bool,
     have_left: bool,
-) -> libc::c_int {
-    let mut cnt: [libc::c_int; 2] = [0 as libc::c_int, 0];
+) -> u8 {
+    let mut cnt = [0; 2];
+
     if have_top && a.intra[xb4 as usize] == 0 {
-        if (a.r#ref[0][xb4 as usize] as libc::c_int) < 2 {
+        if a.r#ref[0][xb4 as usize] < 2 {
             cnt[a.r#ref[0][xb4 as usize] as usize] += 1;
         }
-        if a.comp_type[xb4 as usize] as libc::c_int != 0
-            && (a.r#ref[1][xb4 as usize] as libc::c_int) < 2
-        {
+        if a.comp_type[xb4 as usize] != 0 && a.r#ref[1][xb4 as usize] < 2 {
             cnt[a.r#ref[1][xb4 as usize] as usize] += 1;
         }
     }
+
     if have_left && l.intra[yb4 as usize] == 0 {
-        if (l.r#ref[0][yb4 as usize] as libc::c_int) < 2 {
+        if l.r#ref[0][yb4 as usize] < 2 {
             cnt[l.r#ref[0][yb4 as usize] as usize] += 1;
         }
-        if l.comp_type[yb4 as usize] as libc::c_int != 0
-            && (l.r#ref[1][yb4 as usize] as libc::c_int) < 2
-        {
+        if l.comp_type[yb4 as usize] != 0 && l.r#ref[1][yb4 as usize] < 2 {
             cnt[l.r#ref[1][yb4 as usize] as usize] += 1;
         }
     }
-    return if cnt[0] == cnt[1] {
-        1 as libc::c_int
-    } else if cnt[0] < cnt[1] {
-        0 as libc::c_int
-    } else {
-        2 as libc::c_int
-    };
+
+    cmp_counts(cnt[0], cnt[1])
 }
 
 #[inline]
@@ -493,35 +472,28 @@ pub fn av1_get_fwd_ref_2_ctx(
     xb4: libc::c_int,
     have_top: bool,
     have_left: bool,
-) -> libc::c_int {
-    let mut cnt: [libc::c_int; 2] = [0 as libc::c_int, 0];
+) -> u8 {
+    let mut cnt = [0; 2];
+
     if have_top && a.intra[xb4 as usize] == 0 {
-        if (a.r#ref[0][xb4 as usize] as libc::c_uint ^ 2 as libc::c_uint) < 2 as libc::c_uint {
-            cnt[(a.r#ref[0][xb4 as usize] as libc::c_int - 2) as usize] += 1;
+        if (a.r#ref[0][xb4 as usize] ^ 2) < 2 {
+            cnt[(a.r#ref[0][xb4 as usize] - 2) as usize] += 1;
         }
-        if a.comp_type[xb4 as usize] as libc::c_int != 0
-            && (a.r#ref[1][xb4 as usize] as libc::c_uint ^ 2 as libc::c_uint) < 2 as libc::c_uint
-        {
-            cnt[(a.r#ref[1][xb4 as usize] as libc::c_int - 2) as usize] += 1;
+        if a.comp_type[xb4 as usize] != 0 && (a.r#ref[1][xb4 as usize] ^ 2) < 2 {
+            cnt[(a.r#ref[1][xb4 as usize] - 2) as usize] += 1;
         }
     }
+
     if have_left && l.intra[yb4 as usize] == 0 {
-        if (l.r#ref[0][yb4 as usize] as libc::c_uint ^ 2 as libc::c_uint) < 2 as libc::c_uint {
-            cnt[(l.r#ref[0][yb4 as usize] as libc::c_int - 2) as usize] += 1;
+        if (l.r#ref[0][yb4 as usize] ^ 2) < 2 {
+            cnt[(l.r#ref[0][yb4 as usize] - 2) as usize] += 1;
         }
-        if l.comp_type[yb4 as usize] as libc::c_int != 0
-            && (l.r#ref[1][yb4 as usize] as libc::c_uint ^ 2 as libc::c_uint) < 2 as libc::c_uint
-        {
-            cnt[(l.r#ref[1][yb4 as usize] as libc::c_int - 2) as usize] += 1;
+        if l.comp_type[yb4 as usize] != 0 && (l.r#ref[1][yb4 as usize] ^ 2) < 2 {
+            cnt[(l.r#ref[1][yb4 as usize] - 2) as usize] += 1;
         }
     }
-    return if cnt[0] == cnt[1] {
-        1 as libc::c_int
-    } else if cnt[0] < cnt[1] {
-        0 as libc::c_int
-    } else {
-        2 as libc::c_int
-    };
+
+    cmp_counts(cnt[0], cnt[1])
 }
 
 #[inline]
@@ -532,36 +504,30 @@ pub fn av1_get_bwd_ref_ctx(
     xb4: libc::c_int,
     have_top: bool,
     have_left: bool,
-) -> libc::c_int {
-    let mut cnt: [libc::c_int; 3] = [0 as libc::c_int, 0, 0];
+) -> u8 {
+    let mut cnt = [0; 3];
+
     if have_top && a.intra[xb4 as usize] == 0 {
-        if a.r#ref[0][xb4 as usize] as libc::c_int >= 4 {
-            cnt[(a.r#ref[0][xb4 as usize] as libc::c_int - 4) as usize] += 1;
+        if a.r#ref[0][xb4 as usize] >= 4 {
+            cnt[(a.r#ref[0][xb4 as usize] - 4) as usize] += 1;
         }
-        if a.comp_type[xb4 as usize] as libc::c_int != 0
-            && a.r#ref[1][xb4 as usize] as libc::c_int >= 4
-        {
-            cnt[(a.r#ref[1][xb4 as usize] as libc::c_int - 4) as usize] += 1;
+        if a.comp_type[xb4 as usize] != 0 && a.r#ref[1][xb4 as usize] >= 4 {
+            cnt[(a.r#ref[1][xb4 as usize] - 4) as usize] += 1;
         }
     }
+
     if have_left && l.intra[yb4 as usize] == 0 {
-        if l.r#ref[0][yb4 as usize] as libc::c_int >= 4 {
-            cnt[(l.r#ref[0][yb4 as usize] as libc::c_int - 4) as usize] += 1;
+        if l.r#ref[0][yb4 as usize] >= 4 {
+            cnt[(l.r#ref[0][yb4 as usize] - 4) as usize] += 1;
         }
-        if l.comp_type[yb4 as usize] as libc::c_int != 0
-            && l.r#ref[1][yb4 as usize] as libc::c_int >= 4
-        {
-            cnt[(l.r#ref[1][yb4 as usize] as libc::c_int - 4) as usize] += 1;
+        if l.comp_type[yb4 as usize] != 0 && l.r#ref[1][yb4 as usize] >= 4 {
+            cnt[(l.r#ref[1][yb4 as usize] - 4) as usize] += 1;
         }
     }
+
     cnt[1] += cnt[0];
-    return if cnt[2] == cnt[1] {
-        1 as libc::c_int
-    } else if cnt[1] < cnt[2] {
-        0 as libc::c_int
-    } else {
-        2 as libc::c_int
-    };
+
+    cmp_counts(cnt[1], cnt[2])
 }
 
 #[inline]
@@ -572,35 +538,28 @@ pub fn av1_get_bwd_ref_1_ctx(
     xb4: libc::c_int,
     have_top: bool,
     have_left: bool,
-) -> libc::c_int {
-    let mut cnt: [libc::c_int; 3] = [0 as libc::c_int, 0, 0];
+) -> u8 {
+    let mut cnt = [0; 3];
+
     if have_top && a.intra[xb4 as usize] == 0 {
-        if a.r#ref[0][xb4 as usize] as libc::c_int >= 4 {
-            cnt[(a.r#ref[0][xb4 as usize] as libc::c_int - 4) as usize] += 1;
+        if a.r#ref[0][xb4 as usize] >= 4 {
+            cnt[(a.r#ref[0][xb4 as usize] - 4) as usize] += 1;
         }
-        if a.comp_type[xb4 as usize] as libc::c_int != 0
-            && a.r#ref[1][xb4 as usize] as libc::c_int >= 4
-        {
-            cnt[(a.r#ref[1][xb4 as usize] as libc::c_int - 4) as usize] += 1;
+        if a.comp_type[xb4 as usize] != 0 && a.r#ref[1][xb4 as usize] >= 4 {
+            cnt[(a.r#ref[1][xb4 as usize] - 4) as usize] += 1;
         }
     }
+
     if have_left && l.intra[yb4 as usize] == 0 {
-        if l.r#ref[0][yb4 as usize] as libc::c_int >= 4 {
-            cnt[(l.r#ref[0][yb4 as usize] as libc::c_int - 4) as usize] += 1;
+        if l.r#ref[0][yb4 as usize] >= 4 {
+            cnt[(l.r#ref[0][yb4 as usize] - 4) as usize] += 1;
         }
-        if l.comp_type[yb4 as usize] as libc::c_int != 0
-            && l.r#ref[1][yb4 as usize] as libc::c_int >= 4
-        {
-            cnt[(l.r#ref[1][yb4 as usize] as libc::c_int - 4) as usize] += 1;
+        if l.comp_type[yb4 as usize] != 0 && l.r#ref[1][yb4 as usize] >= 4 {
+            cnt[(l.r#ref[1][yb4 as usize] - 4) as usize] += 1;
         }
     }
-    return if cnt[0] == cnt[1] {
-        1 as libc::c_int
-    } else if cnt[0] < cnt[1] {
-        0 as libc::c_int
-    } else {
-        2 as libc::c_int
-    };
+
+    cmp_counts(cnt[0], cnt[1])
 }
 
 #[inline]
@@ -611,42 +570,32 @@ pub fn av1_get_uni_p1_ctx(
     xb4: libc::c_int,
     have_top: bool,
     have_left: bool,
-) -> libc::c_int {
-    let mut cnt: [libc::c_int; 3] = [0 as libc::c_int, 0, 0];
+) -> u8 {
+    let mut cnt = [0; 3];
+
     if have_top && a.intra[xb4 as usize] == 0 {
-        if (a.r#ref[0][xb4 as usize] as libc::c_uint).wrapping_sub(1 as libc::c_uint)
-            < 3 as libc::c_uint
-        {
-            cnt[(a.r#ref[0][xb4 as usize] as libc::c_int - 1) as usize] += 1;
+        if let Some(cnt) = cnt.get_mut((a.r#ref[0][xb4 as usize] - 1) as usize) {
+            *cnt += 1;
         }
-        if a.comp_type[xb4 as usize] as libc::c_int != 0
-            && (a.r#ref[1][xb4 as usize] as libc::c_uint).wrapping_sub(1 as libc::c_uint)
-                < 3 as libc::c_uint
-        {
-            cnt[(a.r#ref[1][xb4 as usize] as libc::c_int - 1) as usize] += 1;
+        if a.comp_type[xb4 as usize] != 0
+                && let Some(cnt) = cnt.get_mut((a.r#ref[1][xb4 as usize] - 1) as usize) {
+            *cnt += 1;
         }
     }
+
     if have_left && l.intra[yb4 as usize] == 0 {
-        if (l.r#ref[0][yb4 as usize] as libc::c_uint).wrapping_sub(1 as libc::c_uint)
-            < 3 as libc::c_uint
-        {
-            cnt[(l.r#ref[0][yb4 as usize] as libc::c_int - 1) as usize] += 1;
+        if let Some(cnt) = cnt.get_mut((l.r#ref[0][yb4 as usize] - 1) as usize) {
+            *cnt += 1;
         }
-        if l.comp_type[yb4 as usize] as libc::c_int != 0
-            && (l.r#ref[1][yb4 as usize] as libc::c_uint).wrapping_sub(1 as libc::c_uint)
-                < 3 as libc::c_uint
-        {
-            cnt[(l.r#ref[1][yb4 as usize] as libc::c_int - 1) as usize] += 1;
+        if l.comp_type[yb4 as usize] != 0
+                && let Some(cnt) = cnt.get_mut((l.r#ref[1][yb4 as usize] - 1) as usize) {
+            *cnt += 1;
         }
     }
+
     cnt[1] += cnt[2];
-    return if cnt[0] == cnt[1] {
-        1 as libc::c_int
-    } else if cnt[0] < cnt[1] {
-        0 as libc::c_int
-    } else {
-        2 as libc::c_int
-    };
+
+    cmp_counts(cnt[0], cnt[1])
 }
 
 #[inline]

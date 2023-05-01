@@ -6932,7 +6932,7 @@ unsafe fn decode_b(
                         b"Post-segwedge_vs_jntavg[%d,ctx=%d]: r=%d\n\0" as *const u8
                             as *const libc::c_char,
                         is_segwedge,
-                        mask_ctx,
+                        mask_ctx as libc::c_int,
                         ts.msac.rng,
                     );
                 }
@@ -6969,7 +6969,7 @@ unsafe fn decode_b(
                             (b.c2rust_unnamed.c2rust_unnamed_0.comp_type as libc::c_int
                                 == COMP_INTER_AVG as libc::c_int)
                                 as libc::c_int,
-                            jnt_ctx,
+                            jnt_ctx as libc::c_int,
                             (*t.a).comp_type[bx4 as usize] as libc::c_int,
                             (*t.a).r#ref[0][bx4 as usize] as libc::c_int,
                             t.l.comp_type[by4 as usize] as libc::c_int,
