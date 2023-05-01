@@ -2107,7 +2107,7 @@ unsafe fn order_palette(
                 o_idx += 1;
             }
             m <<= 1;
-            bit = bit.wrapping_add(1);
+            bit += 1;
         }
         assert!(o_idx == 8);
         have_top = true;
