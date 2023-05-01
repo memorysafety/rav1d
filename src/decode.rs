@@ -2608,14 +2608,24 @@ unsafe fn get_prev_frame_segid(
 ) -> u8 {
     assert!((*f.frame_hdr).primary_ref_frame != 7);
 
+    // Need checked casts here because an overflowing cast
+    // would give a too large `len` to [`std::slice::from_raw_parts`], which would UB.
+    let w4 = usize::try_from(w4).unwrap();
+    let h4 = usize::try_from(h4).unwrap();
+    let stride = usize::try_from(stride).unwrap();
+
     let mut prev_seg_id = 8;
-    ref_seg_map = ref_seg_map.offset((by as isize * stride + bx as isize) as isize);
+    let mut ref_seg_map = std::slice::from_raw_parts(
+        ref_seg_map.offset(by as isize * stride as isize + bx as isize),
+        h4 * stride,
+    );
+
     for _ in 0..h4 {
-        prev_seg_id = std::slice::from_raw_parts(ref_seg_map, w4 as usize)
+        prev_seg_id = ref_seg_map[..w4]
             .iter()
             .copied()
             .fold(prev_seg_id, std::cmp::min);
-        ref_seg_map = ref_seg_map.offset(stride as isize);
+        ref_seg_map = &ref_seg_map[stride..];
         if prev_seg_id == 0 {
             break;
         }
