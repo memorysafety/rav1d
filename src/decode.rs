@@ -1478,22 +1478,22 @@ unsafe extern "C" fn find_matching_ref(
     bh4: libc::c_int,
     w4: libc::c_int,
     h4: libc::c_int,
-    have_left: libc::c_int,
-    have_top: libc::c_int,
+    have_left: bool,
+    have_top: bool,
     r#ref: libc::c_int,
     mut masks: *mut uint64_t,
 ) {
     let mut r: *const *mut refmvs_block =
         &*((*t).rt.r).as_ptr().offset((((*t).by & 31) + 5) as isize) as *const *mut refmvs_block;
     let mut count = 0;
-    let mut have_topleft = (have_top != 0 && have_left != 0) as libc::c_int;
+    let mut have_topleft = (have_top && have_left) as libc::c_int;
     let mut have_topright = (imax(bw4, bh4) < 32
-        && have_top != 0
+        && have_top
         && (*t).bx + bw4 < (*(*t).ts).tiling.col_end
         && intra_edge_flags as libc::c_uint
             & EDGE_I444_TOP_HAS_RIGHT as libc::c_int as libc::c_uint
             != 0) as libc::c_int;
-    if have_top != 0 {
+    if have_top {
         let mut r2: *const refmvs_block = &mut *(*r.offset(-(1 as libc::c_int) as isize))
             .offset((*t).bx as isize)
             as *mut refmvs_block;
@@ -1534,7 +1534,7 @@ unsafe extern "C" fn find_matching_ref(
             }
         }
     }
-    if have_left != 0 {
+    if have_left {
         let mut r2_0: *const *mut refmvs_block = r;
         if (*(*r2_0.offset(0)).offset(((*t).bx - 1) as isize))
             .r#ref
@@ -3015,8 +3015,8 @@ unsafe fn decode_b(
     let h4 = imin(bh4, f.bh - t.by);
     let cbw4 = bw4 + ss_hor >> ss_hor;
     let cbh4 = bh4 + ss_ver >> ss_ver;
-    let have_left = (t.bx > ts.tiling.col_start) as libc::c_int;
-    let have_top = (t.by > ts.tiling.row_start) as libc::c_int;
+    let have_left = t.bx > ts.tiling.col_start;
+    let have_top = t.by > ts.tiling.row_start;
     let has_chroma = f.cur.p.layout != DAV1D_PIXEL_LAYOUT_I400
         && (bw4 > ss_hor || t.bx & 1 != 0)
         && (bh4 > ss_ver || t.by & 1 != 0);
@@ -3489,7 +3489,7 @@ unsafe fn decode_b(
         if let Some(seg) = seg && (seg.r#ref >= 0 || seg.globalmv != 0) {
             b.intra = (seg.r#ref == 0) as uint8_t;
         } else {
-            let ictx = get_intra_ctx(&*t.a, &t.l, by4, bx4, have_top != 0, have_left != 0);
+            let ictx = get_intra_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
             b.intra = (dav1d_msac_decode_bool_adapt(
                 &mut ts.msac,
                 ts.cdf.m.intra[ictx.into()].as_mut_ptr(),
@@ -7490,8 +7490,8 @@ unsafe fn decode_b(
                     && frame_hdr.gmv[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize].type_0
                         as libc::c_uint
                         > DAV1D_WM_TYPE_TRANSLATION as libc::c_int as libc::c_uint)
-                && (have_left != 0 && findoddzero(&t.l.intra[by4 as usize..][..h4 as usize])
-                    || have_top != 0 && findoddzero(&(*t.a).intra[bx4 as usize..][..w4 as usize]))
+                && (have_left && findoddzero(&t.l.intra[by4 as usize..][..h4 as usize])
+                    || have_top && findoddzero(&(*t.a).intra[bx4 as usize..][..w4 as usize]))
             {
                 let mut mask: [uint64_t; 2] =
                     [0 as libc::c_int as uint64_t, 0 as libc::c_int as uint64_t];
