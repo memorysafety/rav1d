@@ -326,10 +326,12 @@ pub fn get_jnt_comp_ctx(
         ref1poc as libc::c_int,
     )
     .abs() as libc::c_uint;
-    let offset = d0 == d1;
-    let a_ctx = a.comp_type[xb4 as usize] >= COMP_INTER_AVG as u8 || a.r#ref[0][xb4 as usize] == 6;
-    let l_ctx = l.comp_type[yb4 as usize] >= COMP_INTER_AVG as u8 || l.r#ref[0][yb4 as usize] == 6;
-    3 * (offset as libc::c_int) + (a_ctx as libc::c_int) + (l_ctx as libc::c_int)
+    let offset = (d0 == d1) as libc::c_int;
+    let [a_ctx, l_ctx] = [(a, xb4), (l, yb4)].map(|(al, b4)| {
+        (al.comp_type[b4 as usize] >= COMP_INTER_AVG as u8 || al.r#ref[0][b4 as usize] == 6)
+            as libc::c_int
+    });
+    3 * offset + a_ctx + l_ctx
 }
 
 #[inline]
@@ -339,20 +341,15 @@ pub fn get_mask_comp_ctx(
     yb4: libc::c_int,
     xb4: libc::c_int,
 ) -> libc::c_int {
-    let a_ctx = if a.comp_type[xb4 as usize] >= COMP_INTER_SEG as u8 {
-        1
-    } else if a.r#ref[0][xb4 as usize] == 6 {
-        3
-    } else {
-        0
-    };
-    let l_ctx = if l.comp_type[yb4 as usize] >= COMP_INTER_SEG as u8 {
-        1
-    } else if l.r#ref[0][yb4 as usize] == 6 {
-        3
-    } else {
-        0
-    };
+    let [a_ctx, l_ctx] = [(a, xb4), (l, yb4)].map(|(al, b4)| {
+        if al.comp_type[b4 as usize] >= COMP_INTER_SEG as u8 {
+            1
+        } else if al.r#ref[0][b4 as usize] == 6 {
+            3
+        } else {
+            0
+        }
+    });
     imin(a_ctx + l_ctx, 5)
 }
 
