@@ -1154,7 +1154,7 @@ fn get_partition_ctx(
 }
 
 #[inline]
-unsafe fn gather_left_partition_prob(r#in: &[u16; 16], bl: BlockLevel) -> u32 {
+fn gather_left_partition_prob(r#in: &[u16; 16], bl: BlockLevel) -> u32 {
     let mut out = r#in[(PARTITION_H - 1) as usize] as i32 - r#in[PARTITION_H as usize] as i32;
     out +=
         r#in[(PARTITION_SPLIT - 1) as usize] as i32 - r#in[PARTITION_T_LEFT_SPLIT as usize] as i32;
@@ -1165,7 +1165,7 @@ unsafe fn gather_left_partition_prob(r#in: &[u16; 16], bl: BlockLevel) -> u32 {
 }
 
 #[inline]
-unsafe fn gather_top_partition_prob(r#in: &[u16; 16], bl: BlockLevel) -> u32 {
+fn gather_top_partition_prob(r#in: &[u16; 16], bl: BlockLevel) -> u32 {
     let mut out =
         r#in[(PARTITION_V - 1) as usize] as i32 - r#in[PARTITION_T_TOP_SPLIT as usize] as i32;
     out += r#in[(PARTITION_T_LEFT_SPLIT - 1) as usize] as i32;
