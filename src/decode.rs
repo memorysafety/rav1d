@@ -2049,99 +2049,99 @@ unsafe fn order_palette(
 ) {
     let mut have_top = (i > first) as libc::c_int;
     assert!(!pal_idx.is_null());
-    pal_idx = pal_idx.offset((first as isize + (i - first) as isize * stride) as isize);
+    pal_idx = pal_idx.offset(first as isize + (i - first) as isize * stride);
     let mut j = first;
     let mut n = 0;
     while j >= last {
         let have_left = (j > 0) as libc::c_int;
         assert!(have_left != 0 || have_top != 0);
-        let mut mask: libc::c_uint = 0 as libc::c_int as libc::c_uint;
+        let mut mask = 0 as libc::c_uint;
         let mut o_idx = 0;
         if have_left == 0 {
-            *ctx.offset(n as isize) = 0 as libc::c_int as uint8_t;
-            let v = *pal_idx.offset(-stride as isize) as libc::c_int;
-            assert!((v as libc::c_uint) < 8 as libc::c_uint);
+            *ctx.offset(n as isize) = 0;
+            let v = *pal_idx.offset(-stride) as libc::c_int;
+            assert!((v as libc::c_uint) < 8);
             let fresh21 = o_idx;
             o_idx = o_idx + 1;
             (*order.offset(n as isize))[fresh21 as usize] = v as uint8_t;
-            mask |= ((1 as libc::c_int) << v) as libc::c_uint;
+            mask |= (1 << v) as libc::c_uint;
         } else if have_top == 0 {
-            *ctx.offset(n as isize) = 0 as libc::c_int as uint8_t;
-            let v_0 = *pal_idx.offset(-(1 as libc::c_int) as isize) as libc::c_int;
-            assert!((v_0 as libc::c_uint) < 8 as libc::c_uint);
+            *ctx.offset(n as isize) = 0;
+            let v_0 = *pal_idx.offset(-1) as libc::c_int;
+            assert!((v_0 as libc::c_uint) < 8);
             let fresh22 = o_idx;
             o_idx = o_idx + 1;
             (*order.offset(n as isize))[fresh22 as usize] = v_0 as uint8_t;
-            mask |= ((1 as libc::c_int) << v_0) as libc::c_uint;
+            mask |= (1 << v_0) as libc::c_uint;
         } else {
-            let l = *pal_idx.offset(-(1 as libc::c_int) as isize) as libc::c_int;
-            let t = *pal_idx.offset(-stride as isize) as libc::c_int;
-            let tl = *pal_idx.offset(-(stride + 1) as isize) as libc::c_int;
+            let l = *pal_idx.offset(-1) as libc::c_int;
+            let t = *pal_idx.offset(-stride) as libc::c_int;
+            let tl = *pal_idx.offset(-(stride + 1)) as libc::c_int;
             let same_t_l = (t == l) as libc::c_int;
             let same_t_tl = (t == tl) as libc::c_int;
             let same_l_tl = (l == tl) as libc::c_int;
             let same_all = same_t_l & same_t_tl & same_l_tl;
             if same_all != 0 {
-                *ctx.offset(n as isize) = 4 as libc::c_int as uint8_t;
+                *ctx.offset(n as isize) = 4;
                 let v_1 = t;
-                assert!((v_1 as libc::c_uint) < 8 as libc::c_uint);
+                assert!((v_1 as libc::c_uint) < 8);
                 let fresh23 = o_idx;
                 o_idx = o_idx + 1;
                 (*order.offset(n as isize))[fresh23 as usize] = v_1 as uint8_t;
-                mask |= ((1 as libc::c_int) << v_1) as libc::c_uint;
+                mask |= (1 << v_1) as libc::c_uint;
             } else if same_t_l != 0 {
-                *ctx.offset(n as isize) = 3 as libc::c_int as uint8_t;
+                *ctx.offset(n as isize) = 3;
                 let v_2 = t;
-                assert!((v_2 as libc::c_uint) < 8 as libc::c_uint);
+                assert!((v_2 as libc::c_uint) < 8);
                 let fresh24 = o_idx;
                 o_idx = o_idx + 1;
                 (*order.offset(n as isize))[fresh24 as usize] = v_2 as uint8_t;
-                mask |= ((1 as libc::c_int) << v_2) as libc::c_uint;
+                mask |= (1 << v_2) as libc::c_uint;
                 let v_3 = tl;
-                assert!((v_3 as libc::c_uint) < 8 as libc::c_uint);
+                assert!((v_3 as libc::c_uint) < 8);
                 let fresh25 = o_idx;
                 o_idx = o_idx + 1;
                 (*order.offset(n as isize))[fresh25 as usize] = v_3 as uint8_t;
-                mask |= ((1 as libc::c_int) << v_3) as libc::c_uint;
+                mask |= (1 << v_3) as libc::c_uint;
             } else if same_t_tl | same_l_tl != 0 {
-                *ctx.offset(n as isize) = 2 as libc::c_int as uint8_t;
+                *ctx.offset(n as isize) = 2;
                 let v_4 = tl;
-                assert!((v_4 as libc::c_uint) < 8 as libc::c_uint);
+                assert!((v_4 as libc::c_uint) < 8);
                 let fresh26 = o_idx;
                 o_idx = o_idx + 1;
                 (*order.offset(n as isize))[fresh26 as usize] = v_4 as uint8_t;
-                mask |= ((1 as libc::c_int) << v_4) as libc::c_uint;
+                mask |= (1 << v_4) as libc::c_uint;
                 let v_5 = if same_t_tl != 0 { l } else { t };
-                assert!((v_5 as libc::c_uint) < 8 as libc::c_uint);
+                assert!((v_5 as libc::c_uint) < 8);
                 let fresh27 = o_idx;
                 o_idx = o_idx + 1;
                 (*order.offset(n as isize))[fresh27 as usize] = v_5 as uint8_t;
-                mask |= ((1 as libc::c_int) << v_5) as libc::c_uint;
+                mask |= (1 << v_5) as libc::c_uint;
             } else {
-                *ctx.offset(n as isize) = 1 as libc::c_int as uint8_t;
+                *ctx.offset(n as isize) = 1;
                 let v_6 = imin(t, l);
-                assert!((v_6 as libc::c_uint) < 8 as libc::c_uint);
+                assert!((v_6 as libc::c_uint) < 8);
                 let fresh28 = o_idx;
                 o_idx = o_idx + 1;
                 (*order.offset(n as isize))[fresh28 as usize] = v_6 as uint8_t;
-                mask |= ((1 as libc::c_int) << v_6) as libc::c_uint;
+                mask |= (1 << v_6) as libc::c_uint;
                 let v_7 = imax(t, l);
-                assert!((v_7 as libc::c_uint) < 8 as libc::c_uint);
+                assert!((v_7 as libc::c_uint) < 8);
                 let fresh29 = o_idx;
                 o_idx = o_idx + 1;
                 (*order.offset(n as isize))[fresh29 as usize] = v_7 as uint8_t;
-                mask |= ((1 as libc::c_int) << v_7) as libc::c_uint;
+                mask |= (1 << v_7) as libc::c_uint;
                 let v_8 = tl;
-                assert!((v_8 as libc::c_uint) < 8 as libc::c_uint);
+                assert!((v_8 as libc::c_uint) < 8);
                 let fresh30 = o_idx;
                 o_idx = o_idx + 1;
                 (*order.offset(n as isize))[fresh30 as usize] = v_8 as uint8_t;
-                mask |= ((1 as libc::c_int) << v_8) as libc::c_uint;
+                mask |= (1 << v_8) as libc::c_uint;
             }
         }
-        let mut m: libc::c_uint = 1 as libc::c_int as libc::c_uint;
-        let mut bit: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-        while m < 0x100 as libc::c_int as libc::c_uint {
+        let mut m = 1 as libc::c_uint;
+        let mut bit = 0 as libc::c_uint;
+        while m < 0x100 {
             if mask & m == 0 {
                 let fresh31 = o_idx;
                 o_idx = o_idx + 1;
@@ -2151,10 +2151,10 @@ unsafe fn order_palette(
             bit = bit.wrapping_add(1);
         }
         assert!(o_idx == 8);
-        have_top = 1 as libc::c_int;
+        have_top = 1;
         j -= 1;
         n += 1;
-        pal_idx = pal_idx.offset((stride - 1) as isize);
+        pal_idx = pal_idx.offset(stride - 1);
     }
 }
 
