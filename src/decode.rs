@@ -1150,13 +1150,8 @@ fn get_partition_ctx(
     yb8: libc::c_int,
     xb8: libc::c_int,
 ) -> libc::c_int {
-    return (a.partition[xb8 as usize] as libc::c_int
-        >> (4 as libc::c_int as libc::c_uint).wrapping_sub(bl as libc::c_uint)
-        & 1)
-        + ((l.partition[yb8 as usize] as libc::c_int
-            >> (4 as libc::c_int as libc::c_uint).wrapping_sub(bl as libc::c_uint)
-            & 1)
-            << 1);
+    (a.partition[xb8 as usize] as libc::c_int >> 4u32.wrapping_sub(bl) & 1)
+        + ((l.partition[yb8 as usize] as libc::c_int >> 4u32.wrapping_sub(bl) & 1) << 1)
 }
 
 #[inline]
