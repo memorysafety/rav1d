@@ -1131,7 +1131,7 @@ fn get_intra_ctx(
 }
 
 #[inline]
-unsafe fn get_tx_ctx(
+fn get_tx_ctx(
     a: &BlockContext,
     l: &BlockContext,
     max_tx: &TxfmInfo,
