@@ -1154,37 +1154,28 @@ fn get_partition_ctx(
 }
 
 #[inline]
-unsafe fn gather_left_partition_prob(in_0: *const uint16_t, bl: BlockLevel) -> libc::c_uint {
-    let mut out = (*in_0.offset((PARTITION_H - 1) as isize) as libc::c_int
-        - *in_0.offset(PARTITION_H as isize) as libc::c_int) as libc::c_uint;
-    out = out.wrapping_add(
-        (*in_0.offset((PARTITION_SPLIT - 1) as isize) as libc::c_int
-            - *in_0.offset(PARTITION_T_LEFT_SPLIT as isize) as libc::c_int) as libc::c_uint,
-    );
+unsafe fn gather_left_partition_prob(in_0: *const u16, bl: BlockLevel) -> u32 {
+    let mut out =
+        *in_0.offset((PARTITION_H - 1) as isize) as i32 - *in_0.offset(PARTITION_H as isize) as i32;
+    out += *in_0.offset((PARTITION_SPLIT - 1) as isize) as i32
+        - *in_0.offset(PARTITION_T_LEFT_SPLIT as isize) as i32;
     if bl != BL_128X128 {
-        out = out.wrapping_add(
-            (*in_0.offset((PARTITION_H4 - 1) as isize) as libc::c_int
-                - *in_0.offset(PARTITION_H4 as libc::c_int as isize) as libc::c_int)
-                as libc::c_uint,
-        );
+        out += *in_0.offset((PARTITION_H4 - 1) as isize) as i32
+            - *in_0.offset(PARTITION_H4 as libc::c_int as isize) as i32;
     }
-    return out;
+    return out as u32;
 }
 
 #[inline]
-unsafe fn gather_top_partition_prob(in_0: *const uint16_t, bl: BlockLevel) -> libc::c_uint {
-    let mut out = (*in_0.offset((PARTITION_V - 1) as isize) as libc::c_int
-        - *in_0.offset(PARTITION_T_TOP_SPLIT as isize) as libc::c_int)
-        as libc::c_uint;
-    out = out.wrapping_add(*in_0.offset((PARTITION_T_LEFT_SPLIT - 1) as isize) as libc::c_uint);
+unsafe fn gather_top_partition_prob(in_0: *const u16, bl: BlockLevel) -> u32 {
+    let mut out = *in_0.offset((PARTITION_V - 1) as isize) as i32
+        - *in_0.offset(PARTITION_T_TOP_SPLIT as isize) as i32;
+    out += *in_0.offset((PARTITION_T_LEFT_SPLIT - 1) as isize) as i32;
     if bl != BL_128X128 {
-        out = out.wrapping_add(
-            (*in_0.offset((PARTITION_V4 - 1) as isize) as libc::c_int
-                - *in_0.offset(PARTITION_T_RIGHT_SPLIT as isize) as libc::c_int)
-                as libc::c_uint,
-        );
+        out += *in_0.offset((PARTITION_V4 - 1) as isize) as i32
+            - *in_0.offset(PARTITION_T_RIGHT_SPLIT as isize) as i32;
     }
-    return out;
+    return out as u32;
 }
 
 #[inline]
