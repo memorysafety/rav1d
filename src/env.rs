@@ -153,7 +153,7 @@ pub fn get_uv_inter_txtp(uvt_dim: &TxfmInfo, ytxtp: TxfmType) -> TxfmType {
 pub fn get_filter_ctx(
     a: &BlockContext,
     l: &BlockContext,
-    comp: libc::c_int,
+    comp: bool,
     dir: libc::c_int,
     r#ref: i8,
     yb4: libc::c_int,
@@ -169,7 +169,7 @@ pub fn get_filter_ctx(
     } else {
         DAV1D_N_SWITCHABLE_FILTERS as libc::c_int
     };
-    comp * 4 + if a_filter == l_filter {
+    (comp as libc::c_int) * 4 + if a_filter == l_filter {
         a_filter
     } else if a_filter == DAV1D_N_SWITCHABLE_FILTERS as libc::c_int {
         l_filter

@@ -7690,8 +7690,8 @@ unsafe fn decode_b(
             == DAV1D_FILTER_SWITCHABLE as libc::c_int as libc::c_uint
         {
             if has_subpel_filter != 0 {
-                let comp = (b.c2rust_unnamed.c2rust_unnamed_0.comp_type as libc::c_int
-                    != COMP_INTER_NONE as libc::c_int) as libc::c_int;
+                let comp = b.c2rust_unnamed.c2rust_unnamed_0.comp_type as libc::c_int
+                    != COMP_INTER_NONE as libc::c_int;
                 let ctx1_1 = get_filter_ctx(
                     &*t.a,
                     &t.l,
