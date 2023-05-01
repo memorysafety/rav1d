@@ -1156,6 +1156,8 @@ fn get_partition_ctx(
 #[inline]
 fn gather_left_partition_prob(r#in: &[u16; 16], bl: BlockLevel) -> u32 {
     let mut out = r#in[(PARTITION_H - 1) as usize] as i32 - r#in[PARTITION_H as usize] as i32;
+    // Exploit the fact that cdfs for PARTITION_SPLIT, PARTITION_T_TOP_SPLIT,
+    // PARTITION_T_BOTTOM_SPLIT and PARTITION_T_LEFT_SPLIT are neighbors.
     out +=
         r#in[(PARTITION_SPLIT - 1) as usize] as i32 - r#in[PARTITION_T_LEFT_SPLIT as usize] as i32;
     if bl != BL_128X128 {
@@ -1166,8 +1168,14 @@ fn gather_left_partition_prob(r#in: &[u16; 16], bl: BlockLevel) -> u32 {
 
 #[inline]
 fn gather_top_partition_prob(r#in: &[u16; 16], bl: BlockLevel) -> u32 {
+    // Exploit the fact that cdfs for PARTITION_V, PARTITION_SPLIT and
+    // PARTITION_T_TOP_SPLIT are neighbors.
     let mut out =
         r#in[(PARTITION_V - 1) as usize] as i32 - r#in[PARTITION_T_TOP_SPLIT as usize] as i32;
+    // Exploit the facts that cdfs for PARTITION_T_LEFT_SPLIT and
+    // PARTITION_T_RIGHT_SPLIT are neighbors, the probability for
+    // PARTITION_V4 is always zero, and the probability for
+    // PARTITION_T_RIGHT_SPLIT is zero in 128x128 blocks.
     out += r#in[(PARTITION_T_LEFT_SPLIT - 1) as usize] as i32;
     if bl != BL_128X128 {
         out += r#in[(PARTITION_V4 - 1) as usize] as i32
