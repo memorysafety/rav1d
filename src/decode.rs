@@ -2047,17 +2047,17 @@ unsafe fn order_palette(
     order: *mut [uint8_t; 8],
     ctx: *mut uint8_t,
 ) {
-    let mut have_top = (i > first) as libc::c_int;
+    let mut have_top = i > first;
     assert!(!pal_idx.is_null());
     pal_idx = pal_idx.offset(first as isize + (i - first) as isize * stride);
     let mut j = first;
     let mut n = 0;
     while j >= last {
-        let have_left = (j > 0) as libc::c_int;
-        assert!(have_left != 0 || have_top != 0);
+        let have_left = j > 0;
+        assert!(have_left || have_top);
         let mut mask = 0 as libc::c_uint;
         let mut o_idx = 0;
-        if have_left == 0 {
+        if !have_left {
             *ctx.offset(n as isize) = 0;
             let v = *pal_idx.offset(-stride) as libc::c_int;
             assert!((v as libc::c_uint) < 8);
@@ -2065,7 +2065,7 @@ unsafe fn order_palette(
             o_idx = o_idx + 1;
             (*order.offset(n as isize))[fresh21 as usize] = v as uint8_t;
             mask |= (1 << v) as libc::c_uint;
-        } else if have_top == 0 {
+        } else if !have_top {
             *ctx.offset(n as isize) = 0;
             let v_0 = *pal_idx.offset(-1) as libc::c_int;
             assert!((v_0 as libc::c_uint) < 8);
@@ -2151,7 +2151,7 @@ unsafe fn order_palette(
             bit = bit.wrapping_add(1);
         }
         assert!(o_idx == 8);
-        have_top = 1;
+        have_top = true;
         j -= 1;
         n += 1;
         pal_idx = pal_idx.offset(stride - 1);
