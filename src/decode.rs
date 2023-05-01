@@ -2077,21 +2077,21 @@ unsafe fn order_palette(
             let l = *pal_idx.offset(-1) as libc::c_int;
             let t = *pal_idx.offset(-stride) as libc::c_int;
             let tl = *pal_idx.offset(-(stride + 1)) as libc::c_int;
-            let same_t_l = (t == l) as libc::c_int;
-            let same_t_tl = (t == tl) as libc::c_int;
-            let same_l_tl = (l == tl) as libc::c_int;
+            let same_t_l = t == l;
+            let same_t_tl = t == tl;
+            let same_l_tl = l == tl;
             let same_all = same_t_l & same_t_tl & same_l_tl;
-            if same_all != 0 {
+            if same_all {
                 *ctx = 4;
                 add(t);
-            } else if same_t_l != 0 {
+            } else if same_t_l {
                 *ctx = 3;
                 add(t);
                 add(tl);
-            } else if same_t_tl | same_l_tl != 0 {
+            } else if same_t_tl | same_l_tl {
                 *ctx = 2;
                 add(tl);
-                add(if same_t_tl != 0 { l } else { t });
+                add(if same_t_tl { l } else { t });
             } else {
                 *ctx = 1;
                 add(imin(t, l));
