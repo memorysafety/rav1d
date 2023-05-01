@@ -2058,7 +2058,7 @@ unsafe fn order_palette(
         let have_left = j > 0;
         assert!(have_left || have_top);
 
-        let mut mask = 0u32;
+        let mut mask = 0u8;
         let mut o_idx = 0;
         let mut add = |v: u8| {
             assert!(v < 8);
@@ -2099,15 +2099,11 @@ unsafe fn order_palette(
                 add(tl);
             }
         }
-        let mut m = 1;
-        let mut bit = 0;
-        while m < 0x100 {
-            if mask & m == 0 {
+        for bit in 0..u8::BITS as u8 {
+            if mask & (1 << bit) == 0 {
                 order[o_idx] = bit;
                 o_idx += 1;
             }
-            m <<= 1;
-            bit += 1;
         }
         assert!(o_idx == 8);
         have_top = true;
