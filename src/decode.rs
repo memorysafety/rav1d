@@ -1149,9 +1149,8 @@ fn get_partition_ctx(
     bl: BlockLevel,
     yb8: libc::c_int,
     xb8: libc::c_int,
-) -> libc::c_int {
-    (a.partition[xb8 as usize] as libc::c_int >> (4 - bl) & 1)
-        + ((l.partition[yb8 as usize] as libc::c_int >> (4 - bl) & 1) << 1)
+) -> u8 {
+    (a.partition[xb8 as usize] >> (4 - bl) & 1) + ((l.partition[yb8 as usize] >> (4 - bl) & 1) << 1)
 }
 
 #[inline]
@@ -10276,7 +10275,7 @@ unsafe extern "C" fn decode_sb(
                     (*t).by,
                     (*t).bx,
                     bl as libc::c_uint,
-                    ctx,
+                    ctx as libc::c_int,
                     bp as libc::c_uint,
                     (*ts).msac.rng,
                 );
@@ -10692,7 +10691,7 @@ unsafe extern "C" fn decode_sb(
                     (*t).by,
                     (*t).bx,
                     bl as libc::c_uint,
-                    ctx,
+                    ctx as libc::c_int,
                     if is_split != 0 {
                         PARTITION_SPLIT as libc::c_int
                     } else {
@@ -10767,7 +10766,7 @@ unsafe extern "C" fn decode_sb(
                     (*t).by,
                     (*t).bx,
                     bl as libc::c_uint,
-                    ctx,
+                    ctx as libc::c_int,
                     if is_split_0 != 0 {
                         PARTITION_SPLIT as libc::c_int
                     } else {
