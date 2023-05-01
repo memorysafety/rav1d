@@ -615,33 +615,39 @@ pub unsafe fn get_cur_frame_segid(
     bx: libc::c_int,
     have_top: bool,
     have_left: bool,
-    seg_ctx: *mut libc::c_int,
-    mut cur_seg_map: *const uint8_t,
+    // It's very difficult to make this safe (a slice),
+    // as it is negatively indexed
+    // and it comes from [`Dav1dFrameContext::cur_segmap`],
+    // which is set to [`Dav1dFrameContext::cur_segmap_ref`] and [`Dav1dFrameContext::prev_segmap_ref`],
+    // which are [`Dav1dRef`]s, which have no size and are refcounted.
+    mut cur_seg_map: *const u8,
     stride: ptrdiff_t,
-) -> libc::c_uint {
+) -> (u8, u8) {
     cur_seg_map = cur_seg_map.offset(bx as isize + by as isize * stride);
     if have_left && have_top {
-        let l = *cur_seg_map.offset(-(1 as libc::c_int) as isize) as libc::c_int;
-        let a = *cur_seg_map.offset(-stride as isize) as libc::c_int;
-        let al = *cur_seg_map.offset(-(stride + 1) as isize) as libc::c_int;
-        if l == a && al == l {
-            *seg_ctx = 2 as libc::c_int;
+        let l = *cur_seg_map.offset(-1);
+        let a = *cur_seg_map.offset(-stride as isize);
+        let al = *cur_seg_map.offset(-(stride + 1) as isize);
+        let seg_ctx = if l == a && al == l {
+            2
         } else if l == a || al == l || a == al {
-            *seg_ctx = 1 as libc::c_int;
+            1
         } else {
-            *seg_ctx = 0 as libc::c_int;
-        }
-        return (if a == al { a } else { l }) as libc::c_uint;
+            0
+        };
+        let seg_id = if a == al { a } else { l };
+        (seg_id, seg_ctx)
     } else {
-        *seg_ctx = 0 as libc::c_int;
-        return (if have_left {
-            *cur_seg_map.offset(-(1 as libc::c_int) as isize) as libc::c_int
+        let seg_ctx = 0;
+        let seg_id = if have_left {
+            *cur_seg_map.offset(-1)
         } else if have_top {
-            *cur_seg_map.offset(-stride as isize) as libc::c_int
+            *cur_seg_map.offset(-stride as isize)
         } else {
-            0 as libc::c_int
-        }) as libc::c_uint;
-    };
+            0
+        };
+        (seg_id, seg_ctx)
+    }
 }
 
 #[inline]
