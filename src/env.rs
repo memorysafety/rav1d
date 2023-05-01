@@ -153,35 +153,31 @@ pub fn get_uv_inter_txtp(uvt_dim: &TxfmInfo, ytxtp: TxfmType) -> TxfmType {
 pub fn get_filter_ctx(
     a: &BlockContext,
     l: &BlockContext,
-    comp: libc::c_int,
-    dir: libc::c_int,
-    r#ref: libc::c_int,
+    comp: bool,
+    dir: bool,
+    r#ref: i8,
     yb4: libc::c_int,
     xb4: libc::c_int,
-) -> libc::c_int {
-    let a_filter = if a.r#ref[0][xb4 as usize] as libc::c_int == r#ref
-        || a.r#ref[1][xb4 as usize] as libc::c_int == r#ref
-    {
-        a.filter[dir as usize][xb4 as usize] as libc::c_int
+) -> u8 {
+    let a_filter = if a.r#ref[0][xb4 as usize] == r#ref || a.r#ref[1][xb4 as usize] == r#ref {
+        a.filter[dir as usize][xb4 as usize]
     } else {
-        DAV1D_N_SWITCHABLE_FILTERS as libc::c_int
+        DAV1D_N_SWITCHABLE_FILTERS as u8
     };
-    let l_filter = if l.r#ref[0][yb4 as usize] as libc::c_int == r#ref
-        || l.r#ref[1][yb4 as usize] as libc::c_int == r#ref
-    {
-        l.filter[dir as usize][yb4 as usize] as libc::c_int
+    let l_filter = if l.r#ref[0][yb4 as usize] == r#ref || l.r#ref[1][yb4 as usize] == r#ref {
+        l.filter[dir as usize][yb4 as usize]
     } else {
-        DAV1D_N_SWITCHABLE_FILTERS as libc::c_int
+        DAV1D_N_SWITCHABLE_FILTERS as u8
     };
-    if a_filter == l_filter {
-        return comp * 4 + a_filter;
-    } else if a_filter == DAV1D_N_SWITCHABLE_FILTERS as libc::c_int {
-        return comp * 4 + l_filter;
-    } else if l_filter == DAV1D_N_SWITCHABLE_FILTERS as libc::c_int {
-        return comp * 4 + a_filter;
+    (comp as u8) * 4 + if a_filter == l_filter {
+        a_filter
+    } else if a_filter == DAV1D_N_SWITCHABLE_FILTERS as u8 {
+        l_filter
+    } else if l_filter == DAV1D_N_SWITCHABLE_FILTERS as u8 {
+        a_filter
     } else {
-        return comp * 4 + DAV1D_N_SWITCHABLE_FILTERS as libc::c_int;
-    };
+        DAV1D_N_SWITCHABLE_FILTERS as u8
+    }
 }
 
 #[inline]
