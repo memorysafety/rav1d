@@ -2612,10 +2612,7 @@ unsafe fn get_prev_frame_segid(
     ref_seg_map = ref_seg_map.offset((by as isize * stride + bx as isize) as isize);
     for _ in 0..h4 {
         for &seg_id in std::slice::from_raw_parts(ref_seg_map, w4 as usize) {
-            prev_seg_id = imin(
-                prev_seg_id as libc::c_int,
-                seg_id as libc::c_int,
-            ) as libc::c_uint;
+            prev_seg_id = std::cmp::min(prev_seg_id, seg_id as libc::c_uint);
         }
         ref_seg_map = ref_seg_map.offset(stride as isize);
         if prev_seg_id == 0 {
