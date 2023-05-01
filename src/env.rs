@@ -546,23 +546,21 @@ pub fn av1_get_uni_p1_ctx(
 ) -> libc::c_int {
     let mut cnt = [0; 3];
     if have_top && a.intra[xb4 as usize] == 0 {
-        if (a.r#ref[0][xb4 as usize] as libc::c_uint).wrapping_sub(1) < 3 {
-            cnt[(a.r#ref[0][xb4 as usize] - 1) as usize] += 1;
+        if let Some(cnt) = cnt.get_mut((a.r#ref[0][xb4 as usize] - 1) as usize) {
+            *cnt += 1;
         }
         if a.comp_type[xb4 as usize] != 0
-            && (a.r#ref[1][xb4 as usize] as libc::c_uint).wrapping_sub(1) < 3
-        {
-            cnt[(a.r#ref[1][xb4 as usize] - 1) as usize] += 1;
+                && let Some(cnt) = cnt.get_mut((a.r#ref[1][xb4 as usize] - 1) as usize) {
+            *cnt += 1;
         }
     }
     if have_left && l.intra[yb4 as usize] == 0 {
-        if (l.r#ref[0][yb4 as usize] as libc::c_uint).wrapping_sub(1) < 3 {
-            cnt[(l.r#ref[0][yb4 as usize] - 1) as usize] += 1;
+        if let Some(cnt) = cnt.get_mut((l.r#ref[0][yb4 as usize] - 1) as usize) {
+            *cnt += 1;
         }
-        if l.comp_type[yb4 as usize] as libc::c_int != 0
-            && (l.r#ref[1][yb4 as usize] as libc::c_uint).wrapping_sub(1) < 3
-        {
-            cnt[(l.r#ref[1][yb4 as usize] - 1) as usize] += 1;
+        if l.comp_type[yb4 as usize] != 0
+                && let Some(cnt) = cnt.get_mut((l.r#ref[1][yb4 as usize] - 1) as usize) {
+            *cnt += 1;
         }
     }
     cnt[1] += cnt[2];
