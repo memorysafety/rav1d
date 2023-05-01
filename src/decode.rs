@@ -2606,9 +2606,7 @@ unsafe fn get_prev_frame_segid(
     mut ref_seg_map: *const uint8_t,
     stride: ptrdiff_t,
 ) -> libc::c_uint {
-    if !((*(*f).frame_hdr).primary_ref_frame != 7) {
-        unreachable!();
-    }
+    assert!((*(*f).frame_hdr).primary_ref_frame != 7);
     let mut seg_id = 8;
     ref_seg_map = ref_seg_map.offset((by as isize * stride + bx as isize) as isize);
     loop {
@@ -2626,9 +2624,7 @@ unsafe fn get_prev_frame_segid(
             break;
         }
     }
-    if !(seg_id < 8) {
-        unreachable!();
-    }
+    assert!(seg_id < 8);
     return seg_id;
 }
 
