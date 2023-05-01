@@ -1,7 +1,6 @@
 use std::cmp::Ordering;
 
 use crate::include::common::intops::apply_sign;
-use crate::include::common::intops::imin;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 use crate::include::dav1d::headers::DAV1D_N_SWITCHABLE_FILTERS;
@@ -189,7 +188,7 @@ pub fn get_comp_ctx(
     xb4: libc::c_int,
     have_top: bool,
     have_left: bool,
-) -> libc::c_int {
+) -> u8 {
     if have_top {
         if have_left {
             if a.comp_type[xb4 as usize] != 0 {
@@ -197,26 +196,26 @@ pub fn get_comp_ctx(
                     4
                 } else {
                     // 4U means intra (-1) or bwd (>= 4)
-                    2 + (l.r#ref[0][yb4 as usize] as libc::c_uint >= 4) as libc::c_int
+                    2 + (l.r#ref[0][yb4 as usize] as libc::c_uint >= 4) as u8
                 }
             } else if l.comp_type[yb4 as usize] != 0 {
                 // 4U means intra (-1) or bwd (>= 4)
-                2 + (a.r#ref[0][xb4 as usize] as libc::c_uint >= 4) as libc::c_int
+                2 + (a.r#ref[0][xb4 as usize] as libc::c_uint >= 4) as u8
             } else {
-                ((l.r#ref[0][yb4 as usize] >= 4) ^ (a.r#ref[0][xb4 as usize] >= 4)) as libc::c_int
+                ((l.r#ref[0][yb4 as usize] >= 4) ^ (a.r#ref[0][xb4 as usize] >= 4)) as u8
             }
         } else {
             if a.comp_type[xb4 as usize] != 0 {
                 3
             } else {
-                (a.r#ref[0][xb4 as usize] >= 4) as libc::c_int
+                (a.r#ref[0][xb4 as usize] >= 4) as u8
             }
         }
     } else if have_left {
         if l.comp_type[yb4 as usize] != 0 {
             3
         } else {
-            (l.r#ref[0][yb4 as usize] >= 4) as libc::c_int
+            (l.r#ref[0][yb4 as usize] >= 4) as u8
         }
     } else {
         1
@@ -231,7 +230,7 @@ pub fn get_comp_dir_ctx(
     xb4: libc::c_int,
     have_top: bool,
     have_left: bool,
-) -> libc::c_int {
+) -> u8 {
     if have_top && have_left {
         let a_intra = a.intra[xb4 as usize] != 0;
         let l_intra = l.intra[yb4 as usize] != 0;
@@ -247,8 +246,7 @@ pub fn get_comp_dir_ctx(
                 return 2;
             }
             return 1 + 2
-                * ((edge.r#ref[0][off as usize] < 4) == (edge.r#ref[1][off as usize] < 4))
-                    as libc::c_int;
+                * ((edge.r#ref[0][off as usize] < 4) == (edge.r#ref[1][off as usize] < 4)) as u8;
         }
 
         let a_comp = a.comp_type[xb4 as usize] != COMP_INTER_NONE as u8;
@@ -257,7 +255,7 @@ pub fn get_comp_dir_ctx(
         let l_ref0 = l.r#ref[0][yb4 as usize];
 
         if !a_comp && !l_comp {
-            return 1 + 2 * ((a_ref0 >= 4) == (l_ref0 >= 4)) as libc::c_int;
+            return 1 + 2 * ((a_ref0 >= 4) == (l_ref0 >= 4)) as u8;
         } else if !a_comp || !l_comp {
             let edge = if a_comp { a } else { l };
             let off = if a_comp { xb4 } else { yb4 };
@@ -265,7 +263,7 @@ pub fn get_comp_dir_ctx(
             if !((edge.r#ref[0][off as usize] < 4) == (edge.r#ref[1][off as usize] < 4)) {
                 return 1;
             }
-            return 3 + ((a_ref0 >= 4) == (l_ref0 >= 4)) as libc::c_int;
+            return 3 + ((a_ref0 >= 4) == (l_ref0 >= 4)) as u8;
         } else {
             let a_uni = (a.r#ref[0][xb4 as usize] < 4) == (a.r#ref[1][xb4 as usize] < 4);
             let l_uni = (l.r#ref[0][yb4 as usize] < 4) == (l.r#ref[1][yb4 as usize] < 4);
@@ -276,7 +274,7 @@ pub fn get_comp_dir_ctx(
             if !a_uni || !l_uni {
                 return 2;
             }
-            return 3 + ((a_ref0 == 4) == (l_ref0 == 4)) as libc::c_int;
+            return 3 + ((a_ref0 == 4) == (l_ref0 == 4)) as u8;
         }
     } else if have_top || have_left {
         let edge = if have_left { l } else { a };
@@ -288,9 +286,7 @@ pub fn get_comp_dir_ctx(
         if edge.comp_type[off as usize] == COMP_INTER_NONE as u8 {
             return 2;
         }
-        return 4
-            * ((edge.r#ref[0][off as usize] < 4) == (edge.r#ref[1][off as usize] < 4))
-                as libc::c_int;
+        return 4 * ((edge.r#ref[0][off as usize] < 4) == (edge.r#ref[1][off as usize] < 4)) as u8;
     } else {
         return 2;
     };
@@ -320,7 +316,7 @@ pub fn get_jnt_comp_ctx(
     l: &BlockContext,
     yb4: libc::c_int,
     xb4: libc::c_int,
-) -> libc::c_int {
+) -> u8 {
     let d0 = get_poc_diff(
         order_hint_n_bits,
         ref0poc as libc::c_int,
@@ -333,10 +329,9 @@ pub fn get_jnt_comp_ctx(
         ref1poc as libc::c_int,
     )
     .abs();
-    let offset = (d0 == d1) as libc::c_int;
+    let offset = (d0 == d1) as u8;
     let [a_ctx, l_ctx] = [(a, xb4), (l, yb4)].map(|(al, b4)| {
-        (al.comp_type[b4 as usize] >= COMP_INTER_AVG as u8 || al.r#ref[0][b4 as usize] == 6)
-            as libc::c_int
+        (al.comp_type[b4 as usize] >= COMP_INTER_AVG as u8 || al.r#ref[0][b4 as usize] == 6) as u8
     });
 
     3 * offset + a_ctx + l_ctx
@@ -348,7 +343,7 @@ pub fn get_mask_comp_ctx(
     l: &BlockContext,
     yb4: libc::c_int,
     xb4: libc::c_int,
-) -> libc::c_int {
+) -> u8 {
     let [a_ctx, l_ctx] = [(a, xb4), (l, yb4)].map(|(al, b4)| {
         if al.comp_type[b4 as usize] >= COMP_INTER_SEG as u8 {
             1
@@ -359,7 +354,7 @@ pub fn get_mask_comp_ctx(
         }
     });
 
-    imin(a_ctx + l_ctx, 5)
+    std::cmp::min(a_ctx + l_ctx, 5)
 }
 
 fn cmp_counts(c1: u8, c2: u8) -> u8 {
