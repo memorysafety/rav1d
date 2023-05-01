@@ -1154,7 +1154,7 @@ fn get_partition_ctx(
 }
 
 #[inline]
-unsafe extern "C" fn gather_left_partition_prob(
+unsafe fn gather_left_partition_prob(
     in_0: *const uint16_t,
     bl: BlockLevel,
 ) -> libc::c_uint {
@@ -1176,8 +1176,9 @@ unsafe extern "C" fn gather_left_partition_prob(
     }
     return out;
 }
+
 #[inline]
-unsafe extern "C" fn gather_top_partition_prob(
+unsafe fn gather_top_partition_prob(
     in_0: *const uint16_t,
     bl: BlockLevel,
 ) -> libc::c_uint {
@@ -1197,6 +1198,7 @@ unsafe extern "C" fn gather_top_partition_prob(
     }
     return out;
 }
+
 #[inline]
 unsafe extern "C" fn get_filter_ctx(
     a: *const BlockContext,
