@@ -1137,9 +1137,9 @@ fn get_tx_ctx(
     max_tx: &TxfmInfo,
     yb4: libc::c_int,
     xb4: libc::c_int,
-) -> libc::c_int {
-    (l.tx_intra[yb4 as usize] as i32 >= max_tx.lh as i32) as libc::c_int
-        + (a.tx_intra[xb4 as usize] as i32 >= max_tx.lw as i32) as libc::c_int
+) -> u8 {
+    (l.tx_intra[yb4 as usize] as i32 >= max_tx.lh as i32) as u8
+        + (a.tx_intra[xb4 as usize] as i32 >= max_tx.lw as i32) as u8
 }
 
 #[inline]
