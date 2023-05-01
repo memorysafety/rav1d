@@ -1161,7 +1161,7 @@ unsafe fn gather_left_partition_prob(r#in: &[u16; 16], bl: BlockLevel) -> u32 {
     if bl != BL_128X128 {
         out += r#in[(PARTITION_H4 - 1) as usize] as i32 - r#in[PARTITION_H4 as usize] as i32;
     }
-    return out as u32;
+    out as u32
 }
 
 #[inline]
@@ -1173,7 +1173,7 @@ unsafe fn gather_top_partition_prob(r#in: &[u16; 16], bl: BlockLevel) -> u32 {
         out += r#in[(PARTITION_V4 - 1) as usize] as i32
             - r#in[PARTITION_T_RIGHT_SPLIT as usize] as i32;
     }
-    return out as u32;
+    out as u32
 }
 
 #[inline]
