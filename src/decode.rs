@@ -2602,7 +2602,7 @@ unsafe fn get_prev_frame_segid(
     by: libc::c_int,
     bx: libc::c_int,
     w4: libc::c_int,
-    mut h4: libc::c_int,
+    h4: libc::c_int,
     mut ref_seg_map: *const uint8_t,
     stride: ptrdiff_t,
 ) -> libc::c_uint {
@@ -2610,7 +2610,7 @@ unsafe fn get_prev_frame_segid(
 
     let mut seg_id = 8;
     ref_seg_map = ref_seg_map.offset((by as isize * stride + bx as isize) as isize);
-    loop {
+    for _ in 0..h4 {
         for x in 0..w4 {
             seg_id = imin(
                 seg_id as libc::c_int,
@@ -2618,8 +2618,7 @@ unsafe fn get_prev_frame_segid(
             ) as libc::c_uint;
         }
         ref_seg_map = ref_seg_map.offset(stride as isize);
-        h4 -= 1;
-        if !(h4 > 0 && seg_id != 0) {
+        if seg_id == 0 {
             break;
         }
     }
