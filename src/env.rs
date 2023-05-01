@@ -154,7 +154,7 @@ pub fn get_filter_ctx(
     a: &BlockContext,
     l: &BlockContext,
     comp: bool,
-    dir: libc::c_int,
+    dir: bool,
     r#ref: i8,
     yb4: libc::c_int,
     xb4: libc::c_int,
