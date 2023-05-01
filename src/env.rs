@@ -321,18 +321,18 @@ pub fn get_jnt_comp_ctx(
     yb4: libc::c_int,
     xb4: libc::c_int,
 ) -> libc::c_int {
-    let d0: libc::c_uint = get_poc_diff(
+    let d0 = get_poc_diff(
         order_hint_n_bits,
         ref0poc as libc::c_int,
         poc as libc::c_int,
     )
-    .abs() as libc::c_uint;
-    let d1: libc::c_uint = get_poc_diff(
+    .abs();
+    let d1 = get_poc_diff(
         order_hint_n_bits,
         poc as libc::c_int,
         ref1poc as libc::c_int,
     )
-    .abs() as libc::c_uint;
+    .abs();
     let offset = (d0 == d1) as libc::c_int;
     let [a_ctx, l_ctx] = [(a, xb4), (l, yb4)].map(|(al, b4)| {
         (al.comp_type[b4 as usize] >= COMP_INTER_AVG as u8 || al.r#ref[0][b4 as usize] == 6)
