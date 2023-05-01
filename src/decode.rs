@@ -3194,16 +3194,8 @@ unsafe fn decode_b(
                     b.seg_id = 0;
                 }
             } else {
-                let mut seg_ctx = 0;
-                let pred_seg_id = get_cur_frame_segid(
-                    t.by,
-                    t.bx,
-                    have_top,
-                    have_left,
-                    &mut seg_ctx,
-                    f.cur_segmap,
-                    f.b4_stride,
-                );
+                let (pred_seg_id, seg_ctx) =
+                    get_cur_frame_segid(t.by, t.bx, have_top, have_left, f.cur_segmap, f.b4_stride);
                 let diff = dav1d_msac_decode_symbol_adapt8(
                     &mut ts.msac,
                     (ts.cdf.m.seg_id[seg_ctx as usize]).as_mut_ptr(),
@@ -3297,16 +3289,8 @@ unsafe fn decode_b(
                 b.seg_id = 0;
             }
         } else {
-            let mut seg_ctx = 0;
-            let pred_seg_id = get_cur_frame_segid(
-                t.by,
-                t.bx,
-                have_top,
-                have_left,
-                &mut seg_ctx,
-                f.cur_segmap,
-                f.b4_stride,
-            );
+            let (pred_seg_id, seg_ctx) =
+                get_cur_frame_segid(t.by, t.bx, have_top, have_left, f.cur_segmap, f.b4_stride);
 
             if b.skip != 0 {
                 b.seg_id = pred_seg_id as uint8_t;
