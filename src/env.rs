@@ -194,32 +194,32 @@ pub fn get_comp_ctx(
         if have_left {
             if a.comp_type[xb4 as usize] != 0 {
                 if l.comp_type[yb4 as usize] != 0 {
-                    return 4;
+                    4
                 } else {
-                    return 2 + (l.r#ref[0][yb4 as usize] as libc::c_uint >= 4) as libc::c_int;
+                    2 + (l.r#ref[0][yb4 as usize] as libc::c_uint >= 4) as libc::c_int
                 }
             } else if l.comp_type[yb4 as usize] != 0 {
-                return 2 + (a.r#ref[0][xb4 as usize] as libc::c_uint >= 4) as libc::c_int;
+                2 + (a.r#ref[0][xb4 as usize] as libc::c_uint >= 4) as libc::c_int
             } else {
-                return (l.r#ref[0][yb4 as usize] >= 4) as libc::c_int
-                    ^ (a.r#ref[0][xb4 as usize] >= 4) as libc::c_int;
+                (l.r#ref[0][yb4 as usize] >= 4) as libc::c_int
+                    ^ (a.r#ref[0][xb4 as usize] >= 4) as libc::c_int
             }
         } else {
-            return if a.comp_type[xb4 as usize] != 0 {
+            if a.comp_type[xb4 as usize] != 0 {
                 3
             } else {
                 (a.r#ref[0][xb4 as usize] >= 4) as libc::c_int
-            };
+            }
         }
     } else if have_left {
-        return if l.comp_type[yb4 as usize] != 0 {
+        if l.comp_type[yb4 as usize] != 0 {
             3
         } else {
             (l.r#ref[0][yb4 as usize] >= 4) as libc::c_int
-        };
+        }
     } else {
-        return 1;
-    };
+        1
+    }
 }
 
 #[inline]
@@ -332,7 +332,7 @@ pub fn get_jnt_comp_ctx(
         as libc::c_int;
     let l_ctx = (l.comp_type[yb4 as usize] >= COMP_INTER_AVG as u8 || l.r#ref[0][yb4 as usize] == 6)
         as libc::c_int;
-    return 3 * offset + a_ctx + l_ctx;
+    3 * offset + a_ctx + l_ctx
 }
 
 #[inline]
@@ -356,7 +356,7 @@ pub fn get_mask_comp_ctx(
     } else {
         0
     };
-    return imin(a_ctx + l_ctx, 5);
+    imin(a_ctx + l_ctx, 5)
 }
 
 #[inline]
@@ -381,13 +381,13 @@ pub fn av1_get_ref_ctx(
             cnt[(l.r#ref[1][yb4 as usize] >= 4) as usize] += 1;
         }
     }
-    return if cnt[0] == cnt[1] {
+    if cnt[0] == cnt[1] {
         1
     } else if cnt[0] < cnt[1] {
         0
     } else {
         2
-    };
+    }
 }
 
 #[inline]
@@ -418,13 +418,13 @@ pub fn av1_get_fwd_ref_ctx(
     }
     cnt[0] += cnt[1];
     cnt[2] += cnt[3];
-    return if cnt[0] == cnt[2] {
+    if cnt[0] == cnt[2] {
         1
     } else if cnt[0] < cnt[2] {
         0
     } else {
         2
-    };
+    }
 }
 
 #[inline]
@@ -453,13 +453,13 @@ pub fn av1_get_fwd_ref_1_ctx(
             cnt[l.r#ref[1][yb4 as usize] as usize] += 1;
         }
     }
-    return if cnt[0] == cnt[1] {
+    if cnt[0] == cnt[1] {
         1
     } else if cnt[0] < cnt[1] {
         0
     } else {
         2
-    };
+    }
 }
 
 #[inline]
@@ -488,13 +488,13 @@ pub fn av1_get_fwd_ref_2_ctx(
             cnt[(l.r#ref[1][yb4 as usize] - 2) as usize] += 1;
         }
     }
-    return if cnt[0] == cnt[1] {
+    if cnt[0] == cnt[1] {
         1
     } else if cnt[0] < cnt[1] {
         0
     } else {
         2
-    };
+    }
 }
 
 #[inline]
@@ -524,13 +524,13 @@ pub fn av1_get_bwd_ref_ctx(
         }
     }
     cnt[1] += cnt[0];
-    return if cnt[2] == cnt[1] {
+    if cnt[2] == cnt[1] {
         1
     } else if cnt[1] < cnt[2] {
         0
     } else {
         2
-    };
+    }
 }
 
 #[inline]
@@ -559,13 +559,13 @@ pub fn av1_get_bwd_ref_1_ctx(
             cnt[(l.r#ref[1][yb4 as usize] - 4) as usize] += 1;
         }
     }
-    return if cnt[0] == cnt[1] {
+    if cnt[0] == cnt[1] {
         1
     } else if cnt[0] < cnt[1] {
         0
     } else {
         2
-    };
+    }
 }
 
 #[inline]
@@ -599,13 +599,13 @@ pub fn av1_get_uni_p1_ctx(
         }
     }
     cnt[1] += cnt[2];
-    return if cnt[0] == cnt[1] {
+    if cnt[0] == cnt[1] {
         1
     } else if cnt[0] < cnt[1] {
         0
     } else {
         2
-    };
+    }
 }
 
 #[inline]
