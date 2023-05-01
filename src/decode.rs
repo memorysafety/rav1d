@@ -2037,7 +2037,8 @@ unsafe extern "C" fn read_pal_uv(
         printf(b"]\n\0" as *const u8 as *const libc::c_char);
     }
 }
-unsafe extern "C" fn order_palette(
+
+unsafe fn order_palette(
     mut pal_idx: *const uint8_t,
     stride: ptrdiff_t,
     i: libc::c_int,
@@ -2182,6 +2183,7 @@ unsafe extern "C" fn order_palette(
         pal_idx = pal_idx.offset((stride - 1) as isize);
     }
 }
+
 unsafe extern "C" fn read_pal_indices(
     t: *mut Dav1dTaskContext,
     pal_idx: *mut uint8_t,
