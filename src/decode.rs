@@ -1143,7 +1143,7 @@ fn get_tx_ctx(
 }
 
 #[inline]
-unsafe fn get_partition_ctx(
+fn get_partition_ctx(
     a: &BlockContext,
     l: &BlockContext,
     bl: BlockLevel,
