@@ -1143,7 +1143,7 @@ fn get_tx_ctx(
 }
 
 #[inline]
-unsafe extern "C" fn get_partition_ctx(
+unsafe fn get_partition_ctx(
     a: *const BlockContext,
     l: *const BlockContext,
     bl: BlockLevel,
@@ -1158,6 +1158,7 @@ unsafe extern "C" fn get_partition_ctx(
             & 1)
             << 1);
 }
+
 #[inline]
 unsafe extern "C" fn gather_left_partition_prob(
     in_0: *const uint16_t,
