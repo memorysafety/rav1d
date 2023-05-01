@@ -2062,7 +2062,7 @@ unsafe fn order_palette(
         let mut o_idx = 0;
         let mut add = |v: u8| {
             assert!(v < 8);
-            order[o_idx as usize] = v;
+            order[o_idx] = v;
             o_idx += 1;
             mask |= 1 << v;
         };
@@ -2103,7 +2103,7 @@ unsafe fn order_palette(
         let mut bit = 0;
         while m < 0x100 {
             if mask & m == 0 {
-                order[o_idx as usize] = bit;
+                order[o_idx] = bit;
                 o_idx += 1;
             }
             m <<= 1;
