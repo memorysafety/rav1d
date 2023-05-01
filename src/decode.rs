@@ -1117,17 +1117,17 @@ unsafe fn get_intra_ctx(
     if have_left {
         if have_top {
             let ctx = l.intra[yb4 as usize] + a.intra[xb4 as usize];
-            return ctx + (ctx == 2) as u8;
+            ctx + (ctx == 2) as u8
         } else {
-            return l.intra[yb4 as usize] * 2;
+            l.intra[yb4 as usize] * 2
         }
     } else {
-        return if have_top {
+        if have_top {
             a.intra[xb4 as usize] * 2
         } else {
             0
-        };
-    };
+        }
+    }
 }
 
 #[inline]
