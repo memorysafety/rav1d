@@ -150,7 +150,7 @@ pub fn get_uv_inter_txtp(uvt_dim: &TxfmInfo, ytxtp: TxfmType) -> TxfmType {
 }
 
 #[inline]
-pub unsafe fn get_filter_ctx(
+pub fn get_filter_ctx(
     a: &BlockContext,
     l: &BlockContext,
     comp: libc::c_int,
@@ -185,7 +185,7 @@ pub unsafe fn get_filter_ctx(
 }
 
 #[inline]
-pub unsafe fn get_comp_ctx(
+pub fn get_comp_ctx(
     a: &BlockContext,
     l: &BlockContext,
     yb4: libc::c_int,
@@ -230,7 +230,7 @@ pub unsafe fn get_comp_ctx(
 }
 
 #[inline]
-pub unsafe fn get_comp_dir_ctx(
+pub fn get_comp_dir_ctx(
     a: &BlockContext,
     l: &BlockContext,
     yb4: libc::c_int,
@@ -324,7 +324,7 @@ pub fn get_poc_diff(
 }
 
 #[inline]
-pub unsafe fn get_jnt_comp_ctx(
+pub fn get_jnt_comp_ctx(
     order_hint_n_bits: libc::c_int,
     poc: libc::c_uint,
     ref0poc: libc::c_uint,
@@ -355,7 +355,7 @@ pub unsafe fn get_jnt_comp_ctx(
 }
 
 #[inline]
-pub unsafe fn get_mask_comp_ctx(
+pub fn get_mask_comp_ctx(
     a: &BlockContext,
     l: &BlockContext,
     yb4: libc::c_int,
@@ -379,7 +379,7 @@ pub unsafe fn get_mask_comp_ctx(
 }
 
 #[inline]
-pub unsafe fn av1_get_ref_ctx(
+pub fn av1_get_ref_ctx(
     a: &BlockContext,
     l: &BlockContext,
     yb4: libc::c_int,
@@ -410,7 +410,7 @@ pub unsafe fn av1_get_ref_ctx(
 }
 
 #[inline]
-pub unsafe fn av1_get_fwd_ref_ctx(
+pub fn av1_get_fwd_ref_ctx(
     a: &BlockContext,
     l: &BlockContext,
     yb4: libc::c_int,
@@ -451,7 +451,7 @@ pub unsafe fn av1_get_fwd_ref_ctx(
 }
 
 #[inline]
-pub unsafe fn av1_get_fwd_ref_1_ctx(
+pub fn av1_get_fwd_ref_1_ctx(
     a: &BlockContext,
     l: &BlockContext,
     yb4: libc::c_int,
@@ -490,7 +490,7 @@ pub unsafe fn av1_get_fwd_ref_1_ctx(
 }
 
 #[inline]
-pub unsafe fn av1_get_fwd_ref_2_ctx(
+pub fn av1_get_fwd_ref_2_ctx(
     a: &BlockContext,
     l: &BlockContext,
     yb4: libc::c_int,
@@ -529,7 +529,7 @@ pub unsafe fn av1_get_fwd_ref_2_ctx(
 }
 
 #[inline]
-pub unsafe fn av1_get_bwd_ref_ctx(
+pub fn av1_get_bwd_ref_ctx(
     a: &BlockContext,
     l: &BlockContext,
     yb4: libc::c_int,
@@ -569,7 +569,7 @@ pub unsafe fn av1_get_bwd_ref_ctx(
 }
 
 #[inline]
-pub unsafe fn av1_get_bwd_ref_1_ctx(
+pub fn av1_get_bwd_ref_1_ctx(
     a: &BlockContext,
     l: &BlockContext,
     yb4: libc::c_int,
@@ -608,7 +608,7 @@ pub unsafe fn av1_get_bwd_ref_1_ctx(
 }
 
 #[inline]
-pub unsafe fn av1_get_uni_p1_ctx(
+pub fn av1_get_uni_p1_ctx(
     a: &BlockContext,
     l: &BlockContext,
     yb4: libc::c_int,
