@@ -231,6 +231,10 @@ pub fn get_comp_dir_ctx(
     have_top: bool,
     have_left: bool,
 ) -> u8 {
+    let has_uni_comp = |edge: &BlockContext, off| {
+        (edge.r#ref[0][off as usize] < 4) == (edge.r#ref[1][off as usize] < 4)
+    };
+
     if have_top && have_left {
         let a_intra = a.intra[xb4 as usize] != 0;
         let l_intra = l.intra[yb4 as usize] != 0;
@@ -245,8 +249,7 @@ pub fn get_comp_dir_ctx(
             if edge.comp_type[off as usize] == COMP_INTER_NONE as u8 {
                 return 2;
             }
-            return 1 + 2
-                * ((edge.r#ref[0][off as usize] < 4) == (edge.r#ref[1][off as usize] < 4)) as u8;
+            return 1 + 2 * has_uni_comp(edge, off) as u8;
         }
 
         let a_comp = a.comp_type[xb4 as usize] != COMP_INTER_NONE as u8;
@@ -260,13 +263,13 @@ pub fn get_comp_dir_ctx(
             let edge = if a_comp { a } else { l };
             let off = if a_comp { xb4 } else { yb4 };
 
-            if !((edge.r#ref[0][off as usize] < 4) == (edge.r#ref[1][off as usize] < 4)) {
+            if !has_uni_comp(edge, off) {
                 return 1;
             }
             return 3 + ((a_ref0 >= 4) == (l_ref0 >= 4)) as u8;
         } else {
-            let a_uni = (a.r#ref[0][xb4 as usize] < 4) == (a.r#ref[1][xb4 as usize] < 4);
-            let l_uni = (l.r#ref[0][yb4 as usize] < 4) == (l.r#ref[1][yb4 as usize] < 4);
+            let a_uni = has_uni_comp(a, xb4);
+            let l_uni = has_uni_comp(l, yb4);
 
             if !a_uni && !l_uni {
                 return 0;
@@ -286,7 +289,7 @@ pub fn get_comp_dir_ctx(
         if edge.comp_type[off as usize] == COMP_INTER_NONE as u8 {
             return 2;
         }
-        return 4 * ((edge.r#ref[0][off as usize] < 4) == (edge.r#ref[1][off as usize] < 4)) as u8;
+        return 4 * has_uni_comp(edge, off) as u8;
     } else {
         return 2;
     };
