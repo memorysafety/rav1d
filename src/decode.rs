@@ -2607,6 +2607,7 @@ unsafe fn get_prev_frame_segid(
     stride: ptrdiff_t,
 ) -> libc::c_uint {
     assert!((*(*f).frame_hdr).primary_ref_frame != 7);
+
     let mut seg_id = 8;
     ref_seg_map = ref_seg_map.offset((by as isize * stride + bx as isize) as isize);
     loop {
@@ -2625,6 +2626,7 @@ unsafe fn get_prev_frame_segid(
         }
     }
     assert!(seg_id < 8);
+
     return seg_id;
 }
 
