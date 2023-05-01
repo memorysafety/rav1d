@@ -2611,13 +2611,11 @@ unsafe fn get_prev_frame_segid(
     let mut seg_id = 8;
     ref_seg_map = ref_seg_map.offset((by as isize * stride + bx as isize) as isize);
     loop {
-        let mut x = 0;
-        while x < w4 {
+        for x in 0..w4 {
             seg_id = imin(
                 seg_id as libc::c_int,
                 *ref_seg_map.offset(x as isize) as libc::c_int,
             ) as libc::c_uint;
-            x += 1;
         }
         ref_seg_map = ref_seg_map.offset(stride as isize);
         h4 -= 1;
