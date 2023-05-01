@@ -1113,17 +1113,17 @@ unsafe fn get_intra_ctx(
     xb4: libc::c_int,
     have_top: bool,
     have_left: bool,
-) -> libc::c_int {
+) -> u8 {
     if have_left {
         if have_top {
-            let ctx = l.intra[yb4 as usize] as libc::c_int + a.intra[xb4 as usize] as libc::c_int;
-            return ctx + (ctx == 2) as libc::c_int;
+            let ctx = l.intra[yb4 as usize] + a.intra[xb4 as usize];
+            return ctx + (ctx == 2) as u8;
         } else {
-            return l.intra[yb4 as usize] as libc::c_int * 2;
+            return l.intra[yb4 as usize] * 2;
         }
     } else {
         return if have_top {
-            a.intra[xb4 as usize] as libc::c_int * 2
+            a.intra[xb4 as usize] * 2
         } else {
             0
         };
@@ -4095,7 +4095,7 @@ unsafe fn decode_b(
             let ictx = get_intra_ctx(&*t.a, &t.l, by4, bx4, have_top != 0, have_left != 0);
             b.intra = (dav1d_msac_decode_bool_adapt(
                 &mut ts.msac,
-                ts.cdf.m.intra[ictx as usize].as_mut_ptr(),
+                ts.cdf.m.intra[ictx.into()].as_mut_ptr(),
             ) == 0) as uint8_t;
 
             if DEBUG_BLOCK_INFO(f, t) {
