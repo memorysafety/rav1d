@@ -1132,16 +1132,14 @@ fn get_intra_ctx(
 
 #[inline]
 unsafe fn get_tx_ctx(
-    a: *const BlockContext,
-    l: *const BlockContext,
-    max_tx: *const TxfmInfo,
+    a: &BlockContext,
+    l: &BlockContext,
+    max_tx: &TxfmInfo,
     yb4: libc::c_int,
     xb4: libc::c_int,
 ) -> libc::c_int {
-    return ((*l).tx_intra[yb4 as usize] as libc::c_int >= (*max_tx).lh as libc::c_int)
-        as libc::c_int
-        + ((*a).tx_intra[xb4 as usize] as libc::c_int >= (*max_tx).lw as libc::c_int)
-            as libc::c_int;
+    return (l.tx_intra[yb4 as usize] as libc::c_int >= max_tx.lh as libc::c_int) as libc::c_int
+        + (a.tx_intra[xb4 as usize] as libc::c_int >= max_tx.lw as libc::c_int) as libc::c_int;
 }
 
 #[inline]
@@ -4382,7 +4380,7 @@ unsafe fn decode_b(
                 == DAV1D_TX_SWITCHABLE as libc::c_int as libc::c_uint
                 && (*t_dim).max as libc::c_int > TX_4X4 as libc::c_int
             {
-                let tctx = get_tx_ctx(t.a, &mut t.l, t_dim, by4, bx4);
+                let tctx = get_tx_ctx(&*t.a, &t.l, &*t_dim, by4, bx4);
                 let tx_cdf: *mut uint16_t = (ts.cdf.m.txsz
                     [((*t_dim).max as libc::c_int - 1) as usize][tctx as usize])
                     .as_mut_ptr();
