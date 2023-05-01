@@ -1126,7 +1126,7 @@ unsafe fn get_intra_ctx(
         return if have_top != 0 {
             (*a).intra[xb4 as usize] as libc::c_int * 2
         } else {
-            0 as libc::c_int
+            0
         };
     };
 }
