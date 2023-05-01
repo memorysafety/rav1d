@@ -2048,6 +2048,7 @@ unsafe fn order_palette(
     ctx: &mut [u8; 64],
 ) {
     let mut have_top = i > first;
+
     assert!(!pal_idx.is_null());
     pal_idx = pal_idx.offset(first as isize + (i - first) as isize * stride);
     for ((ctx, order), j) in ctx
@@ -2056,6 +2057,7 @@ unsafe fn order_palette(
         .zip((last..=first).rev())
     {
         let have_left = j > 0;
+
         assert!(have_left || have_top);
 
         let mut mask = 0u8;
@@ -2081,6 +2083,7 @@ unsafe fn order_palette(
             let same_t_tl = t == tl;
             let same_l_tl = l == tl;
             let same_all = same_t_l & same_t_tl & same_l_tl;
+
             if same_all {
                 *ctx = 4;
                 add(t);
