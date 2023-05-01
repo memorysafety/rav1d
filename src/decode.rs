@@ -1144,16 +1144,16 @@ fn get_tx_ctx(
 
 #[inline]
 unsafe fn get_partition_ctx(
-    a: *const BlockContext,
-    l: *const BlockContext,
+    a: &BlockContext,
+    l: &BlockContext,
     bl: BlockLevel,
     yb8: libc::c_int,
     xb8: libc::c_int,
 ) -> libc::c_int {
-    return ((*a).partition[xb8 as usize] as libc::c_int
+    return (a.partition[xb8 as usize] as libc::c_int
         >> (4 as libc::c_int as libc::c_uint).wrapping_sub(bl as libc::c_uint)
         & 1)
-        + (((*l).partition[yb8 as usize] as libc::c_int
+        + ((l.partition[yb8 as usize] as libc::c_int
             >> (4 as libc::c_int as libc::c_uint).wrapping_sub(bl as libc::c_uint)
             & 1)
             << 1);
@@ -10245,7 +10245,7 @@ unsafe extern "C" fn decode_sb(
         }
         bx8 = ((*t).bx & 31) >> 1;
         by8 = ((*t).by & 31) >> 1;
-        ctx = get_partition_ctx((*t).a, &mut (*t).l, bl, by8, bx8);
+        ctx = get_partition_ctx(&*(*t).a, &(*t).l, bl, by8, bx8);
         pc = ((*ts).cdf.m.partition[bl as usize][ctx as usize]).as_mut_ptr();
     }
     if have_h_split != 0 && have_v_split != 0 {
