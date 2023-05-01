@@ -161,16 +161,13 @@ pub fn get_filter_ctx(
     yb4: libc::c_int,
     xb4: libc::c_int,
 ) -> u8 {
-    let a_filter = if a.r#ref[0][xb4 as usize] == r#ref || a.r#ref[1][xb4 as usize] == r#ref {
-        a.filter[dir as usize][xb4 as usize]
-    } else {
-        DAV1D_N_SWITCHABLE_FILTERS as u8
-    };
-    let l_filter = if l.r#ref[0][yb4 as usize] == r#ref || l.r#ref[1][yb4 as usize] == r#ref {
-        l.filter[dir as usize][yb4 as usize]
-    } else {
-        DAV1D_N_SWITCHABLE_FILTERS as u8
-    };
+    let [a_filter, l_filter] = [(a, xb4), (l, yb4)].map(|(al, b4)| {
+        if al.r#ref[0][b4 as usize] == r#ref || al.r#ref[1][b4 as usize] == r#ref {
+            al.filter[dir as usize][b4 as usize]
+        } else {
+            DAV1D_N_SWITCHABLE_FILTERS as u8
+        }
+    });
 
     (comp as u8) * 4
         + if a_filter == l_filter {
