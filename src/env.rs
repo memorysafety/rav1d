@@ -201,8 +201,7 @@ pub fn get_comp_ctx(
             } else if l.comp_type[yb4 as usize] != 0 {
                 2 + (a.r#ref[0][xb4 as usize] as libc::c_uint >= 4) as libc::c_int
             } else {
-                (l.r#ref[0][yb4 as usize] >= 4) as libc::c_int
-                    ^ (a.r#ref[0][xb4 as usize] >= 4) as libc::c_int
+                ((l.r#ref[0][yb4 as usize] >= 4) ^ (a.r#ref[0][xb4 as usize] >= 4)) as libc::c_int
             }
         } else {
             if a.comp_type[xb4 as usize] != 0 {
@@ -232,14 +231,14 @@ pub fn get_comp_dir_ctx(
     have_left: bool,
 ) -> libc::c_int {
     if have_top && have_left {
-        let a_intra = a.intra[xb4 as usize] as libc::c_int;
-        let l_intra = l.intra[yb4 as usize] as libc::c_int;
-        if a_intra != 0 && l_intra != 0 {
+        let a_intra = a.intra[xb4 as usize] != 0;
+        let l_intra = l.intra[yb4 as usize] != 0;
+        if a_intra && l_intra {
             return 2;
         }
-        if a_intra != 0 || l_intra != 0 {
-            let edge = if a_intra != 0 { l } else { a };
-            let off = if a_intra != 0 { yb4 } else { xb4 };
+        if a_intra || l_intra {
+            let edge = if a_intra { l } else { a };
+            let off = if a_intra { yb4 } else { xb4 };
             if edge.comp_type[off as usize] == COMP_INTER_NONE as u8 {
                 return 2;
             }
@@ -247,28 +246,26 @@ pub fn get_comp_dir_ctx(
                 * ((edge.r#ref[0][off as usize] < 4) == (edge.r#ref[1][off as usize] < 4))
                     as libc::c_int;
         }
-        let a_comp = (a.comp_type[xb4 as usize] != COMP_INTER_NONE as u8) as libc::c_int;
-        let l_comp = (l.comp_type[yb4 as usize] != COMP_INTER_NONE as u8) as libc::c_int;
-        let a_ref0 = a.r#ref[0][xb4 as usize] as libc::c_int;
-        let l_ref0 = l.r#ref[0][yb4 as usize] as libc::c_int;
-        if a_comp == 0 && l_comp == 0 {
+        let a_comp = a.comp_type[xb4 as usize] != COMP_INTER_NONE as u8;
+        let l_comp = l.comp_type[yb4 as usize] != COMP_INTER_NONE as u8;
+        let a_ref0 = a.r#ref[0][xb4 as usize];
+        let l_ref0 = l.r#ref[0][yb4 as usize];
+        if !a_comp && !l_comp {
             return 1 + 2 * ((a_ref0 >= 4) == (l_ref0 >= 4)) as libc::c_int;
-        } else if a_comp == 0 || l_comp == 0 {
-            let edge_0 = if a_comp != 0 { a } else { l };
-            let off_0 = if a_comp != 0 { xb4 } else { yb4 };
+        } else if !a_comp || !l_comp {
+            let edge_0 = if a_comp { a } else { l };
+            let off_0 = if a_comp { xb4 } else { yb4 };
             if !((edge_0.r#ref[0][off_0 as usize] < 4) == (edge_0.r#ref[1][off_0 as usize] < 4)) {
                 return 1;
             }
             return 3 + ((a_ref0 >= 4) == (l_ref0 >= 4)) as libc::c_int;
         } else {
-            let a_uni =
-                ((a.r#ref[0][xb4 as usize] < 4) == (a.r#ref[1][xb4 as usize] < 4)) as libc::c_int;
-            let l_uni =
-                ((l.r#ref[0][yb4 as usize] < 4) == (l.r#ref[1][yb4 as usize] < 4)) as libc::c_int;
-            if a_uni == 0 && l_uni == 0 {
+            let a_uni = (a.r#ref[0][xb4 as usize] < 4) == (a.r#ref[1][xb4 as usize] < 4);
+            let l_uni = (l.r#ref[0][yb4 as usize] < 4) == (l.r#ref[1][yb4 as usize] < 4);
+            if !a_uni && !l_uni {
                 return 0;
             }
-            if a_uni == 0 || l_uni == 0 {
+            if !a_uni || !l_uni {
                 return 2;
             }
             return 3 + ((a_ref0 == 4) == (l_ref0 == 4)) as libc::c_int;
@@ -327,12 +324,10 @@ pub fn get_jnt_comp_ctx(
         ref1poc as libc::c_int,
     )
     .abs() as libc::c_uint;
-    let offset = (d0 == d1) as libc::c_int;
-    let a_ctx = (a.comp_type[xb4 as usize] >= COMP_INTER_AVG as u8 || a.r#ref[0][xb4 as usize] == 6)
-        as libc::c_int;
-    let l_ctx = (l.comp_type[yb4 as usize] >= COMP_INTER_AVG as u8 || l.r#ref[0][yb4 as usize] == 6)
-        as libc::c_int;
-    3 * offset + a_ctx + l_ctx
+    let offset = d0 == d1;
+    let a_ctx = a.comp_type[xb4 as usize] >= COMP_INTER_AVG as u8 || a.r#ref[0][xb4 as usize] == 6;
+    let l_ctx = l.comp_type[yb4 as usize] >= COMP_INTER_AVG as u8 || l.r#ref[0][yb4 as usize] == 6;
+    3 * (offset as libc::c_int) + (a_ctx as libc::c_int) + (l_ctx as libc::c_int)
 }
 
 #[inline]
