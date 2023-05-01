@@ -631,17 +631,17 @@ pub unsafe fn get_cur_frame_segid(
         } else {
             *seg_ctx = 0;
         }
-        return (if a == al { a } else { l }) as libc::c_uint;
+        (if a == al { a } else { l }) as libc::c_uint
     } else {
         *seg_ctx = 0;
-        return (if have_left {
+        (if have_left {
             *cur_seg_map.offset(-1)
         } else if have_top {
             *cur_seg_map.offset(-stride as isize)
         } else {
             0
-        }) as libc::c_uint;
-    };
+        }) as libc::c_uint
+    }
 }
 
 #[inline]
