@@ -245,14 +245,14 @@ pub unsafe fn get_comp_dir_ctx(
             return 2 as libc::c_int;
         }
         if a_intra != 0 || l_intra != 0 {
-            let edge: *const BlockContext = if a_intra != 0 { l } else { a };
+            let edge = if a_intra != 0 { l } else { a };
             let off = if a_intra != 0 { yb4 } else { xb4 };
-            if (*edge).comp_type[off as usize] as libc::c_int == COMP_INTER_NONE as libc::c_int {
+            if edge.comp_type[off as usize] as libc::c_int == COMP_INTER_NONE as libc::c_int {
                 return 2 as libc::c_int;
             }
             return 1 as libc::c_int
-                + 2 * ((((*edge).r#ref[0][off as usize] as libc::c_int) < 4) as libc::c_int
-                    == (((*edge).r#ref[1][off as usize] as libc::c_int) < 4) as libc::c_int)
+                + 2 * (((edge.r#ref[0][off as usize] as libc::c_int) < 4) as libc::c_int
+                    == ((edge.r#ref[1][off as usize] as libc::c_int) < 4) as libc::c_int)
                     as libc::c_int;
         }
         let a_comp = (a.comp_type[xb4 as usize] as libc::c_int != COMP_INTER_NONE as libc::c_int)
@@ -266,10 +266,10 @@ pub unsafe fn get_comp_dir_ctx(
                 + 2 * ((a_ref0 >= 4) as libc::c_int == (l_ref0 >= 4) as libc::c_int)
                     as libc::c_int;
         } else if a_comp == 0 || l_comp == 0 {
-            let edge_0: *const BlockContext = if a_comp != 0 { a } else { l };
+            let edge_0 = if a_comp != 0 { a } else { l };
             let off_0 = if a_comp != 0 { xb4 } else { yb4 };
-            if !((((*edge_0).r#ref[0][off_0 as usize] as libc::c_int) < 4) as libc::c_int
-                == (((*edge_0).r#ref[1][off_0 as usize] as libc::c_int) < 4) as libc::c_int)
+            if !(((edge_0.r#ref[0][off_0 as usize] as libc::c_int) < 4) as libc::c_int
+                == ((edge_0.r#ref[1][off_0 as usize] as libc::c_int) < 4) as libc::c_int)
             {
                 return 1 as libc::c_int;
             }
@@ -292,17 +292,17 @@ pub unsafe fn get_comp_dir_ctx(
                 + ((a_ref0 == 4) as libc::c_int == (l_ref0 == 4) as libc::c_int) as libc::c_int;
         }
     } else if have_top || have_left {
-        let edge_1: *const BlockContext = if have_left { l } else { a };
+        let edge_1 = if have_left { l } else { a };
         let off_1 = if have_left { yb4 } else { xb4 };
-        if (*edge_1).intra[off_1 as usize] != 0 {
+        if edge_1.intra[off_1 as usize] != 0 {
             return 2 as libc::c_int;
         }
-        if (*edge_1).comp_type[off_1 as usize] as libc::c_int == COMP_INTER_NONE as libc::c_int {
+        if edge_1.comp_type[off_1 as usize] as libc::c_int == COMP_INTER_NONE as libc::c_int {
             return 2 as libc::c_int;
         }
         return 4 as libc::c_int
-            * ((((*edge_1).r#ref[0][off_1 as usize] as libc::c_int) < 4) as libc::c_int
-                == (((*edge_1).r#ref[1][off_1 as usize] as libc::c_int) < 4) as libc::c_int)
+            * (((edge_1.r#ref[0][off_1 as usize] as libc::c_int) < 4) as libc::c_int
+                == ((edge_1.r#ref[1][off_1 as usize] as libc::c_int) < 4) as libc::c_int)
                 as libc::c_int;
     } else {
         return 2 as libc::c_int;
