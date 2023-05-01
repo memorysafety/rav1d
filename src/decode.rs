@@ -1154,49 +1154,36 @@ fn get_partition_ctx(
 }
 
 #[inline]
-unsafe extern "C" fn gather_left_partition_prob(
-    in_0: *const uint16_t,
-    bl: BlockLevel,
-) -> libc::c_uint {
-    let mut out: libc::c_uint = (*in_0.offset((PARTITION_H as libc::c_int - 1) as isize)
-        as libc::c_int
-        - *in_0.offset(PARTITION_H as libc::c_int as isize) as libc::c_int)
-        as libc::c_uint;
-    out = out.wrapping_add(
-        (*in_0.offset((PARTITION_SPLIT as libc::c_int - 1) as isize) as libc::c_int
-            - *in_0.offset(PARTITION_T_LEFT_SPLIT as libc::c_int as isize) as libc::c_int)
-            as libc::c_uint,
-    );
-    if bl as libc::c_uint != BL_128X128 as libc::c_int as libc::c_uint {
-        out = out.wrapping_add(
-            (*in_0.offset((PARTITION_H4 - 1) as isize) as libc::c_int
-                - *in_0.offset(PARTITION_H4 as libc::c_int as isize) as libc::c_int)
-                as libc::c_uint,
-        );
+fn gather_left_partition_prob(r#in: &[u16; 16], bl: BlockLevel) -> u32 {
+    let mut out = r#in[(PARTITION_H - 1) as usize] as i32 - r#in[PARTITION_H as usize] as i32;
+    // Exploit the fact that cdfs for PARTITION_SPLIT, PARTITION_T_TOP_SPLIT,
+    // PARTITION_T_BOTTOM_SPLIT and PARTITION_T_LEFT_SPLIT are neighbors.
+    out +=
+        r#in[(PARTITION_SPLIT - 1) as usize] as i32 - r#in[PARTITION_T_LEFT_SPLIT as usize] as i32;
+    if bl != BL_128X128 {
+        out += r#in[(PARTITION_H4 - 1) as usize] as i32 - r#in[PARTITION_H4 as usize] as i32;
     }
-    return out;
+    out as u32
 }
+
 #[inline]
-unsafe extern "C" fn gather_top_partition_prob(
-    in_0: *const uint16_t,
-    bl: BlockLevel,
-) -> libc::c_uint {
-    let mut out: libc::c_uint = (*in_0.offset((PARTITION_V as libc::c_int - 1) as isize)
-        as libc::c_int
-        - *in_0.offset(PARTITION_T_TOP_SPLIT as libc::c_int as isize) as libc::c_int)
-        as libc::c_uint;
-    out = out.wrapping_add(
-        *in_0.offset((PARTITION_T_LEFT_SPLIT as libc::c_int - 1) as isize) as libc::c_uint,
-    );
-    if bl as libc::c_uint != BL_128X128 as libc::c_int as libc::c_uint {
-        out = out.wrapping_add(
-            (*in_0.offset((PARTITION_V4 - 1) as isize) as libc::c_int
-                - *in_0.offset(PARTITION_T_RIGHT_SPLIT as libc::c_int as isize) as libc::c_int)
-                as libc::c_uint,
-        );
+fn gather_top_partition_prob(r#in: &[u16; 16], bl: BlockLevel) -> u32 {
+    // Exploit the fact that cdfs for PARTITION_V, PARTITION_SPLIT and
+    // PARTITION_T_TOP_SPLIT are neighbors.
+    let mut out =
+        r#in[(PARTITION_V - 1) as usize] as i32 - r#in[PARTITION_T_TOP_SPLIT as usize] as i32;
+    // Exploit the facts that cdfs for PARTITION_T_LEFT_SPLIT and
+    // PARTITION_T_RIGHT_SPLIT are neighbors, the probability for
+    // PARTITION_V4 is always zero, and the probability for
+    // PARTITION_T_RIGHT_SPLIT is zero in 128x128 blocks.
+    out += r#in[(PARTITION_T_LEFT_SPLIT - 1) as usize] as i32;
+    if bl != BL_128X128 {
+        out += r#in[(PARTITION_V4 - 1) as usize] as i32
+            - r#in[PARTITION_T_RIGHT_SPLIT as usize] as i32;
     }
-    return out;
+    out as u32
 }
+
 #[inline]
 unsafe extern "C" fn get_filter_ctx(
     a: *const BlockContext,
@@ -10221,7 +10208,7 @@ unsafe extern "C" fn decode_sb(
             (*(node as *const EdgeBranch)).split[0],
         );
     }
-    let mut pc: *mut uint16_t = 0 as *mut uint16_t;
+    let mut pc = &mut Default::default();
     let mut bp: BlockPartition = PARTITION_NONE;
     let mut ctx = 0;
     let mut bx8 = 0;
@@ -10240,7 +10227,7 @@ unsafe extern "C" fn decode_sb(
         bx8 = ((*t).bx & 31) >> 1;
         by8 = ((*t).by & 31) >> 1;
         ctx = get_partition_ctx(&*(*t).a, &(*t).l, bl, by8, bx8);
-        pc = ((*ts).cdf.m.partition[bl as usize][ctx as usize]).as_mut_ptr();
+        pc = &mut (*ts).cdf.m.partition[bl as usize][ctx as usize];
     }
     if have_h_split != 0 && have_v_split != 0 {
         if (*t).frame_thread.pass == 2 {
@@ -10255,7 +10242,7 @@ unsafe extern "C" fn decode_sb(
         } else {
             bp = dav1d_msac_decode_symbol_adapt16(
                 &mut (*ts).msac,
-                pc,
+                pc.as_mut_ptr(),
                 dav1d_partition_type_count[bl as usize] as size_t,
             ) as BlockPartition;
             if (*f).cur.p.layout as libc::c_uint
