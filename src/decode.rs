@@ -3585,7 +3585,7 @@ unsafe fn decode_b(
                     b.cfl_alpha_mut()[1] = 1 + dav1d_msac_decode_symbol_adapt16(
                         &mut ts.msac,
                         (ts.cdf.m.cfl_alpha[ctx]).as_mut_ptr(),
-                        15 as libc::c_int as size_t,
+                        15,
                     ) as i8;
 
                     if sign_v == 1 {
