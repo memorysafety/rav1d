@@ -3539,7 +3539,7 @@ unsafe fn decode_b(
             let cfl_allowed = if frame_hdr.segmentation.lossless[b.seg_id as usize] != 0 {
                 cbw4 == 1 && cbh4 == 1
             } else {
-                cfl_allowed_mask & (1 << bs) != 0
+                (cfl_allowed_mask & (1 << bs)) != 0
             };
 
             let uvmode_cdf = &mut ts.cdf.m.uv_mode[cfl_allowed as usize][b.y_mode() as usize];
