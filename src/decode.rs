@@ -3543,7 +3543,7 @@ unsafe fn decode_b(
             };
 
             let uvmode_cdf = &mut ts.cdf.m.uv_mode[cfl_allowed as usize][b.y_mode() as usize];
-            b.c2rust_unnamed.c2rust_unnamed.uv_mode = dav1d_msac_decode_symbol_adapt16(
+            *b.uv_mode_mut() = dav1d_msac_decode_symbol_adapt16(
                 &mut ts.msac,
                 uvmode_cdf.as_mut_ptr(),
                 N_UV_INTRA_PRED_MODES as size_t - 1 - (!cfl_allowed) as size_t,
@@ -3554,7 +3554,7 @@ unsafe fn decode_b(
             }
 
             *b.uv_angle_mut() = 0;
-            if b.uv_mode() as u32 == CFL_PRED {
+            if b.uv_mode() == CFL_PRED as u8 {
                 let sign = dav1d_msac_decode_symbol_adapt8(
                     &mut ts.msac,
                     ts.cdf.m.cfl_sign.0.as_mut_ptr(),
@@ -3567,11 +3567,12 @@ unsafe fn decode_b(
 
                 if sign_u != 0 {
                     let ctx = (sign_u == 2) as usize * 3 + sign_v as usize;
-                    b.cfl_alpha_mut()[0] = 1 + dav1d_msac_decode_symbol_adapt16(
+                    b.cfl_alpha_mut()[0] = dav1d_msac_decode_symbol_adapt16(
                         &mut ts.msac,
                         ts.cdf.m.cfl_alpha[ctx].as_mut_ptr(),
                         15,
-                    ) as i8;
+                    ) as i8
+                        + 1;
 
                     if sign_u == 1 {
                         b.cfl_alpha_mut()[0] = -b.cfl_alpha()[0];
@@ -3582,11 +3583,12 @@ unsafe fn decode_b(
 
                 if sign_v != 0 {
                     let ctx = (sign_v == 2) as usize * 3 + sign_u as usize;
-                    b.cfl_alpha_mut()[1] = 1 + dav1d_msac_decode_symbol_adapt16(
+                    b.cfl_alpha_mut()[1] = dav1d_msac_decode_symbol_adapt16(
                         &mut ts.msac,
                         (ts.cdf.m.cfl_alpha[ctx]).as_mut_ptr(),
                         15,
-                    ) as i8;
+                    ) as i8
+                        + 1;
 
                     if sign_v == 1 {
                         b.cfl_alpha_mut()[1] = -b.cfl_alpha()[1];
