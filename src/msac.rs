@@ -130,6 +130,9 @@ unsafe extern "C" fn msac_init_x86(s: &mut MsacContext) {
 #[cfg(all(feature = "asm", target_arch = "x86_64"))]
 use crate::src::cpu::dav1d_get_cpu_flags;
 
+const EC_PROB_SHIFT: libc::c_uint = 6;
+const EC_MIN_PROB: libc::c_uint = 4; // must be <= (1 << EC_PROB_SHIFT) / 16
+
 const EC_WIN_SIZE: usize = mem::size_of::<ec_win>() << 3;
 
 #[inline]
@@ -165,7 +168,7 @@ unsafe fn dav1d_msac_decode_bool_equi_rust(s: &mut MsacContext) -> libc::c_uint 
     let r = s.rng;
     let mut dif = s.dif;
     assert!(dif >> EC_WIN_SIZE.wrapping_sub(16) < r as size_t);
-    let mut v = ((r >> 8) << 7).wrapping_add(4);
+    let mut v = ((r >> 8) << 7).wrapping_add(EC_MIN_PROB);
     let vw = (v as ec_win) << EC_WIN_SIZE.wrapping_sub(16);
     let ret = (dif >= vw) as libc::c_uint;
     dif = dif.wrapping_sub((ret as size_t).wrapping_mul(vw)) as ec_win as ec_win;
@@ -178,7 +181,8 @@ unsafe fn dav1d_msac_decode_bool_rust(s: &mut MsacContext, f: libc::c_uint) -> l
     let r = s.rng;
     let mut dif = s.dif;
     assert!(dif >> EC_WIN_SIZE.wrapping_sub(16) < r as size_t);
-    let mut v = ((r >> 8).wrapping_mul(f >> 6) >> 7 - 6).wrapping_add(4);
+    let mut v = ((r >> 8).wrapping_mul(f >> EC_PROB_SHIFT) >> (7 - EC_PROB_SHIFT))
+        .wrapping_add(EC_MIN_PROB);
     let vw = (v as ec_win) << EC_WIN_SIZE.wrapping_sub(16);
     let ret = (dif >= vw) as libc::c_uint;
     dif = (dif).wrapping_sub((ret as size_t).wrapping_mul(vw)) as ec_win as ec_win;
@@ -225,11 +229,9 @@ unsafe fn dav1d_msac_decode_symbol_adapt_rust(
     loop {
         val = val.wrapping_add(1);
         u = v;
-        v = r.wrapping_mul((cdf[val as usize] >> 6) as libc::c_uint);
-        v >>= 7 - 6;
-        v = v.wrapping_add(
-            (4 as libc::c_uint).wrapping_mul((n_symbols as libc::c_uint).wrapping_sub(val)),
-        );
+        v = r.wrapping_mul((cdf[val as usize] >> EC_PROB_SHIFT) as libc::c_uint);
+        v >>= 7 - EC_PROB_SHIFT;
+        v = v.wrapping_add(EC_MIN_PROB.wrapping_mul((n_symbols as libc::c_uint).wrapping_sub(val)));
         if !(c < v) {
             break;
         }
