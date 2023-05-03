@@ -1,3 +1,4 @@
+use crate::include::common::intops::ulog2;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use ::libc;
@@ -84,6 +85,29 @@ pub unsafe extern "C" fn dav1d_msac_decode_bools(
         v = v << 1 | dav1d_msac_decode_bool_equi(s);
     }
     v
+}
+
+#[inline]
+pub unsafe extern "C" fn dav1d_msac_decode_uniform(
+    s: *mut MsacContext,
+    n: libc::c_uint,
+) -> libc::c_int {
+    if !(n > 0 as libc::c_uint) {
+        unreachable!();
+    }
+    let l = ulog2(n) + 1;
+    if !(l > 1) {
+        unreachable!();
+    }
+    let m: libc::c_uint = (((1 as libc::c_int) << l) as libc::c_uint).wrapping_sub(n);
+    let v: libc::c_uint = dav1d_msac_decode_bools(s, (l - 1) as libc::c_uint);
+    return (if v < m {
+        v
+    } else {
+        (v << 1)
+            .wrapping_sub(m)
+            .wrapping_add(dav1d_msac_decode_bool_equi(s))
+    }) as libc::c_int;
 }
 
 #[cfg(all(feature = "asm", target_arch = "x86_64"))]
