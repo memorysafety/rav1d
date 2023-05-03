@@ -250,14 +250,11 @@ unsafe fn dav1d_msac_decode_symbol_adapt_rust(
         let rate = (4 as libc::c_uint)
             .wrapping_add(count >> 4)
             .wrapping_add((n_symbols > 2) as u32);
-        let mut i = 0;
-        while i < val {
+        for i in 0..val {
             cdf[i as usize] += (1 << 15) - cdf[i as usize] >> rate;
-            i = i.wrapping_add(1);
         }
-        while (i as size_t) < n_symbols {
+        for i in val..n_symbols as libc::c_uint {
             cdf[i as usize] -= cdf[i as usize] >> rate;
-            i = i.wrapping_add(1);
         }
         cdf[n_symbols] = count.wrapping_add((count < 32) as libc::c_uint) as uint16_t;
     }
