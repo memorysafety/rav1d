@@ -252,7 +252,7 @@ unsafe fn dav1d_msac_decode_symbol_adapt_rust(
             .wrapping_add((n_symbols > 2) as u32);
         let mut i = 0;
         while i < val {
-            cdf[i as usize] += 32768 - cdf[i as usize] >> rate;
+            cdf[i as usize] += (1 << 15) - cdf[i as usize] >> rate;
             i = i.wrapping_add(1);
         }
         while (i as size_t) < n_symbols {
@@ -289,7 +289,7 @@ unsafe fn dav1d_msac_decode_bool_adapt_rust(
         let count = cdf[1] as libc::c_uint;
         let rate = (4 as libc::c_uint).wrapping_add(count >> 4) as libc::c_int;
         if bit != 0 {
-            cdf[0] += 32768 - cdf[0] >> rate;
+            cdf[0] += (1 << 15) - cdf[0] >> rate;
         } else {
             cdf[0] -= cdf[0] >> rate;
         }
