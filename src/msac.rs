@@ -88,13 +88,9 @@ pub unsafe fn dav1d_msac_decode_bools(s: &mut MsacContext, n: libc::c_uint) -> l
 
 #[inline]
 pub unsafe fn dav1d_msac_decode_uniform(s: &mut MsacContext, n: libc::c_uint) -> libc::c_int {
-    if !(n > 0) {
-        unreachable!();
-    }
+    assert!(n > 0);
     let l = ulog2(n) + 1;
-    if !(l > 1) {
-        unreachable!();
-    }
+    assert!(l > 1);
     let m = ((1 << l) as libc::c_uint).wrapping_sub(n);
     let v = dav1d_msac_decode_bools(s, (l - 1) as libc::c_uint);
     return (if v < m {
@@ -152,9 +148,7 @@ unsafe extern "C" fn ctx_refill(s: &mut MsacContext) {
 #[inline]
 unsafe extern "C" fn ctx_norm(s: &mut MsacContext, dif: ec_win, rng: libc::c_uint) {
     let d = 15 ^ (31 ^ clz(rng));
-    if !(rng <= 65535) {
-        unreachable!();
-    }
+    assert!(rng <= 65535);
     s.cnt -= d;
     s.dif = (dif.wrapping_add(1) << d).wrapping_sub(1);
     s.rng = rng << d;
@@ -166,9 +160,7 @@ unsafe extern "C" fn ctx_norm(s: &mut MsacContext, dif: ec_win, rng: libc::c_uin
 unsafe fn dav1d_msac_decode_bool_equi_rust(s: &mut MsacContext) -> libc::c_uint {
     let r = s.rng;
     let mut dif = s.dif;
-    if !(dif >> EC_WIN_SIZE.wrapping_sub(16) < r as size_t) {
-        unreachable!();
-    }
+    assert!(dif >> EC_WIN_SIZE.wrapping_sub(16) < r as size_t);
     let mut v = ((r >> 8) << 7).wrapping_add(4);
     let vw = (v as ec_win) << EC_WIN_SIZE.wrapping_sub(16);
     let ret = (dif >= vw) as libc::c_uint;
@@ -181,9 +173,7 @@ unsafe fn dav1d_msac_decode_bool_equi_rust(s: &mut MsacContext) -> libc::c_uint 
 unsafe fn dav1d_msac_decode_bool_rust(s: &mut MsacContext, f: libc::c_uint) -> libc::c_uint {
     let r = s.rng;
     let mut dif = s.dif;
-    if !(dif >> EC_WIN_SIZE.wrapping_sub(16) < r as size_t) {
-        unreachable!();
-    }
+    assert!(dif >> EC_WIN_SIZE.wrapping_sub(16) < r as size_t);
     let mut v = ((r >> 8).wrapping_mul(f >> 6) >> 7 - 6).wrapping_add(4);
     let vw = (v as ec_win) << EC_WIN_SIZE.wrapping_sub(16);
     let ret = (dif >= vw) as libc::c_uint;
@@ -199,9 +189,7 @@ pub unsafe fn dav1d_msac_decode_subexp(
     n: libc::c_int,
     mut k: libc::c_uint,
 ) -> libc::c_int {
-    if !(n >> k == 8) {
-        unreachable!();
-    }
+    assert!(n >> k == 8);
     let mut a = 0;
     if dav1d_msac_decode_bool_equi(s) != 0 {
         if dav1d_msac_decode_bool_equi(s) != 0 {
@@ -228,12 +216,8 @@ unsafe fn dav1d_msac_decode_symbol_adapt_rust(
     let mut u = 0;
     let mut v = s.rng;
     let mut val = -(1 as libc::c_int) as libc::c_uint;
-    if !(n_symbols <= 15) {
-        unreachable!();
-    }
-    if !(cdf[n_symbols] <= 32) {
-        unreachable!();
-    }
+    assert!(n_symbols <= 15);
+    assert!(cdf[n_symbols] <= 32);
     loop {
         val = val.wrapping_add(1);
         u = v;
@@ -246,9 +230,7 @@ unsafe fn dav1d_msac_decode_symbol_adapt_rust(
             break;
         }
     }
-    if !(u <= s.rng) {
-        unreachable!();
-    }
+    assert!(u <= s.rng);
     ctx_norm(
         s,
         (s.dif).wrapping_sub((v as ec_win) << EC_WIN_SIZE.wrapping_sub(16)),
