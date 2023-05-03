@@ -99,17 +99,15 @@ pub unsafe fn dav1d_msac_decode_bools(s: &mut MsacContext, n: libc::c_uint) -> l
 #[inline]
 pub unsafe fn dav1d_msac_decode_uniform(s: &mut MsacContext, n: libc::c_uint) -> libc::c_int {
     assert!(n > 0);
-    let l = ulog2(n) + 1;
+    let l = ulog2(n) as libc::c_uint + 1;
     assert!(l > 1);
-    let m = ((1 << l) as libc::c_uint).wrapping_sub(n);
-    let v = dav1d_msac_decode_bools(s, (l - 1) as libc::c_uint);
-    return (if v < m {
+    let m = (1 << l) - n;
+    let v = dav1d_msac_decode_bools(s, l - 1);
+    (if v < m {
         v
     } else {
-        (v << 1)
-            .wrapping_sub(m)
-            .wrapping_add(dav1d_msac_decode_bool_equi(s))
-    }) as libc::c_int;
+        (v << 1) - m + dav1d_msac_decode_bool_equi(s)
+    }) as libc::c_int
 }
 
 #[cfg(all(feature = "asm", target_arch = "x86_64"))]
