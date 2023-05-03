@@ -120,16 +120,10 @@ unsafe extern "C" fn msac_init_x86(s: &mut MsacContext) {
 
     let flags = dav1d_get_cpu_flags();
     if flags & DAV1D_X86_CPU_FLAG_SSE2 != 0 {
-        s.symbol_adapt16 = Some(
-            dav1d_msac_decode_symbol_adapt16_sse2
-                as unsafe extern "C" fn(*mut MsacContext, *mut uint16_t, size_t) -> libc::c_uint,
-        );
+        s.symbol_adapt16 = Some(dav1d_msac_decode_symbol_adapt16_sse2);
     }
     if flags & DAV1D_X86_CPU_FLAG_AVX2 != 0 {
-        s.symbol_adapt16 = Some(
-            dav1d_msac_decode_symbol_adapt16_avx2
-                as unsafe extern "C" fn(*mut MsacContext, *mut uint16_t, size_t) -> libc::c_uint,
-        );
+        s.symbol_adapt16 = Some(dav1d_msac_decode_symbol_adapt16_avx2);
     }
 }
 
@@ -332,10 +326,7 @@ pub unsafe fn dav1d_msac_init(
 
     #[cfg(all(feature = "asm", target_arch = "x86_64"))]
     {
-        s.symbol_adapt16 = Some(
-            dav1d_msac_decode_symbol_adapt_c
-                as unsafe extern "C" fn(*mut MsacContext, *mut uint16_t, size_t) -> libc::c_uint,
-        );
+        s.symbol_adapt16 = Some(dav1d_msac_decode_symbol_adapt_c);
         msac_init_x86(s);
     }
 }
