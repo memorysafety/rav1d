@@ -3530,7 +3530,7 @@ unsafe fn decode_b(
         {
             let acdf = &mut ts.cdf.m.angle_delta[b.y_mode() as usize - VERT_PRED as usize];
             let angle = dav1d_msac_decode_symbol_adapt8(&mut ts.msac, acdf.as_mut_ptr(), 6);
-            *b.y_angle_mut() = (angle - 3) as int8_t;
+            *b.y_angle_mut() = angle as int8_t - 3;
         } else {
             *b.y_angle_mut() = 0;
         }
