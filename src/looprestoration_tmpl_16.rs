@@ -1093,8 +1093,16 @@ unsafe extern "C" fn loop_restoration_dsp_init_arm(
         return;
     }
 
-    (*c).wiener[0] = Some(dav1d_wiener_filter7_16bpc_neon);
-    (*c).wiener[1] = Some(dav1d_wiener_filter5_16bpc_neon);
+    cfg_if::cfg_if! {
+        if #[cfg(target_arch = "aarch64")] {
+            (*c).wiener[0] = Some(dav1d_wiener_filter7_16bpc_neon);
+            (*c).wiener[1] = Some(dav1d_wiener_filter5_16bpc_neon);
+        } else {
+            // TODO(perl): enable assembly routines here
+            // (*c).wiener[0] = Some(dav1d_wiener_filter_neon);
+            // (*c).wiener[1] = Some(dav1d_wiener_filter_neon);
+        }
+    }
 
     if bpc == 10 {
         (*c).sgr[0] = Some(sgr_filter_5x5_neon);
