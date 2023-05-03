@@ -310,7 +310,10 @@ unsafe extern "C" fn dav1d_msac_decode_symbol_adapt_c(
     dav1d_msac_decode_symbol_adapt_rust(&mut *s, cdf, n_symbols)
 }
 
-unsafe fn dav1d_msac_decode_bool_adapt_rust(s: &mut MsacContext, cdf: &mut [u16]) -> libc::c_uint {
+unsafe fn dav1d_msac_decode_bool_adapt_rust(
+    s: &mut MsacContext,
+    cdf: &mut [u16; 2],
+) -> libc::c_uint {
     let bit: libc::c_uint = dav1d_msac_decode_bool(s, cdf[0] as libc::c_uint);
     if s.allow_update_cdf != 0 {
         let count: libc::c_uint = cdf[1] as libc::c_uint;
@@ -326,7 +329,7 @@ unsafe fn dav1d_msac_decode_bool_adapt_rust(s: &mut MsacContext, cdf: &mut [u16]
     return bit;
 }
 
-unsafe fn dav1d_msac_decode_hi_tok_rust(s: &mut MsacContext, cdf: &mut [u16]) -> libc::c_uint {
+unsafe fn dav1d_msac_decode_hi_tok_rust(s: &mut MsacContext, cdf: &mut [u16; 4]) -> libc::c_uint {
     let mut tok_br: libc::c_uint =
         dav1d_msac_decode_symbol_adapt4(s, cdf, 3 as libc::c_int as size_t);
     let mut tok: libc::c_uint = (3 as libc::c_int as libc::c_uint).wrapping_add(tok_br);
@@ -421,7 +424,10 @@ pub unsafe fn dav1d_msac_decode_symbol_adapt16(
     }
 }
 
-pub unsafe fn dav1d_msac_decode_bool_adapt(s: &mut MsacContext, cdf: &mut [u16]) -> libc::c_uint {
+pub unsafe fn dav1d_msac_decode_bool_adapt(
+    s: &mut MsacContext,
+    cdf: &mut [u16; 2],
+) -> libc::c_uint {
     cfg_if! {
         if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
             dav1d_msac_decode_bool_adapt_sse2(s, cdf.as_mut_ptr())
@@ -457,7 +463,7 @@ pub unsafe fn dav1d_msac_decode_bool(s: &mut MsacContext, f: libc::c_uint) -> li
     }
 }
 
-pub unsafe fn dav1d_msac_decode_hi_tok(s: &mut MsacContext, cdf: &mut [u16]) -> libc::c_uint {
+pub unsafe fn dav1d_msac_decode_hi_tok(s: &mut MsacContext, cdf: &mut [u16; 4]) -> libc::c_uint {
     cfg_if! {
         if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
              dav1d_msac_decode_hi_tok_sse2(s, cdf.as_mut_ptr())
