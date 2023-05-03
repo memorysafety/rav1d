@@ -320,14 +320,14 @@ pub unsafe fn dav1d_msac_init(
     s: &mut MsacContext,
     data: *const uint8_t,
     sz: size_t,
-    disable_cdf_update_flag: libc::c_int,
+    disable_cdf_update_flag: bool,
 ) {
     s.buf_pos = data;
     s.buf_end = data.offset(sz as isize);
     s.dif = ((1 as ec_win) << EC_WIN_SIZE.wrapping_sub(1)).wrapping_sub(1);
     s.rng = 0x8000;
     s.cnt = -15;
-    s.set_allow_update_cdf(disable_cdf_update_flag == 0);
+    s.set_allow_update_cdf(!disable_cdf_update_flag);
     ctx_refill(s);
 
     #[cfg(all(feature = "asm", target_arch = "x86_64"))]

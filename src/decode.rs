@@ -7907,7 +7907,7 @@ unsafe extern "C" fn setup_tile(
         &mut (*ts).msac,
         data,
         sz,
-        (*(*f).frame_hdr).disable_cdf_update,
+        (*(*f).frame_hdr).disable_cdf_update != 0,
     );
     (*ts).tiling.row = tile_row;
     (*ts).tiling.col = tile_col;
