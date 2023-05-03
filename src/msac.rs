@@ -211,7 +211,7 @@ pub unsafe fn dav1d_msac_decode_subexp(
     return ret;
 }
 
-pub unsafe extern "C" fn dav1d_msac_decode_symbol_adapt_c(
+unsafe fn dav1d_msac_decode_symbol_adapt_rust(
     s: *mut MsacContext,
     cdf: *mut uint16_t,
     n_symbols: size_t,
@@ -279,6 +279,14 @@ pub unsafe extern "C" fn dav1d_msac_decode_symbol_adapt_c(
             as uint16_t;
     }
     return val;
+}
+
+pub unsafe extern "C" fn dav1d_msac_decode_symbol_adapt_c(
+    s: *mut MsacContext,
+    cdf: *mut uint16_t,
+    n_symbols: size_t,
+) -> libc::c_uint {
+    dav1d_msac_decode_symbol_adapt_rust(s, cdf, n_symbols)
 }
 
 pub unsafe fn dav1d_msac_decode_bool_adapt_c(
@@ -363,7 +371,7 @@ pub unsafe fn dav1d_msac_decode_symbol_adapt4(
         } else if #[cfg(all(feature = "asm", target_arch = "aarch64"))] {
             return dav1d_msac_decode_symbol_adapt4_neon(s, cdf, n_symbols);
         } else {
-            return dav1d_msac_decode_symbol_adapt_c(s, cdf, n_symbols);
+            return dav1d_msac_decode_symbol_adapt_rust(s, cdf, n_symbols);
         }
     }
 }
@@ -379,7 +387,7 @@ pub unsafe fn dav1d_msac_decode_symbol_adapt8(
         } else if #[cfg(all(feature = "asm", target_arch = "aarch64"))] {
             return dav1d_msac_decode_symbol_adapt8_neon(s, cdf, n_symbols);
         } else {
-            return dav1d_msac_decode_symbol_adapt_c(s, cdf, n_symbols);
+            return dav1d_msac_decode_symbol_adapt_rust(s, cdf, n_symbols);
         }
     }
 }
@@ -395,7 +403,7 @@ pub unsafe fn dav1d_msac_decode_symbol_adapt16(
         } else if #[cfg(all(feature = "asm", target_arch = "aarch64"))] {
             return dav1d_msac_decode_symbol_adapt16_neon(s, cdf, n_symbols);
         } else {
-            return dav1d_msac_decode_symbol_adapt_c(s, cdf, n_symbols);
+            return dav1d_msac_decode_symbol_adapt_rust(s, cdf, n_symbols);
         }
     }
 }
