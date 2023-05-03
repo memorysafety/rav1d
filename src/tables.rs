@@ -4,7 +4,9 @@ use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SHARP;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SMOOTH;
 use crate::include::dav1d::headers::DAV1D_FILTER_BILINEAR;
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_IDENTITY;
+use crate::src::align::Align16;
 use crate::src::align::Align64;
+use crate::src::align::Align8;
 use crate::src::levels::BS_128x128;
 use crate::src::levels::BS_128x64;
 use crate::src::levels::BS_16x16;
@@ -763,7 +765,7 @@ pub static dav1d_sgr_x_by_x: Align64<[u8; 256]> = Align64([
 ]);
 
 #[no_mangle]
-pub static dav1d_mc_subpel_filters: [[[i8; 8]; 15]; 6] = [
+pub static dav1d_mc_subpel_filters: Align8<[[[i8; 8]; 15]; 6]> = Align8([
     [
         [0, 1, -3, 63, 4, -1, 0, 0],
         [0, 1, -5, 61, 9, -2, 0, 0],
@@ -866,7 +868,7 @@ pub static dav1d_mc_subpel_filters: [[[i8; 8]; 15]; 6] = [
         [0, 0, 0, 8, 56, 0, 0, 0],
         [0, 0, 0, 4, 60, 0, 0, 0],
     ],
-];
+]);
 
 #[no_mangle]
 pub static dav1d_mc_warp_filter: [[i8; 8]; 193] = [
@@ -1134,14 +1136,14 @@ pub static dav1d_resize_filter: [[i8; 8]; 64] = [
 ];
 
 #[no_mangle]
-pub static dav1d_sm_weights: [u8; 128] = [
+pub static dav1d_sm_weights: Align16<[u8; 128]> = Align16([
     0, 0, 255, 128, 255, 149, 85, 64, 255, 197, 146, 105, 73, 50, 37, 32, 255, 225, 196, 170, 145,
     123, 102, 84, 68, 54, 43, 33, 26, 20, 17, 16, 255, 240, 225, 210, 196, 182, 169, 157, 145, 133,
     122, 111, 101, 92, 83, 74, 66, 59, 52, 45, 39, 34, 29, 25, 21, 17, 14, 12, 10, 9, 8, 8, 255,
     248, 240, 233, 225, 218, 210, 203, 196, 189, 182, 176, 169, 163, 156, 150, 144, 138, 133, 127,
     121, 116, 111, 106, 101, 96, 91, 86, 82, 77, 73, 69, 65, 61, 57, 54, 50, 47, 44, 41, 38, 35,
     32, 29, 27, 25, 22, 20, 18, 16, 15, 13, 12, 10, 9, 8, 7, 6, 6, 5, 5, 4, 4, 4,
-];
+]);
 
 #[no_mangle]
 pub static dav1d_dr_intra_derivative: [u16; 44] = [

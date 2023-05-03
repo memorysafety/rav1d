@@ -1,5 +1,6 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
+use crate::src::align::Align16;
 use ::libc;
 use cfg_if::cfg_if;
 
@@ -908,8 +909,8 @@ unsafe extern "C" fn cdef_filter_8x8_neon(
     damping: libc::c_int,
     edges: CdefEdgeFlags,
 ) {
-    let mut tmp_buf = [0; 200];
-    let mut tmp = tmp_buf.as_mut_ptr().offset(2 * 16).offset(8);
+    let mut tmp_buf = Align16([0; 200]);
+    let mut tmp = tmp_buf.0.as_mut_ptr().offset(2 * 16).offset(8);
     dav1d_cdef_padding8_8bpc_neon(tmp, dst, stride, left, top, bottom, 8, edges);
     dav1d_cdef_filter8_8bpc_neon(
         dst,

@@ -1158,9 +1158,9 @@ unsafe extern "C" fn ipred_smooth_c(
     _bitdepth_max: libc::c_int,
 ) {
     let weights_hor: *const uint8_t =
-        &*dav1d_sm_weights.as_ptr().offset(width as isize) as *const uint8_t;
+        &*dav1d_sm_weights.0.as_ptr().offset(width as isize) as *const uint8_t;
     let weights_ver: *const uint8_t =
-        &*dav1d_sm_weights.as_ptr().offset(height as isize) as *const uint8_t;
+        &*dav1d_sm_weights.0.as_ptr().offset(height as isize) as *const uint8_t;
     let right = *topleft.offset(width as isize) as libc::c_int;
     let bottom = *topleft.offset(-height as isize) as libc::c_int;
     let mut y = 0;
@@ -1192,7 +1192,7 @@ unsafe extern "C" fn ipred_smooth_v_c(
     _bitdepth_max: libc::c_int,
 ) {
     let weights_ver: *const uint8_t =
-        &*dav1d_sm_weights.as_ptr().offset(height as isize) as *const uint8_t;
+        &*dav1d_sm_weights.0.as_ptr().offset(height as isize) as *const uint8_t;
     let bottom = *topleft.offset(-height as isize) as libc::c_int;
     let mut y = 0;
     while y < height {
@@ -1220,7 +1220,7 @@ unsafe extern "C" fn ipred_smooth_h_c(
     _bitdepth_max: libc::c_int,
 ) {
     let weights_hor: *const uint8_t =
-        &*dav1d_sm_weights.as_ptr().offset(width as isize) as *const uint8_t;
+        &*dav1d_sm_weights.0.as_ptr().offset(width as isize) as *const uint8_t;
     let right = *topleft.offset(width as isize) as libc::c_int;
     let mut y = 0;
     while y < height {
