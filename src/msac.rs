@@ -195,8 +195,8 @@ unsafe fn dav1d_msac_decode_bool_rust(s: &mut MsacContext, f: libc::c_uint) -> l
 
 pub unsafe fn dav1d_msac_decode_subexp(
     s: &mut MsacContext,
-    r#ref: libc::c_int,
-    n: libc::c_int,
+    r#ref: libc::c_uint,
+    n: libc::c_uint,
     mut k: libc::c_uint,
 ) -> libc::c_int {
     assert!(n >> k == 8);
@@ -209,9 +209,9 @@ pub unsafe fn dav1d_msac_decode_subexp(
     }
     let v = dav1d_msac_decode_bools(s, k) + a;
     (if r#ref * 2 <= n {
-        inv_recenter(r#ref as libc::c_uint, v)
+        inv_recenter(r#ref, v)
     } else {
-        ((n - 1) as libc::c_uint) - inv_recenter((n - 1 - r#ref) as libc::c_uint, v)
+        n - 1 - inv_recenter(n - 1 - r#ref, v)
     }) as libc::c_int
 }
 
