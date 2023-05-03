@@ -158,36 +158,6 @@ extern "C" {
     fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext);
     #[cfg(feature = "bitdepth_16")]
     fn dav1d_mc_dsp_init_16bpc(c: *mut Dav1dMCDSPContext);
-    fn dav1d_msac_init(
-        s: *mut MsacContext,
-        data: *const uint8_t,
-        sz: size_t,
-        disable_cdf_update_flag: libc::c_int,
-    );
-    fn dav1d_msac_decode_subexp(
-        s: *mut MsacContext,
-        r#ref: libc::c_int,
-        n: libc::c_int,
-        k: libc::c_uint,
-    ) -> libc::c_int;
-    fn dav1d_msac_decode_symbol_adapt4(
-        s: *mut MsacContext,
-        cdf: *mut uint16_t,
-        n_symbols: size_t,
-    ) -> libc::c_uint;
-    fn dav1d_msac_decode_symbol_adapt8(
-        s: *mut MsacContext,
-        cdf: *mut uint16_t,
-        n_symbols: size_t,
-    ) -> libc::c_uint;
-    fn dav1d_msac_decode_symbol_adapt16(
-        s: *mut MsacContext,
-        cdf: *mut uint16_t,
-        n_symbols: size_t,
-    ) -> libc::c_uint;
-    fn dav1d_msac_decode_bool_adapt(s: *mut MsacContext, cdf: *mut uint16_t) -> libc::c_uint;
-    fn dav1d_msac_decode_bool_equi(s: *mut MsacContext) -> libc::c_uint;
-    fn dav1d_msac_decode_bool(s: *mut MsacContext, f: libc::c_uint) -> libc::c_uint;
     fn dav1d_thread_picture_alloc(
         c: *mut Dav1dContext,
         f: *mut Dav1dFrameContext,
@@ -273,6 +243,14 @@ extern "C" {
 }
 
 use crate::src::dequant_tables::dav1d_dq_tbl;
+use crate::src::msac::dav1d_msac_decode_bool;
+use crate::src::msac::dav1d_msac_decode_bool_adapt;
+use crate::src::msac::dav1d_msac_decode_bool_equi;
+use crate::src::msac::dav1d_msac_decode_subexp;
+use crate::src::msac::dav1d_msac_decode_symbol_adapt16;
+use crate::src::msac::dav1d_msac_decode_symbol_adapt4;
+use crate::src::msac::dav1d_msac_decode_symbol_adapt8;
+use crate::src::msac::dav1d_msac_init;
 use crate::src::refmvs::dav1d_refmvs_find;
 use crate::src::tables::dav1d_al_part_ctx;
 use crate::src::tables::dav1d_block_dimensions;
