@@ -219,11 +219,10 @@ unsafe fn dav1d_msac_decode_symbol_adapt_rust(
     let r = s.rng >> 8;
     let mut u = 0;
     let mut v = s.rng;
-    let mut val = -(1 as libc::c_int) as libc::c_uint;
+    let mut val = 0;
     assert!(n_symbols <= 15);
     assert!(cdf[n_symbols] <= 32);
     loop {
-        val = val.wrapping_add(1);
         u = v;
         v = r * ((cdf[val as usize] >> EC_PROB_SHIFT) as libc::c_uint);
         v >>= 7 - EC_PROB_SHIFT;
@@ -231,6 +230,7 @@ unsafe fn dav1d_msac_decode_symbol_adapt_rust(
         if !(c < v) {
             break;
         }
+        val += 1;
     }
     assert!(u <= s.rng);
     ctx_norm(
