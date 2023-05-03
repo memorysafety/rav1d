@@ -246,17 +246,15 @@ unsafe fn dav1d_msac_decode_symbol_adapt_rust(
         u.wrapping_sub(v),
     );
     if s.allow_update_cdf() {
-        let count = cdf[n_symbols] as libc::c_uint;
-        let rate = (4 as libc::c_uint)
-            .wrapping_add(count >> 4)
-            .wrapping_add((n_symbols > 2) as u32);
+        let count = cdf[n_symbols];
+        let rate = 4 + (count >> 4) + (n_symbols > 2) as u16;
         for i in 0..val {
             cdf[i as usize] += (1 << 15) - cdf[i as usize] >> rate;
         }
         for i in val..n_symbols as libc::c_uint {
             cdf[i as usize] -= cdf[i as usize] >> rate;
         }
-        cdf[n_symbols] = count.wrapping_add((count < 32) as libc::c_uint) as uint16_t;
+        cdf[n_symbols] = count + (count < 32) as u16;
     }
     val
 }
@@ -283,14 +281,14 @@ unsafe fn dav1d_msac_decode_bool_adapt_rust(
 ) -> libc::c_uint {
     let bit = dav1d_msac_decode_bool(s, cdf[0] as libc::c_uint);
     if s.allow_update_cdf() {
-        let count = cdf[1] as libc::c_uint;
-        let rate = (4 as libc::c_uint).wrapping_add(count >> 4) as libc::c_int;
+        let count = cdf[1];
+        let rate = 4 + (count >> 4);
         if bit != 0 {
             cdf[0] += (1 << 15) - cdf[0] >> rate;
         } else {
             cdf[0] -= cdf[0] >> rate;
         }
-        cdf[1] = count.wrapping_add((count < 32) as libc::c_uint) as uint16_t;
+        cdf[1] = count + (count < 32) as u16;
     }
     bit
 }
