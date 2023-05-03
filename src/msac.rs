@@ -1,10 +1,10 @@
-use std::mem;
-
+use crate::include::common::attributes::clz;
+use crate::include::common::intops::inv_recenter;
 use crate::include::common::intops::ulog2;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
-use ::libc;
 use cfg_if::cfg_if;
+use std::mem;
 
 #[cfg(all(feature = "asm", target_arch = "x86_64"))]
 extern "C" {
@@ -60,7 +60,9 @@ extern "C" {
     static mut dav1d_cpu_flags_mask: libc::c_uint;
     static mut dav1d_cpu_flags: libc::c_uint;
 }
+
 pub type ec_win = size_t;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct MsacContext {
@@ -74,8 +76,6 @@ pub struct MsacContext {
     pub symbol_adapt16:
         Option<unsafe extern "C" fn(*mut MsacContext, *mut uint16_t, size_t) -> libc::c_uint>,
 }
-use crate::include::common::attributes::clz;
-use crate::include::common::intops::inv_recenter;
 
 #[inline]
 pub unsafe fn dav1d_msac_decode_bools(s: &mut MsacContext, n: libc::c_uint) -> libc::c_uint {
