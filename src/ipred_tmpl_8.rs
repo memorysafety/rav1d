@@ -2058,8 +2058,11 @@ unsafe extern "C" fn intra_pred_dsp_init_arm(c: *mut Dav1dIntraPredDSPContext) {
     (*c).intra_pred[SMOOTH_PRED as usize] = Some(dav1d_ipred_smooth_8bpc_neon);
     (*c).intra_pred[SMOOTH_V_PRED as usize] = Some(dav1d_ipred_smooth_v_8bpc_neon);
     (*c).intra_pred[SMOOTH_H_PRED as usize] = Some(dav1d_ipred_smooth_h_8bpc_neon);
-    (*c).intra_pred[Z1_PRED as usize] = Some(ipred_z1_neon);
-    (*c).intra_pred[Z3_PRED as usize] = Some(ipred_z3_neon);
+    #[cfg(target_arch = "aarch64")]
+    {
+        (*c).intra_pred[Z1_PRED as usize] = Some(ipred_z1_neon);
+        (*c).intra_pred[Z3_PRED as usize] = Some(ipred_z3_neon);
+    }
     (*c).intra_pred[FILTER_PRED as usize] = Some(dav1d_ipred_filter_8bpc_neon);
 
     (*c).cfl_pred[DC_PRED as usize] = Some(dav1d_ipred_cfl_8bpc_neon);

@@ -15,7 +15,10 @@ fn main() {
             build_nasm_files(false)
         } else if arch == "aarch64" {
             println!("cargo:rustc-cfg={}", "asm_neon");
-            build_asm_files()
+            build_asm_files(true)
+        } else if arch == "arm" {
+            println!("cargo:rustc-cfg={}", "asm_neon");
+            build_asm_files(false)
         } else {
             panic!("unknown arch: {}", arch);
         }
@@ -131,7 +134,7 @@ fn build_nasm_files(x86_64: bool) {
 }
 
 #[cfg(feature = "asm")]
-fn build_asm_files() {
+fn build_asm_files(aarch64: bool) {
     use std::fs::File;
     use std::io::Write;
     let out_dir = env::var("OUT_DIR").unwrap();
@@ -144,45 +147,52 @@ fn build_asm_files() {
     config_file
         .write(b" #define PRIVATE_PREFIX dav1d_\n")
         .unwrap();
-    config_file.write(b" #define ARCH_AARCH64 1\n").unwrap();
-    config_file.write(b" #define ARCH_ARM 0\n").unwrap();
+
+    if aarch64 {
+        config_file.write(b" #define ARCH_AARCH64 1\n").unwrap();
+        config_file.write(b" #define ARCH_ARM 0\n").unwrap();
+    } else {
+        config_file.write(b" #define ARCH_AARCH64 0\n").unwrap();
+        config_file.write(b" #define ARCH_ARM 1\n").unwrap();
+    }
     config_file.write(b" #define CONFIG_LOG 1 \n").unwrap();
     config_file.write(b" #define HAVE_ASM 1\n").unwrap();
     config_file.sync_all().unwrap();
 
+    let arch_dir = if aarch64 { "64" } else { "32" };
     let mut asm_files = vec![
-        "src/arm/64/itx.S",
-        "src/arm/64/msac.S",
-        "src/arm/64/refmvs.S",
-        "src/arm/64/looprestoration_common.S",
+        format!("src/arm/{}/itx.S", arch_dir),
+        format!("src/arm/{}/msac.S", arch_dir),
+        format!("src/arm/{}/refmvs.S", arch_dir),
+        format!("src/arm/{}/looprestoration_common.S", arch_dir),
     ];
 
     #[cfg(feature = "bitdepth_8")]
     asm_files.extend_from_slice(&[
-        "src/arm/64/cdef.S",
-        "src/arm/64/filmgrain.S",
-        "src/arm/64/ipred.S",
-        "src/arm/64/loopfilter.S",
-        "src/arm/64/looprestoration.S",
-        "src/arm/64/mc.S",
+        format!("src/arm/{}/cdef.S", arch_dir),
+        format!("src/arm/{}/filmgrain.S", arch_dir),
+        format!("src/arm/{}/ipred.S", arch_dir),
+        format!("src/arm/{}/loopfilter.S", arch_dir),
+        format!("src/arm/{}/looprestoration.S", arch_dir),
+        format!("src/arm/{}/mc.S", arch_dir),
     ]);
 
     #[cfg(feature = "bitdepth_16")]
     asm_files.extend_from_slice(&[
-        "src/arm/64/cdef16.S",
-        "src/arm/64/filmgrain16.S",
-        "src/arm/64/ipred16.S",
-        "src/arm/64/itx16.S",
-        "src/arm/64/loopfilter16.S",
-        "src/arm/64/looprestoration16.S",
-        "src/arm/64/mc16.S",
+        format!("src/arm/{}/cdef16.S", arch_dir),
+        format!("src/arm/{}/filmgrain16.S", arch_dir),
+        format!("src/arm/{}/ipred16.S", arch_dir),
+        format!("src/arm/{}/itx16.S", arch_dir),
+        format!("src/arm/{}/loopfilter16.S", arch_dir),
+        format!("src/arm/{}/looprestoration16.S", arch_dir),
+        format!("src/arm/{}/mc16.S", arch_dir),
     ]);
 
     cc::Build::new()
         .files(asm_files)
         .include(".")
         .include(&out_dir)
-        .compile("rav1d-aarch64");
+        .compile("rav1dasm");
 
-    println!("cargo:rustc-link-lib=static=rav1d-aarch64");
+    println!("cargo:rustc-link-lib=static=rav1dasm");
 }
