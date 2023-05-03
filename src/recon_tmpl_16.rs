@@ -10,24 +10,6 @@ extern "C" {
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::size_t) -> *mut libc::c_void;
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
     fn printf(_: *const libc::c_char, _: ...) -> libc::c_int;
-    fn dav1d_msac_decode_symbol_adapt4(
-        s: *mut MsacContext,
-        cdf: *mut uint16_t,
-        n_symbols: size_t,
-    ) -> libc::c_uint;
-    fn dav1d_msac_decode_symbol_adapt8(
-        s: *mut MsacContext,
-        cdf: *mut uint16_t,
-        n_symbols: size_t,
-    ) -> libc::c_uint;
-    fn dav1d_msac_decode_symbol_adapt16(
-        s: *mut MsacContext,
-        cdf: *mut uint16_t,
-        n_symbols: size_t,
-    ) -> libc::c_uint;
-    fn dav1d_msac_decode_bool_adapt(s: *mut MsacContext, cdf: *mut uint16_t) -> libc::c_uint;
-    fn dav1d_msac_decode_bool_equi(s: *mut MsacContext) -> libc::c_uint;
-    fn dav1d_msac_decode_hi_tok(s: *mut MsacContext, cdf: *mut uint16_t) -> libc::c_uint;
     fn dav1d_cdef_brow_16bpc(
         tc: *mut Dav1dTaskContext,
         p: *const *mut pixel,
@@ -76,6 +58,12 @@ extern "C" {
     static mut dav1d_ii_masks: [[[*const uint8_t; 4]; 3]; 22];
 }
 
+use crate::src::msac::dav1d_msac_decode_bool_adapt;
+use crate::src::msac::dav1d_msac_decode_bool_equi;
+use crate::src::msac::dav1d_msac_decode_hi_tok;
+use crate::src::msac::dav1d_msac_decode_symbol_adapt16;
+use crate::src::msac::dav1d_msac_decode_symbol_adapt4;
+use crate::src::msac::dav1d_msac_decode_symbol_adapt8;
 use crate::src::tables::dav1d_block_dimensions;
 use crate::src::tables::dav1d_filter_2d;
 use crate::src::tables::dav1d_filter_mode_to_y_mode;
