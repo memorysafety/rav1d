@@ -295,15 +295,15 @@ unsafe fn dav1d_msac_decode_bool_adapt_rust(
 
 unsafe fn dav1d_msac_decode_hi_tok_rust(s: &mut MsacContext, cdf: &mut [u16; 4]) -> libc::c_uint {
     let mut tok_br = dav1d_msac_decode_symbol_adapt4(s, cdf, 3);
-    let mut tok = (3 as libc::c_uint).wrapping_add(tok_br);
+    let mut tok = 3 + tok_br;
     if tok_br == 3 {
         tok_br = dav1d_msac_decode_symbol_adapt4(s, cdf, 3);
-        tok = (6 as libc::c_uint).wrapping_add(tok_br);
+        tok = 6 + tok_br;
         if tok_br == 3 {
             tok_br = dav1d_msac_decode_symbol_adapt4(s, cdf, 3);
-            tok = (9 as libc::c_uint).wrapping_add(tok_br);
+            tok = 9 + tok_br;
             if tok_br == 3 {
-                tok = (12 as libc::c_uint).wrapping_add(dav1d_msac_decode_symbol_adapt4(s, cdf, 3));
+                tok = 12 + dav1d_msac_decode_symbol_adapt4(s, cdf, 3);
             }
         }
     }
