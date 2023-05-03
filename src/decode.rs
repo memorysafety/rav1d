@@ -2851,9 +2851,7 @@ fn affine_lowest_px(
 ) {
     let h_mul = 4 >> ss_hor;
     let v_mul = 4 >> ss_ver;
-    assert!(
-        !(b_dim[0] as libc::c_int * h_mul & 7 == 0 && b_dim[1] as libc::c_int * v_mul & 7 == 0)
-    );
+    assert!(b_dim[0] as libc::c_int * h_mul & 7 == 0 && b_dim[1] as libc::c_int * v_mul & 7 == 0);
     let mat = &wmp.matrix;
     let y = b_dim[1] as libc::c_int * v_mul - 8;
     let src_y = t.by * 4 + ((y + 4) << ss_ver);
@@ -2886,7 +2884,7 @@ unsafe fn affine_lowest_px_chroma(
     wmp: &Dav1dWarpedMotionParams,
 ) {
     let f = &*t.f;
-    assert!(!(f.cur.p.layout != DAV1D_PIXEL_LAYOUT_I400));
+    assert!(f.cur.p.layout != DAV1D_PIXEL_LAYOUT_I400);
     if f.cur.p.layout == DAV1D_PIXEL_LAYOUT_I444 {
         affine_lowest_px_luma(t, dst, b_dim, wmp);
     } else {
@@ -2911,7 +2909,7 @@ unsafe fn obmc_lowest_px(
     w4: libc::c_int,
     h4: libc::c_int,
 ) {
-    assert!(!(t.bx & 1 == 0 && t.by & 1 == 0));
+    assert!(t.bx & 1 == 0 && t.by & 1 == 0);
     let f = &*t.f;
     let r = &t.rt.r[(t.by as usize & 31) + 5 - 1..];
     let ss_ver = (is_chroma && f.cur.p.layout == DAV1D_PIXEL_LAYOUT_I420) as libc::c_int;
