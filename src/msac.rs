@@ -174,7 +174,7 @@ unsafe fn dav1d_msac_decode_bool_equi_rust(s: &mut MsacContext) -> libc::c_uint 
     dif = dif.wrapping_sub((ret as size_t).wrapping_mul(vw)) as ec_win as ec_win;
     v = v.wrapping_add(ret.wrapping_mul(r.wrapping_sub((2 as libc::c_uint).wrapping_mul(v))));
     ctx_norm(s, dif, v);
-    return (ret == 0) as libc::c_uint;
+    (ret == 0) as libc::c_uint
 }
 
 unsafe fn dav1d_msac_decode_bool_rust(s: &mut MsacContext, f: libc::c_uint) -> libc::c_uint {
@@ -188,7 +188,7 @@ unsafe fn dav1d_msac_decode_bool_rust(s: &mut MsacContext, f: libc::c_uint) -> l
     dif = (dif).wrapping_sub((ret as size_t).wrapping_mul(vw)) as ec_win as ec_win;
     v = v.wrapping_add(ret.wrapping_mul(r.wrapping_sub((2 as libc::c_uint).wrapping_mul(v))));
     ctx_norm(s, dif, v);
-    return (ret == 0) as libc::c_uint;
+    (ret == 0) as libc::c_uint
 }
 
 pub unsafe fn dav1d_msac_decode_subexp(
@@ -206,12 +206,11 @@ pub unsafe fn dav1d_msac_decode_subexp(
         a = 1 << k;
     }
     let v = (dav1d_msac_decode_bools(s, k)).wrapping_add(a);
-    let ret = (if r#ref * 2 <= n {
+    (if r#ref * 2 <= n {
         inv_recenter(r#ref as libc::c_uint, v)
     } else {
         ((n - 1) as libc::c_uint).wrapping_sub(inv_recenter((n - 1 - r#ref) as libc::c_uint, v))
-    }) as libc::c_int;
-    return ret;
+    }) as libc::c_int
 }
 
 unsafe fn dav1d_msac_decode_symbol_adapt_rust(
@@ -258,7 +257,7 @@ unsafe fn dav1d_msac_decode_symbol_adapt_rust(
         }
         cdf[n_symbols] = count.wrapping_add((count < 32) as libc::c_uint) as uint16_t;
     }
-    return val;
+    val
 }
 
 unsafe extern "C" fn dav1d_msac_decode_symbol_adapt_c(
@@ -292,7 +291,7 @@ unsafe fn dav1d_msac_decode_bool_adapt_rust(
         }
         cdf[1] = count.wrapping_add((count < 32) as libc::c_uint) as uint16_t;
     }
-    return bit;
+    bit
 }
 
 unsafe fn dav1d_msac_decode_hi_tok_rust(s: &mut MsacContext, cdf: &mut [u16; 4]) -> libc::c_uint {
@@ -309,7 +308,7 @@ unsafe fn dav1d_msac_decode_hi_tok_rust(s: &mut MsacContext, cdf: &mut [u16; 4])
             }
         }
     }
-    return tok;
+    tok
 }
 
 pub unsafe fn dav1d_msac_init(
