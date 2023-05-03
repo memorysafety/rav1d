@@ -2037,151 +2037,83 @@ unsafe extern "C" fn read_pal_uv(
         printf(b"]\n\0" as *const u8 as *const libc::c_char);
     }
 }
-unsafe extern "C" fn order_palette(
+
+unsafe fn order_palette(
     mut pal_idx: *const uint8_t,
     stride: ptrdiff_t,
     i: libc::c_int,
     first: libc::c_int,
     last: libc::c_int,
-    order: *mut [uint8_t; 8],
-    ctx: *mut uint8_t,
+    order: &mut [[u8; u8::BITS as usize]; 64],
+    ctx: &mut [u8; 64],
 ) {
-    let mut have_top = (i > first) as libc::c_int;
-    if pal_idx.is_null() {
-        unreachable!();
-    }
-    pal_idx = pal_idx.offset((first as isize + (i - first) as isize * stride) as isize);
-    let mut j = first;
-    let mut n = 0;
-    while j >= last {
-        let have_left = (j > 0) as libc::c_int;
-        if !(have_left != 0 || have_top != 0) {
-            unreachable!();
-        }
-        let mut mask: libc::c_uint = 0 as libc::c_int as libc::c_uint;
+    let mut have_top = i > first;
+
+    assert!(!pal_idx.is_null());
+    pal_idx = pal_idx.offset(first as isize + (i - first) as isize * stride);
+    for ((ctx, order), j) in ctx
+        .iter_mut()
+        .zip(order.iter_mut())
+        .zip((last..=first).rev())
+    {
+        let have_left = j > 0;
+
+        assert!(have_left || have_top);
+
+        let mut mask = 0u8;
         let mut o_idx = 0;
-        if have_left == 0 {
-            *ctx.offset(n as isize) = 0 as libc::c_int as uint8_t;
-            let v = *pal_idx.offset(-stride as isize) as libc::c_int;
-            if !((v as libc::c_uint) < 8 as libc::c_uint) {
-                unreachable!();
-            }
-            let fresh21 = o_idx;
-            o_idx = o_idx + 1;
-            (*order.offset(n as isize))[fresh21 as usize] = v as uint8_t;
-            mask |= ((1 as libc::c_int) << v) as libc::c_uint;
-        } else if have_top == 0 {
-            *ctx.offset(n as isize) = 0 as libc::c_int as uint8_t;
-            let v_0 = *pal_idx.offset(-(1 as libc::c_int) as isize) as libc::c_int;
-            if !((v_0 as libc::c_uint) < 8 as libc::c_uint) {
-                unreachable!();
-            }
-            let fresh22 = o_idx;
-            o_idx = o_idx + 1;
-            (*order.offset(n as isize))[fresh22 as usize] = v_0 as uint8_t;
-            mask |= ((1 as libc::c_int) << v_0) as libc::c_uint;
+        let mut add = |v: u8| {
+            assert!(v < u8::BITS as u8);
+            order[o_idx] = v;
+            o_idx += 1;
+            mask |= 1 << v;
+        };
+
+        if !have_left {
+            *ctx = 0;
+            add(*pal_idx.offset(-stride));
+        } else if !have_top {
+            *ctx = 0;
+            add(*pal_idx.offset(-1));
         } else {
-            let l = *pal_idx.offset(-(1 as libc::c_int) as isize) as libc::c_int;
-            let t = *pal_idx.offset(-stride as isize) as libc::c_int;
-            let tl = *pal_idx.offset(-(stride + 1) as isize) as libc::c_int;
-            let same_t_l = (t == l) as libc::c_int;
-            let same_t_tl = (t == tl) as libc::c_int;
-            let same_l_tl = (l == tl) as libc::c_int;
+            let l = *pal_idx.offset(-1);
+            let t = *pal_idx.offset(-stride);
+            let tl = *pal_idx.offset(-(stride + 1));
+            let same_t_l = t == l;
+            let same_t_tl = t == tl;
+            let same_l_tl = l == tl;
             let same_all = same_t_l & same_t_tl & same_l_tl;
-            if same_all != 0 {
-                *ctx.offset(n as isize) = 4 as libc::c_int as uint8_t;
-                let v_1 = t;
-                if !((v_1 as libc::c_uint) < 8 as libc::c_uint) {
-                    unreachable!();
-                }
-                let fresh23 = o_idx;
-                o_idx = o_idx + 1;
-                (*order.offset(n as isize))[fresh23 as usize] = v_1 as uint8_t;
-                mask |= ((1 as libc::c_int) << v_1) as libc::c_uint;
-            } else if same_t_l != 0 {
-                *ctx.offset(n as isize) = 3 as libc::c_int as uint8_t;
-                let v_2 = t;
-                if !((v_2 as libc::c_uint) < 8 as libc::c_uint) {
-                    unreachable!();
-                }
-                let fresh24 = o_idx;
-                o_idx = o_idx + 1;
-                (*order.offset(n as isize))[fresh24 as usize] = v_2 as uint8_t;
-                mask |= ((1 as libc::c_int) << v_2) as libc::c_uint;
-                let v_3 = tl;
-                if !((v_3 as libc::c_uint) < 8 as libc::c_uint) {
-                    unreachable!();
-                }
-                let fresh25 = o_idx;
-                o_idx = o_idx + 1;
-                (*order.offset(n as isize))[fresh25 as usize] = v_3 as uint8_t;
-                mask |= ((1 as libc::c_int) << v_3) as libc::c_uint;
-            } else if same_t_tl | same_l_tl != 0 {
-                *ctx.offset(n as isize) = 2 as libc::c_int as uint8_t;
-                let v_4 = tl;
-                if !((v_4 as libc::c_uint) < 8 as libc::c_uint) {
-                    unreachable!();
-                }
-                let fresh26 = o_idx;
-                o_idx = o_idx + 1;
-                (*order.offset(n as isize))[fresh26 as usize] = v_4 as uint8_t;
-                mask |= ((1 as libc::c_int) << v_4) as libc::c_uint;
-                let v_5 = if same_t_tl != 0 { l } else { t };
-                if !((v_5 as libc::c_uint) < 8 as libc::c_uint) {
-                    unreachable!();
-                }
-                let fresh27 = o_idx;
-                o_idx = o_idx + 1;
-                (*order.offset(n as isize))[fresh27 as usize] = v_5 as uint8_t;
-                mask |= ((1 as libc::c_int) << v_5) as libc::c_uint;
+
+            if same_all {
+                *ctx = 4;
+                add(t);
+            } else if same_t_l {
+                *ctx = 3;
+                add(t);
+                add(tl);
+            } else if same_t_tl | same_l_tl {
+                *ctx = 2;
+                add(tl);
+                add(if same_t_tl { l } else { t });
             } else {
-                *ctx.offset(n as isize) = 1 as libc::c_int as uint8_t;
-                let v_6 = imin(t, l);
-                if !((v_6 as libc::c_uint) < 8 as libc::c_uint) {
-                    unreachable!();
-                }
-                let fresh28 = o_idx;
-                o_idx = o_idx + 1;
-                (*order.offset(n as isize))[fresh28 as usize] = v_6 as uint8_t;
-                mask |= ((1 as libc::c_int) << v_6) as libc::c_uint;
-                let v_7 = imax(t, l);
-                if !((v_7 as libc::c_uint) < 8 as libc::c_uint) {
-                    unreachable!();
-                }
-                let fresh29 = o_idx;
-                o_idx = o_idx + 1;
-                (*order.offset(n as isize))[fresh29 as usize] = v_7 as uint8_t;
-                mask |= ((1 as libc::c_int) << v_7) as libc::c_uint;
-                let v_8 = tl;
-                if !((v_8 as libc::c_uint) < 8 as libc::c_uint) {
-                    unreachable!();
-                }
-                let fresh30 = o_idx;
-                o_idx = o_idx + 1;
-                (*order.offset(n as isize))[fresh30 as usize] = v_8 as uint8_t;
-                mask |= ((1 as libc::c_int) << v_8) as libc::c_uint;
+                *ctx = 1;
+                add(std::cmp::min(t, l));
+                add(std::cmp::max(t, l));
+                add(tl);
             }
         }
-        let mut m: libc::c_uint = 1 as libc::c_int as libc::c_uint;
-        let mut bit: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-        while m < 0x100 as libc::c_int as libc::c_uint {
-            if mask & m == 0 {
-                let fresh31 = o_idx;
-                o_idx = o_idx + 1;
-                (*order.offset(n as isize))[fresh31 as usize] = bit as uint8_t;
+        for bit in 0..u8::BITS as u8 {
+            if mask & (1 << bit) == 0 {
+                order[o_idx] = bit;
+                o_idx += 1;
             }
-            m <<= 1;
-            bit = bit.wrapping_add(1);
         }
-        if !(o_idx == 8) {
-            unreachable!();
-        }
-        have_top = 1 as libc::c_int;
-        j -= 1;
-        n += 1;
-        pal_idx = pal_idx.offset((stride - 1) as isize);
+        assert!(o_idx == u8::BITS as usize);
+        have_top = true;
+        pal_idx = pal_idx.offset(stride - 1);
     }
 }
+
 unsafe extern "C" fn read_pal_indices(
     t: *mut Dav1dTaskContext,
     pal_idx: *mut uint8_t,
@@ -2204,20 +2136,18 @@ unsafe extern "C" fn read_pal_indices(
     let color_map_cdf: *mut [uint16_t; 8] = ((*ts).cdf.m.color_map[pl as usize]
         [((*b).c2rust_unnamed.c2rust_unnamed.pal_sz[pl as usize] as libc::c_int - 2) as usize])
         .as_mut_ptr();
-    let order: *mut [uint8_t; 8] = ((*t)
+    let order = &mut (*t)
         .scratch
         .c2rust_unnamed_0
         .c2rust_unnamed
         .c2rust_unnamed
-        .pal_order)
-        .as_mut_ptr();
-    let ctx: *mut uint8_t = ((*t)
+        .pal_order;
+    let ctx = &mut (*t)
         .scratch
         .c2rust_unnamed_0
         .c2rust_unnamed
         .c2rust_unnamed
-        .pal_ctx)
-        .as_mut_ptr();
+        .pal_ctx;
     let mut i = 1;
     while i < 4 * (w4 + h4) - 1 {
         let first = imin(i, w4 * 4 - 1);
@@ -2228,12 +2158,12 @@ unsafe extern "C" fn read_pal_indices(
         while j >= last {
             let color_idx = dav1d_msac_decode_symbol_adapt8(
                 &mut (*ts).msac,
-                (*color_map_cdf.offset(*ctx.offset(m as isize) as isize)).as_mut_ptr(),
+                (*color_map_cdf.offset(ctx[m as usize] as isize)).as_mut_ptr(),
                 ((*b).c2rust_unnamed.c2rust_unnamed.pal_sz[pl as usize] as libc::c_int - 1)
                     as size_t,
             ) as libc::c_int;
             *pal_idx.offset(((i - j) as isize * stride + j as isize) as isize) =
-                (*order.offset(m as isize))[color_idx as usize];
+                order[m as usize][color_idx as usize];
             j -= 1;
             m += 1;
         }
