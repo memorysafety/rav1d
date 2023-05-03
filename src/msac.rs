@@ -231,7 +231,7 @@ pub unsafe fn dav1d_msac_decode_subexp(
 
 unsafe fn dav1d_msac_decode_symbol_adapt_rust(
     s: &mut MsacContext,
-    cdf: *mut uint16_t,
+    cdf: &mut [u16],
     n_symbols: size_t,
 ) -> libc::c_uint {
     let c: libc::c_uint = (s.dif
@@ -245,13 +245,13 @@ unsafe fn dav1d_msac_decode_symbol_adapt_rust(
     if !(n_symbols <= 15) {
         unreachable!();
     }
-    if !(*cdf.offset(n_symbols as isize) as libc::c_int <= 32) {
+    if !(cdf[n_symbols] as libc::c_int <= 32) {
         unreachable!();
     }
     loop {
         val = val.wrapping_add(1);
         u = v;
-        v = r.wrapping_mul((*cdf.offset(val as isize) as libc::c_int >> 6) as libc::c_uint);
+        v = r.wrapping_mul((cdf[val as usize] as libc::c_int >> 6) as libc::c_uint);
         v >>= 7 - 6;
         v = v.wrapping_add(
             (4 as libc::c_int as libc::c_uint)
@@ -274,25 +274,20 @@ unsafe fn dav1d_msac_decode_symbol_adapt_rust(
         u.wrapping_sub(v),
     );
     if s.allow_update_cdf != 0 {
-        let count: libc::c_uint = *cdf.offset(n_symbols as isize) as libc::c_uint;
+        let count: libc::c_uint = cdf[n_symbols] as libc::c_uint;
         let rate: libc::c_uint = (4 as libc::c_int as libc::c_uint)
             .wrapping_add(count >> 4)
             .wrapping_add((n_symbols > 2) as u32);
         let mut i: libc::c_uint = 0;
         while i < val {
-            let ref mut fresh2 = *cdf.offset(i as isize);
-            *fresh2 = (*fresh2 as libc::c_int
-                + (32768 - *cdf.offset(i as isize) as libc::c_int >> rate))
-                as uint16_t;
+            cdf[i as usize] += (32768 - cdf[i as usize] as libc::c_int >> rate) as uint16_t;
             i = i.wrapping_add(1);
         }
         while (i as size_t) < n_symbols {
-            let ref mut fresh3 = *cdf.offset(i as isize);
-            *fresh3 = (*fresh3 as libc::c_int - (*cdf.offset(i as isize) as libc::c_int >> rate))
-                as uint16_t;
+            cdf[i as usize] -= (cdf[i as usize] as libc::c_int >> rate) as uint16_t;
             i = i.wrapping_add(1);
         }
-        *cdf.offset(n_symbols as isize) = count
+        cdf[n_symbols] = count
             .wrapping_add((count < 32 as libc::c_uint) as libc::c_int as libc::c_uint)
             as uint16_t;
     }
@@ -301,9 +296,17 @@ unsafe fn dav1d_msac_decode_symbol_adapt_rust(
 
 unsafe extern "C" fn dav1d_msac_decode_symbol_adapt_c(
     s: *mut MsacContext,
-    cdf: *mut uint16_t,
+    cdf: *mut u16,
     n_symbols: size_t,
 ) -> libc::c_uint {
+    // # Safety
+    //
+    // This is only called from [`dav1d_msac_decode_symbol_adapt16`],
+    // where there is an `assert!(n_symbols < cdf.len());`.
+    // Thus, `n_symbols + 1` is a valid length for the slice `cdf` came from.
+    #[deny(unsafe_op_in_unsafe_fn)]
+    let cdf = unsafe { std::slice::from_raw_parts_mut(cdf, n_symbols + 1) };
+
     dav1d_msac_decode_symbol_adapt_rust(&mut *s, cdf, n_symbols)
 }
 
@@ -408,6 +411,7 @@ pub unsafe fn dav1d_msac_decode_symbol_adapt16(
 ) -> libc::c_uint {
     cfg_if! {
         if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
+            assert!(n_symbols < cdf.len());
             (s.symbol_adapt16).expect("non-null function pointer")(s, cdf.as_mut_ptr(), n_symbols)
         } else if #[cfg(all(feature = "asm", target_arch = "aarch64"))] {
             dav1d_msac_decode_symbol_adapt16_neon(s, cdf.as_mut_ptr(), n_symbols)
