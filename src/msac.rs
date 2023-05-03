@@ -145,7 +145,7 @@ unsafe extern "C" fn ctx_norm(s: *mut MsacContext, dif: ec_win, rng: libc::c_uin
     }
 }
 
-pub unsafe fn dav1d_msac_decode_bool_equi_c(s: *mut MsacContext) -> libc::c_uint {
+pub unsafe fn dav1d_msac_decode_bool_equi_rust(s: *mut MsacContext) -> libc::c_uint {
     let r: libc::c_uint = (*s).rng;
     let mut dif: ec_win = (*s).dif;
     if !(dif >> (::core::mem::size_of::<ec_win>() << 3).wrapping_sub(16) < r as size_t) {
@@ -164,7 +164,7 @@ pub unsafe fn dav1d_msac_decode_bool_equi_c(s: *mut MsacContext) -> libc::c_uint
     return (ret == 0) as libc::c_int as libc::c_uint;
 }
 
-pub unsafe fn dav1d_msac_decode_bool_c(s: *mut MsacContext, f: libc::c_uint) -> libc::c_uint {
+pub unsafe fn dav1d_msac_decode_bool_rust(s: *mut MsacContext, f: libc::c_uint) -> libc::c_uint {
     let r: libc::c_uint = (*s).rng;
     let mut dif: ec_win = (*s).dif;
     if !(dif >> (::core::mem::size_of::<ec_win>() << 3).wrapping_sub(16) < r as size_t) {
@@ -289,7 +289,7 @@ pub unsafe extern "C" fn dav1d_msac_decode_symbol_adapt_c(
     dav1d_msac_decode_symbol_adapt_rust(s, cdf, n_symbols)
 }
 
-pub unsafe fn dav1d_msac_decode_bool_adapt_c(
+pub unsafe fn dav1d_msac_decode_bool_adapt_rust(
     s: *mut MsacContext,
     cdf: *mut uint16_t,
 ) -> libc::c_uint {
@@ -314,7 +314,7 @@ pub unsafe fn dav1d_msac_decode_bool_adapt_c(
     return bit;
 }
 
-pub unsafe fn dav1d_msac_decode_hi_tok_c(s: *mut MsacContext, cdf: *mut uint16_t) -> libc::c_uint {
+pub unsafe fn dav1d_msac_decode_hi_tok_rust(s: *mut MsacContext, cdf: *mut uint16_t) -> libc::c_uint {
     let mut tok_br: libc::c_uint =
         dav1d_msac_decode_symbol_adapt4(s, cdf, 3 as libc::c_int as size_t);
     let mut tok: libc::c_uint = (3 as libc::c_int as libc::c_uint).wrapping_add(tok_br);
@@ -418,7 +418,7 @@ pub unsafe fn dav1d_msac_decode_bool_adapt(
         } else if #[cfg(all(feature = "asm", target_arch = "aarch64"))] {
             return dav1d_msac_decode_bool_adapt_neon(s, cdf);
         } else {
-            return dav1d_msac_decode_bool_adapt_c(s, cdf);
+            return dav1d_msac_decode_bool_adapt_rust(s, cdf);
         }
     }
 }
@@ -430,7 +430,7 @@ pub unsafe fn dav1d_msac_decode_bool_equi(mut s: *mut MsacContext) -> libc::c_ui
         } else if #[cfg(all(feature = "asm", target_arch = "aarch64"))] {
             return dav1d_msac_decode_bool_equi_neon(s);
         } else {
-            return dav1d_msac_decode_bool_equi_c(s);
+            return dav1d_msac_decode_bool_equi_rust(s);
         }
     }
 }
@@ -442,7 +442,7 @@ pub unsafe fn dav1d_msac_decode_bool(mut s: *mut MsacContext, mut f: libc::c_uin
         } else if #[cfg(all(feature = "asm", target_arch = "aarch64"))] {
             return dav1d_msac_decode_bool_neon(s, f);
         } else {
-            return dav1d_msac_decode_bool_c(s, f);
+            return dav1d_msac_decode_bool_rust(s, f);
         }
     }
 }
@@ -457,7 +457,7 @@ pub unsafe fn dav1d_msac_decode_hi_tok(
         } else if #[cfg(all(feature = "asm", target_arch = "aarch64"))] {
             return dav1d_msac_decode_hi_tok_neon(s, cdf);
         } else {
-            return dav1d_msac_decode_hi_tok_c(s, cdf);
+            return dav1d_msac_decode_hi_tok_rust(s, cdf);
         }
     }
 }
