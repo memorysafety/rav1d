@@ -1107,28 +1107,7 @@ use crate::src::env::get_poc_diff;
 use crate::src::env::get_tx_ctx;
 
 use crate::src::msac::dav1d_msac_decode_bools;
-#[inline]
-unsafe extern "C" fn dav1d_msac_decode_uniform(
-    s: *mut MsacContext,
-    n: libc::c_uint,
-) -> libc::c_int {
-    if !(n > 0 as libc::c_uint) {
-        unreachable!();
-    }
-    let l = ulog2(n) + 1;
-    if !(l > 1) {
-        unreachable!();
-    }
-    let m: libc::c_uint = (((1 as libc::c_int) << l) as libc::c_uint).wrapping_sub(n);
-    let v: libc::c_uint = dav1d_msac_decode_bools(s, (l - 1) as libc::c_uint);
-    return (if v < m {
-        v
-    } else {
-        (v << 1)
-            .wrapping_sub(m)
-            .wrapping_add(dav1d_msac_decode_bool_equi(s))
-    }) as libc::c_int;
-}
+use crate::src::msac::dav1d_msac_decode_uniform;
 
 fn init_quant_tables(
     seq_hdr: &Dav1dSequenceHeader,
