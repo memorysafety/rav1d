@@ -1,3 +1,5 @@
+use std::mem;
+
 use crate::include::common::intops::ulog2;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
@@ -128,13 +130,13 @@ unsafe extern "C" fn msac_init_x86(s: &mut MsacContext) {
 #[cfg(feature = "asm")]
 use crate::src::cpu::dav1d_get_cpu_flags;
 
+const EC_WIN_SIZE: usize = mem::size_of::<ec_win>() << 3;
+
 #[inline]
 unsafe extern "C" fn ctx_refill(s: &mut MsacContext) {
     let mut buf_pos: *const uint8_t = s.buf_pos;
     let mut buf_end: *const uint8_t = s.buf_end;
-    let mut c = ((::core::mem::size_of::<ec_win>() as libc::c_ulong) << 3)
-        .wrapping_sub(s.cnt as libc::c_ulong)
-        .wrapping_sub(24 as libc::c_int as libc::c_ulong) as libc::c_int;
+    let mut c = EC_WIN_SIZE.wrapping_sub(s.cnt as usize).wrapping_sub(24) as libc::c_int;
     let mut dif: ec_win = s.dif;
     while c >= 0 && buf_pos < buf_end {
         let fresh1 = buf_pos;
@@ -143,9 +145,7 @@ unsafe extern "C" fn ctx_refill(s: &mut MsacContext) {
         c -= 8 as libc::c_int;
     }
     s.dif = dif;
-    s.cnt = ((::core::mem::size_of::<ec_win>() as libc::c_ulong) << 3)
-        .wrapping_sub(c as libc::c_ulong)
-        .wrapping_sub(24 as libc::c_int as libc::c_ulong) as libc::c_int;
+    s.cnt = EC_WIN_SIZE.wrapping_sub(c as usize).wrapping_sub(24) as libc::c_int;
     s.buf_pos = buf_pos;
 }
 
@@ -166,13 +166,11 @@ unsafe extern "C" fn ctx_norm(s: &mut MsacContext, dif: ec_win, rng: libc::c_uin
 unsafe fn dav1d_msac_decode_bool_equi_rust(s: &mut MsacContext) -> libc::c_uint {
     let r: libc::c_uint = s.rng;
     let mut dif: ec_win = s.dif;
-    if !(dif >> (::core::mem::size_of::<ec_win>() << 3).wrapping_sub(16) < r as size_t) {
+    if !(dif >> EC_WIN_SIZE.wrapping_sub(16) < r as size_t) {
         unreachable!();
     }
     let mut v: libc::c_uint = ((r >> 8) << 7).wrapping_add(4 as libc::c_int as libc::c_uint);
-    let vw: ec_win = (v as ec_win)
-        << ((::core::mem::size_of::<ec_win>() as libc::c_ulong) << 3)
-            .wrapping_sub(16 as libc::c_int as libc::c_ulong);
+    let vw: ec_win = (v as ec_win) << EC_WIN_SIZE.wrapping_sub(16);
     let ret: libc::c_uint = (dif >= vw) as libc::c_int as libc::c_uint;
     dif = dif.wrapping_sub((ret as size_t).wrapping_mul(vw)) as ec_win as ec_win;
     v = v.wrapping_add(
@@ -185,14 +183,12 @@ unsafe fn dav1d_msac_decode_bool_equi_rust(s: &mut MsacContext) -> libc::c_uint 
 unsafe fn dav1d_msac_decode_bool_rust(s: &mut MsacContext, f: libc::c_uint) -> libc::c_uint {
     let r: libc::c_uint = s.rng;
     let mut dif: ec_win = s.dif;
-    if !(dif >> (::core::mem::size_of::<ec_win>() << 3).wrapping_sub(16) < r as size_t) {
+    if !(dif >> EC_WIN_SIZE.wrapping_sub(16) < r as size_t) {
         unreachable!();
     }
     let mut v: libc::c_uint =
         ((r >> 8).wrapping_mul(f >> 6) >> 7 - 6).wrapping_add(4 as libc::c_int as libc::c_uint);
-    let vw: ec_win = (v as ec_win)
-        << ((::core::mem::size_of::<ec_win>() as libc::c_ulong) << 3)
-            .wrapping_sub(16 as libc::c_int as libc::c_ulong);
+    let vw: ec_win = (v as ec_win) << EC_WIN_SIZE.wrapping_sub(16);
     let ret: libc::c_uint = (dif >= vw) as libc::c_int as libc::c_uint;
     dif = (dif).wrapping_sub((ret as size_t).wrapping_mul(vw)) as ec_win as ec_win;
     v = v.wrapping_add(
@@ -234,10 +230,7 @@ unsafe fn dav1d_msac_decode_symbol_adapt_rust(
     cdf: &mut [u16],
     n_symbols: size_t,
 ) -> libc::c_uint {
-    let c: libc::c_uint = (s.dif
-        >> ((::core::mem::size_of::<ec_win>() as libc::c_ulong) << 3)
-            .wrapping_sub(16 as libc::c_int as libc::c_ulong))
-        as libc::c_uint;
+    let c: libc::c_uint = (s.dif >> EC_WIN_SIZE.wrapping_sub(16)) as libc::c_uint;
     let r: libc::c_uint = s.rng >> 8;
     let mut u: libc::c_uint = 0;
     let mut v: libc::c_uint = s.rng;
@@ -266,11 +259,7 @@ unsafe fn dav1d_msac_decode_symbol_adapt_rust(
     }
     ctx_norm(
         s,
-        (s.dif).wrapping_sub(
-            (v as ec_win)
-                << ((::core::mem::size_of::<ec_win>() as libc::c_ulong) << 3)
-                    .wrapping_sub(16 as libc::c_int as libc::c_ulong),
-        ),
+        (s.dif).wrapping_sub((v as ec_win) << EC_WIN_SIZE.wrapping_sub(16)),
         u.wrapping_sub(v),
     );
     if s.allow_update_cdf != 0 {
@@ -357,9 +346,7 @@ pub unsafe fn dav1d_msac_init(
 ) {
     s.buf_pos = data;
     s.buf_end = data.offset(sz as isize);
-    s.dif = ((1 as libc::c_int as ec_win)
-        << ((::core::mem::size_of::<ec_win>()) << 3).wrapping_sub(1))
-    .wrapping_sub(1);
+    s.dif = ((1 as libc::c_int as ec_win) << EC_WIN_SIZE.wrapping_sub(1)).wrapping_sub(1);
     s.rng = 0x8000 as libc::c_int as libc::c_uint;
     s.cnt = -(15 as libc::c_int);
     s.allow_update_cdf = (disable_cdf_update_flag == 0) as libc::c_int;
