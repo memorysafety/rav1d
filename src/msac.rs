@@ -379,9 +379,9 @@ pub unsafe fn dav1d_msac_init(
 }
 
 pub unsafe fn dav1d_msac_decode_symbol_adapt4(
-    mut s: *mut MsacContext,
-    mut cdf: *mut uint16_t,
-    mut n_symbols: size_t,
+    s: *mut MsacContext,
+    cdf: *mut uint16_t,
+    n_symbols: size_t,
 ) -> libc::c_uint {
     cfg_if! {
         if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
@@ -395,9 +395,9 @@ pub unsafe fn dav1d_msac_decode_symbol_adapt4(
 }
 
 pub unsafe fn dav1d_msac_decode_symbol_adapt8(
-    mut s: *mut MsacContext,
-    mut cdf: *mut uint16_t,
-    mut n_symbols: size_t,
+    s: *mut MsacContext,
+    cdf: *mut uint16_t,
+    n_symbols: size_t,
 ) -> libc::c_uint {
     cfg_if! {
         if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
@@ -411,9 +411,9 @@ pub unsafe fn dav1d_msac_decode_symbol_adapt8(
 }
 
 pub unsafe fn dav1d_msac_decode_symbol_adapt16(
-    mut s: *mut MsacContext,
-    mut cdf: *mut uint16_t,
-    mut n_symbols: size_t,
+    s: *mut MsacContext,
+    cdf: *mut uint16_t,
+    n_symbols: size_t,
 ) -> libc::c_uint {
     cfg_if! {
         if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
@@ -427,8 +427,8 @@ pub unsafe fn dav1d_msac_decode_symbol_adapt16(
 }
 
 pub unsafe fn dav1d_msac_decode_bool_adapt(
-    mut s: *mut MsacContext,
-    mut cdf: *mut uint16_t,
+    s: *mut MsacContext,
+    cdf: *mut uint16_t,
 ) -> libc::c_uint {
     cfg_if! {
         if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
@@ -441,7 +441,7 @@ pub unsafe fn dav1d_msac_decode_bool_adapt(
     }
 }
 
-pub unsafe fn dav1d_msac_decode_bool_equi(mut s: *mut MsacContext) -> libc::c_uint {
+pub unsafe fn dav1d_msac_decode_bool_equi(s: *mut MsacContext) -> libc::c_uint {
     cfg_if! {
         if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
              dav1d_msac_decode_bool_equi_sse2(s)
@@ -453,7 +453,7 @@ pub unsafe fn dav1d_msac_decode_bool_equi(mut s: *mut MsacContext) -> libc::c_ui
     }
 }
 
-pub unsafe fn dav1d_msac_decode_bool(mut s: *mut MsacContext, mut f: libc::c_uint) -> libc::c_uint {
+pub unsafe fn dav1d_msac_decode_bool(s: *mut MsacContext, f: libc::c_uint) -> libc::c_uint {
     cfg_if! {
         if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
              dav1d_msac_decode_bool_sse2(s, f)
@@ -465,10 +465,7 @@ pub unsafe fn dav1d_msac_decode_bool(mut s: *mut MsacContext, mut f: libc::c_uin
     }
 }
 
-pub unsafe fn dav1d_msac_decode_hi_tok(
-    mut s: *mut MsacContext,
-    mut cdf: *mut uint16_t,
-) -> libc::c_uint {
+pub unsafe fn dav1d_msac_decode_hi_tok(s: *mut MsacContext, cdf: *mut uint16_t) -> libc::c_uint {
     cfg_if! {
         if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
              dav1d_msac_decode_hi_tok_sse2(s, cdf)
