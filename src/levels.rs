@@ -311,12 +311,60 @@ pub struct Av1Block {
 }
 
 impl Av1Block {
+    pub unsafe fn cfl_alpha(&self) -> &[i8; 2] {
+        &self.c2rust_unnamed.c2rust_unnamed.cfl_alpha
+    }
+
+    pub unsafe fn cfl_alpha_mut(&mut self) -> &mut [i8; 2] {
+        &mut self.c2rust_unnamed.c2rust_unnamed.cfl_alpha
+    }
+
+    pub unsafe fn pal_sz(&self) -> &[u8; 2] {
+        &self.c2rust_unnamed.c2rust_unnamed.pal_sz
+    }
+
+    pub unsafe fn pal_sz_mut(&mut self) -> &mut [u8; 2] {
+        &mut self.c2rust_unnamed.c2rust_unnamed.pal_sz
+    }
+
+    pub unsafe fn tx(&self) -> u8 {
+        self.c2rust_unnamed.c2rust_unnamed.tx
+    }
+
+    pub unsafe fn tx_mut(&mut self) -> &mut u8 {
+        &mut self.c2rust_unnamed.c2rust_unnamed.tx
+    }
+
     pub unsafe fn y_mode(&self) -> u8 {
         self.c2rust_unnamed.c2rust_unnamed.y_mode
     }
 
     pub unsafe fn y_mode_mut(&mut self) -> &mut u8 {
         &mut self.c2rust_unnamed.c2rust_unnamed.y_mode
+    }
+
+    pub unsafe fn y_angle(&self) -> i8 {
+        self.c2rust_unnamed.c2rust_unnamed.y_angle
+    }
+
+    pub unsafe fn y_angle_mut(&mut self) -> &mut i8 {
+        &mut self.c2rust_unnamed.c2rust_unnamed.y_angle
+    }
+
+    pub unsafe fn uv_angle(&self) -> i8 {
+        self.c2rust_unnamed.c2rust_unnamed.uv_angle
+    }
+
+    pub unsafe fn uv_angle_mut(&mut self) -> &mut i8 {
+        &mut self.c2rust_unnamed.c2rust_unnamed.uv_angle
+    }
+
+    pub unsafe fn uv_mode(&self) -> u8 {
+        self.c2rust_unnamed.c2rust_unnamed.uv_mode
+    }
+
+    pub unsafe fn uv_mode_mut(&mut self) -> &mut u8 {
+        &mut self.c2rust_unnamed.c2rust_unnamed.uv_mode
     }
 
     pub unsafe fn matrix(&self) -> &[i16; 4] {
