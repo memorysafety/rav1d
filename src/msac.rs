@@ -76,10 +76,7 @@ use crate::include::common::attributes::clz;
 use crate::include::common::intops::inv_recenter;
 
 #[inline]
-pub unsafe extern "C" fn dav1d_msac_decode_bools(
-    s: *mut MsacContext,
-    n: libc::c_uint,
-) -> libc::c_uint {
+pub unsafe fn dav1d_msac_decode_bools(s: *mut MsacContext, n: libc::c_uint) -> libc::c_uint {
     let mut v = 0;
     for _ in 0..n {
         v = v << 1 | dav1d_msac_decode_bool_equi(s);
@@ -88,10 +85,7 @@ pub unsafe extern "C" fn dav1d_msac_decode_bools(
 }
 
 #[inline]
-pub unsafe extern "C" fn dav1d_msac_decode_uniform(
-    s: *mut MsacContext,
-    n: libc::c_uint,
-) -> libc::c_int {
+pub unsafe fn dav1d_msac_decode_uniform(s: *mut MsacContext, n: libc::c_uint) -> libc::c_int {
     if !(n > 0 as libc::c_uint) {
         unreachable!();
     }
