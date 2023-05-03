@@ -71,10 +71,20 @@ pub struct MsacContext {
     pub dif: ec_win,
     pub rng: libc::c_uint,
     pub cnt: libc::c_int,
-    pub allow_update_cdf: libc::c_int,
+    allow_update_cdf: libc::c_int,
     #[cfg(all(feature = "asm", target_arch = "x86_64"))]
     pub symbol_adapt16:
         Option<unsafe extern "C" fn(*mut MsacContext, *mut uint16_t, size_t) -> libc::c_uint>,
+}
+
+impl MsacContext {
+    fn allow_update_cdf(&self) -> bool {
+        self.allow_update_cdf != 0
+    }
+
+    fn set_allow_update_cdf(&mut self, val: bool) {
+        self.allow_update_cdf = val.into()
+    }
 }
 
 #[inline]
@@ -236,7 +246,7 @@ unsafe fn dav1d_msac_decode_symbol_adapt_rust(
         (s.dif).wrapping_sub((v as ec_win) << EC_WIN_SIZE.wrapping_sub(16)),
         u.wrapping_sub(v),
     );
-    if s.allow_update_cdf != 0 {
+    if s.allow_update_cdf() {
         let count = cdf[n_symbols] as libc::c_uint;
         let rate = (4 as libc::c_uint)
             .wrapping_add(count >> 4)
@@ -276,7 +286,7 @@ unsafe fn dav1d_msac_decode_bool_adapt_rust(
     cdf: &mut [u16; 2],
 ) -> libc::c_uint {
     let bit = dav1d_msac_decode_bool(s, cdf[0] as libc::c_uint);
-    if s.allow_update_cdf != 0 {
+    if s.allow_update_cdf() {
         let count = cdf[1] as libc::c_uint;
         let rate = (4 as libc::c_uint).wrapping_add(count >> 4) as libc::c_int;
         if bit != 0 {
@@ -317,7 +327,7 @@ pub unsafe fn dav1d_msac_init(
     s.dif = ((1 as ec_win) << EC_WIN_SIZE.wrapping_sub(1)).wrapping_sub(1);
     s.rng = 0x8000;
     s.cnt = -15;
-    s.allow_update_cdf = (disable_cdf_update_flag == 0) as libc::c_int;
+    s.set_allow_update_cdf(disable_cdf_update_flag == 0);
     ctx_refill(s);
 
     #[cfg(all(feature = "asm", target_arch = "x86_64"))]
