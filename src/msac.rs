@@ -203,15 +203,15 @@ pub unsafe fn dav1d_msac_decode_subexp(
     let mut a = 0;
     if dav1d_msac_decode_bool_equi(s) != 0 {
         if dav1d_msac_decode_bool_equi(s) != 0 {
-            k = k.wrapping_add((dav1d_msac_decode_bool_equi(s)).wrapping_add(1));
+            k += dav1d_msac_decode_bool_equi(s) + 1;
         }
         a = 1 << k;
     }
-    let v = (dav1d_msac_decode_bools(s, k)).wrapping_add(a);
+    let v = dav1d_msac_decode_bools(s, k) + a;
     (if r#ref * 2 <= n {
         inv_recenter(r#ref as libc::c_uint, v)
     } else {
-        ((n - 1) as libc::c_uint).wrapping_sub(inv_recenter((n - 1 - r#ref) as libc::c_uint, v))
+        ((n - 1) as libc::c_uint) - inv_recenter((n - 1 - r#ref) as libc::c_uint, v)
     }) as libc::c_int
 }
 
