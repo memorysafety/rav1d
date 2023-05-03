@@ -155,7 +155,7 @@ unsafe extern "C" fn ctx_norm(s: &mut MsacContext, dif: ec_win, rng: libc::c_uin
     let d = 15 ^ (31 ^ clz(rng));
     assert!(rng <= 65535);
     s.cnt -= d;
-    s.dif = (dif.wrapping_add(1) << d).wrapping_sub(1);
+    s.dif = ((dif + 1) << d) - 1;
     s.rng = rng << d;
     if s.cnt < 0 {
         ctx_refill(s);
