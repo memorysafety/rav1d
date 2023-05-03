@@ -166,7 +166,7 @@ unsafe fn dav1d_msac_decode_bool_equi_rust(s: &mut MsacContext) -> libc::c_uint 
     let r = s.rng;
     let mut dif = s.dif;
     assert!(dif >> (EC_WIN_SIZE - 16) < r as size_t);
-    let mut v = ((r >> 8) << 7).wrapping_add(EC_MIN_PROB);
+    let mut v = (r >> 8 << 7) + EC_MIN_PROB;
     let vw = (v as ec_win) << (EC_WIN_SIZE - 16);
     let ret = dif >= vw;
     dif = dif.wrapping_sub((ret as size_t).wrapping_mul(vw)) as ec_win;
@@ -181,8 +181,7 @@ unsafe fn dav1d_msac_decode_bool_rust(s: &mut MsacContext, f: libc::c_uint) -> l
     let r = s.rng;
     let mut dif = s.dif;
     assert!(dif >> (EC_WIN_SIZE - 16) < r as size_t);
-    let mut v = ((r >> 8).wrapping_mul(f >> EC_PROB_SHIFT) >> (7 - EC_PROB_SHIFT))
-        .wrapping_add(EC_MIN_PROB);
+    let mut v = ((r >> 8) * (f >> EC_PROB_SHIFT) >> (7 - EC_PROB_SHIFT)) + EC_MIN_PROB;
     let vw = (v as ec_win) << (EC_WIN_SIZE - 16);
     let ret = dif >= vw;
     dif = (dif).wrapping_sub((ret as size_t).wrapping_mul(vw)) as ec_win;
