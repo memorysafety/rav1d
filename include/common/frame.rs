@@ -6,3 +6,9 @@ pub fn is_inter_or_switch(frame_header: &Dav1dFrameHeader) -> bool {
     // See also: AV1 spec 6.8.2
     frame_header.frame_type & 1 != 0
 }
+
+/// Checks whether Dav1dFrameType == KEY || == INTRA
+/// See also: AV1 spec 6.8.2
+pub fn is_key_or_intra(frame_header: &Dav1dFrameHeader) -> bool {
+    !is_inter_or_switch(frame_header)
+}

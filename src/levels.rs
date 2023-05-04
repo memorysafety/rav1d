@@ -416,6 +416,10 @@ impl Av1Block {
         self.c2rust_unnamed.c2rust_unnamed_0.filter2d
     }
 
+    pub unsafe fn filter2d_mut(&mut self) -> &mut u8 {
+        &mut self.c2rust_unnamed.c2rust_unnamed_0.filter2d
+    }
+
     pub unsafe fn r#ref(&self) -> [int8_t; 2] {
         self.c2rust_unnamed.c2rust_unnamed_0.r#ref
     }

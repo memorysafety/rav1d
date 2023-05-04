@@ -79,7 +79,7 @@ pub struct refmvs_refpair {
     pub r#ref: [int8_t; 2],
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
 #[repr(C)]
 pub struct refmvs_mvpair {
     pub mv: [mv; 2],
@@ -136,7 +136,7 @@ pub struct refmvs_tile {
     pub tile_col: refmvs_tile_range,
     pub tile_row: refmvs_tile_range,
 }
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct refmvs_candidate {
     pub mv: refmvs_mvpair,
