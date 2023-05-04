@@ -3745,10 +3745,10 @@ unsafe fn decode_b(
             // ((uint8_t *) &t_dim->lw)[diridx]
             // ```
             //
-            // The original logic casts the `lw` field to a `*const u8` and then does
-            // indexing within the structs fields. This is deeply cursed an unnecessary
-            // since `diridx` will only ever be 0 or 1. So for the Rust version we manually
-            // select which field we want based on `diridx` directly.
+            // The original logic casts a pointer to the `lw` field to a `*const u8` and
+            // then does indexing within the struct's fields. This is deeply cursed and
+            // unnecessary since `diridx` will only ever be 0 or 1. So for the Rust version
+            // we manually select which field we want based on `diridx` directly.
             let lw_lh = match diridx {
                 0 => t_dim.lw,
                 1 => t_dim.lh,
