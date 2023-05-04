@@ -3804,7 +3804,7 @@ unsafe fn decode_b(
             &mut mvstack,
             &mut n_mvs,
             &mut ctx_1,
-            refmvs_refpair { r#ref: [0, -1] },
+            [0, -1].into(),
             bs,
             intra_edge_flags,
             t.by,
@@ -3942,10 +3942,12 @@ unsafe fn decode_b(
             case_set(cbw4, &mut *t.a, 0, cbx4 as isize, &mut set_ctx);
         }
     } else {
-        let mut is_comp = 0;
-        let mut has_subpel_filter = 0;
+        // inter-specific mode/mv coding
+        let mut is_comp = false;
+        let mut has_subpel_filter = false;
+
         if b.skip_mode != 0 {
-            is_comp = 1 as libc::c_int;
+            is_comp = true;
         } else if seg
             .map(|seg| seg.r#ref == -1 && seg.globalmv == 0 && seg.skip == 0)
             .unwrap_or(true)
@@ -3953,97 +3955,62 @@ unsafe fn decode_b(
             && imin(bw4, bh4) > 1
         {
             let ctx_2 = get_comp_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
-            is_comp = dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.comp[ctx_2 as usize])
-                as libc::c_int;
+            is_comp = dav1d_msac_decode_bool_adapt(
+                &mut ts.msac,
+                &mut ts.cdf.m.comp[ctx_2 as usize],
+            ) != 0;
+
             if DEBUG_BLOCK_INFO(f, t) {
-                printf(
-                    b"Post-compflag[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
-                    is_comp,
-                    ts.msac.rng,
-                );
+                println!("Post-compflag[{}]: r={}", is_comp, ts.msac.rng);
             }
         } else {
-            is_comp = 0 as libc::c_int;
+            is_comp = false;
         }
+
         if b.skip_mode != 0 {
-            b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] = frame_hdr.skip_mode_refs[0] as int8_t;
-            b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] = frame_hdr.skip_mode_refs[1] as int8_t;
-            b.c2rust_unnamed.c2rust_unnamed_0.comp_type = COMP_INTER_AVG as libc::c_int as uint8_t;
-            b.c2rust_unnamed.c2rust_unnamed_0.inter_mode =
-                NEARESTMV_NEARESTMV as libc::c_int as uint8_t;
-            b.c2rust_unnamed.c2rust_unnamed_0.drl_idx = NEAREST_DRL as libc::c_int as uint8_t;
-            has_subpel_filter = 0 as libc::c_int;
-            let mut mvstack_0: [refmvs_candidate; 8] = [refmvs_candidate {
-                mv: refmvs_mvpair { mv: [mv::ZERO; 2] },
-                weight: 0,
-            }; 8];
+            b.ref_mut()[0] = frame_hdr.skip_mode_refs[0] as i8;
+            b.ref_mut()[1] = frame_hdr.skip_mode_refs[1] as i8;
+            b.c2rust_unnamed.c2rust_unnamed_0.comp_type = COMP_INTER_AVG as uint8_t;
+            b.c2rust_unnamed.c2rust_unnamed_0.inter_mode = NEARESTMV_NEARESTMV as uint8_t;
+            b.c2rust_unnamed.c2rust_unnamed_0.drl_idx = NEAREST_DRL as uint8_t;
+            has_subpel_filter = false;
+
+            let mut mvstack = [Default::default(); 8];
             let mut n_mvs_0 = 0;
             let mut ctx_3 = 0;
             dav1d_refmvs_find(
                 &mut t.rt,
-                &mut mvstack_0,
+                &mut mvstack,
                 &mut n_mvs_0,
                 &mut ctx_3,
-                refmvs_refpair {
-                    r#ref: [
-                        (b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int + 1) as int8_t,
-                        (b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as libc::c_int + 1) as int8_t,
-                    ],
-                },
+                [b.r#ref()[0] + 1, b.r#ref()[1] + 1].into(),
                 bs,
                 intra_edge_flags,
                 t.by,
                 t.bx,
             );
-            b.c2rust_unnamed
-                .c2rust_unnamed_0
-                .c2rust_unnamed
-                .c2rust_unnamed
-                .mv[0] = mvstack_0[0].mv.mv[0];
-            b.c2rust_unnamed
-                .c2rust_unnamed_0
-                .c2rust_unnamed
-                .c2rust_unnamed
-                .mv[1] = mvstack_0[0].mv.mv[1];
+
+            *b.mv_mut() = mvstack[0].mv.mv;
             fix_mv_precision(frame_hdr, &mut b.mv_mut()[0]);
             fix_mv_precision(frame_hdr, &mut b.mv_mut()[1]);
+
             if DEBUG_BLOCK_INFO(f, t) {
-                printf(
-                    b"Post-skipmodeblock[mv=1:y=%d,x=%d,2:y=%d,x=%d,refs=%d+%d\n\0" as *const u8
-                        as *const libc::c_char,
-                    b.c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .mv[0]
-                        .y as libc::c_int,
-                    b.c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .mv[0]
-                        .x as libc::c_int,
-                    b.c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .mv[1]
-                        .y as libc::c_int,
-                    b.c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .mv[1]
-                        .x as libc::c_int,
-                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int,
-                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as libc::c_int,
+                println!(
+                    "Post-skipmodeblock[mv=1:{:?},2:{:?},refs={}+{}",
+                    b.mv()[0],
+                    b.mv()[1],
+                    b.r#ref()[0],
+                    b.r#ref()[1],
                 );
             }
-        } else if is_comp != 0 {
+        } else if is_comp {
             let dir_ctx = get_comp_dir_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
-            if dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.comp_dir[dir_ctx as usize])
-                != 0
+            if dav1d_msac_decode_bool_adapt(
+                &mut ts.msac,
+                &mut ts.cdf.m.comp_dir[dir_ctx as usize],
+            ) != 0
             {
+                // bidir - first reference (fw)
                 let ctx1 = av1_get_fwd_ref_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
                 if dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
@@ -4051,217 +4018,179 @@ unsafe fn decode_b(
                 ) != 0
                 {
                     let ctx2 = av1_get_fwd_ref_2_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
-                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] = (2 as libc::c_int as libc::c_uint)
-                        .wrapping_add(dav1d_msac_decode_bool_adapt(
-                            &mut ts.msac,
-                            &mut ts.cdf.m.comp_fwd_ref[2][ctx2 as usize],
-                        ))
-                        as int8_t;
-                } else {
-                    let ctx2_0 = av1_get_fwd_ref_1_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
-                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] = dav1d_msac_decode_bool_adapt(
+                    b.ref_mut()[0] = 2 + dav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
-                        &mut ts.cdf.m.comp_fwd_ref[1][ctx2_0 as usize],
+                        &mut ts.cdf.m.comp_fwd_ref[2][ctx2 as usize],
+                    ) as int8_t;
+                } else {
+                    let ctx2 = av1_get_fwd_ref_1_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
+                    b.ref_mut()[0] = dav1d_msac_decode_bool_adapt(
+                        &mut ts.msac,
+                        &mut ts.cdf.m.comp_fwd_ref[1][ctx2 as usize],
                     ) as int8_t;
                 }
+
+                // second reference (bw)
                 let ctx3 = av1_get_bwd_ref_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
                 if dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     &mut ts.cdf.m.comp_bwd_ref[0][ctx3 as usize],
                 ) != 0
                 {
-                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] = 6 as libc::c_int as int8_t;
+                    b.ref_mut()[1] = 6;
                 } else {
                     let ctx4 = av1_get_bwd_ref_1_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
-                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] = (4 as libc::c_int as libc::c_uint)
-                        .wrapping_add(dav1d_msac_decode_bool_adapt(
-                            &mut ts.msac,
-                            &mut ts.cdf.m.comp_bwd_ref[1][ctx4 as usize],
-                        ))
-                        as int8_t;
+                    b.ref_mut()[1] = 4 + dav1d_msac_decode_bool_adapt(
+                        &mut ts.msac,
+                        &mut ts.cdf.m.comp_bwd_ref[1][ctx4 as usize],
+                    ) as int8_t;
                 }
             } else {
+                // unidir
                 let uctx_p = av1_get_ref_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
                 if dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     &mut ts.cdf.m.comp_uni_ref[0][uctx_p as usize],
                 ) != 0
                 {
-                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] = 4 as libc::c_int as int8_t;
-                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] = 6 as libc::c_int as int8_t;
+                    *b.ref_mut() = [4, 6];
                 } else {
                     let uctx_p1 = av1_get_uni_p1_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
-                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] = 0 as libc::c_int as int8_t;
-                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] = (1 as libc::c_int as libc::c_uint)
-                        .wrapping_add(dav1d_msac_decode_bool_adapt(
+                    *b.ref_mut() = [
+                        0,
+                        1 + dav1d_msac_decode_bool_adapt(
                             &mut ts.msac,
                             &mut ts.cdf.m.comp_uni_ref[1][uctx_p1 as usize],
-                        ))
-                        as int8_t;
-                    if b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as libc::c_int == 2 {
+                        ) as i8,
+                    ];
+
+                    if b.r#ref()[1] == 2 {
                         let uctx_p2 =
                             av1_get_fwd_ref_2_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
-                        b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] =
-                            (b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as libc::c_uint)
-                                .wrapping_add(dav1d_msac_decode_bool_adapt(
-                                    &mut ts.msac,
-                                    &mut ts.cdf.m.comp_uni_ref[2][uctx_p2 as usize],
-                                )) as int8_t as int8_t;
+                        b.ref_mut()[1] += dav1d_msac_decode_bool_adapt(
+                            &mut ts.msac,
+                            &mut ts.cdf.m.comp_uni_ref[2][uctx_p2 as usize],
+                        ) as i8;
                     }
                 }
             }
+
             if DEBUG_BLOCK_INFO(f, t) {
-                printf(
-                    b"Post-refs[%d/%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
-                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int,
-                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as libc::c_int,
+                println!(
+                    "Post-refs[{}/{}]: r={}",
+                    b.r#ref()[0],
+                    b.r#ref()[1],
                     ts.msac.rng,
                 );
             }
-            let mut mvstack_1: [refmvs_candidate; 8] = [refmvs_candidate {
-                mv: refmvs_mvpair { mv: [mv::ZERO; 2] },
-                weight: 0,
-            }; 8];
-            let mut n_mvs_1 = 0;
+
+            let mut mvstack = [Default::default(); 8];
+            let mut n_mvs = 0;
             let mut ctx_4 = 0;
             dav1d_refmvs_find(
                 &mut t.rt,
-                &mut mvstack_1,
-                &mut n_mvs_1,
+                &mut mvstack,
+                &mut n_mvs,
                 &mut ctx_4,
-                refmvs_refpair {
-                    r#ref: [
-                        (b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int + 1) as int8_t,
-                        (b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as libc::c_int + 1) as int8_t,
-                    ],
-                },
+                [b.r#ref()[0] + 1, b.r#ref()[1] + 1].into(),
                 bs,
                 intra_edge_flags,
                 t.by,
                 t.bx,
             );
-            b.c2rust_unnamed.c2rust_unnamed_0.inter_mode = dav1d_msac_decode_symbol_adapt8(
+
+            *b.inter_mode_mut() = dav1d_msac_decode_symbol_adapt8(
                 &mut ts.msac,
                 &mut ts.cdf.m.comp_inter_mode[ctx_4 as usize],
-                (N_COMP_INTER_PRED_MODES as libc::c_int - 1) as size_t,
+                N_COMP_INTER_PRED_MODES as size_t - 1,
             ) as uint8_t;
+
             if DEBUG_BLOCK_INFO(f, t) {
-                printf(
-                    b"Post-compintermode[%d,ctx=%d,n_mvs=%d]: r=%d\n\0" as *const u8
-                        as *const libc::c_char,
-                    b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as libc::c_int,
+                println!(
+                    "Post-compintermode[{},ctx={},n_mvs={}]: r={}",
+                    b.inter_mode(),
                     ctx_4,
-                    n_mvs_1,
+                    n_mvs,
                     ts.msac.rng,
                 );
             }
-            let im: *const uint8_t = (dav1d_comp_inter_pred_modes
-                [b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as usize])
-                .as_ptr();
-            b.c2rust_unnamed.c2rust_unnamed_0.drl_idx = NEAREST_DRL as libc::c_int as uint8_t;
-            if b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as libc::c_int
-                == NEWMV_NEWMV as libc::c_int
-            {
-                if n_mvs_1 > 1 {
-                    let drl_ctx_v1 = get_drl_context(&mvstack_1, 0);
-                    b.c2rust_unnamed.c2rust_unnamed_0.drl_idx =
-                        (b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_uint).wrapping_add(
-                            dav1d_msac_decode_bool_adapt(
-                                &mut ts.msac,
-                                &mut ts.cdf.m.drl_bit[drl_ctx_v1 as usize],
-                            ),
-                        ) as uint8_t as uint8_t;
-                    if b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_int
-                        == NEARER_DRL as libc::c_int
-                        && n_mvs_1 > 2
-                    {
-                        let drl_ctx_v2 = get_drl_context(&mvstack_1, 1);
-                        b.c2rust_unnamed.c2rust_unnamed_0.drl_idx =
-                            (b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_uint)
-                                .wrapping_add(dav1d_msac_decode_bool_adapt(
-                                    &mut ts.msac,
-                                    &mut ts.cdf.m.drl_bit[drl_ctx_v2 as usize],
-                                )) as uint8_t as uint8_t;
+
+            let im = &dav1d_comp_inter_pred_modes[b.inter_mode() as usize];
+            *b.drl_idx_mut() = NEAREST_DRL as u8;
+            if b.inter_mode() == NEWMV_NEWMV as u8 {
+                // NEARER, NEAR or NEARISH
+                if n_mvs > 1 {
+                    let drl_ctx_v1 = get_drl_context(&mvstack, 0);
+                    *b.drl_idx_mut() += dav1d_msac_decode_bool_adapt(
+                        &mut ts.msac,
+                        &mut ts.cdf.m.drl_bit[drl_ctx_v1 as usize],
+                    ) as u8;
+
+                    if b.drl_idx() == NEARER_DRL as u8 && n_mvs > 2 {
+                        let drl_ctx_v2 = get_drl_context(&mvstack, 1);
+                        *b.drl_idx_mut() += dav1d_msac_decode_bool_adapt(
+                            &mut ts.msac,
+                            &mut ts.cdf.m.drl_bit[drl_ctx_v2 as usize],
+                        ) as u8;
                     }
+
                     if DEBUG_BLOCK_INFO(f, t) {
-                        printf(
-                            b"Post-drlidx[%d,n_mvs=%d]: r=%d\n\0" as *const u8
-                                as *const libc::c_char,
-                            b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_int,
-                            n_mvs_1,
+                        println!(
+                            "Post-drlidx[{},n_mvs={}]: r={}",
+                            b.drl_idx(),
+                            n_mvs,
                             ts.msac.rng,
                         );
                     }
                 }
-            } else if *im.offset(0) as libc::c_int == NEARMV as libc::c_int
-                || *im.offset(1) as libc::c_int == NEARMV as libc::c_int
-            {
-                b.c2rust_unnamed.c2rust_unnamed_0.drl_idx = NEARER_DRL as libc::c_int as uint8_t;
-                if n_mvs_1 > 2 {
-                    let drl_ctx_v2_0 = get_drl_context(&mvstack_1, 1);
-                    b.c2rust_unnamed.c2rust_unnamed_0.drl_idx =
-                        (b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_uint).wrapping_add(
-                            dav1d_msac_decode_bool_adapt(
-                                &mut ts.msac,
-                                &mut ts.cdf.m.drl_bit[drl_ctx_v2_0 as usize],
-                            ),
-                        ) as uint8_t as uint8_t;
-                    if b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_int
-                        == NEAR_DRL as libc::c_int
-                        && n_mvs_1 > 3
-                    {
-                        let drl_ctx_v3 = get_drl_context(&mvstack_1, 2);
-                        b.c2rust_unnamed.c2rust_unnamed_0.drl_idx =
-                            (b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_uint)
-                                .wrapping_add(dav1d_msac_decode_bool_adapt(
-                                    &mut ts.msac,
-                                    &mut ts.cdf.m.drl_bit[drl_ctx_v3 as usize],
-                                )) as uint8_t as uint8_t;
+            } else if im[0] == NEARMV as u8 || im[1] == NEARMV as u8 {
+                *b.drl_idx_mut() = NEARER_DRL as u8;
+
+                // NEAR or NEARISH
+                if n_mvs > 2 {
+                    let drl_ctx_v2_0 = get_drl_context(&mvstack, 1);
+                    *b.drl_idx_mut() += dav1d_msac_decode_bool_adapt(
+                        &mut ts.msac,
+                        &mut ts.cdf.m.drl_bit[drl_ctx_v2_0 as usize],
+                    ) as u8;
+
+                    if b.drl_idx() == NEAR_DRL as u8 && n_mvs > 3 {
+                        let drl_ctx_v3 = get_drl_context(&mvstack, 2);
+                        *b.drl_idx_mut() += dav1d_msac_decode_bool_adapt(
+                            &mut ts.msac,
+                            &mut ts.cdf.m.drl_bit[drl_ctx_v3 as usize],
+                        ) as u8;
                     }
+
                     if DEBUG_BLOCK_INFO(f, t) {
-                        printf(
-                            b"Post-drlidx[%d,n_mvs=%d]: r=%d\n\0" as *const u8
-                                as *const libc::c_char,
-                            b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_int,
-                            n_mvs_1,
+                        println!(
+                            "Post-drlidx[{},n_mvs={}]: r={}",
+                            b.drl_idx(),
+                            n_mvs,
                             ts.msac.rng,
                         );
                     }
                 }
             }
-            if !(b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_int
-                >= NEAREST_DRL as libc::c_int
-                && b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_int
-                    <= NEARISH_DRL as libc::c_int)
-            {
-                unreachable!();
-            }
-            has_subpel_filter = (imin(bw4, bh4) == 1
-                || b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as libc::c_int
-                    != GLOBALMV_GLOBALMV as libc::c_int)
-                as libc::c_int;
-            match *im.offset(0) as libc::c_int {
+
+            assert!(b.drl_idx() >= NEAREST_DRL as u8 && b.drl_idx() <= NEARISH_DRL as u8);
+
+            has_subpel_filter = imin(bw4, bh4) == 1 || b.inter_mode() != GLOBALMV_GLOBALMV as u8;
+            match im[0] {
                 1 | 0 => {
                     b.c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
-                        .mv[0] = mvstack_1[b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as usize]
+                        .mv[0] = mvstack[b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as usize]
                         .mv
                         .mv[0];
                     fix_mv_precision(frame_hdr, &mut b.mv_mut()[0]);
                 }
                 2 => {
-                    has_subpel_filter |= (frame_hdr.gmv
-                        [b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize]
-                        .type_0 as libc::c_uint
-                        == DAV1D_WM_TYPE_TRANSLATION as libc::c_int as libc::c_uint)
-                        as libc::c_int;
-                    b.c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .mv[0] = get_gmv_2d(
+                    has_subpel_filter |=
+                        frame_hdr.gmv[b.r#ref()[0] as usize].type_0 == DAV1D_WM_TYPE_TRANSLATION;
+                    b.mv_mut()[0] = get_gmv_2d(
                         &frame_hdr.gmv[b.r#ref()[0] as usize],
                         t.bx,
                         t.by,
@@ -4275,7 +4204,7 @@ unsafe fn decode_b(
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
-                        .mv[0] = mvstack_1[b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as usize]
+                        .mv[0] = mvstack[b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as usize]
                         .mv
                         .mv[0];
                     read_mv_residual(
@@ -4294,23 +4223,20 @@ unsafe fn decode_b(
                 }
                 _ => {}
             }
-            match *im.offset(1) as libc::c_int {
+            match im[1] {
                 1 | 0 => {
                     b.c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
-                        .mv[1] = mvstack_1[b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as usize]
+                        .mv[1] = mvstack[b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as usize]
                         .mv
                         .mv[1];
                     fix_mv_precision(frame_hdr, &mut b.mv_mut()[1]);
                 }
                 2 => {
-                    has_subpel_filter |= (frame_hdr.gmv
-                        [b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as usize]
-                        .type_0 as libc::c_uint
-                        == DAV1D_WM_TYPE_TRANSLATION as libc::c_int as libc::c_uint)
-                        as libc::c_int;
+                    has_subpel_filter |=
+                        frame_hdr.gmv[b.r#ref()[1] as usize].type_0 == DAV1D_WM_TYPE_TRANSLATION;
                     b.c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
@@ -4329,7 +4255,7 @@ unsafe fn decode_b(
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
-                        .mv[1] = mvstack_1[b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as usize]
+                        .mv[1] = mvstack[b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as usize]
                         .mv
                         .mv[1];
                     read_mv_residual(
@@ -4687,13 +4613,10 @@ unsafe fn decode_b(
                         bh4,
                         frame_hdr,
                     );
-                    has_subpel_filter = (imin(bw4, bh4) == 1
-                        || frame_hdr.gmv[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize].type_0
-                            as libc::c_uint
-                            == DAV1D_WM_TYPE_TRANSLATION as libc::c_int as libc::c_uint)
-                        as libc::c_int;
+                    has_subpel_filter = imin(bw4, bh4) == 1
+                        || frame_hdr.gmv[b.r#ref()[0] as usize].type_0 == DAV1D_WM_TYPE_TRANSLATION;
                 } else {
-                    has_subpel_filter = 1 as libc::c_int;
+                    has_subpel_filter = true;
                     if dav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
                         &mut ts.cdf.m.refmv_mode[(ctx_6 >> 4 & 15) as usize],
@@ -4774,7 +4697,7 @@ unsafe fn decode_b(
                     );
                 }
             } else {
-                has_subpel_filter = 1 as libc::c_int;
+                has_subpel_filter = true;
                 b.c2rust_unnamed.c2rust_unnamed_0.inter_mode = NEWMV as libc::c_int as uint8_t;
                 b.c2rust_unnamed.c2rust_unnamed_0.drl_idx = NEAREST_DRL as libc::c_int as uint8_t;
                 if n_mvs_2 > 1 {
@@ -4977,7 +4900,7 @@ unsafe fn decode_b(
                 if b.c2rust_unnamed.c2rust_unnamed_0.motion_mode as libc::c_int
                     == MM_WARP as libc::c_int
                 {
-                    has_subpel_filter = 0 as libc::c_int;
+                    has_subpel_filter = false;
                     t.warpmv = derive_warpmv(
                         t,
                         bw4,
@@ -5139,7 +5062,7 @@ unsafe fn decode_b(
         if frame_hdr.subpel_filter_mode as libc::c_uint
             == DAV1D_FILTER_SWITCHABLE as libc::c_int as libc::c_uint
         {
-            if has_subpel_filter != 0 {
+            if has_subpel_filter {
                 let comp = b.c2rust_unnamed.c2rust_unnamed_0.comp_type as libc::c_int
                     != COMP_INTER_NONE as libc::c_int;
                 let ctx1_1 = get_filter_ctx(
@@ -5219,7 +5142,7 @@ unsafe fn decode_b(
         }
         if frame_hdr.loopfilter.level_y[0] != 0 || frame_hdr.loopfilter.level_y[1] != 0 {
             let is_globalmv = (b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as libc::c_int
-                == (if is_comp != 0 {
+                == (if is_comp {
                     GLOBALMV_GLOBALMV as libc::c_int
                 } else {
                     GLOBALMV as libc::c_int
@@ -5275,7 +5198,7 @@ unsafe fn decode_b(
                 },
             );
         }
-        if is_comp != 0 {
+        if is_comp {
             splat_tworef_mv(f.c, t, bs, b, bw4, bh4);
         } else {
             splat_oneref_mv(f.c, t, bs, b, bw4, bh4);
