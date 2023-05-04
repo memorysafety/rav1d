@@ -82,17 +82,17 @@ pub unsafe fn set_ctx_rep4(buf: *mut u8, off: isize, val: u64) {
 pub type SetCtxFn = unsafe fn(*mut u8, isize, u64);
 
 #[inline]
-pub unsafe fn case_set<D, F>(var: libc::c_int, dir: &mut D, off: isize, set_ctx: F)
+pub unsafe fn case_set<D, F>(var: libc::c_int, dir: &mut D, diridx: usize, off: isize, set_ctx: &mut F)
 where
-    F: Fn(&mut D, isize, u64, SetCtxFn),
+    F: FnMut(&mut D, usize, isize, u64, SetCtxFn),
 {
     match var {
-        1 => set_ctx(dir, off, 0x01, set_ctx_rep1::<alias8>),
-        2 => set_ctx(dir, off, 0x0101, set_ctx_rep1::<alias16>),
-        4 => set_ctx(dir, off, 0x01010101, set_ctx_rep1::<alias32>),
-        8 => set_ctx(dir, off, 0x0101010101010101, set_ctx_rep1::<alias64>),
-        16 => set_ctx(dir, off, 0x0101010101010101, set_ctx_rep2),
-        32 => set_ctx(dir, off, 0x0101010101010101, set_ctx_rep4),
+        1 => set_ctx(dir, diridx, off, 0x01, set_ctx_rep1::<alias8>),
+        2 => set_ctx(dir, diridx, off, 0x0101, set_ctx_rep1::<alias16>),
+        4 => set_ctx(dir, diridx, off, 0x01010101, set_ctx_rep1::<alias32>),
+        8 => set_ctx(dir, diridx, off, 0x0101010101010101, set_ctx_rep1::<alias64>),
+        16 => set_ctx(dir, diridx, off, 0x0101010101010101, set_ctx_rep2),
+        32 => set_ctx(dir, diridx, off, 0x0101010101010101, set_ctx_rep4),
 
         _ => {}
     }
