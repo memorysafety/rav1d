@@ -81,7 +81,9 @@ pub struct refmvs_refpair {
 
 impl refmvs_refpair {
     pub fn new(ref_0: i8, ref_1: i8) -> Self {
-        refmvs_refpair { r#ref: [ref_0, ref_1] }
+        refmvs_refpair {
+            r#ref: [ref_0, ref_1],
+        }
     }
 }
 
