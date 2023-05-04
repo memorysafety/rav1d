@@ -11,13 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: install prerequisites
-        run: |
-          # make sure we don't silently continue
-          set -euo pipefail
-          sudo apt-get update --quiet=2
-          sudo apt-get install --yes meson nasm gcc-multilib
-        env:
-          DEBIAN_FRONTEND: noninteractive
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: meson nasm gcc-multilib
+          version: 1.0 # version of cache to load
       - name: git checkout
         uses: actions/checkout@v3
         with:
@@ -29,7 +26,7 @@ jobs:
             ~/.rustup/toolchains
             ~/.rustup/update-hashes
             ~/.rustup/settings.toml
-          key: ${{ runner.os }}-rust-toolchain-${{ hashFiles('rust-toolchain', 'rust-toolchain.toml') }}
+          key: ${{ runner.os }}-${{ matrix.target }}-rust-toolchain-${{ hashFiles('rust-toolchain', 'rust-toolchain.toml') }}
       - name: cache rust crates
         uses: actions/cache@v3
         with:
