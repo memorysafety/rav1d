@@ -1,5 +1,6 @@
 use crate::include::stddef::*;
 use ::libc;
+#[cfg(feature = "asm")]
 use cfg_if::cfg_if;
 extern "C" {
     pub type Dav1dContext;

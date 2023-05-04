@@ -1,4 +1,5 @@
 use ::libc;
+#[cfg(feature = "asm")]
 use cfg_if::cfg_if;
 
 #[cfg(feature = "asm")]

@@ -1,12 +1,15 @@
+#[cfg(feature = "asm")]
 use core::panic;
+#[cfg(feature = "asm")]
 use std::env;
+#[cfg(feature = "asm")]
 use std::path::Path;
 
 fn main() {
-    let arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
-
     #[cfg(feature = "asm")]
     {
+        let arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
+
         if arch == "x86_64" {
             println!("cargo:rustc-cfg={}", "nasm_x86_64");
             build_nasm_files(true)
