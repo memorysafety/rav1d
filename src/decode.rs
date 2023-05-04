@@ -3955,10 +3955,8 @@ unsafe fn decode_b(
             && imin(bw4, bh4) > 1
         {
             let ctx_2 = get_comp_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
-            is_comp = dav1d_msac_decode_bool_adapt(
-                &mut ts.msac,
-                &mut ts.cdf.m.comp[ctx_2 as usize],
-            ) != 0;
+            is_comp =
+                dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.comp[ctx_2 as usize]) != 0;
 
             if DEBUG_BLOCK_INFO(f, t) {
                 println!("Post-compflag[{}]: r={}", is_comp, ts.msac.rng);
@@ -4007,10 +4005,8 @@ unsafe fn decode_b(
             }
         } else if is_comp {
             let dir_ctx = get_comp_dir_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
-            if dav1d_msac_decode_bool_adapt(
-                &mut ts.msac,
-                &mut ts.cdf.m.comp_dir[dir_ctx as usize],
-            ) != 0
+            if dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.comp_dir[dir_ctx as usize])
+                != 0
             {
                 // bidir - first reference (fw)
                 let ctx1 = av1_get_fwd_ref_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
