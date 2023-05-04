@@ -3996,9 +3996,11 @@ unsafe fn decode_b(
 
             if DEBUG_BLOCK_INFO(f, t) {
                 println!(
-                    "Post-skipmodeblock[mv=1:{:?},2:{:?},refs={}+{}",
-                    b.mv()[0],
-                    b.mv()[1],
+                    "Post-skipmodeblock[mv=1:y={},x={},2:y={},x={},refs={}+{}",
+                    b.mv()[0].y,
+                    b.mv()[0].x,
+                    b.mv()[1].y,
+                    b.mv()[1].x,
                     b.r#ref()[0],
                     b.r#ref()[1],
                 );
