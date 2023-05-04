@@ -1654,6 +1654,7 @@ unsafe extern "C" fn output_picture_ready(c: *mut Dav1dContext, drain: libc::c_i
 }
 unsafe extern "C" fn drain_picture(c: *mut Dav1dContext, out: *mut Dav1dPicture) -> libc::c_int {
     let mut drain_count: libc::c_uint = 0 as libc::c_int as libc::c_uint;
+    let mut drained: libc::c_int = 0 as libc::c_int;
     loop {
         let next: libc::c_uint = (*c).frame_thread.next;
         let f: *mut Dav1dFrameContext =
@@ -1667,31 +1668,44 @@ unsafe extern "C" fn drain_picture(c: *mut Dav1dContext, out: *mut Dav1dPicture)
         }
         let out_delayed: *mut Dav1dThreadPicture =
             &mut *((*c).frame_thread.out_delayed).offset(next as isize) as *mut Dav1dThreadPicture;
+        if !((*out_delayed).p.data[0 as libc::c_int as usize]).is_null()
+            || ::core::intrinsics::atomic_load_seqcst(
+                &mut (*f).task_thread.error as *mut atomic_int,
+            ) != 0
+        {
+            let mut first: libc::c_uint =
+                ::core::intrinsics::atomic_load_seqcst(&mut (*c).task_thread.first);
+            if first.wrapping_add(1 as libc::c_uint) < (*c).n_fc {
+                ::core::intrinsics::atomic_xadd_seqcst(
+                    &mut (*c).task_thread.first,
+                    1 as libc::c_uint,
+                );
+            } else {
+                ::core::intrinsics::atomic_store_seqcst(
+                    &mut (*c).task_thread.first,
+                    0 as libc::c_int as libc::c_uint,
+                );
+            }
+            let fresh0 = ::core::intrinsics::atomic_cxchg_seqcst_seqcst(
+                &mut (*c).task_thread.reset_task_cur,
+                *&mut first,
+                (2147483647 as libc::c_int as libc::c_uint)
+                    .wrapping_mul(2 as libc::c_uint)
+                    .wrapping_add(1 as libc::c_uint),
+            );
+            *&mut first = fresh0.0;
+            fresh0.1;
+            if (*c).task_thread.cur != 0 && (*c).task_thread.cur < (*c).n_fc {
+                (*c).task_thread.cur = ((*c).task_thread.cur).wrapping_sub(1);
+            }
+            drained = 1 as libc::c_int;
+        } else if drained != 0 {
+            pthread_mutex_unlock(&mut (*c).task_thread.lock);
+            break;
+        }
         (*c).frame_thread.next = ((*c).frame_thread.next).wrapping_add(1);
         if (*c).frame_thread.next == (*c).n_fc {
             (*c).frame_thread.next = 0 as libc::c_int as libc::c_uint;
-        }
-        let mut first: libc::c_uint =
-            ::core::intrinsics::atomic_load_seqcst(&mut (*c).task_thread.first);
-        if first.wrapping_add(1 as libc::c_uint) < (*c).n_fc {
-            ::core::intrinsics::atomic_xadd_seqcst(&mut (*c).task_thread.first, 1 as libc::c_uint);
-        } else {
-            ::core::intrinsics::atomic_store_seqcst(
-                &mut (*c).task_thread.first,
-                0 as libc::c_int as libc::c_uint,
-            );
-        }
-        let fresh0 = ::core::intrinsics::atomic_cxchg_seqcst_seqcst(
-            &mut (*c).task_thread.reset_task_cur,
-            *&mut first,
-            (2147483647 as libc::c_int as libc::c_uint)
-                .wrapping_mul(2 as libc::c_uint)
-                .wrapping_add(1 as libc::c_uint),
-        );
-        *&mut first = fresh0.0;
-        fresh0.1;
-        if (*c).task_thread.cur != 0 && (*c).task_thread.cur < (*c).n_fc {
-            (*c).task_thread.cur = ((*c).task_thread.cur).wrapping_sub(1);
         }
         pthread_mutex_unlock(&mut (*c).task_thread.lock);
         let error = (*f).task_thread.retval;
