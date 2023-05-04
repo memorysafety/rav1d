@@ -3966,11 +3966,13 @@ unsafe fn decode_b(
         }
 
         if b.skip_mode != 0 {
-            b.ref_mut()[0] = frame_hdr.skip_mode_refs[0] as i8;
-            b.ref_mut()[1] = frame_hdr.skip_mode_refs[1] as i8;
-            b.c2rust_unnamed.c2rust_unnamed_0.comp_type = COMP_INTER_AVG as uint8_t;
-            b.c2rust_unnamed.c2rust_unnamed_0.inter_mode = NEARESTMV_NEARESTMV as uint8_t;
-            b.c2rust_unnamed.c2rust_unnamed_0.drl_idx = NEAREST_DRL as uint8_t;
+            *b.ref_mut() = [
+                frame_hdr.skip_mode_refs[0] as i8,
+                frame_hdr.skip_mode_refs[1] as i8,
+            ];
+            *b.comp_type_mut() = COMP_INTER_AVG as uint8_t;
+            *b.inter_mode_mut() = NEARESTMV_NEARESTMV as uint8_t;
+            *b.drl_idx_mut() = NEAREST_DRL as uint8_t;
             has_subpel_filter = false;
 
             let mut mvstack = [Default::default(); 8];
