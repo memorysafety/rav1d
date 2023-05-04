@@ -6,11 +6,10 @@ jobs:
     name: test on debian-bullseye-arm7
     steps:
       - name: install prerequisites
-        run: |
-          # make sure we don't silently continue
-          set -euo pipefail
-          sudo apt-get update --quiet=2
-          sudo apt-get install --yes g++-arm-linux-gnueabihf libc6-dev-armhf-cross
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: g++-arm-linux-gnueabihf libc6-dev-armhf-cross
+          version: 1.0 # version of cache to load
       - name: git checkout
         uses: actions/checkout@v3
         with:
