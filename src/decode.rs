@@ -3884,8 +3884,8 @@ unsafe fn decode_b(
             b.mv_mut()[0].x = 0;
         }
 
-        let r#ref: mv = b.mv()[0];
-        read_mv_residual(t, &mut b.mv_mut()[0], &mut ts.cdf.dmv, 0 as libc::c_int);
+        let r#ref = b.mv()[0];
+        read_mv_residual(t, &mut b.mv_mut()[0], &mut ts.cdf.dmv, 0);
 
         // clip intrabc motion vector to decoded parts of current tile
         let mut border_left = ts.tiling.col_start * 4;
