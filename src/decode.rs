@@ -3840,7 +3840,7 @@ unsafe fn decode_b(
                     &t.scratch.c2rust_unnamed_0.pal
                 };
 
-                for pl in 0..2 {
+                for pl in 1..=2 {
                     for x in 0..bw4 {
                         t.al_pal[0][(bx4 + x) as usize][pl] = pal[pl];
                     }
