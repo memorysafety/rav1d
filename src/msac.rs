@@ -140,9 +140,8 @@ unsafe extern "C" fn ctx_refill(s: &mut MsacContext) {
     let mut c = (EC_WIN_SIZE as libc::c_int) - 24 - s.cnt;
     let mut dif = s.dif;
     while c >= 0 && buf_pos < buf_end {
-        let fresh1 = buf_pos;
+        dif ^= (*buf_pos as ec_win) << c;
         buf_pos = buf_pos.offset(1);
-        dif ^= (*fresh1 as ec_win) << c;
         c -= 8;
     }
     s.dif = dif;
