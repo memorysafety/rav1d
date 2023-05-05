@@ -226,7 +226,7 @@ pub unsafe fn dav1d_msac_decode_subexp(
     }) as libc::c_int
 }
 
-unsafe fn dav1d_msac_decode_symbol_adapt_rust(
+fn dav1d_msac_decode_symbol_adapt_rust(
     s: &mut MsacContext,
     cdf: &mut [u16],
     n_symbols: size_t,
@@ -344,39 +344,51 @@ pub unsafe fn dav1d_msac_init(
     }
 }
 
-pub unsafe fn dav1d_msac_decode_symbol_adapt4(
+pub fn dav1d_msac_decode_symbol_adapt4(
     s: &mut MsacContext,
     cdf: &mut [u16],
     n_symbols: size_t,
 ) -> libc::c_uint {
     cfg_if! {
         if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
-            dav1d_msac_decode_symbol_adapt4_sse2(s, cdf.as_mut_ptr(), n_symbols)
+            // Safety: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_symbol_adapt_rust`].
+            unsafe {
+                dav1d_msac_decode_symbol_adapt4_sse2(s, cdf.as_mut_ptr(), n_symbols)
+            }
         } else if #[cfg(all(feature = "asm", target_arch = "aarch64"))] {
-            dav1d_msac_decode_symbol_adapt4_neon(s, cdf.as_mut_ptr(), n_symbols)
+            // Safety: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_symbol_adapt_rust`].
+            unsafe {
+                dav1d_msac_decode_symbol_adapt4_neon(s, cdf.as_mut_ptr(), n_symbols)
+            }
         } else {
             dav1d_msac_decode_symbol_adapt_rust(s, cdf, n_symbols)
         }
     }
 }
 
-pub unsafe fn dav1d_msac_decode_symbol_adapt8(
+pub fn dav1d_msac_decode_symbol_adapt8(
     s: &mut MsacContext,
     cdf: &mut [u16],
     n_symbols: size_t,
 ) -> libc::c_uint {
     cfg_if! {
         if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
-             dav1d_msac_decode_symbol_adapt8_sse2(s, cdf.as_mut_ptr(), n_symbols)
+            // Safety: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_symbol_adapt_rust`].
+            unsafe {
+                dav1d_msac_decode_symbol_adapt8_sse2(s, cdf.as_mut_ptr(), n_symbols)
+            }
         } else if #[cfg(all(feature = "asm", target_arch = "aarch64"))] {
-             dav1d_msac_decode_symbol_adapt8_neon(s, cdf.as_mut_ptr(), n_symbols)
+            // Safety: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_symbol_adapt_rust`].
+            unsafe {
+                dav1d_msac_decode_symbol_adapt8_neon(s, cdf.as_mut_ptr(), n_symbols)
+            }
         } else {
              dav1d_msac_decode_symbol_adapt_rust(s, cdf, n_symbols)
         }
     }
 }
 
-pub unsafe fn dav1d_msac_decode_symbol_adapt16(
+pub fn dav1d_msac_decode_symbol_adapt16(
     s: &mut MsacContext,
     cdf: &mut [u16],
     n_symbols: size_t,
@@ -384,9 +396,15 @@ pub unsafe fn dav1d_msac_decode_symbol_adapt16(
     cfg_if! {
         if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
             assert!(n_symbols < cdf.len());
-            (s.symbol_adapt16).expect("non-null function pointer")(s, cdf.as_mut_ptr(), n_symbols)
+            // Safety: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_symbol_adapt_rust`].
+            unsafe {
+                (s.symbol_adapt16).expect("non-null function pointer")(s, cdf.as_mut_ptr(), n_symbols)
+            }
         } else if #[cfg(all(feature = "asm", target_arch = "aarch64"))] {
-            dav1d_msac_decode_symbol_adapt16_neon(s, cdf.as_mut_ptr(), n_symbols)
+            // Safety: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_symbol_adapt_rust`].
+            unsafe {
+                dav1d_msac_decode_symbol_adapt16_neon(s, cdf.as_mut_ptr(), n_symbols)
+            }
         } else {
             dav1d_msac_decode_symbol_adapt_rust(s, cdf, n_symbols)
         }
