@@ -1,8 +1,10 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
 use crate::src::align::Align16;
 use ::libc;
 use ::libc::size_t;
+#[cfg(feature = "asm")]
 use cfg_if::cfg_if;
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: size_t) -> *mut libc::c_void;
@@ -1059,7 +1061,7 @@ unsafe extern "C" fn loop_restoration_dsp_init_arm(
         return;
     }
 
-    cfg_if::cfg_if! {
+    cfg_if! {
         if #[cfg(target_arch = "aarch64")] {
             (*c).wiener[0] = Some(dav1d_wiener_filter7_8bpc_neon);
             (*c).wiener[1] = Some(dav1d_wiener_filter5_8bpc_neon);
@@ -1306,7 +1308,7 @@ unsafe extern "C" fn sgr_filter_mix_neon(
 #[cold]
 pub unsafe extern "C" fn dav1d_loop_restoration_dsp_init_8bpc(
     c: *mut Dav1dLoopRestorationDSPContext,
-    bpc: libc::c_int,
+    _bpc: libc::c_int,
 ) {
     (*c).wiener[1] = Some(wiener_c);
     (*c).wiener[0] = (*c).wiener[1];
@@ -1317,9 +1319,9 @@ pub unsafe extern "C" fn dav1d_loop_restoration_dsp_init_8bpc(
     #[cfg(feature = "asm")]
     cfg_if! {
         if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
-            loop_restoration_dsp_init_x86(c, bpc);
+            loop_restoration_dsp_init_x86(c, _bpc);
         } else if #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]{
-            loop_restoration_dsp_init_arm(c, bpc);
+            loop_restoration_dsp_init_arm(c, _bpc);
         }
     }
 }

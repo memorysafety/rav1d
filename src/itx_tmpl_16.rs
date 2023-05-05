@@ -1,6 +1,7 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use ::libc;
+#[cfg(feature = "asm")]
 use cfg_if::cfg_if;
 extern "C" {
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
@@ -10179,7 +10180,7 @@ unsafe extern "C" fn itx_dsp_init_arm(c: *mut Dav1dInvTxfmDSPContext, mut bpc: l
 #[rustfmt::skip]
 pub unsafe extern "C" fn dav1d_itx_dsp_init_16bpc(
     c: *mut Dav1dInvTxfmDSPContext,
-    mut bpc: libc::c_int,
+    mut _bpc: libc::c_int,
 ) {
     (*c).itxfm_add[TX_4X4 as usize][WHT_WHT as usize] = Some(inv_txfm_add_wht_wht_4x4_c);
     (*c).itxfm_add[TX_4X4 as usize][DCT_DCT as usize] = Some(inv_txfm_add_dct_dct_4x4_c);
@@ -10341,9 +10342,9 @@ pub unsafe extern "C" fn dav1d_itx_dsp_init_16bpc(
     #[cfg(feature = "asm")]
     cfg_if! {
         if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
-            itx_dsp_init_x86(c, bpc);
+            itx_dsp_init_x86(c, _bpc);
         } else if #[cfg(any(target_arch = "arm", target_arch = "aarch64"))] {
-            itx_dsp_init_arm(c, bpc);
+            itx_dsp_init_arm(c, _bpc);
         }
     }
 }

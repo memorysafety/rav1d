@@ -1,6 +1,7 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use ::libc;
+#[cfg(feature = "asm")]
 use cfg_if::cfg_if;
 
 #[cfg(feature = "asm")]

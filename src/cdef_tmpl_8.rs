@@ -1,7 +1,9 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
 use crate::src::align::Align16;
 use ::libc;
+#[cfg(feature = "asm")]
 use cfg_if::cfg_if;
 
 #[cfg(feature = "asm")]
