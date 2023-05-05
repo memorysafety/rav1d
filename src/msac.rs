@@ -66,8 +66,8 @@ pub type ec_win = size_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct MsacContext {
-    pub buf_pos: *const uint8_t,
-    pub buf_end: *const uint8_t,
+    buf_pos: *const uint8_t,
+    buf_end: *const uint8_t,
     pub dif: ec_win,
     pub rng: libc::c_uint,
     pub cnt: libc::c_int,
@@ -78,6 +78,21 @@ pub struct MsacContext {
 }
 
 impl MsacContext {
+    fn buf(&self) -> &[u8] {
+        // # Safety
+        //
+        // [`Self::buf_pos`] and [`Self::buf_end`] are the start and end ptrs of the `buf` slice.
+        // [`Self::buf_end`] is only set in [`dav1d_msac_init`] to `data.offset(sz)`.
+        // [`Self::buf_pos`] is initially set to `data` in [`dav1d_msac_init`],
+        // so this initially forms a valid slice.
+        // Then [`Self::buf_pos`] is incremented in [`ctx_refill`]
+        // with the condition `buf_pos < buf_end`, so it remains a valid slice.
+        unsafe {
+            let len = self.buf_end.offset_from(self.buf_pos) as usize;
+            std::slice::from_raw_parts(self.buf_pos, len)
+        }
+    }
+
     fn allow_update_cdf(&self) -> bool {
         self.allow_update_cdf != 0
     }
