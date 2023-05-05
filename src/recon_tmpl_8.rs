@@ -1465,7 +1465,6 @@ unsafe extern "C" fn decode_coefs(
     mut res_ctx: *mut uint8_t,
 ) -> libc::c_int {
     let mut dc_sign_ctx = 0;
-    let mut dc_sign_cdf: *mut uint16_t = 0 as *mut uint16_t;
     let mut dc_sign = 0;
     let mut dc_dq = 0;
     let mut current_block: u64;
@@ -1492,7 +1491,7 @@ unsafe extern "C" fn decode_coefs(
     let sctx = get_skip_ctx(t_dim, bs, a, l, chroma, (*f).cur.p.layout) as libc::c_int;
     let all_skip = dav1d_msac_decode_bool_adapt(
         &mut (*ts).msac,
-        ((*ts).cdf.coef.skip[(*t_dim).ctx as usize][sctx as usize]).as_mut_ptr(),
+        &mut (*ts).cdf.coef.skip[(*t_dim).ctx as usize][sctx as usize],
     ) as libc::c_int;
     if dbg != 0 {
         printf(
@@ -1541,8 +1540,7 @@ unsafe extern "C" fn decode_coefs(
             {
                 idx = dav1d_msac_decode_symbol_adapt4(
                     &mut (*ts).msac,
-                    ((*ts).cdf.m.txtp_intra2[(*t_dim).min as usize][y_mode_nofilt as usize])
-                        .as_mut_ptr(),
+                    &mut (*ts).cdf.m.txtp_intra2[(*t_dim).min as usize][y_mode_nofilt as usize],
                     4 as libc::c_int as size_t,
                 );
                 *txtp = dav1d_tx_types_per_set
@@ -1551,8 +1549,7 @@ unsafe extern "C" fn decode_coefs(
             } else {
                 idx = dav1d_msac_decode_symbol_adapt8(
                     &mut (*ts).msac,
-                    ((*ts).cdf.m.txtp_intra1[(*t_dim).min as usize][y_mode_nofilt as usize])
-                        .as_mut_ptr(),
+                    &mut (*ts).cdf.m.txtp_intra1[(*t_dim).min as usize][y_mode_nofilt as usize],
                     6 as libc::c_int as size_t,
                 );
                 *txtp = dav1d_tx_types_per_set
@@ -1577,14 +1574,14 @@ unsafe extern "C" fn decode_coefs(
             {
                 idx = dav1d_msac_decode_bool_adapt(
                     &mut (*ts).msac,
-                    ((*ts).cdf.m.txtp_inter3[(*t_dim).min as usize]).as_mut_ptr(),
+                    &mut (*ts).cdf.m.txtp_inter3[(*t_dim).min as usize],
                 );
                 *txtp = (idx.wrapping_sub(1 as libc::c_int as libc::c_uint)
                     & IDTX as libc::c_int as libc::c_uint) as TxfmType;
             } else if (*t_dim).min as libc::c_int == TX_16X16 as libc::c_int {
                 idx = dav1d_msac_decode_symbol_adapt16(
                     &mut (*ts).msac,
-                    ((*ts).cdf.m.txtp_inter2.0).as_mut_ptr(),
+                    &mut (*ts).cdf.m.txtp_inter2.0,
                     11 as libc::c_int as size_t,
                 );
                 *txtp = dav1d_tx_types_per_set
@@ -1593,7 +1590,7 @@ unsafe extern "C" fn decode_coefs(
             } else {
                 idx = dav1d_msac_decode_symbol_adapt16(
                     &mut (*ts).msac,
-                    ((*ts).cdf.m.txtp_inter1[(*t_dim).min as usize]).as_mut_ptr(),
+                    &mut (*ts).cdf.m.txtp_inter1[(*t_dim).min as usize],
                     15 as libc::c_int as size_t,
                 );
                 *txtp = dav1d_tx_types_per_set
@@ -1621,50 +1618,43 @@ unsafe extern "C" fn decode_coefs(
         (tx_class as libc::c_uint != TX_CLASS_2D as libc::c_int as libc::c_uint) as libc::c_int;
     match tx2dszctx {
         0 => {
-            let eob_bin_cdf: *mut uint16_t =
-                ((*ts).cdf.coef.eob_bin_16[chroma as usize][is_1d as usize]).as_mut_ptr();
+            let eob_bin_cdf = &mut (*ts).cdf.coef.eob_bin_16[chroma as usize][is_1d as usize];
             eob_bin =
                 dav1d_msac_decode_symbol_adapt4(&mut (*ts).msac, eob_bin_cdf, (4 + 0) as size_t)
                     as libc::c_int;
         }
         1 => {
-            let eob_bin_cdf_0: *mut uint16_t =
-                ((*ts).cdf.coef.eob_bin_32[chroma as usize][is_1d as usize]).as_mut_ptr();
+            let eob_bin_cdf_0 = &mut (*ts).cdf.coef.eob_bin_32[chroma as usize][is_1d as usize];
             eob_bin =
                 dav1d_msac_decode_symbol_adapt8(&mut (*ts).msac, eob_bin_cdf_0, (4 + 1) as size_t)
                     as libc::c_int;
         }
         2 => {
-            let eob_bin_cdf_1: *mut uint16_t =
-                ((*ts).cdf.coef.eob_bin_64[chroma as usize][is_1d as usize]).as_mut_ptr();
+            let eob_bin_cdf_1 = &mut (*ts).cdf.coef.eob_bin_64[chroma as usize][is_1d as usize];
             eob_bin =
                 dav1d_msac_decode_symbol_adapt8(&mut (*ts).msac, eob_bin_cdf_1, (4 + 2) as size_t)
                     as libc::c_int;
         }
         3 => {
-            let eob_bin_cdf_2: *mut uint16_t =
-                ((*ts).cdf.coef.eob_bin_128[chroma as usize][is_1d as usize]).as_mut_ptr();
+            let eob_bin_cdf_2 = &mut (*ts).cdf.coef.eob_bin_128[chroma as usize][is_1d as usize];
             eob_bin =
                 dav1d_msac_decode_symbol_adapt8(&mut (*ts).msac, eob_bin_cdf_2, (4 + 3) as size_t)
                     as libc::c_int;
         }
         4 => {
-            let eob_bin_cdf_3: *mut uint16_t =
-                ((*ts).cdf.coef.eob_bin_256[chroma as usize][is_1d as usize]).as_mut_ptr();
+            let eob_bin_cdf_3 = &mut (*ts).cdf.coef.eob_bin_256[chroma as usize][is_1d as usize];
             eob_bin =
                 dav1d_msac_decode_symbol_adapt16(&mut (*ts).msac, eob_bin_cdf_3, (4 + 4) as size_t)
                     as libc::c_int;
         }
         5 => {
-            let eob_bin_cdf_4: *mut uint16_t =
-                ((*ts).cdf.coef.eob_bin_512[chroma as usize]).as_mut_ptr();
+            let eob_bin_cdf_4 = &mut (*ts).cdf.coef.eob_bin_512[chroma as usize];
             eob_bin =
                 dav1d_msac_decode_symbol_adapt16(&mut (*ts).msac, eob_bin_cdf_4, (4 + 5) as size_t)
                     as libc::c_int;
         }
         6 => {
-            let eob_bin_cdf_5: *mut uint16_t =
-                ((*ts).cdf.coef.eob_bin_1024[chroma as usize]).as_mut_ptr();
+            let eob_bin_cdf_5 = &mut (*ts).cdf.coef.eob_bin_1024[chroma as usize];
             eob_bin =
                 dav1d_msac_decode_symbol_adapt16(&mut (*ts).msac, eob_bin_cdf_5, (4 + 6) as size_t)
                     as libc::c_int;
@@ -1683,9 +1673,8 @@ unsafe extern "C" fn decode_coefs(
     }
     let mut eob = 0;
     if eob_bin > 1 {
-        let eob_hi_bit_cdf: *mut uint16_t = ((*ts).cdf.coef.eob_hi_bit[(*t_dim).ctx as usize]
-            [chroma as usize][eob_bin as usize])
-            .as_mut_ptr();
+        let eob_hi_bit_cdf = &mut (*ts).cdf.coef.eob_hi_bit[(*t_dim).ctx as usize][chroma as usize]
+            [eob_bin as usize];
         let eob_hi_bit =
             dav1d_msac_decode_bool_adapt(&mut (*ts).msac, eob_hi_bit_cdf) as libc::c_int;
         if dbg != 0 {
@@ -1734,7 +1723,7 @@ unsafe extern "C" fn decode_coefs(
             as libc::c_uint;
         let mut eob_tok = dav1d_msac_decode_symbol_adapt4(
             &mut (*ts).msac,
-            (*eob_cdf.offset(ctx as isize)).as_mut_ptr(),
+            &mut *eob_cdf.offset(ctx as isize),
             2 as libc::c_int as size_t,
         ) as libc::c_int;
         let mut tok = eob_tok + 1;
@@ -1804,7 +1793,7 @@ unsafe extern "C" fn decode_coefs(
                     }) as libc::c_uint;
                     tok = dav1d_msac_decode_hi_tok(
                         &mut (*ts).msac,
-                        (*hi_cdf.offset(ctx as isize)).as_mut_ptr(),
+                        &mut *hi_cdf.offset(ctx as isize),
                     ) as libc::c_int;
                     level_tok = tok + ((3 as libc::c_int) << 6);
                     if dbg != 0 {
@@ -1851,7 +1840,7 @@ unsafe extern "C" fn decode_coefs(
                     }
                     tok = dav1d_msac_decode_symbol_adapt4(
                         &mut (*ts).msac,
-                        (*lo_cdf.offset(ctx as isize)).as_mut_ptr(),
+                        &mut *lo_cdf.offset(ctx as isize),
                         3 as libc::c_int as size_t,
                     ) as libc::c_int;
                     if dbg != 0 {
@@ -1884,7 +1873,7 @@ unsafe extern "C" fn decode_coefs(
                             });
                         tok = dav1d_msac_decode_hi_tok(
                             &mut (*ts).msac,
-                            (*hi_cdf.offset(ctx as isize)).as_mut_ptr(),
+                            &mut *hi_cdf.offset(ctx as isize),
                         ) as libc::c_int;
                         if dbg != 0 {
                             printf(
@@ -1930,7 +1919,7 @@ unsafe extern "C" fn decode_coefs(
                 };
                 dc_tok = dav1d_msac_decode_symbol_adapt4(
                     &mut (*ts).msac,
-                    (*lo_cdf.offset(ctx as isize)).as_mut_ptr(),
+                    &mut *lo_cdf.offset(ctx as isize),
                     3 as libc::c_int as size_t,
                 );
                 if dbg != 0 {
@@ -1959,7 +1948,7 @@ unsafe extern "C" fn decode_coefs(
                     };
                     dc_tok = dav1d_msac_decode_hi_tok(
                         &mut (*ts).msac,
-                        (*hi_cdf.offset(ctx as isize)).as_mut_ptr(),
+                        &mut *hi_cdf.offset(ctx as isize),
                     );
                     if dbg != 0 {
                         printf(
@@ -2025,7 +2014,7 @@ unsafe extern "C" fn decode_coefs(
                     }) as libc::c_uint;
                     tok = dav1d_msac_decode_hi_tok(
                         &mut (*ts).msac,
-                        (*hi_cdf.offset(ctx as isize)).as_mut_ptr(),
+                        &mut *hi_cdf.offset(ctx as isize),
                     ) as libc::c_int;
                     level_tok = tok + ((3 as libc::c_int) << 6);
                     if dbg != 0 {
@@ -2081,7 +2070,7 @@ unsafe extern "C" fn decode_coefs(
                     }
                     tok = dav1d_msac_decode_symbol_adapt4(
                         &mut (*ts).msac,
-                        (*lo_cdf.offset(ctx as isize)).as_mut_ptr(),
+                        &mut *lo_cdf.offset(ctx as isize),
                         3 as libc::c_int as size_t,
                     ) as libc::c_int;
                     if dbg != 0 {
@@ -2114,7 +2103,7 @@ unsafe extern "C" fn decode_coefs(
                             });
                         tok = dav1d_msac_decode_hi_tok(
                             &mut (*ts).msac,
-                            (*hi_cdf.offset(ctx as isize)).as_mut_ptr(),
+                            &mut *hi_cdf.offset(ctx as isize),
                         ) as libc::c_int;
                         if dbg != 0 {
                             printf(
@@ -2160,7 +2149,7 @@ unsafe extern "C" fn decode_coefs(
                 };
                 dc_tok = dav1d_msac_decode_symbol_adapt4(
                     &mut (*ts).msac,
-                    (*lo_cdf.offset(ctx as isize)).as_mut_ptr(),
+                    &mut *lo_cdf.offset(ctx as isize),
                     3 as libc::c_int as size_t,
                 );
                 if dbg != 0 {
@@ -2189,7 +2178,7 @@ unsafe extern "C" fn decode_coefs(
                     };
                     dc_tok = dav1d_msac_decode_hi_tok(
                         &mut (*ts).msac,
-                        (*hi_cdf.offset(ctx as isize)).as_mut_ptr(),
+                        &mut *hi_cdf.offset(ctx as isize),
                     );
                     if dbg != 0 {
                         printf(
@@ -2255,7 +2244,7 @@ unsafe extern "C" fn decode_coefs(
                     }) as libc::c_uint;
                     tok = dav1d_msac_decode_hi_tok(
                         &mut (*ts).msac,
-                        (*hi_cdf.offset(ctx as isize)).as_mut_ptr(),
+                        &mut *hi_cdf.offset(ctx as isize),
                     ) as libc::c_int;
                     level_tok = tok + ((3 as libc::c_int) << 6);
                     if dbg != 0 {
@@ -2311,7 +2300,7 @@ unsafe extern "C" fn decode_coefs(
                     }
                     tok = dav1d_msac_decode_symbol_adapt4(
                         &mut (*ts).msac,
-                        (*lo_cdf.offset(ctx as isize)).as_mut_ptr(),
+                        &mut *lo_cdf.offset(ctx as isize),
                         3 as libc::c_int as size_t,
                     ) as libc::c_int;
                     if dbg != 0 {
@@ -2344,7 +2333,7 @@ unsafe extern "C" fn decode_coefs(
                             });
                         tok = dav1d_msac_decode_hi_tok(
                             &mut (*ts).msac,
-                            (*hi_cdf.offset(ctx as isize)).as_mut_ptr(),
+                            &mut *hi_cdf.offset(ctx as isize),
                         ) as libc::c_int;
                         if dbg != 0 {
                             printf(
@@ -2390,7 +2379,7 @@ unsafe extern "C" fn decode_coefs(
                 };
                 dc_tok = dav1d_msac_decode_symbol_adapt4(
                     &mut (*ts).msac,
-                    (*lo_cdf.offset(ctx as isize)).as_mut_ptr(),
+                    &mut *lo_cdf.offset(ctx as isize),
                     3 as libc::c_int as size_t,
                 );
                 if dbg != 0 {
@@ -2419,7 +2408,7 @@ unsafe extern "C" fn decode_coefs(
                     };
                     dc_tok = dav1d_msac_decode_hi_tok(
                         &mut (*ts).msac,
-                        (*hi_cdf.offset(ctx as isize)).as_mut_ptr(),
+                        &mut *hi_cdf.offset(ctx as isize),
                     );
                     if dbg != 0 {
                         printf(
@@ -2442,7 +2431,7 @@ unsafe extern "C" fn decode_coefs(
     } else {
         let mut tok_br = dav1d_msac_decode_symbol_adapt4(
             &mut (*ts).msac,
-            (*eob_cdf.offset(0)).as_mut_ptr(),
+            &mut *eob_cdf.offset(0),
             2 as libc::c_int as size_t,
         ) as libc::c_int;
         dc_tok = (1 + tok_br) as libc::c_uint;
@@ -2457,7 +2446,7 @@ unsafe extern "C" fn decode_coefs(
             );
         }
         if tok_br == 2 {
-            dc_tok = dav1d_msac_decode_hi_tok(&mut (*ts).msac, (*hi_cdf.offset(0)).as_mut_ptr());
+            dc_tok = dav1d_msac_decode_hi_tok(&mut (*ts).msac, &mut *hi_cdf.offset(0));
             if dbg != 0 {
                 printf(
                     b"Post-dc_hi_tok[%d][%d][0][%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
@@ -2496,7 +2485,7 @@ unsafe extern "C" fn decode_coefs(
         }
     } else {
         dc_sign_ctx = get_dc_sign_ctx(tx as libc::c_int, a, l) as libc::c_int;
-        dc_sign_cdf = ((*ts).cdf.coef.dc_sign[chroma as usize][dc_sign_ctx as usize]).as_mut_ptr();
+        let dc_sign_cdf = &mut (*ts).cdf.coef.dc_sign[chroma as usize][dc_sign_ctx as usize];
         dc_sign = dav1d_msac_decode_bool_adapt(&mut (*ts).msac, dc_sign_cdf) as libc::c_int;
         if dbg != 0 {
             printf(

@@ -76,7 +76,7 @@ use crate::include::common::attributes::clz;
 use crate::include::common::intops::inv_recenter;
 
 #[inline]
-pub unsafe fn dav1d_msac_decode_bools(s: *mut MsacContext, n: libc::c_uint) -> libc::c_uint {
+pub unsafe fn dav1d_msac_decode_bools(s: &mut MsacContext, n: libc::c_uint) -> libc::c_uint {
     let mut v = 0;
     for _ in 0..n {
         v = v << 1 | dav1d_msac_decode_bool_equi(s);
@@ -85,7 +85,7 @@ pub unsafe fn dav1d_msac_decode_bools(s: *mut MsacContext, n: libc::c_uint) -> l
 }
 
 #[inline]
-pub unsafe fn dav1d_msac_decode_uniform(s: *mut MsacContext, n: libc::c_uint) -> libc::c_int {
+pub unsafe fn dav1d_msac_decode_uniform(s: &mut MsacContext, n: libc::c_uint) -> libc::c_int {
     if !(n > 0 as libc::c_uint) {
         unreachable!();
     }
@@ -106,19 +106,19 @@ pub unsafe fn dav1d_msac_decode_uniform(s: *mut MsacContext, n: libc::c_uint) ->
 
 #[cfg(all(feature = "asm", target_arch = "x86_64"))]
 #[inline(always)]
-unsafe extern "C" fn msac_init_x86(s: *mut MsacContext) {
+unsafe extern "C" fn msac_init_x86(s: &mut MsacContext) {
     use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
     use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
 
     let flags: libc::c_uint = dav1d_get_cpu_flags();
     if flags & DAV1D_X86_CPU_FLAG_SSE2 as libc::c_int as libc::c_uint != 0 {
-        (*s).symbol_adapt16 = Some(
+        s.symbol_adapt16 = Some(
             dav1d_msac_decode_symbol_adapt16_sse2
                 as unsafe extern "C" fn(*mut MsacContext, *mut uint16_t, size_t) -> libc::c_uint,
         );
     }
     if flags & DAV1D_X86_CPU_FLAG_AVX2 as libc::c_int as libc::c_uint != 0 {
-        (*s).symbol_adapt16 = Some(
+        s.symbol_adapt16 = Some(
             dav1d_msac_decode_symbol_adapt16_avx2
                 as unsafe extern "C" fn(*mut MsacContext, *mut uint16_t, size_t) -> libc::c_uint,
         );
@@ -129,43 +129,43 @@ unsafe extern "C" fn msac_init_x86(s: *mut MsacContext) {
 use crate::src::cpu::dav1d_get_cpu_flags;
 
 #[inline]
-unsafe extern "C" fn ctx_refill(s: *mut MsacContext) {
-    let mut buf_pos: *const uint8_t = (*s).buf_pos;
-    let mut buf_end: *const uint8_t = (*s).buf_end;
+unsafe extern "C" fn ctx_refill(s: &mut MsacContext) {
+    let mut buf_pos: *const uint8_t = s.buf_pos;
+    let mut buf_end: *const uint8_t = s.buf_end;
     let mut c = ((::core::mem::size_of::<ec_win>() as libc::c_ulong) << 3)
-        .wrapping_sub((*s).cnt as libc::c_ulong)
+        .wrapping_sub(s.cnt as libc::c_ulong)
         .wrapping_sub(24 as libc::c_int as libc::c_ulong) as libc::c_int;
-    let mut dif: ec_win = (*s).dif;
+    let mut dif: ec_win = s.dif;
     while c >= 0 && buf_pos < buf_end {
         let fresh1 = buf_pos;
         buf_pos = buf_pos.offset(1);
         dif ^= (*fresh1 as ec_win) << c;
         c -= 8 as libc::c_int;
     }
-    (*s).dif = dif;
-    (*s).cnt = ((::core::mem::size_of::<ec_win>() as libc::c_ulong) << 3)
+    s.dif = dif;
+    s.cnt = ((::core::mem::size_of::<ec_win>() as libc::c_ulong) << 3)
         .wrapping_sub(c as libc::c_ulong)
         .wrapping_sub(24 as libc::c_int as libc::c_ulong) as libc::c_int;
-    (*s).buf_pos = buf_pos;
+    s.buf_pos = buf_pos;
 }
 
 #[inline]
-unsafe extern "C" fn ctx_norm(s: *mut MsacContext, dif: ec_win, rng: libc::c_uint) {
+unsafe extern "C" fn ctx_norm(s: &mut MsacContext, dif: ec_win, rng: libc::c_uint) {
     let d = 15 as libc::c_int ^ (31 as libc::c_int ^ clz(rng));
     if !(rng <= 65535 as libc::c_uint) {
         unreachable!();
     }
-    (*s).cnt -= d;
-    (*s).dif = (dif.wrapping_add(1) << d).wrapping_sub(1);
-    (*s).rng = rng << d;
-    if (*s).cnt < 0 {
+    s.cnt -= d;
+    s.dif = (dif.wrapping_add(1) << d).wrapping_sub(1);
+    s.rng = rng << d;
+    if s.cnt < 0 {
         ctx_refill(s);
     }
 }
 
-unsafe fn dav1d_msac_decode_bool_equi_rust(s: *mut MsacContext) -> libc::c_uint {
-    let r: libc::c_uint = (*s).rng;
-    let mut dif: ec_win = (*s).dif;
+unsafe fn dav1d_msac_decode_bool_equi_rust(s: &mut MsacContext) -> libc::c_uint {
+    let r: libc::c_uint = s.rng;
+    let mut dif: ec_win = s.dif;
     if !(dif >> (::core::mem::size_of::<ec_win>() << 3).wrapping_sub(16) < r as size_t) {
         unreachable!();
     }
@@ -182,9 +182,9 @@ unsafe fn dav1d_msac_decode_bool_equi_rust(s: *mut MsacContext) -> libc::c_uint 
     return (ret == 0) as libc::c_int as libc::c_uint;
 }
 
-unsafe fn dav1d_msac_decode_bool_rust(s: *mut MsacContext, f: libc::c_uint) -> libc::c_uint {
-    let r: libc::c_uint = (*s).rng;
-    let mut dif: ec_win = (*s).dif;
+unsafe fn dav1d_msac_decode_bool_rust(s: &mut MsacContext, f: libc::c_uint) -> libc::c_uint {
+    let r: libc::c_uint = s.rng;
+    let mut dif: ec_win = s.dif;
     if !(dif >> (::core::mem::size_of::<ec_win>() << 3).wrapping_sub(16) < r as size_t) {
         unreachable!();
     }
@@ -203,7 +203,7 @@ unsafe fn dav1d_msac_decode_bool_rust(s: *mut MsacContext, f: libc::c_uint) -> l
 }
 
 pub unsafe fn dav1d_msac_decode_subexp(
-    s: *mut MsacContext,
+    s: &mut MsacContext,
     r#ref: libc::c_int,
     n: libc::c_int,
     mut k: libc::c_uint,
@@ -230,28 +230,28 @@ pub unsafe fn dav1d_msac_decode_subexp(
 }
 
 unsafe fn dav1d_msac_decode_symbol_adapt_rust(
-    s: *mut MsacContext,
-    cdf: *mut uint16_t,
+    s: &mut MsacContext,
+    cdf: &mut [u16],
     n_symbols: size_t,
 ) -> libc::c_uint {
-    let c: libc::c_uint = ((*s).dif
+    let c: libc::c_uint = (s.dif
         >> ((::core::mem::size_of::<ec_win>() as libc::c_ulong) << 3)
             .wrapping_sub(16 as libc::c_int as libc::c_ulong))
         as libc::c_uint;
-    let r: libc::c_uint = (*s).rng >> 8;
+    let r: libc::c_uint = s.rng >> 8;
     let mut u: libc::c_uint = 0;
-    let mut v: libc::c_uint = (*s).rng;
+    let mut v: libc::c_uint = s.rng;
     let mut val: libc::c_uint = -(1 as libc::c_int) as libc::c_uint;
     if !(n_symbols <= 15) {
         unreachable!();
     }
-    if !(*cdf.offset(n_symbols as isize) as libc::c_int <= 32) {
+    if !(cdf[n_symbols] as libc::c_int <= 32) {
         unreachable!();
     }
     loop {
         val = val.wrapping_add(1);
         u = v;
-        v = r.wrapping_mul((*cdf.offset(val as isize) as libc::c_int >> 6) as libc::c_uint);
+        v = r.wrapping_mul((cdf[val as usize] as libc::c_int >> 6) as libc::c_uint);
         v >>= 7 - 6;
         v = v.wrapping_add(
             (4 as libc::c_int as libc::c_uint)
@@ -261,38 +261,33 @@ unsafe fn dav1d_msac_decode_symbol_adapt_rust(
             break;
         }
     }
-    if !(u <= (*s).rng) {
+    if !(u <= s.rng) {
         unreachable!();
     }
     ctx_norm(
         s,
-        ((*s).dif).wrapping_sub(
+        (s.dif).wrapping_sub(
             (v as ec_win)
                 << ((::core::mem::size_of::<ec_win>() as libc::c_ulong) << 3)
                     .wrapping_sub(16 as libc::c_int as libc::c_ulong),
         ),
         u.wrapping_sub(v),
     );
-    if (*s).allow_update_cdf != 0 {
-        let count: libc::c_uint = *cdf.offset(n_symbols as isize) as libc::c_uint;
+    if s.allow_update_cdf != 0 {
+        let count: libc::c_uint = cdf[n_symbols] as libc::c_uint;
         let rate: libc::c_uint = (4 as libc::c_int as libc::c_uint)
             .wrapping_add(count >> 4)
             .wrapping_add((n_symbols > 2) as u32);
         let mut i: libc::c_uint = 0;
         while i < val {
-            let ref mut fresh2 = *cdf.offset(i as isize);
-            *fresh2 = (*fresh2 as libc::c_int
-                + (32768 - *cdf.offset(i as isize) as libc::c_int >> rate))
-                as uint16_t;
+            cdf[i as usize] += (32768 - cdf[i as usize] as libc::c_int >> rate) as uint16_t;
             i = i.wrapping_add(1);
         }
         while (i as size_t) < n_symbols {
-            let ref mut fresh3 = *cdf.offset(i as isize);
-            *fresh3 = (*fresh3 as libc::c_int - (*cdf.offset(i as isize) as libc::c_int >> rate))
-                as uint16_t;
+            cdf[i as usize] -= (cdf[i as usize] as libc::c_int >> rate) as uint16_t;
             i = i.wrapping_add(1);
         }
-        *cdf.offset(n_symbols as isize) = count
+        cdf[n_symbols] = count
             .wrapping_add((count < 32 as libc::c_uint) as libc::c_int as libc::c_uint)
             as uint16_t;
     }
@@ -301,38 +296,40 @@ unsafe fn dav1d_msac_decode_symbol_adapt_rust(
 
 unsafe extern "C" fn dav1d_msac_decode_symbol_adapt_c(
     s: *mut MsacContext,
-    cdf: *mut uint16_t,
+    cdf: *mut u16,
     n_symbols: size_t,
 ) -> libc::c_uint {
-    dav1d_msac_decode_symbol_adapt_rust(s, cdf, n_symbols)
+    // # Safety
+    //
+    // This is only called from [`dav1d_msac_decode_symbol_adapt16`],
+    // where there is an `assert!(n_symbols < cdf.len());`.
+    // Thus, `n_symbols + 1` is a valid length for the slice `cdf` came from.
+    #[deny(unsafe_op_in_unsafe_fn)]
+    let cdf = unsafe { std::slice::from_raw_parts_mut(cdf, n_symbols + 1) };
+
+    dav1d_msac_decode_symbol_adapt_rust(&mut *s, cdf, n_symbols)
 }
 
 unsafe fn dav1d_msac_decode_bool_adapt_rust(
-    s: *mut MsacContext,
-    cdf: *mut uint16_t,
+    s: &mut MsacContext,
+    cdf: &mut [u16; 2],
 ) -> libc::c_uint {
-    let bit: libc::c_uint = dav1d_msac_decode_bool(s, *cdf as libc::c_uint);
-    if (*s).allow_update_cdf != 0 {
-        let count: libc::c_uint = *cdf.offset(1) as libc::c_uint;
+    let bit: libc::c_uint = dav1d_msac_decode_bool(s, cdf[0] as libc::c_uint);
+    if s.allow_update_cdf != 0 {
+        let count: libc::c_uint = cdf[1] as libc::c_uint;
         let rate = (4 as libc::c_int as libc::c_uint).wrapping_add(count >> 4) as libc::c_int;
         if bit != 0 {
-            let ref mut fresh4 = *cdf.offset(0);
-            *fresh4 = (*fresh4 as libc::c_int
-                + (32768 as libc::c_int - *cdf.offset(0) as libc::c_int >> rate))
-                as uint16_t;
+            cdf[0] += (32768 as libc::c_int - cdf[0] as libc::c_int >> rate) as uint16_t;
         } else {
-            let ref mut fresh5 = *cdf.offset(0);
-            *fresh5 =
-                (*fresh5 as libc::c_int - (*cdf.offset(0) as libc::c_int >> rate)) as uint16_t;
+            cdf[0] -= (cdf[0] as libc::c_int >> rate) as uint16_t;
         }
-        *cdf.offset(1) = count
-            .wrapping_add((count < 32 as libc::c_uint) as libc::c_int as libc::c_uint)
+        cdf[1] = count.wrapping_add((count < 32 as libc::c_uint) as libc::c_int as libc::c_uint)
             as uint16_t;
     }
     return bit;
 }
 
-unsafe fn dav1d_msac_decode_hi_tok_rust(s: *mut MsacContext, cdf: *mut uint16_t) -> libc::c_uint {
+unsafe fn dav1d_msac_decode_hi_tok_rust(s: &mut MsacContext, cdf: &mut [u16; 4]) -> libc::c_uint {
     let mut tok_br: libc::c_uint =
         dav1d_msac_decode_symbol_adapt4(s, cdf, 3 as libc::c_int as size_t);
     let mut tok: libc::c_uint = (3 as libc::c_int as libc::c_uint).wrapping_add(tok_br);
@@ -353,24 +350,24 @@ unsafe fn dav1d_msac_decode_hi_tok_rust(s: *mut MsacContext, cdf: *mut uint16_t)
 }
 
 pub unsafe fn dav1d_msac_init(
-    s: *mut MsacContext,
+    s: &mut MsacContext,
     data: *const uint8_t,
     sz: size_t,
     disable_cdf_update_flag: libc::c_int,
 ) {
-    (*s).buf_pos = data;
-    (*s).buf_end = data.offset(sz as isize);
-    (*s).dif = ((1 as libc::c_int as ec_win)
+    s.buf_pos = data;
+    s.buf_end = data.offset(sz as isize);
+    s.dif = ((1 as libc::c_int as ec_win)
         << ((::core::mem::size_of::<ec_win>()) << 3).wrapping_sub(1))
     .wrapping_sub(1);
-    (*s).rng = 0x8000 as libc::c_int as libc::c_uint;
-    (*s).cnt = -(15 as libc::c_int);
-    (*s).allow_update_cdf = (disable_cdf_update_flag == 0) as libc::c_int;
+    s.rng = 0x8000 as libc::c_int as libc::c_uint;
+    s.cnt = -(15 as libc::c_int);
+    s.allow_update_cdf = (disable_cdf_update_flag == 0) as libc::c_int;
     ctx_refill(s);
 
     #[cfg(all(feature = "asm", target_arch = "x86_64"))]
     {
-        (*s).symbol_adapt16 = Some(
+        s.symbol_adapt16 = Some(
             dav1d_msac_decode_symbol_adapt_c
                 as unsafe extern "C" fn(*mut MsacContext, *mut uint16_t, size_t) -> libc::c_uint,
         );
@@ -379,103 +376,101 @@ pub unsafe fn dav1d_msac_init(
 }
 
 pub unsafe fn dav1d_msac_decode_symbol_adapt4(
-    mut s: *mut MsacContext,
-    mut cdf: *mut uint16_t,
-    mut n_symbols: size_t,
+    s: &mut MsacContext,
+    cdf: &mut [u16],
+    n_symbols: size_t,
 ) -> libc::c_uint {
     cfg_if! {
         if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
-            return dav1d_msac_decode_symbol_adapt4_sse2(s, cdf, n_symbols);
+            dav1d_msac_decode_symbol_adapt4_sse2(s, cdf.as_mut_ptr(), n_symbols)
         } else if #[cfg(all(feature = "asm", target_arch = "aarch64"))] {
-            return dav1d_msac_decode_symbol_adapt4_neon(s, cdf, n_symbols);
+            dav1d_msac_decode_symbol_adapt4_neon(s, cdf.as_mut_ptr(), n_symbols)
         } else {
-            return dav1d_msac_decode_symbol_adapt_rust(s, cdf, n_symbols);
+            dav1d_msac_decode_symbol_adapt_rust(s, cdf, n_symbols)
         }
     }
 }
 
 pub unsafe fn dav1d_msac_decode_symbol_adapt8(
-    mut s: *mut MsacContext,
-    mut cdf: *mut uint16_t,
-    mut n_symbols: size_t,
+    s: &mut MsacContext,
+    cdf: &mut [u16],
+    n_symbols: size_t,
 ) -> libc::c_uint {
     cfg_if! {
         if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
-            return dav1d_msac_decode_symbol_adapt8_sse2(s, cdf, n_symbols);
+             dav1d_msac_decode_symbol_adapt8_sse2(s, cdf.as_mut_ptr(), n_symbols)
         } else if #[cfg(all(feature = "asm", target_arch = "aarch64"))] {
-            return dav1d_msac_decode_symbol_adapt8_neon(s, cdf, n_symbols);
+             dav1d_msac_decode_symbol_adapt8_neon(s, cdf.as_mut_ptr(), n_symbols)
         } else {
-            return dav1d_msac_decode_symbol_adapt_rust(s, cdf, n_symbols);
+             dav1d_msac_decode_symbol_adapt_rust(s, cdf, n_symbols)
         }
     }
 }
 
 pub unsafe fn dav1d_msac_decode_symbol_adapt16(
-    mut s: *mut MsacContext,
-    mut cdf: *mut uint16_t,
-    mut n_symbols: size_t,
+    s: &mut MsacContext,
+    cdf: &mut [u16],
+    n_symbols: size_t,
 ) -> libc::c_uint {
     cfg_if! {
         if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
-            return ((*s).symbol_adapt16).expect("non-null function pointer")(s, cdf, n_symbols);
+            assert!(n_symbols < cdf.len());
+            (s.symbol_adapt16).expect("non-null function pointer")(s, cdf.as_mut_ptr(), n_symbols)
         } else if #[cfg(all(feature = "asm", target_arch = "aarch64"))] {
-            return dav1d_msac_decode_symbol_adapt16_neon(s, cdf, n_symbols);
+            dav1d_msac_decode_symbol_adapt16_neon(s, cdf.as_mut_ptr(), n_symbols)
         } else {
-            return dav1d_msac_decode_symbol_adapt_rust(s, cdf, n_symbols);
+            dav1d_msac_decode_symbol_adapt_rust(s, cdf, n_symbols)
         }
     }
 }
 
 pub unsafe fn dav1d_msac_decode_bool_adapt(
-    mut s: *mut MsacContext,
-    mut cdf: *mut uint16_t,
+    s: &mut MsacContext,
+    cdf: &mut [u16; 2],
 ) -> libc::c_uint {
     cfg_if! {
         if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
-            return dav1d_msac_decode_bool_adapt_sse2(s, cdf);
+            dav1d_msac_decode_bool_adapt_sse2(s, cdf.as_mut_ptr())
         } else if #[cfg(all(feature = "asm", target_arch = "aarch64"))] {
-            return dav1d_msac_decode_bool_adapt_neon(s, cdf);
+            dav1d_msac_decode_bool_adapt_neon(s, cdf.as_mut_ptr())
         } else {
-            return dav1d_msac_decode_bool_adapt_rust(s, cdf);
+            dav1d_msac_decode_bool_adapt_rust(s, cdf)
         }
     }
 }
 
-pub unsafe fn dav1d_msac_decode_bool_equi(mut s: *mut MsacContext) -> libc::c_uint {
+pub unsafe fn dav1d_msac_decode_bool_equi(s: &mut MsacContext) -> libc::c_uint {
     cfg_if! {
         if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
-            return dav1d_msac_decode_bool_equi_sse2(s);
+             dav1d_msac_decode_bool_equi_sse2(s)
         } else if #[cfg(all(feature = "asm", target_arch = "aarch64"))] {
-            return dav1d_msac_decode_bool_equi_neon(s);
+             dav1d_msac_decode_bool_equi_neon(s)
         } else {
-            return dav1d_msac_decode_bool_equi_rust(s);
+             dav1d_msac_decode_bool_equi_rust(s)
         }
     }
 }
 
-pub unsafe fn dav1d_msac_decode_bool(mut s: *mut MsacContext, mut f: libc::c_uint) -> libc::c_uint {
+pub unsafe fn dav1d_msac_decode_bool(s: &mut MsacContext, f: libc::c_uint) -> libc::c_uint {
     cfg_if! {
         if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
-            return dav1d_msac_decode_bool_sse2(s, f);
+             dav1d_msac_decode_bool_sse2(s, f)
         } else if #[cfg(all(feature = "asm", target_arch = "aarch64"))] {
-            return dav1d_msac_decode_bool_neon(s, f);
+             dav1d_msac_decode_bool_neon(s, f)
         } else {
-            return dav1d_msac_decode_bool_rust(s, f);
+             dav1d_msac_decode_bool_rust(s, f)
         }
     }
 }
 
-pub unsafe fn dav1d_msac_decode_hi_tok(
-    mut s: *mut MsacContext,
-    mut cdf: *mut uint16_t,
-) -> libc::c_uint {
+pub unsafe fn dav1d_msac_decode_hi_tok(s: &mut MsacContext, cdf: &mut [u16; 4]) -> libc::c_uint {
     cfg_if! {
         if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
-            return dav1d_msac_decode_hi_tok_sse2(s, cdf);
+             dav1d_msac_decode_hi_tok_sse2(s, cdf.as_mut_ptr())
         } else if #[cfg(all(feature = "asm", target_arch = "aarch64"))] {
-            return dav1d_msac_decode_hi_tok_neon(s, cdf);
+             dav1d_msac_decode_hi_tok_neon(s, cdf.as_mut_ptr())
         } else {
-            return dav1d_msac_decode_hi_tok_rust(s, cdf);
+             dav1d_msac_decode_hi_tok_rust(s, cdf)
         }
     }
 }
