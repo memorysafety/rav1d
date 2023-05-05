@@ -1149,7 +1149,7 @@ fn init_quant_tables(
     }
 }
 
-unsafe extern "C" fn read_mv_component_diff(
+unsafe fn read_mv_component_diff(
     t: *mut Dav1dTaskContext,
     mv_comp: *mut CdfMvComponent,
     have_fp: libc::c_int,
@@ -1212,6 +1212,7 @@ unsafe extern "C" fn read_mv_component_diff(
     let diff = (up << 3 | fp << 1 | hp) + 1;
     return if sign != 0 { -diff } else { diff };
 }
+
 unsafe extern "C" fn read_mv_residual(
     t: *mut Dav1dTaskContext,
     ref_mv: *mut mv,
