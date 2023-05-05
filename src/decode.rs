@@ -3765,14 +3765,12 @@ unsafe fn decode_b(
             rep_macro(dir.skip_mode.as_mut_ptr(), off, 0);
             rep_macro(dir.intra.as_mut_ptr(), off, mul);
             rep_macro(dir.skip.as_mut_ptr(), off, mul * b.skip as u64);
-
             // see aomedia bug 2183 for why we use luma coordinates here
             rep_macro(
                 t.pal_sz_uv[diridx].as_mut_ptr(),
                 off,
                 mul * if has_chroma { b.pal_sz()[1] as u64 } else { 0 },
             );
-
             if is_inter_or_switch(frame_hdr) {
                 rep_macro(
                     dir.comp_type.as_mut_ptr(),
