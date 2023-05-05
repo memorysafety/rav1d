@@ -1158,11 +1158,8 @@ unsafe fn read_mv_component_diff(
     let f = &*t.f;
     let have_hp = (*f.frame_hdr).hp;
     let sign = dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut mv_comp.sign.0) as libc::c_int;
-    let cl = dav1d_msac_decode_symbol_adapt16(
-        &mut ts.msac,
-        &mut mv_comp.classes.0,
-        10 as libc::c_int as size_t,
-    ) as libc::c_int;
+    let cl =
+        dav1d_msac_decode_symbol_adapt16(&mut ts.msac, &mut mv_comp.classes.0, 10) as libc::c_int;
     let mut up = 0;
     let mut fp = 0;
     let mut hp = 0;
@@ -1172,19 +1169,19 @@ unsafe fn read_mv_component_diff(
             fp = dav1d_msac_decode_symbol_adapt4(
                 &mut ts.msac,
                 &mut mv_comp.class0_fp[up as usize],
-                3 as libc::c_int as size_t,
+                3,
             ) as libc::c_int;
-            hp = (if have_hp != 0 {
+            hp = if have_hp != 0 {
                 dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut mv_comp.class0_hp.0)
             } else {
                 true
-            }) as libc::c_int;
+            } as libc::c_int;
         } else {
-            fp = 3 as libc::c_int;
-            hp = 1 as libc::c_int;
+            fp = 3;
+            hp = 1;
         }
     } else {
-        up = (1 as libc::c_int) << cl;
+        up = 1 << cl;
         let mut n = 0;
         while n < cl {
             up = (up as libc::c_uint
@@ -1194,23 +1191,24 @@ unsafe fn read_mv_component_diff(
             n += 1;
         }
         if have_fp != 0 {
-            fp = dav1d_msac_decode_symbol_adapt4(
-                &mut ts.msac,
-                &mut mv_comp.classN_fp.0,
-                3 as libc::c_int as size_t,
-            ) as libc::c_int;
-            hp = (if have_hp != 0 {
+            fp = dav1d_msac_decode_symbol_adapt4(&mut ts.msac, &mut mv_comp.classN_fp.0, 3)
+                as libc::c_int;
+            hp = if have_hp != 0 {
                 dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut mv_comp.classN_hp.0)
             } else {
                 true
-            }) as libc::c_int;
+            } as libc::c_int;
         } else {
-            fp = 3 as libc::c_int;
-            hp = 1 as libc::c_int;
+            fp = 3;
+            hp = 1;
         }
     }
     let diff = (up << 3 | fp << 1 | hp) + 1;
-    return if sign != 0 { -diff } else { diff };
+    if sign != 0 {
+        -diff
+    } else {
+        diff
+    }
 }
 
 unsafe extern "C" fn read_mv_residual(
