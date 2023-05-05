@@ -113,6 +113,7 @@ pub unsafe fn dav1d_msac_decode_uniform(s: &mut MsacContext, n: libc::c_uint) ->
 #[cfg(all(feature = "asm", target_arch = "x86_64"))]
 #[inline(always)]
 unsafe fn msac_init_x86(s: &mut MsacContext) {
+    use crate::src::cpu::dav1d_get_cpu_flags;
     use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
     use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
 
@@ -124,9 +125,6 @@ unsafe fn msac_init_x86(s: &mut MsacContext) {
         s.symbol_adapt16 = Some(dav1d_msac_decode_symbol_adapt16_avx2);
     }
 }
-
-#[cfg(all(feature = "asm", target_arch = "x86_64"))]
-use crate::src::cpu::dav1d_get_cpu_flags;
 
 const EC_PROB_SHIFT: libc::c_uint = 6;
 const EC_MIN_PROB: libc::c_uint = 4; // must be <= (1 << EC_PROB_SHIFT) / 16
