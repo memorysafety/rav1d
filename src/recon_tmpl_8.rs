@@ -1575,7 +1575,7 @@ unsafe extern "C" fn decode_coefs(
                 idx = dav1d_msac_decode_bool_adapt(
                     &mut (*ts).msac,
                     &mut (*ts).cdf.m.txtp_inter3[(*t_dim).min as usize],
-                );
+                ) as libc::c_uint;
                 *txtp = (idx.wrapping_sub(1 as libc::c_int as libc::c_uint)
                     & IDTX as libc::c_int as libc::c_uint) as TxfmType;
             } else if (*t_dim).min as libc::c_int == TX_16X16 as libc::c_int {

@@ -1177,7 +1177,7 @@ unsafe extern "C" fn read_mv_component_diff(
             hp = (if have_hp != 0 {
                 dav1d_msac_decode_bool_adapt(&mut (*ts).msac, &mut (*mv_comp).class0_hp.0)
             } else {
-                1 as libc::c_int as libc::c_uint
+                true
             }) as libc::c_int;
         } else {
             fp = 3 as libc::c_int;
@@ -1188,7 +1188,8 @@ unsafe extern "C" fn read_mv_component_diff(
         let mut n = 0;
         while n < cl {
             up = (up as libc::c_uint
-                | dav1d_msac_decode_bool_adapt(&mut (*ts).msac, &mut (*mv_comp).classN[n as usize])
+                | (dav1d_msac_decode_bool_adapt(&mut (*ts).msac, &mut (*mv_comp).classN[n as usize])
+                    as libc::c_uint)
                     << n) as libc::c_int;
             n += 1;
         }
@@ -1201,7 +1202,7 @@ unsafe extern "C" fn read_mv_component_diff(
             hp = (if have_hp != 0 {
                 dav1d_msac_decode_bool_adapt(&mut (*ts).msac, &mut (*mv_comp).classN_hp.0)
             } else {
-                1 as libc::c_int as libc::c_uint
+                true
             }) as libc::c_int;
         } else {
             fp = 3 as libc::c_int;
@@ -1805,7 +1806,7 @@ unsafe extern "C" fn read_pal_plane(
     let mut i = 0;
     let mut n = 0;
     while n < n_cache && i < pal_sz {
-        if dav1d_msac_decode_bool_equi(&mut (*ts).msac) != 0 {
+        if dav1d_msac_decode_bool_equi(&mut (*ts).msac) {
             let fresh12 = i;
             i = i + 1;
             used_cache[fresh12 as usize] = cache[n as usize];
@@ -1954,7 +1955,7 @@ unsafe extern "C" fn read_pal_uv(
     } else {
         ((*t).scratch.c2rust_unnamed_0.pal[2]).as_mut_ptr()
     };
-    if dav1d_msac_decode_bool_equi(&mut (*ts).msac) != 0 {
+    if dav1d_msac_decode_bool_equi(&mut (*ts).msac) {
         let bits = (((*f).cur.p.bpc - 4) as libc::c_uint).wrapping_add(dav1d_msac_decode_bools(
             &mut (*ts).msac,
             2 as libc::c_int as libc::c_uint,
@@ -1968,7 +1969,7 @@ unsafe extern "C" fn read_pal_uv(
         while i < (*b).c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int {
             let mut delta =
                 dav1d_msac_decode_bools(&mut (*ts).msac, bits as libc::c_uint) as libc::c_int;
-            if delta != 0 && dav1d_msac_decode_bool_equi(&mut (*ts).msac) != 0 {
+            if delta != 0 && dav1d_msac_decode_bool_equi(&mut (*ts).msac) {
                 delta = -delta;
             }
             let ref mut fresh20 = *pal.offset(i as isize);
@@ -3285,7 +3286,7 @@ unsafe fn decode_b(
             }
 
             if delta_q != 0 {
-                if dav1d_msac_decode_bool_equi(&mut ts.msac) != 0 {
+                if dav1d_msac_decode_bool_equi(&mut ts.msac) {
                     delta_q = -delta_q;
                 }
                 delta_q *= 1 << frame_hdr.delta.q.res_log2;
@@ -3327,7 +3328,7 @@ unsafe fn decode_b(
                     }
 
                     if delta_lf != 0 {
-                        if dav1d_msac_decode_bool_equi(&mut ts.msac) != 0 {
+                        if dav1d_msac_decode_bool_equi(&mut ts.msac) {
                             delta_lf = -delta_lf;
                         }
 
@@ -3374,18 +3375,17 @@ unsafe fn decode_b(
             b.intra = (seg.r#ref == 0) as uint8_t;
         } else {
             let ictx = get_intra_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
-            b.intra = (dav1d_msac_decode_bool_adapt(
+            b.intra = (!dav1d_msac_decode_bool_adapt(
                 &mut ts.msac,
                 &mut ts.cdf.m.intra[ictx.into()],
-            ) == 0) as uint8_t;
+            )) as uint8_t;
 
             if DEBUG_BLOCK_INFO(f, t) {
                 println!("Post-intra[{}]: r={}", b.intra, ts.msac.rng);
             }
         }
     } else if frame_hdr.allow_intrabc != 0 {
-        b.intra =
-            (dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.intrabc.0) == 0) as uint8_t;
+        b.intra = (!dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.intrabc.0)) as uint8_t;
 
         if DEBUG_BLOCK_INFO(f, t) {
             println!("Post-intrabcflag[{}]: r={}", b.intra, ts.msac.rng);
@@ -3512,7 +3512,7 @@ unsafe fn decode_b(
                 let use_y_pal = dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     &mut ts.cdf.m.pal_y[sz_ctx as usize][pal_ctx],
-                ) != 0;
+                );
 
                 if DEBUG_BLOCK_INFO(f, t) {
                     println!("Post-y_pal[{}]: r={}", use_y_pal, ts.msac.rng);
@@ -3528,7 +3528,7 @@ unsafe fn decode_b(
                 let use_uv_pal = dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     &mut ts.cdf.m.pal_uv[pal_ctx as usize],
-                ) != 0;
+                );
 
                 if DEBUG_BLOCK_INFO(f, t) {
                     println!("Post-uv_pal[{}]: r={}", use_uv_pal, ts.msac.rng);
@@ -3548,7 +3548,7 @@ unsafe fn decode_b(
             let is_filter = dav1d_msac_decode_bool_adapt(
                 &mut ts.msac,
                 &mut ts.cdf.m.use_filter_intra[bs as usize],
-            ) != 0;
+            );
 
             if is_filter {
                 *b.y_mode_mut() = FILTER_PRED as uint8_t;
@@ -3959,7 +3959,7 @@ unsafe fn decode_b(
         {
             let ctx_2 = get_comp_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
             is_comp =
-                dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.comp[ctx_2 as usize]) != 0;
+                dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.comp[ctx_2 as usize]);
 
             if DEBUG_BLOCK_INFO(f, t) {
                 println!("Post-compflag[{}]: r={}", is_comp, ts.msac.rng);
@@ -4011,15 +4011,13 @@ unsafe fn decode_b(
         } else if is_comp {
             let dir_ctx = get_comp_dir_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
             if dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.comp_dir[dir_ctx as usize])
-                != 0
             {
                 // bidir - first reference (fw)
                 let ctx1 = av1_get_fwd_ref_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
                 if dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     &mut ts.cdf.m.comp_fwd_ref[0][ctx1 as usize],
-                ) != 0
-                {
+                ) {
                     let ctx2 = av1_get_fwd_ref_2_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
                     b.ref_mut()[0] = 2 + dav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
@@ -4038,8 +4036,7 @@ unsafe fn decode_b(
                 if dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     &mut ts.cdf.m.comp_bwd_ref[0][ctx3 as usize],
-                ) != 0
-                {
+                ) {
                     b.ref_mut()[1] = 6;
                 } else {
                     let ctx4 = av1_get_bwd_ref_1_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
@@ -4054,8 +4051,7 @@ unsafe fn decode_b(
                 if dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     &mut ts.cdf.m.comp_uni_ref[0][uctx_p as usize],
-                ) != 0
-                {
+                ) {
                     *b.ref_mut() = [4, 6];
                 } else {
                     let uctx_p1 = av1_get_uni_p1_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
@@ -4348,7 +4344,7 @@ unsafe fn decode_b(
                             dav1d_msac_decode_bool_adapt(
                                 &mut ts.msac,
                                 &mut ts.cdf.m.jnt_comp[jnt_ctx as usize],
-                            ),
+                            ) as libc::c_uint,
                         ) as uint8_t;
                     if DEBUG_BLOCK_INFO(f, t) {
                         printf(
@@ -4379,7 +4375,7 @@ unsafe fn decode_b(
                         .wrapping_sub(dav1d_msac_decode_bool_adapt(
                             &mut ts.msac,
                             &mut ts.cdf.m.wedge_comp[ctx_5 as usize],
-                        ))
+                        ) as libc::c_uint)
                         as uint8_t;
                     if b.c2rust_unnamed.c2rust_unnamed_0.comp_type as libc::c_int
                         == COMP_INTER_WEDGE as libc::c_int
@@ -4449,7 +4445,7 @@ unsafe fn decode_b(
                 if dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     &mut ts.cdf.m.r#ref[0][ctx1_0 as usize],
-                ) != 0
+                )
                 {
                     let ctx2_1 = av1_get_bwd_ref_ctx(
                         &*t.a,
@@ -4462,7 +4458,7 @@ unsafe fn decode_b(
                     if dav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
                         &mut ts.cdf.m.r#ref[1][ctx2_1 as usize],
-                    ) != 0
+                    )
                     {
                         b
                             .c2rust_unnamed
@@ -4490,7 +4486,7 @@ unsafe fn decode_b(
                                         .cdf
                                         .m
                                         .r#ref[5][ctx3_0 as usize],
-                                ),
+                                ) as libc::c_uint,
                             ) as int8_t;
                     }
                 } else {
@@ -4505,7 +4501,7 @@ unsafe fn decode_b(
                     if dav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
                         &mut ts.cdf.m.r#ref[2][ctx2_2 as usize],
-                    ) != 0
+                    )
                     {
                         let ctx3_1 = av1_get_fwd_ref_2_ctx(
                             &*t.a,
@@ -4527,7 +4523,7 @@ unsafe fn decode_b(
                                         .cdf
                                         .m
                                         .r#ref[4][ctx3_1 as usize],
-                                ),
+                                ) as libc::c_uint,
                             ) as int8_t;
                     } else {
                         let ctx3_2 = av1_get_fwd_ref_1_ctx(
@@ -4592,15 +4588,15 @@ unsafe fn decode_b(
                 || dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     &mut ts.cdf.m.newmv_mode[(ctx_6 & 7) as usize],
-                ) != 0
+                )
             {
                 if seg
                     .map(|seg| seg.skip != 0 || seg.globalmv != 0)
                     .unwrap_or(false)
-                    || dav1d_msac_decode_bool_adapt(
+                    || !dav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
                         &mut ts.cdf.m.globalmv_mode[(ctx_6 >> 3 & 1) as usize],
-                    ) == 0
+                    )
                 {
                     b.c2rust_unnamed.c2rust_unnamed_0.inter_mode =
                         GLOBALMV as libc::c_int as uint8_t;
@@ -4623,8 +4619,7 @@ unsafe fn decode_b(
                     if dav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
                         &mut ts.cdf.m.refmv_mode[(ctx_6 >> 4 & 15) as usize],
-                    ) != 0
-                    {
+                    ) {
                         b.c2rust_unnamed.c2rust_unnamed_0.inter_mode =
                             NEARMV as libc::c_int as uint8_t;
                         b.c2rust_unnamed.c2rust_unnamed_0.drl_idx =
@@ -4636,7 +4631,9 @@ unsafe fn decode_b(
                                     .wrapping_add(dav1d_msac_decode_bool_adapt(
                                         &mut ts.msac,
                                         &mut ts.cdf.m.drl_bit[drl_ctx_v2_1 as usize],
-                                    )) as uint8_t as uint8_t;
+                                    )
+                                        as libc::c_uint) as uint8_t
+                                    as uint8_t;
                             if b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_int
                                 == NEAR_DRL as libc::c_int
                                 && n_mvs_2 > 3
@@ -4647,8 +4644,9 @@ unsafe fn decode_b(
                                         .wrapping_add(dav1d_msac_decode_bool_adapt(
                                             &mut ts.msac,
                                             &mut ts.cdf.m.drl_bit[drl_ctx_v3_0 as usize],
-                                        )) as uint8_t
-                                        as uint8_t;
+                                        )
+                                            as libc::c_uint)
+                                        as uint8_t as uint8_t;
                             }
                         }
                     } else {
@@ -4710,7 +4708,7 @@ unsafe fn decode_b(
                             dav1d_msac_decode_bool_adapt(
                                 &mut ts.msac,
                                 &mut ts.cdf.m.drl_bit[drl_ctx_v1_0 as usize],
-                            ),
+                            ) as libc::c_uint,
                         ) as uint8_t as uint8_t;
                     if b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_int
                         == NEARER_DRL as libc::c_int
@@ -4722,7 +4720,8 @@ unsafe fn decode_b(
                                 .wrapping_add(dav1d_msac_decode_bool_adapt(
                                     &mut ts.msac,
                                     &mut ts.cdf.m.drl_bit[drl_ctx_v2_2 as usize],
-                                )) as uint8_t as uint8_t;
+                                ) as libc::c_uint) as uint8_t
+                                as uint8_t;
                     }
                 }
                 if !(b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as libc::c_int
@@ -4800,7 +4799,7 @@ unsafe fn decode_b(
                 && dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     &mut ts.cdf.m.interintra[ii_sz_grp as usize],
-                ) != 0
+                )
             {
                 b.c2rust_unnamed
                     .c2rust_unnamed_0
@@ -4817,7 +4816,7 @@ unsafe fn decode_b(
                         dav1d_msac_decode_bool_adapt(
                             &mut ts.msac,
                             &mut ts.cdf.m.interintra_wedge[wedge_ctx as usize],
-                        ),
+                        ) as libc::c_uint,
                     ) as uint8_t;
                 if b.c2rust_unnamed.c2rust_unnamed_0.interintra_type as libc::c_int
                     == INTER_INTRA_WEDGE as libc::c_int
@@ -4899,6 +4898,7 @@ unsafe fn decode_b(
                     )
                 } else {
                     dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.obmc[bs as usize])
+                        as libc::c_uint
                 }) as uint8_t;
                 if b.c2rust_unnamed.c2rust_unnamed_0.motion_mode as libc::c_int
                     == MM_WARP as libc::c_int
@@ -7440,7 +7440,8 @@ unsafe extern "C" fn decode_sb(
             is_split =
                 ((*b_1).bl as libc::c_uint != bl as libc::c_uint) as libc::c_int as libc::c_uint;
         } else {
-            is_split = dav1d_msac_decode_bool(&mut (*ts).msac, gather_top_partition_prob(pc, bl));
+            is_split = dav1d_msac_decode_bool(&mut (*ts).msac, gather_top_partition_prob(pc, bl))
+                as libc::c_uint;
             if DEBUG_BLOCK_INFO(f, t) {
                 printf(
                     b"poc=%d,y=%d,x=%d,bl=%d,ctx=%d,bp=%d: r=%d\n\0" as *const u8
@@ -7508,8 +7509,8 @@ unsafe extern "C" fn decode_sb(
             is_split_0 =
                 ((*b_2).bl as libc::c_uint != bl as libc::c_uint) as libc::c_int as libc::c_uint;
         } else {
-            is_split_0 =
-                dav1d_msac_decode_bool(&mut (*ts).msac, gather_left_partition_prob(pc, bl));
+            is_split_0 = dav1d_msac_decode_bool(&mut (*ts).msac, gather_left_partition_prob(pc, bl))
+                as libc::c_uint;
             if (*f).cur.p.layout as libc::c_uint
                 == DAV1D_PIXEL_LAYOUT_I422 as libc::c_int as libc::c_uint
                 && is_split_0 == 0
@@ -7921,7 +7922,7 @@ unsafe extern "C" fn read_restoration_info(
             } else {
                 &mut (*ts).cdf.m.restore_sgrproj.0
             },
-        );
+        ) as libc::c_uint;
         (*lr).type_0 = (if type_0 != 0 {
             frame_type as libc::c_uint
         } else {
