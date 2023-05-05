@@ -3846,7 +3846,7 @@ unsafe fn decode_b(
                     }
 
                     for y in 0..bh4 {
-                        (*t).al_pal[1][(by4 + y) as usize][pl] = pal[pl];
+                        t.al_pal[1][(by4 + y) as usize][pl] = pal[pl];
                     }
                 }
             }
