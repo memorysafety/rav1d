@@ -16,7 +16,7 @@ static dav1d_cpu_flags_mask: AtomicU32 = AtomicU32::new(!0);
 
 #[cfg(feature = "asm")]
 #[inline(always)]
-pub unsafe fn dav1d_get_cpu_flags() -> libc::c_uint {
+pub fn dav1d_get_cpu_flags() -> libc::c_uint {
     let mut flags =
         dav1d_cpu_flags.load(Ordering::SeqCst) & dav1d_cpu_flags_mask.load(Ordering::SeqCst);
     cfg_if! {
@@ -43,7 +43,7 @@ pub unsafe fn dav1d_init_cpu() {
 
 #[no_mangle]
 #[cold]
-pub unsafe extern "C" fn dav1d_set_cpu_flags_mask(mask: libc::c_uint) {
+pub extern "C" fn dav1d_set_cpu_flags_mask(mask: libc::c_uint) {
     dav1d_cpu_flags_mask.store(mask, Ordering::SeqCst);
 }
 
