@@ -3977,7 +3977,7 @@ unsafe fn decode_b(
 
         splat_intrabc_mv(f.c, t, bs, b, bw4, bh4);
 
-        let mut set_ctx = |dir: &mut BlockContext, diridx, off, mul, rep_macro: SetCtxFn| {
+        let mut set_ctx = |dir: &mut BlockContext, diridx: usize, off, mul, rep_macro: SetCtxFn| {
             rep_macro(
                 dir.tx_intra.as_mut_ptr() as *mut u8,
                 off,
@@ -3985,11 +3985,8 @@ unsafe fn decode_b(
             );
             rep_macro(dir.mode.as_mut_ptr(), off, mul * DC_PRED as u64);
             rep_macro(dir.pal_sz.as_mut_ptr(), off, 0);
-
             // see aomedia bug 2183 for why this is outside `if has_chroma {}`
-            let pal_sz_uv: &mut [u8; 32] = &mut t.pal_sz_uv[diridx];
-            rep_macro(pal_sz_uv.as_mut_ptr(), off, 0);
-
+            rep_macro(t.pal_sz_uv[diridx].as_mut_ptr(), off, 0);
             rep_macro(dir.seg_pred.as_mut_ptr(), off, mul * seg_pred as u64);
             rep_macro(dir.skip_mode.as_mut_ptr(), off, 0);
             rep_macro(dir.intra.as_mut_ptr(), off, 0);
