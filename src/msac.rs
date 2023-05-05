@@ -112,7 +112,7 @@ pub unsafe fn dav1d_msac_decode_uniform(s: &mut MsacContext, n: libc::c_uint) ->
 
 #[cfg(all(feature = "asm", target_arch = "x86_64"))]
 #[inline(always)]
-unsafe extern "C" fn msac_init_x86(s: &mut MsacContext) {
+unsafe fn msac_init_x86(s: &mut MsacContext) {
     use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
     use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
 
