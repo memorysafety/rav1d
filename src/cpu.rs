@@ -1,24 +1,13 @@
-use crate::include::stddef::*;
-use ::libc;
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
+
 extern "C" {
     pub type Dav1dContext;
     #[cfg(target_arch = "x86_64")]
     fn dav1d_get_cpu_flags_x86() -> libc::c_uint;
     #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
     fn dav1d_get_cpu_flags_arm() -> libc::c_uint;
-    fn __sched_cpucount(__setsize: size_t, __setp: *const cpu_set_t) -> libc::c_int;
-    fn pthread_self() -> pthread_t;
-    fn pthread_getaffinity_np(
-        __th: pthread_t,
-        __cpusetsize: size_t,
-        __cpuset: *mut cpu_set_t,
-    ) -> libc::c_int;
 }
-use crate::include::sched::cpu_set_t;
-
-use crate::include::pthread::pthread_t;
 
 pub static mut dav1d_cpu_flags: libc::c_uint = 0;
 pub static mut dav1d_cpu_flags_mask: libc::c_uint = !0;
@@ -48,11 +37,13 @@ pub unsafe extern "C" fn dav1d_init_cpu() {
         }
     }
 }
+
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_set_cpu_flags_mask(mask: libc::c_uint) {
     dav1d_cpu_flags_mask = mask;
 }
+
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_num_logical_processors(_c: *mut Dav1dContext) -> libc::c_int {
