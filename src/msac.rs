@@ -151,7 +151,7 @@ const EC_MIN_PROB: libc::c_uint = 4; // must be <= (1 << EC_PROB_SHIFT) / 16
 const EC_WIN_SIZE: usize = mem::size_of::<ec_win>() << 3;
 
 #[inline]
-unsafe fn ctx_refill(s: &mut MsacContext) {
+fn ctx_refill(s: &mut MsacContext) {
     let mut c = (EC_WIN_SIZE as libc::c_int) - 24 - s.cnt;
     let mut dif = s.dif;
     s.with_buf(|mut buf| {
@@ -167,7 +167,7 @@ unsafe fn ctx_refill(s: &mut MsacContext) {
 }
 
 #[inline]
-unsafe fn ctx_norm(s: &mut MsacContext, dif: ec_win, rng: libc::c_uint) {
+fn ctx_norm(s: &mut MsacContext, dif: ec_win, rng: libc::c_uint) {
     let d = 15 ^ (31 ^ clz(rng));
     assert!(rng <= 65535);
     s.cnt -= d;
