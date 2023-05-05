@@ -5,6 +5,7 @@ use crate::include::stddef::*;
 use crate::include::stdint::*;
 use cfg_if::cfg_if;
 use std::mem;
+use std::ops::Range;
 
 #[cfg(all(feature = "asm", target_arch = "x86_64"))]
 extern "C" {
@@ -78,19 +79,22 @@ pub struct MsacContext {
 }
 
 impl MsacContext {
-    fn buf(&self) -> &[u8] {
+    fn set_buf(&mut self, buf: &[u8]) {
+        let Range { start, end } = buf.as_ptr_range();
+        self.buf_pos = start;
+        self.buf_end = end;
+    }
+
+    fn with_buf(&mut self, mut f: impl FnMut(&[u8]) -> &[u8]) {
         // # Safety
         //
-        // [`Self::buf_pos`] and [`Self::buf_end`] are the start and end ptrs of the `buf` slice.
-        // [`Self::buf_end`] is only set in [`dav1d_msac_init`] to `data.offset(sz)`.
-        // [`Self::buf_pos`] is initially set to `data` in [`dav1d_msac_init`],
-        // so this initially forms a valid slice.
-        // Then [`Self::buf_pos`] is incremented in [`ctx_refill`]
-        // with the condition `buf_pos < buf_end`, so it remains a valid slice.
-        unsafe {
+        // [`Self::buf_pos`] and [`Self::buf_end`] are the start and end ptrs of the `buf` slice,
+        // and are only set in [`Self::set_buf`], which derives them from a valid slice.
+        let buf = unsafe {
             let len = self.buf_end.offset_from(self.buf_pos) as usize;
             std::slice::from_raw_parts(self.buf_pos, len)
-        }
+        };
+        self.set_buf(f(buf));
     }
 
     fn allow_update_cdf(&self) -> bool {
@@ -148,18 +152,18 @@ const EC_WIN_SIZE: usize = mem::size_of::<ec_win>() << 3;
 
 #[inline]
 unsafe fn ctx_refill(s: &mut MsacContext) {
-    let mut buf_pos = s.buf_pos;
-    let mut buf_end = s.buf_end;
     let mut c = (EC_WIN_SIZE as libc::c_int) - 24 - s.cnt;
     let mut dif = s.dif;
-    while c >= 0 && buf_pos < buf_end {
-        dif ^= (*buf_pos as ec_win) << c;
-        buf_pos = buf_pos.offset(1);
-        c -= 8;
-    }
+    s.with_buf(|mut buf| {
+        while c >= 0 && !buf.is_empty() {
+            dif ^= (buf[0] as ec_win) << c;
+            buf = &buf[1..];
+            c -= 8;
+        }
+        buf
+    });
     s.dif = dif;
     s.cnt = (EC_WIN_SIZE as libc::c_int) - 24 - c;
-    s.buf_pos = buf_pos;
 }
 
 #[inline]
@@ -316,14 +320,17 @@ unsafe fn dav1d_msac_decode_hi_tok_rust(s: &mut MsacContext, cdf: &mut [u16; 4])
     tok
 }
 
+/// # Safety
+///
+/// `data` and `sz` must form a valid slice,
+/// and must live longer than all of the other functions called on [`MsacContext`].
 pub unsafe fn dav1d_msac_init(
     s: &mut MsacContext,
     data: *const uint8_t,
     sz: size_t,
     disable_cdf_update_flag: bool,
 ) {
-    s.buf_pos = data;
-    s.buf_end = data.offset(sz as isize);
+    s.set_buf(std::slice::from_raw_parts(data, sz));
     s.dif = (1 << (EC_WIN_SIZE - 1)) - 1;
     s.rng = 0x8000;
     s.cnt = -15;
