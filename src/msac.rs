@@ -426,26 +426,38 @@ pub unsafe fn dav1d_msac_decode_bool_adapt(
     }
 }
 
-pub unsafe fn dav1d_msac_decode_bool_equi(s: &mut MsacContext) -> libc::c_uint {
+pub fn dav1d_msac_decode_bool_equi(s: &mut MsacContext) -> libc::c_uint {
     cfg_if! {
         if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
-             dav1d_msac_decode_bool_equi_sse2(s)
+            // Safety: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_bool_equi_rust`].
+            unsafe {
+                dav1d_msac_decode_bool_equi_sse2(s)
+            }
         } else if #[cfg(all(feature = "asm", target_arch = "aarch64"))] {
-             dav1d_msac_decode_bool_equi_neon(s)
+            // Safety: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_bool_equi_rust`].
+            unsafe {
+                dav1d_msac_decode_bool_equi_neon(s)
+            }
         } else {
-             dav1d_msac_decode_bool_equi_rust(s)
+            dav1d_msac_decode_bool_equi_rust(s)
         }
     }
 }
 
-pub unsafe fn dav1d_msac_decode_bool(s: &mut MsacContext, f: libc::c_uint) -> libc::c_uint {
+pub fn dav1d_msac_decode_bool(s: &mut MsacContext, f: libc::c_uint) -> libc::c_uint {
     cfg_if! {
         if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
-             dav1d_msac_decode_bool_sse2(s, f)
+            // Safety: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_bool_rust`].
+            unsafe {
+                dav1d_msac_decode_bool_sse2(s, f)
+            }
         } else if #[cfg(all(feature = "asm", target_arch = "aarch64"))] {
-             dav1d_msac_decode_bool_neon(s, f)
+            // Safety: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_bool_rust`].
+            unsafe {
+                dav1d_msac_decode_bool_neon(s, f)
+            }
         } else {
-             dav1d_msac_decode_bool_rust(s, f)
+            dav1d_msac_decode_bool_rust(s, f)
         }
     }
 }
