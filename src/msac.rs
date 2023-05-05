@@ -242,11 +242,11 @@ unsafe fn dav1d_msac_decode_symbol_adapt_rust(
         let count = cdf[n_symbols];
         let rate = 4 + (count >> 4) + (n_symbols > 2) as u16;
         let val = val as usize;
-        for i in 0..val {
-            cdf[i] += (1 << 15) - cdf[i] >> rate;
+        for cdf in &mut cdf[..val] {
+            *cdf += (1 << 15) - *cdf >> rate;
         }
-        for i in val..n_symbols {
-            cdf[i] -= cdf[i] >> rate;
+        for cdf in &mut cdf[val..n_symbols] {
+            *cdf -= *cdf >> rate;
         }
         cdf[n_symbols] = count + (count < 32) as u16;
     }
