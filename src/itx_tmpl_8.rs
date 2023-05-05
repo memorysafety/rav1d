@@ -63,12 +63,6 @@ extern "C" {
     fn dav1d_inv_wht4_1d_c(c: *mut int32_t, stride: ptrdiff_t);
 }
 
-#[cfg(feature = "asm")]
-extern "C" {
-    static mut dav1d_cpu_flags: libc::c_uint;
-    static mut dav1d_cpu_flags_mask: libc::c_uint;
-}
-
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 extern "C" {
     fn dav1d_inv_txfm_add_flipadst_adst_4x8_8bpc_avx512icl(

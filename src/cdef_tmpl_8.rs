@@ -6,12 +6,6 @@ use ::libc;
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
 
-#[cfg(feature = "asm")]
-extern "C" {
-    static mut dav1d_cpu_flags: libc::c_uint;
-    static mut dav1d_cpu_flags_mask: libc::c_uint;
-}
-
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
 extern "C" {
     fn dav1d_cdef_filter_8x8_8bpc_ssse3(
