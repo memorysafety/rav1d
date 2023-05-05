@@ -107,7 +107,7 @@ impl MsacContext {
 }
 
 #[inline]
-pub unsafe fn dav1d_msac_decode_bools(s: &mut MsacContext, n: libc::c_uint) -> libc::c_uint {
+pub fn dav1d_msac_decode_bools(s: &mut MsacContext, n: libc::c_uint) -> libc::c_uint {
     let mut v = 0;
     for _ in 0..n {
         v = v << 1 | dav1d_msac_decode_bool_equi(s);
@@ -116,7 +116,7 @@ pub unsafe fn dav1d_msac_decode_bools(s: &mut MsacContext, n: libc::c_uint) -> l
 }
 
 #[inline]
-pub unsafe fn dav1d_msac_decode_uniform(s: &mut MsacContext, n: libc::c_uint) -> libc::c_int {
+pub fn dav1d_msac_decode_uniform(s: &mut MsacContext, n: libc::c_uint) -> libc::c_int {
     assert!(n > 0);
     let l = ulog2(n) as libc::c_uint + 1;
     assert!(l > 1);
@@ -204,7 +204,7 @@ fn dav1d_msac_decode_bool_rust(s: &mut MsacContext, f: libc::c_uint) -> libc::c_
     !ret as libc::c_uint
 }
 
-pub unsafe fn dav1d_msac_decode_subexp(
+pub fn dav1d_msac_decode_subexp(
     s: &mut MsacContext,
     r#ref: libc::c_uint,
     n: libc::c_uint,
