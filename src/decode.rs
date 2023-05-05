@@ -3731,13 +3731,11 @@ unsafe fn decode_b(
         }
 
         // update contexts
-
         let y_mode_nofilt = if b.y_mode() == FILTER_PRED as u8 {
             DC_PRED as IntraPredMode
         } else {
             b.y_mode() as IntraPredMode
         };
-
         let mut set_ctx = |dir: &mut BlockContext, diridx, off, mul, rep_macro: SetCtxFn| {
             // NOTE: This corresponds to the following logic in the original C:
             //
