@@ -1155,8 +1155,8 @@ unsafe fn read_mv_component_diff(
     have_fp: libc::c_int,
 ) -> libc::c_int {
     let ts = &mut *t.ts;
-    let f: *const Dav1dFrameContext = t.f;
-    let have_hp = (*(*f).frame_hdr).hp;
+    let f = &*t.f;
+    let have_hp = (*f.frame_hdr).hp;
     let sign = dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut mv_comp.sign.0) as libc::c_int;
     let cl = dav1d_msac_decode_symbol_adapt16(
         &mut ts.msac,
