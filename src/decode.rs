@@ -1150,12 +1150,12 @@ fn init_quant_tables(
 }
 
 unsafe fn read_mv_component_diff(
-    t: *mut Dav1dTaskContext,
+    t: &mut Dav1dTaskContext,
     mv_comp: *mut CdfMvComponent,
     have_fp: libc::c_int,
 ) -> libc::c_int {
-    let ts: *mut Dav1dTileState = (*t).ts;
-    let f: *const Dav1dFrameContext = (*t).f;
+    let ts: *mut Dav1dTileState = t.ts;
+    let f: *const Dav1dFrameContext = t.f;
     let have_hp = (*(*f).frame_hdr).hp;
     let sign = dav1d_msac_decode_bool_adapt(&mut (*ts).msac, &mut (*mv_comp).sign.0) as libc::c_int;
     let cl = dav1d_msac_decode_symbol_adapt16(
@@ -1225,18 +1225,18 @@ unsafe extern "C" fn read_mv_residual(
         (N_MV_JOINTS as libc::c_int - 1) as size_t,
     ) {
         3 => {
-            (*ref_mv).y =
-                (*ref_mv).y + read_mv_component_diff(t, &mut (*mv_cdf).comp[0], have_fp) as i16;
-            (*ref_mv).x =
-                (*ref_mv).x + read_mv_component_diff(t, &mut (*mv_cdf).comp[1], have_fp) as i16;
+            (*ref_mv).y = (*ref_mv).y
+                + read_mv_component_diff(&mut *t, &mut (*mv_cdf).comp[0], have_fp) as i16;
+            (*ref_mv).x = (*ref_mv).x
+                + read_mv_component_diff(&mut *t, &mut (*mv_cdf).comp[1], have_fp) as i16;
         }
         1 => {
-            (*ref_mv).x =
-                (*ref_mv).x + read_mv_component_diff(t, &mut (*mv_cdf).comp[1], have_fp) as i16;
+            (*ref_mv).x = (*ref_mv).x
+                + read_mv_component_diff(&mut *t, &mut (*mv_cdf).comp[1], have_fp) as i16;
         }
         2 => {
-            (*ref_mv).y =
-                (*ref_mv).y + read_mv_component_diff(t, &mut (*mv_cdf).comp[0], have_fp) as i16;
+            (*ref_mv).y = (*ref_mv).y
+                + read_mv_component_diff(&mut *t, &mut (*mv_cdf).comp[0], have_fp) as i16;
         }
         _ => {}
     };
