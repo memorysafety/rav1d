@@ -303,7 +303,7 @@ unsafe fn dav1d_msac_decode_bool_adapt_rust(
     bit
 }
 
-unsafe fn dav1d_msac_decode_hi_tok_rust(s: &mut MsacContext, cdf: &mut [u16; 4]) -> libc::c_uint {
+fn dav1d_msac_decode_hi_tok_rust(s: &mut MsacContext, cdf: &mut [u16; 4]) -> libc::c_uint {
     let mut tok_br = dav1d_msac_decode_symbol_adapt4(s, cdf, 3);
     let mut tok = 3 + tok_br;
     if tok_br == 3 {
@@ -462,14 +462,20 @@ pub fn dav1d_msac_decode_bool(s: &mut MsacContext, f: libc::c_uint) -> libc::c_u
     }
 }
 
-pub unsafe fn dav1d_msac_decode_hi_tok(s: &mut MsacContext, cdf: &mut [u16; 4]) -> libc::c_uint {
+pub fn dav1d_msac_decode_hi_tok(s: &mut MsacContext, cdf: &mut [u16; 4]) -> libc::c_uint {
     cfg_if! {
         if #[cfg(all(feature = "asm", target_arch = "x86_64"))] {
-             dav1d_msac_decode_hi_tok_sse2(s, cdf.as_mut_ptr())
+            // Safety: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_hi_tok_rust`].
+            unsafe {
+                dav1d_msac_decode_hi_tok_sse2(s, cdf.as_mut_ptr())
+            }
         } else if #[cfg(all(feature = "asm", target_arch = "aarch64"))] {
-             dav1d_msac_decode_hi_tok_neon(s, cdf.as_mut_ptr())
+            // Safety: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_hi_tok_rust`].
+            unsafe {
+                dav1d_msac_decode_hi_tok_neon(s, cdf.as_mut_ptr())
+            }
         } else {
-             dav1d_msac_decode_hi_tok_rust(s, cdf)
+            dav1d_msac_decode_hi_tok_rust(s, cdf)
         }
     }
 }
