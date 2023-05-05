@@ -3,12 +3,14 @@ use cfg_if::cfg_if;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
 
+#[cfg(target_arch = "x86_64")]
+use crate::src::x86::cpu::dav1d_get_cpu_flags_x86;
+
+#[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+use crate::src::arm::cpu::dav1d_get_cpu_flags_arm;
+
 extern "C" {
     pub type Dav1dContext;
-    #[cfg(target_arch = "x86_64")]
-    fn dav1d_get_cpu_flags_x86() -> libc::c_uint;
-    #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
-    fn dav1d_get_cpu_flags_arm() -> libc::c_uint;
 }
 
 static dav1d_cpu_flags: AtomicU32 = AtomicU32::new(0);
