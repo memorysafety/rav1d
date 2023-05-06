@@ -1263,11 +1263,11 @@ pub static dav1d_filter_intra_taps: Align64<[[i8; 64]; 5]> = Align64([
 ]);
 
 #[no_mangle]
-pub static dav1d_obmc_masks: [u8; 64] = [
+pub static dav1d_obmc_masks: Align16<[u8; 64]> = Align16([
     0, 0, 19, 0, 25, 14, 5, 0, 28, 22, 16, 11, 7, 3, 0, 0, 30, 27, 24, 21, 18, 15, 12, 10, 8, 6, 4,
     3, 0, 0, 0, 0, 31, 29, 28, 26, 24, 23, 21, 20, 19, 17, 16, 14, 13, 12, 11, 9, 8, 7, 6, 5, 4, 4,
     3, 2, 0, 0, 0, 0, 0, 0, 0, 0,
-];
+]);
 
 #[no_mangle]
 pub static dav1d_gaussian_sequence: [i16; 2048] = [
