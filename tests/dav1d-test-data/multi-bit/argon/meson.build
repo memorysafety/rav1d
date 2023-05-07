@@ -24,4 +24,5 @@
 
 tests += [
 	['test10100_579_8614', files('test10100_579_8614.obu'), 'abdc77b000e3bc7124a6ef781e63ce51'],
+	['test10218_6914', files('test10218_6914.obu'), '12b484fced270f53f3673c1234a38d19'],
 ]

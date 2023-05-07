@@ -24,10 +24,6 @@
 
 tests += [
 	['test185_302', files('test185_302.obu'), 'c7e94ed7170edbb3a05f231bac699dbd'],
-
-    # NOTE: This test is disabled because it is actually 8 bit encoded, and so
-    # should not be included in the 10 bit test suite.
-	# ['test10218_6914', files('test10218_6914.obu'), '12b484fced270f53f3673c1234a38d19'],
 ]
 
 test('test5606', dav1d, suite: 'testdata-10',
