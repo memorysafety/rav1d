@@ -7,6 +7,7 @@ use crate::include::dav1d::headers::DAV1D_N_SWITCHABLE_FILTERS;
 use crate::include::stddef::ptrdiff_t;
 use crate::include::stdint::int8_t;
 use crate::include::stdint::uint8_t;
+use crate::src::align::Align8;
 use crate::src::levels::mv;
 use crate::src::levels::BlockLevel;
 use crate::src::levels::TxfmSize;
@@ -37,7 +38,7 @@ use crate::src::tables::TxfmInfo;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct BlockContext {
-    pub mode: [uint8_t; 32],
+    pub mode: Align8<[uint8_t; 32]>,
     pub lcoef: [uint8_t; 32],
     pub ccoef: [[uint8_t; 32]; 2],
     pub seg_pred: [uint8_t; 32],
