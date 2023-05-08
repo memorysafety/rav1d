@@ -60,7 +60,7 @@ jobs:
       - name: cargo build for ${{ matrix.target }} ${{ matrix.build.name }}
         run: |
           cargo clean
-          rustup target add ${{ matrix.target }} --toolchain nightly-2022-08-08
+          rustup target add ${{ matrix.target }}
           cargo build --target ${{ matrix.target }} ${{ matrix.build.flags }}
         env:
           RUSTFLAGS: "-C overflow-checks=on"
