@@ -4,7 +4,7 @@ use crate::include::stddef::*;
 use crate::include::stdint::*;
 use crate::src::align::Align16;
 use crate::src::cdf::{CdfContext, CdfMvComponent, CdfMvContext};
-use crate::src::ctx::{case_set, SetCtxFn};
+use crate::src::ctx::{case_set, case_set_upto16, SetCtxFn};
 use crate::src::msac::MsacContext;
 use libc;
 
@@ -1251,110 +1251,42 @@ unsafe fn read_tx_tree(
         }
         (*t).by -= txsh;
     } else {
-        match (*t_dim).h as libc::c_int {
-            1 => {
-                (*(&mut *((*t).l.tx.0).as_mut_ptr().offset(by4 as isize) as *mut int8_t
-                    as *mut alias8))
-                    .u8_0 = (if is_split != 0 {
-                    TX_4X4 as libc::c_int
+        let mut set_ctx = |dir: &mut BlockContext, _diridx, off, mul, rep_macro: SetCtxFn| {
+            rep_macro(
+                dir.tx.0.as_mut_ptr() as *mut u8,
+                off,
+                if is_split != 0 {
+                    TX_4X4.into()
                 } else {
-                    0x1 * txh
-                }) as uint8_t;
-            }
-            2 => {
-                (*(&mut *((*t).l.tx.0).as_mut_ptr().offset(by4 as isize) as *mut int8_t
-                    as *mut alias16))
-                    .u16_0 = (if is_split != 0 {
-                    TX_4X4 as libc::c_int
+                    mul * txh as u64
+                },
+            );
+        };
+        case_set_upto16(
+            (*t_dim).h as libc::c_int,
+            &mut (*t).l,
+            1,
+            by4 as isize,
+            &mut set_ctx,
+        );
+        let mut set_ctx = |dir: &mut BlockContext, _diridx, off, mul, rep_macro: SetCtxFn| {
+            rep_macro(
+                dir.tx.0.as_mut_ptr() as *mut u8,
+                off,
+                if is_split != 0 {
+                    TX_4X4.into()
                 } else {
-                    0x101 * txh
-                }) as uint16_t;
-            }
-            4 => {
-                (*(&mut *((*t).l.tx.0).as_mut_ptr().offset(by4 as isize) as *mut int8_t
-                    as *mut alias32))
-                    .u32_0 = if is_split != 0 {
-                    TX_4X4 as libc::c_int as libc::c_uint
-                } else {
-                    (0x1010101 as libc::c_uint).wrapping_mul(txh as libc::c_uint)
-                };
-            }
-            8 => {
-                (*(&mut *((*t).l.tx.0).as_mut_ptr().offset(by4 as isize) as *mut int8_t
-                    as *mut alias64))
-                    .u64_0 = (if is_split != 0 {
-                    TX_4X4 as libc::c_int as libc::c_ulonglong
-                } else {
-                    (0x101010101010101 as libc::c_ulonglong).wrapping_mul(txh as libc::c_ulonglong)
-                }) as uint64_t;
-            }
-            16 => {
-                let const_val: uint64_t = (if is_split != 0 {
-                    TX_4X4 as libc::c_int as libc::c_ulonglong
-                } else {
-                    (0x101010101010101 as libc::c_ulonglong).wrapping_mul(txh as libc::c_ulonglong)
-                }) as uint64_t;
-                (*(&mut *((*t).l.tx.0).as_mut_ptr().offset((by4 + 0) as isize) as *mut int8_t
-                    as *mut alias64))
-                    .u64_0 = const_val;
-                (*(&mut *((*t).l.tx.0).as_mut_ptr().offset((by4 + 8) as isize) as *mut int8_t
-                    as *mut alias64))
-                    .u64_0 = const_val;
-            }
-            _ => {}
-        }
-        match (*t_dim).w as libc::c_int {
-            1 => {
-                (*(&mut *((*(*t).a).tx.0).as_mut_ptr().offset(bx4 as isize) as *mut int8_t
-                    as *mut alias8))
-                    .u8_0 = (if is_split != 0 {
-                    TX_4X4 as libc::c_int
-                } else {
-                    0x1 * txw
-                }) as uint8_t;
-            }
-            2 => {
-                (*(&mut *((*(*t).a).tx.0).as_mut_ptr().offset(bx4 as isize) as *mut int8_t
-                    as *mut alias16))
-                    .u16_0 = (if is_split != 0 {
-                    TX_4X4 as libc::c_int
-                } else {
-                    0x101 * txw
-                }) as uint16_t;
-            }
-            4 => {
-                (*(&mut *((*(*t).a).tx.0).as_mut_ptr().offset(bx4 as isize) as *mut int8_t
-                    as *mut alias32))
-                    .u32_0 = if is_split != 0 {
-                    TX_4X4 as libc::c_int as libc::c_uint
-                } else {
-                    (0x1010101 as libc::c_uint).wrapping_mul(txw as libc::c_uint)
-                };
-            }
-            8 => {
-                (*(&mut *((*(*t).a).tx.0).as_mut_ptr().offset(bx4 as isize) as *mut int8_t
-                    as *mut alias64))
-                    .u64_0 = (if is_split != 0 {
-                    TX_4X4 as libc::c_int as libc::c_ulonglong
-                } else {
-                    (0x101010101010101 as libc::c_ulonglong).wrapping_mul(txw as libc::c_ulonglong)
-                }) as uint64_t;
-            }
-            16 => {
-                let const_val_0: uint64_t = (if is_split != 0 {
-                    TX_4X4 as libc::c_int as libc::c_ulonglong
-                } else {
-                    (0x101010101010101 as libc::c_ulonglong).wrapping_mul(txw as libc::c_ulonglong)
-                }) as uint64_t;
-                (*(&mut *((*(*t).a).tx.0).as_mut_ptr().offset((bx4 + 0) as isize) as *mut int8_t
-                    as *mut alias64))
-                    .u64_0 = const_val_0;
-                (*(&mut *((*(*t).a).tx.0).as_mut_ptr().offset((bx4 + 8) as isize) as *mut int8_t
-                    as *mut alias64))
-                    .u64_0 = const_val_0;
-            }
-            _ => {}
-        }
+                    mul * txw as u64
+                },
+            );
+        };
+        case_set_upto16(
+            (*t_dim).w as libc::c_int,
+            &mut *(*t).a,
+            0,
+            bx4 as isize,
+            &mut set_ctx,
+        );
     };
 }
 
