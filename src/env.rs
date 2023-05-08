@@ -53,7 +53,7 @@ pub struct BlockContext {
     pub tx_lpf_y: Align8<[uint8_t; 32]>,
     pub tx_lpf_uv: Align8<[uint8_t; 32]>,
     pub partition: Align8<[uint8_t; 16]>,
-    pub uvmode: [uint8_t; 32],
+    pub uvmode: Align8<[uint8_t; 32]>,
     pub pal_sz: [uint8_t; 32],
 }
 
