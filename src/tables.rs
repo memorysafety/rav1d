@@ -872,7 +872,7 @@ pub static dav1d_mc_subpel_filters: Align8<[[[i8; 8]; 15]; 6]> = Align8([
 ]);
 
 #[no_mangle]
-pub static dav1d_mc_warp_filter: [[i8; 8]; 193] = [
+pub static dav1d_mc_warp_filter: Align8<[[i8; 8]; 193]> = Align8([
     [0, 0, 127, 1, 0, 0, 0, 0],
     [0, -1, 127, 2, 0, 0, 0, 0],
     [1, -3, 127, 4, -1, 0, 0, 0],
@@ -1066,7 +1066,7 @@ pub static dav1d_mc_warp_filter: [[i8; 8]; 193] = [
     [0, 0, 0, -1, 4, 127, -3, 1],
     [0, 0, 0, 0, 2, 127, -1, 0],
     [0, 0, 0, 0, 2, 127, -1, 0],
-];
+]);
 
 #[no_mangle]
 pub static dav1d_resize_filter: [[i8; 8]; 64] = [
