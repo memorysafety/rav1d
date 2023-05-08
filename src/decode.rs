@@ -1160,9 +1160,9 @@ unsafe fn read_mv_component_diff(
     let sign = dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut mv_comp.sign.0);
     let cl =
         dav1d_msac_decode_symbol_adapt16(&mut ts.msac, &mut mv_comp.classes.0, 10) as libc::c_int;
-    let mut up = 0;
-    let mut fp = 0;
-    let mut hp = false;
+    let mut up;
+    let mut fp;
+    let mut hp;
     if cl == 0 {
         up = dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut mv_comp.class0.0) as libc::c_int;
         if have_fp {
