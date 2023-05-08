@@ -1195,7 +1195,7 @@ unsafe fn read_mv_residual(
     };
 }
 
-unsafe extern "C" fn read_tx_tree(
+unsafe fn read_tx_tree(
     t: *mut Dav1dTaskContext,
     from: RectTxfmSize,
     depth: libc::c_int,
