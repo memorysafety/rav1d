@@ -15,9 +15,9 @@ jobs:
         ]
         build: [ # we do release with overflow checks since debug takes forever
           # release build with overflow checks without optimized assembly routines
-          {name: "release", flags: "--release -Coverflow-checks --no-default-features --features=bitdepth_8,bitdepth_16"},
+          {name: "release", flags: "--release --no-default-features --features=bitdepth_8,bitdepth_16"},
           # release build with overflow checks and optimized assembly routines
-          {name: "release", flags: "--release -Coverflow-checks"}
+          {name: "release", flags: "--release"}
         ]
     runs-on: ubuntu-latest
     steps:
@@ -60,6 +60,8 @@ jobs:
           cargo clean
           rustup target add ${{ matrix.target }} --toolchain nightly-2022-08-08
           cargo build --target ${{ matrix.target }} ${{ matrix.build.flags }}
+        env:
+          RUSTFLAGS: "-C overflow-checks=on"
       - name: download, check, and unpack argon test vectors
         if: ${{ steps.cache-argon.outputs.cache-hit != 'true' }}
         run: |
