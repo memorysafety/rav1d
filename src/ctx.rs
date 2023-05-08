@@ -108,3 +108,30 @@ pub unsafe fn case_set<D, F>(
         _ => {}
     }
 }
+
+#[inline]
+pub unsafe fn case_set_upto16<D, F>(
+    var: libc::c_int,
+    dir: &mut D,
+    diridx: usize,
+    off: isize,
+    set_ctx: &mut F,
+) where
+    F: FnMut(&mut D, usize, isize, u64, SetCtxFn),
+{
+    match var {
+        1 => set_ctx(dir, diridx, off, 0x01, set_ctx_rep1::<alias8>),
+        2 => set_ctx(dir, diridx, off, 0x0101, set_ctx_rep1::<alias16>),
+        4 => set_ctx(dir, diridx, off, 0x01010101, set_ctx_rep1::<alias32>),
+        8 => set_ctx(
+            dir,
+            diridx,
+            off,
+            0x0101010101010101,
+            set_ctx_rep1::<alias64>,
+        ),
+        16 => set_ctx(dir, diridx, off, 0x0101010101010101, set_ctx_rep2),
+
+        _ => {}
+    }
+}
