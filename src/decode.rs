@@ -1157,7 +1157,7 @@ unsafe fn read_mv_component_diff(
     let ts = &mut *t.ts;
     let f = &*t.f;
     let have_hp = (*f.frame_hdr).hp != 0;
-    let sign = dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut mv_comp.sign.0) as libc::c_int;
+    let sign = dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut mv_comp.sign.0);
     let cl =
         dav1d_msac_decode_symbol_adapt16(&mut ts.msac, &mut mv_comp.classes.0, 10) as libc::c_int;
     let mut up = 0;
@@ -1204,7 +1204,7 @@ unsafe fn read_mv_component_diff(
         }
     }
     let diff = (up << 3 | fp << 1 | hp as libc::c_int) + 1;
-    if sign != 0 {
+    if sign {
         -diff
     } else {
         diff
