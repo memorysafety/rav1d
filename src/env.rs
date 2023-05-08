@@ -44,7 +44,7 @@ pub struct BlockContext {
     pub seg_pred: Align8<[uint8_t; 32]>,
     pub skip: Align8<[uint8_t; 32]>,
     pub skip_mode: Align8<[uint8_t; 32]>,
-    pub intra: [uint8_t; 32],
+    pub intra: Align8<[uint8_t; 32]>,
     pub comp_type: [uint8_t; 32],
     pub r#ref: [[int8_t; 32]; 2],
     pub filter: [[uint8_t; 32]; 2],
