@@ -1156,7 +1156,7 @@ unsafe fn read_mv_component_diff(
 ) -> libc::c_int {
     let ts = &mut *t.ts;
     let f = &*t.f;
-    let have_hp = (*f.frame_hdr).hp;
+    let have_hp = (*f.frame_hdr).hp != 0;
     let sign = dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut mv_comp.sign.0) as libc::c_int;
     let cl =
         dav1d_msac_decode_symbol_adapt16(&mut ts.msac, &mut mv_comp.classes.0, 10) as libc::c_int;
@@ -1171,7 +1171,7 @@ unsafe fn read_mv_component_diff(
                 &mut mv_comp.class0_fp[up as usize],
                 3,
             ) as libc::c_int;
-            hp = if have_hp != 0 {
+            hp = if have_hp {
                 dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut mv_comp.class0_hp.0)
             } else {
                 true
@@ -1193,7 +1193,7 @@ unsafe fn read_mv_component_diff(
         if have_fp != 0 {
             fp = dav1d_msac_decode_symbol_adapt4(&mut ts.msac, &mut mv_comp.classN_fp.0, 3)
                 as libc::c_int;
-            hp = if have_hp != 0 {
+            hp = if have_hp {
                 dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut mv_comp.classN_hp.0)
             } else {
                 true
