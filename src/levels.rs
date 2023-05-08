@@ -319,6 +319,30 @@ impl Av1Block {
         &mut self.c2rust_unnamed.c2rust_unnamed.cfl_alpha
     }
 
+    pub unsafe fn comp_type(&self) -> u8 {
+        self.c2rust_unnamed.c2rust_unnamed_0.comp_type
+    }
+
+    pub unsafe fn comp_type_mut(&mut self) -> &mut u8 {
+        &mut self.c2rust_unnamed.c2rust_unnamed_0.comp_type
+    }
+
+    pub unsafe fn drl_idx(&self) -> u8 {
+        self.c2rust_unnamed.c2rust_unnamed_0.drl_idx
+    }
+
+    pub unsafe fn drl_idx_mut(&mut self) -> &mut u8 {
+        &mut self.c2rust_unnamed.c2rust_unnamed_0.drl_idx
+    }
+
+    pub unsafe fn inter_mode(&self) -> u8 {
+        self.c2rust_unnamed.c2rust_unnamed_0.inter_mode
+    }
+
+    pub unsafe fn inter_mode_mut(&mut self) -> &mut u8 {
+        &mut self.c2rust_unnamed.c2rust_unnamed_0.inter_mode
+    }
+
     pub unsafe fn pal_sz(&self) -> &[u8; 2] {
         &self.c2rust_unnamed.c2rust_unnamed.pal_sz
     }
@@ -422,5 +446,9 @@ impl Av1Block {
 
     pub unsafe fn r#ref(&self) -> [int8_t; 2] {
         self.c2rust_unnamed.c2rust_unnamed_0.r#ref
+    }
+
+    pub unsafe fn ref_mut(&mut self) -> &mut [int8_t; 2] {
+        &mut self.c2rust_unnamed.c2rust_unnamed_0.r#ref
     }
 }

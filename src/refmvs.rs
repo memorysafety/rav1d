@@ -79,6 +79,12 @@ pub struct refmvs_refpair {
     pub r#ref: [int8_t; 2],
 }
 
+impl From<[i8; 2]> for refmvs_refpair {
+    fn from(from: [i8; 2]) -> Self {
+        refmvs_refpair { r#ref: from }
+    }
+}
+
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
 #[repr(C)]
 pub struct refmvs_mvpair {
