@@ -1228,10 +1228,9 @@ unsafe fn read_tx_tree(
     }
     if is_split != 0 && t_dim.max as libc::c_int > TX_8X8 as libc::c_int {
         let sub: RectTxfmSize = t_dim.sub as RectTxfmSize;
-        let sub_t_dim: *const TxfmInfo =
-            &*dav1d_txfm_dimensions.as_ptr().offset(sub as isize) as *const TxfmInfo;
-        let txsw = (*sub_t_dim).w as libc::c_int;
-        let txsh = (*sub_t_dim).h as libc::c_int;
+        let sub_t_dim = &dav1d_txfm_dimensions[sub as usize];
+        let txsw = sub_t_dim.w as libc::c_int;
+        let txsh = sub_t_dim.h as libc::c_int;
         read_tx_tree(t, sub, depth + 1, masks, x_off * 2 + 0, y_off * 2 + 0);
         t.bx += txsw;
         if txw >= txh && t.bx < f.bw {
