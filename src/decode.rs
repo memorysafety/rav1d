@@ -966,6 +966,7 @@ use crate::src::levels::TX_8X8;
 
 use crate::src::levels::IntraPredMode;
 use crate::src::levels::RectTxfmSize;
+use crate::src::levels::TxfmSize;
 use crate::src::levels::BL_128X128;
 use crate::src::levels::BL_64X64;
 use crate::src::levels::BL_8X8;
@@ -1210,8 +1211,8 @@ unsafe fn read_tx_tree(
     let txw = t_dim.lw as libc::c_int;
     let txh = t_dim.lh as libc::c_int;
     let mut is_split = false;
-    if depth < 2 && from as libc::c_uint > TX_4X4 as libc::c_int as libc::c_uint {
-        let cat = 2 as libc::c_int * (TX_64X64 as libc::c_int - t_dim.max as libc::c_int) - depth;
+    if depth < 2 && from > TX_4X4 {
+        let cat = 2 * (TX_64X64 as libc::c_int - t_dim.max as libc::c_int) - depth;
         let a = (((*t.a).tx.0[bx4 as usize] as libc::c_int) < txw) as libc::c_int;
         let l = ((t.l.tx.0[by4 as usize] as libc::c_int) < txh) as libc::c_int;
         is_split = dav1d_msac_decode_bool_adapt(
@@ -1226,8 +1227,8 @@ unsafe fn read_tx_tree(
     } else {
         is_split = false;
     }
-    if is_split && t_dim.max as libc::c_int > TX_8X8 as libc::c_int {
-        let sub: RectTxfmSize = t_dim.sub as RectTxfmSize;
+    if is_split && t_dim.max as TxfmSize > TX_8X8 {
+        let sub = t_dim.sub as RectTxfmSize;
         let sub_t_dim = &dav1d_txfm_dimensions[sub as usize];
         let txsw = sub_t_dim.w as libc::c_int;
         let txsh = sub_t_dim.h as libc::c_int;
