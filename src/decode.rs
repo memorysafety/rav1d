@@ -4282,18 +4282,16 @@ unsafe fn decode_b(
                 }
             } else {
                 if wedge_allowed_mask & (1 << bs) != 0 {
-                    let ctx = dav1d_wedge_ctx_lut[bs as usize];
+                    let ctx = dav1d_wedge_ctx_lut[bs as usize] as usize;
                     *b.comp_type_mut() = COMP_INTER_WEDGE as u8
-                        - dav1d_msac_decode_bool_adapt(
-                            &mut ts.msac,
-                            &mut ts.cdf.m.wedge_comp[ctx as usize],
-                        ) as u8;
+                        - dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.wedge_comp[ctx])
+                            as u8;
 
                     if b.comp_type() == COMP_INTER_WEDGE as u8 {
                         *b.wedge_idx_mut() = dav1d_msac_decode_symbol_adapt16(
                             &mut ts.msac,
-                            &mut ts.cdf.m.wedge_idx[ctx as usize],
-                            15 as size_t,
+                            &mut ts.cdf.m.wedge_idx[ctx],
+                            15,
                         ) as u8;
                     }
                 } else {
