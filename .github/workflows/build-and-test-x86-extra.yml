@@ -58,7 +58,7 @@ jobs:
       - name: cargo build for ${{ matrix.target }} ${{ matrix.build.name }}
         run: |
           cargo clean
-          rustup target add ${{ matrix.target }} --toolchain nightly-2022-08-08
+          rustup target add ${{ matrix.target }}
           cargo build --target ${{ matrix.target }} ${{ matrix.build.flags }}
       - name: download, check, and unpack argon test vectors
         if: ${{ steps.cache-argon.outputs.cache-hit != 'true' }}
