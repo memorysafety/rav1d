@@ -5,6 +5,7 @@ use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SMOOTH;
 use crate::include::dav1d::headers::DAV1D_FILTER_BILINEAR;
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_IDENTITY;
 use crate::src::align::Align16;
+use crate::src::align::Align4;
 use crate::src::align::Align64;
 use crate::src::align::Align8;
 use crate::src::levels::BS_128x128;
@@ -732,7 +733,7 @@ pub static dav1d_cdef_directions: [[i8; 2]; 12] = [
     [0 * 12 + 1, -1 * 12 + 2],
 ];
 
-pub static dav1d_sgr_params: [[u16; 2]; 16] = [
+pub static dav1d_sgr_params: Align4<[[u16; 2]; 16]> = Align4([
     [140, 3236],
     [112, 2158],
     [93, 1618],
@@ -749,7 +750,7 @@ pub static dav1d_sgr_params: [[u16; 2]; 16] = [
     [0, 925],
     [56, 0],
     [22, 0],
-];
+]);
 
 #[no_mangle]
 pub static dav1d_sgr_x_by_x: Align64<[u8; 256]> = Align64([
