@@ -1212,7 +1212,7 @@ unsafe fn read_mv_component_diff(
 
 unsafe fn read_mv_residual(
     t: &mut Dav1dTaskContext,
-    ref_mv: *mut mv,
+    ref_mv: &mut mv,
     mv_cdf: *mut CdfMvContext,
     have_fp: bool,
 ) {
@@ -1222,18 +1222,14 @@ unsafe fn read_mv_residual(
         (N_MV_JOINTS as libc::c_int - 1) as size_t,
     ) {
         3 => {
-            (*ref_mv).y =
-                (*ref_mv).y + read_mv_component_diff(t, &mut (*mv_cdf).comp[0], have_fp) as i16;
-            (*ref_mv).x =
-                (*ref_mv).x + read_mv_component_diff(t, &mut (*mv_cdf).comp[1], have_fp) as i16;
+            ref_mv.y = ref_mv.y + read_mv_component_diff(t, &mut (*mv_cdf).comp[0], have_fp) as i16;
+            ref_mv.x = ref_mv.x + read_mv_component_diff(t, &mut (*mv_cdf).comp[1], have_fp) as i16;
         }
         1 => {
-            (*ref_mv).x =
-                (*ref_mv).x + read_mv_component_diff(t, &mut (*mv_cdf).comp[1], have_fp) as i16;
+            ref_mv.x = ref_mv.x + read_mv_component_diff(t, &mut (*mv_cdf).comp[1], have_fp) as i16;
         }
         2 => {
-            (*ref_mv).y =
-                (*ref_mv).y + read_mv_component_diff(t, &mut (*mv_cdf).comp[0], have_fp) as i16;
+            ref_mv.y = ref_mv.y + read_mv_component_diff(t, &mut (*mv_cdf).comp[0], have_fp) as i16;
         }
         _ => {}
     };
