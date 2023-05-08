@@ -438,6 +438,7 @@ use crate::src::levels::mv;
 
 use crate::src::env::BlockContext;
 use crate::src::refmvs::refmvs_block;
+use crate::src::refmvs::refmvs_block_unaligned;
 use crate::src::refmvs::refmvs_frame;
 use crate::src::refmvs::refmvs_mvpair;
 use crate::src::refmvs::refmvs_refpair;
@@ -1459,14 +1460,14 @@ unsafe extern "C" fn find_matching_ref(
         let mut r2: *const refmvs_block = &mut *(*r.offset(-(1 as libc::c_int) as isize))
             .offset((*t).bx as isize)
             as *mut refmvs_block;
-        if (*r2).r#ref.r#ref[0] as libc::c_int == r#ref + 1
-            && (*r2).r#ref.r#ref[1] as libc::c_int == -(1 as libc::c_int)
+        if (*r2).0.r#ref.r#ref[0] as libc::c_int == r#ref + 1
+            && (*r2).0.r#ref.r#ref[1] as libc::c_int == -(1 as libc::c_int)
         {
             let ref mut fresh2 = *masks.offset(0);
             *fresh2 |= 1;
             count = 1 as libc::c_int;
         }
-        let mut aw4 = dav1d_block_dimensions[(*r2).bs as usize][0] as libc::c_int;
+        let mut aw4 = dav1d_block_dimensions[(*r2).0.bs as usize][0] as libc::c_int;
         if aw4 >= bw4 {
             let off = (*t).bx & aw4 - 1;
             if off != 0 {
@@ -1480,8 +1481,8 @@ unsafe extern "C" fn find_matching_ref(
             let mut x = aw4;
             while x < w4 {
                 r2 = r2.offset(aw4 as isize);
-                if (*r2).r#ref.r#ref[0] as libc::c_int == r#ref + 1
-                    && (*r2).r#ref.r#ref[1] as libc::c_int == -(1 as libc::c_int)
+                if (*r2).0.r#ref.r#ref[0] as libc::c_int == r#ref + 1
+                    && (*r2).0.r#ref.r#ref[1] as libc::c_int == -(1 as libc::c_int)
                 {
                     let ref mut fresh3 = *masks.offset(0);
                     *fresh3 |= mask as uint64_t;
@@ -1490,7 +1491,7 @@ unsafe extern "C" fn find_matching_ref(
                         return;
                     }
                 }
-                aw4 = dav1d_block_dimensions[(*r2).bs as usize][0] as libc::c_int;
+                aw4 = dav1d_block_dimensions[(*r2).0.bs as usize][0] as libc::c_int;
                 mask <<= aw4;
                 x += aw4;
             }
@@ -1499,10 +1500,12 @@ unsafe extern "C" fn find_matching_ref(
     if have_left {
         let mut r2_0: *const *mut refmvs_block = r;
         if (*(*r2_0.offset(0)).offset(((*t).bx - 1) as isize))
+            .0
             .r#ref
             .r#ref[0] as libc::c_int
             == r#ref + 1
             && (*(*r2_0.offset(0)).offset(((*t).bx - 1) as isize))
+                .0
                 .r#ref
                 .r#ref[1] as libc::c_int
                 == -(1 as libc::c_int)
@@ -1515,7 +1518,7 @@ unsafe extern "C" fn find_matching_ref(
             }
         }
         let mut lh4 = dav1d_block_dimensions
-            [(*(*r2_0.offset(0)).offset(((*t).bx - 1) as isize)).bs as usize][1]
+            [(*(*r2_0.offset(0)).offset(((*t).bx - 1) as isize)).0.bs as usize][1]
             as libc::c_int;
         if lh4 >= bh4 {
             if (*t).by & lh4 - 1 != 0 {
@@ -1527,10 +1530,12 @@ unsafe extern "C" fn find_matching_ref(
             while y < h4 {
                 r2_0 = r2_0.offset(lh4 as isize);
                 if (*(*r2_0.offset(0)).offset(((*t).bx - 1) as isize))
+                    .0
                     .r#ref
                     .r#ref[0] as libc::c_int
                     == r#ref + 1
                     && (*(*r2_0.offset(0)).offset(((*t).bx - 1) as isize))
+                        .0
                         .r#ref
                         .r#ref[1] as libc::c_int
                         == -(1 as libc::c_int)
@@ -1543,7 +1548,7 @@ unsafe extern "C" fn find_matching_ref(
                     }
                 }
                 lh4 = dav1d_block_dimensions
-                    [(*(*r2_0.offset(0)).offset(((*t).bx - 1) as isize)).bs as usize][1]
+                    [(*(*r2_0.offset(0)).offset(((*t).bx - 1) as isize)).0.bs as usize][1]
                     as libc::c_int;
                 mask_0 <<= lh4;
                 y += lh4;
@@ -1552,10 +1557,12 @@ unsafe extern "C" fn find_matching_ref(
     }
     if have_topleft != 0
         && ((*(*r.offset(-(1 as libc::c_int) as isize)).offset(((*t).bx - 1) as isize))
+            .0
             .r#ref
             .r#ref[0] as libc::c_int
             == r#ref + 1
             && (*(*r.offset(-(1 as libc::c_int) as isize)).offset(((*t).bx - 1) as isize))
+                .0
                 .r#ref
                 .r#ref[1] as libc::c_int
                 == -(1 as libc::c_int))
@@ -1569,10 +1576,12 @@ unsafe extern "C" fn find_matching_ref(
     }
     if have_topright != 0
         && ((*(*r.offset(-(1 as libc::c_int) as isize)).offset(((*t).bx + bw4) as isize))
+            .0
             .r#ref
             .r#ref[0] as libc::c_int
             == r#ref + 1
             && (*(*r.offset(-(1 as libc::c_int) as isize)).offset(((*t).bx + bw4) as isize))
+                .0
                 .r#ref
                 .r#ref[1] as libc::c_int
                 == -(1 as libc::c_int))
@@ -1602,13 +1611,13 @@ unsafe fn derive_warpmv(
 
     let rp = |i: i32, j: i32| &*r(i as isize).offset(j as isize);
 
-    let bs = |rp: &refmvs_block| dav1d_block_dimensions[(*rp).bs as usize];
+    let bs = |rp: &refmvs_block| dav1d_block_dimensions[(*rp).0.bs as usize];
 
     let mut add_sample = |np: usize, dx: i32, dy: i32, sx: i32, sy: i32, rp: &refmvs_block| {
         pts[np][0][0] = 16 * (2 * dx + sx * bs(rp)[0] as i32) - 8;
         pts[np][0][1] = 16 * (2 * dy + sy * bs(rp)[1] as i32) - 8;
-        pts[np][1][0] = pts[np][0][0] + (*rp).mv.mv[0].x as i32;
-        pts[np][1][1] = pts[np][0][1] + (*rp).mv.mv[0].y as i32;
+        pts[np][1][0] = pts[np][0][0] + (*rp).0.mv.mv[0].x as i32;
+        pts[np][1][1] = pts[np][0][1] + (*rp).0.mv.mv[0].y as i32;
         np + 1
     };
 
@@ -2542,7 +2551,7 @@ unsafe extern "C" fn splat_oneref_mv(
 ) {
     let mode: InterPredMode = (*b).c2rust_unnamed.c2rust_unnamed_0.inter_mode as InterPredMode;
     let tmpl: Align16<refmvs_block> = {
-        let mut init = refmvs_block {
+        let mut init = refmvs_block(refmvs_block_unaligned {
             mv: refmvs_mvpair {
                 mv: [
                     (*b).c2rust_unnamed
@@ -2568,7 +2577,7 @@ unsafe extern "C" fn splat_oneref_mv(
                 && imin(bw4, bh4) >= 2) as libc::c_int
                 | (mode as libc::c_uint == NEWMV as libc::c_int as libc::c_uint) as libc::c_int * 2)
                 as uint8_t,
-        };
+        });
         Align16(init)
     };
     ((*c).refmvs_dsp.splat_mv).expect("non-null function pointer")(
@@ -2591,7 +2600,7 @@ unsafe extern "C" fn splat_intrabc_mv(
     bh4: libc::c_int,
 ) {
     let tmpl: Align16<refmvs_block> = {
-        let mut init = refmvs_block {
+        let mut init = refmvs_block(refmvs_block_unaligned {
             mv: refmvs_mvpair {
                 mv: [
                     (*b).c2rust_unnamed
@@ -2607,7 +2616,7 @@ unsafe extern "C" fn splat_intrabc_mv(
             },
             bs: bs as uint8_t,
             mf: 0 as libc::c_int as uint8_t,
-        };
+        });
         Align16(init)
     };
     ((*c).refmvs_dsp.splat_mv).expect("non-null function pointer")(
@@ -2635,7 +2644,7 @@ unsafe extern "C" fn splat_tworef_mv(
     let mode: CompInterPredMode =
         (*b).c2rust_unnamed.c2rust_unnamed_0.inter_mode as CompInterPredMode;
     let tmpl: Align16<refmvs_block> = {
-        let mut init = refmvs_block {
+        let mut init = refmvs_block(refmvs_block_unaligned {
             mv: refmvs_mvpair {
                 mv: [
                     (*b).c2rust_unnamed
@@ -2662,7 +2671,7 @@ unsafe extern "C" fn splat_tworef_mv(
                 | ((1 as libc::c_int) << mode as libc::c_uint & 0xbc as libc::c_int != 0)
                     as libc::c_int
                     * 2) as uint8_t,
-        };
+        });
         Align16(init)
     };
     ((*c).refmvs_dsp.splat_mv).expect("non-null function pointer")(
@@ -2684,7 +2693,7 @@ unsafe extern "C" fn splat_intraref(
     bh4: libc::c_int,
 ) {
     let tmpl: Align16<refmvs_block> = {
-        let mut init = refmvs_block {
+        let mut init = refmvs_block(refmvs_block_unaligned {
             mv: refmvs_mvpair {
                 mv: [mv::INVALID, mv::ZERO],
             },
@@ -2693,7 +2702,7 @@ unsafe extern "C" fn splat_intraref(
             },
             bs: bs as uint8_t,
             mf: 0 as libc::c_int as uint8_t,
-        };
+        });
         Align16(init)
     };
     ((*c).refmvs_dsp.splat_mv).expect("non-null function pointer")(
@@ -2815,16 +2824,16 @@ unsafe fn obmc_lowest_px(
         let mut x = 0;
         while x < w4 && i < imin(b_dim[2] as libc::c_int, 4) {
             let a_r = &*r[0].offset((t.bx + x + 1) as isize);
-            let a_b_dim = &dav1d_block_dimensions[a_r.bs as usize];
-            if a_r.r#ref.r#ref[0] as libc::c_int > 0 {
+            let a_b_dim = &dav1d_block_dimensions[a_r.0.bs as usize];
+            if a_r.0.r#ref.r#ref[0] as libc::c_int > 0 {
                 let oh4 = imin(b_dim[1] as libc::c_int, 16) >> 1;
                 mc_lowest_px(
-                    &mut dst[a_r.r#ref.r#ref[0] as usize - 1][is_chroma as usize],
+                    &mut dst[a_r.0.r#ref.r#ref[0] as usize - 1][is_chroma as usize],
                     t.by,
                     oh4 * 3 + 3 >> 2,
-                    a_r.mv.mv[0].y as libc::c_int,
+                    a_r.0.mv.mv[0].y as libc::c_int,
                     ss_ver,
-                    &f.svc[a_r.r#ref.r#ref[0] as usize - 1][1],
+                    &f.svc[a_r.0.r#ref.r#ref[0] as usize - 1][1],
                 );
                 i += 1;
             }
@@ -2836,16 +2845,16 @@ unsafe fn obmc_lowest_px(
         let mut y = 0;
         while y < h4 && i < imin(b_dim[3] as libc::c_int, 4) {
             let l_r = &*r[y as usize + 1 + 1].offset((t.bx - 1) as isize);
-            let l_b_dim = &dav1d_block_dimensions[l_r.bs as usize];
-            if l_r.r#ref.r#ref[0] as libc::c_int > 0 {
+            let l_b_dim = &dav1d_block_dimensions[l_r.0.bs as usize];
+            if l_r.0.r#ref.r#ref[0] as libc::c_int > 0 {
                 let oh4 = iclip(l_b_dim[1] as libc::c_int, 2, b_dim[1] as libc::c_int);
                 mc_lowest_px(
-                    &mut dst[l_r.r#ref.r#ref[0] as usize - 1][is_chroma as usize],
+                    &mut dst[l_r.0.r#ref.r#ref[0] as usize - 1][is_chroma as usize],
                     t.by + y,
                     oh4,
-                    l_r.mv.mv[0].y as libc::c_int,
+                    l_r.0.mv.mv[0].y as libc::c_int,
                     ss_ver,
-                    &f.svc[l_r.r#ref.r#ref[0] as usize - 1][1],
+                    &f.svc[l_r.0.r#ref.r#ref[0] as usize - 1][1],
                 );
                 i += 1;
             }
@@ -2943,15 +2952,15 @@ unsafe fn decode_b(
                     t.rt.r[((t.by & 31) + 5 + bh4 - 1) as usize].offset(t.bx as isize);
                 for x in 0..bw4 {
                     let block = &mut *r.offset(x as isize);
-                    block.r#ref.r#ref[0] = 0;
-                    block.bs = bs as uint8_t;
+                    block.0.r#ref.r#ref[0] = 0;
+                    block.0.bs = bs as uint8_t;
                 }
 
                 let mut rr = &t.rt.r[((t.by & 31) + 5) as usize..];
                 for y in 0..bh4 - 1 {
                     let block = &mut *rr[y as usize].offset((t.bx + bw4 - 1) as isize);
-                    block.r#ref.r#ref[0] = 0;
-                    block.bs = bs as uint8_t;
+                    block.0.r#ref.r#ref[0] = 0;
+                    block.0.bs = bs as uint8_t;
                 }
             }
 
@@ -3019,17 +3028,17 @@ unsafe fn decode_b(
                 let r: *mut refmvs_block =
                     t.rt.r[((t.by & 31) + 5 + bh4 - 1) as usize].offset(t.bx as isize);
                 for x in 0..bw4 as isize {
-                    (*r.offset(x)).r#ref.r#ref[0] = b.r#ref()[0] + 1;
-                    (*r.offset(x)).mv.mv[0] = b.mv()[0];
-                    (*r.offset(x)).bs = bs as uint8_t;
+                    (*r.offset(x)).0.r#ref.r#ref[0] = b.r#ref()[0] + 1;
+                    (*r.offset(x)).0.mv.mv[0] = b.mv()[0];
+                    (*r.offset(x)).0.bs = bs as uint8_t;
                 }
 
                 let mut rr: &[*mut refmvs_block] = &t.rt.r[((t.by & 31) + 5) as usize..];
                 for y in 0..bh4 as usize - 1 {
                     let r = &mut *rr[y].offset((t.bx + bw4 - 1) as isize);
-                    r.r#ref.r#ref[0] = b.r#ref()[0] + 1;
-                    r.mv.mv[0] = b.mv()[0];
-                    r.bs = bs as uint8_t;
+                    r.0.r#ref.r#ref[0] = b.r#ref()[0] + 1;
+                    r.0.mv.mv[0] = b.mv()[0];
+                    r.0.bs = bs as uint8_t;
                 }
             }
 
@@ -6734,13 +6743,16 @@ unsafe fn decode_b(
                     r_1 = &mut *(t.rt.r).as_mut_ptr().offset(((t.by & 31) + 5) as isize)
                         as *mut *mut refmvs_block;
                     if bw4 == 1 {
-                        is_sub8x8 &= ((*(*r_1.offset(0)).offset((t.bx - 1) as isize)).r#ref.r#ref[0]
-                            as libc::c_int
+                        is_sub8x8 &= ((*(*r_1.offset(0)).offset((t.bx - 1) as isize))
+                            .0
+                            .r#ref
+                            .r#ref[0] as libc::c_int
                             > 0) as libc::c_int;
                     }
                     if bh4 == ss_ver {
                         is_sub8x8 &= ((*(*r_1.offset(-(1 as libc::c_int) as isize))
                             .offset(t.bx as isize))
+                        .0
                         .r#ref
                         .r#ref[0] as libc::c_int
                             > 0) as libc::c_int;
@@ -6748,6 +6760,7 @@ unsafe fn decode_b(
                     if bw4 == 1 && bh4 == ss_ver {
                         is_sub8x8 &= ((*(*r_1.offset(-(1 as libc::c_int) as isize))
                             .offset((t.bx - 1) as isize))
+                        .0
                         .r#ref
                         .r#ref[0] as libc::c_int
                             > 0) as libc::c_int;
@@ -6763,13 +6776,13 @@ unsafe fn decode_b(
                         .offset((t.bx - 1) as isize)
                             as *mut refmvs_block;
                         mc_lowest_px(
-                            &mut lowest_px[(*rr_1).r#ref.r#ref[0] as usize - 1][1],
+                            &mut lowest_px[(*rr_1).0.r#ref.r#ref[0] as usize - 1][1],
                             t.by - 1,
                             bh4,
-                            (*rr_1).mv.mv[0].y as libc::c_int,
+                            (*rr_1).0.mv.mv[0].y as libc::c_int,
                             ss_ver,
                             &*(*(f.svc).as_ptr().offset(
-                                (*((*rr_1).r#ref.r#ref).as_ptr().offset(0) as libc::c_int - 1)
+                                (*((*rr_1).0.r#ref.r#ref).as_ptr().offset(0) as libc::c_int - 1)
                                     as isize,
                             ))
                             .as_ptr()
@@ -6780,13 +6793,13 @@ unsafe fn decode_b(
                         let rr_2: *const refmvs_block =
                             &mut *(*r_1.offset(0)).offset((t.bx - 1) as isize) as *mut refmvs_block;
                         mc_lowest_px(
-                            &mut lowest_px[(*rr_2).r#ref.r#ref[0] as usize - 1][1],
+                            &mut lowest_px[(*rr_2).0.r#ref.r#ref[0] as usize - 1][1],
                             t.by,
                             bh4,
-                            (*rr_2).mv.mv[0].y as libc::c_int,
+                            (*rr_2).0.mv.mv[0].y as libc::c_int,
                             ss_ver,
                             &*(*(f.svc).as_ptr().offset(
-                                (*((*rr_2).r#ref.r#ref).as_ptr().offset(0) as libc::c_int - 1)
+                                (*((*rr_2).0.r#ref.r#ref).as_ptr().offset(0) as libc::c_int - 1)
                                     as isize,
                             ))
                             .as_ptr()
@@ -6798,13 +6811,13 @@ unsafe fn decode_b(
                             &mut *(*r_1.offset(-(1 as libc::c_int) as isize)).offset(t.bx as isize)
                                 as *mut refmvs_block;
                         mc_lowest_px(
-                            &mut lowest_px[(*rr_3).r#ref.r#ref[0] as usize - 1][1],
+                            &mut lowest_px[(*rr_3).0.r#ref.r#ref[0] as usize - 1][1],
                             t.by - 1,
                             bh4,
-                            (*rr_3).mv.mv[0].y as libc::c_int,
+                            (*rr_3).0.mv.mv[0].y as libc::c_int,
                             ss_ver,
                             &*(*(f.svc).as_ptr().offset(
-                                (*((*rr_3).r#ref.r#ref).as_ptr().offset(0) as libc::c_int - 1)
+                                (*((*rr_3).0.r#ref.r#ref).as_ptr().offset(0) as libc::c_int - 1)
                                     as isize,
                             ))
                             .as_ptr()
