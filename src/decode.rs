@@ -1222,9 +1222,7 @@ unsafe fn read_tx_tree(
             &mut (*t.ts).cdf.m.txpart[cat as usize][(a + l) as usize],
         );
         if is_split {
-            let ref mut fresh1 = masks[depth as usize];
-            *fresh1 =
-                (*fresh1 as libc::c_int | (1 as libc::c_int) << y_off * 4 + x_off) as uint16_t;
+            masks[depth as usize] |= 1 << (y_off * 4 + x_off);
         }
     } else {
         is_split = false;
