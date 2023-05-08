@@ -1158,19 +1158,18 @@ unsafe fn read_mv_component_diff(
     let f = &*t.f;
     let have_hp = (*f.frame_hdr).hp != 0;
     let sign = dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut mv_comp.sign.0);
-    let cl =
-        dav1d_msac_decode_symbol_adapt16(&mut ts.msac, &mut mv_comp.classes.0, 10) as libc::c_int;
+    let cl = dav1d_msac_decode_symbol_adapt16(&mut ts.msac, &mut mv_comp.classes.0, 10);
     let mut up;
     let mut fp;
     let mut hp;
     if cl == 0 {
-        up = dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut mv_comp.class0.0) as libc::c_int;
+        up = dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut mv_comp.class0.0) as libc::c_uint;
         if have_fp {
             fp = dav1d_msac_decode_symbol_adapt4(
                 &mut ts.msac,
                 &mut mv_comp.class0_fp[up as usize],
                 3,
-            ) as libc::c_int;
+            );
             hp = if have_hp {
                 dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut mv_comp.class0_hp.0)
             } else {
@@ -1182,15 +1181,13 @@ unsafe fn read_mv_component_diff(
         }
     } else {
         up = 1 << cl;
-        for n in 0..cl {
-            up = (up as libc::c_uint
-                | (dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut mv_comp.classN[n as usize])
-                    as libc::c_uint)
-                    << n) as libc::c_int;
+        for n in 0..cl as usize {
+            up |= (dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut mv_comp.classN[n])
+                as libc::c_uint)
+                << n;
         }
         if have_fp {
-            fp = dav1d_msac_decode_symbol_adapt4(&mut ts.msac, &mut mv_comp.classN_fp.0, 3)
-                as libc::c_int;
+            fp = dav1d_msac_decode_symbol_adapt4(&mut ts.msac, &mut mv_comp.classN_fp.0, 3);
             hp = if have_hp {
                 dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut mv_comp.classN_hp.0)
             } else {
@@ -1201,7 +1198,8 @@ unsafe fn read_mv_component_diff(
             hp = true;
         }
     }
-    let diff = (up << 3 | fp << 1 | hp as libc::c_int) + 1;
+    let hp = hp as libc::c_uint;
+    let diff = ((up << 3 | fp << 1 | hp) + 1) as libc::c_int;
     if sign {
         -diff
     } else {
