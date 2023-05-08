@@ -4,6 +4,7 @@
 *~
 tags
 .DS_Store
+tests/argon
 *.snap
 /tools/output/xxhash.h
 /.vscode

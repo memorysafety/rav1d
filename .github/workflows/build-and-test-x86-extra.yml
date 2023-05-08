@@ -1,0 +1,77 @@
+name: build and run extra tests on x86-64
+on:
+  # * is a special character in YAML so we quote lines containing it
+  push:
+    branches:
+      - '*argon*' # Run when pushing branches that have argon in the name
+  schedule:
+  - cron: '0 12 * * 1-5' # Run at 12pm UTC (5am Pacific Time) Monday-Friday
+jobs:
+  test-on-ubuntu-latest:
+    strategy:
+      matrix:
+        target: [
+          "x86_64-unknown-linux-gnu"
+        ]
+        build: [ # we do release with overflow checks since debug takes forever
+          # release build with overflow checks without optimized assembly routines
+          {name: "release", flags: "--release -Coverflow-checks --no-default-features --features=bitdepth_8,bitdepth_16"},
+          # release build with overflow checks and optimized assembly routines
+          {name: "release", flags: "--release -Coverflow-checks"}
+        ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: install prerequisites
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: meson nasm gcc-multilib
+          version: 1.0 # version of cache to load
+      - name: git checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: cache rust toolchain
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.rustup/toolchains
+            ~/.rustup/update-hashes
+            ~/.rustup/settings.toml
+          key: ${{ runner.os }}-${{ matrix.target }}-rust-toolchain-${{ hashFiles('rust-toolchain', 'rust-toolchain.toml') }}
+      - name: cache rust crates
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: cache argon test vectors
+        id: cache-argon
+        uses: actions/cache@v3
+        with:
+          path: |
+            tests/argon
+          key: argon_coveragetool_av1_base_and_extended_profiles_v2.1.1.zip
+      - name: cargo build for ${{ matrix.target }} ${{ matrix.build.name }}
+        run: |
+          cargo clean
+          rustup target add ${{ matrix.target }} --toolchain nightly-2022-08-08
+          cargo build --target ${{ matrix.target }} ${{ matrix.build.flags }}
+      - name: download, check, and unpack argon test vectors
+        if: ${{ steps.cache-argon.outputs.cache-hit != 'true' }}
+        run: |
+          curl --silent -O $ARGON_URL
+          curl --silent -O $ARGON_URL_MD5
+          md5sum --check argon_coveragetool_av1_base_and_extended_profiles_v2.1.1.zip.md5sum
+          unzip -q argon_coveragetool_av1_base_and_extended_profiles_v2.1.1.zip
+          mv argon_coveragetool_av1_base_and_extended_profiles_v2.1 tests/argon
+        env:
+          ARGON_URL: https://storage.googleapis.com/downloads.aomedia.org/assets/zip/argon_coveragetool_av1_base_and_extended_profiles_v2.1.1.zip
+          ARGON_URL_MD5: https://storage.googleapis.com/downloads.aomedia.org/assets/zip/argon_coveragetool_av1_base_and_extended_profiles_v2.1.1.zip.md5sum
+      - name: run argon tests for ${{ matrix.target }} ${{ matrix.build.name }}
+        run: |
+          tests/dav1d_argon.bash -d target/${{ matrix.target }}/${{ matrix.build.name }}/dav1d -j `nproc`
+
