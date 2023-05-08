@@ -55,6 +55,8 @@ jobs:
           path: |
             tests/argon
           key: argon_coveragetool_av1_base_and_extended_profiles_v2.1.1.zip
+          restore-keys: | # it is perfectly fine to restore from other branches
+            argon_coveragetool_av1_base_and_extended_profiles_v2.1.1.zip
       - name: cargo build for ${{ matrix.target }} ${{ matrix.build.name }}
         run: |
           cargo clean
