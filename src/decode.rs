@@ -1162,7 +1162,7 @@ unsafe fn read_mv_component_diff(
         dav1d_msac_decode_symbol_adapt16(&mut ts.msac, &mut mv_comp.classes.0, 10) as libc::c_int;
     let mut up = 0;
     let mut fp = 0;
-    let mut hp = 0;
+    let mut hp = false;
     if cl == 0 {
         up = dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut mv_comp.class0.0) as libc::c_int;
         if have_fp != 0 {
@@ -1175,10 +1175,10 @@ unsafe fn read_mv_component_diff(
                 dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut mv_comp.class0_hp.0)
             } else {
                 true
-            } as libc::c_int;
+            };
         } else {
             fp = 3;
-            hp = 1;
+            hp = true;
         }
     } else {
         up = 1 << cl;
@@ -1197,13 +1197,13 @@ unsafe fn read_mv_component_diff(
                 dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut mv_comp.classN_hp.0)
             } else {
                 true
-            } as libc::c_int;
+            };
         } else {
             fp = 3;
-            hp = 1;
+            hp = true;
         }
     }
-    let diff = (up << 3 | fp << 1 | hp) + 1;
+    let diff = (up << 3 | fp << 1 | hp as libc::c_int) + 1;
     if sign != 0 {
         -diff
     } else {
