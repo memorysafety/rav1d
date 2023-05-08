@@ -1041,6 +1041,9 @@ use crate::src::levels::PARTITION_V;
 use crate::src::levels::PARTITION_V4;
 
 use crate::src::levels::InterPredMode;
+use crate::src::levels::MV_JOINT_H;
+use crate::src::levels::MV_JOINT_HV;
+use crate::src::levels::MV_JOINT_V;
 use crate::src::levels::N_MV_JOINTS;
 
 use crate::src::levels::GLOBALMV;
@@ -1222,14 +1225,14 @@ unsafe fn read_mv_residual(
         &mut ts.cdf.mv.joint.0,
         (N_MV_JOINTS as libc::c_int - 1) as size_t,
     ) {
-        3 => {
+        MV_JOINT_HV => {
             ref_mv.y += read_mv_component_diff(t, &mut mv_cdf.comp[0], have_fp) as i16;
             ref_mv.x += read_mv_component_diff(t, &mut mv_cdf.comp[1], have_fp) as i16;
         }
-        1 => {
+        MV_JOINT_H => {
             ref_mv.x += read_mv_component_diff(t, &mut mv_cdf.comp[1], have_fp) as i16;
         }
-        2 => {
+        MV_JOINT_V => {
             ref_mv.y += read_mv_component_diff(t, &mut mv_cdf.comp[0], have_fp) as i16;
         }
         _ => {}
