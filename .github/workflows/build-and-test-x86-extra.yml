@@ -3,7 +3,7 @@ on:
   # * is a special character in YAML so we quote lines containing it
   push:
     branches:
-      - '*argon*' # Run when pushing branches that have argon in the name
+      - '**argon**' # Run when pushing branches that have argon in the name
   schedule:
   - cron: '0 12 * * 1-5' # Run at 12pm UTC (5am Pacific Time) Monday-Friday
 jobs:
