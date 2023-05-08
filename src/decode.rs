@@ -7685,46 +7685,46 @@ unsafe extern "C" fn decode_sb(
     {
         match hsz {
             1 => {
-                (*(&mut *((*(*t).a).partition).as_mut_ptr().offset(bx8 as isize) as *mut uint8_t
+                (*(&mut *((*(*t).a).partition.0).as_mut_ptr().offset(bx8 as isize) as *mut uint8_t
                     as *mut alias8))
                     .u8_0 = (0x1 as libc::c_int
                     * dav1d_al_part_ctx[0][bl as usize][bp as usize] as libc::c_int)
                     as uint8_t;
-                (*(&mut *((*t).l.partition).as_mut_ptr().offset(by8 as isize) as *mut uint8_t
+                (*(&mut *((*t).l.partition.0).as_mut_ptr().offset(by8 as isize) as *mut uint8_t
                     as *mut alias8))
                     .u8_0 = (0x1 as libc::c_int
                     * dav1d_al_part_ctx[1][bl as usize][bp as usize] as libc::c_int)
                     as uint8_t;
             }
             2 => {
-                (*(&mut *((*(*t).a).partition).as_mut_ptr().offset(bx8 as isize) as *mut uint8_t
+                (*(&mut *((*(*t).a).partition.0).as_mut_ptr().offset(bx8 as isize) as *mut uint8_t
                     as *mut alias16))
                     .u16_0 = (0x101 as libc::c_int
                     * dav1d_al_part_ctx[0][bl as usize][bp as usize] as libc::c_int)
                     as uint16_t;
-                (*(&mut *((*t).l.partition).as_mut_ptr().offset(by8 as isize) as *mut uint8_t
+                (*(&mut *((*t).l.partition.0).as_mut_ptr().offset(by8 as isize) as *mut uint8_t
                     as *mut alias16))
                     .u16_0 = (0x101 as libc::c_int
                     * dav1d_al_part_ctx[1][bl as usize][bp as usize] as libc::c_int)
                     as uint16_t;
             }
             4 => {
-                (*(&mut *((*(*t).a).partition).as_mut_ptr().offset(bx8 as isize) as *mut uint8_t
+                (*(&mut *((*(*t).a).partition.0).as_mut_ptr().offset(bx8 as isize) as *mut uint8_t
                     as *mut alias32))
                     .u32_0 = (0x1010101 as libc::c_uint)
                     .wrapping_mul(dav1d_al_part_ctx[0][bl as usize][bp as usize] as libc::c_uint);
-                (*(&mut *((*t).l.partition).as_mut_ptr().offset(by8 as isize) as *mut uint8_t
+                (*(&mut *((*t).l.partition.0).as_mut_ptr().offset(by8 as isize) as *mut uint8_t
                     as *mut alias32))
                     .u32_0 = (0x1010101 as libc::c_uint)
                     .wrapping_mul(dav1d_al_part_ctx[1][bl as usize][bp as usize] as libc::c_uint);
             }
             8 => {
-                (*(&mut *((*(*t).a).partition).as_mut_ptr().offset(bx8 as isize) as *mut uint8_t
+                (*(&mut *((*(*t).a).partition.0).as_mut_ptr().offset(bx8 as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong).wrapping_mul(
                     dav1d_al_part_ctx[0][bl as usize][bp as usize] as libc::c_ulonglong,
                 ) as uint64_t;
-                (*(&mut *((*t).l.partition).as_mut_ptr().offset(by8 as isize) as *mut uint8_t
+                (*(&mut *((*t).l.partition.0).as_mut_ptr().offset(by8 as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong).wrapping_mul(
                     dav1d_al_part_ctx[1][bl as usize][bp as usize] as libc::c_ulonglong,
@@ -7734,12 +7734,12 @@ unsafe extern "C" fn decode_sb(
                 let const_val: uint64_t = (0x101010101010101 as libc::c_ulonglong).wrapping_mul(
                     dav1d_al_part_ctx[0][bl as usize][bp as usize] as libc::c_ulonglong,
                 ) as uint64_t;
-                (*(&mut *((*(*t).a).partition)
+                (*(&mut *((*(*t).a).partition.0)
                     .as_mut_ptr()
                     .offset((bx8 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val;
-                (*(&mut *((*(*t).a).partition)
+                (*(&mut *((*(*t).a).partition.0)
                     .as_mut_ptr()
                     .offset((bx8 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
@@ -7747,12 +7747,12 @@ unsafe extern "C" fn decode_sb(
                 let const_val_0: uint64_t = (0x101010101010101 as libc::c_ulonglong).wrapping_mul(
                     dav1d_al_part_ctx[1][bl as usize][bp as usize] as libc::c_ulonglong,
                 ) as uint64_t;
-                (*(&mut *((*t).l.partition)
+                (*(&mut *((*t).l.partition.0)
                     .as_mut_ptr()
                     .offset((by8 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_0;
-                (*(&mut *((*t).l.partition)
+                (*(&mut *((*t).l.partition.0)
                     .as_mut_ptr()
                     .offset((by8 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
@@ -7789,7 +7789,7 @@ unsafe extern "C" fn reset_context(
         return;
     }
     memset(
-        ((*ctx).partition).as_mut_ptr() as *mut libc::c_void,
+        ((*ctx).partition.0).as_mut_ptr() as *mut libc::c_void,
         0 as libc::c_int,
         ::core::mem::size_of::<[uint8_t; 16]>(),
     );
