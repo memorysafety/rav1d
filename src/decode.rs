@@ -1206,14 +1206,12 @@ unsafe fn read_tx_tree(
     let f = &*t.f;
     let bx4 = t.bx & 31;
     let by4 = t.by & 31;
-    let t_dim: *const TxfmInfo =
-        &*dav1d_txfm_dimensions.as_ptr().offset(from as isize) as *const TxfmInfo;
-    let txw = (*t_dim).lw as libc::c_int;
-    let txh = (*t_dim).lh as libc::c_int;
+    let t_dim = &dav1d_txfm_dimensions[from as usize];
+    let txw = t_dim.lw as libc::c_int;
+    let txh = t_dim.lh as libc::c_int;
     let mut is_split = 0;
     if depth < 2 && from as libc::c_uint > TX_4X4 as libc::c_int as libc::c_uint {
-        let cat =
-            2 as libc::c_int * (TX_64X64 as libc::c_int - (*t_dim).max as libc::c_int) - depth;
+        let cat = 2 as libc::c_int * (TX_64X64 as libc::c_int - t_dim.max as libc::c_int) - depth;
         let a = (((*t.a).tx.0[bx4 as usize] as libc::c_int) < txw) as libc::c_int;
         let l = ((t.l.tx.0[by4 as usize] as libc::c_int) < txh) as libc::c_int;
         is_split = dav1d_msac_decode_bool_adapt(
@@ -1228,8 +1226,8 @@ unsafe fn read_tx_tree(
     } else {
         is_split = 0 as libc::c_int;
     }
-    if is_split != 0 && (*t_dim).max as libc::c_int > TX_8X8 as libc::c_int {
-        let sub: RectTxfmSize = (*t_dim).sub as RectTxfmSize;
+    if is_split != 0 && t_dim.max as libc::c_int > TX_8X8 as libc::c_int {
+        let sub: RectTxfmSize = t_dim.sub as RectTxfmSize;
         let sub_t_dim: *const TxfmInfo =
             &*dav1d_txfm_dimensions.as_ptr().offset(sub as isize) as *const TxfmInfo;
         let txsw = (*sub_t_dim).w as libc::c_int;
@@ -1263,7 +1261,7 @@ unsafe fn read_tx_tree(
             );
         };
         case_set_upto16(
-            (*t_dim).h as libc::c_int,
+            t_dim.h as libc::c_int,
             &mut t.l,
             1,
             by4 as isize,
@@ -1281,7 +1279,7 @@ unsafe fn read_tx_tree(
             );
         };
         case_set_upto16(
-            (*t_dim).w as libc::c_int,
+            t_dim.w as libc::c_int,
             &mut *t.a,
             0,
             bx4 as isize,
