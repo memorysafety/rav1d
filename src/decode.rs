@@ -1199,7 +1199,7 @@ unsafe fn read_tx_tree(
     t: &mut Dav1dTaskContext,
     from: RectTxfmSize,
     depth: libc::c_int,
-    masks: *mut uint16_t,
+    masks: &mut [u16; 2],
     x_off: libc::c_int,
     y_off: libc::c_int,
 ) {
@@ -1221,7 +1221,7 @@ unsafe fn read_tx_tree(
             &mut (*t.ts).cdf.m.txpart[cat as usize][(a + l) as usize],
         ) as libc::c_int;
         if is_split != 0 {
-            let ref mut fresh1 = *masks.offset(depth as isize);
+            let ref mut fresh1 = masks[depth as usize];
             *fresh1 =
                 (*fresh1 as libc::c_int | (1 as libc::c_int) << y_off * 4 + x_off) as uint16_t;
         }
@@ -2328,7 +2328,7 @@ unsafe extern "C" fn read_vartx_tree(
                     &mut *t,
                     (*b).c2rust_unnamed.c2rust_unnamed_0.max_ytx as RectTxfmSize,
                     0 as libc::c_int,
-                    tx_split.as_mut_ptr(),
+                    &mut tx_split,
                     x_off,
                     y_off,
                 );
