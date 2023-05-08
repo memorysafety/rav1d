@@ -1209,7 +1209,7 @@ unsafe fn read_tx_tree(
     let t_dim = &dav1d_txfm_dimensions[from as usize];
     let txw = t_dim.lw as libc::c_int;
     let txh = t_dim.lh as libc::c_int;
-    let mut is_split = 0;
+    let mut is_split = false;
     if depth < 2 && from as libc::c_uint > TX_4X4 as libc::c_int as libc::c_uint {
         let cat = 2 as libc::c_int * (TX_64X64 as libc::c_int - t_dim.max as libc::c_int) - depth;
         let a = (((*t.a).tx.0[bx4 as usize] as libc::c_int) < txw) as libc::c_int;
@@ -1217,16 +1217,16 @@ unsafe fn read_tx_tree(
         is_split = dav1d_msac_decode_bool_adapt(
             &mut (*t.ts).msac,
             &mut (*t.ts).cdf.m.txpart[cat as usize][(a + l) as usize],
-        ) as libc::c_int;
-        if is_split != 0 {
+        );
+        if is_split {
             let ref mut fresh1 = masks[depth as usize];
             *fresh1 =
                 (*fresh1 as libc::c_int | (1 as libc::c_int) << y_off * 4 + x_off) as uint16_t;
         }
     } else {
-        is_split = 0 as libc::c_int;
+        is_split = false;
     }
-    if is_split != 0 && t_dim.max as libc::c_int > TX_8X8 as libc::c_int {
+    if is_split && t_dim.max as libc::c_int > TX_8X8 as libc::c_int {
         let sub: RectTxfmSize = t_dim.sub as RectTxfmSize;
         let sub_t_dim = &dav1d_txfm_dimensions[sub as usize];
         let txsw = sub_t_dim.w as libc::c_int;
@@ -1252,7 +1252,7 @@ unsafe fn read_tx_tree(
             rep_macro(
                 dir.tx.0.as_mut_ptr() as *mut u8,
                 off,
-                if is_split != 0 {
+                if is_split {
                     TX_4X4.into()
                 } else {
                     mul * txh as u64
@@ -1270,7 +1270,7 @@ unsafe fn read_tx_tree(
             rep_macro(
                 dir.tx.0.as_mut_ptr() as *mut u8,
                 off,
-                if is_split != 0 {
+                if is_split {
                     TX_4X4.into()
                 } else {
                     mul * txw as u64
