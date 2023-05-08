@@ -1203,7 +1203,7 @@ unsafe fn read_tx_tree(
     x_off: libc::c_int,
     y_off: libc::c_int,
 ) {
-    let f: *const Dav1dFrameContext = t.f;
+    let f = &*t.f;
     let bx4 = t.bx & 31;
     let by4 = t.by & 31;
     let t_dim: *const TxfmInfo =
@@ -1236,15 +1236,15 @@ unsafe fn read_tx_tree(
         let txsh = (*sub_t_dim).h as libc::c_int;
         read_tx_tree(t, sub, depth + 1, masks, x_off * 2 + 0, y_off * 2 + 0);
         t.bx += txsw;
-        if txw >= txh && t.bx < (*f).bw {
+        if txw >= txh && t.bx < f.bw {
             read_tx_tree(t, sub, depth + 1, masks, x_off * 2 + 1, y_off * 2 + 0);
         }
         t.bx -= txsw;
         t.by += txsh;
-        if txh >= txw && t.by < (*f).bh {
+        if txh >= txw && t.by < f.bh {
             read_tx_tree(t, sub, depth + 1, masks, x_off * 2 + 0, y_off * 2 + 1);
             t.bx += txsw;
-            if txw >= txh && t.bx < (*f).bw {
+            if txw >= txh && t.bx < f.bw {
                 read_tx_tree(t, sub, depth + 1, masks, x_off * 2 + 1, y_off * 2 + 1);
             }
             t.bx -= txsw;
