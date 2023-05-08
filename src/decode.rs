@@ -4311,145 +4311,102 @@ unsafe fn decode_b(
                 }
             }
         } else {
-            b.c2rust_unnamed.c2rust_unnamed_0.comp_type = COMP_INTER_NONE as libc::c_int as uint8_t;
+            *b.comp_type_mut() = COMP_INTER_NONE as u8;
+
             if let Some(seg) = seg && seg.r#ref > 0 {
-                b
-                    .c2rust_unnamed
-                    .c2rust_unnamed_0
-                    .r#ref[0 as libc::c_int
-                    as usize] = seg.r#ref as i8 - 1;
+                b.ref_mut()[0] = seg.r#ref as i8 - 1;
             } else if let Some(seg) = seg && (seg.globalmv != 0 || seg.skip != 0) {
-                b
-                    .c2rust_unnamed
-                    .c2rust_unnamed_0
-                    .r#ref[0] = 0 as libc::c_int as int8_t;
+                b.ref_mut()[0] = 0;
             } else {
-                let ctx1_0 = av1_get_ref_ctx(
+                let ctx = av1_get_ref_ctx(
                     &*t.a,
                     &t.l,
                     by4,
                     bx4,
                     have_top,
                     have_left,
-                );
+                ) as usize;
+
                 if dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
-                    &mut ts.cdf.m.r#ref[0][ctx1_0 as usize],
-                ) != 0
-                {
-                    let ctx2_1 = av1_get_bwd_ref_ctx(
+                    &mut ts.cdf.m.r#ref[0][ctx],
+                ) != 0 {
+                    let ctx = av1_get_bwd_ref_ctx(
                         &*t.a,
                         &t.l,
                         by4,
                         bx4,
                         have_top,
                         have_left,
-                    );
+                    ) as usize;
+
                     if dav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
-                        &mut ts.cdf.m.r#ref[1][ctx2_1 as usize],
-                    ) != 0
-                    {
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[0 as libc::c_int
-                            as usize] = 6 as libc::c_int as int8_t;
+                        &mut ts.cdf.m.r#ref[1][ctx],
+                    ) != 0 {
+                        b.ref_mut()[0] = 6;
                     } else {
-                        let ctx3_0 = av1_get_bwd_ref_1_ctx(
+                        let ctx = av1_get_bwd_ref_1_ctx(
                             &*t.a,
                             &t.l,
                             by4,
                             bx4,
                             have_top,
                             have_left,
-                        );
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[0 as libc::c_int
-                            as usize] = (4 as libc::c_int as libc::c_uint)
-                            .wrapping_add(
-                                dav1d_msac_decode_bool_adapt(
-                                    &mut ts.msac,
-                                    &mut ts
-                                        .cdf
-                                        .m
-                                        .r#ref[5][ctx3_0 as usize],
-                                ),
-                            ) as int8_t;
+                        ) as usize;
+                        b.ref_mut()[0] = 4 + dav1d_msac_decode_bool_adapt(
+                            &mut ts.msac,
+                            &mut ts.cdf.m.r#ref[5][ctx],
+                        ) as i8;
                     }
                 } else {
-                    let ctx2_2 = av1_get_fwd_ref_ctx(
+                    let ctx = av1_get_fwd_ref_ctx(
                         &*t.a,
                         &t.l,
                         by4,
                         bx4,
                         have_top,
                         have_left,
-                    );
+                    ) as usize;
+
                     if dav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
-                        &mut ts.cdf.m.r#ref[2][ctx2_2 as usize],
-                    ) != 0
-                    {
-                        let ctx3_1 = av1_get_fwd_ref_2_ctx(
+                        &mut ts.cdf.m.r#ref[2][ctx],
+                    ) != 0 {
+                        let ctx = av1_get_fwd_ref_2_ctx(
                             &*t.a,
                             &t.l,
                             by4,
                             bx4,
                             have_top,
                             have_left,
-                        );
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[0 as libc::c_int
-                            as usize] = (2 as libc::c_int as libc::c_uint)
-                            .wrapping_add(
-                                dav1d_msac_decode_bool_adapt(
-                                    &mut ts.msac,
-                                    &mut ts
-                                        .cdf
-                                        .m
-                                        .r#ref[4][ctx3_1 as usize],
-                                ),
-                            ) as int8_t;
-                    } else {
-                        let ctx3_2 = av1_get_fwd_ref_1_ctx(
-                            &*t.a,
-                            &t.l,
-                            by4,
-                            bx4,
-                            have_top,
-                            have_left,
-                        );
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[0 as libc::c_int
-                            as usize] = dav1d_msac_decode_bool_adapt(
+                        ) as usize;
+                        b.ref_mut()[0] = 2 + dav1d_msac_decode_bool_adapt(
                             &mut ts.msac,
-                            &mut ts
-                                .cdf
-                                .m
-                                .r#ref[3][ctx3_2 as usize],
-                        ) as int8_t;
+                            &mut ts.cdf.m.r#ref[4][ctx],
+                        ) as i8;
+                    } else {
+                        let ctx = av1_get_fwd_ref_1_ctx(
+                            &*t.a,
+                            &t.l,
+                            by4,
+                            bx4,
+                            have_top,
+                            have_left,
+                        ) as usize;
+                        b.ref_mut()[0] = dav1d_msac_decode_bool_adapt(
+                            &mut ts.msac,
+                            &mut ts.cdf.m.r#ref[3][ctx],
+                        ) as i8;
                     }
                 }
-                if DEBUG_BLOCK_INFO(f, t)
-                {
-                    printf(
-                        b"Post-ref[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[0] as libc::c_int,
-                        ts.msac.rng,
-                    );
+
+                if DEBUG_BLOCK_INFO(f, t) {
+                    println!("Post-ref[{}]: r={}", b.r#ref()[0], ts.msac.rng);
                 }
             }
-            b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] = -(1 as libc::c_int) as int8_t;
+            b.ref_mut()[1] = -1;
+
             let mut mvstack_2: [refmvs_candidate; 8] = [refmvs_candidate {
                 mv: refmvs_mvpair { mv: [mv::ZERO; 2] },
                 weight: 0,
