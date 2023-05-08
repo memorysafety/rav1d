@@ -1223,7 +1223,7 @@ unsafe fn read_mv_residual(
     match dav1d_msac_decode_symbol_adapt4(
         &mut ts.msac,
         &mut ts.cdf.mv.joint.0,
-        (N_MV_JOINTS as libc::c_int - 1) as size_t,
+        N_MV_JOINTS as size_t - 1,
     ) {
         MV_JOINT_HV => {
             ref_mv.y += read_mv_component_diff(t, &mut mv_cdf.comp[0], have_fp) as i16;
