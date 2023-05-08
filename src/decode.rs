@@ -1162,6 +1162,7 @@ unsafe fn read_mv_component_diff(
     let mut up;
     let mut fp;
     let mut hp;
+
     if cl == 0 {
         up = dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut mv_comp.class0.0) as libc::c_uint;
         if have_fp {
@@ -1199,7 +1200,9 @@ unsafe fn read_mv_component_diff(
         }
     }
     let hp = hp as libc::c_uint;
+
     let diff = ((up << 3 | fp << 1 | hp) + 1) as libc::c_int;
+
     if sign {
         -diff
     } else {
