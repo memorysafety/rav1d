@@ -3667,8 +3667,8 @@ unsafe fn decode_b(
                 b.tx() as RectTxfmSize,
                 b.uvtx as RectTxfmSize,
                 f.cur.p.layout,
-                &mut (*t.a).tx_lpf_y[bx4 as usize],
-                &mut t.l.tx_lpf_y[by4 as usize],
+                &mut (*t.a).tx_lpf_y.0[bx4 as usize],
+                &mut t.l.tx_lpf_y.0[by4 as usize],
                 if has_chroma {
                     &mut (*t.a).tx_lpf_uv[cbx4 as usize]
                 } else {
@@ -5270,8 +5270,8 @@ unsafe fn decode_b(
                 tx_split.as_ptr(),
                 uvtx,
                 f.cur.p.layout,
-                &mut *((*t.a).tx_lpf_y).as_mut_ptr().offset(bx4 as isize),
-                &mut *(t.l.tx_lpf_y).as_mut_ptr().offset(by4 as isize),
+                &mut *((*t.a).tx_lpf_y.0).as_mut_ptr().offset(bx4 as isize),
+                &mut *(t.l.tx_lpf_y.0).as_mut_ptr().offset(by4 as isize),
                 if has_chroma {
                     &mut *((*t.a).tx_lpf_uv).as_mut_ptr().offset(cbx4 as isize)
                 } else {
@@ -7804,7 +7804,7 @@ unsafe extern "C" fn reset_context(
         ::core::mem::size_of::<[uint8_t; 32]>(),
     );
     memset(
-        ((*ctx).tx_lpf_y).as_mut_ptr() as *mut libc::c_void,
+        ((*ctx).tx_lpf_y.0).as_mut_ptr() as *mut libc::c_void,
         2 as libc::c_int,
         ::core::mem::size_of::<[uint8_t; 32]>(),
     );
@@ -8382,7 +8382,7 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> li
         &mut *(*((*f).lf.tx_lpf_right_edge).as_ptr().offset(0))
             .offset((align_h * tile_col + (*t).by) as isize) as *mut uint8_t
             as *mut libc::c_void,
-        &mut *((*t).l.tx_lpf_y)
+        &mut *((*t).l.tx_lpf_y.0)
             .as_mut_ptr()
             .offset(((*t).by & 16) as isize) as *mut uint8_t as *const libc::c_void,
         sb_step as libc::c_ulong,
