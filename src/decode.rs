@@ -3670,12 +3670,12 @@ unsafe fn decode_b(
                 &mut (*t.a).tx_lpf_y.0[bx4 as usize],
                 &mut t.l.tx_lpf_y.0[by4 as usize],
                 if has_chroma {
-                    &mut (*t.a).tx_lpf_uv[cbx4 as usize]
+                    &mut (*t.a).tx_lpf_uv.0[cbx4 as usize]
                 } else {
                     std::ptr::null_mut()
                 },
                 if has_chroma {
-                    &mut t.l.tx_lpf_uv[cby4 as usize]
+                    &mut t.l.tx_lpf_uv.0[cby4 as usize]
                 } else {
                     std::ptr::null_mut()
                 },
@@ -5273,12 +5273,12 @@ unsafe fn decode_b(
                 &mut *((*t.a).tx_lpf_y.0).as_mut_ptr().offset(bx4 as isize),
                 &mut *(t.l.tx_lpf_y.0).as_mut_ptr().offset(by4 as isize),
                 if has_chroma {
-                    &mut *((*t.a).tx_lpf_uv).as_mut_ptr().offset(cbx4 as isize)
+                    &mut *((*t.a).tx_lpf_uv.0).as_mut_ptr().offset(cbx4 as isize)
                 } else {
                     0 as *mut uint8_t
                 },
                 if has_chroma {
-                    &mut *(t.l.tx_lpf_uv).as_mut_ptr().offset(cby4 as isize)
+                    &mut *(t.l.tx_lpf_uv.0).as_mut_ptr().offset(cby4 as isize)
                 } else {
                     0 as *mut uint8_t
                 },
@@ -7809,7 +7809,7 @@ unsafe extern "C" fn reset_context(
         ::core::mem::size_of::<[uint8_t; 32]>(),
     );
     memset(
-        ((*ctx).tx_lpf_uv).as_mut_ptr() as *mut libc::c_void,
+        ((*ctx).tx_lpf_uv.0).as_mut_ptr() as *mut libc::c_void,
         1 as libc::c_int,
         ::core::mem::size_of::<[uint8_t; 32]>(),
     );
@@ -8395,7 +8395,7 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> li
         &mut *(*((*f).lf.tx_lpf_right_edge).as_ptr().offset(1))
             .offset((align_h * tile_col + ((*t).by >> ss_ver_0)) as isize) as *mut uint8_t
             as *mut libc::c_void,
-        &mut *((*t).l.tx_lpf_uv)
+        &mut *((*t).l.tx_lpf_uv.0)
             .as_mut_ptr()
             .offset((((*t).by & 16) >> ss_ver_0) as isize) as *mut uint8_t
             as *const libc::c_void,
