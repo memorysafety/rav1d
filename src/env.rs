@@ -41,7 +41,7 @@ pub struct BlockContext {
     pub mode: Align8<[uint8_t; 32]>,
     pub lcoef: Align8<[uint8_t; 32]>,
     pub ccoef: Align8<[[uint8_t; 32]; 2]>,
-    pub seg_pred: [uint8_t; 32],
+    pub seg_pred: Align8<[uint8_t; 32]>,
     pub skip: [uint8_t; 32],
     pub skip_mode: [uint8_t; 32],
     pub intra: [uint8_t; 32],
