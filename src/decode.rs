@@ -3716,7 +3716,7 @@ unsafe fn decode_b(
             rep_macro(dir.seg_pred.0.as_mut_ptr(), off, mul * seg_pred as u64);
             rep_macro(dir.skip_mode.as_mut_ptr(), off, 0);
             rep_macro(dir.intra.as_mut_ptr(), off, mul);
-            rep_macro(dir.skip.as_mut_ptr(), off, mul * b.skip as u64);
+            rep_macro(dir.skip.0.as_mut_ptr(), off, mul * b.skip as u64);
             // see aomedia bug 2183 for why we use luma coordinates here
             rep_macro(
                 t.pal_sz_uv[diridx].as_mut_ptr(),
@@ -3938,7 +3938,7 @@ unsafe fn decode_b(
             rep_macro(dir.seg_pred.0.as_mut_ptr(), off, mul * seg_pred as u64);
             rep_macro(dir.skip_mode.as_mut_ptr(), off, 0);
             rep_macro(dir.intra.as_mut_ptr(), off, 0);
-            rep_macro(dir.skip.as_mut_ptr(), off, mul * b.skip as u64)
+            rep_macro(dir.skip.0.as_mut_ptr(), off, mul * b.skip as u64)
         };
         case_set(bh4, &mut t.l, 1, by4 as isize, &mut set_ctx);
         case_set(bw4, &mut *t.a, 0, bx4 as isize, &mut set_ctx);
@@ -5300,7 +5300,7 @@ unsafe fn decode_b(
                 (*(&mut *(t.l.intra).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias8))
                     .u8_0 = 0 as libc::c_int as uint8_t;
-                (*(&mut *(t.l.skip).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip.0).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias8))
                     .u8_0 = (0x1 * b.skip as libc::c_int) as uint8_t;
                 (*(&mut *(t.l.pal_sz).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
@@ -5358,7 +5358,7 @@ unsafe fn decode_b(
                 (*(&mut *(t.l.intra).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias16))
                     .u16_0 = 0 as libc::c_int as uint16_t;
-                (*(&mut *(t.l.skip).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip.0).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias16))
                     .u16_0 = (0x101 * b.skip as libc::c_int) as uint16_t;
                 (*(&mut *(t.l.pal_sz).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
@@ -5416,7 +5416,7 @@ unsafe fn decode_b(
                 (*(&mut *(t.l.intra).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias32))
                     .u32_0 = 0 as libc::c_int as uint32_t;
-                (*(&mut *(t.l.skip).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip.0).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias32))
                     .u32_0 = (0x1010101 as libc::c_uint).wrapping_mul(b.skip as libc::c_uint);
                 (*(&mut *(t.l.pal_sz).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
@@ -5471,7 +5471,7 @@ unsafe fn decode_b(
                 (*(&mut *(t.l.intra).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = 0 as libc::c_int as uint64_t;
-                (*(&mut *(t.l.skip).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip.0).as_mut_ptr().offset(by4 as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
                     .wrapping_mul(b.skip as libc::c_ulonglong)
@@ -5552,10 +5552,10 @@ unsafe fn decode_b(
                 let const_val_126: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                     .wrapping_mul(b.skip as libc::c_ulonglong)
                     as uint64_t;
-                (*(&mut *(t.l.skip).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip.0).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_126;
-                (*(&mut *(t.l.skip).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip.0).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_126;
                 let const_val_127: uint64_t = 0 as libc::c_int as uint64_t;
@@ -5703,16 +5703,16 @@ unsafe fn decode_b(
                 let const_val_139: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                     .wrapping_mul(b.skip as libc::c_ulonglong)
                     as uint64_t;
-                (*(&mut *(t.l.skip).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip.0).as_mut_ptr().offset((by4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_139;
-                (*(&mut *(t.l.skip).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip.0).as_mut_ptr().offset((by4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_139;
-                (*(&mut *(t.l.skip).as_mut_ptr().offset((by4 + 16) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip.0).as_mut_ptr().offset((by4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_139;
-                (*(&mut *(t.l.skip).as_mut_ptr().offset((by4 + 24) as isize) as *mut uint8_t
+                (*(&mut *(t.l.skip.0).as_mut_ptr().offset((by4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_139;
                 let const_val_140: uint64_t = 0 as libc::c_int as uint64_t;
@@ -5900,7 +5900,7 @@ unsafe fn decode_b(
                 (*(&mut *((*t.a).intra).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
                     as *mut alias8))
                     .u8_0 = 0 as libc::c_int as uint8_t;
-                (*(&mut *((*t.a).skip).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                (*(&mut *((*t.a).skip.0).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
                     as *mut alias8))
                     .u8_0 = (0x1 * b.skip as libc::c_int) as uint8_t;
                 (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
@@ -5958,7 +5958,7 @@ unsafe fn decode_b(
                 (*(&mut *((*t.a).intra).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
                     as *mut alias16))
                     .u16_0 = 0 as libc::c_int as uint16_t;
-                (*(&mut *((*t.a).skip).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                (*(&mut *((*t.a).skip.0).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
                     as *mut alias16))
                     .u16_0 = (0x101 * b.skip as libc::c_int) as uint16_t;
                 (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
@@ -6016,7 +6016,7 @@ unsafe fn decode_b(
                 (*(&mut *((*t.a).intra).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
                     as *mut alias32))
                     .u32_0 = 0 as libc::c_int as uint32_t;
-                (*(&mut *((*t.a).skip).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                (*(&mut *((*t.a).skip.0).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
                     as *mut alias32))
                     .u32_0 = (0x1010101 as libc::c_uint).wrapping_mul(b.skip as libc::c_uint);
                 (*(&mut *((*t.a).pal_sz).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
@@ -6071,7 +6071,7 @@ unsafe fn decode_b(
                 (*(&mut *((*t.a).intra).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = 0 as libc::c_int as uint64_t;
-                (*(&mut *((*t.a).skip).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
+                (*(&mut *((*t.a).skip.0).as_mut_ptr().offset(bx4 as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = (0x101010101010101 as libc::c_ulonglong)
                     .wrapping_mul(b.skip as libc::c_ulonglong)
@@ -6160,10 +6160,10 @@ unsafe fn decode_b(
                 let const_val_152: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                     .wrapping_mul(b.skip as libc::c_ulonglong)
                     as uint64_t;
-                (*(&mut *((*t.a).skip).as_mut_ptr().offset((bx4 + 0) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).skip.0).as_mut_ptr().offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_152;
-                (*(&mut *((*t.a).skip).as_mut_ptr().offset((bx4 + 8) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).skip.0).as_mut_ptr().offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_152;
                 let const_val_153: uint64_t = 0 as libc::c_int as uint64_t;
@@ -6331,16 +6331,16 @@ unsafe fn decode_b(
                 let const_val_165: uint64_t = (0x101010101010101 as libc::c_ulonglong)
                     .wrapping_mul(b.skip as libc::c_ulonglong)
                     as uint64_t;
-                (*(&mut *((*t.a).skip).as_mut_ptr().offset((bx4 + 0) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).skip.0).as_mut_ptr().offset((bx4 + 0) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_165;
-                (*(&mut *((*t.a).skip).as_mut_ptr().offset((bx4 + 8) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).skip.0).as_mut_ptr().offset((bx4 + 8) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_165;
-                (*(&mut *((*t.a).skip).as_mut_ptr().offset((bx4 + 16) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).skip.0).as_mut_ptr().offset((bx4 + 16) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_165;
-                (*(&mut *((*t.a).skip).as_mut_ptr().offset((bx4 + 24) as isize) as *mut uint8_t
+                (*(&mut *((*t.a).skip.0).as_mut_ptr().offset((bx4 + 24) as isize) as *mut uint8_t
                     as *mut alias64))
                     .u64_0 = const_val_165;
                 let const_val_166: uint64_t = 0 as libc::c_int as uint64_t;
@@ -7794,7 +7794,7 @@ unsafe extern "C" fn reset_context(
         ::core::mem::size_of::<[uint8_t; 16]>(),
     );
     memset(
-        ((*ctx).skip).as_mut_ptr() as *mut libc::c_void,
+        ((*ctx).skip.0).as_mut_ptr() as *mut libc::c_void,
         0 as libc::c_int,
         ::core::mem::size_of::<[uint8_t; 32]>(),
     );
