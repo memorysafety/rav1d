@@ -1,8 +1,8 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
-use ::libc;
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
+use libc;
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
@@ -771,6 +771,7 @@ extern "C" {
         w: libc::c_int,
         h: libc::c_int,
     );
+    fn dav1d_ipred_pixel_set_8bpc_neon(out: *mut pixel, px: pixel, n: libc::c_int);
 }
 
 use crate::src::tables::dav1d_dr_intra_derivative;
@@ -2151,11 +2152,10 @@ unsafe extern "C" fn ipred_z3_neon(
     }
     let base_inc = 1 + upsample_left;
     let mut pad_pixels = imax(64 - max_base_y - 1, height + 15);
-    memset(
-        &mut *left_out.as_mut_ptr().offset((max_base_y + 1) as isize) as *mut pixel
-            as *mut libc::c_void,
-        left_out[max_base_y as usize] as libc::c_int,
-        (pad_pixels * base_inc) as libc::c_ulong,
+    dav1d_ipred_pixel_set_8bpc_neon(
+        &mut *left_out.as_mut_ptr().offset((max_base_y + 1) as isize) as *mut pixel,
+        left_out[max_base_y as usize],
+        (pad_pixels * base_inc) as libc::c_int,
     );
     if upsample_left != 0 {
         dav1d_ipred_z3_fill2_8bpc_neon(
@@ -2195,7 +2195,8 @@ unsafe extern "C" fn ipred_z1_neon(
     let enable_intra_edge_filter = angle >> 10;
     angle &= 511 as libc::c_int;
     let mut dx = dav1d_dr_intra_derivative[(angle >> 1) as usize] as libc::c_int;
-    let mut top_out: [pixel; 286] = [0; 286];
+    const top_out_size: usize = 64 + 64 * (64 + 15) * 2 + 16;
+    let mut top_out: [pixel; top_out_size] = [0; top_out_size];
     let mut max_base_x = 0;
     let upsample_above = if enable_intra_edge_filter != 0 {
         get_upsample(width + height, 90 - angle, is_sm)
@@ -2238,11 +2239,10 @@ unsafe extern "C" fn ipred_z1_neon(
     }
     let base_inc = 1 + upsample_above;
     let mut pad_pixels = width + 15;
-    memset(
-        &mut *top_out.as_mut_ptr().offset((max_base_x + 1) as isize) as *mut pixel
-            as *mut libc::c_void,
-        top_out[max_base_x as usize] as libc::c_int,
-        (pad_pixels * base_inc) as libc::c_ulong,
+    dav1d_ipred_pixel_set_8bpc_neon(
+        &mut *top_out.as_mut_ptr().offset((max_base_x + 1) as isize) as *mut pixel,
+        top_out[max_base_x as usize],
+        (pad_pixels * base_inc) as libc::c_int,
     );
     if upsample_above != 0 {
         dav1d_ipred_z1_fill2_8bpc_neon(
