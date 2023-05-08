@@ -4122,7 +4122,7 @@ unsafe extern "C" fn blend_v_c(
     w: libc::c_int,
     mut h: libc::c_int,
 ) {
-    let mask: *const uint8_t = &*dav1d_obmc_masks.as_ptr().offset(w as isize) as *const uint8_t;
+    let mask: *const uint8_t = &*dav1d_obmc_masks.0.as_ptr().offset(w as isize) as *const uint8_t;
     loop {
         let mut x = 0;
         while x < w * 3 >> 2 {
@@ -4148,7 +4148,8 @@ unsafe extern "C" fn blend_h_c(
     w: libc::c_int,
     mut h: libc::c_int,
 ) {
-    let mut mask: *const uint8_t = &*dav1d_obmc_masks.as_ptr().offset(h as isize) as *const uint8_t;
+    let mut mask: *const uint8_t =
+        &*dav1d_obmc_masks.0.as_ptr().offset(h as isize) as *const uint8_t;
     h = h * 3 >> 2;
     loop {
         let fresh0 = mask;

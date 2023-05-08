@@ -8,122 +8,38 @@
 
 use std::ops::{Index, IndexMut};
 
-#[derive(Copy, Clone)]
-#[repr(C, align(64))]
-pub struct Align64<T>(pub T);
+macro_rules! def_align {
+    ($align:literal, $name:ident) => {
+        #[derive(Copy, Clone)]
+        #[repr(C, align($align))]
+        pub struct $name<T>(pub T);
 
-impl<T> From<T> for Align64<T> {
-    fn from(from: T) -> Self {
-        Align64(from)
-    }
+        impl<T> From<T> for $name<T> {
+            fn from(from: T) -> Self {
+                Self(from)
+            }
+        }
+
+        impl<T: Index<usize>> Index<usize> for $name<T> {
+            type Output = T::Output;
+
+            fn index(&self, index: usize) -> &Self::Output {
+                &self.0[index]
+            }
+        }
+
+        impl<T: IndexMut<usize>> IndexMut<usize> for $name<T> {
+            fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+                &mut self.0[index]
+            }
+        }
+    };
 }
 
-impl<T: Index<usize>> Index<usize> for Align64<T> {
-    type Output = T::Output;
-
-    fn index(&self, index: usize) -> &Self::Output {
-        &self.0[index]
-    }
-}
-
-impl<T: IndexMut<usize>> IndexMut<usize> for Align64<T> {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        &mut self.0[index]
-    }
-}
-
-#[derive(Copy, Clone)]
-#[repr(C, align(32))]
-pub struct Align32<T>(pub T);
-
-impl<T> From<T> for Align32<T> {
-    fn from(from: T) -> Self {
-        Align32(from)
-    }
-}
-
-impl<T: Index<usize>> Index<usize> for Align32<T> {
-    type Output = T::Output;
-
-    fn index(&self, index: usize) -> &Self::Output {
-        &self.0[index]
-    }
-}
-
-impl<T: IndexMut<usize>> IndexMut<usize> for Align32<T> {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        &mut self.0[index]
-    }
-}
-
-#[derive(Copy, Clone)]
-#[repr(C, align(16))]
-pub struct Align16<T>(pub T);
-
-impl<T> From<T> for Align16<T> {
-    fn from(from: T) -> Self {
-        Align16(from)
-    }
-}
-
-impl<T: Index<usize>> Index<usize> for Align16<T> {
-    type Output = T::Output;
-
-    fn index(&self, index: usize) -> &Self::Output {
-        &self.0[index]
-    }
-}
-
-impl<T: IndexMut<usize>> IndexMut<usize> for Align16<T> {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        &mut self.0[index]
-    }
-}
-
-#[derive(Copy, Clone)]
-#[repr(C, align(8))]
-pub struct Align8<T>(pub T);
-
-impl<T> From<T> for Align8<T> {
-    fn from(from: T) -> Self {
-        Align8(from)
-    }
-}
-
-impl<T: Index<usize>> Index<usize> for Align8<T> {
-    type Output = T::Output;
-
-    fn index(&self, index: usize) -> &Self::Output {
-        &self.0[index]
-    }
-}
-
-impl<T: IndexMut<usize>> IndexMut<usize> for Align8<T> {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        &mut self.0[index]
-    }
-}
-
-#[derive(Copy, Clone)]
-#[repr(C, align(4))]
-pub struct Align4<T>(pub T);
-
-impl<T> From<T> for Align4<T> {
-    fn from(from: T) -> Self {
-        Align4(from)
-    }
-}
-
-impl<T: Index<usize>> Index<usize> for Align4<T> {
-    type Output = T::Output;
-
-    fn index(&self, index: usize) -> &Self::Output {
-        &self.0[index]
-    }
-}
-
-impl<T: IndexMut<usize>> IndexMut<usize> for Align4<T> {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        &mut self.0[index]
-    }
-}
+def_align!(1, Align1);
+def_align!(2, Align2);
+def_align!(4, Align4);
+def_align!(8, Align8);
+def_align!(16, Align16);
+def_align!(32, Align32);
+def_align!(64, Align64);
