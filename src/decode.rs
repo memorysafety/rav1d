@@ -1152,7 +1152,7 @@ fn init_quant_tables(
 unsafe fn read_mv_component_diff(
     t: &mut Dav1dTaskContext,
     mv_comp: &mut CdfMvComponent,
-    have_fp: libc::c_int,
+    have_fp: bool,
 ) -> libc::c_int {
     let ts = &mut *t.ts;
     let f = &*t.f;
@@ -1165,7 +1165,7 @@ unsafe fn read_mv_component_diff(
     let mut hp = false;
     if cl == 0 {
         up = dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut mv_comp.class0.0) as libc::c_int;
-        if have_fp != 0 {
+        if have_fp {
             fp = dav1d_msac_decode_symbol_adapt4(
                 &mut ts.msac,
                 &mut mv_comp.class0_fp[up as usize],
@@ -1190,7 +1190,7 @@ unsafe fn read_mv_component_diff(
                     << n) as libc::c_int;
             n += 1;
         }
-        if have_fp != 0 {
+        if have_fp {
             fp = dav1d_msac_decode_symbol_adapt4(&mut ts.msac, &mut mv_comp.classN_fp.0, 3)
                 as libc::c_int;
             hp = if have_hp {
@@ -1215,7 +1215,7 @@ unsafe extern "C" fn read_mv_residual(
     t: *mut Dav1dTaskContext,
     ref_mv: *mut mv,
     mv_cdf: *mut CdfMvContext,
-    have_fp: libc::c_int,
+    have_fp: bool,
 ) {
     match dav1d_msac_decode_symbol_adapt4(
         &mut (*(*t).ts).msac,
@@ -3826,7 +3826,7 @@ unsafe fn decode_b(
         }
 
         let r#ref = b.mv()[0];
-        read_mv_residual(t, &mut b.mv_mut()[0], &mut ts.cdf.dmv, 0);
+        read_mv_residual(t, &mut b.mv_mut()[0], &mut ts.cdf.dmv, false);
 
         // clip intrabc motion vector to decoded parts of current tile
         let mut border_left = ts.tiling.col_start * 4;
@@ -4216,7 +4216,7 @@ unsafe fn decode_b(
                             .as_mut_ptr()
                             .offset(0),
                         &mut ts.cdf.mv,
-                        (frame_hdr.force_integer_mv == 0) as libc::c_int,
+                        frame_hdr.force_integer_mv == 0,
                     );
                 }
                 _ => {}
@@ -4267,7 +4267,7 @@ unsafe fn decode_b(
                             .as_mut_ptr()
                             .offset(1),
                         &mut ts.cdf.mv,
-                        (frame_hdr.force_integer_mv == 0) as libc::c_int,
+                        frame_hdr.force_integer_mv == 0,
                     );
                 }
                 _ => {}
@@ -4768,7 +4768,7 @@ unsafe fn decode_b(
                         .as_mut_ptr()
                         .offset(0),
                     &mut ts.cdf.mv,
-                    (frame_hdr.force_integer_mv == 0) as libc::c_int,
+                    frame_hdr.force_integer_mv == 0,
                 );
                 if DEBUG_BLOCK_INFO(f, t) {
                     printf(
