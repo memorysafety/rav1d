@@ -1069,7 +1069,7 @@ pub static dav1d_mc_warp_filter: Align8<[[i8; 8]; 193]> = Align8([
 ]);
 
 #[no_mangle]
-pub static dav1d_resize_filter: [[i8; 8]; 64] = [
+pub static dav1d_resize_filter: Align8<[[i8; 8]; 64]> = Align8([
     [0, 0, 0, -128, 0, 0, 0, 0],
     [0, 0, 1, -128, -2, 1, 0, 0],
     [0, -1, 3, -127, -4, 2, -1, 0],
@@ -1134,7 +1134,7 @@ pub static dav1d_resize_filter: [[i8; 8]; 64] = [
     [0, -1, 3, -6, -127, 4, -1, 0],
     [0, -1, 2, -4, -127, 3, -1, 0],
     [0, 0, 1, -2, -128, 1, 0, 0],
-];
+]);
 
 #[no_mangle]
 pub static dav1d_sm_weights: Align16<[u8; 128]> = Align16([
