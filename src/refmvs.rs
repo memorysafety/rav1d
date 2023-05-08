@@ -85,6 +85,7 @@ pub struct refmvs_mvpair {
     pub mv: [mv; 2],
 }
 
+/// For why this unaligned, see the aligned [`refmvs_block`] below.
 #[derive(Copy, Clone)]
 #[repr(C, packed)]
 pub struct refmvs_block_unaligned {
@@ -94,6 +95,14 @@ pub struct refmvs_block_unaligned {
     pub mf: uint8_t,
 }
 
+/// In C, `struct refmvs_block` is both aligned and packed,
+/// but this (aligned types within a packed type) is not yet allowed in Rust
+/// (see [rust-lang/rust#59154](https://github.com/rust-lang/rust/issues/59154)),
+/// as different C compilers treat this differently.
+/// To get around this limitation, we split `struct refmvs_block`
+/// into an inner packed [`refmvs_block_unaligned`]
+/// and an outer aligned [`refmvs_block`]
+/// that is just a wrapper over the real [`refmvs_block_unaligned`].
 #[derive(Copy, Clone)]
 #[repr(C, align(4))]
 pub struct refmvs_block(pub refmvs_block_unaligned);
