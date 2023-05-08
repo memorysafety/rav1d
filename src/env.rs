@@ -39,7 +39,7 @@ use crate::src::tables::TxfmInfo;
 #[repr(C)]
 pub struct BlockContext {
     pub mode: Align8<[uint8_t; 32]>,
-    pub lcoef: [uint8_t; 32],
+    pub lcoef: Align8<[uint8_t; 32]>,
     pub ccoef: [[uint8_t; 32]; 2],
     pub seg_pred: [uint8_t; 32],
     pub skip: [uint8_t; 32],
