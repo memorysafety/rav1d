@@ -4482,12 +4482,12 @@ pub fn default_mv_component_cdf() -> CdfMvComponent {
     };
     init
 }
-static mut default_mv_joint_cdf: [uint16_t; 4] = [
+static mut default_mv_joint_cdf: Align8<[uint16_t; 4]> = Align8([
     (32768 - 4096) as uint16_t,
     (32768 - 11264) as uint16_t,
     (32768 - 19328) as uint16_t,
     0,
-];
+]);
 static mut default_kf_y_mode_cdf: [[[uint16_t; 16]; 5]; 5] = [
     [
         [
@@ -23242,12 +23242,12 @@ pub unsafe extern "C" fn dav1d_cdf_thread_copy(dst: *mut CdfContext, src: *const
         (*dst).coef = av1_default_coef_cdf()[(*src).data.qcat as usize];
         memcpy(
             ((*dst).mv.joint.0).as_mut_ptr() as *mut libc::c_void,
-            default_mv_joint_cdf.as_ptr() as *const libc::c_void,
+            default_mv_joint_cdf.0.as_ptr() as *const libc::c_void,
             ::core::mem::size_of::<[uint16_t; 4]>() as libc::c_ulong,
         );
         memcpy(
             ((*dst).dmv.joint.0).as_mut_ptr() as *mut libc::c_void,
-            default_mv_joint_cdf.as_ptr() as *const libc::c_void,
+            default_mv_joint_cdf.0.as_ptr() as *const libc::c_void,
             ::core::mem::size_of::<[uint16_t; 4]>() as libc::c_ulong,
         );
         (*dst).dmv.comp[1] = default_mv_component_cdf();
