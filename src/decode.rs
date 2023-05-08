@@ -1196,16 +1196,16 @@ unsafe fn read_mv_residual(
 }
 
 unsafe fn read_tx_tree(
-    t: *mut Dav1dTaskContext,
+    t: &mut Dav1dTaskContext,
     from: RectTxfmSize,
     depth: libc::c_int,
     masks: *mut uint16_t,
     x_off: libc::c_int,
     y_off: libc::c_int,
 ) {
-    let f: *const Dav1dFrameContext = (*t).f;
-    let bx4 = (*t).bx & 31;
-    let by4 = (*t).by & 31;
+    let f: *const Dav1dFrameContext = t.f;
+    let bx4 = t.bx & 31;
+    let by4 = t.by & 31;
     let t_dim: *const TxfmInfo =
         &*dav1d_txfm_dimensions.as_ptr().offset(from as isize) as *const TxfmInfo;
     let txw = (*t_dim).lw as libc::c_int;
@@ -1214,11 +1214,11 @@ unsafe fn read_tx_tree(
     if depth < 2 && from as libc::c_uint > TX_4X4 as libc::c_int as libc::c_uint {
         let cat =
             2 as libc::c_int * (TX_64X64 as libc::c_int - (*t_dim).max as libc::c_int) - depth;
-        let a = (((*(*t).a).tx.0[bx4 as usize] as libc::c_int) < txw) as libc::c_int;
-        let l = (((*t).l.tx.0[by4 as usize] as libc::c_int) < txh) as libc::c_int;
+        let a = (((*t.a).tx.0[bx4 as usize] as libc::c_int) < txw) as libc::c_int;
+        let l = ((t.l.tx.0[by4 as usize] as libc::c_int) < txh) as libc::c_int;
         is_split = dav1d_msac_decode_bool_adapt(
-            &mut (*(*t).ts).msac,
-            &mut (*(*t).ts).cdf.m.txpart[cat as usize][(a + l) as usize],
+            &mut (*t.ts).msac,
+            &mut (*t.ts).cdf.m.txpart[cat as usize][(a + l) as usize],
         ) as libc::c_int;
         if is_split != 0 {
             let ref mut fresh1 = *masks.offset(depth as isize);
@@ -1235,21 +1235,21 @@ unsafe fn read_tx_tree(
         let txsw = (*sub_t_dim).w as libc::c_int;
         let txsh = (*sub_t_dim).h as libc::c_int;
         read_tx_tree(t, sub, depth + 1, masks, x_off * 2 + 0, y_off * 2 + 0);
-        (*t).bx += txsw;
-        if txw >= txh && (*t).bx < (*f).bw {
+        t.bx += txsw;
+        if txw >= txh && t.bx < (*f).bw {
             read_tx_tree(t, sub, depth + 1, masks, x_off * 2 + 1, y_off * 2 + 0);
         }
-        (*t).bx -= txsw;
-        (*t).by += txsh;
-        if txh >= txw && (*t).by < (*f).bh {
+        t.bx -= txsw;
+        t.by += txsh;
+        if txh >= txw && t.by < (*f).bh {
             read_tx_tree(t, sub, depth + 1, masks, x_off * 2 + 0, y_off * 2 + 1);
-            (*t).bx += txsw;
-            if txw >= txh && (*t).bx < (*f).bw {
+            t.bx += txsw;
+            if txw >= txh && t.bx < (*f).bw {
                 read_tx_tree(t, sub, depth + 1, masks, x_off * 2 + 1, y_off * 2 + 1);
             }
-            (*t).bx -= txsw;
+            t.bx -= txsw;
         }
-        (*t).by -= txsh;
+        t.by -= txsh;
     } else {
         let mut set_ctx = |dir: &mut BlockContext, _diridx, off, mul, rep_macro: SetCtxFn| {
             rep_macro(
@@ -1264,7 +1264,7 @@ unsafe fn read_tx_tree(
         };
         case_set_upto16(
             (*t_dim).h as libc::c_int,
-            &mut (*t).l,
+            &mut t.l,
             1,
             by4 as isize,
             &mut set_ctx,
@@ -1282,7 +1282,7 @@ unsafe fn read_tx_tree(
         };
         case_set_upto16(
             (*t_dim).w as libc::c_int,
-            &mut *(*t).a,
+            &mut *t.a,
             0,
             bx4 as isize,
             &mut set_ctx,
@@ -2325,7 +2325,7 @@ unsafe extern "C" fn read_vartx_tree(
             x_off = 0 as libc::c_int;
             while x < bw4 {
                 read_tx_tree(
-                    t,
+                    &mut *t,
                     (*b).c2rust_unnamed.c2rust_unnamed_0.max_ytx as RectTxfmSize,
                     0 as libc::c_int,
                     tx_split.as_mut_ptr(),
