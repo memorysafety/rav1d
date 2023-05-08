@@ -1211,10 +1211,12 @@ unsafe fn read_tx_tree(
     let txw = t_dim.lw as libc::c_int;
     let txh = t_dim.lh as libc::c_int;
     let mut is_split;
+
     if depth < 2 && from > TX_4X4 {
         let cat = 2 * (TX_64X64 as libc::c_int - t_dim.max as libc::c_int) - depth;
         let a = (((*t.a).tx.0[bx4 as usize] as libc::c_int) < txw) as libc::c_int;
         let l = ((t.l.tx.0[by4 as usize] as libc::c_int) < txh) as libc::c_int;
+
         is_split = dav1d_msac_decode_bool_adapt(
             &mut (*t.ts).msac,
             &mut (*t.ts).cdf.m.txpart[cat as usize][(a + l) as usize],
@@ -1232,6 +1234,7 @@ unsafe fn read_tx_tree(
         let sub_t_dim = &dav1d_txfm_dimensions[sub as usize];
         let txsw = sub_t_dim.w as libc::c_int;
         let txsh = sub_t_dim.h as libc::c_int;
+
         read_tx_tree(t, sub, depth + 1, masks, x_off * 2 + 0, y_off * 2 + 0);
         t.bx += txsw;
         if txw >= txh && t.bx < f.bw {
