@@ -7907,7 +7907,7 @@ unsafe extern "C" fn setup_tile(
         &mut (*ts).msac,
         data,
         sz,
-        (*(*f).frame_hdr).disable_cdf_update,
+        (*(*f).frame_hdr).disable_cdf_update != 0,
     );
     (*ts).tiling.row = tile_row;
     (*ts).tiling.col = tile_col;
@@ -8032,44 +8032,44 @@ unsafe extern "C" fn read_restoration_info(
         } else {
             dav1d_msac_decode_subexp(
                 &mut (*ts).msac,
-                (*(*ts).lr_ref[p as usize]).filter_v[0] as libc::c_int + 5,
-                16 as libc::c_int,
-                1 as libc::c_int as libc::c_uint,
+                ((*(*ts).lr_ref[p as usize]).filter_v[0] + 5) as libc::c_uint,
+                16,
+                1,
             ) - 5
         }) as int8_t;
         (*lr).filter_v[1] = (dav1d_msac_decode_subexp(
             &mut (*ts).msac,
-            (*(*ts).lr_ref[p as usize]).filter_v[1] as libc::c_int + 23,
-            32 as libc::c_int,
-            2 as libc::c_int as libc::c_uint,
+            ((*(*ts).lr_ref[p as usize]).filter_v[1] + 23) as libc::c_uint,
+            32,
+            2,
         ) - 23) as int8_t;
         (*lr).filter_v[2] = (dav1d_msac_decode_subexp(
             &mut (*ts).msac,
-            (*(*ts).lr_ref[p as usize]).filter_v[2] as libc::c_int + 17,
-            64 as libc::c_int,
-            3 as libc::c_int as libc::c_uint,
+            ((*(*ts).lr_ref[p as usize]).filter_v[2] + 17) as libc::c_uint,
+            64,
+            3,
         ) - 17) as int8_t;
         (*lr).filter_h[0] = (if p != 0 {
             0 as libc::c_int
         } else {
             dav1d_msac_decode_subexp(
                 &mut (*ts).msac,
-                (*(*ts).lr_ref[p as usize]).filter_h[0] as libc::c_int + 5,
-                16 as libc::c_int,
-                1 as libc::c_int as libc::c_uint,
+                ((*(*ts).lr_ref[p as usize]).filter_h[0] + 5) as libc::c_uint,
+                16,
+                1,
             ) - 5
         }) as int8_t;
         (*lr).filter_h[1] = (dav1d_msac_decode_subexp(
             &mut (*ts).msac,
-            (*(*ts).lr_ref[p as usize]).filter_h[1] as libc::c_int + 23,
-            32 as libc::c_int,
-            2 as libc::c_int as libc::c_uint,
+            ((*(*ts).lr_ref[p as usize]).filter_h[1] + 23) as libc::c_uint,
+            32,
+            2,
         ) - 23) as int8_t;
         (*lr).filter_h[2] = (dav1d_msac_decode_subexp(
             &mut (*ts).msac,
-            (*(*ts).lr_ref[p as usize]).filter_h[2] as libc::c_int + 17,
-            64 as libc::c_int,
-            3 as libc::c_int as libc::c_uint,
+            ((*(*ts).lr_ref[p as usize]).filter_h[2] + 17) as libc::c_uint,
+            64,
+            3,
         ) - 17) as int8_t;
         memcpy(
             ((*lr).sgr_weights).as_mut_ptr() as *mut libc::c_void,
@@ -8105,9 +8105,9 @@ unsafe extern "C" fn read_restoration_info(
         (*lr).sgr_weights[0] = (if *sgr_params.offset(0) as libc::c_int != 0 {
             dav1d_msac_decode_subexp(
                 &mut (*ts).msac,
-                (*(*ts).lr_ref[p as usize]).sgr_weights[0] as libc::c_int + 96,
-                128 as libc::c_int,
-                4 as libc::c_int as libc::c_uint,
+                ((*(*ts).lr_ref[p as usize]).sgr_weights[0] + 96) as libc::c_uint,
+                128,
+                4,
             ) - 96
         } else {
             0 as libc::c_int
@@ -8115,9 +8115,9 @@ unsafe extern "C" fn read_restoration_info(
         (*lr).sgr_weights[1] = (if *sgr_params.offset(1) as libc::c_int != 0 {
             dav1d_msac_decode_subexp(
                 &mut (*ts).msac,
-                (*(*ts).lr_ref[p as usize]).sgr_weights[1] as libc::c_int + 32,
-                128 as libc::c_int,
-                4 as libc::c_int as libc::c_uint,
+                ((*(*ts).lr_ref[p as usize]).sgr_weights[1] + 32) as libc::c_uint,
+                128,
+                4,
             ) - 32
         } else {
             95 as libc::c_int
