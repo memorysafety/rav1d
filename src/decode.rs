@@ -1182,13 +1182,11 @@ unsafe fn read_mv_component_diff(
         }
     } else {
         up = 1 << cl;
-        let mut n = 0;
-        while n < cl {
+        for n in 0..cl {
             up = (up as libc::c_uint
                 | (dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut mv_comp.classN[n as usize])
                     as libc::c_uint)
                     << n) as libc::c_int;
-            n += 1;
         }
         if have_fp {
             fp = dav1d_msac_decode_symbol_adapt4(&mut ts.msac, &mut mv_comp.classN_fp.0, 3)
