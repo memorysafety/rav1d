@@ -4185,22 +4185,18 @@ unsafe fn decode_b(
             assert!(b.drl_idx() >= NEAREST_DRL as u8 && b.drl_idx() <= NEARISH_DRL as u8);
 
             has_subpel_filter = imin(bw4, bh4) == 1 || b.inter_mode() != GLOBALMV_GLOBALMV as u8;
-            match im[0] {
-                1 | 0 => {
-                    b.c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .mv[0] = mvstack[b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as usize]
-                        .mv
-                        .mv[0];
-                    fix_mv_precision(frame_hdr, &mut b.mv_mut()[0]);
+
+            let mut assign_comp_mv = |idx: usize| match im[idx] as InterPredMode {
+                NEARMV | NEARESTMV => {
+                    b.mv_mut()[idx] = mvstack[b.drl_idx() as usize].mv.mv[idx];
+                    fix_mv_precision(frame_hdr, &mut b.mv_mut()[idx]);
                 }
-                2 => {
+
+                GLOBALMV => {
                     has_subpel_filter |=
-                        frame_hdr.gmv[b.r#ref()[0] as usize].type_0 == DAV1D_WM_TYPE_TRANSLATION;
-                    b.mv_mut()[0] = get_gmv_2d(
-                        &frame_hdr.gmv[b.r#ref()[0] as usize],
+                        frame_hdr.gmv[b.r#ref()[idx] as usize].type_0 == DAV1D_WM_TYPE_TRANSLATION;
+                    b.mv_mut()[idx] = get_gmv_2d(
+                        &frame_hdr.gmv[b.r#ref()[idx] as usize],
                         t.bx,
                         t.by,
                         bw4,
@@ -4208,81 +4204,21 @@ unsafe fn decode_b(
                         frame_hdr,
                     );
                 }
-                3 => {
-                    b.c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .mv[0] = mvstack[b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as usize]
-                        .mv
-                        .mv[0];
+
+                NEWMV => {
+                    b.mv_mut()[idx] = mvstack[b.drl_idx() as usize].mv.mv[idx];
                     read_mv_residual(
                         t,
-                        &mut *(b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .mv)
-                            .as_mut_ptr()
-                            .offset(0),
+                        &mut b.mv_mut()[idx],
                         &mut ts.cdf.mv,
                         (frame_hdr.force_integer_mv == 0) as libc::c_int,
                     );
                 }
                 _ => {}
-            }
-            match im[1] {
-                1 | 0 => {
-                    b.c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .mv[1] = mvstack[b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as usize]
-                        .mv
-                        .mv[1];
-                    fix_mv_precision(frame_hdr, &mut b.mv_mut()[1]);
-                }
-                2 => {
-                    has_subpel_filter |=
-                        frame_hdr.gmv[b.r#ref()[1] as usize].type_0 == DAV1D_WM_TYPE_TRANSLATION;
-                    b.c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .mv[1] = get_gmv_2d(
-                        &frame_hdr.gmv[b.r#ref()[1] as usize],
-                        t.bx,
-                        t.by,
-                        bw4,
-                        bh4,
-                        frame_hdr,
-                    );
-                }
-                3 => {
-                    b.c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .mv[1] = mvstack[b.c2rust_unnamed.c2rust_unnamed_0.drl_idx as usize]
-                        .mv
-                        .mv[1];
-                    read_mv_residual(
-                        t,
-                        &mut *(b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .mv)
-                            .as_mut_ptr()
-                            .offset(1),
-                        &mut ts.cdf.mv,
-                        (frame_hdr.force_integer_mv == 0) as libc::c_int,
-                    );
-                }
-                _ => {}
-            }
+            };
+            assign_comp_mv(0);
+            assign_comp_mv(1);
+
             if DEBUG_BLOCK_INFO(f, t) {
                 printf(
                     b"Post-residual_mv[1:y=%d,x=%d,2:y=%d,x=%d]: r=%d\n\0" as *const u8
