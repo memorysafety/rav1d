@@ -7846,7 +7846,7 @@ unsafe extern "C" fn reset_context(
         ::core::mem::size_of::<[uint8_t; 32]>(),
     );
     memset(
-        ((*ctx).ccoef).as_mut_ptr() as *mut libc::c_void,
+        ((*ctx).ccoef.0).as_mut_ptr() as *mut libc::c_void,
         0x40 as libc::c_int,
         ::core::mem::size_of::<[[uint8_t; 32]; 2]>(),
     );
