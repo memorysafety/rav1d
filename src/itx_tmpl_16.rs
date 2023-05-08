@@ -561,6 +561,41 @@ extern "C" {
         eob: libc::c_int,
         bitdepth_max: libc::c_int,
     );
+    fn dav1d_inv_txfm_add_dct_dct_16x64_10bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_dct_32x64_10bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_dct_64x16_10bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_dct_64x32_10bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_dct_dct_64x64_10bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
     fn dav1d_inv_txfm_add_wht_wht_4x4_16bpc_avx2(
         dst: *mut pixel,
         dst_stride: ptrdiff_t,
@@ -2655,6 +2690,27 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     fn dav1d_inv_txfm_add_adst_flipadst_4x8_12bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_identity_16x32_12bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_identity_32x16_12bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut coef,
+        eob: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_inv_txfm_add_identity_identity_32x32_12bpc_avx2(
         dst: *mut pixel,
         dst_stride: ptrdiff_t,
         coeff: *mut coef,
@@ -9762,6 +9818,9 @@ unsafe extern "C" fn itx_dsp_init_x86(c: *mut Dav1dInvTxfmDSPContext, bpc: libc:
             (*c).itxfm_add[TX_16X16 as usize][V_DCT as usize] = Some(dav1d_inv_txfm_add_identity_dct_16x16_12bpc_avx2);
             (*c).itxfm_add[RTX_32X8 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_32x8_12bpc_avx2);
             (*c).itxfm_add[RTX_32X8 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_32x8_12bpc_avx2);
+            (*c).itxfm_add[RTX_16X32 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_16x32_12bpc_avx2);
+            (*c).itxfm_add[RTX_32X16 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_32x16_12bpc_avx2);
+            (*c).itxfm_add[TX_32X32 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_32x32_12bpc_avx2);
         }
 
         if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
@@ -9839,6 +9898,11 @@ unsafe extern "C" fn itx_dsp_init_x86(c: *mut Dav1dInvTxfmDSPContext, bpc: libc:
             (*c).itxfm_add[RTX_32X16 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_32x16_10bpc_avx512icl);
             (*c).itxfm_add[TX_32X32 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_32x32_10bpc_avx512icl);
             (*c).itxfm_add[TX_32X32 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_32x32_10bpc_avx512icl);
+            (*c).itxfm_add[RTX_16X64 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_16x64_10bpc_avx512icl);
+            (*c).itxfm_add[RTX_32X64 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_32x64_10bpc_avx512icl);
+            (*c).itxfm_add[RTX_64X16 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_64x16_10bpc_avx512icl);
+            (*c).itxfm_add[RTX_64X32 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_64x32_10bpc_avx512icl);
+            (*c).itxfm_add[TX_64X64 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_64x64_10bpc_avx512icl);
         }
     }
 }
