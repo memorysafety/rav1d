@@ -1210,7 +1210,7 @@ unsafe fn read_mv_component_diff(
     }
 }
 
-unsafe extern "C" fn read_mv_residual(
+unsafe fn read_mv_residual(
     t: *mut Dav1dTaskContext,
     ref_mv: *mut mv,
     mv_cdf: *mut CdfMvContext,
@@ -1238,6 +1238,7 @@ unsafe extern "C" fn read_mv_residual(
         _ => {}
     };
 }
+
 unsafe extern "C" fn read_tx_tree(
     t: *mut Dav1dTaskContext,
     from: RectTxfmSize,
