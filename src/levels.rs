@@ -343,6 +343,23 @@ impl Av1Block {
         &mut self.c2rust_unnamed.c2rust_unnamed_0.inter_mode
     }
 
+    pub unsafe fn mask_sign(&self) -> u8 {
+        self.c2rust_unnamed
+            .c2rust_unnamed_0
+            .c2rust_unnamed
+            .c2rust_unnamed
+            .mask_sign
+    }
+
+    pub unsafe fn mask_sign_mut(&mut self) -> &mut u8 {
+        &mut self
+            .c2rust_unnamed
+            .c2rust_unnamed_0
+            .c2rust_unnamed
+            .c2rust_unnamed
+            .mask_sign
+    }
+
     pub unsafe fn pal_sz(&self) -> &[u8; 2] {
         &self.c2rust_unnamed.c2rust_unnamed.pal_sz
     }
@@ -389,6 +406,23 @@ impl Av1Block {
 
     pub unsafe fn uv_mode_mut(&mut self) -> &mut u8 {
         &mut self.c2rust_unnamed.c2rust_unnamed.uv_mode
+    }
+
+    pub unsafe fn wedge_idx(&self) -> u8 {
+        self.c2rust_unnamed
+            .c2rust_unnamed_0
+            .c2rust_unnamed
+            .c2rust_unnamed
+            .wedge_idx
+    }
+
+    pub unsafe fn wedge_idx_mut(&mut self) -> &mut u8 {
+        &mut self
+            .c2rust_unnamed
+            .c2rust_unnamed_0
+            .c2rust_unnamed
+            .c2rust_unnamed
+            .wedge_idx
     }
 
     pub unsafe fn matrix(&self) -> &[i16; 4] {
