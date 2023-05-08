@@ -1216,9 +1216,10 @@ unsafe fn read_mv_residual(
     mv_cdf: &mut CdfMvContext,
     have_fp: bool,
 ) {
+    let ts = &mut *t.ts;
     match dav1d_msac_decode_symbol_adapt4(
-        &mut (*t.ts).msac,
-        &mut (*t.ts).cdf.mv.joint.0,
+        &mut ts.msac,
+        &mut ts.cdf.mv.joint.0,
         (N_MV_JOINTS as libc::c_int - 1) as size_t,
     ) {
         3 => {
