@@ -1041,6 +1041,9 @@ use crate::src::levels::PARTITION_V;
 use crate::src::levels::PARTITION_V4;
 
 use crate::src::levels::InterPredMode;
+use crate::src::levels::MV_JOINT_H;
+use crate::src::levels::MV_JOINT_HV;
+use crate::src::levels::MV_JOINT_V;
 use crate::src::levels::N_MV_JOINTS;
 
 use crate::src::levels::GLOBALMV;
@@ -1210,34 +1213,32 @@ unsafe fn read_mv_component_diff(
     }
 }
 
-unsafe extern "C" fn read_mv_residual(
-    t: *mut Dav1dTaskContext,
-    ref_mv: *mut mv,
-    mv_cdf: *mut CdfMvContext,
+unsafe fn read_mv_residual(
+    t: &mut Dav1dTaskContext,
+    ref_mv: &mut mv,
+    mv_cdf: &mut CdfMvContext,
     have_fp: bool,
 ) {
+    let ts = &mut *t.ts;
     match dav1d_msac_decode_symbol_adapt4(
-        &mut (*(*t).ts).msac,
-        &mut (*(*t).ts).cdf.mv.joint.0,
-        (N_MV_JOINTS as libc::c_int - 1) as size_t,
+        &mut ts.msac,
+        &mut ts.cdf.mv.joint.0,
+        N_MV_JOINTS as size_t - 1,
     ) {
-        3 => {
-            (*ref_mv).y = (*ref_mv).y
-                + read_mv_component_diff(&mut *t, &mut (*mv_cdf).comp[0], have_fp) as i16;
-            (*ref_mv).x = (*ref_mv).x
-                + read_mv_component_diff(&mut *t, &mut (*mv_cdf).comp[1], have_fp) as i16;
+        MV_JOINT_HV => {
+            ref_mv.y += read_mv_component_diff(t, &mut mv_cdf.comp[0], have_fp) as i16;
+            ref_mv.x += read_mv_component_diff(t, &mut mv_cdf.comp[1], have_fp) as i16;
         }
-        1 => {
-            (*ref_mv).x = (*ref_mv).x
-                + read_mv_component_diff(&mut *t, &mut (*mv_cdf).comp[1], have_fp) as i16;
+        MV_JOINT_H => {
+            ref_mv.x += read_mv_component_diff(t, &mut mv_cdf.comp[1], have_fp) as i16;
         }
-        2 => {
-            (*ref_mv).y = (*ref_mv).y
-                + read_mv_component_diff(&mut *t, &mut (*mv_cdf).comp[0], have_fp) as i16;
+        MV_JOINT_V => {
+            ref_mv.y += read_mv_component_diff(t, &mut mv_cdf.comp[0], have_fp) as i16;
         }
         _ => {}
     };
 }
+
 unsafe extern "C" fn read_tx_tree(
     t: *mut Dav1dTaskContext,
     from: RectTxfmSize,
