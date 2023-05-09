@@ -11,12 +11,6 @@ extern "C" {
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: size_t) -> *mut libc::c_void;
 }
 
-#[cfg(feature = "asm")]
-extern "C" {
-    static mut dav1d_cpu_flags_mask: libc::c_uint;
-    static mut dav1d_cpu_flags: libc::c_uint;
-}
-
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 extern "C" {
     fn dav1d_wiener_filter7_8bpc_sse2(

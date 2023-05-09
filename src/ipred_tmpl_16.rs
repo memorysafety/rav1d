@@ -8,12 +8,6 @@ extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
 }
 
-#[cfg(feature = "asm")]
-extern "C" {
-    static mut dav1d_cpu_flags: libc::c_uint;
-    static mut dav1d_cpu_flags_mask: libc::c_uint;
-}
-
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
 extern "C" {
     fn dav1d_ipred_dc_16bpc_ssse3(
@@ -2047,12 +2041,7 @@ unsafe extern "C" fn intra_pred_dsp_init_x86(c: *mut Dav1dIntraPredDSPContext) {
 }
 
 #[cfg(feature = "asm")]
-#[inline(always)]
-unsafe extern "C" fn dav1d_get_cpu_flags() -> libc::c_uint {
-    let mut flags: libc::c_uint = dav1d_cpu_flags & dav1d_cpu_flags_mask;
-    flags |= DAV1D_X86_CPU_FLAG_SSE2 as libc::c_int as libc::c_uint;
-    return flags;
-}
+use crate::src::cpu::dav1d_get_cpu_flags;
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
 #[inline(always)]

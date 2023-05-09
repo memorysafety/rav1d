@@ -33,8 +33,6 @@ extern "C" {
         cdf: *mut uint16_t,
         n_symbols: size_t,
     ) -> libc::c_uint;
-    static mut dav1d_cpu_flags_mask: libc::c_uint;
-    static mut dav1d_cpu_flags: libc::c_uint;
 }
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
@@ -58,8 +56,6 @@ extern "C" {
         cdf: *mut uint16_t,
         n_symbols: size_t,
     ) -> libc::c_uint;
-    static mut dav1d_cpu_flags_mask: libc::c_uint;
-    static mut dav1d_cpu_flags: libc::c_uint;
 }
 
 pub type ec_win = size_t;
