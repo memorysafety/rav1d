@@ -1330,12 +1330,12 @@ unsafe fn find_matching_ref(
     h4: libc::c_int,
     have_left: bool,
     have_top: bool,
-    r#ref: libc::c_int,
+    r#ref: i8,
     masks: &mut [u64; 2],
 ) {
     let bs = |rp: *const refmvs_block| dav1d_block_dimensions[(*rp).0.bs as usize];
     let matches = |rp: *const refmvs_block| {
-        (*rp).0.r#ref.r#ref[0] as libc::c_int == r#ref + 1 && (*rp).0.r#ref.r#ref[1] == -1
+        (*rp).0.r#ref.r#ref[0] == r#ref + 1 && (*rp).0.r#ref.r#ref[1] == -1
     };
 
     let mut r = &*(t.rt.r).as_ptr().offset(((t.by & 31) + 5) as isize) as *const *mut refmvs_block;
@@ -4478,7 +4478,7 @@ unsafe fn decode_b(
                     h4,
                     have_left,
                     have_top,
-                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int,
+                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0],
                     &mut mask,
                 );
                 let allow_warp =
