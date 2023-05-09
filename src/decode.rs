@@ -1321,7 +1321,7 @@ fn neg_deinterleave(
     }
 }
 
-unsafe extern "C" fn find_matching_ref(
+unsafe fn find_matching_ref(
     t: *const Dav1dTaskContext,
     intra_edge_flags: EdgeFlags,
     bw4: libc::c_int,
