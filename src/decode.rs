@@ -1338,8 +1338,7 @@ unsafe fn find_matching_ref(
         (*rp).0.r#ref.r#ref[0] as libc::c_int == r#ref + 1 && (*rp).0.r#ref.r#ref[1] == -1
     };
 
-    let mut r: *const *mut refmvs_block =
-        &*(t.rt.r).as_ptr().offset(((t.by & 31) + 5) as isize) as *const *mut refmvs_block;
+    let mut r = &*(t.rt.r).as_ptr().offset(((t.by & 31) + 5) as isize) as *const *mut refmvs_block;
     let mut count = 0;
     let mut have_topleft = have_top && have_left;
     let mut have_topright = imax(bw4, bh4) < 32
@@ -1349,8 +1348,8 @@ unsafe fn find_matching_ref(
             & EDGE_I444_TOP_HAS_RIGHT as libc::c_int as libc::c_uint
             != 0;
     if have_top {
-        let mut r2: *const refmvs_block = &mut *(*r.offset(-(1 as libc::c_int) as isize))
-            .offset(t.bx as isize) as *mut refmvs_block;
+        let mut r2 = &mut *(*r.offset(-(1 as libc::c_int) as isize)).offset(t.bx as isize)
+            as *const refmvs_block;
         if matches(r2) {
             masks[0] |= 1;
             count = 1 as libc::c_int;
@@ -1365,7 +1364,7 @@ unsafe fn find_matching_ref(
                 have_topright = false;
             }
         } else {
-            let mut mask: libc::c_uint = ((1 as libc::c_int) << aw4) as libc::c_uint;
+            let mut mask = ((1 as libc::c_int) << aw4) as libc::c_uint;
             let mut x = aw4;
             while x < w4 {
                 r2 = r2.offset(aw4 as isize);
@@ -1383,7 +1382,7 @@ unsafe fn find_matching_ref(
         }
     }
     if have_left {
-        let mut r2_0: *const *mut refmvs_block = r;
+        let mut r2_0 = r;
         if matches((*r2_0.offset(0)).offset((t.bx - 1) as isize)) {
             masks[1] |= 1;
             count += 1;
@@ -1397,7 +1396,7 @@ unsafe fn find_matching_ref(
                 have_topleft = false;
             }
         } else {
-            let mut mask_0: libc::c_uint = ((1 as libc::c_int) << lh4) as libc::c_uint;
+            let mut mask_0 = ((1 as libc::c_int) << lh4) as libc::c_uint;
             let mut y = lh4;
             while y < h4 {
                 r2_0 = r2_0.offset(lh4 as isize);
