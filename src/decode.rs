@@ -1344,15 +1344,12 @@ unsafe fn find_matching_ref(
     let mut have_topright = imax(bw4, bh4) < 32
         && have_top
         && t.bx + bw4 < (*t.ts).tiling.col_end
-        && intra_edge_flags as libc::c_uint
-            & EDGE_I444_TOP_HAS_RIGHT as libc::c_int as libc::c_uint
-            != 0;
+        && intra_edge_flags & EDGE_I444_TOP_HAS_RIGHT != 0;
     if have_top {
-        let mut r2 = &mut *(*r.offset(-(1 as libc::c_int) as isize)).offset(t.bx as isize)
-            as *const refmvs_block;
+        let mut r2 = &mut *(*r.offset(-1)).offset(t.bx as isize) as *const refmvs_block;
         if matches(r2) {
             masks[0] |= 1;
-            count = 1 as libc::c_int;
+            count = 1;
         }
         let mut aw4 = bs(r2)[0] as libc::c_int;
         if aw4 >= bw4 {
@@ -1364,7 +1361,7 @@ unsafe fn find_matching_ref(
                 have_topright = false;
             }
         } else {
-            let mut mask = ((1 as libc::c_int) << aw4) as libc::c_uint;
+            let mut mask = (1 as libc::c_uint) << aw4;
             let mut x = aw4;
             while x < w4 {
                 r2 = r2.offset(aw4 as isize);
@@ -1396,7 +1393,7 @@ unsafe fn find_matching_ref(
                 have_topleft = false;
             }
         } else {
-            let mut mask_0 = ((1 as libc::c_int) << lh4) as libc::c_uint;
+            let mut mask_0 = (1 as libc::c_uint) << lh4;
             let mut y = lh4;
             while y < h4 {
                 r2_0 = r2_0.offset(lh4 as isize);
@@ -1413,18 +1410,14 @@ unsafe fn find_matching_ref(
             }
         }
     }
-    if have_topleft
-        && matches((*r.offset(-(1 as libc::c_int) as isize)).offset((t.bx - 1) as isize))
-    {
+    if have_topleft && matches((*r.offset(-1)).offset((t.bx - 1) as isize)) {
         masks[1] |= 1 << 32;
         count += 1;
         if count >= 8 {
             return;
         }
     }
-    if have_topright
-        && matches((*r.offset(-(1 as libc::c_int) as isize)).offset((t.bx + bw4) as isize))
-    {
+    if have_topright && matches((*r.offset(-1)).offset((t.bx + bw4) as isize)) {
         masks[0] |= 1 << 32;
     }
 }
