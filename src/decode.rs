@@ -1336,13 +1336,13 @@ unsafe fn find_matching_ref(
     let mut r: *const *mut refmvs_block =
         &*(t.rt.r).as_ptr().offset(((t.by & 31) + 5) as isize) as *const *mut refmvs_block;
     let mut count = 0;
-    let mut have_topleft = (have_top && have_left) as libc::c_int;
-    let mut have_topright = (imax(bw4, bh4) < 32
+    let mut have_topleft = have_top && have_left;
+    let mut have_topright = imax(bw4, bh4) < 32
         && have_top
         && t.bx + bw4 < (*t.ts).tiling.col_end
         && intra_edge_flags as libc::c_uint
             & EDGE_I444_TOP_HAS_RIGHT as libc::c_int as libc::c_uint
-            != 0) as libc::c_int;
+            != 0;
     if have_top {
         let mut r2: *const refmvs_block = &mut *(*r.offset(-(1 as libc::c_int) as isize))
             .offset(t.bx as isize) as *mut refmvs_block;
@@ -1356,10 +1356,10 @@ unsafe fn find_matching_ref(
         if aw4 >= bw4 {
             let off = t.bx & aw4 - 1;
             if off != 0 {
-                have_topleft = 0 as libc::c_int;
+                have_topleft = false;
             }
             if aw4 - off > bw4 {
-                have_topright = 0 as libc::c_int;
+                have_topright = false;
             }
         } else {
             let mut mask: libc::c_uint = ((1 as libc::c_int) << aw4) as libc::c_uint;
@@ -1405,7 +1405,7 @@ unsafe fn find_matching_ref(
             as libc::c_int;
         if lh4 >= bh4 {
             if t.by & lh4 - 1 != 0 {
-                have_topleft = 0 as libc::c_int;
+                have_topleft = false;
             }
         } else {
             let mut mask_0: libc::c_uint = ((1 as libc::c_int) << lh4) as libc::c_uint;
@@ -1437,7 +1437,7 @@ unsafe fn find_matching_ref(
             }
         }
     }
-    if have_topleft != 0
+    if have_topleft
         && ((*(*r.offset(-(1 as libc::c_int) as isize)).offset((t.bx - 1) as isize))
             .0
             .r#ref
@@ -1455,7 +1455,7 @@ unsafe fn find_matching_ref(
             return;
         }
     }
-    if have_topright != 0
+    if have_topright
         && ((*(*r.offset(-(1 as libc::c_int) as isize)).offset((t.bx + bw4) as isize))
             .0
             .r#ref
