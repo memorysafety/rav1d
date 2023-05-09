@@ -1333,6 +1333,7 @@ unsafe fn find_matching_ref(
     r#ref: libc::c_int,
     masks: &mut [u64; 2],
 ) {
+    let bs = |rp: *const refmvs_block| dav1d_block_dimensions[(*rp).0.bs as usize];
     let matches = |rp: *const refmvs_block| {
         (*rp).0.r#ref.r#ref[0] as libc::c_int == r#ref + 1 && (*rp).0.r#ref.r#ref[1] == -1
     };
@@ -1354,7 +1355,7 @@ unsafe fn find_matching_ref(
             masks[0] |= 1;
             count = 1 as libc::c_int;
         }
-        let mut aw4 = dav1d_block_dimensions[(*r2).0.bs as usize][0] as libc::c_int;
+        let mut aw4 = bs(r2)[0] as libc::c_int;
         if aw4 >= bw4 {
             let off = t.bx & aw4 - 1;
             if off != 0 {
@@ -1375,7 +1376,7 @@ unsafe fn find_matching_ref(
                         return;
                     }
                 }
-                aw4 = dav1d_block_dimensions[(*r2).0.bs as usize][0] as libc::c_int;
+                aw4 = bs(r2)[0] as libc::c_int;
                 mask <<= aw4;
                 x += aw4;
             }
@@ -1390,9 +1391,7 @@ unsafe fn find_matching_ref(
                 return;
             }
         }
-        let mut lh4 = dav1d_block_dimensions
-            [(*(*r2_0.offset(0)).offset((t.bx - 1) as isize)).0.bs as usize][1]
-            as libc::c_int;
+        let mut lh4 = bs((*r2_0.offset(0)).offset((t.bx - 1) as isize))[1] as libc::c_int;
         if lh4 >= bh4 {
             if t.by & lh4 - 1 != 0 {
                 have_topleft = false;
@@ -1409,9 +1408,7 @@ unsafe fn find_matching_ref(
                         return;
                     }
                 }
-                lh4 = dav1d_block_dimensions
-                    [(*(*r2_0.offset(0)).offset((t.bx - 1) as isize)).0.bs as usize][1]
-                    as libc::c_int;
+                lh4 = bs((*r2_0.offset(0)).offset((t.bx - 1) as isize))[1] as libc::c_int;
                 mask_0 <<= lh4;
                 y += lh4;
             }
