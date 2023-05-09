@@ -40,6 +40,36 @@ extern "C" {
         bw4: libc::c_int,
         bh4: libc::c_int,
     );
+    fn dav1d_save_tmvs_ssse3(
+        rp: *mut refmvs_temporal_block,
+        stride: ptrdiff_t,
+        rr: *const *const refmvs_block,
+        ref_sign: *const u8,
+        col_end8: libc::c_int,
+        row_end8: libc::c_int,
+        col_start8: libc::c_int,
+        row_start8: libc::c_int,
+    );
+    fn dav1d_save_tmvs_avx2(
+        rp: *mut refmvs_temporal_block,
+        stride: ptrdiff_t,
+        rr: *const *const refmvs_block,
+        ref_sign: *const u8,
+        col_end8: libc::c_int,
+        row_end8: libc::c_int,
+        col_start8: libc::c_int,
+        row_start8: libc::c_int,
+    );
+    fn dav1d_save_tmvs_avx512icl(
+        rp: *mut refmvs_temporal_block,
+        stride: ptrdiff_t,
+        rr: *const *const refmvs_block,
+        ref_sign: *const u8,
+        col_end8: libc::c_int,
+        row_end8: libc::c_int,
+        col_start8: libc::c_int,
+        row_start8: libc::c_int,
+    );
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
@@ -1599,18 +1629,26 @@ unsafe extern "C" fn refmvs_dsp_init_x86(c: *mut Dav1dRefmvsDSPContext) {
 
     (*c).splat_mv = Some(dav1d_splat_mv_sse2);
 
+    if flags & DAV1D_X86_CPU_FLAG_SSSE3 == 0 {
+        return;
+    }
+
+    (*c).save_tmvs = Some(dav1d_save_tmvs_ssse3);
+
     #[cfg(target_arch = "x86_64")]
     {
         if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
             return;
         }
 
+        (*c).save_tmvs = Some(dav1d_save_tmvs_avx2);
         (*c).splat_mv = Some(dav1d_splat_mv_avx2);
 
         if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
             return;
         }
 
+        (*c).save_tmvs = Some(dav1d_save_tmvs_avx512icl);
         (*c).splat_mv = Some(dav1d_splat_mv_avx512icl);
     }
 }
