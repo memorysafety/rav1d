@@ -1338,7 +1338,8 @@ unsafe fn find_matching_ref(
         (*rp).0.r#ref.r#ref[0] == r#ref + 1 && (*rp).0.r#ref.r#ref[1] == -1
     };
 
-    let mut r = &*(t.rt.r).as_ptr().offset(((t.by & 31) + 5) as isize) as *const *mut refmvs_block;
+    let mut r =
+        &*(t.rt.r).as_ptr().offset(((t.by & 31) + 5 - 1) as isize) as *const *mut refmvs_block;
     let mut count = 0;
     let mut have_topleft = have_top && have_left;
     let mut have_topright = imax(bw4, bh4) < 32
@@ -1346,7 +1347,7 @@ unsafe fn find_matching_ref(
         && t.bx + bw4 < (*t.ts).tiling.col_end
         && intra_edge_flags & EDGE_I444_TOP_HAS_RIGHT != 0;
     if have_top {
-        let mut r2 = &mut *(*r.offset(-1)).offset(t.bx as isize) as *const refmvs_block;
+        let mut r2 = &mut *(*r.offset(0)).offset(t.bx as isize) as *const refmvs_block;
         if matches(r2) {
             masks[0] |= 1;
             count = 1;
@@ -1379,7 +1380,7 @@ unsafe fn find_matching_ref(
         }
     }
     if have_left {
-        let mut r2 = r;
+        let mut r2 = r.offset(1);
         if matches((*r2.offset(0)).offset((t.bx - 1) as isize)) {
             masks[1] |= 1;
             count += 1;
@@ -1410,14 +1411,14 @@ unsafe fn find_matching_ref(
             }
         }
     }
-    if have_topleft && matches((*r.offset(-1)).offset((t.bx - 1) as isize)) {
+    if have_topleft && matches((*r.offset(0)).offset((t.bx - 1) as isize)) {
         masks[1] |= 1 << 32;
         count += 1;
         if count >= 8 {
             return;
         }
     }
-    if have_topright && matches((*r.offset(-1)).offset((t.bx + bw4) as isize)) {
+    if have_topright && matches((*r.offset(0)).offset((t.bx + bw4) as isize)) {
         masks[0] |= 1 << 32;
     }
 }
