@@ -1333,10 +1333,8 @@ unsafe fn find_matching_ref(
     r#ref: i8,
     masks: &mut [u64; 2],
 ) {
-    let bs = |rp: *const refmvs_block| dav1d_block_dimensions[(*rp).0.bs as usize];
-    let matches = |rp: *const refmvs_block| {
-        (*rp).0.r#ref.r#ref[0] == r#ref + 1 && (*rp).0.r#ref.r#ref[1] == -1
-    };
+    let bs = |rp: &refmvs_block| dav1d_block_dimensions[rp.0.bs as usize];
+    let matches = |rp: &refmvs_block| rp.0.r#ref.r#ref[0] == r#ref + 1 && rp.0.r#ref.r#ref[1] == -1;
 
     let r = &t.rt.r[((t.by & 31) + 5 - 1) as usize..];
     let mut count = 0;
@@ -1346,12 +1344,13 @@ unsafe fn find_matching_ref(
         && t.bx + bw4 < (*t.ts).tiling.col_end
         && intra_edge_flags & EDGE_I444_TOP_HAS_RIGHT != 0;
     if have_top {
-        let mut r2 = &mut *r[0].offset(t.bx as isize) as *const refmvs_block;
-        if matches(r2) {
+        let mut r2 = r[0].offset(t.bx as isize) as *const _;
+        let r2_ref = &*r2;
+        if matches(r2_ref) {
             masks[0] |= 1;
             count = 1;
         }
-        let mut aw4 = bs(r2)[0] as libc::c_int;
+        let mut aw4 = bs(r2_ref)[0] as libc::c_int;
         if aw4 >= bw4 {
             let off = t.bx & aw4 - 1;
             if off != 0 {
@@ -1365,14 +1364,15 @@ unsafe fn find_matching_ref(
             let mut x = aw4;
             while x < w4 {
                 r2 = r2.offset(aw4 as isize);
-                if matches(r2) {
+                let r2_ref = &*r2;
+                if matches(r2_ref) {
                     masks[0] |= mask;
                     count += 1;
                     if count >= 8 {
                         return;
                     }
                 }
-                aw4 = bs(r2)[0] as libc::c_int;
+                aw4 = bs(r2_ref)[0] as libc::c_int;
                 mask <<= aw4;
                 x += aw4;
             }
@@ -1380,14 +1380,15 @@ unsafe fn find_matching_ref(
     }
     if have_left {
         let mut r2 = &r[1..];
-        if matches(r2[0].offset((t.bx - 1) as isize)) {
+        let r2_ref = &*r2[0].offset((t.bx - 1) as isize);
+        if matches(r2_ref) {
             masks[1] |= 1;
             count += 1;
             if count >= 8 {
                 return;
             }
         }
-        let mut lh4 = bs(r2[0].offset((t.bx - 1) as isize))[1] as libc::c_int;
+        let mut lh4 = bs(r2_ref)[1] as libc::c_int;
         if lh4 >= bh4 {
             if t.by & lh4 - 1 != 0 {
                 have_topleft = false;
@@ -1397,27 +1398,28 @@ unsafe fn find_matching_ref(
             let mut y = lh4;
             while y < h4 {
                 r2 = &r2[lh4 as usize..];
-                if matches(r2[0].offset((t.bx - 1) as isize)) {
+                let r2_ref = &*r2[0].offset((t.bx - 1) as isize);
+                if matches(r2_ref) {
                     masks[1] |= mask;
                     count += 1;
                     if count >= 8 {
                         return;
                     }
                 }
-                lh4 = bs(r2[0].offset((t.bx - 1) as isize))[1] as libc::c_int;
+                lh4 = bs(r2_ref)[1] as libc::c_int;
                 mask <<= lh4;
                 y += lh4;
             }
         }
     }
-    if have_topleft && matches(r[0].offset((t.bx - 1) as isize)) {
+    if have_topleft && matches(&*r[0].offset((t.bx - 1) as isize)) {
         masks[1] |= 1 << 32;
         count += 1;
         if count >= 8 {
             return;
         }
     }
-    if have_topright && matches(r[0].offset((t.bx + bw4) as isize)) {
+    if have_topright && matches(&*r[0].offset((t.bx + bw4) as isize)) {
         masks[0] |= 1 << 32;
     }
 }
