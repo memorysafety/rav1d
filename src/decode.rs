@@ -1361,12 +1361,12 @@ unsafe fn find_matching_ref(
                 have_topright = false;
             }
         } else {
-            let mut mask = (1 as libc::c_uint) << aw4;
+            let mut mask = 1 << aw4;
             let mut x = aw4;
             while x < w4 {
                 r2 = r2.offset(aw4 as isize);
                 if matches(r2) {
-                    masks[0] |= mask as u64;
+                    masks[0] |= mask;
                     count += 1;
                     if count >= 8 {
                         return;
@@ -1393,12 +1393,12 @@ unsafe fn find_matching_ref(
                 have_topleft = false;
             }
         } else {
-            let mut mask = (1 as libc::c_uint) << lh4;
+            let mut mask = 1 << lh4;
             let mut y = lh4;
             while y < h4 {
                 r2 = r2.offset(lh4 as isize);
                 if matches((*r2.offset(0)).offset((t.bx - 1) as isize)) {
-                    masks[1] |= mask as u64;
+                    masks[1] |= mask;
                     count += 1;
                     if count >= 8 {
                         return;
