@@ -1349,8 +1349,7 @@ unsafe fn find_matching_ref(
         if (*r2).0.r#ref.r#ref[0] as libc::c_int == r#ref + 1
             && (*r2).0.r#ref.r#ref[1] as libc::c_int == -(1 as libc::c_int)
         {
-            let ref mut fresh2 = masks[0];
-            *fresh2 |= 1;
+            masks[0] |= 1;
             count = 1 as libc::c_int;
         }
         let mut aw4 = dav1d_block_dimensions[(*r2).0.bs as usize][0] as libc::c_int;
@@ -1370,8 +1369,7 @@ unsafe fn find_matching_ref(
                 if (*r2).0.r#ref.r#ref[0] as libc::c_int == r#ref + 1
                     && (*r2).0.r#ref.r#ref[1] as libc::c_int == -(1 as libc::c_int)
                 {
-                    let ref mut fresh3 = masks[0];
-                    *fresh3 |= mask as uint64_t;
+                    masks[0] |= mask as u64;
                     count += 1;
                     if count >= 8 {
                         return;
@@ -1396,8 +1394,7 @@ unsafe fn find_matching_ref(
                 .r#ref[1] as libc::c_int
                 == -(1 as libc::c_int)
         {
-            let ref mut fresh4 = masks[1];
-            *fresh4 |= 1;
+            masks[1] |= 1;
             count += 1;
             if count >= 8 {
                 return;
@@ -1426,8 +1423,7 @@ unsafe fn find_matching_ref(
                         .r#ref[1] as libc::c_int
                         == -(1 as libc::c_int)
                 {
-                    let ref mut fresh5 = masks[1];
-                    *fresh5 |= mask_0 as uint64_t;
+                    masks[1] |= mask_0 as u64;
                     count += 1;
                     if count >= 8 {
                         return;
@@ -1453,8 +1449,7 @@ unsafe fn find_matching_ref(
                 .r#ref[1] as libc::c_int
                 == -(1 as libc::c_int))
     {
-        let ref mut fresh6 = masks[1];
-        *fresh6 = (*fresh6 as libc::c_ulonglong | (1 as libc::c_ulonglong) << 32) as uint64_t;
+        masks[1] |= 1 << 32;
         count += 1;
         if count >= 8 {
             return;
@@ -1472,8 +1467,7 @@ unsafe fn find_matching_ref(
                 .r#ref[1] as libc::c_int
                 == -(1 as libc::c_int))
     {
-        let ref mut fresh7 = masks[0];
-        *fresh7 = (*fresh7 as libc::c_ulonglong | (1 as libc::c_ulonglong) << 32) as uint64_t;
+        masks[0] |= 1 << 32;
     }
 }
 
