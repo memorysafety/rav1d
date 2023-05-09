@@ -1333,6 +1333,10 @@ unsafe fn find_matching_ref(
     r#ref: libc::c_int,
     masks: &mut [u64; 2],
 ) {
+    let matches = |rp: *const refmvs_block| {
+        (*rp).0.r#ref.r#ref[0] as libc::c_int == r#ref + 1 && (*rp).0.r#ref.r#ref[1] == -1
+    };
+
     let mut r: *const *mut refmvs_block =
         &*(t.rt.r).as_ptr().offset(((t.by & 31) + 5) as isize) as *const *mut refmvs_block;
     let mut count = 0;
@@ -1346,9 +1350,7 @@ unsafe fn find_matching_ref(
     if have_top {
         let mut r2: *const refmvs_block = &mut *(*r.offset(-(1 as libc::c_int) as isize))
             .offset(t.bx as isize) as *mut refmvs_block;
-        if (*r2).0.r#ref.r#ref[0] as libc::c_int == r#ref + 1
-            && (*r2).0.r#ref.r#ref[1] as libc::c_int == -(1 as libc::c_int)
-        {
+        if matches(r2) {
             masks[0] |= 1;
             count = 1 as libc::c_int;
         }
@@ -1366,9 +1368,7 @@ unsafe fn find_matching_ref(
             let mut x = aw4;
             while x < w4 {
                 r2 = r2.offset(aw4 as isize);
-                if (*r2).0.r#ref.r#ref[0] as libc::c_int == r#ref + 1
-                    && (*r2).0.r#ref.r#ref[1] as libc::c_int == -(1 as libc::c_int)
-                {
+                if matches(r2) {
                     masks[0] |= mask as u64;
                     count += 1;
                     if count >= 8 {
@@ -1383,17 +1383,7 @@ unsafe fn find_matching_ref(
     }
     if have_left {
         let mut r2_0: *const *mut refmvs_block = r;
-        if (*(*r2_0.offset(0)).offset((t.bx - 1) as isize))
-            .0
-            .r#ref
-            .r#ref[0] as libc::c_int
-            == r#ref + 1
-            && (*(*r2_0.offset(0)).offset((t.bx - 1) as isize))
-                .0
-                .r#ref
-                .r#ref[1] as libc::c_int
-                == -(1 as libc::c_int)
-        {
+        if matches((*r2_0.offset(0)).offset((t.bx - 1) as isize)) {
             masks[1] |= 1;
             count += 1;
             if count >= 8 {
@@ -1412,17 +1402,7 @@ unsafe fn find_matching_ref(
             let mut y = lh4;
             while y < h4 {
                 r2_0 = r2_0.offset(lh4 as isize);
-                if (*(*r2_0.offset(0)).offset((t.bx - 1) as isize))
-                    .0
-                    .r#ref
-                    .r#ref[0] as libc::c_int
-                    == r#ref + 1
-                    && (*(*r2_0.offset(0)).offset((t.bx - 1) as isize))
-                        .0
-                        .r#ref
-                        .r#ref[1] as libc::c_int
-                        == -(1 as libc::c_int)
-                {
+                if matches((*r2_0.offset(0)).offset((t.bx - 1) as isize)) {
                     masks[1] |= mask_0 as u64;
                     count += 1;
                     if count >= 8 {
@@ -1438,16 +1418,7 @@ unsafe fn find_matching_ref(
         }
     }
     if have_topleft
-        && ((*(*r.offset(-(1 as libc::c_int) as isize)).offset((t.bx - 1) as isize))
-            .0
-            .r#ref
-            .r#ref[0] as libc::c_int
-            == r#ref + 1
-            && (*(*r.offset(-(1 as libc::c_int) as isize)).offset((t.bx - 1) as isize))
-                .0
-                .r#ref
-                .r#ref[1] as libc::c_int
-                == -(1 as libc::c_int))
+        && matches((*r.offset(-(1 as libc::c_int) as isize)).offset((t.bx - 1) as isize))
     {
         masks[1] |= 1 << 32;
         count += 1;
@@ -1456,16 +1427,7 @@ unsafe fn find_matching_ref(
         }
     }
     if have_topright
-        && ((*(*r.offset(-(1 as libc::c_int) as isize)).offset((t.bx + bw4) as isize))
-            .0
-            .r#ref
-            .r#ref[0] as libc::c_int
-            == r#ref + 1
-            && (*(*r.offset(-(1 as libc::c_int) as isize)).offset((t.bx + bw4) as isize))
-                .0
-                .r#ref
-                .r#ref[1] as libc::c_int
-                == -(1 as libc::c_int))
+        && matches((*r.offset(-(1 as libc::c_int) as isize)).offset((t.bx + bw4) as isize))
     {
         masks[0] |= 1 << 32;
     }
