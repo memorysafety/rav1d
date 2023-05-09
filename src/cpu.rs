@@ -13,7 +13,23 @@ extern "C" {
     pub type Dav1dContext;
 }
 
+/// This is atomic, which has interior mutability,
+/// instead of a `static mut`, since the latter is `unsafe` to access.
+///
+/// It seems to only be used in init functions,
+/// should it shouldn't be performance sensitive.
+///
+/// It is written once by [`dav1d_init_cpu`] in initialization code,
+/// and then subsequently read in [`dav1d_get_cpu_flags`] by other initialization code.
 static dav1d_cpu_flags: AtomicU32 = AtomicU32::new(0);
+
+/// This is atomic, which has interior mutability,
+/// instead of a `static mut`, since the latter is `unsafe` to access.
+///
+/// It is modifiable through the publicly exported [`dav1d_set_cpu_flags_mask`],
+/// so strict safety guarantees about how it's used can't be made.
+/// Other than that, it is also only used in init functions (that call [`dav1d_get_cpu_flags`]),
+/// so it shouldn't be performance sensitive.
 static dav1d_cpu_flags_mask: AtomicU32 = AtomicU32::new(!0);
 
 #[cfg(feature = "asm")]
