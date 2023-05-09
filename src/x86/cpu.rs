@@ -34,9 +34,9 @@ pub union C2RustUnnamed_0 {
     pub r: CpuidRegisters,
     pub c2rust_unnamed: C2RustUnnamed,
 }
-#[no_mangle]
+
 #[cold]
-pub unsafe extern "C" fn dav1d_get_cpu_flags_x86() -> libc::c_uint {
+pub unsafe fn dav1d_get_cpu_flags_x86() -> libc::c_uint {
     let mut cpu: C2RustUnnamed_0 = C2RustUnnamed_0 {
         r: CpuidRegisters {
             eax: 0,

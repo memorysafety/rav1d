@@ -270,7 +270,7 @@ pub struct Dav1dTaskContext_scratch_levels_pal_ac_interintra_edge {
 }
 
 #[derive(Copy, Clone)]
-#[repr(C)]
+#[repr(C, align(64))]
 pub union Dav1dTaskContext_scratch {
     pub c2rust_unnamed: Dav1dTaskContext_scratch_lap_emu_edge,
     pub c2rust_unnamed_0: Dav1dTaskContext_scratch_levels_pal_ac_interintra_edge,

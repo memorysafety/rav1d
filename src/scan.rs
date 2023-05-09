@@ -1,7 +1,8 @@
 use crate::include::stdint::*;
+use crate::src::align::Align32;
 use ::libc;
 
-static mut scan_4x4: [uint16_t; 16] = [
+static mut scan_4x4: Align32<[uint16_t; 16]> = Align32([
     0 as libc::c_int as uint16_t,
     4 as libc::c_int as uint16_t,
     1 as libc::c_int as uint16_t,
@@ -18,8 +19,8 @@ static mut scan_4x4: [uint16_t; 16] = [
     14 as libc::c_int as uint16_t,
     11 as libc::c_int as uint16_t,
     15 as libc::c_int as uint16_t,
-];
-static mut scan_4x8: [uint16_t; 32] = [
+]);
+static mut scan_4x8: Align32<[uint16_t; 32]> = Align32([
     0 as libc::c_int as uint16_t,
     8 as libc::c_int as uint16_t,
     1 as libc::c_int as uint16_t,
@@ -52,8 +53,8 @@ static mut scan_4x8: [uint16_t; 32] = [
     30 as libc::c_int as uint16_t,
     23 as libc::c_int as uint16_t,
     31 as libc::c_int as uint16_t,
-];
-static mut scan_4x16: [uint16_t; 64] = [
+]);
+static mut scan_4x16: Align32<[uint16_t; 64]> = Align32([
     0 as libc::c_int as uint16_t,
     16 as libc::c_int as uint16_t,
     1 as libc::c_int as uint16_t,
@@ -118,8 +119,8 @@ static mut scan_4x16: [uint16_t; 64] = [
     62 as libc::c_int as uint16_t,
     47 as libc::c_int as uint16_t,
     63 as libc::c_int as uint16_t,
-];
-static mut scan_8x4: [uint16_t; 32] = [
+]);
+static mut scan_8x4: Align32<[uint16_t; 32]> = Align32([
     0 as libc::c_int as uint16_t,
     1 as libc::c_int as uint16_t,
     4 as libc::c_int as uint16_t,
@@ -152,8 +153,8 @@ static mut scan_8x4: [uint16_t; 32] = [
     27 as libc::c_int as uint16_t,
     30 as libc::c_int as uint16_t,
     31 as libc::c_int as uint16_t,
-];
-static mut scan_8x8: [uint16_t; 64] = [
+]);
+static mut scan_8x8: Align32<[uint16_t; 64]> = Align32([
     0 as libc::c_int as uint16_t,
     8 as libc::c_int as uint16_t,
     1 as libc::c_int as uint16_t,
@@ -218,8 +219,8 @@ static mut scan_8x8: [uint16_t; 64] = [
     62 as libc::c_int as uint16_t,
     55 as libc::c_int as uint16_t,
     63 as libc::c_int as uint16_t,
-];
-static mut scan_8x16: [uint16_t; 128] = [
+]);
+static mut scan_8x16: Align32<[uint16_t; 128]> = Align32([
     0 as libc::c_int as uint16_t,
     16 as libc::c_int as uint16_t,
     1 as libc::c_int as uint16_t,
@@ -348,8 +349,8 @@ static mut scan_8x16: [uint16_t; 128] = [
     126 as libc::c_int as uint16_t,
     111 as libc::c_int as uint16_t,
     127 as libc::c_int as uint16_t,
-];
-static mut scan_8x32: [uint16_t; 256] = [
+]);
+static mut scan_8x32: Align32<[uint16_t; 256]> = Align32([
     0 as libc::c_int as uint16_t,
     32 as libc::c_int as uint16_t,
     1 as libc::c_int as uint16_t,
@@ -606,8 +607,8 @@ static mut scan_8x32: [uint16_t; 256] = [
     254 as libc::c_int as uint16_t,
     223 as libc::c_int as uint16_t,
     255 as libc::c_int as uint16_t,
-];
-static mut scan_16x4: [uint16_t; 64] = [
+]);
+static mut scan_16x4: Align32<[uint16_t; 64]> = Align32([
     0 as libc::c_int as uint16_t,
     1 as libc::c_int as uint16_t,
     4 as libc::c_int as uint16_t,
@@ -672,8 +673,8 @@ static mut scan_16x4: [uint16_t; 64] = [
     59 as libc::c_int as uint16_t,
     62 as libc::c_int as uint16_t,
     63 as libc::c_int as uint16_t,
-];
-static mut scan_16x8: [uint16_t; 128] = [
+]);
+static mut scan_16x8: Align32<[uint16_t; 128]> = Align32([
     0 as libc::c_int as uint16_t,
     1 as libc::c_int as uint16_t,
     8 as libc::c_int as uint16_t,
@@ -802,8 +803,8 @@ static mut scan_16x8: [uint16_t; 128] = [
     119 as libc::c_int as uint16_t,
     126 as libc::c_int as uint16_t,
     127 as libc::c_int as uint16_t,
-];
-static mut scan_16x16: [uint16_t; 256] = [
+]);
+static mut scan_16x16: Align32<[uint16_t; 256]> = Align32([
     0 as libc::c_int as uint16_t,
     16 as libc::c_int as uint16_t,
     1 as libc::c_int as uint16_t,
@@ -1060,8 +1061,8 @@ static mut scan_16x16: [uint16_t; 256] = [
     254 as libc::c_int as uint16_t,
     239 as libc::c_int as uint16_t,
     255 as libc::c_int as uint16_t,
-];
-static mut scan_16x32: [uint16_t; 512] = [
+]);
+static mut scan_16x32: Align32<[uint16_t; 512]> = Align32([
     0 as libc::c_int as uint16_t,
     32 as libc::c_int as uint16_t,
     1 as libc::c_int as uint16_t,
@@ -1574,8 +1575,8 @@ static mut scan_16x32: [uint16_t; 512] = [
     510 as libc::c_int as uint16_t,
     479 as libc::c_int as uint16_t,
     511 as libc::c_int as uint16_t,
-];
-static mut scan_32x8: [uint16_t; 256] = [
+]);
+static mut scan_32x8: Align32<[uint16_t; 256]> = Align32([
     0 as libc::c_int as uint16_t,
     1 as libc::c_int as uint16_t,
     8 as libc::c_int as uint16_t,
@@ -1832,8 +1833,8 @@ static mut scan_32x8: [uint16_t; 256] = [
     247 as libc::c_int as uint16_t,
     254 as libc::c_int as uint16_t,
     255 as libc::c_int as uint16_t,
-];
-static mut scan_32x16: [uint16_t; 512] = [
+]);
+static mut scan_32x16: Align32<[uint16_t; 512]> = Align32([
     0 as libc::c_int as uint16_t,
     1 as libc::c_int as uint16_t,
     16 as libc::c_int as uint16_t,
@@ -2346,8 +2347,8 @@ static mut scan_32x16: [uint16_t; 512] = [
     495 as libc::c_int as uint16_t,
     510 as libc::c_int as uint16_t,
     511 as libc::c_int as uint16_t,
-];
-static mut scan_32x32: [uint16_t; 1024] = [
+]);
+static mut scan_32x32: Align32<[uint16_t; 1024]> = Align32([
     0 as libc::c_int as uint16_t,
     32 as libc::c_int as uint16_t,
     1 as libc::c_int as uint16_t,
@@ -3372,28 +3373,28 @@ static mut scan_32x32: [uint16_t; 1024] = [
     1022 as libc::c_int as uint16_t,
     991 as libc::c_int as uint16_t,
     1023 as libc::c_int as uint16_t,
-];
+]);
 #[no_mangle]
 pub static mut dav1d_scans: [*const uint16_t; 19] = unsafe {
     [
-        scan_4x4.as_ptr(),
-        scan_8x8.as_ptr(),
-        scan_16x16.as_ptr(),
-        scan_32x32.as_ptr(),
-        scan_32x32.as_ptr(),
-        scan_4x8.as_ptr(),
-        scan_8x4.as_ptr(),
-        scan_8x16.as_ptr(),
-        scan_16x8.as_ptr(),
-        scan_16x32.as_ptr(),
-        scan_32x16.as_ptr(),
-        scan_32x32.as_ptr(),
-        scan_32x32.as_ptr(),
-        scan_4x16.as_ptr(),
-        scan_16x4.as_ptr(),
-        scan_8x32.as_ptr(),
-        scan_32x8.as_ptr(),
-        scan_16x32.as_ptr(),
-        scan_32x16.as_ptr(),
+        scan_4x4.0.as_ptr(),
+        scan_8x8.0.as_ptr(),
+        scan_16x16.0.as_ptr(),
+        scan_32x32.0.as_ptr(),
+        scan_32x32.0.as_ptr(),
+        scan_4x8.0.as_ptr(),
+        scan_8x4.0.as_ptr(),
+        scan_8x16.0.as_ptr(),
+        scan_16x8.0.as_ptr(),
+        scan_16x32.0.as_ptr(),
+        scan_32x16.0.as_ptr(),
+        scan_32x32.0.as_ptr(),
+        scan_32x32.0.as_ptr(),
+        scan_4x16.0.as_ptr(),
+        scan_16x4.0.as_ptr(),
+        scan_8x32.0.as_ptr(),
+        scan_32x8.0.as_ptr(),
+        scan_16x32.0.as_ptr(),
+        scan_32x16.0.as_ptr(),
     ]
 };
