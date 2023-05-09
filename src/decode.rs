@@ -1379,33 +1379,33 @@ unsafe fn find_matching_ref(
         }
     }
     if have_left {
-        let mut r2_0 = r;
-        if matches((*r2_0.offset(0)).offset((t.bx - 1) as isize)) {
+        let mut r2 = r;
+        if matches((*r2.offset(0)).offset((t.bx - 1) as isize)) {
             masks[1] |= 1;
             count += 1;
             if count >= 8 {
                 return;
             }
         }
-        let mut lh4 = bs((*r2_0.offset(0)).offset((t.bx - 1) as isize))[1] as libc::c_int;
+        let mut lh4 = bs((*r2.offset(0)).offset((t.bx - 1) as isize))[1] as libc::c_int;
         if lh4 >= bh4 {
             if t.by & lh4 - 1 != 0 {
                 have_topleft = false;
             }
         } else {
-            let mut mask_0 = (1 as libc::c_uint) << lh4;
+            let mut mask = (1 as libc::c_uint) << lh4;
             let mut y = lh4;
             while y < h4 {
-                r2_0 = r2_0.offset(lh4 as isize);
-                if matches((*r2_0.offset(0)).offset((t.bx - 1) as isize)) {
-                    masks[1] |= mask_0 as u64;
+                r2 = r2.offset(lh4 as isize);
+                if matches((*r2.offset(0)).offset((t.bx - 1) as isize)) {
+                    masks[1] |= mask as u64;
                     count += 1;
                     if count >= 8 {
                         return;
                     }
                 }
-                lh4 = bs((*r2_0.offset(0)).offset((t.bx - 1) as isize))[1] as libc::c_int;
-                mask_0 <<= lh4;
+                lh4 = bs((*r2.offset(0)).offset((t.bx - 1) as isize))[1] as libc::c_int;
+                mask <<= lh4;
                 y += lh4;
             }
         }
