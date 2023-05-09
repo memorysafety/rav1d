@@ -4,9 +4,8 @@ use libc;
 pub const DAV1D_ARM_CPU_FLAG_NEON: libc::c_uint = 1 << 0;
 pub const NEON_HWCAP: libc::c_ulong = 1 << 12;
 
-#[no_mangle]
 #[cold]
-pub unsafe extern "C" fn dav1d_get_cpu_flags_arm() -> libc::c_uint {
+pub unsafe fn dav1d_get_cpu_flags_arm() -> libc::c_uint {
     let mut flags = 0;
 
     cfg_if! {

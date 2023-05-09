@@ -11,12 +11,6 @@ extern "C" {
     ) -> libc::c_int;
 }
 
-#[cfg(feature = "asm")]
-extern "C" {
-    static mut dav1d_cpu_flags_mask: libc::c_uint;
-    static mut dav1d_cpu_flags: libc::c_uint;
-}
-
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
 extern "C" {
     fn dav1d_splat_mv_avx512icl(

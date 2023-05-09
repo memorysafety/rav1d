@@ -5,6 +5,7 @@ use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SMOOTH;
 use crate::include::dav1d::headers::DAV1D_FILTER_BILINEAR;
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_IDENTITY;
 use crate::src::align::Align16;
+use crate::src::align::Align4;
 use crate::src::align::Align64;
 use crate::src::align::Align8;
 use crate::src::levels::BS_128x128;
@@ -732,7 +733,7 @@ pub static dav1d_cdef_directions: [[i8; 2]; 12] = [
     [0 * 12 + 1, -1 * 12 + 2],
 ];
 
-pub static dav1d_sgr_params: [[u16; 2]; 16] = [
+pub static dav1d_sgr_params: Align4<[[u16; 2]; 16]> = Align4([
     [140, 3236],
     [112, 2158],
     [93, 1618],
@@ -749,7 +750,7 @@ pub static dav1d_sgr_params: [[u16; 2]; 16] = [
     [0, 925],
     [56, 0],
     [22, 0],
-];
+]);
 
 #[no_mangle]
 pub static dav1d_sgr_x_by_x: Align64<[u8; 256]> = Align64([
@@ -871,7 +872,7 @@ pub static dav1d_mc_subpel_filters: Align8<[[[i8; 8]; 15]; 6]> = Align8([
 ]);
 
 #[no_mangle]
-pub static dav1d_mc_warp_filter: [[i8; 8]; 193] = [
+pub static dav1d_mc_warp_filter: Align8<[[i8; 8]; 193]> = Align8([
     [0, 0, 127, 1, 0, 0, 0, 0],
     [0, -1, 127, 2, 0, 0, 0, 0],
     [1, -3, 127, 4, -1, 0, 0, 0],
@@ -1065,10 +1066,10 @@ pub static dav1d_mc_warp_filter: [[i8; 8]; 193] = [
     [0, 0, 0, -1, 4, 127, -3, 1],
     [0, 0, 0, 0, 2, 127, -1, 0],
     [0, 0, 0, 0, 2, 127, -1, 0],
-];
+]);
 
 #[no_mangle]
-pub static dav1d_resize_filter: [[i8; 8]; 64] = [
+pub static dav1d_resize_filter: Align8<[[i8; 8]; 64]> = Align8([
     [0, 0, 0, -128, 0, 0, 0, 0],
     [0, 0, 1, -128, -2, 1, 0, 0],
     [0, -1, 3, -127, -4, 2, -1, 0],
@@ -1133,7 +1134,7 @@ pub static dav1d_resize_filter: [[i8; 8]; 64] = [
     [0, -1, 3, -6, -127, 4, -1, 0],
     [0, -1, 2, -4, -127, 3, -1, 0],
     [0, 0, 1, -2, -128, 1, 0, 0],
-];
+]);
 
 #[no_mangle]
 pub static dav1d_sm_weights: Align16<[u8; 128]> = Align16([
@@ -1262,11 +1263,11 @@ pub static dav1d_filter_intra_taps: Align64<[[i8; 64]; 5]> = Align64([
 ]);
 
 #[no_mangle]
-pub static dav1d_obmc_masks: [u8; 64] = [
+pub static dav1d_obmc_masks: Align16<[u8; 64]> = Align16([
     0, 0, 19, 0, 25, 14, 5, 0, 28, 22, 16, 11, 7, 3, 0, 0, 30, 27, 24, 21, 18, 15, 12, 10, 8, 6, 4,
     3, 0, 0, 0, 0, 31, 29, 28, 26, 24, 23, 21, 20, 19, 17, 16, 14, 13, 12, 11, 9, 8, 7, 6, 5, 4, 4,
     3, 2, 0, 0, 0, 0, 0, 0, 0, 0,
-];
+]);
 
 #[no_mangle]
 pub static dav1d_gaussian_sequence: [i16; 2048] = [

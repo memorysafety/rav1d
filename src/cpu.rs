@@ -1,62 +1,72 @@
-use crate::include::stddef::*;
-use ::libc;
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
+use std::sync::atomic::AtomicU32;
+use std::sync::atomic::Ordering;
+
+#[cfg(target_arch = "x86_64")]
+use crate::src::x86::cpu::dav1d_get_cpu_flags_x86;
+
+#[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+use crate::src::arm::cpu::dav1d_get_cpu_flags_arm;
+
 extern "C" {
     pub type Dav1dContext;
-    #[cfg(target_arch = "x86_64")]
-    fn dav1d_get_cpu_flags_x86() -> libc::c_uint;
-    #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
-    fn dav1d_get_cpu_flags_arm() -> libc::c_uint;
-    fn __sched_cpucount(__setsize: size_t, __setp: *const cpu_set_t) -> libc::c_int;
-    fn pthread_self() -> pthread_t;
-    fn pthread_getaffinity_np(
-        __th: pthread_t,
-        __cpusetsize: size_t,
-        __cpuset: *mut cpu_set_t,
-    ) -> libc::c_int;
 }
-use crate::include::sched::cpu_set_t;
 
-use crate::include::pthread::pthread_t;
+/// This is atomic, which has interior mutability,
+/// instead of a `static mut`, since the latter is `unsafe` to access.
+///
+/// It seems to only be used in init functions,
+/// should it shouldn't be performance sensitive.
+///
+/// It is written once by [`dav1d_init_cpu`] in initialization code,
+/// and then subsequently read in [`dav1d_get_cpu_flags`] by other initialization code.
+static dav1d_cpu_flags: AtomicU32 = AtomicU32::new(0);
 
-#[no_mangle]
-pub static mut dav1d_cpu_flags: libc::c_uint = 0 as libc::c_uint;
-#[no_mangle]
-pub static mut dav1d_cpu_flags_mask: libc::c_uint = !(0 as libc::c_uint);
+/// This is atomic, which has interior mutability,
+/// instead of a `static mut`, since the latter is `unsafe` to access.
+///
+/// It is modifiable through the publicly exported [`dav1d_set_cpu_flags_mask`],
+/// so strict safety guarantees about how it's used can't be made.
+/// Other than that, it is also only used in init functions (that call [`dav1d_get_cpu_flags`]),
+/// so it shouldn't be performance sensitive.
+static dav1d_cpu_flags_mask: AtomicU32 = AtomicU32::new(!0);
 
 #[cfg(feature = "asm")]
 #[inline(always)]
-pub unsafe extern "C" fn dav1d_get_cpu_flags() -> libc::c_uint {
-    let mut flags: libc::c_uint = dav1d_cpu_flags & dav1d_cpu_flags_mask;
+pub fn dav1d_get_cpu_flags() -> libc::c_uint {
+    let mut flags =
+        dav1d_cpu_flags.load(Ordering::SeqCst) & dav1d_cpu_flags_mask.load(Ordering::SeqCst);
     cfg_if! {
         if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
             use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
             flags |= DAV1D_X86_CPU_FLAG_SSE2;
         }
     }
-    return flags;
+    flags
 }
 
 #[no_mangle]
 #[cold]
-pub unsafe extern "C" fn dav1d_init_cpu() {
+pub unsafe fn dav1d_init_cpu() {
     #[cfg(feature = "asm")]
     cfg_if! {
         if #[cfg(target_arch = "x86_64")] {
-            dav1d_cpu_flags = dav1d_get_cpu_flags_x86();
+            dav1d_cpu_flags.store(dav1d_get_cpu_flags_x86(), Ordering::SeqCst);
         } else if #[cfg(any(target_arch = "arm", target_arch = "aarch64"))] {
-            dav1d_cpu_flags = dav1d_get_cpu_flags_arm();
+            dav1d_cpu_flags.store(dav1d_get_cpu_flags_arm(), Ordering::SeqCst);
         }
     }
 }
+
 #[no_mangle]
 #[cold]
-pub unsafe extern "C" fn dav1d_set_cpu_flags_mask(mask: libc::c_uint) {
-    dav1d_cpu_flags_mask = mask;
+pub extern "C" fn dav1d_set_cpu_flags_mask(mask: libc::c_uint) {
+    dav1d_cpu_flags_mask.store(mask, Ordering::SeqCst);
 }
+
 #[no_mangle]
 #[cold]
-pub unsafe extern "C" fn dav1d_num_logical_processors(_c: *mut Dav1dContext) -> libc::c_int {
+pub fn dav1d_num_logical_processors(_c: *mut Dav1dContext) -> libc::c_int {
     num_cpus::get() as libc::c_int
 }
