@@ -1331,7 +1331,7 @@ unsafe fn find_matching_ref(
     have_left: bool,
     have_top: bool,
     r#ref: libc::c_int,
-    mut masks: *mut uint64_t,
+    masks: &mut [u64; 2],
 ) {
     let mut r: *const *mut refmvs_block =
         &*(t.rt.r).as_ptr().offset(((t.by & 31) + 5) as isize) as *const *mut refmvs_block;
@@ -1349,7 +1349,7 @@ unsafe fn find_matching_ref(
         if (*r2).0.r#ref.r#ref[0] as libc::c_int == r#ref + 1
             && (*r2).0.r#ref.r#ref[1] as libc::c_int == -(1 as libc::c_int)
         {
-            let ref mut fresh2 = *masks.offset(0);
+            let ref mut fresh2 = masks[0];
             *fresh2 |= 1;
             count = 1 as libc::c_int;
         }
@@ -1370,7 +1370,7 @@ unsafe fn find_matching_ref(
                 if (*r2).0.r#ref.r#ref[0] as libc::c_int == r#ref + 1
                     && (*r2).0.r#ref.r#ref[1] as libc::c_int == -(1 as libc::c_int)
                 {
-                    let ref mut fresh3 = *masks.offset(0);
+                    let ref mut fresh3 = masks[0];
                     *fresh3 |= mask as uint64_t;
                     count += 1;
                     if count >= 8 {
@@ -1396,7 +1396,7 @@ unsafe fn find_matching_ref(
                 .r#ref[1] as libc::c_int
                 == -(1 as libc::c_int)
         {
-            let ref mut fresh4 = *masks.offset(1);
+            let ref mut fresh4 = masks[1];
             *fresh4 |= 1;
             count += 1;
             if count >= 8 {
@@ -1426,7 +1426,7 @@ unsafe fn find_matching_ref(
                         .r#ref[1] as libc::c_int
                         == -(1 as libc::c_int)
                 {
-                    let ref mut fresh5 = *masks.offset(1);
+                    let ref mut fresh5 = masks[1];
                     *fresh5 |= mask_0 as uint64_t;
                     count += 1;
                     if count >= 8 {
@@ -1453,7 +1453,7 @@ unsafe fn find_matching_ref(
                 .r#ref[1] as libc::c_int
                 == -(1 as libc::c_int))
     {
-        let ref mut fresh6 = *masks.offset(1);
+        let ref mut fresh6 = masks[1];
         *fresh6 = (*fresh6 as libc::c_ulonglong | (1 as libc::c_ulonglong) << 32) as uint64_t;
         count += 1;
         if count >= 8 {
@@ -1472,7 +1472,7 @@ unsafe fn find_matching_ref(
                 .r#ref[1] as libc::c_int
                 == -(1 as libc::c_int))
     {
-        let ref mut fresh7 = *masks.offset(0);
+        let ref mut fresh7 = masks[0];
         *fresh7 = (*fresh7 as libc::c_ulonglong | (1 as libc::c_ulonglong) << 32) as uint64_t;
     }
 }
@@ -4534,7 +4534,7 @@ unsafe fn decode_b(
                     have_left,
                     have_top,
                     b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int,
-                    mask.as_mut_ptr(),
+                    &mut mask,
                 );
                 let allow_warp =
                     (f.svc[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize][0].scale == 0
