@@ -1115,6 +1115,10 @@ use crate::src::env::get_tx_ctx;
 use crate::src::msac::dav1d_msac_decode_bools;
 use crate::src::msac::dav1d_msac_decode_uniform;
 
+use crate::src::recon::define_DEBUG_BLOCK_INFO;
+
+define_DEBUG_BLOCK_INFO!();
+
 fn init_quant_tables(
     seq_hdr: &Dav1dSequenceHeader,
     frame_hdr: &Dav1dFrameHeader,
@@ -2846,20 +2850,6 @@ unsafe fn obmc_lowest_px(
             y += imax(l_b_dim[1] as libc::c_int, 2);
         }
     }
-}
-
-/* NOTE: DEBUG_BLOCK_INFO is a macro in recon.h so it should probably live in
- * one of the rust files generated from recon_tmpl.c once deduplicated.
- */
-unsafe fn DEBUG_BLOCK_INFO(f: *const Dav1dFrameContext, t: *const Dav1dTaskContext) -> bool {
-    /* TODO: add feature and compile-time guard around this code */
-    0 != 0
-        && (*(*f).frame_hdr).frame_offset == 2
-        && (*t).by >= 0
-        && (*t).by < 4
-        && (*t).bx >= 8
-        && (*t).bx < 12
-    // true
 }
 
 unsafe fn decode_b(
