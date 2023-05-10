@@ -1333,9 +1333,6 @@ unsafe fn find_matching_ref(
     r#ref: i8,
     masks: &mut [u64; 2],
 ) {
-    let bs = |rp: &refmvs_block| dav1d_block_dimensions[rp.0.bs as usize];
-    let matches = |rp: &refmvs_block| rp.0.r#ref.r#ref[0] == r#ref + 1 && rp.0.r#ref.r#ref[1] == -1;
-
     let r = &t.rt.r[((t.by & 31) + 5 - 1) as usize..];
     let mut count = 0;
     let mut have_topleft = have_top && have_left;
@@ -1343,6 +1340,10 @@ unsafe fn find_matching_ref(
         && have_top
         && t.bx + bw4 < (*t.ts).tiling.col_end
         && intra_edge_flags & EDGE_I444_TOP_HAS_RIGHT != 0;
+
+    let bs = |rp: &refmvs_block| dav1d_block_dimensions[rp.0.bs as usize];
+    let matches = |rp: &refmvs_block| rp.0.r#ref.r#ref[0] == r#ref + 1 && rp.0.r#ref.r#ref[1] == -1;
+
     if have_top {
         let mut r2 = r[0].offset(t.bx as isize) as *const _;
         let r2_ref = &*r2;
