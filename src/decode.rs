@@ -1587,8 +1587,8 @@ unsafe fn read_pal_plane(
     let mut a = t.al_pal[0][bx4 as usize][pl as usize].as_mut_ptr();
     while l_cache != 0 && a_cache != 0 {
         if *l < *a {
-            if n_cache == 0 || cache[(n_cache - 1) as usize] != *l {
-                cache[n_cache as usize] = *l;
+            if n_cache == 0 || cache[n_cache - 1] != *l {
+                cache[n_cache] = *l;
                 n_cache += 1;
             }
             l = l.offset(1);
@@ -1598,8 +1598,8 @@ unsafe fn read_pal_plane(
                 l = l.offset(1);
                 l_cache -= 1;
             }
-            if n_cache == 0 || cache[(n_cache - 1) as usize] != *a {
-                cache[n_cache as usize] = *a;
+            if n_cache == 0 || cache[n_cache - 1] != *a {
+                cache[n_cache] = *a;
                 n_cache += 1;
             }
             a = a.offset(1);
@@ -1608,8 +1608,8 @@ unsafe fn read_pal_plane(
     }
     if l_cache != 0 {
         loop {
-            if n_cache == 0 || cache[(n_cache - 1) as usize] != *l {
-                cache[n_cache as usize] = *l;
+            if n_cache == 0 || cache[n_cache - 1] != *l {
+                cache[n_cache] = *l;
                 n_cache += 1;
             }
             l = l.offset(1);
@@ -1620,8 +1620,8 @@ unsafe fn read_pal_plane(
         }
     } else if a_cache != 0 {
         loop {
-            if n_cache == 0 || cache[(n_cache - 1) as usize] != *a {
-                cache[n_cache as usize] = *a;
+            if n_cache == 0 || cache[n_cache - 1] != *a {
+                cache[n_cache] = *a;
                 n_cache += 1;
             }
             a = a.offset(1);
@@ -1635,7 +1635,7 @@ unsafe fn read_pal_plane(
     let mut n = 0;
     while n < n_cache && i < pal_sz {
         if dav1d_msac_decode_bool_equi(&mut ts.msac) {
-            used_cache[i as usize] = cache[n as usize];
+            used_cache[i as usize] = cache[n];
             i += 1;
         }
         n += 1;
@@ -1718,7 +1718,7 @@ unsafe fn read_pal_plane(
             print!(
                 "{}{:02x}",
                 if n_1 != 0 { ' ' } else { '[' },
-                cache[n_1 as usize]
+                cache[n_1]
             );
             n_1 += 1;
         }
