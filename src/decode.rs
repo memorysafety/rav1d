@@ -1583,36 +1583,37 @@ unsafe fn read_pal_plane(
     } else {
         0
     };
-    let mut l = t.al_pal[1][by4 as usize][pl as usize].as_mut_ptr();
-    let mut a = t.al_pal[0][bx4 as usize][pl as usize].as_mut_ptr();
+    let [a, l] = &mut t.al_pal;
+    let mut l = &mut l[by4 as usize][pl as usize][..];
+    let mut a = &mut a[bx4 as usize][pl as usize][..];
     while l_cache != 0 && a_cache != 0 {
-        if *l < *a {
-            if n_cache == 0 || cache[n_cache - 1] != *l {
-                cache[n_cache] = *l;
+        if l[0] < a[0] {
+            if n_cache == 0 || cache[n_cache - 1] != l[0] {
+                cache[n_cache] = l[0];
                 n_cache += 1;
             }
-            l = l.offset(1);
+            l = &mut l[1..];
             l_cache -= 1;
         } else {
-            if *a == *l {
-                l = l.offset(1);
+            if a[0] == l[0] {
+                l = &mut l[1..];
                 l_cache -= 1;
             }
-            if n_cache == 0 || cache[n_cache - 1] != *a {
-                cache[n_cache] = *a;
+            if n_cache == 0 || cache[n_cache - 1] != a[0] {
+                cache[n_cache] = a[0];
                 n_cache += 1;
             }
-            a = a.offset(1);
+            a = &mut a[1..];
             a_cache -= 1;
         }
     }
     if l_cache != 0 {
         loop {
-            if n_cache == 0 || cache[n_cache - 1] != *l {
-                cache[n_cache] = *l;
+            if n_cache == 0 || cache[n_cache - 1] != l[0] {
+                cache[n_cache] = l[0];
                 n_cache += 1;
             }
-            l = l.offset(1);
+            l = &mut l[1..];
             l_cache -= 1;
             if !(l_cache > 0) {
                 break;
@@ -1620,11 +1621,11 @@ unsafe fn read_pal_plane(
         }
     } else if a_cache != 0 {
         loop {
-            if n_cache == 0 || cache[n_cache - 1] != *a {
-                cache[n_cache] = *a;
+            if n_cache == 0 || cache[n_cache - 1] != a[0] {
+                cache[n_cache] = a[0];
                 n_cache += 1;
             }
-            a = a.offset(1);
+            a = &mut a[1..];
             a_cache -= 1;
             if !(a_cache > 0) {
                 break;
