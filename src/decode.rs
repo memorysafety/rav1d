@@ -1676,8 +1676,8 @@ unsafe fn read_pal_plane(
                 prev = pal[i] as libc::c_int;
                 i += 1;
                 if prev + not_pl >= max {
-                    for i in i..pal_sz {
-                        pal[i] = max as uint16_t;
+                    for pal in &mut pal[i..pal_sz] {
+                        *pal = max as u16;
                     }
                     break;
                 } else {
@@ -1708,12 +1708,12 @@ unsafe fn read_pal_plane(
             "Post-pal[pl={},sz={},cache_size={},used_cache={}]: r={}, cache=",
             pli, pal_sz, n_cache, n_used_cache, ts.msac.rng
         );
-        for n in 0..n_cache {
-            print!("{}{:02x}", if n != 0 { ' ' } else { '[' }, cache[n]);
+        for (n, cache) in cache[..n_cache].iter().enumerate() {
+            print!("{}{:02x}", if n != 0 { ' ' } else { '[' }, cache);
         }
         print!("{}, pal=", if n_cache != 0 { "]" } else { "[]" });
-        for n in 0..pal_sz {
-            print!("{}{:02x}", if n != 0 { ' ' } else { '[' }, pal[n]);
+        for (n, pal) in pal[..pal_sz].iter().enumerate() {
+            print!("{}{:02x}", if n != 0 { ' ' } else { '[' }, pal);
         }
         println!("]");
     }
