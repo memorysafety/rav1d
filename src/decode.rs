@@ -1560,12 +1560,12 @@ unsafe fn read_pal_plane(
     let pli = pl as usize;
     let ts = &mut *t.ts;
     let f = &*t.f;
-    b.c2rust_unnamed.c2rust_unnamed.pal_sz[pli] = (dav1d_msac_decode_symbol_adapt8(
+    b.c2rust_unnamed.c2rust_unnamed.pal_sz[pli] = dav1d_msac_decode_symbol_adapt8(
         &mut ts.msac,
         &mut ts.cdf.m.pal_sz[pli][sz_ctx as usize],
         6,
-    ))
-    .wrapping_add(2) as uint8_t;
+    ) as u8
+        + 2;
     let pal_sz = b.c2rust_unnamed.c2rust_unnamed.pal_sz[pli] as libc::c_int;
     let mut cache: [uint16_t; 16] = [0; 16];
     let mut used_cache: [uint16_t; 8] = [0; 8];
@@ -1658,9 +1658,8 @@ unsafe fn read_pal_plane(
         let mut prev = *pal.offset(i as isize) as libc::c_int;
         i += 1;
         if i < pal_sz {
-            let mut bits = ((f.cur.p.bpc - 3) as libc::c_uint)
-                .wrapping_add(dav1d_msac_decode_bools(&mut ts.msac, 2))
-                as libc::c_int;
+            let mut bits =
+                f.cur.p.bpc - 3 + dav1d_msac_decode_bools(&mut ts.msac, 2) as libc::c_int;
             let max = (1 << f.cur.p.bpc) - 1;
             loop {
                 let delta =
