@@ -1557,11 +1557,11 @@ unsafe fn read_pal_plane(
     bx4: libc::c_int,
     by4: libc::c_int,
 ) {
-    let ts: *mut Dav1dTileState = t.ts;
+    let ts = &mut *t.ts;
     let f: *const Dav1dFrameContext = t.f;
     b.c2rust_unnamed.c2rust_unnamed.pal_sz[pl as usize] = (dav1d_msac_decode_symbol_adapt8(
-        &mut (*ts).msac,
-        &mut (*ts).cdf.m.pal_sz[pl as usize][sz_ctx as usize],
+        &mut ts.msac,
+        &mut ts.cdf.m.pal_sz[pl as usize][sz_ctx as usize],
         6 as libc::c_int as size_t,
     ))
     .wrapping_add(2 as libc::c_int as libc::c_uint)
@@ -1639,7 +1639,7 @@ unsafe fn read_pal_plane(
     let mut i = 0;
     let mut n = 0;
     while n < n_cache && i < pal_sz {
-        if dav1d_msac_decode_bool_equi(&mut (*ts).msac) {
+        if dav1d_msac_decode_bool_equi(&mut ts.msac) {
             let fresh12 = i;
             i = i + 1;
             used_cache[fresh12 as usize] = cache[n as usize];
@@ -1661,16 +1661,16 @@ unsafe fn read_pal_plane(
         i = i + 1;
         let ref mut fresh14 = *pal.offset(fresh13 as isize);
         *fresh14 =
-            dav1d_msac_decode_bools(&mut (*ts).msac, (*f).cur.p.bpc as libc::c_uint) as uint16_t;
+            dav1d_msac_decode_bools(&mut ts.msac, (*f).cur.p.bpc as libc::c_uint) as uint16_t;
         let mut prev = *fresh14 as libc::c_int;
         if i < pal_sz {
             let mut bits = (((*f).cur.p.bpc - 3) as libc::c_uint).wrapping_add(
-                dav1d_msac_decode_bools(&mut (*ts).msac, 2 as libc::c_int as libc::c_uint),
+                dav1d_msac_decode_bools(&mut ts.msac, 2 as libc::c_int as libc::c_uint),
             ) as libc::c_int;
             let max = ((1 as libc::c_int) << (*f).cur.p.bpc) - 1;
             loop {
                 let delta =
-                    dav1d_msac_decode_bools(&mut (*ts).msac, bits as libc::c_uint) as libc::c_int;
+                    dav1d_msac_decode_bools(&mut ts.msac, bits as libc::c_uint) as libc::c_int;
                 let fresh15 = i;
                 i = i + 1;
                 let ref mut fresh16 = *pal.offset(fresh15 as isize);
@@ -1732,7 +1732,7 @@ unsafe fn read_pal_plane(
             pal_sz,
             n_cache,
             n_used_cache,
-            (*ts).msac.rng,
+            ts.msac.rng,
         );
         let mut n_1 = 0;
         while n_1 < n_cache {
