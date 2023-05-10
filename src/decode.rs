@@ -1549,7 +1549,7 @@ fn findoddzero(buf: &[u8]) -> bool {
         .is_some()
 }
 
-unsafe extern "C" fn read_pal_plane(
+unsafe fn read_pal_plane(
     t: *mut Dav1dTaskContext,
     b: *mut Av1Block,
     pl: libc::c_int,
@@ -1763,6 +1763,7 @@ unsafe extern "C" fn read_pal_plane(
         printf(b"]\n\0" as *const u8 as *const libc::c_char);
     }
 }
+
 unsafe extern "C" fn read_pal_uv(
     t: *mut Dav1dTaskContext,
     b: *mut Av1Block,
