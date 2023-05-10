@@ -1558,7 +1558,7 @@ unsafe fn read_pal_plane(
     by4: usize,
 ) {
     let pli = pl as usize;
-    let not_pl = !pl as libc::c_int;
+    let not_pl = !pl as u16;
 
     let ts = &mut *t.ts;
     let f = &*t.f;
@@ -1580,17 +1580,17 @@ unsafe fn read_pal_plane(
     let mut cache: [uint16_t; 16] = [0; 16];
     let mut used_cache: [uint16_t; 8] = [0; 8];
     let mut l_cache = if pl {
-        t.pal_sz_uv[1][by4] as libc::c_int
+        t.pal_sz_uv[1][by4]
     } else {
-        t.l.pal_sz.0[by4] as libc::c_int
+        t.l.pal_sz.0[by4]
     };
     let mut n_cache = 0;
     let mut a_cache = if by4 & 15 != 0 {
-        (if pl {
+        if pl {
             t.pal_sz_uv[0][bx4]
         } else {
             (*t.a).pal_sz.0[bx4]
-        }) as libc::c_int
+        }
     } else {
         0
     };
@@ -1655,33 +1655,31 @@ unsafe fn read_pal_plane(
     let n_used_cache = i;
     let pal = if t.frame_thread.pass != 0 {
         &mut (*(f.frame_thread.pal).offset(
-            (((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
-                + ((t.bx >> 1) + (t.by & 1)) as isize) as isize,
+            ((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
+                + ((t.bx >> 1) + (t.by & 1)) as isize,
         ))[pli]
     } else {
         &mut t.scratch.c2rust_unnamed_0.pal[pli]
     };
     if i < pal_sz {
-        pal[i] = dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as uint16_t;
-        let mut prev = pal[i] as libc::c_int;
+        let mut prev = dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as u32) as u16;
+        pal[i] = prev;
         i += 1;
         if i < pal_sz {
-            let mut bits =
-                f.cur.p.bpc - 3 + dav1d_msac_decode_bools(&mut ts.msac, 2) as libc::c_int;
+            let mut bits = f.cur.p.bpc as u32 + dav1d_msac_decode_bools(&mut ts.msac, 2) - 3;
             let max = (1 << f.cur.p.bpc) - 1;
             loop {
-                let delta =
-                    dav1d_msac_decode_bools(&mut ts.msac, bits as libc::c_uint) as libc::c_int;
-                pal[i] = imin(prev + delta + not_pl, max) as uint16_t;
-                prev = pal[i] as libc::c_int;
+                let delta = dav1d_msac_decode_bools(&mut ts.msac, bits) as u16;
+                prev = std::cmp::min(prev + delta + not_pl, max);
+                pal[i] = prev;
                 i += 1;
                 if prev + not_pl >= max {
                     for pal in &mut pal[i..pal_sz] {
-                        *pal = max as u16;
+                        *pal = max;
                     }
                     break;
                 } else {
-                    bits = imin(bits, 1 + ulog2((max - prev - not_pl) as libc::c_uint));
+                    bits = std::cmp::min(bits, 1 + ulog2((max - prev - not_pl) as u32) as u32);
                     if !(i < pal_sz) {
                         break;
                     }
