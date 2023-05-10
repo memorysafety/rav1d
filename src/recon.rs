@@ -7,16 +7,13 @@ use crate::src::msac::MsacContext;
 macro_rules! define_DEBUG_BLOCK_INFO {
     () => {
         /// TODO: add feature and compile-time guard around this code
-        unsafe fn DEBUG_BLOCK_INFO(
-            f: *const Dav1dFrameContext,
-            t: *const Dav1dTaskContext,
-        ) -> bool {
+        unsafe fn DEBUG_BLOCK_INFO(f: &Dav1dFrameContext, t: &Dav1dTaskContext) -> bool {
             false
-                && (*(*f).frame_hdr).frame_offset == 2
-                && (*t).by >= 0
-                && (*t).by < 4
-                && (*t).bx >= 8
-                && (*t).bx < 12
+                && (*f.frame_hdr).frame_offset == 2
+                && t.by >= 0
+                && t.by < 4
+                && t.bx >= 8
+                && t.bx < 12
         }
     };
 }

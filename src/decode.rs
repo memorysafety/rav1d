@@ -1887,7 +1887,7 @@ unsafe extern "C" fn read_pal_plane(
                 .wrapping_mul(::core::mem::size_of::<uint16_t>() as libc::c_ulong),
         );
     }
-    if DEBUG_BLOCK_INFO(f, t) {
+    if DEBUG_BLOCK_INFO(&*f, &*t) {
         printf(
             b"Post-pal[pl=%d,sz=%d,cache_size=%d,used_cache=%d]: r=%d, cache=\0" as *const u8
                 as *const libc::c_char,
@@ -1976,7 +1976,7 @@ unsafe extern "C" fn read_pal_uv(
             i_0 += 1;
         }
     }
-    if DEBUG_BLOCK_INFO(f, t) {
+    if DEBUG_BLOCK_INFO(&*f, &*t) {
         printf(
             b"Post-pal[pl=2]: r=%d \0" as *const u8 as *const libc::c_char,
             (*ts).msac.rng,
@@ -2451,7 +2451,7 @@ unsafe extern "C" fn read_vartx_tree(
             y_off += 1;
         }
         (*t).by -= y;
-        if DEBUG_BLOCK_INFO(f, t) {
+        if DEBUG_BLOCK_INFO(&*f, &*t) {
             printf(
                 b"Post-vartxtree[%x/%x]: r=%d\n\0" as *const u8 as *const libc::c_char,
                 tx_split[0] as libc::c_int,
@@ -6869,7 +6869,7 @@ unsafe extern "C" fn decode_sb(
             {
                 return 1 as libc::c_int;
             }
-            if DEBUG_BLOCK_INFO(f, t) {
+            if DEBUG_BLOCK_INFO(&*f, &*t) {
                 printf(
                     b"poc=%d,y=%d,x=%d,bl=%d,ctx=%d,bp=%d: r=%d\n\0" as *const u8
                         as *const libc::c_char,
@@ -7286,7 +7286,7 @@ unsafe extern "C" fn decode_sb(
         } else {
             is_split = dav1d_msac_decode_bool(&mut (*ts).msac, gather_top_partition_prob(pc, bl))
                 as libc::c_uint;
-            if DEBUG_BLOCK_INFO(f, t) {
+            if DEBUG_BLOCK_INFO(&*f, &*t) {
                 printf(
                     b"poc=%d,y=%d,x=%d,bl=%d,ctx=%d,bp=%d: r=%d\n\0" as *const u8
                         as *const libc::c_char,
@@ -7361,7 +7361,7 @@ unsafe extern "C" fn decode_sb(
             {
                 return 1 as libc::c_int;
             }
-            if DEBUG_BLOCK_INFO(f, t) {
+            if DEBUG_BLOCK_INFO(&*f, &*t) {
                 printf(
                     b"poc=%d,y=%d,x=%d,bl=%d,ctx=%d,bp=%d: r=%d\n\0" as *const u8
                         as *const libc::c_char,
@@ -7824,7 +7824,7 @@ unsafe extern "C" fn read_restoration_info(
             ::core::mem::size_of::<[int8_t; 2]>() as libc::c_ulong,
         );
         (*ts).lr_ref[p as usize] = lr;
-        if DEBUG_BLOCK_INFO(f, t) {
+        if DEBUG_BLOCK_INFO(&*f, &*t) {
             printf(
                 b"Post-lr_wiener[pl=%d,v[%d,%d,%d],h[%d,%d,%d]]: r=%d\n\0" as *const u8
                     as *const libc::c_char,
@@ -7874,7 +7874,7 @@ unsafe extern "C" fn read_restoration_info(
             ::core::mem::size_of::<[int8_t; 3]>() as libc::c_ulong,
         );
         (*ts).lr_ref[p as usize] = lr;
-        if DEBUG_BLOCK_INFO(f, t) {
+        if DEBUG_BLOCK_INFO(&*f, &*t) {
             printf(
                 b"Post-lr_sgrproj[pl=%d,idx=%d,w[%d,%d]]: r=%d\n\0" as *const u8
                     as *const libc::c_char,

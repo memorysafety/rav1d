@@ -1479,7 +1479,7 @@ unsafe extern "C" fn decode_coefs(
     let lossless = (*(*f).frame_hdr).segmentation.lossless[(*b).seg_id as usize];
     let t_dim: *const TxfmInfo =
         &*dav1d_txfm_dimensions.as_ptr().offset(tx as isize) as *const TxfmInfo;
-    let dbg = DEBUG_BLOCK_INFO(f, t) as libc::c_int;
+    let dbg = DEBUG_BLOCK_INFO(&*f, &*t) as libc::c_int;
     if dbg != 0 {
         printf(
             b"Start: r=%d\n\0" as *const u8 as *const libc::c_char,
@@ -2800,7 +2800,7 @@ unsafe extern "C" fn read_coef_tree(
                 &mut txtp,
                 &mut cf_ctx,
             );
-            if DEBUG_BLOCK_INFO(f, t) {
+            if DEBUG_BLOCK_INFO(&*f, &*t) {
                 printf(
                     b"Post-y-cf-blk[tx=%d,txtp=%d,eob=%d]: r=%d\n\0" as *const u8
                         as *const libc::c_char,
@@ -2973,7 +2973,7 @@ unsafe extern "C" fn read_coef_tree(
                 unreachable!();
             }
             if eob >= 0 {
-                if DEBUG_BLOCK_INFO(f, t) && 0 != 0 {
+                if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
                     coef_dump(
                         cf,
                         imin((*t_dim).h as libc::c_int, 8 as libc::c_int) * 4,
@@ -2986,7 +2986,7 @@ unsafe extern "C" fn read_coef_tree(
                     .expect("non-null function pointer")(
                     dst, (*f).cur.stride[0], cf, eob
                 );
-                if DEBUG_BLOCK_INFO(f, t) && 0 != 0 {
+                if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
                     hex_dump(
                         dst,
                         (*f).cur.stride[0],
@@ -3483,7 +3483,7 @@ pub unsafe extern "C" fn dav1d_read_coef_blocks_8bpc(
                             &mut cf_ctx,
                         ) as int16_t;
                         let eob = *fresh4 as libc::c_int;
-                        if DEBUG_BLOCK_INFO(f, t) {
+                        if DEBUG_BLOCK_INFO(&*f, &*t) {
                             printf(
                                 b"Post-y-cf-blk[tx=%d,txtp=%d,eob=%d]: r=%d\n\0" as *const u8
                                     as *const libc::c_char,
@@ -3669,7 +3669,7 @@ pub unsafe extern "C" fn dav1d_read_coef_blocks_8bpc(
                                 &mut cf_ctx_0,
                             ) as int16_t;
                             let eob_0 = *fresh5 as libc::c_int;
-                            if DEBUG_BLOCK_INFO(f, t) {
+                            if DEBUG_BLOCK_INFO(&*f, &*t) {
                                 printf(
                                     b"Post-uv-cf-blk[pl=%d,tx=%d,txtp=%d,eob=%d]: r=%d\n\0"
                                         as *const u8
@@ -3986,7 +3986,7 @@ unsafe extern "C" fn mc(
         let top = pos_y >> 10;
         let right = (pos_x + (bw4 * h_mul - 1) * (*f).svc[refidx as usize][0].step >> 10) + 1;
         let bottom = (pos_y + (bh4 * v_mul - 1) * (*f).svc[refidx as usize][1].step >> 10) + 1;
-        if DEBUG_BLOCK_INFO(f, t) {
+        if DEBUG_BLOCK_INFO(&*f, &*t) {
             printf(
                 b"Off %dx%d [%d,%d,%d], size %dx%d [%d,%d]\n\0" as *const u8 as *const libc::c_char,
                 left,
@@ -4023,7 +4023,7 @@ unsafe extern "C" fn mc(
             ref_stride = (320 as libc::c_int as libc::c_ulong)
                 .wrapping_mul(::core::mem::size_of::<pixel>() as libc::c_ulong)
                 as ptrdiff_t;
-            if DEBUG_BLOCK_INFO(f, t) {
+            if DEBUG_BLOCK_INFO(&*f, &*t) {
                 printf(b"Emu\n\0" as *const u8 as *const libc::c_char);
             }
         } else {
@@ -4405,7 +4405,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                     bw4 * 4,
                     bh4 * 4,
                 );
-                if DEBUG_BLOCK_INFO(f, t) && 0 != 0 {
+                if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
                     hex_dump(
                         dst,
                         (*f).cur.stride[0],
@@ -4501,7 +4501,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                             4 * (*f).bw - 4 * (*t).bx,
                             4 * (*f).bh - 4 * (*t).by,
                         );
-                        if DEBUG_BLOCK_INFO(f, t) && 0 != 0 {
+                        if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
                             hex_dump(
                                 edge.offset(-(((*t_dim).h as libc::c_int * 4) as isize)),
                                 ((*t_dim).h as libc::c_int * 4) as ptrdiff_t,
@@ -4567,7 +4567,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                                 &mut txtp,
                                 &mut cf_ctx,
                             );
-                            if DEBUG_BLOCK_INFO(f, t) {
+                            if DEBUG_BLOCK_INFO(&*f, &*t) {
                                 printf(
                                     b"Post-y-cf-blk[tx=%d,txtp=%d,eob=%d]: r=%d\n\0" as *const u8
                                         as *const libc::c_char,
@@ -4713,7 +4713,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                             }
                         }
                         if eob >= 0 {
-                            if DEBUG_BLOCK_INFO(f, t) && 0 != 0 {
+                            if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
                                 coef_dump(
                                     cf,
                                     imin((*t_dim).h as libc::c_int, 8 as libc::c_int) * 4,
@@ -4730,7 +4730,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                                 cf,
                                 eob,
                             );
-                            if DEBUG_BLOCK_INFO(f, t) && 0 != 0 {
+                            if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
                                 hex_dump(
                                     dst_0,
                                     (*f).cur.stride[0],
@@ -4931,7 +4931,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                         }
                         pl += 1;
                     }
-                    if DEBUG_BLOCK_INFO(f, t) && 0 != 0 {
+                    if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
                         ac_dump(
                             ac,
                             4 * cbw4,
@@ -4998,7 +4998,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                         cbw4 * 4,
                         cbh4 * 4,
                     );
-                    if DEBUG_BLOCK_INFO(f, t) && 0 != 0 {
+                    if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
                         hex_dump(
                             ((*f).cur.data[1] as *mut pixel).offset(uv_dstoff as isize),
                             (*f).cur.stride[1],
@@ -5134,7 +5134,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                                     4 * (*f).bw + ss_hor - 4 * ((*t).bx & !ss_hor) >> ss_hor,
                                     4 * (*f).bh + ss_ver - 4 * ((*t).by & !ss_ver) >> ss_ver,
                                 );
-                                if DEBUG_BLOCK_INFO(f, t) && 0 != 0 {
+                                if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
                                     hex_dump(
                                         edge.offset(-(((*uv_t_dim).h as libc::c_int * 4) as isize)),
                                         ((*uv_t_dim).h as libc::c_int * 4) as ptrdiff_t,
@@ -5215,7 +5215,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                                         &mut txtp_0,
                                         &mut cf_ctx_0,
                                     );
-                                    if DEBUG_BLOCK_INFO(f, t) {
+                                    if DEBUG_BLOCK_INFO(&*f, &*t) {
                                         printf(
                                             b"Post-uv-cf-blk[pl=%d,tx=%d,txtp=%d,eob=%d]: r=%d [x=%d,cbx4=%d]\n\0"
                                                 as *const u8 as *const libc::c_char,
@@ -5406,7 +5406,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                                     }
                                 }
                                 if eob_0 >= 0 {
-                                    if DEBUG_BLOCK_INFO(f, t) && 0 != 0 {
+                                    if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
                                         coef_dump(
                                             cf_0,
                                             (*uv_t_dim).h as libc::c_int * 4,
@@ -5419,7 +5419,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                                         .expect("non-null function pointer")(
                                         dst_1, stride, cf_0, eob_0,
                                     );
-                                    if DEBUG_BLOCK_INFO(f, t) && 0 != 0 {
+                                    if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
                                         hex_dump(
                                             dst_1,
                                             stride,
@@ -6598,7 +6598,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
             }
         }
     }
-    if DEBUG_BLOCK_INFO(f, t) && 0 != 0 {
+    if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
         hex_dump(
             dst,
             (*f).cur.stride[0],
@@ -7115,7 +7115,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                                     &mut txtp,
                                     &mut cf_ctx,
                                 );
-                                if DEBUG_BLOCK_INFO(f, t) {
+                                if DEBUG_BLOCK_INFO(&*f, &*t) {
                                     printf(
                                         b"Post-uv-cf-blk[pl=%d,tx=%d,txtp=%d,eob=%d]: r=%d\n\0"
                                             as *const u8
@@ -7301,7 +7301,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                                 }
                             }
                             if eob >= 0 {
-                                if DEBUG_BLOCK_INFO(f, t) && 0 != 0 {
+                                if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
                                     coef_dump(
                                         cf,
                                         (*uvtx).h as libc::c_int * 4,
@@ -7317,7 +7317,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                                     cf,
                                     eob,
                                 );
-                                if DEBUG_BLOCK_INFO(f, t) && 0 != 0 {
+                                if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
                                     hex_dump(
                                         &mut *uvdst_1.offset((4 * x_0) as isize),
                                         (*f).cur.stride[1],
