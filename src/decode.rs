@@ -1720,42 +1720,30 @@ unsafe fn read_pal_plane(
         );
     }
     if DEBUG_BLOCK_INFO(f, t) {
-        printf(
-            b"Post-pal[pl=%d,sz=%d,cache_size=%d,used_cache=%d]: r=%d, cache=\0" as *const u8
-                as *const libc::c_char,
-            pl,
-            pal_sz,
-            n_cache,
-            n_used_cache,
-            ts.msac.rng,
+        print!(
+            "Post-pal[pl={},sz={},cache_size={},used_cache={}]: r={}, cache=",
+            pl, pal_sz, n_cache, n_used_cache, ts.msac.rng
         );
         let mut n_1 = 0;
         while n_1 < n_cache {
-            printf(
-                b"%c%02x\0" as *const u8 as *const libc::c_char,
-                if n_1 != 0 { ' ' as i32 } else { '[' as i32 },
-                cache[n_1 as usize] as libc::c_int,
+            print!(
+                "{}{:02x}",
+                if n_1 != 0 { ' ' } else { '[' },
+                cache[n_1 as usize]
             );
             n_1 += 1;
         }
-        printf(
-            b"%s, pal=\0" as *const u8 as *const libc::c_char,
-            if n_cache != 0 {
-                b"]\0" as *const u8 as *const libc::c_char
-            } else {
-                b"[]\0" as *const u8 as *const libc::c_char
-            },
-        );
+        print!("{}, pal=", if n_cache != 0 { "]" } else { "[]" });
         let mut n_2 = 0;
         while n_2 < pal_sz {
-            printf(
-                b"%c%02x\0" as *const u8 as *const libc::c_char,
-                if n_2 != 0 { ' ' as i32 } else { '[' as i32 },
-                *pal.offset(n_2 as isize) as libc::c_int,
+            print!(
+                "{}{:02x}",
+                if n_2 != 0 { ' ' } else { '[' },
+                *pal.offset(n_2 as isize)
             );
             n_2 += 1;
         }
-        printf(b"]\n\0" as *const u8 as *const libc::c_char);
+        println!("]");
     }
 }
 
