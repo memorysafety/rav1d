@@ -1558,7 +1558,7 @@ unsafe fn read_pal_plane(
     by4: libc::c_int,
 ) {
     let ts = &mut *t.ts;
-    let f: *const Dav1dFrameContext = t.f;
+    let f = &*t.f;
     b.c2rust_unnamed.c2rust_unnamed.pal_sz[pl as usize] = (dav1d_msac_decode_symbol_adapt8(
         &mut ts.msac,
         &mut ts.cdf.m.pal_sz[pl as usize][sz_ctx as usize],
@@ -1648,8 +1648,8 @@ unsafe fn read_pal_plane(
     }
     let n_used_cache = i;
     let pal: *mut uint16_t = if t.frame_thread.pass != 0 {
-        ((*((*f).frame_thread.pal).offset(
-            (((t.by >> 1) + (t.bx & 1)) as isize * ((*f).b4_stride >> 1)
+        ((*(f.frame_thread.pal).offset(
+            (((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
                 + ((t.bx >> 1) + (t.by & 1)) as isize) as isize,
         ))[pl as usize])
             .as_mut_ptr()
@@ -1660,14 +1660,13 @@ unsafe fn read_pal_plane(
         let fresh13 = i;
         i = i + 1;
         let ref mut fresh14 = *pal.offset(fresh13 as isize);
-        *fresh14 =
-            dav1d_msac_decode_bools(&mut ts.msac, (*f).cur.p.bpc as libc::c_uint) as uint16_t;
+        *fresh14 = dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as uint16_t;
         let mut prev = *fresh14 as libc::c_int;
         if i < pal_sz {
-            let mut bits = (((*f).cur.p.bpc - 3) as libc::c_uint).wrapping_add(
+            let mut bits = ((f.cur.p.bpc - 3) as libc::c_uint).wrapping_add(
                 dav1d_msac_decode_bools(&mut ts.msac, 2 as libc::c_int as libc::c_uint),
             ) as libc::c_int;
-            let max = ((1 as libc::c_int) << (*f).cur.p.bpc) - 1;
+            let max = ((1 as libc::c_int) << f.cur.p.bpc) - 1;
             loop {
                 let delta =
                     dav1d_msac_decode_bools(&mut ts.msac, bits as libc::c_uint) as libc::c_int;
@@ -1724,7 +1723,7 @@ unsafe fn read_pal_plane(
                 .wrapping_mul(::core::mem::size_of::<uint16_t>() as libc::c_ulong),
         );
     }
-    if DEBUG_BLOCK_INFO(&*f, t) {
+    if DEBUG_BLOCK_INFO(f, t) {
         printf(
             b"Post-pal[pl=%d,sz=%d,cache_size=%d,used_cache=%d]: r=%d, cache=\0" as *const u8
                 as *const libc::c_char,
