@@ -1557,15 +1557,16 @@ unsafe fn read_pal_plane(
     bx4: usize,
     by4: usize,
 ) {
+    let pli = pl as usize;
     let ts = &mut *t.ts;
     let f = &*t.f;
-    b.c2rust_unnamed.c2rust_unnamed.pal_sz[pl as usize] = (dav1d_msac_decode_symbol_adapt8(
+    b.c2rust_unnamed.c2rust_unnamed.pal_sz[pli] = (dav1d_msac_decode_symbol_adapt8(
         &mut ts.msac,
-        &mut ts.cdf.m.pal_sz[pl as usize][sz_ctx as usize],
+        &mut ts.cdf.m.pal_sz[pli][sz_ctx as usize],
         6,
     ))
     .wrapping_add(2) as uint8_t;
-    let pal_sz = b.c2rust_unnamed.c2rust_unnamed.pal_sz[pl as usize] as libc::c_int;
+    let pal_sz = b.c2rust_unnamed.c2rust_unnamed.pal_sz[pli] as libc::c_int;
     let mut cache: [uint16_t; 16] = [0; 16];
     let mut used_cache: [uint16_t; 8] = [0; 8];
     let mut l_cache = if pl {
@@ -1584,8 +1585,8 @@ unsafe fn read_pal_plane(
         0
     };
     let [a, l] = &mut t.al_pal;
-    let mut l = &mut l[by4][pl as usize][..];
-    let mut a = &mut a[bx4][pl as usize][..];
+    let mut l = &mut l[by4][pli][..];
+    let mut a = &mut a[bx4][pli][..];
     while l_cache != 0 && a_cache != 0 {
         if l[0] < a[0] {
             if n_cache == 0 || cache[n_cache - 1] != l[0] {
@@ -1646,10 +1647,10 @@ unsafe fn read_pal_plane(
         (*(f.frame_thread.pal).offset(
             (((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
                 + ((t.bx >> 1) + (t.by & 1)) as isize) as isize,
-        ))[pl as usize]
+        ))[pli]
             .as_mut_ptr()
     } else {
-        t.scratch.c2rust_unnamed_0.pal[pl as usize].as_mut_ptr()
+        t.scratch.c2rust_unnamed_0.pal[pli].as_mut_ptr()
     };
     if i < pal_sz {
         *pal.offset(i as isize) =
@@ -1664,8 +1665,7 @@ unsafe fn read_pal_plane(
             loop {
                 let delta =
                     dav1d_msac_decode_bools(&mut ts.msac, bits as libc::c_uint) as libc::c_int;
-                *pal.offset(i as isize) =
-                    imin(prev + delta + !pl as libc::c_int, max) as uint16_t;
+                *pal.offset(i as isize) = imin(prev + delta + !pl as libc::c_int, max) as uint16_t;
                 prev = *pal.offset(i as isize) as libc::c_int;
                 i += 1;
                 if prev + !pl as libc::c_int >= max {
@@ -1712,7 +1712,7 @@ unsafe fn read_pal_plane(
     if DEBUG_BLOCK_INFO(f, t) {
         print!(
             "Post-pal[pl={},sz={},cache_size={},used_cache={}]: r={}, cache=",
-            pl, pal_sz, n_cache, n_used_cache, ts.msac.rng
+            pli, pal_sz, n_cache, n_used_cache, ts.msac.rng
         );
         let mut n_1 = 0;
         while n_1 < n_cache {
