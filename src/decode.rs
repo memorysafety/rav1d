@@ -1553,7 +1553,7 @@ unsafe fn read_pal_plane(
     t: &mut Dav1dTaskContext,
     b: &mut Av1Block,
     pl: libc::c_int,
-    sz_ctx: libc::c_int,
+    sz_ctx: u8,
     bx4: libc::c_int,
     by4: libc::c_int,
 ) {
@@ -1740,7 +1740,7 @@ unsafe fn read_pal_plane(
 unsafe extern "C" fn read_pal_uv(
     t: *mut Dav1dTaskContext,
     b: *mut Av1Block,
-    sz_ctx: libc::c_int,
+    sz_ctx: u8,
     bx4: libc::c_int,
     by4: libc::c_int,
 ) {
@@ -3289,7 +3289,7 @@ unsafe fn decode_b(
                 }
 
                 if use_y_pal {
-                    read_pal_plane(t, b, 0, sz_ctx as i32, bx4, by4);
+                    read_pal_plane(t, b, 0, sz_ctx, bx4, by4);
                 }
             }
 
@@ -3305,7 +3305,7 @@ unsafe fn decode_b(
                 }
 
                 if use_uv_pal {
-                    read_pal_uv(t, b, sz_ctx as i32, bx4, by4);
+                    read_pal_uv(t, b, sz_ctx, bx4, by4);
                 }
             }
         }
