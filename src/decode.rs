@@ -1684,15 +1684,15 @@ unsafe fn read_pal_plane(
                 }
             }
         }
-        let mut n_0 = 0;
+        let mut n = 0;
         let mut m = n_used_cache;
         i = 0;
         while i < pal_sz {
-            if n_0 < n_used_cache
-                && (m >= pal_sz || used_cache[n_0 as usize] <= *pal.offset(m as isize))
+            if n < n_used_cache
+                && (m >= pal_sz || used_cache[n as usize] <= *pal.offset(m as isize))
             {
-                *pal.offset(i as isize) = used_cache[n_0 as usize];
-                n_0 += 1;
+                *pal.offset(i as isize) = used_cache[n as usize];
+                n += 1;
             } else {
                 assert!(m < pal_sz);
                 *pal.offset(i as isize) = *pal.offset(m as isize);
@@ -1713,24 +1713,20 @@ unsafe fn read_pal_plane(
             "Post-pal[pl={},sz={},cache_size={},used_cache={}]: r={}, cache=",
             pli, pal_sz, n_cache, n_used_cache, ts.msac.rng
         );
-        let mut n_1 = 0;
-        while n_1 < n_cache {
-            print!(
-                "{}{:02x}",
-                if n_1 != 0 { ' ' } else { '[' },
-                cache[n_1]
-            );
-            n_1 += 1;
+        let mut n = 0;
+        while n < n_cache {
+            print!("{}{:02x}", if n != 0 { ' ' } else { '[' }, cache[n]);
+            n += 1;
         }
         print!("{}, pal=", if n_cache != 0 { "]" } else { "[]" });
-        let mut n_2 = 0;
-        while n_2 < pal_sz {
+        let mut n = 0;
+        while n < pal_sz {
             print!(
                 "{}{:02x}",
-                if n_2 != 0 { ' ' } else { '[' },
-                *pal.offset(n_2 as isize)
+                if n != 0 { ' ' } else { '[' },
+                *pal.offset(n as isize)
             );
-            n_2 += 1;
+            n += 1;
         }
         println!("]");
     }
