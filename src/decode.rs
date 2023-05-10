@@ -1702,9 +1702,7 @@ unsafe fn read_pal_plane(
                 n_0 = n_0 + 1;
                 *pal.offset(i as isize) = used_cache[fresh17 as usize];
             } else {
-                if !(m < pal_sz) {
-                    unreachable!();
-                }
+                assert!(m < pal_sz);
                 let fresh18 = m;
                 m = m + 1;
                 *pal.offset(i as isize) = *pal.offset(fresh18 as isize);
