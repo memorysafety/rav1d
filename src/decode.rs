@@ -1588,9 +1588,8 @@ unsafe fn read_pal_plane(
     while l_cache != 0 && a_cache != 0 {
         if *l < *a {
             if n_cache == 0 || cache[(n_cache - 1) as usize] != *l {
-                let fresh8 = n_cache;
-                n_cache = n_cache + 1;
-                cache[fresh8 as usize] = *l;
+                cache[n_cache as usize] = *l;
+                n_cache += 1;
             }
             l = l.offset(1);
             l_cache -= 1;
@@ -1600,9 +1599,8 @@ unsafe fn read_pal_plane(
                 l_cache -= 1;
             }
             if n_cache == 0 || cache[(n_cache - 1) as usize] != *a {
-                let fresh9 = n_cache;
-                n_cache = n_cache + 1;
-                cache[fresh9 as usize] = *a;
+                cache[n_cache as usize] = *a;
+                n_cache += 1;
             }
             a = a.offset(1);
             a_cache -= 1;
@@ -1611,9 +1609,8 @@ unsafe fn read_pal_plane(
     if l_cache != 0 {
         loop {
             if n_cache == 0 || cache[(n_cache - 1) as usize] != *l {
-                let fresh10 = n_cache;
-                n_cache = n_cache + 1;
-                cache[fresh10 as usize] = *l;
+                cache[n_cache as usize] = *l;
+                n_cache += 1;
             }
             l = l.offset(1);
             l_cache -= 1;
@@ -1624,9 +1621,8 @@ unsafe fn read_pal_plane(
     } else if a_cache != 0 {
         loop {
             if n_cache == 0 || cache[(n_cache - 1) as usize] != *a {
-                let fresh11 = n_cache;
-                n_cache = n_cache + 1;
-                cache[fresh11 as usize] = *a;
+                cache[n_cache as usize] = *a;
+                n_cache += 1;
             }
             a = a.offset(1);
             a_cache -= 1;
@@ -1639,9 +1635,8 @@ unsafe fn read_pal_plane(
     let mut n = 0;
     while n < n_cache && i < pal_sz {
         if dav1d_msac_decode_bool_equi(&mut ts.msac) {
-            let fresh12 = i;
-            i = i + 1;
-            used_cache[fresh12 as usize] = cache[n as usize];
+            used_cache[i as usize] = cache[n as usize];
+            i += 1;
         }
         n += 1;
     }
@@ -1656,11 +1651,10 @@ unsafe fn read_pal_plane(
         t.scratch.c2rust_unnamed_0.pal[pl as usize].as_mut_ptr()
     };
     if i < pal_sz {
-        let fresh13 = i;
-        i = i + 1;
-        let ref mut fresh14 = *pal.offset(fresh13 as isize);
-        *fresh14 = dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as uint16_t;
-        let mut prev = *fresh14 as libc::c_int;
+        *pal.offset(i as isize) =
+            dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as uint16_t;
+        let mut prev = *pal.offset(i as isize) as libc::c_int;
+        i += 1;
         if i < pal_sz {
             let mut bits = ((f.cur.p.bpc - 3) as libc::c_uint)
                 .wrapping_add(dav1d_msac_decode_bools(&mut ts.msac, 2))
@@ -1669,11 +1663,10 @@ unsafe fn read_pal_plane(
             loop {
                 let delta =
                     dav1d_msac_decode_bools(&mut ts.msac, bits as libc::c_uint) as libc::c_int;
-                let fresh15 = i;
-                i = i + 1;
-                let ref mut fresh16 = *pal.offset(fresh15 as isize);
-                *fresh16 = imin(prev + delta + (pl == 0) as libc::c_int, max) as uint16_t;
-                prev = *fresh16 as libc::c_int;
+                *pal.offset(i as isize) =
+                    imin(prev + delta + (pl == 0) as libc::c_int, max) as uint16_t;
+                prev = *pal.offset(i as isize) as libc::c_int;
+                i += 1;
                 if prev + (pl == 0) as libc::c_int >= max {
                     while i < pal_sz {
                         *pal.offset(i as isize) = max as uint16_t;
@@ -1698,14 +1691,12 @@ unsafe fn read_pal_plane(
             if n_0 < n_used_cache
                 && (m >= pal_sz || used_cache[n_0 as usize] <= *pal.offset(m as isize))
             {
-                let fresh17 = n_0;
-                n_0 = n_0 + 1;
-                *pal.offset(i as isize) = used_cache[fresh17 as usize];
+                *pal.offset(i as isize) = used_cache[n_0 as usize];
+                n_0 += 1;
             } else {
                 assert!(m < pal_sz);
-                let fresh18 = m;
-                m = m + 1;
-                *pal.offset(i as isize) = *pal.offset(fresh18 as isize);
+                *pal.offset(i as isize) = *pal.offset(m as isize);
+                m += 1;
             }
             i += 1;
         }
