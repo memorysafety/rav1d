@@ -6,18 +6,17 @@ use crate::src::msac::MsacContext;
 /// which have not yet been deduplicated/genericized over bitdepth.
 macro_rules! define_DEBUG_BLOCK_INFO {
     () => {
+        /// TODO: add feature and compile-time guard around this code
         unsafe fn DEBUG_BLOCK_INFO(
             f: *const Dav1dFrameContext,
             t: *const Dav1dTaskContext,
         ) -> bool {
-            /* TODO: add feature and compile-time guard around this code */
-            0 != 0
+            false
                 && (*(*f).frame_hdr).frame_offset == 2
                 && (*t).by >= 0
                 && (*t).by < 4
                 && (*t).bx >= 8
                 && (*t).bx < 12
-            // true
         }
     };
 }
