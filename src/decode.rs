@@ -1554,8 +1554,8 @@ unsafe fn read_pal_plane(
     b: &mut Av1Block,
     pl: libc::c_int,
     sz_ctx: u8,
-    bx4: libc::c_int,
-    by4: libc::c_int,
+    bx4: usize,
+    by4: usize,
 ) {
     let ts = &mut *t.ts;
     let f = &*t.f;
@@ -1569,23 +1569,23 @@ unsafe fn read_pal_plane(
     let mut cache: [uint16_t; 16] = [0; 16];
     let mut used_cache: [uint16_t; 8] = [0; 8];
     let mut l_cache = if pl != 0 {
-        t.pal_sz_uv[1][by4 as usize] as libc::c_int
+        t.pal_sz_uv[1][by4] as libc::c_int
     } else {
-        t.l.pal_sz.0[by4 as usize] as libc::c_int
+        t.l.pal_sz.0[by4] as libc::c_int
     };
     let mut n_cache = 0;
     let mut a_cache = if by4 & 15 != 0 {
         (if pl != 0 {
-            t.pal_sz_uv[0][bx4 as usize]
+            t.pal_sz_uv[0][bx4]
         } else {
-            (*t.a).pal_sz.0[bx4 as usize]
+            (*t.a).pal_sz.0[bx4]
         }) as libc::c_int
     } else {
         0
     };
     let [a, l] = &mut t.al_pal;
-    let mut l = &mut l[by4 as usize][pl as usize][..];
-    let mut a = &mut a[bx4 as usize][pl as usize][..];
+    let mut l = &mut l[by4][pl as usize][..];
+    let mut a = &mut a[bx4][pl as usize][..];
     while l_cache != 0 && a_cache != 0 {
         if l[0] < a[0] {
             if n_cache == 0 || cache[n_cache - 1] != l[0] {
@@ -1741,8 +1741,8 @@ unsafe extern "C" fn read_pal_uv(
     t: *mut Dav1dTaskContext,
     b: *mut Av1Block,
     sz_ctx: u8,
-    bx4: libc::c_int,
-    by4: libc::c_int,
+    bx4: usize,
+    by4: usize,
 ) {
     read_pal_plane(&mut *t, &mut *b, 1 as libc::c_int, sz_ctx, bx4, by4);
     let ts: *mut Dav1dTileState = (*t).ts;
@@ -3289,7 +3289,7 @@ unsafe fn decode_b(
                 }
 
                 if use_y_pal {
-                    read_pal_plane(t, b, 0, sz_ctx, bx4, by4);
+                    read_pal_plane(t, b, 0, sz_ctx, bx4 as usize, by4 as usize);
                 }
             }
 
@@ -3305,7 +3305,7 @@ unsafe fn decode_b(
                 }
 
                 if use_uv_pal {
-                    read_pal_uv(t, b, sz_ctx, bx4, by4);
+                    read_pal_uv(t, b, sz_ctx, bx4 as usize, by4 as usize);
                 }
             }
         }
