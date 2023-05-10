@@ -1550,15 +1550,15 @@ fn findoddzero(buf: &[u8]) -> bool {
 }
 
 unsafe fn read_pal_plane(
-    t: *mut Dav1dTaskContext,
+    t: &mut Dav1dTaskContext,
     b: *mut Av1Block,
     pl: libc::c_int,
     sz_ctx: libc::c_int,
     bx4: libc::c_int,
     by4: libc::c_int,
 ) {
-    let ts: *mut Dav1dTileState = (*t).ts;
-    let f: *const Dav1dFrameContext = (*t).f;
+    let ts: *mut Dav1dTileState = t.ts;
+    let f: *const Dav1dFrameContext = t.f;
     (*b).c2rust_unnamed.c2rust_unnamed.pal_sz[pl as usize] = (dav1d_msac_decode_symbol_adapt8(
         &mut (*ts).msac,
         &mut (*ts).cdf.m.pal_sz[pl as usize][sz_ctx as usize],
@@ -1570,22 +1570,22 @@ unsafe fn read_pal_plane(
     let mut cache: [uint16_t; 16] = [0; 16];
     let mut used_cache: [uint16_t; 8] = [0; 8];
     let mut l_cache = if pl != 0 {
-        (*t).pal_sz_uv[1][by4 as usize] as libc::c_int
+        t.pal_sz_uv[1][by4 as usize] as libc::c_int
     } else {
-        (*t).l.pal_sz.0[by4 as usize] as libc::c_int
+        t.l.pal_sz.0[by4 as usize] as libc::c_int
     };
     let mut n_cache = 0;
     let mut a_cache = if by4 & 15 != 0 {
         if pl != 0 {
-            (*t).pal_sz_uv[0][bx4 as usize] as libc::c_int
+            t.pal_sz_uv[0][bx4 as usize] as libc::c_int
         } else {
-            (*(*t).a).pal_sz.0[bx4 as usize] as libc::c_int
+            (*t.a).pal_sz.0[bx4 as usize] as libc::c_int
         }
     } else {
         0 as libc::c_int
     };
-    let mut l: *const uint16_t = ((*t).al_pal[1][by4 as usize][pl as usize]).as_mut_ptr();
-    let mut a: *const uint16_t = ((*t).al_pal[0][bx4 as usize][pl as usize]).as_mut_ptr();
+    let mut l: *const uint16_t = (t.al_pal[1][by4 as usize][pl as usize]).as_mut_ptr();
+    let mut a: *const uint16_t = (t.al_pal[0][bx4 as usize][pl as usize]).as_mut_ptr();
     while l_cache != 0 && a_cache != 0 {
         if (*l as libc::c_int) < *a as libc::c_int {
             if n_cache == 0 || cache[(n_cache - 1) as usize] as libc::c_int != *l as libc::c_int {
@@ -1647,14 +1647,14 @@ unsafe fn read_pal_plane(
         n += 1;
     }
     let n_used_cache = i;
-    let pal: *mut uint16_t = if (*t).frame_thread.pass != 0 {
+    let pal: *mut uint16_t = if t.frame_thread.pass != 0 {
         ((*((*f).frame_thread.pal).offset(
-            ((((*t).by >> 1) + ((*t).bx & 1)) as isize * ((*f).b4_stride >> 1)
-                + (((*t).bx >> 1) + ((*t).by & 1)) as isize) as isize,
+            (((t.by >> 1) + (t.bx & 1)) as isize * ((*f).b4_stride >> 1)
+                + ((t.bx >> 1) + (t.by & 1)) as isize) as isize,
         ))[pl as usize])
             .as_mut_ptr()
     } else {
-        ((*t).scratch.c2rust_unnamed_0.pal[pl as usize]).as_mut_ptr()
+        (t.scratch.c2rust_unnamed_0.pal[pl as usize]).as_mut_ptr()
     };
     if i < pal_sz {
         let fresh13 = i;
@@ -1724,7 +1724,7 @@ unsafe fn read_pal_plane(
                 .wrapping_mul(::core::mem::size_of::<uint16_t>() as libc::c_ulong),
         );
     }
-    if DEBUG_BLOCK_INFO(&*f, &*t) {
+    if DEBUG_BLOCK_INFO(&*f, t) {
         printf(
             b"Post-pal[pl=%d,sz=%d,cache_size=%d,used_cache=%d]: r=%d, cache=\0" as *const u8
                 as *const libc::c_char,
@@ -1771,7 +1771,7 @@ unsafe extern "C" fn read_pal_uv(
     bx4: libc::c_int,
     by4: libc::c_int,
 ) {
-    read_pal_plane(t, b, 1 as libc::c_int, sz_ctx, bx4, by4);
+    read_pal_plane(&mut *t, b, 1 as libc::c_int, sz_ctx, bx4, by4);
     let ts: *mut Dav1dTileState = (*t).ts;
     let f: *const Dav1dFrameContext = (*t).f;
     let pal: *mut uint16_t = if (*t).frame_thread.pass != 0 {
