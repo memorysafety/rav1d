@@ -1676,9 +1676,8 @@ unsafe fn read_pal_plane(
                 prev = pal[i] as libc::c_int;
                 i += 1;
                 if prev + not_pl >= max {
-                    while i < pal_sz {
+                    for i in i..pal_sz {
                         pal[i] = max as uint16_t;
-                        i += 1;
                     }
                     break;
                 } else {
@@ -1691,8 +1690,7 @@ unsafe fn read_pal_plane(
         }
         let mut n = 0;
         let mut m = n_used_cache;
-        i = 0;
-        while i < pal_sz {
+        for i in 0..pal_sz {
             if n < n_used_cache && (m >= pal_sz || used_cache[n] <= pal[m]) {
                 pal[i] = used_cache[n];
                 n += 1;
@@ -1701,7 +1699,6 @@ unsafe fn read_pal_plane(
                 pal[i] = pal[m];
                 m += 1;
             }
-            i += 1;
         }
     } else {
         pal[..n_used_cache].copy_from_slice(&used_cache[..n_used_cache]);
@@ -1711,16 +1708,12 @@ unsafe fn read_pal_plane(
             "Post-pal[pl={},sz={},cache_size={},used_cache={}]: r={}, cache=",
             pli, pal_sz, n_cache, n_used_cache, ts.msac.rng
         );
-        let mut n = 0;
-        while n < n_cache {
+        for n in 0..n_cache {
             print!("{}{:02x}", if n != 0 { ' ' } else { '[' }, cache[n]);
-            n += 1;
         }
         print!("{}, pal=", if n_cache != 0 { "]" } else { "[]" });
-        let mut n = 0;
-        while n < pal_sz {
+        for n in 0..pal_sz {
             print!("{}{:02x}", if n != 0 { ' ' } else { '[' }, pal[n]);
-            n += 1;
         }
         println!("]");
     }
