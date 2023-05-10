@@ -1560,6 +1560,13 @@ unsafe fn read_pal_plane(
     let pli = pl as usize;
     let ts = &mut *t.ts;
     let f = &*t.f;
+    
+    // Must come before `pal`, which mutably borrows `t`.
+    // TODO: `DEBUG_BLOCK_INFO` really should take a subset of `f` and `t`,
+    // i.e. only the fields it needs, as this would solve the bitdepth-dependence problem
+    // as well as the borrowck error here if `dbg` is not hoisted.
+    let dbg = DEBUG_BLOCK_INFO(f, t);
+
     b.c2rust_unnamed.c2rust_unnamed.pal_sz[pli] = dav1d_msac_decode_symbol_adapt8(
         &mut ts.msac,
         &mut ts.cdf.m.pal_sz[pli][sz_ctx as usize],
@@ -1644,18 +1651,17 @@ unsafe fn read_pal_plane(
     }
     let n_used_cache = i;
     let pal = if t.frame_thread.pass != 0 {
-        (*(f.frame_thread.pal).offset(
+        &mut (*(f.frame_thread.pal).offset(
             (((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
                 + ((t.bx >> 1) + (t.by & 1)) as isize) as isize,
         ))[pli]
-            .as_mut_ptr()
     } else {
-        t.scratch.c2rust_unnamed_0.pal[pli].as_mut_ptr()
+        &mut t.scratch.c2rust_unnamed_0.pal[pli]
     };
     if i < pal_sz {
-        *pal.offset(i as isize) =
+        pal[i as usize] =
             dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as uint16_t;
-        let mut prev = *pal.offset(i as isize) as libc::c_int;
+        let mut prev = pal[i as usize] as libc::c_int;
         i += 1;
         if i < pal_sz {
             let mut bits =
@@ -1664,12 +1670,12 @@ unsafe fn read_pal_plane(
             loop {
                 let delta =
                     dav1d_msac_decode_bools(&mut ts.msac, bits as libc::c_uint) as libc::c_int;
-                *pal.offset(i as isize) = imin(prev + delta + !pl as libc::c_int, max) as uint16_t;
-                prev = *pal.offset(i as isize) as libc::c_int;
+                pal[i as usize] = imin(prev + delta + !pl as libc::c_int, max) as uint16_t;
+                prev = pal[i as usize] as libc::c_int;
                 i += 1;
                 if prev + !pl as libc::c_int >= max {
                     while i < pal_sz {
-                        *pal.offset(i as isize) = max as uint16_t;
+                        pal[i as usize] = max as uint16_t;
                         i += 1;
                     }
                     break;
@@ -1688,27 +1694,20 @@ unsafe fn read_pal_plane(
         let mut m = n_used_cache;
         i = 0;
         while i < pal_sz {
-            if n < n_used_cache
-                && (m >= pal_sz || used_cache[n as usize] <= *pal.offset(m as isize))
-            {
-                *pal.offset(i as isize) = used_cache[n as usize];
+            if n < n_used_cache && (m >= pal_sz || used_cache[n as usize] <= pal[m as usize]) {
+                pal[i as usize] = used_cache[n as usize];
                 n += 1;
             } else {
                 assert!(m < pal_sz);
-                *pal.offset(i as isize) = *pal.offset(m as isize);
+                pal[i as usize] = pal[m as usize];
                 m += 1;
             }
             i += 1;
         }
     } else {
-        memcpy(
-            pal as *mut libc::c_void,
-            used_cache.as_mut_ptr() as *const libc::c_void,
-            (n_used_cache as libc::c_ulong)
-                .wrapping_mul(::core::mem::size_of::<uint16_t>() as libc::c_ulong),
-        );
+        pal[..n_used_cache as usize].copy_from_slice(&used_cache[..n_used_cache as usize]);
     }
-    if DEBUG_BLOCK_INFO(f, t) {
+    if dbg {
         print!(
             "Post-pal[pl={},sz={},cache_size={},used_cache={}]: r={}, cache=",
             pli, pal_sz, n_cache, n_used_cache, ts.msac.rng
@@ -1721,11 +1720,7 @@ unsafe fn read_pal_plane(
         print!("{}, pal=", if n_cache != 0 { "]" } else { "[]" });
         let mut n = 0;
         while n < pal_sz {
-            print!(
-                "{}{:02x}",
-                if n != 0 { ' ' } else { '[' },
-                *pal.offset(n as isize)
-            );
+            print!("{}{:02x}", if n != 0 { ' ' } else { '[' }, pal[n as usize]);
             n += 1;
         }
         println!("]");
