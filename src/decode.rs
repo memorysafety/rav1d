@@ -1560,20 +1560,20 @@ unsafe fn read_pal_plane(
     let pli = pl as usize;
     let ts = &mut *t.ts;
     let f = &*t.f;
-    
+
     // Must come before `pal`, which mutably borrows `t`.
     // TODO: `DEBUG_BLOCK_INFO` really should take a subset of `f` and `t`,
     // i.e. only the fields it needs, as this would solve the bitdepth-dependence problem
     // as well as the borrowck error here if `dbg` is not hoisted.
     let dbg = DEBUG_BLOCK_INFO(f, t);
 
-    b.c2rust_unnamed.c2rust_unnamed.pal_sz[pli] = dav1d_msac_decode_symbol_adapt8(
+    b.pal_sz_mut()[pli] = dav1d_msac_decode_symbol_adapt8(
         &mut ts.msac,
         &mut ts.cdf.m.pal_sz[pli][sz_ctx as usize],
         6,
     ) as u8
         + 2;
-    let pal_sz = b.c2rust_unnamed.c2rust_unnamed.pal_sz[pli] as libc::c_int;
+    let pal_sz = b.pal_sz()[pli] as libc::c_int;
     let mut cache: [uint16_t; 16] = [0; 16];
     let mut used_cache: [uint16_t; 8] = [0; 8];
     let mut l_cache = if pl {
