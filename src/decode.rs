@@ -1558,6 +1558,8 @@ unsafe fn read_pal_plane(
     by4: usize,
 ) {
     let pli = pl as usize;
+    let not_pl = !pl as libc::c_int;
+
     let ts = &mut *t.ts;
     let f = &*t.f;
 
@@ -1670,20 +1672,17 @@ unsafe fn read_pal_plane(
             loop {
                 let delta =
                     dav1d_msac_decode_bools(&mut ts.msac, bits as libc::c_uint) as libc::c_int;
-                pal[i] = imin(prev + delta + !pl as libc::c_int, max) as uint16_t;
+                pal[i] = imin(prev + delta + not_pl, max) as uint16_t;
                 prev = pal[i] as libc::c_int;
                 i += 1;
-                if prev + !pl as libc::c_int >= max {
+                if prev + not_pl >= max {
                     while i < pal_sz {
                         pal[i] = max as uint16_t;
                         i += 1;
                     }
                     break;
                 } else {
-                    bits = imin(
-                        bits,
-                        1 + ulog2((max - prev - !pl as libc::c_int) as libc::c_uint),
-                    );
+                    bits = imin(bits, 1 + ulog2((max - prev - not_pl) as libc::c_uint));
                     if !(i < pal_sz) {
                         break;
                     }
