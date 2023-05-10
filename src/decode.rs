@@ -1562,10 +1562,9 @@ unsafe fn read_pal_plane(
     b.c2rust_unnamed.c2rust_unnamed.pal_sz[pl as usize] = (dav1d_msac_decode_symbol_adapt8(
         &mut ts.msac,
         &mut ts.cdf.m.pal_sz[pl as usize][sz_ctx as usize],
-        6 as libc::c_int as size_t,
+        6,
     ))
-    .wrapping_add(2 as libc::c_int as libc::c_uint)
-        as uint8_t;
+    .wrapping_add(2) as uint8_t;
     let pal_sz = b.c2rust_unnamed.c2rust_unnamed.pal_sz[pl as usize] as libc::c_int;
     let mut cache: [uint16_t; 16] = [0; 16];
     let mut used_cache: [uint16_t; 8] = [0; 8];
@@ -1576,19 +1575,19 @@ unsafe fn read_pal_plane(
     };
     let mut n_cache = 0;
     let mut a_cache = if by4 & 15 != 0 {
-        if pl != 0 {
-            t.pal_sz_uv[0][bx4 as usize] as libc::c_int
+        (if pl != 0 {
+            t.pal_sz_uv[0][bx4 as usize]
         } else {
-            (*t.a).pal_sz.0[bx4 as usize] as libc::c_int
-        }
+            (*t.a).pal_sz.0[bx4 as usize]
+        }) as libc::c_int
     } else {
-        0 as libc::c_int
+        0
     };
-    let mut l: *const uint16_t = (t.al_pal[1][by4 as usize][pl as usize]).as_mut_ptr();
-    let mut a: *const uint16_t = (t.al_pal[0][bx4 as usize][pl as usize]).as_mut_ptr();
+    let mut l = t.al_pal[1][by4 as usize][pl as usize].as_mut_ptr();
+    let mut a = t.al_pal[0][bx4 as usize][pl as usize].as_mut_ptr();
     while l_cache != 0 && a_cache != 0 {
-        if (*l as libc::c_int) < *a as libc::c_int {
-            if n_cache == 0 || cache[(n_cache - 1) as usize] as libc::c_int != *l as libc::c_int {
+        if *l < *a {
+            if n_cache == 0 || cache[(n_cache - 1) as usize] != *l {
                 let fresh8 = n_cache;
                 n_cache = n_cache + 1;
                 cache[fresh8 as usize] = *l;
@@ -1596,11 +1595,11 @@ unsafe fn read_pal_plane(
             l = l.offset(1);
             l_cache -= 1;
         } else {
-            if *a as libc::c_int == *l as libc::c_int {
+            if *a == *l {
                 l = l.offset(1);
                 l_cache -= 1;
             }
-            if n_cache == 0 || cache[(n_cache - 1) as usize] as libc::c_int != *a as libc::c_int {
+            if n_cache == 0 || cache[(n_cache - 1) as usize] != *a {
                 let fresh9 = n_cache;
                 n_cache = n_cache + 1;
                 cache[fresh9 as usize] = *a;
@@ -1611,7 +1610,7 @@ unsafe fn read_pal_plane(
     }
     if l_cache != 0 {
         loop {
-            if n_cache == 0 || cache[(n_cache - 1) as usize] as libc::c_int != *l as libc::c_int {
+            if n_cache == 0 || cache[(n_cache - 1) as usize] != *l {
                 let fresh10 = n_cache;
                 n_cache = n_cache + 1;
                 cache[fresh10 as usize] = *l;
@@ -1624,7 +1623,7 @@ unsafe fn read_pal_plane(
         }
     } else if a_cache != 0 {
         loop {
-            if n_cache == 0 || cache[(n_cache - 1) as usize] as libc::c_int != *a as libc::c_int {
+            if n_cache == 0 || cache[(n_cache - 1) as usize] != *a {
                 let fresh11 = n_cache;
                 n_cache = n_cache + 1;
                 cache[fresh11 as usize] = *a;
@@ -1647,14 +1646,14 @@ unsafe fn read_pal_plane(
         n += 1;
     }
     let n_used_cache = i;
-    let pal: *mut uint16_t = if t.frame_thread.pass != 0 {
-        ((*(f.frame_thread.pal).offset(
+    let pal = if t.frame_thread.pass != 0 {
+        (*(f.frame_thread.pal).offset(
             (((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
                 + ((t.bx >> 1) + (t.by & 1)) as isize) as isize,
-        ))[pl as usize])
+        ))[pl as usize]
             .as_mut_ptr()
     } else {
-        (t.scratch.c2rust_unnamed_0.pal[pl as usize]).as_mut_ptr()
+        t.scratch.c2rust_unnamed_0.pal[pl as usize].as_mut_ptr()
     };
     if i < pal_sz {
         let fresh13 = i;
@@ -1663,10 +1662,10 @@ unsafe fn read_pal_plane(
         *fresh14 = dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as uint16_t;
         let mut prev = *fresh14 as libc::c_int;
         if i < pal_sz {
-            let mut bits = ((f.cur.p.bpc - 3) as libc::c_uint).wrapping_add(
-                dav1d_msac_decode_bools(&mut ts.msac, 2 as libc::c_int as libc::c_uint),
-            ) as libc::c_int;
-            let max = ((1 as libc::c_int) << f.cur.p.bpc) - 1;
+            let mut bits = ((f.cur.p.bpc - 3) as libc::c_uint)
+                .wrapping_add(dav1d_msac_decode_bools(&mut ts.msac, 2))
+                as libc::c_int;
+            let max = (1 << f.cur.p.bpc) - 1;
             loop {
                 let delta =
                     dav1d_msac_decode_bools(&mut ts.msac, bits as libc::c_uint) as libc::c_int;
@@ -1684,8 +1683,7 @@ unsafe fn read_pal_plane(
                 } else {
                     bits = imin(
                         bits,
-                        1 as libc::c_int
-                            + ulog2((max - prev - (pl == 0) as libc::c_int) as libc::c_uint),
+                        1 + ulog2((max - prev - (pl == 0) as libc::c_int) as libc::c_uint),
                     );
                     if !(i < pal_sz) {
                         break;
@@ -1695,12 +1693,10 @@ unsafe fn read_pal_plane(
         }
         let mut n_0 = 0;
         let mut m = n_used_cache;
-        i = 0 as libc::c_int;
+        i = 0;
         while i < pal_sz {
             if n_0 < n_used_cache
-                && (m >= pal_sz
-                    || used_cache[n_0 as usize] as libc::c_int
-                        <= *pal.offset(m as isize) as libc::c_int)
+                && (m >= pal_sz || used_cache[n_0 as usize] <= *pal.offset(m as isize))
             {
                 let fresh17 = n_0;
                 n_0 = n_0 + 1;
