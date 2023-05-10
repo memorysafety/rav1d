@@ -1567,13 +1567,14 @@ unsafe fn read_pal_plane(
     // as well as the borrowck error here if `dbg` is not hoisted.
     let dbg = DEBUG_BLOCK_INFO(f, t);
 
-    b.pal_sz_mut()[pli] = dav1d_msac_decode_symbol_adapt8(
+    let pal_sz = dav1d_msac_decode_symbol_adapt8(
         &mut ts.msac,
         &mut ts.cdf.m.pal_sz[pli][sz_ctx as usize],
         6,
     ) as u8
         + 2;
-    let pal_sz = b.pal_sz()[pli] as libc::c_int;
+    b.pal_sz_mut()[pli] = pal_sz;
+    let pal_sz = pal_sz as usize;
     let mut cache: [uint16_t; 16] = [0; 16];
     let mut used_cache: [uint16_t; 8] = [0; 8];
     let mut l_cache = if pl {
@@ -1644,7 +1645,7 @@ unsafe fn read_pal_plane(
     let mut n = 0;
     while n < n_cache && i < pal_sz {
         if dav1d_msac_decode_bool_equi(&mut ts.msac) {
-            used_cache[i as usize] = cache[n];
+            used_cache[i] = cache[n];
             i += 1;
         }
         n += 1;
@@ -1659,9 +1660,8 @@ unsafe fn read_pal_plane(
         &mut t.scratch.c2rust_unnamed_0.pal[pli]
     };
     if i < pal_sz {
-        pal[i as usize] =
-            dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as uint16_t;
-        let mut prev = pal[i as usize] as libc::c_int;
+        pal[i] = dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as uint16_t;
+        let mut prev = pal[i] as libc::c_int;
         i += 1;
         if i < pal_sz {
             let mut bits =
@@ -1670,12 +1670,12 @@ unsafe fn read_pal_plane(
             loop {
                 let delta =
                     dav1d_msac_decode_bools(&mut ts.msac, bits as libc::c_uint) as libc::c_int;
-                pal[i as usize] = imin(prev + delta + !pl as libc::c_int, max) as uint16_t;
-                prev = pal[i as usize] as libc::c_int;
+                pal[i] = imin(prev + delta + !pl as libc::c_int, max) as uint16_t;
+                prev = pal[i] as libc::c_int;
                 i += 1;
                 if prev + !pl as libc::c_int >= max {
                     while i < pal_sz {
-                        pal[i as usize] = max as uint16_t;
+                        pal[i] = max as uint16_t;
                         i += 1;
                     }
                     break;
@@ -1694,18 +1694,18 @@ unsafe fn read_pal_plane(
         let mut m = n_used_cache;
         i = 0;
         while i < pal_sz {
-            if n < n_used_cache && (m >= pal_sz || used_cache[n as usize] <= pal[m as usize]) {
-                pal[i as usize] = used_cache[n as usize];
+            if n < n_used_cache && (m >= pal_sz || used_cache[n] <= pal[m]) {
+                pal[i] = used_cache[n];
                 n += 1;
             } else {
                 assert!(m < pal_sz);
-                pal[i as usize] = pal[m as usize];
+                pal[i] = pal[m];
                 m += 1;
             }
             i += 1;
         }
     } else {
-        pal[..n_used_cache as usize].copy_from_slice(&used_cache[..n_used_cache as usize]);
+        pal[..n_used_cache].copy_from_slice(&used_cache[..n_used_cache]);
     }
     if dbg {
         print!(
@@ -1720,7 +1720,7 @@ unsafe fn read_pal_plane(
         print!("{}, pal=", if n_cache != 0 { "]" } else { "[]" });
         let mut n = 0;
         while n < pal_sz {
-            print!("{}{:02x}", if n != 0 { ' ' } else { '[' }, pal[n as usize]);
+            print!("{}{:02x}", if n != 0 { ' ' } else { '[' }, pal[n]);
             n += 1;
         }
         println!("]");
