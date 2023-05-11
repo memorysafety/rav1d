@@ -1676,9 +1676,7 @@ unsafe fn read_pal_plane(
                 pal[i] = prev;
                 i += 1;
                 if prev + not_pl >= max {
-                    for pal in &mut pal[i..] {
-                        *pal = max;
-                    }
+                    pal[i..].fill(max);
                     break;
                 } else {
                     bits = std::cmp::min(bits, 1 + ulog2((max - prev - not_pl) as u32) as u32);
