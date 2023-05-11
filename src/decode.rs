@@ -1743,7 +1743,7 @@ unsafe fn read_pal_uv(
     by4: usize,
 ) {
     read_pal_plane(t, b, true, sz_ctx, bx4, by4);
-    let ts: *mut Dav1dTileState = t.ts;
+    let ts = &mut *t.ts;
     let f: *const Dav1dFrameContext = t.f;
     let pal: *mut uint16_t = if t.frame_thread.pass != 0 {
         ((*((*f).frame_thread.pal).offset(
@@ -1754,21 +1754,21 @@ unsafe fn read_pal_uv(
     } else {
         (t.scratch.c2rust_unnamed_0.pal[2]).as_mut_ptr()
     };
-    if dav1d_msac_decode_bool_equi(&mut (*ts).msac) {
+    if dav1d_msac_decode_bool_equi(&mut ts.msac) {
         let bits = (((*f).cur.p.bpc - 4) as libc::c_uint).wrapping_add(dav1d_msac_decode_bools(
-            &mut (*ts).msac,
+            &mut ts.msac,
             2 as libc::c_int as libc::c_uint,
         )) as libc::c_int;
         let ref mut fresh19 = *pal.offset(0);
         *fresh19 =
-            dav1d_msac_decode_bools(&mut (*ts).msac, (*f).cur.p.bpc as libc::c_uint) as uint16_t;
+            dav1d_msac_decode_bools(&mut ts.msac, (*f).cur.p.bpc as libc::c_uint) as uint16_t;
         let mut prev = *fresh19 as libc::c_int;
         let max = ((1 as libc::c_int) << (*f).cur.p.bpc) - 1;
         let mut i = 1;
         while i < b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int {
             let mut delta =
-                dav1d_msac_decode_bools(&mut (*ts).msac, bits as libc::c_uint) as libc::c_int;
-            if delta != 0 && dav1d_msac_decode_bool_equi(&mut (*ts).msac) {
+                dav1d_msac_decode_bools(&mut ts.msac, bits as libc::c_uint) as libc::c_int;
+            if delta != 0 && dav1d_msac_decode_bool_equi(&mut ts.msac) {
                 delta = -delta;
             }
             let ref mut fresh20 = *pal.offset(i as isize);
@@ -1780,7 +1780,7 @@ unsafe fn read_pal_uv(
         let mut i_0 = 0;
         while i_0 < b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int {
             *pal.offset(i_0 as isize) =
-                dav1d_msac_decode_bools(&mut (*ts).msac, (*f).cur.p.bpc as libc::c_uint)
+                dav1d_msac_decode_bools(&mut ts.msac, (*f).cur.p.bpc as libc::c_uint)
                     as uint16_t;
             i_0 += 1;
         }
@@ -1788,7 +1788,7 @@ unsafe fn read_pal_uv(
     if DEBUG_BLOCK_INFO(&*f, &*t) {
         printf(
             b"Post-pal[pl=2]: r=%d \0" as *const u8 as *const libc::c_char,
-            (*ts).msac.rng,
+            ts.msac.rng,
         );
         let mut n = 0;
         while n < b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int {
