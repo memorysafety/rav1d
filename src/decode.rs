@@ -1737,12 +1737,12 @@ unsafe fn read_pal_plane(
 
 unsafe fn read_pal_uv(
     t: &mut Dav1dTaskContext,
-    b: *mut Av1Block,
+    b: &mut Av1Block,
     sz_ctx: u8,
     bx4: usize,
     by4: usize,
 ) {
-    read_pal_plane(t, &mut *b, true, sz_ctx, bx4, by4);
+    read_pal_plane(t, b, true, sz_ctx, bx4, by4);
     let ts: *mut Dav1dTileState = t.ts;
     let f: *const Dav1dFrameContext = t.f;
     let pal: *mut uint16_t = if t.frame_thread.pass != 0 {
@@ -1765,7 +1765,7 @@ unsafe fn read_pal_uv(
         let mut prev = *fresh19 as libc::c_int;
         let max = ((1 as libc::c_int) << (*f).cur.p.bpc) - 1;
         let mut i = 1;
-        while i < (*b).c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int {
+        while i < b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int {
             let mut delta =
                 dav1d_msac_decode_bools(&mut (*ts).msac, bits as libc::c_uint) as libc::c_int;
             if delta != 0 && dav1d_msac_decode_bool_equi(&mut (*ts).msac) {
@@ -1778,7 +1778,7 @@ unsafe fn read_pal_uv(
         }
     } else {
         let mut i_0 = 0;
-        while i_0 < (*b).c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int {
+        while i_0 < b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int {
             *pal.offset(i_0 as isize) =
                 dav1d_msac_decode_bools(&mut (*ts).msac, (*f).cur.p.bpc as libc::c_uint)
                     as uint16_t;
@@ -1791,7 +1791,7 @@ unsafe fn read_pal_uv(
             (*ts).msac.rng,
         );
         let mut n = 0;
-        while n < (*b).c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int {
+        while n < b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int {
             printf(
                 b"%c%02x\0" as *const u8 as *const libc::c_char,
                 if n != 0 { ' ' as i32 } else { '[' as i32 },
