@@ -1744,10 +1744,10 @@ unsafe fn read_pal_uv(
 ) {
     read_pal_plane(t, b, true, sz_ctx, bx4, by4);
     let ts = &mut *t.ts;
-    let f: *const Dav1dFrameContext = t.f;
+    let f = &*t.f;
     let pal: *mut uint16_t = if t.frame_thread.pass != 0 {
-        ((*((*f).frame_thread.pal).offset(
-            (((t.by >> 1) + (t.bx & 1)) as isize * ((*f).b4_stride >> 1)
+        ((*(f.frame_thread.pal).offset(
+            (((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
                 + ((t.bx >> 1) + (t.by & 1)) as isize) as isize,
         ))[2])
             .as_mut_ptr()
@@ -1755,15 +1755,14 @@ unsafe fn read_pal_uv(
         (t.scratch.c2rust_unnamed_0.pal[2]).as_mut_ptr()
     };
     if dav1d_msac_decode_bool_equi(&mut ts.msac) {
-        let bits = (((*f).cur.p.bpc - 4) as libc::c_uint).wrapping_add(dav1d_msac_decode_bools(
+        let bits = ((f.cur.p.bpc - 4) as libc::c_uint).wrapping_add(dav1d_msac_decode_bools(
             &mut ts.msac,
             2 as libc::c_int as libc::c_uint,
         )) as libc::c_int;
         let ref mut fresh19 = *pal.offset(0);
-        *fresh19 =
-            dav1d_msac_decode_bools(&mut ts.msac, (*f).cur.p.bpc as libc::c_uint) as uint16_t;
+        *fresh19 = dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as uint16_t;
         let mut prev = *fresh19 as libc::c_int;
-        let max = ((1 as libc::c_int) << (*f).cur.p.bpc) - 1;
+        let max = ((1 as libc::c_int) << f.cur.p.bpc) - 1;
         let mut i = 1;
         while i < b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int {
             let mut delta =
@@ -1780,8 +1779,7 @@ unsafe fn read_pal_uv(
         let mut i_0 = 0;
         while i_0 < b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int {
             *pal.offset(i_0 as isize) =
-                dav1d_msac_decode_bools(&mut ts.msac, (*f).cur.p.bpc as libc::c_uint)
-                    as uint16_t;
+                dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as uint16_t;
             i_0 += 1;
         }
     }
