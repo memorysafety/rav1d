@@ -1759,10 +1759,7 @@ unsafe fn read_pal_uv(
         &mut t.scratch.c2rust_unnamed_0.pal[2]
     };
     if dav1d_msac_decode_bool_equi(&mut ts.msac) {
-        let bits = (f.cur.p.bpc as libc::c_uint - 4).wrapping_add(dav1d_msac_decode_bools(
-            &mut ts.msac,
-            2,
-        )) as libc::c_int;
+        let bits = f.cur.p.bpc - 4 + dav1d_msac_decode_bools(&mut ts.msac, 2) as libc::c_int;
         let ref mut fresh19 = pal[0];
         *fresh19 = dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as uint16_t;
         let mut prev = *fresh19 as libc::c_int;
