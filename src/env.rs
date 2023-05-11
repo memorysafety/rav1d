@@ -578,9 +578,10 @@ pub fn av1_get_uni_p1_ctx(
         if let Some(cnt) = cnt.get_mut((a.r#ref[0][xb4 as usize] - 1) as usize) {
             *cnt += 1;
         }
-        if a.comp_type[xb4 as usize] != 0
-                && let Some(cnt) = cnt.get_mut((a.r#ref[1][xb4 as usize] - 1) as usize) {
-            *cnt += 1;
+        if a.comp_type[xb4 as usize] != 0 {
+            if let Some(cnt) = cnt.get_mut((a.r#ref[1][xb4 as usize] - 1) as usize) {
+                *cnt += 1;
+            }
         }
     }
 
@@ -588,9 +589,10 @@ pub fn av1_get_uni_p1_ctx(
         if let Some(cnt) = cnt.get_mut((l.r#ref[0][yb4 as usize] - 1) as usize) {
             *cnt += 1;
         }
-        if l.comp_type[yb4 as usize] != 0
-                && let Some(cnt) = cnt.get_mut((l.r#ref[1][yb4 as usize] - 1) as usize) {
-            *cnt += 1;
+        if l.comp_type[yb4 as usize] != 0 {
+            if let Some(cnt) = cnt.get_mut((l.r#ref[1][yb4 as usize] - 1) as usize) {
+                *cnt += 1;
+            }
         }
     }
 

@@ -3335,7 +3335,7 @@ unsafe fn decode_b(
     if b.skip_mode != 0 {
         b.intra = 0;
     } else if is_inter_or_switch(frame_hdr) {
-        if let Some(seg) = seg && (seg.r#ref >= 0 || seg.globalmv != 0) {
+        if let Some(seg) = seg.filter(|seg| seg.r#ref >= 0 || seg.globalmv != 0) {
             b.intra = (seg.r#ref == 0) as uint8_t;
         } else {
             let ictx = get_intra_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
@@ -4266,13 +4266,13 @@ unsafe fn decode_b(
             }
         } else {
             b.c2rust_unnamed.c2rust_unnamed_0.comp_type = COMP_INTER_NONE as libc::c_int as uint8_t;
-            if let Some(seg) = seg && seg.r#ref > 0 {
+            if let Some(seg) = seg.filter(|seg| seg.r#ref > 0) {
                 b
                     .c2rust_unnamed
                     .c2rust_unnamed_0
                     .r#ref[0 as libc::c_int
                     as usize] = seg.r#ref as i8 - 1;
-            } else if let Some(seg) = seg && (seg.globalmv != 0 || seg.skip != 0) {
+            } else if let Some(_) = seg.filter(|seg| seg.globalmv != 0 || seg.skip != 0) {
                 b
                     .c2rust_unnamed
                     .c2rust_unnamed_0
