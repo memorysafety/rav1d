@@ -1585,6 +1585,7 @@ unsafe fn read_pal_plane(
         t.l.pal_sz.0[by4]
     };
     let mut n_cache = 0;
+    // don't reuse above palette outside SB64 boundaries
     let mut a_cache = if by4 & 15 != 0 {
         if pl {
             t.pal_sz_uv[0][bx4]
@@ -1597,6 +1598,8 @@ unsafe fn read_pal_plane(
     let [a, l] = &mut t.al_pal;
     let mut l = &l[by4][pli][..];
     let mut a = &a[bx4][pli][..];
+
+    // fill/sort cache
     while l_cache != 0 && a_cache != 0 {
         if l[0] < a[0] {
             if n_cache == 0 || cache[n_cache - 1] != l[0] {
@@ -1644,6 +1647,8 @@ unsafe fn read_pal_plane(
         }
     }
     let cache = &cache[..n_cache];
+
+    // find reused cache entries
     let mut i = 0;
     for cache in cache {
         if !(i < pal_sz) {
@@ -1655,6 +1660,8 @@ unsafe fn read_pal_plane(
         }
     }
     let used_cache = &used_cache[..i];
+
+    // parse new entries
     let pal = if t.frame_thread.pass != 0 {
         &mut (*(f.frame_thread.pal).offset(
             ((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
@@ -1668,9 +1675,11 @@ unsafe fn read_pal_plane(
         let mut prev = dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as u32) as u16;
         pal[i] = prev;
         i += 1;
+
         if i < pal.len() {
             let mut bits = f.cur.p.bpc as u32 + dav1d_msac_decode_bools(&mut ts.msac, 2) - 3;
             let max = (1 << f.cur.p.bpc) - 1;
+
             loop {
                 let delta = dav1d_msac_decode_bools(&mut ts.msac, bits) as u16;
                 prev = std::cmp::min(prev + delta + not_pl, max);
@@ -1687,6 +1696,8 @@ unsafe fn read_pal_plane(
                 }
             }
         }
+
+        // merge cache+new entries
         let mut n = 0;
         let mut m = used_cache.len();
         for i in 0..pal.len() {
@@ -1701,6 +1712,7 @@ unsafe fn read_pal_plane(
     } else {
         pal[..used_cache.len()].copy_from_slice(&used_cache);
     }
+
     if dbg {
         print!(
             "Post-pal[pl={},sz={},cache_size={},used_cache={}]: r={}, cache=",
