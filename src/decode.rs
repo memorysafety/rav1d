@@ -1595,26 +1595,26 @@ unsafe fn read_pal_plane(
         0
     };
     let [a, l] = &mut t.al_pal;
-    let mut l = &mut l[by4][pli][..];
-    let mut a = &mut a[bx4][pli][..];
+    let mut l = &l[by4][pli][..];
+    let mut a = &a[bx4][pli][..];
     while l_cache != 0 && a_cache != 0 {
         if l[0] < a[0] {
             if n_cache == 0 || cache[n_cache - 1] != l[0] {
                 cache[n_cache] = l[0];
                 n_cache += 1;
             }
-            l = &mut l[1..];
+            l = &l[1..];
             l_cache -= 1;
         } else {
             if a[0] == l[0] {
-                l = &mut l[1..];
+                l = &l[1..];
                 l_cache -= 1;
             }
             if n_cache == 0 || cache[n_cache - 1] != a[0] {
                 cache[n_cache] = a[0];
                 n_cache += 1;
             }
-            a = &mut a[1..];
+            a = &a[1..];
             a_cache -= 1;
         }
     }
@@ -1624,7 +1624,7 @@ unsafe fn read_pal_plane(
                 cache[n_cache] = l[0];
                 n_cache += 1;
             }
-            l = &mut l[1..];
+            l = &l[1..];
             l_cache -= 1;
             if !(l_cache > 0) {
                 break;
@@ -1636,7 +1636,7 @@ unsafe fn read_pal_plane(
                 cache[n_cache] = a[0];
                 n_cache += 1;
             }
-            a = &mut a[1..];
+            a = &a[1..];
             a_cache -= 1;
             if !(a_cache > 0) {
                 break;
