@@ -1745,21 +1745,25 @@ unsafe fn read_pal_uv(
     read_pal_plane(t, b, true, sz_ctx, bx4, by4);
     let ts = &mut *t.ts;
     let f = &*t.f;
-    let pal: *mut uint16_t = if t.frame_thread.pass != 0 {
-        ((*(f.frame_thread.pal).offset(
+
+    // Hoisted so the `&` borrow of `t`
+    // doesn't conflict with `pal`'s `&mut` borrow of `t`.
+    let dbg = DEBUG_BLOCK_INFO(&*f, &*t);
+
+    let pal = if t.frame_thread.pass != 0 {
+        &mut (*(f.frame_thread.pal).offset(
             (((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
                 + ((t.bx >> 1) + (t.by & 1)) as isize) as isize,
-        ))[2])
-            .as_mut_ptr()
+        ))[2]
     } else {
-        (t.scratch.c2rust_unnamed_0.pal[2]).as_mut_ptr()
+        &mut t.scratch.c2rust_unnamed_0.pal[2]
     };
     if dav1d_msac_decode_bool_equi(&mut ts.msac) {
         let bits = ((f.cur.p.bpc - 4) as libc::c_uint).wrapping_add(dav1d_msac_decode_bools(
             &mut ts.msac,
             2 as libc::c_int as libc::c_uint,
         )) as libc::c_int;
-        let ref mut fresh19 = *pal.offset(0);
+        let ref mut fresh19 = pal[0];
         *fresh19 = dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as uint16_t;
         let mut prev = *fresh19 as libc::c_int;
         let max = ((1 as libc::c_int) << f.cur.p.bpc) - 1;
@@ -1770,7 +1774,7 @@ unsafe fn read_pal_uv(
             if delta != 0 && dav1d_msac_decode_bool_equi(&mut ts.msac) {
                 delta = -delta;
             }
-            let ref mut fresh20 = *pal.offset(i as isize);
+            let ref mut fresh20 = pal[i as usize];
             *fresh20 = (prev + delta & max) as uint16_t;
             prev = *fresh20 as libc::c_int;
             i += 1;
@@ -1778,12 +1782,12 @@ unsafe fn read_pal_uv(
     } else {
         let mut i_0 = 0;
         while i_0 < b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int {
-            *pal.offset(i_0 as isize) =
+            pal[i_0 as usize] =
                 dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as uint16_t;
             i_0 += 1;
         }
     }
-    if DEBUG_BLOCK_INFO(&*f, &*t) {
+    if dbg {
         printf(
             b"Post-pal[pl=2]: r=%d \0" as *const u8 as *const libc::c_char,
             ts.msac.rng,
@@ -1793,7 +1797,7 @@ unsafe fn read_pal_uv(
             printf(
                 b"%c%02x\0" as *const u8 as *const libc::c_char,
                 if n != 0 { ' ' as i32 } else { '[' as i32 },
-                *pal.offset(n as isize) as libc::c_int,
+                pal[n as usize] as libc::c_int,
             );
             n += 1;
         }
