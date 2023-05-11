@@ -1577,8 +1577,8 @@ unsafe fn read_pal_plane(
         + 2;
     b.pal_sz_mut()[pli] = pal_sz;
     let pal_sz = pal_sz as usize;
-    let mut cache: [uint16_t; 16] = [0; 16];
-    let mut used_cache: [uint16_t; 8] = [0; 8];
+    let mut cache = <[u16; 16]>::default();
+    let mut used_cache = <[u16; 8]>::default();
     let mut l_cache = if pl {
         t.pal_sz_uv[1][by4]
     } else {
