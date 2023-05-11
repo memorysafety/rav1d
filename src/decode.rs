@@ -1695,7 +1695,6 @@ unsafe fn read_pal_plane(
                 pal[i] = used_cache[n];
                 n += 1;
             } else {
-                assert!(m < pal.len());
                 pal[i] = pal[m];
                 m += 1;
             }
