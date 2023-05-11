@@ -286,7 +286,7 @@ pub struct Dav1dFrameContext {
     pub task_thread: Dav1dFrameContext_task_thread,
     pub tile_thread: FrameTileThreadData,
 }
-use crate::include::pthread::pthread_mutex_t;
+use libc::pthread_mutex_t;
 use crate::src::internal::Dav1dFrameContext_task_thread;
 use crate::src::internal::FrameTileThreadData;
 

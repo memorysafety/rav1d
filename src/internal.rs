@@ -1,7 +1,7 @@
 use crate::include::dav1d::data::Dav1dData;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::pthread::pthread_cond_t;
-use crate::include::pthread::pthread_mutex_t;
+use libc::pthread_mutex_t;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
 use crate::include::stdint::int16_t;

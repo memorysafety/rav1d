@@ -201,7 +201,7 @@ pub struct Dav1dContext {
 }
 use crate::src::mem::Dav1dMemPool;
 
-use crate::include::pthread::pthread_mutex_t;
+use libc::pthread_mutex_t;
 
 use crate::include::dav1d::dav1d::Dav1dDecodeFrameType;
 use crate::include::dav1d::dav1d::Dav1dEventFlags;
