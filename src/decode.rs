@@ -1764,32 +1764,25 @@ unsafe fn read_pal_uv(
         *fresh19 = dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as uint16_t;
         let mut prev = *fresh19 as libc::c_int;
         let max = (1 << f.cur.p.bpc) - 1;
-        let mut i = 1;
-        while i < b.pal_sz()[1] as libc::c_int {
+        for i in 1..b.pal_sz()[1] as usize {
             let mut delta =
                 dav1d_msac_decode_bools(&mut ts.msac, bits as libc::c_uint) as libc::c_int;
             if delta != 0 && dav1d_msac_decode_bool_equi(&mut ts.msac) {
                 delta = -delta;
             }
-            let ref mut fresh20 = pal[i as usize];
+            let ref mut fresh20 = pal[i];
             *fresh20 = (prev + delta & max) as uint16_t;
             prev = *fresh20 as libc::c_int;
-            i += 1;
         }
     } else {
-        let mut i = 0;
-        while i < b.pal_sz()[1] as libc::c_int {
-            pal[i as usize] =
-                dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as uint16_t;
-            i += 1;
+        for i in 0..b.pal_sz()[1] as usize {
+            pal[i] = dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as uint16_t;
         }
     }
     if dbg {
         print!("Post-pal[pl=2]: r={} ", ts.msac.rng);
-        let mut n = 0;
-        while n < b.pal_sz()[1] as libc::c_int {
-            print!("{}{:02x}", if n != 0 { ' ' } else { '[' }, pal[n as usize]);
-            n += 1;
+        for n in 0..b.pal_sz()[1] as usize {
+            print!("{}{:02x}", if n != 0 { ' ' } else { '[' }, pal[n]);
         }
         println!("]");
     }
