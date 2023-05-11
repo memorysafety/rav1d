@@ -1768,7 +1768,7 @@ unsafe fn read_pal_uv(
             if delta != 0 && dav1d_msac_decode_bool_equi(&mut ts.msac) {
                 delta = -delta;
             }
-            pal[i] = (prev + delta & max) as uint16_t;
+            pal[i] = ((prev + delta) & max) as uint16_t;
             prev = pal[i] as libc::c_int;
         }
     } else {
