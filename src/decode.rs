@@ -1788,20 +1788,17 @@ unsafe fn read_pal_uv(
         }
     }
     if dbg {
-        printf(
-            b"Post-pal[pl=2]: r=%d \0" as *const u8 as *const libc::c_char,
-            ts.msac.rng,
-        );
+        print!("Post-pal[pl=2]: r={} ", ts.msac.rng);
         let mut n = 0;
         while n < b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int {
-            printf(
-                b"%c%02x\0" as *const u8 as *const libc::c_char,
-                if n != 0 { ' ' as i32 } else { '[' as i32 },
-                pal[n as usize] as libc::c_int,
+            print!(
+                "{}{:02x}",
+                if n != 0 { ' ' } else { '[' },
+                pal[n as usize] as libc::c_int
             );
             n += 1;
         }
-        printf(b"]\n\0" as *const u8 as *const libc::c_char);
+        println!("]");
     }
 }
 
