@@ -1643,8 +1643,9 @@ unsafe fn read_pal_plane(
             }
         }
     }
+    let cache = &cache[..n_cache];
     let mut i = 0;
-    for cache in &cache[..n_cache] {
+    for cache in cache {
         if !(i < pal_sz) {
             break;
         }
@@ -1705,14 +1706,14 @@ unsafe fn read_pal_plane(
             "Post-pal[pl={},sz={},cache_size={},used_cache={}]: r={}, cache=",
             pli,
             pal_sz,
-            n_cache,
+            cache.len(),
             used_cache.len(),
             ts.msac.rng
         );
-        for (n, cache) in cache[..n_cache].iter().enumerate() {
+        for (n, cache) in cache.iter().enumerate() {
             print!("{}{:02x}", if n != 0 { ' ' } else { '[' }, cache);
         }
-        print!("{}, pal=", if n_cache != 0 { "]" } else { "[]" });
+        print!("{}, pal=", if cache.len() != 0 { "]" } else { "[]" });
         for (n, pal) in pal.iter().enumerate() {
             print!("{}{:02x}", if n != 0 { ' ' } else { '[' }, pal);
         }
