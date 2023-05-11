@@ -902,7 +902,7 @@ pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
                 layout,
             );
         }
-        let mut lr_bak: [[[[pixel; 2]; 8]; 3]; 2] = [[[[0; 2]; 8]; 3]; 2];
+        let mut lr_bak: Align16<[[[[pixel; 2]; 8]; 3]; 2]> = Align16([[[[0; 2]; 8]; 3]; 2]);
         let mut iptrs: [*mut pixel; 3] = [ptrs[0], ptrs[1], ptrs[2]];
         edges = ::core::mem::transmute::<libc::c_uint, CdefEdgeFlags>(
             edges as libc::c_uint & !(CDEF_HAVE_LEFT as libc::c_int) as libc::c_uint,
