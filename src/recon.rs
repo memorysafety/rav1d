@@ -4,6 +4,11 @@ use crate::src::msac::MsacContext;
 /// This is a macro that defines a function
 /// because it takes `Dav1dFrameContext` and `Dav1dTaskContext` as arguments,
 /// which have not yet been deduplicated/genericized over bitdepth.
+///
+/// TODO: This should not remain a macro.
+/// It should either be a `fn` generic over bitdepth
+/// or take `struct` arguments that are the subset of fields that are actually used in this `fn`,
+/// as this would also solve some borrowck errors that had to be worked around.
 macro_rules! define_DEBUG_BLOCK_INFO {
     () => {
         /// TODO: add feature and compile-time guard around this code
