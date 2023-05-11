@@ -1736,23 +1736,23 @@ unsafe fn read_pal_plane(
 }
 
 unsafe fn read_pal_uv(
-    t: *mut Dav1dTaskContext,
+    t: &mut Dav1dTaskContext,
     b: *mut Av1Block,
     sz_ctx: u8,
     bx4: usize,
     by4: usize,
 ) {
-    read_pal_plane(&mut *t, &mut *b, true, sz_ctx, bx4, by4);
-    let ts: *mut Dav1dTileState = (*t).ts;
-    let f: *const Dav1dFrameContext = (*t).f;
-    let pal: *mut uint16_t = if (*t).frame_thread.pass != 0 {
+    read_pal_plane(t, &mut *b, true, sz_ctx, bx4, by4);
+    let ts: *mut Dav1dTileState = t.ts;
+    let f: *const Dav1dFrameContext = t.f;
+    let pal: *mut uint16_t = if t.frame_thread.pass != 0 {
         ((*((*f).frame_thread.pal).offset(
-            ((((*t).by >> 1) + ((*t).bx & 1)) as isize * ((*f).b4_stride >> 1)
-                + (((*t).bx >> 1) + ((*t).by & 1)) as isize) as isize,
+            (((t.by >> 1) + (t.bx & 1)) as isize * ((*f).b4_stride >> 1)
+                + ((t.bx >> 1) + (t.by & 1)) as isize) as isize,
         ))[2])
             .as_mut_ptr()
     } else {
-        ((*t).scratch.c2rust_unnamed_0.pal[2]).as_mut_ptr()
+        (t.scratch.c2rust_unnamed_0.pal[2]).as_mut_ptr()
     };
     if dav1d_msac_decode_bool_equi(&mut (*ts).msac) {
         let bits = (((*f).cur.p.bpc - 4) as libc::c_uint).wrapping_add(dav1d_msac_decode_bools(
