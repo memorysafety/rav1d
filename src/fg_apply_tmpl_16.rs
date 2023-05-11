@@ -1,6 +1,6 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
-use crate::src::align::{Align16, Align64};
+use crate::src::align::{Align1, Align16};
 use ::libc;
 extern "C" {
     pub type Dav1dRef;
@@ -392,7 +392,7 @@ pub unsafe extern "C" fn dav1d_apply_grain_16bpc(
     in_0: *const Dav1dPicture,
 ) {
     let mut grain_lut = Align16([[[0; 82]; 74]; 3]);
-    let mut scaling = Align64([[0; 4096]; 3]);
+    let mut scaling = Align1([[0; 4096]; 3]);
     let rows = (*out).p.h + 31 >> 5;
     dav1d_prep_grain_16bpc(
         dsp,
