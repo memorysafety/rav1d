@@ -1758,12 +1758,13 @@ unsafe fn read_pal_uv(
     } else {
         &mut t.scratch.c2rust_unnamed_0.pal[2]
     };
+    let pal = &mut pal[..b.pal_sz()[1] as usize];
     if dav1d_msac_decode_bool_equi(&mut ts.msac) {
         let bits = f.cur.p.bpc as u32 + dav1d_msac_decode_bools(&mut ts.msac, 2) - 4;
         pal[0] = dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as u16;
         let mut prev = pal[0];
         let max = (1 << f.cur.p.bpc) - 1;
-        for i in 1..b.pal_sz()[1] as usize {
+        for i in 1..pal.len() {
             let mut delta = dav1d_msac_decode_bools(&mut ts.msac, bits) as i16;
             if delta != 0 && dav1d_msac_decode_bool_equi(&mut ts.msac) {
                 delta = -delta;
@@ -1772,13 +1773,13 @@ unsafe fn read_pal_uv(
             prev = pal[i];
         }
     } else {
-        for i in 0..b.pal_sz()[1] as usize {
+        for i in 0..pal.len() {
             pal[i] = dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as u16;
         }
     }
     if dbg {
         print!("Post-pal[pl=2]: r={} ", ts.msac.rng);
-        for n in 0..b.pal_sz()[1] as usize {
+        for n in 0..pal.len() {
             print!("{}{:02x}", if n != 0 { ' ' } else { '[' }, pal[n]);
         }
         println!("]");
