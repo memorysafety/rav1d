@@ -1653,7 +1653,7 @@ unsafe fn read_pal_plane(
             i += 1;
         }
     }
-    let n_used_cache = i;
+    let used_cache = &used_cache[..i];
     let pal = if t.frame_thread.pass != 0 {
         &mut (*(f.frame_thread.pal).offset(
             ((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
@@ -1687,9 +1687,9 @@ unsafe fn read_pal_plane(
             }
         }
         let mut n = 0;
-        let mut m = n_used_cache;
+        let mut m = used_cache.len();
         for i in 0..pal.len() {
-            if n < n_used_cache && (m >= pal.len() || used_cache[n] <= pal[m]) {
+            if n < used_cache.len() && (m >= pal.len() || used_cache[n] <= pal[m]) {
                 pal[i] = used_cache[n];
                 n += 1;
             } else {
@@ -1698,12 +1698,16 @@ unsafe fn read_pal_plane(
             }
         }
     } else {
-        pal[..n_used_cache].copy_from_slice(&used_cache[..n_used_cache]);
+        pal[..used_cache.len()].copy_from_slice(&used_cache);
     }
     if dbg {
         print!(
             "Post-pal[pl={},sz={},cache_size={},used_cache={}]: r={}, cache=",
-            pli, pal_sz, n_cache, n_used_cache, ts.msac.rng
+            pli,
+            pal_sz,
+            n_cache,
+            used_cache.len(),
+            ts.msac.rng
         );
         for (n, cache) in cache[..n_cache].iter().enumerate() {
             print!("{}{:02x}", if n != 0 { ' ' } else { '[' }, cache);
