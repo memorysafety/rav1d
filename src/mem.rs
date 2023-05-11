@@ -18,7 +18,7 @@ extern "C" {
     ) -> libc::c_int;
 }
 
-use crate::include::pthread::pthread_mutex_t;
+use libc::pthread_mutex_t;
 
 #[derive(Copy, Clone)]
 #[repr(C)]

@@ -131,7 +131,7 @@ use crate::src::internal::DAV1D_TASK_TYPE_FG_APPLY;
 use crate::src::internal::DAV1D_TASK_TYPE_FG_PREP;
 use crate::src::internal::DAV1D_TASK_TYPE_RECONSTRUCTION_PROGRESS;
 
-use crate::include::pthread::pthread_mutex_t;
+use libc::pthread_mutex_t;
 use crate::src::internal::DAV1D_TASK_TYPE_CDEF;
 use crate::src::internal::DAV1D_TASK_TYPE_DEBLOCK_COLS;
 use crate::src::internal::DAV1D_TASK_TYPE_DEBLOCK_ROWS;

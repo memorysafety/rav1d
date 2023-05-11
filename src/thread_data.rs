@@ -1,5 +1,5 @@
 use crate::include::pthread::pthread_cond_t;
-use crate::include::pthread::pthread_mutex_t;
+use libc::pthread_mutex_t;
 use crate::include::pthread::pthread_t;
 
 #[derive(Copy, Clone)]
