@@ -845,8 +845,8 @@ unsafe extern "C" fn cdef_filter_4x4_neon(
     damping: libc::c_int,
     edges: CdefEdgeFlags,
 ) {
-    let mut tmp_buf = [0; 104];
-    let mut tmp = tmp_buf.as_mut_ptr().offset(2 * 8).offset(8);
+    let mut tmp_buf = Align16([0; 104]);
+    let mut tmp = tmp_buf.0.as_mut_ptr().offset(2 * 8).offset(8);
     dav1d_cdef_padding4_8bpc_neon(tmp, dst, stride, left, top, bottom, 4, edges);
     dav1d_cdef_filter4_8bpc_neon(
         dst,
@@ -875,8 +875,8 @@ unsafe extern "C" fn cdef_filter_4x8_neon(
     damping: libc::c_int,
     edges: CdefEdgeFlags,
 ) {
-    let mut tmp_buf = [0; 104];
-    let mut tmp = tmp_buf.as_mut_ptr().offset(2 * 8).offset(8);
+    let mut tmp_buf = Align16([0; 104]);
+    let mut tmp = tmp_buf.0.as_mut_ptr().offset(2 * 8).offset(8);
     dav1d_cdef_padding4_8bpc_neon(tmp, dst, stride, left, top, bottom, 8, edges);
     dav1d_cdef_filter4_8bpc_neon(
         dst,
