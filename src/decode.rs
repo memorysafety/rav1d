@@ -1662,11 +1662,12 @@ unsafe fn read_pal_plane(
     } else {
         &mut t.scratch.c2rust_unnamed_0.pal[pli]
     };
-    if i < pal_sz {
+    let pal = &mut pal[..pal_sz];
+    if i < pal.len() {
         let mut prev = dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as u32) as u16;
         pal[i] = prev;
         i += 1;
-        if i < pal_sz {
+        if i < pal.len() {
             let mut bits = f.cur.p.bpc as u32 + dav1d_msac_decode_bools(&mut ts.msac, 2) - 3;
             let max = (1 << f.cur.p.bpc) - 1;
             loop {
@@ -1675,13 +1676,13 @@ unsafe fn read_pal_plane(
                 pal[i] = prev;
                 i += 1;
                 if prev + not_pl >= max {
-                    for pal in &mut pal[i..pal_sz] {
+                    for pal in &mut pal[i..] {
                         *pal = max;
                     }
                     break;
                 } else {
                     bits = std::cmp::min(bits, 1 + ulog2((max - prev - not_pl) as u32) as u32);
-                    if !(i < pal_sz) {
+                    if !(i < pal.len()) {
                         break;
                     }
                 }
@@ -1689,12 +1690,12 @@ unsafe fn read_pal_plane(
         }
         let mut n = 0;
         let mut m = n_used_cache;
-        for i in 0..pal_sz {
-            if n < n_used_cache && (m >= pal_sz || used_cache[n] <= pal[m]) {
+        for i in 0..pal.len() {
+            if n < n_used_cache && (m >= pal.len() || used_cache[n] <= pal[m]) {
                 pal[i] = used_cache[n];
                 n += 1;
             } else {
-                assert!(m < pal_sz);
+                assert!(m < pal.len());
                 pal[i] = pal[m];
                 m += 1;
             }
@@ -1711,7 +1712,7 @@ unsafe fn read_pal_plane(
             print!("{}{:02x}", if n != 0 { ' ' } else { '[' }, cache);
         }
         print!("{}, pal=", if n_cache != 0 { "]" } else { "[]" });
-        for (n, pal) in pal[..pal_sz].iter().enumerate() {
+        for (n, pal) in pal.iter().enumerate() {
             print!("{}{:02x}", if n != 0 { ' ' } else { '[' }, pal);
         }
         println!("]");
