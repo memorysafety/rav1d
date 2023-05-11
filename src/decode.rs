@@ -1735,7 +1735,7 @@ unsafe fn read_pal_plane(
     }
 }
 
-unsafe extern "C" fn read_pal_uv(
+unsafe fn read_pal_uv(
     t: *mut Dav1dTaskContext,
     b: *mut Av1Block,
     sz_ctx: u8,
