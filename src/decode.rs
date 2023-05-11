@@ -1644,13 +1644,14 @@ unsafe fn read_pal_plane(
         }
     }
     let mut i = 0;
-    let mut n = 0;
-    while n < n_cache && i < pal_sz {
+    for cache in &cache[..n_cache] {
+        if !(i < pal_sz) {
+            break;
+        }
         if dav1d_msac_decode_bool_equi(&mut ts.msac) {
-            used_cache[i] = cache[n];
+            used_cache[i] = *cache;
             i += 1;
         }
-        n += 1;
     }
     let n_used_cache = i;
     let pal = if t.frame_thread.pass != 0 {
