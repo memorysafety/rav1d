@@ -1600,6 +1600,7 @@ unsafe fn read_pal_plane(
     let mut a = &a[bx4][pli][..];
 
     // fill/sort cache
+    // TODO: This logic could be replaced with `itertools`' `.merge` and `.dedup`, which would elide bounds checks.
     while l_cache != 0 && a_cache != 0 {
         if l[0] < a[0] {
             if n_cache == 0 || cache[n_cache - 1] != l[0] {
@@ -1649,6 +1650,7 @@ unsafe fn read_pal_plane(
     let cache = &cache[..n_cache];
 
     // find reused cache entries
+    // TODO: Bounds checks could be elided with more complex iterators.
     let mut i = 0;
     for cache in cache {
         if !(i < pal_sz) {
