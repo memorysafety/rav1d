@@ -1780,11 +1780,11 @@ unsafe fn read_pal_uv(
             i += 1;
         }
     } else {
-        let mut i_0 = 0;
-        while i_0 < b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int {
-            pal[i_0 as usize] =
+        let mut i = 0;
+        while i < b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int {
+            pal[i as usize] =
                 dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as uint16_t;
-            i_0 += 1;
+            i += 1;
         }
     }
     if dbg {
