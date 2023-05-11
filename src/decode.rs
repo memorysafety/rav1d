@@ -1764,11 +1764,11 @@ unsafe fn read_pal_uv(
         let mut prev = pal[0];
         let max = (1 << f.cur.p.bpc) - 1;
         for i in 1..b.pal_sz()[1] as usize {
-            let mut delta = dav1d_msac_decode_bools(&mut ts.msac, bits) as libc::c_int;
+            let mut delta = dav1d_msac_decode_bools(&mut ts.msac, bits) as i16;
             if delta != 0 && dav1d_msac_decode_bool_equi(&mut ts.msac) {
                 delta = -delta;
             }
-            pal[i] = ((prev as libc::c_int + delta) & max) as u16;
+            pal[i] = ((prev as i16 + delta) as u16) & max;
             prev = pal[i];
         }
     } else {
