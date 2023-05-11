@@ -1764,23 +1764,23 @@ unsafe fn read_pal_uv(
         pal[0] = dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as u16;
         let mut prev = pal[0];
         let max = (1 << f.cur.p.bpc) - 1;
-        for i in 1..pal.len() {
+        for pal in &mut pal[1..] {
             let mut delta = dav1d_msac_decode_bools(&mut ts.msac, bits) as i16;
             if delta != 0 && dav1d_msac_decode_bool_equi(&mut ts.msac) {
                 delta = -delta;
             }
-            pal[i] = ((prev as i16 + delta) as u16) & max;
-            prev = pal[i];
+            *pal = ((prev as i16 + delta) as u16) & max;
+            prev = *pal;
         }
     } else {
-        for i in 0..pal.len() {
-            pal[i] = dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as u16;
+        for pal in pal.iter_mut() {
+            *pal = dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as u16;
         }
     }
     if dbg {
         print!("Post-pal[pl=2]: r={} ", ts.msac.rng);
-        for n in 0..pal.len() {
-            print!("{}{:02x}", if n != 0 { ' ' } else { '[' }, pal[n]);
+        for (n, pal) in pal.iter().enumerate() {
+            print!("{}{:02x}", if n != 0 { ' ' } else { '[' }, pal);
         }
         println!("]");
     }
