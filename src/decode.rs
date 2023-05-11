@@ -1760,9 +1760,8 @@ unsafe fn read_pal_uv(
     };
     if dav1d_msac_decode_bool_equi(&mut ts.msac) {
         let bits = f.cur.p.bpc - 4 + dav1d_msac_decode_bools(&mut ts.msac, 2) as libc::c_int;
-        let ref mut fresh19 = pal[0];
-        *fresh19 = dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as uint16_t;
-        let mut prev = *fresh19 as libc::c_int;
+        pal[0] = dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as uint16_t;
+        let mut prev = pal[0] as libc::c_int;
         let max = (1 << f.cur.p.bpc) - 1;
         for i in 1..b.pal_sz()[1] as usize {
             let mut delta =
@@ -1770,9 +1769,8 @@ unsafe fn read_pal_uv(
             if delta != 0 && dav1d_msac_decode_bool_equi(&mut ts.msac) {
                 delta = -delta;
             }
-            let ref mut fresh20 = pal[i];
-            *fresh20 = (prev + delta & max) as uint16_t;
-            prev = *fresh20 as libc::c_int;
+            pal[i] = (prev + delta & max) as uint16_t;
+            prev = pal[i] as libc::c_int;
         }
     } else {
         for i in 0..b.pal_sz()[1] as usize {
