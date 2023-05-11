@@ -1768,7 +1768,7 @@ unsafe fn read_pal_uv(
         let mut prev = *fresh19 as libc::c_int;
         let max = ((1 as libc::c_int) << f.cur.p.bpc) - 1;
         let mut i = 1;
-        while i < b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int {
+        while i < b.pal_sz()[1] as libc::c_int {
             let mut delta =
                 dav1d_msac_decode_bools(&mut ts.msac, bits as libc::c_uint) as libc::c_int;
             if delta != 0 && dav1d_msac_decode_bool_equi(&mut ts.msac) {
@@ -1781,7 +1781,7 @@ unsafe fn read_pal_uv(
         }
     } else {
         let mut i = 0;
-        while i < b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int {
+        while i < b.pal_sz()[1] as libc::c_int {
             pal[i as usize] =
                 dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as uint16_t;
             i += 1;
@@ -1790,7 +1790,7 @@ unsafe fn read_pal_uv(
     if dbg {
         print!("Post-pal[pl=2]: r={} ", ts.msac.rng);
         let mut n = 0;
-        while n < b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int {
+        while n < b.pal_sz()[1] as libc::c_int {
             print!(
                 "{}{:02x}",
                 if n != 0 { ' ' } else { '[' },
