@@ -2063,34 +2063,31 @@ unsafe fn splat_oneref_mv(
     bh4: libc::c_int,
 ) {
     let mode = b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as InterPredMode;
-    let tmpl = {
-        let mut init = refmvs_block(refmvs_block_unaligned {
-            mv: refmvs_mvpair {
-                mv: [
-                    b.c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .mv[0],
-                    mv::ZERO,
-                ],
-            },
-            r#ref: refmvs_refpair {
-                r#ref: [
-                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] + 1,
-                    if b.c2rust_unnamed.c2rust_unnamed_0.interintra_type != 0 {
-                        0
-                    } else {
-                        -1
-                    },
-                ],
-            },
-            bs: bs as u8,
-            mf: ((mode == GLOBALMV && imin(bw4, bh4) >= 2) as libc::c_int
-                | (mode == NEWMV) as libc::c_int * 2) as u8,
-        });
-        Align16(init)
-    };
+    let tmpl = Align16(refmvs_block(refmvs_block_unaligned {
+        mv: refmvs_mvpair {
+            mv: [
+                b.c2rust_unnamed
+                    .c2rust_unnamed_0
+                    .c2rust_unnamed
+                    .c2rust_unnamed
+                    .mv[0],
+                mv::ZERO,
+            ],
+        },
+        r#ref: refmvs_refpair {
+            r#ref: [
+                b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] + 1,
+                if b.c2rust_unnamed.c2rust_unnamed_0.interintra_type != 0 {
+                    0
+                } else {
+                    -1
+                },
+            ],
+        },
+        bs: bs as u8,
+        mf: ((mode == GLOBALMV && imin(bw4, bh4) >= 2) as libc::c_int
+            | (mode == NEWMV) as libc::c_int * 2) as u8,
+    }));
     (c.refmvs_dsp.splat_mv).expect("non-null function pointer")(
         &mut *(t.rt.r).as_mut_ptr().offset(((t.by & 31) + 5) as isize),
         &tmpl.0,
@@ -2109,24 +2106,21 @@ unsafe fn splat_intrabc_mv(
     bw4: libc::c_int,
     bh4: libc::c_int,
 ) {
-    let tmpl = {
-        let mut init = refmvs_block(refmvs_block_unaligned {
-            mv: refmvs_mvpair {
-                mv: [
-                    b.c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .mv[0],
-                    mv::ZERO,
-                ],
-            },
-            r#ref: refmvs_refpair { r#ref: [0, -1] },
-            bs: bs as u8,
-            mf: 0,
-        });
-        Align16(init)
-    };
+    let tmpl = Align16(refmvs_block(refmvs_block_unaligned {
+        mv: refmvs_mvpair {
+            mv: [
+                b.c2rust_unnamed
+                    .c2rust_unnamed_0
+                    .c2rust_unnamed
+                    .c2rust_unnamed
+                    .mv[0],
+                mv::ZERO,
+            ],
+        },
+        r#ref: refmvs_refpair { r#ref: [0, -1] },
+        bs: bs as u8,
+        mf: 0,
+    }));
     (c.refmvs_dsp.splat_mv).expect("non-null function pointer")(
         &mut *(t.rt.r).as_mut_ptr().offset(((t.by & 31) + 5) as isize),
         &tmpl.0,
@@ -2149,34 +2143,31 @@ unsafe fn splat_tworef_mv(
         unreachable!();
     }
     let mode = b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as CompInterPredMode;
-    let tmpl = {
-        let mut init = refmvs_block(refmvs_block_unaligned {
-            mv: refmvs_mvpair {
-                mv: [
-                    b.c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .mv[0],
-                    b.c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .mv[1],
-                ],
-            },
-            r#ref: refmvs_refpair {
-                r#ref: [
-                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] + 1,
-                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] + 1,
-                ],
-            },
-            bs: bs as u8,
-            mf: ((mode == GLOBALMV_GLOBALMV) as libc::c_int
-                | (1 << mode & 0xbc != 0) as libc::c_int * 2) as u8,
-        });
-        Align16(init)
-    };
+    let tmpl = Align16(refmvs_block(refmvs_block_unaligned {
+        mv: refmvs_mvpair {
+            mv: [
+                b.c2rust_unnamed
+                    .c2rust_unnamed_0
+                    .c2rust_unnamed
+                    .c2rust_unnamed
+                    .mv[0],
+                b.c2rust_unnamed
+                    .c2rust_unnamed_0
+                    .c2rust_unnamed
+                    .c2rust_unnamed
+                    .mv[1],
+            ],
+        },
+        r#ref: refmvs_refpair {
+            r#ref: [
+                b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] + 1,
+                b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] + 1,
+            ],
+        },
+        bs: bs as u8,
+        mf: ((mode == GLOBALMV_GLOBALMV) as libc::c_int
+            | (1 << mode & 0xbc != 0) as libc::c_int * 2) as u8,
+    }));
     (c.refmvs_dsp.splat_mv).expect("non-null function pointer")(
         &mut *(t.rt.r).as_mut_ptr().offset(((t.by & 31) + 5) as isize),
         &tmpl.0,
@@ -2194,17 +2185,14 @@ unsafe fn splat_intraref(
     bw4: libc::c_int,
     bh4: libc::c_int,
 ) {
-    let tmpl = {
-        let mut init = refmvs_block(refmvs_block_unaligned {
-            mv: refmvs_mvpair {
-                mv: [mv::INVALID, mv::ZERO],
-            },
-            r#ref: refmvs_refpair { r#ref: [0, -1] },
-            bs: bs as u8,
-            mf: 0,
-        });
-        Align16(init)
-    };
+    let tmpl = Align16(refmvs_block(refmvs_block_unaligned {
+        mv: refmvs_mvpair {
+            mv: [mv::INVALID, mv::ZERO],
+        },
+        r#ref: refmvs_refpair { r#ref: [0, -1] },
+        bs: bs as u8,
+        mf: 0,
+    }));
     (c.refmvs_dsp.splat_mv).expect("non-null function pointer")(
         &mut *(t.rt.r).as_mut_ptr().offset(((t.by & 31) + 5) as isize),
         &tmpl.0,
