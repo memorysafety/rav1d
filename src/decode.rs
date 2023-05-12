@@ -1200,8 +1200,8 @@ unsafe fn read_tx_tree(
     from: RectTxfmSize,
     depth: libc::c_int,
     masks: &mut [u16; 2],
-    x_off: libc::c_int,
-    y_off: libc::c_int,
+    x_off: usize,
+    y_off: usize,
 ) {
     let f = &*t.f;
     let bx4 = t.bx & 31;
