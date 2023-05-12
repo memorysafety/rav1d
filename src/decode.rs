@@ -1743,6 +1743,8 @@ unsafe fn read_pal_uv(
     by4: usize,
 ) {
     read_pal_plane(t, b, true, sz_ctx, bx4, by4);
+
+    // V pal coding
     let ts = &mut *t.ts;
     let f = &*t.f;
 
