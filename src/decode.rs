@@ -1863,7 +1863,7 @@ unsafe fn order_palette(
 }
 
 unsafe fn read_pal_indices(
-    t: *mut Dav1dTaskContext,
+    t: &mut Dav1dTaskContext,
     pal_idx: *mut uint8_t,
     b: *const Av1Block,
     pl: libc::c_int,
@@ -1872,7 +1872,7 @@ unsafe fn read_pal_indices(
     bw4: libc::c_int,
     bh4: libc::c_int,
 ) {
-    let ts: *mut Dav1dTileState = (*t).ts;
+    let ts: *mut Dav1dTileState = t.ts;
     let stride: ptrdiff_t = (bw4 * 4) as ptrdiff_t;
     if pal_idx.is_null() {
         unreachable!();
@@ -1884,13 +1884,13 @@ unsafe fn read_pal_indices(
     let color_map_cdf: *mut [uint16_t; 8] = ((*ts).cdf.m.color_map[pl as usize]
         [((*b).c2rust_unnamed.c2rust_unnamed.pal_sz[pl as usize] as libc::c_int - 2) as usize])
         .as_mut_ptr();
-    let order = &mut (*t)
+    let order = &mut t
         .scratch
         .c2rust_unnamed_0
         .c2rust_unnamed
         .c2rust_unnamed
         .pal_order;
-    let ctx = &mut (*t)
+    let ctx = &mut t
         .scratch
         .c2rust_unnamed_0
         .c2rust_unnamed
