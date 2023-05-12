@@ -1942,21 +1942,22 @@ unsafe fn read_vartx_tree(
     let bh4 = b_dim[1] as libc::c_int;
     let mut tx_split: [u16; 2] = [0, 0];
     *b.max_ytx_mut() = dav1d_max_txfm_size_for_bs[bs as usize][0];
+    let txfm_mode = (*f.frame_hdr).txfm_mode as Dav1dTxfmMode;
     if b.skip == 0
         && ((*f.frame_hdr).segmentation.lossless[b.seg_id as usize] != 0
             || b.max_ytx() as TxfmSize == TX_4X4)
     {
         b.uvtx = TX_4X4 as u8;
         *b.max_ytx_mut() = b.uvtx;
-        if (*f.frame_hdr).txfm_mode as Dav1dTxfmMode == DAV1D_TX_SWITCHABLE {
+        if txfm_mode == DAV1D_TX_SWITCHABLE {
             let mut set_ctx = |dir: &mut BlockContext, _diridx, off, _mul, rep_macro: SetCtxFn| {
                 rep_macro(dir.tx.0.as_mut_ptr() as *mut u8, off, TX_4X4 as u64);
             };
             case_set(bh4, &mut t.l, 1, by4 as isize, &mut set_ctx);
             case_set(bw4, &mut *t.a, 0, bx4 as isize, &mut set_ctx);
         }
-    } else if (*f.frame_hdr).txfm_mode as Dav1dTxfmMode != DAV1D_TX_SWITCHABLE || b.skip != 0 {
-        if (*f.frame_hdr).txfm_mode as Dav1dTxfmMode == DAV1D_TX_SWITCHABLE {
+    } else if txfm_mode != DAV1D_TX_SWITCHABLE || b.skip != 0 {
+        if txfm_mode == DAV1D_TX_SWITCHABLE {
             let mut set_ctx = |dir: &mut BlockContext, diridx, off, mul, rep_macro: SetCtxFn| {
                 rep_macro(
                     dir.tx.0.as_mut_ptr() as *mut u8,
