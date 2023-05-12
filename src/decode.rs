@@ -1930,7 +1930,7 @@ unsafe fn read_pal_indices(
     }
 }
 
-unsafe extern "C" fn read_vartx_tree(
+unsafe fn read_vartx_tree(
     t: *mut Dav1dTaskContext,
     b: *mut Av1Block,
     bs: BlockSize,
