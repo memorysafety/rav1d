@@ -1905,9 +1905,9 @@ unsafe fn read_pal_indices(
                 &mut ts.msac,
                 &mut color_map_cdf[ctx[m as usize] as usize],
                 (b.pal_sz()[pli] as libc::c_int - 1) as size_t,
-            ) as libc::c_int;
+            ) as usize;
             *pal_idx.offset(((i - j) as isize * stride + j as isize) as isize) =
-                order[m as usize][color_idx as usize];
+                order[m as usize][color_idx];
             j -= 1;
             m += 1;
         }
