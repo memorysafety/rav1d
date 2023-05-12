@@ -1892,8 +1892,8 @@ unsafe fn read_pal_indices(
         .c2rust_unnamed
         .pal_ctx;
     for i in 1..4 * (w4 + h4) - 1 {
-        let first = imin(i, w4 * 4 - 1);
-        let last = imax(0, i - h4 * 4 + 1);
+        let first = std::cmp::min(i, w4 * 4 - 1);
+        let last = std::cmp::max(0, i - h4 * 4 + 1);
         order_palette(pal_idx, stride, i, first, last, order, ctx);
         for (m, j) in (last..=first).rev().enumerate() {
             let color_idx = dav1d_msac_decode_symbol_adapt8(
