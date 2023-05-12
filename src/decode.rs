@@ -1773,9 +1773,7 @@ unsafe fn read_pal_uv(
             prev = *pal;
         }
     } else {
-        for pal in pal.iter_mut() {
-            *pal = dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as u16;
-        }
+        pal.fill_with(|| dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as u16);
     }
     if dbg {
         print!("Post-pal[pl=2]: r={} ", ts.msac.rng);
