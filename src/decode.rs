@@ -1862,7 +1862,7 @@ unsafe fn order_palette(
     }
 }
 
-unsafe extern "C" fn read_pal_indices(
+unsafe fn read_pal_indices(
     t: *mut Dav1dTaskContext,
     pal_idx: *mut uint8_t,
     b: *const Av1Block,
@@ -1945,6 +1945,7 @@ unsafe extern "C" fn read_pal_indices(
         }
     }
 }
+
 unsafe extern "C" fn read_vartx_tree(
     t: *mut Dav1dTaskContext,
     b: *mut Av1Block,
