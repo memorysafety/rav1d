@@ -1940,6 +1940,8 @@ unsafe fn read_vartx_tree(
     let b_dim = &dav1d_block_dimensions[bs as usize];
     let bw4 = b_dim[0] as usize;
     let bh4 = b_dim[1] as usize;
+
+    // var-tx tree coding
     let mut tx_split = [0u16; 2];
     *b.max_ytx_mut() = dav1d_max_txfm_size_for_bs[bs as usize][0];
     let txfm_mode = (*f.frame_hdr).txfm_mode as Dav1dTxfmMode;
@@ -1986,6 +1988,7 @@ unsafe fn read_vartx_tree(
                     x_off,
                     y_off,
                 );
+                // contexts are updated inside read_tx_tree()
                 t.bx += w as libc::c_int;
             }
             t.bx -= bw4 as libc::c_int;
