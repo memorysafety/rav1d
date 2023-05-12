@@ -1906,8 +1906,10 @@ unsafe fn read_pal_indices(
     // fill invisible edges
     if bw4 > w4 {
         for y in 0..4 * h4 {
-            let filler = pal_idx[y * stride + (4 * w4) - 1];
-            pal_idx[y * stride + (4 * w4)..][..4 * (bw4 - w4)].fill(filler);
+            let offset = y * stride + (4 * w4);
+            let len = 4 * (bw4 - w4);
+            let filler = pal_idx[offset - 1];
+            pal_idx[offset..][..len].fill(filler);
         }
     }
     if h4 < bh4 {
