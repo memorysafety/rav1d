@@ -1921,13 +1921,11 @@ unsafe fn read_pal_indices(
         }
     }
     if h4 < bh4 {
-        let src = pal_idx.offset((stride * (4 * h4 - 1)) as isize) as *const u8;
+        let len = bw4 * 4;
+        let src = std::slice::from_raw_parts(pal_idx.offset((stride * (4 * h4 - 1)) as isize), len);
         for y in h4 * 4..bh4 * 4 {
-            memcpy(
-                pal_idx.offset((y * stride) as isize) as *mut libc::c_void,
-                src as *const libc::c_void,
-                (bw4 * 4) as libc::c_ulong,
-            );
+            std::slice::from_raw_parts_mut(pal_idx.offset((y * stride) as isize), len)
+                .copy_from_slice(src);
         }
     }
 }
