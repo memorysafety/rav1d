@@ -2077,7 +2077,7 @@ unsafe fn splat_oneref_mv(
         mf: (mode == GLOBALMV && std::cmp::min(bw4, bh4) >= 2) as u8 | (mode == NEWMV) as u8 * 2,
     }));
     c.refmvs_dsp.splat_mv(
-        t.rt.r[((t.by & 31) + 5) as usize..].as_mut_ptr(),
+        &mut t.rt.r[((t.by & 31) + 5) as usize..],
         &tmpl.0,
         t.bx,
         bw4,
@@ -2103,7 +2103,7 @@ unsafe fn splat_intrabc_mv(
         mf: 0,
     }));
     c.refmvs_dsp.splat_mv(
-        t.rt.r[((t.by & 31) + 5) as usize..].as_mut_ptr(),
+        &mut t.rt.r[((t.by & 31) + 5) as usize..],
         &tmpl.0,
         t.bx,
         bw4,
@@ -2131,7 +2131,7 @@ unsafe fn splat_tworef_mv(
         mf: (mode == GLOBALMV_GLOBALMV) as u8 | (1 << mode & 0xbc != 0) as u8 * 2,
     }));
     c.refmvs_dsp.splat_mv(
-        t.rt.r[((t.by & 31) + 5) as usize..].as_mut_ptr(),
+        &mut t.rt.r[((t.by & 31) + 5) as usize..],
         &tmpl.0,
         t.bx,
         bw4,
@@ -2156,7 +2156,7 @@ unsafe fn splat_intraref(
         mf: 0,
     }));
     c.refmvs_dsp.splat_mv(
-        t.rt.r[((t.by & 31) + 5) as usize..].as_mut_ptr(),
+        &mut t.rt.r[((t.by & 31) + 5) as usize..],
         &tmpl.0,
         t.bx,
         bw4,

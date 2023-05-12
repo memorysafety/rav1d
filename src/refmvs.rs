@@ -227,13 +227,13 @@ pub struct Dav1dRefmvsDSPContext {
 impl Dav1dRefmvsDSPContext {
     pub unsafe fn splat_mv(
         &self,
-        rr: *mut *mut refmvs_block,
-        rmv: *const refmvs_block,
+        rr: &mut [*mut refmvs_block],
+        rmv: &refmvs_block,
         bx4: libc::c_int,
         bw4: libc::c_int,
         bh4: libc::c_int,
     ) {
-        self.splat_mv.expect("non-null function pointer")(rr, rmv, bx4, bw4, bh4);
+        self.splat_mv.expect("non-null function pointer")(rr.as_mut_ptr(), rmv, bx4, bw4, bh4);
     }
 }
 
