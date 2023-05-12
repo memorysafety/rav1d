@@ -485,4 +485,12 @@ impl Av1Block {
     pub unsafe fn ref_mut(&mut self) -> &mut [int8_t; 2] {
         &mut self.c2rust_unnamed.c2rust_unnamed_0.r#ref
     }
+
+    pub unsafe fn max_ytx(&self) -> u8 {
+        self.c2rust_unnamed.c2rust_unnamed_0.max_ytx
+    }
+
+    pub unsafe fn max_ytx_mut(&mut self) -> &mut u8 {
+        &mut self.c2rust_unnamed.c2rust_unnamed_0.max_ytx
+    }
 }
