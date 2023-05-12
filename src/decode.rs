@@ -2055,7 +2055,7 @@ unsafe fn get_prev_frame_segid(
 
 #[inline]
 unsafe fn splat_oneref_mv(
-    c: *const Dav1dContext,
+    c: &Dav1dContext,
     t: *mut Dav1dTaskContext,
     bs: BlockSize,
     b: *const Av1Block,
@@ -2093,7 +2093,7 @@ unsafe fn splat_oneref_mv(
         });
         Align16(init)
     };
-    ((*c).refmvs_dsp.splat_mv).expect("non-null function pointer")(
+    (c.refmvs_dsp.splat_mv).expect("non-null function pointer")(
         &mut *((*t).rt.r)
             .as_mut_ptr()
             .offset((((*t).by & 31) + 5) as isize),
@@ -2106,7 +2106,7 @@ unsafe fn splat_oneref_mv(
 
 #[inline]
 unsafe fn splat_intrabc_mv(
-    c: *const Dav1dContext,
+    c: &Dav1dContext,
     t: *mut Dav1dTaskContext,
     bs: BlockSize,
     b: *const Av1Block,
@@ -2133,7 +2133,7 @@ unsafe fn splat_intrabc_mv(
         });
         Align16(init)
     };
-    ((*c).refmvs_dsp.splat_mv).expect("non-null function pointer")(
+    (c.refmvs_dsp.splat_mv).expect("non-null function pointer")(
         &mut *((*t).rt.r)
             .as_mut_ptr()
             .offset((((*t).by & 31) + 5) as isize),
@@ -2146,7 +2146,7 @@ unsafe fn splat_intrabc_mv(
 
 #[inline]
 unsafe fn splat_tworef_mv(
-    c: *const Dav1dContext,
+    c: &Dav1dContext,
     t: *mut Dav1dTaskContext,
     bs: BlockSize,
     b: *const Av1Block,
@@ -2189,7 +2189,7 @@ unsafe fn splat_tworef_mv(
         });
         Align16(init)
     };
-    ((*c).refmvs_dsp.splat_mv).expect("non-null function pointer")(
+    (c.refmvs_dsp.splat_mv).expect("non-null function pointer")(
         &mut *((*t).rt.r)
             .as_mut_ptr()
             .offset((((*t).by & 31) + 5) as isize),
@@ -2202,7 +2202,7 @@ unsafe fn splat_tworef_mv(
 
 #[inline]
 unsafe fn splat_intraref(
-    c: *const Dav1dContext,
+    c: &Dav1dContext,
     t: *mut Dav1dTaskContext,
     bs: BlockSize,
     bw4: libc::c_int,
@@ -2221,7 +2221,7 @@ unsafe fn splat_intraref(
         });
         Align16(init)
     };
-    ((*c).refmvs_dsp.splat_mv).expect("non-null function pointer")(
+    (c.refmvs_dsp.splat_mv).expect("non-null function pointer")(
         &mut *((*t).rt.r)
             .as_mut_ptr()
             .offset((((*t).by & 31) + 5) as isize),
@@ -3297,7 +3297,7 @@ unsafe fn decode_b(
         }
 
         if is_inter_or_switch(frame_hdr) || frame_hdr.allow_intrabc != 0 {
-            splat_intraref(f.c, t, bs, bw4, bh4);
+            splat_intraref(&*f.c, t, bs, bw4, bh4);
         }
     } else if is_key_or_intra(frame_hdr) {
         // intra block copy
@@ -3419,7 +3419,7 @@ unsafe fn decode_b(
             return -1;
         }
 
-        splat_intrabc_mv(f.c, t, bs, b, bw4, bh4);
+        splat_intrabc_mv(&*f.c, t, bs, b, bw4, bh4);
 
         let mut set_ctx = |dir: &mut BlockContext, diridx: usize, off, mul, rep_macro: SetCtxFn| {
             rep_macro(
@@ -4507,9 +4507,9 @@ unsafe fn decode_b(
             );
         }
         if is_comp {
-            splat_tworef_mv(f.c, t, bs, b, bw4, bh4);
+            splat_tworef_mv(&*f.c, t, bs, b, bw4, bh4);
         } else {
-            splat_oneref_mv(f.c, t, bs, b, bw4, bh4);
+            splat_oneref_mv(&*f.c, t, bs, b, bw4, bh4);
         }
         match bh4 {
             1 => {
