@@ -1941,13 +1941,13 @@ unsafe fn read_vartx_tree(
     let bw4 = b_dim[0] as libc::c_int;
     let bh4 = b_dim[1] as libc::c_int;
     let mut tx_split: [u16; 2] = [0, 0];
-    b.c2rust_unnamed.c2rust_unnamed_0.max_ytx = dav1d_max_txfm_size_for_bs[bs as usize][0];
+    *b.max_ytx_mut() = dav1d_max_txfm_size_for_bs[bs as usize][0];
     if b.skip == 0
         && ((*f.frame_hdr).segmentation.lossless[b.seg_id as usize] != 0
-            || b.c2rust_unnamed.c2rust_unnamed_0.max_ytx as TxfmSize == TX_4X4)
+            || b.max_ytx() as TxfmSize == TX_4X4)
     {
         b.uvtx = TX_4X4 as u8;
-        b.c2rust_unnamed.c2rust_unnamed_0.max_ytx = b.uvtx;
+        *b.max_ytx_mut() = b.uvtx;
         if (*f.frame_hdr).txfm_mode as Dav1dTxfmMode == DAV1D_TX_SWITCHABLE {
             let mut set_ctx = |dir: &mut BlockContext, _diridx, off, _mul, rep_macro: SetCtxFn| {
                 rep_macro(dir.tx.0.as_mut_ptr() as *mut u8, off, TX_4X4 as u64);
@@ -1969,18 +1969,12 @@ unsafe fn read_vartx_tree(
         }
         b.uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
     } else {
-        assert!(
-            bw4 <= 16
-                || bh4 <= 16
-                || b.c2rust_unnamed.c2rust_unnamed_0.max_ytx as TxfmSize == TX_64X64
-        );
+        assert!(bw4 <= 16 || bh4 <= 16 || b.max_ytx() as TxfmSize == TX_64X64);
         let mut y = 0;
         let mut x = 0;
         let mut y_off = 0;
         let mut x_off = 0;
-        let ytx = dav1d_txfm_dimensions
-            .as_ptr()
-            .offset(b.c2rust_unnamed.c2rust_unnamed_0.max_ytx as isize);
+        let ytx = dav1d_txfm_dimensions.as_ptr().offset(b.max_ytx() as isize);
         y = 0;
         y_off = 0;
         while y < bh4 {
@@ -1989,7 +1983,7 @@ unsafe fn read_vartx_tree(
             while x < bw4 {
                 read_tx_tree(
                     &mut *t,
-                    b.c2rust_unnamed.c2rust_unnamed_0.max_ytx as RectTxfmSize,
+                    b.max_ytx() as RectTxfmSize,
                     0,
                     &mut tx_split,
                     x_off,
