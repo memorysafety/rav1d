@@ -1969,12 +1969,11 @@ unsafe fn read_vartx_tree(
         }
         b.uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
     } else {
-        if !(bw4 <= 16
-            || bh4 <= 16
-            || b.c2rust_unnamed.c2rust_unnamed_0.max_ytx as TxfmSize == TX_64X64)
-        {
-            unreachable!();
-        }
+        assert!(
+            bw4 <= 16
+                || bh4 <= 16
+                || b.c2rust_unnamed.c2rust_unnamed_0.max_ytx as TxfmSize == TX_64X64
+        );
         let mut y = 0;
         let mut x = 0;
         let mut y_off = 0;
@@ -2016,9 +2015,7 @@ unsafe fn read_vartx_tree(
         }
         b.uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
     }
-    if tx_split[0] & !0x33 != 0 {
-        unreachable!();
-    }
+    assert!(tx_split[0] & !0x33 == 0);
     b.c2rust_unnamed.c2rust_unnamed_0.tx_split0 = tx_split[0] as u8;
     b.c2rust_unnamed.c2rust_unnamed_0.tx_split1 = tx_split[1];
 }
