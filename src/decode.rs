@@ -1788,17 +1788,20 @@ unsafe fn read_pal_uv(
 
 unsafe fn order_palette(
     mut pal_idx: *const uint8_t,
-    stride: ptrdiff_t,
-    i: libc::c_int,
-    first: libc::c_int,
-    last: libc::c_int,
+    stride: usize,
+    i: usize,
+    first: usize,
+    last: usize,
     order: &mut [[u8; u8::BITS as usize]; 64],
     ctx: &mut [u8; 64],
 ) {
     let mut have_top = i > first;
 
     assert!(!pal_idx.is_null());
-    pal_idx = pal_idx.offset(first as isize + (i - first) as isize * stride);
+    pal_idx = pal_idx.offset((first + (i - first) * stride) as isize);
+
+    let stride = stride as isize;
+
     for ((ctx, order), j) in ctx
         .iter_mut()
         .zip(order.iter_mut())
@@ -1872,10 +1875,11 @@ unsafe fn read_pal_indices(
     bw4: libc::c_int,
     bh4: libc::c_int,
 ) {
+    let [w4, h4, bw4, bh4] = [w4, h4, bw4, bh4].map(|n| usize::try_from(n).unwrap());
     let pli = pl as usize;
     let pal_sz = b.pal_sz()[pli] as usize;
     let ts = &mut *t.ts;
-    let stride = (bw4 * 4) as ptrdiff_t;
+    let stride = bw4 * 4;
     assert!(!pal_idx.is_null());
     *pal_idx.offset(0) = dav1d_msac_decode_uniform(&mut ts.msac, pal_sz as libc::c_uint) as u8;
     let color_map_cdf = &mut ts.cdf.m.color_map[pli][pal_sz - 2];
@@ -1893,7 +1897,7 @@ unsafe fn read_pal_indices(
         .pal_ctx;
     for i in 1..4 * (w4 + h4) - 1 {
         let first = std::cmp::min(i, w4 * 4 - 1);
-        let last = std::cmp::max(0, i - h4 * 4 + 1);
+        let last = (i + 1).checked_sub(h4 * 4).unwrap_or(0);
         order_palette(pal_idx, stride, i, first, last, order, ctx);
         for (m, j) in (last..=first).rev().enumerate() {
             let color_idx = dav1d_msac_decode_symbol_adapt8(
@@ -1901,23 +1905,23 @@ unsafe fn read_pal_indices(
                 &mut color_map_cdf[ctx[m] as usize],
                 pal_sz - 1,
             ) as usize;
-            *pal_idx.offset((i - j) as isize * stride + j as isize) = order[m][color_idx];
+            *pal_idx.offset(((i - j) * stride + j) as isize) = order[m][color_idx];
         }
     }
     if bw4 > w4 {
         for y in 0..4 * h4 {
             memset(
-                pal_idx.offset(y as isize * stride + (4 * w4) as isize) as *mut libc::c_void,
-                *pal_idx.offset(y as isize * stride + (4 * w4) as isize - 1) as libc::c_int,
-                (4 * (bw4 - w4)) as size_t,
+                pal_idx.offset((y * stride + (4 * w4)) as isize) as *mut libc::c_void,
+                *pal_idx.offset((y * stride + (4 * w4) - 1) as isize) as libc::c_int,
+                4 * (bw4 - w4),
             );
         }
     }
     if h4 < bh4 {
-        let src = pal_idx.offset(stride * (4 * h4 as isize - 1)) as *const u8;
+        let src = pal_idx.offset((stride * (4 * h4 - 1)) as isize) as *const u8;
         for y in h4 * 4..bh4 * 4 {
             memcpy(
-                pal_idx.offset(y as isize * stride) as *mut libc::c_void,
+                pal_idx.offset((y * stride) as isize) as *mut libc::c_void,
                 src as *const libc::c_void,
                 (bw4 * 4) as libc::c_ulong,
             );
