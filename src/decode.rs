@@ -2054,7 +2054,7 @@ unsafe fn get_prev_frame_segid(
 }
 
 #[inline]
-unsafe extern "C" fn splat_oneref_mv(
+unsafe fn splat_oneref_mv(
     c: *const Dav1dContext,
     t: *mut Dav1dTaskContext,
     bs: BlockSize,
@@ -2103,8 +2103,9 @@ unsafe extern "C" fn splat_oneref_mv(
         bh4,
     );
 }
+
 #[inline]
-unsafe extern "C" fn splat_intrabc_mv(
+unsafe fn splat_intrabc_mv(
     c: *const Dav1dContext,
     t: *mut Dav1dTaskContext,
     bs: BlockSize,
@@ -2142,8 +2143,9 @@ unsafe extern "C" fn splat_intrabc_mv(
         bh4,
     );
 }
+
 #[inline]
-unsafe extern "C" fn splat_tworef_mv(
+unsafe fn splat_tworef_mv(
     c: *const Dav1dContext,
     t: *mut Dav1dTaskContext,
     bs: BlockSize,
@@ -2197,8 +2199,9 @@ unsafe extern "C" fn splat_tworef_mv(
         bh4,
     );
 }
+
 #[inline]
-unsafe extern "C" fn splat_intraref(
+unsafe fn splat_intraref(
     c: *const Dav1dContext,
     t: *mut Dav1dTaskContext,
     bs: BlockSize,
