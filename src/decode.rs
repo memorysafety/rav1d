@@ -2074,7 +2074,7 @@ unsafe fn splat_oneref_mv(
             ],
         },
         bs: bs as u8,
-        mf: (mode == GLOBALMV && imin(bw4, bh4) >= 2) as u8 | (mode == NEWMV) as u8 * 2,
+        mf: (mode == GLOBALMV && std::cmp::min(bw4, bh4) >= 2) as u8 | (mode == NEWMV) as u8 * 2,
     }));
     (c.refmvs_dsp.splat_mv).expect("non-null function pointer")(
         &mut *(t.rt.r).as_mut_ptr().offset(((t.by & 31) + 5) as isize),
