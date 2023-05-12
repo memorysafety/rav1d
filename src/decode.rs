@@ -1876,9 +1876,7 @@ unsafe fn read_pal_indices(
     let pal_sz = b.pal_sz()[pli] as usize;
     let ts = &mut *t.ts;
     let stride = (bw4 * 4) as ptrdiff_t;
-    if pal_idx.is_null() {
-        unreachable!();
-    }
+    assert!(!pal_idx.is_null());
     *pal_idx.offset(0) = dav1d_msac_decode_uniform(&mut ts.msac, pal_sz as libc::c_uint) as u8;
     let color_map_cdf = &mut ts.cdf.m.color_map[pli][pal_sz - 2];
     let order = &mut t
