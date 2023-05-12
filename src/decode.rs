@@ -2000,11 +2000,11 @@ unsafe fn read_vartx_tree(
         }
         t.by -= y;
         if DEBUG_BLOCK_INFO(&*f, &*t) {
-            printf(
-                b"Post-vartxtree[%x/%x]: r=%d\n\0" as *const u8 as *const libc::c_char,
-                tx_split[0] as libc::c_int,
-                tx_split[1] as libc::c_int,
-                (*t.ts).msac.rng,
+            println!(
+                "Post-vartxtree[{}/{}]: r={}",
+                tx_split[0],
+                tx_split[1],
+                (*t.ts).msac.rng
             );
         }
         b.uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
