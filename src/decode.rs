@@ -1913,11 +1913,11 @@ unsafe fn read_pal_indices(
     // fill invisible edges
     if bw4 > w4 {
         for y in 0..4 * h4 {
-            memset(
-                pal_idx.offset((y * stride + (4 * w4)) as isize) as *mut libc::c_void,
-                *pal_idx.offset((y * stride + (4 * w4) - 1) as isize) as libc::c_int,
+            std::slice::from_raw_parts_mut(
+                pal_idx.offset((y * stride + (4 * w4)) as isize),
                 4 * (bw4 - w4),
-            );
+            )
+            .fill(*pal_idx.offset((y * stride + (4 * w4) - 1) as isize));
         }
     }
     if h4 < bh4 {
