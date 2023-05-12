@@ -1076,6 +1076,8 @@ use crate::src::msac::dav1d_msac_decode_uniform;
 
 use crate::src::recon::define_DEBUG_BLOCK_INFO;
 
+use crate::src::internal::Dav1dTaskContext_scratch_pal;
+
 define_DEBUG_BLOCK_INFO!();
 
 fn init_quant_tables(
@@ -1786,7 +1788,7 @@ unsafe fn read_pal_uv(
 }
 
 unsafe fn order_palette(
-    mut pal_idx: *const uint8_t,
+    mut pal_idx: &[u8],
     stride: usize,
     i: usize,
     first: usize,
@@ -1796,8 +1798,9 @@ unsafe fn order_palette(
 ) {
     let mut have_top = i > first;
 
-    assert!(!pal_idx.is_null());
-    pal_idx = pal_idx.offset((first + (i - first) * stride) as isize);
+    let mut pal_idx = pal_idx
+        .as_ptr()
+        .offset((first + (i - first) * stride) as isize);
 
     let stride = stride as isize;
 
@@ -1865,8 +1868,9 @@ unsafe fn order_palette(
 }
 
 unsafe fn read_pal_indices(
-    t: &mut Dav1dTaskContext,
-    pal_idx: *mut uint8_t,
+    ts: &mut Dav1dTileState,
+    scratch_pal: &mut Dav1dTaskContext_scratch_pal,
+    pal_idx: &mut [u8],
     b: &Av1Block,
     pl: bool,
     w4: libc::c_int,
@@ -1878,23 +1882,13 @@ unsafe fn read_pal_indices(
     let pli = pl as usize;
     let pal_sz = b.pal_sz()[pli] as usize;
 
-    let ts = &mut *t.ts;
     let stride = bw4 * 4;
-    assert!(!pal_idx.is_null());
-    *pal_idx.offset(0) = dav1d_msac_decode_uniform(&mut ts.msac, pal_sz as libc::c_uint) as u8;
+    pal_idx[0] = dav1d_msac_decode_uniform(&mut ts.msac, pal_sz as libc::c_uint) as u8;
     let color_map_cdf = &mut ts.cdf.m.color_map[pli][pal_sz - 2];
-    let order = &mut t
-        .scratch
-        .c2rust_unnamed_0
-        .c2rust_unnamed
-        .c2rust_unnamed
-        .pal_order;
-    let ctx = &mut t
-        .scratch
-        .c2rust_unnamed_0
-        .c2rust_unnamed
-        .c2rust_unnamed
-        .pal_ctx;
+    let Dav1dTaskContext_scratch_pal {
+        pal_order: order,
+        pal_ctx: ctx,
+    } = scratch_pal;
     for i in 1..4 * (w4 + h4) - 1 {
         // top/left-to-bottom/right diagonals ("wave-front")
         let first = std::cmp::min(i, w4 * 4 - 1);
@@ -1906,24 +1900,24 @@ unsafe fn read_pal_indices(
                 &mut color_map_cdf[ctx[m] as usize],
                 pal_sz - 1,
             ) as usize;
-            *pal_idx.offset(((i - j) * stride + j) as isize) = order[m][color_idx];
+            pal_idx[(i - j) * stride + j] = order[m][color_idx];
         }
     }
     // fill invisible edges
     if bw4 > w4 {
         for y in 0..4 * h4 {
-            std::slice::from_raw_parts_mut(
-                pal_idx.offset((y * stride + (4 * w4)) as isize),
-                4 * (bw4 - w4),
-            )
-            .fill(*pal_idx.offset((y * stride + (4 * w4) - 1) as isize));
+            let filler = pal_idx[y * stride + (4 * w4) - 1];
+            pal_idx[y * stride + (4 * w4)..][..4 * (bw4 - w4)].fill(filler);
         }
     }
     if h4 < bh4 {
         let len = bw4 * 4;
-        let src = std::slice::from_raw_parts(pal_idx.offset((stride * (4 * h4 - 1)) as isize), len);
+        let src = std::slice::from_raw_parts(
+            pal_idx.as_ptr().offset((stride * (4 * h4 - 1)) as isize),
+            len,
+        );
         for y in h4 * 4..bh4 * 4 {
-            std::slice::from_raw_parts_mut(pal_idx.offset((y * stride) as isize), len)
+            std::slice::from_raw_parts_mut(pal_idx.as_mut_ptr().offset((y * stride) as isize), len)
                 .copy_from_slice(src);
         }
     }
@@ -3009,13 +3003,24 @@ unsafe fn decode_b(
                 let p = t.frame_thread.pass & 1;
                 let frame_thread = &mut ts.frame_thread[p as usize];
                 assert!(!frame_thread.pal_idx.is_null());
-                pal_idx = frame_thread.pal_idx;
-                frame_thread.pal_idx = frame_thread.pal_idx.offset((bw4 * bh4 * 16) as isize);
+                let len = usize::try_from(bw4 * bh4 * 16).unwrap();
+                pal_idx = std::slice::from_raw_parts_mut(frame_thread.pal_idx, len);
+                frame_thread.pal_idx = frame_thread.pal_idx.offset(len as isize);
             } else {
-                pal_idx = t.scratch.c2rust_unnamed_0.pal_idx.as_mut_ptr();
+                pal_idx = &mut t.scratch.c2rust_unnamed_0.pal_idx;
             }
 
-            read_pal_indices(t, pal_idx, b, false, w4, h4, bw4, bh4);
+            read_pal_indices(
+                &mut *t.ts,
+                &mut t.scratch.c2rust_unnamed_0.c2rust_unnamed.c2rust_unnamed,
+                pal_idx,
+                b,
+                false,
+                w4,
+                h4,
+                bw4,
+                bh4,
+            );
 
             if DEBUG_BLOCK_INFO(f, t) {
                 println!("Post-y-pal-indices: r={}", ts.msac.rng);
@@ -3028,18 +3033,24 @@ unsafe fn decode_b(
                 let p = t.frame_thread.pass & 1;
                 let frame_thread = &mut ts.frame_thread[p as usize];
                 assert!(!(frame_thread.pal_idx).is_null());
-                pal_idx = frame_thread.pal_idx;
-                frame_thread.pal_idx = frame_thread.pal_idx.offset((cbw4 * cbh4 * 16) as isize);
+                let len = usize::try_from(cbw4 * cbh4 * 16).unwrap();
+                pal_idx = std::slice::from_raw_parts_mut(frame_thread.pal_idx, len);
+                frame_thread.pal_idx = frame_thread.pal_idx.offset(len as isize);
             } else {
-                pal_idx = t
-                    .scratch
-                    .c2rust_unnamed_0
-                    .pal_idx
-                    .as_mut_ptr()
-                    .offset((bw4 * bh4 * 16) as isize);
+                pal_idx = &mut t.scratch.c2rust_unnamed_0.pal_idx[(bw4 * bh4 * 16) as usize..];
             }
 
-            read_pal_indices(t, pal_idx, b, true, cw4, ch4, cbw4, cbh4);
+            read_pal_indices(
+                &mut *t.ts,
+                &mut t.scratch.c2rust_unnamed_0.c2rust_unnamed.c2rust_unnamed,
+                pal_idx,
+                b,
+                true,
+                cw4,
+                ch4,
+                cbw4,
+                cbh4,
+            );
 
             if DEBUG_BLOCK_INFO(f, t) {
                 println!("Post-uv-pal-indices: r={}", ts.msac.rng);
