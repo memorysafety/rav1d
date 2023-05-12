@@ -2062,8 +2062,8 @@ unsafe fn splat_oneref_mv(
     bw4: libc::c_int,
     bh4: libc::c_int,
 ) {
-    let mode: InterPredMode = b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as InterPredMode;
-    let tmpl: Align16<refmvs_block> = {
+    let mode = b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as InterPredMode;
+    let tmpl = {
         let mut init = refmvs_block(refmvs_block_unaligned {
             mv: refmvs_mvpair {
                 mv: [
@@ -2077,19 +2077,17 @@ unsafe fn splat_oneref_mv(
             },
             r#ref: refmvs_refpair {
                 r#ref: [
-                    (b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int + 1) as int8_t,
-                    (if b.c2rust_unnamed.c2rust_unnamed_0.interintra_type as libc::c_int != 0 {
-                        0 as libc::c_int
+                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] + 1,
+                    if b.c2rust_unnamed.c2rust_unnamed_0.interintra_type != 0 {
+                        0
                     } else {
-                        -(1 as libc::c_int)
-                    }) as int8_t,
+                        -1
+                    },
                 ],
             },
-            bs: bs as uint8_t,
-            mf: ((mode as libc::c_uint == GLOBALMV as libc::c_int as libc::c_uint
-                && imin(bw4, bh4) >= 2) as libc::c_int
-                | (mode as libc::c_uint == NEWMV as libc::c_int as libc::c_uint) as libc::c_int * 2)
-                as uint8_t,
+            bs: bs as u8,
+            mf: ((mode == GLOBALMV && imin(bw4, bh4) >= 2) as libc::c_int
+                | (mode == NEWMV) as libc::c_int * 2) as u8,
         });
         Align16(init)
     };
@@ -2111,7 +2109,7 @@ unsafe fn splat_intrabc_mv(
     bw4: libc::c_int,
     bh4: libc::c_int,
 ) {
-    let tmpl: Align16<refmvs_block> = {
+    let tmpl = {
         let mut init = refmvs_block(refmvs_block_unaligned {
             mv: refmvs_mvpair {
                 mv: [
@@ -2123,11 +2121,9 @@ unsafe fn splat_intrabc_mv(
                     mv::ZERO,
                 ],
             },
-            r#ref: refmvs_refpair {
-                r#ref: [0 as libc::c_int as int8_t, -(1 as libc::c_int) as int8_t],
-            },
-            bs: bs as uint8_t,
-            mf: 0 as libc::c_int as uint8_t,
+            r#ref: refmvs_refpair { r#ref: [0, -1] },
+            bs: bs as u8,
+            mf: 0,
         });
         Align16(init)
     };
@@ -2152,8 +2148,8 @@ unsafe fn splat_tworef_mv(
     if !(bw4 >= 2 && bh4 >= 2) {
         unreachable!();
     }
-    let mode: CompInterPredMode = b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as CompInterPredMode;
-    let tmpl: Align16<refmvs_block> = {
+    let mode = b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as CompInterPredMode;
+    let tmpl = {
         let mut init = refmvs_block(refmvs_block_unaligned {
             mv: refmvs_mvpair {
                 mv: [
@@ -2171,16 +2167,13 @@ unsafe fn splat_tworef_mv(
             },
             r#ref: refmvs_refpair {
                 r#ref: [
-                    (b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int + 1) as int8_t,
-                    (b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as libc::c_int + 1) as int8_t,
+                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] + 1,
+                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] + 1,
                 ],
             },
-            bs: bs as uint8_t,
-            mf: ((mode as libc::c_uint == GLOBALMV_GLOBALMV as libc::c_int as libc::c_uint)
-                as libc::c_int
-                | ((1 as libc::c_int) << mode as libc::c_uint & 0xbc as libc::c_int != 0)
-                    as libc::c_int
-                    * 2) as uint8_t,
+            bs: bs as u8,
+            mf: ((mode == GLOBALMV_GLOBALMV) as libc::c_int
+                | (1 << mode & 0xbc != 0) as libc::c_int * 2) as u8,
         });
         Align16(init)
     };
@@ -2201,16 +2194,14 @@ unsafe fn splat_intraref(
     bw4: libc::c_int,
     bh4: libc::c_int,
 ) {
-    let tmpl: Align16<refmvs_block> = {
+    let tmpl = {
         let mut init = refmvs_block(refmvs_block_unaligned {
             mv: refmvs_mvpair {
                 mv: [mv::INVALID, mv::ZERO],
             },
-            r#ref: refmvs_refpair {
-                r#ref: [0 as libc::c_int as int8_t, -(1 as libc::c_int) as int8_t],
-            },
-            bs: bs as uint8_t,
-            mf: 0 as libc::c_int as uint8_t,
+            r#ref: refmvs_refpair { r#ref: [0, -1] },
+            bs: bs as u8,
+            mf: 0,
         });
         Align16(init)
     };
