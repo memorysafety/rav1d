@@ -2074,8 +2074,7 @@ unsafe fn splat_oneref_mv(
             ],
         },
         bs: bs as u8,
-        mf: ((mode == GLOBALMV && imin(bw4, bh4) >= 2) as libc::c_int
-            | (mode == NEWMV) as libc::c_int * 2) as u8,
+        mf: (mode == GLOBALMV && imin(bw4, bh4) >= 2) as u8 | (mode == NEWMV) as u8 * 2,
     }));
     (c.refmvs_dsp.splat_mv).expect("non-null function pointer")(
         &mut *(t.rt.r).as_mut_ptr().offset(((t.by & 31) + 5) as isize),
@@ -2131,8 +2130,7 @@ unsafe fn splat_tworef_mv(
             r#ref: [b.r#ref()[0] + 1, b.r#ref()[1] + 1],
         },
         bs: bs as u8,
-        mf: ((mode == GLOBALMV_GLOBALMV) as libc::c_int
-            | (1 << mode & 0xbc != 0) as libc::c_int * 2) as u8,
+        mf: (mode == GLOBALMV_GLOBALMV) as u8 | (1 << mode & 0xbc != 0) as u8 * 2,
     }));
     (c.refmvs_dsp.splat_mv).expect("non-null function pointer")(
         &mut *(t.rt.r).as_mut_ptr().offset(((t.by & 31) + 5) as isize),
