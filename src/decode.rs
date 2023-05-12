@@ -1,5 +1,5 @@
 use crate::include::common::frame::{is_inter_or_switch, is_key_or_intra};
-use crate::include::dav1d::headers::DAV1D_MAX_SEGMENTS;
+use crate::include::dav1d::headers::{Dav1dTxfmMode, DAV1D_MAX_SEGMENTS};
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use crate::src::align::Align16;
@@ -1030,7 +1030,6 @@ use crate::src::levels::MM_OBMC;
 use crate::src::levels::MM_TRANSLATION;
 use crate::src::levels::MM_WARP;
 use crate::src::refmvs::refmvs_candidate;
-use crate::src::tables::TxfmInfo;
 
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
@@ -1941,30 +1940,23 @@ unsafe fn read_vartx_tree(
     let b_dim = &dav1d_block_dimensions[bs as usize];
     let bw4 = b_dim[0] as libc::c_int;
     let bh4 = b_dim[1] as libc::c_int;
-    let mut tx_split: [uint16_t; 2] = [0 as libc::c_int as uint16_t, 0];
+    let mut tx_split: [u16; 2] = [0, 0];
     b.c2rust_unnamed.c2rust_unnamed_0.max_ytx = dav1d_max_txfm_size_for_bs[bs as usize][0];
     if b.skip == 0
         && ((*f.frame_hdr).segmentation.lossless[b.seg_id as usize] != 0
-            || b.c2rust_unnamed.c2rust_unnamed_0.max_ytx as libc::c_int == TX_4X4 as libc::c_int)
+            || b.c2rust_unnamed.c2rust_unnamed_0.max_ytx as TxfmSize == TX_4X4)
     {
-        b.uvtx = TX_4X4 as libc::c_int as uint8_t;
+        b.uvtx = TX_4X4 as u8;
         b.c2rust_unnamed.c2rust_unnamed_0.max_ytx = b.uvtx;
-        if (*f.frame_hdr).txfm_mode as libc::c_uint
-            == DAV1D_TX_SWITCHABLE as libc::c_int as libc::c_uint
-        {
+        if (*f.frame_hdr).txfm_mode as Dav1dTxfmMode == DAV1D_TX_SWITCHABLE {
             let mut set_ctx = |dir: &mut BlockContext, _diridx, off, _mul, rep_macro: SetCtxFn| {
                 rep_macro(dir.tx.0.as_mut_ptr() as *mut u8, off, TX_4X4 as u64);
             };
             case_set(bh4, &mut t.l, 1, by4 as isize, &mut set_ctx);
             case_set(bw4, &mut *t.a, 0, bx4 as isize, &mut set_ctx);
         }
-    } else if (*f.frame_hdr).txfm_mode as libc::c_uint
-        != DAV1D_TX_SWITCHABLE as libc::c_int as libc::c_uint
-        || b.skip as libc::c_int != 0
-    {
-        if (*f.frame_hdr).txfm_mode as libc::c_uint
-            == DAV1D_TX_SWITCHABLE as libc::c_int as libc::c_uint
-        {
+    } else if (*f.frame_hdr).txfm_mode as Dav1dTxfmMode != DAV1D_TX_SWITCHABLE || b.skip != 0 {
+        if (*f.frame_hdr).txfm_mode as Dav1dTxfmMode == DAV1D_TX_SWITCHABLE {
             let mut set_ctx = |dir: &mut BlockContext, diridx, off, mul, rep_macro: SetCtxFn| {
                 rep_macro(
                     dir.tx.0.as_mut_ptr() as *mut u8,
@@ -1979,7 +1971,7 @@ unsafe fn read_vartx_tree(
     } else {
         if !(bw4 <= 16
             || bh4 <= 16
-            || b.c2rust_unnamed.c2rust_unnamed_0.max_ytx as libc::c_int == TX_64X64 as libc::c_int)
+            || b.c2rust_unnamed.c2rust_unnamed_0.max_ytx as TxfmSize == TX_64X64)
         {
             unreachable!();
         }
@@ -1987,20 +1979,19 @@ unsafe fn read_vartx_tree(
         let mut x = 0;
         let mut y_off = 0;
         let mut x_off = 0;
-        let ytx: *const TxfmInfo = &*dav1d_txfm_dimensions
+        let ytx = dav1d_txfm_dimensions
             .as_ptr()
-            .offset(b.c2rust_unnamed.c2rust_unnamed_0.max_ytx as isize)
-            as *const TxfmInfo;
-        y = 0 as libc::c_int;
-        y_off = 0 as libc::c_int;
+            .offset(b.c2rust_unnamed.c2rust_unnamed_0.max_ytx as isize);
+        y = 0;
+        y_off = 0;
         while y < bh4 {
-            x = 0 as libc::c_int;
-            x_off = 0 as libc::c_int;
+            x = 0;
+            x_off = 0;
             while x < bw4 {
                 read_tx_tree(
                     &mut *t,
                     b.c2rust_unnamed.c2rust_unnamed_0.max_ytx as RectTxfmSize,
-                    0 as libc::c_int,
+                    0,
                     &mut tx_split,
                     x_off,
                     y_off,
@@ -2025,10 +2016,10 @@ unsafe fn read_vartx_tree(
         }
         b.uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
     }
-    if tx_split[0] as libc::c_int & !(0x33 as libc::c_int) != 0 {
+    if tx_split[0] & !0x33 != 0 {
         unreachable!();
     }
-    b.c2rust_unnamed.c2rust_unnamed_0.tx_split0 = tx_split[0] as uint8_t;
+    b.c2rust_unnamed.c2rust_unnamed_0.tx_split0 = tx_split[0] as u8;
     b.c2rust_unnamed.c2rust_unnamed_0.tx_split1 = tx_split[1];
 }
 
