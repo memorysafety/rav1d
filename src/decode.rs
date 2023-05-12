@@ -1931,13 +1931,13 @@ unsafe fn read_pal_indices(
 }
 
 unsafe fn read_vartx_tree(
-    t: *mut Dav1dTaskContext,
+    t: &mut Dav1dTaskContext,
     b: *mut Av1Block,
     bs: BlockSize,
     bx4: libc::c_int,
     by4: libc::c_int,
 ) {
-    let f: *const Dav1dFrameContext = (*t).f;
+    let f: *const Dav1dFrameContext = t.f;
     let b_dim: *const uint8_t = (dav1d_block_dimensions[bs as usize]).as_ptr();
     let bw4 = *b_dim.offset(0) as libc::c_int;
     let bh4 = *b_dim.offset(1) as libc::c_int;
@@ -1955,8 +1955,8 @@ unsafe fn read_vartx_tree(
             let mut set_ctx = |dir: &mut BlockContext, _diridx, off, _mul, rep_macro: SetCtxFn| {
                 rep_macro(dir.tx.0.as_mut_ptr() as *mut u8, off, TX_4X4 as u64);
             };
-            case_set(bh4, &mut (*t).l, 1, by4 as isize, &mut set_ctx);
-            case_set(bw4, &mut *(*t).a, 0, bx4 as isize, &mut set_ctx);
+            case_set(bh4, &mut t.l, 1, by4 as isize, &mut set_ctx);
+            case_set(bw4, &mut *t.a, 0, bx4 as isize, &mut set_ctx);
         }
     } else if (*(*f).frame_hdr).txfm_mode as libc::c_uint
         != DAV1D_TX_SWITCHABLE as libc::c_int as libc::c_uint
@@ -1972,8 +1972,8 @@ unsafe fn read_vartx_tree(
                     mul * *b_dim.offset(2 + diridx as isize) as u64,
                 );
             };
-            case_set(bh4, &mut (*t).l, 1, by4 as isize, &mut set_ctx);
-            case_set(bw4, &mut *(*t).a, 0, bx4 as isize, &mut set_ctx);
+            case_set(bh4, &mut t.l, 1, by4 as isize, &mut set_ctx);
+            case_set(bw4, &mut *t.a, 0, bx4 as isize, &mut set_ctx);
         }
         (*b).uvtx = dav1d_max_txfm_size_for_bs[bs as usize][(*f).cur.p.layout as usize];
     } else {
@@ -2006,22 +2006,22 @@ unsafe fn read_vartx_tree(
                     x_off,
                     y_off,
                 );
-                (*t).bx += (*ytx).w as libc::c_int;
+                t.bx += (*ytx).w as libc::c_int;
                 x += (*ytx).w as libc::c_int;
                 x_off += 1;
             }
-            (*t).bx -= x;
-            (*t).by += (*ytx).h as libc::c_int;
+            t.bx -= x;
+            t.by += (*ytx).h as libc::c_int;
             y += (*ytx).h as libc::c_int;
             y_off += 1;
         }
-        (*t).by -= y;
+        t.by -= y;
         if DEBUG_BLOCK_INFO(&*f, &*t) {
             printf(
                 b"Post-vartxtree[%x/%x]: r=%d\n\0" as *const u8 as *const libc::c_char,
                 tx_split[0] as libc::c_int,
                 tx_split[1] as libc::c_int,
-                (*(*t).ts).msac.rng,
+                (*t.ts).msac.rng,
             );
         }
         (*b).uvtx = dav1d_max_txfm_size_for_bs[bs as usize][(*f).cur.p.layout as usize];
