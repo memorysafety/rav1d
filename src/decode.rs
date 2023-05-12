@@ -1938,8 +1938,8 @@ unsafe fn read_vartx_tree(
 ) {
     let f = &*t.f;
     let b_dim = &dav1d_block_dimensions[bs as usize];
-    let bw4 = b_dim[0] as libc::c_int;
-    let bh4 = b_dim[1] as libc::c_int;
+    let bw4 = b_dim[0] as usize;
+    let bh4 = b_dim[1] as usize;
     let mut tx_split: [u16; 2] = [0, 0];
     *b.max_ytx_mut() = dav1d_max_txfm_size_for_bs[bs as usize][0];
     let txfm_mode = (*f.frame_hdr).txfm_mode as Dav1dTxfmMode;
@@ -1953,8 +1953,8 @@ unsafe fn read_vartx_tree(
             let mut set_ctx = |dir: &mut BlockContext, _diridx, off, _mul, rep_macro: SetCtxFn| {
                 rep_macro(dir.tx.0.as_mut_ptr() as *mut u8, off, TX_4X4 as u64);
             };
-            case_set(bh4, &mut t.l, 1, by4 as isize, &mut set_ctx);
-            case_set(bw4, &mut *t.a, 0, bx4 as isize, &mut set_ctx);
+            case_set(bh4 as libc::c_int, &mut t.l, 1, by4 as isize, &mut set_ctx);
+            case_set(bw4 as libc::c_int, &mut *t.a, 0, bx4 as isize, &mut set_ctx);
         }
     } else if txfm_mode != DAV1D_TX_SWITCHABLE || b.skip != 0 {
         if txfm_mode == DAV1D_TX_SWITCHABLE {
@@ -1965,8 +1965,8 @@ unsafe fn read_vartx_tree(
                     mul * b_dim[2 + diridx] as u64,
                 );
             };
-            case_set(bh4, &mut t.l, 1, by4 as isize, &mut set_ctx);
-            case_set(bw4, &mut *t.a, 0, bx4 as isize, &mut set_ctx);
+            case_set(bh4 as libc::c_int, &mut t.l, 1, by4 as isize, &mut set_ctx);
+            case_set(bw4 as libc::c_int, &mut *t.a, 0, bx4 as isize, &mut set_ctx);
         }
         b.uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
     } else {
@@ -1991,15 +1991,15 @@ unsafe fn read_vartx_tree(
                     y_off,
                 );
                 t.bx += (*ytx).w as libc::c_int;
-                x += (*ytx).w as libc::c_int;
+                x += (*ytx).w as usize;
                 x_off += 1;
             }
-            t.bx -= x;
+            t.bx -= x as libc::c_int;
             t.by += (*ytx).h as libc::c_int;
-            y += (*ytx).h as libc::c_int;
+            y += (*ytx).h as usize;
             y_off += 1;
         }
-        t.by -= y;
+        t.by -= y as libc::c_int;
         if DEBUG_BLOCK_INFO(&*f, &*t) {
             println!(
                 "Post-vartxtree[{}/{}]: r={}",
