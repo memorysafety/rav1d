@@ -2058,16 +2058,16 @@ unsafe fn splat_oneref_mv(
     c: &Dav1dContext,
     t: &mut Dav1dTaskContext,
     bs: BlockSize,
-    b: *const Av1Block,
+    b: &Av1Block,
     bw4: libc::c_int,
     bh4: libc::c_int,
 ) {
-    let mode: InterPredMode = (*b).c2rust_unnamed.c2rust_unnamed_0.inter_mode as InterPredMode;
+    let mode: InterPredMode = b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as InterPredMode;
     let tmpl: Align16<refmvs_block> = {
         let mut init = refmvs_block(refmvs_block_unaligned {
             mv: refmvs_mvpair {
                 mv: [
-                    (*b).c2rust_unnamed
+                    b.c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
@@ -2077,8 +2077,8 @@ unsafe fn splat_oneref_mv(
             },
             r#ref: refmvs_refpair {
                 r#ref: [
-                    ((*b).c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int + 1) as int8_t,
-                    (if (*b).c2rust_unnamed.c2rust_unnamed_0.interintra_type as libc::c_int != 0 {
+                    (b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int + 1) as int8_t,
+                    (if b.c2rust_unnamed.c2rust_unnamed_0.interintra_type as libc::c_int != 0 {
                         0 as libc::c_int
                     } else {
                         -(1 as libc::c_int)
@@ -2107,7 +2107,7 @@ unsafe fn splat_intrabc_mv(
     c: &Dav1dContext,
     t: &mut Dav1dTaskContext,
     bs: BlockSize,
-    b: *const Av1Block,
+    b: &Av1Block,
     bw4: libc::c_int,
     bh4: libc::c_int,
 ) {
@@ -2115,7 +2115,7 @@ unsafe fn splat_intrabc_mv(
         let mut init = refmvs_block(refmvs_block_unaligned {
             mv: refmvs_mvpair {
                 mv: [
-                    (*b).c2rust_unnamed
+                    b.c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
@@ -2145,25 +2145,24 @@ unsafe fn splat_tworef_mv(
     c: &Dav1dContext,
     t: &mut Dav1dTaskContext,
     bs: BlockSize,
-    b: *const Av1Block,
+    b: &Av1Block,
     bw4: libc::c_int,
     bh4: libc::c_int,
 ) {
     if !(bw4 >= 2 && bh4 >= 2) {
         unreachable!();
     }
-    let mode: CompInterPredMode =
-        (*b).c2rust_unnamed.c2rust_unnamed_0.inter_mode as CompInterPredMode;
+    let mode: CompInterPredMode = b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as CompInterPredMode;
     let tmpl: Align16<refmvs_block> = {
         let mut init = refmvs_block(refmvs_block_unaligned {
             mv: refmvs_mvpair {
                 mv: [
-                    (*b).c2rust_unnamed
+                    b.c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
                         .mv[0],
-                    (*b).c2rust_unnamed
+                    b.c2rust_unnamed
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
@@ -2172,8 +2171,8 @@ unsafe fn splat_tworef_mv(
             },
             r#ref: refmvs_refpair {
                 r#ref: [
-                    ((*b).c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int + 1) as int8_t,
-                    ((*b).c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as libc::c_int + 1) as int8_t,
+                    (b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int + 1) as int8_t,
+                    (b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as libc::c_int + 1) as int8_t,
                 ],
             },
             bs: bs as uint8_t,
