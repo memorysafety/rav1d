@@ -2056,7 +2056,7 @@ unsafe fn get_prev_frame_segid(
 #[inline]
 unsafe fn splat_oneref_mv(
     c: &Dav1dContext,
-    t: *mut Dav1dTaskContext,
+    t: &mut Dav1dTaskContext,
     bs: BlockSize,
     b: *const Av1Block,
     bw4: libc::c_int,
@@ -2094,11 +2094,9 @@ unsafe fn splat_oneref_mv(
         Align16(init)
     };
     (c.refmvs_dsp.splat_mv).expect("non-null function pointer")(
-        &mut *((*t).rt.r)
-            .as_mut_ptr()
-            .offset((((*t).by & 31) + 5) as isize),
+        &mut *(t.rt.r).as_mut_ptr().offset(((t.by & 31) + 5) as isize),
         &tmpl.0,
-        (*t).bx,
+        t.bx,
         bw4,
         bh4,
     );
@@ -2107,7 +2105,7 @@ unsafe fn splat_oneref_mv(
 #[inline]
 unsafe fn splat_intrabc_mv(
     c: &Dav1dContext,
-    t: *mut Dav1dTaskContext,
+    t: &mut Dav1dTaskContext,
     bs: BlockSize,
     b: *const Av1Block,
     bw4: libc::c_int,
@@ -2134,11 +2132,9 @@ unsafe fn splat_intrabc_mv(
         Align16(init)
     };
     (c.refmvs_dsp.splat_mv).expect("non-null function pointer")(
-        &mut *((*t).rt.r)
-            .as_mut_ptr()
-            .offset((((*t).by & 31) + 5) as isize),
+        &mut *(t.rt.r).as_mut_ptr().offset(((t.by & 31) + 5) as isize),
         &tmpl.0,
-        (*t).bx,
+        t.bx,
         bw4,
         bh4,
     );
@@ -2147,7 +2143,7 @@ unsafe fn splat_intrabc_mv(
 #[inline]
 unsafe fn splat_tworef_mv(
     c: &Dav1dContext,
-    t: *mut Dav1dTaskContext,
+    t: &mut Dav1dTaskContext,
     bs: BlockSize,
     b: *const Av1Block,
     bw4: libc::c_int,
@@ -2190,11 +2186,9 @@ unsafe fn splat_tworef_mv(
         Align16(init)
     };
     (c.refmvs_dsp.splat_mv).expect("non-null function pointer")(
-        &mut *((*t).rt.r)
-            .as_mut_ptr()
-            .offset((((*t).by & 31) + 5) as isize),
+        &mut *(t.rt.r).as_mut_ptr().offset(((t.by & 31) + 5) as isize),
         &tmpl.0,
-        (*t).bx,
+        t.bx,
         bw4,
         bh4,
     );
@@ -2203,7 +2197,7 @@ unsafe fn splat_tworef_mv(
 #[inline]
 unsafe fn splat_intraref(
     c: &Dav1dContext,
-    t: *mut Dav1dTaskContext,
+    t: &mut Dav1dTaskContext,
     bs: BlockSize,
     bw4: libc::c_int,
     bh4: libc::c_int,
@@ -2222,11 +2216,9 @@ unsafe fn splat_intraref(
         Align16(init)
     };
     (c.refmvs_dsp.splat_mv).expect("non-null function pointer")(
-        &mut *((*t).rt.r)
-            .as_mut_ptr()
-            .offset((((*t).by & 31) + 5) as isize),
+        &mut *(t.rt.r).as_mut_ptr().offset(((t.by & 31) + 5) as isize),
         &tmpl.0,
-        (*t).bx,
+        t.bx,
         bw4,
         bh4,
     );
