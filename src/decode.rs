@@ -1878,6 +1878,7 @@ unsafe fn read_pal_indices(
     let [w4, h4, bw4, bh4] = [w4, h4, bw4, bh4].map(|n| usize::try_from(n).unwrap());
     let pli = pl as usize;
     let pal_sz = b.pal_sz()[pli] as usize;
+
     let ts = &mut *t.ts;
     let stride = bw4 * 4;
     assert!(!pal_idx.is_null());
@@ -1896,6 +1897,7 @@ unsafe fn read_pal_indices(
         .c2rust_unnamed
         .pal_ctx;
     for i in 1..4 * (w4 + h4) - 1 {
+        // top/left-to-bottom/right diagonals ("wave-front")
         let first = std::cmp::min(i, w4 * 4 - 1);
         let last = (i + 1).checked_sub(h4 * 4).unwrap_or(0);
         order_palette(pal_idx, stride, i, first, last, order, ctx);
@@ -1908,6 +1910,7 @@ unsafe fn read_pal_indices(
             *pal_idx.offset(((i - j) * stride + j) as isize) = order[m][color_idx];
         }
     }
+    // fill invisible edges
     if bw4 > w4 {
         for y in 0..4 * h4 {
             memset(
