@@ -1972,16 +1972,12 @@ unsafe fn read_vartx_tree(
     } else {
         assert!(bw4 <= 16 || bh4 <= 16 || b.max_ytx() as TxfmSize == TX_64X64);
         let ytx = &dav1d_txfm_dimensions[b.max_ytx() as usize];
-        let mut y = 0;
-        let mut x = 0;
-        let mut y_off = 0;
-        let mut x_off = 0;
-        y = 0;
-        y_off = 0;
-        while y < bh4 {
-            x = 0;
-            x_off = 0;
-            while x < bw4 {
+        let h = ytx.h as usize;
+        let w = ytx.w as usize;
+        debug_assert_eq!(bh4 % h, 0);
+        debug_assert_eq!(bw4 % w, 0);
+        for y_off in 0..bh4 / h {
+            for x_off in 0..bw4 / w {
                 read_tx_tree(
                     &mut *t,
                     b.max_ytx() as RectTxfmSize,
@@ -1990,16 +1986,12 @@ unsafe fn read_vartx_tree(
                     x_off,
                     y_off,
                 );
-                t.bx += ytx.w as libc::c_int;
-                x += ytx.w as usize;
-                x_off += 1;
+                t.bx += w as libc::c_int;
             }
-            t.bx -= x as libc::c_int;
-            t.by += ytx.h as libc::c_int;
-            y += ytx.h as usize;
-            y_off += 1;
+            t.bx -= bw4 as libc::c_int;
+            t.by += h as libc::c_int;
         }
-        t.by -= y as libc::c_int;
+        t.by -= bh4 as libc::c_int;
         if DEBUG_BLOCK_INFO(&*f, &*t) {
             println!(
                 "Post-vartxtree[{}/{}]: r={}",
