@@ -2120,9 +2120,7 @@ unsafe fn splat_tworef_mv(
     bw4: libc::c_int,
     bh4: libc::c_int,
 ) {
-    if !(bw4 >= 2 && bh4 >= 2) {
-        unreachable!();
-    }
+    assert!(bw4 >= 2 && bh4 >= 2);
     let mode = b.inter_mode() as CompInterPredMode;
     let tmpl = Align16(refmvs_block(refmvs_block_unaligned {
         mv: refmvs_mvpair { mv: *b.mv() },
