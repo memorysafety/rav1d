@@ -1865,7 +1865,7 @@ unsafe fn order_palette(
 unsafe fn read_pal_indices(
     t: &mut Dav1dTaskContext,
     pal_idx: *mut uint8_t,
-    b: *const Av1Block,
+    b: &Av1Block,
     pl: libc::c_int,
     w4: libc::c_int,
     h4: libc::c_int,
@@ -1879,10 +1879,10 @@ unsafe fn read_pal_indices(
     }
     *pal_idx.offset(0) = dav1d_msac_decode_uniform(
         &mut (*ts).msac,
-        (*b).c2rust_unnamed.c2rust_unnamed.pal_sz[pl as usize] as libc::c_uint,
+        b.c2rust_unnamed.c2rust_unnamed.pal_sz[pl as usize] as libc::c_uint,
     ) as uint8_t;
     let color_map_cdf: *mut [uint16_t; 8] = ((*ts).cdf.m.color_map[pl as usize]
-        [((*b).c2rust_unnamed.c2rust_unnamed.pal_sz[pl as usize] as libc::c_int - 2) as usize])
+        [(b.c2rust_unnamed.c2rust_unnamed.pal_sz[pl as usize] as libc::c_int - 2) as usize])
         .as_mut_ptr();
     let order = &mut t
         .scratch
@@ -1907,8 +1907,7 @@ unsafe fn read_pal_indices(
             let color_idx = dav1d_msac_decode_symbol_adapt8(
                 &mut (*ts).msac,
                 &mut *color_map_cdf.offset(ctx[m as usize] as isize),
-                ((*b).c2rust_unnamed.c2rust_unnamed.pal_sz[pl as usize] as libc::c_int - 1)
-                    as size_t,
+                (b.c2rust_unnamed.c2rust_unnamed.pal_sz[pl as usize] as libc::c_int - 1) as size_t,
             ) as libc::c_int;
             *pal_idx.offset(((i - j) as isize * stride + j as isize) as isize) =
                 order[m as usize][color_idx as usize];
