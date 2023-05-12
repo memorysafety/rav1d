@@ -175,15 +175,6 @@ struct Dav1dContext {
     Dav1dDSPContext dsp[3 /* 8, 10, 12 bits/component */];
     Dav1dRefmvsDSPContext refmvs_dsp;
 
-    // tree to keep track of which edges are available
-    struct Dav1dContext_intra_edge {
-        EdgeNode *root[2 /* BL_128X128 vs. BL_64X64 */];
-        EdgeBranch branch_sb128[1 + 4 + 16 + 64];
-        EdgeBranch branch_sb64[1 + 4 + 16];
-        EdgeTip tip_sb128[256];
-        EdgeTip tip_sb64[64];
-    } intra_edge;
-
     Dav1dPicAllocator allocator;
     int apply_grain;
     int operating_point;

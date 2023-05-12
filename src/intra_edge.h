@@ -62,7 +62,9 @@ typedef struct EdgeBranch {
     const EdgeNode *split[4];
 } EdgeBranch;
 
-void dav1d_init_mode_tree(EdgeNode *const root, EdgeTip *const nt,
-                          const int allow_sb128);
+/* Tree to keep track of which edges are available. */
+EXTERN const EdgeNode *dav1d_intra_edge_tree[2 /* BL_128X128, BL_64X64 */];
+
+void dav1d_init_intra_edge_tree(void);
 
 #endif /* DAV1D_SRC_INTRA_EDGE_H */
