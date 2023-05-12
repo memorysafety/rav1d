@@ -1866,7 +1866,7 @@ unsafe fn read_pal_indices(
     t: &mut Dav1dTaskContext,
     pal_idx: *mut uint8_t,
     b: &Av1Block,
-    pl: libc::c_int,
+    pl: bool,
     w4: libc::c_int,
     h4: libc::c_int,
     bw4: libc::c_int,
@@ -3327,7 +3327,7 @@ unsafe fn decode_b(
                 pal_idx = t.scratch.c2rust_unnamed_0.pal_idx.as_mut_ptr();
             }
 
-            read_pal_indices(t, pal_idx, b, 0, w4, h4, bw4, bh4);
+            read_pal_indices(t, pal_idx, b, false, w4, h4, bw4, bh4);
 
             if DEBUG_BLOCK_INFO(f, t) {
                 println!("Post-y-pal-indices: r={}", ts.msac.rng);
@@ -3351,7 +3351,7 @@ unsafe fn decode_b(
                     .offset((bw4 * bh4 * 16) as isize);
             }
 
-            read_pal_indices(t, pal_idx, b, 1, cw4, ch4, cbw4, cbh4);
+            read_pal_indices(t, pal_idx, b, true, cw4, ch4, cbw4, cbh4);
 
             if DEBUG_BLOCK_INFO(f, t) {
                 println!("Post-uv-pal-indices: r={}", ts.msac.rng);
