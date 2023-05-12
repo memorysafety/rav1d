@@ -1925,14 +1925,14 @@ unsafe fn read_pal_indices(
     }
     if h4 < bh4 {
         let src = pal_idx.offset(stride * (4 * h4 as isize - 1)) as *const u8;
-        let mut y_0 = h4 * 4;
-        while y_0 < bh4 * 4 {
+        let mut y = h4 * 4;
+        while y < bh4 * 4 {
             memcpy(
-                pal_idx.offset(y_0 as isize * stride) as *mut libc::c_void,
+                pal_idx.offset(y as isize * stride) as *mut libc::c_void,
                 src as *const libc::c_void,
                 (bw4 * 4) as libc::c_ulong,
             );
-            y_0 += 1;
+            y += 1;
         }
     }
 }
