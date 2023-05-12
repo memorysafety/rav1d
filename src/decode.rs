@@ -1938,9 +1938,9 @@ unsafe fn read_vartx_tree(
     by4: libc::c_int,
 ) {
     let f = &*t.f;
-    let b_dim: *const uint8_t = (dav1d_block_dimensions[bs as usize]).as_ptr();
-    let bw4 = *b_dim.offset(0) as libc::c_int;
-    let bh4 = *b_dim.offset(1) as libc::c_int;
+    let b_dim = &dav1d_block_dimensions[bs as usize];
+    let bw4 = b_dim[0] as libc::c_int;
+    let bh4 = b_dim[1] as libc::c_int;
     let mut tx_split: [uint16_t; 2] = [0 as libc::c_int as uint16_t, 0];
     b.c2rust_unnamed.c2rust_unnamed_0.max_ytx = dav1d_max_txfm_size_for_bs[bs as usize][0];
     if b.skip == 0
@@ -1969,7 +1969,7 @@ unsafe fn read_vartx_tree(
                 rep_macro(
                     dir.tx.0.as_mut_ptr() as *mut u8,
                     off,
-                    mul * *b_dim.offset(2 + diridx as isize) as u64,
+                    mul * b_dim[2 + diridx] as u64,
                 );
             };
             case_set(bh4, &mut t.l, 1, by4 as isize, &mut set_ctx);
