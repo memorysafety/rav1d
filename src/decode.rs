@@ -1971,11 +1971,11 @@ unsafe fn read_vartx_tree(
         b.uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
     } else {
         assert!(bw4 <= 16 || bh4 <= 16 || b.max_ytx() as TxfmSize == TX_64X64);
+        let ytx = &dav1d_txfm_dimensions[b.max_ytx() as usize];
         let mut y = 0;
         let mut x = 0;
         let mut y_off = 0;
         let mut x_off = 0;
-        let ytx = dav1d_txfm_dimensions.as_ptr().offset(b.max_ytx() as isize);
         y = 0;
         y_off = 0;
         while y < bh4 {
@@ -1990,13 +1990,13 @@ unsafe fn read_vartx_tree(
                     x_off,
                     y_off,
                 );
-                t.bx += (*ytx).w as libc::c_int;
-                x += (*ytx).w as usize;
+                t.bx += ytx.w as libc::c_int;
+                x += ytx.w as usize;
                 x_off += 1;
             }
             t.bx -= x as libc::c_int;
-            t.by += (*ytx).h as libc::c_int;
-            y += (*ytx).h as usize;
+            t.by += ytx.h as libc::c_int;
+            y += ytx.h as usize;
             y_off += 1;
         }
         t.by -= y as libc::c_int;
