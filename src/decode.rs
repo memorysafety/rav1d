@@ -2062,26 +2062,15 @@ unsafe fn splat_oneref_mv(
     bw4: libc::c_int,
     bh4: libc::c_int,
 ) {
-    let mode = b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as InterPredMode;
+    let mode = b.inter_mode() as InterPredMode;
     let tmpl = Align16(refmvs_block(refmvs_block_unaligned {
         mv: refmvs_mvpair {
-            mv: [
-                b.c2rust_unnamed
-                    .c2rust_unnamed_0
-                    .c2rust_unnamed
-                    .c2rust_unnamed
-                    .mv[0],
-                mv::ZERO,
-            ],
+            mv: [b.mv()[0], mv::ZERO],
         },
         r#ref: refmvs_refpair {
             r#ref: [
-                b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] + 1,
-                if b.c2rust_unnamed.c2rust_unnamed_0.interintra_type != 0 {
-                    0
-                } else {
-                    -1
-                },
+                b.r#ref()[0] + 1,
+                if b.interintra_type() != 0 { 0 } else { -1 },
             ],
         },
         bs: bs as u8,
@@ -2108,14 +2097,7 @@ unsafe fn splat_intrabc_mv(
 ) {
     let tmpl = Align16(refmvs_block(refmvs_block_unaligned {
         mv: refmvs_mvpair {
-            mv: [
-                b.c2rust_unnamed
-                    .c2rust_unnamed_0
-                    .c2rust_unnamed
-                    .c2rust_unnamed
-                    .mv[0],
-                mv::ZERO,
-            ],
+            mv: [b.mv()[0], mv::ZERO],
         },
         r#ref: refmvs_refpair { r#ref: [0, -1] },
         bs: bs as u8,
@@ -2142,27 +2124,11 @@ unsafe fn splat_tworef_mv(
     if !(bw4 >= 2 && bh4 >= 2) {
         unreachable!();
     }
-    let mode = b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as CompInterPredMode;
+    let mode = b.inter_mode() as CompInterPredMode;
     let tmpl = Align16(refmvs_block(refmvs_block_unaligned {
-        mv: refmvs_mvpair {
-            mv: [
-                b.c2rust_unnamed
-                    .c2rust_unnamed_0
-                    .c2rust_unnamed
-                    .c2rust_unnamed
-                    .mv[0],
-                b.c2rust_unnamed
-                    .c2rust_unnamed_0
-                    .c2rust_unnamed
-                    .c2rust_unnamed
-                    .mv[1],
-            ],
-        },
+        mv: refmvs_mvpair { mv: *b.mv() },
         r#ref: refmvs_refpair {
-            r#ref: [
-                b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] + 1,
-                b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] + 1,
-            ],
+            r#ref: [b.r#ref()[0] + 1, b.r#ref()[1] + 1],
         },
         bs: bs as u8,
         mf: ((mode == GLOBALMV_GLOBALMV) as libc::c_int
