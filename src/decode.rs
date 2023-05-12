@@ -1913,14 +1913,12 @@ unsafe fn read_pal_indices(
         }
     }
     if h4 < bh4 {
+        let y_start = h4 * 4;
         let len = bw4 * 4;
-        let src = std::slice::from_raw_parts(
-            pal_idx.as_ptr().offset((stride * (4 * h4 - 1)) as isize),
-            len,
-        );
-        for y in h4 * 4..bh4 * 4 {
-            std::slice::from_raw_parts_mut(pal_idx.as_mut_ptr().offset((y * stride) as isize), len)
-                .copy_from_slice(src);
+        let (src, dests) = pal_idx.split_at_mut(stride * y_start);
+        let src = &src[stride * (y_start - 1)..][..len];
+        for y in 0..(bh4 - h4) * 4 {
+            dests[y * stride..][..len].copy_from_slice(src);
         }
     }
 }
