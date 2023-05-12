@@ -1761,16 +1761,16 @@ unsafe fn read_pal_uv(
     let pal = &mut pal[..b.pal_sz()[1] as usize];
     if dav1d_msac_decode_bool_equi(&mut ts.msac) {
         let bits = f.cur.p.bpc as u32 + dav1d_msac_decode_bools(&mut ts.msac, 2) - 4;
-        pal[0] = dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as u16;
-        let mut prev = pal[0];
+        let mut prev = dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as u16;
+        pal[0] = prev;
         let max = (1 << f.cur.p.bpc) - 1;
         for pal in &mut pal[1..] {
             let mut delta = dav1d_msac_decode_bools(&mut ts.msac, bits) as i16;
             if delta != 0 && dav1d_msac_decode_bool_equi(&mut ts.msac) {
                 delta = -delta;
             }
-            *pal = ((prev as i16 + delta) as u16) & max;
-            prev = *pal;
+            prev = ((prev as i16 + delta) as u16) & max;
+            *pal = prev;
         }
     } else {
         pal.fill_with(|| dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as u16);
