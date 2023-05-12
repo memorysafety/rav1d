@@ -1932,7 +1932,7 @@ unsafe fn read_pal_indices(
 
 unsafe fn read_vartx_tree(
     t: &mut Dav1dTaskContext,
-    b: *mut Av1Block,
+    b: &mut Av1Block,
     bs: BlockSize,
     bx4: libc::c_int,
     by4: libc::c_int,
@@ -1942,13 +1942,13 @@ unsafe fn read_vartx_tree(
     let bw4 = *b_dim.offset(0) as libc::c_int;
     let bh4 = *b_dim.offset(1) as libc::c_int;
     let mut tx_split: [uint16_t; 2] = [0 as libc::c_int as uint16_t, 0];
-    (*b).c2rust_unnamed.c2rust_unnamed_0.max_ytx = dav1d_max_txfm_size_for_bs[bs as usize][0];
-    if (*b).skip == 0
-        && ((*(*f).frame_hdr).segmentation.lossless[(*b).seg_id as usize] != 0
-            || (*b).c2rust_unnamed.c2rust_unnamed_0.max_ytx as libc::c_int == TX_4X4 as libc::c_int)
+    b.c2rust_unnamed.c2rust_unnamed_0.max_ytx = dav1d_max_txfm_size_for_bs[bs as usize][0];
+    if b.skip == 0
+        && ((*(*f).frame_hdr).segmentation.lossless[b.seg_id as usize] != 0
+            || b.c2rust_unnamed.c2rust_unnamed_0.max_ytx as libc::c_int == TX_4X4 as libc::c_int)
     {
-        (*b).uvtx = TX_4X4 as libc::c_int as uint8_t;
-        (*b).c2rust_unnamed.c2rust_unnamed_0.max_ytx = (*b).uvtx;
+        b.uvtx = TX_4X4 as libc::c_int as uint8_t;
+        b.c2rust_unnamed.c2rust_unnamed_0.max_ytx = b.uvtx;
         if (*(*f).frame_hdr).txfm_mode as libc::c_uint
             == DAV1D_TX_SWITCHABLE as libc::c_int as libc::c_uint
         {
@@ -1960,7 +1960,7 @@ unsafe fn read_vartx_tree(
         }
     } else if (*(*f).frame_hdr).txfm_mode as libc::c_uint
         != DAV1D_TX_SWITCHABLE as libc::c_int as libc::c_uint
-        || (*b).skip as libc::c_int != 0
+        || b.skip as libc::c_int != 0
     {
         if (*(*f).frame_hdr).txfm_mode as libc::c_uint
             == DAV1D_TX_SWITCHABLE as libc::c_int as libc::c_uint
@@ -1975,12 +1975,11 @@ unsafe fn read_vartx_tree(
             case_set(bh4, &mut t.l, 1, by4 as isize, &mut set_ctx);
             case_set(bw4, &mut *t.a, 0, bx4 as isize, &mut set_ctx);
         }
-        (*b).uvtx = dav1d_max_txfm_size_for_bs[bs as usize][(*f).cur.p.layout as usize];
+        b.uvtx = dav1d_max_txfm_size_for_bs[bs as usize][(*f).cur.p.layout as usize];
     } else {
         if !(bw4 <= 16
             || bh4 <= 16
-            || (*b).c2rust_unnamed.c2rust_unnamed_0.max_ytx as libc::c_int
-                == TX_64X64 as libc::c_int)
+            || b.c2rust_unnamed.c2rust_unnamed_0.max_ytx as libc::c_int == TX_64X64 as libc::c_int)
         {
             unreachable!();
         }
@@ -1990,7 +1989,7 @@ unsafe fn read_vartx_tree(
         let mut x_off = 0;
         let ytx: *const TxfmInfo = &*dav1d_txfm_dimensions
             .as_ptr()
-            .offset((*b).c2rust_unnamed.c2rust_unnamed_0.max_ytx as isize)
+            .offset(b.c2rust_unnamed.c2rust_unnamed_0.max_ytx as isize)
             as *const TxfmInfo;
         y = 0 as libc::c_int;
         y_off = 0 as libc::c_int;
@@ -2000,7 +1999,7 @@ unsafe fn read_vartx_tree(
             while x < bw4 {
                 read_tx_tree(
                     &mut *t,
-                    (*b).c2rust_unnamed.c2rust_unnamed_0.max_ytx as RectTxfmSize,
+                    b.c2rust_unnamed.c2rust_unnamed_0.max_ytx as RectTxfmSize,
                     0 as libc::c_int,
                     &mut tx_split,
                     x_off,
@@ -2024,13 +2023,13 @@ unsafe fn read_vartx_tree(
                 (*t.ts).msac.rng,
             );
         }
-        (*b).uvtx = dav1d_max_txfm_size_for_bs[bs as usize][(*f).cur.p.layout as usize];
+        b.uvtx = dav1d_max_txfm_size_for_bs[bs as usize][(*f).cur.p.layout as usize];
     }
     if tx_split[0] as libc::c_int & !(0x33 as libc::c_int) != 0 {
         unreachable!();
     }
-    (*b).c2rust_unnamed.c2rust_unnamed_0.tx_split0 = tx_split[0] as uint8_t;
-    (*b).c2rust_unnamed.c2rust_unnamed_0.tx_split1 = tx_split[1];
+    b.c2rust_unnamed.c2rust_unnamed_0.tx_split0 = tx_split[0] as uint8_t;
+    b.c2rust_unnamed.c2rust_unnamed_0.tx_split1 = tx_split[1];
 }
 
 #[inline]
