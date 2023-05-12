@@ -224,6 +224,19 @@ pub struct Dav1dRefmvsDSPContext {
     pub splat_mv: splat_mv_fn,
 }
 
+impl Dav1dRefmvsDSPContext {
+    pub unsafe fn splat_mv(
+        &self,
+        rr: *mut *mut refmvs_block,
+        rmv: *const refmvs_block,
+        bx4: libc::c_int,
+        bw4: libc::c_int,
+        bh4: libc::c_int,
+    ) {
+        self.splat_mv.expect("non-null function pointer")(rr, rmv, bx4, bw4, bh4);
+    }
+}
+
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::imax;

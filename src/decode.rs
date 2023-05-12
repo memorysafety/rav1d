@@ -2076,7 +2076,7 @@ unsafe fn splat_oneref_mv(
         bs: bs as u8,
         mf: (mode == GLOBALMV && std::cmp::min(bw4, bh4) >= 2) as u8 | (mode == NEWMV) as u8 * 2,
     }));
-    (c.refmvs_dsp.splat_mv).expect("non-null function pointer")(
+    c.refmvs_dsp.splat_mv(
         &mut *(t.rt.r).as_mut_ptr().offset(((t.by & 31) + 5) as isize),
         &tmpl.0,
         t.bx,
@@ -2102,7 +2102,7 @@ unsafe fn splat_intrabc_mv(
         bs: bs as u8,
         mf: 0,
     }));
-    (c.refmvs_dsp.splat_mv).expect("non-null function pointer")(
+    c.refmvs_dsp.splat_mv(
         &mut *(t.rt.r).as_mut_ptr().offset(((t.by & 31) + 5) as isize),
         &tmpl.0,
         t.bx,
@@ -2130,7 +2130,7 @@ unsafe fn splat_tworef_mv(
         bs: bs as u8,
         mf: (mode == GLOBALMV_GLOBALMV) as u8 | (1 << mode & 0xbc != 0) as u8 * 2,
     }));
-    (c.refmvs_dsp.splat_mv).expect("non-null function pointer")(
+    c.refmvs_dsp.splat_mv(
         &mut *(t.rt.r).as_mut_ptr().offset(((t.by & 31) + 5) as isize),
         &tmpl.0,
         t.bx,
@@ -2155,7 +2155,7 @@ unsafe fn splat_intraref(
         bs: bs as u8,
         mf: 0,
     }));
-    (c.refmvs_dsp.splat_mv).expect("non-null function pointer")(
+    c.refmvs_dsp.splat_mv(
         &mut *(t.rt.r).as_mut_ptr().offset(((t.by & 31) + 5) as isize),
         &tmpl.0,
         t.bx,
