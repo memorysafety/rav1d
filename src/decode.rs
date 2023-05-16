@@ -96,50 +96,6 @@ extern "C" {
     fn dav1d_itx_dsp_init_8bpc(c: *mut Dav1dInvTxfmDSPContext, bpc: libc::c_int);
     #[cfg(feature = "bitdepth_16")]
     fn dav1d_itx_dsp_init_16bpc(c: *mut Dav1dInvTxfmDSPContext, bpc: libc::c_int);
-    fn dav1d_create_lf_mask_intra(
-        lflvl: *mut Av1Filter,
-        level_cache: *mut [uint8_t; 4],
-        b4_stride: ptrdiff_t,
-        level: *const [[uint8_t; 2]; 8],
-        bx: libc::c_int,
-        by: libc::c_int,
-        iw: libc::c_int,
-        ih: libc::c_int,
-        bs: BlockSize,
-        ytx: RectTxfmSize,
-        uvtx: RectTxfmSize,
-        layout: Dav1dPixelLayout,
-        ay: *mut uint8_t,
-        ly: *mut uint8_t,
-        auv: *mut uint8_t,
-        luv: *mut uint8_t,
-    );
-    fn dav1d_create_lf_mask_inter(
-        lflvl: *mut Av1Filter,
-        level_cache: *mut [uint8_t; 4],
-        b4_stride: ptrdiff_t,
-        level: *const [[uint8_t; 2]; 8],
-        bx: libc::c_int,
-        by: libc::c_int,
-        iw: libc::c_int,
-        ih: libc::c_int,
-        skip_inter: libc::c_int,
-        bs: BlockSize,
-        max_ytx: RectTxfmSize,
-        tx_mask: *const uint16_t,
-        uvtx: RectTxfmSize,
-        layout: Dav1dPixelLayout,
-        ay: *mut uint8_t,
-        ly: *mut uint8_t,
-        auv: *mut uint8_t,
-        luv: *mut uint8_t,
-    );
-    fn dav1d_calc_eih(lim_lut: *mut Av1FilterLUT, filter_sharpness: libc::c_int);
-    fn dav1d_calc_lf_values(
-        values: *mut [[[uint8_t; 2]; 8]; 4],
-        hdr: *const Dav1dFrameHeader,
-        lf_delta: *const int8_t,
-    );
     #[cfg(feature = "bitdepth_8")]
     fn dav1d_loop_filter_dsp_init_8bpc(c: *mut Dav1dLoopFilterDSPContext);
     #[cfg(feature = "bitdepth_16")]
@@ -243,6 +199,10 @@ extern "C" {
 }
 
 use crate::src::dequant_tables::dav1d_dq_tbl;
+use crate::src::lf_mask::dav1d_calc_eih;
+use crate::src::lf_mask::dav1d_calc_lf_values;
+use crate::src::lf_mask::dav1d_create_lf_mask_inter;
+use crate::src::lf_mask::dav1d_create_lf_mask_intra;
 use crate::src::msac::dav1d_msac_decode_bool;
 use crate::src::msac::dav1d_msac_decode_bool_adapt;
 use crate::src::msac::dav1d_msac_decode_bool_equi;
@@ -349,7 +309,6 @@ use crate::include::dav1d::picture::Dav1dPicture;
 use crate::src::internal::TaskThreadData;
 
 use crate::include::dav1d::headers::Dav1dFrameHeader;
-use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
