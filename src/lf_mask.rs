@@ -1,5 +1,4 @@
 use crate::include::common::intops::iclip;
-use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dLoopfilterModeRefDeltas;
@@ -927,9 +926,9 @@ pub fn dav1d_calc_eih(lim_lut: &mut Av1FilterLUT, filter_sharpness: libc::c_int)
         let mut limit = level;
         if sharp > 0 {
             limit >>= sharp + 3 >> 2;
-            limit = imin(limit, 9 - sharp);
+            limit = std::cmp::min(limit, 9 - sharp);
         }
-        limit = imax(limit, 1);
+        limit = std::cmp::max(limit, 1);
         lim_lut.i[level as usize] = limit as u8;
         lim_lut.e[level as usize] = (2 * (level + 2) + limit) as u8;
     }
