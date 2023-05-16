@@ -957,11 +957,7 @@ unsafe fn calc_lf_value(
         63 as libc::c_int,
     );
     if mr_delta.is_null() {
-        memset(
-            lflvl_values.as_mut_ptr() as *mut libc::c_void,
-            base,
-            (8 * 2) as libc::c_ulong,
-        );
+        *lflvl_values = [[base as u8; 2]; 8];
     } else {
         let sh = (base >= 32) as libc::c_int;
         let ref mut fresh16 = lflvl_values[0][1];
@@ -997,11 +993,7 @@ unsafe fn calc_lf_value_chroma(
     mr_delta: *const Dav1dLoopfilterModeRefDeltas,
 ) {
     if base_lvl == 0 {
-        memset(
-            lflvl_values.as_mut_ptr() as *mut libc::c_void,
-            0 as libc::c_int,
-            (8 * 2) as libc::c_ulong,
-        );
+        *lflvl_values = Default::default();
     } else {
         calc_lf_value(lflvl_values, base_lvl, lf_delta, seg_delta, mr_delta);
     };
@@ -1018,11 +1010,7 @@ pub unsafe fn dav1d_calc_lf_values(
         1 as libc::c_int
     };
     if (*hdr).loopfilter.level_y[0] == 0 && (*hdr).loopfilter.level_y[1] == 0 {
-        memset(
-            lflvl_values.as_mut_ptr() as *mut libc::c_void,
-            0 as libc::c_int,
-            (8 * 4 * 2 * n_seg) as libc::c_ulong,
-        );
+        lflvl_values[..n_seg as usize].fill_with(Default::default);
         return;
     }
     let mr_deltas: *const Dav1dLoopfilterModeRefDeltas =
