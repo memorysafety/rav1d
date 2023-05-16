@@ -954,9 +954,7 @@ unsafe fn calc_lf_value(
     let base = iclip(iclip(base_lvl + lf_delta, 0, 63) + seg_delta, 0, 63);
     if let Some(mr_delta) = mr_delta {
         let sh = (base >= 32) as libc::c_int;
-        let ref mut fresh16 = lflvl_values[0][1];
-        *fresh16 = iclip(base + mr_delta.ref_delta[0] * (1 << sh), 0, 63) as u8;
-        lflvl_values[0][0] = *fresh16;
+        lflvl_values[0] = [iclip(base + mr_delta.ref_delta[0] * (1 << sh), 0, 63) as u8; 2];
         let mut r = 1;
         while r < 8 {
             let mut m = 0;
