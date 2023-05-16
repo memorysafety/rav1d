@@ -931,17 +931,13 @@ pub fn dav1d_calc_eih(lim_lut: &mut Av1FilterLUT, filter_sharpness: libc::c_int)
             limit >>= sharp + 3 >> 2;
             limit = imin(limit, 9 - sharp);
         }
-        limit = imax(limit, 1 as libc::c_int);
+        limit = imax(limit, 1);
         lim_lut.i[level as usize] = limit as u8;
         lim_lut.e[level as usize] = (2 * (level + 2) + limit) as u8;
         level += 1;
     }
     lim_lut.sharp[0] = (sharp + 3 >> 2) as u64;
-    lim_lut.sharp[1] = (if sharp != 0 {
-        9 - sharp
-    } else {
-        0xff as libc::c_int
-    }) as u64;
+    lim_lut.sharp[1] = (if sharp != 0 { 9 - sharp } else { 0xff }) as u64;
 }
 
 fn calc_lf_value(
