@@ -1003,7 +1003,7 @@ unsafe fn calc_lf_value_chroma(
 pub unsafe fn dav1d_calc_lf_values(
     lflvl_values: &mut [[[[u8; 2]; 8]; 4]; 8],
     hdr: *const Dav1dFrameHeader,
-    mut lf_delta: *const i8,
+    mut lf_delta: &[i8; 4],
 ) {
     let n_seg = if (*hdr).segmentation.enabled != 0 {
         8 as libc::c_int
@@ -1031,7 +1031,7 @@ pub unsafe fn dav1d_calc_lf_values(
         calc_lf_value(
             &mut lflvl_values[s as usize][0],
             (*hdr).loopfilter.level_y[0],
-            *lf_delta.offset(0) as libc::c_int,
+            lf_delta[0] as libc::c_int,
             if !segd.is_null() {
                 (*segd).delta_lf_y_v
             } else {
@@ -1042,13 +1042,11 @@ pub unsafe fn dav1d_calc_lf_values(
         calc_lf_value(
             &mut lflvl_values[s as usize][1],
             (*hdr).loopfilter.level_y[1],
-            *lf_delta.offset(
-                (if (*hdr).delta.lf.multi != 0 {
-                    1 as libc::c_int
-                } else {
-                    0 as libc::c_int
-                }) as isize,
-            ) as libc::c_int,
+            lf_delta[(if (*hdr).delta.lf.multi != 0 {
+                1 as libc::c_int
+            } else {
+                0 as libc::c_int
+            }) as usize] as libc::c_int,
             if !segd.is_null() {
                 (*segd).delta_lf_y_h
             } else {
@@ -1059,13 +1057,11 @@ pub unsafe fn dav1d_calc_lf_values(
         calc_lf_value_chroma(
             &mut lflvl_values[s as usize][2],
             (*hdr).loopfilter.level_u,
-            *lf_delta.offset(
-                (if (*hdr).delta.lf.multi != 0 {
-                    2 as libc::c_int
-                } else {
-                    0 as libc::c_int
-                }) as isize,
-            ) as libc::c_int,
+            lf_delta[(if (*hdr).delta.lf.multi != 0 {
+                2 as libc::c_int
+            } else {
+                0 as libc::c_int
+            }) as usize] as libc::c_int,
             if !segd.is_null() {
                 (*segd).delta_lf_u
             } else {
@@ -1076,13 +1072,11 @@ pub unsafe fn dav1d_calc_lf_values(
         calc_lf_value_chroma(
             &mut lflvl_values[s as usize][3],
             (*hdr).loopfilter.level_v,
-            *lf_delta.offset(
-                (if (*hdr).delta.lf.multi != 0 {
-                    3 as libc::c_int
-                } else {
-                    0 as libc::c_int
-                }) as isize,
-            ) as libc::c_int,
+            lf_delta[(if (*hdr).delta.lf.multi != 0 {
+                3 as libc::c_int
+            } else {
+                0 as libc::c_int
+            }) as usize] as libc::c_int,
             if !segd.is_null() {
                 (*segd).delta_lf_v
             } else {
