@@ -36,6 +36,7 @@ pub struct Av1FilterLUT {
     pub i: [uint8_t; 64],
     pub sharp: [uint64_t; 2],
 }
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Av1RestorationUnit {
@@ -45,6 +46,7 @@ pub struct Av1RestorationUnit {
     pub sgr_idx: uint8_t,
     pub sgr_weights: [int8_t; 2],
 }
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Av1Filter {
@@ -53,6 +55,7 @@ pub struct Av1Filter {
     pub cdef_idx: [int8_t; 4],
     pub noskip_mask: [[uint16_t; 2]; 16],
 }
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Av1Restoration {
@@ -305,6 +308,7 @@ unsafe extern "C" fn decomp_tx(
         }
     };
 }
+
 #[inline]
 unsafe extern "C" fn mask_edges_inter(
     masks: *mut [[[uint16_t; 2]; 3]; 32],
@@ -427,6 +431,7 @@ unsafe extern "C" fn mask_edges_inter(
         w4 as libc::c_ulong,
     );
 }
+
 #[inline]
 unsafe extern "C" fn mask_edges_intra(
     masks: *mut [[[uint16_t; 2]; 3]; 32],
@@ -588,6 +593,7 @@ unsafe extern "C" fn mask_edges_intra(
         }
     };
 }
+
 unsafe extern "C" fn mask_edges_chroma(
     masks: *mut [[[uint16_t; 2]; 2]; 32],
     cby4: libc::c_int,
@@ -759,6 +765,7 @@ unsafe extern "C" fn mask_edges_chroma(
         }
     };
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_create_lf_mask_intra(
     lflvl: *mut Av1Filter,
@@ -857,6 +864,7 @@ pub unsafe extern "C" fn dav1d_create_lf_mask_intra(
         ss_ver,
     );
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_create_lf_mask_inter(
     lflvl: *mut Av1Filter,
@@ -959,6 +967,7 @@ pub unsafe extern "C" fn dav1d_create_lf_mask_inter(
         ss_ver,
     );
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_calc_eih(lim_lut: *mut Av1FilterLUT, filter_sharpness: libc::c_int) {
     let sharp = filter_sharpness;
@@ -981,6 +990,7 @@ pub unsafe extern "C" fn dav1d_calc_eih(lim_lut: *mut Av1FilterLUT, filter_sharp
         0xff as libc::c_int
     }) as uint64_t;
 }
+
 unsafe extern "C" fn calc_lf_value(
     lflvl_values: *mut [uint8_t; 2],
     base_lvl: libc::c_int,
@@ -1024,6 +1034,7 @@ unsafe extern "C" fn calc_lf_value(
         }
     };
 }
+
 #[inline]
 unsafe extern "C" fn calc_lf_value_chroma(
     lflvl_values: *mut [uint8_t; 2],
@@ -1042,6 +1053,7 @@ unsafe extern "C" fn calc_lf_value_chroma(
         calc_lf_value(lflvl_values, base_lvl, lf_delta, seg_delta, mr_delta);
     };
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_calc_lf_values(
     lflvl_values: *mut [[[uint8_t; 2]; 8]; 4],
