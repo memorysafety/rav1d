@@ -955,15 +955,11 @@ fn calc_lf_value(
     if let Some(mr_delta) = mr_delta {
         let sh = (base >= 32) as libc::c_int;
         lflvl_values[0] = [iclip(base + mr_delta.ref_delta[0] * (1 << sh), 0, 63) as u8; 2];
-        let mut r = 1;
-        while r < 8 {
-            let mut m = 0;
-            while m < 2 {
+        for r in 1..8 {
+            for m in 0..2 {
                 let delta = mr_delta.mode_delta[m as usize] + mr_delta.ref_delta[r as usize];
                 lflvl_values[r as usize][m as usize] = iclip(base + delta * (1 << sh), 0, 63) as u8;
-                m += 1;
             }
-            r += 1;
         }
     } else {
         *lflvl_values = [[base as u8; 2]; 8];
@@ -1000,8 +996,7 @@ pub fn dav1d_calc_lf_values(
     } else {
         None
     };
-    let mut s = 0;
-    while s < n_seg {
+    for s in 0..n_seg {
         let segd = if hdr.segmentation.enabled != 0 {
             Some(&hdr.segmentation.seg_data.d[s as usize])
         } else {
@@ -1035,6 +1030,5 @@ pub fn dav1d_calc_lf_values(
             segd.map(|segd| segd.delta_lf_v).unwrap_or(0),
             mr_deltas,
         );
-        s += 1;
     }
 }
