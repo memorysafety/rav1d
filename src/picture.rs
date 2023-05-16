@@ -2,8 +2,8 @@ use crate::include::stddef::*;
 use crate::include::stdint::*;
 
 use crate::{errno_location, stderr};
-use ::libc;
-use ::libc::malloc;
+use libc;
+use libc::malloc;
 extern "C" {
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
     fn free(_: *mut libc::c_void);
@@ -629,13 +629,20 @@ pub type recon_b_inter_fn =
 pub type recon_b_intra_fn = Option<
     unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, EdgeFlags, *const Av1Block) -> (),
 >;
+use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::src::internal::ScalableMotionParams;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct pic_ctx_context {
+    pub plane_ref: [*mut Dav1dRef; 3],
+    pub layout: Dav1dPixelLayout,
+    pub extra_ptr: *mut libc::c_void,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct plane_ctx_context {
     pub allocator: Dav1dPicAllocator,
     pub pic: Dav1dPicture,
-    pub extra_ptr: *mut libc::c_void,
 }
 use crate::src::r#ref::dav1d_ref_inc;
 #[no_mangle]
@@ -709,11 +716,23 @@ pub unsafe extern "C" fn dav1d_default_picture_release(
 }
 unsafe extern "C" fn free_buffer(_data: *const uint8_t, user_data: *mut libc::c_void) {
     let mut pic_ctx: *mut pic_ctx_context = user_data as *mut pic_ctx_context;
-    ((*pic_ctx).allocator.release_picture_callback).expect("non-null function pointer")(
-        &mut (*pic_ctx).pic,
-        (*pic_ctx).allocator.cookie,
-    );
+    let planes = if (*pic_ctx).layout != DAV1D_PIXEL_LAYOUT_I400 {
+        3
+    } else {
+        1
+    };
+    for i in 0..planes {
+        dav1d_ref_dec((&mut (*pic_ctx).plane_ref[i]) as *mut *mut Dav1dRef)
+    }
     free(pic_ctx as *mut libc::c_void);
+}
+unsafe extern "C" fn free_plane_buffer(_data: *const uint8_t, user_data: *mut libc::c_void) {
+    let mut plane_ctx: *mut plane_ctx_context = user_data as *mut plane_ctx_context;
+    ((*plane_ctx).allocator.release_picture_callback).expect("non-null function pointer")(
+        &mut (*plane_ctx).pic,
+        (*plane_ctx).allocator.cookie,
+    );
+    free(plane_ctx as *mut libc::c_void);
 }
 unsafe extern "C" fn picture_alloc_with_edges(
     c: *mut Dav1dContext,
@@ -752,6 +771,11 @@ unsafe extern "C" fn picture_alloc_with_edges(
     if pic_ctx.is_null() {
         return -(12 as libc::c_int);
     }
+    memset(
+        pic_ctx as *mut libc::c_void,
+        0,
+        ::core::mem::size_of::<pic_ctx_context>(),
+    );
     (*p).p.w = w;
     (*p).p.h = h;
     (*p).seq_hdr = seq_hdr;
@@ -770,11 +794,10 @@ unsafe extern "C" fn picture_alloc_with_edges(
         free(pic_ctx as *mut libc::c_void);
         return res;
     }
-    (*pic_ctx).allocator = *p_allocator;
-    (*pic_ctx).pic = *p;
+    (*pic_ctx).layout = (*p).p.layout;
     (*p).r#ref = dav1d_ref_wrap(
         (*p).data[0] as *const uint8_t,
-        Some(free_buffer as unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> ()),
+        Some(free_buffer),
         pic_ctx as *mut libc::c_void,
     );
     if ((*p).r#ref).is_null() {
@@ -790,6 +813,51 @@ unsafe extern "C" fn picture_alloc_with_edges(
         );
         return -(12 as libc::c_int);
     }
+
+    let plane_ctx: *mut plane_ctx_context =
+        malloc(::core::mem::size_of::<plane_ctx_context>()) as *mut plane_ctx_context;
+    if plane_ctx.is_null() {
+        dav1d_ref_dec(&mut (*p).r#ref);
+        ((*p_allocator).release_picture_callback).expect("non-null function pointer")(
+            p,
+            (*p_allocator).cookie,
+        );
+        return -(12 as libc::c_int);
+    }
+
+    (*plane_ctx).allocator = *p_allocator;
+    (*plane_ctx).pic = *p;
+
+    (*pic_ctx).plane_ref[0] = dav1d_ref_wrap(
+        (*p).data[0] as *const uint8_t,
+        Some(free_plane_buffer),
+        plane_ctx as *mut libc::c_void,
+    );
+    if ((*pic_ctx).plane_ref[0]).is_null() {
+        dav1d_ref_dec(&mut (*p).r#ref);
+        ((*p_allocator).release_picture_callback).expect("non-null function pointer")(
+            p,
+            (*p_allocator).cookie,
+        );
+        free(plane_ctx as *mut libc::c_void);
+        dav1d_log(
+            c,
+            b"Failed to wrap picture plane: %s\n\0" as *const u8 as *const libc::c_char,
+            strerror(*errno_location()),
+        );
+        return -(12 as libc::c_int);
+    }
+
+    let planes = if (*p).p.layout != DAV1D_PIXEL_LAYOUT_I400 {
+        3
+    } else {
+        1
+    };
+    for i in 1..planes {
+        (*pic_ctx).plane_ref[i] = (*pic_ctx).plane_ref[0];
+        dav1d_ref_inc((*pic_ctx).plane_ref[i]);
+    }
+
     (*p).seq_hdr_ref = seq_hdr_ref;
     if !seq_hdr_ref.is_null() {
         dav1d_ref_inc(seq_hdr_ref);
@@ -879,6 +947,8 @@ pub unsafe extern "C" fn dav1d_picture_alloc_copy(
     src: *const Dav1dPicture,
 ) -> libc::c_int {
     let pic_ctx: *mut pic_ctx_context = (*(*src).r#ref).user_data as *mut pic_ctx_context;
+    let plane_ctx: *mut plane_ctx_context =
+        (*(*pic_ctx).plane_ref[0]).user_data as *mut plane_ctx_context;
     let res = picture_alloc_with_edges(
         c,
         dst,
@@ -896,7 +966,7 @@ pub unsafe extern "C" fn dav1d_picture_alloc_copy(
         (*src).itut_t35_ref,
         (*src).p.bpc,
         &(*src).m,
-        &mut (*pic_ctx).allocator,
+        &mut (*plane_ctx).allocator,
         0 as libc::c_int as size_t,
         0 as *mut *mut libc::c_void,
     );

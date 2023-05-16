@@ -1,9 +1,9 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use crate::src::align::{Align1, Align16};
+use crate::src::r#ref::{dav1d_ref_dec, dav1d_ref_inc, Dav1dRef};
 use ::libc;
 extern "C" {
-    pub type Dav1dRef;
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
 }
@@ -220,21 +220,13 @@ pub unsafe extern "C" fn dav1d_prep_grain_16bpc(
         unreachable!();
     }
     if (*data).num_y_points == 0 {
-        let stride: ptrdiff_t = (*out).stride[0];
-        let sz: ptrdiff_t = (*out).p.h as isize * stride;
-        if sz < 0 {
-            memcpy(
-                ((*out).data[0] as *mut uint8_t)
-                    .offset(sz as isize)
-                    .offset(-(stride as isize)) as *mut libc::c_void,
-                ((*in_0).data[0] as *mut uint8_t)
-                    .offset(sz as isize)
-                    .offset(-(stride as isize)) as *const libc::c_void,
-                -sz as libc::c_ulong,
-            );
-        } else {
-            memcpy((*out).data[0], (*in_0).data[0], sz as libc::c_ulong);
-        }
+        let out_plane_ref: *mut *mut Dav1dRef = (*(*out).r#ref).user_data as *mut *mut Dav1dRef;
+        let in_plane_ref: *const *const Dav1dRef =
+            (*(*in_0).r#ref).user_data as *const *const Dav1dRef;
+        dav1d_ref_dec(&mut *out_plane_ref as *mut *mut Dav1dRef);
+        *out_plane_ref = *in_plane_ref as *mut Dav1dRef;
+        dav1d_ref_inc(*out_plane_ref as *mut Dav1dRef);
+        (*out).data[0] = (*in_0).data[0];
     }
     if (*in_0).p.layout as libc::c_uint != DAV1D_PIXEL_LAYOUT_I400 as libc::c_int as libc::c_uint
         && (*data).chroma_scaling_from_luma == 0
@@ -242,41 +234,20 @@ pub unsafe extern "C" fn dav1d_prep_grain_16bpc(
         if !((*out).stride[1] == (*in_0).stride[1]) {
             unreachable!();
         }
-        let ss_ver = ((*in_0).p.layout as libc::c_uint
-            == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint)
-            as libc::c_int;
-        let stride_0: ptrdiff_t = (*out).stride[1];
-        let sz_0: ptrdiff_t = ((*out).p.h + ss_ver >> ss_ver) as isize * stride_0;
-        if sz_0 < 0 {
-            if (*data).num_uv_points[0] == 0 {
-                memcpy(
-                    ((*out).data[1] as *mut uint8_t)
-                        .offset(sz_0 as isize)
-                        .offset(-(stride_0 as isize)) as *mut libc::c_void,
-                    ((*in_0).data[1] as *mut uint8_t)
-                        .offset(sz_0 as isize)
-                        .offset(-(stride_0 as isize)) as *const libc::c_void,
-                    -sz_0 as libc::c_ulong,
-                );
-            }
-            if (*data).num_uv_points[1] == 0 {
-                memcpy(
-                    ((*out).data[2] as *mut uint8_t)
-                        .offset(sz_0 as isize)
-                        .offset(-(stride_0 as isize)) as *mut libc::c_void,
-                    ((*in_0).data[2] as *mut uint8_t)
-                        .offset(sz_0 as isize)
-                        .offset(-(stride_0 as isize)) as *const libc::c_void,
-                    -sz_0 as libc::c_ulong,
-                );
-            }
-        } else {
-            if (*data).num_uv_points[0] == 0 {
-                memcpy((*out).data[1], (*in_0).data[1], sz_0 as libc::c_ulong);
-            }
-            if (*data).num_uv_points[1] == 0 {
-                memcpy((*out).data[2], (*in_0).data[2], sz_0 as libc::c_ulong);
-            }
+        let out_plane_ref: *mut *mut Dav1dRef = (*(*out).r#ref).user_data as *mut *mut Dav1dRef;
+        let in_plane_ref: *const *const Dav1dRef =
+            (*(*in_0).r#ref).user_data as *const *const Dav1dRef;
+        if (*data).num_uv_points[0] == 0 {
+            dav1d_ref_dec(&mut *out_plane_ref.offset(1) as *mut *mut Dav1dRef);
+            *out_plane_ref.offset(1) = *in_plane_ref.offset(1) as *mut Dav1dRef;
+            dav1d_ref_inc(*out_plane_ref.offset(1) as *mut Dav1dRef);
+            (*out).data[1] = (*in_0).data[1];
+        }
+        if (*data).num_uv_points[1] == 0 {
+            dav1d_ref_dec(&mut *out_plane_ref.offset(2) as *mut *mut Dav1dRef);
+            *out_plane_ref.offset(2) = *in_plane_ref.offset(2) as *mut Dav1dRef;
+            dav1d_ref_inc(*out_plane_ref.offset(2) as *mut Dav1dRef);
+            (*out).data[2] = (*in_0).data[2];
         }
     }
 }
