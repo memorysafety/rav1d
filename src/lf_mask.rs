@@ -950,20 +950,18 @@ unsafe fn calc_lf_value(
     base_lvl: libc::c_int,
     lf_delta: libc::c_int,
     seg_delta: libc::c_int,
-    mr_delta: *const Dav1dLoopfilterModeRefDeltas,
+    mr_delta: Option<&Dav1dLoopfilterModeRefDeltas>,
 ) {
     let base = iclip(
         iclip(base_lvl + lf_delta, 0 as libc::c_int, 63 as libc::c_int) + seg_delta,
         0 as libc::c_int,
         63 as libc::c_int,
     );
-    if mr_delta.is_null() {
-        *lflvl_values = [[base as u8; 2]; 8];
-    } else {
+    if let Some(mr_delta) = mr_delta {
         let sh = (base >= 32) as libc::c_int;
         let ref mut fresh16 = lflvl_values[0][1];
         *fresh16 = iclip(
-            base + (*mr_delta).ref_delta[0] * ((1 as libc::c_int) << sh),
+            base + mr_delta.ref_delta[0] * ((1 as libc::c_int) << sh),
             0 as libc::c_int,
             63 as libc::c_int,
         ) as u8;
@@ -972,7 +970,7 @@ unsafe fn calc_lf_value(
         while r < 8 {
             let mut m = 0;
             while m < 2 {
-                let delta = (*mr_delta).mode_delta[m as usize] + (*mr_delta).ref_delta[r as usize];
+                let delta = mr_delta.mode_delta[m as usize] + mr_delta.ref_delta[r as usize];
                 lflvl_values[r as usize][m as usize] = iclip(
                     base + delta * ((1 as libc::c_int) << sh),
                     0 as libc::c_int,
@@ -982,7 +980,9 @@ unsafe fn calc_lf_value(
             }
             r += 1;
         }
-    };
+    } else {
+        *lflvl_values = [[base as u8; 2]; 8];
+    }
 }
 
 #[inline]
@@ -991,7 +991,7 @@ unsafe fn calc_lf_value_chroma(
     base_lvl: libc::c_int,
     lf_delta: libc::c_int,
     seg_delta: libc::c_int,
-    mr_delta: *const Dav1dLoopfilterModeRefDeltas,
+    mr_delta: Option<&Dav1dLoopfilterModeRefDeltas>,
 ) {
     if base_lvl == 0 {
         *lflvl_values = Default::default();
@@ -1014,12 +1014,11 @@ pub unsafe fn dav1d_calc_lf_values(
         lflvl_values[..n_seg as usize].fill_with(Default::default);
         return;
     }
-    let mr_deltas: *const Dav1dLoopfilterModeRefDeltas =
-        if (*hdr).loopfilter.mode_ref_delta_enabled != 0 {
-            &(*hdr).loopfilter.mode_ref_deltas
-        } else {
-            0 as *const Dav1dLoopfilterModeRefDeltas
-        };
+    let mr_deltas = if (*hdr).loopfilter.mode_ref_delta_enabled != 0 {
+        Some(&(*hdr).loopfilter.mode_ref_deltas)
+    } else {
+        None
+    };
     let mut s = 0;
     while s < n_seg {
         let segd: *const Dav1dSegmentationData = if (*hdr).segmentation.enabled != 0 {
