@@ -957,8 +957,8 @@ fn calc_lf_value(
         lflvl_values[0] = [iclip(base + mr_delta.ref_delta[0] * (1 << sh), 0, 63) as u8; 2];
         for r in 1..8 {
             for m in 0..2 {
-                let delta = mr_delta.mode_delta[m as usize] + mr_delta.ref_delta[r as usize];
-                lflvl_values[r as usize][m as usize] = iclip(base + delta * (1 << sh), 0, 63) as u8;
+                let delta = mr_delta.mode_delta[m] + mr_delta.ref_delta[r];
+                lflvl_values[r][m] = iclip(base + delta * (1 << sh), 0, 63) as u8;
             }
         }
     } else {
@@ -988,7 +988,7 @@ pub fn dav1d_calc_lf_values(
 ) {
     let n_seg = if hdr.segmentation.enabled != 0 { 8 } else { 1 };
     if hdr.loopfilter.level_y[0] == 0 && hdr.loopfilter.level_y[1] == 0 {
-        lflvl_values[..n_seg as usize].fill_with(Default::default);
+        lflvl_values[..n_seg].fill_with(Default::default);
         return;
     }
     let mr_deltas = if hdr.loopfilter.mode_ref_delta_enabled != 0 {
@@ -998,33 +998,33 @@ pub fn dav1d_calc_lf_values(
     };
     for s in 0..n_seg {
         let segd = if hdr.segmentation.enabled != 0 {
-            Some(&hdr.segmentation.seg_data.d[s as usize])
+            Some(&hdr.segmentation.seg_data.d[s])
         } else {
             None
         };
         calc_lf_value(
-            &mut lflvl_values[s as usize][0],
+            &mut lflvl_values[s][0],
             hdr.loopfilter.level_y[0],
             lf_delta[0] as libc::c_int,
             segd.map(|segd| segd.delta_lf_y_v).unwrap_or(0),
             mr_deltas,
         );
         calc_lf_value(
-            &mut lflvl_values[s as usize][1],
+            &mut lflvl_values[s][1],
             hdr.loopfilter.level_y[1],
             lf_delta[if hdr.delta.lf.multi != 0 { 1 } else { 0 }] as libc::c_int,
             segd.map(|segd| segd.delta_lf_y_h).unwrap_or(0),
             mr_deltas,
         );
         calc_lf_value_chroma(
-            &mut lflvl_values[s as usize][2],
+            &mut lflvl_values[s][2],
             hdr.loopfilter.level_u,
             lf_delta[if hdr.delta.lf.multi != 0 { 2 } else { 0 }] as libc::c_int,
             segd.map(|segd| segd.delta_lf_u).unwrap_or(0),
             mr_deltas,
         );
         calc_lf_value_chroma(
-            &mut lflvl_values[s as usize][3],
+            &mut lflvl_values[s][3],
             hdr.loopfilter.level_v,
             lf_delta[if hdr.delta.lf.multi != 0 { 3 } else { 0 }] as libc::c_int,
             segd.map(|segd| segd.delta_lf_v).unwrap_or(0),
