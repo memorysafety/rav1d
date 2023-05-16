@@ -1,31 +1,32 @@
-use crate::include::stddef::*;
-use crate::include::stdint::*;
-use ::libc;
-extern "C" {
-    fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
-    fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
-}
-
-use crate::src::tables::dav1d_block_dimensions;
-use crate::src::tables::dav1d_txfm_dimensions;
-
+use crate::include::common::intops::iclip;
+use crate::include::common::intops::imax;
+use crate::include::common::intops::imin;
+use crate::include::dav1d::headers::Dav1dFrameHeader;
+use crate::include::dav1d::headers::Dav1dLoopfilterModeRefDeltas;
 use crate::include::dav1d::headers::Dav1dPixelLayout;
+use crate::include::dav1d::headers::Dav1dSegmentationData;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
+use crate::include::stddef::ptrdiff_t;
+use crate::include::stdint::int8_t;
+use crate::include::stdint::uint16_t;
+use crate::include::stdint::uint64_t;
+use crate::include::stdint::uint8_t;
 use crate::src::ctx::alias16;
 use crate::src::ctx::alias32;
 use crate::src::ctx::alias64;
 use crate::src::ctx::alias8;
-
-use crate::include::dav1d::headers::Dav1dSegmentationData;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-
-use crate::include::dav1d::headers::Dav1dLoopfilterModeRefDeltas;
-
-use crate::include::dav1d::headers::Dav1dFrameHeader;
+use crate::src::levels::BlockSize;
 use crate::src::levels::RectTxfmSize;
 use crate::src::levels::TX_4X4;
+use crate::src::tables::dav1d_block_dimensions;
+use crate::src::tables::dav1d_txfm_dimensions;
+use crate::src::tables::TxfmInfo;
 
-use crate::src::levels::BlockSize;
+extern "C" {
+    fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
+    fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
+}
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -56,10 +57,7 @@ pub struct Av1Filter {
 pub struct Av1Restoration {
     pub lr: [[Av1RestorationUnit; 4]; 3],
 }
-use crate::include::common::intops::iclip;
-use crate::include::common::intops::imax;
-use crate::include::common::intops::imin;
-use crate::src::tables::TxfmInfo;
+
 unsafe extern "C" fn decomp_tx(
     txa: *mut [[[uint8_t; 32]; 32]; 2],
     from: RectTxfmSize,
