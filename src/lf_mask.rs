@@ -766,7 +766,6 @@ unsafe extern "C" fn mask_edges_chroma(
     };
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_create_lf_mask_intra(
     lflvl: *mut Av1Filter,
     level_cache: *mut [uint8_t; 4],
@@ -865,7 +864,6 @@ pub unsafe extern "C" fn dav1d_create_lf_mask_intra(
     );
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_create_lf_mask_inter(
     lflvl: *mut Av1Filter,
     level_cache: *mut [uint8_t; 4],
@@ -968,7 +966,6 @@ pub unsafe extern "C" fn dav1d_create_lf_mask_inter(
     );
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_calc_eih(lim_lut: *mut Av1FilterLUT, filter_sharpness: libc::c_int) {
     let sharp = filter_sharpness;
     let mut level = 0;
@@ -1054,7 +1051,6 @@ unsafe extern "C" fn calc_lf_value_chroma(
     };
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_calc_lf_values(
     lflvl_values: *mut [[[uint8_t; 2]; 8]; 4],
     hdr: *const Dav1dFrameHeader,
