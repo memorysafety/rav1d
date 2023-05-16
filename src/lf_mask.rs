@@ -944,7 +944,7 @@ pub unsafe fn dav1d_calc_eih(lim_lut: *mut Av1FilterLUT, filter_sharpness: libc:
     }) as u64;
 }
 
-unsafe fn calc_lf_value(
+fn calc_lf_value(
     lflvl_values: &mut [[u8; 2]; 8],
     base_lvl: libc::c_int,
     lf_delta: libc::c_int,
@@ -971,7 +971,7 @@ unsafe fn calc_lf_value(
 }
 
 #[inline]
-unsafe fn calc_lf_value_chroma(
+fn calc_lf_value_chroma(
     lflvl_values: &mut [[u8; 2]; 8],
     base_lvl: libc::c_int,
     lf_delta: libc::c_int,
@@ -985,7 +985,7 @@ unsafe fn calc_lf_value_chroma(
     };
 }
 
-pub unsafe fn dav1d_calc_lf_values(
+pub fn dav1d_calc_lf_values(
     lflvl_values: &mut [[[[u8; 2]; 8]; 4]; 8],
     hdr: &Dav1dFrameHeader,
     mut lf_delta: &[i8; 4],
