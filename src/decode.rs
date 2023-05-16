@@ -3317,11 +3317,7 @@ unsafe fn decode_b(
             ts.lflvl = f.lf.lvl.as_ptr();
         } else if ts.last_delta_lf != prev_delta_lf {
             // find sb-specific lf lvl parameters
-            dav1d_calc_lf_values(
-                &mut ts.lflvlmem,
-                frame_hdr,
-                ts.last_delta_lf.as_ptr(),
-            );
+            dav1d_calc_lf_values(&mut ts.lflvlmem, frame_hdr, &ts.last_delta_lf);
             ts.lflvl = ts.lflvlmem.as_ptr();
         }
     }
@@ -8978,18 +8974,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                                                                     dav1d_calc_lf_values(
                                                                         &mut (*f).lf.lvl,
                                                                         (*f).frame_hdr,
-                                                                        [
-                                                                            0 as libc::c_int
-                                                                                as int8_t,
-                                                                            0 as libc::c_int
-                                                                                as int8_t,
-                                                                            0 as libc::c_int
-                                                                                as int8_t,
-                                                                            0 as libc::c_int
-                                                                                as int8_t,
-                                                                        ]
-                                                                        .as_mut_ptr()
-                                                                            as *const int8_t,
+                                                                        &[0, 0, 0, 0],
                                                                     );
                                                                     memset(
                                                                         (*f).lf.mask
