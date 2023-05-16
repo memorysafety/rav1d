@@ -952,30 +952,18 @@ unsafe fn calc_lf_value(
     seg_delta: libc::c_int,
     mr_delta: Option<&Dav1dLoopfilterModeRefDeltas>,
 ) {
-    let base = iclip(
-        iclip(base_lvl + lf_delta, 0 as libc::c_int, 63 as libc::c_int) + seg_delta,
-        0 as libc::c_int,
-        63 as libc::c_int,
-    );
+    let base = iclip(iclip(base_lvl + lf_delta, 0, 63) + seg_delta, 0, 63);
     if let Some(mr_delta) = mr_delta {
         let sh = (base >= 32) as libc::c_int;
         let ref mut fresh16 = lflvl_values[0][1];
-        *fresh16 = iclip(
-            base + mr_delta.ref_delta[0] * ((1 as libc::c_int) << sh),
-            0 as libc::c_int,
-            63 as libc::c_int,
-        ) as u8;
+        *fresh16 = iclip(base + mr_delta.ref_delta[0] * (1 << sh), 0, 63) as u8;
         lflvl_values[0][0] = *fresh16;
         let mut r = 1;
         while r < 8 {
             let mut m = 0;
             while m < 2 {
                 let delta = mr_delta.mode_delta[m as usize] + mr_delta.ref_delta[r as usize];
-                lflvl_values[r as usize][m as usize] = iclip(
-                    base + delta * ((1 as libc::c_int) << sh),
-                    0 as libc::c_int,
-                    63 as libc::c_int,
-                ) as u8;
+                lflvl_values[r as usize][m as usize] = iclip(base + delta * (1 << sh), 0, 63) as u8;
                 m += 1;
             }
             r += 1;
@@ -1006,9 +994,9 @@ pub unsafe fn dav1d_calc_lf_values(
     mut lf_delta: &[i8; 4],
 ) {
     let n_seg = if (*hdr).segmentation.enabled != 0 {
-        8 as libc::c_int
+        8
     } else {
-        1 as libc::c_int
+        1
     };
     if (*hdr).loopfilter.level_y[0] == 0 && (*hdr).loopfilter.level_y[1] == 0 {
         lflvl_values[..n_seg as usize].fill_with(Default::default);
@@ -1034,52 +1022,40 @@ pub unsafe fn dav1d_calc_lf_values(
             if !segd.is_null() {
                 (*segd).delta_lf_y_v
             } else {
-                0 as libc::c_int
+                0
             },
             mr_deltas,
         );
         calc_lf_value(
             &mut lflvl_values[s as usize][1],
             (*hdr).loopfilter.level_y[1],
-            lf_delta[(if (*hdr).delta.lf.multi != 0 {
-                1 as libc::c_int
-            } else {
-                0 as libc::c_int
-            }) as usize] as libc::c_int,
+            lf_delta[if (*hdr).delta.lf.multi != 0 { 1 } else { 0 }] as libc::c_int,
             if !segd.is_null() {
                 (*segd).delta_lf_y_h
             } else {
-                0 as libc::c_int
+                0
             },
             mr_deltas,
         );
         calc_lf_value_chroma(
             &mut lflvl_values[s as usize][2],
             (*hdr).loopfilter.level_u,
-            lf_delta[(if (*hdr).delta.lf.multi != 0 {
-                2 as libc::c_int
-            } else {
-                0 as libc::c_int
-            }) as usize] as libc::c_int,
+            lf_delta[if (*hdr).delta.lf.multi != 0 { 2 } else { 0 }] as libc::c_int,
             if !segd.is_null() {
                 (*segd).delta_lf_u
             } else {
-                0 as libc::c_int
+                0
             },
             mr_deltas,
         );
         calc_lf_value_chroma(
             &mut lflvl_values[s as usize][3],
             (*hdr).loopfilter.level_v,
-            lf_delta[(if (*hdr).delta.lf.multi != 0 {
-                3 as libc::c_int
-            } else {
-                0 as libc::c_int
-            }) as usize] as libc::c_int,
+            lf_delta[if (*hdr).delta.lf.multi != 0 { 3 } else { 0 }] as libc::c_int,
             if !segd.is_null() {
                 (*segd).delta_lf_v
             } else {
-                0 as libc::c_int
+                0
             },
             mr_deltas,
         );
