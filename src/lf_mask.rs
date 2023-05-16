@@ -922,7 +922,7 @@ pub unsafe fn dav1d_create_lf_mask_inter(
     );
 }
 
-pub unsafe fn dav1d_calc_eih(lim_lut: &mut Av1FilterLUT, filter_sharpness: libc::c_int) {
+pub fn dav1d_calc_eih(lim_lut: &mut Av1FilterLUT, filter_sharpness: libc::c_int) {
     let sharp = filter_sharpness;
     let mut level = 0;
     while level < 64 {
