@@ -8798,7 +8798,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                                                                     }
                                                                     dav1d_calc_lf_values(
                                                                         &mut (*f).lf.lvl,
-                                                                        (*f).frame_hdr,
+                                                                        &*(*f).frame_hdr,
                                                                         &[0, 0, 0, 0],
                                                                     );
                                                                     memset(

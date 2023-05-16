@@ -990,34 +990,30 @@ unsafe fn calc_lf_value_chroma(
 
 pub unsafe fn dav1d_calc_lf_values(
     lflvl_values: &mut [[[[u8; 2]; 8]; 4]; 8],
-    hdr: *const Dav1dFrameHeader,
+    hdr: &Dav1dFrameHeader,
     mut lf_delta: &[i8; 4],
 ) {
-    let n_seg = if (*hdr).segmentation.enabled != 0 {
-        8
-    } else {
-        1
-    };
-    if (*hdr).loopfilter.level_y[0] == 0 && (*hdr).loopfilter.level_y[1] == 0 {
+    let n_seg = if hdr.segmentation.enabled != 0 { 8 } else { 1 };
+    if hdr.loopfilter.level_y[0] == 0 && hdr.loopfilter.level_y[1] == 0 {
         lflvl_values[..n_seg as usize].fill_with(Default::default);
         return;
     }
-    let mr_deltas = if (*hdr).loopfilter.mode_ref_delta_enabled != 0 {
-        Some(&(*hdr).loopfilter.mode_ref_deltas)
+    let mr_deltas = if hdr.loopfilter.mode_ref_delta_enabled != 0 {
+        Some(&hdr.loopfilter.mode_ref_deltas)
     } else {
         None
     };
     let mut s = 0;
     while s < n_seg {
-        let segd: *const Dav1dSegmentationData = if (*hdr).segmentation.enabled != 0 {
-            &*((*hdr).segmentation.seg_data.d).as_ptr().offset(s as isize)
+        let segd: *const Dav1dSegmentationData = if hdr.segmentation.enabled != 0 {
+            &*(hdr.segmentation.seg_data.d).as_ptr().offset(s as isize)
                 as *const Dav1dSegmentationData
         } else {
             0 as *const Dav1dSegmentationData
         };
         calc_lf_value(
             &mut lflvl_values[s as usize][0],
-            (*hdr).loopfilter.level_y[0],
+            hdr.loopfilter.level_y[0],
             lf_delta[0] as libc::c_int,
             if !segd.is_null() {
                 (*segd).delta_lf_y_v
@@ -1028,8 +1024,8 @@ pub unsafe fn dav1d_calc_lf_values(
         );
         calc_lf_value(
             &mut lflvl_values[s as usize][1],
-            (*hdr).loopfilter.level_y[1],
-            lf_delta[if (*hdr).delta.lf.multi != 0 { 1 } else { 0 }] as libc::c_int,
+            hdr.loopfilter.level_y[1],
+            lf_delta[if hdr.delta.lf.multi != 0 { 1 } else { 0 }] as libc::c_int,
             if !segd.is_null() {
                 (*segd).delta_lf_y_h
             } else {
@@ -1039,8 +1035,8 @@ pub unsafe fn dav1d_calc_lf_values(
         );
         calc_lf_value_chroma(
             &mut lflvl_values[s as usize][2],
-            (*hdr).loopfilter.level_u,
-            lf_delta[if (*hdr).delta.lf.multi != 0 { 2 } else { 0 }] as libc::c_int,
+            hdr.loopfilter.level_u,
+            lf_delta[if hdr.delta.lf.multi != 0 { 2 } else { 0 }] as libc::c_int,
             if !segd.is_null() {
                 (*segd).delta_lf_u
             } else {
@@ -1050,8 +1046,8 @@ pub unsafe fn dav1d_calc_lf_values(
         );
         calc_lf_value_chroma(
             &mut lflvl_values[s as usize][3],
-            (*hdr).loopfilter.level_v,
-            lf_delta[if (*hdr).delta.lf.multi != 0 { 3 } else { 0 }] as libc::c_int,
+            hdr.loopfilter.level_v,
+            lf_delta[if hdr.delta.lf.multi != 0 { 3 } else { 0 }] as libc::c_int,
             if !segd.is_null() {
                 (*segd).delta_lf_v
             } else {
