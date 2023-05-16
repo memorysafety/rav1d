@@ -3318,7 +3318,7 @@ unsafe fn decode_b(
         } else if ts.last_delta_lf != prev_delta_lf {
             // find sb-specific lf lvl parameters
             dav1d_calc_lf_values(
-                ts.lflvlmem.as_mut_ptr(),
+                &mut ts.lflvlmem,
                 frame_hdr,
                 ts.last_delta_lf.as_ptr(),
             );
@@ -8976,7 +8976,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                                                                                 .sharpness;
                                                                     }
                                                                     dav1d_calc_lf_values(
-                                                                        ((*f).lf.lvl).as_mut_ptr(),
+                                                                        &mut (*f).lf.lvl,
                                                                         (*f).frame_hdr,
                                                                         [
                                                                             0 as libc::c_int

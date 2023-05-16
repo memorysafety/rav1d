@@ -945,7 +945,7 @@ pub unsafe fn dav1d_calc_eih(lim_lut: *mut Av1FilterLUT, filter_sharpness: libc:
 }
 
 unsafe fn calc_lf_value(
-    lflvl_values: *mut [u8; 2],
+    lflvl_values: &mut [[u8; 2]; 8],
     base_lvl: libc::c_int,
     lf_delta: libc::c_int,
     seg_delta: libc::c_int,
@@ -958,25 +958,25 @@ unsafe fn calc_lf_value(
     );
     if mr_delta.is_null() {
         memset(
-            lflvl_values as *mut libc::c_void,
+            lflvl_values.as_mut_ptr() as *mut libc::c_void,
             base,
             (8 * 2) as libc::c_ulong,
         );
     } else {
         let sh = (base >= 32) as libc::c_int;
-        let ref mut fresh16 = (*lflvl_values.offset(0))[1];
+        let ref mut fresh16 = lflvl_values[0][1];
         *fresh16 = iclip(
             base + (*mr_delta).ref_delta[0] * ((1 as libc::c_int) << sh),
             0 as libc::c_int,
             63 as libc::c_int,
         ) as u8;
-        (*lflvl_values.offset(0))[0] = *fresh16;
+        lflvl_values[0][0] = *fresh16;
         let mut r = 1;
         while r < 8 {
             let mut m = 0;
             while m < 2 {
                 let delta = (*mr_delta).mode_delta[m as usize] + (*mr_delta).ref_delta[r as usize];
-                (*lflvl_values.offset(r as isize))[m as usize] = iclip(
+                lflvl_values[r as usize][m as usize] = iclip(
                     base + delta * ((1 as libc::c_int) << sh),
                     0 as libc::c_int,
                     63 as libc::c_int,
@@ -990,7 +990,7 @@ unsafe fn calc_lf_value(
 
 #[inline]
 unsafe fn calc_lf_value_chroma(
-    lflvl_values: *mut [u8; 2],
+    lflvl_values: &mut [[u8; 2]; 8],
     base_lvl: libc::c_int,
     lf_delta: libc::c_int,
     seg_delta: libc::c_int,
@@ -998,7 +998,7 @@ unsafe fn calc_lf_value_chroma(
 ) {
     if base_lvl == 0 {
         memset(
-            lflvl_values as *mut libc::c_void,
+            lflvl_values.as_mut_ptr() as *mut libc::c_void,
             0 as libc::c_int,
             (8 * 2) as libc::c_ulong,
         );
@@ -1008,7 +1008,7 @@ unsafe fn calc_lf_value_chroma(
 }
 
 pub unsafe fn dav1d_calc_lf_values(
-    lflvl_values: *mut [[[u8; 2]; 8]; 4],
+    lflvl_values: &mut [[[[u8; 2]; 8]; 4]; 8],
     hdr: *const Dav1dFrameHeader,
     mut lf_delta: *const i8,
 ) {
@@ -1019,7 +1019,7 @@ pub unsafe fn dav1d_calc_lf_values(
     };
     if (*hdr).loopfilter.level_y[0] == 0 && (*hdr).loopfilter.level_y[1] == 0 {
         memset(
-            lflvl_values as *mut libc::c_void,
+            lflvl_values.as_mut_ptr() as *mut libc::c_void,
             0 as libc::c_int,
             (8 * 4 * 2 * n_seg) as libc::c_ulong,
         );
@@ -1040,7 +1040,7 @@ pub unsafe fn dav1d_calc_lf_values(
             0 as *const Dav1dSegmentationData
         };
         calc_lf_value(
-            ((*lflvl_values.offset(s as isize))[0]).as_mut_ptr(),
+            &mut lflvl_values[s as usize][0],
             (*hdr).loopfilter.level_y[0],
             *lf_delta.offset(0) as libc::c_int,
             if !segd.is_null() {
@@ -1051,7 +1051,7 @@ pub unsafe fn dav1d_calc_lf_values(
             mr_deltas,
         );
         calc_lf_value(
-            ((*lflvl_values.offset(s as isize))[1]).as_mut_ptr(),
+            &mut lflvl_values[s as usize][1],
             (*hdr).loopfilter.level_y[1],
             *lf_delta.offset(
                 (if (*hdr).delta.lf.multi != 0 {
@@ -1068,7 +1068,7 @@ pub unsafe fn dav1d_calc_lf_values(
             mr_deltas,
         );
         calc_lf_value_chroma(
-            ((*lflvl_values.offset(s as isize))[2]).as_mut_ptr(),
+            &mut lflvl_values[s as usize][2],
             (*hdr).loopfilter.level_u,
             *lf_delta.offset(
                 (if (*hdr).delta.lf.multi != 0 {
@@ -1085,7 +1085,7 @@ pub unsafe fn dav1d_calc_lf_values(
             mr_deltas,
         );
         calc_lf_value_chroma(
-            ((*lflvl_values.offset(s as isize))[3]).as_mut_ptr(),
+            &mut lflvl_values[s as usize][3],
             (*hdr).loopfilter.level_v,
             *lf_delta.offset(
                 (if (*hdr).delta.lf.multi != 0 {
