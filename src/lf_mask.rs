@@ -4,7 +4,6 @@ use crate::include::common::intops::imin;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dLoopfilterModeRefDeltas;
 use crate::include::dav1d::headers::Dav1dPixelLayout;
-use crate::include::dav1d::headers::Dav1dSegmentationData;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 use crate::include::stddef::ptrdiff_t;
@@ -1005,54 +1004,37 @@ pub unsafe fn dav1d_calc_lf_values(
     };
     let mut s = 0;
     while s < n_seg {
-        let segd: *const Dav1dSegmentationData = if hdr.segmentation.enabled != 0 {
-            &*(hdr.segmentation.seg_data.d).as_ptr().offset(s as isize)
-                as *const Dav1dSegmentationData
+        let segd = if hdr.segmentation.enabled != 0 {
+            Some(&hdr.segmentation.seg_data.d[s as usize])
         } else {
-            0 as *const Dav1dSegmentationData
+            None
         };
         calc_lf_value(
             &mut lflvl_values[s as usize][0],
             hdr.loopfilter.level_y[0],
             lf_delta[0] as libc::c_int,
-            if !segd.is_null() {
-                (*segd).delta_lf_y_v
-            } else {
-                0
-            },
+            segd.map(|segd| segd.delta_lf_y_v).unwrap_or(0),
             mr_deltas,
         );
         calc_lf_value(
             &mut lflvl_values[s as usize][1],
             hdr.loopfilter.level_y[1],
             lf_delta[if hdr.delta.lf.multi != 0 { 1 } else { 0 }] as libc::c_int,
-            if !segd.is_null() {
-                (*segd).delta_lf_y_h
-            } else {
-                0
-            },
+            segd.map(|segd| segd.delta_lf_y_h).unwrap_or(0),
             mr_deltas,
         );
         calc_lf_value_chroma(
             &mut lflvl_values[s as usize][2],
             hdr.loopfilter.level_u,
             lf_delta[if hdr.delta.lf.multi != 0 { 2 } else { 0 }] as libc::c_int,
-            if !segd.is_null() {
-                (*segd).delta_lf_u
-            } else {
-                0
-            },
+            segd.map(|segd| segd.delta_lf_u).unwrap_or(0),
             mr_deltas,
         );
         calc_lf_value_chroma(
             &mut lflvl_values[s as usize][3],
             hdr.loopfilter.level_v,
             lf_delta[if hdr.delta.lf.multi != 0 { 3 } else { 0 }] as libc::c_int,
-            if !segd.is_null() {
-                (*segd).delta_lf_v
-            } else {
-                0
-            },
+            segd.map(|segd| segd.delta_lf_v).unwrap_or(0),
             mr_deltas,
         );
         s += 1;
