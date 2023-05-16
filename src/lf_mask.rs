@@ -956,6 +956,7 @@ fn calc_lf_value(
         0,
         63,
     );
+
     if let Some(mr_delta) = mr_delta {
         let sh = (base >= 32) as libc::c_int;
         lflvl_values[0] = [iclip(base + mr_delta.ref_delta[0] * (1 << sh), 0, 63) as u8; 2];
@@ -991,10 +992,12 @@ pub fn dav1d_calc_lf_values(
     mut lf_delta: &[i8; 4],
 ) {
     let n_seg = if hdr.segmentation.enabled != 0 { 8 } else { 1 };
+
     if hdr.loopfilter.level_y[0] == 0 && hdr.loopfilter.level_y[1] == 0 {
         lflvl_values[..n_seg].fill_with(Default::default);
         return;
     }
+
     let mr_deltas = if hdr.loopfilter.mode_ref_delta_enabled != 0 {
         Some(&hdr.loopfilter.mode_ref_deltas)
     } else {
@@ -1006,6 +1009,7 @@ pub fn dav1d_calc_lf_values(
         } else {
             None
         };
+
         calc_lf_value(
             &mut lflvl_values[s][0],
             hdr.loopfilter.level_y[0],
