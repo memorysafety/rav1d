@@ -921,14 +921,17 @@ pub unsafe fn dav1d_create_lf_mask_inter(
 }
 
 pub fn dav1d_calc_eih(lim_lut: &mut Av1FilterLUT, filter_sharpness: libc::c_int) {
+    // set E/I/H values from loopfilter level
     let sharp = filter_sharpness as u8;
     for level in 0..64 {
         let mut limit = level;
+
         if sharp > 0 {
             limit >>= sharp + 3 >> 2;
             limit = std::cmp::min(limit, 9 - sharp);
         }
         limit = std::cmp::max(limit, 1);
+
         lim_lut.i[level as usize] = limit;
         lim_lut.e[level as usize] = 2 * (level + 2) + limit;
     }
