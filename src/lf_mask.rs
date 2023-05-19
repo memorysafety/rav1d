@@ -178,8 +178,7 @@ unsafe fn mask_edges_inter(
     a: &mut [u8],
     l: &mut [u8],
 ) {
-    let t_dim: *const TxfmInfo =
-        &*dav1d_txfm_dimensions.as_ptr().offset(max_tx as isize) as *const TxfmInfo;
+    let t_dim = &dav1d_txfm_dimensions[max_tx as usize];
     let mut y = 0;
     let mut x = 0;
     let mut txa: Align16<[[[[u8; 32]; 32]; 2]; 2]> = Align16([[[[0; 32]; 32]; 2]; 2]);
@@ -201,10 +200,10 @@ unsafe fn mask_edges_inter(
                 x_off,
                 tx_masks,
             );
-            x_0 += (*t_dim).w as libc::c_int;
+            x_0 += t_dim.w as libc::c_int;
             x_off += 1;
         }
-        y_0 += (*t_dim).h as libc::c_int;
+        y_0 += t_dim.h as libc::c_int;
         y_off += 1;
     }
     let mut mask: libc::c_uint = (1 as libc::c_uint) << by4;
