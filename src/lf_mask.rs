@@ -167,7 +167,7 @@ unsafe fn decomp_tx(
 
 #[inline]
 unsafe fn mask_edges_inter(
-    masks: *mut [[[u16; 2]; 3]; 32],
+    masks: &mut [[[[u16; 2]; 3]; 32]; 2],
     by4: libc::c_int,
     bx4: libc::c_int,
     w4: libc::c_int,
@@ -212,7 +212,7 @@ unsafe fn mask_edges_inter(
     while y < h4 {
         let sidx = (mask >= 0x10000 as libc::c_int as libc::c_uint) as libc::c_int;
         let smask: libc::c_uint = mask >> (sidx << 4);
-        let ref mut fresh0 = (*masks.offset(0))[bx4 as usize][imin(
+        let ref mut fresh0 = masks[0][bx4 as usize][imin(
             txa[0][0][y as usize][0] as libc::c_int,
             *l.offset(y as isize) as libc::c_int,
         ) as usize][sidx as usize];
@@ -225,7 +225,7 @@ unsafe fn mask_edges_inter(
     while x < w4 {
         let sidx_0 = (mask >= 0x10000 as libc::c_int as libc::c_uint) as libc::c_int;
         let smask_0: libc::c_uint = mask >> (sidx_0 << 4);
-        let ref mut fresh1 = (*masks.offset(1))[by4 as usize][imin(
+        let ref mut fresh1 = masks[1][by4 as usize][imin(
             txa[1][0][0][x as usize] as libc::c_int,
             *a.offset(x as isize) as libc::c_int,
         ) as usize][sidx_0 as usize];
@@ -244,8 +244,8 @@ unsafe fn mask_edges_inter(
             x = step;
             while x < w4 {
                 let rtx = txa[0][0][y as usize][x as usize] as libc::c_int;
-                let ref mut fresh2 = (*masks.offset(0))[(bx4 + x) as usize]
-                    [imin(rtx, ltx) as usize][sidx_1 as usize];
+                let ref mut fresh2 =
+                    masks[0][(bx4 + x) as usize][imin(rtx, ltx) as usize][sidx_1 as usize];
                 *fresh2 = (*fresh2 as libc::c_uint | smask_1) as u16;
                 ltx = rtx;
                 step = txa[0][1][y as usize][x as usize] as libc::c_int;
@@ -264,8 +264,8 @@ unsafe fn mask_edges_inter(
             y = step_0;
             while y < h4 {
                 let btx = txa[1][0][y as usize][x as usize] as libc::c_int;
-                let ref mut fresh3 = (*masks.offset(1))[(by4 + y) as usize]
-                    [imin(ttx, btx) as usize][sidx_2 as usize];
+                let ref mut fresh3 =
+                    masks[1][(by4 + y) as usize][imin(ttx, btx) as usize][sidx_2 as usize];
                 *fresh3 = (*fresh3 as libc::c_uint | smask_2) as u16;
                 ttx = btx;
                 step_0 = txa[1][1][y as usize][x as usize] as libc::c_int;
@@ -726,7 +726,7 @@ pub unsafe fn dav1d_create_lf_mask_inter(
             y += 1;
         }
         mask_edges_inter(
-            ((*lflvl).filter_y).as_mut_ptr(),
+            &mut (*lflvl).filter_y,
             by4,
             bx4,
             bw4,
