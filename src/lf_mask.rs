@@ -300,28 +300,26 @@ unsafe fn mask_edges_intra(
     }
     let hstep = t_dim.w as usize;
     let t = 1u32 << by4;
-    let inner = (((t as u64) << h4) - (t as u64)) as libc::c_uint;
-    let inner1 = inner & 0xffff;
-    let inner2 = inner >> 16;
+    let inner = (((t as u64) << h4) - (t as u64)) as u32;
+    let inner = [inner as u16, (inner >> 16) as u16];
     for x in (hstep..w4).step_by(hstep) {
-        if inner1 != 0 {
-            masks[0][bx4 + x][twl4c as usize][0] |= inner1 as u16;
+        if inner[0] != 0 {
+            masks[0][bx4 + x][twl4c as usize][0] |= inner[0];
         }
-        if inner2 != 0 {
-            masks[0][bx4 + x][twl4c as usize][1] |= inner2 as u16;
+        if inner[1] != 0 {
+            masks[0][bx4 + x][twl4c as usize][1] |= inner[1];
         }
     }
     let vstep = t_dim.h as usize;
     let t = 1u32 << bx4;
-    let inner = (((t as u64) << w4) - (t as u64)) as libc::c_uint;
-    let inner1 = inner & 0xffff;
-    let inner2 = inner >> 16;
+    let inner = (((t as u64) << w4) - (t as u64)) as u32;
+    let inner = [inner as u16, (inner >> 16) as u16];
     for y in (vstep..h4).step_by(vstep) {
-        if inner1 != 0 {
-            masks[1][by4 + y][thl4c as usize][0] |= inner1 as u16;
+        if inner[0] != 0 {
+            masks[1][by4 + y][thl4c as usize][0] |= inner[0];
         }
-        if inner2 != 0 {
-            masks[1][by4 + y][thl4c as usize][1] |= inner2 as u16;
+        if inner[1] != 0 {
+            masks[1][by4 + y][thl4c as usize][1] |= inner[1];
         }
     }
 
