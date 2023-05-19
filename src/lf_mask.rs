@@ -177,6 +177,7 @@ unsafe fn mask_edges_inter(
     a: &mut [u8],
     l: &mut [u8],
 ) {
+    let [by4, bx4, w4, h4] = [by4, bx4, w4, h4].map(|it| it as usize);
     let t_dim = &dav1d_txfm_dimensions[max_tx as usize];
     let mut txa = [[[[0; 32]; 32]; 2]; 2];
     for (y_off, y) in (0..h4).step_by(t_dim.h as usize).enumerate() {
@@ -199,30 +200,27 @@ unsafe fn mask_edges_inter(
         let mask = 1u32 << (by4 + y);
         let sidx = (mask >= 0x10000) as usize;
         let smask = mask >> (sidx << 4);
-        masks[0][bx4 as usize][std::cmp::min(txa[0][0][y as usize][0], l[y as usize]) as usize]
-            [sidx] |= smask as u16;
+        masks[0][bx4][std::cmp::min(txa[0][0][y][0], l[y]) as usize][sidx] |= smask as u16;
     }
     for x in 0..w4 {
         let mask = 1u32 << (bx4 + x);
         let sidx = (mask >= 0x10000) as usize;
         let smask = mask >> (sidx << 4);
-        masks[1][by4 as usize][std::cmp::min(txa[1][0][0][x as usize], a[x as usize]) as usize]
-            [sidx] |= smask as u16;
+        masks[1][by4][std::cmp::min(txa[1][0][0][x], a[x]) as usize][sidx] |= smask as u16;
     }
     if skip == 0 {
         for y in 0..h4 {
             let mask = 1u32 << (by4 + y);
             let sidx = (mask >= 0x10000) as usize;
             let smask = mask >> (sidx << 4);
-            let mut ltx = txa[0][0][y as usize][0];
-            let mut step = txa[0][1][y as usize][0] as libc::c_int;
+            let mut ltx = txa[0][0][y][0];
+            let mut step = txa[0][1][y][0] as usize;
             let mut x = step;
             while x < w4 {
-                let rtx = txa[0][0][y as usize][x as usize];
-                masks[0][(bx4 + x) as usize][std::cmp::min(rtx, ltx) as usize][sidx] |=
-                    smask as u16;
+                let rtx = txa[0][0][y][x];
+                masks[0][bx4 + x][std::cmp::min(rtx, ltx) as usize][sidx] |= smask as u16;
                 ltx = rtx;
-                step = txa[0][1][y as usize][x as usize] as libc::c_int;
+                step = txa[0][1][y][x] as usize;
                 x += step;
             }
         }
@@ -230,25 +228,24 @@ unsafe fn mask_edges_inter(
             let mask = 1u32 << (bx4 + x);
             let sidx = (mask >= 0x10000) as usize;
             let smask = mask >> (sidx << 4);
-            let mut ttx = txa[1][0][0][x as usize];
-            let mut step = txa[1][1][0][x as usize] as libc::c_int;
+            let mut ttx = txa[1][0][0][x];
+            let mut step = txa[1][1][0][x] as usize;
             let mut y = step;
             while y < h4 {
-                let btx = txa[1][0][y as usize][x as usize];
-                masks[1][(by4 + y) as usize][std::cmp::min(ttx, btx) as usize][sidx] |=
-                    smask as u16;
+                let btx = txa[1][0][y][x];
+                masks[1][by4 + y][std::cmp::min(ttx, btx) as usize][sidx] |= smask as u16;
                 ttx = btx;
-                step = txa[1][1][y as usize][x as usize] as libc::c_int;
+                step = txa[1][1][y][x] as usize;
                 y += step;
             }
         }
     }
     for y in 0..h4 {
-        l[y as usize] = txa[0][0][y as usize][(w4 - 1) as usize];
+        l[y] = txa[0][0][y][w4 - 1];
     }
     memcpy(
         a.as_mut_ptr() as *mut libc::c_void,
-        (txa[1][0][(h4 - 1) as usize]).as_mut_ptr() as *const libc::c_void,
+        (txa[1][0][h4 - 1]).as_mut_ptr() as *const libc::c_void,
         w4 as libc::c_ulong,
     );
 }
