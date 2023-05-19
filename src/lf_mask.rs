@@ -125,20 +125,10 @@ unsafe fn decomp_tx(
         let lh = std::cmp::min(2, t_dim.lh);
 
         let mut set_ctx = |_dir: &mut (), _diridx, off, mul, rep_macro: SetCtxFn| {
-            let mut y = 0;
-            while y < t_dim.h as libc::c_int {
-                rep_macro(
-                    (*txa.offset(0))[0][y as usize].as_mut_ptr(),
-                    off,
-                    mul * lw as u64,
-                );
-                rep_macro(
-                    (*txa.offset(1))[0][y as usize].as_mut_ptr(),
-                    off,
-                    mul * lh as u64,
-                );
-                (*txa.offset(0))[1][y as usize][0] = t_dim.w;
-                y += 1;
+            for y in 0..t_dim.h as usize {
+                rep_macro((*txa.offset(0))[0][y].as_mut_ptr(), off, mul * lw as u64);
+                rep_macro((*txa.offset(1))[0][y].as_mut_ptr(), off, mul * lh as u64);
+                (*txa.offset(0))[1][y][0] = t_dim.w;
             }
         };
         case_set_upto16(
