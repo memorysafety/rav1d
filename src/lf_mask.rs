@@ -175,8 +175,8 @@ unsafe fn mask_edges_inter(
     skip: libc::c_int,
     max_tx: RectTxfmSize,
     tx_masks: &[u16; 2],
-    a: *mut u8,
-    l: *mut u8,
+    a: &mut [u8],
+    l: &mut [u8],
 ) {
     let t_dim: *const TxfmInfo =
         &*dav1d_txfm_dimensions.as_ptr().offset(max_tx as isize) as *const TxfmInfo;
@@ -214,7 +214,7 @@ unsafe fn mask_edges_inter(
         let smask: libc::c_uint = mask >> (sidx << 4);
         let ref mut fresh0 = masks[0][bx4 as usize][imin(
             txa[0][0][y as usize][0] as libc::c_int,
-            *l.offset(y as isize) as libc::c_int,
+            l[y as usize] as libc::c_int,
         ) as usize][sidx as usize];
         *fresh0 = (*fresh0 as libc::c_uint | smask) as u16;
         y += 1;
@@ -227,7 +227,7 @@ unsafe fn mask_edges_inter(
         let smask_0: libc::c_uint = mask >> (sidx_0 << 4);
         let ref mut fresh1 = masks[1][by4 as usize][imin(
             txa[1][0][0][x as usize] as libc::c_int,
-            *a.offset(x as isize) as libc::c_int,
+            a[x as usize] as libc::c_int,
         ) as usize][sidx_0 as usize];
         *fresh1 = (*fresh1 as libc::c_uint | smask_0) as u16;
         x += 1;
@@ -277,11 +277,11 @@ unsafe fn mask_edges_inter(
     }
     y = 0 as libc::c_int;
     while y < h4 {
-        *l.offset(y as isize) = txa[0][0][y as usize][(w4 - 1) as usize];
+        l[y as usize] = txa[0][0][y as usize][(w4 - 1) as usize];
         y += 1;
     }
     memcpy(
-        a as *mut libc::c_void,
+        a.as_mut_ptr() as *mut libc::c_void,
         (txa[1][0][(h4 - 1) as usize]).as_mut_ptr() as *const libc::c_void,
         w4 as libc::c_ulong,
     );
@@ -700,8 +700,8 @@ pub unsafe fn dav1d_create_lf_mask_inter(
     tx_masks: &[u16; 2],
     uvtx: RectTxfmSize,
     layout: Dav1dPixelLayout,
-    ay: *mut u8,
-    ly: *mut u8,
+    ay: &mut [u8],
+    ly: &mut [u8],
     auv: *mut u8,
     luv: *mut u8,
 ) {
