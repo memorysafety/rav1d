@@ -280,6 +280,8 @@ unsafe fn mask_edges_intra(
     a: &mut [u8],
     l: &mut [u8],
 ) {
+    let [by4, bx4, w4, h4] = [by4, bx4, w4, h4].map(|it| it as usize);
+
     let t_dim = &dav1d_txfm_dimensions[tx as usize];
     let twl4 = t_dim.lw;
     let thl4 = t_dim.lh;
@@ -289,38 +291,38 @@ unsafe fn mask_edges_intra(
         let mask = 1u32 << (by4 + y);
         let sidx = (mask >= 0x10000) as usize;
         let smask = mask >> (sidx << 4);
-        masks[0][bx4 as usize][std::cmp::min(twl4c, l[y as usize]) as usize][sidx] |= smask as u16;
+        masks[0][bx4][std::cmp::min(twl4c, l[y]) as usize][sidx] |= smask as u16;
     }
     for x in 0..w4 {
         let mask = 1u32 << (bx4 + x);
         let sidx = (mask >= 0x10000) as usize;
         let smask = mask >> (sidx << 4);
-        masks[1][by4 as usize][std::cmp::min(thl4c, a[x as usize]) as usize][sidx] |= smask as u16;
+        masks[1][by4][std::cmp::min(thl4c, a[x]) as usize][sidx] |= smask as u16;
     }
-    let hstep = t_dim.w as libc::c_int;
+    let hstep = t_dim.w as usize;
     let mut t = 1u32 << by4;
     let mut inner = ((t as u64) << h4).wrapping_sub(t as u64) as libc::c_uint;
     let mut inner1 = inner & 0xffff;
     let mut inner2 = inner >> 16;
-    for x in (hstep..w4).step_by(hstep as usize) {
+    for x in (hstep..w4).step_by(hstep) {
         if inner1 != 0 {
-            masks[0][(bx4 + x) as usize][twl4c as usize][0] |= inner1 as u16;
+            masks[0][bx4 + x][twl4c as usize][0] |= inner1 as u16;
         }
         if inner2 != 0 {
-            masks[0][(bx4 + x) as usize][twl4c as usize][1] |= inner2 as u16;
+            masks[0][bx4 + x][twl4c as usize][1] |= inner2 as u16;
         }
     }
-    let vstep = t_dim.h as libc::c_int;
+    let vstep = t_dim.h as usize;
     t = 1u32 << bx4;
     inner = ((t as u64) << w4).wrapping_sub(t as u64) as libc::c_uint;
     inner1 = inner & 0xffff;
     inner2 = inner >> 16;
-    for y in (vstep..h4).step_by(vstep as usize) {
+    for y in (vstep..h4).step_by(vstep) {
         if inner1 != 0 {
-            masks[1][(by4 + y) as usize][thl4c as usize][0] |= inner1 as u16;
+            masks[1][by4 + y][thl4c as usize][0] |= inner1 as u16;
         }
         if inner2 != 0 {
-            masks[1][(by4 + y) as usize][thl4c as usize][1] |= inner2 as u16;
+            masks[1][by4 + y][thl4c as usize][1] |= inner2 as u16;
         }
     }
 
