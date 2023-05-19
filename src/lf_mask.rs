@@ -287,59 +287,53 @@ unsafe fn mask_edges_intra(
     let thl4c = imin(2, thl4);
     let mut y = 0;
     let mut x = 0;
-    let mut mask = 1 << by4;
+    let mut mask = 1u32 << by4;
     y = 0;
     while y < h4 {
         let sidx = (mask >= 0x10000) as usize;
         let smask = mask >> (sidx << 4);
-        let ref mut fresh4 =
-            masks[0][bx4 as usize][imin(twl4c, l[y as usize] as libc::c_int) as usize][sidx];
-        *fresh4 = (*fresh4 as libc::c_uint | smask) as u16;
+        masks[0][bx4 as usize][imin(twl4c, l[y as usize] as libc::c_int) as usize][sidx] |=
+            smask as u16;
         y += 1;
         mask <<= 1;
     }
     x = 0;
-    mask = 1 << bx4;
+    mask = 1u32 << bx4;
     while x < w4 {
         let sidx = (mask >= 0x10000) as usize;
         let smask = mask >> (sidx << 4);
-        let ref mut fresh5 =
-            masks[1][by4 as usize][imin(thl4c, a[x as usize] as libc::c_int) as usize][sidx];
-        *fresh5 = (*fresh5 as libc::c_uint | smask) as u16;
+        masks[1][by4 as usize][imin(thl4c, a[x as usize] as libc::c_int) as usize][sidx] |=
+            smask as u16;
         x += 1;
         mask <<= 1;
     }
     let hstep = t_dim.w as libc::c_int;
-    let mut t = 1 << by4;
+    let mut t = 1u32 << by4;
     let mut inner = ((t as u64) << h4).wrapping_sub(t as u64) as libc::c_uint;
     let mut inner1 = inner & 0xffff;
     let mut inner2 = inner >> 16;
     x = hstep;
     while x < w4 {
         if inner1 != 0 {
-            let ref mut fresh6 = masks[0][(bx4 + x) as usize][twl4c as usize][0];
-            *fresh6 = (*fresh6 as libc::c_uint | inner1) as u16;
+            masks[0][(bx4 + x) as usize][twl4c as usize][0] |= inner1 as u16;
         }
         if inner2 != 0 {
-            let ref mut fresh7 = masks[0][(bx4 + x) as usize][twl4c as usize][1];
-            *fresh7 = (*fresh7 as libc::c_uint | inner2) as u16;
+            masks[0][(bx4 + x) as usize][twl4c as usize][1] |= inner2 as u16;
         }
         x += hstep;
     }
     let vstep = t_dim.h as libc::c_int;
-    t = 1 << bx4;
+    t = 1u32 << bx4;
     inner = ((t as u64) << w4).wrapping_sub(t as u64) as libc::c_uint;
     inner1 = inner & 0xffff;
     inner2 = inner >> 16;
     y = vstep;
     while y < h4 {
         if inner1 != 0 {
-            let ref mut fresh8 = masks[1][(by4 + y) as usize][thl4c as usize][0];
-            *fresh8 = (*fresh8 as libc::c_uint | inner1) as u16;
+            masks[1][(by4 + y) as usize][thl4c as usize][0] |= inner1 as u16;
         }
         if inner2 != 0 {
-            let ref mut fresh9 = masks[1][(by4 + y) as usize][thl4c as usize][1];
-            *fresh9 = (*fresh9 as libc::c_uint | inner2) as u16;
+            masks[1][(by4 + y) as usize][thl4c as usize][1] |= inner2 as u16;
         }
         y += vstep;
     }
