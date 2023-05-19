@@ -213,13 +213,13 @@ unsafe fn mask_edges_inter(
             let sidx = (mask >= 0x10000) as usize;
             let smask = mask >> (sidx << 4);
             let mut ltx = txa[0][0][y][0];
-            let mut step = txa[0][1][y][0] as usize;
+            let step = txa[0][1][y][0] as usize;
             let mut x = step;
             while x < w4 {
                 let rtx = txa[0][0][y][x];
                 masks[0][bx4 + x][std::cmp::min(rtx, ltx) as usize][sidx] |= smask as u16;
                 ltx = rtx;
-                step = txa[0][1][y][x] as usize;
+                let step = txa[0][1][y][x] as usize;
                 x += step;
             }
         }
@@ -228,13 +228,13 @@ unsafe fn mask_edges_inter(
             let sidx = (mask >= 0x10000) as usize;
             let smask = mask >> (sidx << 4);
             let mut ttx = txa[1][0][0][x];
-            let mut step = txa[1][1][0][x] as usize;
+            let step = txa[1][1][0][x] as usize;
             let mut y = step;
             while y < h4 {
                 let btx = txa[1][0][y][x];
                 masks[1][by4 + y][std::cmp::min(ttx, btx) as usize][sidx] |= smask as u16;
                 ttx = btx;
-                step = txa[1][1][y][x] as usize;
+                let step = txa[1][1][y][x] as usize;
                 y += step;
             }
         }
