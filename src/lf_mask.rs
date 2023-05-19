@@ -276,8 +276,8 @@ unsafe fn mask_edges_intra(
     w4: libc::c_int,
     h4: libc::c_int,
     tx: RectTxfmSize,
-    a: *mut u8,
-    l: *mut u8,
+    a: &mut [u8],
+    l: &mut [u8],
 ) {
     let t_dim: *const TxfmInfo =
         &*dav1d_txfm_dimensions.as_ptr().offset(tx as isize) as *const TxfmInfo;
@@ -293,7 +293,7 @@ unsafe fn mask_edges_intra(
         let sidx = (mask >= 0x10000 as libc::c_int as libc::c_uint) as libc::c_int;
         let smask: libc::c_uint = mask >> (sidx << 4);
         let ref mut fresh4 = masks[0][bx4 as usize]
-            [imin(twl4c, *l.offset(y as isize) as libc::c_int) as usize][sidx as usize];
+            [imin(twl4c, l[y as usize] as libc::c_int) as usize][sidx as usize];
         *fresh4 = (*fresh4 as libc::c_uint | smask) as u16;
         y += 1;
         mask <<= 1;
@@ -304,7 +304,7 @@ unsafe fn mask_edges_intra(
         let sidx_0 = (mask >= 0x10000 as libc::c_int as libc::c_uint) as libc::c_int;
         let smask_0: libc::c_uint = mask >> (sidx_0 << 4);
         let ref mut fresh5 = masks[1][by4 as usize]
-            [imin(thl4c, *a.offset(x as isize) as libc::c_int) as usize][sidx_0 as usize];
+            [imin(thl4c, a[x as usize] as libc::c_int) as usize][sidx_0 as usize];
         *fresh5 = (*fresh5 as libc::c_uint | smask_0) as u16;
         x += 1;
         mask <<= 1;
@@ -344,29 +344,37 @@ unsafe fn mask_edges_intra(
         y += vstep;
     }
 
-    let mut set_ctx = |_dir: &mut (), _diridx, off, mul, rep_macro: SetCtxFn| {
-        rep_macro(a, off, mul * thl4c as u64);
+    let mut set_ctx = |dir: &mut [u8], _diridx, off, mul, rep_macro: SetCtxFn| {
+        rep_macro(dir.as_mut_ptr(), off, mul * thl4c as u64);
     };
-    let default_memset = |_dir: &mut (), _diridx, _off, var| {
-        memset(a as *mut libc::c_void, thl4c, var as libc::c_ulong);
+    let default_memset = |dir: &mut [u8], _diridx, _off, var| {
+        memset(
+            dir.as_mut_ptr() as *mut libc::c_void,
+            thl4c,
+            var as libc::c_ulong,
+        );
     };
     case_set_upto32_with_default(
         w4 as libc::c_int,
-        &mut (),            // Was nothing in C.
+        a,                  // Was nothing in C; changed to `l` for borrowck.
         Default::default(), // Was nothing in C.
         0,
         &mut set_ctx,
         default_memset,
     );
-    let mut set_ctx = |_dir: &mut (), _diridx, off, mul, rep_macro: SetCtxFn| {
-        rep_macro(l, off, mul * twl4c as u64);
+    let mut set_ctx = |dir: &mut [u8], _diridx, off, mul, rep_macro: SetCtxFn| {
+        rep_macro(dir.as_mut_ptr(), off, mul * twl4c as u64);
     };
-    let default_memset = |_dir: &mut (), _diridx, _off, var| {
-        memset(l as *mut libc::c_void, twl4c, var as libc::c_ulong);
+    let default_memset = |dir: &mut [u8], _diridx, _off, var| {
+        memset(
+            dir.as_mut_ptr() as *mut libc::c_void,
+            twl4c,
+            var as libc::c_ulong,
+        );
     };
     case_set_upto32_with_default(
         h4 as libc::c_int,
-        &mut (),            // Was nothing in C.
+        l,                  // Was nothing in C; changed to `l` for borrowck.
         Default::default(), // Was nothing in C.
         0,
         &mut set_ctx,
@@ -542,8 +550,8 @@ pub unsafe fn dav1d_create_lf_mask_intra(
     ytx: RectTxfmSize,
     uvtx: RectTxfmSize,
     layout: Dav1dPixelLayout,
-    ay: *mut u8,
-    ly: *mut u8,
+    ay: &mut [u8],
+    ly: &mut [u8],
     auv: *mut u8,
     luv: *mut u8,
 ) {
@@ -567,16 +575,7 @@ pub unsafe fn dav1d_create_lf_mask_intra(
             level_cache_ptr = level_cache_ptr.offset(b4_stride as isize);
             y += 1;
         }
-        mask_edges_intra(
-            &mut (*lflvl).filter_y,
-            by4,
-            bx4,
-            bw4,
-            bh4,
-            ytx,
-            ay,
-            ly,
-        );
+        mask_edges_intra(&mut (*lflvl).filter_y, by4, bx4, bw4, bh4, ytx, ay, ly);
     }
     if auv.is_null() {
         return;

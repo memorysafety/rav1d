@@ -3615,8 +3615,8 @@ unsafe fn decode_b(
                 b.tx() as RectTxfmSize,
                 b.uvtx as RectTxfmSize,
                 f.cur.p.layout,
-                &mut (*t.a).tx_lpf_y.0[bx4 as usize],
-                &mut t.l.tx_lpf_y.0[by4 as usize],
+                &mut (*t.a).tx_lpf_y.0[bx4 as usize..],
+                &mut t.l.tx_lpf_y.0[by4 as usize..],
                 if has_chroma {
                     &mut (*t.a).tx_lpf_uv.0[cbx4 as usize]
                 } else {
