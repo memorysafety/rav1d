@@ -4904,7 +4904,7 @@ unsafe fn decode_b(
                 t.by,
                 f.w4,
                 f.h4,
-                b.skip as libc::c_int,
+                b.skip != 0,
                 bs,
                 ytx,
                 &tx_split,
