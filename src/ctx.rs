@@ -147,6 +147,7 @@ pub unsafe fn case_set_upto32_with_default<D, F, G>(
 ) where
     F: FnMut(&mut D, usize, isize, u64, SetCtxFn),
     G: FnMut(&mut D, usize, isize, libc::c_int),
+    D: ?Sized,
 {
     match var {
         1 => set_ctx(dir, diridx, off, 0x01, set_ctx_rep1::<alias8>),
