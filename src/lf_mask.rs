@@ -177,8 +177,20 @@ unsafe fn mask_edges_inter(
     l: &mut [u8],
 ) {
     let [by4, bx4, w4, h4] = [by4, bx4, w4, h4].map(|it| it as usize);
+
     let t_dim = &dav1d_txfm_dimensions[max_tx as usize];
+
+    // In `txa`, the array lengths represent from inner to outer:
+    // * `32`: `x`
+    // * `32`: `y`
+    // * `2`: `txsz`, `step`
+    // * `2`: `edge`
+    //
+    // (Note: This is added here in the docs vs. inline `/* */` comments
+    // at the array lengths because `rustfmt` deletes them
+    // (tracked in [rust-lang/rustfmt#5297](https://github.com/rust-lang/rustfmt/issues/5297))).
     let mut txa = [[[[0; 32]; 32]; 2]; 2];
+
     for (y_off, y) in (0..h4).step_by(t_dim.h as usize).enumerate() {
         for (x_off, x) in (0..w4).step_by(t_dim.w as usize).enumerate() {
             decomp_tx(
@@ -195,12 +207,16 @@ unsafe fn mask_edges_inter(
             );
         }
     }
+
+    // left block edge
     for y in 0..h4 {
         let mask = 1u32 << (by4 + y);
         let sidx = (mask >= 0x10000) as usize;
         let smask = mask >> (sidx << 4);
         masks[0][bx4][std::cmp::min(txa[0][0][y][0], l[y]) as usize][sidx] |= smask as u16;
     }
+
+    // top block edge
     for x in 0..w4 {
         let mask = 1u32 << (bx4 + x);
         let sidx = (mask >= 0x10000) as usize;
@@ -208,6 +224,7 @@ unsafe fn mask_edges_inter(
         masks[1][by4][std::cmp::min(txa[1][0][0][x], a[x]) as usize][sidx] |= smask as u16;
     }
     if !skip {
+        // inner (tx) left|right edges
         for y in 0..h4 {
             let mask = 1u32 << (by4 + y);
             let sidx = (mask >= 0x10000) as usize;
@@ -223,6 +240,10 @@ unsafe fn mask_edges_inter(
                 x += step;
             }
         }
+
+        //            top
+        // inner (tx) --- edges
+        //           bottom
         for x in 0..w4 {
             let mask = 1u32 << (bx4 + x);
             let sidx = (mask >= 0x10000) as usize;
@@ -239,6 +260,7 @@ unsafe fn mask_edges_inter(
             }
         }
     }
+
     for (l, txa) in l[..h4].iter_mut().zip(&txa[0][0][..h4]) {
         *l = txa[w4 - 1];
     }
