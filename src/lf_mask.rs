@@ -300,11 +300,11 @@ unsafe fn mask_edges_intra(
     x = 0;
     mask = 1 << bx4;
     while x < w4 {
-        let sidx_0 = (mask >= 0x10000) as libc::c_int;
-        let smask_0 = mask >> (sidx_0 << 4);
+        let sidx = (mask >= 0x10000) as libc::c_int;
+        let smask = mask >> (sidx << 4);
         let ref mut fresh5 = masks[1][by4 as usize]
-            [imin(thl4c, a[x as usize] as libc::c_int) as usize][sidx_0 as usize];
-        *fresh5 = (*fresh5 as libc::c_uint | smask_0) as u16;
+            [imin(thl4c, a[x as usize] as libc::c_int) as usize][sidx as usize];
+        *fresh5 = (*fresh5 as libc::c_uint | smask) as u16;
         x += 1;
         mask <<= 1;
     }
