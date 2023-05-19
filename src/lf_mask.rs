@@ -21,7 +21,6 @@ use crate::src::tables::dav1d_txfm_dimensions;
 use crate::src::tables::TxfmInfo;
 
 extern "C" {
-    fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
 }
 
@@ -244,11 +243,7 @@ unsafe fn mask_edges_inter(
     for y in 0..h4 {
         l[y] = txa[0][0][y][w4 - 1];
     }
-    memcpy(
-        a.as_mut_ptr() as *mut libc::c_void,
-        (txa[1][0][h4 - 1]).as_mut_ptr() as *const libc::c_void,
-        w4 as libc::c_ulong,
-    );
+    a[..w4].copy_from_slice(&mut txa[1][0][h4 - 1][..w4]);
 }
 
 #[inline]
