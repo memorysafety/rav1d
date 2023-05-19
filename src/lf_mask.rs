@@ -11,6 +11,7 @@ use crate::src::ctx::alias32;
 use crate::src::ctx::alias64;
 use crate::src::ctx::alias8;
 use crate::src::ctx::case_set_upto16;
+use crate::src::ctx::case_set_upto32_with_default;
 use crate::src::ctx::SetCtxFn;
 use crate::src::levels::BlockSize;
 use crate::src::levels::RectTxfmSize;
@@ -342,74 +343,35 @@ unsafe fn mask_edges_intra(
         }
         y += vstep;
     }
-    match w4 {
-        1 => {
-            (*(&mut *a.offset(0) as *mut u8 as *mut alias8)).u8_0 = (0x1 * thl4c) as u8;
-        }
-        2 => {
-            (*(&mut *a.offset(0) as *mut u8 as *mut alias16)).u16_0 = (0x101 * thl4c) as u16;
-        }
-        4 => {
-            (*(&mut *a.offset(0) as *mut u8 as *mut alias32)).u32_0 =
-                (0x1010101 as libc::c_uint).wrapping_mul(thl4c as libc::c_uint);
-        }
-        8 => {
-            (*(&mut *a.offset(0) as *mut u8 as *mut alias64)).u64_0 =
-                (0x101010101010101 as libc::c_ulonglong).wrapping_mul(thl4c as libc::c_ulonglong)
-                    as u64;
-        }
-        16 => {
-            let const_val: u64 = (0x101010101010101 as libc::c_ulonglong)
-                .wrapping_mul(thl4c as libc::c_ulonglong) as u64;
-            (*(&mut *a.offset((0 + 0) as isize) as *mut u8 as *mut alias64)).u64_0 = const_val;
-            (*(&mut *a.offset((0 + 8) as isize) as *mut u8 as *mut alias64)).u64_0 = const_val;
-        }
-        32 => {
-            let const_val_0: u64 = (0x101010101010101 as libc::c_ulonglong)
-                .wrapping_mul(thl4c as libc::c_ulonglong) as u64;
-            (*(&mut *a.offset((0 + 0) as isize) as *mut u8 as *mut alias64)).u64_0 = const_val_0;
-            (*(&mut *a.offset((0 + 8) as isize) as *mut u8 as *mut alias64)).u64_0 = const_val_0;
-            (*(&mut *a.offset((0 + 16) as isize) as *mut u8 as *mut alias64)).u64_0 = const_val_0;
-            (*(&mut *a.offset((0 + 24) as isize) as *mut u8 as *mut alias64)).u64_0 = const_val_0;
-        }
-        _ => {
-            memset(a as *mut libc::c_void, thl4c, w4 as libc::c_ulong);
-        }
-    }
-    match h4 {
-        1 => {
-            (*(&mut *l.offset(0) as *mut u8 as *mut alias8)).u8_0 = (0x1 * twl4c) as u8;
-        }
-        2 => {
-            (*(&mut *l.offset(0) as *mut u8 as *mut alias16)).u16_0 = (0x101 * twl4c) as u16;
-        }
-        4 => {
-            (*(&mut *l.offset(0) as *mut u8 as *mut alias32)).u32_0 =
-                (0x1010101 as libc::c_uint).wrapping_mul(twl4c as libc::c_uint);
-        }
-        8 => {
-            (*(&mut *l.offset(0) as *mut u8 as *mut alias64)).u64_0 =
-                (0x101010101010101 as libc::c_ulonglong).wrapping_mul(twl4c as libc::c_ulonglong)
-                    as u64;
-        }
-        16 => {
-            let const_val_1: u64 = (0x101010101010101 as libc::c_ulonglong)
-                .wrapping_mul(twl4c as libc::c_ulonglong) as u64;
-            (*(&mut *l.offset((0 + 0) as isize) as *mut u8 as *mut alias64)).u64_0 = const_val_1;
-            (*(&mut *l.offset((0 + 8) as isize) as *mut u8 as *mut alias64)).u64_0 = const_val_1;
-        }
-        32 => {
-            let const_val_2: u64 = (0x101010101010101 as libc::c_ulonglong)
-                .wrapping_mul(twl4c as libc::c_ulonglong) as u64;
-            (*(&mut *l.offset((0 + 0) as isize) as *mut u8 as *mut alias64)).u64_0 = const_val_2;
-            (*(&mut *l.offset((0 + 8) as isize) as *mut u8 as *mut alias64)).u64_0 = const_val_2;
-            (*(&mut *l.offset((0 + 16) as isize) as *mut u8 as *mut alias64)).u64_0 = const_val_2;
-            (*(&mut *l.offset((0 + 24) as isize) as *mut u8 as *mut alias64)).u64_0 = const_val_2;
-        }
-        _ => {
-            memset(l as *mut libc::c_void, twl4c, h4 as libc::c_ulong);
-        }
+
+    let mut set_ctx = |_dir: &mut (), _diridx, off, mul, rep_macro: SetCtxFn| {
+        rep_macro(a, off, mul * thl4c as u64);
     };
+    let default_memset = |_dir: &mut (), _diridx, _off, var| {
+        memset(a as *mut libc::c_void, thl4c, var as libc::c_ulong);
+    };
+    case_set_upto32_with_default(
+        w4 as libc::c_int,
+        &mut (),            // Was nothing in C.
+        Default::default(), // Was nothing in C.
+        0,
+        &mut set_ctx,
+        default_memset,
+    );
+    let mut set_ctx = |_dir: &mut (), _diridx, off, mul, rep_macro: SetCtxFn| {
+        rep_macro(l, off, mul * twl4c as u64);
+    };
+    let default_memset = |_dir: &mut (), _diridx, _off, var| {
+        memset(l as *mut libc::c_void, twl4c, var as libc::c_ulong);
+    };
+    case_set_upto32_with_default(
+        h4 as libc::c_int,
+        &mut (),            // Was nothing in C.
+        Default::default(), // Was nothing in C.
+        0,
+        &mut set_ctx,
+        default_memset,
+    );
 }
 
 unsafe fn mask_edges_chroma(
