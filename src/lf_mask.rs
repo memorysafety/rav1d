@@ -287,18 +287,24 @@ unsafe fn mask_edges_intra(
     let thl4 = t_dim.lh;
     let twl4c = std::cmp::min(2, twl4);
     let thl4c = std::cmp::min(2, thl4);
+
+    // left block edge
     for y in 0..h4 {
         let mask = 1u32 << (by4 + y);
         let sidx = (mask >= 0x10000) as usize;
         let smask = mask >> (sidx << 4);
         masks[0][bx4][std::cmp::min(twl4c, l[y]) as usize][sidx] |= smask as u16;
     }
+
+    // top block edge
     for x in 0..w4 {
         let mask = 1u32 << (bx4 + x);
         let sidx = (mask >= 0x10000) as usize;
         let smask = mask >> (sidx << 4);
         masks[1][by4][std::cmp::min(thl4c, a[x]) as usize][sidx] |= smask as u16;
     }
+
+    // inner (tx) left|right edges
     let hstep = t_dim.w as usize;
     let t = 1u32 << by4;
     let inner = (((t as u64) << h4) - (t as u64)) as u32;
@@ -311,6 +317,10 @@ unsafe fn mask_edges_intra(
             masks[0][bx4 + x][twl4c as usize][1] |= inner[1];
         }
     }
+
+    //            top
+    // inner (tx) --- edges
+    //           bottom
     let vstep = t_dim.h as usize;
     let t = 1u32 << bx4;
     let inner = (((t as u64) << w4) - (t as u64)) as u32;
