@@ -283,26 +283,26 @@ unsafe fn mask_edges_intra(
     let t_dim = &dav1d_txfm_dimensions[tx as usize];
     let twl4 = t_dim.lw as libc::c_int;
     let thl4 = t_dim.lh as libc::c_int;
-    let twl4c = imin(2 as libc::c_int, twl4);
-    let thl4c = imin(2 as libc::c_int, thl4);
+    let twl4c = imin(2, twl4);
+    let thl4c = imin(2, thl4);
     let mut y = 0;
     let mut x = 0;
-    let mut mask: libc::c_uint = (1 as libc::c_uint) << by4;
-    y = 0 as libc::c_int;
+    let mut mask = 1 << by4;
+    y = 0;
     while y < h4 {
-        let sidx = (mask >= 0x10000 as libc::c_int as libc::c_uint) as libc::c_int;
-        let smask: libc::c_uint = mask >> (sidx << 4);
+        let sidx = (mask >= 0x10000) as libc::c_int;
+        let smask = mask >> (sidx << 4);
         let ref mut fresh4 = masks[0][bx4 as usize]
             [imin(twl4c, l[y as usize] as libc::c_int) as usize][sidx as usize];
         *fresh4 = (*fresh4 as libc::c_uint | smask) as u16;
         y += 1;
         mask <<= 1;
     }
-    x = 0 as libc::c_int;
-    mask = (1 as libc::c_uint) << bx4;
+    x = 0;
+    mask = 1 << bx4;
     while x < w4 {
-        let sidx_0 = (mask >= 0x10000 as libc::c_int as libc::c_uint) as libc::c_int;
-        let smask_0: libc::c_uint = mask >> (sidx_0 << 4);
+        let sidx_0 = (mask >= 0x10000) as libc::c_int;
+        let smask_0 = mask >> (sidx_0 << 4);
         let ref mut fresh5 = masks[1][by4 as usize]
             [imin(thl4c, a[x as usize] as libc::c_int) as usize][sidx_0 as usize];
         *fresh5 = (*fresh5 as libc::c_uint | smask_0) as u16;
@@ -310,10 +310,10 @@ unsafe fn mask_edges_intra(
         mask <<= 1;
     }
     let hstep = t_dim.w as libc::c_int;
-    let mut t: libc::c_uint = (1 as libc::c_uint) << by4;
-    let mut inner: libc::c_uint = ((t as u64) << h4).wrapping_sub(t as u64) as libc::c_uint;
-    let mut inner1: libc::c_uint = inner & 0xffff as libc::c_int as libc::c_uint;
-    let mut inner2: libc::c_uint = inner >> 16;
+    let mut t = 1 << by4;
+    let mut inner = ((t as u64) << h4).wrapping_sub(t as u64) as libc::c_uint;
+    let mut inner1 = inner & 0xffff;
+    let mut inner2 = inner >> 16;
     x = hstep;
     while x < w4 {
         if inner1 != 0 {
@@ -327,9 +327,9 @@ unsafe fn mask_edges_intra(
         x += hstep;
     }
     let vstep = t_dim.h as libc::c_int;
-    t = (1 as libc::c_uint) << bx4;
+    t = 1 << bx4;
     inner = ((t as u64) << w4).wrapping_sub(t as u64) as libc::c_uint;
-    inner1 = inner & 0xffff as libc::c_int as libc::c_uint;
+    inner1 = inner & 0xffff;
     inner2 = inner >> 16;
     y = vstep;
     while y < h4 {
