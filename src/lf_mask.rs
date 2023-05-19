@@ -63,13 +63,13 @@ unsafe fn decomp_tx(
     depth: libc::c_int,
     y_off: libc::c_int,
     x_off: libc::c_int,
-    tx_masks: *const u16,
+    tx_masks: &[u16; 2],
 ) {
     let t_dim = &dav1d_txfm_dimensions[from as usize];
     let is_split = if from == TX_4X4 || depth > 1 {
         false
     } else {
-        (*tx_masks.offset(depth as isize) >> (y_off * 4 + x_off)) & 1 != 0
+        (tx_masks[depth as usize] >> (y_off * 4 + x_off)) & 1 != 0
     };
     if is_split {
         let sub = t_dim.sub as RectTxfmSize;
@@ -174,7 +174,7 @@ unsafe fn mask_edges_inter(
     h4: libc::c_int,
     skip: libc::c_int,
     max_tx: RectTxfmSize,
-    tx_masks: *const u16,
+    tx_masks: &[u16; 2],
     a: *mut u8,
     l: *mut u8,
 ) {
@@ -697,7 +697,7 @@ pub unsafe fn dav1d_create_lf_mask_inter(
     skip: libc::c_int,
     bs: BlockSize,
     max_ytx: RectTxfmSize,
-    tx_masks: *const u16,
+    tx_masks: &[u16; 2],
     uvtx: RectTxfmSize,
     layout: Dav1dPixelLayout,
     ay: *mut u8,

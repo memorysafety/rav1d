@@ -5074,7 +5074,7 @@ unsafe fn decode_b(
                 b.skip as libc::c_int,
                 bs,
                 ytx,
-                tx_split.as_ptr(),
+                &tx_split,
                 uvtx,
                 f.cur.p.layout,
                 &mut *((*t.a).tx_lpf_y.0).as_mut_ptr().offset(bx4 as isize),
