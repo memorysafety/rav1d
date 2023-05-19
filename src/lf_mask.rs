@@ -67,11 +67,11 @@ unsafe fn decomp_tx(
 ) {
     let t_dim = &dav1d_txfm_dimensions[from as usize];
     let is_split = if from == TX_4X4 || depth > 1 {
-        0
+        false
     } else {
-        *tx_masks.offset(depth as isize) >> y_off * 4 + x_off & 1
+        (*tx_masks.offset(depth as isize) >> (y_off * 4 + x_off)) & 1 != 0
     };
-    if is_split != 0 {
+    if is_split {
         let sub = t_dim.sub as RectTxfmSize;
         let htw4 = t_dim.w >> 1;
         let hth4 = t_dim.h >> 1;
