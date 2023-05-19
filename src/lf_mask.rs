@@ -61,8 +61,8 @@ unsafe fn decomp_tx(
     txa: *mut [[[u8; 32]; 32]; 2],
     from: RectTxfmSize,
     depth: libc::c_int,
-    y_off: libc::c_int,
-    x_off: libc::c_int,
+    y_off: u8,
+    x_off: u8,
     tx_masks: &[u16; 2],
 ) {
     let t_dim = &dav1d_txfm_dimensions[from as usize];
