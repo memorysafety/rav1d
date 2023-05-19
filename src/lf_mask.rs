@@ -179,14 +179,9 @@ unsafe fn mask_edges_inter(
     l: &mut [u8],
 ) {
     let t_dim = &dav1d_txfm_dimensions[max_tx as usize];
-    let mut x = 0;
     let mut txa = Align16([[[[0; 32]; 32]; 2]; 2]);
-    let mut y_off = 0;
-    let mut y = 0;
-    while y < h4 {
-        let mut x_off = 0;
-        let mut x = 0;
-        while x < w4 {
+    for (y_off, y) in (0..h4).step_by(t_dim.h as usize).enumerate() {
+        for (x_off, x) in (0..w4).step_by(t_dim.w as usize).enumerate() {
             decomp_tx(
                 &mut *(*(*(*txa.0.as_mut_ptr().offset(0)).as_mut_ptr().offset(0))
                     .as_mut_ptr()
@@ -195,45 +190,34 @@ unsafe fn mask_edges_inter(
                 .offset(x as isize) as *mut u8 as *mut [[[u8; 32]; 32]; 2],
                 max_tx,
                 0,
-                y_off,
-                x_off,
+                y_off as u8,
+                x_off as u8,
                 tx_masks,
             );
-            x += t_dim.w as libc::c_int;
-            x_off += 1;
         }
-        y += t_dim.h as libc::c_int;
-        y_off += 1;
     }
-    let mut mask = 1u32 << by4;
-    y = 0;
-    while y < h4 {
+    for y in 0..h4 {
+        let mask = 1u32 << (by4 + y);
         let sidx = (mask >= 0x10000) as usize;
         let smask = mask >> (sidx << 4);
         masks[0][bx4 as usize][std::cmp::min(txa[0][0][y as usize][0], l[y as usize]) as usize]
             [sidx] |= smask as u16;
-        y += 1;
-        mask <<= 1;
     }
-    x = 0;
-    mask = 1 << bx4;
-    while x < w4 {
+    for x in 0..w4 {
+        let mask = 1u32 << (bx4 + x);
         let sidx = (mask >= 0x10000) as usize;
         let smask = mask >> (sidx << 4);
         masks[1][by4 as usize][std::cmp::min(txa[1][0][0][x as usize], a[x as usize]) as usize]
             [sidx] |= smask as u16;
-        x += 1;
-        mask <<= 1;
     }
     if skip == 0 {
-        y = 0;
-        mask = 1 << by4;
-        while y < h4 {
+        for y in 0..h4 {
+            let mask = 1u32 << (by4 + y);
             let sidx = (mask >= 0x10000) as usize;
             let smask = mask >> (sidx << 4);
             let mut ltx = txa[0][0][y as usize][0];
             let mut step = txa[0][1][y as usize][0] as libc::c_int;
-            x = step;
+            let mut x = step;
             while x < w4 {
                 let rtx = txa[0][0][y as usize][x as usize];
                 masks[0][(bx4 + x) as usize][std::cmp::min(rtx, ltx) as usize][sidx] |=
@@ -242,17 +226,14 @@ unsafe fn mask_edges_inter(
                 step = txa[0][1][y as usize][x as usize] as libc::c_int;
                 x += step;
             }
-            y += 1;
-            mask <<= 1;
         }
-        x = 0;
-        mask = 1 << bx4;
-        while x < w4 {
+        for x in 0..w4 {
+            let mask = 1u32 << (bx4 + x);
             let sidx = (mask >= 0x10000) as usize;
             let smask = mask >> (sidx << 4);
             let mut ttx = txa[1][0][0][x as usize];
             let mut step = txa[1][1][0][x as usize] as libc::c_int;
-            y = step;
+            let mut y = step;
             while y < h4 {
                 let btx = txa[1][0][y as usize][x as usize];
                 masks[1][(by4 + y) as usize][std::cmp::min(ttx, btx) as usize][sidx] |=
@@ -261,14 +242,10 @@ unsafe fn mask_edges_inter(
                 step = txa[1][1][y as usize][x as usize] as libc::c_int;
                 y += step;
             }
-            x += 1;
-            mask <<= 1;
         }
     }
-    y = 0;
-    while y < h4 {
+    for y in 0..h4 {
         l[y as usize] = txa[0][0][y as usize][(w4 - 1) as usize];
-        y += 1;
     }
     memcpy(
         a.as_mut_ptr() as *mut libc::c_void,
