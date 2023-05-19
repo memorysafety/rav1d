@@ -283,8 +283,8 @@ unsafe fn mask_edges_intra(
     let t_dim = &dav1d_txfm_dimensions[tx as usize];
     let twl4 = t_dim.lw as libc::c_int;
     let thl4 = t_dim.lh as libc::c_int;
-    let twl4c = imin(2, twl4);
-    let thl4c = imin(2, thl4);
+    let twl4c = std::cmp::min(2, twl4);
+    let thl4c = std::cmp::min(2, thl4);
     let mut y = 0;
     let mut x = 0;
     let mut mask = 1u32 << by4;
@@ -292,8 +292,8 @@ unsafe fn mask_edges_intra(
     while y < h4 {
         let sidx = (mask >= 0x10000) as usize;
         let smask = mask >> (sidx << 4);
-        masks[0][bx4 as usize][imin(twl4c, l[y as usize] as libc::c_int) as usize][sidx] |=
-            smask as u16;
+        masks[0][bx4 as usize][std::cmp::min(twl4c, l[y as usize] as libc::c_int) as usize]
+            [sidx] |= smask as u16;
         y += 1;
         mask <<= 1;
     }
@@ -302,8 +302,8 @@ unsafe fn mask_edges_intra(
     while x < w4 {
         let sidx = (mask >= 0x10000) as usize;
         let smask = mask >> (sidx << 4);
-        masks[1][by4 as usize][imin(thl4c, a[x as usize] as libc::c_int) as usize][sidx] |=
-            smask as u16;
+        masks[1][by4 as usize][std::cmp::min(thl4c, a[x as usize] as libc::c_int) as usize]
+            [sidx] |= smask as u16;
         x += 1;
         mask <<= 1;
     }
