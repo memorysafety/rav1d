@@ -280,8 +280,8 @@ unsafe fn mask_edges_intra(
     l: &mut [u8],
 ) {
     let t_dim = &dav1d_txfm_dimensions[tx as usize];
-    let twl4 = t_dim.lw as libc::c_int;
-    let thl4 = t_dim.lh as libc::c_int;
+    let twl4 = t_dim.lw;
+    let thl4 = t_dim.lh;
     let twl4c = std::cmp::min(2, twl4);
     let thl4c = std::cmp::min(2, thl4);
     let mut y = 0;
@@ -291,8 +291,7 @@ unsafe fn mask_edges_intra(
     while y < h4 {
         let sidx = (mask >= 0x10000) as usize;
         let smask = mask >> (sidx << 4);
-        masks[0][bx4 as usize][std::cmp::min(twl4c, l[y as usize] as libc::c_int) as usize]
-            [sidx] |= smask as u16;
+        masks[0][bx4 as usize][std::cmp::min(twl4c, l[y as usize]) as usize][sidx] |= smask as u16;
         y += 1;
         mask <<= 1;
     }
@@ -301,8 +300,7 @@ unsafe fn mask_edges_intra(
     while x < w4 {
         let sidx = (mask >= 0x10000) as usize;
         let smask = mask >> (sidx << 4);
-        masks[1][by4 as usize][std::cmp::min(thl4c, a[x as usize] as libc::c_int) as usize]
-            [sidx] |= smask as u16;
+        masks[1][by4 as usize][std::cmp::min(thl4c, a[x as usize]) as usize][sidx] |= smask as u16;
         x += 1;
         mask <<= 1;
     }
@@ -341,11 +339,7 @@ unsafe fn mask_edges_intra(
         rep_macro(dir.as_mut_ptr(), off, mul * thl4c as u64);
     };
     let default_memset = |dir: &mut [u8], _diridx, _off, var| {
-        memset(
-            dir.as_mut_ptr() as *mut libc::c_void,
-            thl4c,
-            var as libc::c_ulong,
-        );
+        dir[..var as usize].fill(thl4c);
     };
     case_set_upto32_with_default(
         w4 as libc::c_int,
@@ -359,11 +353,7 @@ unsafe fn mask_edges_intra(
         rep_macro(dir.as_mut_ptr(), off, mul * twl4c as u64);
     };
     let default_memset = |dir: &mut [u8], _diridx, _off, var| {
-        memset(
-            dir.as_mut_ptr() as *mut libc::c_void,
-            twl4c,
-            var as libc::c_ulong,
-        );
+        dir[..var as usize].fill(twl4c);
     };
     case_set_upto32_with_default(
         h4 as libc::c_int,
