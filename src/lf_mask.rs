@@ -209,10 +209,8 @@ unsafe fn mask_edges_inter(
     while y < h4 {
         let sidx = (mask >= 0x10000) as libc::c_int;
         let smask = mask >> (sidx << 4);
-        let ref mut fresh0 = masks[0][bx4 as usize][imin(
-            txa[0][0][y as usize][0] as libc::c_int,
-            l[y as usize] as libc::c_int,
-        ) as usize][sidx as usize];
+        let ref mut fresh0 = masks[0][bx4 as usize]
+            [std::cmp::min(txa[0][0][y as usize][0], l[y as usize]) as usize][sidx as usize];
         *fresh0 = (*fresh0 as libc::c_uint | smask) as u16;
         y += 1;
         mask <<= 1;
@@ -222,10 +220,8 @@ unsafe fn mask_edges_inter(
     while x < w4 {
         let sidx = (mask >= 0x10000) as libc::c_int;
         let smask = mask >> (sidx << 4);
-        let ref mut fresh1 = masks[1][by4 as usize][imin(
-            txa[1][0][0][x as usize] as libc::c_int,
-            a[x as usize] as libc::c_int,
-        ) as usize][sidx as usize];
+        let ref mut fresh1 = masks[1][by4 as usize]
+            [std::cmp::min(txa[1][0][0][x as usize], a[x as usize]) as usize][sidx as usize];
         *fresh1 = (*fresh1 as libc::c_uint | smask) as u16;
         x += 1;
         mask <<= 1;
@@ -236,13 +232,13 @@ unsafe fn mask_edges_inter(
         while y < h4 {
             let sidx = (mask >= 0x10000) as libc::c_int;
             let smask = mask >> (sidx << 4);
-            let mut ltx = txa[0][0][y as usize][0] as libc::c_int;
+            let mut ltx = txa[0][0][y as usize][0];
             let mut step = txa[0][1][y as usize][0] as libc::c_int;
             x = step;
             while x < w4 {
-                let rtx = txa[0][0][y as usize][x as usize] as libc::c_int;
+                let rtx = txa[0][0][y as usize][x as usize];
                 let ref mut fresh2 =
-                    masks[0][(bx4 + x) as usize][imin(rtx, ltx) as usize][sidx as usize];
+                    masks[0][(bx4 + x) as usize][std::cmp::min(rtx, ltx) as usize][sidx as usize];
                 *fresh2 = (*fresh2 as libc::c_uint | smask) as u16;
                 ltx = rtx;
                 step = txa[0][1][y as usize][x as usize] as libc::c_int;
@@ -256,13 +252,13 @@ unsafe fn mask_edges_inter(
         while x < w4 {
             let sidx = (mask >= 0x10000) as libc::c_int;
             let smask = mask >> (sidx << 4);
-            let mut ttx = txa[1][0][0][x as usize] as libc::c_int;
+            let mut ttx = txa[1][0][0][x as usize];
             let mut step = txa[1][1][0][x as usize] as libc::c_int;
             y = step;
             while y < h4 {
-                let btx = txa[1][0][y as usize][x as usize] as libc::c_int;
+                let btx = txa[1][0][y as usize][x as usize];
                 let ref mut fresh3 =
-                    masks[1][(by4 + y) as usize][imin(ttx, btx) as usize][sidx as usize];
+                    masks[1][(by4 + y) as usize][std::cmp::min(ttx, btx) as usize][sidx as usize];
                 *fresh3 = (*fresh3 as libc::c_uint | smask) as u16;
                 ttx = btx;
                 step = txa[1][1][y as usize][x as usize] as libc::c_int;
