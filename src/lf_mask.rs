@@ -66,19 +66,18 @@ unsafe fn decomp_tx(
     x_off: libc::c_int,
     tx_masks: *const u16,
 ) {
-    let t_dim: *const TxfmInfo =
-        &*dav1d_txfm_dimensions.as_ptr().offset(from as isize) as *const TxfmInfo;
+    let t_dim = &dav1d_txfm_dimensions[from as usize];
     let is_split = if from as libc::c_uint == TX_4X4 as libc::c_int as libc::c_uint || depth > 1 {
         0 as libc::c_int
     } else {
         *tx_masks.offset(depth as isize) as libc::c_int >> y_off * 4 + x_off & 1
     };
     if is_split != 0 {
-        let sub: RectTxfmSize = (*t_dim).sub as RectTxfmSize;
-        let htw4 = (*t_dim).w as libc::c_int >> 1;
-        let hth4 = (*t_dim).h as libc::c_int >> 1;
+        let sub: RectTxfmSize = t_dim.sub as RectTxfmSize;
+        let htw4 = t_dim.w as libc::c_int >> 1;
+        let hth4 = t_dim.h as libc::c_int >> 1;
         decomp_tx(txa, sub, depth + 1, y_off * 2 + 0, x_off * 2 + 0, tx_masks);
-        if (*t_dim).w as libc::c_int >= (*t_dim).h as libc::c_int {
+        if t_dim.w as libc::c_int >= t_dim.h as libc::c_int {
             decomp_tx(
                 &mut *(*(*(*txa.offset(0)).as_mut_ptr().offset(0))
                     .as_mut_ptr()
@@ -92,7 +91,7 @@ unsafe fn decomp_tx(
                 tx_masks,
             );
         }
-        if (*t_dim).h as libc::c_int >= (*t_dim).w as libc::c_int {
+        if t_dim.h as libc::c_int >= t_dim.w as libc::c_int {
             decomp_tx(
                 &mut *(*(*(*txa.offset(0)).as_mut_ptr().offset(0))
                     .as_mut_ptr()
@@ -105,7 +104,7 @@ unsafe fn decomp_tx(
                 x_off * 2 + 0,
                 tx_masks,
             );
-            if (*t_dim).w as libc::c_int >= (*t_dim).h as libc::c_int {
+            if t_dim.w as libc::c_int >= t_dim.h as libc::c_int {
                 decomp_tx(
                     &mut *(*(*(*txa.offset(0)).as_mut_ptr().offset(0))
                         .as_mut_ptr()
@@ -122,12 +121,12 @@ unsafe fn decomp_tx(
             }
         }
     } else {
-        let lw = imin(2 as libc::c_int, (*t_dim).lw as libc::c_int);
-        let lh = imin(2 as libc::c_int, (*t_dim).lh as libc::c_int);
+        let lw = imin(2 as libc::c_int, t_dim.lw as libc::c_int);
+        let lh = imin(2 as libc::c_int, t_dim.lh as libc::c_int);
 
         let mut set_ctx = |_dir: &mut (), _diridx, off, mul, rep_macro: SetCtxFn| {
             let mut y = 0;
-            while y < (*t_dim).h as libc::c_int {
+            while y < t_dim.h as libc::c_int {
                 rep_macro(
                     (*txa.offset(0))[0][y as usize].as_mut_ptr(),
                     off,
@@ -138,13 +137,13 @@ unsafe fn decomp_tx(
                     off,
                     mul * lh as u64,
                 );
-                (*txa.offset(0))[1][y as usize][0] = (*t_dim).w;
+                (*txa.offset(0))[1][y as usize][0] = t_dim.w;
                 y += 1;
             }
         };
         case_set_upto16(
-            (*t_dim).w as libc::c_int,
-            &mut (), // Was nothing in C.
+            t_dim.w as libc::c_int,
+            &mut (),            // Was nothing in C.
             Default::default(), // Was nothing in C.
             0,
             &mut set_ctx,
@@ -154,12 +153,12 @@ unsafe fn decomp_tx(
             rep_macro(
                 (*txa.offset(1))[1][0].as_mut_ptr(),
                 off,
-                mul * (*t_dim).h as u64,
+                mul * t_dim.h as u64,
             );
         };
         case_set_upto16(
-            (*t_dim).w as libc::c_int,
-            &mut (), // Was nothing in C.
+            t_dim.w as libc::c_int,
+            &mut (),            // Was nothing in C.
             Default::default(), // Was nothing in C.
             0,
             &mut set_ctx,
