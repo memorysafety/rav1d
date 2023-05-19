@@ -170,7 +170,7 @@ unsafe fn mask_edges_inter(
     bx4: libc::c_int,
     w4: libc::c_int,
     h4: libc::c_int,
-    skip: libc::c_int,
+    skip: bool,
     max_tx: RectTxfmSize,
     tx_masks: &[u16; 2],
     a: &mut [u8],
@@ -207,7 +207,7 @@ unsafe fn mask_edges_inter(
         let smask = mask >> (sidx << 4);
         masks[1][by4][std::cmp::min(txa[1][0][0][x], a[x]) as usize][sidx] |= smask as u16;
     }
-    if skip == 0 {
+    if !skip {
         for y in 0..h4 {
             let mask = 1u32 << (by4 + y);
             let sidx = (mask >= 0x10000) as usize;
@@ -396,7 +396,7 @@ unsafe fn mask_edges_chroma(
     cbx4: libc::c_int,
     cw4: libc::c_int,
     ch4: libc::c_int,
-    skip_inter: libc::c_int,
+    skip_inter: bool,
     tx: RectTxfmSize,
     a: *mut u8,
     l: *mut u8,
@@ -439,7 +439,7 @@ unsafe fn mask_edges_chroma(
         x += 1;
         mask <<= 1;
     }
-    if skip_inter == 0 {
+    if !skip_inter {
         let hstep = (*t_dim).w as libc::c_int;
         let mut t: libc::c_uint = (1 as libc::c_uint) << cby4;
         let mut inner: libc::c_uint = ((t as u64) << ch4).wrapping_sub(t as u64) as libc::c_uint;
@@ -634,7 +634,7 @@ pub unsafe fn dav1d_create_lf_mask_intra(
         cbx4,
         cbw4,
         cbh4,
-        0 as libc::c_int,
+        false,
         uvtx,
         auv,
         luv,
@@ -652,7 +652,7 @@ pub unsafe fn dav1d_create_lf_mask_inter(
     by: libc::c_int,
     iw: libc::c_int,
     ih: libc::c_int,
-    skip: libc::c_int,
+    skip: bool,
     bs: BlockSize,
     max_ytx: RectTxfmSize,
     tx_masks: &[u16; 2],
