@@ -57,6 +57,14 @@ pub struct Av1Restoration {
     pub lr: [[Av1RestorationUnit; 4]; 3],
 }
 
+/// In `txa`, the array lengths represent from inner to outer:
+/// * `32`: `x`
+/// * `32`: `y`
+/// * `2`: `txsz`, `step`
+///
+/// (Note: This is added here in the docs vs. inline `/* */` comments
+/// at the array lengths because `rustfmt` deletes them
+/// (tracked in [rust-lang/rustfmt#5297](https://github.com/rust-lang/rustfmt/issues/5297))).
 unsafe fn decomp_tx(
     txa: *mut [[[u8; 32]; 32]; 2],
     from: RectTxfmSize,
@@ -76,6 +84,7 @@ unsafe fn decomp_tx(
         let sub = t_dim.sub as RectTxfmSize;
         let htw4 = t_dim.w >> 1;
         let hth4 = t_dim.h >> 1;
+
         decomp_tx(txa, sub, depth + 1, y_off * 2 + 0, x_off * 2 + 0, tx_masks);
         if t_dim.w >= t_dim.h {
             decomp_tx(
@@ -138,7 +147,6 @@ unsafe fn decomp_tx(
             0,
             &mut set_ctx,
         );
-
         let mut set_ctx = |_dir: &mut (), _diridx, off, mul, rep_macro: SetCtxFn| {
             rep_macro(
                 (*txa.offset(1))[1][0].as_mut_ptr(),
