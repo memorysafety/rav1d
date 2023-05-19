@@ -120,8 +120,8 @@ unsafe fn decomp_tx(
             }
         }
     } else {
-        let lw = imin(2, t_dim.lw as libc::c_int);
-        let lh = imin(2, t_dim.lh as libc::c_int);
+        let lw = std::cmp::min(2, t_dim.lw);
+        let lh = std::cmp::min(2, t_dim.lh);
 
         let mut set_ctx = |_dir: &mut (), _diridx, off, mul, rep_macro: SetCtxFn| {
             let mut y = 0;
