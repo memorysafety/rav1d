@@ -300,10 +300,10 @@ unsafe fn mask_edges_intra(
         masks[1][by4][std::cmp::min(thl4c, a[x]) as usize][sidx] |= smask as u16;
     }
     let hstep = t_dim.w as usize;
-    let mut t = 1u32 << by4;
-    let mut inner = (((t as u64) << h4) - (t as u64)) as libc::c_uint;
-    let mut inner1 = inner & 0xffff;
-    let mut inner2 = inner >> 16;
+    let t = 1u32 << by4;
+    let inner = (((t as u64) << h4) - (t as u64)) as libc::c_uint;
+    let inner1 = inner & 0xffff;
+    let inner2 = inner >> 16;
     for x in (hstep..w4).step_by(hstep) {
         if inner1 != 0 {
             masks[0][bx4 + x][twl4c as usize][0] |= inner1 as u16;
@@ -313,10 +313,10 @@ unsafe fn mask_edges_intra(
         }
     }
     let vstep = t_dim.h as usize;
-    t = 1u32 << bx4;
-    inner = (((t as u64) << w4) - (t as u64)) as libc::c_uint;
-    inner1 = inner & 0xffff;
-    inner2 = inner >> 16;
+    let t = 1u32 << bx4;
+    let inner = (((t as u64) << w4) - (t as u64)) as libc::c_uint;
+    let inner1 = inner & 0xffff;
+    let inner2 = inner >> 16;
     for y in (vstep..h4).step_by(vstep) {
         if inner1 != 0 {
             masks[1][by4 + y][thl4c as usize][0] |= inner1 as u16;
