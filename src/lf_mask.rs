@@ -61,16 +61,17 @@ pub struct Av1Restoration {
 unsafe fn decomp_tx(
     txa: *mut [[[u8; 32]; 32]; 2],
     from: RectTxfmSize,
-    depth: libc::c_int,
+    depth: usize,
     y_off: u8,
     x_off: u8,
     tx_masks: &[u16; 2],
 ) {
+    debug_assert!(depth <= 2);
     let t_dim = &dav1d_txfm_dimensions[from as usize];
     let is_split = if from == TX_4X4 || depth > 1 {
         false
     } else {
-        (tx_masks[depth as usize] >> (y_off * 4 + x_off)) & 1 != 0
+        (tx_masks[depth] >> (y_off * 4 + x_off)) & 1 != 0
     };
     if is_split {
         let sub = t_dim.sub as RectTxfmSize;
@@ -197,7 +198,7 @@ unsafe fn mask_edges_inter(
                 .as_mut_ptr()
                 .offset(x_0 as isize) as *mut u8 as *mut [[[u8; 32]; 32]; 2],
                 max_tx,
-                0 as libc::c_int,
+                0,
                 y_off,
                 x_off,
                 tx_masks,
