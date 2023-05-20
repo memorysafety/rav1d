@@ -326,8 +326,8 @@ unsafe fn mask_edges_chroma(
 ) {
     let [cby4, cbx4, cw4, ch4] = [cby4, cbx4, cw4, ch4].map(|it| it as usize);
     let t_dim = &dav1d_txfm_dimensions[tx as usize];
-    let twl4 = t_dim.lw as libc::c_int;
-    let thl4 = t_dim.lh as libc::c_int;
+    let twl4 = t_dim.lw;
+    let thl4 = t_dim.lh;
     let twl4c = (twl4 != 0) as u8;
     let thl4c = (thl4 != 0) as u8;
     let vbits = 4 - ss_ver;
