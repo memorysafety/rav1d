@@ -413,7 +413,7 @@ pub unsafe fn dav1d_create_lf_mask_intra(
     lflvl: &mut Av1Filter,
     level_cache: *mut [u8; 4],
     b4_stride: ptrdiff_t,
-    mut filter_level: *const [[u8; 2]; 8],
+    filter_level: &[[[u8; 2]; 8]; 4],
     bx: libc::c_int,
     by: libc::c_int,
     iw: libc::c_int,
@@ -440,8 +440,8 @@ pub unsafe fn dav1d_create_lf_mask_intra(
         let mut level_cache_ptr = level_cache.offset((by * b4_stride + bx) as isize);
         for _ in 0..bh4 {
             for x in 0..bw4 {
-                (*level_cache_ptr.offset(x as isize))[0] = (*filter_level.offset(0))[0][0];
-                (*level_cache_ptr.offset(x as isize))[1] = (*filter_level.offset(1))[0][0];
+                (*level_cache_ptr.offset(x as isize))[0] = filter_level[0][0][0];
+                (*level_cache_ptr.offset(x as isize))[1] = filter_level[1][0][0];
             }
             level_cache_ptr = level_cache_ptr.offset(b4_stride as isize);
         }
@@ -476,8 +476,8 @@ pub unsafe fn dav1d_create_lf_mask_intra(
         level_cache.offset(((by >> ss_ver) * b4_stride + (bx >> ss_hor)) as isize);
     for _ in 0..cbh4 {
         for x in 0..cbw4 {
-            (*level_cache_ptr.offset(x as isize))[2] = (*filter_level.offset(2))[0][0];
-            (*level_cache_ptr.offset(x as isize))[3] = (*filter_level.offset(3))[0][0];
+            (*level_cache_ptr.offset(x as isize))[2] = filter_level[2][0][0];
+            (*level_cache_ptr.offset(x as isize))[3] = filter_level[3][0][0];
         }
         level_cache_ptr = level_cache_ptr.offset(b4_stride as isize);
     }

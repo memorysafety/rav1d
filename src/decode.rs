@@ -3606,7 +3606,7 @@ unsafe fn decode_b(
                 &mut *t.lf_mask,
                 f.lf.level,
                 f.b4_stride,
-                &(*ts.lflvl.offset(b.seg_id as isize))[0],
+                &*ts.lflvl.offset(b.seg_id as isize),
                 t.bx,
                 t.by,
                 f.w4,
