@@ -454,11 +454,11 @@ pub unsafe fn dav1d_create_lf_mask_intra(
     let ss_hor = (layout != DAV1D_PIXEL_LAYOUT_I444) as usize;
     let cbw4 = std::cmp::min(
         (iw + ss_hor >> ss_hor) - (bx >> ss_hor),
-        b_dim[0] + ss_hor >> ss_hor,
+        (b_dim[0] + ss_hor) >> ss_hor,
     );
     let cbh4 = std::cmp::min(
         (ih + ss_ver >> ss_ver) - (by >> ss_ver),
-        b_dim[1] + ss_ver >> ss_ver,
+        (b_dim[1] + ss_ver) >> ss_ver,
     );
     if cbw4 == 0 || cbh4 == 0 {
         return;
@@ -546,11 +546,11 @@ pub unsafe fn dav1d_create_lf_mask_inter(
     let ss_hor = (layout != DAV1D_PIXEL_LAYOUT_I444) as usize;
     let cbw4 = std::cmp::min(
         (iw + ss_hor >> ss_hor) - (bx >> ss_hor),
-        b_dim[0] + ss_hor >> ss_hor,
+        (b_dim[0] + ss_hor) >> ss_hor,
     );
     let cbh4 = std::cmp::min(
         (ih + ss_ver >> ss_ver) - (by >> ss_ver),
-        b_dim[1] + ss_ver >> ss_ver,
+        (b_dim[1] + ss_ver) >> ss_ver,
     );
     if cbw4 == 0 || cbh4 == 0 {
         return;
