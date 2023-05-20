@@ -133,18 +133,16 @@ unsafe fn decomp_tx(
 #[inline]
 unsafe fn mask_edges_inter(
     masks: &mut [[[[u16; 2]; 3]; 32]; 2],
-    by4: libc::c_int,
-    bx4: libc::c_int,
-    w4: libc::c_int,
-    h4: libc::c_int,
+    by4: usize,
+    bx4: usize,
+    w4: usize,
+    h4: usize,
     skip: bool,
     max_tx: RectTxfmSize,
     tx_masks: &[u16; 2],
     a: &mut [u8],
     l: &mut [u8],
 ) {
-    let [by4, bx4, w4, h4] = [by4, bx4, w4, h4].map(|it| it as usize);
-
     let t_dim = &dav1d_txfm_dimensions[max_tx as usize];
 
     // See [`decomp_tx`]'s docs for the `txa` arg.
@@ -218,16 +216,14 @@ unsafe fn mask_edges_inter(
 #[inline]
 unsafe fn mask_edges_intra(
     masks: &mut [[[[u16; 2]; 3]; 32]; 2],
-    by4: libc::c_int,
-    bx4: libc::c_int,
-    w4: libc::c_int,
-    h4: libc::c_int,
+    by4: usize,
+    bx4: usize,
+    w4: usize,
+    h4: usize,
     tx: RectTxfmSize,
     a: &mut [u8],
     l: &mut [u8],
 ) {
-    let [by4, bx4, w4, h4] = [by4, bx4, w4, h4].map(|it| it as usize);
-
     let t_dim = &dav1d_txfm_dimensions[tx as usize];
     let twl4 = t_dim.lw;
     let thl4 = t_dim.lh;
@@ -312,19 +308,17 @@ unsafe fn mask_edges_intra(
 
 unsafe fn mask_edges_chroma(
     masks: &mut [[[[u16; 2]; 2]; 32]; 2],
-    cby4: libc::c_int,
-    cbx4: libc::c_int,
-    cw4: libc::c_int,
-    ch4: libc::c_int,
+    cby4: usize,
+    cbx4: usize,
+    cw4: usize,
+    ch4: usize,
     skip_inter: bool,
     tx: RectTxfmSize,
     a: &mut [u8],
     l: &mut [u8],
-    ss_hor: libc::c_int,
-    ss_ver: libc::c_int,
+    ss_hor: usize,
+    ss_ver: usize,
 ) {
-    let [cby4, cbx4, cw4, ch4] = [cby4, cbx4, cw4, ch4].map(|it| it as usize);
-
     let t_dim = &dav1d_txfm_dimensions[tx as usize];
     let twl4 = t_dim.lw;
     let thl4 = t_dim.lh;
@@ -432,9 +426,11 @@ pub unsafe fn dav1d_create_lf_mask_intra(
     ly: &mut [u8],
     aluv: Option<(&mut [u8], &mut [u8])>,
 ) {
+    let [bx, by, iw, ih] = [bx, by, iw, ih].map(|it| it as usize);
     let b_dim = &dav1d_block_dimensions[bs as usize];
-    let bw4 = std::cmp::min(iw - bx, b_dim[0] as libc::c_int);
-    let bh4 = std::cmp::min(ih - by, b_dim[1] as libc::c_int);
+    let b_dim = b_dim.map(|it| it as usize);
+    let bw4 = std::cmp::min(iw - bx, b_dim[0]);
+    let bh4 = std::cmp::min(ih - by, b_dim[1]);
     let bx4 = bx & 31;
     let by4 = by & 31;
     if bw4 != 0 && bh4 != 0 {
@@ -454,15 +450,15 @@ pub unsafe fn dav1d_create_lf_mask_intra(
         None => return,
         Some(aluv) => aluv,
     };
-    let ss_ver = (layout == DAV1D_PIXEL_LAYOUT_I420) as libc::c_int;
-    let ss_hor = (layout != DAV1D_PIXEL_LAYOUT_I444) as libc::c_int;
+    let ss_ver = (layout == DAV1D_PIXEL_LAYOUT_I420) as usize;
+    let ss_hor = (layout != DAV1D_PIXEL_LAYOUT_I444) as usize;
     let cbw4 = std::cmp::min(
         (iw + ss_hor >> ss_hor) - (bx >> ss_hor),
-        b_dim[0] as libc::c_int + ss_hor >> ss_hor,
+        b_dim[0] + ss_hor >> ss_hor,
     );
     let cbh4 = std::cmp::min(
         (ih + ss_ver >> ss_ver) - (by >> ss_ver),
-        b_dim[1] as libc::c_int + ss_ver >> ss_ver,
+        b_dim[1] + ss_ver >> ss_ver,
     );
     if cbw4 == 0 || cbh4 == 0 {
         return;
@@ -513,9 +509,11 @@ pub unsafe fn dav1d_create_lf_mask_inter(
     ly: &mut [u8],
     aluv: Option<(&mut [u8], &mut [u8])>,
 ) {
+    let [bx, by, iw, ih] = [bx, by, iw, ih].map(|it| it as usize);
     let b_dim = &dav1d_block_dimensions[bs as usize];
-    let bw4 = std::cmp::min(iw - bx, b_dim[0] as libc::c_int);
-    let bh4 = std::cmp::min(ih - by, b_dim[1] as libc::c_int);
+    let b_dim = b_dim.map(|it| it as usize);
+    let bw4 = std::cmp::min(iw - bx, b_dim[0]);
+    let bh4 = std::cmp::min(ih - by, b_dim[1]);
     let bx4 = bx & 31;
     let by4 = by & 31;
     if bw4 != 0 && bh4 != 0 {
@@ -546,15 +544,15 @@ pub unsafe fn dav1d_create_lf_mask_inter(
         None => return,
         Some(aluv) => aluv,
     };
-    let ss_ver = (layout == DAV1D_PIXEL_LAYOUT_I420) as libc::c_int;
-    let ss_hor = (layout != DAV1D_PIXEL_LAYOUT_I444) as libc::c_int;
+    let ss_ver = (layout == DAV1D_PIXEL_LAYOUT_I420) as usize;
+    let ss_hor = (layout != DAV1D_PIXEL_LAYOUT_I444) as usize;
     let cbw4 = std::cmp::min(
         (iw + ss_hor >> ss_hor) - (bx >> ss_hor),
-        b_dim[0] as libc::c_int + ss_hor >> ss_hor,
+        b_dim[0] + ss_hor >> ss_hor,
     );
     let cbh4 = std::cmp::min(
         (ih + ss_ver >> ss_ver) - (by >> ss_ver),
-        b_dim[1] as libc::c_int + ss_ver >> ss_ver,
+        b_dim[1] + ss_ver >> ss_ver,
     );
     if cbw4 == 0 || cbh4 == 0 {
         return;
