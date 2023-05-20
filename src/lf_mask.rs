@@ -445,9 +445,9 @@ pub unsafe fn dav1d_create_lf_mask_intra(
         let offset = by * b4_stride + bx;
         for y in 0..bh4 {
             let offset = offset + y * b4_stride;
-            for x in 0..bw4 {
-                level_cache[offset + x][0] = filter_level[0][0][0];
-                level_cache[offset + x][1] = filter_level[1][0][0];
+            for level_cache in &mut level_cache[offset..][..bw4] {
+                level_cache[0] = filter_level[0][0][0];
+                level_cache[1] = filter_level[1][0][0];
             }
         }
 
@@ -485,9 +485,9 @@ pub unsafe fn dav1d_create_lf_mask_intra(
     let offset = (by >> ss_ver) * b4_stride + (bx >> ss_hor);
     for y in 0..cbh4 {
         let offset = offset + y * b4_stride;
-        for x in 0..cbw4 {
-            level_cache[offset + x][2] = filter_level[2][0][0];
-            level_cache[offset + x][3] = filter_level[3][0][0];
+        for level_cache in &mut level_cache[offset..][..cbw4] {
+            level_cache[2] = filter_level[2][0][0];
+            level_cache[3] = filter_level[3][0][0];
         }
     }
 
@@ -546,9 +546,9 @@ pub unsafe fn dav1d_create_lf_mask_inter(
         let offset = by * b4_stride + bx;
         for y in 0..bh4 {
             let offset = offset + y * b4_stride;
-            for x in 0..bw4 {
-                level_cache[offset + x][0] = filter_level[0][r#ref][is_gmv];
-                level_cache[offset + x][1] = filter_level[1][r#ref][is_gmv];
+            for level_cache in &mut level_cache[offset..][..bw4] {
+                level_cache[0] = filter_level[0][r#ref][is_gmv];
+                level_cache[1] = filter_level[1][r#ref][is_gmv];
             }
         }
 
@@ -597,9 +597,9 @@ pub unsafe fn dav1d_create_lf_mask_inter(
     let offset = (by >> ss_ver) * b4_stride + (bx >> ss_hor);
     for y in 0..cbh4 {
         let offset = offset + y * b4_stride;
-        for x in 0..cbw4 {
-            level_cache[offset + x][2] = filter_level[2][r#ref][is_gmv];
-            level_cache[offset + x][3] = filter_level[3][r#ref][is_gmv];
+        for level_cache in &mut level_cache[offset..][..cbw4] {
+            level_cache[2] = filter_level[2][r#ref][is_gmv];
+            level_cache[3] = filter_level[3][r#ref][is_gmv];
         }
     }
 
