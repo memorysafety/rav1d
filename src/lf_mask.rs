@@ -336,24 +336,24 @@ unsafe fn mask_edges_chroma(
     let hbits = 4 - ss_hor;
     let vmask = 16 >> ss_ver;
     let hmask = 16 >> ss_hor;
-    let vmax: libc::c_uint = ((1 as libc::c_int) << vmask) as libc::c_uint;
-    let hmax: libc::c_uint = ((1 as libc::c_int) << hmask) as libc::c_uint;
-    let mut mask: libc::c_uint = (1 as libc::c_uint) << cby4;
-    y = 0 as libc::c_int;
+    let vmax = 1u32 << vmask;
+    let hmax = 1u32 << hmask;
+    let mut mask = 1u32 << cby4;
+    y = 0;
     while y < ch4 {
         let sidx = (mask >= vmax) as libc::c_int;
-        let smask: libc::c_uint = mask >> (sidx << vbits);
+        let smask = mask >> (sidx << vbits);
         let ref mut fresh10 =
             masks[0][cbx4 as usize][std::cmp::min(twl4c, l[y as usize]) as usize][sidx as usize];
         *fresh10 = (*fresh10 as libc::c_uint | smask) as u16;
         y += 1;
         mask <<= 1;
     }
-    x = 0 as libc::c_int;
-    mask = (1 as libc::c_uint) << cbx4;
+    x = 0;
+    mask = 1u32 << cbx4;
     while x < cw4 {
         let sidx_0 = (mask >= hmax) as libc::c_int;
-        let smask_0: libc::c_uint = mask >> (sidx_0 << hbits);
+        let smask_0 = mask >> (sidx_0 << hbits);
         let ref mut fresh11 =
             masks[1][cby4 as usize][std::cmp::min(thl4c, a[x as usize]) as usize][sidx_0 as usize];
         *fresh11 = (*fresh11 as libc::c_uint | smask_0) as u16;
@@ -362,10 +362,10 @@ unsafe fn mask_edges_chroma(
     }
     if !skip_inter {
         let hstep = t_dim.w as libc::c_int;
-        let mut t: libc::c_uint = (1 as libc::c_uint) << cby4;
-        let mut inner: libc::c_uint = ((t as u64) << ch4).wrapping_sub(t as u64) as libc::c_uint;
-        let mut inner1: libc::c_uint = inner & (((1 as libc::c_int) << vmask) - 1) as libc::c_uint;
-        let mut inner2: libc::c_uint = inner >> vmask;
+        let mut t = 1u32 << cby4;
+        let mut inner = ((t as u64) << ch4).wrapping_sub(t as u64) as u32;
+        let mut inner1 = inner & ((1 << vmask) - 1);
+        let mut inner2 = inner >> vmask;
         x = hstep;
         while x < cw4 {
             if inner1 != 0 {
@@ -379,9 +379,9 @@ unsafe fn mask_edges_chroma(
             x += hstep;
         }
         let vstep = t_dim.h as libc::c_int;
-        t = (1 as libc::c_uint) << cbx4;
-        inner = ((t as u64) << cw4).wrapping_sub(t as u64) as libc::c_uint;
-        inner1 = inner & (((1 as libc::c_int) << hmask) - 1) as libc::c_uint;
+        t = 1u32 << cbx4;
+        inner = ((t as u64) << cw4).wrapping_sub(t as u64) as u32;
+        inner1 = inner & ((1 << hmask) - 1);
         inner2 = inner >> hmask;
         y = vstep;
         while y < ch4 {
