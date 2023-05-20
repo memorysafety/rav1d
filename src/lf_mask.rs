@@ -502,7 +502,9 @@ pub unsafe fn dav1d_create_lf_mask_inter(
     lflvl: &mut Av1Filter,
     level_cache: *mut [u8; 4],
     b4_stride: ptrdiff_t,
-    mut filter_level: *const [[u8; 2]; 8],
+    filter_level: &[[[u8; 2]; 8]; 4],
+    r#ref: usize,
+    is_gmv: bool,
     bx: libc::c_int,
     by: libc::c_int,
     iw: libc::c_int,
@@ -518,6 +520,7 @@ pub unsafe fn dav1d_create_lf_mask_inter(
     aluv: Option<(&mut [u8], &mut [u8])>,
 ) {
     let b4_stride = b4_stride as usize;
+    let is_gmv = is_gmv as usize;
     let [bx, by, iw, ih] = [bx, by, iw, ih].map(|it| it as usize);
 
     let b_dim = &dav1d_block_dimensions[bs as usize];
@@ -531,8 +534,8 @@ pub unsafe fn dav1d_create_lf_mask_inter(
         let mut level_cache_ptr = level_cache.offset((by * b4_stride + bx) as isize);
         for _ in 0..bh4 {
             for x in 0..bw4 {
-                (*level_cache_ptr.offset(x as isize))[0] = (*filter_level.offset(0))[0][0];
-                (*level_cache_ptr.offset(x as isize))[1] = (*filter_level.offset(1))[0][0];
+                (*level_cache_ptr.offset(x as isize))[0] = filter_level[0][r#ref][is_gmv];
+                (*level_cache_ptr.offset(x as isize))[1] = filter_level[1][r#ref][is_gmv];
             }
             level_cache_ptr = level_cache_ptr.offset(b4_stride as isize);
         }
@@ -578,8 +581,8 @@ pub unsafe fn dav1d_create_lf_mask_inter(
         level_cache.offset(((by >> ss_ver) * b4_stride + (bx >> ss_hor)) as isize);
     for _ in 0..cbh4 {
         for x in 0..cbw4 {
-            (*level_cache_ptr.offset(x as isize))[2] = (*filter_level.offset(2))[0][0];
-            (*level_cache_ptr.offset(x as isize))[3] = (*filter_level.offset(3))[0][0];
+            (*level_cache_ptr.offset(x as isize))[2] = filter_level[2][r#ref][is_gmv];
+            (*level_cache_ptr.offset(x as isize))[3] = filter_level[3][r#ref][is_gmv];
         }
         level_cache_ptr = level_cache_ptr.offset(b4_stride as isize);
     }
