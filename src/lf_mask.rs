@@ -78,8 +78,8 @@ unsafe fn decomp_tx(
     debug_assert!(depth <= 2);
     let t_dim = &dav1d_txfm_dimensions[from as usize];
 
-    let txa_y_off = y_off * t_dim.h;
-    let txa_x_off = x_off * t_dim.w;
+    let y0 = (y_off * t_dim.h) as usize;
+    let x0 = (x_off * t_dim.w) as usize;
 
     let is_split = if from == TX_4X4 || depth > 1 {
         false
@@ -105,17 +105,9 @@ unsafe fn decomp_tx(
 
         let mut set_ctx = |_dir: &mut (), _diridx, off, mul, rep_macro: SetCtxFn| {
             for y in 0..t_dim.h as usize {
-                rep_macro(
-                    txa[0][0][txa_y_off as usize + y][txa_x_off as usize..].as_mut_ptr(),
-                    off,
-                    mul * lw as u64,
-                );
-                rep_macro(
-                    txa[1][0][txa_y_off as usize + y][txa_x_off as usize..].as_mut_ptr(),
-                    off,
-                    mul * lh as u64,
-                );
-                txa[0][1][txa_y_off as usize + y][txa_x_off as usize] = t_dim.w;
+                rep_macro(txa[0][0][y0 + y][x0..].as_mut_ptr(), off, mul * lw as u64);
+                rep_macro(txa[1][0][y0 + y][x0..].as_mut_ptr(), off, mul * lh as u64);
+                txa[0][1][y0 + y][x0] = t_dim.w;
             }
         };
         case_set_upto16(
@@ -126,11 +118,7 @@ unsafe fn decomp_tx(
             &mut set_ctx,
         );
         let mut set_ctx = |_dir: &mut (), _diridx, off, mul, rep_macro: SetCtxFn| {
-            rep_macro(
-                txa[1][1][txa_y_off as usize][txa_x_off as usize..].as_mut_ptr(),
-                off,
-                mul * t_dim.h as u64,
-            );
+            rep_macro(txa[1][1][y0][x0..].as_mut_ptr(), off, mul * t_dim.h as u64);
         };
         case_set_upto16(
             t_dim.w as libc::c_int,
