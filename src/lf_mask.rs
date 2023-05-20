@@ -329,31 +329,23 @@ unsafe fn mask_edges_chroma(
     let thl4 = t_dim.lh as libc::c_int;
     let twl4c = (twl4 != 0) as u8;
     let thl4c = (thl4 != 0) as u8;
-    let mut y = 0;
-    let mut x = 0;
     let vbits = 4 - ss_ver;
     let hbits = 4 - ss_hor;
     let vmask = 16 >> ss_ver;
     let hmask = 16 >> ss_hor;
     let vmax = 1u32 << vmask;
     let hmax = 1u32 << hmask;
-    let mut mask = 1u32 << cby4;
-    y = 0;
-    while y < ch4 {
+    for y in 0..ch4 {
+        let mask = 1u32 << (cby4 + y);
         let sidx = (mask >= vmax) as usize;
         let smask = mask >> (sidx << vbits);
         masks[0][cbx4 as usize][std::cmp::min(twl4c, l[y as usize]) as usize][sidx] |= smask as u16;
-        y += 1;
-        mask <<= 1;
     }
-    x = 0;
-    mask = 1u32 << cbx4;
-    while x < cw4 {
+    for x in 0..cw4 {
+        let mask = 1u32 << (cbx4 + x);
         let sidx = (mask >= hmax) as usize;
         let smask = mask >> (sidx << hbits);
         masks[1][cby4 as usize][std::cmp::min(thl4c, a[x as usize]) as usize][sidx] |= smask as u16;
-        x += 1;
-        mask <<= 1;
     }
     if !skip_inter {
         let hstep = t_dim.w as libc::c_int;
@@ -361,30 +353,26 @@ unsafe fn mask_edges_chroma(
         let mut inner = (((t as u64) << ch4) - (t as u64)) as u32;
         let mut inner1 = inner & ((1 << vmask) - 1);
         let mut inner2 = inner >> vmask;
-        x = hstep;
-        while x < cw4 {
+        for x in (hstep..cw4).step_by(hstep as usize) {
             if inner1 != 0 {
                 masks[0][(cbx4 + x) as usize][twl4c as usize][0] |= inner1 as u16;
             }
             if inner2 != 0 {
                 masks[0][(cbx4 + x) as usize][twl4c as usize][1] |= inner2 as u16;
             }
-            x += hstep;
         }
         let vstep = t_dim.h as libc::c_int;
         t = 1u32 << cbx4;
         inner = (((t as u64) << cw4) - (t as u64)) as u32;
         inner1 = inner & ((1 << hmask) - 1);
         inner2 = inner >> hmask;
-        y = vstep;
-        while y < ch4 {
+        for y in (vstep..ch4).step_by(vstep as usize) {
             if inner1 != 0 {
                 masks[1][(cby4 + y) as usize][thl4c as usize][0] |= inner1 as u16;
             }
             if inner2 != 0 {
                 masks[1][(cby4 + y) as usize][thl4c as usize][1] |= inner2 as u16;
             }
-            y += vstep;
         }
     }
 
