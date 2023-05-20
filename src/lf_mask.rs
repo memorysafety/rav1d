@@ -490,8 +490,7 @@ pub unsafe fn dav1d_create_lf_mask_intra(
     layout: Dav1dPixelLayout,
     ay: &mut [u8],
     ly: &mut [u8],
-    auv: *mut u8,
-    luv: *mut u8,
+    aluv: Option<(&mut [u8], &mut [u8])>,
 ) {
     let b_dim: *const u8 = (dav1d_block_dimensions[bs as usize]).as_ptr();
     let bw4 = imin(iw - bx, *b_dim.offset(0) as libc::c_int);
@@ -515,9 +514,10 @@ pub unsafe fn dav1d_create_lf_mask_intra(
         }
         mask_edges_intra(&mut (*lflvl).filter_y, by4, bx4, bw4, bh4, ytx, ay, ly);
     }
-    if auv.is_null() {
-        return;
-    }
+    let (auv, luv) = match aluv {
+        None => return,
+        Some(aluv) => aluv,
+    };
     let ss_ver = (layout as libc::c_uint == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint)
         as libc::c_int;
     let ss_hor = (layout as libc::c_uint != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint)
@@ -557,8 +557,8 @@ pub unsafe fn dav1d_create_lf_mask_intra(
         cbh4,
         false,
         uvtx,
-        auv,
-        luv,
+        auv.as_mut_ptr(),
+        luv.as_mut_ptr(),
         ss_hor,
         ss_ver,
     );
@@ -581,8 +581,7 @@ pub unsafe fn dav1d_create_lf_mask_inter(
     layout: Dav1dPixelLayout,
     ay: &mut [u8],
     ly: &mut [u8],
-    auv: *mut u8,
-    luv: *mut u8,
+    aluv: Option<(&mut [u8], &mut [u8])>,
 ) {
     let b_dim: *const u8 = (dav1d_block_dimensions[bs as usize]).as_ptr();
     let bw4 = imin(iw - bx, *b_dim.offset(0) as libc::c_int);
@@ -617,9 +616,10 @@ pub unsafe fn dav1d_create_lf_mask_inter(
             ly,
         );
     }
-    if auv.is_null() {
-        return;
-    }
+    let (auv, luv) = match aluv {
+        None => return,
+        Some(aluv) => aluv,
+    };
     let ss_ver = (layout as libc::c_uint == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint)
         as libc::c_int;
     let ss_hor = (layout as libc::c_uint != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint)
@@ -659,8 +659,8 @@ pub unsafe fn dav1d_create_lf_mask_inter(
         cbh4,
         skip,
         uvtx,
-        auv,
-        luv,
+        auv.as_mut_ptr(),
+        luv.as_mut_ptr(),
         ss_hor,
         ss_ver,
     );
