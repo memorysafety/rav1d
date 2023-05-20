@@ -340,10 +340,10 @@ unsafe fn mask_edges_chroma(
     let mut mask = 1u32 << cby4;
     y = 0;
     while y < ch4 {
-        let sidx = (mask >= vmax) as libc::c_int;
+        let sidx = (mask >= vmax) as usize;
         let smask = mask >> (sidx << vbits);
         let ref mut fresh10 =
-            masks[0][cbx4 as usize][std::cmp::min(twl4c, l[y as usize]) as usize][sidx as usize];
+            masks[0][cbx4 as usize][std::cmp::min(twl4c, l[y as usize]) as usize][sidx];
         *fresh10 = (*fresh10 as libc::c_uint | smask) as u16;
         y += 1;
         mask <<= 1;
@@ -351,10 +351,10 @@ unsafe fn mask_edges_chroma(
     x = 0;
     mask = 1u32 << cbx4;
     while x < cw4 {
-        let sidx = (mask >= hmax) as libc::c_int;
+        let sidx = (mask >= hmax) as usize;
         let smask = mask >> (sidx << hbits);
         let ref mut fresh11 =
-            masks[1][cby4 as usize][std::cmp::min(thl4c, a[x as usize]) as usize][sidx as usize];
+            masks[1][cby4 as usize][std::cmp::min(thl4c, a[x as usize]) as usize][sidx];
         *fresh11 = (*fresh11 as libc::c_uint | smask) as u16;
         x += 1;
         mask <<= 1;
