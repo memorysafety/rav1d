@@ -322,7 +322,7 @@ unsafe fn mask_edges_intra(
 }
 
 unsafe fn mask_edges_chroma(
-    masks: *mut [[[u16; 2]; 2]; 32],
+    masks: &mut [[[[u16; 2]; 2]; 32]; 2],
     cby4: libc::c_int,
     cbx4: libc::c_int,
     cw4: libc::c_int,
@@ -353,7 +353,7 @@ unsafe fn mask_edges_chroma(
     while y < ch4 {
         let sidx = (mask >= vmax) as libc::c_int;
         let smask: libc::c_uint = mask >> (sidx << vbits);
-        let ref mut fresh10 = (*masks.offset(0))[cbx4 as usize]
+        let ref mut fresh10 = masks[0][cbx4 as usize]
             [imin(twl4c, *l.offset(y as isize) as libc::c_int) as usize][sidx as usize];
         *fresh10 = (*fresh10 as libc::c_uint | smask) as u16;
         y += 1;
@@ -364,7 +364,7 @@ unsafe fn mask_edges_chroma(
     while x < cw4 {
         let sidx_0 = (mask >= hmax) as libc::c_int;
         let smask_0: libc::c_uint = mask >> (sidx_0 << hbits);
-        let ref mut fresh11 = (*masks.offset(1))[cby4 as usize]
+        let ref mut fresh11 = masks[1][cby4 as usize]
             [imin(thl4c, *a.offset(x as isize) as libc::c_int) as usize][sidx_0 as usize];
         *fresh11 = (*fresh11 as libc::c_uint | smask_0) as u16;
         x += 1;
@@ -379,11 +379,11 @@ unsafe fn mask_edges_chroma(
         x = hstep;
         while x < cw4 {
             if inner1 != 0 {
-                let ref mut fresh12 = (*masks.offset(0))[(cbx4 + x) as usize][twl4c as usize][0];
+                let ref mut fresh12 = masks[0][(cbx4 + x) as usize][twl4c as usize][0];
                 *fresh12 = (*fresh12 as libc::c_uint | inner1) as u16;
             }
             if inner2 != 0 {
-                let ref mut fresh13 = (*masks.offset(0))[(cbx4 + x) as usize][twl4c as usize][1];
+                let ref mut fresh13 = masks[0][(cbx4 + x) as usize][twl4c as usize][1];
                 *fresh13 = (*fresh13 as libc::c_uint | inner2) as u16;
             }
             x += hstep;
@@ -396,11 +396,11 @@ unsafe fn mask_edges_chroma(
         y = vstep;
         while y < ch4 {
             if inner1 != 0 {
-                let ref mut fresh14 = (*masks.offset(1))[(cby4 + y) as usize][thl4c as usize][0];
+                let ref mut fresh14 = masks[1][(cby4 + y) as usize][thl4c as usize][0];
                 *fresh14 = (*fresh14 as libc::c_uint | inner1) as u16;
             }
             if inner2 != 0 {
-                let ref mut fresh15 = (*masks.offset(1))[(cby4 + y) as usize][thl4c as usize][1];
+                let ref mut fresh15 = masks[1][(cby4 + y) as usize][thl4c as usize][1];
                 *fresh15 = (*fresh15 as libc::c_uint | inner2) as u16;
             }
             y += vstep;
@@ -551,7 +551,7 @@ pub unsafe fn dav1d_create_lf_mask_intra(
         y_0 += 1;
     }
     mask_edges_chroma(
-        ((*lflvl).filter_uv).as_mut_ptr(),
+        &mut (*lflvl).filter_uv,
         cby4,
         cbx4,
         cbw4,
@@ -653,7 +653,7 @@ pub unsafe fn dav1d_create_lf_mask_inter(
         y_0 += 1;
     }
     mask_edges_chroma(
-        ((*lflvl).filter_uv).as_mut_ptr(),
+        &mut (*lflvl).filter_uv,
         cby4,
         cbx4,
         cbw4,
