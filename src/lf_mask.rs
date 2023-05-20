@@ -427,6 +427,7 @@ pub unsafe fn dav1d_create_lf_mask_intra(
     ly: &mut [u8],
     aluv: Option<(&mut [u8], &mut [u8])>,
 ) {
+    let b4_stride = b4_stride as usize;
     let [bx, by, iw, ih] = [bx, by, iw, ih].map(|it| it as usize);
     let b_dim = &dav1d_block_dimensions[bs as usize];
     let b_dim = b_dim.map(|it| it as usize);
@@ -435,9 +436,7 @@ pub unsafe fn dav1d_create_lf_mask_intra(
     let bx4 = bx & 31;
     let by4 = by & 31;
     if bw4 != 0 && bh4 != 0 {
-        let mut level_cache_ptr = level_cache
-            .offset(by as isize * b4_stride)
-            .offset(bx as isize);
+        let mut level_cache_ptr = level_cache.offset((by * b4_stride + bx) as isize);
         for _ in 0..bh4 {
             for x in 0..bw4 {
                 (*level_cache_ptr.offset(x as isize))[0] = (*filter_level.offset(0))[0][0];
@@ -466,9 +465,8 @@ pub unsafe fn dav1d_create_lf_mask_intra(
     }
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
-    let mut level_cache_ptr = level_cache
-        .offset(((by >> ss_ver) as isize * b4_stride) as isize)
-        .offset((bx >> ss_hor) as isize);
+    let mut level_cache_ptr =
+        level_cache.offset(((by >> ss_ver) * b4_stride + (bx >> ss_hor)) as isize);
     for _ in 0..cbh4 {
         for x in 0..cbw4 {
             (*level_cache_ptr.offset(x as isize))[2] = (*filter_level.offset(2))[0][0];
@@ -510,6 +508,7 @@ pub unsafe fn dav1d_create_lf_mask_inter(
     ly: &mut [u8],
     aluv: Option<(&mut [u8], &mut [u8])>,
 ) {
+    let b4_stride = b4_stride as usize;
     let [bx, by, iw, ih] = [bx, by, iw, ih].map(|it| it as usize);
     let b_dim = &dav1d_block_dimensions[bs as usize];
     let b_dim = b_dim.map(|it| it as usize);
@@ -518,9 +517,7 @@ pub unsafe fn dav1d_create_lf_mask_inter(
     let bx4 = bx & 31;
     let by4 = by & 31;
     if bw4 != 0 && bh4 != 0 {
-        let mut level_cache_ptr = level_cache
-            .offset(by as isize * b4_stride)
-            .offset(bx as isize);
+        let mut level_cache_ptr = level_cache.offset((by * b4_stride + bx) as isize);
         for _ in 0..bh4 {
             for x in 0..bw4 {
                 (*level_cache_ptr.offset(x as isize))[0] = (*filter_level.offset(0))[0][0];
@@ -560,9 +557,8 @@ pub unsafe fn dav1d_create_lf_mask_inter(
     }
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
-    let mut level_cache_ptr = level_cache
-        .offset(((by >> ss_ver) as isize * b4_stride) as isize)
-        .offset((bx >> ss_hor) as isize);
+    let mut level_cache_ptr =
+        level_cache.offset(((by >> ss_ver) * b4_stride + (bx >> ss_hor)) as isize);
     for _ in 0..cbh4 {
         for x in 0..cbw4 {
             (*level_cache_ptr.offset(x as isize))[2] = (*filter_level.offset(2))[0][0];
