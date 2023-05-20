@@ -1,5 +1,4 @@
 use crate::include::common::intops::iclip;
-use crate::include::common::intops::imin;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dLoopfilterModeRefDeltas;
 use crate::include::dav1d::headers::Dav1dPixelLayout;
@@ -435,8 +434,8 @@ pub unsafe fn dav1d_create_lf_mask_intra(
     aluv: Option<(&mut [u8], &mut [u8])>,
 ) {
     let b_dim = &dav1d_block_dimensions[bs as usize];
-    let bw4 = imin(iw - bx, b_dim[0] as libc::c_int);
-    let bh4 = imin(ih - by, b_dim[1] as libc::c_int);
+    let bw4 = std::cmp::min(iw - bx, b_dim[0] as libc::c_int);
+    let bh4 = std::cmp::min(ih - by, b_dim[1] as libc::c_int);
     let bx4 = bx & 31;
     let by4 = by & 31;
     if bw4 != 0 && bh4 != 0 {
@@ -458,11 +457,11 @@ pub unsafe fn dav1d_create_lf_mask_intra(
     };
     let ss_ver = (layout == DAV1D_PIXEL_LAYOUT_I420) as libc::c_int;
     let ss_hor = (layout != DAV1D_PIXEL_LAYOUT_I444) as libc::c_int;
-    let cbw4 = imin(
+    let cbw4 = std::cmp::min(
         (iw + ss_hor >> ss_hor) - (bx >> ss_hor),
         b_dim[0] as libc::c_int + ss_hor >> ss_hor,
     );
-    let cbh4 = imin(
+    let cbh4 = std::cmp::min(
         (ih + ss_ver >> ss_ver) - (by >> ss_ver),
         b_dim[1] as libc::c_int + ss_ver >> ss_ver,
     );
@@ -516,8 +515,8 @@ pub unsafe fn dav1d_create_lf_mask_inter(
     aluv: Option<(&mut [u8], &mut [u8])>,
 ) {
     let b_dim = &dav1d_block_dimensions[bs as usize];
-    let bw4 = imin(iw - bx, b_dim[0] as libc::c_int);
-    let bh4 = imin(ih - by, b_dim[1] as libc::c_int);
+    let bw4 = std::cmp::min(iw - bx, b_dim[0] as libc::c_int);
+    let bh4 = std::cmp::min(ih - by, b_dim[1] as libc::c_int);
     let bx4 = bx & 31;
     let by4 = by & 31;
     if bw4 != 0 && bh4 != 0 {
@@ -550,11 +549,11 @@ pub unsafe fn dav1d_create_lf_mask_inter(
     };
     let ss_ver = (layout == DAV1D_PIXEL_LAYOUT_I420) as libc::c_int;
     let ss_hor = (layout != DAV1D_PIXEL_LAYOUT_I444) as libc::c_int;
-    let cbw4 = imin(
+    let cbw4 = std::cmp::min(
         (iw + ss_hor >> ss_hor) - (bx >> ss_hor),
         b_dim[0] as libc::c_int + ss_hor >> ss_hor,
     );
-    let cbh4 = imin(
+    let cbh4 = std::cmp::min(
         (ih + ss_ver >> ss_ver) - (by >> ss_ver),
         b_dim[1] as libc::c_int + ss_ver >> ss_ver,
     );
