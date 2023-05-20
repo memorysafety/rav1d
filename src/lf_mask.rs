@@ -476,19 +476,19 @@ pub unsafe fn dav1d_create_lf_mask_intra(
     }
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
-    let mut level_cache_ptr_0: *mut [u8; 4] = level_cache
+    let mut level_cache_ptr: *mut [u8; 4] = level_cache
         .offset(((by >> ss_ver) as isize * b4_stride) as isize)
         .offset((bx >> ss_hor) as isize);
-    let mut y_0 = 0;
-    while y_0 < cbh4 {
-        let mut x_0 = 0;
-        while x_0 < cbw4 {
-            (*level_cache_ptr_0.offset(x_0 as isize))[2] = (*filter_level.offset(2))[0][0];
-            (*level_cache_ptr_0.offset(x_0 as isize))[3] = (*filter_level.offset(3))[0][0];
-            x_0 += 1;
+    let mut y = 0;
+    while y < cbh4 {
+        let mut x = 0;
+        while x < cbw4 {
+            (*level_cache_ptr.offset(x as isize))[2] = (*filter_level.offset(2))[0][0];
+            (*level_cache_ptr.offset(x as isize))[3] = (*filter_level.offset(3))[0][0];
+            x += 1;
         }
-        level_cache_ptr_0 = level_cache_ptr_0.offset(b4_stride as isize);
-        y_0 += 1;
+        level_cache_ptr = level_cache_ptr.offset(b4_stride as isize);
+        y += 1;
     }
     mask_edges_chroma(
         &mut lflvl.filter_uv,
@@ -578,19 +578,19 @@ pub unsafe fn dav1d_create_lf_mask_inter(
     }
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
-    let mut level_cache_ptr_0: *mut [u8; 4] = level_cache
+    let mut level_cache_ptr: *mut [u8; 4] = level_cache
         .offset(((by >> ss_ver) as isize * b4_stride) as isize)
         .offset((bx >> ss_hor) as isize);
-    let mut y_0 = 0;
-    while y_0 < cbh4 {
-        let mut x_0 = 0;
-        while x_0 < cbw4 {
-            (*level_cache_ptr_0.offset(x_0 as isize))[2] = (*filter_level.offset(2))[0][0];
-            (*level_cache_ptr_0.offset(x_0 as isize))[3] = (*filter_level.offset(3))[0][0];
-            x_0 += 1;
+    let mut y = 0;
+    while y < cbh4 {
+        let mut x = 0;
+        while x < cbw4 {
+            (*level_cache_ptr.offset(x as isize))[2] = (*filter_level.offset(2))[0][0];
+            (*level_cache_ptr.offset(x as isize))[3] = (*filter_level.offset(3))[0][0];
+            x += 1;
         }
-        level_cache_ptr_0 = level_cache_ptr_0.offset(b4_stride as isize);
-        y_0 += 1;
+        level_cache_ptr = level_cache_ptr.offset(b4_stride as isize);
+        y += 1;
     }
     mask_edges_chroma(
         &mut lflvl.filter_uv,
