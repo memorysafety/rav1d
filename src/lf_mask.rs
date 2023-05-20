@@ -443,16 +443,12 @@ pub unsafe fn dav1d_create_lf_mask_intra(
         let mut level_cache_ptr: *mut [u8; 4] = level_cache
             .offset(by as isize * b4_stride)
             .offset(bx as isize);
-        let mut y = 0;
-        while y < bh4 {
-            let mut x = 0;
-            while x < bw4 {
+        for _ in 0..bh4 {
+            for x in 0..bw4 {
                 (*level_cache_ptr.offset(x as isize))[0] = (*filter_level.offset(0))[0][0];
                 (*level_cache_ptr.offset(x as isize))[1] = (*filter_level.offset(1))[0][0];
-                x += 1;
             }
             level_cache_ptr = level_cache_ptr.offset(b4_stride as isize);
-            y += 1;
         }
         mask_edges_intra(&mut lflvl.filter_y, by4, bx4, bw4, bh4, ytx, ay, ly);
     }
@@ -480,16 +476,12 @@ pub unsafe fn dav1d_create_lf_mask_intra(
     let mut level_cache_ptr: *mut [u8; 4] = level_cache
         .offset(((by >> ss_ver) as isize * b4_stride) as isize)
         .offset((bx >> ss_hor) as isize);
-    let mut y = 0;
-    while y < cbh4 {
-        let mut x = 0;
-        while x < cbw4 {
+    for _ in 0..cbh4 {
+        for x in 0..cbw4 {
             (*level_cache_ptr.offset(x as isize))[2] = (*filter_level.offset(2))[0][0];
             (*level_cache_ptr.offset(x as isize))[3] = (*filter_level.offset(3))[0][0];
-            x += 1;
         }
         level_cache_ptr = level_cache_ptr.offset(b4_stride as isize);
-        y += 1;
     }
     mask_edges_chroma(
         &mut lflvl.filter_uv,
@@ -534,16 +526,12 @@ pub unsafe fn dav1d_create_lf_mask_inter(
         let mut level_cache_ptr: *mut [u8; 4] = level_cache
             .offset(by as isize * b4_stride)
             .offset(bx as isize);
-        let mut y = 0;
-        while y < bh4 {
-            let mut x = 0;
-            while x < bw4 {
+        for _ in 0..bh4 {
+            for x in 0..bw4 {
                 (*level_cache_ptr.offset(x as isize))[0] = (*filter_level.offset(0))[0][0];
                 (*level_cache_ptr.offset(x as isize))[1] = (*filter_level.offset(1))[0][0];
-                x += 1;
             }
             level_cache_ptr = level_cache_ptr.offset(b4_stride as isize);
-            y += 1;
         }
         mask_edges_inter(
             &mut lflvl.filter_y,
@@ -582,16 +570,12 @@ pub unsafe fn dav1d_create_lf_mask_inter(
     let mut level_cache_ptr: *mut [u8; 4] = level_cache
         .offset(((by >> ss_ver) as isize * b4_stride) as isize)
         .offset((bx >> ss_hor) as isize);
-    let mut y = 0;
-    while y < cbh4 {
-        let mut x = 0;
-        while x < cbw4 {
+    for _ in 0..cbh4 {
+        for x in 0..cbw4 {
             (*level_cache_ptr.offset(x as isize))[2] = (*filter_level.offset(2))[0][0];
             (*level_cache_ptr.offset(x as isize))[3] = (*filter_level.offset(3))[0][0];
-            x += 1;
         }
         level_cache_ptr = level_cache_ptr.offset(b4_stride as isize);
-        y += 1;
     }
     mask_edges_chroma(
         &mut lflvl.filter_uv,
