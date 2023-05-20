@@ -15,7 +15,6 @@ use crate::src::levels::RectTxfmSize;
 use crate::src::levels::TX_4X4;
 use crate::src::tables::dav1d_block_dimensions;
 use crate::src::tables::dav1d_txfm_dimensions;
-use crate::src::tables::TxfmInfo;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -326,10 +325,9 @@ unsafe fn mask_edges_chroma(
     ss_hor: libc::c_int,
     ss_ver: libc::c_int,
 ) {
-    let t_dim: *const TxfmInfo =
-        &*dav1d_txfm_dimensions.as_ptr().offset(tx as isize) as *const TxfmInfo;
-    let twl4 = (*t_dim).lw as libc::c_int;
-    let thl4 = (*t_dim).lh as libc::c_int;
+    let t_dim = &dav1d_txfm_dimensions[tx as usize];
+    let twl4 = t_dim.lw as libc::c_int;
+    let thl4 = t_dim.lh as libc::c_int;
     let twl4c = (twl4 != 0) as u8;
     let thl4c = (thl4 != 0) as u8;
     let mut y = 0;
@@ -363,7 +361,7 @@ unsafe fn mask_edges_chroma(
         mask <<= 1;
     }
     if !skip_inter {
-        let hstep = (*t_dim).w as libc::c_int;
+        let hstep = t_dim.w as libc::c_int;
         let mut t: libc::c_uint = (1 as libc::c_uint) << cby4;
         let mut inner: libc::c_uint = ((t as u64) << ch4).wrapping_sub(t as u64) as libc::c_uint;
         let mut inner1: libc::c_uint = inner & (((1 as libc::c_int) << vmask) - 1) as libc::c_uint;
@@ -380,7 +378,7 @@ unsafe fn mask_edges_chroma(
             }
             x += hstep;
         }
-        let vstep = (*t_dim).h as libc::c_int;
+        let vstep = t_dim.h as libc::c_int;
         t = (1 as libc::c_uint) << cbx4;
         inner = ((t as u64) << cw4).wrapping_sub(t as u64) as libc::c_uint;
         inner1 = inner & (((1 as libc::c_int) << hmask) - 1) as libc::c_uint;
