@@ -428,12 +428,14 @@ pub unsafe fn dav1d_create_lf_mask_intra(
 ) {
     let b4_stride = b4_stride as usize;
     let [bx, by, iw, ih] = [bx, by, iw, ih].map(|it| it as usize);
+
     let b_dim = &dav1d_block_dimensions[bs as usize];
     let b_dim = b_dim.map(|it| it as usize);
     let bw4 = std::cmp::min(iw - bx, b_dim[0]);
     let bh4 = std::cmp::min(ih - by, b_dim[1]);
     let bx4 = bx & 31;
     let by4 = by & 31;
+
     if bw4 != 0 && bh4 != 0 {
         let mut level_cache_ptr = level_cache.offset((by * b4_stride + bx) as isize);
         for _ in 0..bh4 {
@@ -443,12 +445,15 @@ pub unsafe fn dav1d_create_lf_mask_intra(
             }
             level_cache_ptr = level_cache_ptr.offset(b4_stride as isize);
         }
+
         mask_edges_intra(&mut lflvl.filter_y, by4, bx4, bw4, bh4, ytx, ay, ly);
     }
+
     let (auv, luv) = match aluv {
         None => return,
         Some(aluv) => aluv,
     };
+
     let ss_ver = (layout == DAV1D_PIXEL_LAYOUT_I420) as usize;
     let ss_hor = (layout != DAV1D_PIXEL_LAYOUT_I444) as usize;
     let cbw4 = std::cmp::min(
@@ -459,11 +464,14 @@ pub unsafe fn dav1d_create_lf_mask_intra(
         (ih + ss_ver >> ss_ver) - (by >> ss_ver),
         (b_dim[1] + ss_ver) >> ss_ver,
     );
+
     if cbw4 == 0 || cbh4 == 0 {
         return;
     }
+
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
+
     let mut level_cache_ptr =
         level_cache.offset(((by >> ss_ver) * b4_stride + (bx >> ss_hor)) as isize);
     for _ in 0..cbh4 {
@@ -473,6 +481,7 @@ pub unsafe fn dav1d_create_lf_mask_intra(
         }
         level_cache_ptr = level_cache_ptr.offset(b4_stride as isize);
     }
+
     mask_edges_chroma(
         &mut lflvl.filter_uv,
         cby4,
@@ -509,12 +518,14 @@ pub unsafe fn dav1d_create_lf_mask_inter(
 ) {
     let b4_stride = b4_stride as usize;
     let [bx, by, iw, ih] = [bx, by, iw, ih].map(|it| it as usize);
+
     let b_dim = &dav1d_block_dimensions[bs as usize];
     let b_dim = b_dim.map(|it| it as usize);
     let bw4 = std::cmp::min(iw - bx, b_dim[0]);
     let bh4 = std::cmp::min(ih - by, b_dim[1]);
     let bx4 = bx & 31;
     let by4 = by & 31;
+
     if bw4 != 0 && bh4 != 0 {
         let mut level_cache_ptr = level_cache.offset((by * b4_stride + bx) as isize);
         for _ in 0..bh4 {
@@ -524,6 +535,7 @@ pub unsafe fn dav1d_create_lf_mask_inter(
             }
             level_cache_ptr = level_cache_ptr.offset(b4_stride as isize);
         }
+
         mask_edges_inter(
             &mut lflvl.filter_y,
             by4,
@@ -537,10 +549,12 @@ pub unsafe fn dav1d_create_lf_mask_inter(
             ly,
         );
     }
+
     let (auv, luv) = match aluv {
         None => return,
         Some(aluv) => aluv,
     };
+
     let ss_ver = (layout == DAV1D_PIXEL_LAYOUT_I420) as usize;
     let ss_hor = (layout != DAV1D_PIXEL_LAYOUT_I444) as usize;
     let cbw4 = std::cmp::min(
@@ -551,11 +565,14 @@ pub unsafe fn dav1d_create_lf_mask_inter(
         (ih + ss_ver >> ss_ver) - (by >> ss_ver),
         (b_dim[1] + ss_ver) >> ss_ver,
     );
+
     if cbw4 == 0 || cbh4 == 0 {
         return;
     }
+
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
+
     let mut level_cache_ptr =
         level_cache.offset(((by >> ss_ver) * b4_stride + (bx >> ss_hor)) as isize);
     for _ in 0..cbh4 {
@@ -565,6 +582,7 @@ pub unsafe fn dav1d_create_lf_mask_inter(
         }
         level_cache_ptr = level_cache_ptr.offset(b4_stride as isize);
     }
+
     mask_edges_chroma(
         &mut lflvl.filter_uv,
         cby4,
