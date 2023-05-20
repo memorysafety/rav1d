@@ -349,10 +349,10 @@ unsafe fn mask_edges_chroma(
     }
     if !skip_inter {
         let hstep = t_dim.w as libc::c_int;
-        let mut t = 1u32 << cby4;
-        let mut inner = (((t as u64) << ch4) - (t as u64)) as u32;
-        let mut inner1 = inner & ((1 << vmask) - 1);
-        let mut inner2 = inner >> vmask;
+        let t = 1u32 << cby4;
+        let inner = (((t as u64) << ch4) - (t as u64)) as u32;
+        let inner1 = inner & ((1 << vmask) - 1);
+        let inner2 = inner >> vmask;
         for x in (hstep..cw4).step_by(hstep as usize) {
             if inner1 != 0 {
                 masks[0][(cbx4 + x) as usize][twl4c as usize][0] |= inner1 as u16;
@@ -362,10 +362,10 @@ unsafe fn mask_edges_chroma(
             }
         }
         let vstep = t_dim.h as libc::c_int;
-        t = 1u32 << cbx4;
-        inner = (((t as u64) << cw4) - (t as u64)) as u32;
-        inner1 = inner & ((1 << hmask) - 1);
-        inner2 = inner >> hmask;
+        let t = 1u32 << cbx4;
+        let inner = (((t as u64) << cw4) - (t as u64)) as u32;
+        let inner1 = inner & ((1 << hmask) - 1);
+        let inner2 = inner >> hmask;
         for y in (vstep..ch4).step_by(vstep as usize) {
             if inner1 != 0 {
                 masks[1][(cby4 + y) as usize][thl4c as usize][0] |= inner1 as u16;
