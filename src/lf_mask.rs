@@ -438,13 +438,17 @@ pub unsafe fn dav1d_create_lf_mask_intra(
     let by4 = by & 31;
 
     if bw4 != 0 && bh4 != 0 {
-        let mut level_cache_ptr = level_cache.offset((by * b4_stride + bx) as isize);
+        // TODO: Remove when `level_cache` is already a slice coming from a `Vec`.
+        // That refactor is complex, though, so for now we make it a slice by how elements are accessed.
+        let level_cache_len = (by * b4_stride + bx) + (bh4 * b4_stride);
+        let level_cache = std::slice::from_raw_parts_mut(level_cache, level_cache_len);
+        let mut level_cache_ptr = &mut level_cache[by * b4_stride + bx..];
         for _ in 0..bh4 {
             for x in 0..bw4 {
-                (*level_cache_ptr.offset(x as isize))[0] = filter_level[0][0][0];
-                (*level_cache_ptr.offset(x as isize))[1] = filter_level[1][0][0];
+                level_cache_ptr[x][0] = filter_level[0][0][0];
+                level_cache_ptr[x][1] = filter_level[1][0][0];
             }
-            level_cache_ptr = level_cache_ptr.offset(b4_stride as isize);
+            level_cache_ptr = &mut level_cache_ptr[b4_stride..];
         }
 
         mask_edges_intra(&mut lflvl.filter_y, by4, bx4, bw4, bh4, ytx, ay, ly);
@@ -473,14 +477,17 @@ pub unsafe fn dav1d_create_lf_mask_intra(
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
 
-    let mut level_cache_ptr =
-        level_cache.offset(((by >> ss_ver) * b4_stride + (bx >> ss_hor)) as isize);
+    // TODO: Remove when `level_cache` is already a slice coming from a `Vec`.
+    // That refactor is complex, though, so for now we make it a slice by how elements are accessed.
+    let level_cache_len = ((by >> ss_ver) * b4_stride + (bx >> ss_hor)) + (cbh4 * b4_stride);
+    let level_cache = std::slice::from_raw_parts_mut(level_cache, level_cache_len);
+    let mut level_cache_ptr = &mut level_cache[(by >> ss_ver) * b4_stride + (bx >> ss_hor)..];
     for _ in 0..cbh4 {
         for x in 0..cbw4 {
-            (*level_cache_ptr.offset(x as isize))[2] = filter_level[2][0][0];
-            (*level_cache_ptr.offset(x as isize))[3] = filter_level[3][0][0];
+            level_cache_ptr[x][2] = filter_level[2][0][0];
+            level_cache_ptr[x][3] = filter_level[3][0][0];
         }
-        level_cache_ptr = level_cache_ptr.offset(b4_stride as isize);
+        level_cache_ptr = &mut level_cache_ptr[b4_stride..];
     }
 
     mask_edges_chroma(
@@ -531,13 +538,17 @@ pub unsafe fn dav1d_create_lf_mask_inter(
     let by4 = by & 31;
 
     if bw4 != 0 && bh4 != 0 {
-        let mut level_cache_ptr = level_cache.offset((by * b4_stride + bx) as isize);
+        // TODO: Remove when `level_cache` is already a slice coming from a `Vec`.
+        // That refactor is complex, though, so for now we make it a slice by how elements are accessed.
+        let level_cache_len = (by * b4_stride + bx) + (bh4 * b4_stride);
+        let level_cache = std::slice::from_raw_parts_mut(level_cache, level_cache_len);
+        let mut level_cache_ptr = &mut level_cache[by * b4_stride + bx..];
         for _ in 0..bh4 {
             for x in 0..bw4 {
-                (*level_cache_ptr.offset(x as isize))[0] = filter_level[0][r#ref][is_gmv];
-                (*level_cache_ptr.offset(x as isize))[1] = filter_level[1][r#ref][is_gmv];
+                level_cache_ptr[x][0] = filter_level[0][r#ref][is_gmv];
+                level_cache_ptr[x][1] = filter_level[1][r#ref][is_gmv];
             }
-            level_cache_ptr = level_cache_ptr.offset(b4_stride as isize);
+            level_cache_ptr = &mut level_cache_ptr[b4_stride..];
         }
 
         mask_edges_inter(
@@ -577,14 +588,17 @@ pub unsafe fn dav1d_create_lf_mask_inter(
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
 
-    let mut level_cache_ptr =
-        level_cache.offset(((by >> ss_ver) * b4_stride + (bx >> ss_hor)) as isize);
+    // TODO: Remove when `level_cache` is already a slice coming from a `Vec`.
+    // That refactor is complex, though, so for now we make it a slice by how elements are accessed.
+    let level_cache_len = ((by >> ss_ver) * b4_stride + (bx >> ss_hor)) + (cbh4 * b4_stride);
+    let level_cache = std::slice::from_raw_parts_mut(level_cache, level_cache_len);
+    let mut level_cache_ptr = &mut level_cache[(by >> ss_ver) * b4_stride + (bx >> ss_hor)..];
     for _ in 0..cbh4 {
         for x in 0..cbw4 {
-            (*level_cache_ptr.offset(x as isize))[2] = filter_level[2][r#ref][is_gmv];
-            (*level_cache_ptr.offset(x as isize))[3] = filter_level[3][r#ref][is_gmv];
+            level_cache_ptr[x][2] = filter_level[2][r#ref][is_gmv];
+            level_cache_ptr[x][3] = filter_level[3][r#ref][is_gmv];
         }
-        level_cache_ptr = level_cache_ptr.offset(b4_stride as isize);
+        level_cache_ptr = &mut level_cache_ptr[b4_stride..];
     }
 
     mask_edges_chroma(
