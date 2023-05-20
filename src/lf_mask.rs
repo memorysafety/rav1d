@@ -67,6 +67,17 @@ pub struct Av1Restoration {
 /// (Note: This is added here in the docs vs. inline `/* */` comments
 /// at the array lengths because `rustfmt` deletes them
 /// (tracked in [rust-lang/rustfmt#5297](https://github.com/rust-lang/rustfmt/issues/5297))).
+///
+/// The usage of `txa` here has been changed from the C version
+/// as the C version would've been UB in Rust.
+/// The C version offsetted `txa` in each recursive call
+/// to an element of the inner 32x32 dimensional array,
+/// but then casting that back to a pointer to the full 32x32x2x2 array,
+/// even though the pointer no longer pointed to a complete 32x32x2x2 array.
+/// This was (likely) okay in C given those now out-of-bounds elements were never accessed,
+/// but in Rust, making such a pointer a references requires the object to be fully there.
+/// Instead of offsetting `txa`, the offsets are calculated from
+/// the existing `y_off` and `x_off` args and applied at each use site of `txa.
 unsafe fn decomp_tx(
     txa: &mut [[[[u8; 32]; 32]; 2]; 2],
     from: RectTxfmSize,
@@ -147,15 +158,7 @@ unsafe fn mask_edges_inter(
 
     let t_dim = &dav1d_txfm_dimensions[max_tx as usize];
 
-    // In `txa`, the array lengths represent from inner to outer:
-    // * `32`: `x`
-    // * `32`: `y`
-    // * `2`: `txsz`, `step`
-    // * `2`: `edge`
-    //
-    // (Note: This is added here in the docs vs. inline `/* */` comments
-    // at the array lengths because `rustfmt` deletes them
-    // (tracked in [rust-lang/rustfmt#5297](https://github.com/rust-lang/rustfmt/issues/5297))).
+    // See [`decomp_tx`]'s docs for the `txa` arg.
     let mut txa = Align16([[[[0; 32]; 32]; 2]; 2]);
 
     for (y_off, _) in (0..h4).step_by(t_dim.h as usize).enumerate() {
