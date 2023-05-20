@@ -359,7 +359,7 @@ unsafe fn mask_edges_chroma(
     if !skip_inter {
         let hstep = t_dim.w as libc::c_int;
         let mut t = 1u32 << cby4;
-        let mut inner = ((t as u64) << ch4).wrapping_sub(t as u64) as u32;
+        let mut inner = (((t as u64) << ch4) - (t as u64)) as u32;
         let mut inner1 = inner & ((1 << vmask) - 1);
         let mut inner2 = inner >> vmask;
         x = hstep;
@@ -374,7 +374,7 @@ unsafe fn mask_edges_chroma(
         }
         let vstep = t_dim.h as libc::c_int;
         t = 1u32 << cbx4;
-        inner = ((t as u64) << cw4).wrapping_sub(t as u64) as u32;
+        inner = (((t as u64) << cw4) - (t as u64)) as u32;
         inner1 = inner & ((1 << hmask) - 1);
         inner2 = inner >> hmask;
         y = vstep;
