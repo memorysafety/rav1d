@@ -1787,7 +1787,7 @@ unsafe fn read_pal_uv(
     }
 }
 
-unsafe fn order_palette(
+fn order_palette(
     mut pal_idx: &[u8],
     stride: usize,
     i: usize,
