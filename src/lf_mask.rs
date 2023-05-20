@@ -434,9 +434,9 @@ pub unsafe fn dav1d_create_lf_mask_intra(
     ly: &mut [u8],
     aluv: Option<(&mut [u8], &mut [u8])>,
 ) {
-    let b_dim: *const u8 = (dav1d_block_dimensions[bs as usize]).as_ptr();
-    let bw4 = imin(iw - bx, *b_dim.offset(0) as libc::c_int);
-    let bh4 = imin(ih - by, *b_dim.offset(1) as libc::c_int);
+    let b_dim = &dav1d_block_dimensions[bs as usize];
+    let bw4 = imin(iw - bx, b_dim[0] as libc::c_int);
+    let bh4 = imin(ih - by, b_dim[1] as libc::c_int);
     let bx4 = bx & 31;
     let by4 = by & 31;
     if bw4 != 0 && bh4 != 0 {
@@ -466,11 +466,11 @@ pub unsafe fn dav1d_create_lf_mask_intra(
         as libc::c_int;
     let cbw4 = imin(
         (iw + ss_hor >> ss_hor) - (bx >> ss_hor),
-        *b_dim.offset(0) as libc::c_int + ss_hor >> ss_hor,
+        b_dim[0] as libc::c_int + ss_hor >> ss_hor,
     );
     let cbh4 = imin(
         (ih + ss_ver >> ss_ver) - (by >> ss_ver),
-        *b_dim.offset(1) as libc::c_int + ss_ver >> ss_ver,
+        b_dim[1] as libc::c_int + ss_ver >> ss_ver,
     );
     if cbw4 == 0 || cbh4 == 0 {
         return;
@@ -525,9 +525,9 @@ pub unsafe fn dav1d_create_lf_mask_inter(
     ly: &mut [u8],
     aluv: Option<(&mut [u8], &mut [u8])>,
 ) {
-    let b_dim: *const u8 = (dav1d_block_dimensions[bs as usize]).as_ptr();
-    let bw4 = imin(iw - bx, *b_dim.offset(0) as libc::c_int);
-    let bh4 = imin(ih - by, *b_dim.offset(1) as libc::c_int);
+    let b_dim = &dav1d_block_dimensions[bs as usize];
+    let bw4 = imin(iw - bx, b_dim[0] as libc::c_int);
+    let bh4 = imin(ih - by, b_dim[1] as libc::c_int);
     let bx4 = bx & 31;
     let by4 = by & 31;
     if bw4 != 0 && bh4 != 0 {
@@ -568,11 +568,11 @@ pub unsafe fn dav1d_create_lf_mask_inter(
         as libc::c_int;
     let cbw4 = imin(
         (iw + ss_hor >> ss_hor) - (bx >> ss_hor),
-        *b_dim.offset(0) as libc::c_int + ss_hor >> ss_hor,
+        b_dim[0] as libc::c_int + ss_hor >> ss_hor,
     );
     let cbh4 = imin(
         (ih + ss_ver >> ss_ver) - (by >> ss_ver),
-        *b_dim.offset(1) as libc::c_int + ss_ver >> ss_ver,
+        b_dim[1] as libc::c_int + ss_ver >> ss_ver,
     );
     if cbw4 == 0 || cbh4 == 0 {
         return;
