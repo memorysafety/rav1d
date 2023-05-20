@@ -326,6 +326,7 @@ unsafe fn mask_edges_chroma(
     ss_ver: libc::c_int,
 ) {
     let [cby4, cbx4, cw4, ch4] = [cby4, cbx4, cw4, ch4].map(|it| it as usize);
+
     let t_dim = &dav1d_txfm_dimensions[tx as usize];
     let twl4 = t_dim.lw;
     let thl4 = t_dim.lh;
@@ -337,19 +338,25 @@ unsafe fn mask_edges_chroma(
     let hmask = 16 >> ss_hor;
     let vmax = 1u32 << vmask;
     let hmax = 1u32 << hmask;
+
+    // left block edge
     for y in 0..ch4 {
         let mask = 1u32 << (cby4 + y);
         let sidx = (mask >= vmax) as usize;
         let smask = mask >> (sidx << vbits);
         masks[0][cbx4][std::cmp::min(twl4c, l[y]) as usize][sidx] |= smask as u16;
     }
+
+    // top block edge
     for x in 0..cw4 {
         let mask = 1u32 << (cbx4 + x);
         let sidx = (mask >= hmax) as usize;
         let smask = mask >> (sidx << hbits);
         masks[1][cby4][std::cmp::min(thl4c, a[x]) as usize][sidx] |= smask as u16;
     }
+
     if !skip_inter {
+        // inner (tx) left|right edges
         let hstep = t_dim.w as usize;
         let t = 1u32 << cby4;
         let inner = (((t as u64) << ch4) - (t as u64)) as u32;
@@ -362,6 +369,10 @@ unsafe fn mask_edges_chroma(
                 masks[0][cbx4 + x][twl4c as usize][1] |= inner[1];
             }
         }
+
+        //            top
+        // inner (tx) --- edges
+        //           bottom
         let vstep = t_dim.h as usize;
         let t = 1u32 << cbx4;
         let inner = (((t as u64) << cw4) - (t as u64)) as u32;
