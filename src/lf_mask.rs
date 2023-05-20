@@ -324,6 +324,7 @@ unsafe fn mask_edges_chroma(
     ss_hor: libc::c_int,
     ss_ver: libc::c_int,
 ) {
+    let [cby4, cbx4, cw4, ch4] = [cby4, cbx4, cw4, ch4].map(|it| it as usize);
     let t_dim = &dav1d_txfm_dimensions[tx as usize];
     let twl4 = t_dim.lw as libc::c_int;
     let thl4 = t_dim.lh as libc::c_int;
@@ -339,39 +340,39 @@ unsafe fn mask_edges_chroma(
         let mask = 1u32 << (cby4 + y);
         let sidx = (mask >= vmax) as usize;
         let smask = mask >> (sidx << vbits);
-        masks[0][cbx4 as usize][std::cmp::min(twl4c, l[y as usize]) as usize][sidx] |= smask as u16;
+        masks[0][cbx4][std::cmp::min(twl4c, l[y]) as usize][sidx] |= smask as u16;
     }
     for x in 0..cw4 {
         let mask = 1u32 << (cbx4 + x);
         let sidx = (mask >= hmax) as usize;
         let smask = mask >> (sidx << hbits);
-        masks[1][cby4 as usize][std::cmp::min(thl4c, a[x as usize]) as usize][sidx] |= smask as u16;
+        masks[1][cby4][std::cmp::min(thl4c, a[x]) as usize][sidx] |= smask as u16;
     }
     if !skip_inter {
-        let hstep = t_dim.w as libc::c_int;
+        let hstep = t_dim.w as usize;
         let t = 1u32 << cby4;
         let inner = (((t as u64) << ch4) - (t as u64)) as u32;
         let inner1 = inner & ((1 << vmask) - 1);
         let inner2 = inner >> vmask;
-        for x in (hstep..cw4).step_by(hstep as usize) {
+        for x in (hstep..cw4).step_by(hstep) {
             if inner1 != 0 {
-                masks[0][(cbx4 + x) as usize][twl4c as usize][0] |= inner1 as u16;
+                masks[0][cbx4 + x][twl4c as usize][0] |= inner1 as u16;
             }
             if inner2 != 0 {
-                masks[0][(cbx4 + x) as usize][twl4c as usize][1] |= inner2 as u16;
+                masks[0][cbx4 + x][twl4c as usize][1] |= inner2 as u16;
             }
         }
-        let vstep = t_dim.h as libc::c_int;
+        let vstep = t_dim.h as usize;
         let t = 1u32 << cbx4;
         let inner = (((t as u64) << cw4) - (t as u64)) as u32;
         let inner1 = inner & ((1 << hmask) - 1);
         let inner2 = inner >> hmask;
-        for y in (vstep..ch4).step_by(vstep as usize) {
+        for y in (vstep..ch4).step_by(vstep) {
             if inner1 != 0 {
-                masks[1][(cby4 + y) as usize][thl4c as usize][0] |= inner1 as u16;
+                masks[1][cby4 + y][thl4c as usize][0] |= inner1 as u16;
             }
             if inner2 != 0 {
-                masks[1][(cby4 + y) as usize][thl4c as usize][1] |= inner2 as u16;
+                masks[1][cby4 + y][thl4c as usize][1] |= inner2 as u16;
             }
         }
     }
