@@ -72,12 +72,14 @@ unsafe fn decomp_tx(
     depth: usize,
     y_off: u8,
     x_off: u8,
-    txa_y_off: u8,
-    txa_x_off: u8,
     tx_masks: &[u16; 2],
 ) {
     debug_assert!(depth <= 2);
     let t_dim = &dav1d_txfm_dimensions[from as usize];
+
+    let txa_y_off = y_off * t_dim.h;
+    let txa_x_off = x_off * t_dim.w;
+
     let is_split = if from == TX_4X4 || depth > 1 {
         false
     } else {
@@ -85,53 +87,15 @@ unsafe fn decomp_tx(
     };
     if is_split {
         let sub = t_dim.sub as RectTxfmSize;
-        let htw4 = t_dim.w >> 1;
-        let hth4 = t_dim.h >> 1;
 
-        decomp_tx(
-            txa,
-            sub,
-            depth + 1,
-            y_off * 2 + 0,
-            x_off * 2 + 0,
-            txa_y_off + 0 * hth4,
-            txa_x_off + 0 * htw4,
-            tx_masks,
-        );
+        decomp_tx(txa, sub, depth + 1, y_off * 2 + 0, x_off * 2 + 0, tx_masks);
         if t_dim.w >= t_dim.h {
-            decomp_tx(
-                txa,
-                sub,
-                depth + 1,
-                y_off * 2 + 0,
-                x_off * 2 + 1,
-                txa_y_off + 0 * hth4,
-                txa_x_off + 1 * htw4,
-                tx_masks,
-            );
+            decomp_tx(txa, sub, depth + 1, y_off * 2 + 0, x_off * 2 + 1, tx_masks);
         }
         if t_dim.h >= t_dim.w {
-            decomp_tx(
-                txa,
-                sub,
-                depth + 1,
-                y_off * 2 + 1,
-                x_off * 2 + 0,
-                txa_y_off + 1 * hth4,
-                txa_x_off + 0 * htw4,
-                tx_masks,
-            );
+            decomp_tx(txa, sub, depth + 1, y_off * 2 + 1, x_off * 2 + 0, tx_masks);
             if t_dim.w >= t_dim.h {
-                decomp_tx(
-                    txa,
-                    sub,
-                    depth + 1,
-                    y_off * 2 + 1,
-                    x_off * 2 + 1,
-                    txa_y_off + 1 * hth4,
-                    txa_x_off + 1 * htw4,
-                    tx_masks,
-                );
+                decomp_tx(txa, sub, depth + 1, y_off * 2 + 1, x_off * 2 + 1, tx_masks);
             }
         }
     } else {
@@ -205,10 +169,9 @@ unsafe fn mask_edges_inter(
     // (tracked in [rust-lang/rustfmt#5297](https://github.com/rust-lang/rustfmt/issues/5297))).
     let mut txa = [[[[0; 32]; 32]; 2]; 2];
 
-    for (y_off, y) in (0..h4).step_by(t_dim.h as usize).enumerate() {
-        for (x_off, x) in (0..w4).step_by(t_dim.w as usize).enumerate() {
-            let [y_off, y, x_off, x] = [y_off, y, x_off, x].map(|it| it as u8);
-            decomp_tx(&mut txa, max_tx, 0, y_off, x_off, y, x, tx_masks);
+    for (y_off, _) in (0..h4).step_by(t_dim.h as usize).enumerate() {
+        for (x_off, _) in (0..w4).step_by(t_dim.w as usize).enumerate() {
+            decomp_tx(&mut txa, max_tx, 0, y_off as u8, x_off as u8, tx_masks);
         }
     }
 
