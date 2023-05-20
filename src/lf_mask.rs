@@ -351,11 +351,11 @@ unsafe fn mask_edges_chroma(
     x = 0;
     mask = 1u32 << cbx4;
     while x < cw4 {
-        let sidx_0 = (mask >= hmax) as libc::c_int;
-        let smask_0 = mask >> (sidx_0 << hbits);
+        let sidx = (mask >= hmax) as libc::c_int;
+        let smask = mask >> (sidx << hbits);
         let ref mut fresh11 =
-            masks[1][cby4 as usize][std::cmp::min(thl4c, a[x as usize]) as usize][sidx_0 as usize];
-        *fresh11 = (*fresh11 as libc::c_uint | smask_0) as u16;
+            masks[1][cby4 as usize][std::cmp::min(thl4c, a[x as usize]) as usize][sidx as usize];
+        *fresh11 = (*fresh11 as libc::c_uint | smask) as u16;
         x += 1;
         mask <<= 1;
     }
