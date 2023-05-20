@@ -352,27 +352,25 @@ unsafe fn mask_edges_chroma(
         let hstep = t_dim.w as usize;
         let t = 1u32 << cby4;
         let inner = (((t as u64) << ch4) - (t as u64)) as u32;
-        let inner1 = inner & ((1 << vmask) - 1);
-        let inner2 = inner >> vmask;
+        let inner = [(inner & ((1 << vmask) - 1)) as u16, (inner >> vmask) as u16];
         for x in (hstep..cw4).step_by(hstep) {
-            if inner1 != 0 {
-                masks[0][cbx4 + x][twl4c as usize][0] |= inner1 as u16;
+            if inner[0] != 0 {
+                masks[0][cbx4 + x][twl4c as usize][0] |= inner[0];
             }
-            if inner2 != 0 {
-                masks[0][cbx4 + x][twl4c as usize][1] |= inner2 as u16;
+            if inner[1] != 0 {
+                masks[0][cbx4 + x][twl4c as usize][1] |= inner[1];
             }
         }
         let vstep = t_dim.h as usize;
         let t = 1u32 << cbx4;
         let inner = (((t as u64) << cw4) - (t as u64)) as u32;
-        let inner1 = inner & ((1 << hmask) - 1);
-        let inner2 = inner >> hmask;
+        let inner = [(inner & ((1 << hmask) - 1)) as u16, (inner >> hmask) as u16];
         for y in (vstep..ch4).step_by(vstep) {
-            if inner1 != 0 {
-                masks[1][cby4 + y][thl4c as usize][0] |= inner1 as u16;
+            if inner[0] != 0 {
+                masks[1][cby4 + y][thl4c as usize][0] |= inner[0];
             }
-            if inner2 != 0 {
-                masks[1][cby4 + y][thl4c as usize][1] |= inner2 as u16;
+            if inner[1] != 0 {
+                masks[1][cby4 + y][thl4c as usize][1] |= inner[1];
             }
         }
     }
