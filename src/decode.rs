@@ -1798,11 +1798,7 @@ unsafe fn order_palette(
 ) {
     let mut have_top = i > first;
 
-    let mut pal_idx = pal_idx
-        .as_ptr()
-        .offset((first + (i - first) * stride) as isize);
-
-    let stride = stride as isize;
+    let mut offset = first + (i - first) * stride;
 
     for ((ctx, order), j) in ctx
         .iter_mut()
@@ -1824,14 +1820,14 @@ unsafe fn order_palette(
 
         if !have_left {
             *ctx = 0;
-            add(*pal_idx.offset(-stride));
+            add(pal_idx[offset - stride]);
         } else if !have_top {
             *ctx = 0;
-            add(*pal_idx.offset(-1));
+            add(pal_idx[offset - 1]);
         } else {
-            let l = *pal_idx.offset(-1);
-            let t = *pal_idx.offset(-stride);
-            let tl = *pal_idx.offset(-(stride + 1));
+            let l = pal_idx[offset - 1];
+            let t = pal_idx[offset - stride];
+            let tl = pal_idx[offset - (stride + 1)];
             let same_t_l = t == l;
             let same_t_tl = t == tl;
             let same_l_tl = l == tl;
@@ -1863,7 +1859,7 @@ unsafe fn order_palette(
         }
         assert!(o_idx == u8::BITS as usize);
         have_top = true;
-        pal_idx = pal_idx.offset(stride - 1);
+        offset += stride - 1;
     }
 }
 
