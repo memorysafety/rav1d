@@ -68,13 +68,13 @@ pub struct Av1Restoration {
 /// (tracked in [rust-lang/rustfmt#5297](https://github.com/rust-lang/rustfmt/issues/5297))).
 ///
 /// The usage of `txa` here has been changed from the C version
-/// as the C version would've been UB in Rust.
+/// as the C version was UB in Rust.
 /// The C version offsetted `txa` in each recursive call
 /// to an element of the inner 32x32 dimensional array,
 /// but then casting that back to a pointer to the full 32x32x2x2 array,
 /// even though the pointer no longer pointed to a complete 32x32x2x2 array.
 /// This was (likely) okay in C given those now out-of-bounds elements were never accessed,
-/// but in Rust, making such a pointer a references requires the object to be fully there.
+/// but in Rust, dereferencing such a pointer would be an out-of-bounds access, and thus UB.
 /// Instead of offsetting `txa`, the offsets are calculated from
 /// the existing `y_off` and `x_off` args and applied at each use site of `txa.
 unsafe fn decomp_tx(
