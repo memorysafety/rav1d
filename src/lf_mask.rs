@@ -439,7 +439,7 @@ pub unsafe fn dav1d_create_lf_mask_intra(
     let bx4 = bx & 31;
     let by4 = by & 31;
     if bw4 != 0 && bh4 != 0 {
-        let mut level_cache_ptr: *mut [u8; 4] = level_cache
+        let mut level_cache_ptr = level_cache
             .offset(by as isize * b4_stride)
             .offset(bx as isize);
         for _ in 0..bh4 {
@@ -455,10 +455,8 @@ pub unsafe fn dav1d_create_lf_mask_intra(
         None => return,
         Some(aluv) => aluv,
     };
-    let ss_ver = (layout as libc::c_uint == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint)
-        as libc::c_int;
-    let ss_hor = (layout as libc::c_uint != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint)
-        as libc::c_int;
+    let ss_ver = (layout == DAV1D_PIXEL_LAYOUT_I420) as libc::c_int;
+    let ss_hor = (layout != DAV1D_PIXEL_LAYOUT_I444) as libc::c_int;
     let cbw4 = imin(
         (iw + ss_hor >> ss_hor) - (bx >> ss_hor),
         b_dim[0] as libc::c_int + ss_hor >> ss_hor,
@@ -472,7 +470,7 @@ pub unsafe fn dav1d_create_lf_mask_intra(
     }
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
-    let mut level_cache_ptr: *mut [u8; 4] = level_cache
+    let mut level_cache_ptr = level_cache
         .offset(((by >> ss_ver) as isize * b4_stride) as isize)
         .offset((bx >> ss_hor) as isize);
     for _ in 0..cbh4 {
@@ -522,7 +520,7 @@ pub unsafe fn dav1d_create_lf_mask_inter(
     let bx4 = bx & 31;
     let by4 = by & 31;
     if bw4 != 0 && bh4 != 0 {
-        let mut level_cache_ptr: *mut [u8; 4] = level_cache
+        let mut level_cache_ptr = level_cache
             .offset(by as isize * b4_stride)
             .offset(bx as isize);
         for _ in 0..bh4 {
@@ -549,10 +547,8 @@ pub unsafe fn dav1d_create_lf_mask_inter(
         None => return,
         Some(aluv) => aluv,
     };
-    let ss_ver = (layout as libc::c_uint == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint)
-        as libc::c_int;
-    let ss_hor = (layout as libc::c_uint != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint)
-        as libc::c_int;
+    let ss_ver = (layout == DAV1D_PIXEL_LAYOUT_I420) as libc::c_int;
+    let ss_hor = (layout != DAV1D_PIXEL_LAYOUT_I444) as libc::c_int;
     let cbw4 = imin(
         (iw + ss_hor >> ss_hor) - (bx >> ss_hor),
         b_dim[0] as libc::c_int + ss_hor >> ss_hor,
@@ -566,7 +562,7 @@ pub unsafe fn dav1d_create_lf_mask_inter(
     }
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
-    let mut level_cache_ptr: *mut [u8; 4] = level_cache
+    let mut level_cache_ptr = level_cache
         .offset(((by >> ss_ver) as isize * b4_stride) as isize)
         .offset((bx >> ss_hor) as isize);
     for _ in 0..cbh4 {
