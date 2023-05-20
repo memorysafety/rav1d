@@ -3603,7 +3603,7 @@ unsafe fn decode_b(
 
         if frame_hdr.loopfilter.level_y[0] != 0 || frame_hdr.loopfilter.level_y[1] != 0 {
             dav1d_create_lf_mask_intra(
-                t.lf_mask,
+                &mut *t.lf_mask,
                 f.lf.level,
                 f.b4_stride,
                 &(*ts.lflvl.offset(b.seg_id as isize))[0],
@@ -5061,7 +5061,7 @@ unsafe fn decode_b(
                 uvtx = TX_4X4 as libc::c_int as RectTxfmSize;
             }
             dav1d_create_lf_mask_inter(
-                t.lf_mask,
+                &mut *t.lf_mask,
                 f.lf.level,
                 f.b4_stride,
                 lf_lvls,

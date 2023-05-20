@@ -417,7 +417,7 @@ unsafe fn mask_edges_chroma(
 }
 
 pub unsafe fn dav1d_create_lf_mask_intra(
-    lflvl: *mut Av1Filter,
+    lflvl: &mut Av1Filter,
     level_cache: *mut [u8; 4],
     b4_stride: ptrdiff_t,
     mut filter_level: *const [[u8; 2]; 8],
@@ -453,7 +453,7 @@ pub unsafe fn dav1d_create_lf_mask_intra(
             level_cache_ptr = level_cache_ptr.offset(b4_stride as isize);
             y += 1;
         }
-        mask_edges_intra(&mut (*lflvl).filter_y, by4, bx4, bw4, bh4, ytx, ay, ly);
+        mask_edges_intra(&mut lflvl.filter_y, by4, bx4, bw4, bh4, ytx, ay, ly);
     }
     let (auv, luv) = match aluv {
         None => return,
@@ -491,7 +491,7 @@ pub unsafe fn dav1d_create_lf_mask_intra(
         y_0 += 1;
     }
     mask_edges_chroma(
-        &mut (*lflvl).filter_uv,
+        &mut lflvl.filter_uv,
         cby4,
         cbx4,
         cbw4,
@@ -506,7 +506,7 @@ pub unsafe fn dav1d_create_lf_mask_intra(
 }
 
 pub unsafe fn dav1d_create_lf_mask_inter(
-    lflvl: *mut Av1Filter,
+    lflvl: &mut Av1Filter,
     level_cache: *mut [u8; 4],
     b4_stride: ptrdiff_t,
     mut filter_level: *const [[u8; 2]; 8],
@@ -545,7 +545,7 @@ pub unsafe fn dav1d_create_lf_mask_inter(
             y += 1;
         }
         mask_edges_inter(
-            &mut (*lflvl).filter_y,
+            &mut lflvl.filter_y,
             by4,
             bx4,
             bw4,
@@ -593,7 +593,7 @@ pub unsafe fn dav1d_create_lf_mask_inter(
         y_0 += 1;
     }
     mask_edges_chroma(
-        &mut (*lflvl).filter_uv,
+        &mut lflvl.filter_uv,
         cby4,
         cbx4,
         cbw4,
