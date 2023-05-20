@@ -43,7 +43,7 @@ use crate::include::stdatomic::atomic_int;
 use crate::src::r#ref::Dav1dRef;
 
 use crate::include::stdatomic::atomic_uint;
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext {
     pub seq_hdr_ref: *mut Dav1dRef,
@@ -171,10 +171,10 @@ use crate::include::pthread::pthread_cond_t;
 
 use crate::src::align::Align16;
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext_lf {
-    pub level: *mut [uint8_t; 4],
+    pub level: Vec<[u8; 4]>,
     pub mask: *mut Av1Filter,
     pub lr_mask: *mut Av1Restoration,
     pub mask_sz: libc::c_int,
@@ -254,7 +254,7 @@ use crate::src::levels::BlockSize;
 #[repr(C)]
 pub struct Dav1dTaskContext {
     pub c: *const Dav1dContext,
-    pub f: *const Dav1dFrameContext,
+    pub f: *mut Dav1dFrameContext,
     pub ts: *mut Dav1dTileState,
     pub bx: libc::c_int,
     pub by: libc::c_int,

@@ -613,7 +613,7 @@ use crate::src::internal::Dav1dTileGroup;
 #[repr(C)]
 pub struct Dav1dTaskContext {
     pub c: *const Dav1dContext,
-    pub f: *const Dav1dFrameContext,
+    pub f: *mut Dav1dFrameContext,
     pub ts: *mut Dav1dTileState,
     pub bx: libc::c_int,
     pub by: libc::c_int,
@@ -674,7 +674,7 @@ pub struct Dav1dTileState_frame_thread {
 }
 use crate::src::internal::Dav1dTileState_tiling;
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext {
     pub seq_hdr_ref: *mut Dav1dRef,
@@ -739,10 +739,10 @@ use crate::src::internal::Dav1dTask;
 
 use crate::src::align::Align16;
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext_lf {
-    pub level: *mut [uint8_t; 4],
+    pub level: Vec<[u8; 4]>,
     pub mask: *mut Av1Filter,
     pub lr_mask: *mut Av1Restoration,
     pub mask_sz: libc::c_int,
@@ -2143,7 +2143,7 @@ unsafe extern "C" fn close_internal(c_out: *mut *mut Dav1dContext, mut flush: li
         free((*f).tile as *mut libc::c_void);
         free((*f).lf.mask as *mut libc::c_void);
         free((*f).lf.lr_mask as *mut libc::c_void);
-        free((*f).lf.level as *mut libc::c_void);
+        (*f).lf.level = Vec::new();
         free((*f).lf.tx_lpf_right_edge[0] as *mut libc::c_void);
         free((*f).lf.start_of_tile_row as *mut libc::c_void);
         dav1d_refmvs_clear(&mut (*f).rf);

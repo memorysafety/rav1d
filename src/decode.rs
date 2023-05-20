@@ -239,7 +239,7 @@ use crate::src::ctx::alias8;
 use crate::src::r#ref::Dav1dRef;
 
 use crate::include::stdatomic::atomic_uint;
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext {
     pub seq_hdr_ref: *mut Dav1dRef,
@@ -335,10 +335,10 @@ use crate::include::dav1d::headers::DAV1D_RESTORATION_WIENER;
 
 use crate::include::pthread::pthread_cond_t;
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext_lf {
-    pub level: *mut [uint8_t; 4],
+    pub level: Vec<[u8; 4]>,
     pub mask: *mut Av1Filter,
     pub lr_mask: *mut Av1Restoration,
     pub mask_sz: libc::c_int,
@@ -458,7 +458,7 @@ use crate::src::levels::BS_64x64;
 #[repr(C)]
 pub struct Dav1dTaskContext {
     pub c: *const Dav1dContext,
-    pub f: *const Dav1dFrameContext,
+    pub f: *mut Dav1dFrameContext,
     pub ts: *mut Dav1dTileState,
     pub bx: libc::c_int,
     pub by: libc::c_int,
@@ -2848,7 +2848,7 @@ unsafe fn decode_b(
     }
 
     let ts = &mut *t.ts;
-    let f = &*t.f;
+    let f = &mut *t.f;
     let frame_hdr = &mut *f.frame_hdr;
     let mut b_mem = Default::default();
 
@@ -3604,7 +3604,7 @@ unsafe fn decode_b(
         if frame_hdr.loopfilter.level_y[0] != 0 || frame_hdr.loopfilter.level_y[1] != 0 {
             dav1d_create_lf_mask_intra(
                 &mut *t.lf_mask,
-                f.lf.level,
+                &mut f.lf.level,
                 f.b4_stride,
                 &*ts.lflvl.offset(b.seg_id as isize),
                 t.bx,
@@ -5050,7 +5050,7 @@ unsafe fn decode_b(
             }
             dav1d_create_lf_mask_inter(
                 &mut *t.lf_mask,
-                f.lf.level,
+                &mut f.lf.level,
                 f.b4_stride,
                 // In C, the inner dimensions (`ref`, `is_gmv`) are offset,
                 // but then cast back to a pointer to the full array,
@@ -8782,10 +8782,9 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                                                             &mut (*f).lf.mask as *mut *mut Av1Filter
                                                                 as *mut libc::c_void,
                                                         );
-                                                        freep(
-                                                            &mut (*f).lf.level
-                                                                as *mut *mut [uint8_t; 4]
-                                                                as *mut libc::c_void,
+                                                        (*f).lf.level.resize_with(
+                                                            num_sb128 as usize * 32 * 32 + 3,
+                                                            Default::default,
                                                         );
                                                         (*f).lf.mask = malloc(
                                                             (::core::mem::size_of::<Av1Filter>()
@@ -8795,29 +8794,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                                                                 ),
                                                         )
                                                             as *mut Av1Filter;
-                                                        (*f).lf.level = malloc(
-                                                            (::core::mem::size_of::<[uint8_t; 4]>()
-                                                                as libc::c_ulong)
-                                                                .wrapping_mul(
-                                                                    num_sb128 as libc::c_ulong,
-                                                                )
-                                                                .wrapping_mul(
-                                                                    32 as libc::c_int
-                                                                        as libc::c_ulong,
-                                                                )
-                                                                .wrapping_mul(
-                                                                    32 as libc::c_int
-                                                                        as libc::c_ulong,
-                                                                )
-                                                                .wrapping_add(
-                                                                    3 as libc::c_int
-                                                                        as libc::c_ulong,
-                                                                ),
-                                                        )
-                                                            as *mut [uint8_t; 4];
-                                                        if ((*f).lf.mask).is_null()
-                                                            || ((*f).lf.level).is_null()
-                                                        {
+                                                        if ((*f).lf.mask).is_null() {
                                                             (*f).lf.mask_sz = 0 as libc::c_int;
                                                             current_block = 13495985911605184990;
                                                         } else {

@@ -485,7 +485,7 @@ use crate::src::internal::Dav1dTileGroup;
 #[repr(C)]
 pub struct Dav1dTaskContext {
     pub c: *const Dav1dContext,
-    pub f: *const Dav1dFrameContext,
+    pub f: *mut Dav1dFrameContext,
     pub ts: *mut Dav1dTileState,
     pub bx: libc::c_int,
     pub by: libc::c_int,
@@ -544,7 +544,7 @@ pub struct Dav1dTileState_frame_thread {
 }
 use crate::src::internal::Dav1dTileState_tiling;
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext {
     pub seq_hdr_ref: *mut Dav1dRef,
@@ -607,10 +607,10 @@ use crate::src::internal::Dav1dFrameContext_task_thread;
 
 use crate::src::align::Align16;
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext_lf {
-    pub level: *mut [uint8_t; 4],
+    pub level: Vec<[u8; 4]>,
     pub mask: *mut Av1Filter,
     pub lr_mask: *mut Av1Restoration,
     pub mask_sz: libc::c_int,

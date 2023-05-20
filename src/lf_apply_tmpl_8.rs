@@ -15,7 +15,7 @@ use crate::include::stdatomic::atomic_uint;
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
 use crate::src::r#ref::Dav1dRef;
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext {
     pub seq_hdr_ref: *mut Dav1dRef,
@@ -94,10 +94,10 @@ use crate::include::dav1d::headers::Dav1dSequenceHeader;
 
 use crate::src::align::Align16;
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext_lf {
-    pub level: *mut [uint8_t; 4],
+    pub level: Vec<[u8; 4]>,
     pub mask: *mut Av1Filter,
     pub lr_mask: *mut Av1Restoration,
     pub mask_sz: libc::c_int,
@@ -175,7 +175,7 @@ use crate::src::levels::BlockSize;
 #[repr(C)]
 pub struct Dav1dTaskContext {
     pub c: *const Dav1dContext,
-    pub f: *const Dav1dFrameContext,
+    pub f: *mut Dav1dFrameContext,
     pub ts: *mut Dav1dTileState,
     pub bx: libc::c_int,
     pub by: libc::c_int,
@@ -1134,7 +1134,7 @@ unsafe extern "C" fn filter_plane_rows_uv(
 }
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_8bpc(
-    f: *const Dav1dFrameContext,
+    f: *mut Dav1dFrameContext,
     mut p: *const *mut pixel,
     lflvl: *mut Av1Filter,
     mut sby: libc::c_int,
@@ -1293,7 +1293,7 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_8bpc(
     }
     let mut ptr: *mut pixel = 0 as *mut pixel;
     let mut level_ptr: *mut [uint8_t; 4] =
-        ((*f).lf.level).offset(((*f).b4_stride * sby as isize * sbsz as isize) as isize);
+        ((*f).lf.level.as_mut_ptr()).offset(((*f).b4_stride * sby as isize * sbsz as isize) as isize);
     ptr = *p.offset(0);
     have_left = 0 as libc::c_int;
     x = 0 as libc::c_int;
@@ -1319,7 +1319,7 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_8bpc(
         return;
     }
     let mut uv_off: ptrdiff_t = 0;
-    level_ptr = ((*f).lf.level).offset(((*f).b4_stride * (sby * sbsz >> ss_ver) as isize) as isize);
+    level_ptr = ((*f).lf.level.as_mut_ptr()).offset(((*f).b4_stride * (sby * sbsz >> ss_ver) as isize) as isize);
     uv_off = 0 as libc::c_int as ptrdiff_t;
     have_left = 0 as libc::c_int;
     x = 0 as libc::c_int;
@@ -1346,7 +1346,7 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_8bpc(
 }
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_loopfilter_sbrow_rows_8bpc(
-    f: *const Dav1dFrameContext,
+    f: *mut Dav1dFrameContext,
     mut p: *const *mut pixel,
     lflvl: *mut Av1Filter,
     mut sby: libc::c_int,
@@ -1364,7 +1364,7 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_rows_8bpc(
     let uv_endy4: libc::c_uint = endy4.wrapping_add(ss_ver as libc::c_uint) >> ss_ver;
     let mut ptr: *mut pixel = 0 as *mut pixel;
     let mut level_ptr: *mut [uint8_t; 4] =
-        ((*f).lf.level).offset(((*f).b4_stride * sby as isize * sbsz as isize) as isize);
+        ((*f).lf.level.as_mut_ptr()).offset(((*f).b4_stride * sby as isize * sbsz as isize) as isize);
     ptr = *p.offset(0);
     x = 0 as libc::c_int;
     while x < (*f).sb128w {
@@ -1388,7 +1388,7 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_rows_8bpc(
         return;
     }
     let mut uv_off: ptrdiff_t = 0;
-    level_ptr = ((*f).lf.level).offset(((*f).b4_stride * (sby * sbsz >> ss_ver) as isize) as isize);
+    level_ptr = ((*f).lf.level.as_mut_ptr()).offset(((*f).b4_stride * (sby * sbsz >> ss_ver) as isize) as isize);
     uv_off = 0 as libc::c_int as ptrdiff_t;
     x = 0 as libc::c_int;
     while x < (*f).sb128w {
