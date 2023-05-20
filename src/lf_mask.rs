@@ -342,9 +342,7 @@ unsafe fn mask_edges_chroma(
     while y < ch4 {
         let sidx = (mask >= vmax) as usize;
         let smask = mask >> (sidx << vbits);
-        let ref mut fresh10 =
-            masks[0][cbx4 as usize][std::cmp::min(twl4c, l[y as usize]) as usize][sidx];
-        *fresh10 = (*fresh10 as libc::c_uint | smask) as u16;
+        masks[0][cbx4 as usize][std::cmp::min(twl4c, l[y as usize]) as usize][sidx] |= smask as u16;
         y += 1;
         mask <<= 1;
     }
@@ -353,9 +351,7 @@ unsafe fn mask_edges_chroma(
     while x < cw4 {
         let sidx = (mask >= hmax) as usize;
         let smask = mask >> (sidx << hbits);
-        let ref mut fresh11 =
-            masks[1][cby4 as usize][std::cmp::min(thl4c, a[x as usize]) as usize][sidx];
-        *fresh11 = (*fresh11 as libc::c_uint | smask) as u16;
+        masks[1][cby4 as usize][std::cmp::min(thl4c, a[x as usize]) as usize][sidx] |= smask as u16;
         x += 1;
         mask <<= 1;
     }
@@ -368,12 +364,10 @@ unsafe fn mask_edges_chroma(
         x = hstep;
         while x < cw4 {
             if inner1 != 0 {
-                let ref mut fresh12 = masks[0][(cbx4 + x) as usize][twl4c as usize][0];
-                *fresh12 = (*fresh12 as libc::c_uint | inner1) as u16;
+                masks[0][(cbx4 + x) as usize][twl4c as usize][0] |= inner1 as u16;
             }
             if inner2 != 0 {
-                let ref mut fresh13 = masks[0][(cbx4 + x) as usize][twl4c as usize][1];
-                *fresh13 = (*fresh13 as libc::c_uint | inner2) as u16;
+                masks[0][(cbx4 + x) as usize][twl4c as usize][1] |= inner2 as u16;
             }
             x += hstep;
         }
@@ -385,12 +379,10 @@ unsafe fn mask_edges_chroma(
         y = vstep;
         while y < ch4 {
             if inner1 != 0 {
-                let ref mut fresh14 = masks[1][(cby4 + y) as usize][thl4c as usize][0];
-                *fresh14 = (*fresh14 as libc::c_uint | inner1) as u16;
+                masks[1][(cby4 + y) as usize][thl4c as usize][0] |= inner1 as u16;
             }
             if inner2 != 0 {
-                let ref mut fresh15 = masks[1][(cby4 + y) as usize][thl4c as usize][1];
-                *fresh15 = (*fresh15 as libc::c_uint | inner2) as u16;
+                masks[1][(cby4 + y) as usize][thl4c as usize][1] |= inner2 as u16;
             }
             y += vstep;
         }
