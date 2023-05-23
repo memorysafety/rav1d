@@ -4904,14 +4904,14 @@ unsafe fn decode_b(
                 t.by,
                 f.w4,
                 f.h4,
-                b.skip as libc::c_int,
+                b.skip != 0,
                 bs,
                 ytx,
                 &tx_split,
                 uvtx,
                 f.cur.p.layout,
-                &mut *((*t.a).tx_lpf_y.0).as_mut_ptr().offset(bx4 as isize),
-                &mut *(t.l.tx_lpf_y.0).as_mut_ptr().offset(by4 as isize),
+                &mut (*t.a).tx_lpf_y.0[bx4 as usize..],
+                &mut t.l.tx_lpf_y.0[by4 as usize..],
                 if has_chroma {
                     &mut *((*t.a).tx_lpf_uv.0).as_mut_ptr().offset(cbx4 as isize)
                 } else {
