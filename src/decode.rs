@@ -3582,14 +3582,12 @@ unsafe fn decode_b(
                 &mut (*t.a).tx_lpf_y.0[bx4 as usize..],
                 &mut t.l.tx_lpf_y.0[by4 as usize..],
                 if has_chroma {
-                    &mut (*t.a).tx_lpf_uv.0[cbx4 as usize]
+                    Some((
+                        &mut (*t.a).tx_lpf_uv.0[cbx4 as usize..],
+                        &mut t.l.tx_lpf_uv.0[cby4 as usize..],
+                    ))
                 } else {
-                    std::ptr::null_mut()
-                },
-                if has_chroma {
-                    &mut t.l.tx_lpf_uv.0[cby4 as usize]
-                } else {
-                    std::ptr::null_mut()
+                    None
                 },
             );
         }
@@ -4913,14 +4911,12 @@ unsafe fn decode_b(
                 &mut (*t.a).tx_lpf_y.0[bx4 as usize..],
                 &mut t.l.tx_lpf_y.0[by4 as usize..],
                 if has_chroma {
-                    &mut *((*t.a).tx_lpf_uv.0).as_mut_ptr().offset(cbx4 as isize)
+                    Some((
+                        &mut (*t.a).tx_lpf_uv.0[cbx4 as usize..],
+                        &mut t.l.tx_lpf_uv.0[cby4 as usize..],
+                    ))
                 } else {
-                    0 as *mut uint8_t
-                },
-                if has_chroma {
-                    &mut *(t.l.tx_lpf_uv.0).as_mut_ptr().offset(cby4 as isize)
-                } else {
-                    0 as *mut uint8_t
+                    None
                 },
             );
         }
