@@ -4209,148 +4209,92 @@ unsafe fn decode_b(
             assign_comp_mv(1);
 
             if DEBUG_BLOCK_INFO(f, t) {
-                printf(
-                    b"Post-residual_mv[1:y=%d,x=%d,2:y=%d,x=%d]: r=%d\n\0" as *const u8
-                        as *const libc::c_char,
-                    b.c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .mv[0]
-                        .y as libc::c_int,
-                    b.c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .mv[0]
-                        .x as libc::c_int,
-                    b.c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .mv[1]
-                        .y as libc::c_int,
-                    b.c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .mv[1]
-                        .x as libc::c_int,
+                println!(
+                    "Post-residual_mv[1:y={},x={},2:y={},x={}]: r={}",
+                    b.mv()[0].y,
+                    b.mv()[0].x,
+                    b.mv()[1].y,
+                    b.mv()[1].x,
                     ts.msac.rng,
                 );
             }
-            let mut is_segwedge = 0;
+
+            // jnt_comp vs. seg vs. wedge
+            let mut is_segwedge = false;
             if (*f.seq_hdr).masked_compound != 0 {
                 let mask_ctx = get_mask_comp_ctx(&*t.a, &t.l, by4, bx4);
                 is_segwedge = dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     &mut ts.cdf.m.mask_comp[mask_ctx as usize],
-                ) as libc::c_int;
+                );
+
                 if DEBUG_BLOCK_INFO(f, t) {
-                    printf(
-                        b"Post-segwedge_vs_jntavg[%d,ctx=%d]: r=%d\n\0" as *const u8
-                            as *const libc::c_char,
-                        is_segwedge,
-                        mask_ctx as libc::c_int,
-                        ts.msac.rng,
+                    println!(
+                        "Post-segwedge_vs_jntavg[{},ctx={}]: r={}",
+                        is_segwedge, mask_ctx, ts.msac.rng,
                     );
                 }
             }
-            if is_segwedge == 0 {
+
+            if !is_segwedge {
                 if (*f.seq_hdr).jnt_comp != 0 {
                     let jnt_ctx = get_jnt_comp_ctx(
                         (*f.seq_hdr).order_hint_n_bits,
                         (*f.cur.frame_hdr).frame_offset as libc::c_uint,
-                        (*f.refp[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize]
-                            .p
-                            .frame_hdr)
-                            .frame_offset as libc::c_uint,
-                        (*f.refp[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as usize]
-                            .p
-                            .frame_hdr)
-                            .frame_offset as libc::c_uint,
+                        (*f.refp[b.r#ref()[0] as usize].p.frame_hdr).frame_offset as libc::c_uint,
+                        (*f.refp[b.r#ref()[1] as usize].p.frame_hdr).frame_offset as libc::c_uint,
                         &*t.a,
                         &t.l,
                         by4,
                         bx4,
                     );
-                    b.c2rust_unnamed.c2rust_unnamed_0.comp_type =
-                        (COMP_INTER_WEIGHTED_AVG as libc::c_int as libc::c_uint).wrapping_add(
-                            dav1d_msac_decode_bool_adapt(
-                                &mut ts.msac,
-                                &mut ts.cdf.m.jnt_comp[jnt_ctx as usize],
-                            ) as libc::c_uint,
-                        ) as uint8_t;
+                    *b.comp_type_mut() = COMP_INTER_WEIGHTED_AVG as u8
+                        + dav1d_msac_decode_bool_adapt(
+                            &mut ts.msac,
+                            &mut ts.cdf.m.jnt_comp[jnt_ctx as usize],
+                        ) as u8;
+
                     if DEBUG_BLOCK_INFO(f, t) {
-                        printf(
-                            b"Post-jnt_comp[%d,ctx=%d[ac:%d,ar:%d,lc:%d,lr:%d]]: r=%d\n\0"
-                                as *const u8 as *const libc::c_char,
-                            (b.c2rust_unnamed.c2rust_unnamed_0.comp_type as libc::c_int
-                                == COMP_INTER_AVG as libc::c_int)
-                                as libc::c_int,
-                            jnt_ctx as libc::c_int,
-                            (*t.a).comp_type.0[bx4 as usize] as libc::c_int,
-                            (*t.a).r#ref[0][bx4 as usize] as libc::c_int,
-                            t.l.comp_type.0[by4 as usize] as libc::c_int,
-                            t.l.r#ref[0][by4 as usize] as libc::c_int,
+                        println!(
+                            "Post-jnt_comp[{},ctx={}[ac:{},ar:{},lc:{},lr:{}]]: r={}",
+                            b.comp_type() == COMP_INTER_AVG as u8,
+                            jnt_ctx,
+                            (*t.a).comp_type[bx4 as usize],
+                            (*t.a).r#ref[0][bx4 as usize],
+                            t.l.comp_type[by4 as usize],
+                            t.l.r#ref[0][by4 as usize],
                             ts.msac.rng,
                         );
                     }
                 } else {
-                    b.c2rust_unnamed.c2rust_unnamed_0.comp_type =
-                        COMP_INTER_AVG as libc::c_int as uint8_t;
+                    *b.comp_type_mut() = COMP_INTER_AVG as u8;
                 }
             } else {
-                if wedge_allowed_mask & ((1 as libc::c_int) << bs as libc::c_uint) as libc::c_uint
-                    != 0
-                {
-                    let ctx_5 = dav1d_wedge_ctx_lut[bs as usize] as libc::c_int;
-                    b.c2rust_unnamed.c2rust_unnamed_0.comp_type = (COMP_INTER_WEDGE as libc::c_int
-                        as libc::c_uint)
-                        .wrapping_sub(dav1d_msac_decode_bool_adapt(
+                if wedge_allowed_mask & (1 << bs) != 0 {
+                    let ctx = dav1d_wedge_ctx_lut[bs as usize] as usize;
+                    *b.comp_type_mut() = COMP_INTER_WEDGE as u8
+                        - dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.wedge_comp[ctx])
+                            as u8;
+
+                    if b.comp_type() == COMP_INTER_WEDGE as u8 {
+                        *b.wedge_idx_mut() = dav1d_msac_decode_symbol_adapt16(
                             &mut ts.msac,
-                            &mut ts.cdf.m.wedge_comp[ctx_5 as usize],
-                        ) as libc::c_uint)
-                        as uint8_t;
-                    if b.c2rust_unnamed.c2rust_unnamed_0.comp_type as libc::c_int
-                        == COMP_INTER_WEDGE as libc::c_int
-                    {
-                        b.c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .wedge_idx = dav1d_msac_decode_symbol_adapt16(
-                            &mut ts.msac,
-                            &mut ts.cdf.m.wedge_idx[ctx_5 as usize],
-                            15 as libc::c_int as size_t,
-                        ) as uint8_t;
+                            &mut ts.cdf.m.wedge_idx[ctx],
+                            15,
+                        ) as u8;
                     }
                 } else {
-                    b.c2rust_unnamed.c2rust_unnamed_0.comp_type =
-                        COMP_INTER_SEG as libc::c_int as uint8_t;
+                    *b.comp_type_mut() = COMP_INTER_SEG as u8;
                 }
-                b.c2rust_unnamed
-                    .c2rust_unnamed_0
-                    .c2rust_unnamed
-                    .c2rust_unnamed
-                    .mask_sign = dav1d_msac_decode_bool_equi(&mut ts.msac) as uint8_t;
+
+                *b.mask_sign_mut() = dav1d_msac_decode_bool_equi(&mut ts.msac) as u8;
+
                 if DEBUG_BLOCK_INFO(f, t) {
-                    printf(
-                        b"Post-seg/wedge[%d,wedge_idx=%d,sign=%d]: r=%d\n\0" as *const u8
-                            as *const libc::c_char,
-                        (b.c2rust_unnamed.c2rust_unnamed_0.comp_type as libc::c_int
-                            == COMP_INTER_WEDGE as libc::c_int)
-                            as libc::c_int,
-                        b.c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .wedge_idx as libc::c_int,
-                        b.c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .mask_sign as libc::c_int,
+                    println!(
+                        "Post-seg/wedge[{},wedge_idx={},sign={}]: r={}",
+                        b.comp_type() == COMP_INTER_WEDGE as u8,
+                        b.wedge_idx(),
+                        b.mask_sign(),
                         ts.msac.rng,
                     );
                 }
