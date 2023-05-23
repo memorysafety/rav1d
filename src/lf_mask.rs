@@ -12,6 +12,7 @@ use crate::src::ctx::alias32;
 use crate::src::ctx::alias64;
 use crate::src::ctx::alias8;
 use crate::src::ctx::case_set_upto16;
+use crate::src::ctx::case_set_upto32_with_default;
 use crate::src::ctx::SetCtxFn;
 use crate::src::levels::BlockSize;
 use crate::src::levels::RectTxfmSize;
@@ -270,147 +271,97 @@ unsafe fn mask_edges_inter(
 
 #[inline]
 unsafe fn mask_edges_intra(
-    masks: *mut [[[u16; 2]; 3]; 32],
+    masks: &mut [[[[u16; 2]; 3]; 32]; 2],
     by4: libc::c_int,
     bx4: libc::c_int,
     w4: libc::c_int,
     h4: libc::c_int,
     tx: RectTxfmSize,
-    a: *mut u8,
-    l: *mut u8,
+    a: &mut [u8],
+    l: &mut [u8],
 ) {
-    let t_dim: *const TxfmInfo =
-        &*dav1d_txfm_dimensions.as_ptr().offset(tx as isize) as *const TxfmInfo;
-    let twl4 = (*t_dim).lw as libc::c_int;
-    let thl4 = (*t_dim).lh as libc::c_int;
-    let twl4c = imin(2 as libc::c_int, twl4);
-    let thl4c = imin(2 as libc::c_int, thl4);
-    let mut y = 0;
-    let mut x = 0;
-    let mut mask: libc::c_uint = (1 as libc::c_uint) << by4;
-    y = 0 as libc::c_int;
-    while y < h4 {
-        let sidx = (mask >= 0x10000 as libc::c_int as libc::c_uint) as libc::c_int;
-        let smask: libc::c_uint = mask >> (sidx << 4);
-        let ref mut fresh4 = (*masks.offset(0))[bx4 as usize]
-            [imin(twl4c, *l.offset(y as isize) as libc::c_int) as usize][sidx as usize];
-        *fresh4 = (*fresh4 as libc::c_uint | smask) as u16;
-        y += 1;
-        mask <<= 1;
+    let [by4, bx4, w4, h4] = [by4, bx4, w4, h4].map(|it| it as usize);
+
+    let t_dim = &dav1d_txfm_dimensions[tx as usize];
+    let twl4 = t_dim.lw;
+    let thl4 = t_dim.lh;
+    let twl4c = std::cmp::min(2, twl4);
+    let thl4c = std::cmp::min(2, thl4);
+
+    // left block edge
+    for y in 0..h4 {
+        let mask = 1u32 << (by4 + y);
+        let sidx = (mask >= 0x10000) as usize;
+        let smask = mask >> (sidx << 4);
+        masks[0][bx4][std::cmp::min(twl4c, l[y]) as usize][sidx] |= smask as u16;
     }
-    x = 0 as libc::c_int;
-    mask = (1 as libc::c_uint) << bx4;
-    while x < w4 {
-        let sidx_0 = (mask >= 0x10000 as libc::c_int as libc::c_uint) as libc::c_int;
-        let smask_0: libc::c_uint = mask >> (sidx_0 << 4);
-        let ref mut fresh5 = (*masks.offset(1))[by4 as usize]
-            [imin(thl4c, *a.offset(x as isize) as libc::c_int) as usize][sidx_0 as usize];
-        *fresh5 = (*fresh5 as libc::c_uint | smask_0) as u16;
-        x += 1;
-        mask <<= 1;
+
+    // top block edge
+    for x in 0..w4 {
+        let mask = 1u32 << (bx4 + x);
+        let sidx = (mask >= 0x10000) as usize;
+        let smask = mask >> (sidx << 4);
+        masks[1][by4][std::cmp::min(thl4c, a[x]) as usize][sidx] |= smask as u16;
     }
-    let hstep = (*t_dim).w as libc::c_int;
-    let mut t: libc::c_uint = (1 as libc::c_uint) << by4;
-    let mut inner: libc::c_uint = ((t as u64) << h4).wrapping_sub(t as u64) as libc::c_uint;
-    let mut inner1: libc::c_uint = inner & 0xffff as libc::c_int as libc::c_uint;
-    let mut inner2: libc::c_uint = inner >> 16;
-    x = hstep;
-    while x < w4 {
-        if inner1 != 0 {
-            let ref mut fresh6 = (*masks.offset(0))[(bx4 + x) as usize][twl4c as usize][0];
-            *fresh6 = (*fresh6 as libc::c_uint | inner1) as u16;
+
+    // inner (tx) left|right edges
+    let hstep = t_dim.w as usize;
+    let t = 1u32 << by4;
+    let inner = (((t as u64) << h4) - (t as u64)) as u32;
+    let inner = [inner as u16, (inner >> 16) as u16];
+    for x in (hstep..w4).step_by(hstep) {
+        if inner[0] != 0 {
+            masks[0][bx4 + x][twl4c as usize][0] |= inner[0];
         }
-        if inner2 != 0 {
-            let ref mut fresh7 = (*masks.offset(0))[(bx4 + x) as usize][twl4c as usize][1];
-            *fresh7 = (*fresh7 as libc::c_uint | inner2) as u16;
-        }
-        x += hstep;
-    }
-    let vstep = (*t_dim).h as libc::c_int;
-    t = (1 as libc::c_uint) << bx4;
-    inner = ((t as u64) << w4).wrapping_sub(t as u64) as libc::c_uint;
-    inner1 = inner & 0xffff as libc::c_int as libc::c_uint;
-    inner2 = inner >> 16;
-    y = vstep;
-    while y < h4 {
-        if inner1 != 0 {
-            let ref mut fresh8 = (*masks.offset(1))[(by4 + y) as usize][thl4c as usize][0];
-            *fresh8 = (*fresh8 as libc::c_uint | inner1) as u16;
-        }
-        if inner2 != 0 {
-            let ref mut fresh9 = (*masks.offset(1))[(by4 + y) as usize][thl4c as usize][1];
-            *fresh9 = (*fresh9 as libc::c_uint | inner2) as u16;
-        }
-        y += vstep;
-    }
-    match w4 {
-        1 => {
-            (*(&mut *a.offset(0) as *mut u8 as *mut alias8)).u8_0 = (0x1 * thl4c) as u8;
-        }
-        2 => {
-            (*(&mut *a.offset(0) as *mut u8 as *mut alias16)).u16_0 = (0x101 * thl4c) as u16;
-        }
-        4 => {
-            (*(&mut *a.offset(0) as *mut u8 as *mut alias32)).u32_0 =
-                (0x1010101 as libc::c_uint).wrapping_mul(thl4c as libc::c_uint);
-        }
-        8 => {
-            (*(&mut *a.offset(0) as *mut u8 as *mut alias64)).u64_0 =
-                (0x101010101010101 as libc::c_ulonglong).wrapping_mul(thl4c as libc::c_ulonglong)
-                    as u64;
-        }
-        16 => {
-            let const_val: u64 = (0x101010101010101 as libc::c_ulonglong)
-                .wrapping_mul(thl4c as libc::c_ulonglong) as u64;
-            (*(&mut *a.offset((0 + 0) as isize) as *mut u8 as *mut alias64)).u64_0 = const_val;
-            (*(&mut *a.offset((0 + 8) as isize) as *mut u8 as *mut alias64)).u64_0 = const_val;
-        }
-        32 => {
-            let const_val_0: u64 = (0x101010101010101 as libc::c_ulonglong)
-                .wrapping_mul(thl4c as libc::c_ulonglong) as u64;
-            (*(&mut *a.offset((0 + 0) as isize) as *mut u8 as *mut alias64)).u64_0 = const_val_0;
-            (*(&mut *a.offset((0 + 8) as isize) as *mut u8 as *mut alias64)).u64_0 = const_val_0;
-            (*(&mut *a.offset((0 + 16) as isize) as *mut u8 as *mut alias64)).u64_0 = const_val_0;
-            (*(&mut *a.offset((0 + 24) as isize) as *mut u8 as *mut alias64)).u64_0 = const_val_0;
-        }
-        _ => {
-            memset(a as *mut libc::c_void, thl4c, w4 as libc::c_ulong);
+        if inner[1] != 0 {
+            masks[0][bx4 + x][twl4c as usize][1] |= inner[1];
         }
     }
-    match h4 {
-        1 => {
-            (*(&mut *l.offset(0) as *mut u8 as *mut alias8)).u8_0 = (0x1 * twl4c) as u8;
+
+    //            top
+    // inner (tx) --- edges
+    //           bottom
+    let vstep = t_dim.h as usize;
+    let t = 1u32 << bx4;
+    let inner = (((t as u64) << w4) - (t as u64)) as u32;
+    let inner = [inner as u16, (inner >> 16) as u16];
+    for y in (vstep..h4).step_by(vstep) {
+        if inner[0] != 0 {
+            masks[1][by4 + y][thl4c as usize][0] |= inner[0];
         }
-        2 => {
-            (*(&mut *l.offset(0) as *mut u8 as *mut alias16)).u16_0 = (0x101 * twl4c) as u16;
+        if inner[1] != 0 {
+            masks[1][by4 + y][thl4c as usize][1] |= inner[1];
         }
-        4 => {
-            (*(&mut *l.offset(0) as *mut u8 as *mut alias32)).u32_0 =
-                (0x1010101 as libc::c_uint).wrapping_mul(twl4c as libc::c_uint);
-        }
-        8 => {
-            (*(&mut *l.offset(0) as *mut u8 as *mut alias64)).u64_0 =
-                (0x101010101010101 as libc::c_ulonglong).wrapping_mul(twl4c as libc::c_ulonglong)
-                    as u64;
-        }
-        16 => {
-            let const_val_1: u64 = (0x101010101010101 as libc::c_ulonglong)
-                .wrapping_mul(twl4c as libc::c_ulonglong) as u64;
-            (*(&mut *l.offset((0 + 0) as isize) as *mut u8 as *mut alias64)).u64_0 = const_val_1;
-            (*(&mut *l.offset((0 + 8) as isize) as *mut u8 as *mut alias64)).u64_0 = const_val_1;
-        }
-        32 => {
-            let const_val_2: u64 = (0x101010101010101 as libc::c_ulonglong)
-                .wrapping_mul(twl4c as libc::c_ulonglong) as u64;
-            (*(&mut *l.offset((0 + 0) as isize) as *mut u8 as *mut alias64)).u64_0 = const_val_2;
-            (*(&mut *l.offset((0 + 8) as isize) as *mut u8 as *mut alias64)).u64_0 = const_val_2;
-            (*(&mut *l.offset((0 + 16) as isize) as *mut u8 as *mut alias64)).u64_0 = const_val_2;
-            (*(&mut *l.offset((0 + 24) as isize) as *mut u8 as *mut alias64)).u64_0 = const_val_2;
-        }
-        _ => {
-            memset(l as *mut libc::c_void, twl4c, h4 as libc::c_ulong);
-        }
+    }
+
+    let mut set_ctx = |dir: &mut [u8], _diridx, off, mul, rep_macro: SetCtxFn| {
+        rep_macro(dir.as_mut_ptr(), off, mul * thl4c as u64);
     };
+    let default_memset = |dir: &mut [u8], _diridx, _off, var| {
+        dir[..var as usize].fill(thl4c);
+    };
+    case_set_upto32_with_default(
+        w4 as libc::c_int,
+        a,                  // Was nothing in C; changed to `l` for borrowck.
+        Default::default(), // Was nothing in C.
+        0,
+        &mut set_ctx,
+        default_memset,
+    );
+    let mut set_ctx = |dir: &mut [u8], _diridx, off, mul, rep_macro: SetCtxFn| {
+        rep_macro(dir.as_mut_ptr(), off, mul * twl4c as u64);
+    };
+    let default_memset = |dir: &mut [u8], _diridx, _off, var| {
+        dir[..var as usize].fill(twl4c);
+    };
+    case_set_upto32_with_default(
+        h4 as libc::c_int,
+        l,                  // Was nothing in C; changed to `l` for borrowck.
+        Default::default(), // Was nothing in C.
+        0,
+        &mut set_ctx,
+        default_memset,
+    );
 }
 
 unsafe fn mask_edges_chroma(
@@ -581,8 +532,8 @@ pub unsafe fn dav1d_create_lf_mask_intra(
     ytx: RectTxfmSize,
     uvtx: RectTxfmSize,
     layout: Dav1dPixelLayout,
-    ay: *mut u8,
-    ly: *mut u8,
+    ay: &mut [u8],
+    ly: &mut [u8],
     auv: *mut u8,
     luv: *mut u8,
 ) {
@@ -606,16 +557,7 @@ pub unsafe fn dav1d_create_lf_mask_intra(
             level_cache_ptr = level_cache_ptr.offset(b4_stride as isize);
             y += 1;
         }
-        mask_edges_intra(
-            ((*lflvl).filter_y).as_mut_ptr(),
-            by4,
-            bx4,
-            bw4,
-            bh4,
-            ytx,
-            ay,
-            ly,
-        );
+        mask_edges_intra(&mut (*lflvl).filter_y, by4, bx4, bw4, bh4, ytx, ay, ly);
     }
     if auv.is_null() {
         return;
