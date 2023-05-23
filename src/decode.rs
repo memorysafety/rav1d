@@ -1115,6 +1115,10 @@ use crate::src::env::get_tx_ctx;
 use crate::src::msac::dav1d_msac_decode_bools;
 use crate::src::msac::dav1d_msac_decode_uniform;
 
+use crate::src::recon::define_DEBUG_BLOCK_INFO;
+
+define_DEBUG_BLOCK_INFO!();
+
 fn init_quant_tables(
     seq_hdr: &Dav1dSequenceHeader,
     frame_hdr: &Dav1dFrameHeader,
@@ -1883,13 +1887,7 @@ unsafe extern "C" fn read_pal_plane(
                 .wrapping_mul(::core::mem::size_of::<uint16_t>() as libc::c_ulong),
         );
     }
-    if 0 as libc::c_int != 0
-        && (*(*f).frame_hdr).frame_offset == 2
-        && (*t).by >= 0
-        && (*t).by < 4
-        && (*t).bx >= 8
-        && (*t).bx < 12
-    {
+    if DEBUG_BLOCK_INFO(&*f, &*t) {
         printf(
             b"Post-pal[pl=%d,sz=%d,cache_size=%d,used_cache=%d]: r=%d, cache=\0" as *const u8
                 as *const libc::c_char,
@@ -1978,13 +1976,7 @@ unsafe extern "C" fn read_pal_uv(
             i_0 += 1;
         }
     }
-    if 0 as libc::c_int != 0
-        && (*(*f).frame_hdr).frame_offset == 2
-        && (*t).by >= 0
-        && (*t).by < 4
-        && (*t).bx >= 8
-        && (*t).bx < 12
-    {
+    if DEBUG_BLOCK_INFO(&*f, &*t) {
         printf(
             b"Post-pal[pl=2]: r=%d \0" as *const u8 as *const libc::c_char,
             (*ts).msac.rng,
@@ -2459,13 +2451,7 @@ unsafe extern "C" fn read_vartx_tree(
             y_off += 1;
         }
         (*t).by -= y;
-        if 0 as libc::c_int != 0
-            && (*(*f).frame_hdr).frame_offset == 2
-            && (*t).by >= 0
-            && (*t).by < 4
-            && (*t).bx >= 8
-            && (*t).bx < 12
-        {
+        if DEBUG_BLOCK_INFO(&*f, &*t) {
             printf(
                 b"Post-vartxtree[%x/%x]: r=%d\n\0" as *const u8 as *const libc::c_char,
                 tx_split[0] as libc::c_int,
@@ -2846,20 +2832,6 @@ unsafe fn obmc_lowest_px(
             y += imax(l_b_dim[1] as libc::c_int, 2);
         }
     }
-}
-
-/* NOTE: DEBUG_BLOCK_INFO is a macro in recon.h so it should probably live in
- * one of the rust files generated from recon_tmpl.c once deduplicated.
- */
-unsafe fn DEBUG_BLOCK_INFO(f: *const Dav1dFrameContext, t: *const Dav1dTaskContext) -> bool {
-    /* TODO: add feature and compile-time guard around this code */
-    0 != 0
-        && (*(*f).frame_hdr).frame_offset == 2
-        && (*t).by >= 0
-        && (*t).by < 4
-        && (*t).bx >= 8
-        && (*t).bx < 12
-    // true
 }
 
 unsafe fn decode_b(
@@ -6897,7 +6869,7 @@ unsafe extern "C" fn decode_sb(
             {
                 return 1 as libc::c_int;
             }
-            if DEBUG_BLOCK_INFO(f, t) {
+            if DEBUG_BLOCK_INFO(&*f, &*t) {
                 printf(
                     b"poc=%d,y=%d,x=%d,bl=%d,ctx=%d,bp=%d: r=%d\n\0" as *const u8
                         as *const libc::c_char,
@@ -7314,7 +7286,7 @@ unsafe extern "C" fn decode_sb(
         } else {
             is_split = dav1d_msac_decode_bool(&mut (*ts).msac, gather_top_partition_prob(pc, bl))
                 as libc::c_uint;
-            if DEBUG_BLOCK_INFO(f, t) {
+            if DEBUG_BLOCK_INFO(&*f, &*t) {
                 printf(
                     b"poc=%d,y=%d,x=%d,bl=%d,ctx=%d,bp=%d: r=%d\n\0" as *const u8
                         as *const libc::c_char,
@@ -7389,7 +7361,7 @@ unsafe extern "C" fn decode_sb(
             {
                 return 1 as libc::c_int;
             }
-            if DEBUG_BLOCK_INFO(f, t) {
+            if DEBUG_BLOCK_INFO(&*f, &*t) {
                 printf(
                     b"poc=%d,y=%d,x=%d,bl=%d,ctx=%d,bp=%d: r=%d\n\0" as *const u8
                         as *const libc::c_char,
@@ -7852,13 +7824,7 @@ unsafe extern "C" fn read_restoration_info(
             ::core::mem::size_of::<[int8_t; 2]>() as libc::c_ulong,
         );
         (*ts).lr_ref[p as usize] = lr;
-        if 0 as libc::c_int != 0
-            && (*(*f).frame_hdr).frame_offset == 2
-            && (*t).by >= 0
-            && (*t).by < 4
-            && (*t).bx >= 8
-            && (*t).bx < 12
-        {
+        if DEBUG_BLOCK_INFO(&*f, &*t) {
             printf(
                 b"Post-lr_wiener[pl=%d,v[%d,%d,%d],h[%d,%d,%d]]: r=%d\n\0" as *const u8
                     as *const libc::c_char,
@@ -7908,13 +7874,7 @@ unsafe extern "C" fn read_restoration_info(
             ::core::mem::size_of::<[int8_t; 3]>() as libc::c_ulong,
         );
         (*ts).lr_ref[p as usize] = lr;
-        if 0 as libc::c_int != 0
-            && (*(*f).frame_hdr).frame_offset == 2
-            && (*t).by >= 0
-            && (*t).by < 4
-            && (*t).bx >= 8
-            && (*t).bx < 12
-        {
+        if DEBUG_BLOCK_INFO(&*f, &*t) {
             printf(
                 b"Post-lr_sgrproj[pl=%d,idx=%d,w[%d,%d]]: r=%d\n\0" as *const u8
                     as *const libc::c_char,
