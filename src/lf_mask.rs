@@ -11,6 +11,8 @@ use crate::src::ctx::alias16;
 use crate::src::ctx::alias32;
 use crate::src::ctx::alias64;
 use crate::src::ctx::alias8;
+use crate::src::ctx::case_set_upto16;
+use crate::src::ctx::SetCtxFn;
 use crate::src::levels::BlockSize;
 use crate::src::levels::RectTxfmSize;
 use crate::src::levels::TX_4X4;
@@ -56,27 +58,36 @@ pub struct Av1Restoration {
     pub lr: [[Av1RestorationUnit; 4]; 3],
 }
 
+/// In `txa`, the array lengths represent from inner to outer:
+/// * `32`: `x`
+/// * `32`: `y`
+/// * `2`: `txsz`, `step`
+///
+/// (Note: This is added here in the docs vs. inline `/* */` comments
+/// at the array lengths because `rustfmt` deletes them
+/// (tracked in [rust-lang/rustfmt#5297](https://github.com/rust-lang/rustfmt/issues/5297))).
 unsafe fn decomp_tx(
     txa: *mut [[[u8; 32]; 32]; 2],
     from: RectTxfmSize,
-    depth: libc::c_int,
-    y_off: libc::c_int,
-    x_off: libc::c_int,
-    tx_masks: *const u16,
+    depth: usize,
+    y_off: u8,
+    x_off: u8,
+    tx_masks: &[u16; 2],
 ) {
-    let t_dim: *const TxfmInfo =
-        &*dav1d_txfm_dimensions.as_ptr().offset(from as isize) as *const TxfmInfo;
-    let is_split = if from as libc::c_uint == TX_4X4 as libc::c_int as libc::c_uint || depth > 1 {
-        0 as libc::c_int
+    debug_assert!(depth <= 2);
+    let t_dim = &dav1d_txfm_dimensions[from as usize];
+    let is_split = if from == TX_4X4 || depth > 1 {
+        false
     } else {
-        *tx_masks.offset(depth as isize) as libc::c_int >> y_off * 4 + x_off & 1
+        (tx_masks[depth] >> (y_off * 4 + x_off)) & 1 != 0
     };
-    if is_split != 0 {
-        let sub: RectTxfmSize = (*t_dim).sub as RectTxfmSize;
-        let htw4 = (*t_dim).w as libc::c_int >> 1;
-        let hth4 = (*t_dim).h as libc::c_int >> 1;
+    if is_split {
+        let sub = t_dim.sub as RectTxfmSize;
+        let htw4 = t_dim.w >> 1;
+        let hth4 = t_dim.h >> 1;
+
         decomp_tx(txa, sub, depth + 1, y_off * 2 + 0, x_off * 2 + 0, tx_masks);
-        if (*t_dim).w as libc::c_int >= (*t_dim).h as libc::c_int {
+        if t_dim.w >= t_dim.h {
             decomp_tx(
                 &mut *(*(*(*txa.offset(0)).as_mut_ptr().offset(0))
                     .as_mut_ptr()
@@ -90,7 +101,7 @@ unsafe fn decomp_tx(
                 tx_masks,
             );
         }
-        if (*t_dim).h as libc::c_int >= (*t_dim).w as libc::c_int {
+        if t_dim.h >= t_dim.w {
             decomp_tx(
                 &mut *(*(*(*txa.offset(0)).as_mut_ptr().offset(0))
                     .as_mut_ptr()
@@ -103,7 +114,7 @@ unsafe fn decomp_tx(
                 x_off * 2 + 0,
                 tx_masks,
             );
-            if (*t_dim).w as libc::c_int >= (*t_dim).h as libc::c_int {
+            if t_dim.w >= t_dim.h {
                 decomp_tx(
                     &mut *(*(*(*txa.offset(0)).as_mut_ptr().offset(0))
                         .as_mut_ptr()
@@ -120,182 +131,37 @@ unsafe fn decomp_tx(
             }
         }
     } else {
-        let lw = imin(2 as libc::c_int, (*t_dim).lw as libc::c_int);
-        let lh = imin(2 as libc::c_int, (*t_dim).lh as libc::c_int);
-        match (*t_dim).w as libc::c_int {
-            1 => {
-                let mut y = 0;
-                while y < (*t_dim).h as libc::c_int {
-                    (*(&mut *(*(*(*txa.offset(0)).as_mut_ptr().offset(0))
-                        .as_mut_ptr()
-                        .offset(y as isize))
-                    .as_mut_ptr()
-                    .offset(0) as *mut u8 as *mut alias8))
-                        .u8_0 = (0x1 * lw) as u8;
-                    (*(&mut *(*(*(*txa.offset(1)).as_mut_ptr().offset(0))
-                        .as_mut_ptr()
-                        .offset(y as isize))
-                    .as_mut_ptr()
-                    .offset(0) as *mut u8 as *mut alias8))
-                        .u8_0 = (0x1 * lh) as u8;
-                    (*txa.offset(0))[1][y as usize][0] = (*t_dim).w;
-                    y += 1;
-                }
+        let lw = std::cmp::min(2, t_dim.lw);
+        let lh = std::cmp::min(2, t_dim.lh);
+
+        let mut set_ctx = |_dir: &mut (), _diridx, off, mul, rep_macro: SetCtxFn| {
+            for y in 0..t_dim.h as usize {
+                rep_macro((*txa.offset(0))[0][y].as_mut_ptr(), off, mul * lw as u64);
+                rep_macro((*txa.offset(1))[0][y].as_mut_ptr(), off, mul * lh as u64);
+                (*txa.offset(0))[1][y][0] = t_dim.w;
             }
-            2 => {
-                let mut y_0 = 0;
-                while y_0 < (*t_dim).h as libc::c_int {
-                    (*(&mut *(*(*(*txa.offset(0)).as_mut_ptr().offset(0))
-                        .as_mut_ptr()
-                        .offset(y_0 as isize))
-                    .as_mut_ptr()
-                    .offset(0) as *mut u8 as *mut alias16))
-                        .u16_0 = (0x101 * lw) as u16;
-                    (*(&mut *(*(*(*txa.offset(1)).as_mut_ptr().offset(0))
-                        .as_mut_ptr()
-                        .offset(y_0 as isize))
-                    .as_mut_ptr()
-                    .offset(0) as *mut u8 as *mut alias16))
-                        .u16_0 = (0x101 * lh) as u16;
-                    (*txa.offset(0))[1][y_0 as usize][0] = (*t_dim).w;
-                    y_0 += 1;
-                }
-            }
-            4 => {
-                let mut y_1 = 0;
-                while y_1 < (*t_dim).h as libc::c_int {
-                    (*(&mut *(*(*(*txa.offset(0)).as_mut_ptr().offset(0))
-                        .as_mut_ptr()
-                        .offset(y_1 as isize))
-                    .as_mut_ptr()
-                    .offset(0) as *mut u8 as *mut alias32))
-                        .u32_0 = (0x1010101 as libc::c_uint).wrapping_mul(lw as libc::c_uint);
-                    (*(&mut *(*(*(*txa.offset(1)).as_mut_ptr().offset(0))
-                        .as_mut_ptr()
-                        .offset(y_1 as isize))
-                    .as_mut_ptr()
-                    .offset(0) as *mut u8 as *mut alias32))
-                        .u32_0 = (0x1010101 as libc::c_uint).wrapping_mul(lh as libc::c_uint);
-                    (*txa.offset(0))[1][y_1 as usize][0] = (*t_dim).w;
-                    y_1 += 1;
-                }
-            }
-            8 => {
-                let mut y_2 = 0;
-                while y_2 < (*t_dim).h as libc::c_int {
-                    (*(&mut *(*(*(*txa.offset(0)).as_mut_ptr().offset(0))
-                        .as_mut_ptr()
-                        .offset(y_2 as isize))
-                    .as_mut_ptr()
-                    .offset(0) as *mut u8 as *mut alias64))
-                        .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(lw as libc::c_ulonglong)
-                        as u64;
-                    (*(&mut *(*(*(*txa.offset(1)).as_mut_ptr().offset(0))
-                        .as_mut_ptr()
-                        .offset(y_2 as isize))
-                    .as_mut_ptr()
-                    .offset(0) as *mut u8 as *mut alias64))
-                        .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(lh as libc::c_ulonglong)
-                        as u64;
-                    (*txa.offset(0))[1][y_2 as usize][0] = (*t_dim).w;
-                    y_2 += 1;
-                }
-            }
-            16 => {
-                let mut y_3 = 0;
-                while y_3 < (*t_dim).h as libc::c_int {
-                    let const_val: u64 = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(lw as libc::c_ulonglong)
-                        as u64;
-                    (*(&mut *(*(*(*txa.offset(0)).as_mut_ptr().offset(0))
-                        .as_mut_ptr()
-                        .offset(y_3 as isize))
-                    .as_mut_ptr()
-                    .offset((0 + 0) as isize) as *mut u8 as *mut alias64))
-                        .u64_0 = const_val;
-                    (*(&mut *(*(*(*txa.offset(0)).as_mut_ptr().offset(0))
-                        .as_mut_ptr()
-                        .offset(y_3 as isize))
-                    .as_mut_ptr()
-                    .offset((0 + 8) as isize) as *mut u8 as *mut alias64))
-                        .u64_0 = const_val;
-                    let const_val_0: u64 = (0x101010101010101 as libc::c_ulonglong)
-                        .wrapping_mul(lh as libc::c_ulonglong)
-                        as u64;
-                    (*(&mut *(*(*(*txa.offset(1)).as_mut_ptr().offset(0))
-                        .as_mut_ptr()
-                        .offset(y_3 as isize))
-                    .as_mut_ptr()
-                    .offset((0 + 0) as isize) as *mut u8 as *mut alias64))
-                        .u64_0 = const_val_0;
-                    (*(&mut *(*(*(*txa.offset(1)).as_mut_ptr().offset(0))
-                        .as_mut_ptr()
-                        .offset(y_3 as isize))
-                    .as_mut_ptr()
-                    .offset((0 + 8) as isize) as *mut u8 as *mut alias64))
-                        .u64_0 = const_val_0;
-                    (*txa.offset(0))[1][y_3 as usize][0] = (*t_dim).w;
-                    y_3 += 1;
-                }
-            }
-            _ => {}
-        }
-        match (*t_dim).w as libc::c_int {
-            1 => {
-                (*(&mut *(*(*(*txa.offset(1)).as_mut_ptr().offset(1))
-                    .as_mut_ptr()
-                    .offset(0))
-                .as_mut_ptr()
-                .offset(0) as *mut u8 as *mut alias8))
-                    .u8_0 = (0x1 * (*t_dim).h as libc::c_int) as u8;
-            }
-            2 => {
-                (*(&mut *(*(*(*txa.offset(1)).as_mut_ptr().offset(1))
-                    .as_mut_ptr()
-                    .offset(0))
-                .as_mut_ptr()
-                .offset(0) as *mut u8 as *mut alias16))
-                    .u16_0 = (0x101 * (*t_dim).h as libc::c_int) as u16;
-            }
-            4 => {
-                (*(&mut *(*(*(*txa.offset(1)).as_mut_ptr().offset(1))
-                    .as_mut_ptr()
-                    .offset(0))
-                .as_mut_ptr()
-                .offset(0) as *mut u8 as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint).wrapping_mul((*t_dim).h as libc::c_uint);
-            }
-            8 => {
-                (*(&mut *(*(*(*txa.offset(1)).as_mut_ptr().offset(1))
-                    .as_mut_ptr()
-                    .offset(0))
-                .as_mut_ptr()
-                .offset(0) as *mut u8 as *mut alias64))
-                    .u64_0 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul((*t_dim).h as libc::c_ulonglong)
-                    as u64;
-            }
-            16 => {
-                let const_val_1: u64 = (0x101010101010101 as libc::c_ulonglong)
-                    .wrapping_mul((*t_dim).h as libc::c_ulonglong)
-                    as u64;
-                (*(&mut *(*(*(*txa.offset(1)).as_mut_ptr().offset(1))
-                    .as_mut_ptr()
-                    .offset(0))
-                .as_mut_ptr()
-                .offset((0 + 0) as isize) as *mut u8 as *mut alias64))
-                    .u64_0 = const_val_1;
-                (*(&mut *(*(*(*txa.offset(1)).as_mut_ptr().offset(1))
-                    .as_mut_ptr()
-                    .offset(0))
-                .as_mut_ptr()
-                .offset((0 + 8) as isize) as *mut u8 as *mut alias64))
-                    .u64_0 = const_val_1;
-            }
-            _ => {}
-        }
+        };
+        case_set_upto16(
+            t_dim.w as libc::c_int,
+            &mut (),            // Was nothing in C.
+            Default::default(), // Was nothing in C.
+            0,
+            &mut set_ctx,
+        );
+        let mut set_ctx = |_dir: &mut (), _diridx, off, mul, rep_macro: SetCtxFn| {
+            rep_macro(
+                (*txa.offset(1))[1][0].as_mut_ptr(),
+                off,
+                mul * t_dim.h as u64,
+            );
+        };
+        case_set_upto16(
+            t_dim.w as libc::c_int,
+            &mut (),            // Was nothing in C.
+            Default::default(), // Was nothing in C.
+            0,
+            &mut set_ctx,
+        );
     };
 }
 
@@ -308,7 +174,7 @@ unsafe fn mask_edges_inter(
     h4: libc::c_int,
     skip: libc::c_int,
     max_tx: RectTxfmSize,
-    tx_masks: *const u16,
+    tx_masks: &[u16; 2],
     a: *mut u8,
     l: *mut u8,
 ) {
@@ -330,7 +196,7 @@ unsafe fn mask_edges_inter(
                 .as_mut_ptr()
                 .offset(x_0 as isize) as *mut u8 as *mut [[[u8; 32]; 32]; 2],
                 max_tx,
-                0 as libc::c_int,
+                0,
                 y_off,
                 x_off,
                 tx_masks,
@@ -831,7 +697,7 @@ pub unsafe fn dav1d_create_lf_mask_inter(
     skip: libc::c_int,
     bs: BlockSize,
     max_ytx: RectTxfmSize,
-    tx_masks: *const u16,
+    tx_masks: &[u16; 2],
     uvtx: RectTxfmSize,
     layout: Dav1dPixelLayout,
     ay: *mut u8,
