@@ -1,7 +1,7 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
-use ::libc;
 use cfg_if::cfg_if;
+use libc;
 extern "C" {
     fn free(_: *mut libc::c_void);
     fn posix_memalign(
@@ -34,6 +34,36 @@ extern "C" {
         bw4: libc::c_int,
         bh4: libc::c_int,
     );
+    fn dav1d_save_tmvs_ssse3(
+        rp: *mut refmvs_temporal_block,
+        stride: ptrdiff_t,
+        rr: *const *const refmvs_block,
+        ref_sign: *const u8,
+        col_end8: libc::c_int,
+        row_end8: libc::c_int,
+        col_start8: libc::c_int,
+        row_start8: libc::c_int,
+    );
+    fn dav1d_save_tmvs_avx2(
+        rp: *mut refmvs_temporal_block,
+        stride: ptrdiff_t,
+        rr: *const *const refmvs_block,
+        ref_sign: *const u8,
+        col_end8: libc::c_int,
+        row_end8: libc::c_int,
+        col_start8: libc::c_int,
+        row_start8: libc::c_int,
+    );
+    fn dav1d_save_tmvs_avx512icl(
+        rp: *mut refmvs_temporal_block,
+        stride: ptrdiff_t,
+        rr: *const *const refmvs_block,
+        ref_sign: *const u8,
+        col_end8: libc::c_int,
+        row_end8: libc::c_int,
+        col_start8: libc::c_int,
+        row_start8: libc::c_int,
+    );
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
@@ -61,7 +91,7 @@ use crate::src::levels::mv;
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 
 #[derive(Copy, Clone)]
-#[repr(C)]
+#[repr(C, packed)]
 pub struct refmvs_temporal_block {
     pub mv: mv,
     pub r#ref: int8_t,
@@ -155,6 +185,28 @@ pub struct refmvs_candidate {
     pub mv: refmvs_mvpair,
     pub weight: libc::c_int,
 }
+pub type load_tmvs_fn = Option<
+    unsafe extern "C" fn(
+        *const refmvs_frame,
+        libc::c_int,
+        libc::c_int,
+        libc::c_int,
+        libc::c_int,
+        libc::c_int,
+    ) -> (),
+>;
+pub type save_tmvs_fn = Option<
+    unsafe extern "C" fn(
+        *mut refmvs_temporal_block,
+        ptrdiff_t,
+        *const *const refmvs_block,
+        *const u8,
+        libc::c_int,
+        libc::c_int,
+        libc::c_int,
+        libc::c_int,
+    ) -> (),
+>;
 pub type splat_mv_fn = Option<
     unsafe extern "C" fn(
         *mut *mut refmvs_block,
@@ -167,6 +219,8 @@ pub type splat_mv_fn = Option<
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dRefmvsDSPContext {
+    pub load_tmvs: load_tmvs_fn,
+    pub save_tmvs: save_tmvs_fn,
     pub splat_mv: splat_mv_fn,
 }
 
@@ -427,7 +481,7 @@ unsafe fn add_temporal_candidate(
     r#ref: refmvs_refpair,
     globalmv: Option<(&mut libc::c_int, &[mv; 2])>,
 ) {
-    if rb.mv == mv::INVALID {
+    if rb.mv.is_invalid() {
         return;
     }
 
@@ -1052,6 +1106,42 @@ pub unsafe fn dav1d_refmvs_find(
     *ctx = refmv_ctx << 4 | globalmv_ctx << 3 | newmv_ctx;
 }
 
+// cache the current tile/sbrow (or frame/sbrow)'s projectable motion vectors
+// into buffers for use in future frame's temporal MV prediction
+#[no_mangle]
+pub unsafe extern "C" fn dav1d_refmvs_save_tmvs(
+    dsp: *const Dav1dRefmvsDSPContext,
+    rt: *const refmvs_tile,
+    col_start8: libc::c_int,
+    mut col_end8: libc::c_int,
+    row_start8: libc::c_int,
+    mut row_end8: libc::c_int,
+) {
+    let rf: *const refmvs_frame = (*rt).rf;
+    if !(row_start8 >= 0) {
+        unreachable!();
+    }
+    if !((row_end8 - row_start8) as libc::c_uint <= 16 as libc::c_uint) {
+        unreachable!();
+    }
+    row_end8 = imin(row_end8, (*rf).ih8);
+    col_end8 = imin(col_end8, (*rf).iw8);
+    let stride: ptrdiff_t = (*rf).rp_stride;
+    let ref_sign: *const uint8_t = ((*rf).mfmv_sign).as_ptr();
+    let mut rp: *mut refmvs_temporal_block = (*rf).rp.offset(row_start8 as isize * stride);
+
+    (*dsp).save_tmvs.expect("non-null function pointer")(
+        rp,
+        stride,
+        (*rt).r.as_ptr().offset(6) as *const *const refmvs_block,
+        ref_sign,
+        col_end8,
+        row_end8,
+        col_start8,
+        row_start8,
+    );
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_refmvs_tile_sbrow_init(
     rt: *mut refmvs_tile,
@@ -1111,7 +1201,7 @@ pub unsafe extern "C" fn dav1d_refmvs_tile_sbrow_init(
     (*rt).tile_col.end = imin(tile_col_end4, (*rf).iw4);
 }
 #[no_mangle]
-pub unsafe extern "C" fn dav1d_refmvs_load_tmvs(
+pub unsafe extern "C" fn load_tmvs_c(
     rf: *const refmvs_frame,
     mut tile_row_idx: libc::c_int,
     col_start8: libc::c_int,
@@ -1197,7 +1287,8 @@ pub unsafe extern "C" fn dav1d_refmvs_load_tmvs(
                                         break;
                                     }
                                     rb = rb.offset(1);
-                                    if (*rb).r#ref as libc::c_int != b_ref || (*rb).mv != b_mv {
+                                    let rb_mv = (*rb).mv;
+                                    if (*rb).r#ref as libc::c_int != b_ref || rb_mv != b_mv {
                                         break;
                                     }
                                     pos_x += 1;
@@ -1209,7 +1300,8 @@ pub unsafe extern "C" fn dav1d_refmvs_load_tmvs(
                                         break;
                                     }
                                     rb = rb.offset(1);
-                                    if (*rb).r#ref as libc::c_int != b_ref || (*rb).mv != b_mv {
+                                    let rb_mv = (*rb).mv;
+                                    if (*rb).r#ref as libc::c_int != b_ref || rb_mv != b_mv {
                                         break;
                                     }
                                 }
@@ -1227,29 +1319,19 @@ pub unsafe extern "C" fn dav1d_refmvs_load_tmvs(
     }
 }
 #[no_mangle]
-pub unsafe extern "C" fn dav1d_refmvs_save_tmvs(
-    rt: *const refmvs_tile,
+pub unsafe extern "C" fn save_tmvs_c(
+    mut rp: *mut refmvs_temporal_block,
+    stride: ptrdiff_t,
+    rr: *const *const refmvs_block,
+    ref_sign: *const u8,
+    col_end8: libc::c_int,
+    row_end8: libc::c_int,
     col_start8: libc::c_int,
-    mut col_end8: libc::c_int,
     row_start8: libc::c_int,
-    mut row_end8: libc::c_int,
 ) {
-    let rf: *const refmvs_frame = (*rt).rf;
-    if !(row_start8 >= 0) {
-        unreachable!();
-    }
-    if !((row_end8 - row_start8) as libc::c_uint <= 16 as libc::c_uint) {
-        unreachable!();
-    }
-    row_end8 = imin(row_end8, (*rf).ih8);
-    col_end8 = imin(col_end8, (*rf).iw8);
-    let stride: ptrdiff_t = (*rf).rp_stride;
-    let ref_sign: *const uint8_t = ((*rf).mfmv_sign).as_ptr();
-    let mut rp: *mut refmvs_temporal_block =
-        &mut *((*rf).rp).offset(row_start8 as isize * stride) as *mut refmvs_temporal_block;
     let mut y = row_start8;
     while y < row_end8 {
-        let b: *const refmvs_block = (*rt).r[(6 + (y & 15) * 2) as usize];
+        let b: *const refmvs_block = *rr.offset(((y & 15) * 2) as isize);
         let mut x = col_start8;
         while x < col_end8 {
             let cand_b: *const refmvs_block =
@@ -1294,7 +1376,10 @@ pub unsafe extern "C" fn dav1d_refmvs_save_tmvs(
             } else {
                 let mut n_1 = 0;
                 while n_1 < bw8 {
-                    (*rp.offset(x as isize)).r#ref = 0 as libc::c_int as int8_t;
+                    *rp.offset(x as isize) = refmvs_temporal_block {
+                        mv: mv { x: 0, y: 0 },
+                        r#ref: 0,
+                    };
                     n_1 += 1;
                     x += 1;
                 }
@@ -1538,18 +1623,26 @@ unsafe extern "C" fn refmvs_dsp_init_x86(c: *mut Dav1dRefmvsDSPContext) {
 
     (*c).splat_mv = Some(dav1d_splat_mv_sse2);
 
+    if flags & DAV1D_X86_CPU_FLAG_SSSE3 == 0 {
+        return;
+    }
+
+    (*c).save_tmvs = Some(dav1d_save_tmvs_ssse3);
+
     #[cfg(target_arch = "x86_64")]
     {
         if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
             return;
         }
 
+        (*c).save_tmvs = Some(dav1d_save_tmvs_avx2);
         (*c).splat_mv = Some(dav1d_splat_mv_avx2);
 
         if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
             return;
         }
 
+        (*c).save_tmvs = Some(dav1d_save_tmvs_avx512icl);
         (*c).splat_mv = Some(dav1d_splat_mv_avx512icl);
     }
 }
@@ -1567,6 +1660,8 @@ unsafe extern "C" fn refmvs_dsp_init_arm(c: *mut Dav1dRefmvsDSPContext) {
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_refmvs_dsp_init(c: *mut Dav1dRefmvsDSPContext) {
+    (*c).load_tmvs = Some(load_tmvs_c);
+    (*c).save_tmvs = Some(save_tmvs_c);
     (*c).splat_mv = Some(
         splat_mv_c
             as unsafe extern "C" fn(

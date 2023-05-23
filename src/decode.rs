@@ -6,7 +6,7 @@ use crate::src::align::Align16;
 use crate::src::cdf::{CdfContext, CdfMvComponent, CdfMvContext};
 use crate::src::ctx::{case_set, SetCtxFn};
 use crate::src::msac::MsacContext;
-use ::libc;
+use libc;
 
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
@@ -58,15 +58,8 @@ extern "C" {
         n_tile_threads: libc::c_int,
         n_frame_threads: libc::c_int,
     ) -> libc::c_int;
-    fn dav1d_refmvs_load_tmvs(
-        rf: *const refmvs_frame,
-        tile_row_idx: libc::c_int,
-        col_start8: libc::c_int,
-        col_end8: libc::c_int,
-        row_start8: libc::c_int,
-        row_end8: libc::c_int,
-    );
     fn dav1d_refmvs_save_tmvs(
+        dsp: *const Dav1dRefmvsDSPContext,
         rt: *const refmvs_tile,
         col_start8: libc::c_int,
         col_end8: libc::c_int,
@@ -8015,7 +8008,10 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> li
         return 1 as libc::c_int;
     }
     if (*(*f).c).n_tc > 1 as libc::c_uint && (*(*f).frame_hdr).use_ref_frame_mvs != 0 {
-        dav1d_refmvs_load_tmvs(
+        (*(*f).c)
+            .refmvs_dsp
+            .load_tmvs
+            .expect("non-null function pointer")(
             &(*f).rf,
             (*ts).tiling.row,
             (*ts).tiling.col_start >> 1,
@@ -8136,6 +8132,7 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> li
         && (*(*f).frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint != 0
     {
         dav1d_refmvs_save_tmvs(
+            &(*(*f).c).refmvs_dsp,
             &mut (*t).rt,
             (*ts).tiling.col_start >> 1,
             (*ts).tiling.col_end >> 1,
@@ -9431,7 +9428,10 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
             (*t).by = sby << 4 + (*(*f).seq_hdr).sb128;
             let by_end = (*t).by + (*f).sb_step >> 1;
             if (*(*f).frame_hdr).use_ref_frame_mvs != 0 {
-                dav1d_refmvs_load_tmvs(
+                (*(*f).c)
+                    .refmvs_dsp
+                    .load_tmvs
+                    .expect("non-null function pointer")(
                     &mut (*f).rf,
                     tile_row,
                     0 as libc::c_int,
@@ -9453,6 +9453,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
             }
             if (*(*f).frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint != 0 {
                 dav1d_refmvs_save_tmvs(
+                    &(*(*f).c).refmvs_dsp,
                     &mut (*t).rt,
                     0 as libc::c_int,
                     (*f).bw >> 1,
