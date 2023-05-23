@@ -60,6 +60,9 @@ use crate::include::common::intops::iclip;
 use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
 use crate::src::tables::TxfmInfo;
+
+use crate::src::align::Align16;
+
 unsafe extern "C" fn decomp_tx(
     txa: *mut [[[uint8_t; 32]; 32]; 2],
     from: RectTxfmSize,
@@ -324,7 +327,7 @@ unsafe extern "C" fn mask_edges_inter(
         &*dav1d_txfm_dimensions.as_ptr().offset(max_tx as isize) as *const TxfmInfo;
     let mut y = 0;
     let mut x = 0;
-    let mut txa: [[[[uint8_t; 32]; 32]; 2]; 2] = [[[[0; 32]; 32]; 2]; 2];
+    let mut txa: Align16<[[[[uint8_t; 32]; 32]; 2]; 2]> = Align16([[[[0; 32]; 32]; 2]; 2]);
     let mut y_off = 0;
     let mut y_0 = 0;
     while y_0 < h4 {
@@ -332,7 +335,7 @@ unsafe extern "C" fn mask_edges_inter(
         let mut x_0 = 0;
         while x_0 < w4 {
             decomp_tx(
-                &mut *(*(*(*txa.as_mut_ptr().offset(0)).as_mut_ptr().offset(0))
+                &mut *(*(*(*txa.0.as_mut_ptr().offset(0)).as_mut_ptr().offset(0))
                     .as_mut_ptr()
                     .offset(y_0 as isize))
                 .as_mut_ptr()
