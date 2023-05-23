@@ -3335,14 +3335,13 @@ unsafe fn decode_b(
     if b.skip_mode != 0 {
         b.intra = 0;
     } else if is_inter_or_switch(frame_hdr) {
-        if let Some(seg) = seg && (seg.r#ref >= 0 || seg.globalmv != 0) {
+        if let Some(seg) = seg.filter(|seg| seg.r#ref >= 0 || seg.globalmv != 0) {
             b.intra = (seg.r#ref == 0) as uint8_t;
         } else {
             let ictx = get_intra_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
-            b.intra = (!dav1d_msac_decode_bool_adapt(
-                &mut ts.msac,
-                &mut ts.cdf.m.intra[ictx.into()],
-            )) as uint8_t;
+            b.intra =
+                (!dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.intra[ictx.into()]))
+                    as uint8_t;
 
             if DEBUG_BLOCK_INFO(f, t) {
                 println!("Post-intra[{}]: r={}", b.intra, ts.msac.rng);
@@ -4266,139 +4265,64 @@ unsafe fn decode_b(
             }
         } else {
             b.c2rust_unnamed.c2rust_unnamed_0.comp_type = COMP_INTER_NONE as libc::c_int as uint8_t;
-            if let Some(seg) = seg && seg.r#ref > 0 {
-                b
-                    .c2rust_unnamed
-                    .c2rust_unnamed_0
-                    .r#ref[0 as libc::c_int
-                    as usize] = seg.r#ref as i8 - 1;
-            } else if let Some(seg) = seg && (seg.globalmv != 0 || seg.skip != 0) {
-                b
-                    .c2rust_unnamed
-                    .c2rust_unnamed_0
-                    .r#ref[0] = 0 as libc::c_int as int8_t;
+            if let Some(seg) = seg.filter(|seg| seg.r#ref > 0) {
+                b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0 as libc::c_int as usize] =
+                    seg.r#ref as i8 - 1;
+            } else if let Some(_) = seg.filter(|seg| seg.globalmv != 0 || seg.skip != 0) {
+                b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] = 0 as libc::c_int as int8_t;
             } else {
-                let ctx1_0 = av1_get_ref_ctx(
-                    &*t.a,
-                    &t.l,
-                    by4,
-                    bx4,
-                    have_top,
-                    have_left,
-                );
+                let ctx1_0 = av1_get_ref_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
                 if dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     &mut ts.cdf.m.r#ref[0][ctx1_0 as usize],
-                )
-                {
-                    let ctx2_1 = av1_get_bwd_ref_ctx(
-                        &*t.a,
-                        &t.l,
-                        by4,
-                        bx4,
-                        have_top,
-                        have_left,
-                    );
+                ) {
+                    let ctx2_1 = av1_get_bwd_ref_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
                     if dav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
                         &mut ts.cdf.m.r#ref[1][ctx2_1 as usize],
-                    )
-                    {
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[0 as libc::c_int
-                            as usize] = 6 as libc::c_int as int8_t;
+                    ) {
+                        b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0 as libc::c_int as usize] =
+                            6 as libc::c_int as int8_t;
                     } else {
-                        let ctx3_0 = av1_get_bwd_ref_1_ctx(
-                            &*t.a,
-                            &t.l,
-                            by4,
-                            bx4,
-                            have_top,
-                            have_left,
-                        );
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[0 as libc::c_int
-                            as usize] = (4 as libc::c_int as libc::c_uint)
-                            .wrapping_add(
+                        let ctx3_0 =
+                            av1_get_bwd_ref_1_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
+                        b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0 as libc::c_int as usize] =
+                            (4 as libc::c_int as libc::c_uint).wrapping_add(
                                 dav1d_msac_decode_bool_adapt(
                                     &mut ts.msac,
-                                    &mut ts
-                                        .cdf
-                                        .m
-                                        .r#ref[5][ctx3_0 as usize],
+                                    &mut ts.cdf.m.r#ref[5][ctx3_0 as usize],
                                 ) as libc::c_uint,
                             ) as int8_t;
                     }
                 } else {
-                    let ctx2_2 = av1_get_fwd_ref_ctx(
-                        &*t.a,
-                        &t.l,
-                        by4,
-                        bx4,
-                        have_top,
-                        have_left,
-                    );
+                    let ctx2_2 = av1_get_fwd_ref_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
                     if dav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
                         &mut ts.cdf.m.r#ref[2][ctx2_2 as usize],
-                    )
-                    {
-                        let ctx3_1 = av1_get_fwd_ref_2_ctx(
-                            &*t.a,
-                            &t.l,
-                            by4,
-                            bx4,
-                            have_top,
-                            have_left,
-                        );
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[0 as libc::c_int
-                            as usize] = (2 as libc::c_int as libc::c_uint)
-                            .wrapping_add(
+                    ) {
+                        let ctx3_1 =
+                            av1_get_fwd_ref_2_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
+                        b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0 as libc::c_int as usize] =
+                            (2 as libc::c_int as libc::c_uint).wrapping_add(
                                 dav1d_msac_decode_bool_adapt(
                                     &mut ts.msac,
-                                    &mut ts
-                                        .cdf
-                                        .m
-                                        .r#ref[4][ctx3_1 as usize],
+                                    &mut ts.cdf.m.r#ref[4][ctx3_1 as usize],
                                 ) as libc::c_uint,
                             ) as int8_t;
                     } else {
-                        let ctx3_2 = av1_get_fwd_ref_1_ctx(
-                            &*t.a,
-                            &t.l,
-                            by4,
-                            bx4,
-                            have_top,
-                            have_left,
-                        );
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[0 as libc::c_int
-                            as usize] = dav1d_msac_decode_bool_adapt(
-                            &mut ts.msac,
-                            &mut ts
-                                .cdf
-                                .m
-                                .r#ref[3][ctx3_2 as usize],
-                        ) as int8_t;
+                        let ctx3_2 =
+                            av1_get_fwd_ref_1_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
+                        b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0 as libc::c_int as usize] =
+                            dav1d_msac_decode_bool_adapt(
+                                &mut ts.msac,
+                                &mut ts.cdf.m.r#ref[3][ctx3_2 as usize],
+                            ) as int8_t;
                     }
                 }
-                if DEBUG_BLOCK_INFO(f, t)
-                {
+                if DEBUG_BLOCK_INFO(f, t) {
                     printf(
                         b"Post-ref[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
-                        b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .r#ref[0] as libc::c_int,
+                        b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int,
                         ts.msac.rng,
                     );
                 }

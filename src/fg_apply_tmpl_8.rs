@@ -1,7 +1,8 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
-use crate::src::align::{Align16, Align64};
+use crate::src::align::Align16;
 use ::libc;
+use cfg_if::cfg_if;
 extern "C" {
     pub type Dav1dRef;
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
@@ -348,7 +349,17 @@ pub unsafe extern "C" fn dav1d_apply_grain_8bpc(
     in_0: *const Dav1dPicture,
 ) {
     let mut grain_lut = Align16([[[0; 82]; 74]; 3]);
-    let mut scaling = Align64([[0; 256]; 3]);
+    cfg_if! {
+        if #[cfg(target_arch = "x86_64")] {
+            use crate::src::align::Align64;
+
+            let mut scaling = Align64([[0; 256]; 3]);
+        } else {
+            use crate::src::align::Align1;
+
+            let mut scaling = Align1([[0; 256]; 3]);
+        }
+    }
     let rows = (*out).p.h + 31 >> 5;
     dav1d_prep_grain_8bpc(
         dsp,

@@ -840,7 +840,7 @@ unsafe extern "C" fn lr_sbrow(
     let max_unit_size = unit_size + half_unit_size;
     let row_y = y + (8 >> ss_ver) * (y != 0) as libc::c_int;
     let shift_hor = 7 - ss_hor;
-    let mut pre_lr_border: [[[pixel; 4]; 136]; 2] = [[[0; 4]; 136]; 2];
+    let mut pre_lr_border: Align16<[[[pixel; 4]; 136]; 2]> = Align16([[[0; 4]; 136]; 2]);
     let mut lr: [*const Av1RestorationUnit; 2] = [0 as *const Av1RestorationUnit; 2];
     let mut edges: LrEdgeFlags = ((if y > 0 {
         LR_HAVE_TOP as libc::c_int
