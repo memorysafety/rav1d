@@ -1,5 +1,4 @@
 use crate::include::common::intops::iclip;
-use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dLoopfilterModeRefDeltas;
@@ -922,26 +921,24 @@ pub unsafe fn dav1d_create_lf_mask_inter(
     );
 }
 
-pub unsafe fn dav1d_calc_eih(lim_lut: *mut Av1FilterLUT, filter_sharpness: libc::c_int) {
-    let sharp = filter_sharpness;
-    let mut level = 0;
-    while level < 64 {
+pub fn dav1d_calc_eih(lim_lut: &mut Av1FilterLUT, filter_sharpness: libc::c_int) {
+    // set E/I/H values from loopfilter level
+    let sharp = filter_sharpness as u8;
+    for level in 0..64 {
         let mut limit = level;
+
         if sharp > 0 {
             limit >>= sharp + 3 >> 2;
-            limit = imin(limit, 9 - sharp);
+            limit = std::cmp::min(limit, 9 - sharp);
         }
-        limit = imax(limit, 1 as libc::c_int);
-        (*lim_lut).i[level as usize] = limit as u8;
-        (*lim_lut).e[level as usize] = (2 * (level + 2) + limit) as u8;
-        level += 1;
+        limit = std::cmp::max(limit, 1);
+
+        lim_lut.i[level as usize] = limit;
+        lim_lut.e[level as usize] = 2 * (level + 2) + limit;
     }
-    (*lim_lut).sharp[0] = (sharp + 3 >> 2) as u64;
-    (*lim_lut).sharp[1] = (if sharp != 0 {
-        9 - sharp
-    } else {
-        0xff as libc::c_int
-    }) as u64;
+    let sharp = sharp as u64;
+    lim_lut.sharp[0] = sharp + 3 >> 2;
+    lim_lut.sharp[1] = if sharp != 0 { 9 - sharp } else { 0xff };
 }
 
 fn calc_lf_value(
