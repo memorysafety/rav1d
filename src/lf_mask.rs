@@ -62,12 +62,24 @@ pub struct Av1Restoration {
 /// * `32`: `x`
 /// * `32`: `y`
 /// * `2`: `txsz`, `step`
+/// * `2`: `edge`
 ///
 /// (Note: This is added here in the docs vs. inline `/* */` comments
 /// at the array lengths because `rustfmt` deletes them
 /// (tracked in [rust-lang/rustfmt#5297](https://github.com/rust-lang/rustfmt/issues/5297))).
+///
+/// The usage of `txa` here has been changed from the C version
+/// as the C version was UB in Rust.
+/// The C version offsetted `txa` in each recursive call
+/// to an element of the inner 32x32 dimensional array,
+/// but then casting that back to a pointer to the full 32x32x2x2 array,
+/// even though the pointer no longer pointed to a complete 32x32x2x2 array.
+/// This was (likely) okay in C given those now out-of-bounds elements were never accessed,
+/// but in Rust, dereferencing such a pointer would be an out-of-bounds access, and thus UB.
+/// Instead of offsetting `txa`, the offsets are calculated from
+/// the existing `y_off` and `x_off` args and applied at each use site of `txa.
 unsafe fn decomp_tx(
-    txa: *mut [[[u8; 32]; 32]; 2],
+    txa: &mut [[[[u8; 32]; 32]; 2]; 2],
     from: RectTxfmSize,
     depth: usize,
     y_off: u8,
@@ -76,6 +88,10 @@ unsafe fn decomp_tx(
 ) {
     debug_assert!(depth <= 2);
     let t_dim = &dav1d_txfm_dimensions[from as usize];
+
+    let y0 = (y_off * t_dim.h) as usize;
+    let x0 = (x_off * t_dim.w) as usize;
+
     let is_split = if from == TX_4X4 || depth > 1 {
         false
     } else {
@@ -83,51 +99,15 @@ unsafe fn decomp_tx(
     };
     if is_split {
         let sub = t_dim.sub as RectTxfmSize;
-        let htw4 = t_dim.w >> 1;
-        let hth4 = t_dim.h >> 1;
 
         decomp_tx(txa, sub, depth + 1, y_off * 2 + 0, x_off * 2 + 0, tx_masks);
         if t_dim.w >= t_dim.h {
-            decomp_tx(
-                &mut *(*(*(*txa.offset(0)).as_mut_ptr().offset(0))
-                    .as_mut_ptr()
-                    .offset(0))
-                .as_mut_ptr()
-                .offset(htw4 as isize) as *mut u8 as *mut [[[u8; 32]; 32]; 2],
-                sub,
-                depth + 1,
-                y_off * 2 + 0,
-                x_off * 2 + 1,
-                tx_masks,
-            );
+            decomp_tx(txa, sub, depth + 1, y_off * 2 + 0, x_off * 2 + 1, tx_masks);
         }
         if t_dim.h >= t_dim.w {
-            decomp_tx(
-                &mut *(*(*(*txa.offset(0)).as_mut_ptr().offset(0))
-                    .as_mut_ptr()
-                    .offset(hth4 as isize))
-                .as_mut_ptr()
-                .offset(0) as *mut u8 as *mut [[[u8; 32]; 32]; 2],
-                sub,
-                depth + 1,
-                y_off * 2 + 1,
-                x_off * 2 + 0,
-                tx_masks,
-            );
+            decomp_tx(txa, sub, depth + 1, y_off * 2 + 1, x_off * 2 + 0, tx_masks);
             if t_dim.w >= t_dim.h {
-                decomp_tx(
-                    &mut *(*(*(*txa.offset(0)).as_mut_ptr().offset(0))
-                        .as_mut_ptr()
-                        .offset(hth4 as isize))
-                    .as_mut_ptr()
-                    .offset(htw4 as isize) as *mut u8
-                        as *mut [[[u8; 32]; 32]; 2],
-                    sub,
-                    depth + 1,
-                    y_off * 2 + 1,
-                    x_off * 2 + 1,
-                    tx_masks,
-                );
+                decomp_tx(txa, sub, depth + 1, y_off * 2 + 1, x_off * 2 + 1, tx_masks);
             }
         }
     } else {
@@ -136,9 +116,9 @@ unsafe fn decomp_tx(
 
         let mut set_ctx = |_dir: &mut (), _diridx, off, mul, rep_macro: SetCtxFn| {
             for y in 0..t_dim.h as usize {
-                rep_macro((*txa.offset(0))[0][y].as_mut_ptr(), off, mul * lw as u64);
-                rep_macro((*txa.offset(1))[0][y].as_mut_ptr(), off, mul * lh as u64);
-                (*txa.offset(0))[1][y][0] = t_dim.w;
+                rep_macro(txa[0][0][y0 + y][x0..].as_mut_ptr(), off, mul * lw as u64);
+                rep_macro(txa[1][0][y0 + y][x0..].as_mut_ptr(), off, mul * lh as u64);
+                txa[0][1][y0 + y][x0] = t_dim.w;
             }
         };
         case_set_upto16(
@@ -149,11 +129,7 @@ unsafe fn decomp_tx(
             &mut set_ctx,
         );
         let mut set_ctx = |_dir: &mut (), _diridx, off, mul, rep_macro: SetCtxFn| {
-            rep_macro(
-                (*txa.offset(1))[1][0].as_mut_ptr(),
-                off,
-                mul * t_dim.h as u64,
-            );
+            rep_macro(txa[1][1][y0][x0..].as_mut_ptr(), off, mul * t_dim.h as u64);
         };
         case_set_upto16(
             t_dim.w as libc::c_int,
@@ -182,31 +158,12 @@ unsafe fn mask_edges_inter(
 
     let t_dim = &dav1d_txfm_dimensions[max_tx as usize];
 
-    // In `txa`, the array lengths represent from inner to outer:
-    // * `32`: `x`
-    // * `32`: `y`
-    // * `2`: `txsz`, `step`
-    // * `2`: `edge`
-    //
-    // (Note: This is added here in the docs vs. inline `/* */` comments
-    // at the array lengths because `rustfmt` deletes them
-    // (tracked in [rust-lang/rustfmt#5297](https://github.com/rust-lang/rustfmt/issues/5297))).
+    // See [`decomp_tx`]'s docs for the `txa` arg.
     let mut txa = Align16([[[[0; 32]; 32]; 2]; 2]);
 
-    for (y_off, y) in (0..h4).step_by(t_dim.h as usize).enumerate() {
-        for (x_off, x) in (0..w4).step_by(t_dim.w as usize).enumerate() {
-            decomp_tx(
-                &mut *(*(*(*txa.0.as_mut_ptr().offset(0)).as_mut_ptr().offset(0))
-                    .as_mut_ptr()
-                    .offset(y as isize))
-                .as_mut_ptr()
-                .offset(x as isize) as *mut u8 as *mut [[[u8; 32]; 32]; 2],
-                max_tx,
-                0,
-                y_off as u8,
-                x_off as u8,
-                tx_masks,
-            );
+    for (y_off, _) in (0..h4).step_by(t_dim.h as usize).enumerate() {
+        for (x_off, _) in (0..w4).step_by(t_dim.w as usize).enumerate() {
+            decomp_tx(&mut txa.0, max_tx, 0, y_off as u8, x_off as u8, tx_masks);
         }
     }
 
