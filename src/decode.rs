@@ -2054,176 +2054,111 @@ unsafe fn get_prev_frame_segid(
 }
 
 #[inline]
-unsafe extern "C" fn splat_oneref_mv(
-    c: *const Dav1dContext,
-    t: *mut Dav1dTaskContext,
+unsafe fn splat_oneref_mv(
+    c: &Dav1dContext,
+    t: &mut Dav1dTaskContext,
     bs: BlockSize,
-    b: *const Av1Block,
+    b: &Av1Block,
     bw4: libc::c_int,
     bh4: libc::c_int,
 ) {
-    let mode: InterPredMode = (*b).c2rust_unnamed.c2rust_unnamed_0.inter_mode as InterPredMode;
-    let tmpl: Align16<refmvs_block> = {
-        let mut init = refmvs_block(refmvs_block_unaligned {
-            mv: refmvs_mvpair {
-                mv: [
-                    (*b).c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .mv[0],
-                    mv::ZERO,
-                ],
-            },
-            r#ref: refmvs_refpair {
-                r#ref: [
-                    ((*b).c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int + 1) as int8_t,
-                    (if (*b).c2rust_unnamed.c2rust_unnamed_0.interintra_type as libc::c_int != 0 {
-                        0 as libc::c_int
-                    } else {
-                        -(1 as libc::c_int)
-                    }) as int8_t,
-                ],
-            },
-            bs: bs as uint8_t,
-            mf: ((mode as libc::c_uint == GLOBALMV as libc::c_int as libc::c_uint
-                && imin(bw4, bh4) >= 2) as libc::c_int
-                | (mode as libc::c_uint == NEWMV as libc::c_int as libc::c_uint) as libc::c_int * 2)
-                as uint8_t,
-        });
-        Align16(init)
-    };
-    ((*c).refmvs_dsp.splat_mv).expect("non-null function pointer")(
-        &mut *((*t).rt.r)
-            .as_mut_ptr()
-            .offset((((*t).by & 31) + 5) as isize),
+    let mode = b.inter_mode() as InterPredMode;
+    let tmpl = Align16(refmvs_block(refmvs_block_unaligned {
+        mv: refmvs_mvpair {
+            mv: [b.mv()[0], mv::ZERO],
+        },
+        r#ref: refmvs_refpair {
+            r#ref: [
+                b.r#ref()[0] + 1,
+                if b.interintra_type() != 0 { 0 } else { -1 },
+            ],
+        },
+        bs: bs as u8,
+        mf: (mode == GLOBALMV && std::cmp::min(bw4, bh4) >= 2) as u8 | (mode == NEWMV) as u8 * 2,
+    }));
+    c.refmvs_dsp.splat_mv(
+        &mut t.rt.r[((t.by & 31) + 5) as usize..],
         &tmpl.0,
-        (*t).bx,
+        t.bx,
         bw4,
         bh4,
     );
 }
+
 #[inline]
-unsafe extern "C" fn splat_intrabc_mv(
-    c: *const Dav1dContext,
-    t: *mut Dav1dTaskContext,
+unsafe fn splat_intrabc_mv(
+    c: &Dav1dContext,
+    t: &mut Dav1dTaskContext,
     bs: BlockSize,
-    b: *const Av1Block,
+    b: &Av1Block,
     bw4: libc::c_int,
     bh4: libc::c_int,
 ) {
-    let tmpl: Align16<refmvs_block> = {
-        let mut init = refmvs_block(refmvs_block_unaligned {
-            mv: refmvs_mvpair {
-                mv: [
-                    (*b).c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .mv[0],
-                    mv::ZERO,
-                ],
-            },
-            r#ref: refmvs_refpair {
-                r#ref: [0 as libc::c_int as int8_t, -(1 as libc::c_int) as int8_t],
-            },
-            bs: bs as uint8_t,
-            mf: 0 as libc::c_int as uint8_t,
-        });
-        Align16(init)
-    };
-    ((*c).refmvs_dsp.splat_mv).expect("non-null function pointer")(
-        &mut *((*t).rt.r)
-            .as_mut_ptr()
-            .offset((((*t).by & 31) + 5) as isize),
+    let tmpl = Align16(refmvs_block(refmvs_block_unaligned {
+        mv: refmvs_mvpair {
+            mv: [b.mv()[0], mv::ZERO],
+        },
+        r#ref: refmvs_refpair { r#ref: [0, -1] },
+        bs: bs as u8,
+        mf: 0,
+    }));
+    c.refmvs_dsp.splat_mv(
+        &mut t.rt.r[((t.by & 31) + 5) as usize..],
         &tmpl.0,
-        (*t).bx,
+        t.bx,
         bw4,
         bh4,
     );
 }
+
 #[inline]
-unsafe extern "C" fn splat_tworef_mv(
-    c: *const Dav1dContext,
-    t: *mut Dav1dTaskContext,
+unsafe fn splat_tworef_mv(
+    c: &Dav1dContext,
+    t: &mut Dav1dTaskContext,
     bs: BlockSize,
-    b: *const Av1Block,
+    b: &Av1Block,
     bw4: libc::c_int,
     bh4: libc::c_int,
 ) {
-    if !(bw4 >= 2 && bh4 >= 2) {
-        unreachable!();
-    }
-    let mode: CompInterPredMode =
-        (*b).c2rust_unnamed.c2rust_unnamed_0.inter_mode as CompInterPredMode;
-    let tmpl: Align16<refmvs_block> = {
-        let mut init = refmvs_block(refmvs_block_unaligned {
-            mv: refmvs_mvpair {
-                mv: [
-                    (*b).c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .mv[0],
-                    (*b).c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .mv[1],
-                ],
-            },
-            r#ref: refmvs_refpair {
-                r#ref: [
-                    ((*b).c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int + 1) as int8_t,
-                    ((*b).c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as libc::c_int + 1) as int8_t,
-                ],
-            },
-            bs: bs as uint8_t,
-            mf: ((mode as libc::c_uint == GLOBALMV_GLOBALMV as libc::c_int as libc::c_uint)
-                as libc::c_int
-                | ((1 as libc::c_int) << mode as libc::c_uint & 0xbc as libc::c_int != 0)
-                    as libc::c_int
-                    * 2) as uint8_t,
-        });
-        Align16(init)
-    };
-    ((*c).refmvs_dsp.splat_mv).expect("non-null function pointer")(
-        &mut *((*t).rt.r)
-            .as_mut_ptr()
-            .offset((((*t).by & 31) + 5) as isize),
+    assert!(bw4 >= 2 && bh4 >= 2);
+    let mode = b.inter_mode() as CompInterPredMode;
+    let tmpl = Align16(refmvs_block(refmvs_block_unaligned {
+        mv: refmvs_mvpair { mv: *b.mv() },
+        r#ref: refmvs_refpair {
+            r#ref: [b.r#ref()[0] + 1, b.r#ref()[1] + 1],
+        },
+        bs: bs as u8,
+        mf: (mode == GLOBALMV_GLOBALMV) as u8 | (1 << mode & 0xbc != 0) as u8 * 2,
+    }));
+    c.refmvs_dsp.splat_mv(
+        &mut t.rt.r[((t.by & 31) + 5) as usize..],
         &tmpl.0,
-        (*t).bx,
+        t.bx,
         bw4,
         bh4,
     );
 }
+
 #[inline]
-unsafe extern "C" fn splat_intraref(
-    c: *const Dav1dContext,
-    t: *mut Dav1dTaskContext,
+unsafe fn splat_intraref(
+    c: &Dav1dContext,
+    t: &mut Dav1dTaskContext,
     bs: BlockSize,
     bw4: libc::c_int,
     bh4: libc::c_int,
 ) {
-    let tmpl: Align16<refmvs_block> = {
-        let mut init = refmvs_block(refmvs_block_unaligned {
-            mv: refmvs_mvpair {
-                mv: [mv::INVALID, mv::ZERO],
-            },
-            r#ref: refmvs_refpair {
-                r#ref: [0 as libc::c_int as int8_t, -(1 as libc::c_int) as int8_t],
-            },
-            bs: bs as uint8_t,
-            mf: 0 as libc::c_int as uint8_t,
-        });
-        Align16(init)
-    };
-    ((*c).refmvs_dsp.splat_mv).expect("non-null function pointer")(
-        &mut *((*t).rt.r)
-            .as_mut_ptr()
-            .offset((((*t).by & 31) + 5) as isize),
+    let tmpl = Align16(refmvs_block(refmvs_block_unaligned {
+        mv: refmvs_mvpair {
+            mv: [mv::INVALID, mv::ZERO],
+        },
+        r#ref: refmvs_refpair { r#ref: [0, -1] },
+        bs: bs as u8,
+        mf: 0,
+    }));
+    c.refmvs_dsp.splat_mv(
+        &mut t.rt.r[((t.by & 31) + 5) as usize..],
         &tmpl.0,
-        (*t).bx,
+        t.bx,
         bw4,
         bh4,
     );
@@ -3294,7 +3229,7 @@ unsafe fn decode_b(
         }
 
         if is_inter_or_switch(frame_hdr) || frame_hdr.allow_intrabc != 0 {
-            splat_intraref(f.c, t, bs, bw4, bh4);
+            splat_intraref(&*f.c, t, bs, bw4, bh4);
         }
     } else if is_key_or_intra(frame_hdr) {
         // intra block copy
@@ -3416,7 +3351,7 @@ unsafe fn decode_b(
             return -1;
         }
 
-        splat_intrabc_mv(f.c, t, bs, b, bw4, bh4);
+        splat_intrabc_mv(&*f.c, t, bs, b, bw4, bh4);
 
         let mut set_ctx = |dir: &mut BlockContext, diridx: usize, off, mul, rep_macro: SetCtxFn| {
             rep_macro(
@@ -4504,9 +4439,9 @@ unsafe fn decode_b(
             );
         }
         if is_comp {
-            splat_tworef_mv(f.c, t, bs, b, bw4, bh4);
+            splat_tworef_mv(&*f.c, t, bs, b, bw4, bh4);
         } else {
-            splat_oneref_mv(f.c, t, bs, b, bw4, bh4);
+            splat_oneref_mv(&*f.c, t, bs, b, bw4, bh4);
         }
         match bh4 {
             1 => {

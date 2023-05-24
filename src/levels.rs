@@ -493,4 +493,8 @@ impl Av1Block {
     pub unsafe fn max_ytx_mut(&mut self) -> &mut u8 {
         &mut self.c2rust_unnamed.c2rust_unnamed_0.max_ytx
     }
+
+    pub unsafe fn interintra_type(&self) -> u8 {
+        self.c2rust_unnamed.c2rust_unnamed_0.interintra_type
+    }
 }
