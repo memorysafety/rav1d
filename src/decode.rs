@@ -1735,71 +1735,54 @@ unsafe fn read_pal_plane(
     }
 }
 
-unsafe extern "C" fn read_pal_uv(
-    t: *mut Dav1dTaskContext,
-    b: *mut Av1Block,
+unsafe fn read_pal_uv(
+    t: &mut Dav1dTaskContext,
+    b: &mut Av1Block,
     sz_ctx: u8,
     bx4: usize,
     by4: usize,
 ) {
-    read_pal_plane(&mut *t, &mut *b, true, sz_ctx, bx4, by4);
-    let ts: *mut Dav1dTileState = (*t).ts;
-    let f: *const Dav1dFrameContext = (*t).f;
-    let pal: *mut uint16_t = if (*t).frame_thread.pass != 0 {
-        ((*((*f).frame_thread.pal).offset(
-            ((((*t).by >> 1) + ((*t).bx & 1)) as isize * ((*f).b4_stride >> 1)
-                + (((*t).bx >> 1) + ((*t).by & 1)) as isize) as isize,
-        ))[2])
-            .as_mut_ptr()
+    read_pal_plane(t, b, true, sz_ctx, bx4, by4);
+
+    // V pal coding
+    let ts = &mut *t.ts;
+    let f = &*t.f;
+
+    // Hoisted so the `&` borrow of `t`
+    // doesn't conflict with `pal`'s `&mut` borrow of `t`.
+    let dbg = DEBUG_BLOCK_INFO(&*f, &*t);
+
+    let pal = if t.frame_thread.pass != 0 {
+        &mut (*(f.frame_thread.pal).offset(
+            ((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
+                + ((t.bx >> 1) + (t.by & 1)) as isize,
+        ))[2]
     } else {
-        ((*t).scratch.c2rust_unnamed_0.pal[2]).as_mut_ptr()
+        &mut t.scratch.c2rust_unnamed_0.pal[2]
     };
-    if dav1d_msac_decode_bool_equi(&mut (*ts).msac) {
-        let bits = (((*f).cur.p.bpc - 4) as libc::c_uint).wrapping_add(dav1d_msac_decode_bools(
-            &mut (*ts).msac,
-            2 as libc::c_int as libc::c_uint,
-        )) as libc::c_int;
-        let ref mut fresh19 = *pal.offset(0);
-        *fresh19 =
-            dav1d_msac_decode_bools(&mut (*ts).msac, (*f).cur.p.bpc as libc::c_uint) as uint16_t;
-        let mut prev = *fresh19 as libc::c_int;
-        let max = ((1 as libc::c_int) << (*f).cur.p.bpc) - 1;
-        let mut i = 1;
-        while i < (*b).c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int {
-            let mut delta =
-                dav1d_msac_decode_bools(&mut (*ts).msac, bits as libc::c_uint) as libc::c_int;
-            if delta != 0 && dav1d_msac_decode_bool_equi(&mut (*ts).msac) {
+    let pal = &mut pal[..b.pal_sz()[1] as usize];
+    if dav1d_msac_decode_bool_equi(&mut ts.msac) {
+        let bits = f.cur.p.bpc as u32 + dav1d_msac_decode_bools(&mut ts.msac, 2) - 4;
+        let mut prev = dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as u16;
+        pal[0] = prev;
+        let max = (1 << f.cur.p.bpc) - 1;
+        for pal in &mut pal[1..] {
+            let mut delta = dav1d_msac_decode_bools(&mut ts.msac, bits) as i16;
+            if delta != 0 && dav1d_msac_decode_bool_equi(&mut ts.msac) {
                 delta = -delta;
             }
-            let ref mut fresh20 = *pal.offset(i as isize);
-            *fresh20 = (prev + delta & max) as uint16_t;
-            prev = *fresh20 as libc::c_int;
-            i += 1;
+            prev = ((prev as i16 + delta) as u16) & max;
+            *pal = prev;
         }
     } else {
-        let mut i_0 = 0;
-        while i_0 < (*b).c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int {
-            *pal.offset(i_0 as isize) =
-                dav1d_msac_decode_bools(&mut (*ts).msac, (*f).cur.p.bpc as libc::c_uint)
-                    as uint16_t;
-            i_0 += 1;
-        }
+        pal.fill_with(|| dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as libc::c_uint) as u16);
     }
-    if DEBUG_BLOCK_INFO(&*f, &*t) {
-        printf(
-            b"Post-pal[pl=2]: r=%d \0" as *const u8 as *const libc::c_char,
-            (*ts).msac.rng,
-        );
-        let mut n = 0;
-        while n < (*b).c2rust_unnamed.c2rust_unnamed.pal_sz[1] as libc::c_int {
-            printf(
-                b"%c%02x\0" as *const u8 as *const libc::c_char,
-                if n != 0 { ' ' as i32 } else { '[' as i32 },
-                *pal.offset(n as isize) as libc::c_int,
-            );
-            n += 1;
+    if dbg {
+        print!("Post-pal[pl=2]: r={} ", ts.msac.rng);
+        for (n, pal) in pal.iter().enumerate() {
+            print!("{}{:02x}", if n != 0 { ' ' } else { '[' }, pal);
         }
-        printf(b"]\n\0" as *const u8 as *const libc::c_char);
+        println!("]");
     }
 }
 
