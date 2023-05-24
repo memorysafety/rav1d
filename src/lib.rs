@@ -591,24 +591,11 @@ use crate::include::stdatomic::atomic_uint;
 use crate::src::cdf::CdfThreadContext;
 
 use crate::include::pthread::pthread_cond_t;
+use crate::src::internal::Dav1dContext_frame_thread;
 use crate::src::internal::Dav1dContext_refs;
+use crate::src::internal::Dav1dTileGroup;
 use crate::src::internal::TaskThreadData;
 use crate::src::picture::Dav1dThreadPicture;
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union __atomic_wide_counter {
-    pub __value64: libc::c_ulonglong,
-    pub __value32: C2RustUnnamed_3,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_3 {
-    pub __low: libc::c_uint,
-    pub __high: libc::c_uint,
-}
-use crate::src::internal::Dav1dContext_frame_thread;
-use crate::src::internal::Dav1dTileGroup;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTaskContext {

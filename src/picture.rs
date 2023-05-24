@@ -22,23 +22,10 @@ extern "C" {
     fn dav1d_data_props_set_defaults(props: *mut Dav1dDataProps);
     fn dav1d_log(c: *mut Dav1dContext, format: *const libc::c_char, _: ...);
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union __atomic_wide_counter {
-    pub __value64: libc::c_ulonglong,
-    pub __value32: C2RustUnnamed,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed {
-    pub __low: libc::c_uint,
-    pub __high: libc::c_uint,
-}
-use crate::include::stdatomic::atomic_int;
-use crate::include::stdatomic::atomic_uint;
-
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
+use crate::include::stdatomic::atomic_int;
+use crate::include::stdatomic::atomic_uint;
 use crate::src::r#ref::Dav1dRef;
 #[derive(Copy, Clone)]
 #[repr(C)]
