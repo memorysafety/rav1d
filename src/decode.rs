@@ -1788,17 +1788,20 @@ unsafe fn read_pal_uv(
 
 unsafe fn order_palette(
     mut pal_idx: *const uint8_t,
-    stride: ptrdiff_t,
-    i: libc::c_int,
-    first: libc::c_int,
-    last: libc::c_int,
+    stride: usize,
+    i: usize,
+    first: usize,
+    last: usize,
     order: &mut [[u8; u8::BITS as usize]; 64],
     ctx: &mut [u8; 64],
 ) {
     let mut have_top = i > first;
 
     assert!(!pal_idx.is_null());
-    pal_idx = pal_idx.offset(first as isize + (i - first) as isize * stride);
+    pal_idx = pal_idx.offset((first + (i - first) * stride) as isize);
+
+    let stride = stride as isize;
+
     for ((ctx, order), j) in ctx
         .iter_mut()
         .zip(order.iter_mut())
@@ -1862,89 +1865,71 @@ unsafe fn order_palette(
     }
 }
 
-unsafe extern "C" fn read_pal_indices(
-    t: *mut Dav1dTaskContext,
+unsafe fn read_pal_indices(
+    t: &mut Dav1dTaskContext,
     pal_idx: *mut uint8_t,
-    b: *const Av1Block,
-    pl: libc::c_int,
+    b: &Av1Block,
+    pl: bool,
     w4: libc::c_int,
     h4: libc::c_int,
     bw4: libc::c_int,
     bh4: libc::c_int,
 ) {
-    let ts: *mut Dav1dTileState = (*t).ts;
-    let stride: ptrdiff_t = (bw4 * 4) as ptrdiff_t;
-    if pal_idx.is_null() {
-        unreachable!();
-    }
-    *pal_idx.offset(0) = dav1d_msac_decode_uniform(
-        &mut (*ts).msac,
-        (*b).c2rust_unnamed.c2rust_unnamed.pal_sz[pl as usize] as libc::c_uint,
-    ) as uint8_t;
-    let color_map_cdf: *mut [uint16_t; 8] = ((*ts).cdf.m.color_map[pl as usize]
-        [((*b).c2rust_unnamed.c2rust_unnamed.pal_sz[pl as usize] as libc::c_int - 2) as usize])
-        .as_mut_ptr();
-    let order = &mut (*t)
+    let [w4, h4, bw4, bh4] = [w4, h4, bw4, bh4].map(|n| usize::try_from(n).unwrap());
+    let pli = pl as usize;
+    let pal_sz = b.pal_sz()[pli] as usize;
+
+    let ts = &mut *t.ts;
+    let stride = bw4 * 4;
+    assert!(!pal_idx.is_null());
+    *pal_idx.offset(0) = dav1d_msac_decode_uniform(&mut ts.msac, pal_sz as libc::c_uint) as u8;
+    let color_map_cdf = &mut ts.cdf.m.color_map[pli][pal_sz - 2];
+    let order = &mut t
         .scratch
         .c2rust_unnamed_0
         .c2rust_unnamed
         .c2rust_unnamed
         .pal_order;
-    let ctx = &mut (*t)
+    let ctx = &mut t
         .scratch
         .c2rust_unnamed_0
         .c2rust_unnamed
         .c2rust_unnamed
         .pal_ctx;
-    let mut i = 1;
-    while i < 4 * (w4 + h4) - 1 {
-        let first = imin(i, w4 * 4 - 1);
-        let last = imax(0 as libc::c_int, i - h4 * 4 + 1);
+    for i in 1..4 * (w4 + h4) - 1 {
+        // top/left-to-bottom/right diagonals ("wave-front")
+        let first = std::cmp::min(i, w4 * 4 - 1);
+        let last = (i + 1).checked_sub(h4 * 4).unwrap_or(0);
         order_palette(pal_idx, stride, i, first, last, order, ctx);
-        let mut j = first;
-        let mut m = 0;
-        while j >= last {
+        for (m, j) in (last..=first).rev().enumerate() {
             let color_idx = dav1d_msac_decode_symbol_adapt8(
-                &mut (*ts).msac,
-                &mut *color_map_cdf.offset(ctx[m as usize] as isize),
-                ((*b).c2rust_unnamed.c2rust_unnamed.pal_sz[pl as usize] as libc::c_int - 1)
-                    as size_t,
-            ) as libc::c_int;
-            *pal_idx.offset(((i - j) as isize * stride + j as isize) as isize) =
-                order[m as usize][color_idx as usize];
-            j -= 1;
-            m += 1;
+                &mut ts.msac,
+                &mut color_map_cdf[ctx[m] as usize],
+                pal_sz - 1,
+            ) as usize;
+            *pal_idx.offset(((i - j) * stride + j) as isize) = order[m][color_idx];
         }
-        i += 1;
     }
+    // fill invisible edges
     if bw4 > w4 {
-        let mut y = 0;
-        while y < 4 * h4 {
-            memset(
-                &mut *pal_idx.offset((y as isize * stride + (4 * w4) as isize) as isize)
-                    as *mut uint8_t as *mut libc::c_void,
-                *pal_idx.offset((y as isize * stride + (4 * w4) as isize - 1) as isize)
-                    as libc::c_int,
-                (4 * (bw4 - w4)) as size_t,
-            );
-            y += 1;
+        for y in 0..4 * h4 {
+            std::slice::from_raw_parts_mut(
+                pal_idx.offset((y * stride + (4 * w4)) as isize),
+                4 * (bw4 - w4),
+            )
+            .fill(*pal_idx.offset((y * stride + (4 * w4) - 1) as isize));
         }
     }
     if h4 < bh4 {
-        let src: *const uint8_t =
-            &mut *pal_idx.offset(stride * (4 * h4 as isize - 1)) as *mut uint8_t;
-        let mut y_0 = h4 * 4;
-        while y_0 < bh4 * 4 {
-            memcpy(
-                &mut *pal_idx.offset((y_0 as isize * stride) as isize) as *mut uint8_t
-                    as *mut libc::c_void,
-                src as *const libc::c_void,
-                (bw4 * 4) as libc::c_ulong,
-            );
-            y_0 += 1;
+        let len = bw4 * 4;
+        let src = std::slice::from_raw_parts(pal_idx.offset((stride * (4 * h4 - 1)) as isize), len);
+        for y in h4 * 4..bh4 * 4 {
+            std::slice::from_raw_parts_mut(pal_idx.offset((y * stride) as isize), len)
+                .copy_from_slice(src);
         }
     }
 }
+
 unsafe extern "C" fn read_vartx_tree(
     t: *mut Dav1dTaskContext,
     b: *mut Av1Block,
@@ -3330,7 +3315,7 @@ unsafe fn decode_b(
                 pal_idx = t.scratch.c2rust_unnamed_0.pal_idx.as_mut_ptr();
             }
 
-            read_pal_indices(t, pal_idx, b, 0, w4, h4, bw4, bh4);
+            read_pal_indices(t, pal_idx, b, false, w4, h4, bw4, bh4);
 
             if DEBUG_BLOCK_INFO(f, t) {
                 println!("Post-y-pal-indices: r={}", ts.msac.rng);
@@ -3354,7 +3339,7 @@ unsafe fn decode_b(
                     .offset((bw4 * bh4 * 16) as isize);
             }
 
-            read_pal_indices(t, pal_idx, b, 1, cw4, ch4, cbw4, cbh4);
+            read_pal_indices(t, pal_idx, b, true, cw4, ch4, cbw4, cbh4);
 
             if DEBUG_BLOCK_INFO(f, t) {
                 println!("Post-uv-pal-indices: r={}", ts.msac.rng);
