@@ -1549,74 +1549,86 @@ fn findoddzero(buf: &[u8]) -> bool {
         .is_some()
 }
 
-unsafe extern "C" fn read_pal_plane(
-    t: *mut Dav1dTaskContext,
-    b: *mut Av1Block,
-    pl: libc::c_int,
-    sz_ctx: libc::c_int,
-    bx4: libc::c_int,
-    by4: libc::c_int,
+unsafe fn read_pal_plane(
+    t: &mut Dav1dTaskContext,
+    b: &mut Av1Block,
+    pl: bool,
+    sz_ctx: u8,
+    bx4: usize,
+    by4: usize,
 ) {
-    let ts: *mut Dav1dTileState = (*t).ts;
-    let f: *const Dav1dFrameContext = (*t).f;
-    (*b).c2rust_unnamed.c2rust_unnamed.pal_sz[pl as usize] = (dav1d_msac_decode_symbol_adapt8(
-        &mut (*ts).msac,
-        &mut (*ts).cdf.m.pal_sz[pl as usize][sz_ctx as usize],
-        6 as libc::c_int as size_t,
-    ))
-    .wrapping_add(2 as libc::c_int as libc::c_uint)
-        as uint8_t;
-    let pal_sz = (*b).c2rust_unnamed.c2rust_unnamed.pal_sz[pl as usize] as libc::c_int;
-    let mut cache: [uint16_t; 16] = [0; 16];
-    let mut used_cache: [uint16_t; 8] = [0; 8];
-    let mut l_cache = if pl != 0 {
-        (*t).pal_sz_uv[1][by4 as usize] as libc::c_int
+    let pli = pl as usize;
+    let not_pl = !pl as u16;
+
+    let ts = &mut *t.ts;
+    let f = &*t.f;
+
+    // Must come before `pal`, which mutably borrows `t`.
+    // TODO: `DEBUG_BLOCK_INFO` really should take a subset of `f` and `t`,
+    // i.e. only the fields it needs, as this would solve the bitdepth-dependence problem
+    // as well as the borrowck error here if `dbg` is not hoisted.
+    let dbg = DEBUG_BLOCK_INFO(f, t);
+
+    let pal_sz = dav1d_msac_decode_symbol_adapt8(
+        &mut ts.msac,
+        &mut ts.cdf.m.pal_sz[pli][sz_ctx as usize],
+        6,
+    ) as u8
+        + 2;
+    b.pal_sz_mut()[pli] = pal_sz;
+    let pal_sz = pal_sz as usize;
+    let mut cache = <[u16; 16]>::default();
+    let mut used_cache = <[u16; 8]>::default();
+    let mut l_cache = if pl {
+        t.pal_sz_uv[1][by4]
     } else {
-        (*t).l.pal_sz.0[by4 as usize] as libc::c_int
+        t.l.pal_sz.0[by4]
     };
     let mut n_cache = 0;
+    // don't reuse above palette outside SB64 boundaries
     let mut a_cache = if by4 & 15 != 0 {
-        if pl != 0 {
-            (*t).pal_sz_uv[0][bx4 as usize] as libc::c_int
+        if pl {
+            t.pal_sz_uv[0][bx4]
         } else {
-            (*(*t).a).pal_sz.0[bx4 as usize] as libc::c_int
+            (*t.a).pal_sz.0[bx4]
         }
     } else {
-        0 as libc::c_int
+        0
     };
-    let mut l: *const uint16_t = ((*t).al_pal[1][by4 as usize][pl as usize]).as_mut_ptr();
-    let mut a: *const uint16_t = ((*t).al_pal[0][bx4 as usize][pl as usize]).as_mut_ptr();
+    let [a, l] = &mut t.al_pal;
+    let mut l = &l[by4][pli][..];
+    let mut a = &a[bx4][pli][..];
+
+    // fill/sort cache
+    // TODO: This logic could be replaced with `itertools`' `.merge` and `.dedup`, which would elide bounds checks.
     while l_cache != 0 && a_cache != 0 {
-        if (*l as libc::c_int) < *a as libc::c_int {
-            if n_cache == 0 || cache[(n_cache - 1) as usize] as libc::c_int != *l as libc::c_int {
-                let fresh8 = n_cache;
-                n_cache = n_cache + 1;
-                cache[fresh8 as usize] = *l;
+        if l[0] < a[0] {
+            if n_cache == 0 || cache[n_cache - 1] != l[0] {
+                cache[n_cache] = l[0];
+                n_cache += 1;
             }
-            l = l.offset(1);
+            l = &l[1..];
             l_cache -= 1;
         } else {
-            if *a as libc::c_int == *l as libc::c_int {
-                l = l.offset(1);
+            if a[0] == l[0] {
+                l = &l[1..];
                 l_cache -= 1;
             }
-            if n_cache == 0 || cache[(n_cache - 1) as usize] as libc::c_int != *a as libc::c_int {
-                let fresh9 = n_cache;
-                n_cache = n_cache + 1;
-                cache[fresh9 as usize] = *a;
+            if n_cache == 0 || cache[n_cache - 1] != a[0] {
+                cache[n_cache] = a[0];
+                n_cache += 1;
             }
-            a = a.offset(1);
+            a = &a[1..];
             a_cache -= 1;
         }
     }
     if l_cache != 0 {
         loop {
-            if n_cache == 0 || cache[(n_cache - 1) as usize] as libc::c_int != *l as libc::c_int {
-                let fresh10 = n_cache;
-                n_cache = n_cache + 1;
-                cache[fresh10 as usize] = *l;
+            if n_cache == 0 || cache[n_cache - 1] != l[0] {
+                cache[n_cache] = l[0];
+                n_cache += 1;
             }
-            l = l.offset(1);
+            l = &l[1..];
             l_cache -= 1;
             if !(l_cache > 0) {
                 break;
@@ -1624,153 +1636,113 @@ unsafe extern "C" fn read_pal_plane(
         }
     } else if a_cache != 0 {
         loop {
-            if n_cache == 0 || cache[(n_cache - 1) as usize] as libc::c_int != *a as libc::c_int {
-                let fresh11 = n_cache;
-                n_cache = n_cache + 1;
-                cache[fresh11 as usize] = *a;
+            if n_cache == 0 || cache[n_cache - 1] != a[0] {
+                cache[n_cache] = a[0];
+                n_cache += 1;
             }
-            a = a.offset(1);
+            a = &a[1..];
             a_cache -= 1;
             if !(a_cache > 0) {
                 break;
             }
         }
     }
+    let cache = &cache[..n_cache];
+
+    // find reused cache entries
+    // TODO: Bounds checks could be elided with more complex iterators.
     let mut i = 0;
-    let mut n = 0;
-    while n < n_cache && i < pal_sz {
-        if dav1d_msac_decode_bool_equi(&mut (*ts).msac) {
-            let fresh12 = i;
-            i = i + 1;
-            used_cache[fresh12 as usize] = cache[n as usize];
+    for cache in cache {
+        if !(i < pal_sz) {
+            break;
         }
-        n += 1;
+        if dav1d_msac_decode_bool_equi(&mut ts.msac) {
+            used_cache[i] = *cache;
+            i += 1;
+        }
     }
-    let n_used_cache = i;
-    let pal: *mut uint16_t = if (*t).frame_thread.pass != 0 {
-        ((*((*f).frame_thread.pal).offset(
-            ((((*t).by >> 1) + ((*t).bx & 1)) as isize * ((*f).b4_stride >> 1)
-                + (((*t).bx >> 1) + ((*t).by & 1)) as isize) as isize,
-        ))[pl as usize])
-            .as_mut_ptr()
+    let used_cache = &used_cache[..i];
+
+    // parse new entries
+    let pal = if t.frame_thread.pass != 0 {
+        &mut (*(f.frame_thread.pal).offset(
+            ((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
+                + ((t.bx >> 1) + (t.by & 1)) as isize,
+        ))[pli]
     } else {
-        ((*t).scratch.c2rust_unnamed_0.pal[pl as usize]).as_mut_ptr()
+        &mut t.scratch.c2rust_unnamed_0.pal[pli]
     };
-    if i < pal_sz {
-        let fresh13 = i;
-        i = i + 1;
-        let ref mut fresh14 = *pal.offset(fresh13 as isize);
-        *fresh14 =
-            dav1d_msac_decode_bools(&mut (*ts).msac, (*f).cur.p.bpc as libc::c_uint) as uint16_t;
-        let mut prev = *fresh14 as libc::c_int;
-        if i < pal_sz {
-            let mut bits = (((*f).cur.p.bpc - 3) as libc::c_uint).wrapping_add(
-                dav1d_msac_decode_bools(&mut (*ts).msac, 2 as libc::c_int as libc::c_uint),
-            ) as libc::c_int;
-            let max = ((1 as libc::c_int) << (*f).cur.p.bpc) - 1;
+    let pal = &mut pal[..pal_sz];
+    if i < pal.len() {
+        let mut prev = dav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as u32) as u16;
+        pal[i] = prev;
+        i += 1;
+
+        if i < pal.len() {
+            let mut bits = f.cur.p.bpc as u32 + dav1d_msac_decode_bools(&mut ts.msac, 2) - 3;
+            let max = (1 << f.cur.p.bpc) - 1;
+
             loop {
-                let delta =
-                    dav1d_msac_decode_bools(&mut (*ts).msac, bits as libc::c_uint) as libc::c_int;
-                let fresh15 = i;
-                i = i + 1;
-                let ref mut fresh16 = *pal.offset(fresh15 as isize);
-                *fresh16 = imin(prev + delta + (pl == 0) as libc::c_int, max) as uint16_t;
-                prev = *fresh16 as libc::c_int;
-                if prev + (pl == 0) as libc::c_int >= max {
-                    while i < pal_sz {
-                        *pal.offset(i as isize) = max as uint16_t;
-                        i += 1;
-                    }
+                let delta = dav1d_msac_decode_bools(&mut ts.msac, bits) as u16;
+                prev = std::cmp::min(prev + delta + not_pl, max);
+                pal[i] = prev;
+                i += 1;
+                if prev + not_pl >= max {
+                    pal[i..].fill(max);
                     break;
                 } else {
-                    bits = imin(
-                        bits,
-                        1 as libc::c_int
-                            + ulog2((max - prev - (pl == 0) as libc::c_int) as libc::c_uint),
-                    );
-                    if !(i < pal_sz) {
+                    bits = std::cmp::min(bits, 1 + ulog2((max - prev - not_pl) as u32) as u32);
+                    if !(i < pal.len()) {
                         break;
                     }
                 }
             }
         }
-        let mut n_0 = 0;
-        let mut m = n_used_cache;
-        i = 0 as libc::c_int;
-        while i < pal_sz {
-            if n_0 < n_used_cache
-                && (m >= pal_sz
-                    || used_cache[n_0 as usize] as libc::c_int
-                        <= *pal.offset(m as isize) as libc::c_int)
-            {
-                let fresh17 = n_0;
-                n_0 = n_0 + 1;
-                *pal.offset(i as isize) = used_cache[fresh17 as usize];
+
+        // merge cache+new entries
+        let mut n = 0;
+        let mut m = used_cache.len();
+        for i in 0..pal.len() {
+            if n < used_cache.len() && (m >= pal.len() || used_cache[n] <= pal[m]) {
+                pal[i] = used_cache[n];
+                n += 1;
             } else {
-                if !(m < pal_sz) {
-                    unreachable!();
-                }
-                let fresh18 = m;
-                m = m + 1;
-                *pal.offset(i as isize) = *pal.offset(fresh18 as isize);
+                pal[i] = pal[m];
+                m += 1;
             }
-            i += 1;
         }
     } else {
-        memcpy(
-            pal as *mut libc::c_void,
-            used_cache.as_mut_ptr() as *const libc::c_void,
-            (n_used_cache as libc::c_ulong)
-                .wrapping_mul(::core::mem::size_of::<uint16_t>() as libc::c_ulong),
-        );
+        pal[..used_cache.len()].copy_from_slice(&used_cache);
     }
-    if DEBUG_BLOCK_INFO(&*f, &*t) {
-        printf(
-            b"Post-pal[pl=%d,sz=%d,cache_size=%d,used_cache=%d]: r=%d, cache=\0" as *const u8
-                as *const libc::c_char,
-            pl,
+
+    if dbg {
+        print!(
+            "Post-pal[pl={},sz={},cache_size={},used_cache={}]: r={}, cache=",
+            pli,
             pal_sz,
-            n_cache,
-            n_used_cache,
-            (*ts).msac.rng,
+            cache.len(),
+            used_cache.len(),
+            ts.msac.rng
         );
-        let mut n_1 = 0;
-        while n_1 < n_cache {
-            printf(
-                b"%c%02x\0" as *const u8 as *const libc::c_char,
-                if n_1 != 0 { ' ' as i32 } else { '[' as i32 },
-                cache[n_1 as usize] as libc::c_int,
-            );
-            n_1 += 1;
+        for (n, cache) in cache.iter().enumerate() {
+            print!("{}{:02x}", if n != 0 { ' ' } else { '[' }, cache);
         }
-        printf(
-            b"%s, pal=\0" as *const u8 as *const libc::c_char,
-            if n_cache != 0 {
-                b"]\0" as *const u8 as *const libc::c_char
-            } else {
-                b"[]\0" as *const u8 as *const libc::c_char
-            },
-        );
-        let mut n_2 = 0;
-        while n_2 < pal_sz {
-            printf(
-                b"%c%02x\0" as *const u8 as *const libc::c_char,
-                if n_2 != 0 { ' ' as i32 } else { '[' as i32 },
-                *pal.offset(n_2 as isize) as libc::c_int,
-            );
-            n_2 += 1;
+        print!("{}, pal=", if cache.len() != 0 { "]" } else { "[]" });
+        for (n, pal) in pal.iter().enumerate() {
+            print!("{}{:02x}", if n != 0 { ' ' } else { '[' }, pal);
         }
-        printf(b"]\n\0" as *const u8 as *const libc::c_char);
+        println!("]");
     }
 }
+
 unsafe extern "C" fn read_pal_uv(
     t: *mut Dav1dTaskContext,
     b: *mut Av1Block,
-    sz_ctx: libc::c_int,
-    bx4: libc::c_int,
-    by4: libc::c_int,
+    sz_ctx: u8,
+    bx4: usize,
+    by4: usize,
 ) {
-    read_pal_plane(t, b, 1 as libc::c_int, sz_ctx, bx4, by4);
+    read_pal_plane(&mut *t, &mut *b, true, sz_ctx, bx4, by4);
     let ts: *mut Dav1dTileState = (*t).ts;
     let f: *const Dav1dFrameContext = (*t).f;
     let pal: *mut uint16_t = if (*t).frame_thread.pass != 0 {
@@ -3315,7 +3287,7 @@ unsafe fn decode_b(
                 }
 
                 if use_y_pal {
-                    read_pal_plane(t, b, 0, sz_ctx as i32, bx4, by4);
+                    read_pal_plane(t, b, false, sz_ctx, bx4 as usize, by4 as usize);
                 }
             }
 
@@ -3331,7 +3303,7 @@ unsafe fn decode_b(
                 }
 
                 if use_uv_pal {
-                    read_pal_uv(t, b, sz_ctx as i32, bx4, by4);
+                    read_pal_uv(t, b, sz_ctx, bx4 as usize, by4 as usize);
                 }
             }
         }
