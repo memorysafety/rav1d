@@ -1321,8 +1321,8 @@ fn neg_deinterleave(
     }
 }
 
-unsafe extern "C" fn find_matching_ref(
-    t: *const Dav1dTaskContext,
+unsafe fn find_matching_ref(
+    t: &Dav1dTaskContext,
     intra_edge_flags: EdgeFlags,
     bw4: libc::c_int,
     bh4: libc::c_int,
@@ -1330,151 +1330,98 @@ unsafe extern "C" fn find_matching_ref(
     h4: libc::c_int,
     have_left: bool,
     have_top: bool,
-    r#ref: libc::c_int,
-    mut masks: *mut uint64_t,
+    r#ref: i8,
+    masks: &mut [u64; 2],
 ) {
-    let mut r: *const *mut refmvs_block =
-        &*((*t).rt.r).as_ptr().offset((((*t).by & 31) + 5) as isize) as *const *mut refmvs_block;
+    let r = &t.rt.r[((t.by & 31) + 5 - 1) as usize..];
     let mut count = 0;
-    let mut have_topleft = (have_top && have_left) as libc::c_int;
-    let mut have_topright = (imax(bw4, bh4) < 32
+    let mut have_topleft = have_top && have_left;
+    let mut have_topright = imax(bw4, bh4) < 32
         && have_top
-        && (*t).bx + bw4 < (*(*t).ts).tiling.col_end
-        && intra_edge_flags as libc::c_uint
-            & EDGE_I444_TOP_HAS_RIGHT as libc::c_int as libc::c_uint
-            != 0) as libc::c_int;
+        && t.bx + bw4 < (*t.ts).tiling.col_end
+        && intra_edge_flags & EDGE_I444_TOP_HAS_RIGHT != 0;
+
+    let bs = |rp: &refmvs_block| dav1d_block_dimensions[rp.0.bs as usize];
+    let matches = |rp: &refmvs_block| rp.0.r#ref.r#ref[0] == r#ref + 1 && rp.0.r#ref.r#ref[1] == -1;
+
     if have_top {
-        let mut r2: *const refmvs_block = &mut *(*r.offset(-(1 as libc::c_int) as isize))
-            .offset((*t).bx as isize)
-            as *mut refmvs_block;
-        if (*r2).0.r#ref.r#ref[0] as libc::c_int == r#ref + 1
-            && (*r2).0.r#ref.r#ref[1] as libc::c_int == -(1 as libc::c_int)
-        {
-            let ref mut fresh2 = *masks.offset(0);
-            *fresh2 |= 1;
-            count = 1 as libc::c_int;
+        let mut r2 = r[0].offset(t.bx as isize) as *const _;
+        let r2_ref = &*r2;
+        if matches(r2_ref) {
+            masks[0] |= 1;
+            count = 1;
         }
-        let mut aw4 = dav1d_block_dimensions[(*r2).0.bs as usize][0] as libc::c_int;
+        let mut aw4 = bs(r2_ref)[0] as libc::c_int;
         if aw4 >= bw4 {
-            let off = (*t).bx & aw4 - 1;
+            let off = t.bx & aw4 - 1;
             if off != 0 {
-                have_topleft = 0 as libc::c_int;
+                have_topleft = false;
             }
             if aw4 - off > bw4 {
-                have_topright = 0 as libc::c_int;
+                have_topright = false;
             }
         } else {
-            let mut mask: libc::c_uint = ((1 as libc::c_int) << aw4) as libc::c_uint;
+            let mut mask = 1 << aw4;
             let mut x = aw4;
             while x < w4 {
                 r2 = r2.offset(aw4 as isize);
-                if (*r2).0.r#ref.r#ref[0] as libc::c_int == r#ref + 1
-                    && (*r2).0.r#ref.r#ref[1] as libc::c_int == -(1 as libc::c_int)
-                {
-                    let ref mut fresh3 = *masks.offset(0);
-                    *fresh3 |= mask as uint64_t;
+                let r2_ref = &*r2;
+                if matches(r2_ref) {
+                    masks[0] |= mask;
                     count += 1;
                     if count >= 8 {
                         return;
                     }
                 }
-                aw4 = dav1d_block_dimensions[(*r2).0.bs as usize][0] as libc::c_int;
+                aw4 = bs(r2_ref)[0] as libc::c_int;
                 mask <<= aw4;
                 x += aw4;
             }
         }
     }
     if have_left {
-        let mut r2_0: *const *mut refmvs_block = r;
-        if (*(*r2_0.offset(0)).offset(((*t).bx - 1) as isize))
-            .0
-            .r#ref
-            .r#ref[0] as libc::c_int
-            == r#ref + 1
-            && (*(*r2_0.offset(0)).offset(((*t).bx - 1) as isize))
-                .0
-                .r#ref
-                .r#ref[1] as libc::c_int
-                == -(1 as libc::c_int)
-        {
-            let ref mut fresh4 = *masks.offset(1);
-            *fresh4 |= 1;
+        let mut r2 = &r[1..];
+        let r2_ref = &*r2[0].offset((t.bx - 1) as isize);
+        if matches(r2_ref) {
+            masks[1] |= 1;
             count += 1;
             if count >= 8 {
                 return;
             }
         }
-        let mut lh4 = dav1d_block_dimensions
-            [(*(*r2_0.offset(0)).offset(((*t).bx - 1) as isize)).0.bs as usize][1]
-            as libc::c_int;
+        let mut lh4 = bs(r2_ref)[1] as libc::c_int;
         if lh4 >= bh4 {
-            if (*t).by & lh4 - 1 != 0 {
-                have_topleft = 0 as libc::c_int;
+            if t.by & lh4 - 1 != 0 {
+                have_topleft = false;
             }
         } else {
-            let mut mask_0: libc::c_uint = ((1 as libc::c_int) << lh4) as libc::c_uint;
+            let mut mask = 1 << lh4;
             let mut y = lh4;
             while y < h4 {
-                r2_0 = r2_0.offset(lh4 as isize);
-                if (*(*r2_0.offset(0)).offset(((*t).bx - 1) as isize))
-                    .0
-                    .r#ref
-                    .r#ref[0] as libc::c_int
-                    == r#ref + 1
-                    && (*(*r2_0.offset(0)).offset(((*t).bx - 1) as isize))
-                        .0
-                        .r#ref
-                        .r#ref[1] as libc::c_int
-                        == -(1 as libc::c_int)
-                {
-                    let ref mut fresh5 = *masks.offset(1);
-                    *fresh5 |= mask_0 as uint64_t;
+                r2 = &r2[lh4 as usize..];
+                let r2_ref = &*r2[0].offset((t.bx - 1) as isize);
+                if matches(r2_ref) {
+                    masks[1] |= mask;
                     count += 1;
                     if count >= 8 {
                         return;
                     }
                 }
-                lh4 = dav1d_block_dimensions
-                    [(*(*r2_0.offset(0)).offset(((*t).bx - 1) as isize)).0.bs as usize][1]
-                    as libc::c_int;
-                mask_0 <<= lh4;
+                lh4 = bs(r2_ref)[1] as libc::c_int;
+                mask <<= lh4;
                 y += lh4;
             }
         }
     }
-    if have_topleft != 0
-        && ((*(*r.offset(-(1 as libc::c_int) as isize)).offset(((*t).bx - 1) as isize))
-            .0
-            .r#ref
-            .r#ref[0] as libc::c_int
-            == r#ref + 1
-            && (*(*r.offset(-(1 as libc::c_int) as isize)).offset(((*t).bx - 1) as isize))
-                .0
-                .r#ref
-                .r#ref[1] as libc::c_int
-                == -(1 as libc::c_int))
-    {
-        let ref mut fresh6 = *masks.offset(1);
-        *fresh6 = (*fresh6 as libc::c_ulonglong | (1 as libc::c_ulonglong) << 32) as uint64_t;
+    if have_topleft && matches(&*r[0].offset((t.bx - 1) as isize)) {
+        masks[1] |= 1 << 32;
         count += 1;
         if count >= 8 {
             return;
         }
     }
-    if have_topright != 0
-        && ((*(*r.offset(-(1 as libc::c_int) as isize)).offset(((*t).bx + bw4) as isize))
-            .0
-            .r#ref
-            .r#ref[0] as libc::c_int
-            == r#ref + 1
-            && (*(*r.offset(-(1 as libc::c_int) as isize)).offset(((*t).bx + bw4) as isize))
-                .0
-                .r#ref
-                .r#ref[1] as libc::c_int
-                == -(1 as libc::c_int))
-    {
-        let ref mut fresh7 = *masks.offset(0);
-        *fresh7 = (*fresh7 as libc::c_ulonglong | (1 as libc::c_ulonglong) << 32) as uint64_t;
+    if have_topright && matches(&*r[0].offset((t.bx + bw4) as isize)) {
+        masks[0] |= 1 << 32;
     }
 }
 
@@ -4534,8 +4481,8 @@ unsafe fn decode_b(
                     h4,
                     have_left,
                     have_top,
-                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as libc::c_int,
-                    mask.as_mut_ptr(),
+                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0],
+                    &mut mask,
                 );
                 let allow_warp =
                     (f.svc[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize][0].scale == 0
