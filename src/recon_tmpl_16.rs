@@ -116,7 +116,7 @@ pub struct Dav1dFrameContext {
     pub dsp: *const Dav1dDSPContext,
     pub bd_fn: Dav1dFrameContext_bd_fn,
     pub ipred_edge_sz: libc::c_int,
-    pub ipred_edge: [*mut pixel; 3],
+    pub ipred_edge: [*mut libc::c_void; 3],
     pub b4_stride: ptrdiff_t,
     pub w4: libc::c_int,
     pub h4: libc::c_int,
@@ -4217,7 +4217,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_16bpc(
                         })) as EdgeFlags;
                         top_sb_edge = 0 as *const pixel;
                         if (*t).by & (*f).sb_step - 1 == 0 {
-                            top_sb_edge = (*f).ipred_edge[0];
+                            top_sb_edge = (*f).ipred_edge[0] as *mut pixel;
                             let sby = (*t).by >> (*f).sb_shift;
                             top_sb_edge =
                                 top_sb_edge.offset(((*f).sb128w * 128 * (sby - 1)) as isize);
@@ -4646,7 +4646,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_16bpc(
                             let mut angle_0 = 0;
                             let mut top_sb_edge_0: *const pixel = 0 as *const pixel;
                             if (*t).by & !ss_ver & (*f).sb_step - 1 == 0 {
-                                top_sb_edge_0 = (*f).ipred_edge[(pl + 1) as usize];
+                                top_sb_edge_0 = (*f).ipred_edge[(pl + 1) as usize] as *mut pixel;
                                 let sby_0 = (*t).by >> (*f).sb_shift;
                                 top_sb_edge_0 = top_sb_edge_0
                                     .offset(((*f).sb128w * 128 * (sby_0 - 1)) as isize);
@@ -4845,7 +4845,8 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_16bpc(
                                 })) as EdgeFlags;
                                 top_sb_edge_1 = 0 as *const pixel;
                                 if (*t).by & !ss_ver & (*f).sb_step - 1 == 0 {
-                                    top_sb_edge_1 = (*f).ipred_edge[(1 + pl_0) as usize];
+                                    top_sb_edge_1 =
+                                        (*f).ipred_edge[(1 + pl_0) as usize] as *mut pixel;
                                     let sby_1 = (*t).by >> (*f).sb_shift;
                                     top_sb_edge_1 = top_sb_edge_1
                                         .offset(((*f).sb128w * 128 * (sby_1 - 1)) as isize);
@@ -5568,7 +5569,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_16bpc(
             let mut angle = 0;
             let mut top_sb_edge: *const pixel = 0 as *const pixel;
             if (*t).by & (*f).sb_step - 1 == 0 {
-                top_sb_edge = (*f).ipred_edge[0];
+                top_sb_edge = (*f).ipred_edge[0] as *mut pixel;
                 let sby = (*t).by >> (*f).sb_shift;
                 top_sb_edge = top_sb_edge.offset(((*f).sb128w * 128 * (sby - 1)) as isize);
             }
@@ -6015,7 +6016,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_16bpc(
                             .offset(uvdstoff as isize);
                         let mut top_sb_edge_0: *const pixel = 0 as *const pixel;
                         if (*t).by & (*f).sb_step - 1 == 0 {
-                            top_sb_edge_0 = (*f).ipred_edge[(pl_6 + 1) as usize];
+                            top_sb_edge_0 = (*f).ipred_edge[(pl_6 + 1) as usize] as *mut pixel;
                             let sby_0 = (*t).by >> (*f).sb_shift;
                             top_sb_edge_0 =
                                 top_sb_edge_0.offset(((*f).sb128w * 128 * (sby_0 - 1)) as isize);
@@ -7355,8 +7356,8 @@ pub unsafe extern "C" fn dav1d_backup_ipred_edge_16bpc(t: *mut Dav1dTaskContext)
             ((((*t).by + (*f).sb_step) * 4 - 1) as isize * PXSTRIDE((*f).cur.stride[0])) as isize,
         );
     memcpy(
-        &mut *(*((*f).ipred_edge).as_ptr().offset(0)).offset((sby_off + x_off * 4) as isize)
-            as *mut pixel as *mut libc::c_void,
+        &mut *(*((*f).ipred_edge).as_ptr().offset(0) as *mut pixel)
+            .offset((sby_off + x_off * 4) as isize) as *mut pixel as *mut libc::c_void,
         y as *const libc::c_void,
         (4 * ((*ts).tiling.col_end - x_off) << 1) as size_t,
     );
@@ -7373,7 +7374,7 @@ pub unsafe extern "C" fn dav1d_backup_ipred_edge_16bpc(t: *mut Dav1dTaskContext)
         let mut pl = 1;
         while pl <= 2 {
             memcpy(
-                &mut *(*((*f).ipred_edge).as_ptr().offset(pl as isize))
+                &mut *(*((*f).ipred_edge).as_ptr().offset(pl as isize) as *mut pixel)
                     .offset((sby_off + (x_off * 4 >> ss_hor)) as isize)
                     as *mut pixel as *mut libc::c_void,
                 &*(*((*f).cur.data).as_ptr().offset(pl as isize) as *const pixel)
