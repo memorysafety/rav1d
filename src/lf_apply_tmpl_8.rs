@@ -10,7 +10,6 @@ extern "C" {
 pub type pixel = uint8_t;
 pub type coef = int16_t;
 use crate::include::stdatomic::atomic_int;
-use crate::include::stdatomic::atomic_uint;
 
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
@@ -92,62 +91,13 @@ use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 
-use crate::src::align::Align16;
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFrameContext_lf {
-    pub level: *mut [uint8_t; 4],
-    pub mask: *mut Av1Filter,
-    pub lr_mask: *mut Av1Restoration,
-    pub mask_sz: libc::c_int,
-    pub lr_mask_sz: libc::c_int,
-    pub cdef_buf_plane_sz: [libc::c_int; 2],
-    pub cdef_buf_sbh: libc::c_int,
-    pub lr_buf_plane_sz: [libc::c_int; 2],
-    pub re_sz: libc::c_int,
-    pub lim_lut: Align16<Av1FilterLUT>,
-    pub last_sharpness: libc::c_int,
-    pub lvl: [[[[uint8_t; 2]; 8]; 4]; 8],
-    pub tx_lpf_right_edge: [*mut uint8_t; 2],
-    pub cdef_line_buf: *mut uint8_t,
-    pub lr_line_buf: *mut uint8_t,
-    pub cdef_line: [[*mut pixel; 3]; 2],
-    pub cdef_lpf_line: [*mut pixel; 3],
-    pub lr_lpf_line: [*mut pixel; 3],
-    pub start_of_tile_row: *mut uint8_t,
-    pub start_of_tile_row_sz: libc::c_int,
-    pub need_cdef_lpf_copy: libc::c_int,
-    pub p: [*mut pixel; 3],
-    pub sr_p: [*mut pixel; 3],
-    pub mask_ptr: *mut Av1Filter,
-    pub prev_mask_ptr: *mut Av1Filter,
-    pub restore_planes: libc::c_int,
-}
+use crate::src::internal::Dav1dFrameContext_lf;
 use crate::src::lf_mask::Av1Filter;
 use crate::src::lf_mask::Av1FilterLUT;
-use crate::src::lf_mask::Av1Restoration;
+
+use crate::src::internal::Dav1dFrameContext_frame_thread;
 use crate::src::lf_mask::Av1RestorationUnit;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFrameContext_frame_thread {
-    pub next_tile_row: [libc::c_int; 2],
-    pub entropy_progress: atomic_int,
-    pub deblock_progress: atomic_int,
-    pub frame_progress: *mut atomic_uint,
-    pub copy_lpf_progress: *mut atomic_uint,
-    pub b: *mut Av1Block,
-    pub cbi: *mut CodedBlockInfo,
-    pub pal: *mut [[uint16_t; 8]; 3],
-    pub pal_idx: *mut uint8_t,
-    pub cf: *mut coef,
-    pub prog_sz: libc::c_int,
-    pub pal_sz: libc::c_int,
-    pub pal_idx_sz: libc::c_int,
-    pub cf_sz: libc::c_int,
-    pub tile_start_off: *mut libc::c_int,
-}
-use crate::src::internal::CodedBlockInfo;
+
 use crate::src::levels::Av1Block;
 use crate::src::refmvs::refmvs_frame;
 
@@ -789,9 +739,12 @@ pub unsafe extern "C" fn dav1d_copy_lpf_8bpc(
     let lr_stride: *const ptrdiff_t = ((*f).sr_cur.p.stride).as_mut_ptr();
     let tt_off = have_tt * sby * ((4 as libc::c_int) << (*(*f).seq_hdr).sb128);
     let dst: [*mut pixel; 3] = [
-        ((*f).lf.lr_lpf_line[0]).offset((tt_off as isize * *lr_stride.offset(0)) as isize),
-        ((*f).lf.lr_lpf_line[1]).offset((tt_off as isize * *lr_stride.offset(1)) as isize),
-        ((*f).lf.lr_lpf_line[2]).offset((tt_off as isize * *lr_stride.offset(1)) as isize),
+        ((*f).lf.lr_lpf_line[0] as *mut pixel)
+            .offset((tt_off as isize * *lr_stride.offset(0)) as isize),
+        ((*f).lf.lr_lpf_line[1] as *mut pixel)
+            .offset((tt_off as isize * *lr_stride.offset(1)) as isize),
+        ((*f).lf.lr_lpf_line[2] as *mut pixel)
+            .offset((tt_off as isize * *lr_stride.offset(1)) as isize),
     ];
     let restore_planes = (*f).lf.restore_planes;
     if (*(*f).seq_hdr).cdef != 0 || restore_planes & LR_RESTORE_Y as libc::c_int != 0 {
@@ -820,7 +773,7 @@ pub unsafe extern "C" fn dav1d_copy_lpf_8bpc(
             let cdef_off_y: ptrdiff_t = (sby * 4) as isize * *src_stride.offset(0);
             backup_lpf(
                 f,
-                ((*f).lf.cdef_lpf_line[0]).offset(cdef_off_y as isize),
+                ((*f).lf.cdef_lpf_line[0] as *mut pixel).offset(cdef_off_y as isize),
                 *src_stride.offset(0),
                 (*src.offset(0)).offset(-((offset as isize * *src_stride.offset(0)) as isize)),
                 *src_stride.offset(0),
@@ -874,7 +827,7 @@ pub unsafe extern "C" fn dav1d_copy_lpf_8bpc(
             if have_tt != 0 && resize != 0 {
                 backup_lpf(
                     f,
-                    ((*f).lf.cdef_lpf_line[1]).offset(cdef_off_uv as isize),
+                    ((*f).lf.cdef_lpf_line[1] as *mut pixel).offset(cdef_off_uv as isize),
                     *src_stride.offset(1),
                     (*src.offset(1))
                         .offset(-((offset_uv as isize * *src_stride.offset(1)) as isize)),
@@ -912,7 +865,7 @@ pub unsafe extern "C" fn dav1d_copy_lpf_8bpc(
             if have_tt != 0 && resize != 0 {
                 backup_lpf(
                     f,
-                    ((*f).lf.cdef_lpf_line[2]).offset(cdef_off_uv as isize),
+                    ((*f).lf.cdef_lpf_line[2] as *mut pixel).offset(cdef_off_uv as isize),
                     *src_stride.offset(1),
                     (*src.offset(2))
                         .offset(-((offset_uv as isize * *src_stride.offset(1)) as isize)),

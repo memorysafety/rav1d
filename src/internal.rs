@@ -13,6 +13,10 @@ use crate::src::align::*;
 use crate::src::intra_edge::EdgeBranch;
 use crate::src::intra_edge::EdgeNode;
 use crate::src::intra_edge::EdgeTip;
+use crate::src::levels::Av1Block;
+use crate::src::lf_mask::Av1Filter;
+use crate::src::lf_mask::Av1FilterLUT;
+use crate::src::lf_mask::Av1Restoration;
 use crate::src::picture::Dav1dThreadPicture;
 use crate::src::r#ref::Dav1dRef;
 use crate::src::thread_data::thread_data;
@@ -136,6 +140,57 @@ pub struct ScalableMotionParams {
 pub struct CodedBlockInfo {
     pub eob: [int16_t; 3],
     pub txtp: [uint8_t; 3],
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dFrameContext_frame_thread {
+    pub next_tile_row: [libc::c_int; 2],
+    pub entropy_progress: atomic_int,
+    pub deblock_progress: atomic_int,
+    pub frame_progress: *mut atomic_uint,
+    pub copy_lpf_progress: *mut atomic_uint,
+    pub b: *mut Av1Block,
+    pub cbi: *mut CodedBlockInfo,
+    pub pal: *mut [[uint16_t; 8]; 3],
+    pub pal_idx: *mut uint8_t,
+    pub cf: *mut libc::c_void,
+    pub prog_sz: libc::c_int,
+    pub pal_sz: libc::c_int,
+    pub pal_idx_sz: libc::c_int,
+    pub cf_sz: libc::c_int,
+    pub tile_start_off: *mut libc::c_int,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dFrameContext_lf {
+    pub level: *mut [uint8_t; 4],
+    pub mask: *mut Av1Filter,
+    pub lr_mask: *mut Av1Restoration,
+    pub mask_sz: libc::c_int,
+    pub lr_mask_sz: libc::c_int,
+    pub cdef_buf_plane_sz: [libc::c_int; 2],
+    pub cdef_buf_sbh: libc::c_int,
+    pub lr_buf_plane_sz: [libc::c_int; 2],
+    pub re_sz: libc::c_int,
+    pub lim_lut: Align16<Av1FilterLUT>,
+    pub last_sharpness: libc::c_int,
+    pub lvl: [[[[uint8_t; 2]; 8]; 4]; 8],
+    pub tx_lpf_right_edge: [*mut uint8_t; 2],
+    pub cdef_line_buf: *mut uint8_t,
+    pub lr_line_buf: *mut uint8_t,
+    pub cdef_line: [[*mut libc::c_void; 3]; 2],
+    pub cdef_lpf_line: [*mut libc::c_void; 3],
+    pub lr_lpf_line: [*mut libc::c_void; 3],
+    pub start_of_tile_row: *mut uint8_t,
+    pub start_of_tile_row_sz: libc::c_int,
+    pub need_cdef_lpf_copy: libc::c_int,
+    pub p: [*mut libc::c_void; 3],
+    pub sr_p: [*mut libc::c_void; 3],
+    pub mask_ptr: *mut Av1Filter,
+    pub prev_mask_ptr: *mut Av1Filter,
+    pub restore_planes: libc::c_int,
 }
 
 #[derive(Copy, Clone)]

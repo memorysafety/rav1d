@@ -76,7 +76,6 @@ use crate::src::tables::dav1d_txtp_from_uvmode;
 pub type pixel = uint8_t;
 pub type coef = int16_t;
 use crate::include::stdatomic::atomic_int;
-use crate::include::stdatomic::atomic_uint;
 
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
@@ -161,64 +160,15 @@ use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 
-use crate::src::align::Align16;
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFrameContext_lf {
-    pub level: *mut [uint8_t; 4],
-    pub mask: *mut Av1Filter,
-    pub lr_mask: *mut Av1Restoration,
-    pub mask_sz: libc::c_int,
-    pub lr_mask_sz: libc::c_int,
-    pub cdef_buf_plane_sz: [libc::c_int; 2],
-    pub cdef_buf_sbh: libc::c_int,
-    pub lr_buf_plane_sz: [libc::c_int; 2],
-    pub re_sz: libc::c_int,
-    pub lim_lut: Align16<Av1FilterLUT>,
-    pub last_sharpness: libc::c_int,
-    pub lvl: [[[[uint8_t; 2]; 8]; 4]; 8],
-    pub tx_lpf_right_edge: [*mut uint8_t; 2],
-    pub cdef_line_buf: *mut uint8_t,
-    pub lr_line_buf: *mut uint8_t,
-    pub cdef_line: [[*mut pixel; 3]; 2],
-    pub cdef_lpf_line: [*mut pixel; 3],
-    pub lr_lpf_line: [*mut pixel; 3],
-    pub start_of_tile_row: *mut uint8_t,
-    pub start_of_tile_row_sz: libc::c_int,
-    pub need_cdef_lpf_copy: libc::c_int,
-    pub p: [*mut pixel; 3],
-    pub sr_p: [*mut pixel; 3],
-    pub mask_ptr: *mut Av1Filter,
-    pub prev_mask_ptr: *mut Av1Filter,
-    pub restore_planes: libc::c_int,
-}
+use crate::src::internal::Dav1dFrameContext_lf;
 use crate::src::lf_mask::Av1Filter;
 use crate::src::lf_mask::Av1FilterLUT;
-use crate::src::lf_mask::Av1Restoration;
-use crate::src::lf_mask::Av1RestorationUnit;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFrameContext_frame_thread {
-    pub next_tile_row: [libc::c_int; 2],
-    pub entropy_progress: atomic_int,
-    pub deblock_progress: atomic_int,
-    pub frame_progress: *mut atomic_uint,
-    pub copy_lpf_progress: *mut atomic_uint,
-    pub b: *mut Av1Block,
-    pub cbi: *mut CodedBlockInfo,
-    pub pal: *mut [[uint16_t; 8]; 3],
-    pub pal_idx: *mut uint8_t,
-    pub cf: *mut coef,
-    pub prog_sz: libc::c_int,
-    pub pal_sz: libc::c_int,
-    pub pal_idx_sz: libc::c_int,
-    pub cf_sz: libc::c_int,
-    pub tile_start_off: *mut libc::c_int,
-}
+
 use crate::src::internal::CodedBlockInfo;
+use crate::src::internal::Dav1dFrameContext_frame_thread;
 use crate::src::levels::mv;
 use crate::src::levels::Av1Block;
+use crate::src::lf_mask::Av1RestorationUnit;
 
 use crate::src::env::BlockContext;
 use crate::src::refmvs::refmvs_block;
@@ -7362,9 +7312,9 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_deblock_cols_8bpc(
     let ss_ver = ((*f).cur.p.layout as libc::c_uint
         == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint) as libc::c_int;
     let p: [*mut pixel; 3] = [
-        ((*f).lf.p[0]).offset((y as isize * (*f).cur.stride[0]) as isize),
-        ((*f).lf.p[1]).offset((y as isize * (*f).cur.stride[1] >> ss_ver) as isize),
-        ((*f).lf.p[2]).offset((y as isize * (*f).cur.stride[1] >> ss_ver) as isize),
+        ((*f).lf.p[0] as *mut pixel).offset((y as isize * (*f).cur.stride[0]) as isize),
+        ((*f).lf.p[1] as *mut pixel).offset((y as isize * (*f).cur.stride[1] >> ss_ver) as isize),
+        ((*f).lf.p[2] as *mut pixel).offset((y as isize * (*f).cur.stride[1] >> ss_ver) as isize),
     ];
     let mut mask: *mut Av1Filter = ((*f).lf.mask)
         .offset(((sby >> ((*(*f).seq_hdr).sb128 == 0) as libc::c_int) * (*f).sb128w) as isize);
@@ -7385,9 +7335,9 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_deblock_rows_8bpc(
     let ss_ver = ((*f).cur.p.layout as libc::c_uint
         == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint) as libc::c_int;
     let p: [*mut pixel; 3] = [
-        ((*f).lf.p[0]).offset((y as isize * (*f).cur.stride[0]) as isize),
-        ((*f).lf.p[1]).offset((y as isize * (*f).cur.stride[1] >> ss_ver) as isize),
-        ((*f).lf.p[2]).offset((y as isize * (*f).cur.stride[1] >> ss_ver) as isize),
+        ((*f).lf.p[0] as *mut pixel).offset((y as isize * (*f).cur.stride[0]) as isize),
+        ((*f).lf.p[1] as *mut pixel).offset((y as isize * (*f).cur.stride[1] >> ss_ver) as isize),
+        ((*f).lf.p[2] as *mut pixel).offset((y as isize * (*f).cur.stride[1] >> ss_ver) as isize),
     ];
     let mut mask: *mut Av1Filter = ((*f).lf.mask)
         .offset(((sby >> ((*(*f).seq_hdr).sb128 == 0) as libc::c_int) * (*f).sb128w) as isize);
@@ -7417,9 +7367,9 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_cdef_8bpc(tc: *mut Dav1dTaskContext,
     let ss_ver = ((*f).cur.p.layout as libc::c_uint
         == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint) as libc::c_int;
     let p: [*mut pixel; 3] = [
-        ((*f).lf.p[0]).offset((y as isize * (*f).cur.stride[0]) as isize),
-        ((*f).lf.p[1]).offset((y as isize * (*f).cur.stride[1] >> ss_ver) as isize),
-        ((*f).lf.p[2]).offset((y as isize * (*f).cur.stride[1] >> ss_ver) as isize),
+        ((*f).lf.p[0] as *mut pixel).offset((y as isize * (*f).cur.stride[0]) as isize),
+        ((*f).lf.p[1] as *mut pixel).offset((y as isize * (*f).cur.stride[1] >> ss_ver) as isize),
+        ((*f).lf.p[2] as *mut pixel).offset((y as isize * (*f).cur.stride[1] >> ss_ver) as isize),
     ];
     let mut prev_mask: *mut Av1Filter = ((*f).lf.mask)
         .offset(((sby - 1 >> ((*(*f).seq_hdr).sb128 == 0) as libc::c_int) * (*f).sb128w) as isize);
@@ -7459,14 +7409,19 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_resize_8bpc(
     let ss_ver = ((*f).cur.p.layout as libc::c_uint
         == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint) as libc::c_int;
     let p: [*const pixel; 3] = [
-        ((*f).lf.p[0]).offset((y as isize * (*f).cur.stride[0]) as isize) as *const pixel,
-        ((*f).lf.p[1]).offset((y as isize * (*f).cur.stride[1] >> ss_ver) as isize) as *const pixel,
-        ((*f).lf.p[2]).offset((y as isize * (*f).cur.stride[1] >> ss_ver) as isize) as *const pixel,
+        ((*f).lf.p[0] as *mut pixel).offset((y as isize * (*f).cur.stride[0]) as isize)
+            as *const pixel,
+        ((*f).lf.p[1] as *mut pixel).offset((y as isize * (*f).cur.stride[1] >> ss_ver) as isize)
+            as *const pixel,
+        ((*f).lf.p[2] as *mut pixel).offset((y as isize * (*f).cur.stride[1] >> ss_ver) as isize)
+            as *const pixel,
     ];
     let sr_p: [*mut pixel; 3] = [
-        ((*f).lf.sr_p[0]).offset((y as isize * (*f).sr_cur.p.stride[0]) as isize),
-        ((*f).lf.sr_p[1]).offset((y as isize * (*f).sr_cur.p.stride[1] >> ss_ver) as isize),
-        ((*f).lf.sr_p[2]).offset((y as isize * (*f).sr_cur.p.stride[1] >> ss_ver) as isize),
+        ((*f).lf.sr_p[0] as *mut pixel).offset((y as isize * (*f).sr_cur.p.stride[0]) as isize),
+        ((*f).lf.sr_p[1] as *mut pixel)
+            .offset((y as isize * (*f).sr_cur.p.stride[1] >> ss_ver) as isize),
+        ((*f).lf.sr_p[2] as *mut pixel)
+            .offset((y as isize * (*f).sr_cur.p.stride[1] >> ss_ver) as isize),
     ];
     let has_chroma = ((*f).cur.p.layout as libc::c_uint
         != DAV1D_PIXEL_LAYOUT_I400 as libc::c_int as libc::c_uint)
@@ -7519,9 +7474,11 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_lr_8bpc(f: *mut Dav1dFrameContext, s
     let ss_ver = ((*f).cur.p.layout as libc::c_uint
         == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint) as libc::c_int;
     let sr_p: [*mut pixel; 3] = [
-        ((*f).lf.sr_p[0]).offset((y as isize * (*f).sr_cur.p.stride[0]) as isize),
-        ((*f).lf.sr_p[1]).offset((y as isize * (*f).sr_cur.p.stride[1] >> ss_ver) as isize),
-        ((*f).lf.sr_p[2]).offset((y as isize * (*f).sr_cur.p.stride[1] >> ss_ver) as isize),
+        ((*f).lf.sr_p[0] as *mut pixel).offset((y as isize * (*f).sr_cur.p.stride[0]) as isize),
+        ((*f).lf.sr_p[1] as *mut pixel)
+            .offset((y as isize * (*f).sr_cur.p.stride[1] >> ss_ver) as isize),
+        ((*f).lf.sr_p[2] as *mut pixel)
+            .offset((y as isize * (*f).sr_cur.p.stride[1] >> ss_ver) as isize),
     ];
     dav1d_lr_sbrow_8bpc(f, sr_p.as_ptr(), sby);
 }
