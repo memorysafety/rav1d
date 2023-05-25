@@ -189,6 +189,13 @@ pub struct Dav1dTileState_tiling {
 }
 
 #[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dTileState_frame_thread {
+    pub pal_idx: *mut uint8_t,
+    pub cf: *mut libc::c_void,
+}
+
+#[derive(Copy, Clone)]
 #[repr(C, align(64))]
 pub union Dav1dTaskContext_cf {
     pub cf_8bpc: [int16_t; 1024],

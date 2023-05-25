@@ -293,12 +293,7 @@ pub struct Dav1dTileState {
     pub lflvl: *const [[[uint8_t; 2]; 8]; 4],
     pub lr_ref: [*mut Av1RestorationUnit; 3],
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dTileState_frame_thread {
-    pub pal_idx: *mut uint8_t,
-    pub cf: *mut coef,
-}
+use crate::src::internal::Dav1dTileState_frame_thread;
 use crate::src::internal::Dav1dTileState_tiling;
 
 #[derive(Copy, Clone)]
@@ -2774,12 +2769,13 @@ unsafe extern "C" fn read_coef_tree(
             if ((*ts).frame_thread[p as usize].cf).is_null() {
                 unreachable!();
             }
-            cf = (*ts).frame_thread[p as usize].cf;
-            (*ts).frame_thread[p as usize].cf = ((*ts).frame_thread[p as usize].cf).offset(
-                (imin((*t_dim).w as libc::c_int, 8 as libc::c_int)
-                    * imin((*t_dim).h as libc::c_int, 8 as libc::c_int)
-                    * 16) as isize,
-            );
+            cf = (*ts).frame_thread[p as usize].cf as *mut coef;
+            (*ts).frame_thread[p as usize].cf = ((*ts).frame_thread[p as usize].cf as *mut coef)
+                .offset(
+                    (imin((*t_dim).w as libc::c_int, 8 as libc::c_int)
+                        * imin((*t_dim).h as libc::c_int, 8 as libc::c_int)
+                        * 16) as isize,
+                ) as *mut libc::c_void;
             cbi = &mut *((*f).frame_thread.cbi)
                 .offset(((*t).by as isize * (*f).b4_stride + (*t).bx as isize) as isize)
                 as *mut CodedBlockInfo;
@@ -3478,7 +3474,7 @@ pub unsafe extern "C" fn dav1d_read_coef_blocks_8bpc(
                             b,
                             1 as libc::c_int,
                             0 as libc::c_int,
-                            (*ts).frame_thread[1].cf,
+                            (*ts).frame_thread[1].cf as *mut coef,
                             &mut txtp,
                             &mut cf_ctx,
                         ) as int16_t;
@@ -3494,11 +3490,11 @@ pub unsafe extern "C" fn dav1d_read_coef_blocks_8bpc(
                             );
                         }
                         (*cbi.offset((*t).bx as isize)).txtp[0] = txtp as uint8_t;
-                        (*ts).frame_thread[1].cf = ((*ts).frame_thread[1].cf).offset(
+                        (*ts).frame_thread[1].cf = ((*ts).frame_thread[1].cf as *mut coef).offset(
                             (imin((*t_dim).w as libc::c_int, 8 as libc::c_int)
                                 * imin((*t_dim).h as libc::c_int, 8 as libc::c_int)
                                 * 16) as isize,
-                        );
+                        ) as *mut libc::c_void;
                         match imin((*t_dim).h as libc::c_int, (*f).bh - (*t).by) {
                             1 => {
                                 (*(&mut *((*t).l.lcoef.0).as_mut_ptr().offset((by4 + y) as isize)
@@ -3664,7 +3660,7 @@ pub unsafe extern "C" fn dav1d_read_coef_blocks_8bpc(
                                 b,
                                 (*b).intra as libc::c_int,
                                 1 + pl,
-                                (*ts).frame_thread[1].cf,
+                                (*ts).frame_thread[1].cf as *mut coef,
                                 &mut txtp_0,
                                 &mut cf_ctx_0,
                             ) as int16_t;
@@ -3683,10 +3679,12 @@ pub unsafe extern "C" fn dav1d_read_coef_blocks_8bpc(
                             }
                             (*cbi_0.offset((*t).bx as isize)).txtp[(1 + pl) as usize] =
                                 txtp_0 as uint8_t;
-                            (*ts).frame_thread[1].cf = ((*ts).frame_thread[1].cf).offset(
-                                ((*uv_t_dim).w as libc::c_int * (*uv_t_dim).h as libc::c_int * 16)
-                                    as isize,
-                            );
+                            (*ts).frame_thread[1].cf =
+                                ((*ts).frame_thread[1].cf as *mut coef).offset(
+                                    ((*uv_t_dim).w as libc::c_int
+                                        * (*uv_t_dim).h as libc::c_int
+                                        * 16) as isize,
+                                ) as *mut libc::c_void;
                             match imin(
                                 (*uv_t_dim).h as libc::c_int,
                                 (*f).bh - (*t).by + ss_ver >> ss_ver,
@@ -4538,13 +4536,13 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                         let mut txtp: TxfmType = DCT_DCT;
                         if (*t).frame_thread.pass != 0 {
                             let p_0 = (*t).frame_thread.pass & 1;
-                            cf = (*ts).frame_thread[p_0 as usize].cf;
+                            cf = (*ts).frame_thread[p_0 as usize].cf as *mut coef;
                             (*ts).frame_thread[p_0 as usize].cf =
-                                ((*ts).frame_thread[p_0 as usize].cf).offset(
+                                ((*ts).frame_thread[p_0 as usize].cf as *mut coef).offset(
                                     (imin((*t_dim).w as libc::c_int, 8 as libc::c_int)
                                         * imin((*t_dim).h as libc::c_int, 8 as libc::c_int)
                                         * 16) as isize,
-                                );
+                                ) as *mut libc::c_void;
                             let cbi: *const CodedBlockInfo = &mut *((*f).frame_thread.cbi).offset(
                                 ((*t).by as isize * (*f).b4_stride + (*t).bx as isize) as isize,
                             )
@@ -5175,14 +5173,15 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                                 let mut cf_0: *mut coef = 0 as *mut coef;
                                 if (*t).frame_thread.pass != 0 {
                                     let p_2 = (*t).frame_thread.pass & 1;
-                                    cf_0 = (*ts).frame_thread[p_2 as usize].cf;
+                                    cf_0 = (*ts).frame_thread[p_2 as usize].cf as *mut coef;
                                     (*ts).frame_thread[p_2 as usize].cf =
-                                        ((*ts).frame_thread[p_2 as usize].cf).offset(
+                                        ((*ts).frame_thread[p_2 as usize].cf as *mut coef).offset(
                                             ((*uv_t_dim).w as libc::c_int
                                                 * (*uv_t_dim).h as libc::c_int
                                                 * 16)
                                                 as isize,
-                                        );
+                                        )
+                                            as *mut libc::c_void;
                                     let cbi_0: *const CodedBlockInfo = &mut *((*f).frame_thread.cbi)
                                         .offset(
                                             ((*t).by as isize * (*f).b4_stride + (*t).bx as isize)
@@ -7079,12 +7078,12 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                             let mut txtp: TxfmType = DCT_DCT;
                             if (*t).frame_thread.pass != 0 {
                                 let p = (*t).frame_thread.pass & 1;
-                                cf = (*ts).frame_thread[p as usize].cf;
+                                cf = (*ts).frame_thread[p as usize].cf as *mut coef;
                                 (*ts).frame_thread[p as usize].cf =
-                                    ((*ts).frame_thread[p as usize].cf).offset(
+                                    ((*ts).frame_thread[p as usize].cf as *mut coef).offset(
                                         ((*uvtx).w as libc::c_int * (*uvtx).h as libc::c_int * 16)
                                             as isize,
-                                    );
+                                    ) as *mut libc::c_void;
                                 let cbi: *const CodedBlockInfo =
                                     &mut *((*f).frame_thread.cbi).offset(
                                         ((*t).by as isize * (*f).b4_stride + (*t).bx as isize)

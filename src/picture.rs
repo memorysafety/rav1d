@@ -234,12 +234,7 @@ pub struct Dav1dTileState {
     pub lflvl: *const [[[uint8_t; 2]; 8]; 4],
     pub lr_ref: [*mut Av1RestorationUnit; 3],
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dTileState_frame_thread {
-    pub pal_idx: *mut uint8_t,
-    pub cf: *mut libc::c_void,
-}
+use crate::src::internal::Dav1dTileState_frame_thread;
 use crate::src::internal::Dav1dTileState_tiling;
 
 #[derive(Copy, Clone)]
