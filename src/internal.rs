@@ -10,6 +10,7 @@ use crate::include::stdint::int8_t;
 use crate::include::stdint::uint16_t;
 use crate::include::stdint::uint8_t;
 use crate::src::align::*;
+use crate::src::cdf::CdfContext;
 use crate::src::intra_edge::EdgeBranch;
 use crate::src::intra_edge::EdgeNode;
 use crate::src::intra_edge::EdgeTip;
@@ -17,6 +18,8 @@ use crate::src::levels::Av1Block;
 use crate::src::lf_mask::Av1Filter;
 use crate::src::lf_mask::Av1FilterLUT;
 use crate::src::lf_mask::Av1Restoration;
+use crate::src::lf_mask::Av1RestorationUnit;
+use crate::src::msac::MsacContext;
 use crate::src::picture::Dav1dThreadPicture;
 use crate::src::r#ref::Dav1dRef;
 use crate::src::thread_data::thread_data;
@@ -248,6 +251,24 @@ pub struct Dav1dTileState_tiling {
 pub struct Dav1dTileState_frame_thread {
     pub pal_idx: *mut uint8_t,
     pub cf: *mut libc::c_void,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dTileState {
+    pub cdf: CdfContext,
+    pub msac: MsacContext,
+    pub tiling: Dav1dTileState_tiling,
+    pub progress: [atomic_int; 2],
+    pub frame_thread: [Dav1dTileState_frame_thread; 2],
+    pub lowest_pixel: *mut [[libc::c_int; 2]; 7],
+    pub dqmem: [[[uint16_t; 2]; 3]; 8],
+    pub dq: *const [[uint16_t; 2]; 3],
+    pub last_qidx: libc::c_int,
+    pub last_delta_lf: [int8_t; 4],
+    pub lflvlmem: [[[[uint8_t; 2]; 8]; 4]; 8],
+    pub lflvl: *const [[[uint8_t; 2]; 8]; 4],
+    pub lr_ref: [*mut Av1RestorationUnit; 3],
 }
 
 #[derive(Copy, Clone)]

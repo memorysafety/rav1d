@@ -2,8 +2,6 @@ use crate::include::stddef::*;
 use crate::include::stdint::*;
 use ::libc;
 
-use crate::src::cdf::CdfContext;
-use crate::src::msac::MsacContext;
 use crate::stdout;
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::size_t) -> *mut libc::c_void;
@@ -170,8 +168,6 @@ use crate::src::levels::Av1Block;
 use crate::src::lf_mask::Av1Filter;
 use crate::src::lf_mask::Av1FilterLUT;
 
-use crate::src::lf_mask::Av1RestorationUnit;
-
 use crate::src::env::BlockContext;
 use crate::src::refmvs::refmvs_block;
 use crate::src::refmvs::refmvs_frame;
@@ -228,25 +224,7 @@ use crate::src::internal::Dav1dTaskContext_cf;
 use crate::src::internal::Dav1dTaskContext_scratch;
 use crate::src::refmvs::refmvs_tile;
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dTileState {
-    pub cdf: CdfContext,
-    pub msac: MsacContext,
-    pub tiling: Dav1dTileState_tiling,
-    pub progress: [atomic_int; 2],
-    pub frame_thread: [Dav1dTileState_frame_thread; 2],
-    pub lowest_pixel: *mut [[libc::c_int; 2]; 7],
-    pub dqmem: [[[uint16_t; 2]; 3]; 8],
-    pub dq: *const [[uint16_t; 2]; 3],
-    pub last_qidx: libc::c_int,
-    pub last_delta_lf: [int8_t; 4],
-    pub lflvlmem: [[[[uint8_t; 2]; 8]; 4]; 8],
-    pub lflvl: *const [[[uint8_t; 2]; 8]; 4],
-    pub lr_ref: [*mut Av1RestorationUnit; 3],
-}
-use crate::src::internal::Dav1dTileState_frame_thread;
-use crate::src::internal::Dav1dTileState_tiling;
+use crate::src::internal::Dav1dTileState;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
