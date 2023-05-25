@@ -497,4 +497,41 @@ impl Av1Block {
     pub unsafe fn interintra_type(&self) -> u8 {
         self.c2rust_unnamed.c2rust_unnamed_0.interintra_type
     }
+
+    pub unsafe fn interintra_type_mut(&mut self) -> &mut u8 {
+        &mut self.c2rust_unnamed.c2rust_unnamed_0.interintra_type
+    }
+
+    pub unsafe fn interintra_mode(&self) -> u8 {
+        self.c2rust_unnamed
+            .c2rust_unnamed_0
+            .c2rust_unnamed
+            .c2rust_unnamed
+            .interintra_mode
+    }
+
+    pub unsafe fn interintra_mode_mut(&mut self) -> &mut u8 {
+        &mut self
+            .c2rust_unnamed
+            .c2rust_unnamed_0
+            .c2rust_unnamed
+            .c2rust_unnamed
+            .interintra_mode
+    }
+
+    pub unsafe fn motion_mode(&self) -> u8 {
+        self.c2rust_unnamed.c2rust_unnamed_0.motion_mode
+    }
+
+    pub unsafe fn motion_mode_mut(&mut self) -> &mut u8 {
+        &mut self.c2rust_unnamed.c2rust_unnamed_0.motion_mode
+    }
+
+    pub unsafe fn tx_split0(&self) -> u8 {
+        self.c2rust_unnamed.c2rust_unnamed_0.tx_split0
+    }
+
+    pub unsafe fn tx_split1(&self) -> u16 {
+        self.c2rust_unnamed.c2rust_unnamed_0.tx_split1
+    }
 }
