@@ -3721,11 +3721,7 @@ unsafe fn decode_b(
                     }
                 }
                 if DEBUG_BLOCK_INFO(f, t) {
-                    printf(
-                        b"Post-ref[%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
-                        b.r#ref()[0] as libc::c_int,
-                        ts.msac.rng,
-                    );
+                    println!("Post-ref[{}]: r={}", b.r#ref()[0], ts.msac.rng);
                 }
             }
             b.ref_mut()[1] = -1;
@@ -3814,13 +3810,12 @@ unsafe fn decode_b(
                     }
                 }
                 if DEBUG_BLOCK_INFO(f, t) {
-                    printf(
-                        b"Post-intermode[%d,drl=%d,mv=y:%d,x:%d,n_mvs=%d]: r=%d\n\0" as *const u8
-                            as *const libc::c_char,
-                        b.inter_mode() as libc::c_int,
-                        b.drl_idx() as libc::c_int,
-                        b.mv()[0].y as libc::c_int,
-                        b.mv()[0].x as libc::c_int,
+                    println!(
+                        "Post-intermode[{},drl={},mv=y:{},x:{},n_mvs={}]: r={}",
+                        b.inter_mode(),
+                        b.drl_idx(),
+                        b.mv()[0].y,
+                        b.mv()[0].x,
                         n_mvs,
                         ts.msac.rng,
                     );
@@ -3860,10 +3855,10 @@ unsafe fn decode_b(
                     fix_mv_precision(frame_hdr, &mut b.mv_mut()[0]);
                 }
                 if DEBUG_BLOCK_INFO(f, t) {
-                    printf(
-                        b"Post-intermode[%d,drl=%d]: r=%d\n\0" as *const u8 as *const libc::c_char,
-                        b.inter_mode() as libc::c_int,
-                        b.drl_idx() as libc::c_int,
+                    println!(
+                        "Post-intermode[{},drl={}]: r={}",
+                        b.inter_mode(),
+                        b.drl_idx(),
                         ts.msac.rng,
                     );
                 }
@@ -3874,11 +3869,10 @@ unsafe fn decode_b(
                     frame_hdr.force_integer_mv == 0,
                 );
                 if DEBUG_BLOCK_INFO(f, t) {
-                    printf(
-                        b"Post-residualmv[mv=y:%d,x:%d]: r=%d\n\0" as *const u8
-                            as *const libc::c_char,
-                        b.mv()[0].y as libc::c_int,
-                        b.mv()[0].x as libc::c_int,
+                    println!(
+                        "Post-residualmv[mv=y:{},x:{}]: r={}",
+                        b.mv()[0].y,
+                        b.mv()[0].x,
                         ts.msac.rng,
                     );
                 }
@@ -3917,12 +3911,11 @@ unsafe fn decode_b(
                 && (*f.seq_hdr).inter_intra != 0
                 && interintra_allowed_mask & (1 << bs) != 0
             {
-                printf(
-                    b"Post-interintra[t=%d,m=%d,w=%d]: r=%d\n\0" as *const u8
-                        as *const libc::c_char,
-                    b.interintra_type() as libc::c_int,
-                    b.interintra_mode() as libc::c_int,
-                    b.wedge_idx() as libc::c_int,
+                println!(
+                    "Post-interintra[t={},m={},w={}]: r={}",
+                    b.interintra_type(),
+                    b.interintra_mode(),
+                    b.wedge_idx(),
                     ts.msac.rng,
                 );
             }
@@ -3966,86 +3959,21 @@ unsafe fn decode_b(
                     has_subpel_filter = false;
                     t.warpmv = derive_warpmv(t, bw4, bh4, &mask, b.mv()[0], t.warpmv.clone());
                     if DEBUG_BLOCK_INFO(f, t) {
-                        printf(
-                            b"[ %c%x %c%x %c%x\n  %c%x %c%x %c%x ]\nalpha=%c%x, beta=%c%x, gamma=%c%x, delta=%c%x, mv=y:%d,x:%d\n\0"
-                                as *const u8 as *const libc::c_char,
-                            if t.warpmv.matrix[0]
-                                < 0
-                            {
-                                '-' as i32
-                            } else {
-                                ' ' as i32
-                            },
-                            (t.warpmv.matrix[0]).abs(),
-                            if t.warpmv.matrix[1]
-                                < 0
-                            {
-                                '-' as i32
-                            } else {
-                                ' ' as i32
-                            },
-                            (t.warpmv.matrix[1]).abs(),
-                            if t.warpmv.matrix[2]
-                                < 0
-                            {
-                                '-' as i32
-                            } else {
-                                ' ' as i32
-                            },
-                            (t.warpmv.matrix[2]).abs(),
-                            if t.warpmv.matrix[3]
-                                < 0
-                            {
-                                '-' as i32
-                            } else {
-                                ' ' as i32
-                            },
-                            (t.warpmv.matrix[3]).abs(),
-                            if t.warpmv.matrix[4]
-                                < 0
-                            {
-                                '-' as i32
-                            } else {
-                                ' ' as i32
-                            },
-                            (t.warpmv.matrix[4]).abs(),
-                            if t.warpmv.matrix[5]
-                                < 0
-                            {
-                                '-' as i32
-                            } else {
-                                ' ' as i32
-                            },
-                            (t.warpmv.matrix[5]).abs(),
-                            if (t.warpmv.alpha() as libc::c_int) < 0
-                            {
-                                '-' as i32
-                            } else {
-                                ' ' as i32
-                            },
-                            (t.warpmv.alpha() as libc::c_int).abs(),
-                            if (t.warpmv.beta() as libc::c_int) < 0 {
-                                '-' as i32
-                            } else {
-                                ' ' as i32
-                            },
-                            (t.warpmv.beta() as libc::c_int).abs(),
-                            if (t.warpmv.gamma() as libc::c_int) < 0
-                            {
-                                '-' as i32
-                            } else {
-                                ' ' as i32
-                            },
-                            (t.warpmv.gamma() as libc::c_int).abs(),
-                            if (t.warpmv.delta() as libc::c_int) < 0
-                            {
-                                '-' as i32
-                            } else {
-                                ' ' as i32
-                            },
-                            (t.warpmv.delta() as libc::c_int).abs(),
-                            b.mv()[0].y as libc::c_int,
-                            b.mv()[0].x as libc::c_int,
+                        println!(
+                            "[ {} {} {}\n  {} {} {} ]\n\
+                            alpha={}, beta={}, gamma={}, deta={}, mv=y:{},x:{}",
+                            SignAbs(t.warpmv.matrix[0]),
+                            SignAbs(t.warpmv.matrix[1]),
+                            SignAbs(t.warpmv.matrix[2]),
+                            SignAbs(t.warpmv.matrix[3]),
+                            SignAbs(t.warpmv.matrix[4]),
+                            SignAbs(t.warpmv.matrix[5]),
+                            SignAbs(t.warpmv.alpha().into()),
+                            SignAbs(t.warpmv.beta().into()),
+                            SignAbs(t.warpmv.gamma().into()),
+                            SignAbs(t.warpmv.delta().into()),
+                            b.mv()[0].y,
+                            b.mv()[0].x,
                         );
                     }
                     if t.frame_thread.pass != 0 {
@@ -4060,10 +3988,9 @@ unsafe fn decode_b(
                     }
                 }
                 if DEBUG_BLOCK_INFO(f, t) {
-                    printf(
-                        b"Post-motionmode[%d]: r=%d [mask: 0x%lx/0x%lx]\n\0" as *const u8
-                            as *const libc::c_char,
-                        b.motion_mode() as libc::c_int,
+                    println!(
+                        "Post-motionmode[{}]: r={} [mask: 0x{:x}/0x{:x}]",
+                        b.motion_mode(),
                         ts.msac.rng,
                         mask[0],
                         mask[1],
@@ -4086,12 +4013,9 @@ unsafe fn decode_b(
                 if (*f.seq_hdr).dual_filter != 0 {
                     let ctx2 = get_filter_ctx(&*t.a, &t.l, comp, true, b.r#ref()[0], by4, bx4);
                     if DEBUG_BLOCK_INFO(f, t) {
-                        printf(
-                            b"Post-subpel_filter1[%d,ctx=%d]: r=%d\n\0" as *const u8
-                                as *const libc::c_char,
-                            filter[0] as libc::c_uint,
-                            ctx1 as libc::c_int,
-                            ts.msac.rng,
+                        println!(
+                            "Post-subpel_filter1[{},ctx={}]: r={}",
+                            filter[0], ctx1, ts.msac.rng,
                         );
                     }
                     filter[1] = dav1d_msac_decode_symbol_adapt4(
@@ -4100,23 +4024,17 @@ unsafe fn decode_b(
                         DAV1D_N_SWITCHABLE_FILTERS as size_t - 1,
                     ) as Dav1dFilterMode;
                     if DEBUG_BLOCK_INFO(f, t) {
-                        printf(
-                            b"Post-subpel_filter2[%d,ctx=%d]: r=%d\n\0" as *const u8
-                                as *const libc::c_char,
-                            filter[1] as libc::c_uint,
-                            ctx2 as libc::c_int,
-                            ts.msac.rng,
+                        println!(
+                            "Post-subpel_filter2[{},ctx={}]: r={}",
+                            filter[1], ctx2, ts.msac.rng,
                         );
                     }
                 } else {
                     filter[1] = filter[0];
                     if DEBUG_BLOCK_INFO(f, t) {
-                        printf(
-                            b"Post-subpel_filter[%d,ctx=%d]: r=%d\n\0" as *const u8
-                                as *const libc::c_char,
-                            filter[0] as libc::c_uint,
-                            ctx1 as libc::c_int,
-                            ts.msac.rng,
+                        println!(
+                            "Post-subpel_filter[{},ctx={}]: r={}",
+                            filter[0], ctx1, ts.msac.rng
                         );
                     }
                 }
