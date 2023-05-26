@@ -4138,11 +4138,9 @@ unsafe fn decode_b(
             as *mut u8;
 
         let mut set_ctx = |_dir: &mut (), _diridx, _off, mul, rep_macro: SetCtxFn| {
-            let mut y = 0;
-            while y < bh4 {
+            for _ in 0..bh4 {
                 rep_macro(seg_ptr, 0, mul * b.seg_id as u64);
                 seg_ptr = seg_ptr.offset(f.b4_stride as isize);
-                y += 1;
             }
         };
         case_set(bw4, &mut (), 0, 0, &mut set_ctx);
@@ -4294,53 +4292,49 @@ unsafe fn decode_b(
                 }
             }
         } else {
-            let mut i = 0;
-            while i < 2 {
+            for i in 0..2 {
                 if b.inter_mode() == GLOBALMV_GLOBALMV as u8
-                    && f.gmv_warp_allowed[b.r#ref()[i as usize] as usize] != 0
+                    && f.gmv_warp_allowed[b.r#ref()[i] as usize] != 0
                 {
                     affine_lowest_px_luma(
                         t,
-                        &mut lowest_px[b.r#ref()[i as usize] as usize][0],
+                        &mut lowest_px[b.r#ref()[i] as usize][0],
                         b_dim,
-                        &frame_hdr.gmv[b.r#ref()[i as usize] as usize],
+                        &frame_hdr.gmv[b.r#ref()[i] as usize],
                     );
                 } else {
                     mc_lowest_px(
-                        &mut lowest_px[b.r#ref()[i as usize] as usize][0],
+                        &mut lowest_px[b.r#ref()[i] as usize][0],
                         t.by,
                         bh4,
-                        b.mv()[i as usize].y,
+                        b.mv()[i].y,
                         0,
-                        &f.svc[b.r#ref()[i as usize] as usize][1],
+                        &f.svc[b.r#ref()[i] as usize][1],
                     );
                 }
-                i += 1;
             }
             if has_chroma {
-                let mut i = 0;
-                while i < 2 {
+                for i in 0..2 {
                     if b.inter_mode() == GLOBALMV_GLOBALMV as u8
                         && std::cmp::min(cbw4, cbh4) > 1
-                        && f.gmv_warp_allowed[b.r#ref()[i as usize] as usize] != 0
+                        && f.gmv_warp_allowed[b.r#ref()[i] as usize] != 0
                     {
                         affine_lowest_px_chroma(
                             t,
-                            &mut lowest_px[b.r#ref()[i as usize] as usize][1],
+                            &mut lowest_px[b.r#ref()[i] as usize][1],
                             b_dim,
-                            &frame_hdr.gmv[b.r#ref()[i as usize] as usize],
+                            &frame_hdr.gmv[b.r#ref()[i] as usize],
                         );
                     } else {
                         mc_lowest_px(
-                            &mut lowest_px[b.r#ref()[i as usize] as usize][1],
+                            &mut lowest_px[b.r#ref()[i] as usize][1],
                             t.by,
                             bh4,
-                            b.mv()[i as usize].y,
+                            b.mv()[i].y,
                             ss_ver,
-                            &f.svc[b.r#ref()[i as usize] as usize][1],
+                            &f.svc[b.r#ref()[i] as usize][1],
                         );
                     }
-                    i += 1;
                 }
             }
         }
