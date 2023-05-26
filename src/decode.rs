@@ -4146,19 +4146,15 @@ unsafe fn decode_b(
         case_set(bw4, &mut (), 0, 0, &mut set_ctx);
     }
     if b.skip == 0 {
-        let mut noskip_mask = &mut *((*t.lf_mask).noskip_mask)
-            .as_mut_ptr()
-            .offset((by4 >> 1) as isize) as *mut [u16; 2];
         let mask = !0u32 >> 32 - bw4 << (bx4 & 15);
         let bx_idx = (bx4 & 16) >> 4;
-        let mut y = 0;
-        while y < bh4 {
-            (*noskip_mask)[bx_idx as usize] |= mask as u16;
+        for noskip_mask in
+            &mut (*t.lf_mask).noskip_mask[by4 as usize >> 1..][..(bh4 as usize + 1) / 2]
+        {
+            noskip_mask[bx_idx as usize] |= mask as u16;
             if bw4 == 32 {
-                (*noskip_mask)[1] |= mask as u16;
+                noskip_mask[1] |= mask as u16;
             }
-            y += 2;
-            noskip_mask = noskip_mask.offset(1);
         }
     }
     if t.frame_thread.pass == 1 && b.intra == 0 && frame_hdr.frame_type & 1 != 0 {
