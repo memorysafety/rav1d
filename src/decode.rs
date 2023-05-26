@@ -4195,28 +4195,25 @@ unsafe fn decode_b(
                 }
             }
             if has_chroma {
-                let mut is_sub8x8 = (bw4 == ss_hor || bh4 == ss_ver) as libc::c_int;
+                let mut is_sub8x8 = bw4 == ss_hor || bh4 == ss_ver;
                 let mut r = 0 as *const *mut refmvs_block;
-                if is_sub8x8 != 0 {
+                if is_sub8x8 {
                     assert!(ss_hor == 1);
                     r = &mut *(t.rt.r).as_mut_ptr().offset(((t.by & 31) + 5) as isize)
                         as *mut *mut refmvs_block;
                     if bw4 == 1 {
-                        is_sub8x8 &= ((*(*r.offset(0)).offset((t.bx - 1) as isize)).0.r#ref.r#ref
-                            [0]
-                            > 0) as libc::c_int;
+                        is_sub8x8 &=
+                            (*(*r.offset(0)).offset((t.bx - 1) as isize)).0.r#ref.r#ref[0] > 0;
                     }
                     if bh4 == ss_ver {
-                        is_sub8x8 &= ((*(*r.offset(-1)).offset(t.bx as isize)).0.r#ref.r#ref[0] > 0)
-                            as libc::c_int;
+                        is_sub8x8 &= (*(*r.offset(-1)).offset(t.bx as isize)).0.r#ref.r#ref[0] > 0;
                     }
                     if bw4 == 1 && bh4 == ss_ver {
-                        is_sub8x8 &= ((*(*r.offset(-1)).offset((t.bx - 1) as isize)).0.r#ref.r#ref
-                            [0]
-                            > 0) as libc::c_int;
+                        is_sub8x8 &=
+                            (*(*r.offset(-1)).offset((t.bx - 1) as isize)).0.r#ref.r#ref[0] > 0;
                     }
                 }
-                if is_sub8x8 != 0 {
+                if is_sub8x8 {
                     assert!(ss_hor == 1);
                     if bw4 == 1 && bh4 == ss_ver {
                         let rr = &mut *(*r.offset(-1)).offset((t.bx - 1) as isize)
