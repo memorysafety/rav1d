@@ -3721,10 +3721,7 @@ unsafe fn decode_b(
                 }
             }
             b.ref_mut()[1] = -1;
-            let mut mvstack = [refmvs_candidate {
-                mv: refmvs_mvpair { mv: [mv::ZERO; 2] },
-                weight: 0,
-            }; 8];
+            let mut mvstack = [Default::default(); 8];
             let mut n_mvs = 0;
             let mut ctx = 0;
             dav1d_refmvs_find(
