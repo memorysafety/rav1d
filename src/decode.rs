@@ -2088,10 +2088,12 @@ fn mc_lowest_px(
     dst: &mut libc::c_int,
     by4: libc::c_int,
     bh4: libc::c_int,
-    mvy: libc::c_int,
+    mvy: i16,
     ss_ver: libc::c_int,
     smp: &ScalableMotionParams,
 ) {
+    let mvy = mvy as libc::c_int;
+
     let v_mul = 4 >> ss_ver;
     if smp.scale == 0 {
         let my = mvy >> 3 + ss_ver;
@@ -2199,7 +2201,7 @@ unsafe fn obmc_lowest_px(
                     &mut dst[a_r.0.r#ref.r#ref[0] as usize - 1][is_chroma as usize],
                     t.by,
                     oh4 * 3 + 3 >> 2,
-                    a_r.0.mv.mv[0].y as libc::c_int,
+                    a_r.0.mv.mv[0].y,
                     ss_ver,
                     &f.svc[a_r.0.r#ref.r#ref[0] as usize - 1][1],
                 );
@@ -2220,7 +2222,7 @@ unsafe fn obmc_lowest_px(
                     &mut dst[l_r.0.r#ref.r#ref[0] as usize - 1][is_chroma as usize],
                     t.by + y,
                     oh4,
-                    l_r.0.mv.mv[0].y as libc::c_int,
+                    l_r.0.mv.mv[0].y,
                     ss_ver,
                     &f.svc[l_r.0.r#ref.r#ref[0] as usize - 1][1],
                 );
@@ -4192,7 +4194,7 @@ unsafe fn decode_b(
                     &mut lowest_px[b.r#ref()[0] as usize][0],
                     t.by,
                     bh4,
-                    b.mv()[0].y as libc::c_int,
+                    b.mv()[0].y,
                     0,
                     &*(*(f.svc)
                         .as_ptr()
@@ -4235,7 +4237,7 @@ unsafe fn decode_b(
                             &mut lowest_px[(*rr).0.r#ref.r#ref[0] as usize - 1][1],
                             t.by - 1,
                             bh4,
-                            (*rr).0.mv.mv[0].y as libc::c_int,
+                            (*rr).0.mv.mv[0].y,
                             ss_ver,
                             &*(*(f.svc)
                                 .as_ptr()
@@ -4251,7 +4253,7 @@ unsafe fn decode_b(
                             &mut lowest_px[(*rr).0.r#ref.r#ref[0] as usize - 1][1],
                             t.by,
                             bh4,
-                            (*rr).0.mv.mv[0].y as libc::c_int,
+                            (*rr).0.mv.mv[0].y,
                             ss_ver,
                             &*(*(f.svc)
                                 .as_ptr()
@@ -4266,7 +4268,7 @@ unsafe fn decode_b(
                             &mut lowest_px[(*rr).0.r#ref.r#ref[0] as usize - 1][1],
                             t.by - 1,
                             bh4,
-                            (*rr).0.mv.mv[0].y as libc::c_int,
+                            (*rr).0.mv.mv[0].y,
                             ss_ver,
                             &*(*(f.svc)
                                 .as_ptr()
@@ -4279,7 +4281,7 @@ unsafe fn decode_b(
                         &mut lowest_px[b.r#ref()[0] as usize][1],
                         t.by,
                         bh4,
-                        b.mv()[0].y as libc::c_int,
+                        b.mv()[0].y,
                         ss_ver,
                         &*(*(f.svc)
                             .as_ptr()
@@ -4310,7 +4312,7 @@ unsafe fn decode_b(
                         &mut lowest_px[b.r#ref()[0] as usize][1],
                         t.by & !ss_ver,
                         bh4 << (bh4 == ss_ver) as libc::c_int,
-                        b.mv()[0].y as libc::c_int,
+                        b.mv()[0].y,
                         ss_ver,
                         &*(*(f.svc)
                             .as_ptr()
@@ -4342,7 +4344,7 @@ unsafe fn decode_b(
                         &mut lowest_px[b.r#ref()[i as usize] as usize][0],
                         t.by,
                         bh4,
-                        b.mv()[i as usize].y as libc::c_int,
+                        b.mv()[i as usize].y,
                         0,
                         &*(*(f.svc)
                             .as_ptr()
@@ -4373,7 +4375,7 @@ unsafe fn decode_b(
                             &mut lowest_px[b.r#ref()[i as usize] as usize][1],
                             t.by,
                             bh4,
-                            b.mv()[i as usize].y as libc::c_int,
+                            b.mv()[i as usize].y,
                             ss_ver,
                             &*(*(f.svc)
                                 .as_ptr()
