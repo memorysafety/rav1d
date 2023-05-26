@@ -2273,8 +2273,8 @@ unsafe fn decode_b(
     let cby4 = by4 >> ss_ver;
     let bw4 = b_dim[0] as libc::c_int;
     let bh4 = b_dim[1] as libc::c_int;
-    let w4 = imin(bw4, f.bw - t.bx);
-    let h4 = imin(bh4, f.bh - t.by);
+    let w4 = std::cmp::min(bw4, f.bw - t.bx);
+    let h4 = std::cmp::min(bh4, f.bh - t.by);
     let cbw4 = bw4 + ss_hor >> ss_hor;
     let cbh4 = bh4 + ss_ver >> ss_ver;
     let have_left = t.bx > ts.tiling.col_start;
@@ -2497,7 +2497,7 @@ unsafe fn decode_b(
         .map(|seg| seg.globalmv == 0 && seg.r#ref == -1 && seg.skip == 0)
         .unwrap_or(true)
         && (*f.frame_hdr).skip_mode_enabled != 0
-        && imin(bw4, bh4) > 1
+        && std::cmp::min(bw4, bh4) > 1
     {
         let smctx = (*t.a).skip_mode.0[bx4 as usize] + t.l.skip_mode.0[by4 as usize];
         b.skip_mode =
@@ -2860,7 +2860,10 @@ unsafe fn decode_b(
         }
 
         *b.pal_sz_mut() = [0, 0];
-        if frame_hdr.allow_screen_content_tools != 0 && imax(bw4, bh4) <= 16 && bw4 + bh4 >= 4 {
+        if frame_hdr.allow_screen_content_tools != 0
+            && std::cmp::max(bw4, bh4) <= 16
+            && bw4 + bh4 >= 4
+        {
             let sz_ctx = b_dim[2] + b_dim[3] - 2;
             if b.y_mode() == DC_PRED as u8 {
                 let pal_ctx = ((*t.a).pal_sz.0[bx4 as usize] > 0) as usize
@@ -2898,7 +2901,7 @@ unsafe fn decode_b(
 
         if b.y_mode() == DC_PRED as u8
             && b.pal_sz()[0] == 0
-            && imax(b_dim[2] as libc::c_int, b_dim[3] as libc::c_int) <= 3
+            && std::cmp::max(b_dim[2] as libc::c_int, b_dim[3] as libc::c_int) <= 3
             && (*f.seq_hdr).filter_intra != 0
         {
             let is_filter = dav1d_msac_decode_bool_adapt(
@@ -2999,7 +3002,7 @@ unsafe fn decode_b(
                 let mut depth = dav1d_msac_decode_symbol_adapt4(
                     &mut ts.msac,
                     tx_cdf,
-                    imin(t_dim.max as libc::c_int, 2 as libc::c_int) as size_t,
+                    std::cmp::min(t_dim.max as libc::c_int, 2 as libc::c_int) as size_t,
                 ) as libc::c_int;
 
                 for _ in 0..depth {
@@ -3326,7 +3329,7 @@ unsafe fn decode_b(
             .map(|seg| seg.r#ref == -1 && seg.globalmv == 0 && seg.skip == 0)
             .unwrap_or(true)
             && frame_hdr.switchable_comp_refs != 0
-            && imin(bw4, bh4) > 1
+            && std::cmp::min(bw4, bh4) > 1
         {
             let ctx_2 = get_comp_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
             is_comp =
@@ -3545,7 +3548,8 @@ unsafe fn decode_b(
 
             assert!(b.drl_idx() >= NEAREST_DRL as u8 && b.drl_idx() <= NEARISH_DRL as u8);
 
-            has_subpel_filter = imin(bw4, bh4) == 1 || b.inter_mode() != GLOBALMV_GLOBALMV as u8;
+            has_subpel_filter =
+                std::cmp::min(bw4, bh4) == 1 || b.inter_mode() != GLOBALMV_GLOBALMV as u8;
 
             let mut assign_comp_mv = |idx: usize| match im[idx] as InterPredMode {
                 NEARMV | NEARESTMV => {
@@ -3769,7 +3773,7 @@ unsafe fn decode_b(
                         bh4,
                         frame_hdr,
                     );
-                    has_subpel_filter = imin(bw4, bh4) == 1
+                    has_subpel_filter = std::cmp::min(bw4, bh4) == 1
                         || frame_hdr.gmv[b.r#ref()[0] as usize].type_0 == DAV1D_WM_TYPE_TRANSLATION;
                 } else {
                     has_subpel_filter = true;
@@ -3921,7 +3925,7 @@ unsafe fn decode_b(
             }
             if frame_hdr.switchable_motion_mode != 0
                 && b.interintra_type() == INTER_INTRA_NONE as u8
-                && imin(bw4, bh4) >= 2
+                && std::cmp::min(bw4, bh4) >= 2
                 && !(frame_hdr.force_integer_mv == 0
                     && b.inter_mode() == GLOBALMV as u8
                     && frame_hdr.gmv[b.r#ref()[0] as usize].type_0 > DAV1D_WM_TYPE_TRANSLATION)
@@ -4186,7 +4190,7 @@ unsafe fn decode_b(
         let sby = t.by - ts.tiling.row_start >> f.sb_shift;
         let lowest_px = &mut *ts.lowest_pixel.offset(sby as isize);
         if b.comp_type() == COMP_INTER_NONE as u8 {
-            if imin(bw4, bh4) > 1
+            if std::cmp::min(bw4, bh4) > 1
                 && (b.inter_mode() == GLOBALMV as u8
                     && f.gmv_warp_allowed[b.r#ref()[0] as usize] != 0
                     || b.motion_mode() == MM_WARP as u8
@@ -4312,7 +4316,7 @@ unsafe fn decode_b(
                         .as_ptr()
                         .offset(1),
                     );
-                } else if imin(cbw4, cbh4) > 1
+                } else if std::cmp::min(cbw4, cbh4) > 1
                     && (b.inter_mode() == GLOBALMV as u8
                         && f.gmv_warp_allowed[b.r#ref()[0] as usize] != 0
                         || b.motion_mode() == MM_WARP as u8
@@ -4382,7 +4386,7 @@ unsafe fn decode_b(
                 let mut i = 0;
                 while i < 2 {
                     if b.inter_mode() == GLOBALMV_GLOBALMV as u8
-                        && imin(cbw4, cbh4) > 1
+                        && std::cmp::min(cbw4, cbh4) > 1
                         && f.gmv_warp_allowed[b.r#ref()[i as usize] as usize] != 0
                     {
                         affine_lowest_px_chroma(
