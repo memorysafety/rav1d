@@ -3968,7 +3968,7 @@ unsafe fn decode_b(
                             b.matrix_mut()[2] = t.warpmv.matrix[4] as i16;
                             b.matrix_mut()[3] = (t.warpmv.matrix[5] - 0x10000) as i16;
                         } else {
-                            b.matrix_mut()[0] = -32767 - 1;
+                            b.matrix_mut()[0] = i16::MIN;
                         }
                     }
                 }
