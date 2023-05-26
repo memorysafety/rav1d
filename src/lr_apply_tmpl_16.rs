@@ -1,7 +1,6 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
-use crate::src::cdf::CdfContext;
-use crate::src::msac::MsacContext;
+
 use ::libc;
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
@@ -12,7 +11,6 @@ use crate::src::tables::dav1d_sgr_params;
 pub type pixel = uint16_t;
 pub type coef = int32_t;
 use crate::include::stdatomic::atomic_int;
-use crate::include::stdatomic::atomic_uint;
 
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
@@ -52,7 +50,7 @@ pub struct Dav1dFrameContext {
     pub dsp: *const Dav1dDSPContext,
     pub bd_fn: Dav1dFrameContext_bd_fn,
     pub ipred_edge_sz: libc::c_int,
-    pub ipred_edge: [*mut pixel; 3],
+    pub ipred_edge: [*mut libc::c_void; 3],
     pub b4_stride: ptrdiff_t,
     pub w4: libc::c_int,
     pub h4: libc::c_int,
@@ -99,60 +97,13 @@ use crate::include::dav1d::headers::Dav1dSequenceHeader;
 
 use crate::src::align::Align16;
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFrameContext_lf {
-    pub level: *mut [uint8_t; 4],
-    pub mask: *mut Av1Filter,
-    pub lr_mask: *mut Av1Restoration,
-    pub mask_sz: libc::c_int,
-    pub lr_mask_sz: libc::c_int,
-    pub cdef_buf_plane_sz: [libc::c_int; 2],
-    pub cdef_buf_sbh: libc::c_int,
-    pub lr_buf_plane_sz: [libc::c_int; 2],
-    pub re_sz: libc::c_int,
-    pub lim_lut: Align16<Av1FilterLUT>,
-    pub last_sharpness: libc::c_int,
-    pub lvl: [[[[uint8_t; 2]; 8]; 4]; 8],
-    pub tx_lpf_right_edge: [*mut uint8_t; 2],
-    pub cdef_line_buf: *mut uint8_t,
-    pub lr_line_buf: *mut uint8_t,
-    pub cdef_line: [[*mut pixel; 3]; 2],
-    pub cdef_lpf_line: [*mut pixel; 3],
-    pub lr_lpf_line: [*mut pixel; 3],
-    pub start_of_tile_row: *mut uint8_t,
-    pub start_of_tile_row_sz: libc::c_int,
-    pub need_cdef_lpf_copy: libc::c_int,
-    pub p: [*mut pixel; 3],
-    pub sr_p: [*mut pixel; 3],
-    pub mask_ptr: *mut Av1Filter,
-    pub prev_mask_ptr: *mut Av1Filter,
-    pub restore_planes: libc::c_int,
-}
+use crate::src::internal::Dav1dFrameContext_lf;
 use crate::src::lf_mask::Av1Filter;
 use crate::src::lf_mask::Av1FilterLUT;
-use crate::src::lf_mask::Av1Restoration;
+
+use crate::src::internal::Dav1dFrameContext_frame_thread;
 use crate::src::lf_mask::Av1RestorationUnit;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFrameContext_frame_thread {
-    pub next_tile_row: [libc::c_int; 2],
-    pub entropy_progress: atomic_int,
-    pub deblock_progress: atomic_int,
-    pub frame_progress: *mut atomic_uint,
-    pub copy_lpf_progress: *mut atomic_uint,
-    pub b: *mut Av1Block,
-    pub cbi: *mut CodedBlockInfo,
-    pub pal: *mut [[uint16_t; 8]; 3],
-    pub pal_idx: *mut uint8_t,
-    pub cf: *mut coef,
-    pub prog_sz: libc::c_int,
-    pub pal_sz: libc::c_int,
-    pub pal_idx_sz: libc::c_int,
-    pub cf_sz: libc::c_int,
-    pub tile_start_off: *mut libc::c_int,
-}
-use crate::src::internal::CodedBlockInfo;
+
 use crate::src::levels::Av1Block;
 use crate::src::refmvs::refmvs_frame;
 
@@ -208,30 +159,7 @@ use crate::src::internal::Dav1dTaskContext_cf;
 use crate::src::internal::Dav1dTaskContext_scratch;
 use crate::src::refmvs::refmvs_tile;
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dTileState {
-    pub cdf: CdfContext,
-    pub msac: MsacContext,
-    pub tiling: Dav1dTileState_tiling,
-    pub progress: [atomic_int; 2],
-    pub frame_thread: [Dav1dTileState_frame_thread; 2],
-    pub lowest_pixel: *mut [[libc::c_int; 2]; 7],
-    pub dqmem: [[[uint16_t; 2]; 3]; 8],
-    pub dq: *const [[uint16_t; 2]; 3],
-    pub last_qidx: libc::c_int,
-    pub last_delta_lf: [int8_t; 4],
-    pub lflvlmem: [[[[uint8_t; 2]; 8]; 4]; 8],
-    pub lflvl: *const [[[uint8_t; 2]; 8]; 4],
-    pub lr_ref: [*mut Av1RestorationUnit; 3],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dTileState_frame_thread {
-    pub pal_idx: *mut uint8_t,
-    pub cf: *mut coef,
-}
-use crate::src::internal::Dav1dTileState_tiling;
+use crate::src::internal::Dav1dTileState;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -736,7 +664,7 @@ unsafe extern "C" fn lr_stripe(
             0 as libc::c_int
         }) >> 6 - ss_ver + (*(*f).seq_hdr).sb128;
     let have_tt = ((*(*f).c).n_tc > 1 as libc::c_uint) as libc::c_int;
-    let mut lpf: *const pixel = ((*f).lf.lr_lpf_line[plane as usize])
+    let mut lpf: *const pixel = ((*f).lf.lr_lpf_line[plane as usize] as *mut pixel)
         .offset(
             ((have_tt * (sby * ((4 as libc::c_int) << (*(*f).seq_hdr).sb128) - 4)) as isize
                 * PXSTRIDE(stride)) as isize,

@@ -1,7 +1,6 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
-use crate::src::cdf::CdfContext;
-use crate::src::msac::MsacContext;
+
 use ::libc;
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: size_t) -> *mut libc::c_void;
@@ -10,7 +9,6 @@ extern "C" {
 pub type pixel = uint8_t;
 pub type coef = int16_t;
 use crate::include::stdatomic::atomic_int;
-use crate::include::stdatomic::atomic_uint;
 
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
@@ -50,7 +48,7 @@ pub struct Dav1dFrameContext {
     pub dsp: *const Dav1dDSPContext,
     pub bd_fn: Dav1dFrameContext_bd_fn,
     pub ipred_edge_sz: libc::c_int,
-    pub ipred_edge: [*mut pixel; 3],
+    pub ipred_edge: [*mut libc::c_void; 3],
     pub b4_stride: ptrdiff_t,
     pub w4: libc::c_int,
     pub h4: libc::c_int,
@@ -96,60 +94,11 @@ use crate::include::dav1d::headers::Dav1dSequenceHeader;
 
 use crate::src::align::Align16;
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFrameContext_lf {
-    pub level: *mut [uint8_t; 4],
-    pub mask: *mut Av1Filter,
-    pub lr_mask: *mut Av1Restoration,
-    pub mask_sz: libc::c_int,
-    pub lr_mask_sz: libc::c_int,
-    pub cdef_buf_plane_sz: [libc::c_int; 2],
-    pub cdef_buf_sbh: libc::c_int,
-    pub lr_buf_plane_sz: [libc::c_int; 2],
-    pub re_sz: libc::c_int,
-    pub lim_lut: Align16<Av1FilterLUT>,
-    pub last_sharpness: libc::c_int,
-    pub lvl: [[[[uint8_t; 2]; 8]; 4]; 8],
-    pub tx_lpf_right_edge: [*mut uint8_t; 2],
-    pub cdef_line_buf: *mut uint8_t,
-    pub lr_line_buf: *mut uint8_t,
-    pub cdef_line: [[*mut pixel; 3]; 2],
-    pub cdef_lpf_line: [*mut pixel; 3],
-    pub lr_lpf_line: [*mut pixel; 3],
-    pub start_of_tile_row: *mut uint8_t,
-    pub start_of_tile_row_sz: libc::c_int,
-    pub need_cdef_lpf_copy: libc::c_int,
-    pub p: [*mut pixel; 3],
-    pub sr_p: [*mut pixel; 3],
-    pub mask_ptr: *mut Av1Filter,
-    pub prev_mask_ptr: *mut Av1Filter,
-    pub restore_planes: libc::c_int,
-}
+use crate::src::internal::Dav1dFrameContext_frame_thread;
+use crate::src::internal::Dav1dFrameContext_lf;
 use crate::src::lf_mask::Av1Filter;
 use crate::src::lf_mask::Av1FilterLUT;
-use crate::src::lf_mask::Av1Restoration;
-use crate::src::lf_mask::Av1RestorationUnit;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFrameContext_frame_thread {
-    pub next_tile_row: [libc::c_int; 2],
-    pub entropy_progress: atomic_int,
-    pub deblock_progress: atomic_int,
-    pub frame_progress: *mut atomic_uint,
-    pub copy_lpf_progress: *mut atomic_uint,
-    pub b: *mut Av1Block,
-    pub cbi: *mut CodedBlockInfo,
-    pub pal: *mut [[uint16_t; 8]; 3],
-    pub pal_idx: *mut uint8_t,
-    pub cf: *mut coef,
-    pub prog_sz: libc::c_int,
-    pub pal_sz: libc::c_int,
-    pub pal_idx_sz: libc::c_int,
-    pub cf_sz: libc::c_int,
-    pub tile_start_off: *mut libc::c_int,
-}
-use crate::src::internal::CodedBlockInfo;
+
 use crate::src::levels::Av1Block;
 use crate::src::refmvs::refmvs_frame;
 
@@ -205,30 +154,7 @@ use crate::src::internal::Dav1dTaskContext_cf;
 use crate::src::internal::Dav1dTaskContext_scratch;
 use crate::src::refmvs::refmvs_tile;
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dTileState {
-    pub cdf: CdfContext,
-    pub msac: MsacContext,
-    pub tiling: Dav1dTileState_tiling,
-    pub progress: [atomic_int; 2],
-    pub frame_thread: [Dav1dTileState_frame_thread; 2],
-    pub lowest_pixel: *mut [[libc::c_int; 2]; 7],
-    pub dqmem: [[[uint16_t; 2]; 3]; 8],
-    pub dq: *const [[uint16_t; 2]; 3],
-    pub last_qidx: libc::c_int,
-    pub last_delta_lf: [int8_t; 4],
-    pub lflvlmem: [[[[uint8_t; 2]; 8]; 4]; 8],
-    pub lflvl: *const [[[uint8_t; 2]; 8]; 4],
-    pub lr_ref: [*mut Av1RestorationUnit; 3],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dTileState_frame_thread {
-    pub pal_idx: *mut uint8_t,
-    pub cf: *mut coef,
-}
-use crate::src::internal::Dav1dTileState_tiling;
+use crate::src::internal::Dav1dTileState;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -888,11 +814,11 @@ pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
             && edges as libc::c_uint & CDEF_HAVE_BOTTOM as libc::c_int as libc::c_uint != 0
         {
             let cdef_top_bak: [*mut pixel; 3] = [
-                ((*f).lf.cdef_line[(tf == 0) as libc::c_int as usize][0])
+                ((*f).lf.cdef_line[(tf == 0) as libc::c_int as usize][0] as *mut pixel)
                     .offset(((have_tt * sby * 4) as isize * y_stride) as isize),
-                ((*f).lf.cdef_line[(tf == 0) as libc::c_int as usize][1])
+                ((*f).lf.cdef_line[(tf == 0) as libc::c_int as usize][1] as *mut pixel)
                     .offset(((have_tt * sby * 8) as isize * uv_stride) as isize),
-                ((*f).lf.cdef_line[(tf == 0) as libc::c_int as usize][2])
+                ((*f).lf.cdef_line[(tf == 0) as libc::c_int as usize][2] as *mut pixel)
                     .offset(((have_tt * sby * 8) as isize * uv_stride) as isize),
             ];
             backup2lines(
@@ -1021,36 +947,37 @@ pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
                         } else if sbrow_start != 0 && by == by_start {
                             if resize != 0 {
                                 offset = ((sby - 1) * 4) as isize * y_stride + (bx * 4) as isize;
-                                top = &mut *(*((*f).lf.cdef_lpf_line).as_mut_ptr().offset(0))
-                                    .offset(offset as isize)
-                                    as *mut pixel;
+                                top = &mut *((*((*f).lf.cdef_lpf_line).as_mut_ptr().offset(0))
+                                    as *mut pixel)
+                                    .offset(offset as isize);
                             } else {
                                 offset = (sby * ((4 as libc::c_int) << sb128) - 4) as isize
                                     * y_stride
                                     + (bx * 4) as isize;
-                                top = &mut *(*((*f).lf.lr_lpf_line).as_mut_ptr().offset(0))
-                                    .offset(offset as isize)
-                                    as *mut pixel;
+                                top = &mut *((*((*f).lf.lr_lpf_line).as_mut_ptr().offset(0))
+                                    as *mut pixel)
+                                    .offset(offset as isize);
                             }
                             bot = (bptrs[0]).offset((8 * y_stride) as isize);
                             current_block_84 = 17075014677070940716;
                         } else if sbrow_start == 0 && by + 2 >= by_end {
-                            top = &mut *(*(*((*f).lf.cdef_line).as_mut_ptr().offset(tf as isize))
+                            top = &mut *((*(*((*f).lf.cdef_line).as_mut_ptr().offset(tf as isize))
                                 .as_mut_ptr()
-                                .offset(0))
-                            .offset(((sby * 4) as isize * y_stride + (bx * 4) as isize) as isize)
-                                as *mut pixel;
+                                .offset(0)) as *mut pixel)
+                                .offset(
+                                    ((sby * 4) as isize * y_stride + (bx * 4) as isize) as isize,
+                                );
                             if resize != 0 {
                                 offset = (sby * 4 + 2) as isize * y_stride + (bx * 4) as isize;
-                                bot = &mut *(*((*f).lf.cdef_lpf_line).as_mut_ptr().offset(0))
-                                    .offset(offset as isize)
-                                    as *mut pixel;
+                                bot = &mut *((*((*f).lf.cdef_lpf_line).as_mut_ptr().offset(0))
+                                    as *mut pixel)
+                                    .offset(offset as isize);
                             } else {
                                 let line = sby * ((4 as libc::c_int) << sb128) + 4 * sb128 + 2;
                                 offset = line as isize * y_stride + (bx * 4) as isize;
-                                bot = &mut *(*((*f).lf.lr_lpf_line).as_mut_ptr().offset(0))
-                                    .offset(offset as isize)
-                                    as *mut pixel;
+                                bot = &mut *((*((*f).lf.lr_lpf_line).as_mut_ptr().offset(0))
+                                    as *mut pixel)
+                                    .offset(offset as isize);
                             }
                             current_block_84 = 17075014677070940716;
                         } else {
@@ -1059,13 +986,15 @@ pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
                         match current_block_84 {
                             17728966195399430138 => {
                                 offset = (sby * 4) as isize * y_stride;
-                                top = &mut *(*(*((*f).lf.cdef_line)
+                                top = &mut *((*(*((*f).lf.cdef_line)
                                     .as_mut_ptr()
                                     .offset(tf as isize))
                                 .as_mut_ptr()
                                 .offset(0))
-                                .offset((have_tt as isize * offset + (bx * 4) as isize) as isize)
-                                    as *mut pixel;
+                                    as *mut pixel)
+                                    .offset(
+                                        (have_tt as isize * offset + (bx * 4) as isize) as isize,
+                                    );
                                 bot = (bptrs[0]).offset((8 * y_stride) as isize);
                             }
                             _ => {}
@@ -1121,20 +1050,20 @@ pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
                                     if resize != 0 {
                                         offset = ((sby - 1) * 4) as isize * uv_stride
                                             + (bx * 4 >> ss_hor) as isize;
-                                        top = &mut *(*((*f).lf.cdef_lpf_line)
+                                        top = &mut *((*((*f).lf.cdef_lpf_line)
                                             .as_mut_ptr()
                                             .offset(pl as isize))
-                                        .offset(offset as isize)
-                                            as *mut pixel;
+                                            as *mut pixel)
+                                            .offset(offset as isize);
                                     } else {
                                         let line_0 = sby * ((4 as libc::c_int) << sb128) - 4;
                                         offset = line_0 as isize * uv_stride
                                             + (bx * 4 >> ss_hor) as isize;
-                                        top = &mut *(*((*f).lf.lr_lpf_line)
+                                        top = &mut *((*((*f).lf.lr_lpf_line)
                                             .as_mut_ptr()
                                             .offset(pl as isize))
-                                        .offset(offset as isize)
-                                            as *mut pixel;
+                                            as *mut pixel)
+                                            .offset(offset as isize);
                                     }
                                     bot = (bptrs[pl as usize])
                                         .offset(((8 >> ss_ver) as isize * uv_stride) as isize);
@@ -1142,31 +1071,31 @@ pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
                                 } else if sbrow_start == 0 && by + 2 >= by_end {
                                     let top_offset: ptrdiff_t = (sby * 8) as isize * uv_stride
                                         + (bx * 4 >> ss_hor) as isize;
-                                    top = &mut *(*(*((*f).lf.cdef_line)
+                                    top = &mut *((*(*((*f).lf.cdef_line)
                                         .as_mut_ptr()
                                         .offset(tf as isize))
                                     .as_mut_ptr()
                                     .offset(pl as isize))
-                                    .offset(top_offset as isize)
-                                        as *mut pixel;
+                                        as *mut pixel)
+                                        .offset(top_offset as isize);
                                     if resize != 0 {
                                         offset = (sby * 4 + 2) as isize * uv_stride
                                             + (bx * 4 >> ss_hor) as isize;
-                                        bot = &mut *(*((*f).lf.cdef_lpf_line)
+                                        bot = &mut *((*((*f).lf.cdef_lpf_line)
                                             .as_mut_ptr()
                                             .offset(pl as isize))
-                                        .offset(offset as isize)
-                                            as *mut pixel;
+                                            as *mut pixel)
+                                            .offset(offset as isize);
                                     } else {
                                         let line_1 =
                                             sby * ((4 as libc::c_int) << sb128) + 4 * sb128 + 2;
                                         offset = line_1 as isize * uv_stride
                                             + (bx * 4 >> ss_hor) as isize;
-                                        bot = &mut *(*((*f).lf.lr_lpf_line)
+                                        bot = &mut *((*((*f).lf.lr_lpf_line)
                                             .as_mut_ptr()
                                             .offset(pl as isize))
-                                        .offset(offset as isize)
-                                            as *mut pixel;
+                                            as *mut pixel)
+                                            .offset(offset as isize);
                                     }
                                     current_block_77 = 6540614962658479183;
                                 } else {
@@ -1175,17 +1104,17 @@ pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
                                 match current_block_77 {
                                     5687667889785024198 => {
                                         let offset_0: ptrdiff_t = (sby * 8) as isize * uv_stride;
-                                        top = &mut *(*(*((*f).lf.cdef_line)
+                                        top = &mut *((*(*((*f).lf.cdef_line)
                                             .as_mut_ptr()
                                             .offset(tf as isize))
                                         .as_mut_ptr()
                                         .offset(pl as isize))
-                                        .offset(
-                                            (have_tt as isize * offset_0
-                                                + (bx * 4 >> ss_hor) as isize)
-                                                as isize,
-                                        )
-                                            as *mut pixel;
+                                            as *mut pixel)
+                                            .offset(
+                                                (have_tt as isize * offset_0
+                                                    + (bx * 4 >> ss_hor) as isize)
+                                                    as isize,
+                                            );
                                         bot = (bptrs[pl as usize])
                                             .offset(((8 >> ss_ver) as isize * uv_stride) as isize);
                                     }
