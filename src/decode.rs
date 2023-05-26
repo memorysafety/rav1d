@@ -3672,11 +3672,11 @@ unsafe fn decode_b(
                 }
             }
         } else {
-            *b.comp_type_mut() = COMP_INTER_NONE as libc::c_int as uint8_t;
+            *b.comp_type_mut() = COMP_INTER_NONE as u8;
             if let Some(seg) = seg.filter(|seg| seg.r#ref > 0) {
-                b.ref_mut()[0 as libc::c_int as usize] = seg.r#ref as i8 - 1;
+                b.ref_mut()[0] = seg.r#ref as i8 - 1;
             } else if let Some(_) = seg.filter(|seg| seg.globalmv != 0 || seg.skip != 0) {
-                b.ref_mut()[0] = 0 as libc::c_int as int8_t;
+                b.ref_mut()[0] = 0;
             } else {
                 let ctx1 = av1_get_ref_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
                 if dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.r#ref[0][ctx1 as usize])
@@ -3686,16 +3686,16 @@ unsafe fn decode_b(
                         &mut ts.msac,
                         &mut ts.cdf.m.r#ref[1][ctx2 as usize],
                     ) {
-                        b.ref_mut()[0 as libc::c_int as usize] = 6 as libc::c_int as int8_t;
+                        b.ref_mut()[0] = 6;
                     } else {
                         let ctx3 =
                             av1_get_bwd_ref_1_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
-                        b.ref_mut()[0 as libc::c_int as usize] = (4 as libc::c_int as libc::c_uint)
-                            .wrapping_add(dav1d_msac_decode_bool_adapt(
+                        b.ref_mut()[0] = (4 as libc::c_uint).wrapping_add(
+                            dav1d_msac_decode_bool_adapt(
                                 &mut ts.msac,
                                 &mut ts.cdf.m.r#ref[5][ctx3 as usize],
-                            ) as libc::c_uint)
-                            as int8_t;
+                            ) as libc::c_uint,
+                        ) as i8;
                     }
                 } else {
                     let ctx2 = av1_get_fwd_ref_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
@@ -3705,20 +3705,19 @@ unsafe fn decode_b(
                     ) {
                         let ctx3 =
                             av1_get_fwd_ref_2_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
-                        b.ref_mut()[0 as libc::c_int as usize] = (2 as libc::c_int as libc::c_uint)
-                            .wrapping_add(dav1d_msac_decode_bool_adapt(
+                        b.ref_mut()[0] = (2 as libc::c_uint).wrapping_add(
+                            dav1d_msac_decode_bool_adapt(
                                 &mut ts.msac,
                                 &mut ts.cdf.m.r#ref[4][ctx3 as usize],
-                            ) as libc::c_uint)
-                            as int8_t;
+                            ) as libc::c_uint,
+                        ) as int8_t;
                     } else {
                         let ctx3 =
                             av1_get_fwd_ref_1_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
-                        b.ref_mut()[0 as libc::c_int as usize] = dav1d_msac_decode_bool_adapt(
+                        b.ref_mut()[0] = dav1d_msac_decode_bool_adapt(
                             &mut ts.msac,
                             &mut ts.cdf.m.r#ref[3][ctx3 as usize],
-                        )
-                            as int8_t;
+                        ) as i8;
                     }
                 }
                 if DEBUG_BLOCK_INFO(f, t) {
@@ -3729,8 +3728,8 @@ unsafe fn decode_b(
                     );
                 }
             }
-            b.ref_mut()[1] = -(1 as libc::c_int) as int8_t;
-            let mut mvstack: [refmvs_candidate; 8] = [refmvs_candidate {
+            b.ref_mut()[1] = -1;
+            let mut mvstack = [refmvs_candidate {
                 mv: refmvs_mvpair { mv: [mv::ZERO; 2] },
                 weight: 0,
             }; 8];
@@ -3742,10 +3741,7 @@ unsafe fn decode_b(
                 &mut n_mvs,
                 &mut ctx,
                 refmvs_refpair {
-                    r#ref: [
-                        (b.r#ref()[0] as libc::c_int + 1) as int8_t,
-                        -(1 as libc::c_int) as int8_t,
-                    ],
+                    r#ref: [b.r#ref()[0] + 1, -1],
                 },
                 bs,
                 intra_edge_flags,
@@ -3768,7 +3764,7 @@ unsafe fn decode_b(
                         &mut ts.cdf.m.globalmv_mode[(ctx >> 3 & 1) as usize],
                     )
                 {
-                    *b.inter_mode_mut() = GLOBALMV as libc::c_int as uint8_t;
+                    *b.inter_mode_mut() = GLOBALMV as u8;
                     b.mv_mut()[0] = get_gmv_2d(
                         &frame_hdr.gmv[b.r#ref()[0] as usize],
                         t.bx,
@@ -3785,8 +3781,8 @@ unsafe fn decode_b(
                         &mut ts.msac,
                         &mut ts.cdf.m.refmv_mode[(ctx >> 4 & 15) as usize],
                     ) {
-                        *b.inter_mode_mut() = NEARMV as libc::c_int as uint8_t;
-                        *b.drl_idx_mut() = NEARER_DRL as libc::c_int as uint8_t;
+                        *b.inter_mode_mut() = NEARMV as u8;
+                        *b.drl_idx_mut() = NEARER_DRL as u8;
                         if n_mvs > 2 {
                             let drl_ctx_v2 = get_drl_context(&mvstack, 1);
                             *b.drl_idx_mut() = (b.drl_idx() as libc::c_uint).wrapping_add(
@@ -3794,29 +3790,26 @@ unsafe fn decode_b(
                                     &mut ts.msac,
                                     &mut ts.cdf.m.drl_bit[drl_ctx_v2 as usize],
                                 ) as libc::c_uint,
-                            ) as uint8_t as uint8_t;
-                            if b.drl_idx() as libc::c_int == NEAR_DRL as libc::c_int && n_mvs > 3 {
+                            ) as u8;
+                            if b.drl_idx() == NEAR_DRL as u8 && n_mvs > 3 {
                                 let drl_ctx_v3 = get_drl_context(&mvstack, 2);
                                 *b.drl_idx_mut() = (b.drl_idx() as libc::c_uint).wrapping_add(
                                     dav1d_msac_decode_bool_adapt(
                                         &mut ts.msac,
                                         &mut ts.cdf.m.drl_bit[drl_ctx_v3 as usize],
                                     ) as libc::c_uint,
-                                ) as uint8_t
-                                    as uint8_t;
+                                ) as u8;
                             }
                         }
                     } else {
-                        *b.inter_mode_mut() = NEARESTMV as libc::c_int as uint8_t;
-                        *b.drl_idx_mut() = NEAREST_DRL as libc::c_int as uint8_t;
+                        *b.inter_mode_mut() = NEARESTMV as u8;
+                        *b.drl_idx_mut() = NEAREST_DRL as u8;
                     }
-                    if !(b.drl_idx() as libc::c_int >= NEAREST_DRL as libc::c_int
-                        && b.drl_idx() as libc::c_int <= NEARISH_DRL as libc::c_int)
-                    {
+                    if !(b.drl_idx() >= NEAREST_DRL as u8 && b.drl_idx() <= NEARISH_DRL as u8) {
                         unreachable!();
                     }
                     b.mv_mut()[0] = mvstack[b.drl_idx() as usize].mv.mv[0];
-                    if (b.drl_idx() as libc::c_int) < NEAR_DRL as libc::c_int {
+                    if b.drl_idx() < NEAR_DRL as u8 {
                         fix_mv_precision(frame_hdr, &mut b.mv_mut()[0]);
                     }
                 }
@@ -3834,8 +3827,8 @@ unsafe fn decode_b(
                 }
             } else {
                 has_subpel_filter = true;
-                *b.inter_mode_mut() = NEWMV as libc::c_int as uint8_t;
-                *b.drl_idx_mut() = NEAREST_DRL as libc::c_int as uint8_t;
+                *b.inter_mode_mut() = NEWMV as u8;
+                *b.drl_idx_mut() = NEAREST_DRL as u8;
                 if n_mvs > 1 {
                     let drl_ctx_v1 = get_drl_context(&mvstack, 0);
                     *b.drl_idx_mut() = (b.drl_idx() as libc::c_uint).wrapping_add(
@@ -3843,20 +3836,18 @@ unsafe fn decode_b(
                             &mut ts.msac,
                             &mut ts.cdf.m.drl_bit[drl_ctx_v1 as usize],
                         ) as libc::c_uint,
-                    ) as uint8_t as uint8_t;
-                    if b.drl_idx() as libc::c_int == NEARER_DRL as libc::c_int && n_mvs > 2 {
+                    ) as u8;
+                    if b.drl_idx() == NEARER_DRL as u8 && n_mvs > 2 {
                         let drl_ctx_v2 = get_drl_context(&mvstack, 1);
                         *b.drl_idx_mut() = (b.drl_idx() as libc::c_uint).wrapping_add(
                             dav1d_msac_decode_bool_adapt(
                                 &mut ts.msac,
                                 &mut ts.cdf.m.drl_bit[drl_ctx_v2 as usize],
                             ) as libc::c_uint,
-                        ) as uint8_t as uint8_t;
+                        ) as u8;
                     }
                 }
-                if !(b.drl_idx() as libc::c_int >= NEAREST_DRL as libc::c_int
-                    && b.drl_idx() as libc::c_int <= NEARISH_DRL as libc::c_int)
-                {
+                if !(b.drl_idx() >= NEAREST_DRL as u8 && b.drl_idx() <= NEARISH_DRL as u8) {
                     unreachable!();
                 }
                 if n_mvs > 1 {
@@ -3894,9 +3885,7 @@ unsafe fn decode_b(
             }
             let ii_sz_grp = dav1d_ymode_size_context[bs as usize] as libc::c_int;
             if (*f.seq_hdr).inter_intra != 0
-                && interintra_allowed_mask
-                    & ((1 as libc::c_int) << bs as libc::c_uint) as libc::c_uint
-                    != 0
+                && interintra_allowed_mask & (1 << bs) != 0
                 && dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     &mut ts.cdf.m.interintra[ii_sz_grp as usize],
@@ -3905,29 +3894,28 @@ unsafe fn decode_b(
                 *b.interintra_mode_mut() = dav1d_msac_decode_symbol_adapt4(
                     &mut ts.msac,
                     &mut ts.cdf.m.interintra_mode[ii_sz_grp as usize],
-                    (N_INTER_INTRA_PRED_MODES as libc::c_int - 1) as size_t,
-                ) as uint8_t;
+                    N_INTER_INTRA_PRED_MODES as size_t - 1,
+                ) as u8;
                 let wedge_ctx = dav1d_wedge_ctx_lut[bs as usize] as libc::c_int;
-                *b.interintra_type_mut() = (INTER_INTRA_BLEND as libc::c_int as libc::c_uint)
-                    .wrapping_add(dav1d_msac_decode_bool_adapt(
+                *b.interintra_type_mut() = (INTER_INTRA_BLEND as libc::c_uint).wrapping_add(
+                    dav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
                         &mut ts.cdf.m.interintra_wedge[wedge_ctx as usize],
-                    ) as libc::c_uint) as uint8_t;
-                if b.interintra_type() as libc::c_int == INTER_INTRA_WEDGE as libc::c_int {
+                    ) as libc::c_uint,
+                ) as u8;
+                if b.interintra_type() == INTER_INTRA_WEDGE as u8 {
                     *b.wedge_idx_mut() = dav1d_msac_decode_symbol_adapt16(
                         &mut ts.msac,
                         &mut ts.cdf.m.wedge_idx[wedge_ctx as usize],
-                        15 as libc::c_int as size_t,
-                    ) as uint8_t;
+                        15,
+                    ) as u8;
                 }
             } else {
-                *b.interintra_type_mut() = INTER_INTRA_NONE as libc::c_int as uint8_t;
+                *b.interintra_type_mut() = INTER_INTRA_NONE as u8;
             }
             if DEBUG_BLOCK_INFO(f, t)
                 && (*f.seq_hdr).inter_intra != 0
-                && interintra_allowed_mask
-                    & ((1 as libc::c_int) << bs as libc::c_uint) as libc::c_uint
-                    != 0
+                && interintra_allowed_mask & (1 << bs) != 0
             {
                 printf(
                     b"Post-interintra[t=%d,m=%d,w=%d]: r=%d\n\0" as *const u8
@@ -3939,17 +3927,15 @@ unsafe fn decode_b(
                 );
             }
             if frame_hdr.switchable_motion_mode != 0
-                && b.interintra_type() as libc::c_int == INTER_INTRA_NONE as libc::c_int
+                && b.interintra_type() == INTER_INTRA_NONE as u8
                 && imin(bw4, bh4) >= 2
                 && !(frame_hdr.force_integer_mv == 0
-                    && b.inter_mode() as libc::c_int == GLOBALMV as libc::c_int
-                    && frame_hdr.gmv[b.r#ref()[0] as usize].type_0 as libc::c_uint
-                        > DAV1D_WM_TYPE_TRANSLATION as libc::c_int as libc::c_uint)
+                    && b.inter_mode() == GLOBALMV as u8
+                    && frame_hdr.gmv[b.r#ref()[0] as usize].type_0 > DAV1D_WM_TYPE_TRANSLATION)
                 && (have_left && findoddzero(&t.l.intra.0[by4 as usize..][..h4 as usize])
                     || have_top && findoddzero(&(*t.a).intra.0[bx4 as usize..][..w4 as usize]))
             {
-                let mut mask: [uint64_t; 2] =
-                    [0 as libc::c_int as uint64_t, 0 as libc::c_int as uint64_t];
+                let mut mask = [0, 0];
                 find_matching_ref(
                     t,
                     intra_edge_flags,
@@ -3966,17 +3952,17 @@ unsafe fn decode_b(
                     && frame_hdr.force_integer_mv == 0
                     && frame_hdr.warp_motion != 0
                     && mask[0] | mask[1] != 0) as libc::c_int;
-                *b.motion_mode_mut() = (if allow_warp != 0 {
+                *b.motion_mode_mut() = if allow_warp != 0 {
                     dav1d_msac_decode_symbol_adapt4(
                         &mut ts.msac,
                         &mut ts.cdf.m.motion_mode[bs as usize],
-                        2 as libc::c_int as size_t,
-                    )
+                        2,
+                    ) as u8
                 } else {
                     dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.obmc[bs as usize])
-                        as libc::c_uint
-                }) as uint8_t;
-                if b.motion_mode() as libc::c_int == MM_WARP as libc::c_int {
+                        as u8
+                };
+                if b.motion_mode() == MM_WARP as u8 {
                     has_subpel_filter = false;
                     t.warpmv = derive_warpmv(t, bw4, bh4, &mask, b.mv()[0], t.warpmv.clone());
                     if DEBUG_BLOCK_INFO(f, t) {
@@ -4063,17 +4049,13 @@ unsafe fn decode_b(
                         );
                     }
                     if t.frame_thread.pass != 0 {
-                        if t.warpmv.type_0 as libc::c_uint
-                            == DAV1D_WM_TYPE_AFFINE as libc::c_int as libc::c_uint
-                        {
-                            b.matrix_mut()[0] =
-                                (t.warpmv.matrix[2] - 0x10000 as libc::c_int) as int16_t;
-                            b.matrix_mut()[1] = t.warpmv.matrix[3] as int16_t;
-                            b.matrix_mut()[2] = t.warpmv.matrix[4] as int16_t;
-                            b.matrix_mut()[3] =
-                                (t.warpmv.matrix[5] - 0x10000 as libc::c_int) as int16_t;
+                        if t.warpmv.type_0 == DAV1D_WM_TYPE_AFFINE {
+                            b.matrix_mut()[0] = (t.warpmv.matrix[2] - 0x10000) as i16;
+                            b.matrix_mut()[1] = t.warpmv.matrix[3] as i16;
+                            b.matrix_mut()[2] = t.warpmv.matrix[4] as i16;
+                            b.matrix_mut()[3] = (t.warpmv.matrix[5] - 0x10000) as i16;
                         } else {
-                            b.matrix_mut()[0] = (-(32767 as libc::c_int) - 1) as int16_t;
+                            b.matrix_mut()[0] = -32767 - 1;
                         }
                     }
                 }
@@ -4088,20 +4070,18 @@ unsafe fn decode_b(
                     );
                 }
             } else {
-                *b.motion_mode_mut() = MM_TRANSLATION as libc::c_int as uint8_t;
+                *b.motion_mode_mut() = MM_TRANSLATION as u8;
             }
         }
-        let mut filter: [Dav1dFilterMode; 2] = [DAV1D_FILTER_8TAP_REGULAR; 2];
-        if frame_hdr.subpel_filter_mode as libc::c_uint
-            == DAV1D_FILTER_SWITCHABLE as libc::c_int as libc::c_uint
-        {
+        let mut filter = [DAV1D_FILTER_8TAP_REGULAR; 2];
+        if frame_hdr.subpel_filter_mode == DAV1D_FILTER_SWITCHABLE {
             if has_subpel_filter {
-                let comp = b.comp_type() as libc::c_int != COMP_INTER_NONE as libc::c_int;
+                let comp = b.comp_type() != COMP_INTER_NONE as u8;
                 let ctx1 = get_filter_ctx(&*t.a, &t.l, comp, false, b.r#ref()[0], by4, bx4);
                 filter[0] = dav1d_msac_decode_symbol_adapt4(
                     &mut ts.msac,
                     &mut ts.cdf.m.filter.0[0][ctx1 as usize],
-                    (DAV1D_N_SWITCHABLE_FILTERS as libc::c_int - 1) as size_t,
+                    DAV1D_N_SWITCHABLE_FILTERS as size_t - 1,
                 ) as Dav1dFilterMode;
                 if (*f.seq_hdr).dual_filter != 0 {
                     let ctx2 = get_filter_ctx(&*t.a, &t.l, comp, true, b.r#ref()[0], by4, bx4);
@@ -4117,7 +4097,7 @@ unsafe fn decode_b(
                     filter[1] = dav1d_msac_decode_symbol_adapt4(
                         &mut ts.msac,
                         &mut ts.cdf.m.filter.0[1][ctx2 as usize],
-                        (DAV1D_N_SWITCHABLE_FILTERS as libc::c_int - 1) as size_t,
+                        DAV1D_N_SWITCHABLE_FILTERS as size_t - 1,
                     ) as Dav1dFilterMode;
                     if DEBUG_BLOCK_INFO(f, t) {
                         printf(
@@ -4153,21 +4133,21 @@ unsafe fn decode_b(
         if t.frame_thread.pass == 1 {
             (f.bd_fn.read_coef_blocks).expect("non-null function pointer")(t, bs, b);
         } else if (f.bd_fn.recon_b_inter).expect("non-null function pointer")(t, bs, b) != 0 {
-            return -(1 as libc::c_int);
+            return -1;
         }
         if frame_hdr.loopfilter.level_y[0] != 0 || frame_hdr.loopfilter.level_y[1] != 0 {
-            let is_globalmv = (b.inter_mode() as libc::c_int
-                == (if is_comp {
-                    GLOBALMV_GLOBALMV as libc::c_int
+            let is_globalmv = (b.inter_mode()
+                == if is_comp {
+                    GLOBALMV_GLOBALMV as u8
                 } else {
-                    GLOBALMV as libc::c_int
-                })) as libc::c_int;
-            let tx_split: [uint16_t; 2] = [b.tx_split0() as uint16_t, b.tx_split1()];
-            let mut ytx: RectTxfmSize = b.c2rust_unnamed.c2rust_unnamed_0.max_ytx as RectTxfmSize;
-            let mut uvtx: RectTxfmSize = b.uvtx as RectTxfmSize;
+                    GLOBALMV as u8
+                }) as libc::c_int;
+            let tx_split = [b.tx_split0() as u16, b.tx_split1()];
+            let mut ytx = b.max_ytx() as RectTxfmSize;
+            let mut uvtx = b.uvtx as RectTxfmSize;
             if frame_hdr.segmentation.lossless[b.seg_id as usize] != 0 {
-                ytx = TX_4X4 as libc::c_int as RectTxfmSize;
-                uvtx = TX_4X4 as libc::c_int as RectTxfmSize;
+                ytx = TX_4X4 as RectTxfmSize;
+                uvtx = TX_4X4 as RectTxfmSize;
             }
             dav1d_create_lf_mask_inter(
                 &mut *t.lf_mask,
@@ -4253,9 +4233,9 @@ unsafe fn decode_b(
         }
     }
     if frame_hdr.segmentation.enabled != 0 && frame_hdr.segmentation.update_map != 0 {
-        let mut seg_ptr: *mut uint8_t = &mut *(f.cur_segmap)
+        let mut seg_ptr = &mut *(f.cur_segmap)
             .offset((t.by as isize * f.b4_stride + t.bx as isize) as isize)
-            as *mut uint8_t;
+            as *mut u8;
 
         let mut set_ctx = |_dir: &mut (), _diridx, _off, mul, rep_macro: SetCtxFn| {
             let mut y = 0;
@@ -4268,42 +4248,37 @@ unsafe fn decode_b(
         case_set(bw4, &mut (), 0, 0, &mut set_ctx);
     }
     if b.skip == 0 {
-        let mut noskip_mask: *mut [uint16_t; 2] = &mut *((*t.lf_mask).noskip_mask)
+        let mut noskip_mask = &mut *((*t.lf_mask).noskip_mask)
             .as_mut_ptr()
-            .offset((by4 >> 1) as isize)
-            as *mut [uint16_t; 2];
-        let mask: libc::c_uint = !(0 as libc::c_uint) >> 32 - bw4 << (bx4 & 15);
+            .offset((by4 >> 1) as isize) as *mut [u16; 2];
+        let mask = !(0 as libc::c_uint) >> 32 - bw4 << (bx4 & 15);
         let bx_idx = (bx4 & 16) >> 4;
         let mut y = 0;
         while y < bh4 {
             (*noskip_mask)[bx_idx as usize] =
-                ((*noskip_mask)[bx_idx as usize] as libc::c_uint | mask) as uint16_t;
+                ((*noskip_mask)[bx_idx as usize] as libc::c_uint | mask) as u16;
             if bw4 == 32 {
-                (*noskip_mask)[1] = ((*noskip_mask)[1] as libc::c_uint | mask) as uint16_t;
+                (*noskip_mask)[1] = ((*noskip_mask)[1] as libc::c_uint | mask) as u16;
             }
-            y += 2 as libc::c_int;
+            y += 2;
             noskip_mask = noskip_mask.offset(1);
         }
     }
-    if t.frame_thread.pass == 1
-        && b.intra == 0
-        && frame_hdr.frame_type as libc::c_uint & 1 as libc::c_uint != 0
-    {
+    if t.frame_thread.pass == 1 && b.intra == 0 && frame_hdr.frame_type & 1 != 0 {
         let sby = t.by - ts.tiling.row_start >> f.sb_shift;
         let lowest_px = &mut *ts.lowest_pixel.offset(sby as isize);
-        if b.comp_type() as libc::c_int == COMP_INTER_NONE as libc::c_int {
+        if b.comp_type() == COMP_INTER_NONE as u8 {
             if imin(bw4, bh4) > 1
-                && (b.inter_mode() as libc::c_int == GLOBALMV as libc::c_int
-                    && f.gmv_warp_allowed[b.r#ref()[0] as usize] as libc::c_int != 0
-                    || b.motion_mode() as libc::c_int == MM_WARP as libc::c_int
-                        && t.warpmv.type_0 as libc::c_uint
-                            > DAV1D_WM_TYPE_TRANSLATION as libc::c_int as libc::c_uint)
+                && (b.inter_mode() == GLOBALMV as u8
+                    && f.gmv_warp_allowed[b.r#ref()[0] as usize] != 0
+                    || b.motion_mode() == MM_WARP as u8
+                        && t.warpmv.type_0 > DAV1D_WM_TYPE_TRANSLATION)
             {
                 affine_lowest_px_luma(
                     t,
                     &mut lowest_px[b.r#ref()[0] as usize][0],
                     b_dim,
-                    if b.motion_mode() as libc::c_int == MM_WARP as libc::c_int {
+                    if b.motion_mode() == MM_WARP as u8 {
                         &t.warpmv
                     } else {
                         &mut *(frame_hdr.gmv)
@@ -4317,20 +4292,20 @@ unsafe fn decode_b(
                     t.by,
                     bh4,
                     b.mv()[0].y as libc::c_int,
-                    0 as libc::c_int,
+                    0,
                     &*(*(f.svc)
                         .as_ptr()
                         .offset(*b.ref_mut().as_mut_ptr().offset(0) as isize))
                     .as_ptr()
                     .offset(1),
                 );
-                if b.motion_mode() as libc::c_int == MM_OBMC as libc::c_int {
+                if b.motion_mode() == MM_OBMC as u8 {
                     obmc_lowest_px(t, lowest_px, false, b_dim, bx4, by4, w4, h4);
                 }
             }
             if has_chroma {
                 let mut is_sub8x8 = (bw4 == ss_hor || bh4 == ss_ver) as libc::c_int;
-                let mut r: *const *mut refmvs_block = 0 as *const *mut refmvs_block;
+                let mut r = 0 as *const *mut refmvs_block;
                 if is_sub8x8 != 0 {
                     if !(ss_hor == 1) {
                         unreachable!();
@@ -4338,8 +4313,8 @@ unsafe fn decode_b(
                     r = &mut *(t.rt.r).as_mut_ptr().offset(((t.by & 31) + 5) as isize)
                         as *mut *mut refmvs_block;
                     if bw4 == 1 {
-                        is_sub8x8 &= ((*(*r.offset(0)).offset((t.bx - 1) as isize)).0.r#ref.r#ref[0]
-                            as libc::c_int
+                        is_sub8x8 &= ((*(*r.offset(0)).offset((t.bx - 1) as isize)).0.r#ref.r#ref
+                            [0]
                             > 0) as libc::c_int;
                     }
                     if bh4 == ss_ver {
@@ -4347,15 +4322,12 @@ unsafe fn decode_b(
                             .offset(t.bx as isize))
                         .0
                         .r#ref
-                        .r#ref[0] as libc::c_int
+                        .r#ref[0]
                             > 0) as libc::c_int;
                     }
                     if bw4 == 1 && bh4 == ss_ver {
-                        is_sub8x8 &= ((*(*r.offset(-(1 as libc::c_int) as isize))
-                            .offset((t.bx - 1) as isize))
-                        .0
-                        .r#ref
-                        .r#ref[0] as libc::c_int
+                        is_sub8x8 &= ((*(*r.offset(-1)).offset((t.bx - 1) as isize)).0.r#ref.r#ref
+                            [0]
                             > 0) as libc::c_int;
                     }
                 }
@@ -4364,55 +4336,48 @@ unsafe fn decode_b(
                         unreachable!();
                     }
                     if bw4 == 1 && bh4 == ss_ver {
-                        let rr: *const refmvs_block = &mut *(*r
-                            .offset(-(1 as libc::c_int) as isize))
-                        .offset((t.bx - 1) as isize)
-                            as *mut refmvs_block;
+                        let rr = &mut *(*r.offset(-1)).offset((t.bx - 1) as isize)
+                            as *const refmvs_block;
                         mc_lowest_px(
                             &mut lowest_px[(*rr).0.r#ref.r#ref[0] as usize - 1][1],
                             t.by - 1,
                             bh4,
                             (*rr).0.mv.mv[0].y as libc::c_int,
                             ss_ver,
-                            &*(*(f.svc).as_ptr().offset(
-                                (*((*rr).0.r#ref.r#ref).as_ptr().offset(0) as libc::c_int - 1)
-                                    as isize,
-                            ))
+                            &*(*(f.svc)
+                                .as_ptr()
+                                .offset(*((*rr).0.r#ref.r#ref).as_ptr().offset(0) as isize - 1))
                             .as_ptr()
                             .offset(1),
                         );
                     }
                     if bw4 == 1 {
-                        let rr: *const refmvs_block =
-                            &mut *(*r.offset(0)).offset((t.bx - 1) as isize) as *mut refmvs_block;
+                        let rr =
+                            &mut *(*r.offset(0)).offset((t.bx - 1) as isize) as *const refmvs_block;
                         mc_lowest_px(
                             &mut lowest_px[(*rr).0.r#ref.r#ref[0] as usize - 1][1],
                             t.by,
                             bh4,
                             (*rr).0.mv.mv[0].y as libc::c_int,
                             ss_ver,
-                            &*(*(f.svc).as_ptr().offset(
-                                (*((*rr).0.r#ref.r#ref).as_ptr().offset(0) as libc::c_int - 1)
-                                    as isize,
-                            ))
+                            &*(*(f.svc)
+                                .as_ptr()
+                                .offset(*((*rr).0.r#ref.r#ref).as_ptr().offset(0) as isize - 1))
                             .as_ptr()
                             .offset(1),
                         );
                     }
                     if bh4 == ss_ver {
-                        let rr: *const refmvs_block =
-                            &mut *(*r.offset(-(1 as libc::c_int) as isize)).offset(t.bx as isize)
-                                as *mut refmvs_block;
+                        let rr = &mut *(*r.offset(-1)).offset(t.bx as isize) as *const refmvs_block;
                         mc_lowest_px(
                             &mut lowest_px[(*rr).0.r#ref.r#ref[0] as usize - 1][1],
                             t.by - 1,
                             bh4,
                             (*rr).0.mv.mv[0].y as libc::c_int,
                             ss_ver,
-                            &*(*(f.svc).as_ptr().offset(
-                                (*((*rr).0.r#ref.r#ref).as_ptr().offset(0) as libc::c_int - 1)
-                                    as isize,
-                            ))
+                            &*(*(f.svc)
+                                .as_ptr()
+                                .offset(*((*rr).0.r#ref.r#ref).as_ptr().offset(0) as isize - 1))
                             .as_ptr()
                             .offset(1),
                         );
@@ -4430,17 +4395,16 @@ unsafe fn decode_b(
                         .offset(1),
                     );
                 } else if imin(cbw4, cbh4) > 1
-                    && (b.inter_mode() as libc::c_int == GLOBALMV as libc::c_int
-                        && f.gmv_warp_allowed[b.r#ref()[0] as usize] as libc::c_int != 0
-                        || b.motion_mode() as libc::c_int == MM_WARP as libc::c_int
-                            && t.warpmv.type_0 as libc::c_uint
-                                > DAV1D_WM_TYPE_TRANSLATION as libc::c_int as libc::c_uint)
+                    && (b.inter_mode() == GLOBALMV as u8
+                        && f.gmv_warp_allowed[b.r#ref()[0] as usize] != 0
+                        || b.motion_mode() == MM_WARP as u8
+                            && t.warpmv.type_0 > DAV1D_WM_TYPE_TRANSLATION)
                 {
                     affine_lowest_px_chroma(
                         t,
                         &mut lowest_px[b.r#ref()[0] as usize][1],
                         b_dim,
-                        if b.motion_mode() as libc::c_int == MM_WARP as libc::c_int {
+                        if b.motion_mode() == MM_WARP as u8 {
                             &t.warpmv
                         } else {
                             &mut *(frame_hdr.gmv)
@@ -4461,7 +4425,7 @@ unsafe fn decode_b(
                         .as_ptr()
                         .offset(1),
                     );
-                    if b.motion_mode() as libc::c_int == MM_OBMC as libc::c_int {
+                    if b.motion_mode() == MM_OBMC as u8 {
                         obmc_lowest_px(t, lowest_px, true, b_dim, bx4, by4, w4, h4);
                     }
                 }
@@ -4469,8 +4433,8 @@ unsafe fn decode_b(
         } else {
             let mut i = 0;
             while i < 2 {
-                if b.inter_mode() as libc::c_int == GLOBALMV_GLOBALMV as libc::c_int
-                    && f.gmv_warp_allowed[b.r#ref()[i as usize] as usize] as libc::c_int != 0
+                if b.inter_mode() == GLOBALMV_GLOBALMV as u8
+                    && f.gmv_warp_allowed[b.r#ref()[i as usize] as usize] != 0
                 {
                     affine_lowest_px_luma(
                         t,
@@ -4486,7 +4450,7 @@ unsafe fn decode_b(
                         t.by,
                         bh4,
                         b.mv()[i as usize].y as libc::c_int,
-                        0 as libc::c_int,
+                        0,
                         &*(*(f.svc)
                             .as_ptr()
                             .offset(*b.ref_mut().as_mut_ptr().offset(i as isize) as isize))
@@ -4499,9 +4463,9 @@ unsafe fn decode_b(
             if has_chroma {
                 let mut i = 0;
                 while i < 2 {
-                    if b.inter_mode() as libc::c_int == GLOBALMV_GLOBALMV as libc::c_int
+                    if b.inter_mode() == GLOBALMV_GLOBALMV as u8
                         && imin(cbw4, cbh4) > 1
-                        && f.gmv_warp_allowed[b.r#ref()[i as usize] as usize] as libc::c_int != 0
+                        && f.gmv_warp_allowed[b.r#ref()[i as usize] as usize] != 0
                     {
                         affine_lowest_px_chroma(
                             t,
@@ -4530,7 +4494,7 @@ unsafe fn decode_b(
             }
         }
     }
-    return 0 as libc::c_int;
+    return 0;
 }
 unsafe extern "C" fn decode_sb(
     t: *mut Dav1dTaskContext,
