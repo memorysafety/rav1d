@@ -3799,9 +3799,7 @@ unsafe fn decode_b(
                         *b.inter_mode_mut() = NEARESTMV as u8;
                         *b.drl_idx_mut() = NEAREST_DRL as u8;
                     }
-                    if !(b.drl_idx() >= NEAREST_DRL as u8 && b.drl_idx() <= NEARISH_DRL as u8) {
-                        unreachable!();
-                    }
+                    assert!(b.drl_idx() >= NEAREST_DRL as u8 && b.drl_idx() <= NEARISH_DRL as u8);
                     b.mv_mut()[0] = mvstack[b.drl_idx() as usize].mv.mv[0];
                     if b.drl_idx() < NEAR_DRL as u8 {
                         fix_mv_precision(frame_hdr, &mut b.mv_mut()[0]);
@@ -3838,15 +3836,11 @@ unsafe fn decode_b(
                             ) as u8;
                     }
                 }
-                if !(b.drl_idx() >= NEAREST_DRL as u8 && b.drl_idx() <= NEARISH_DRL as u8) {
-                    unreachable!();
-                }
+                assert!(b.drl_idx() >= NEAREST_DRL as u8 && b.drl_idx() <= NEARISH_DRL as u8);
                 if n_mvs > 1 {
                     b.mv_mut()[0] = mvstack[b.drl_idx() as usize].mv.mv[0];
                 } else {
-                    if b.drl_idx() != 0 {
-                        unreachable!();
-                    }
+                    assert!(b.drl_idx() == 0);
                     b.mv_mut()[0] = mvstack[0].mv.mv[0];
                     fix_mv_precision(frame_hdr, &mut b.mv_mut()[0]);
                 }
@@ -4220,9 +4214,7 @@ unsafe fn decode_b(
                 let mut is_sub8x8 = (bw4 == ss_hor || bh4 == ss_ver) as libc::c_int;
                 let mut r = 0 as *const *mut refmvs_block;
                 if is_sub8x8 != 0 {
-                    if !(ss_hor == 1) {
-                        unreachable!();
-                    }
+                    assert!(ss_hor == 1);
                     r = &mut *(t.rt.r).as_mut_ptr().offset(((t.by & 31) + 5) as isize)
                         as *mut *mut refmvs_block;
                     if bw4 == 1 {
@@ -4245,9 +4237,7 @@ unsafe fn decode_b(
                     }
                 }
                 if is_sub8x8 != 0 {
-                    if !(ss_hor == 1) {
-                        unreachable!();
-                    }
+                    assert!(ss_hor == 1);
                     if bw4 == 1 && bh4 == ss_ver {
                         let rr = &mut *(*r.offset(-1)).offset((t.bx - 1) as isize)
                             as *const refmvs_block;
