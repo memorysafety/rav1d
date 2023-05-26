@@ -3694,11 +3694,9 @@ unsafe fn decode_b(
                     } else {
                         let ctx3 =
                             av1_get_bwd_ref_1_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
-                        b.ref_mut()[0] = (4 as libc::c_uint).wrapping_add(
-                            dav1d_msac_decode_bool_adapt(
-                                &mut ts.msac,
-                                &mut ts.cdf.m.r#ref[5][ctx3 as usize],
-                            ) as libc::c_uint,
+                        b.ref_mut()[0] = 4 + dav1d_msac_decode_bool_adapt(
+                            &mut ts.msac,
+                            &mut ts.cdf.m.r#ref[5][ctx3 as usize],
                         ) as i8;
                     }
                 } else {
@@ -3709,12 +3707,10 @@ unsafe fn decode_b(
                     ) {
                         let ctx3 =
                             av1_get_fwd_ref_2_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
-                        b.ref_mut()[0] = (2 as libc::c_uint).wrapping_add(
-                            dav1d_msac_decode_bool_adapt(
-                                &mut ts.msac,
-                                &mut ts.cdf.m.r#ref[4][ctx3 as usize],
-                            ) as libc::c_uint,
-                        ) as int8_t;
+                        b.ref_mut()[0] = 2 + dav1d_msac_decode_bool_adapt(
+                            &mut ts.msac,
+                            &mut ts.cdf.m.r#ref[4][ctx3 as usize],
+                        ) as i8;
                     } else {
                         let ctx3 =
                             av1_get_fwd_ref_1_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
@@ -3785,20 +3781,18 @@ unsafe fn decode_b(
                         *b.drl_idx_mut() = NEARER_DRL as u8;
                         if n_mvs > 2 {
                             let drl_ctx_v2 = get_drl_context(&mvstack, 1);
-                            *b.drl_idx_mut() = (b.drl_idx() as libc::c_uint).wrapping_add(
-                                dav1d_msac_decode_bool_adapt(
+                            *b.drl_idx_mut() = b.drl_idx()
+                                + dav1d_msac_decode_bool_adapt(
                                     &mut ts.msac,
                                     &mut ts.cdf.m.drl_bit[drl_ctx_v2 as usize],
-                                ) as libc::c_uint,
-                            ) as u8;
+                                ) as u8;
                             if b.drl_idx() == NEAR_DRL as u8 && n_mvs > 3 {
                                 let drl_ctx_v3 = get_drl_context(&mvstack, 2);
-                                *b.drl_idx_mut() = (b.drl_idx() as libc::c_uint).wrapping_add(
-                                    dav1d_msac_decode_bool_adapt(
+                                *b.drl_idx_mut() = b.drl_idx()
+                                    + dav1d_msac_decode_bool_adapt(
                                         &mut ts.msac,
                                         &mut ts.cdf.m.drl_bit[drl_ctx_v3 as usize],
-                                    ) as libc::c_uint,
-                                ) as u8;
+                                    ) as u8;
                             }
                         }
                     } else {
@@ -3830,20 +3824,18 @@ unsafe fn decode_b(
                 *b.drl_idx_mut() = NEAREST_DRL as u8;
                 if n_mvs > 1 {
                     let drl_ctx_v1 = get_drl_context(&mvstack, 0);
-                    *b.drl_idx_mut() = (b.drl_idx() as libc::c_uint).wrapping_add(
-                        dav1d_msac_decode_bool_adapt(
+                    *b.drl_idx_mut() = b.drl_idx()
+                        + dav1d_msac_decode_bool_adapt(
                             &mut ts.msac,
                             &mut ts.cdf.m.drl_bit[drl_ctx_v1 as usize],
-                        ) as libc::c_uint,
-                    ) as u8;
+                        ) as u8;
                     if b.drl_idx() == NEARER_DRL as u8 && n_mvs > 2 {
                         let drl_ctx_v2 = get_drl_context(&mvstack, 1);
-                        *b.drl_idx_mut() = (b.drl_idx() as libc::c_uint).wrapping_add(
-                            dav1d_msac_decode_bool_adapt(
+                        *b.drl_idx_mut() = b.drl_idx()
+                            + dav1d_msac_decode_bool_adapt(
                                 &mut ts.msac,
                                 &mut ts.cdf.m.drl_bit[drl_ctx_v2 as usize],
-                            ) as libc::c_uint,
-                        ) as u8;
+                            ) as u8;
                     }
                 }
                 if !(b.drl_idx() >= NEAREST_DRL as u8 && b.drl_idx() <= NEARISH_DRL as u8) {
@@ -3895,12 +3887,11 @@ unsafe fn decode_b(
                     N_INTER_INTRA_PRED_MODES as size_t - 1,
                 ) as u8;
                 let wedge_ctx = dav1d_wedge_ctx_lut[bs as usize] as libc::c_int;
-                *b.interintra_type_mut() = (INTER_INTRA_BLEND as libc::c_uint).wrapping_add(
-                    dav1d_msac_decode_bool_adapt(
+                *b.interintra_type_mut() = INTER_INTRA_BLEND as u8
+                    + dav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
                         &mut ts.cdf.m.interintra_wedge[wedge_ctx as usize],
-                    ) as libc::c_uint,
-                ) as u8;
+                    ) as u8;
                 if b.interintra_type() == INTER_INTRA_WEDGE as u8 {
                     *b.wedge_idx_mut() = dav1d_msac_decode_symbol_adapt16(
                         &mut ts.msac,
