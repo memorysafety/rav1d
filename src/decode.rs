@@ -4412,8 +4412,9 @@ unsafe fn decode_b(
             }
         }
     }
-    return 0;
+    0
 }
+
 unsafe extern "C" fn decode_sb(
     t: *mut Dav1dTaskContext,
     bl: BlockLevel,
