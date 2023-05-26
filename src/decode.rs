@@ -3085,10 +3085,10 @@ unsafe fn decode_b(
 
         if frame_hdr.loopfilter.level_y[0] != 0 || frame_hdr.loopfilter.level_y[1] != 0 {
             dav1d_create_lf_mask_intra(
-                t.lf_mask,
+                &mut *t.lf_mask,
                 f.lf.level,
                 f.b4_stride,
-                &(*ts.lflvl.offset(b.seg_id as isize))[0],
+                &*ts.lflvl.offset(b.seg_id as isize),
                 t.bx,
                 t.by,
                 f.w4,
@@ -4389,18 +4389,6 @@ unsafe fn decode_b(
                 } else {
                     GLOBALMV as libc::c_int
                 })) as libc::c_int;
-            let lf_lvls: *const [[uint8_t; 2]; 8] =
-                &*(*(*(*(ts.lflvl).offset(b.seg_id as isize)).as_ptr().offset(0))
-                    .as_ptr()
-                    .offset(
-                        (*(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
-                            .as_mut_ptr()
-                            .offset(0) as libc::c_int
-                            + 1) as isize,
-                    ))
-                .as_ptr()
-                .offset((is_globalmv == 0) as libc::c_int as isize)
-                    as *const uint8_t as *const [[uint8_t; 2]; 8];
             let tx_split: [uint16_t; 2] = [
                 b.c2rust_unnamed.c2rust_unnamed_0.tx_split0 as uint16_t,
                 b.c2rust_unnamed.c2rust_unnamed_0.tx_split1,
@@ -4412,10 +4400,17 @@ unsafe fn decode_b(
                 uvtx = TX_4X4 as libc::c_int as RectTxfmSize;
             }
             dav1d_create_lf_mask_inter(
-                t.lf_mask,
+                &mut *t.lf_mask,
                 f.lf.level,
                 f.b4_stride,
-                lf_lvls,
+                // In C, the inner dimensions (`ref`, `is_gmv`) are offset,
+                // but then cast back to a pointer to the full array,
+                // even though the whole array is not passed.
+                // Dereferencing this in Rust is UB, so instead
+                // we pass the indices as args, which are then applied at the use sites.
+                &*ts.lflvl.offset(b.seg_id as isize),
+                (b.r#ref()[0] + 1) as usize,
+                is_globalmv == 0,
                 t.bx,
                 t.by,
                 f.w4,
