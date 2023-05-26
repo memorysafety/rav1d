@@ -4180,9 +4180,7 @@ unsafe fn decode_b(
                     if b.motion_mode() == MM_WARP as u8 {
                         &t.warpmv
                     } else {
-                        &mut *(frame_hdr.gmv)
-                            .as_mut_ptr()
-                            .offset(*b.ref_mut().as_mut_ptr().offset(0) as isize)
+                        &frame_hdr.gmv[b.r#ref()[0] as usize]
                     },
                 );
             } else {
@@ -4192,11 +4190,7 @@ unsafe fn decode_b(
                     bh4,
                     b.mv()[0].y,
                     0,
-                    &*(*(f.svc)
-                        .as_ptr()
-                        .offset(*b.ref_mut().as_mut_ptr().offset(0) as isize))
-                    .as_ptr()
-                    .offset(1),
+                    &f.svc[b.r#ref()[0] as usize][1],
                 );
                 if b.motion_mode() == MM_OBMC as u8 {
                     obmc_lowest_px(t, lowest_px, false, b_dim, bx4, by4, w4, h4);
@@ -4235,11 +4229,7 @@ unsafe fn decode_b(
                             bh4,
                             (*rr).0.mv.mv[0].y,
                             ss_ver,
-                            &*(*(f.svc)
-                                .as_ptr()
-                                .offset(*((*rr).0.r#ref.r#ref).as_ptr().offset(0) as isize - 1))
-                            .as_ptr()
-                            .offset(1),
+                            &f.svc[(*rr).0.r#ref.r#ref[0] as usize][1],
                         );
                     }
                     if bw4 == 1 {
@@ -4251,11 +4241,7 @@ unsafe fn decode_b(
                             bh4,
                             (*rr).0.mv.mv[0].y,
                             ss_ver,
-                            &*(*(f.svc)
-                                .as_ptr()
-                                .offset(*((*rr).0.r#ref.r#ref).as_ptr().offset(0) as isize - 1))
-                            .as_ptr()
-                            .offset(1),
+                            &f.svc[(*rr).0.r#ref.r#ref[0] as usize][1],
                         );
                     }
                     if bh4 == ss_ver {
@@ -4266,11 +4252,7 @@ unsafe fn decode_b(
                             bh4,
                             (*rr).0.mv.mv[0].y,
                             ss_ver,
-                            &*(*(f.svc)
-                                .as_ptr()
-                                .offset(*((*rr).0.r#ref.r#ref).as_ptr().offset(0) as isize - 1))
-                            .as_ptr()
-                            .offset(1),
+                            &f.svc[(*rr).0.r#ref.r#ref[0] as usize][1],
                         );
                     }
                     mc_lowest_px(
@@ -4279,11 +4261,7 @@ unsafe fn decode_b(
                         bh4,
                         b.mv()[0].y,
                         ss_ver,
-                        &*(*(f.svc)
-                            .as_ptr()
-                            .offset(*b.ref_mut().as_mut_ptr().offset(0) as isize))
-                        .as_ptr()
-                        .offset(1),
+                        &f.svc[b.r#ref()[0] as usize][1],
                     );
                 } else if std::cmp::min(cbw4, cbh4) > 1
                     && (b.inter_mode() == GLOBALMV as u8
@@ -4298,9 +4276,7 @@ unsafe fn decode_b(
                         if b.motion_mode() == MM_WARP as u8 {
                             &t.warpmv
                         } else {
-                            &mut *(frame_hdr.gmv)
-                                .as_mut_ptr()
-                                .offset(*b.ref_mut().as_mut_ptr().offset(0) as isize)
+                            &frame_hdr.gmv[b.r#ref()[0] as usize]
                         },
                     );
                 } else {
@@ -4310,11 +4286,7 @@ unsafe fn decode_b(
                         bh4 << (bh4 == ss_ver) as libc::c_int,
                         b.mv()[0].y,
                         ss_ver,
-                        &*(*(f.svc)
-                            .as_ptr()
-                            .offset(*b.ref_mut().as_mut_ptr().offset(0) as isize))
-                        .as_ptr()
-                        .offset(1),
+                        &f.svc[b.r#ref()[0] as usize][1],
                     );
                     if b.motion_mode() == MM_OBMC as u8 {
                         obmc_lowest_px(t, lowest_px, true, b_dim, bx4, by4, w4, h4);
@@ -4331,9 +4303,7 @@ unsafe fn decode_b(
                         t,
                         &mut lowest_px[b.r#ref()[i as usize] as usize][0],
                         b_dim,
-                        &mut *(frame_hdr.gmv)
-                            .as_mut_ptr()
-                            .offset(*b.ref_mut().as_mut_ptr().offset(i as isize) as isize),
+                        &frame_hdr.gmv[b.r#ref()[i as usize] as usize],
                     );
                 } else {
                     mc_lowest_px(
@@ -4342,11 +4312,7 @@ unsafe fn decode_b(
                         bh4,
                         b.mv()[i as usize].y,
                         0,
-                        &*(*(f.svc)
-                            .as_ptr()
-                            .offset(*b.ref_mut().as_mut_ptr().offset(i as isize) as isize))
-                        .as_ptr()
-                        .offset(1),
+                        &f.svc[b.r#ref()[i as usize] as usize][1],
                     );
                 }
                 i += 1;
@@ -4362,9 +4328,7 @@ unsafe fn decode_b(
                             t,
                             &mut lowest_px[b.r#ref()[i as usize] as usize][1],
                             b_dim,
-                            &mut *(frame_hdr.gmv)
-                                .as_mut_ptr()
-                                .offset(*b.ref_mut().as_mut_ptr().offset(i as isize) as isize),
+                            &frame_hdr.gmv[b.r#ref()[i as usize] as usize],
                         );
                     } else {
                         mc_lowest_px(
@@ -4373,11 +4337,7 @@ unsafe fn decode_b(
                             bh4,
                             b.mv()[i as usize].y,
                             ss_ver,
-                            &*(*(f.svc)
-                                .as_ptr()
-                                .offset(*b.ref_mut().as_mut_ptr().offset(i as isize) as isize))
-                            .as_ptr()
-                            .offset(1),
+                            &f.svc[b.r#ref()[i as usize] as usize][1],
                         );
                     }
                     i += 1;
