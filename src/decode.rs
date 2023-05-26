@@ -4289,47 +4289,67 @@ unsafe fn decode_b(
                 }
             }
         } else {
-            for i in 0..2 {
-                if b.inter_mode() == GLOBALMV_GLOBALMV as u8
-                    && f.gmv_warp_allowed[b.r#ref()[i] as usize] != 0
-                {
+            for (r#ref, mv) in std::iter::zip(b.r#ref(), b.mv()) {
+                let r#ref = r#ref as usize;
+                if b.inter_mode() == GLOBALMV_GLOBALMV as u8 && f.gmv_warp_allowed[r#ref] != 0 {
                     affine_lowest_px_luma(
                         t,
-                        &mut lowest_px[b.r#ref()[i] as usize][0],
+                        &mut lowest_px[r#ref][0],
                         b_dim,
-                        &frame_hdr.gmv[b.r#ref()[i] as usize],
+                        &frame_hdr.gmv[r#ref],
                     );
                 } else {
                     mc_lowest_px(
-                        &mut lowest_px[b.r#ref()[i] as usize][0],
+                        &mut lowest_px[r#ref][0],
                         t.by,
                         bh4,
-                        b.mv()[i].y,
+                        mv.y,
                         0,
-                        &f.svc[b.r#ref()[i] as usize][1],
+                        &f.svc[r#ref][1],
+                    );
+                }
+            }
+            for (r#ref, mv) in std::iter::zip(b.r#ref(), b.mv()) {
+                let r#ref = r#ref as usize;
+                if b.inter_mode() == GLOBALMV_GLOBALMV as u8 && f.gmv_warp_allowed[r#ref] != 0 {
+                    affine_lowest_px_luma(
+                        t,
+                        &mut lowest_px[r#ref][0],
+                        b_dim,
+                        &frame_hdr.gmv[r#ref],
+                    );
+                } else {
+                    mc_lowest_px(
+                        &mut lowest_px[r#ref][0],
+                        t.by,
+                        bh4,
+                        mv.y,
+                        0,
+                        &f.svc[r#ref][1],
                     );
                 }
             }
             if has_chroma {
-                for i in 0..2 {
+                for (r#ref, mv) in std::iter::zip(b.r#ref(), b.mv()) {
+                    let r#ref = r#ref as usize;
                     if b.inter_mode() == GLOBALMV_GLOBALMV as u8
                         && std::cmp::min(cbw4, cbh4) > 1
-                        && f.gmv_warp_allowed[b.r#ref()[i] as usize] != 0
+                        && f.gmv_warp_allowed[r#ref] != 0
                     {
                         affine_lowest_px_chroma(
                             t,
-                            &mut lowest_px[b.r#ref()[i] as usize][1],
+                            &mut lowest_px[r#ref][1],
                             b_dim,
-                            &frame_hdr.gmv[b.r#ref()[i] as usize],
+                            &frame_hdr.gmv[r#ref],
                         );
                     } else {
                         mc_lowest_px(
-                            &mut lowest_px[b.r#ref()[i] as usize][1],
+                            &mut lowest_px[r#ref][1],
                             t.by,
                             bh4,
-                            b.mv()[i].y,
+                            mv.y,
                             ss_ver,
-                            &f.svc[b.r#ref()[i] as usize][1],
+                            &f.svc[r#ref][1],
                         );
                     }
                 }
