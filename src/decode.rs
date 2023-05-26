@@ -4031,8 +4031,8 @@ unsafe fn decode_b(
         *b.filter2d_mut() = dav1d_filter_2d[filter[1] as usize][filter[0] as usize];
         read_vartx_tree(t, b, bs, bx4, by4);
         if t.frame_thread.pass == 1 {
-            (f.bd_fn.read_coef_blocks).expect("non-null function pointer")(t, bs, b);
-        } else if (f.bd_fn.recon_b_inter).expect("non-null function pointer")(t, bs, b) != 0 {
+            f.bd_fn.read_coef_blocks(t, bs, b);
+        } else if f.bd_fn.recon_b_inter(t, bs, b) != 0 {
             return -1;
         }
         if frame_hdr.loopfilter.level_y[0] != 0 || frame_hdr.loopfilter.level_y[1] != 0 {
