@@ -4289,8 +4289,9 @@ unsafe fn decode_b(
                 }
             }
         } else {
-            for (r#ref, mv) in std::iter::zip(b.r#ref(), b.mv()) {
-                let r#ref = r#ref as usize;
+            let refmvs =
+                || std::iter::zip(b.r#ref(), b.mv()).map(|(r#ref, mv)| (r#ref as usize, mv));
+            for (r#ref, mv) in refmvs() {
                 if b.inter_mode() == GLOBALMV_GLOBALMV as u8 && f.gmv_warp_allowed[r#ref] != 0 {
                     affine_lowest_px_luma(
                         t,
@@ -4309,8 +4310,7 @@ unsafe fn decode_b(
                     );
                 }
             }
-            for (r#ref, mv) in std::iter::zip(b.r#ref(), b.mv()) {
-                let r#ref = r#ref as usize;
+            for (r#ref, mv) in refmvs() {
                 if b.inter_mode() == GLOBALMV_GLOBALMV as u8 && f.gmv_warp_allowed[r#ref] != 0 {
                     affine_lowest_px_luma(
                         t,
@@ -4330,8 +4330,7 @@ unsafe fn decode_b(
                 }
             }
             if has_chroma {
-                for (r#ref, mv) in std::iter::zip(b.r#ref(), b.mv()) {
-                    let r#ref = r#ref as usize;
+                for (r#ref, mv) in refmvs() {
                     if b.inter_mode() == GLOBALMV_GLOBALMV as u8
                         && std::cmp::min(cbw4, cbh4) > 1
                         && f.gmv_warp_allowed[r#ref] != 0
