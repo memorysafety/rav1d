@@ -1599,25 +1599,16 @@ pub unsafe extern "C" fn dav1d_refmvs_clear(rf: *mut refmvs_frame) {
 }
 
 unsafe extern "C" fn splat_mv_rust(
-    mut rr: *mut *mut refmvs_block,
+    rr: *mut *mut refmvs_block,
     rmv: *const refmvs_block,
     bx4: libc::c_int,
     bw4: libc::c_int,
-    mut bh4: libc::c_int,
+    bh4: libc::c_int,
 ) {
-    loop {
-        let fresh17 = rr;
-        rr = rr.offset(1);
-        let r: *mut refmvs_block = (*fresh17).offset(bx4 as isize);
-        let mut x = 0;
-        while x < bw4 {
-            *r.offset(x as isize) = *rmv;
-            x += 1;
-        }
-        bh4 -= 1;
-        if !(bh4 != 0) {
-            break;
-        }
+    let [bx4, bw4, bh4] = [bx4, bw4, bh4].map(|it| it as usize);
+    let rmv = &*rmv;
+    for r in std::slice::from_raw_parts_mut(rr, bh4) {
+        std::slice::from_raw_parts_mut(*r, bx4 + bw4)[bx4..].fill(*rmv);
     }
 }
 
