@@ -208,8 +208,9 @@ pub type save_tmvs_fn = Option<
     ) -> (),
 >;
 
-pub type splat_mv_fn =
-    Option<unsafe extern "C" fn(*mut *mut refmvs_block, &refmvs_block, usize, usize, usize) -> ()>;
+pub type splat_mv_fn = Option<
+    unsafe extern "C" fn(*mut *mut refmvs_block, usize, &refmvs_block, usize, usize, usize) -> (),
+>;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -228,7 +229,14 @@ impl Dav1dRefmvsDSPContext {
         bw4: usize,
         bh4: usize,
     ) {
-        self.splat_mv.expect("non-null function pointer")(rr.as_mut_ptr(), rmv, bx4, bw4, bh4);
+        self.splat_mv.expect("non-null function pointer")(
+            rr.as_mut_ptr(),
+            rr.len(),
+            rmv,
+            bx4,
+            bw4,
+            bh4,
+        );
     }
 }
 
@@ -1601,6 +1609,7 @@ mod ffi {
         ($fn_name:ident) => {
             pub(super) unsafe extern "C" fn $fn_name(
                 rr: *mut *mut refmvs_block,
+                _rr_len: usize,
                 rmv: &refmvs_block,
                 bx4: usize,
                 bw4: usize,
@@ -1632,12 +1641,16 @@ mod ffi {
 
 unsafe extern "C" fn splat_mv_rust(
     rr: *mut *mut refmvs_block,
+    rr_len: usize,
     rmv: &refmvs_block,
     bx4: usize,
     bw4: usize,
     bh4: usize,
 ) {
-    for r in std::slice::from_raw_parts_mut(rr, bh4) {
+    // Safety: `rr` and `rr_len` are the raw parts of a slice in [`Dav1dRefmvsDSPContext::splat_mv`].
+    let rr = unsafe { std::slice::from_raw_parts_mut(rr, rr_len) };
+
+    for r in &mut rr[..bh4] {
         std::slice::from_raw_parts_mut(*r, bx4 + bw4)[bx4..].fill(*rmv);
     }
 }
