@@ -208,15 +208,8 @@ pub type save_tmvs_fn = Option<
     ) -> (),
 >;
 
-pub type splat_mv_fn = Option<
-    unsafe extern "C" fn(
-        *mut *mut refmvs_block,
-        &refmvs_block,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
+pub type splat_mv_fn =
+    Option<unsafe extern "C" fn(*mut *mut refmvs_block, &refmvs_block, usize, usize, usize) -> ()>;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -231,9 +224,9 @@ impl Dav1dRefmvsDSPContext {
         &self,
         rr: &mut [*mut refmvs_block],
         rmv: &refmvs_block,
-        bx4: libc::c_int,
-        bw4: libc::c_int,
-        bh4: libc::c_int,
+        bx4: usize,
+        bw4: usize,
+        bh4: usize,
     ) {
         self.splat_mv.expect("non-null function pointer")(rr.as_mut_ptr(), rmv, bx4, bw4, bh4);
     }
@@ -1609,11 +1602,17 @@ mod ffi {
             pub(super) unsafe extern "C" fn $fn_name(
                 rr: *mut *mut refmvs_block,
                 rmv: &refmvs_block,
-                bx4: libc::c_int,
-                bw4: libc::c_int,
-                bh4: libc::c_int,
+                bx4: usize,
+                bw4: usize,
+                bh4: usize,
             ) {
-                super::$fn_name(rr, rmv, bx4, bw4, bh4)
+                super::$fn_name(
+                    rr,
+                    rmv,
+                    bx4 as libc::c_int,
+                    bw4 as libc::c_int,
+                    bh4 as libc::c_int,
+                )
             }
         };
     }
@@ -1634,11 +1633,10 @@ mod ffi {
 unsafe extern "C" fn splat_mv_rust(
     rr: *mut *mut refmvs_block,
     rmv: &refmvs_block,
-    bx4: libc::c_int,
-    bw4: libc::c_int,
-    bh4: libc::c_int,
+    bx4: usize,
+    bw4: usize,
+    bh4: usize,
 ) {
-    let [bx4, bw4, bh4] = [bx4, bw4, bh4].map(|it| it as usize);
     for r in std::slice::from_raw_parts_mut(rr, bh4) {
         std::slice::from_raw_parts_mut(*r, bx4 + bw4)[bx4..].fill(*rmv);
     }
