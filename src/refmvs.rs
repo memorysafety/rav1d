@@ -207,15 +207,17 @@ pub type save_tmvs_fn = Option<
         libc::c_int,
     ) -> (),
 >;
+
 pub type splat_mv_fn = Option<
     unsafe extern "C" fn(
         *mut *mut refmvs_block,
-        *const refmvs_block,
+        &refmvs_block,
         libc::c_int,
         libc::c_int,
         libc::c_int,
     ) -> (),
 >;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dRefmvsDSPContext {
@@ -1606,7 +1608,7 @@ mod ffi {
         ($fn_name:ident) => {
             pub(super) unsafe extern "C" fn $fn_name(
                 rr: *mut *mut refmvs_block,
-                rmv: *const refmvs_block,
+                rmv: &refmvs_block,
                 bx4: libc::c_int,
                 bw4: libc::c_int,
                 bh4: libc::c_int,
@@ -1631,13 +1633,12 @@ mod ffi {
 
 unsafe extern "C" fn splat_mv_rust(
     rr: *mut *mut refmvs_block,
-    rmv: *const refmvs_block,
+    rmv: &refmvs_block,
     bx4: libc::c_int,
     bw4: libc::c_int,
     bh4: libc::c_int,
 ) {
     let [bx4, bw4, bh4] = [bx4, bw4, bh4].map(|it| it as usize);
-    let rmv = &*rmv;
     for r in std::slice::from_raw_parts_mut(rr, bh4) {
         std::slice::from_raw_parts_mut(*r, bx4 + bw4)[bx4..].fill(*rmv);
     }
