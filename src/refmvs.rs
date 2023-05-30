@@ -1598,6 +1598,37 @@ pub unsafe extern "C" fn dav1d_refmvs_clear(rf: *mut refmvs_frame) {
     }
 }
 
+#[cfg(feature = "asm")]
+mod ffi {
+    use super::*;
+
+    macro_rules! wrap_splat_mv {
+        ($fn_name:ident) => {
+            pub(super) unsafe extern "C" fn $fn_name(
+                rr: *mut *mut refmvs_block,
+                rmv: *const refmvs_block,
+                bx4: libc::c_int,
+                bw4: libc::c_int,
+                bh4: libc::c_int,
+            ) {
+                super::$fn_name(rr, rmv, bx4, bw4, bh4)
+            }
+        };
+    }
+
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    wrap_splat_mv!(dav1d_splat_mv_sse2);
+
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    wrap_splat_mv!(dav1d_splat_mv_avx2);
+
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    wrap_splat_mv!(dav1d_splat_mv_avx512icl);
+
+    #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+    wrap_splat_mv!(dav1d_splat_mv_neon);
+}
+
 unsafe extern "C" fn splat_mv_rust(
     rr: *mut *mut refmvs_block,
     rmv: *const refmvs_block,
@@ -1626,7 +1657,7 @@ unsafe extern "C" fn refmvs_dsp_init_x86(c: *mut Dav1dRefmvsDSPContext) {
         return;
     }
 
-    (*c).splat_mv = Some(dav1d_splat_mv_sse2);
+    (*c).splat_mv = Some(ffi::dav1d_splat_mv_sse2);
 
     if flags & DAV1D_X86_CPU_FLAG_SSSE3 == 0 {
         return;
@@ -1641,14 +1672,14 @@ unsafe extern "C" fn refmvs_dsp_init_x86(c: *mut Dav1dRefmvsDSPContext) {
         }
 
         (*c).save_tmvs = Some(dav1d_save_tmvs_avx2);
-        (*c).splat_mv = Some(dav1d_splat_mv_avx2);
+        (*c).splat_mv = Some(ffi::dav1d_splat_mv_avx2);
 
         if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
             return;
         }
 
         (*c).save_tmvs = Some(dav1d_save_tmvs_avx512icl);
-        (*c).splat_mv = Some(dav1d_splat_mv_avx512icl);
+        (*c).splat_mv = Some(ffi::dav1d_splat_mv_avx512icl);
     }
 }
 
@@ -1659,7 +1690,7 @@ unsafe extern "C" fn refmvs_dsp_init_arm(c: *mut Dav1dRefmvsDSPContext) {
 
     let flags: libc::c_uint = dav1d_get_cpu_flags();
     if (flags & DAV1D_ARM_CPU_FLAG_NEON) != 0 {
-        (*c).splat_mv = Some(dav1d_splat_mv_neon);
+        (*c).splat_mv = Some(ffi::dav1d_splat_mv_neon);
     }
 }
 #[no_mangle]
