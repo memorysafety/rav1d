@@ -1597,7 +1597,8 @@ pub unsafe extern "C" fn dav1d_refmvs_clear(rf: *mut refmvs_frame) {
         );
     }
 }
-unsafe extern "C" fn splat_mv_c(
+
+unsafe extern "C" fn splat_mv_rust(
     mut rr: *mut *mut refmvs_block,
     rmv: *const refmvs_block,
     bx4: libc::c_int,
@@ -1675,16 +1676,7 @@ unsafe extern "C" fn refmvs_dsp_init_arm(c: *mut Dav1dRefmvsDSPContext) {
 pub unsafe extern "C" fn dav1d_refmvs_dsp_init(c: *mut Dav1dRefmvsDSPContext) {
     (*c).load_tmvs = Some(load_tmvs_c);
     (*c).save_tmvs = Some(save_tmvs_c);
-    (*c).splat_mv = Some(
-        splat_mv_c
-            as unsafe extern "C" fn(
-                *mut *mut refmvs_block,
-                *const refmvs_block,
-                libc::c_int,
-                libc::c_int,
-                libc::c_int,
-            ) -> (),
-    );
+    (*c).splat_mv = Some(splat_mv_rust);
     cfg_if! {
         if #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "asm"))] {
             refmvs_dsp_init_x86(c);
