@@ -4,8 +4,9 @@ on:
   push:
     branches:
       - '**argon**' # Run when pushing branches that have argon in the name
-  schedule:
-  - cron: '0 12 * * 1-5' # Run at 12pm UTC (5am Pacific Time) Monday-Friday
+      - 'main' # Run on each change to main
+  # schedule:
+  # - cron: '0 12 * * 1-5' # Run at 12pm UTC (5am Pacific Time) Monday-Friday
 jobs:
   test-on-ubuntu-latest:
     strategy:
