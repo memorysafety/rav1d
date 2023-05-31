@@ -3,13 +3,13 @@ use crate::include::stdint::uint32_t;
 use crate::include::stdint::uint64_t;
 use crate::include::stdint::uint8_t;
 
-pub trait Alias {
+trait Alias {
     fn set(&mut self, val: u64);
 }
 
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union alias8 {
+union alias8 {
     pub u8_0: uint8_t,
 }
 
@@ -21,7 +21,7 @@ impl Alias for alias8 {
 
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union alias16 {
+union alias16 {
     pub u16_0: uint16_t,
     pub u8_0: [uint8_t; 2],
 }
@@ -34,7 +34,7 @@ impl Alias for alias16 {
 
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union alias32 {
+union alias32 {
     pub u32_0: uint32_t,
     pub u8_0: [uint8_t; 4],
 }
@@ -47,7 +47,7 @@ impl Alias for alias32 {
 
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union alias64 {
+union alias64 {
     pub u64_0: uint64_t,
     pub u8_0: [uint8_t; 8],
 }
@@ -59,20 +59,20 @@ impl Alias for alias64 {
 }
 
 #[inline]
-pub unsafe fn set_ctx_rep1<T: Alias>(buf: *mut u8, off: isize, val: u64) {
+unsafe fn set_ctx_rep1<T: Alias>(buf: *mut u8, off: isize, val: u64) {
     let buf = buf.offset(off);
     let buf = buf.cast::<T>();
     (*buf).set(val);
 }
 
 #[inline]
-pub unsafe fn set_ctx_rep2(buf: *mut u8, off: isize, val: u64) {
+unsafe fn set_ctx_rep2(buf: *mut u8, off: isize, val: u64) {
     set_ctx_rep1::<alias64>(buf, off + 0, val);
     set_ctx_rep1::<alias64>(buf, off + 8, val);
 }
 
 #[inline]
-pub unsafe fn set_ctx_rep4(buf: *mut u8, off: isize, val: u64) {
+unsafe fn set_ctx_rep4(buf: *mut u8, off: isize, val: u64) {
     set_ctx_rep1::<alias64>(buf, off + 0, val);
     set_ctx_rep1::<alias64>(buf, off + 8, val);
     set_ctx_rep1::<alias64>(buf, off + 16, val);
