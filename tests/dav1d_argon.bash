@@ -6,11 +6,12 @@ FILMGRAIN=1
 CPUMASK=-1
 THREADS=0
 JOBS=1
+NUM_TESTS_PER_DIR=-1
 
 usage() {
     NAME=$(basename "$0")
     {
-        printf "Usage:   %s [-d dav1d] [-a argondir] [-g \$filmgrain] [-c \$cpumask] [-t threads] [-j jobs] [DIRECTORY]...\n" "$NAME"
+        printf "Usage:   %s [-d dav1d] [-a argondir] [-g \$filmgrain] [-c \$cpumask] [-t threads] [-j jobs] [-n num_tests_per_dir] [DIRECTORY]...\n" "$NAME"
         printf "Example: %s -d /path/to/dav1d -a /path/to/argon/ -g 0 -c avx2 profile0_core\n" "$NAME"
         printf "Used to verify that dav1d can decode the Argon AV1 test vectors correctly.\n\n"
         printf " DIRECTORY one or more dirs in the argon folder to check against\n"
@@ -20,7 +21,9 @@ usage() {
         printf " -g \$num   enable filmgrain (default: 1)\n"
         printf " -c \$mask  use restricted cpumask (default: -1)\n"
         printf " -t \$num   number of threads per dav1d (default: 0)\n"
-        printf " -j \$num   number of parallel dav1d processes (default: 1)\n\n"
+        printf " -j \$num   number of parallel dav1d processes (default: 1)\n"
+        printf " -n \$num   only run the first n tests from each dir (negative is no limit) (default: -1)\n"
+        printf
     } >&2
     exit 1
 }
@@ -79,7 +82,7 @@ if [ -d "$tests_dir/argon" ]; then
     ARGON_DIR="$tests_dir/argon"
 fi
 
-while getopts ":d:a:g:c:t:j:" opt; do
+while getopts ":d:a:g:c:t:j:n:" opt; do
     case "$opt" in
         d)
             DAV1D="$OPTARG"
@@ -98,6 +101,9 @@ while getopts ":d:a:g:c:t:j:" opt; do
             ;;
         j)
             JOBS="$OPTARG"
+            ;;
+        n)
+            NUM_TESTS_PER_DIR="$OPTARG"
             ;;
         \?)
             printf "Error! Invalid option: -%s\n" "$OPTARG" >&2
@@ -128,7 +134,12 @@ files=()
 
 for d in "${dirs[@]}"; do
     if [ -d "$d/streams" ]; then
-        files+=("${d/%\//}"/streams/*.obu)
+        files_in_dir=("${d/%\//}"/streams/*.obu)
+        if [ "$NUM_TESTS_PER_DIR" -ge 0 ]; then
+            files+=("${files_in_dir[@]::$NUM_TESTS_PER_DIR}")
+        else
+            files+=("${files_in_dir[@]}")
+        fi
     fi
 done
 
