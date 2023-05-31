@@ -4220,7 +4220,7 @@ unsafe fn decode_b(
                             bh4,
                             (*rr).0.mv.mv[0].y,
                             ss_ver,
-                            &f.svc[(*rr).0.r#ref.r#ref[0] as usize][1],
+                            &f.svc[(*rr).0.r#ref.r#ref[0] as usize - 1][1],
                         );
                     }
                     if bw4 == 1 {
@@ -4232,7 +4232,7 @@ unsafe fn decode_b(
                             bh4,
                             (*rr).0.mv.mv[0].y,
                             ss_ver,
-                            &f.svc[(*rr).0.r#ref.r#ref[0] as usize][1],
+                            &f.svc[(*rr).0.r#ref.r#ref[0] as usize - 1][1],
                         );
                     }
                     if bh4 == ss_ver {
@@ -4243,7 +4243,7 @@ unsafe fn decode_b(
                             bh4,
                             (*rr).0.mv.mv[0].y,
                             ss_ver,
-                            &f.svc[(*rr).0.r#ref.r#ref[0] as usize][1],
+                            &f.svc[(*rr).0.r#ref.r#ref[0] as usize - 1][1],
                         );
                     }
                     mc_lowest_px(
