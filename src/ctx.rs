@@ -166,3 +166,33 @@ pub unsafe fn case_set_upto32_with_default<D, F, G>(
         _ => default_memset(dir, diridx, off, var),
     }
 }
+
+#[inline]
+pub unsafe fn case_set_upto16_with_default<D, F, G>(
+    var: libc::c_int,
+    dir: &mut D,
+    diridx: usize,
+    off: isize,
+    set_ctx: &mut F,
+    mut default_memset: G,
+) where
+    F: FnMut(&mut D, usize, isize, u64, SetCtxFn),
+    G: FnMut(&mut D, usize, isize, libc::c_int),
+    D: ?Sized,
+{
+    match var {
+        1 => set_ctx(dir, diridx, off, 0x01, set_ctx_rep1::<alias8>),
+        2 => set_ctx(dir, diridx, off, 0x0101, set_ctx_rep1::<alias16>),
+        4 => set_ctx(dir, diridx, off, 0x01010101, set_ctx_rep1::<alias32>),
+        8 => set_ctx(
+            dir,
+            diridx,
+            off,
+            0x0101010101010101,
+            set_ctx_rep1::<alias64>,
+        ),
+        16 => set_ctx(dir, diridx, off, 0x0101010101010101, set_ctx_rep2),
+
+        _ => default_memset(dir, diridx, off, var),
+    }
+}
