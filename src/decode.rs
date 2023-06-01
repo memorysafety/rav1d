@@ -889,7 +889,6 @@ use crate::src::levels::TX_4X4;
 use crate::src::levels::TX_64X64;
 use crate::src::levels::TX_8X8;
 
-use crate::src::levels::IntraPredMode;
 use crate::src::levels::RectTxfmSize;
 use crate::src::levels::TxfmSize;
 use crate::src::levels::BL_128X128;
@@ -2284,7 +2283,7 @@ unsafe fn decode_b(
         if b.intra != 0 {
             f.bd_fn.recon_b_intra(t, bs, intra_edge_flags, b);
 
-            let y_mode = b.y_mode() as IntraPredMode;
+            let y_mode = b.y_mode();
             let y_mode_nofilt = if y_mode == FILTER_PRED {
                 DC_PRED
             } else {
@@ -2762,10 +2761,7 @@ unsafe fn decode_b(
         }
 
         // angle delta
-        if b_dim[2] + b_dim[3] >= 2
-            && b.y_mode() as IntraPredMode >= VERT_PRED
-            && b.y_mode() as IntraPredMode <= VERT_LEFT_PRED
-        {
+        if b_dim[2] + b_dim[3] >= 2 && b.y_mode() >= VERT_PRED && b.y_mode() <= VERT_LEFT_PRED {
             let acdf = &mut ts.cdf.m.angle_delta[b.y_mode() as usize - VERT_PRED as usize];
             let angle = dav1d_msac_decode_symbol_adapt8(&mut ts.msac, acdf, 6);
             *b.y_angle_mut() = angle as i8 - 3;
@@ -2792,7 +2788,7 @@ unsafe fn decode_b(
             }
 
             *b.uv_angle_mut() = 0;
-            if b.uv_mode() == CFL_PRED as u8 {
+            if b.uv_mode() == CFL_PRED {
                 let sign =
                     dav1d_msac_decode_symbol_adapt8(&mut ts.msac, &mut ts.cdf.m.cfl_sign.0, 7) + 1;
                 let sign_u = sign * 0x56 >> 8;
@@ -2856,7 +2852,7 @@ unsafe fn decode_b(
             && bw4 + bh4 >= 4
         {
             let sz_ctx = b_dim[2] + b_dim[3] - 2;
-            if b.y_mode() == DC_PRED as u8 {
+            if b.y_mode() == DC_PRED {
                 let pal_ctx = ((*t.a).pal_sz.0[bx4 as usize] > 0) as usize
                     + (t.l.pal_sz.0[by4 as usize] > 0) as usize;
                 let use_y_pal = dav1d_msac_decode_bool_adapt(
@@ -3042,10 +3038,10 @@ unsafe fn decode_b(
         }
 
         // update contexts
-        let y_mode_nofilt = if b.y_mode() == FILTER_PRED as u8 {
-            DC_PRED as IntraPredMode
+        let y_mode_nofilt = if b.y_mode() == FILTER_PRED {
+            DC_PRED
         } else {
-            b.y_mode() as IntraPredMode
+            b.y_mode()
         };
         let mut set_ctx = |dir: &mut BlockContext, diridx, off, mul, rep_macro: SetCtxFn| {
             // NOTE: This corresponds to the following logic in the original C:
