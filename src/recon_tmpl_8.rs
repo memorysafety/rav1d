@@ -2759,16 +2759,10 @@ unsafe extern "C" fn read_coef_tree(
                 &mut set_ctx,
                 default_memset,
             );
-            let mut txtp_map: *mut uint8_t = &mut *((*t).txtp_map)
-                .as_mut_ptr()
-                .offset((by4 * 32 + bx4) as isize)
-                as *mut uint8_t;
+            let mut txtp_map = &mut (*t).txtp_map[(by4 * 32 + bx4) as usize..];
             let mut set_ctx = |_dir: &mut (), _diridx, _off, mul, rep_macro: SetCtxFn| {
-                let mut y = 0;
-                while y < txh {
-                    rep_macro(txtp_map, 0, mul * txtp as u64);
-                    txtp_map = txtp_map.offset(32);
-                    y += 1;
+                for txtp_map in txtp_map.chunks_mut(32).take(txh as usize) {
+                    rep_macro(txtp_map.as_mut_ptr(), 0, mul * txtp as u64);
                 }
             };
             case_set_upto16(
