@@ -2410,7 +2410,7 @@ unsafe fn decode_b(
     let mut seg = None;
 
     // segment_id (if seg_feature for skip/ref/gmv is enabled)
-    let mut seg_pred = 0;
+    let mut seg_pred = false;
     if frame_hdr.segmentation.enabled != 0 {
         if frame_hdr.segmentation.update_map == 0 {
             if !(f.prev_segmap).is_null() {
@@ -2433,8 +2433,8 @@ unsafe fn decode_b(
                 seg_pred = dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     &mut ts.cdf.m.seg_pred.0[index as usize],
-                ) as libc::c_int;
-                seg_pred != 0
+                );
+                seg_pred
             } {
                 if !(f.prev_segmap).is_null() {
                     let mut seg_id =
@@ -2525,8 +2525,8 @@ unsafe fn decode_b(
             seg_pred = dav1d_msac_decode_bool_adapt(
                 &mut ts.msac,
                 &mut ts.cdf.m.seg_pred.0[index as usize],
-            ) as libc::c_int;
-            seg_pred != 0
+            );
+            seg_pred
         } {
             // temporal predicted seg_id
             if !(f.prev_segmap).is_null() {
