@@ -225,13 +225,8 @@ use crate::src::warpmv::dav1d_set_affine_mv2d;
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
 use crate::include::stdatomic::atomic_int;
-use crate::src::ctx::alias16;
-use crate::src::ctx::alias32;
-use crate::src::ctx::alias64;
-use crate::src::ctx::alias8;
-use crate::src::r#ref::Dav1dRef;
-
 use crate::include::stdatomic::atomic_uint;
+use crate::src::r#ref::Dav1dRef;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext {
@@ -4972,79 +4967,25 @@ unsafe extern "C" fn decode_sb(
         && (bp as libc::c_uint != PARTITION_SPLIT as libc::c_int as libc::c_uint
             || bl as libc::c_uint == BL_8X8 as libc::c_int as libc::c_uint)
     {
-        match hsz {
-            1 => {
-                (*(&mut *((*(*t).a).partition.0).as_mut_ptr().offset(bx8 as isize) as *mut uint8_t
-                    as *mut alias8))
-                    .u8_0 = (0x1 as libc::c_int
-                    * dav1d_al_part_ctx[0][bl as usize][bp as usize] as libc::c_int)
-                    as uint8_t;
-                (*(&mut *((*t).l.partition.0).as_mut_ptr().offset(by8 as isize) as *mut uint8_t
-                    as *mut alias8))
-                    .u8_0 = (0x1 as libc::c_int
-                    * dav1d_al_part_ctx[1][bl as usize][bp as usize] as libc::c_int)
-                    as uint8_t;
-            }
-            2 => {
-                (*(&mut *((*(*t).a).partition.0).as_mut_ptr().offset(bx8 as isize) as *mut uint8_t
-                    as *mut alias16))
-                    .u16_0 = (0x101 as libc::c_int
-                    * dav1d_al_part_ctx[0][bl as usize][bp as usize] as libc::c_int)
-                    as uint16_t;
-                (*(&mut *((*t).l.partition.0).as_mut_ptr().offset(by8 as isize) as *mut uint8_t
-                    as *mut alias16))
-                    .u16_0 = (0x101 as libc::c_int
-                    * dav1d_al_part_ctx[1][bl as usize][bp as usize] as libc::c_int)
-                    as uint16_t;
-            }
-            4 => {
-                (*(&mut *((*(*t).a).partition.0).as_mut_ptr().offset(bx8 as isize) as *mut uint8_t
-                    as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(dav1d_al_part_ctx[0][bl as usize][bp as usize] as libc::c_uint);
-                (*(&mut *((*t).l.partition.0).as_mut_ptr().offset(by8 as isize) as *mut uint8_t
-                    as *mut alias32))
-                    .u32_0 = (0x1010101 as libc::c_uint)
-                    .wrapping_mul(dav1d_al_part_ctx[1][bl as usize][bp as usize] as libc::c_uint);
-            }
-            8 => {
-                (*(&mut *((*(*t).a).partition.0).as_mut_ptr().offset(bx8 as isize) as *mut uint8_t
-                    as *mut alias64))
-                    .u64_0 = (0x101010101010101 as libc::c_ulonglong).wrapping_mul(
-                    dav1d_al_part_ctx[0][bl as usize][bp as usize] as libc::c_ulonglong,
-                ) as uint64_t;
-                (*(&mut *((*t).l.partition.0).as_mut_ptr().offset(by8 as isize) as *mut uint8_t
-                    as *mut alias64))
-                    .u64_0 = (0x101010101010101 as libc::c_ulonglong).wrapping_mul(
-                    dav1d_al_part_ctx[1][bl as usize][bp as usize] as libc::c_ulonglong,
-                ) as uint64_t;
-            }
-            16 => {
-                let const_val: uint64_t = (0x101010101010101 as libc::c_ulonglong).wrapping_mul(
-                    dav1d_al_part_ctx[0][bl as usize][bp as usize] as libc::c_ulonglong,
-                ) as uint64_t;
-                (*(&mut *((*(*t).a).partition.0)
-                    .as_mut_ptr()
-                    .offset((bx8 + 0) as isize) as *mut uint8_t
-                    as *mut alias64))
-                    .u64_0 = const_val;
-                (*(&mut *((*(*t).a).partition.0)
-                    .as_mut_ptr()
-                    .offset((bx8 + 8) as isize) as *mut uint8_t
-                    as *mut alias64))
-                    .u64_0 = const_val;
-                let const_val_0: uint64_t = (0x101010101010101 as libc::c_ulonglong).wrapping_mul(
-                    dav1d_al_part_ctx[1][bl as usize][bp as usize] as libc::c_ulonglong,
-                ) as uint64_t;
-                (*(&mut *((*t).l.partition.0).as_mut_ptr().offset((by8 + 0) as isize)
-                    as *mut uint8_t as *mut alias64))
-                    .u64_0 = const_val_0;
-                (*(&mut *((*t).l.partition.0).as_mut_ptr().offset((by8 + 8) as isize)
-                    as *mut uint8_t as *mut alias64))
-                    .u64_0 = const_val_0;
-            }
-            _ => {}
-        }
+        let mut set_ctx = |_dir: &mut (), _diridx, _off, mul, rep_macro: SetCtxFn| {
+            rep_macro(
+                (*(*t).a).partition.0.as_mut_ptr(),
+                bx8 as isize,
+                mul * dav1d_al_part_ctx[0][bl as usize][bp as usize] as u64,
+            );
+            rep_macro(
+                (*t).l.partition.0.as_mut_ptr(),
+                by8 as isize,
+                mul * dav1d_al_part_ctx[1][bl as usize][bp as usize] as u64,
+            );
+        };
+        case_set_upto16(
+            hsz,
+            &mut (),
+            Default::default(),
+            Default::default(),
+            &mut set_ctx,
+        );
     }
     return 0 as libc::c_int;
 }
