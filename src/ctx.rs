@@ -1,198 +1,66 @@
-use crate::include::stdint::uint16_t;
-use crate::include::stdint::uint32_t;
-use crate::include::stdint::uint64_t;
-use crate::include::stdint::uint8_t;
+use std::iter::zip;
 
-trait Alias {
-    fn set(&mut self, val: u64);
-}
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-union alias8 {
-    pub u8_0: uint8_t,
-}
-
-impl Alias for alias8 {
-    fn set(&mut self, val: u64) {
-        self.u8_0 = val as u8;
+#[inline]
+fn small_memset<T: Clone + Copy, const UP_TO: usize, const WITH_DEFAULT: bool>(
+    buf: &mut [T],
+    val: T,
+) {
+    macro_rules! set {
+        ($n:literal) => {{
+            let buf: &mut [T; $n] = buf.try_into().unwrap();
+            *buf = [val; $n];
+        }};
+    }
+    match buf.len() {
+        1 if UP_TO >= 1 => set!(1),
+        2 if UP_TO >= 2 => set!(2),
+        4 if UP_TO >= 4 => set!(4),
+        8 if UP_TO >= 8 => set!(8),
+        16 if UP_TO >= 16 => set!(16),
+        32 if UP_TO >= 32 => set!(32),
+        64 if UP_TO >= 64 => set!(64),
+        _ => {
+            if WITH_DEFAULT {
+                buf.fill(val)
+            }
+        }
     }
 }
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-union alias16 {
-    pub u16_0: uint16_t,
-    pub u8_0: [uint8_t; 2],
+pub struct CaseSetter<const UP_TO: usize, const WITH_DEFAULT: bool> {
+    offset: usize,
+    len: usize,
 }
 
-impl Alias for alias16 {
-    fn set(&mut self, val: u64) {
-        self.u16_0 = val as u16;
+impl<const UP_TO: usize, const WITH_DEFAULT: bool> CaseSetter<UP_TO, WITH_DEFAULT> {
+    #[inline]
+    pub fn set<T: Clone + Copy>(&self, buf: &mut [T], val: T) {
+        small_memset::<T, UP_TO, WITH_DEFAULT>(&mut buf[self.offset..][..self.len], val);
     }
 }
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-union alias32 {
-    pub u32_0: uint32_t,
-    pub u8_0: [uint8_t; 4],
-}
+pub struct CaseSet<const UP_TO: usize, const WITH_DEFAULT: bool>;
 
-impl Alias for alias32 {
-    fn set(&mut self, val: u64) {
-        self.u32_0 = val as u32;
+impl<const UP_TO: usize, const WITH_DEFAULT: bool> CaseSet<UP_TO, WITH_DEFAULT> {
+    #[inline]
+    pub fn one<T, F>(ctx: T, len: usize, offset: usize, mut set_ctx: F)
+    where
+        F: FnMut(&CaseSetter<UP_TO, WITH_DEFAULT>, T),
+    {
+        set_ctx(&CaseSetter { offset, len }, ctx);
     }
-}
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-union alias64 {
-    pub u64_0: uint64_t,
-    pub u8_0: [uint8_t; 8],
-}
-
-impl Alias for alias64 {
-    fn set(&mut self, val: u64) {
-        self.u64_0 = val;
-    }
-}
-
-#[inline]
-unsafe fn set_ctx_rep1<T: Alias>(buf: *mut u8, off: isize, val: u64) {
-    let buf = buf.offset(off);
-    let buf = buf.cast::<T>();
-    (*buf).set(val);
-}
-
-#[inline]
-unsafe fn set_ctx_rep2(buf: *mut u8, off: isize, val: u64) {
-    set_ctx_rep1::<alias64>(buf, off + 0, val);
-    set_ctx_rep1::<alias64>(buf, off + 8, val);
-}
-
-#[inline]
-unsafe fn set_ctx_rep4(buf: *mut u8, off: isize, val: u64) {
-    set_ctx_rep1::<alias64>(buf, off + 0, val);
-    set_ctx_rep1::<alias64>(buf, off + 8, val);
-    set_ctx_rep1::<alias64>(buf, off + 16, val);
-    set_ctx_rep1::<alias64>(buf, off + 24, val);
-}
-
-pub type SetCtxFn = unsafe fn(*mut u8, isize, u64);
-
-#[inline]
-pub unsafe fn case_set<D, F>(
-    len: libc::c_int,
-    dir: &mut D,
-    diridx: usize,
-    off: isize,
-    set_ctx: &mut F,
-) where
-    F: FnMut(&mut D, usize, isize, u64, SetCtxFn),
-{
-    match len {
-        1 => set_ctx(dir, diridx, off, 0x01, set_ctx_rep1::<alias8>),
-        2 => set_ctx(dir, diridx, off, 0x0101, set_ctx_rep1::<alias16>),
-        4 => set_ctx(dir, diridx, off, 0x01010101, set_ctx_rep1::<alias32>),
-        8 => set_ctx(
-            dir,
-            diridx,
-            off,
-            0x0101010101010101,
-            set_ctx_rep1::<alias64>,
-        ),
-        16 => set_ctx(dir, diridx, off, 0x0101010101010101, set_ctx_rep2),
-        32 => set_ctx(dir, diridx, off, 0x0101010101010101, set_ctx_rep4),
-
-        _ => {}
-    }
-}
-
-#[inline]
-pub unsafe fn case_set_upto16<D, F>(
-    len: libc::c_int,
-    dir: &mut D,
-    diridx: usize,
-    off: isize,
-    set_ctx: &mut F,
-) where
-    F: FnMut(&mut D, usize, isize, u64, SetCtxFn),
-{
-    match len {
-        1 => set_ctx(dir, diridx, off, 0x01, set_ctx_rep1::<alias8>),
-        2 => set_ctx(dir, diridx, off, 0x0101, set_ctx_rep1::<alias16>),
-        4 => set_ctx(dir, diridx, off, 0x01010101, set_ctx_rep1::<alias32>),
-        8 => set_ctx(
-            dir,
-            diridx,
-            off,
-            0x0101010101010101,
-            set_ctx_rep1::<alias64>,
-        ),
-        16 => set_ctx(dir, diridx, off, 0x0101010101010101, set_ctx_rep2),
-
-        _ => {}
-    }
-}
-
-#[inline]
-pub unsafe fn case_set_upto32_with_default<D, F, G>(
-    len: libc::c_int,
-    dir: &mut D,
-    diridx: usize,
-    off: isize,
-    set_ctx: &mut F,
-    mut default_memset: G,
-) where
-    F: FnMut(&mut D, usize, isize, u64, SetCtxFn),
-    G: FnMut(&mut D, usize, isize, libc::c_int),
-    D: ?Sized,
-{
-    match len {
-        1 => set_ctx(dir, diridx, off, 0x01, set_ctx_rep1::<alias8>),
-        2 => set_ctx(dir, diridx, off, 0x0101, set_ctx_rep1::<alias16>),
-        4 => set_ctx(dir, diridx, off, 0x01010101, set_ctx_rep1::<alias32>),
-        8 => set_ctx(
-            dir,
-            diridx,
-            off,
-            0x0101010101010101,
-            set_ctx_rep1::<alias64>,
-        ),
-        16 => set_ctx(dir, diridx, off, 0x0101010101010101, set_ctx_rep2),
-        32 => set_ctx(dir, diridx, off, 0x0101010101010101, set_ctx_rep4),
-
-        _ => default_memset(dir, diridx, off, len),
-    }
-}
-
-#[inline]
-pub unsafe fn case_set_upto16_with_default<D, F, G>(
-    len: libc::c_int,
-    dir: &mut D,
-    diridx: usize,
-    off: isize,
-    set_ctx: &mut F,
-    mut default_memset: G,
-) where
-    F: FnMut(&mut D, usize, isize, u64, SetCtxFn),
-    G: FnMut(&mut D, usize, isize, libc::c_int),
-    D: ?Sized,
-{
-    match len {
-        1 => set_ctx(dir, diridx, off, 0x01, set_ctx_rep1::<alias8>),
-        2 => set_ctx(dir, diridx, off, 0x0101, set_ctx_rep1::<alias16>),
-        4 => set_ctx(dir, diridx, off, 0x01010101, set_ctx_rep1::<alias32>),
-        8 => set_ctx(
-            dir,
-            diridx,
-            off,
-            0x0101010101010101,
-            set_ctx_rep1::<alias64>,
-        ),
-        16 => set_ctx(dir, diridx, off, 0x0101010101010101, set_ctx_rep2),
-
-        _ => default_memset(dir, diridx, off, len),
+    #[inline]
+    pub fn many<T, F, const N: usize>(
+        dirs: [T; N],
+        lens: [usize; N],
+        offsets: [usize; N],
+        mut set_ctx: F,
+    ) where
+        F: FnMut(&CaseSetter<UP_TO, WITH_DEFAULT>, T),
+    {
+        for (dir, (len, offset)) in zip(dirs, zip(lens, offsets)) {
+            Self::one(dir, len, offset, &mut set_ctx);
+        }
     }
 }

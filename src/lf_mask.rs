@@ -6,9 +6,7 @@ use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 use crate::include::stddef::ptrdiff_t;
 use crate::src::align::Align16;
-use crate::src::ctx::case_set_upto16;
-use crate::src::ctx::case_set_upto32_with_default;
-use crate::src::ctx::SetCtxFn;
+use crate::src::ctx::CaseSet;
 use crate::src::levels::BlockSize;
 use crate::src::levels::RectTxfmSize;
 use crate::src::levels::TX_4X4;
@@ -104,30 +102,16 @@ unsafe fn decomp_tx(
         let lw = std::cmp::min(2, t_dim.lw);
         let lh = std::cmp::min(2, t_dim.lh);
 
-        let mut set_ctx = |_dir: &mut (), _diridx, off, mul, rep_macro: SetCtxFn| {
+        CaseSet::<16, false>::one((), t_dim.w as usize, x0, |case, ()| {
             for y in 0..t_dim.h as usize {
-                rep_macro(txa[0][0][y0 + y][x0..].as_mut_ptr(), off, mul * lw as u64);
-                rep_macro(txa[1][0][y0 + y][x0..].as_mut_ptr(), off, mul * lh as u64);
+                case.set(&mut txa[0][0][y0 + y], lw);
+                case.set(&mut txa[1][0][y0 + y], lh);
                 txa[0][1][y0 + y][x0] = t_dim.w;
             }
-        };
-        case_set_upto16(
-            t_dim.w as libc::c_int,
-            &mut (),            // Was nothing in C.
-            Default::default(), // Was nothing in C.
-            0,
-            &mut set_ctx,
-        );
-        let mut set_ctx = |_dir: &mut (), _diridx, off, mul, rep_macro: SetCtxFn| {
-            rep_macro(txa[1][1][y0][x0..].as_mut_ptr(), off, mul * t_dim.h as u64);
-        };
-        case_set_upto16(
-            t_dim.w as libc::c_int,
-            &mut (),            // Was nothing in C.
-            Default::default(), // Was nothing in C.
-            0,
-            &mut set_ctx,
-        );
+        });
+        CaseSet::<16, false>::one((), t_dim.w as usize, x0, |case, ()| {
+            case.set(&mut txa[1][1][y0], t_dim.h);
+        });
     };
 }
 
@@ -277,33 +261,13 @@ unsafe fn mask_edges_intra(
         }
     }
 
-    let mut set_ctx = |dir: &mut [u8], _diridx, off, mul, rep_macro: SetCtxFn| {
-        rep_macro(dir.as_mut_ptr(), off, mul * thl4c as u64);
-    };
-    let default_memset = |dir: &mut [u8], _diridx, _off, var| {
-        dir[..var as usize].fill(thl4c);
-    };
-    case_set_upto32_with_default(
-        w4 as libc::c_int,
-        a,                  // Was nothing in C; changed to `a` for borrowck.
-        Default::default(), // Was nothing in C.
-        0,
-        &mut set_ctx,
-        default_memset,
-    );
-    let mut set_ctx = |dir: &mut [u8], _diridx, off, mul, rep_macro: SetCtxFn| {
-        rep_macro(dir.as_mut_ptr(), off, mul * twl4c as u64);
-    };
-    let default_memset = |dir: &mut [u8], _diridx, _off, var| {
-        dir[..var as usize].fill(twl4c);
-    };
-    case_set_upto32_with_default(
-        h4 as libc::c_int,
-        l,                  // Was nothing in C; changed to `l` for borrowck.
-        Default::default(), // Was nothing in C.
-        0,
-        &mut set_ctx,
-        default_memset,
+    CaseSet::<32, true>::many(
+        [(a, thl4c), (l, twl4c)],
+        [w4 as usize, h4 as usize],
+        [0, 0],
+        |case, (dir, tl4c)| {
+            case.set(dir, tl4c);
+        },
     );
 }
 
@@ -380,33 +344,13 @@ unsafe fn mask_edges_chroma(
         }
     }
 
-    let mut set_ctx = |dir: &mut [u8], _diridx, off, mul, rep_macro: SetCtxFn| {
-        rep_macro(dir.as_mut_ptr(), off, mul * thl4c as u64);
-    };
-    let default_memset = |dir: &mut [u8], _diridx, _off, var| {
-        dir[..var as usize].fill(thl4c);
-    };
-    case_set_upto32_with_default(
-        cw4 as libc::c_int,
-        a,                  // Was nothing in C; changed to `l` for borrowck.
-        Default::default(), // Was nothing in C.
-        0,
-        &mut set_ctx,
-        default_memset,
-    );
-    let mut set_ctx = |dir: &mut [u8], _diridx, off, mul, rep_macro: SetCtxFn| {
-        rep_macro(dir.as_mut_ptr(), off, mul * twl4c as u64);
-    };
-    let default_memset = |dir: &mut [u8], _diridx, _off, var| {
-        dir[..var as usize].fill(twl4c);
-    };
-    case_set_upto32_with_default(
-        ch4 as libc::c_int,
-        l,                  // Was nothing in C; changed to `l` for borrowck.
-        Default::default(), // Was nothing in C.
-        0,
-        &mut set_ctx,
-        default_memset,
+    CaseSet::<32, true>::many(
+        [(a, thl4c), (l, twl4c)],
+        [cw4 as usize, ch4 as usize],
+        [0, 0],
+        |case, (dir, tl4c)| {
+            case.set(dir, tl4c);
+        },
     );
 }
 
