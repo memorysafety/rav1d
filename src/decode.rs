@@ -3334,7 +3334,7 @@ unsafe fn decode_b(
                 frame_hdr.skip_mode_refs[0] as i8,
                 frame_hdr.skip_mode_refs[1] as i8,
             ];
-            *b.comp_type_mut() = COMP_INTER_AVG as u8;
+            *b.comp_type_mut() = COMP_INTER_AVG;
             *b.inter_mode_mut() = NEARESTMV_NEARESTMV as u8;
             *b.drl_idx_mut() = NEAREST_DRL as u8;
             has_subpel_filter = false;
