@@ -1133,14 +1133,14 @@ unsafe fn read_tx_tree(
     let bx4 = t.bx & 31;
     let by4 = t.by & 31;
     let t_dim = &dav1d_txfm_dimensions[from as usize];
-    let txw = t_dim.lw as libc::c_int;
-    let txh = t_dim.lh as libc::c_int;
+    let txw = t_dim.lw as i8;
+    let txh = t_dim.lh as i8;
     let mut is_split;
 
     if depth < 2 && from > TX_4X4 {
         let cat = 2 * (TX_64X64 as libc::c_int - t_dim.max as libc::c_int) - depth;
-        let a = (((*t.a).tx.0[bx4 as usize] as libc::c_int) < txw) as libc::c_int;
-        let l = ((t.l.tx.0[by4 as usize] as libc::c_int) < txh) as libc::c_int;
+        let a = ((*t.a).tx.0[bx4 as usize] < txw) as libc::c_int;
+        let l = (t.l.tx.0[by4 as usize] < txh) as libc::c_int;
 
         is_split = dav1d_msac_decode_bool_adapt(
             &mut (*t.ts).msac,
