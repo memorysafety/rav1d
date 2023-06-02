@@ -706,6 +706,7 @@ use crate::src::internal::ScalableMotionParams;
 use crate::src::levels::IntraPredMode;
 use crate::src::levels::RectTxfmSize;
 use crate::src::levels::TxClass;
+use crate::src::levels::TxfmSize;
 use crate::src::levels::TxfmType;
 use crate::src::levels::CFL_PRED;
 use crate::src::levels::COMP_INTER_NONE;
@@ -822,6 +823,7 @@ use crate::src::ipred_prepare::sm_flag;
 use crate::src::ipred_prepare::sm_uv_flag;
 use crate::src::msac::dav1d_msac_decode_bools;
 use crate::src::recon::read_golomb;
+
 // If the C macro is called like `MERGE_CTX(a, uint8_t,  0x40)`, the
 // corresponding call to this macro is `MERGE_CTX(ca, a, uint8_t,  0x40)`.
 macro_rules! MERGE_CTX {
@@ -876,14 +878,14 @@ unsafe extern "C" fn get_skip_ctx(
                 > (*t_dim).lh as libc::c_int) as libc::c_int;
         let mut ca: libc::c_uint = 0;
         let mut cl: libc::c_uint = 0;
-        match (*t_dim).lw as libc::c_uint {
+        match (*t_dim).lw as TxfmSize {
             TX_4X4 => MERGE_CTX!(ca, a, uint8_t, 0x40),
             TX_8X8 => MERGE_CTX!(ca, a, uint16_t, 0x4040),
             TX_16X16 => MERGE_CTX!(ca, a, uint32_t, 0x40404040),
             TX_32X32 => MERGE_CTX!(ca, a, uint64_t, 0x4040404040404040u64),
             _ => unreachable!(),
         }
-        match (*t_dim).lh as libc::c_uint {
+        match (*t_dim).lh as TxfmSize {
             TX_4X4 => MERGE_CTX!(cl, l, uint8_t, 0x40),
             TX_8X8 => MERGE_CTX!(cl, l, uint16_t, 0x4040),
             TX_16X16 => MERGE_CTX!(cl, l, uint32_t, 0x40404040),
@@ -901,7 +903,7 @@ unsafe extern "C" fn get_skip_ctx(
         let mut la: libc::c_uint = 0;
         let mut ll: libc::c_uint = 0;
         let mut _current_block_80: u64;
-        match (*t_dim).lw as libc::c_uint {
+        match (*t_dim).lw as TxfmSize {
             TX_4X4 => MERGE_CTX_TX!(la, a, uint8_t, TX_4X4),
             TX_8X8 => MERGE_CTX_TX!(la, a, uint16_t, TX_8X8),
             TX_16X16 => MERGE_CTX_TX!(la, a, uint32_t, TX_16X16),
@@ -909,7 +911,7 @@ unsafe extern "C" fn get_skip_ctx(
             TX_64X64 => MERGE_CTX_TX!(la, a, uint32_t, TX_64X64),
             _ => unreachable!(),
         }
-        match (*t_dim).lh as libc::c_uint {
+        match (*t_dim).lh as TxfmSize {
             TX_4X4 => MERGE_CTX_TX!(ll, l, uint8_t, TX_4X4),
             TX_8X8 => MERGE_CTX_TX!(ll, l, uint16_t, TX_8X8),
             TX_16X16 => MERGE_CTX_TX!(ll, l, uint32_t, TX_16X16),

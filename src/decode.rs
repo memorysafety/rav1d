@@ -1180,7 +1180,7 @@ unsafe fn read_tx_tree(
                 dir.tx.0.as_mut_ptr() as *mut u8,
                 off,
                 if is_split {
-                    TX_4X4.into()
+                    TX_4X4 as u64
                 } else {
                     mul * txh as u64
                 },
@@ -1198,7 +1198,7 @@ unsafe fn read_tx_tree(
                 dir.tx.0.as_mut_ptr() as *mut u8,
                 off,
                 if is_split {
-                    TX_4X4.into()
+                    TX_4X4 as u64
                 } else {
                     mul * txw as u64
                 },
