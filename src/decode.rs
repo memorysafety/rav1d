@@ -4124,17 +4124,24 @@ unsafe fn decode_b(
         }
     }
     if frame_hdr.segmentation.enabled != 0 && frame_hdr.segmentation.update_map != 0 {
-        let mut seg_ptr = &mut *(f.cur_segmap)
-            .offset((t.by as isize * f.b4_stride + t.bx as isize) as isize)
-            as *mut u8;
+        // Need checked casts here because we're using `from_raw_parts_mut` and an overflow would be UB.
+        let [by, bx, bh4, bw4] = [t.by, t.bx, bh4, bw4].map(|it| usize::try_from(it).unwrap());
+        let b4_stride = usize::try_from(f.b4_stride).unwrap();
+        let cur_segmap_len = (by * b4_stride + bx)
+            + if bh4 == 0 {
+                0
+            } else {
+                (b4_stride * (bh4 - 1)) + bw4
+            };
+        let cur_segmap = std::slice::from_raw_parts_mut(f.cur_segmap, cur_segmap_len);
+        let seg_ptr = &mut cur_segmap[by * b4_stride + bx..];
 
         let mut set_ctx = |_dir: &mut (), _diridx, _off, mul, rep_macro: SetCtxFn| {
-            for _ in 0..bh4 {
-                rep_macro(seg_ptr, 0, mul * b.seg_id as u64);
-                seg_ptr = seg_ptr.offset(f.b4_stride as isize);
+            for seg_ptr in seg_ptr.chunks_mut(b4_stride).take(bh4) {
+                rep_macro(seg_ptr.as_mut_ptr(), 0, mul * b.seg_id as u64);
             }
         };
-        case_set(bw4, &mut (), 0, 0, &mut set_ctx);
+        case_set(bw4 as libc::c_int, &mut (), 0, 0, &mut set_ctx);
     }
     if b.skip == 0 {
         let mask = !0u32 >> 32 - bw4 << (bx4 & 15);
