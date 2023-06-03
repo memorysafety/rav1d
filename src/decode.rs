@@ -2372,10 +2372,11 @@ unsafe fn decode_b(
 
             if is_inter_or_switch(frame_hdr) {
                 let r = t.rt.r[((t.by & 31) + 5 + bh4 - 1) as usize].offset(t.bx as isize);
-                for x in 0..bw4 as isize {
-                    (*r.offset(x)).0.r#ref.r#ref[0] = b.r#ref()[0] + 1;
-                    (*r.offset(x)).0.mv.mv[0] = b.mv()[0];
-                    (*r.offset(x)).0.bs = bs as u8;
+                let r = std::slice::from_raw_parts_mut(r, bw4 as usize);
+                for r in r {
+                    r.0.r#ref.r#ref[0] = b.r#ref()[0] + 1;
+                    r.0.mv.mv[0] = b.mv()[0];
+                    r.0.bs = bs as u8;
                 }
 
                 let mut rr = &t.rt.r[((t.by & 31) + 5) as usize..];
