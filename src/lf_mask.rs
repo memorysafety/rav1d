@@ -66,7 +66,7 @@ pub struct Av1Restoration {
 /// but in Rust, dereferencing such a pointer would be an out-of-bounds access, and thus UB.
 /// Instead of offsetting `txa`, the offsets are calculated from
 /// the existing `y_off` and `x_off` args and applied at each use site of `txa.
-unsafe fn decomp_tx(
+fn decomp_tx(
     txa: &mut [[[[u8; 32]; 32]; 2]; 2],
     from: RectTxfmSize,
     depth: usize,
@@ -116,7 +116,7 @@ unsafe fn decomp_tx(
 }
 
 #[inline]
-unsafe fn mask_edges_inter(
+fn mask_edges_inter(
     masks: &mut [[[[u16; 2]; 3]; 32]; 2],
     by4: usize,
     bx4: usize,
@@ -199,7 +199,7 @@ unsafe fn mask_edges_inter(
 }
 
 #[inline]
-unsafe fn mask_edges_intra(
+fn mask_edges_intra(
     masks: &mut [[[[u16; 2]; 3]; 32]; 2],
     by4: usize,
     bx4: usize,
@@ -271,7 +271,7 @@ unsafe fn mask_edges_intra(
     );
 }
 
-unsafe fn mask_edges_chroma(
+fn mask_edges_chroma(
     masks: &mut [[[[u16; 2]; 2]; 32]; 2],
     cby4: usize,
     cbx4: usize,
