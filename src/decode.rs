@@ -3123,12 +3123,12 @@ unsafe fn decode_b(
                 &t.scratch.c2rust_unnamed_0.pal[0]
             };
 
-            for x in 0..bw4 {
-                t.al_pal[0][(bx4 + x) as usize][0] = *pal;
+            for al_pal in &mut t.al_pal[0][bx4 as usize..][..bw4 as usize] {
+                al_pal[0] = *pal;
             }
 
-            for y in 0..bh4 {
-                t.al_pal[1][(by4 + y) as usize][0] = *pal;
+            for al_pal in &mut t.al_pal[1][by4 as usize..][..bh4 as usize] {
+                al_pal[0] = *pal;
             }
         }
 
