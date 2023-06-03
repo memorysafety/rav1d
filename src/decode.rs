@@ -1974,8 +1974,8 @@ unsafe fn splat_oneref_mv(
     t: &mut Dav1dTaskContext,
     bs: BlockSize,
     b: &Av1Block,
-    bw4: libc::c_int,
-    bh4: libc::c_int,
+    bw4: usize,
+    bh4: usize,
 ) {
     let mode = b.inter_mode() as InterPredMode;
     let tmpl = Align16(refmvs_block(refmvs_block_unaligned {
@@ -1994,7 +1994,7 @@ unsafe fn splat_oneref_mv(
     c.refmvs_dsp.splat_mv(
         &mut t.rt.r[((t.by & 31) + 5) as usize..],
         &tmpl.0,
-        t.bx,
+        t.bx as usize,
         bw4,
         bh4,
     );
@@ -2006,8 +2006,8 @@ unsafe fn splat_intrabc_mv(
     t: &mut Dav1dTaskContext,
     bs: BlockSize,
     b: &Av1Block,
-    bw4: libc::c_int,
-    bh4: libc::c_int,
+    bw4: usize,
+    bh4: usize,
 ) {
     let tmpl = Align16(refmvs_block(refmvs_block_unaligned {
         mv: refmvs_mvpair {
@@ -2020,7 +2020,7 @@ unsafe fn splat_intrabc_mv(
     c.refmvs_dsp.splat_mv(
         &mut t.rt.r[((t.by & 31) + 5) as usize..],
         &tmpl.0,
-        t.bx,
+        t.bx as usize,
         bw4,
         bh4,
     );
@@ -2032,8 +2032,8 @@ unsafe fn splat_tworef_mv(
     t: &mut Dav1dTaskContext,
     bs: BlockSize,
     b: &Av1Block,
-    bw4: libc::c_int,
-    bh4: libc::c_int,
+    bw4: usize,
+    bh4: usize,
 ) {
     assert!(bw4 >= 2 && bh4 >= 2);
     let mode = b.inter_mode() as CompInterPredMode;
@@ -2048,7 +2048,7 @@ unsafe fn splat_tworef_mv(
     c.refmvs_dsp.splat_mv(
         &mut t.rt.r[((t.by & 31) + 5) as usize..],
         &tmpl.0,
-        t.bx,
+        t.bx as usize,
         bw4,
         bh4,
     );
@@ -2059,8 +2059,8 @@ unsafe fn splat_intraref(
     c: &Dav1dContext,
     t: &mut Dav1dTaskContext,
     bs: BlockSize,
-    bw4: libc::c_int,
-    bh4: libc::c_int,
+    bw4: usize,
+    bh4: usize,
 ) {
     let tmpl = Align16(refmvs_block(refmvs_block_unaligned {
         mv: refmvs_mvpair {
@@ -2073,7 +2073,7 @@ unsafe fn splat_intraref(
     c.refmvs_dsp.splat_mv(
         &mut t.rt.r[((t.by & 31) + 5) as usize..],
         &tmpl.0,
-        t.bx,
+        t.bx as usize,
         bw4,
         bh4,
     );
@@ -3160,7 +3160,7 @@ unsafe fn decode_b(
         }
 
         if is_inter_or_switch(frame_hdr) || frame_hdr.allow_intrabc != 0 {
-            splat_intraref(&*f.c, t, bs, bw4, bh4);
+            splat_intraref(&*f.c, t, bs, bw4 as usize, bh4 as usize);
         }
     } else if is_key_or_intra(frame_hdr) {
         // intra block copy
@@ -3282,7 +3282,7 @@ unsafe fn decode_b(
             return -1;
         }
 
-        splat_intrabc_mv(&*f.c, t, bs, b, bw4, bh4);
+        splat_intrabc_mv(&*f.c, t, bs, b, bw4 as usize, bh4 as usize);
 
         let mut set_ctx = |dir: &mut BlockContext, diridx: usize, off, mul, rep_macro: SetCtxFn| {
             rep_macro(
@@ -4079,9 +4079,9 @@ unsafe fn decode_b(
             );
         }
         if is_comp {
-            splat_tworef_mv(&*f.c, t, bs, b, bw4, bh4);
+            splat_tworef_mv(&*f.c, t, bs, b, bw4 as usize, bh4 as usize);
         } else {
-            splat_oneref_mv(&*f.c, t, bs, b, bw4, bh4);
+            splat_oneref_mv(&*f.c, t, bs, b, bw4 as usize, bh4 as usize);
         }
 
         let mut set_ctx = |dir: &mut BlockContext, diridx: usize, off, mul, rep_macro: SetCtxFn| {
