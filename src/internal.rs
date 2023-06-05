@@ -9,6 +9,7 @@ use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dMasteringDisplay;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
+use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 use crate::include::dav1d::picture::Dav1dPicAllocator;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::pthread::pthread_cond_t;
@@ -29,9 +30,13 @@ use crate::src::r#ref::Dav1dRef;
 use crate::src::thread_data::thread_data;
 
 use super::cdf::CdfThreadContext;
+use super::env::BlockContext;
+use super::levels::Filter2d;
+use super::lf_mask::Av1Filter;
 use super::mem::Dav1dMemPool;
 use super::picture::PictureFlags;
 use super::refmvs::Dav1dRefmvsDSPContext;
+use super::refmvs::refmvs_tile;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -202,6 +207,31 @@ pub struct Dav1dTileState_tiling {
     pub row_end: libc::c_int,
     pub col: libc::c_int,
     pub row: libc::c_int,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dTaskContext {
+    pub c: *const Dav1dContext,
+    pub f: *const Dav1dFrameContext,
+    pub ts: *mut Dav1dTileState,
+    pub bx: libc::c_int,
+    pub by: libc::c_int,
+    pub l: BlockContext,
+    pub a: *mut BlockContext,
+    pub rt: refmvs_tile,
+    pub c2rust_unnamed: Dav1dTaskContext_cf,
+    pub al_pal: [[[[uint16_t; 8]; 3]; 32]; 2],
+    pub pal_sz_uv: [[uint8_t; 32]; 2],
+    pub txtp_map: [uint8_t; 1024],
+    pub scratch: Dav1dTaskContext_scratch,
+    pub warpmv: Dav1dWarpedMotionParams,
+    pub lf_mask: *mut Av1Filter,
+    pub top_pre_cdef_toggle: libc::c_int,
+    pub cur_sb_cdef_idx_ptr: *mut int8_t,
+    pub tl_4x4_filter: Filter2d,
+    pub frame_thread: Dav1dTaskContext_frame_thread,
+    pub task_thread: Dav1dTaskContext_task_thread,
 }
 
 #[derive(Copy, Clone)]

@@ -234,39 +234,9 @@ pub type read_coef_blocks_fn =
     Option<unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> ()>;
 use crate::src::levels::BlockSize;
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dTaskContext {
-    pub c: *const Dav1dContext,
-    pub f: *const Dav1dFrameContext,
-    pub ts: *mut Dav1dTileState,
-    pub bx: libc::c_int,
-    pub by: libc::c_int,
-    pub l: BlockContext,
-    pub a: *mut BlockContext,
-    pub rt: refmvs_tile,
-    pub c2rust_unnamed: Dav1dTaskContext_cf,
-    pub al_pal: [[[[uint16_t; 8]; 3]; 32]; 2],
-    pub pal_sz_uv: [[uint8_t; 32]; 2],
-    pub txtp_map: [uint8_t; 1024],
-    pub scratch: Dav1dTaskContext_scratch,
-    pub warpmv: Dav1dWarpedMotionParams,
-    pub lf_mask: *mut Av1Filter,
-    pub top_pre_cdef_toggle: libc::c_int,
-    pub cur_sb_cdef_idx_ptr: *mut int8_t,
-    pub tl_4x4_filter: Filter2d,
-    pub frame_thread: Dav1dTaskContext_frame_thread,
-    pub task_thread: Dav1dTaskContext_task_thread,
-}
-use crate::src::internal::Dav1dTaskContext_frame_thread;
-use crate::src::internal::Dav1dTaskContext_task_thread;
+use crate::src::internal::Dav1dTaskContext;
 use crate::src::levels::Filter2d;
-
 use crate::src::levels::FILTER_2D_BILINEAR;
-
-use crate::src::internal::Dav1dTaskContext_cf;
-use crate::src::internal::Dav1dTaskContext_scratch;
-use crate::src::refmvs::refmvs_tile;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
