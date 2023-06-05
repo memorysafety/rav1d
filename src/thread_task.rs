@@ -59,9 +59,6 @@ extern "C" {
 }
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
-
-use crate::include::dav1d::common::Dav1dDataProps;
-use crate::include::dav1d::data::Dav1dData;
 use crate::src::r#ref::Dav1dRef;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -141,10 +138,6 @@ use crate::src::internal::DAV1D_TASK_TYPE_INIT_CDF;
 use crate::src::internal::DAV1D_TASK_TYPE_SUPER_RESOLUTION;
 use crate::src::internal::DAV1D_TASK_TYPE_TILE_ENTROPY;
 use crate::src::internal::DAV1D_TASK_TYPE_TILE_RECONSTRUCTION;
-
-use crate::include::dav1d::headers::Dav1dContentLightLevel;
-use crate::include::dav1d::headers::Dav1dITUTT35;
-use crate::include::dav1d::headers::Dav1dMasteringDisplay;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::src::internal::TaskThreadData;
@@ -294,78 +287,8 @@ pub struct Dav1dTileState_frame_thread {
     pub cf: *mut libc::c_void,
 }
 use crate::src::internal::Dav1dTileState_tiling;
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dContext {
-    pub fc: *mut Dav1dFrameContext,
-    pub n_fc: libc::c_uint,
-    pub tc: *mut Dav1dTaskContext,
-    pub n_tc: libc::c_uint,
-    pub tile: *mut Dav1dTileGroup,
-    pub n_tile_data_alloc: libc::c_int,
-    pub n_tile_data: libc::c_int,
-    pub n_tiles: libc::c_int,
-    pub seq_hdr_pool: *mut Dav1dMemPool,
-    pub seq_hdr_ref: *mut Dav1dRef,
-    pub seq_hdr: *mut Dav1dSequenceHeader,
-    pub frame_hdr_pool: *mut Dav1dMemPool,
-    pub frame_hdr_ref: *mut Dav1dRef,
-    pub frame_hdr: *mut Dav1dFrameHeader,
-    pub content_light_ref: *mut Dav1dRef,
-    pub content_light: *mut Dav1dContentLightLevel,
-    pub mastering_display_ref: *mut Dav1dRef,
-    pub mastering_display: *mut Dav1dMasteringDisplay,
-    pub itut_t35_ref: *mut Dav1dRef,
-    pub itut_t35: *mut Dav1dITUTT35,
-    pub in_0: Dav1dData,
-    pub out: Dav1dThreadPicture,
-    pub cache: Dav1dThreadPicture,
-    pub flush_mem: atomic_int,
-    pub flush: *mut atomic_int,
-    pub frame_thread: Dav1dContext_frame_thread,
-    pub task_thread: TaskThreadData,
-    pub segmap_pool: *mut Dav1dMemPool,
-    pub refmvs_pool: *mut Dav1dMemPool,
-    pub refs: [Dav1dContext_refs; 8],
-    pub cdf_pool: *mut Dav1dMemPool,
-    pub cdf: [CdfThreadContext; 8],
-    pub dsp: [Dav1dDSPContext; 3],
-    pub refmvs_dsp: Dav1dRefmvsDSPContext,
-    pub intra_edge: Dav1dContext_intra_edge,
-    pub allocator: Dav1dPicAllocator,
-    pub apply_grain: libc::c_int,
-    pub operating_point: libc::c_int,
-    pub operating_point_idc: libc::c_uint,
-    pub all_layers: libc::c_int,
-    pub max_spatial_id: libc::c_int,
-    pub frame_size_limit: libc::c_uint,
-    pub strict_std_compliance: libc::c_int,
-    pub output_invisible_frames: libc::c_int,
-    pub inloop_filters: Dav1dInloopFilterType,
-    pub decode_frame_type: Dav1dDecodeFrameType,
-    pub drain: libc::c_int,
-    pub frame_flags: PictureFlags,
-    pub event_flags: Dav1dEventFlags,
-    pub cached_error_props: Dav1dDataProps,
-    pub cached_error: libc::c_int,
-    pub logger: Dav1dLogger,
-    pub picture_pool: *mut Dav1dMemPool,
-}
-use crate::src::mem::Dav1dMemPool;
-
-use crate::include::dav1d::dav1d::Dav1dEventFlags;
-use crate::include::dav1d::dav1d::Dav1dLogger;
-use crate::src::picture::PictureFlags;
-
-use crate::include::dav1d::dav1d::Dav1dDecodeFrameType;
-use crate::include::dav1d::dav1d::Dav1dInloopFilterType;
-
-use crate::include::dav1d::picture::Dav1dPicAllocator;
-use crate::src::internal::Dav1dContext_intra_edge;
-
+use crate::src::internal::Dav1dContext;
 use crate::src::intra_edge::EdgeFlags;
-use crate::src::refmvs::Dav1dRefmvsDSPContext;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -731,9 +654,6 @@ pub type generate_grain_uv_fn = Option<
 pub type generate_grain_y_fn =
     Option<unsafe extern "C" fn(*mut [entry; 82], *const Dav1dFilmGrainData) -> ()>;
 use crate::src::cdf::CdfThreadContext;
-
-use crate::src::internal::Dav1dContext_frame_thread;
-use crate::src::internal::Dav1dContext_refs;
 use crate::src::internal::Dav1dTileGroup;
 use crate::src::picture::Dav1dThreadPicture;
 pub type backup_ipred_edge_fn = Option<unsafe extern "C" fn(*mut Dav1dTaskContext) -> ()>;
