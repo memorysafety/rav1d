@@ -31,3 +31,13 @@ default = ["asm", "bitdepth_8", "bitdepth_16"]
 asm = []
 bitdepth_8 = []
 bitdepth_16 = []
+
+# `release` takes ~2min to build.
+# For many use cases during iterative development,
+# such as running the argon tests,
+# way faster compile times is worth it for a small perf hit,
+# which can be achieved with incremental compilation,
+# which will bring incremental compile times down to seconds.
+[profile.incr-release]
+inherits = "release"
+incremental = true
