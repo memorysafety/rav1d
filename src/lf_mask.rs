@@ -285,7 +285,7 @@ unsafe fn mask_edges_intra(
     };
     case_set_upto32_with_default(
         w4 as libc::c_int,
-        a,                  // Was nothing in C; changed to `l` for borrowck.
+        a,                  // Was nothing in C; changed to `a` for borrowck.
         Default::default(), // Was nothing in C.
         0,
         &mut set_ctx,

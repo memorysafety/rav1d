@@ -889,7 +889,6 @@ use crate::src::levels::TX_4X4;
 use crate::src::levels::TX_64X64;
 use crate::src::levels::TX_8X8;
 
-use crate::src::levels::IntraPredMode;
 use crate::src::levels::RectTxfmSize;
 use crate::src::levels::TxfmSize;
 use crate::src::levels::BL_128X128;
@@ -1134,14 +1133,14 @@ unsafe fn read_tx_tree(
     let bx4 = t.bx & 31;
     let by4 = t.by & 31;
     let t_dim = &dav1d_txfm_dimensions[from as usize];
-    let txw = t_dim.lw as libc::c_int;
-    let txh = t_dim.lh as libc::c_int;
+    let txw = t_dim.lw as i8;
+    let txh = t_dim.lh as i8;
     let mut is_split;
 
     if depth < 2 && from > TX_4X4 {
         let cat = 2 * (TX_64X64 as libc::c_int - t_dim.max as libc::c_int) - depth;
-        let a = (((*t.a).tx.0[bx4 as usize] as libc::c_int) < txw) as libc::c_int;
-        let l = ((t.l.tx.0[by4 as usize] as libc::c_int) < txh) as libc::c_int;
+        let a = ((*t.a).tx.0[bx4 as usize] < txw) as libc::c_int;
+        let l = (t.l.tx.0[by4 as usize] < txh) as libc::c_int;
 
         is_split = dav1d_msac_decode_bool_adapt(
             &mut (*t.ts).msac,
@@ -1181,7 +1180,7 @@ unsafe fn read_tx_tree(
                 dir.tx.0.as_mut_ptr() as *mut u8,
                 off,
                 if is_split {
-                    TX_4X4.into()
+                    TX_4X4 as u64
                 } else {
                     mul * txh as u64
                 },
@@ -1199,7 +1198,7 @@ unsafe fn read_tx_tree(
                 dir.tx.0.as_mut_ptr() as *mut u8,
                 off,
                 if is_split {
-                    TX_4X4.into()
+                    TX_4X4 as u64
                 } else {
                     mul * txw as u64
                 },
@@ -2284,7 +2283,7 @@ unsafe fn decode_b(
         if b.intra != 0 {
             f.bd_fn.recon_b_intra(t, bs, intra_edge_flags, b);
 
-            let y_mode = b.y_mode() as IntraPredMode;
+            let y_mode = b.y_mode();
             let y_mode_nofilt = if y_mode == FILTER_PRED {
                 DC_PRED
             } else {
@@ -2410,7 +2409,7 @@ unsafe fn decode_b(
     let mut seg = None;
 
     // segment_id (if seg_feature for skip/ref/gmv is enabled)
-    let mut seg_pred = 0;
+    let mut seg_pred = false;
     if frame_hdr.segmentation.enabled != 0 {
         if frame_hdr.segmentation.update_map == 0 {
             if !(f.prev_segmap).is_null() {
@@ -2433,8 +2432,8 @@ unsafe fn decode_b(
                 seg_pred = dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     &mut ts.cdf.m.seg_pred.0[index as usize],
-                ) as libc::c_int;
-                seg_pred != 0
+                );
+                seg_pred
             } {
                 if !(f.prev_segmap).is_null() {
                     let mut seg_id =
@@ -2525,8 +2524,8 @@ unsafe fn decode_b(
             seg_pred = dav1d_msac_decode_bool_adapt(
                 &mut ts.msac,
                 &mut ts.cdf.m.seg_pred.0[index as usize],
-            ) as libc::c_int;
-            seg_pred != 0
+            );
+            seg_pred
         } {
             // temporal predicted seg_id
             if !(f.prev_segmap).is_null() {
@@ -2762,10 +2761,7 @@ unsafe fn decode_b(
         }
 
         // angle delta
-        if b_dim[2] + b_dim[3] >= 2
-            && b.y_mode() as IntraPredMode >= VERT_PRED
-            && b.y_mode() as IntraPredMode <= VERT_LEFT_PRED
-        {
+        if b_dim[2] + b_dim[3] >= 2 && b.y_mode() >= VERT_PRED && b.y_mode() <= VERT_LEFT_PRED {
             let acdf = &mut ts.cdf.m.angle_delta[b.y_mode() as usize - VERT_PRED as usize];
             let angle = dav1d_msac_decode_symbol_adapt8(&mut ts.msac, acdf, 6);
             *b.y_angle_mut() = angle as i8 - 3;
@@ -2792,7 +2788,7 @@ unsafe fn decode_b(
             }
 
             *b.uv_angle_mut() = 0;
-            if b.uv_mode() == CFL_PRED as u8 {
+            if b.uv_mode() == CFL_PRED {
                 let sign =
                     dav1d_msac_decode_symbol_adapt8(&mut ts.msac, &mut ts.cdf.m.cfl_sign.0, 7) + 1;
                 let sign_u = sign * 0x56 >> 8;
@@ -2856,7 +2852,7 @@ unsafe fn decode_b(
             && bw4 + bh4 >= 4
         {
             let sz_ctx = b_dim[2] + b_dim[3] - 2;
-            if b.y_mode() == DC_PRED as u8 {
+            if b.y_mode() == DC_PRED {
                 let pal_ctx = ((*t.a).pal_sz.0[bx4 as usize] > 0) as usize
                     + (t.l.pal_sz.0[by4 as usize] > 0) as usize;
                 let use_y_pal = dav1d_msac_decode_bool_adapt(
@@ -3042,10 +3038,10 @@ unsafe fn decode_b(
         }
 
         // update contexts
-        let y_mode_nofilt = if b.y_mode() == FILTER_PRED as u8 {
-            DC_PRED as IntraPredMode
+        let y_mode_nofilt = if b.y_mode() == FILTER_PRED {
+            DC_PRED
         } else {
-            b.y_mode() as IntraPredMode
+            b.y_mode()
         };
         let mut set_ctx = |dir: &mut BlockContext, diridx, off, mul, rep_macro: SetCtxFn| {
             // NOTE: This corresponds to the following logic in the original C:
@@ -3338,7 +3334,7 @@ unsafe fn decode_b(
                 frame_hdr.skip_mode_refs[0] as i8,
                 frame_hdr.skip_mode_refs[1] as i8,
             ];
-            *b.comp_type_mut() = COMP_INTER_AVG as u8;
+            *b.comp_type_mut() = COMP_INTER_AVG;
             *b.inter_mode_mut() = NEARESTMV_NEARESTMV as u8;
             *b.drl_idx_mut() = NEAREST_DRL as u8;
             has_subpel_filter = false;
@@ -4128,17 +4124,24 @@ unsafe fn decode_b(
         }
     }
     if frame_hdr.segmentation.enabled != 0 && frame_hdr.segmentation.update_map != 0 {
-        let mut seg_ptr = &mut *(f.cur_segmap)
-            .offset((t.by as isize * f.b4_stride + t.bx as isize) as isize)
-            as *mut u8;
+        // Need checked casts here because we're using `from_raw_parts_mut` and an overflow would be UB.
+        let [by, bx, bh4, bw4] = [t.by, t.bx, bh4, bw4].map(|it| usize::try_from(it).unwrap());
+        let b4_stride = usize::try_from(f.b4_stride).unwrap();
+        let cur_segmap_len = (by * b4_stride + bx)
+            + if bh4 == 0 {
+                0
+            } else {
+                (b4_stride * (bh4 - 1)) + bw4
+            };
+        let cur_segmap = std::slice::from_raw_parts_mut(f.cur_segmap, cur_segmap_len);
+        let seg_ptr = &mut cur_segmap[by * b4_stride + bx..];
 
         let mut set_ctx = |_dir: &mut (), _diridx, _off, mul, rep_macro: SetCtxFn| {
-            for _ in 0..bh4 {
-                rep_macro(seg_ptr, 0, mul * b.seg_id as u64);
-                seg_ptr = seg_ptr.offset(f.b4_stride as isize);
+            for seg_ptr in seg_ptr.chunks_mut(b4_stride).take(bh4) {
+                rep_macro(seg_ptr.as_mut_ptr(), 0, mul * b.seg_id as u64);
             }
         };
-        case_set(bw4, &mut (), 0, 0, &mut set_ctx);
+        case_set(bw4 as libc::c_int, &mut (), 0, 0, &mut set_ctx);
     }
     if b.skip == 0 {
         let mask = !0u32 >> 32 - bw4 << (bx4 & 15);
