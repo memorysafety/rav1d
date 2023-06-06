@@ -16,6 +16,7 @@ use crate::include::pthread::pthread_cond_t;
 use crate::include::pthread::pthread_mutex_t;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
+use crate::include::stddef::ptrdiff_t;
 use crate::include::stdint::int16_t;
 use crate::include::stdint::int32_t;
 use crate::include::stdint::int8_t;
@@ -31,14 +32,21 @@ use crate::src::thread_data::thread_data;
 
 use super::cdf::CdfThreadContext;
 use super::env::BlockContext;
+use super::intra_edge::EdgeFlags;
+use super::levels::Av1Block;
+use super::levels::BlockSize;
 use super::levels::Filter2d;
 use super::lf_mask::Av1Filter;
+use super::lf_mask::Av1FilterLUT;
+use super::lf_mask::Av1Restoration;
 use super::mem::Dav1dMemPool;
 use super::picture::PictureFlags;
 use super::recon::recon_b_inter_fn;
 use super::recon::recon_b_intra_fn;
-use super::refmvs::Dav1dRefmvsDSPContext;
+use super::refmvs::refmvs_frame;
+use super::refmvs::refmvs_temporal_block;
 use super::refmvs::refmvs_tile;
+use super::refmvs::Dav1dRefmvsDSPContext;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -457,6 +465,9 @@ pub struct Dav1dFrameContext {
     pub task_thread: Dav1dFrameContext_task_thread,
     pub tile_thread: FrameTileThreadData,
 }
+
+type pixel = libc::c_void;
+type coef = libc::c_void;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
