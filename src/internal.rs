@@ -35,6 +35,8 @@ use super::levels::Filter2d;
 use super::lf_mask::Av1Filter;
 use super::mem::Dav1dMemPool;
 use super::picture::PictureFlags;
+use super::recon::recon_b_inter_fn;
+use super::recon::recon_b_intra_fn;
 use super::refmvs::Dav1dRefmvsDSPContext;
 use super::refmvs::refmvs_tile;
 
@@ -394,4 +396,160 @@ pub struct Dav1dContext {
     pub cached_error: libc::c_int,
     pub logger: Dav1dLogger,
     pub picture_pool: *mut Dav1dMemPool,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dFrameContext {
+    pub seq_hdr_ref: *mut Dav1dRef,
+    pub seq_hdr: *mut Dav1dSequenceHeader,
+    pub frame_hdr_ref: *mut Dav1dRef,
+    pub frame_hdr: *mut Dav1dFrameHeader,
+    pub refp: [Dav1dThreadPicture; 7],
+    pub cur: Dav1dPicture,
+    pub sr_cur: Dav1dThreadPicture,
+    pub mvs_ref: *mut Dav1dRef,
+    pub mvs: *mut refmvs_temporal_block,
+    pub ref_mvs: [*mut refmvs_temporal_block; 7],
+    pub ref_mvs_ref: [*mut Dav1dRef; 7],
+    pub cur_segmap_ref: *mut Dav1dRef,
+    pub prev_segmap_ref: *mut Dav1dRef,
+    pub cur_segmap: *mut uint8_t,
+    pub prev_segmap: *const uint8_t,
+    pub refpoc: [libc::c_uint; 7],
+    pub refrefpoc: [[libc::c_uint; 7]; 7],
+    pub gmv_warp_allowed: [uint8_t; 7],
+    pub in_cdf: CdfThreadContext,
+    pub out_cdf: CdfThreadContext,
+    pub tile: *mut Dav1dTileGroup,
+    pub n_tile_data_alloc: libc::c_int,
+    pub n_tile_data: libc::c_int,
+    pub svc: [[ScalableMotionParams; 2]; 7],
+    pub resize_step: [libc::c_int; 2],
+    pub resize_start: [libc::c_int; 2],
+    pub c: *const Dav1dContext,
+    pub ts: *mut Dav1dTileState,
+    pub n_ts: libc::c_int,
+    pub dsp: *const Dav1dDSPContext,
+    pub bd_fn: Dav1dFrameContext_bd_fn,
+    pub ipred_edge_sz: libc::c_int,
+    pub ipred_edge: [*mut pixel; 3],
+    pub b4_stride: ptrdiff_t,
+    pub w4: libc::c_int,
+    pub h4: libc::c_int,
+    pub bw: libc::c_int,
+    pub bh: libc::c_int,
+    pub sb128w: libc::c_int,
+    pub sb128h: libc::c_int,
+    pub sbh: libc::c_int,
+    pub sb_shift: libc::c_int,
+    pub sb_step: libc::c_int,
+    pub sr_sb128w: libc::c_int,
+    pub dq: [[[uint16_t; 2]; 3]; 8],
+    pub qm: [[*const uint8_t; 3]; 19],
+    pub a: *mut BlockContext,
+    pub a_sz: libc::c_int,
+    pub rf: refmvs_frame,
+    pub jnt_weights: [[uint8_t; 7]; 7],
+    pub bitdepth_max: libc::c_int,
+    pub frame_thread: Dav1dFrameContext_frame_thread,
+    pub lf: Dav1dFrameContext_lf,
+    pub task_thread: Dav1dFrameContext_task_thread,
+    pub tile_thread: FrameTileThreadData,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dFrameContext_lf {
+    pub level: *mut [uint8_t; 4],
+    pub mask: *mut Av1Filter,
+    pub lr_mask: *mut Av1Restoration,
+    pub mask_sz: libc::c_int,
+    pub lr_mask_sz: libc::c_int,
+    pub cdef_buf_plane_sz: [libc::c_int; 2],
+    pub cdef_buf_sbh: libc::c_int,
+    pub lr_buf_plane_sz: [libc::c_int; 2],
+    pub re_sz: libc::c_int,
+    pub lim_lut: Align16<Av1FilterLUT>,
+    pub last_sharpness: libc::c_int,
+    pub lvl: [[[[uint8_t; 2]; 8]; 4]; 8],
+    pub tx_lpf_right_edge: [*mut uint8_t; 2],
+    pub cdef_line_buf: *mut uint8_t,
+    pub lr_line_buf: *mut uint8_t,
+    pub cdef_line: [[*mut pixel; 3]; 2],
+    pub cdef_lpf_line: [*mut pixel; 3],
+    pub lr_lpf_line: [*mut pixel; 3],
+    pub start_of_tile_row: *mut uint8_t,
+    pub start_of_tile_row_sz: libc::c_int,
+    pub need_cdef_lpf_copy: libc::c_int,
+    pub p: [*mut pixel; 3],
+    pub sr_p: [*mut pixel; 3],
+    pub mask_ptr: *mut Av1Filter,
+    pub prev_mask_ptr: *mut Av1Filter,
+    pub restore_planes: libc::c_int,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dFrameContext_frame_thread {
+    pub next_tile_row: [libc::c_int; 2],
+    pub entropy_progress: atomic_int,
+    pub deblock_progress: atomic_int,
+    pub frame_progress: *mut atomic_uint,
+    pub copy_lpf_progress: *mut atomic_uint,
+    pub b: *mut Av1Block,
+    pub cbi: *mut CodedBlockInfo,
+    pub pal: *mut [[uint16_t; 8]; 3],
+    pub pal_idx: *mut uint8_t,
+    pub cf: *mut coef,
+    pub prog_sz: libc::c_int,
+    pub pal_sz: libc::c_int,
+    pub pal_idx_sz: libc::c_int,
+    pub cf_sz: libc::c_int,
+    pub tile_start_off: *mut libc::c_int,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dFrameContext_bd_fn {
+    pub recon_b_intra: recon_b_intra_fn,
+    pub recon_b_inter: recon_b_inter_fn,
+    pub filter_sbrow: filter_sbrow_fn,
+    pub filter_sbrow_deblock_cols: filter_sbrow_fn,
+    pub filter_sbrow_deblock_rows: filter_sbrow_fn,
+    pub filter_sbrow_cdef: Option<unsafe extern "C" fn(*mut Dav1dTaskContext, libc::c_int) -> ()>,
+    pub filter_sbrow_resize: filter_sbrow_fn,
+    pub filter_sbrow_lr: filter_sbrow_fn,
+    pub backup_ipred_edge: backup_ipred_edge_fn,
+    pub read_coef_blocks: read_coef_blocks_fn,
+}
+
+impl Dav1dFrameContext_bd_fn {
+    pub unsafe fn recon_b_intra(
+        &self,
+        context: *mut Dav1dTaskContext,
+        block_size: BlockSize,
+        flags: EdgeFlags,
+        block: *const Av1Block,
+    ) {
+        self.recon_b_intra.expect("non-null function pointer")(context, block_size, flags, block);
+    }
+
+    pub unsafe fn recon_b_inter(
+        &self,
+        context: *mut Dav1dTaskContext,
+        block_size: BlockSize,
+        block: *const Av1Block,
+    ) -> libc::c_int {
+        self.recon_b_inter.expect("non-null function pointer")(context, block_size, block)
+    }
+
+    pub unsafe fn read_coef_blocks(
+        &self,
+        context: *mut Dav1dTaskContext,
+        block_size: BlockSize,
+        block: *const Av1Block,
+    ) {
+        self.read_coef_blocks.expect("non-null function pointer")(context, block_size, block);
+    }
 }

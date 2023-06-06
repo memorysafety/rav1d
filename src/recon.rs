@@ -1,5 +1,19 @@
+use super::internal::Dav1dTaskContext;
+use super::intra_edge::EdgeFlags;
+use super::levels::Av1Block;
+use super::levels::BlockSize;
+use crate::src::internal::Dav1dFrameContext;
 use crate::src::msac::dav1d_msac_decode_bool_equi;
 use crate::src::msac::MsacContext;
+
+pub type recon_b_intra_fn = Option<
+    unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, EdgeFlags, *const Av1Block) -> (),
+>;
+
+pub type recon_b_inter_fn =
+    Option<unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> libc::c_int>;
+
+pub type filter_sbrow_fn = Option<unsafe extern "C" fn(*mut Dav1dFrameContext, libc::c_int) -> ()>;
 
 /// This is a macro that defines a function
 /// because it takes `Dav1dFrameContext` and `Dav1dTaskContext` as arguments,
