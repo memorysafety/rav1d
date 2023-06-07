@@ -619,7 +619,8 @@ pub unsafe fn get_lo_ctx(
         mag += levels[1 * stride + 1] as libc::c_uint;
         *hi_mag = mag;
         mag += levels[0 * stride + 2] as libc::c_uint + levels[2 * stride + 0] as libc::c_uint;
-        ctx_offsets.unwrap()[umin(y, 4) as usize][umin(x, 4) as usize] as libc::c_uint
+        ctx_offsets.unwrap()[std::cmp::min(y, 4) as usize][std::cmp::min(x, 4) as usize]
+            as libc::c_uint
     } else {
         mag += levels[0 * stride + 2] as libc::c_uint;
         *hi_mag = mag;
