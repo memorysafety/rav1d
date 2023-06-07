@@ -7,7 +7,22 @@ use crate::include::stdint::uint32_t;
 use crate::include::stdint::uint64_t;
 use crate::include::stdint::uint8_t;
 use crate::src::levels::BlockSize;
+use crate::src::levels::RectTxfmSize;
 use crate::src::levels::TxClass;
+use crate::src::levels::RTX_16X32;
+use crate::src::levels::RTX_16X4;
+use crate::src::levels::RTX_16X64;
+use crate::src::levels::RTX_16X8;
+use crate::src::levels::RTX_32X16;
+use crate::src::levels::RTX_32X64;
+use crate::src::levels::RTX_32X8;
+use crate::src::levels::RTX_4X16;
+use crate::src::levels::RTX_4X8;
+use crate::src::levels::RTX_64X16;
+use crate::src::levels::RTX_64X32;
+use crate::src::levels::RTX_8X16;
+use crate::src::levels::RTX_8X32;
+use crate::src::levels::RTX_8X4;
 use crate::src::levels::TX_16X16;
 use crate::src::levels::TX_32X32;
 use crate::src::levels::TX_4X4;
@@ -403,8 +418,10 @@ pub unsafe fn get_skip_ctx(
     };
 }
 
+// `tx: RectTxfmSize` arg is also `TxfmSize`.
+// `TxfmSize` and `RectTxfmSize` should be part of the same `enum`.
 #[inline]
-pub unsafe fn get_dc_sign_ctx(tx: libc::c_int, a: &[u8], l: &[u8]) -> libc::c_uint {
+pub unsafe fn get_dc_sign_ctx(tx: RectTxfmSize, a: &[u8], l: &[u8]) -> libc::c_uint {
     let a = a.as_ptr();
     let l = l.as_ptr();
 
@@ -412,30 +429,30 @@ pub unsafe fn get_dc_sign_ctx(tx: libc::c_int, a: &[u8], l: &[u8]) -> libc::c_ui
     let mut mul = 0x101010101010101 as uint64_t;
     let mut s = 0;
     match tx {
-        0 => {
+        TX_4X4 => {
             let mut t = *a as libc::c_int >> 6;
             t += *l as libc::c_int >> 6;
             s = t - 1 - 1;
         }
-        1 => {
+        TX_8X8 => {
             let mut t = *(a as *const uint16_t) as uint32_t & mask as uint32_t;
             t = t.wrapping_add(*(l as *const uint16_t) as uint32_t & mask as uint32_t);
             t = t.wrapping_mul(0x4040404);
             s = (t >> 24) as libc::c_int - 2 - 2;
         }
-        2 => {
+        TX_16X16 => {
             let mut t = (*(a as *const uint32_t) & mask as uint32_t) >> 6;
             t = t.wrapping_add((*(l as *const uint32_t) & mask as uint32_t) >> 6);
             t = t.wrapping_mul(mul as uint32_t);
             s = (t >> 24) as libc::c_int - 4 - 4;
         }
-        3 => {
+        TX_32X32 => {
             let mut t = (*(a as *const uint64_t) & mask) >> 6;
             t = t.wrapping_add((*(l as *const uint64_t) & mask) >> 6);
             t = t.wrapping_mul(mul);
             s = (t >> 56) as libc::c_int - 8 - 8;
         }
-        4 => {
+        TX_64X64 => {
             let mut t = (*(&*a.offset(0) as *const uint8_t as *const uint64_t) & mask) >> 6;
             t = t.wrapping_add((*(&*a.offset(8) as *const uint8_t as *const uint64_t) & mask) >> 6);
             t = t.wrapping_add((*(&*l.offset(0) as *const uint8_t as *const uint64_t) & mask) >> 6);
@@ -443,82 +460,82 @@ pub unsafe fn get_dc_sign_ctx(tx: libc::c_int, a: &[u8], l: &[u8]) -> libc::c_ui
             t = t.wrapping_mul(mul);
             s = (t >> 56) as libc::c_int - 16 - 16;
         }
-        5 => {
+        RTX_4X8 => {
             let mut t = *a as uint32_t & mask as uint32_t;
             t = t.wrapping_add(*(l as *const uint16_t) as uint32_t & mask as uint32_t);
             t = t.wrapping_mul(0x4040404);
             s = (t >> 24) as libc::c_int - 1 - 2;
         }
-        6 => {
+        RTX_8X4 => {
             let mut t = *(a as *const uint16_t) as uint32_t & mask as uint32_t;
             t = t.wrapping_add(*l as uint32_t & mask as uint32_t);
             t = t.wrapping_mul(0x4040404);
             s = (t >> 24) as libc::c_int - 2 - 1;
         }
-        7 => {
+        RTX_8X16 => {
             let mut t = *(a as *const uint16_t) as uint32_t & mask as uint32_t;
             t = t.wrapping_add(*(l as *const uint32_t) & mask as uint32_t);
             t = (t >> 6).wrapping_mul(mul as uint32_t);
             s = (t >> 24) as libc::c_int - 2 - 4;
         }
-        8 => {
+        RTX_16X8 => {
             let mut t = *(a as *const uint32_t) & mask as uint32_t;
             t = t.wrapping_add(*(l as *const uint16_t) as libc::c_uint & mask as uint32_t);
             t = (t >> 6).wrapping_mul(mul as uint32_t);
             s = (t >> 24) as libc::c_int - 4 - 2;
         }
-        9 => {
+        RTX_16X32 => {
             let mut t = (*(a as *const uint32_t) & mask as uint32_t) as uint64_t;
             t = t.wrapping_add(*(l as *const uint64_t) & mask);
             t = (t >> 6).wrapping_mul(mul);
             s = (t >> 56) as libc::c_int - 4 - 8;
         }
-        10 => {
+        RTX_32X16 => {
             let mut t = *(a as *const uint64_t) & mask;
             t = t + (*(l as *const uint32_t) & mask as uint32_t) as uint64_t;
             t = (t >> 6).wrapping_mul(mul);
             s = (t >> 56) as libc::c_int - 8 - 4;
         }
-        11 => {
+        RTX_32X64 => {
             let mut t = (*(&*a.offset(0) as *const uint8_t as *const uint64_t) & mask) >> 6;
             t = t.wrapping_add((*(&*l.offset(0) as *const uint8_t as *const uint64_t) & mask) >> 6);
             t = t.wrapping_add((*(&*l.offset(8) as *const uint8_t as *const uint64_t) & mask) >> 6);
             t = t.wrapping_mul(mul);
             s = (t >> 56) as libc::c_int - 8 - 16;
         }
-        12 => {
+        RTX_64X32 => {
             let mut t = (*(&*a.offset(0) as *const uint8_t as *const uint64_t) & mask) >> 6;
             t = t.wrapping_add((*(&*a.offset(8) as *const uint8_t as *const uint64_t) & mask) >> 6);
             t = t.wrapping_add((*(&*l.offset(0) as *const uint8_t as *const uint64_t) & mask) >> 6);
             t = t.wrapping_mul(mul);
             s = (t >> 56) as libc::c_int - 16 - 8;
         }
-        13 => {
+        RTX_4X16 => {
             let mut t = *a as uint32_t & mask as uint32_t;
             t = t.wrapping_add(*(l as *const uint32_t) & mask as uint32_t);
             t = (t >> 6).wrapping_mul(mul as uint32_t);
             s = (t >> 24) as libc::c_int - 1 - 4;
         }
-        14 => {
+        RTX_16X4 => {
             let mut t = *(a as *const uint32_t) & mask as uint32_t;
             t = t.wrapping_add(*l as libc::c_uint & mask as uint32_t);
             t = (t >> 6).wrapping_mul(mul as uint32_t);
             s = (t >> 24) as libc::c_int - 4 - 1;
         }
-        15 => {
+        RTX_8X32 => {
             let mut t = (*(a as *const uint16_t) as libc::c_uint & mask as uint32_t) as uint64_t;
             t = t.wrapping_add(*(l as *const uint64_t) & mask);
             t = (t >> 6).wrapping_mul(mul);
             s = (t >> 56) as libc::c_int - 2 - 8;
         }
-        16 => {
+        RTX_32X8 => {
             let mut t = *(a as *const uint64_t) & mask;
             t = t
                 .wrapping_add((*(l as *const uint16_t) as uint32_t & mask as uint32_t) as uint64_t);
             t = (t >> 6).wrapping_mul(mul);
             s = (t >> 56) as libc::c_int - 8 - 2;
         }
-        17 => {
+        RTX_16X64 => {
             let mut t = (*(a as *const uint32_t) & mask as uint32_t) as uint64_t;
             t = t.wrapping_add(*(&*l.offset(0) as *const uint8_t as *const uint64_t) & mask);
             t = (t >> 6)
@@ -526,7 +543,7 @@ pub unsafe fn get_dc_sign_ctx(tx: libc::c_int, a: &[u8], l: &[u8]) -> libc::c_ui
             t = t.wrapping_mul(mul);
             s = (t >> 56) as libc::c_int - 4 - 16;
         }
-        18 => {
+        RTX_64X16 => {
             let mut t = *(&*a.offset(0) as *const uint8_t as *const uint64_t) & mask;
             t = t + (*(l as *const uint32_t) & mask as uint32_t) as uint64_t;
             t = (t >> 6)
