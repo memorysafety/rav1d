@@ -71,7 +71,7 @@ use crate::src::tables::dav1d_block_dimensions;
 use crate::src::tables::dav1d_filter_2d;
 use crate::src::tables::dav1d_filter_mode_to_y_mode;
 use crate::src::tables::dav1d_lo_ctx_offsets;
-use crate::src::tables::dav1d_skip_ctx;
+
 use crate::src::tables::dav1d_tx_type_class;
 use crate::src::tables::dav1d_tx_types_per_set;
 use crate::src::tables::dav1d_txfm_dimensions;
@@ -151,7 +151,6 @@ use crate::src::internal::Dav1dFrameContext_task_thread;
 use crate::src::internal::FrameTileThreadData;
 use crate::src::internal::TaskThreadData;
 
-use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 
 use crate::include::dav1d::headers::Dav1dFrameHeader;
@@ -706,7 +705,6 @@ use crate::src::internal::ScalableMotionParams;
 use crate::src::levels::IntraPredMode;
 use crate::src::levels::RectTxfmSize;
 use crate::src::levels::TxClass;
-use crate::src::levels::TxfmSize;
 use crate::src::levels::TxfmType;
 use crate::src::levels::CFL_PRED;
 use crate::src::levels::COMP_INTER_NONE;
@@ -726,7 +724,7 @@ use crate::src::levels::TX_16X16;
 use crate::src::levels::TX_32X32;
 use crate::src::levels::TX_4X4;
 use crate::src::levels::TX_64X64;
-use crate::src::levels::TX_8X8;
+
 use crate::src::levels::TX_CLASS_2D;
 use crate::src::levels::TX_CLASS_H;
 use crate::src::levels::TX_CLASS_V;
@@ -822,112 +820,8 @@ use crate::src::env::get_uv_inter_txtp;
 use crate::src::ipred_prepare::sm_flag;
 use crate::src::ipred_prepare::sm_uv_flag;
 use crate::src::msac::dav1d_msac_decode_bools;
+use crate::src::recon::get_skip_ctx;
 use crate::src::recon::read_golomb;
-
-// If the C macro is called like `MERGE_CTX(a, uint8_t,  0x40)`, the
-// corresponding call to this macro is `MERGE_CTX(ca, a, uint8_t,  0x40)`.
-macro_rules! MERGE_CTX {
-    ($dest:ident, $dir:ident, $type:tt, $no_val:literal) => {
-        $dest = (*($dir as *const $type) != $no_val as $type) as libc::c_uint
-    };
-}
-// corresponds to the second definition of MERGE_CTX inside get_skip_ctx.
-macro_rules! MERGE_CTX_TX {
-    ($dest:ident, $dir:ident, $type:tt, $tx:expr) => {{
-        if $tx as libc::c_int == TX_64X64 as libc::c_int {
-            let mut tmp: uint64_t = *($dir as *const uint64_t);
-            tmp |= *(&*$dir.offset(8) as *const uint8_t as *const uint64_t);
-            $dest = tmp.wrapping_shr(32) as libc::c_uint | tmp as libc::c_uint;
-        } else {
-            $dest = *($dir as *const $type) as libc::c_uint;
-        }
-        if $tx as libc::c_int == TX_32X32 as libc::c_int {
-            let off = ::core::mem::size_of::<$type>() as isize;
-            $dest |= *(&*$dir.offset(off) as *const uint8_t as *const $type) as libc::c_uint;
-        }
-        if $tx as libc::c_int >= TX_16X16 as libc::c_int {
-            $dest |= $dest >> 16;
-        }
-        if $tx as libc::c_int >= TX_8X8 as libc::c_int {
-            $dest |= $dest >> 8;
-        }
-    }};
-}
-#[inline]
-unsafe extern "C" fn get_skip_ctx(
-    t_dim: *const TxfmInfo,
-    bs: BlockSize,
-    a: *const uint8_t,
-    l: *const uint8_t,
-    chroma: libc::c_int,
-    layout: Dav1dPixelLayout,
-) -> libc::c_uint {
-    let b_dim: *const uint8_t = (dav1d_block_dimensions[bs as usize]).as_ptr();
-    if chroma != 0 {
-        let ss_ver = (layout as libc::c_uint
-            == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint)
-            as libc::c_int;
-        let ss_hor = (layout as libc::c_uint
-            != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint)
-            as libc::c_int;
-        let not_one_blk = (*b_dim.offset(2) as libc::c_int
-            - (*b_dim.offset(2) != 0 && ss_hor != 0) as libc::c_int
-            > (*t_dim).lw as libc::c_int
-            || *b_dim.offset(3) as libc::c_int
-                - (*b_dim.offset(3) != 0 && ss_ver != 0) as libc::c_int
-                > (*t_dim).lh as libc::c_int) as libc::c_int;
-        let mut ca: libc::c_uint = 0;
-        let mut cl: libc::c_uint = 0;
-        match (*t_dim).lw as TxfmSize {
-            TX_4X4 => MERGE_CTX!(ca, a, uint8_t, 0x40),
-            TX_8X8 => MERGE_CTX!(ca, a, uint16_t, 0x4040),
-            TX_16X16 => MERGE_CTX!(ca, a, uint32_t, 0x40404040),
-            TX_32X32 => MERGE_CTX!(ca, a, uint64_t, 0x4040404040404040u64),
-            _ => unreachable!(),
-        }
-        match (*t_dim).lh as TxfmSize {
-            TX_4X4 => MERGE_CTX!(cl, l, uint8_t, 0x40),
-            TX_8X8 => MERGE_CTX!(cl, l, uint16_t, 0x4040),
-            TX_16X16 => MERGE_CTX!(cl, l, uint32_t, 0x40404040),
-            TX_32X32 => MERGE_CTX!(cl, l, uint64_t, 0x4040404040404040u64),
-            _ => unreachable!(),
-        }
-        return ((7 + not_one_blk * 3) as libc::c_uint)
-            .wrapping_add(ca)
-            .wrapping_add(cl);
-    } else if *b_dim.offset(2) as libc::c_int == (*t_dim).lw as libc::c_int
-        && *b_dim.offset(3) as libc::c_int == (*t_dim).lh as libc::c_int
-    {
-        return 0 as libc::c_int as libc::c_uint;
-    } else {
-        let mut la: libc::c_uint = 0;
-        let mut ll: libc::c_uint = 0;
-        let mut _current_block_80: u64;
-        match (*t_dim).lw as TxfmSize {
-            TX_4X4 => MERGE_CTX_TX!(la, a, uint8_t, TX_4X4),
-            TX_8X8 => MERGE_CTX_TX!(la, a, uint16_t, TX_8X8),
-            TX_16X16 => MERGE_CTX_TX!(la, a, uint32_t, TX_16X16),
-            TX_32X32 => MERGE_CTX_TX!(la, a, uint32_t, TX_32X32),
-            TX_64X64 => MERGE_CTX_TX!(la, a, uint32_t, TX_64X64),
-            _ => unreachable!(),
-        }
-        match (*t_dim).lh as TxfmSize {
-            TX_4X4 => MERGE_CTX_TX!(ll, l, uint8_t, TX_4X4),
-            TX_8X8 => MERGE_CTX_TX!(ll, l, uint16_t, TX_8X8),
-            TX_16X16 => MERGE_CTX_TX!(ll, l, uint32_t, TX_16X16),
-            TX_32X32 => MERGE_CTX_TX!(ll, l, uint32_t, TX_32X32),
-            TX_64X64 => MERGE_CTX_TX!(ll, l, uint32_t, TX_64X64),
-            _ => unreachable!(),
-        }
-        return dav1d_skip_ctx[umin(
-            la & 0x3f as libc::c_int as libc::c_uint,
-            4 as libc::c_int as libc::c_uint,
-        ) as usize][umin(
-            ll & 0x3f as libc::c_int as libc::c_uint,
-            4 as libc::c_int as libc::c_uint,
-        ) as usize] as libc::c_uint;
-    };
-}
 #[inline]
 unsafe extern "C" fn get_dc_sign_ctx(
     tx: libc::c_int,
