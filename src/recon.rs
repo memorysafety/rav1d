@@ -605,7 +605,7 @@ pub unsafe fn get_dc_sign_ctx(tx: libc::c_int, a: &[u8], l: &[u8]) -> libc::c_ui
 }
 
 #[inline]
-pub unsafe fn get_lo_ctx(
+pub fn get_lo_ctx(
     levels: &[u8],
     tx_class: TxClass,
     hi_mag: &mut libc::c_uint,
