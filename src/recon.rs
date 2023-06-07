@@ -2,16 +2,19 @@ use crate::include::common::intops::umin;
 use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
+use crate::include::stddef::ptrdiff_t;
 use crate::include::stdint::uint16_t;
 use crate::include::stdint::uint32_t;
 use crate::include::stdint::uint64_t;
 use crate::include::stdint::uint8_t;
 use crate::src::levels::BlockSize;
+use crate::src::levels::TxClass;
 use crate::src::levels::TX_16X16;
 use crate::src::levels::TX_32X32;
 use crate::src::levels::TX_4X4;
 use crate::src::levels::TX_64X64;
 use crate::src::levels::TX_8X8;
+use crate::src::levels::TX_CLASS_2D;
 use crate::src::msac::dav1d_msac_decode_bool_equi;
 use crate::src::msac::MsacContext;
 use crate::src::tables::dav1d_block_dimensions;
@@ -603,4 +606,49 @@ pub unsafe extern "C" fn get_dc_sign_ctx(
         _ => {}
     }
     return ((s != 0 as libc::c_int) as libc::c_int + (s > 0) as libc::c_int) as libc::c_uint;
+}
+
+#[inline]
+pub unsafe extern "C" fn get_lo_ctx(
+    levels: *const uint8_t,
+    tx_class: TxClass,
+    hi_mag: *mut libc::c_uint,
+    ctx_offsets: *const [uint8_t; 5],
+    x: libc::c_uint,
+    y: libc::c_uint,
+    stride: ptrdiff_t,
+) -> libc::c_uint {
+    let mut mag: libc::c_uint = (*levels.offset((0 * stride + 1) as isize) as libc::c_int
+        + *levels.offset((1 * stride + 0) as isize) as libc::c_int)
+        as libc::c_uint;
+    let mut offset: libc::c_uint = 0;
+    if tx_class as libc::c_uint == TX_CLASS_2D as libc::c_int as libc::c_uint {
+        mag = mag.wrapping_add(*levels.offset((1 * stride + 1) as isize) as libc::c_uint);
+        *hi_mag = mag;
+        mag = mag.wrapping_add(
+            (*levels.offset((0 * stride + 2) as isize) as libc::c_int
+                + *levels.offset((2 * stride + 0) as isize) as libc::c_int)
+                as libc::c_uint,
+        );
+        offset = (*ctx_offsets.offset(umin(y, 4 as libc::c_int as libc::c_uint) as isize))
+            [umin(x, 4 as libc::c_int as libc::c_uint) as usize] as libc::c_uint;
+    } else {
+        mag = mag.wrapping_add(*levels.offset((0 * stride + 2) as isize) as libc::c_uint);
+        *hi_mag = mag;
+        mag = mag.wrapping_add(
+            (*levels.offset((0 * stride + 3) as isize) as libc::c_int
+                + *levels.offset((0 * stride + 4) as isize) as libc::c_int)
+                as libc::c_uint,
+        );
+        offset = (26 as libc::c_int as libc::c_uint).wrapping_add(if y > 1 as libc::c_uint {
+            10 as libc::c_int as libc::c_uint
+        } else {
+            y.wrapping_mul(5 as libc::c_int as libc::c_uint)
+        });
+    }
+    return offset.wrapping_add(if mag > 512 as libc::c_uint {
+        4 as libc::c_int as libc::c_uint
+    } else {
+        mag.wrapping_add(64 as libc::c_int as libc::c_uint) >> 7
+    });
 }
