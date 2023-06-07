@@ -614,16 +614,18 @@ pub unsafe fn get_lo_ctx(
     y: usize,
     stride: usize,
 ) -> usize {
-    let mut mag = levels[0 * stride + 1] as libc::c_uint + levels[1 * stride + 0] as libc::c_uint;
+    let level = |y, x| levels[y * stride + x] as libc::c_uint;
+
+    let mut mag = level(0, 1) + level(1, 0);
     let offset = if tx_class == TX_CLASS_2D {
-        mag += levels[1 * stride + 1] as libc::c_uint;
+        mag += level(1, 1);
         *hi_mag = mag;
-        mag += levels[0 * stride + 2] as libc::c_uint + levels[2 * stride + 0] as libc::c_uint;
+        mag += level(0, 2) + level(2, 0);
         ctx_offsets.unwrap()[std::cmp::min(y, 4)][std::cmp::min(x, 4)] as usize
     } else {
-        mag += levels[0 * stride + 2] as libc::c_uint;
+        mag += level(0, 2);
         *hi_mag = mag;
-        mag += levels[0 * stride + 3] as libc::c_uint + levels[0 * stride + 4] as libc::c_uint;
+        mag += level(0, 3) + level(0, 4);
         26 + if y > 1 { 10 } else { y * 5 }
     };
     offset
