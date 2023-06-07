@@ -2,7 +2,6 @@ use crate::include::common::intops::umin;
 use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-use crate::include::stddef::ptrdiff_t;
 use crate::include::stdint::uint16_t;
 use crate::include::stdint::uint32_t;
 use crate::include::stdint::uint64_t;
@@ -613,21 +612,18 @@ pub unsafe fn get_lo_ctx(
     ctx_offsets: Option<&[[u8; 5]; 5]>,
     x: libc::c_uint,
     y: libc::c_uint,
-    stride: ptrdiff_t,
+    stride: usize,
 ) -> libc::c_uint {
-    let mut mag = levels[(0 * stride + 1) as usize] as libc::c_uint
-        + levels[(1 * stride + 0) as usize] as libc::c_uint;
+    let mut mag = levels[0 * stride + 1] as libc::c_uint + levels[1 * stride + 0] as libc::c_uint;
     let offset = if tx_class == TX_CLASS_2D {
-        mag += levels[(1 * stride + 1) as usize] as libc::c_uint;
+        mag += levels[1 * stride + 1] as libc::c_uint;
         *hi_mag = mag;
-        mag += levels[(0 * stride + 2) as usize] as libc::c_uint
-            + levels[(2 * stride + 0) as usize] as libc::c_uint;
+        mag += levels[0 * stride + 2] as libc::c_uint + levels[2 * stride + 0] as libc::c_uint;
         ctx_offsets.unwrap()[umin(y, 4) as usize][umin(x, 4) as usize] as libc::c_uint
     } else {
-        mag += levels[(0 * stride + 2) as usize] as libc::c_uint;
+        mag += levels[0 * stride + 2] as libc::c_uint;
         *hi_mag = mag;
-        mag += levels[(0 * stride + 3) as usize] as libc::c_uint
-            + levels[(0 * stride + 4) as usize] as libc::c_uint;
+        mag += levels[0 * stride + 3] as libc::c_uint + levels[0 * stride + 4] as libc::c_uint;
         26 + if y > 1 { 10 } else { y * 5 }
     };
     offset + if mag > 512 { 4 } else { (mag + 64) >> 7 }
