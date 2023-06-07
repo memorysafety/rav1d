@@ -574,7 +574,8 @@ pub fn get_dc_sign_ctx(tx: RectTxfmSize, a: &[u8], l: &[u8]) -> libc::c_uint {
         }
         _ => unreachable!(),
     };
-    return (s != 0) as libc::c_uint + (s > 0) as libc::c_uint;
+
+    (s != 0) as libc::c_uint + (s > 0) as libc::c_uint
 }
 
 #[inline]
