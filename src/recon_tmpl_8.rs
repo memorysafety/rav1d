@@ -1177,7 +1177,7 @@ unsafe fn decode_coefs(
                         x as usize,
                         y as usize,
                         stride as usize,
-                    );
+                    ) as libc::c_uint;
                     if TX_CLASS_2D as libc::c_int == TX_CLASS_2D as libc::c_int {
                         y |= x;
                     }
@@ -1258,7 +1258,7 @@ unsafe fn decode_coefs(
                         0,
                         0,
                         stride as usize,
-                    )
+                    ) as libc::c_uint
                 };
                 dc_tok = dav1d_msac_decode_symbol_adapt4(
                     &mut (*ts).msac,
@@ -1404,7 +1404,7 @@ unsafe fn decode_coefs(
                         x_0 as usize,
                         y_0 as usize,
                         stride_0 as usize,
-                    );
+                    ) as libc::c_uint;
                     if TX_CLASS_H as libc::c_int == TX_CLASS_2D as libc::c_int {
                         y_0 |= x_0;
                     }
@@ -1485,7 +1485,7 @@ unsafe fn decode_coefs(
                         0,
                         0,
                         stride_0 as usize,
-                    )
+                    ) as libc::c_uint
                 };
                 dc_tok = dav1d_msac_decode_symbol_adapt4(
                     &mut (*ts).msac,
@@ -1631,7 +1631,7 @@ unsafe fn decode_coefs(
                         x_1 as usize,
                         y_1 as usize,
                         stride_1 as usize,
-                    );
+                    ) as libc::c_uint;
                     if TX_CLASS_V as libc::c_int == TX_CLASS_2D as libc::c_int {
                         y_1 |= x_1;
                     }
@@ -1712,7 +1712,7 @@ unsafe fn decode_coefs(
                         0,
                         0,
                         stride_1 as usize,
-                    )
+                    ) as libc::c_uint
                 };
                 dc_tok = dav1d_msac_decode_symbol_adapt4(
                     &mut (*ts).msac,
