@@ -448,7 +448,7 @@ pub unsafe fn get_skip_ctx(
 // `tx: RectTxfmSize` arg is also `TxfmSize`.
 // `TxfmSize` and `RectTxfmSize` should be part of the same `enum`.
 #[inline]
-pub unsafe fn get_dc_sign_ctx(tx: RectTxfmSize, a: &[u8], l: &[u8]) -> libc::c_uint {
+pub fn get_dc_sign_ctx(tx: RectTxfmSize, a: &[u8], l: &[u8]) -> libc::c_uint {
     let mut mask = 0xc0c0c0c0c0c0c0c0 as uint64_t;
     let mut mul = 0x101010101010101 as uint64_t;
     let mut s = 0;
