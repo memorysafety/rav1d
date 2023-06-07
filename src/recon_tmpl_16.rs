@@ -845,8 +845,7 @@ unsafe fn decode_coefs(
     let chroma = (plane != 0) as libc::c_int;
     let f: *const Dav1dFrameContext = (*t).f;
     let lossless = (*(*f).frame_hdr).segmentation.lossless[(*b).seg_id as usize];
-    let t_dim: *const TxfmInfo =
-        &*dav1d_txfm_dimensions.as_ptr().offset(tx as isize) as *const TxfmInfo;
+    let t_dim = &dav1d_txfm_dimensions[tx as usize];
     let dbg = DEBUG_BLOCK_INFO(&*f, &*t) as libc::c_int;
     if dbg != 0 {
         printf(
@@ -3696,7 +3695,8 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_16bpc(
                                     cf_0 = ((*t).c2rust_unnamed.cf_16bpc).as_mut_ptr();
                                     eob_0 = decode_coefs(
                                         t,
-                                        &mut (*(*t).a).ccoef.0[pl_0 as usize][(cbx4 + x) as usize..],
+                                        &mut (*(*t).a).ccoef.0[pl_0 as usize]
+                                            [(cbx4 + x) as usize..],
                                         &mut (*t).l.ccoef.0[pl_0 as usize][(cby4 + y) as usize..],
                                         (*b).uvtx as RectTxfmSize,
                                         bs,
