@@ -824,10 +824,10 @@ use crate::src::recon::get_dc_sign_ctx;
 use crate::src::recon::get_lo_ctx;
 use crate::src::recon::get_skip_ctx;
 use crate::src::recon::read_golomb;
-unsafe extern "C" fn decode_coefs(
+unsafe fn decode_coefs(
     t: *mut Dav1dTaskContext,
-    a: *mut uint8_t,
-    l: *mut uint8_t,
+    a: &mut [u8],
+    l: &mut [u8],
     tx: RectTxfmSize,
     bs: BlockSize,
     b: *const Av1Block,
@@ -2154,8 +2154,8 @@ unsafe extern "C" fn read_coef_tree(
         if (*t).frame_thread.pass != 2 as libc::c_int {
             eob = decode_coefs(
                 t,
-                &mut *((*(*t).a).lcoef.0).as_mut_ptr().offset(bx4 as isize),
-                &mut *((*t).l.lcoef.0).as_mut_ptr().offset(by4 as isize),
+                &mut (*(*t).a).lcoef.0[bx4 as usize..],
+                &mut (*t).l.lcoef.0[by4 as usize..],
                 ytx,
                 bs,
                 b,
@@ -2354,8 +2354,8 @@ pub unsafe extern "C" fn dav1d_read_coef_blocks_16bpc(
                         let ref mut fresh4 = (*cbi.offset((*t).bx as isize)).eob[0];
                         *fresh4 = decode_coefs(
                             t,
-                            &mut *((*(*t).a).lcoef.0).as_mut_ptr().offset((bx4 + x) as isize),
-                            &mut *((*t).l.lcoef.0).as_mut_ptr().offset((by4 + y) as isize),
+                            &mut (*(*t).a).lcoef.0[(bx4 + x) as usize..],
+                            &mut (*t).l.lcoef.0[(by4 + y) as usize..],
                             (*b).c2rust_unnamed.c2rust_unnamed.tx as RectTxfmSize,
                             bs,
                             b,
@@ -2441,12 +2441,8 @@ pub unsafe extern "C" fn dav1d_read_coef_blocks_16bpc(
                                 (*cbi_0.offset((*t).bx as isize)).eob[(1 + pl) as usize];
                             *fresh5 = decode_coefs(
                                 t,
-                                &mut *(*((*(*t).a).ccoef.0).as_mut_ptr().offset(pl as isize))
-                                    .as_mut_ptr()
-                                    .offset((cbx4 + x) as isize),
-                                &mut *(*((*t).l.ccoef.0).as_mut_ptr().offset(pl as isize))
-                                    .as_mut_ptr()
-                                    .offset((cby4 + y) as isize),
+                                &mut (*(*t).a).ccoef.0[pl as usize][(cbx4 + x) as usize..],
+                                &mut (*t).l.ccoef.0[pl as usize][(cby4 + y) as usize..],
                                 (*b).uvtx as RectTxfmSize,
                                 bs,
                                 b,
@@ -3241,8 +3237,8 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_16bpc(
                             cf = ((*t).c2rust_unnamed.cf_16bpc).as_mut_ptr();
                             eob = decode_coefs(
                                 t,
-                                &mut *((*(*t).a).lcoef.0).as_mut_ptr().offset((bx4 + x) as isize),
-                                &mut *((*t).l.lcoef.0).as_mut_ptr().offset((by4 + y) as isize),
+                                &mut (*(*t).a).lcoef.0[(bx4 + x) as usize..],
+                                &mut (*t).l.lcoef.0[(by4 + y) as usize..],
                                 (*b).c2rust_unnamed.c2rust_unnamed.tx as RectTxfmSize,
                                 bs,
                                 b,
@@ -3700,16 +3696,8 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_16bpc(
                                     cf_0 = ((*t).c2rust_unnamed.cf_16bpc).as_mut_ptr();
                                     eob_0 = decode_coefs(
                                         t,
-                                        &mut *(*((*(*t).a).ccoef.0)
-                                            .as_mut_ptr()
-                                            .offset(pl_0 as isize))
-                                        .as_mut_ptr()
-                                        .offset((cbx4 + x) as isize),
-                                        &mut *(*((*t).l.ccoef.0)
-                                            .as_mut_ptr()
-                                            .offset(pl_0 as isize))
-                                        .as_mut_ptr()
-                                        .offset((cby4 + y) as isize),
+                                        &mut (*(*t).a).ccoef.0[pl_0 as usize][(cbx4 + x) as usize..],
+                                        &mut (*t).l.ccoef.0[pl_0 as usize][(cby4 + y) as usize..],
                                         (*b).uvtx as RectTxfmSize,
                                         bs,
                                         b,
@@ -5002,12 +4990,8 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_16bpc(
                                     as TxfmType;
                                 eob = decode_coefs(
                                     t,
-                                    &mut *(*((*(*t).a).ccoef.0).as_mut_ptr().offset(pl_8 as isize))
-                                        .as_mut_ptr()
-                                        .offset((cbx4 + x_0) as isize),
-                                    &mut *(*((*t).l.ccoef.0).as_mut_ptr().offset(pl_8 as isize))
-                                        .as_mut_ptr()
-                                        .offset((cby4 + y) as isize),
+                                    &mut (*(*t).a).ccoef.0[pl_8 as usize][(cbx4 + x_0) as usize..],
+                                    &mut (*t).l.ccoef.0[pl_8 as usize][(cby4 + y) as usize..],
                                     (*b).uvtx as RectTxfmSize,
                                     bs,
                                     b,

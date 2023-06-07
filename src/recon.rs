@@ -64,11 +64,14 @@ pub fn read_golomb(msac: &mut MsacContext) -> libc::c_uint {
 pub unsafe fn get_skip_ctx(
     t_dim: *const TxfmInfo,
     bs: BlockSize,
-    a: *const uint8_t,
-    l: *const uint8_t,
+    a: &[u8],
+    l: &[u8],
     chroma: libc::c_int,
     layout: Dav1dPixelLayout,
 ) -> libc::c_uint {
+    let a = a.as_ptr();
+    let l = l.as_ptr();
+
     let b_dim: *const uint8_t = (dav1d_block_dimensions[bs as usize]).as_ptr();
     if chroma != 0 {
         let ss_ver = (layout as libc::c_uint
@@ -404,11 +407,10 @@ pub unsafe fn get_skip_ctx(
 }
 
 #[inline]
-pub unsafe fn get_dc_sign_ctx(
-    tx: libc::c_int,
-    a: *const uint8_t,
-    l: *const uint8_t,
-) -> libc::c_uint {
+pub unsafe fn get_dc_sign_ctx(tx: libc::c_int, a: &[u8], l: &[u8]) -> libc::c_uint {
+    let a = a.as_ptr();
+    let l = l.as_ptr();
+
     let mut mask: uint64_t = 0xc0c0c0c0c0c0c0c0 as libc::c_ulonglong as uint64_t;
     let mut mul: uint64_t = 0x101010101010101 as libc::c_ulonglong as uint64_t;
     let mut s = 0;
