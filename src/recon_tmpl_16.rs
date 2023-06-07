@@ -1099,9 +1099,10 @@ unsafe fn decode_coefs(
                 let nonsquare_tx: libc::c_uint = (tx as libc::c_uint
                     >= RTX_4X8 as libc::c_int as libc::c_uint)
                     as libc::c_int as libc::c_uint;
-                let lo_ctx_offsets: *const [uint8_t; 5] = (dav1d_lo_ctx_offsets
-                    [nonsquare_tx.wrapping_add(tx as libc::c_uint & nonsquare_tx) as usize])
-                    .as_ptr();
+                let lo_ctx_offsets = Some(
+                    &dav1d_lo_ctx_offsets
+                        [nonsquare_tx.wrapping_add(tx as libc::c_uint & nonsquare_tx) as usize],
+                );
                 scan = dav1d_scans[tx as usize];
                 let stride: ptrdiff_t = (4 * sh) as ptrdiff_t;
                 let shift: libc::c_uint = (if ((*t_dim).lh as libc::c_int) < 4 {
@@ -1325,7 +1326,7 @@ unsafe fn decode_coefs(
                 }
             }
             1 => {
-                let lo_ctx_offsets_0: *const [uint8_t; 5] = 0 as *const [uint8_t; 5];
+                let lo_ctx_offsets_0 = None;
                 let stride_0: ptrdiff_t = 16 as libc::c_int as ptrdiff_t;
                 let shift_0: libc::c_uint = ((*t_dim).lh as libc::c_int + 2) as libc::c_uint;
                 let shift2_0: libc::c_uint = 0 as libc::c_int as libc::c_uint;
@@ -1553,7 +1554,7 @@ unsafe fn decode_coefs(
                 }
             }
             2 => {
-                let lo_ctx_offsets_1: *const [uint8_t; 5] = 0 as *const [uint8_t; 5];
+                let lo_ctx_offsets_1 = None;
                 let stride_1: ptrdiff_t = 16 as libc::c_int as ptrdiff_t;
                 let shift_1: libc::c_uint = ((*t_dim).lw as libc::c_int + 2) as libc::c_uint;
                 let shift2_1: libc::c_uint = ((*t_dim).lh as libc::c_int + 2) as libc::c_uint;

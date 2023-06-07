@@ -612,7 +612,7 @@ pub unsafe fn get_lo_ctx(
     levels: &[u8],
     tx_class: TxClass,
     hi_mag: &mut libc::c_uint,
-    ctx_offsets: *const [uint8_t; 5],
+    ctx_offsets: Option<&[[u8; 5]; 5]>,
     x: libc::c_uint,
     y: libc::c_uint,
     stride: ptrdiff_t,
@@ -628,7 +628,7 @@ pub unsafe fn get_lo_ctx(
             (levels[(0 * stride + 2) as usize] as libc::c_int
                 + levels[(2 * stride + 0) as usize] as libc::c_int) as libc::c_uint,
         );
-        offset = (*ctx_offsets.offset(umin(y, 4 as libc::c_int as libc::c_uint) as isize))
+        offset = ctx_offsets.unwrap()[umin(y, 4 as libc::c_int as libc::c_uint) as usize]
             [umin(x, 4 as libc::c_int as libc::c_uint) as usize] as libc::c_uint;
     } else {
         mag = mag.wrapping_add(levels[(0 * stride + 2) as usize] as libc::c_uint);
