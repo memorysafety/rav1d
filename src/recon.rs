@@ -610,8 +610,8 @@ pub unsafe fn get_lo_ctx(
     tx_class: TxClass,
     hi_mag: &mut libc::c_uint,
     ctx_offsets: Option<&[[u8; 5]; 5]>,
-    x: libc::c_uint,
-    y: libc::c_uint,
+    x: usize,
+    y: usize,
     stride: usize,
 ) -> libc::c_uint {
     let mut mag = levels[0 * stride + 1] as libc::c_uint + levels[1 * stride + 0] as libc::c_uint;
@@ -619,13 +619,12 @@ pub unsafe fn get_lo_ctx(
         mag += levels[1 * stride + 1] as libc::c_uint;
         *hi_mag = mag;
         mag += levels[0 * stride + 2] as libc::c_uint + levels[2 * stride + 0] as libc::c_uint;
-        ctx_offsets.unwrap()[std::cmp::min(y, 4) as usize][std::cmp::min(x, 4) as usize]
-            as libc::c_uint
+        ctx_offsets.unwrap()[std::cmp::min(y, 4)][std::cmp::min(x, 4)] as libc::c_uint
     } else {
         mag += levels[0 * stride + 2] as libc::c_uint;
         *hi_mag = mag;
         mag += levels[0 * stride + 3] as libc::c_uint + levels[0 * stride + 4] as libc::c_uint;
-        26 + if y > 1 { 10 } else { y * 5 }
+        26 + if y > 1 { 10 } else { y as libc::c_uint * 5 }
     };
     offset + if mag > 512 { 4 } else { (mag + 64) >> 7 }
 }

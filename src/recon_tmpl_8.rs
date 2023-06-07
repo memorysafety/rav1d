@@ -1169,7 +1169,15 @@ unsafe fn decode_coefs(
                         unreachable!();
                     }
                     let level = &mut levels[(x as isize * stride + y as isize) as usize..];
-                    ctx = get_lo_ctx(level, TX_CLASS_2D, &mut mag, lo_ctx_offsets, x, y, stride as usize);
+                    ctx = get_lo_ctx(
+                        level,
+                        TX_CLASS_2D,
+                        &mut mag,
+                        lo_ctx_offsets,
+                        x as usize,
+                        y as usize,
+                        stride as usize,
+                    );
                     if TX_CLASS_2D as libc::c_int == TX_CLASS_2D as libc::c_int {
                         y |= x;
                     }
@@ -1247,8 +1255,8 @@ unsafe fn decode_coefs(
                         TX_CLASS_2D,
                         &mut mag,
                         lo_ctx_offsets,
-                        0 as libc::c_int as libc::c_uint,
-                        0 as libc::c_int as libc::c_uint,
+                        0,
+                        0,
                         stride as usize,
                     )
                 };
@@ -1393,8 +1401,8 @@ unsafe fn decode_coefs(
                         TX_CLASS_H,
                         &mut mag,
                         lo_ctx_offsets_0,
-                        x_0,
-                        y_0,
+                        x_0 as usize,
+                        y_0 as usize,
                         stride_0 as usize,
                     );
                     if TX_CLASS_H as libc::c_int == TX_CLASS_2D as libc::c_int {
@@ -1474,8 +1482,8 @@ unsafe fn decode_coefs(
                         TX_CLASS_H,
                         &mut mag,
                         lo_ctx_offsets_0,
-                        0 as libc::c_int as libc::c_uint,
-                        0 as libc::c_int as libc::c_uint,
+                        0,
+                        0,
                         stride_0 as usize,
                     )
                 };
@@ -1620,8 +1628,8 @@ unsafe fn decode_coefs(
                         TX_CLASS_V,
                         &mut mag,
                         lo_ctx_offsets_1,
-                        x_1,
-                        y_1,
+                        x_1 as usize,
+                        y_1 as usize,
                         stride_1 as usize,
                     );
                     if TX_CLASS_V as libc::c_int == TX_CLASS_2D as libc::c_int {
@@ -1701,8 +1709,8 @@ unsafe fn decode_coefs(
                         TX_CLASS_V,
                         &mut mag,
                         lo_ctx_offsets_1,
-                        0 as libc::c_int as libc::c_uint,
-                        0 as libc::c_int as libc::c_uint,
+                        0,
+                        0,
                         stride_1 as usize,
                     )
                 };
