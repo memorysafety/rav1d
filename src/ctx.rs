@@ -5,20 +5,17 @@ fn small_memset<T: Clone + Copy, const UP_TO: usize, const WITH_DEFAULT: bool>(
     buf: &mut [T],
     val: T,
 ) {
-    macro_rules! set {
-        ($n:literal) => {{
-            let buf: &mut [T; $n] = buf.try_into().unwrap();
-            *buf = [val; $n];
-        }};
+    fn as_array<T: Clone + Copy, const N: usize>(buf: &mut [T]) -> &mut [T; N] {
+        buf.try_into().unwrap()
     }
     match buf.len() {
-        1 if UP_TO >= 1 => set!(1),
-        2 if UP_TO >= 2 => set!(2),
-        4 if UP_TO >= 4 => set!(4),
-        8 if UP_TO >= 8 => set!(8),
-        16 if UP_TO >= 16 => set!(16),
-        32 if UP_TO >= 32 => set!(32),
-        64 if UP_TO >= 64 => set!(64),
+        01 if UP_TO >= 01 => *as_array(buf) = [val; 01],
+        02 if UP_TO >= 02 => *as_array(buf) = [val; 02],
+        04 if UP_TO >= 04 => *as_array(buf) = [val; 04],
+        08 if UP_TO >= 08 => *as_array(buf) = [val; 08],
+        16 if UP_TO >= 16 => *as_array(buf) = [val; 16],
+        32 if UP_TO >= 32 => *as_array(buf) = [val; 32],
+        64 if UP_TO >= 64 => *as_array(buf) = [val; 64],
         _ => {
             if WITH_DEFAULT {
                 buf.fill(val)
