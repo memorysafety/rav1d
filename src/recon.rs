@@ -72,7 +72,7 @@ pub unsafe fn get_skip_ctx(
     let a = a.as_ptr();
     let l = l.as_ptr();
 
-    let b_dim: *const uint8_t = (dav1d_block_dimensions[bs as usize]).as_ptr();
+    let b_dim = &dav1d_block_dimensions[bs as usize];
     if chroma != 0 {
         let ss_ver = (layout as libc::c_uint
             == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint)
@@ -80,11 +80,9 @@ pub unsafe fn get_skip_ctx(
         let ss_hor = (layout as libc::c_uint
             != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint)
             as libc::c_int;
-        let not_one_blk = (*b_dim.offset(2) as libc::c_int
-            - (*b_dim.offset(2) != 0 && ss_hor != 0) as libc::c_int
+        let not_one_blk = (b_dim[2] as libc::c_int - (b_dim[2] != 0 && ss_hor != 0) as libc::c_int
             > t_dim.lw as libc::c_int
-            || *b_dim.offset(3) as libc::c_int
-                - (*b_dim.offset(3) != 0 && ss_ver != 0) as libc::c_int
+            || b_dim[3] as libc::c_int - (b_dim[3] != 0 && ss_ver != 0) as libc::c_int
                 > t_dim.lh as libc::c_int) as libc::c_int;
         let mut ca: libc::c_uint = 0;
         let mut cl: libc::c_uint = 0;
@@ -159,8 +157,8 @@ pub unsafe fn get_skip_ctx(
         return ((7 + not_one_blk * 3) as libc::c_uint)
             .wrapping_add(ca)
             .wrapping_add(cl);
-    } else if *b_dim.offset(2) as libc::c_int == t_dim.lw as libc::c_int
-        && *b_dim.offset(3) as libc::c_int == t_dim.lh as libc::c_int
+    } else if b_dim[2] as libc::c_int == t_dim.lw as libc::c_int
+        && b_dim[3] as libc::c_int == t_dim.lh as libc::c_int
     {
         return 0 as libc::c_int as libc::c_uint;
     } else {
