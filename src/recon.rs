@@ -402,3 +402,205 @@ pub unsafe extern "C" fn get_skip_ctx(
         ) as usize] as libc::c_uint;
     };
 }
+
+#[inline]
+pub unsafe extern "C" fn get_dc_sign_ctx(
+    tx: libc::c_int,
+    a: *const uint8_t,
+    l: *const uint8_t,
+) -> libc::c_uint {
+    let mut mask: uint64_t = 0xc0c0c0c0c0c0c0c0 as libc::c_ulonglong as uint64_t;
+    let mut mul: uint64_t = 0x101010101010101 as libc::c_ulonglong as uint64_t;
+    let mut s = 0;
+    let mut current_block_66: u64;
+    match tx {
+        0 => {
+            current_block_66 = 6873731126896040597;
+        }
+        1 => {
+            let mut t_0: uint32_t = *(a as *const uint16_t) as libc::c_uint & mask as uint32_t;
+            t_0 = (t_0 as libc::c_uint)
+                .wrapping_add(*(l as *const uint16_t) as libc::c_uint & mask as uint32_t)
+                as uint32_t as uint32_t;
+            t_0 = (t_0 as libc::c_uint).wrapping_mul(0x4040404 as libc::c_uint) as uint32_t
+                as uint32_t;
+            s = (t_0 >> 24) as libc::c_int - 2 - 2;
+            current_block_66 = 2606304779496145856;
+        }
+        2 => {
+            let mut t_1: uint32_t = (*(a as *const uint32_t) & mask as uint32_t) >> 6;
+            t_1 = (t_1 as libc::c_uint)
+                .wrapping_add((*(l as *const uint32_t) & mask as uint32_t) >> 6)
+                as uint32_t as uint32_t;
+            t_1 = (t_1 as libc::c_uint).wrapping_mul(mul as uint32_t) as uint32_t as uint32_t;
+            s = (t_1 >> 24) as libc::c_int - 4 - 4;
+            current_block_66 = 2606304779496145856;
+        }
+        3 => {
+            let mut t_2: uint64_t = (*(a as *const uint64_t) & mask) >> 6;
+            t_2 = t_2.wrapping_add((*(l as *const uint64_t) & mask) >> 6) as uint64_t as uint64_t;
+            t_2 = t_2.wrapping_mul(mul) as uint64_t as uint64_t;
+            s = (t_2 >> 56) as libc::c_int - 8 - 8;
+            current_block_66 = 2606304779496145856;
+        }
+        4 => {
+            let mut t_3: uint64_t =
+                (*(&*a.offset(0) as *const uint8_t as *const uint64_t) & mask) >> 6;
+            t_3 = t_3
+                .wrapping_add((*(&*a.offset(8) as *const uint8_t as *const uint64_t) & mask) >> 6)
+                as uint64_t as uint64_t;
+            t_3 = t_3
+                .wrapping_add((*(&*l.offset(0) as *const uint8_t as *const uint64_t) & mask) >> 6)
+                as uint64_t as uint64_t;
+            t_3 = t_3
+                .wrapping_add((*(&*l.offset(8) as *const uint8_t as *const uint64_t) & mask) >> 6)
+                as uint64_t as uint64_t;
+            t_3 = t_3.wrapping_mul(mul) as uint64_t as uint64_t;
+            s = (t_3 >> 56) as libc::c_int - 16 - 16;
+            current_block_66 = 2606304779496145856;
+        }
+        5 => {
+            let mut t_4: uint32_t = *a as libc::c_uint & mask as uint32_t;
+            t_4 = (t_4 as libc::c_uint)
+                .wrapping_add(*(l as *const uint16_t) as libc::c_uint & mask as uint32_t)
+                as uint32_t as uint32_t;
+            t_4 = (t_4 as libc::c_uint).wrapping_mul(0x4040404 as libc::c_uint) as uint32_t
+                as uint32_t;
+            s = (t_4 >> 24) as libc::c_int - 1 - 2;
+            current_block_66 = 2606304779496145856;
+        }
+        6 => {
+            let mut t_5: uint32_t = *(a as *const uint16_t) as libc::c_uint & mask as uint32_t;
+            t_5 = (t_5 as libc::c_uint).wrapping_add(*l as libc::c_uint & mask as uint32_t)
+                as uint32_t as uint32_t;
+            t_5 = (t_5 as libc::c_uint).wrapping_mul(0x4040404 as libc::c_uint) as uint32_t
+                as uint32_t;
+            s = (t_5 >> 24) as libc::c_int - 2 - 1;
+            current_block_66 = 2606304779496145856;
+        }
+        7 => {
+            let mut t_6: uint32_t = *(a as *const uint16_t) as libc::c_uint & mask as uint32_t;
+            t_6 = (t_6 as libc::c_uint).wrapping_add(*(l as *const uint32_t) & mask as uint32_t)
+                as uint32_t as uint32_t;
+            t_6 = (t_6 >> 6).wrapping_mul(mul as uint32_t);
+            s = (t_6 >> 24) as libc::c_int - 2 - 4;
+            current_block_66 = 2606304779496145856;
+        }
+        8 => {
+            let mut t_7: uint32_t = *(a as *const uint32_t) & mask as uint32_t;
+            t_7 = (t_7 as libc::c_uint)
+                .wrapping_add(*(l as *const uint16_t) as libc::c_uint & mask as uint32_t)
+                as uint32_t as uint32_t;
+            t_7 = (t_7 >> 6).wrapping_mul(mul as uint32_t);
+            s = (t_7 >> 24) as libc::c_int - 4 - 2;
+            current_block_66 = 2606304779496145856;
+        }
+        9 => {
+            let mut t_8: uint64_t = (*(a as *const uint32_t) & mask as uint32_t) as uint64_t;
+            t_8 = t_8.wrapping_add(*(l as *const uint64_t) & mask) as uint64_t as uint64_t;
+            t_8 = (t_8 >> 6).wrapping_mul(mul);
+            s = (t_8 >> 56) as libc::c_int - 4 - 8;
+            current_block_66 = 2606304779496145856;
+        }
+        10 => {
+            let mut t_9: uint64_t = *(a as *const uint64_t) & mask;
+            t_9 = t_9 + (*(l as *const uint32_t) & mask as uint32_t) as uint64_t;
+            t_9 = (t_9 >> 6).wrapping_mul(mul);
+            s = (t_9 >> 56) as libc::c_int - 8 - 4;
+            current_block_66 = 2606304779496145856;
+        }
+        11 => {
+            let mut t_10: uint64_t =
+                (*(&*a.offset(0) as *const uint8_t as *const uint64_t) & mask) >> 6;
+            t_10 = t_10
+                .wrapping_add((*(&*l.offset(0) as *const uint8_t as *const uint64_t) & mask) >> 6)
+                as uint64_t as uint64_t;
+            t_10 = t_10
+                .wrapping_add((*(&*l.offset(8) as *const uint8_t as *const uint64_t) & mask) >> 6)
+                as uint64_t as uint64_t;
+            t_10 = t_10.wrapping_mul(mul) as uint64_t as uint64_t;
+            s = (t_10 >> 56) as libc::c_int - 8 - 16;
+            current_block_66 = 2606304779496145856;
+        }
+        12 => {
+            let mut t_11: uint64_t =
+                (*(&*a.offset(0) as *const uint8_t as *const uint64_t) & mask) >> 6;
+            t_11 = t_11
+                .wrapping_add((*(&*a.offset(8) as *const uint8_t as *const uint64_t) & mask) >> 6)
+                as uint64_t as uint64_t;
+            t_11 = t_11
+                .wrapping_add((*(&*l.offset(0) as *const uint8_t as *const uint64_t) & mask) >> 6)
+                as uint64_t as uint64_t;
+            t_11 = t_11.wrapping_mul(mul) as uint64_t as uint64_t;
+            s = (t_11 >> 56) as libc::c_int - 16 - 8;
+            current_block_66 = 2606304779496145856;
+        }
+        13 => {
+            let mut t_12: uint32_t = *a as libc::c_uint & mask as uint32_t;
+            t_12 = (t_12 as libc::c_uint).wrapping_add(*(l as *const uint32_t) & mask as uint32_t)
+                as uint32_t as uint32_t;
+            t_12 = (t_12 >> 6).wrapping_mul(mul as uint32_t);
+            s = (t_12 >> 24) as libc::c_int - 1 - 4;
+            current_block_66 = 2606304779496145856;
+        }
+        14 => {
+            let mut t_13: uint32_t = *(a as *const uint32_t) & mask as uint32_t;
+            t_13 = (t_13 as libc::c_uint).wrapping_add(*l as libc::c_uint & mask as uint32_t)
+                as uint32_t as uint32_t;
+            t_13 = (t_13 >> 6).wrapping_mul(mul as uint32_t);
+            s = (t_13 >> 24) as libc::c_int - 4 - 1;
+            current_block_66 = 2606304779496145856;
+        }
+        15 => {
+            let mut t_14: uint64_t =
+                (*(a as *const uint16_t) as libc::c_uint & mask as uint32_t) as uint64_t;
+            t_14 = t_14.wrapping_add(*(l as *const uint64_t) & mask) as uint64_t as uint64_t;
+            t_14 = (t_14 >> 6).wrapping_mul(mul);
+            s = (t_14 >> 56) as libc::c_int - 2 - 8;
+            current_block_66 = 2606304779496145856;
+        }
+        16 => {
+            let mut t_15: uint64_t = *(a as *const uint64_t) & mask;
+            t_15 = t_15.wrapping_add(
+                (*(l as *const uint16_t) as libc::c_uint & mask as uint32_t) as uint64_t,
+            ) as uint64_t as uint64_t;
+            t_15 = (t_15 >> 6).wrapping_mul(mul);
+            s = (t_15 >> 56) as libc::c_int - 8 - 2;
+            current_block_66 = 2606304779496145856;
+        }
+        17 => {
+            let mut t_16: uint64_t = (*(a as *const uint32_t) & mask as uint32_t) as uint64_t;
+            t_16 = t_16.wrapping_add(*(&*l.offset(0) as *const uint8_t as *const uint64_t) & mask)
+                as uint64_t as uint64_t;
+            t_16 = (t_16 >> 6)
+                .wrapping_add((*(&*l.offset(8) as *const uint8_t as *const uint64_t) & mask) >> 6);
+            t_16 = t_16.wrapping_mul(mul) as uint64_t as uint64_t;
+            s = (t_16 >> 56) as libc::c_int - 4 - 16;
+            current_block_66 = 2606304779496145856;
+        }
+        18 => {
+            let mut t_17: uint64_t = *(&*a.offset(0) as *const uint8_t as *const uint64_t) & mask;
+            t_17 = t_17 + (*(l as *const uint32_t) & mask as uint32_t) as uint64_t;
+            t_17 = (t_17 >> 6)
+                .wrapping_add((*(&*a.offset(8) as *const uint8_t as *const uint64_t) & mask) >> 6);
+            t_17 = t_17.wrapping_mul(mul) as uint64_t as uint64_t;
+            s = (t_17 >> 56) as libc::c_int - 16 - 4;
+            current_block_66 = 2606304779496145856;
+        }
+        _ => {
+            if 0 == 0 {
+                unreachable!();
+            }
+            current_block_66 = 6873731126896040597;
+        }
+    }
+    match current_block_66 {
+        6873731126896040597 => {
+            let mut t = *a as libc::c_int >> 6;
+            t += *l as libc::c_int >> 6;
+            s = t - 1 - 1;
+        }
+        _ => {}
+    }
+    return ((s != 0 as libc::c_int) as libc::c_int + (s > 0) as libc::c_int) as libc::c_uint;
+}
