@@ -615,35 +615,29 @@ pub unsafe fn get_lo_ctx(
     y: libc::c_uint,
     stride: ptrdiff_t,
 ) -> libc::c_uint {
-    let mut mag: libc::c_uint = (levels[(0 * stride + 1) as usize] as libc::c_int
-        + levels[(1 * stride + 0) as usize] as libc::c_int)
-        as libc::c_uint;
-    let mut offset: libc::c_uint = 0;
-    if tx_class as libc::c_uint == TX_CLASS_2D as libc::c_int as libc::c_uint {
+    let mut mag = levels[(0 * stride + 1) as usize] as libc::c_uint
+        + levels[(1 * stride + 0) as usize] as libc::c_uint;
+    let mut offset = 0;
+    if tx_class == TX_CLASS_2D {
         mag = mag.wrapping_add(levels[(1 * stride + 1) as usize] as libc::c_uint);
         *hi_mag = mag;
         mag = mag.wrapping_add(
-            (levels[(0 * stride + 2) as usize] as libc::c_int
-                + levels[(2 * stride + 0) as usize] as libc::c_int) as libc::c_uint,
+            levels[(0 * stride + 2) as usize] as libc::c_uint
+                + levels[(2 * stride + 0) as usize] as libc::c_uint,
         );
-        offset = ctx_offsets.unwrap()[umin(y, 4 as libc::c_int as libc::c_uint) as usize]
-            [umin(x, 4 as libc::c_int as libc::c_uint) as usize] as libc::c_uint;
+        offset = ctx_offsets.unwrap()[umin(y, 4) as usize][umin(x, 4) as usize] as libc::c_uint;
     } else {
         mag = mag.wrapping_add(levels[(0 * stride + 2) as usize] as libc::c_uint);
         *hi_mag = mag;
         mag = mag.wrapping_add(
-            (levels[(0 * stride + 3) as usize] as libc::c_int
-                + levels[(0 * stride + 4) as usize] as libc::c_int) as libc::c_uint,
+            levels[(0 * stride + 3) as usize] as libc::c_uint
+                + levels[(0 * stride + 4) as usize] as libc::c_uint,
         );
-        offset = (26 as libc::c_int as libc::c_uint).wrapping_add(if y > 1 as libc::c_uint {
-            10 as libc::c_int as libc::c_uint
-        } else {
-            y.wrapping_mul(5 as libc::c_int as libc::c_uint)
-        });
+        offset = (26 as libc::c_uint).wrapping_add(if y > 1 { 10 } else { y.wrapping_mul(5) });
     }
-    return offset.wrapping_add(if mag > 512 as libc::c_uint {
-        4 as libc::c_int as libc::c_uint
+    return offset.wrapping_add(if mag > 512 {
+        4
     } else {
-        mag.wrapping_add(64 as libc::c_int as libc::c_uint) >> 7
+        mag.wrapping_add(64) >> 7
     });
 }
