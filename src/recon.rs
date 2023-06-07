@@ -61,7 +61,7 @@ pub fn read_golomb(msac: &mut MsacContext) -> libc::c_uint {
 }
 
 #[inline]
-pub unsafe extern "C" fn get_skip_ctx(
+pub unsafe fn get_skip_ctx(
     t_dim: *const TxfmInfo,
     bs: BlockSize,
     a: *const uint8_t,
@@ -404,7 +404,7 @@ pub unsafe extern "C" fn get_skip_ctx(
 }
 
 #[inline]
-pub unsafe extern "C" fn get_dc_sign_ctx(
+pub unsafe fn get_dc_sign_ctx(
     tx: libc::c_int,
     a: *const uint8_t,
     l: *const uint8_t,
@@ -606,7 +606,7 @@ pub unsafe extern "C" fn get_dc_sign_ctx(
 }
 
 #[inline]
-pub unsafe extern "C" fn get_lo_ctx(
+pub unsafe fn get_lo_ctx(
     levels: *const uint8_t,
     tx_class: TxClass,
     hi_mag: *mut libc::c_uint,
