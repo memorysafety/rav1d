@@ -631,5 +631,5 @@ pub unsafe fn get_lo_ctx(
             + levels[(0 * stride + 4) as usize] as libc::c_uint;
         offset = 26 + if y > 1 { 10 } else { y * 5 };
     }
-    return offset + if mag > 512 { 4 } else { (mag + 64) >> 7 };
+    offset + if mag > 512 { 4 } else { (mag + 64) >> 7 }
 }
