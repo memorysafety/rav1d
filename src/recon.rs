@@ -110,9 +110,8 @@ pub fn get_skip_ctx(
     if chroma != 0 {
         let ss_ver = layout == DAV1D_PIXEL_LAYOUT_I420;
         let ss_hor = layout != DAV1D_PIXEL_LAYOUT_I444;
-        let not_one_blk = (b_dim[2] - (b_dim[2] != 0 && ss_hor) as u8 > t_dim.lw
-            || b_dim[3] - (b_dim[3] != 0 && ss_ver) as u8 > t_dim.lh)
-            as libc::c_int;
+        let not_one_blk = b_dim[2] - (b_dim[2] != 0 && ss_hor) as u8 > t_dim.lw
+            || b_dim[3] - (b_dim[3] != 0 && ss_ver) as u8 > t_dim.lh;
         let ca = match t_dim.lw {
             0 => u8::read_ne(a) != 0x40,
             1 => u16::read_ne(a) != 0x4040,
@@ -127,7 +126,7 @@ pub fn get_skip_ctx(
             3 => u64::read_ne(l) != 0x4040404040404040,
             _ => unreachable!(),
         };
-        ((7 + not_one_blk * 3) as libc::c_uint)
+        (7 + (not_one_blk as libc::c_uint) * 3)
             .wrapping_add(ca as libc::c_uint)
             .wrapping_add(cl as libc::c_uint)
     } else if b_dim[2] == t_dim.lw && b_dim[3] == t_dim.lh {
