@@ -7,7 +7,22 @@ use crate::include::stdint::uint32_t;
 use crate::include::stdint::uint64_t;
 use crate::include::stdint::uint8_t;
 use crate::src::levels::BlockSize;
+use crate::src::levels::RectTxfmSize;
 use crate::src::levels::TxClass;
+use crate::src::levels::RTX_16X32;
+use crate::src::levels::RTX_16X4;
+use crate::src::levels::RTX_16X64;
+use crate::src::levels::RTX_16X8;
+use crate::src::levels::RTX_32X16;
+use crate::src::levels::RTX_32X64;
+use crate::src::levels::RTX_32X8;
+use crate::src::levels::RTX_4X16;
+use crate::src::levels::RTX_4X8;
+use crate::src::levels::RTX_64X16;
+use crate::src::levels::RTX_64X32;
+use crate::src::levels::RTX_8X16;
+use crate::src::levels::RTX_8X32;
+use crate::src::levels::RTX_8X4;
 use crate::src::levels::TX_16X16;
 use crate::src::levels::TX_32X32;
 use crate::src::levels::TX_4X4;
@@ -58,6 +73,33 @@ pub fn read_golomb(msac: &mut MsacContext) -> libc::c_uint {
 
     val - 1
 }
+
+trait ReadInt {
+    /// (Try to or panic) read [`Self`] from the front of `bytes` in native endianness.
+    /// These are similar to the [`u32::from_ne_bytes`] type methods,
+    /// but generalized into a `trait` to be generic,
+    /// and operating on a slice that is sliced and converted into an array first.
+    ///
+    /// This replaces the previous code that used `unsafe` transmutes through casting.
+    fn read_ne(bytes: &[u8]) -> Self;
+}
+
+macro_rules! impl_ReadInt {
+    ($U:ty) => {
+        impl ReadInt for $U {
+            fn read_ne(bytes: &[u8]) -> Self {
+                let n = std::mem::size_of::<Self>();
+                Self::from_ne_bytes(bytes[..n].try_into().unwrap())
+            }
+        }
+    };
+}
+
+impl_ReadInt!(u8);
+impl_ReadInt!(u16);
+impl_ReadInt!(u32);
+impl_ReadInt!(u64);
+impl_ReadInt!(u128);
 
 #[inline]
 pub unsafe fn get_skip_ctx(
@@ -403,205 +445,137 @@ pub unsafe fn get_skip_ctx(
     };
 }
 
+// `tx: RectTxfmSize` arg is also `TxfmSize`.
+// `TxfmSize` and `RectTxfmSize` should be part of the same `enum`.
 #[inline]
-pub unsafe fn get_dc_sign_ctx(tx: libc::c_int, a: &[u8], l: &[u8]) -> libc::c_uint {
-    let a = a.as_ptr();
-    let l = l.as_ptr();
+pub fn get_dc_sign_ctx(tx: RectTxfmSize, a: &[u8], l: &[u8]) -> libc::c_uint {
+    let mut mask = 0xc0c0c0c0c0c0c0c0 as u64;
+    let mut mul = 0x101010101010101 as u64;
 
-    let mut mask: uint64_t = 0xc0c0c0c0c0c0c0c0 as libc::c_ulonglong as uint64_t;
-    let mut mul: uint64_t = 0x101010101010101 as libc::c_ulonglong as uint64_t;
-    let mut s = 0;
-    let mut current_block_66: u64;
-    match tx {
-        0 => {
-            current_block_66 = 6873731126896040597;
+    let s = match tx {
+        TX_4X4 => {
+            let mut t = u8::read_ne(a) as i32 >> 6;
+            t += u8::read_ne(l) as i32 >> 6;
+            t - 1 - 1
         }
-        1 => {
-            let mut t_0: uint32_t = *(a as *const uint16_t) as libc::c_uint & mask as uint32_t;
-            t_0 = (t_0 as libc::c_uint)
-                .wrapping_add(*(l as *const uint16_t) as libc::c_uint & mask as uint32_t)
-                as uint32_t as uint32_t;
-            t_0 = (t_0 as libc::c_uint).wrapping_mul(0x4040404 as libc::c_uint) as uint32_t
-                as uint32_t;
-            s = (t_0 >> 24) as libc::c_int - 2 - 2;
-            current_block_66 = 2606304779496145856;
+        TX_8X8 => {
+            let mut t = u16::read_ne(a) as u32 & mask as u32;
+            t += u16::read_ne(l) as u32 & mask as u32;
+            t = t.wrapping_mul(0x4040404);
+            (t >> 24) as i32 - 2 - 2
         }
-        2 => {
-            let mut t_1: uint32_t = (*(a as *const uint32_t) & mask as uint32_t) >> 6;
-            t_1 = (t_1 as libc::c_uint)
-                .wrapping_add((*(l as *const uint32_t) & mask as uint32_t) >> 6)
-                as uint32_t as uint32_t;
-            t_1 = (t_1 as libc::c_uint).wrapping_mul(mul as uint32_t) as uint32_t as uint32_t;
-            s = (t_1 >> 24) as libc::c_int - 4 - 4;
-            current_block_66 = 2606304779496145856;
+        TX_16X16 => {
+            let mut t = (u32::read_ne(a) & mask as u32) >> 6;
+            t += (u32::read_ne(l) & mask as u32) >> 6;
+            t = t.wrapping_mul(mul as u32);
+            (t >> 24) as i32 - 4 - 4
         }
-        3 => {
-            let mut t_2: uint64_t = (*(a as *const uint64_t) & mask) >> 6;
-            t_2 = t_2.wrapping_add((*(l as *const uint64_t) & mask) >> 6) as uint64_t as uint64_t;
-            t_2 = t_2.wrapping_mul(mul) as uint64_t as uint64_t;
-            s = (t_2 >> 56) as libc::c_int - 8 - 8;
-            current_block_66 = 2606304779496145856;
+        TX_32X32 => {
+            let mut t = (u64::read_ne(a) & mask) >> 6;
+            t += (u64::read_ne(l) & mask) >> 6;
+            t = t.wrapping_mul(mul);
+            (t >> 56) as i32 - 8 - 8
         }
-        4 => {
-            let mut t_3: uint64_t =
-                (*(&*a.offset(0) as *const uint8_t as *const uint64_t) & mask) >> 6;
-            t_3 = t_3
-                .wrapping_add((*(&*a.offset(8) as *const uint8_t as *const uint64_t) & mask) >> 6)
-                as uint64_t as uint64_t;
-            t_3 = t_3
-                .wrapping_add((*(&*l.offset(0) as *const uint8_t as *const uint64_t) & mask) >> 6)
-                as uint64_t as uint64_t;
-            t_3 = t_3
-                .wrapping_add((*(&*l.offset(8) as *const uint8_t as *const uint64_t) & mask) >> 6)
-                as uint64_t as uint64_t;
-            t_3 = t_3.wrapping_mul(mul) as uint64_t as uint64_t;
-            s = (t_3 >> 56) as libc::c_int - 16 - 16;
-            current_block_66 = 2606304779496145856;
+        TX_64X64 => {
+            let mut t = (u64::read_ne(&a[0..]) & mask) >> 6;
+            t += (u64::read_ne(&a[8..]) & mask) >> 6;
+            t += (u64::read_ne(&l[0..]) & mask) >> 6;
+            t += (u64::read_ne(&l[8..]) & mask) >> 6;
+            t = t.wrapping_mul(mul);
+            (t >> 56) as i32 - 16 - 16
         }
-        5 => {
-            let mut t_4: uint32_t = *a as libc::c_uint & mask as uint32_t;
-            t_4 = (t_4 as libc::c_uint)
-                .wrapping_add(*(l as *const uint16_t) as libc::c_uint & mask as uint32_t)
-                as uint32_t as uint32_t;
-            t_4 = (t_4 as libc::c_uint).wrapping_mul(0x4040404 as libc::c_uint) as uint32_t
-                as uint32_t;
-            s = (t_4 >> 24) as libc::c_int - 1 - 2;
-            current_block_66 = 2606304779496145856;
+        RTX_4X8 => {
+            let mut t = u8::read_ne(a) as u32 & mask as u32;
+            t += u16::read_ne(l) as u32 & mask as u32;
+            t = t.wrapping_mul(0x4040404);
+            (t >> 24) as i32 - 1 - 2
         }
-        6 => {
-            let mut t_5: uint32_t = *(a as *const uint16_t) as libc::c_uint & mask as uint32_t;
-            t_5 = (t_5 as libc::c_uint).wrapping_add(*l as libc::c_uint & mask as uint32_t)
-                as uint32_t as uint32_t;
-            t_5 = (t_5 as libc::c_uint).wrapping_mul(0x4040404 as libc::c_uint) as uint32_t
-                as uint32_t;
-            s = (t_5 >> 24) as libc::c_int - 2 - 1;
-            current_block_66 = 2606304779496145856;
+        RTX_8X4 => {
+            let mut t = u16::read_ne(a) as u32 & mask as u32;
+            t += u8::read_ne(l) as u32 & mask as u32;
+            t = t.wrapping_mul(0x4040404);
+            (t >> 24) as i32 - 2 - 1
         }
-        7 => {
-            let mut t_6: uint32_t = *(a as *const uint16_t) as libc::c_uint & mask as uint32_t;
-            t_6 = (t_6 as libc::c_uint).wrapping_add(*(l as *const uint32_t) & mask as uint32_t)
-                as uint32_t as uint32_t;
-            t_6 = (t_6 >> 6).wrapping_mul(mul as uint32_t);
-            s = (t_6 >> 24) as libc::c_int - 2 - 4;
-            current_block_66 = 2606304779496145856;
+        RTX_8X16 => {
+            let mut t = u16::read_ne(a) as u32 & mask as u32;
+            t += u32::read_ne(l) & mask as u32;
+            t = (t >> 6).wrapping_mul(mul as u32);
+            (t >> 24) as i32 - 2 - 4
         }
-        8 => {
-            let mut t_7: uint32_t = *(a as *const uint32_t) & mask as uint32_t;
-            t_7 = (t_7 as libc::c_uint)
-                .wrapping_add(*(l as *const uint16_t) as libc::c_uint & mask as uint32_t)
-                as uint32_t as uint32_t;
-            t_7 = (t_7 >> 6).wrapping_mul(mul as uint32_t);
-            s = (t_7 >> 24) as libc::c_int - 4 - 2;
-            current_block_66 = 2606304779496145856;
+        RTX_16X8 => {
+            let mut t = u32::read_ne(a) & mask as u32;
+            t += u16::read_ne(l) as libc::c_uint & mask as u32;
+            t = (t >> 6).wrapping_mul(mul as u32);
+            (t >> 24) as i32 - 4 - 2
         }
-        9 => {
-            let mut t_8: uint64_t = (*(a as *const uint32_t) & mask as uint32_t) as uint64_t;
-            t_8 = t_8.wrapping_add(*(l as *const uint64_t) & mask) as uint64_t as uint64_t;
-            t_8 = (t_8 >> 6).wrapping_mul(mul);
-            s = (t_8 >> 56) as libc::c_int - 4 - 8;
-            current_block_66 = 2606304779496145856;
+        RTX_16X32 => {
+            let mut t = (u32::read_ne(a) & mask as u32) as u64;
+            t += u64::read_ne(l) & mask;
+            t = (t >> 6).wrapping_mul(mul);
+            (t >> 56) as i32 - 4 - 8
         }
-        10 => {
-            let mut t_9: uint64_t = *(a as *const uint64_t) & mask;
-            t_9 = t_9 + (*(l as *const uint32_t) & mask as uint32_t) as uint64_t;
-            t_9 = (t_9 >> 6).wrapping_mul(mul);
-            s = (t_9 >> 56) as libc::c_int - 8 - 4;
-            current_block_66 = 2606304779496145856;
+        RTX_32X16 => {
+            let mut t = u64::read_ne(a) & mask;
+            t += (u32::read_ne(l) & mask as u32) as u64;
+            t = (t >> 6).wrapping_mul(mul);
+            (t >> 56) as i32 - 8 - 4
         }
-        11 => {
-            let mut t_10: uint64_t =
-                (*(&*a.offset(0) as *const uint8_t as *const uint64_t) & mask) >> 6;
-            t_10 = t_10
-                .wrapping_add((*(&*l.offset(0) as *const uint8_t as *const uint64_t) & mask) >> 6)
-                as uint64_t as uint64_t;
-            t_10 = t_10
-                .wrapping_add((*(&*l.offset(8) as *const uint8_t as *const uint64_t) & mask) >> 6)
-                as uint64_t as uint64_t;
-            t_10 = t_10.wrapping_mul(mul) as uint64_t as uint64_t;
-            s = (t_10 >> 56) as libc::c_int - 8 - 16;
-            current_block_66 = 2606304779496145856;
+        RTX_32X64 => {
+            let mut t = (u64::read_ne(&a[0..]) & mask) >> 6;
+            t += (u64::read_ne(&l[0..]) & mask) >> 6;
+            t += (u64::read_ne(&l[8..]) & mask) >> 6;
+            t = t.wrapping_mul(mul);
+            (t >> 56) as i32 - 8 - 16
         }
-        12 => {
-            let mut t_11: uint64_t =
-                (*(&*a.offset(0) as *const uint8_t as *const uint64_t) & mask) >> 6;
-            t_11 = t_11
-                .wrapping_add((*(&*a.offset(8) as *const uint8_t as *const uint64_t) & mask) >> 6)
-                as uint64_t as uint64_t;
-            t_11 = t_11
-                .wrapping_add((*(&*l.offset(0) as *const uint8_t as *const uint64_t) & mask) >> 6)
-                as uint64_t as uint64_t;
-            t_11 = t_11.wrapping_mul(mul) as uint64_t as uint64_t;
-            s = (t_11 >> 56) as libc::c_int - 16 - 8;
-            current_block_66 = 2606304779496145856;
+        RTX_64X32 => {
+            let mut t = (u64::read_ne(&a[0..]) & mask) >> 6;
+            t += (u64::read_ne(&a[8..]) & mask) >> 6;
+            t += (u64::read_ne(&l[0..]) & mask) >> 6;
+            t = t.wrapping_mul(mul);
+            (t >> 56) as i32 - 16 - 8
         }
-        13 => {
-            let mut t_12: uint32_t = *a as libc::c_uint & mask as uint32_t;
-            t_12 = (t_12 as libc::c_uint).wrapping_add(*(l as *const uint32_t) & mask as uint32_t)
-                as uint32_t as uint32_t;
-            t_12 = (t_12 >> 6).wrapping_mul(mul as uint32_t);
-            s = (t_12 >> 24) as libc::c_int - 1 - 4;
-            current_block_66 = 2606304779496145856;
+        RTX_4X16 => {
+            let mut t = u8::read_ne(a) as u32 & mask as u32;
+            t += u32::read_ne(l) & mask as u32;
+            t = (t >> 6).wrapping_mul(mul as u32);
+            (t >> 24) as i32 - 1 - 4
         }
-        14 => {
-            let mut t_13: uint32_t = *(a as *const uint32_t) & mask as uint32_t;
-            t_13 = (t_13 as libc::c_uint).wrapping_add(*l as libc::c_uint & mask as uint32_t)
-                as uint32_t as uint32_t;
-            t_13 = (t_13 >> 6).wrapping_mul(mul as uint32_t);
-            s = (t_13 >> 24) as libc::c_int - 4 - 1;
-            current_block_66 = 2606304779496145856;
+        RTX_16X4 => {
+            let mut t = u32::read_ne(a) & mask as u32;
+            t += u8::read_ne(l) as u32 & mask as u32;
+            t = (t >> 6).wrapping_mul(mul as u32);
+            (t >> 24) as i32 - 4 - 1
         }
-        15 => {
-            let mut t_14: uint64_t =
-                (*(a as *const uint16_t) as libc::c_uint & mask as uint32_t) as uint64_t;
-            t_14 = t_14.wrapping_add(*(l as *const uint64_t) & mask) as uint64_t as uint64_t;
-            t_14 = (t_14 >> 6).wrapping_mul(mul);
-            s = (t_14 >> 56) as libc::c_int - 2 - 8;
-            current_block_66 = 2606304779496145856;
+        RTX_8X32 => {
+            let mut t = (u16::read_ne(a) as u32 & mask as u32) as u64;
+            t += u64::read_ne(l) & mask;
+            t = (t >> 6).wrapping_mul(mul);
+            (t >> 56) as i32 - 2 - 8
         }
-        16 => {
-            let mut t_15: uint64_t = *(a as *const uint64_t) & mask;
-            t_15 = t_15.wrapping_add(
-                (*(l as *const uint16_t) as libc::c_uint & mask as uint32_t) as uint64_t,
-            ) as uint64_t as uint64_t;
-            t_15 = (t_15 >> 6).wrapping_mul(mul);
-            s = (t_15 >> 56) as libc::c_int - 8 - 2;
-            current_block_66 = 2606304779496145856;
+        RTX_32X8 => {
+            let mut t = u64::read_ne(a) & mask;
+            t += (u16::read_ne(l) as u32 & mask as u32) as u64;
+            t = (t >> 6).wrapping_mul(mul);
+            (t >> 56) as i32 - 8 - 2
         }
-        17 => {
-            let mut t_16: uint64_t = (*(a as *const uint32_t) & mask as uint32_t) as uint64_t;
-            t_16 = t_16.wrapping_add(*(&*l.offset(0) as *const uint8_t as *const uint64_t) & mask)
-                as uint64_t as uint64_t;
-            t_16 = (t_16 >> 6)
-                .wrapping_add((*(&*l.offset(8) as *const uint8_t as *const uint64_t) & mask) >> 6);
-            t_16 = t_16.wrapping_mul(mul) as uint64_t as uint64_t;
-            s = (t_16 >> 56) as libc::c_int - 4 - 16;
-            current_block_66 = 2606304779496145856;
+        RTX_16X64 => {
+            let mut t = (u32::read_ne(a) & mask as u32) as u64;
+            t += u64::read_ne(&l[0..]) & mask;
+            t = (t >> 6) + ((u64::read_ne(&l[8..]) & mask) >> 6);
+            t = t.wrapping_mul(mul);
+            (t >> 56) as i32 - 4 - 16
         }
-        18 => {
-            let mut t_17: uint64_t = *(&*a.offset(0) as *const uint8_t as *const uint64_t) & mask;
-            t_17 = t_17 + (*(l as *const uint32_t) & mask as uint32_t) as uint64_t;
-            t_17 = (t_17 >> 6)
-                .wrapping_add((*(&*a.offset(8) as *const uint8_t as *const uint64_t) & mask) >> 6);
-            t_17 = t_17.wrapping_mul(mul) as uint64_t as uint64_t;
-            s = (t_17 >> 56) as libc::c_int - 16 - 4;
-            current_block_66 = 2606304779496145856;
+        RTX_64X16 => {
+            let mut t = u64::read_ne(&a[0..]) & mask;
+            t += (u32::read_ne(l) & mask as u32) as u64;
+            t = (t >> 6) + ((u64::read_ne(&a[8..]) & mask) >> 6);
+            t = t.wrapping_mul(mul);
+            (t >> 56) as i32 - 16 - 4
         }
-        _ => {
-            if 0 == 0 {
-                unreachable!();
-            }
-            current_block_66 = 6873731126896040597;
-        }
-    }
-    match current_block_66 {
-        6873731126896040597 => {
-            let mut t = *a as libc::c_int >> 6;
-            t += *l as libc::c_int >> 6;
-            s = t - 1 - 1;
-        }
-        _ => {}
-    }
-    return ((s != 0 as libc::c_int) as libc::c_int + (s > 0) as libc::c_int) as libc::c_uint;
+        _ => unreachable!(),
+    };
+
+    (s != 0) as libc::c_uint + (s > 0) as libc::c_uint
 }
 
 #[inline]

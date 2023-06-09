@@ -1817,7 +1817,7 @@ unsafe fn decode_coefs(
             current_block = 16948539754621368774;
         }
     } else {
-        dc_sign_ctx = get_dc_sign_ctx(tx as libc::c_int, a, l) as libc::c_int;
+        dc_sign_ctx = get_dc_sign_ctx(tx, a, l) as libc::c_int;
         let dc_sign_cdf = &mut (*ts).cdf.coef.dc_sign[chroma as usize][dc_sign_ctx as usize];
         dc_sign = dav1d_msac_decode_bool_adapt(&mut (*ts).msac, dc_sign_cdf) as libc::c_int;
         if dbg != 0 {
