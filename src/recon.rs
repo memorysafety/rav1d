@@ -98,7 +98,7 @@ impl_ReadInt!(u64);
 impl_ReadInt!(u128);
 
 #[inline]
-pub unsafe fn get_skip_ctx(
+pub fn get_skip_ctx(
     t_dim: &TxfmInfo,
     bs: BlockSize,
     a: &[u8],
