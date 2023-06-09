@@ -824,10 +824,10 @@ use crate::src::recon::get_dc_sign_ctx;
 use crate::src::recon::get_lo_ctx;
 use crate::src::recon::get_skip_ctx;
 use crate::src::recon::read_golomb;
-unsafe extern "C" fn decode_coefs(
+unsafe fn decode_coefs(
     t: *mut Dav1dTaskContext,
-    a: *mut uint8_t,
-    l: *mut uint8_t,
+    a: &mut [u8],
+    l: &mut [u8],
     tx: RectTxfmSize,
     bs: BlockSize,
     b: *const Av1Block,
@@ -845,8 +845,7 @@ unsafe extern "C" fn decode_coefs(
     let chroma = (plane != 0) as libc::c_int;
     let f: *const Dav1dFrameContext = (*t).f;
     let lossless = (*(*f).frame_hdr).segmentation.lossless[(*b).seg_id as usize];
-    let t_dim: *const TxfmInfo =
-        &*dav1d_txfm_dimensions.as_ptr().offset(tx as isize) as *const TxfmInfo;
+    let t_dim = &dav1d_txfm_dimensions[tx as usize];
     let dbg = DEBUG_BLOCK_INFO(&*f, &*t) as libc::c_int;
     if dbg != 0 {
         printf(
@@ -1079,8 +1078,7 @@ unsafe extern "C" fn decode_coefs(
     if eob != 0 {
         let lo_cdf: *mut [uint16_t; 4] =
             ((*ts).cdf.coef.base_tok[(*t_dim).ctx as usize][chroma as usize]).as_mut_ptr();
-        let levels: *mut uint8_t =
-            ((*t).scratch.c2rust_unnamed_0.c2rust_unnamed.levels).as_mut_ptr();
+        let levels = &mut (*t).scratch.c2rust_unnamed_0.c2rust_unnamed.levels;
         let sw = imin((*t_dim).w as libc::c_int, 8 as libc::c_int);
         let sh = imin((*t_dim).h as libc::c_int, 8 as libc::c_int);
         let mut ctx: libc::c_uint = (1 as libc::c_int
@@ -1101,9 +1099,10 @@ unsafe extern "C" fn decode_coefs(
                 let nonsquare_tx: libc::c_uint = (tx as libc::c_uint
                     >= RTX_4X8 as libc::c_int as libc::c_uint)
                     as libc::c_int as libc::c_uint;
-                let lo_ctx_offsets: *const [uint8_t; 5] = (dav1d_lo_ctx_offsets
-                    [nonsquare_tx.wrapping_add(tx as libc::c_uint & nonsquare_tx) as usize])
-                    .as_ptr();
+                let lo_ctx_offsets = Some(
+                    &dav1d_lo_ctx_offsets
+                        [nonsquare_tx.wrapping_add(tx as libc::c_uint & nonsquare_tx) as usize],
+                );
                 scan = dav1d_scans[tx as usize];
                 let stride: ptrdiff_t = (4 * sh) as ptrdiff_t;
                 let shift: libc::c_uint = (if ((*t_dim).lh as libc::c_int) < 4 {
@@ -1114,7 +1113,7 @@ unsafe extern "C" fn decode_coefs(
                 let shift2: libc::c_uint = 0 as libc::c_int as libc::c_uint;
                 let mask: libc::c_uint = (4 * sh - 1) as libc::c_uint;
                 memset(
-                    levels as *mut libc::c_void,
+                    levels.as_mut_ptr() as *mut libc::c_void,
                     0 as libc::c_int,
                     (stride * (4 * sw as isize + 2)) as size_t,
                 );
@@ -1177,7 +1176,7 @@ unsafe extern "C" fn decode_coefs(
                     }
                 }
                 *cf.offset(rc as isize) = tok << 11;
-                *levels.offset(x as isize * stride + y as isize) = level_tok as uint8_t;
+                levels[(x as isize * stride + y as isize) as usize] = level_tok as uint8_t;
                 let mut i = eob - 1;
                 while i > 0 {
                     let mut rc_i: libc::c_uint = 0;
@@ -1197,7 +1196,7 @@ unsafe extern "C" fn decode_coefs(
                     if !(x < 32 as libc::c_uint && y < 32 as libc::c_uint) {
                         unreachable!();
                     }
-                    let level: *mut uint8_t = levels.offset(x as isize * stride).offset(y as isize);
+                    let level = &mut levels[(x as isize * stride + y as isize) as usize..];
                     ctx = get_lo_ctx(level, TX_CLASS_2D, &mut mag, lo_ctx_offsets, x, y, stride);
                     if TX_CLASS_2D as libc::c_int == TX_CLASS_2D as libc::c_int {
                         y |= x;
@@ -1252,12 +1251,12 @@ unsafe extern "C" fn decode_coefs(
                                 (*ts).msac.rng,
                             );
                         }
-                        *level = (tok + ((3 as libc::c_int) << 6)) as uint8_t;
+                        level[0] = (tok + ((3 as libc::c_int) << 6)) as uint8_t;
                         *cf.offset(rc_i as isize) = ((tok << 11) as libc::c_uint | rc) as coef;
                         rc = rc_i;
                     } else {
                         tok *= 0x17ff41 as libc::c_int;
-                        *level = tok as uint8_t;
+                        level[0] = tok as uint8_t;
                         tok = ((tok >> 9) as libc::c_uint
                             & rc.wrapping_add(!(0x7ff as libc::c_uint)))
                             as libc::c_int;
@@ -1299,9 +1298,9 @@ unsafe extern "C" fn decode_coefs(
                 }
                 if dc_tok == 3 as libc::c_uint {
                     if TX_CLASS_2D as libc::c_int == TX_CLASS_2D as libc::c_int {
-                        mag = (*levels.offset((0 * stride + 1) as isize) as libc::c_int
-                            + *levels.offset((1 * stride + 0) as isize) as libc::c_int
-                            + *levels.offset((1 * stride + 1) as isize) as libc::c_int)
+                        mag = (levels[(0 * stride + 1) as usize] as libc::c_int
+                            + levels[(1 * stride + 0) as usize] as libc::c_int
+                            + levels[(1 * stride + 1) as usize] as libc::c_int)
                             as libc::c_uint;
                     }
                     mag &= 63 as libc::c_int as libc::c_uint;
@@ -1327,13 +1326,13 @@ unsafe extern "C" fn decode_coefs(
                 }
             }
             1 => {
-                let lo_ctx_offsets_0: *const [uint8_t; 5] = 0 as *const [uint8_t; 5];
+                let lo_ctx_offsets_0 = None;
                 let stride_0: ptrdiff_t = 16 as libc::c_int as ptrdiff_t;
                 let shift_0: libc::c_uint = ((*t_dim).lh as libc::c_int + 2) as libc::c_uint;
                 let shift2_0: libc::c_uint = 0 as libc::c_int as libc::c_uint;
                 let mask_0: libc::c_uint = (4 * sh - 1) as libc::c_uint;
                 memset(
-                    levels as *mut libc::c_void,
+                    levels.as_mut_ptr() as *mut libc::c_void,
                     0 as libc::c_int,
                     (stride_0 * (4 * sh + 2) as isize) as usize,
                 );
@@ -1396,7 +1395,7 @@ unsafe extern "C" fn decode_coefs(
                     }
                 }
                 *cf.offset(rc as isize) = tok << 11;
-                *levels.offset(x_0 as isize * stride_0 + y_0 as isize) = level_tok as uint8_t;
+                levels[(x_0 as isize * stride_0 + y_0 as isize) as usize] = level_tok as uint8_t;
                 let mut i_0 = eob - 1;
                 while i_0 > 0 {
                     let mut rc_i_0: libc::c_uint = 0;
@@ -1416,9 +1415,8 @@ unsafe extern "C" fn decode_coefs(
                     if !(x_0 < 32 as libc::c_uint && y_0 < 32 as libc::c_uint) {
                         unreachable!();
                     }
-                    let level_0: *mut uint8_t = levels
-                        .offset(x_0 as isize * stride_0 as isize)
-                        .offset(y_0 as isize);
+                    let level_0 =
+                        &mut levels[(x_0 as isize * stride_0 as isize + y_0 as isize) as usize..];
                     ctx = get_lo_ctx(
                         level_0,
                         TX_CLASS_H,
@@ -1481,12 +1479,12 @@ unsafe extern "C" fn decode_coefs(
                                 (*ts).msac.rng,
                             );
                         }
-                        *level_0 = (tok + ((3 as libc::c_int) << 6)) as uint8_t;
+                        level_0[0] = (tok + ((3 as libc::c_int) << 6)) as uint8_t;
                         *cf.offset(rc_i_0 as isize) = ((tok << 11) as libc::c_uint | rc) as coef;
                         rc = rc_i_0;
                     } else {
                         tok *= 0x17ff41 as libc::c_int;
-                        *level_0 = tok as uint8_t;
+                        level_0[0] = tok as uint8_t;
                         tok = ((tok >> 9) as libc::c_uint
                             & rc.wrapping_add(!(0x7ff as libc::c_uint)))
                             as libc::c_int;
@@ -1528,9 +1526,9 @@ unsafe extern "C" fn decode_coefs(
                 }
                 if dc_tok == 3 as libc::c_uint {
                     if TX_CLASS_H as libc::c_int == TX_CLASS_2D as libc::c_int {
-                        mag = (*levels.offset((0 * stride_0 + 1) as isize) as libc::c_int
-                            + *levels.offset((1 * stride_0 + 0) as isize) as libc::c_int
-                            + *levels.offset((1 * stride_0 + 1) as isize) as libc::c_int)
+                        mag = (levels[(0 * stride_0 + 1) as usize] as libc::c_int
+                            + levels[(1 * stride_0 + 0) as usize] as libc::c_int
+                            + levels[(1 * stride_0 + 1) as usize] as libc::c_int)
                             as libc::c_uint;
                     }
                     mag &= 63 as libc::c_int as libc::c_uint;
@@ -1556,13 +1554,13 @@ unsafe extern "C" fn decode_coefs(
                 }
             }
             2 => {
-                let lo_ctx_offsets_1: *const [uint8_t; 5] = 0 as *const [uint8_t; 5];
+                let lo_ctx_offsets_1 = None;
                 let stride_1: ptrdiff_t = 16 as libc::c_int as ptrdiff_t;
                 let shift_1: libc::c_uint = ((*t_dim).lw as libc::c_int + 2) as libc::c_uint;
                 let shift2_1: libc::c_uint = ((*t_dim).lh as libc::c_int + 2) as libc::c_uint;
                 let mask_1: libc::c_uint = (4 * sw - 1) as libc::c_uint;
                 memset(
-                    levels as *mut libc::c_void,
+                    levels.as_mut_ptr() as *mut libc::c_void,
                     0 as libc::c_int,
                     (stride_1 * (4 * sw + 2) as isize) as size_t,
                 );
@@ -1625,8 +1623,7 @@ unsafe extern "C" fn decode_coefs(
                     }
                 }
                 *cf.offset(rc as isize) = tok << 11;
-                *levels.offset((x_1 as isize * stride_1 + y_1 as isize) as isize) =
-                    level_tok as uint8_t;
+                levels[(x_1 as isize * stride_1 + y_1 as isize) as usize] = level_tok as uint8_t;
                 let mut i_1 = eob - 1;
                 while i_1 > 0 {
                     let mut rc_i_1: libc::c_uint = 0;
@@ -1646,8 +1643,7 @@ unsafe extern "C" fn decode_coefs(
                     if !(x_1 < 32 as libc::c_uint && y_1 < 32 as libc::c_uint) {
                         unreachable!();
                     }
-                    let level_1: *mut uint8_t =
-                        levels.offset(x_1 as isize * stride_1).offset(y_1 as isize);
+                    let level_1 = &mut levels[(x_1 as isize * stride_1 + y_1 as isize) as usize..];
                     ctx = get_lo_ctx(
                         level_1,
                         TX_CLASS_V,
@@ -1710,12 +1706,12 @@ unsafe extern "C" fn decode_coefs(
                                 (*ts).msac.rng,
                             );
                         }
-                        *level_1 = (tok + ((3 as libc::c_int) << 6)) as uint8_t;
+                        level_1[0] = (tok + ((3 as libc::c_int) << 6)) as uint8_t;
                         *cf.offset(rc_i_1 as isize) = ((tok << 11) as libc::c_uint | rc) as coef;
                         rc = rc_i_1;
                     } else {
                         tok *= 0x17ff41 as libc::c_int;
-                        *level_1 = tok as uint8_t;
+                        level_1[0] = tok as uint8_t;
                         tok = ((tok >> 9) as libc::c_uint
                             & rc.wrapping_add(!(0x7ff as libc::c_uint)))
                             as libc::c_int;
@@ -1757,9 +1753,9 @@ unsafe extern "C" fn decode_coefs(
                 }
                 if dc_tok == 3 as libc::c_uint {
                     if TX_CLASS_V as libc::c_int == TX_CLASS_2D as libc::c_int {
-                        mag = (*levels.offset((0 * stride_1 + 1) as isize) as libc::c_int
-                            + *levels.offset((1 * stride_1 + 0) as isize) as libc::c_int
-                            + *levels.offset((1 * stride_1 + 1) as isize) as libc::c_int)
+                        mag = (levels[(0 * stride_1 + 1) as usize] as libc::c_int
+                            + levels[(1 * stride_1 + 0) as usize] as libc::c_int
+                            + levels[(1 * stride_1 + 1) as usize] as libc::c_int)
                             as libc::c_uint;
                     }
                     mag &= 63 as libc::c_int as libc::c_uint;
@@ -2154,8 +2150,8 @@ unsafe extern "C" fn read_coef_tree(
         if (*t).frame_thread.pass != 2 as libc::c_int {
             eob = decode_coefs(
                 t,
-                &mut *((*(*t).a).lcoef.0).as_mut_ptr().offset(bx4 as isize),
-                &mut *((*t).l.lcoef.0).as_mut_ptr().offset(by4 as isize),
+                &mut (*(*t).a).lcoef.0[bx4 as usize..],
+                &mut (*t).l.lcoef.0[by4 as usize..],
                 ytx,
                 bs,
                 b,
@@ -2354,8 +2350,8 @@ pub unsafe extern "C" fn dav1d_read_coef_blocks_16bpc(
                         let ref mut fresh4 = (*cbi.offset((*t).bx as isize)).eob[0];
                         *fresh4 = decode_coefs(
                             t,
-                            &mut *((*(*t).a).lcoef.0).as_mut_ptr().offset((bx4 + x) as isize),
-                            &mut *((*t).l.lcoef.0).as_mut_ptr().offset((by4 + y) as isize),
+                            &mut (*(*t).a).lcoef.0[(bx4 + x) as usize..],
+                            &mut (*t).l.lcoef.0[(by4 + y) as usize..],
                             (*b).c2rust_unnamed.c2rust_unnamed.tx as RectTxfmSize,
                             bs,
                             b,
@@ -2441,12 +2437,8 @@ pub unsafe extern "C" fn dav1d_read_coef_blocks_16bpc(
                                 (*cbi_0.offset((*t).bx as isize)).eob[(1 + pl) as usize];
                             *fresh5 = decode_coefs(
                                 t,
-                                &mut *(*((*(*t).a).ccoef.0).as_mut_ptr().offset(pl as isize))
-                                    .as_mut_ptr()
-                                    .offset((cbx4 + x) as isize),
-                                &mut *(*((*t).l.ccoef.0).as_mut_ptr().offset(pl as isize))
-                                    .as_mut_ptr()
-                                    .offset((cby4 + y) as isize),
+                                &mut (*(*t).a).ccoef.0[pl as usize][(cbx4 + x) as usize..],
+                                &mut (*t).l.ccoef.0[pl as usize][(cby4 + y) as usize..],
                                 (*b).uvtx as RectTxfmSize,
                                 bs,
                                 b,
@@ -3241,8 +3233,8 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_16bpc(
                             cf = ((*t).c2rust_unnamed.cf_16bpc).as_mut_ptr();
                             eob = decode_coefs(
                                 t,
-                                &mut *((*(*t).a).lcoef.0).as_mut_ptr().offset((bx4 + x) as isize),
-                                &mut *((*t).l.lcoef.0).as_mut_ptr().offset((by4 + y) as isize),
+                                &mut (*(*t).a).lcoef.0[(bx4 + x) as usize..],
+                                &mut (*t).l.lcoef.0[(by4 + y) as usize..],
                                 (*b).c2rust_unnamed.c2rust_unnamed.tx as RectTxfmSize,
                                 bs,
                                 b,
@@ -3700,16 +3692,9 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_16bpc(
                                     cf_0 = ((*t).c2rust_unnamed.cf_16bpc).as_mut_ptr();
                                     eob_0 = decode_coefs(
                                         t,
-                                        &mut *(*((*(*t).a).ccoef.0)
-                                            .as_mut_ptr()
-                                            .offset(pl_0 as isize))
-                                        .as_mut_ptr()
-                                        .offset((cbx4 + x) as isize),
-                                        &mut *(*((*t).l.ccoef.0)
-                                            .as_mut_ptr()
-                                            .offset(pl_0 as isize))
-                                        .as_mut_ptr()
-                                        .offset((cby4 + y) as isize),
+                                        &mut (*(*t).a).ccoef.0[pl_0 as usize]
+                                            [(cbx4 + x) as usize..],
+                                        &mut (*t).l.ccoef.0[pl_0 as usize][(cby4 + y) as usize..],
                                         (*b).uvtx as RectTxfmSize,
                                         bs,
                                         b,
@@ -5002,12 +4987,8 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_16bpc(
                                     as TxfmType;
                                 eob = decode_coefs(
                                     t,
-                                    &mut *(*((*(*t).a).ccoef.0).as_mut_ptr().offset(pl_8 as isize))
-                                        .as_mut_ptr()
-                                        .offset((cbx4 + x_0) as isize),
-                                    &mut *(*((*t).l.ccoef.0).as_mut_ptr().offset(pl_8 as isize))
-                                        .as_mut_ptr()
-                                        .offset((cby4 + y) as isize),
+                                    &mut (*(*t).a).ccoef.0[pl_8 as usize][(cbx4 + x_0) as usize..],
+                                    &mut (*t).l.ccoef.0[pl_8 as usize][(cby4 + y) as usize..],
                                     (*b).uvtx as RectTxfmSize,
                                     bs,
                                     b,

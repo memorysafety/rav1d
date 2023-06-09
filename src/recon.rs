@@ -61,15 +61,18 @@ pub fn read_golomb(msac: &mut MsacContext) -> libc::c_uint {
 }
 
 #[inline]
-pub unsafe extern "C" fn get_skip_ctx(
-    t_dim: *const TxfmInfo,
+pub unsafe fn get_skip_ctx(
+    t_dim: &TxfmInfo,
     bs: BlockSize,
-    a: *const uint8_t,
-    l: *const uint8_t,
+    a: &[u8],
+    l: &[u8],
     chroma: libc::c_int,
     layout: Dav1dPixelLayout,
 ) -> libc::c_uint {
-    let b_dim: *const uint8_t = (dav1d_block_dimensions[bs as usize]).as_ptr();
+    let a = a.as_ptr();
+    let l = l.as_ptr();
+
+    let b_dim = &dav1d_block_dimensions[bs as usize];
     if chroma != 0 {
         let ss_ver = (layout as libc::c_uint
             == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint)
@@ -77,16 +80,14 @@ pub unsafe extern "C" fn get_skip_ctx(
         let ss_hor = (layout as libc::c_uint
             != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint)
             as libc::c_int;
-        let not_one_blk = (*b_dim.offset(2) as libc::c_int
-            - (*b_dim.offset(2) != 0 && ss_hor != 0) as libc::c_int
-            > (*t_dim).lw as libc::c_int
-            || *b_dim.offset(3) as libc::c_int
-                - (*b_dim.offset(3) != 0 && ss_ver != 0) as libc::c_int
-                > (*t_dim).lh as libc::c_int) as libc::c_int;
+        let not_one_blk = (b_dim[2] as libc::c_int - (b_dim[2] != 0 && ss_hor != 0) as libc::c_int
+            > t_dim.lw as libc::c_int
+            || b_dim[3] as libc::c_int - (b_dim[3] != 0 && ss_ver != 0) as libc::c_int
+                > t_dim.lh as libc::c_int) as libc::c_int;
         let mut ca: libc::c_uint = 0;
         let mut cl: libc::c_uint = 0;
         let mut current_block_7: u64;
-        match (*t_dim).lw as libc::c_int {
+        match t_dim.lw as libc::c_int {
             0 => {
                 current_block_7 = 11396040223254765297;
             }
@@ -120,7 +121,7 @@ pub unsafe extern "C" fn get_skip_ctx(
             _ => {}
         }
         let mut current_block_16: u64;
-        match (*t_dim).lh as libc::c_int {
+        match t_dim.lh as libc::c_int {
             0 => {
                 current_block_16 = 15770135957368472560;
             }
@@ -156,15 +157,15 @@ pub unsafe extern "C" fn get_skip_ctx(
         return ((7 + not_one_blk * 3) as libc::c_uint)
             .wrapping_add(ca)
             .wrapping_add(cl);
-    } else if *b_dim.offset(2) as libc::c_int == (*t_dim).lw as libc::c_int
-        && *b_dim.offset(3) as libc::c_int == (*t_dim).lh as libc::c_int
+    } else if b_dim[2] as libc::c_int == t_dim.lw as libc::c_int
+        && b_dim[3] as libc::c_int == t_dim.lh as libc::c_int
     {
         return 0 as libc::c_int as libc::c_uint;
     } else {
         let mut la: libc::c_uint = 0;
         let mut ll: libc::c_uint = 0;
         let mut current_block_80: u64;
-        match (*t_dim).lw as libc::c_int {
+        match t_dim.lw as libc::c_int {
             0 => {
                 current_block_80 = 15794479632267580089;
             }
@@ -279,7 +280,7 @@ pub unsafe extern "C" fn get_skip_ctx(
             _ => {}
         }
         let mut current_block_140: u64;
-        match (*t_dim).lh as libc::c_int {
+        match t_dim.lh as libc::c_int {
             0 => {
                 current_block_140 = 5167972421258071942;
             }
@@ -404,11 +405,10 @@ pub unsafe extern "C" fn get_skip_ctx(
 }
 
 #[inline]
-pub unsafe extern "C" fn get_dc_sign_ctx(
-    tx: libc::c_int,
-    a: *const uint8_t,
-    l: *const uint8_t,
-) -> libc::c_uint {
+pub unsafe fn get_dc_sign_ctx(tx: libc::c_int, a: &[u8], l: &[u8]) -> libc::c_uint {
+    let a = a.as_ptr();
+    let l = l.as_ptr();
+
     let mut mask: uint64_t = 0xc0c0c0c0c0c0c0c0 as libc::c_ulonglong as uint64_t;
     let mut mul: uint64_t = 0x101010101010101 as libc::c_ulonglong as uint64_t;
     let mut s = 0;
@@ -606,36 +606,34 @@ pub unsafe extern "C" fn get_dc_sign_ctx(
 }
 
 #[inline]
-pub unsafe extern "C" fn get_lo_ctx(
-    levels: *const uint8_t,
+pub unsafe fn get_lo_ctx(
+    levels: &[u8],
     tx_class: TxClass,
-    hi_mag: *mut libc::c_uint,
-    ctx_offsets: *const [uint8_t; 5],
+    hi_mag: &mut libc::c_uint,
+    ctx_offsets: Option<&[[u8; 5]; 5]>,
     x: libc::c_uint,
     y: libc::c_uint,
     stride: ptrdiff_t,
 ) -> libc::c_uint {
-    let mut mag: libc::c_uint = (*levels.offset((0 * stride + 1) as isize) as libc::c_int
-        + *levels.offset((1 * stride + 0) as isize) as libc::c_int)
+    let mut mag: libc::c_uint = (levels[(0 * stride + 1) as usize] as libc::c_int
+        + levels[(1 * stride + 0) as usize] as libc::c_int)
         as libc::c_uint;
     let mut offset: libc::c_uint = 0;
     if tx_class as libc::c_uint == TX_CLASS_2D as libc::c_int as libc::c_uint {
-        mag = mag.wrapping_add(*levels.offset((1 * stride + 1) as isize) as libc::c_uint);
+        mag = mag.wrapping_add(levels[(1 * stride + 1) as usize] as libc::c_uint);
         *hi_mag = mag;
         mag = mag.wrapping_add(
-            (*levels.offset((0 * stride + 2) as isize) as libc::c_int
-                + *levels.offset((2 * stride + 0) as isize) as libc::c_int)
-                as libc::c_uint,
+            (levels[(0 * stride + 2) as usize] as libc::c_int
+                + levels[(2 * stride + 0) as usize] as libc::c_int) as libc::c_uint,
         );
-        offset = (*ctx_offsets.offset(umin(y, 4 as libc::c_int as libc::c_uint) as isize))
+        offset = ctx_offsets.unwrap()[umin(y, 4 as libc::c_int as libc::c_uint) as usize]
             [umin(x, 4 as libc::c_int as libc::c_uint) as usize] as libc::c_uint;
     } else {
-        mag = mag.wrapping_add(*levels.offset((0 * stride + 2) as isize) as libc::c_uint);
+        mag = mag.wrapping_add(levels[(0 * stride + 2) as usize] as libc::c_uint);
         *hi_mag = mag;
         mag = mag.wrapping_add(
-            (*levels.offset((0 * stride + 3) as isize) as libc::c_int
-                + *levels.offset((0 * stride + 4) as isize) as libc::c_int)
-                as libc::c_uint,
+            (levels[(0 * stride + 3) as usize] as libc::c_int
+                + levels[(0 * stride + 4) as usize] as libc::c_int) as libc::c_uint,
         );
         offset = (26 as libc::c_int as libc::c_uint).wrapping_add(if y > 1 as libc::c_uint {
             10 as libc::c_int as libc::c_uint
