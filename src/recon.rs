@@ -75,6 +75,12 @@ pub fn read_golomb(msac: &mut MsacContext) -> libc::c_uint {
 }
 
 trait ReadInt {
+    /// (Try to or panic) read [`Self`] from the front of `bytes` in native endianness.
+    /// These are similar to the [`u32::from_ne_bytes`] type methods,
+    /// but generalized into a `trait` to be generic,
+    /// and operating on a slice that is sliced and converted into an array first.
+    ///
+    /// This replaces the previous code that used `unsafe` transmutes through casting.
     fn read_ne(bytes: &[u8]) -> Self;
 }
 
