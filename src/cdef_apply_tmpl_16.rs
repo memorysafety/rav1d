@@ -9,12 +9,12 @@ extern "C" {
 
 pub type pixel = uint16_t;
 pub type coef = int32_t;
+use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
-use crate::src::r#ref::Dav1dRef;
-use crate::include::dav1d::picture::Dav1dPicture;
 use crate::src::internal::Dav1dFrameContext_task_thread;
 use crate::src::internal::FrameTileThreadData;
+use crate::src::r#ref::Dav1dRef;
 
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dPixelLayout;
@@ -28,12 +28,12 @@ use crate::include::dav1d::headers::Dav1dSequenceHeader;
 
 use crate::src::align::Align16;
 
+use crate::src::internal::CodedBlockInfo;
+use crate::src::levels::Av1Block;
 use crate::src::lf_mask::Av1Filter;
 use crate::src::lf_mask::Av1FilterLUT;
 use crate::src::lf_mask::Av1Restoration;
 use crate::src::lf_mask::Av1RestorationUnit;
-use crate::src::internal::CodedBlockInfo;
-use crate::src::levels::Av1Block;
 use crate::src::refmvs::refmvs_frame;
 
 use crate::src::env::BlockContext;
@@ -43,30 +43,6 @@ pub type read_coef_blocks_fn =
 use crate::src::levels::BlockSize;
 
 use crate::src::internal::Dav1dTaskContext;
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dTileState {
-    pub cdf: CdfContext,
-    pub msac: MsacContext,
-    pub tiling: Dav1dTileState_tiling,
-    pub progress: [atomic_int; 2],
-    pub frame_thread: [Dav1dTileState_frame_thread; 2],
-    pub lowest_pixel: *mut [[libc::c_int; 2]; 7],
-    pub dqmem: [[[uint16_t; 2]; 3]; 8],
-    pub dq: *const [[uint16_t; 2]; 3],
-    pub last_qidx: libc::c_int,
-    pub last_delta_lf: [int8_t; 4],
-    pub lflvlmem: [[[[uint8_t; 2]; 8]; 4]; 8],
-    pub lflvl: *const [[[uint8_t; 2]; 8]; 4],
-    pub lr_ref: [*mut Av1RestorationUnit; 3],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dTileState_frame_thread {
-    pub pal_idx: *mut uint8_t,
-    pub cf: *mut coef,
-}
 use crate::src::internal::Dav1dTileState_tiling;
 use crate::src::intra_edge::EdgeFlags;
 

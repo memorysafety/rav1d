@@ -296,29 +296,6 @@ use crate::src::levels::Filter2d;
 use crate::src::levels::FILTER_2D_BILINEAR;
 use crate::src::refmvs::refmvs_tile;
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dTileState {
-    pub cdf: CdfContext,
-    pub msac: MsacContext,
-    pub tiling: Dav1dTileState_tiling,
-    pub progress: [atomic_int; 2],
-    pub frame_thread: [Dav1dTileState_frame_thread; 2],
-    pub lowest_pixel: *mut [[libc::c_int; 2]; 7],
-    pub dqmem: [[[uint16_t; 2]; 3]; 8],
-    pub dq: *const [[uint16_t; 2]; 3],
-    pub last_qidx: libc::c_int,
-    pub last_delta_lf: [int8_t; 4],
-    pub lflvlmem: [[[[uint8_t; 2]; 8]; 4]; 8],
-    pub lflvl: *const [[[uint8_t; 2]; 8]; 4],
-    pub lr_ref: [*mut Av1RestorationUnit; 3],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dTileState_frame_thread {
-    pub pal_idx: *mut uint8_t,
-    pub cf: *mut libc::c_void,
-}
 use crate::src::internal::Dav1dTileState_tiling;
 
 use crate::src::internal::Dav1dContext;
@@ -825,6 +802,8 @@ use crate::src::msac::dav1d_msac_decode_uniform;
 use crate::src::recon::define_DEBUG_BLOCK_INFO;
 
 use crate::src::internal::Dav1dTaskContext_scratch_pal;
+
+use super::internal::Dav1dTileState;
 
 define_DEBUG_BLOCK_INFO!();
 
@@ -5967,7 +5946,7 @@ unsafe extern "C" fn decode_sb(
             (*(node as *const EdgeBranch)).split[0],
         );
     }
-    let mut pc = Default::default().as_mut_slice();
+    let mut pc = &mut [0; 16];
     let mut bp: BlockPartition = PARTITION_NONE;
     let mut ctx = 0;
     let mut bx8 = 0;

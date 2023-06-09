@@ -30,6 +30,7 @@ use crate::src::picture::Dav1dThreadPicture;
 use crate::src::r#ref::Dav1dRef;
 use crate::src::thread_data::thread_data;
 
+use super::cdf::CdfContext;
 use super::cdf::CdfThreadContext;
 use super::env::BlockContext;
 use super::intra_edge::EdgeFlags;
@@ -39,7 +40,9 @@ use super::levels::Filter2d;
 use super::lf_mask::Av1Filter;
 use super::lf_mask::Av1FilterLUT;
 use super::lf_mask::Av1Restoration;
+use super::lf_mask::Av1RestorationUnit;
 use super::mem::Dav1dMemPool;
+use super::msac::MsacContext;
 use super::picture::PictureFlags;
 use super::recon::recon_b_inter_fn;
 use super::recon::recon_b_intra_fn;
@@ -47,6 +50,9 @@ use super::refmvs::refmvs_frame;
 use super::refmvs::refmvs_temporal_block;
 use super::refmvs::refmvs_tile;
 use super::refmvs::Dav1dRefmvsDSPContext;
+
+type pixel = libc::c_void;
+type coef = libc::c_void;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -466,9 +472,6 @@ pub struct Dav1dFrameContext {
     pub tile_thread: FrameTileThreadData,
 }
 
-type pixel = libc::c_void;
-type coef = libc::c_void;
-
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext_lf {
@@ -563,4 +566,29 @@ impl Dav1dFrameContext_bd_fn {
     ) {
         self.read_coef_blocks.expect("non-null function pointer")(context, block_size, block);
     }
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dTileState {
+    pub cdf: CdfContext,
+    pub msac: MsacContext,
+    pub tiling: Dav1dTileState_tiling,
+    pub progress: [atomic_int; 2],
+    pub frame_thread: [Dav1dTileState_frame_thread; 2],
+    pub lowest_pixel: *mut [[libc::c_int; 2]; 7],
+    pub dqmem: [[[uint16_t; 2]; 3]; 8],
+    pub dq: *const [[uint16_t; 2]; 3],
+    pub last_qidx: libc::c_int,
+    pub last_delta_lf: [int8_t; 4],
+    pub lflvlmem: [[[[uint8_t; 2]; 8]; 4]; 8],
+    pub lflvl: *const [[[uint8_t; 2]; 8]; 4],
+    pub lr_ref: [*mut Av1RestorationUnit; 3],
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dTileState_frame_thread {
+    pub pal_idx: *mut uint8_t,
+    pub cf: *mut coef,
 }

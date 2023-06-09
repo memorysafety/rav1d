@@ -117,29 +117,6 @@ use crate::src::internal::Dav1dTaskContext;
 use crate::src::levels::Filter2d;
 use crate::src::levels::FILTER_2D_BILINEAR;
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dTileState {
-    pub cdf: CdfContext,
-    pub msac: MsacContext,
-    pub tiling: Dav1dTileState_tiling,
-    pub progress: [atomic_int; 2],
-    pub frame_thread: [Dav1dTileState_frame_thread; 2],
-    pub lowest_pixel: *mut [[libc::c_int; 2]; 7],
-    pub dqmem: [[[uint16_t; 2]; 3]; 8],
-    pub dq: *const [[uint16_t; 2]; 3],
-    pub last_qidx: libc::c_int,
-    pub last_delta_lf: [int8_t; 4],
-    pub lflvlmem: [[[[uint8_t; 2]; 8]; 4]; 8],
-    pub lflvl: *const [[[uint8_t; 2]; 8]; 4],
-    pub lr_ref: [*mut Av1RestorationUnit; 3],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dTileState_frame_thread {
-    pub pal_idx: *mut uint8_t,
-    pub cf: *mut coef,
-}
 use crate::src::internal::Dav1dTileState_tiling;
 
 use crate::src::internal::Dav1dContext;
@@ -637,6 +614,8 @@ use crate::src::ipred_prepare::sm_flag;
 use crate::src::ipred_prepare::sm_uv_flag;
 use crate::src::msac::dav1d_msac_decode_bools;
 use crate::src::recon::read_golomb;
+
+use super::internal::Dav1dTileState;
 #[inline]
 unsafe extern "C" fn get_skip_ctx(
     t_dim: *const TxfmInfo,
