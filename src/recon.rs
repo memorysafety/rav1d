@@ -174,9 +174,9 @@ pub fn get_skip_ctx(
             }
             1 => {
                 if TX_8X8 == TX_64X64 {
-                    let mut tmp_0 = u64::read_ne(a);
-                    tmp_0 |= u64::read_ne(&a[8..]);
-                    la = (tmp_0 >> 32) as libc::c_uint | tmp_0 as libc::c_uint;
+                    let mut tmp = u64::read_ne(a);
+                    tmp |= u64::read_ne(&a[8..]);
+                    la = (tmp >> 32) as libc::c_uint | tmp as libc::c_uint;
                 } else {
                     la = u16::read_ne(a) as libc::c_uint;
                 }
@@ -192,9 +192,9 @@ pub fn get_skip_ctx(
             }
             2 => {
                 if TX_16X16 == TX_64X64 {
-                    let mut tmp_1 = u64::read_ne(a);
-                    tmp_1 |= u64::read_ne(&a[8..]);
-                    la = (tmp_1 >> 32) as libc::c_uint | tmp_1 as libc::c_uint;
+                    let mut tmp = u64::read_ne(a);
+                    tmp |= u64::read_ne(&a[8..]);
+                    la = (tmp >> 32) as libc::c_uint | tmp as libc::c_uint;
                 } else {
                     la = u32::read_ne(a);
                 }
@@ -210,9 +210,9 @@ pub fn get_skip_ctx(
             }
             3 => {
                 if TX_32X32 == TX_64X64 {
-                    let mut tmp_2 = u64::read_ne(a);
-                    tmp_2 |= u64::read_ne(&a[8..]);
-                    la = (tmp_2 >> 32) as libc::c_uint | tmp_2 as libc::c_uint;
+                    let mut tmp = u64::read_ne(a);
+                    tmp |= u64::read_ne(&a[8..]);
+                    la = (tmp >> 32) as libc::c_uint | tmp as libc::c_uint;
                 } else {
                     la = u32::read_ne(a);
                 }
@@ -228,9 +228,9 @@ pub fn get_skip_ctx(
             }
             4 => {
                 if TX_64X64 == TX_64X64 {
-                    let mut tmp_3 = u64::read_ne(a);
-                    tmp_3 |= u64::read_ne(&a[8..]);
-                    la = (tmp_3 >> 32) as libc::c_uint | tmp_3 as libc::c_uint;
+                    let mut tmp = u64::read_ne(a);
+                    tmp |= u64::read_ne(&a[8..]);
+                    la = (tmp >> 32) as libc::c_uint | tmp as libc::c_uint;
                 } else {
                     la = u32::read_ne(a);
                 }
@@ -249,9 +249,9 @@ pub fn get_skip_ctx(
         match t_dim.lh {
             0 => {
                 if TX_4X4 == TX_64X64 {
-                    let mut tmp_4 = u64::read_ne(l);
-                    tmp_4 |= u64::read_ne(&l[8..]);
-                    ll = (tmp_4 >> 32) as libc::c_uint | tmp_4 as libc::c_uint;
+                    let mut tmp = u64::read_ne(l);
+                    tmp |= u64::read_ne(&l[8..]);
+                    ll = (tmp >> 32) as libc::c_uint | tmp as libc::c_uint;
                 } else {
                     ll = u8::read_ne(l) as libc::c_uint;
                 }
@@ -267,9 +267,9 @@ pub fn get_skip_ctx(
             }
             1 => {
                 if TX_8X8 == TX_64X64 {
-                    let mut tmp_5 = u64::read_ne(l);
-                    tmp_5 |= u64::read_ne(&l[8..]);
-                    ll = (tmp_5 >> 32) as libc::c_uint | tmp_5 as libc::c_uint;
+                    let mut tmp = u64::read_ne(l);
+                    tmp |= u64::read_ne(&l[8..]);
+                    ll = (tmp >> 32) as libc::c_uint | tmp as libc::c_uint;
                 } else {
                     ll = u16::read_ne(l) as libc::c_uint;
                 }
@@ -285,9 +285,9 @@ pub fn get_skip_ctx(
             }
             2 => {
                 if TX_16X16 == TX_64X64 {
-                    let mut tmp_6 = u64::read_ne(l);
-                    tmp_6 |= u64::read_ne(&l[8..]);
-                    ll = (tmp_6 >> 32) as libc::c_uint | tmp_6 as libc::c_uint;
+                    let mut tmp = u64::read_ne(l);
+                    tmp |= u64::read_ne(&l[8..]);
+                    ll = (tmp >> 32) as libc::c_uint | tmp as libc::c_uint;
                 } else {
                     ll = u32::read_ne(l);
                 }
@@ -303,9 +303,9 @@ pub fn get_skip_ctx(
             }
             3 => {
                 if TX_32X32 == TX_64X64 {
-                    let mut tmp_7 = u64::read_ne(l);
-                    tmp_7 |= u64::read_ne(&l[8..]);
-                    ll = (tmp_7 >> 32) as libc::c_uint | tmp_7 as libc::c_uint;
+                    let mut tmp = u64::read_ne(l);
+                    tmp |= u64::read_ne(&l[8..]);
+                    ll = (tmp >> 32) as libc::c_uint | tmp as libc::c_uint;
                 } else {
                     ll = u32::read_ne(l);
                 }
@@ -321,9 +321,9 @@ pub fn get_skip_ctx(
             }
             4 => {
                 if TX_64X64 == TX_64X64 {
-                    let mut tmp_8 = u64::read_ne(l);
-                    tmp_8 |= u64::read_ne(&l[8..]);
-                    ll = (tmp_8 >> 32) as libc::c_uint | tmp_8 as libc::c_uint;
+                    let mut tmp = u64::read_ne(l);
+                    tmp |= u64::read_ne(&l[8..]);
+                    ll = (tmp >> 32) as libc::c_uint | tmp as libc::c_uint;
                 } else {
                     ll = u32::read_ne(l);
                 }
