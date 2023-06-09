@@ -115,37 +115,28 @@ pub unsafe fn get_skip_ctx(
 
     let b_dim = &dav1d_block_dimensions[bs as usize];
     if chroma != 0 {
-        let ss_ver = (layout as libc::c_uint
-            == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint)
+        let ss_ver = (layout == DAV1D_PIXEL_LAYOUT_I420) as libc::c_int;
+        let ss_hor = (layout != DAV1D_PIXEL_LAYOUT_I444) as libc::c_int;
+        let not_one_blk = (b_dim[2] - (b_dim[2] != 0 && ss_hor != 0) as u8 > t_dim.lw
+            || b_dim[3] - (b_dim[3] != 0 && ss_ver != 0) as u8 > t_dim.lh)
             as libc::c_int;
-        let ss_hor = (layout as libc::c_uint
-            != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint)
-            as libc::c_int;
-        let not_one_blk = (b_dim[2] as libc::c_int - (b_dim[2] != 0 && ss_hor != 0) as libc::c_int
-            > t_dim.lw as libc::c_int
-            || b_dim[3] as libc::c_int - (b_dim[3] != 0 && ss_ver != 0) as libc::c_int
-                > t_dim.lh as libc::c_int) as libc::c_int;
         let mut ca: libc::c_uint = 0;
         let mut cl: libc::c_uint = 0;
         let mut current_block_7: u64;
-        match t_dim.lw as libc::c_int {
+        match t_dim.lw {
             0 => {
                 current_block_7 = 11396040223254765297;
             }
             1 => {
-                ca = (*(a as *const uint16_t) as libc::c_int != 0x4040 as libc::c_int)
-                    as libc::c_int as libc::c_uint;
+                ca = (*(a as *const uint16_t) != 0x4040) as libc::c_uint;
                 current_block_7 = 2979737022853876585;
             }
             2 => {
-                ca = (*(a as *const uint32_t) != 0x40404040 as libc::c_uint) as libc::c_int
-                    as libc::c_uint;
+                ca = (*(a as *const uint32_t) != 0x40404040) as libc::c_uint;
                 current_block_7 = 2979737022853876585;
             }
             3 => {
-                ca = (*(a as *const uint64_t) as libc::c_ulonglong
-                    != 0x4040404040404040 as libc::c_ulonglong) as libc::c_int
-                    as libc::c_uint;
+                ca = (*(a as *const uint64_t) != 0x4040404040404040) as libc::c_uint;
                 current_block_7 = 2979737022853876585;
             }
             _ => {
@@ -157,29 +148,25 @@ pub unsafe fn get_skip_ctx(
         }
         match current_block_7 {
             11396040223254765297 => {
-                ca = (*a as libc::c_int != 0x40 as libc::c_int) as libc::c_int as libc::c_uint;
+                ca = (*a != 0x40) as libc::c_uint;
             }
             _ => {}
         }
         let mut current_block_16: u64;
-        match t_dim.lh as libc::c_int {
+        match t_dim.lh {
             0 => {
                 current_block_16 = 15770135957368472560;
             }
             1 => {
-                cl = (*(l as *const uint16_t) as libc::c_int != 0x4040 as libc::c_int)
-                    as libc::c_int as libc::c_uint;
+                cl = (*(l as *const uint16_t) != 0x4040) as libc::c_uint;
                 current_block_16 = 11307063007268554308;
             }
             2 => {
-                cl = (*(l as *const uint32_t) != 0x40404040 as libc::c_uint) as libc::c_int
-                    as libc::c_uint;
+                cl = (*(l as *const uint32_t) != 0x40404040) as libc::c_uint;
                 current_block_16 = 11307063007268554308;
             }
             3 => {
-                cl = (*(l as *const uint64_t) as libc::c_ulonglong
-                    != 0x4040404040404040 as libc::c_ulonglong) as libc::c_int
-                    as libc::c_uint;
+                cl = (*(l as *const uint64_t) != 0x4040404040404040) as libc::c_uint;
                 current_block_16 = 11307063007268554308;
             }
             _ => {
@@ -191,102 +178,100 @@ pub unsafe fn get_skip_ctx(
         }
         match current_block_16 {
             15770135957368472560 => {
-                cl = (*l as libc::c_int != 0x40 as libc::c_int) as libc::c_int as libc::c_uint;
+                cl = (*l != 0x40) as libc::c_uint;
             }
             _ => {}
         }
         return ((7 + not_one_blk * 3) as libc::c_uint)
             .wrapping_add(ca)
             .wrapping_add(cl);
-    } else if b_dim[2] as libc::c_int == t_dim.lw as libc::c_int
-        && b_dim[3] as libc::c_int == t_dim.lh as libc::c_int
-    {
-        return 0 as libc::c_int as libc::c_uint;
+    } else if b_dim[2] == t_dim.lw && b_dim[3] == t_dim.lh {
+        return 0;
     } else {
         let mut la: libc::c_uint = 0;
         let mut ll: libc::c_uint = 0;
         let mut current_block_80: u64;
-        match t_dim.lw as libc::c_int {
+        match t_dim.lw {
             0 => {
                 current_block_80 = 15794479632267580089;
             }
             1 => {
-                if TX_8X8 as libc::c_int == TX_64X64 as libc::c_int {
-                    let mut tmp_0: uint64_t = *(a as *const uint64_t);
+                if TX_8X8 == TX_64X64 {
+                    let mut tmp_0 = *(a as *const uint64_t);
                     tmp_0 |= *(&*a.offset(8) as *const uint8_t as *const uint64_t);
                     la = (tmp_0 >> 32) as libc::c_uint | tmp_0 as libc::c_uint;
                 } else {
                     la = *(a as *const uint16_t) as libc::c_uint;
                 }
-                if TX_8X8 as libc::c_int == TX_32X32 as libc::c_int {
-                    la |= *(&*a.offset(::core::mem::size_of::<uint16_t>() as libc::c_ulong as isize)
+                if TX_8X8 == TX_32X32 {
+                    la |= *(&*a.offset(::core::mem::size_of::<uint16_t>() as isize)
                         as *const uint8_t as *const uint16_t)
                         as libc::c_uint;
                 }
-                if TX_8X8 as libc::c_int >= TX_16X16 as libc::c_int {
+                if TX_8X8 >= TX_16X16 {
                     la |= la >> 16;
                 }
-                if TX_8X8 as libc::c_int >= TX_8X8 as libc::c_int {
+                if TX_8X8 >= TX_8X8 {
                     la |= la >> 8;
                 }
                 current_block_80 = 17787701279558130514;
             }
             2 => {
-                if TX_16X16 as libc::c_int == TX_64X64 as libc::c_int {
-                    let mut tmp_1: uint64_t = *(a as *const uint64_t);
+                if TX_16X16 == TX_64X64 {
+                    let mut tmp_1 = *(a as *const uint64_t);
                     tmp_1 |= *(&*a.offset(8) as *const uint8_t as *const uint64_t);
                     la = (tmp_1 >> 32) as libc::c_uint | tmp_1 as libc::c_uint;
                 } else {
                     la = *(a as *const uint32_t);
                 }
-                if TX_16X16 as libc::c_int == TX_32X32 as libc::c_int {
-                    la |= *(&*a.offset(::core::mem::size_of::<uint32_t>() as libc::c_ulong as isize)
+                if TX_16X16 == TX_32X32 {
+                    la |= *(&*a.offset(::core::mem::size_of::<uint32_t>() as isize)
                         as *const uint8_t as *const uint32_t);
                 }
-                if TX_16X16 as libc::c_int >= TX_16X16 as libc::c_int {
+                if TX_16X16 >= TX_16X16 {
                     la |= la >> 16;
                 }
-                if TX_16X16 as libc::c_int >= TX_8X8 as libc::c_int {
+                if TX_16X16 >= TX_8X8 {
                     la |= la >> 8;
                 }
                 current_block_80 = 17787701279558130514;
             }
             3 => {
-                if TX_32X32 as libc::c_int == TX_64X64 as libc::c_int {
-                    let mut tmp_2: uint64_t = *(a as *const uint64_t);
+                if TX_32X32 == TX_64X64 {
+                    let mut tmp_2 = *(a as *const uint64_t);
                     tmp_2 |= *(&*a.offset(8) as *const uint8_t as *const uint64_t);
                     la = (tmp_2 >> 32) as libc::c_uint | tmp_2 as libc::c_uint;
                 } else {
                     la = *(a as *const uint32_t);
                 }
-                if TX_32X32 as libc::c_int == TX_32X32 as libc::c_int {
-                    la |= *(&*a.offset(::core::mem::size_of::<uint32_t>() as libc::c_ulong as isize)
+                if TX_32X32 == TX_32X32 {
+                    la |= *(&*a.offset(::core::mem::size_of::<uint32_t>() as isize)
                         as *const uint8_t as *const uint32_t);
                 }
-                if TX_32X32 as libc::c_int >= TX_16X16 as libc::c_int {
+                if TX_32X32 >= TX_16X16 {
                     la |= la >> 16;
                 }
-                if TX_32X32 as libc::c_int >= TX_8X8 as libc::c_int {
+                if TX_32X32 >= TX_8X8 {
                     la |= la >> 8;
                 }
                 current_block_80 = 17787701279558130514;
             }
             4 => {
-                if TX_64X64 as libc::c_int == TX_64X64 as libc::c_int {
-                    let mut tmp_3: uint64_t = *(a as *const uint64_t);
+                if TX_64X64 == TX_64X64 {
+                    let mut tmp_3 = *(a as *const uint64_t);
                     tmp_3 |= *(&*a.offset(8) as *const uint8_t as *const uint64_t);
                     la = (tmp_3 >> 32) as libc::c_uint | tmp_3 as libc::c_uint;
                 } else {
                     la = *(a as *const uint32_t);
                 }
-                if TX_64X64 as libc::c_int == TX_32X32 as libc::c_int {
-                    la |= *(&*a.offset(::core::mem::size_of::<uint32_t>() as libc::c_ulong as isize)
+                if TX_64X64 == TX_32X32 {
+                    la |= *(&*a.offset(::core::mem::size_of::<uint32_t>() as isize)
                         as *const uint8_t as *const uint32_t);
                 }
-                if TX_64X64 as libc::c_int >= TX_16X16 as libc::c_int {
+                if TX_64X64 >= TX_16X16 {
                     la |= la >> 16;
                 }
-                if TX_64X64 as libc::c_int >= TX_8X8 as libc::c_int {
+                if TX_64X64 >= TX_8X8 {
                     la |= la >> 8;
                 }
                 current_block_80 = 17787701279558130514;
@@ -300,108 +285,108 @@ pub unsafe fn get_skip_ctx(
         }
         match current_block_80 {
             15794479632267580089 => {
-                if TX_4X4 as libc::c_int == TX_64X64 as libc::c_int {
-                    let mut tmp: uint64_t = *(a as *const uint64_t);
+                if TX_4X4 == TX_64X64 {
+                    let mut tmp = *(a as *const uint64_t);
                     tmp |= *(&*a.offset(8) as *const uint8_t as *const uint64_t);
                     la = (tmp >> 32) as libc::c_uint | tmp as libc::c_uint;
                 } else {
                     la = *a as libc::c_uint;
                 }
-                if TX_4X4 as libc::c_int == TX_32X32 as libc::c_int {
-                    la |= *(&*a.offset(::core::mem::size_of::<uint8_t>() as libc::c_ulong as isize)
+                if TX_4X4 == TX_32X32 {
+                    la |= *(&*a.offset(::core::mem::size_of::<uint8_t>() as isize)
                         as *const uint8_t) as libc::c_uint;
                 }
-                if TX_4X4 as libc::c_int >= TX_16X16 as libc::c_int {
+                if TX_4X4 >= TX_16X16 {
                     la |= la >> 16;
                 }
-                if TX_4X4 as libc::c_int >= TX_8X8 as libc::c_int {
+                if TX_4X4 >= TX_8X8 {
                     la |= la >> 8;
                 }
             }
             _ => {}
         }
         let mut current_block_140: u64;
-        match t_dim.lh as libc::c_int {
+        match t_dim.lh {
             0 => {
                 current_block_140 = 5167972421258071942;
             }
             1 => {
-                if TX_8X8 as libc::c_int == TX_64X64 as libc::c_int {
-                    let mut tmp_5: uint64_t = *(l as *const uint64_t);
+                if TX_8X8 == TX_64X64 {
+                    let mut tmp_5 = *(l as *const uint64_t);
                     tmp_5 |= *(&*l.offset(8) as *const uint8_t as *const uint64_t);
                     ll = (tmp_5 >> 32) as libc::c_uint | tmp_5 as libc::c_uint;
                 } else {
                     ll = *(l as *const uint16_t) as libc::c_uint;
                 }
-                if TX_8X8 as libc::c_int == TX_32X32 as libc::c_int {
-                    ll |= *(&*l.offset(::core::mem::size_of::<uint16_t>() as libc::c_ulong as isize)
+                if TX_8X8 == TX_32X32 {
+                    ll |= *(&*l.offset(::core::mem::size_of::<uint16_t>() as isize)
                         as *const uint8_t as *const uint16_t)
                         as libc::c_uint;
                 }
-                if TX_8X8 as libc::c_int >= TX_16X16 as libc::c_int {
+                if TX_8X8 >= TX_16X16 {
                     ll |= ll >> 16;
                 }
-                if TX_8X8 as libc::c_int >= TX_8X8 as libc::c_int {
+                if TX_8X8 >= TX_8X8 {
                     ll |= ll >> 8;
                 }
                 current_block_140 = 7370318721998929769;
             }
             2 => {
-                if TX_16X16 as libc::c_int == TX_64X64 as libc::c_int {
-                    let mut tmp_6: uint64_t = *(l as *const uint64_t);
+                if TX_16X16 == TX_64X64 {
+                    let mut tmp_6 = *(l as *const uint64_t);
                     tmp_6 |= *(&*l.offset(8) as *const uint8_t as *const uint64_t);
                     ll = (tmp_6 >> 32) as libc::c_uint | tmp_6 as libc::c_uint;
                 } else {
                     ll = *(l as *const uint32_t);
                 }
-                if TX_16X16 as libc::c_int == TX_32X32 as libc::c_int {
-                    ll |= *(&*l.offset(::core::mem::size_of::<uint32_t>() as libc::c_ulong as isize)
+                if TX_16X16 == TX_32X32 {
+                    ll |= *(&*l.offset(::core::mem::size_of::<uint32_t>() as isize)
                         as *const uint8_t as *const uint32_t);
                 }
-                if TX_16X16 as libc::c_int >= TX_16X16 as libc::c_int {
+                if TX_16X16 >= TX_16X16 {
                     ll |= ll >> 16;
                 }
-                if TX_16X16 as libc::c_int >= TX_8X8 as libc::c_int {
+                if TX_16X16 >= TX_8X8 {
                     ll |= ll >> 8;
                 }
                 current_block_140 = 7370318721998929769;
             }
             3 => {
-                if TX_32X32 as libc::c_int == TX_64X64 as libc::c_int {
-                    let mut tmp_7: uint64_t = *(l as *const uint64_t);
+                if TX_32X32 == TX_64X64 {
+                    let mut tmp_7 = *(l as *const uint64_t);
                     tmp_7 |= *(&*l.offset(8) as *const uint8_t as *const uint64_t);
                     ll = (tmp_7 >> 32) as libc::c_uint | tmp_7 as libc::c_uint;
                 } else {
                     ll = *(l as *const uint32_t);
                 }
-                if TX_32X32 as libc::c_int == TX_32X32 as libc::c_int {
-                    ll |= *(&*l.offset(::core::mem::size_of::<uint32_t>() as libc::c_ulong as isize)
+                if TX_32X32 == TX_32X32 {
+                    ll |= *(&*l.offset(::core::mem::size_of::<uint32_t>() as isize)
                         as *const uint8_t as *const uint32_t);
                 }
-                if TX_32X32 as libc::c_int >= TX_16X16 as libc::c_int {
+                if TX_32X32 >= TX_16X16 {
                     ll |= ll >> 16;
                 }
-                if TX_32X32 as libc::c_int >= TX_8X8 as libc::c_int {
+                if TX_32X32 >= TX_8X8 {
                     ll |= ll >> 8;
                 }
                 current_block_140 = 7370318721998929769;
             }
             4 => {
-                if TX_64X64 as libc::c_int == TX_64X64 as libc::c_int {
-                    let mut tmp_8: uint64_t = *(l as *const uint64_t);
+                if TX_64X64 == TX_64X64 {
+                    let mut tmp_8 = *(l as *const uint64_t);
                     tmp_8 |= *(&*l.offset(8) as *const uint8_t as *const uint64_t);
                     ll = (tmp_8 >> 32) as libc::c_uint | tmp_8 as libc::c_uint;
                 } else {
                     ll = *(l as *const uint32_t);
                 }
-                if TX_64X64 as libc::c_int == TX_32X32 as libc::c_int {
-                    ll |= *(&*l.offset(::core::mem::size_of::<uint32_t>() as libc::c_ulong as isize)
+                if TX_64X64 == TX_32X32 {
+                    ll |= *(&*l.offset(::core::mem::size_of::<uint32_t>() as isize)
                         as *const uint8_t as *const uint32_t);
                 }
-                if TX_64X64 as libc::c_int >= TX_16X16 as libc::c_int {
+                if TX_64X64 >= TX_16X16 {
                     ll |= ll >> 16;
                 }
-                if TX_64X64 as libc::c_int >= TX_8X8 as libc::c_int {
+                if TX_64X64 >= TX_8X8 {
                     ll |= ll >> 8;
                 }
                 current_block_140 = 7370318721998929769;
@@ -415,33 +400,28 @@ pub unsafe fn get_skip_ctx(
         }
         match current_block_140 {
             5167972421258071942 => {
-                if TX_4X4 as libc::c_int == TX_64X64 as libc::c_int {
-                    let mut tmp_4: uint64_t = *(l as *const uint64_t);
+                if TX_4X4 == TX_64X64 {
+                    let mut tmp_4 = *(l as *const uint64_t);
                     tmp_4 |= *(&*l.offset(8) as *const uint8_t as *const uint64_t);
                     ll = (tmp_4 >> 32) as libc::c_uint | tmp_4 as libc::c_uint;
                 } else {
                     ll = *l as libc::c_uint;
                 }
-                if TX_4X4 as libc::c_int == TX_32X32 as libc::c_int {
-                    ll |= *(&*l.offset(::core::mem::size_of::<uint8_t>() as libc::c_ulong as isize)
+                if TX_4X4 == TX_32X32 {
+                    ll |= *(&*l.offset(::core::mem::size_of::<uint8_t>() as isize)
                         as *const uint8_t) as libc::c_uint;
                 }
-                if TX_4X4 as libc::c_int >= TX_16X16 as libc::c_int {
+                if TX_4X4 >= TX_16X16 {
                     ll |= ll >> 16;
                 }
-                if TX_4X4 as libc::c_int >= TX_8X8 as libc::c_int {
+                if TX_4X4 >= TX_8X8 {
                     ll |= ll >> 8;
                 }
             }
             _ => {}
         }
-        return dav1d_skip_ctx[umin(
-            la & 0x3f as libc::c_int as libc::c_uint,
-            4 as libc::c_int as libc::c_uint,
-        ) as usize][umin(
-            ll & 0x3f as libc::c_int as libc::c_uint,
-            4 as libc::c_int as libc::c_uint,
-        ) as usize] as libc::c_uint;
+        return dav1d_skip_ctx[umin(la & 0x3f, 4) as usize][umin(ll & 0x3f, 4) as usize]
+            as libc::c_uint;
     };
 }
 
