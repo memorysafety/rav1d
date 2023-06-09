@@ -126,9 +126,7 @@ pub fn get_skip_ctx(
             3 => u64::read_ne(l) != 0x4040404040404040,
             _ => unreachable!(),
         };
-        (7 + (not_one_blk as libc::c_uint) * 3)
-            .wrapping_add(ca as libc::c_uint)
-            .wrapping_add(cl as libc::c_uint)
+        (7 + (not_one_blk as libc::c_uint) * 3) + (ca as libc::c_uint) + (cl as libc::c_uint)
     } else if b_dim[2] == t_dim.lw && b_dim[3] == t_dim.lh {
         0
     } else {
