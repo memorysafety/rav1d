@@ -113,41 +113,23 @@ pub fn get_skip_ctx(
         let not_one_blk = (b_dim[2] - (b_dim[2] != 0 && ss_hor != 0) as u8 > t_dim.lw
             || b_dim[3] - (b_dim[3] != 0 && ss_ver != 0) as u8 > t_dim.lh)
             as libc::c_int;
-        let mut ca: libc::c_uint = 0;
-        let mut cl: libc::c_uint = 0;
-        match t_dim.lw {
-            0 => {
-                ca = (u8::read_ne(a) != 0x40) as libc::c_uint;
-            }
-            1 => {
-                ca = (u16::read_ne(a) != 0x4040) as libc::c_uint;
-            }
-            2 => {
-                ca = (u32::read_ne(a) != 0x40404040) as libc::c_uint;
-            }
-            3 => {
-                ca = (u64::read_ne(a) != 0x4040404040404040) as libc::c_uint;
-            }
+        let ca = match t_dim.lw {
+            0 => u8::read_ne(a) != 0x40,
+            1 => u16::read_ne(a) != 0x4040,
+            2 => u32::read_ne(a) != 0x40404040,
+            3 => u64::read_ne(a) != 0x4040404040404040,
             _ => unreachable!(),
-        }
-        match t_dim.lh {
-            0 => {
-                cl = (u8::read_ne(l) != 0x40) as libc::c_uint;
-            }
-            1 => {
-                cl = (u16::read_ne(l) != 0x4040) as libc::c_uint;
-            }
-            2 => {
-                cl = (u32::read_ne(l) != 0x40404040) as libc::c_uint;
-            }
-            3 => {
-                cl = (u64::read_ne(l) != 0x4040404040404040) as libc::c_uint;
-            }
+        };
+        let cl = match t_dim.lh {
+            0 => u8::read_ne(l) != 0x40,
+            1 => u16::read_ne(l) != 0x4040,
+            2 => u32::read_ne(l) != 0x40404040,
+            3 => u64::read_ne(l) != 0x4040404040404040,
             _ => unreachable!(),
-        }
+        };
         ((7 + not_one_blk * 3) as libc::c_uint)
-            .wrapping_add(ca)
-            .wrapping_add(cl)
+            .wrapping_add(ca as libc::c_uint)
+            .wrapping_add(cl as libc::c_uint)
     } else if b_dim[2] == t_dim.lw && b_dim[3] == t_dim.lh {
         0
     } else {
