@@ -1,11 +1,7 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
+use crate::src::ctx::CaseSet;
 use ::libc;
-
-use crate::src::ctx::case_set;
-use crate::src::ctx::case_set_upto16;
-use crate::src::ctx::case_set_upto16_with_default;
-use crate::src::ctx::SetCtxFn;
 
 use crate::stdout;
 extern "C" {
@@ -2150,41 +2146,23 @@ unsafe extern "C" fn read_coef_tree(
                     (*ts).msac.rng,
                 );
             }
-            let mut set_ctx = |dir: &mut BlockContext, _diridx, off, mul, rep_macro: SetCtxFn| {
-                rep_macro(dir.lcoef.0.as_mut_ptr(), off, mul * cf_ctx as u64);
-            };
-            let default_memset = |dir: &mut BlockContext, _diridx, off, sz| {
-                dir.lcoef.0[off as usize..][..sz as usize].fill(cf_ctx);
-            };
-            case_set_upto16_with_default(
-                imin(txh, (*f).bh - (*t).by),
-                &mut (*t).l,
-                1,
-                by4 as isize,
-                &mut set_ctx,
-                default_memset,
-            );
-            case_set_upto16_with_default(
-                imin(txw, (*f).bw - (*t).bx),
-                &mut *(*t).a,
-                0,
-                bx4 as isize,
-                &mut set_ctx,
-                default_memset,
+            CaseSet::<16, true>::many(
+                [&mut (*t).l, &mut *(*t).a],
+                [
+                    imin(txh, (*f).bh - (*t).by) as usize,
+                    imin(txw, (*f).bw - (*t).bx) as usize,
+                ],
+                [by4 as usize, bx4 as usize],
+                |case, dir| {
+                    case.set(&mut dir.lcoef.0, cf_ctx);
+                },
             );
             let mut txtp_map = &mut (*t).txtp_map[(by4 * 32 + bx4) as usize..];
-            let mut set_ctx = |_dir: &mut (), _diridx, _off, mul, rep_macro: SetCtxFn| {
+            CaseSet::<16, false>::one((), txw as usize, 0, |case, ()| {
                 for txtp_map in txtp_map.chunks_mut(32).take(txh as usize) {
-                    rep_macro(txtp_map.as_mut_ptr(), 0, mul * txtp as u64);
+                    case.set(txtp_map, txtp);
                 }
-            };
-            case_set_upto16(
-                txw,
-                &mut (),
-                Default::default(),
-                Default::default(),
-                &mut set_ctx,
-            );
+            });
             if (*t).frame_thread.pass == 1 {
                 (*cbi).eob[0] = eob as int16_t;
                 (*cbi).txtp[0] = txtp as uint8_t;
@@ -2249,18 +2227,24 @@ pub unsafe extern "C" fn dav1d_read_coef_blocks_8bpc(
         && (bw4 > ss_hor || (*t).bx & 1 != 0)
         && (bh4 > ss_ver || (*t).by & 1 != 0)) as libc::c_int;
     if (*b).skip != 0 {
-        let mut set_ctx = |dir: &mut BlockContext, _diridx, off, mul, rep_macro: SetCtxFn| {
-            rep_macro(dir.lcoef.0.as_mut_ptr(), off, mul * 0x40);
-        };
-        case_set(bh4, &mut (*t).l, 1, by4 as isize, &mut set_ctx);
-        case_set(bw4, &mut *(*t).a, 0, bx4 as isize, &mut set_ctx);
+        CaseSet::<32, false>::many(
+            [&mut (*t).l, &mut *(*t).a],
+            [bh4 as usize, bw4 as usize],
+            [by4 as usize, bx4 as usize],
+            |case, dir| {
+                case.set(&mut dir.lcoef.0, 0x40);
+            },
+        );
         if has_chroma != 0 {
-            let mut set_ctx = |dir: &mut BlockContext, _diridx, off, mul, rep_macro: SetCtxFn| {
-                rep_macro(dir.ccoef.0[0].as_mut_ptr(), off, mul * 0x40);
-                rep_macro(dir.ccoef.0[1].as_mut_ptr(), off, mul * 0x40);
-            };
-            case_set(cbh4, &mut (*t).l, 1, cby4 as isize, &mut set_ctx);
-            case_set(cbw4, &mut *(*t).a, 0, cbx4 as isize, &mut set_ctx);
+            CaseSet::<32, false>::many(
+                [&mut (*t).l, &mut *(*t).a],
+                [cbh4 as usize, cbw4 as usize],
+                [cby4 as usize, cbx4 as usize],
+                |case, dir| {
+                    case.set(&mut dir.ccoef.0[0], 0x40);
+                    case.set(&mut dir.ccoef.0[1], 0x40);
+                },
+            );
         }
         return;
     }
@@ -2353,28 +2337,16 @@ pub unsafe extern "C" fn dav1d_read_coef_blocks_8bpc(
                                 * imin((*t_dim).h as libc::c_int, 8 as libc::c_int)
                                 * 16) as isize,
                         ) as *mut libc::c_void;
-                        let mut set_ctx =
-                            |dir: &mut BlockContext, _diridx, off, mul, rep_macro: SetCtxFn| {
-                                rep_macro(dir.lcoef.0.as_mut_ptr(), off, mul * cf_ctx as u64);
-                            };
-                        let default_memset = |dir: &mut BlockContext, _diridx, off, sz| {
-                            dir.lcoef.0[off as usize..][..sz as usize].fill(cf_ctx);
-                        };
-                        case_set_upto16_with_default(
-                            imin((*t_dim).h as libc::c_int, (*f).bh - (*t).by),
-                            &mut (*t).l,
-                            1,
-                            (by4 + y) as isize,
-                            &mut set_ctx,
-                            default_memset,
-                        );
-                        case_set_upto16_with_default(
-                            imin((*t_dim).w as libc::c_int, (*f).bw - (*t).bx),
-                            &mut *(*t).a,
-                            0,
-                            (bx4 + x) as isize,
-                            &mut set_ctx,
-                            default_memset,
+                        CaseSet::<16, true>::many(
+                            [&mut (*t).l, &mut *(*t).a],
+                            [
+                                imin((*t_dim).h as i32, (*f).bh - (*t).by) as usize,
+                                imin((*t_dim).w as i32, (*f).bw - (*t).bx) as usize,
+                            ],
+                            [(by4 + y) as usize, (bx4 + x) as usize],
+                            |case, dir| {
+                                case.set(&mut dir.lcoef.0, cf_ctx);
+                            },
                         );
                     }
                     x += (*t_dim).w as libc::c_int;
@@ -2444,39 +2416,18 @@ pub unsafe extern "C" fn dav1d_read_coef_blocks_8bpc(
                                         * (*uv_t_dim).h as libc::c_int
                                         * 16) as isize,
                                 ) as *mut libc::c_void;
-                            let mut set_ctx =
-                                |dir: &mut BlockContext, _diridx, off, mul, rep_macro: SetCtxFn| {
-                                    rep_macro(
-                                        dir.ccoef.0[pl as usize].as_mut_ptr(),
-                                        off,
-                                        mul * cf_ctx_0 as u64,
-                                    );
-                                };
-                            let default_memset = |dir: &mut BlockContext, _diridx, off, sz| {
-                                dir.ccoef.0[pl as usize][off as usize..][..sz as usize]
-                                    .fill(cf_ctx_0);
-                            };
-                            case_set_upto16_with_default(
-                                imin(
-                                    (*uv_t_dim).h as libc::c_int,
-                                    (*f).bh - (*t).by + ss_ver >> ss_ver,
-                                ),
-                                &mut (*t).l,
-                                1,
-                                (cby4 + y) as isize,
-                                &mut set_ctx,
-                                default_memset,
-                            );
-                            case_set_upto16_with_default(
-                                imin(
-                                    (*uv_t_dim).w as libc::c_int,
-                                    (*f).bw - (*t).bx + ss_hor >> ss_hor,
-                                ),
-                                &mut *(*t).a,
-                                0,
-                                (cbx4 + x) as isize,
-                                &mut set_ctx,
-                                default_memset,
+                            CaseSet::<16, true>::many(
+                                [&mut (*t).l, &mut *(*t).a],
+                                [
+                                    imin((*uv_t_dim).h as i32, (*f).bh - (*t).by + ss_ver >> ss_ver)
+                                        as usize,
+                                    imin((*uv_t_dim).w as i32, (*f).bw - (*t).bx + ss_hor >> ss_hor)
+                                        as usize,
+                                ],
+                                [(cby4 + y) as usize, (cbx4 + x) as usize],
+                                |case, dir| {
+                                    case.set(&mut dir.ccoef.0[pl as usize], cf_ctx_0);
+                                },
                             );
                             x += (*uv_t_dim).w as libc::c_int;
                             (*t).bx += ((*uv_t_dim).w as libc::c_int) << ss_hor;
@@ -3215,28 +3166,16 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                                     (*ts).msac.rng,
                                 );
                             }
-                            let mut set_ctx =
-                                |dir: &mut BlockContext, _diridx, off, mul, rep_macro: SetCtxFn| {
-                                    rep_macro(dir.lcoef.0.as_mut_ptr(), off, mul * cf_ctx as u64);
-                                };
-                            let default_memset = |dir: &mut BlockContext, _diridx, off, sz| {
-                                dir.lcoef.0[off as usize..][..sz as usize].fill(cf_ctx);
-                            };
-                            case_set_upto16_with_default(
-                                imin((*t_dim).h as libc::c_int, (*f).bh - (*t).by),
-                                &mut (*t).l,
-                                1,
-                                (by4 + y) as isize,
-                                &mut set_ctx,
-                                default_memset,
-                            );
-                            case_set_upto16_with_default(
-                                imin((*t_dim).w as libc::c_int, (*f).bw - (*t).bx),
-                                &mut *(*t).a,
-                                0,
-                                (bx4 + x) as isize,
-                                &mut set_ctx,
-                                default_memset,
+                            CaseSet::<16, true>::many(
+                                [&mut (*t).l, &mut *(*t).a],
+                                [
+                                    imin((*t_dim).h as i32, (*f).bh - (*t).by) as usize,
+                                    imin((*t_dim).w as i32, (*f).bw - (*t).bx) as usize,
+                                ],
+                                [(by4 + y) as usize, (bx4 + x) as usize],
+                                |case, dir| {
+                                    case.set(&mut dir.lcoef.0, cf_ctx);
+                                },
                             );
                         }
                         if eob >= 0 {
@@ -3268,23 +3207,13 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                             }
                         }
                     } else if (*t).frame_thread.pass == 0 {
-                        let mut set_ctx =
-                            |dir: &mut BlockContext, _diridx, off, mul, rep_macro: SetCtxFn| {
-                                rep_macro(dir.lcoef.0.as_mut_ptr(), off, mul * 0x40);
-                            };
-                        case_set_upto16(
-                            (*t_dim).h as libc::c_int,
-                            &mut (*t).l,
-                            1,
-                            (by4 + y) as isize,
-                            &mut set_ctx,
-                        );
-                        case_set_upto16(
-                            (*t_dim).w as libc::c_int,
-                            &mut *(*t).a,
-                            0,
-                            (bx4 + x) as isize,
-                            &mut set_ctx,
+                        CaseSet::<16, false>::many(
+                            [&mut (*t).l, &mut *(*t).a],
+                            [(*t_dim).h as usize, (*t_dim).w as usize],
+                            [(by4 + y) as usize, (bx4 + x) as usize],
+                            |case, dir| {
+                                case.set(&mut dir.lcoef.0, 0x40);
+                            },
                         );
                     }
                     dst_0 = dst_0.offset((4 * (*t_dim).w as libc::c_int) as isize);
@@ -3669,41 +3598,22 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                                             cbx4,
                                         );
                                     }
-                                    let mut set_ctx =
-                                |dir: &mut BlockContext, _diridx, off, mul, rep_macro: SetCtxFn| {
-                                    rep_macro(
-                                        dir.ccoef.0[pl_0 as usize].as_mut_ptr(),
-                                        off,
-                                        mul * cf_ctx_0 as u64,
-                                    );
-                                };
-                                    let default_memset =
-                                        |dir: &mut BlockContext, _diridx, off, sz| {
-                                            dir.ccoef.0[pl_0 as usize][off as usize..]
-                                                [..sz as usize]
-                                                .fill(cf_ctx_0);
-                                        };
-                                    case_set_upto16_with_default(
-                                        imin(
-                                            (*uv_t_dim).h as libc::c_int,
-                                            (*f).bh - (*t).by + ss_ver >> ss_ver,
-                                        ),
-                                        &mut (*t).l,
-                                        1,
-                                        (cby4 + y) as isize,
-                                        &mut set_ctx,
-                                        default_memset,
-                                    );
-                                    case_set_upto16_with_default(
-                                        imin(
-                                            (*uv_t_dim).w as libc::c_int,
-                                            (*f).bw - (*t).bx + ss_hor >> ss_hor,
-                                        ),
-                                        &mut *(*t).a,
-                                        0,
-                                        (cbx4 + x) as isize,
-                                        &mut set_ctx,
-                                        default_memset,
+                                    CaseSet::<16, true>::many(
+                                        [&mut (*t).l, &mut *(*t).a],
+                                        [
+                                            imin(
+                                                (*uv_t_dim).h as i32,
+                                                (*f).bh - (*t).by + ss_ver >> ss_ver,
+                                            ) as usize,
+                                            imin(
+                                                (*uv_t_dim).w as i32,
+                                                (*f).bw - (*t).bx + ss_hor >> ss_hor,
+                                            ) as usize,
+                                        ],
+                                        [(cby4 + y) as usize, (cbx4 + x) as usize],
+                                        |case, dir| {
+                                            case.set(&mut dir.ccoef.0[pl_0 as usize], cf_ctx_0);
+                                        },
                                     );
                                 }
                                 if eob_0 >= 0 {
@@ -3731,31 +3641,13 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                                     }
                                 }
                             } else if (*t).frame_thread.pass == 0 {
-                                let mut set_ctx =
-                                    |dir: &mut BlockContext,
-                                     _diridx,
-                                     off,
-                                     mul,
-                                     rep_macro: SetCtxFn| {
-                                        rep_macro(
-                                            dir.ccoef.0[pl_0 as usize].as_mut_ptr(),
-                                            off,
-                                            mul * 0x40,
-                                        );
-                                    };
-                                case_set_upto16(
-                                    (*uv_t_dim).h as libc::c_int,
-                                    &mut (*t).l,
-                                    1,
-                                    (cby4 + y) as isize,
-                                    &mut set_ctx,
-                                );
-                                case_set_upto16(
-                                    (*uv_t_dim).w as libc::c_int,
-                                    &mut *(*t).a,
-                                    0,
-                                    (cbx4 + x) as isize,
-                                    &mut set_ctx,
+                                CaseSet::<16, false>::many(
+                                    [&mut (*t).l, &mut *(*t).a],
+                                    [(*uv_t_dim).h as usize, (*uv_t_dim).w as usize],
+                                    [(cby4 + y) as usize, (cbx4 + x) as usize],
+                                    |case, dir| {
+                                        case.set(&mut dir.ccoef.0[pl_0 as usize], 0x40);
+                                    },
                                 );
                             }
                             dst_1 = dst_1.offset(((*uv_t_dim).w as libc::c_int * 4) as isize);
@@ -4817,18 +4709,24 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
     let cw4 = w4 + ss_hor >> ss_hor;
     let ch4 = h4 + ss_ver >> ss_ver;
     if (*b).skip != 0 {
-        let mut set_ctx = |dir: &mut BlockContext, _diridx, off, mul, rep_macro: SetCtxFn| {
-            rep_macro(dir.lcoef.0.as_mut_ptr(), off, mul * 0x40);
-        };
-        case_set(bh4, &mut (*t).l, 1, by4 as isize, &mut set_ctx);
-        case_set(bw4, &mut *(*t).a, 0, bx4 as isize, &mut set_ctx);
+        CaseSet::<32, false>::many(
+            [&mut (*t).l, &mut *(*t).a],
+            [bh4 as usize, bw4 as usize],
+            [by4 as usize, bx4 as usize],
+            |case, dir| {
+                case.set(&mut dir.lcoef.0, 0x40);
+            },
+        );
         if has_chroma != 0 {
-            let mut set_ctx = |dir: &mut BlockContext, _diridx, off, mul, rep_macro: SetCtxFn| {
-                rep_macro(dir.ccoef.0[0].as_mut_ptr(), off, mul * 0x40);
-                rep_macro(dir.ccoef.0[1].as_mut_ptr(), off, mul * 0x40);
-            };
-            case_set(cbh4, &mut (*t).l, 1, cby4 as isize, &mut set_ctx);
-            case_set(cbw4, &mut *(*t).a, 0, cbx4 as isize, &mut set_ctx);
+            CaseSet::<32, false>::many(
+                [&mut (*t).l, &mut *(*t).a],
+                [cbh4 as usize, cbw4 as usize],
+                [cby4 as usize, cbx4 as usize],
+                |case, dir| {
+                    case.set(&mut dir.ccoef.0[0], 0x40);
+                    case.set(&mut dir.ccoef.0[1], 0x40);
+                },
+            );
         }
         return 0 as libc::c_int;
     }
@@ -4943,43 +4841,18 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                                         (*ts).msac.rng,
                                     );
                                 }
-                                let mut set_ctx =
-                                    |dir: &mut BlockContext,
-                                     _diridx,
-                                     off,
-                                     mul,
-                                     rep_macro: SetCtxFn| {
-                                        rep_macro(
-                                            dir.ccoef.0[pl_8 as usize].as_mut_ptr(),
-                                            off,
-                                            mul * cf_ctx as u64,
-                                        );
-                                    };
-                                let default_memset = |dir: &mut BlockContext, _diridx, off, sz| {
-                                    dir.ccoef.0[pl_8 as usize][off as usize..][..sz as usize]
-                                        .fill(cf_ctx);
-                                };
-                                case_set_upto16_with_default(
-                                    imin(
-                                        (*uvtx).h as libc::c_int,
-                                        (*f).bh - (*t).by + ss_ver >> ss_ver,
-                                    ),
-                                    &mut (*t).l,
-                                    1,
-                                    (cby4 + y) as isize,
-                                    &mut set_ctx,
-                                    default_memset,
-                                );
-                                case_set_upto16_with_default(
-                                    imin(
-                                        (*uvtx).w as libc::c_int,
-                                        (*f).bw - (*t).bx + ss_hor >> ss_hor,
-                                    ),
-                                    &mut *(*t).a,
-                                    0,
-                                    (cbx4 + x_0) as isize,
-                                    &mut set_ctx,
-                                    default_memset,
+                                CaseSet::<16, true>::many(
+                                    [&mut (*t).l, &mut *(*t).a],
+                                    [
+                                        imin((*uvtx).h as i32, (*f).bh - (*t).by + ss_ver >> ss_ver)
+                                            as usize,
+                                        imin((*uvtx).w as i32, (*f).bw - (*t).bx + ss_hor >> ss_hor)
+                                            as usize,
+                                    ],
+                                    [(cby4 + y) as usize, (cbx4 + x_0) as usize],
+                                    |case, dir| {
+                                        case.set(&mut dir.ccoef.0[pl_8 as usize], cf_ctx);
+                                    },
                                 );
                             }
                             if eob >= 0 {

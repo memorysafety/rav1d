@@ -4,7 +4,7 @@ use crate::include::stddef::*;
 use crate::include::stdint::*;
 use crate::src::align::Align16;
 use crate::src::cdf::{CdfContext, CdfMvComponent, CdfMvContext};
-use crate::src::ctx::{case_set, case_set_upto16, SetCtxFn};
+use crate::src::ctx::CaseSet;
 
 use libc;
 
@@ -1175,41 +1175,13 @@ unsafe fn read_tx_tree(
         }
         t.by -= txsh;
     } else {
-        let mut set_ctx = |dir: &mut BlockContext, _diridx, off, mul, rep_macro: SetCtxFn| {
-            rep_macro(
-                dir.tx.0.as_mut_ptr() as *mut u8,
-                off,
-                if is_split {
-                    TX_4X4 as u64
-                } else {
-                    mul * txh as u64
-                },
-            );
-        };
-        case_set_upto16(
-            t_dim.h as libc::c_int,
-            &mut t.l,
-            1,
-            by4 as isize,
-            &mut set_ctx,
-        );
-        let mut set_ctx = |dir: &mut BlockContext, _diridx, off, mul, rep_macro: SetCtxFn| {
-            rep_macro(
-                dir.tx.0.as_mut_ptr() as *mut u8,
-                off,
-                if is_split {
-                    TX_4X4 as u64
-                } else {
-                    mul * txw as u64
-                },
-            );
-        };
-        case_set_upto16(
-            t_dim.w as libc::c_int,
-            &mut *t.a,
-            0,
-            bx4 as isize,
-            &mut set_ctx,
+        CaseSet::<16, false>::many(
+            [(&mut t.l, txh), (&mut *t.a, txw)],
+            [t_dim.h as usize, t_dim.w as usize],
+            [by4 as usize, bx4 as usize],
+            |case, (dir, val)| {
+                case.set(&mut dir.tx.0, if is_split { TX_4X4 } else { val });
+            },
         );
     };
 }
@@ -1866,23 +1838,25 @@ unsafe fn read_vartx_tree(
         b.uvtx = TX_4X4 as u8;
         *b.max_ytx_mut() = b.uvtx;
         if txfm_mode == DAV1D_TX_SWITCHABLE {
-            let mut set_ctx = |dir: &mut BlockContext, _diridx, off, _mul, rep_macro: SetCtxFn| {
-                rep_macro(dir.tx.0.as_mut_ptr() as *mut u8, off, TX_4X4 as u64);
-            };
-            case_set(bh4 as libc::c_int, &mut t.l, 1, by4 as isize, &mut set_ctx);
-            case_set(bw4 as libc::c_int, &mut *t.a, 0, bx4 as isize, &mut set_ctx);
+            CaseSet::<32, false>::many(
+                [&mut t.l, &mut *t.a],
+                [bh4 as usize, bw4 as usize],
+                [by4 as usize, bx4 as usize],
+                |case, dir| {
+                    case.set(&mut dir.tx.0, TX_4X4);
+                },
+            );
         }
     } else if txfm_mode != DAV1D_TX_SWITCHABLE || b.skip != 0 {
         if txfm_mode == DAV1D_TX_SWITCHABLE {
-            let mut set_ctx = |dir: &mut BlockContext, diridx, off, mul, rep_macro: SetCtxFn| {
-                rep_macro(
-                    dir.tx.0.as_mut_ptr() as *mut u8,
-                    off,
-                    mul * b_dim[2 + diridx] as u64,
-                );
-            };
-            case_set(bh4 as libc::c_int, &mut t.l, 1, by4 as isize, &mut set_ctx);
-            case_set(bw4 as libc::c_int, &mut *t.a, 0, bx4 as isize, &mut set_ctx);
+            CaseSet::<32, false>::many(
+                [(&mut t.l, 1), (&mut *t.a, 0)],
+                [bh4 as usize, bw4 as usize],
+                [by4 as usize, bx4 as usize],
+                |case, (dir, dir_index)| {
+                    case.set(&mut dir.tx.0, b_dim[2 + dir_index] as i8);
+                },
+            );
         }
         b.uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
     } else {
@@ -2290,12 +2264,15 @@ unsafe fn decode_b(
                 y_mode
             };
 
-            let mut set_ctx = |dir: &mut BlockContext, _diridx, off, mul, rep_macro: SetCtxFn| {
-                rep_macro(dir.mode.0.as_mut_ptr(), off, mul * y_mode_nofilt as u64);
-                rep_macro(dir.intra.0.as_mut_ptr(), off, mul);
-            };
-            case_set(bh4, &mut t.l, 1, by4 as isize, &mut set_ctx);
-            case_set(bw4, &mut *t.a, 0, bx4 as isize, &mut set_ctx);
+            CaseSet::<32, false>::many(
+                [&mut t.l, &mut *t.a],
+                [bh4 as usize, bw4 as usize],
+                [by4 as usize, bx4 as usize],
+                |case, dir| {
+                    case.set(&mut dir.mode.0, y_mode_nofilt);
+                    case.set(&mut dir.intra.0, 1);
+                },
+            );
 
             if is_inter_or_switch(frame_hdr) {
                 let r = t.rt.r[((t.by & 31) + 5 + bh4 - 1) as usize].offset(t.bx as isize);
@@ -2314,12 +2291,14 @@ unsafe fn decode_b(
             }
 
             if has_chroma {
-                let mut set_ctx =
-                    |dir: &mut BlockContext, _diridx, off, mul, rep_macro: SetCtxFn| {
-                        rep_macro(dir.uvmode.0.as_mut_ptr(), off, mul * b.uv_mode() as u64);
-                    };
-                case_set(cbh4, &mut t.l, 1, cby4 as isize, &mut set_ctx);
-                case_set(cbw4, &mut *t.a, 0, cbx4 as isize, &mut set_ctx);
+                CaseSet::<32, false>::many(
+                    [&mut t.l, &mut *t.a],
+                    [cbh4 as usize, cbw4 as usize],
+                    [cby4 as usize, cbx4 as usize],
+                    |case, dir| {
+                        case.set(&mut dir.uvmode.0, b.uv_mode());
+                    },
+                );
             }
         } else {
             if is_inter_or_switch(frame_hdr) {
@@ -2361,13 +2340,16 @@ unsafe fn decode_b(
 
             let filter = &dav1d_filter_dir[b.filter2d() as usize];
 
-            let mut set_ctx = |dir: &mut BlockContext, _diridx, off, mul, rep_macro: SetCtxFn| {
-                rep_macro(dir.filter.0[0].as_mut_ptr(), off, mul * filter[0] as u64);
-                rep_macro(dir.filter.0[1].as_mut_ptr(), off, mul * filter[1] as u64);
-                rep_macro(dir.intra.0.as_mut_ptr(), off, 0);
-            };
-            case_set(bh4, &mut t.l, 1, by4 as isize, &mut set_ctx);
-            case_set(bw4, &mut *t.a, 0, bx4 as isize, &mut set_ctx);
+            CaseSet::<32, false>::many(
+                [&mut t.l, &mut *t.a],
+                [bh4 as usize, bw4 as usize],
+                [by4 as usize, bx4 as usize],
+                |case, dir| {
+                    case.set(&mut dir.filter.0[0], filter[0]);
+                    case.set(&mut dir.filter.0[1], filter[1]);
+                    case.set(&mut dir.intra.0, 0);
+                },
+            );
 
             if is_inter_or_switch(frame_hdr) {
                 let r = t.rt.r[((t.by & 31) + 5 + bh4 - 1) as usize].offset(t.bx as isize);
@@ -2388,12 +2370,14 @@ unsafe fn decode_b(
             }
 
             if has_chroma {
-                let mut set_ctx =
-                    |dir: &mut BlockContext, _diridx, off, mul, rep_macro: SetCtxFn| {
-                        rep_macro(dir.uvmode.0.as_mut_ptr(), off, mul * DC_PRED as u64);
-                    };
-                case_set(cbh4, &mut t.l, 1, cby4 as isize, &mut set_ctx);
-                case_set(cbw4, &mut *t.a, 0, cbx4 as isize, &mut set_ctx);
+                CaseSet::<32, false>::many(
+                    [&mut t.l, &mut *t.a],
+                    [cbh4 as usize, cbw4 as usize],
+                    [cby4 as usize, cbx4 as usize],
+                    |case, dir| {
+                        case.set(&mut dir.uvmode.0, DC_PRED);
+                    },
+                );
             }
         }
 
@@ -3044,71 +3028,34 @@ unsafe fn decode_b(
         } else {
             b.y_mode()
         };
-        let mut set_ctx = |dir: &mut BlockContext, diridx, off, mul, rep_macro: SetCtxFn| {
-            // NOTE: This corresponds to the following logic in the original C:
-            //
-            // ```
-            // ((uint8_t *) &t_dim->lw)[diridx]
-            // ```
-            //
-            // The original logic casts a pointer to the `lw` field to a `*const u8` and
-            // then does indexing within the struct's fields. This is deeply cursed and
-            // unnecessary since `diridx` will only ever be 0 or 1. So for the Rust version
-            // we manually select which field we want based on `diridx` directly.
-            let lw_lh = match diridx {
-                0 => t_dim.lw,
-                1 => t_dim.lh,
-                _ => unreachable!(),
-            };
-
-            rep_macro(
-                dir.tx_intra.0.as_mut_ptr() as *mut u8,
-                off,
-                mul * lw_lh as u64,
-            );
-            rep_macro(dir.tx.0.as_mut_ptr() as *mut u8, off, mul * lw_lh as u64);
-            rep_macro(dir.mode.0.as_mut_ptr(), off, mul * y_mode_nofilt as u64);
-            rep_macro(dir.pal_sz.0.as_mut_ptr(), off, mul * b.pal_sz()[0] as u64);
-            rep_macro(dir.seg_pred.0.as_mut_ptr(), off, mul * seg_pred as u64);
-            rep_macro(dir.skip_mode.0.as_mut_ptr(), off, 0);
-            rep_macro(dir.intra.0.as_mut_ptr(), off, mul);
-            rep_macro(dir.skip.0.as_mut_ptr(), off, mul * b.skip as u64);
-            // see aomedia bug 2183 for why we use luma coordinates here
-            rep_macro(
-                t.pal_sz_uv[diridx].as_mut_ptr(),
-                off,
-                mul * if has_chroma { b.pal_sz()[1] as u64 } else { 0 },
-            );
-            if is_inter_or_switch(frame_hdr) {
-                rep_macro(
-                    dir.comp_type.0.as_mut_ptr(),
-                    off,
-                    mul * COMP_INTER_NONE as u64,
+        CaseSet::<32, false>::many(
+            [(&mut t.l, t_dim.lh, 1), (&mut *t.a, t_dim.lw, 0)],
+            [bh4 as usize, bw4 as usize],
+            [by4 as usize, bx4 as usize],
+            |case, (dir, lw_lh, dir_index)| {
+                let lw_lh = lw_lh as i8;
+                case.set(&mut dir.tx_intra.0, lw_lh);
+                case.set(&mut dir.tx.0, lw_lh);
+                case.set(&mut dir.mode.0, y_mode_nofilt);
+                case.set(&mut dir.pal_sz.0, b.pal_sz()[0]);
+                case.set(&mut dir.seg_pred.0, seg_pred.into());
+                case.set(&mut dir.skip_mode.0, 0);
+                case.set(&mut dir.intra.0, 1);
+                case.set(&mut dir.skip.0, b.skip);
+                // see aomedia bug 2183 for why we use luma coordinates here
+                case.set(
+                    &mut t.pal_sz_uv[dir_index],
+                    if has_chroma { b.pal_sz()[1] } else { 0 },
                 );
-                rep_macro(
-                    dir.r#ref[0].as_mut_ptr() as *mut u8,
-                    off,
-                    mul * u8::MAX as u64,
-                );
-                rep_macro(
-                    dir.r#ref[1].as_mut_ptr() as *mut u8,
-                    off,
-                    mul * u8::MAX as u64,
-                );
-                rep_macro(
-                    dir.filter.0[0].as_mut_ptr(),
-                    off,
-                    mul * DAV1D_N_SWITCHABLE_FILTERS as u64,
-                );
-                rep_macro(
-                    dir.filter.0[1].as_mut_ptr(),
-                    off,
-                    mul * DAV1D_N_SWITCHABLE_FILTERS as u64,
-                );
-            }
-        };
-        case_set(bh4, &mut t.l, 1, by4 as isize, &mut set_ctx);
-        case_set(bw4, &mut *t.a, 0, bx4 as isize, &mut set_ctx);
+                if is_inter_or_switch(frame_hdr) {
+                    case.set(&mut dir.comp_type.0, COMP_INTER_NONE);
+                    case.set(&mut dir.r#ref[0], -1);
+                    case.set(&mut dir.r#ref[1], -1);
+                    case.set(&mut dir.filter.0[0], DAV1D_N_SWITCHABLE_FILTERS);
+                    case.set(&mut dir.filter.0[1], DAV1D_N_SWITCHABLE_FILTERS);
+                }
+            },
+        );
 
         if b.pal_sz()[0] != 0 {
             let pal = if t.frame_thread.pass != 0 {
@@ -3129,11 +3076,14 @@ unsafe fn decode_b(
         }
 
         if has_chroma {
-            let mut set_ctx = |dir: &mut BlockContext, _diridx, off, mul, rep_macro: SetCtxFn| {
-                rep_macro(dir.uvmode.0.as_mut_ptr(), off, mul * b.uv_mode() as u64);
-            };
-            case_set(cbh4, &mut t.l, 1, cby4 as isize, &mut set_ctx);
-            case_set(cbw4, &mut *t.a, 0, cbx4 as isize, &mut set_ctx);
+            CaseSet::<32, false>::many(
+                [&mut t.l, &mut *t.a],
+                [cbh4 as usize, cbw4 as usize],
+                [cby4 as usize, cbx4 as usize],
+                |case, dir| {
+                    case.set(&mut dir.uvmode.0, b.uv_mode());
+                },
+            );
 
             if b.pal_sz()[1] != 0 {
                 let pal = if t.frame_thread.pass != 0 {
@@ -3281,30 +3231,32 @@ unsafe fn decode_b(
 
         splat_intrabc_mv(&*f.c, t, bs, b, bw4 as usize, bh4 as usize);
 
-        let mut set_ctx = |dir: &mut BlockContext, diridx: usize, off, mul, rep_macro: SetCtxFn| {
-            rep_macro(
-                dir.tx_intra.0.as_mut_ptr() as *mut u8,
-                off,
-                mul * b_dim[2 + diridx] as u64,
-            );
-            rep_macro(dir.mode.0.as_mut_ptr(), off, mul * DC_PRED as u64);
-            rep_macro(dir.pal_sz.0.as_mut_ptr(), off, 0);
-            // see aomedia bug 2183 for why this is outside `if has_chroma {}`
-            rep_macro(t.pal_sz_uv[diridx].as_mut_ptr(), off, 0);
-            rep_macro(dir.seg_pred.0.as_mut_ptr(), off, mul * seg_pred as u64);
-            rep_macro(dir.skip_mode.0.as_mut_ptr(), off, 0);
-            rep_macro(dir.intra.0.as_mut_ptr(), off, 0);
-            rep_macro(dir.skip.0.as_mut_ptr(), off, mul * b.skip as u64)
-        };
-        case_set(bh4, &mut t.l, 1, by4 as isize, &mut set_ctx);
-        case_set(bw4, &mut *t.a, 0, bx4 as isize, &mut set_ctx);
+        CaseSet::<32, false>::many(
+            [(&mut t.l, 1), (&mut *t.a, 0)],
+            [bh4 as usize, bw4 as usize],
+            [by4 as usize, bx4 as usize],
+            |case, (dir, dir_index)| {
+                case.set(&mut dir.tx_intra.0, b_dim[2 + dir_index] as i8);
+                case.set(&mut dir.mode.0, DC_PRED);
+                case.set(&mut dir.pal_sz.0, 0);
+                // see aomedia bug 2183 for why this is outside `if has_chroma {}`
+                case.set(&mut t.pal_sz_uv[dir_index], 0);
+                case.set(&mut dir.seg_pred.0, seg_pred.into());
+                case.set(&mut dir.skip_mode.0, 0);
+                case.set(&mut dir.intra.0, 0);
+                case.set(&mut dir.skip.0, b.skip);
+            },
+        );
 
         if has_chroma {
-            let mut set_ctx = |dir: &mut BlockContext, _diridx, off, mul, rep_macro: SetCtxFn| {
-                rep_macro(dir.uvmode.0.as_mut_ptr(), off, mul * DC_PRED as u64);
-            };
-            case_set(cbh4, &mut t.l, 1, cby4 as isize, &mut set_ctx);
-            case_set(cbw4, &mut *t.a, 0, cbx4 as isize, &mut set_ctx);
+            CaseSet::<32, false>::many(
+                [&mut t.l, &mut *t.a],
+                [cbh4 as usize, cbw4 as usize],
+                [cby4 as usize, cbx4 as usize],
+                |case, dir| {
+                    case.set(&mut dir.uvmode.0, DC_PRED);
+                },
+            );
         }
     } else {
         // inter-specific mode/mv coding
@@ -4081,47 +4033,37 @@ unsafe fn decode_b(
             splat_oneref_mv(&*f.c, t, bs, b, bw4 as usize, bh4 as usize);
         }
 
-        let mut set_ctx = |dir: &mut BlockContext, diridx: usize, off, mul, rep_macro: SetCtxFn| {
-            rep_macro(dir.seg_pred.0.as_mut_ptr(), off, mul * seg_pred as u64);
-            rep_macro(dir.skip_mode.0.as_mut_ptr(), off, mul * b.skip_mode as u64);
-            rep_macro(dir.intra.0.as_mut_ptr(), off, 0);
-            rep_macro(dir.skip.0.as_mut_ptr(), off, mul * b.skip as u64);
-            rep_macro(dir.pal_sz.0.as_mut_ptr(), off, 0);
-            // see aomedia bug 2183 for why this is outside if (has_chroma)
-            rep_macro(t.pal_sz_uv[diridx].as_mut_ptr(), off, 0);
-            rep_macro(
-                dir.tx_intra.0.as_mut_ptr() as *mut u8,
-                off,
-                mul * b_dim[2 + diridx] as u64,
-            );
-            rep_macro(
-                dir.comp_type.0.as_mut_ptr(),
-                off,
-                mul * b.comp_type() as u64,
-            );
-            rep_macro(dir.filter.0[0].as_mut_ptr(), off, mul * filter[0] as u64);
-            rep_macro(dir.filter.0[1].as_mut_ptr(), off, mul * filter[1] as u64);
-            rep_macro(dir.mode.0.as_mut_ptr(), off, mul * b.inter_mode() as u64);
-            rep_macro(
-                dir.r#ref.0[0].as_mut_ptr() as *mut u8,
-                off,
-                mul * b.r#ref()[0] as u64,
-            );
-            rep_macro(
-                dir.r#ref.0[1].as_mut_ptr() as *mut u8,
-                off,
-                mul * b.r#ref()[1] as u8 as u64,
-            );
-        };
-        case_set(bh4, &mut t.l, 1, by4 as isize, &mut set_ctx);
-        case_set(bw4, &mut *t.a, 0, bx4 as isize, &mut set_ctx);
+        CaseSet::<32, false>::many(
+            [(&mut t.l, 1), (&mut *t.a, 0)],
+            [bh4 as usize, bw4 as usize],
+            [by4 as usize, bx4 as usize],
+            |case, (dir, dir_index)| {
+                case.set(&mut dir.seg_pred.0, seg_pred.into());
+                case.set(&mut dir.skip_mode.0, b.skip_mode);
+                case.set(&mut dir.intra.0, 0);
+                case.set(&mut dir.skip.0, b.skip);
+                case.set(&mut dir.pal_sz.0, 0);
+                // see aomedia bug 2183 for why this is outside if (has_chroma)
+                case.set(&mut t.pal_sz_uv[dir_index], 0);
+                case.set(&mut dir.tx_intra.0, b_dim[2 + dir_index] as i8);
+                case.set(&mut dir.comp_type.0, b.comp_type());
+                case.set(&mut dir.filter.0[0], filter[0]);
+                case.set(&mut dir.filter.0[1], filter[1]);
+                case.set(&mut dir.mode.0, b.inter_mode());
+                case.set(&mut dir.r#ref.0[0], b.r#ref()[0]);
+                case.set(&mut dir.r#ref.0[1], b.r#ref()[1]);
+            },
+        );
 
         if has_chroma {
-            let mut set_ctx = |dir: &mut BlockContext, _diridx, off, mul, rep_macro: SetCtxFn| {
-                rep_macro(dir.uvmode.0.as_mut_ptr(), off, mul * DC_PRED as u64);
-            };
-            case_set(cbh4, &mut t.l, 1, cby4 as isize, &mut set_ctx);
-            case_set(cbw4, &mut *t.a, 0, cbx4 as isize, &mut set_ctx);
+            CaseSet::<32, false>::many(
+                [&mut t.l, &mut *t.a],
+                [cbh4 as usize, cbw4 as usize],
+                [cby4 as usize, cbx4 as usize],
+                |case, dir| {
+                    case.set(&mut dir.uvmode.0, DC_PRED);
+                },
+            );
         }
     }
     if frame_hdr.segmentation.enabled != 0 && frame_hdr.segmentation.update_map != 0 {
@@ -4137,12 +4079,11 @@ unsafe fn decode_b(
         let cur_segmap = std::slice::from_raw_parts_mut(f.cur_segmap, cur_segmap_len);
         let seg_ptr = &mut cur_segmap[by * b4_stride + bx..];
 
-        let mut set_ctx = |_dir: &mut (), _diridx, _off, mul, rep_macro: SetCtxFn| {
+        CaseSet::<32, false>::one((), bw4, 0, |case, ()| {
             for seg_ptr in seg_ptr.chunks_mut(b4_stride).take(bh4) {
-                rep_macro(seg_ptr.as_mut_ptr(), 0, mul * b.seg_id as u64);
+                case.set(seg_ptr, b.seg_id);
             }
-        };
-        case_set(bw4 as libc::c_int, &mut (), 0, 0, &mut set_ctx);
+        });
     }
     if b.skip == 0 {
         let mask = !0u32 >> 32 - bw4 << (bx4 & 15);
@@ -4971,24 +4912,16 @@ unsafe extern "C" fn decode_sb(
         && (bp as libc::c_uint != PARTITION_SPLIT as libc::c_int as libc::c_uint
             || bl as libc::c_uint == BL_8X8 as libc::c_int as libc::c_uint)
     {
-        let mut set_ctx = |_dir: &mut (), _diridx, _off, mul, rep_macro: SetCtxFn| {
-            rep_macro(
-                (*(*t).a).partition.0.as_mut_ptr(),
-                bx8 as isize,
-                mul * dav1d_al_part_ctx[0][bl as usize][bp as usize] as u64,
-            );
-            rep_macro(
-                (*t).l.partition.0.as_mut_ptr(),
-                by8 as isize,
-                mul * dav1d_al_part_ctx[1][bl as usize][bp as usize] as u64,
-            );
-        };
-        case_set_upto16(
-            hsz,
-            &mut (),
-            Default::default(),
-            Default::default(),
-            &mut set_ctx,
+        CaseSet::<16, false>::many(
+            [(&mut *(*t).a, 0), (&mut (*t).l, 1)],
+            [hsz as usize; 2],
+            [bx8 as usize, by8 as usize],
+            |case, (dir, dir_index)| {
+                case.set(
+                    &mut dir.partition.0,
+                    dav1d_al_part_ctx[dir_index][bl as usize][bp as usize],
+                );
+            },
         );
     }
     return 0 as libc::c_int;
