@@ -145,11 +145,11 @@ pub fn get_skip_ctx(
             }
             _ => unreachable!(),
         }
-        return ((7 + not_one_blk * 3) as libc::c_uint)
+        ((7 + not_one_blk * 3) as libc::c_uint)
             .wrapping_add(ca)
-            .wrapping_add(cl);
+            .wrapping_add(cl)
     } else if b_dim[2] == t_dim.lw && b_dim[3] == t_dim.lh {
-        return 0;
+        0
     } else {
         let mut la: libc::c_uint = 0;
         let mut ll: libc::c_uint = 0;
@@ -339,9 +339,8 @@ pub fn get_skip_ctx(
             }
             _ => unreachable!(),
         }
-        return dav1d_skip_ctx[umin(la & 0x3f, 4) as usize][umin(ll & 0x3f, 4) as usize]
-            as libc::c_uint;
-    };
+        dav1d_skip_ctx[umin(la & 0x3f, 4) as usize][umin(ll & 0x3f, 4) as usize] as libc::c_uint
+    }
 }
 
 // `tx: RectTxfmSize` arg is also `TxfmSize`.
