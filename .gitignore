@@ -4,7 +4,6 @@
 *~
 tags
 .DS_Store
-tests/argon
 *.snap
 /tools/output/xxhash.h
 /.vscode
@@ -12,3 +11,7 @@ compile_commands.json
 
 # Rust
 target/
+
+# Too Large Tests
+/tests/argon
+/tests/large
