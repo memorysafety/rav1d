@@ -2,10 +2,6 @@ use crate::include::common::intops::umin;
 use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-use crate::include::stdint::uint16_t;
-use crate::include::stdint::uint32_t;
-use crate::include::stdint::uint64_t;
-use crate::include::stdint::uint8_t;
 use crate::src::levels::BlockSize;
 use crate::src::levels::RectTxfmSize;
 use crate::src::levels::TxClass;
@@ -110,9 +106,6 @@ pub unsafe fn get_skip_ctx(
     chroma: libc::c_int,
     layout: Dav1dPixelLayout,
 ) -> libc::c_uint {
-    let a = a.as_ptr();
-    let l = l.as_ptr();
-
     let b_dim = &dav1d_block_dimensions[bs as usize];
     if chroma != 0 {
         let ss_ver = (layout == DAV1D_PIXEL_LAYOUT_I420) as libc::c_int;
@@ -124,31 +117,31 @@ pub unsafe fn get_skip_ctx(
         let mut cl: libc::c_uint = 0;
         match t_dim.lw {
             0 => {
-                ca = (*a != 0x40) as libc::c_uint;
+                ca = (u8::read_ne(a) != 0x40) as libc::c_uint;
             }
             1 => {
-                ca = (*(a as *const uint16_t) != 0x4040) as libc::c_uint;
+                ca = (u16::read_ne(a) != 0x4040) as libc::c_uint;
             }
             2 => {
-                ca = (*(a as *const uint32_t) != 0x40404040) as libc::c_uint;
+                ca = (u32::read_ne(a) != 0x40404040) as libc::c_uint;
             }
             3 => {
-                ca = (*(a as *const uint64_t) != 0x4040404040404040) as libc::c_uint;
+                ca = (u64::read_ne(a) != 0x4040404040404040) as libc::c_uint;
             }
             _ => unreachable!(),
         }
         match t_dim.lh {
             0 => {
-                cl = (*l != 0x40) as libc::c_uint;
+                cl = (u8::read_ne(l) != 0x40) as libc::c_uint;
             }
             1 => {
-                cl = (*(l as *const uint16_t) != 0x4040) as libc::c_uint;
+                cl = (u16::read_ne(l) != 0x4040) as libc::c_uint;
             }
             2 => {
-                cl = (*(l as *const uint32_t) != 0x40404040) as libc::c_uint;
+                cl = (u32::read_ne(l) != 0x40404040) as libc::c_uint;
             }
             3 => {
-                cl = (*(l as *const uint64_t) != 0x4040404040404040) as libc::c_uint;
+                cl = (u64::read_ne(l) != 0x4040404040404040) as libc::c_uint;
             }
             _ => unreachable!(),
         }
@@ -163,15 +156,14 @@ pub unsafe fn get_skip_ctx(
         match t_dim.lw {
             0 => {
                 if TX_4X4 == TX_64X64 {
-                    let mut tmp = *(a as *const uint64_t);
-                    tmp |= *(&*a.offset(8) as *const uint8_t as *const uint64_t);
+                    let mut tmp = u64::read_ne(a);
+                    tmp |= u64::read_ne(&a[8..]);
                     la = (tmp >> 32) as libc::c_uint | tmp as libc::c_uint;
                 } else {
-                    la = *a as libc::c_uint;
+                    la = u8::read_ne(a) as libc::c_uint;
                 }
                 if TX_4X4 == TX_32X32 {
-                    la |= *(&*a.offset(::core::mem::size_of::<uint8_t>() as isize)
-                        as *const uint8_t) as libc::c_uint;
+                    la |= u8::read_ne(&a[std::mem::size_of::<u8>()..]) as libc::c_uint;
                 }
                 if TX_4X4 >= TX_16X16 {
                     la |= la >> 16;
@@ -182,16 +174,14 @@ pub unsafe fn get_skip_ctx(
             }
             1 => {
                 if TX_8X8 == TX_64X64 {
-                    let mut tmp_0 = *(a as *const uint64_t);
-                    tmp_0 |= *(&*a.offset(8) as *const uint8_t as *const uint64_t);
+                    let mut tmp_0 = u64::read_ne(a);
+                    tmp_0 |= u64::read_ne(&a[8..]);
                     la = (tmp_0 >> 32) as libc::c_uint | tmp_0 as libc::c_uint;
                 } else {
-                    la = *(a as *const uint16_t) as libc::c_uint;
+                    la = u16::read_ne(a) as libc::c_uint;
                 }
                 if TX_8X8 == TX_32X32 {
-                    la |= *(&*a.offset(::core::mem::size_of::<uint16_t>() as isize)
-                        as *const uint8_t as *const uint16_t)
-                        as libc::c_uint;
+                    la |= u16::read_ne(&a[std::mem::size_of::<u16>()..]) as libc::c_uint;
                 }
                 if TX_8X8 >= TX_16X16 {
                     la |= la >> 16;
@@ -202,15 +192,14 @@ pub unsafe fn get_skip_ctx(
             }
             2 => {
                 if TX_16X16 == TX_64X64 {
-                    let mut tmp_1 = *(a as *const uint64_t);
-                    tmp_1 |= *(&*a.offset(8) as *const uint8_t as *const uint64_t);
+                    let mut tmp_1 = u64::read_ne(a);
+                    tmp_1 |= u64::read_ne(&a[8..]);
                     la = (tmp_1 >> 32) as libc::c_uint | tmp_1 as libc::c_uint;
                 } else {
-                    la = *(a as *const uint32_t);
+                    la = u32::read_ne(a);
                 }
                 if TX_16X16 == TX_32X32 {
-                    la |= *(&*a.offset(::core::mem::size_of::<uint32_t>() as isize)
-                        as *const uint8_t as *const uint32_t);
+                    la |= u32::read_ne(&a[std::mem::size_of::<u32>()..]);
                 }
                 if TX_16X16 >= TX_16X16 {
                     la |= la >> 16;
@@ -221,15 +210,14 @@ pub unsafe fn get_skip_ctx(
             }
             3 => {
                 if TX_32X32 == TX_64X64 {
-                    let mut tmp_2 = *(a as *const uint64_t);
-                    tmp_2 |= *(&*a.offset(8) as *const uint8_t as *const uint64_t);
+                    let mut tmp_2 = u64::read_ne(a);
+                    tmp_2 |= u64::read_ne(&a[8..]);
                     la = (tmp_2 >> 32) as libc::c_uint | tmp_2 as libc::c_uint;
                 } else {
-                    la = *(a as *const uint32_t);
+                    la = u32::read_ne(a);
                 }
                 if TX_32X32 == TX_32X32 {
-                    la |= *(&*a.offset(::core::mem::size_of::<uint32_t>() as isize)
-                        as *const uint8_t as *const uint32_t);
+                    la |= u32::read_ne(&a[std::mem::size_of::<u32>()..]);
                 }
                 if TX_32X32 >= TX_16X16 {
                     la |= la >> 16;
@@ -240,15 +228,14 @@ pub unsafe fn get_skip_ctx(
             }
             4 => {
                 if TX_64X64 == TX_64X64 {
-                    let mut tmp_3 = *(a as *const uint64_t);
-                    tmp_3 |= *(&*a.offset(8) as *const uint8_t as *const uint64_t);
+                    let mut tmp_3 = u64::read_ne(a);
+                    tmp_3 |= u64::read_ne(&a[8..]);
                     la = (tmp_3 >> 32) as libc::c_uint | tmp_3 as libc::c_uint;
                 } else {
-                    la = *(a as *const uint32_t);
+                    la = u32::read_ne(a);
                 }
                 if TX_64X64 == TX_32X32 {
-                    la |= *(&*a.offset(::core::mem::size_of::<uint32_t>() as isize)
-                        as *const uint8_t as *const uint32_t);
+                    la |= u32::read_ne(&a[std::mem::size_of::<u32>()..]);
                 }
                 if TX_64X64 >= TX_16X16 {
                     la |= la >> 16;
@@ -262,15 +249,14 @@ pub unsafe fn get_skip_ctx(
         match t_dim.lh {
             0 => {
                 if TX_4X4 == TX_64X64 {
-                    let mut tmp_4 = *(l as *const uint64_t);
-                    tmp_4 |= *(&*l.offset(8) as *const uint8_t as *const uint64_t);
+                    let mut tmp_4 = u64::read_ne(l);
+                    tmp_4 |= u64::read_ne(&l[8..]);
                     ll = (tmp_4 >> 32) as libc::c_uint | tmp_4 as libc::c_uint;
                 } else {
-                    ll = *l as libc::c_uint;
+                    ll = u8::read_ne(l) as libc::c_uint;
                 }
                 if TX_4X4 == TX_32X32 {
-                    ll |= *(&*l.offset(::core::mem::size_of::<uint8_t>() as isize)
-                        as *const uint8_t) as libc::c_uint;
+                    ll |= u8::read_ne(&l[std::mem::size_of::<u8>()..]) as libc::c_uint;
                 }
                 if TX_4X4 >= TX_16X16 {
                     ll |= ll >> 16;
@@ -281,16 +267,14 @@ pub unsafe fn get_skip_ctx(
             }
             1 => {
                 if TX_8X8 == TX_64X64 {
-                    let mut tmp_5 = *(l as *const uint64_t);
-                    tmp_5 |= *(&*l.offset(8) as *const uint8_t as *const uint64_t);
+                    let mut tmp_5 = u64::read_ne(l);
+                    tmp_5 |= u64::read_ne(&l[8..]);
                     ll = (tmp_5 >> 32) as libc::c_uint | tmp_5 as libc::c_uint;
                 } else {
-                    ll = *(l as *const uint16_t) as libc::c_uint;
+                    ll = u16::read_ne(l) as libc::c_uint;
                 }
                 if TX_8X8 == TX_32X32 {
-                    ll |= *(&*l.offset(::core::mem::size_of::<uint16_t>() as isize)
-                        as *const uint8_t as *const uint16_t)
-                        as libc::c_uint;
+                    ll |= u16::read_ne(&l[std::mem::size_of::<u16>()..]) as libc::c_uint;
                 }
                 if TX_8X8 >= TX_16X16 {
                     ll |= ll >> 16;
@@ -301,15 +285,14 @@ pub unsafe fn get_skip_ctx(
             }
             2 => {
                 if TX_16X16 == TX_64X64 {
-                    let mut tmp_6 = *(l as *const uint64_t);
-                    tmp_6 |= *(&*l.offset(8) as *const uint8_t as *const uint64_t);
+                    let mut tmp_6 = u64::read_ne(l);
+                    tmp_6 |= u64::read_ne(&l[8..]);
                     ll = (tmp_6 >> 32) as libc::c_uint | tmp_6 as libc::c_uint;
                 } else {
-                    ll = *(l as *const uint32_t);
+                    ll = u32::read_ne(l);
                 }
                 if TX_16X16 == TX_32X32 {
-                    ll |= *(&*l.offset(::core::mem::size_of::<uint32_t>() as isize)
-                        as *const uint8_t as *const uint32_t);
+                    ll |= u32::read_ne(&l[std::mem::size_of::<u32>()..]);
                 }
                 if TX_16X16 >= TX_16X16 {
                     ll |= ll >> 16;
@@ -320,15 +303,14 @@ pub unsafe fn get_skip_ctx(
             }
             3 => {
                 if TX_32X32 == TX_64X64 {
-                    let mut tmp_7 = *(l as *const uint64_t);
-                    tmp_7 |= *(&*l.offset(8) as *const uint8_t as *const uint64_t);
+                    let mut tmp_7 = u64::read_ne(l);
+                    tmp_7 |= u64::read_ne(&l[8..]);
                     ll = (tmp_7 >> 32) as libc::c_uint | tmp_7 as libc::c_uint;
                 } else {
-                    ll = *(l as *const uint32_t);
+                    ll = u32::read_ne(l);
                 }
                 if TX_32X32 == TX_32X32 {
-                    ll |= *(&*l.offset(::core::mem::size_of::<uint32_t>() as isize)
-                        as *const uint8_t as *const uint32_t);
+                    ll |= u32::read_ne(&l[std::mem::size_of::<u32>()..]);
                 }
                 if TX_32X32 >= TX_16X16 {
                     ll |= ll >> 16;
@@ -339,15 +321,14 @@ pub unsafe fn get_skip_ctx(
             }
             4 => {
                 if TX_64X64 == TX_64X64 {
-                    let mut tmp_8 = *(l as *const uint64_t);
-                    tmp_8 |= *(&*l.offset(8) as *const uint8_t as *const uint64_t);
+                    let mut tmp_8 = u64::read_ne(l);
+                    tmp_8 |= u64::read_ne(&l[8..]);
                     ll = (tmp_8 >> 32) as libc::c_uint | tmp_8 as libc::c_uint;
                 } else {
-                    ll = *(l as *const uint32_t);
+                    ll = u32::read_ne(l);
                 }
                 if TX_64X64 == TX_32X32 {
-                    ll |= *(&*l.offset(::core::mem::size_of::<uint32_t>() as isize)
-                        as *const uint8_t as *const uint32_t);
+                    ll |= u32::read_ne(&l[std::mem::size_of::<u32>()..]);
                 }
                 if TX_64X64 >= TX_16X16 {
                     ll |= ll >> 16;
