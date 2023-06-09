@@ -108,10 +108,10 @@ pub fn get_skip_ctx(
 ) -> libc::c_uint {
     let b_dim = &dav1d_block_dimensions[bs as usize];
     if chroma != 0 {
-        let ss_ver = (layout == DAV1D_PIXEL_LAYOUT_I420) as libc::c_int;
-        let ss_hor = (layout != DAV1D_PIXEL_LAYOUT_I444) as libc::c_int;
-        let not_one_blk = (b_dim[2] - (b_dim[2] != 0 && ss_hor != 0) as u8 > t_dim.lw
-            || b_dim[3] - (b_dim[3] != 0 && ss_ver != 0) as u8 > t_dim.lh)
+        let ss_ver = layout == DAV1D_PIXEL_LAYOUT_I420;
+        let ss_hor = layout != DAV1D_PIXEL_LAYOUT_I444;
+        let not_one_blk = (b_dim[2] - (b_dim[2] != 0 && ss_hor) as u8 > t_dim.lw
+            || b_dim[3] - (b_dim[3] != 0 && ss_ver) as u8 > t_dim.lh)
             as libc::c_int;
         let ca = match t_dim.lw {
             0 => u8::read_ne(a) != 0x40,
