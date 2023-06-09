@@ -105,7 +105,7 @@ pub fn get_skip_ctx(
     l: &[u8],
     chroma: libc::c_int,
     layout: Dav1dPixelLayout,
-) -> libc::c_uint {
+) -> u8 {
     let b_dim = &dav1d_block_dimensions[bs as usize];
     if chroma != 0 {
         let ss_ver = layout == DAV1D_PIXEL_LAYOUT_I420;
@@ -126,7 +126,7 @@ pub fn get_skip_ctx(
             3 => u64::read_ne(l) != 0x4040404040404040,
             _ => unreachable!(),
         };
-        (7 + (not_one_blk as libc::c_uint) * 3) + (ca as libc::c_uint) + (cl as libc::c_uint)
+        (7 + (not_one_blk as u8) * 3) + (ca as u8) + (cl as u8)
     } else if b_dim[2] == t_dim.lw && b_dim[3] == t_dim.lh {
         0
     } else {
@@ -318,7 +318,7 @@ pub fn get_skip_ctx(
             }
             _ => unreachable!(),
         }
-        dav1d_skip_ctx[umin(la & 0x3f, 4) as usize][umin(ll & 0x3f, 4) as usize] as libc::c_uint
+        dav1d_skip_ctx[umin(la & 0x3f, 4) as usize][umin(ll & 0x3f, 4) as usize]
     }
 }
 
