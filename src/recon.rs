@@ -2,7 +2,6 @@ use crate::include::common::intops::umin;
 use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-use crate::include::stddef::ptrdiff_t;
 use crate::include::stdint::uint16_t;
 use crate::include::stdint::uint32_t;
 use crate::include::stdint::uint64_t;
@@ -606,44 +605,28 @@ pub unsafe fn get_dc_sign_ctx(tx: libc::c_int, a: &[u8], l: &[u8]) -> libc::c_ui
 }
 
 #[inline]
-pub unsafe fn get_lo_ctx(
+pub fn get_lo_ctx(
     levels: &[u8],
     tx_class: TxClass,
     hi_mag: &mut libc::c_uint,
     ctx_offsets: Option<&[[u8; 5]; 5]>,
-    x: libc::c_uint,
-    y: libc::c_uint,
-    stride: ptrdiff_t,
-) -> libc::c_uint {
-    let mut mag: libc::c_uint = (levels[(0 * stride + 1) as usize] as libc::c_int
-        + levels[(1 * stride + 0) as usize] as libc::c_int)
-        as libc::c_uint;
-    let mut offset: libc::c_uint = 0;
-    if tx_class as libc::c_uint == TX_CLASS_2D as libc::c_int as libc::c_uint {
-        mag = mag.wrapping_add(levels[(1 * stride + 1) as usize] as libc::c_uint);
-        *hi_mag = mag;
-        mag = mag.wrapping_add(
-            (levels[(0 * stride + 2) as usize] as libc::c_int
-                + levels[(2 * stride + 0) as usize] as libc::c_int) as libc::c_uint,
-        );
-        offset = ctx_offsets.unwrap()[umin(y, 4 as libc::c_int as libc::c_uint) as usize]
-            [umin(x, 4 as libc::c_int as libc::c_uint) as usize] as libc::c_uint;
+    x: usize,
+    y: usize,
+    stride: usize,
+) -> usize {
+    let level = |y, x| levels[y * stride + x] as usize;
+
+    let mut mag = level(0, 1) + level(1, 0);
+    let offset = if tx_class == TX_CLASS_2D {
+        mag += level(1, 1);
+        *hi_mag = mag as libc::c_uint;
+        mag += level(0, 2) + level(2, 0);
+        ctx_offsets.unwrap()[std::cmp::min(y, 4)][std::cmp::min(x, 4)] as usize
     } else {
-        mag = mag.wrapping_add(levels[(0 * stride + 2) as usize] as libc::c_uint);
-        *hi_mag = mag;
-        mag = mag.wrapping_add(
-            (levels[(0 * stride + 3) as usize] as libc::c_int
-                + levels[(0 * stride + 4) as usize] as libc::c_int) as libc::c_uint,
-        );
-        offset = (26 as libc::c_int as libc::c_uint).wrapping_add(if y > 1 as libc::c_uint {
-            10 as libc::c_int as libc::c_uint
-        } else {
-            y.wrapping_mul(5 as libc::c_int as libc::c_uint)
-        });
-    }
-    return offset.wrapping_add(if mag > 512 as libc::c_uint {
-        4 as libc::c_int as libc::c_uint
-    } else {
-        mag.wrapping_add(64 as libc::c_int as libc::c_uint) >> 7
-    });
+        mag += level(0, 2);
+        *hi_mag = mag as libc::c_uint;
+        mag += level(0, 3) + level(0, 4);
+        26 + if y > 1 { 10 } else { y * 5 }
+    };
+    offset + if mag > 512 { 4 } else { (mag + 64) >> 7 }
 }
