@@ -54,8 +54,7 @@ use crate::src::refmvs::refmvs_frame;
 
 use crate::src::env::BlockContext;
 use crate::src::refmvs::refmvs_temporal_block;
-pub type read_coef_blocks_fn =
-    Option<unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> ()>;
+use crate::src::internal::read_coef_blocks_fn;
 use crate::src::levels::BlockSize;
 
 use crate::src::internal::Dav1dTaskContext;
@@ -451,8 +450,8 @@ pub struct Dav1dThreadPicture {
 
 use crate::src::internal::Dav1dTileGroup;
 use crate::src::internal::Dav1dFrameContext;
-pub type backup_ipred_edge_fn = Option<unsafe extern "C" fn(*mut Dav1dTaskContext) -> ()>;
-pub type filter_sbrow_fn = Option<unsafe extern "C" fn(*mut Dav1dFrameContext, libc::c_int) -> ()>;
+use crate::src::internal::backup_ipred_edge_fn;
+use crate::src::internal::filter_sbrow_fn;
 pub type recon_b_inter_fn =
     Option<unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> libc::c_int>;
 pub type recon_b_intra_fn = Option<

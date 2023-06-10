@@ -13,7 +13,7 @@ pub type recon_b_intra_fn = Option<
 pub type recon_b_inter_fn =
     Option<unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> libc::c_int>;
 
-pub type filter_sbrow_fn = Option<unsafe extern "C" fn(*mut Dav1dFrameContext, libc::c_int) -> ()>;
+use crate::src::internal::filter_sbrow_fn;
 
 /// This is a macro that defines a function
 /// because it takes `Dav1dFrameContext` and `Dav1dTaskContext` as arguments,

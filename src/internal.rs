@@ -54,6 +54,11 @@ use super::refmvs::Dav1dRefmvsDSPContext;
 type pixel = libc::c_void;
 type coef = libc::c_void;
 
+pub type filter_sbrow_fn = Option<unsafe extern "C" fn(*mut Dav1dFrameContext, libc::c_int) -> ()>;
+pub type backup_ipred_edge_fn = Option<unsafe extern "C" fn(*mut Dav1dTaskContext) -> ()>;
+pub type read_coef_blocks_fn =
+    Option<unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> ()>;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTileGroup {

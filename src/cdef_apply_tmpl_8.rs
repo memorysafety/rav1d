@@ -21,8 +21,7 @@ use crate::src::lf_mask::Av1Filter;
 use crate::src::lf_mask::Av1FilterLUT;
 use crate::src::lf_mask::Av1RestorationUnit;
 use crate::src::levels::Av1Block;
-pub type read_coef_blocks_fn =
-    Option<unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> ()>;
+use crate::src::internal::read_coef_blocks_fn;
 use crate::src::levels::BlockSize;
 
 use crate::src::internal::Dav1dTaskContext;
@@ -389,8 +388,7 @@ pub type generate_grain_uv_fn = Option<
 >;
 pub type generate_grain_y_fn =
     Option<unsafe extern "C" fn(*mut [entry; 82], *const Dav1dFilmGrainData) -> ()>;
-pub type backup_ipred_edge_fn = Option<unsafe extern "C" fn(*mut Dav1dTaskContext) -> ()>;
-pub type filter_sbrow_fn = Option<unsafe extern "C" fn(*mut Dav1dFrameContext, libc::c_int) -> ()>;
+use crate::src::internal::backup_ipred_edge_fn;
 pub type recon_b_inter_fn =
     Option<unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> libc::c_int>;
 pub type recon_b_intra_fn = Option<
