@@ -111,20 +111,16 @@ pub fn get_skip_ctx(
         let ss_hor = layout != DAV1D_PIXEL_LAYOUT_I444;
         let not_one_blk = b_dim[2] - (b_dim[2] != 0 && ss_hor) as u8 > t_dim.lw
             || b_dim[3] - (b_dim[3] != 0 && ss_ver) as u8 > t_dim.lh;
-        let ca = match t_dim.lw as i8 {
-            TX_4X4 => u8::read_ne(a) != 0x40,
-            TX_8X8 => u16::read_ne(a) != 0x4040,
-            TX_16X16 => u32::read_ne(a) != 0x40404040,
-            TX_32X32 => u64::read_ne(a) != 0x4040404040404040,
+        fn ne_0x40s<const N: usize>(al: &[u8]) -> bool {
+            al[..N] != [0x40; N]
+        }
+        let [ca, cl] = [(a, t_dim.lw), (l, t_dim.lh)].map(|(al, lwh)| match lwh as i8 {
+            TX_4X4 => ne_0x40s::<1>(al),
+            TX_8X8 => ne_0x40s::<2>(al),
+            TX_16X16 => ne_0x40s::<4>(al),
+            TX_32X32 => ne_0x40s::<8>(al),
             _ => unreachable!(),
-        };
-        let cl = match t_dim.lh as i8 {
-            TX_4X4 => u8::read_ne(l) != 0x40,
-            TX_8X8 => u16::read_ne(l) != 0x4040,
-            TX_16X16 => u32::read_ne(l) != 0x40404040,
-            TX_32X32 => u64::read_ne(l) != 0x4040404040404040,
-            _ => unreachable!(),
-        };
+        });
         (7 + (not_one_blk as u8) * 3) + (ca as u8) + (cl as u8)
     } else if b_dim[2] == t_dim.lw && b_dim[3] == t_dim.lh {
         0
