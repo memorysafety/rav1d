@@ -125,10 +125,9 @@ pub fn get_skip_ctx(
     } else if b_dim[2] == t_dim.lw && b_dim[3] == t_dim.lh {
         0
     } else {
-        let mut la: libc::c_uint = 0;
-        let mut ll: libc::c_uint = 0;
-        match t_dim.lw as i8 {
+        let la = match t_dim.lw as i8 {
             TX_4X4 => {
+                let mut la = 0;
                 if TX_4X4 == TX_64X64 {
                     let mut tmp = u64::read_ne(a);
                     tmp |= u64::read_ne(&a[8..]);
@@ -145,8 +144,10 @@ pub fn get_skip_ctx(
                 if TX_4X4 >= TX_8X8 {
                     la |= la >> 8;
                 }
+                la
             }
             TX_8X8 => {
+                let mut la = 0;
                 if TX_8X8 == TX_64X64 {
                     let mut tmp = u64::read_ne(a);
                     tmp |= u64::read_ne(&a[8..]);
@@ -163,8 +164,10 @@ pub fn get_skip_ctx(
                 if TX_8X8 >= TX_8X8 {
                     la |= la >> 8;
                 }
+                la
             }
             TX_16X16 => {
+                let mut la = 0;
                 if TX_16X16 == TX_64X64 {
                     let mut tmp = u64::read_ne(a);
                     tmp |= u64::read_ne(&a[8..]);
@@ -181,8 +184,10 @@ pub fn get_skip_ctx(
                 if TX_16X16 >= TX_8X8 {
                     la |= la >> 8;
                 }
+                la
             }
             TX_32X32 => {
+                let mut la = 0;
                 if TX_32X32 == TX_64X64 {
                     let mut tmp = u64::read_ne(a);
                     tmp |= u64::read_ne(&a[8..]);
@@ -199,8 +204,10 @@ pub fn get_skip_ctx(
                 if TX_32X32 >= TX_8X8 {
                     la |= la >> 8;
                 }
+                la
             }
             TX_64X64 => {
+                let mut la = 0;
                 if TX_64X64 == TX_64X64 {
                     let mut tmp = u64::read_ne(a);
                     tmp |= u64::read_ne(&a[8..]);
@@ -217,11 +224,13 @@ pub fn get_skip_ctx(
                 if TX_64X64 >= TX_8X8 {
                     la |= la >> 8;
                 }
+                la
             }
             _ => unreachable!(),
-        }
-        match t_dim.lh as i8 {
+        };
+        let ll = match t_dim.lh as i8 {
             TX_4X4 => {
+                let mut ll = 0;
                 if TX_4X4 == TX_64X64 {
                     let mut tmp = u64::read_ne(l);
                     tmp |= u64::read_ne(&l[8..]);
@@ -238,8 +247,10 @@ pub fn get_skip_ctx(
                 if TX_4X4 >= TX_8X8 {
                     ll |= ll >> 8;
                 }
+                ll
             }
             TX_8X8 => {
+                let mut ll = 0;
                 if TX_8X8 == TX_64X64 {
                     let mut tmp = u64::read_ne(l);
                     tmp |= u64::read_ne(&l[8..]);
@@ -256,8 +267,10 @@ pub fn get_skip_ctx(
                 if TX_8X8 >= TX_8X8 {
                     ll |= ll >> 8;
                 }
+                ll
             }
             TX_16X16 => {
+                let mut ll = 0;
                 if TX_16X16 == TX_64X64 {
                     let mut tmp = u64::read_ne(l);
                     tmp |= u64::read_ne(&l[8..]);
@@ -274,8 +287,10 @@ pub fn get_skip_ctx(
                 if TX_16X16 >= TX_8X8 {
                     ll |= ll >> 8;
                 }
+                ll
             }
             TX_32X32 => {
+                let mut ll = 0;
                 if TX_32X32 == TX_64X64 {
                     let mut tmp = u64::read_ne(l);
                     tmp |= u64::read_ne(&l[8..]);
@@ -292,8 +307,10 @@ pub fn get_skip_ctx(
                 if TX_32X32 >= TX_8X8 {
                     ll |= ll >> 8;
                 }
+                ll
             }
             TX_64X64 => {
+                let mut ll = 0;
                 if TX_64X64 == TX_64X64 {
                     let mut tmp = u64::read_ne(l);
                     tmp |= u64::read_ne(&l[8..]);
@@ -310,9 +327,10 @@ pub fn get_skip_ctx(
                 if TX_64X64 >= TX_8X8 {
                     ll |= ll >> 8;
                 }
+                ll
             }
             _ => unreachable!(),
-        }
+        };
         dav1d_skip_ctx[std::cmp::min(la & 0x3f, 4) as usize][std::cmp::min(ll & 0x3f, 4) as usize]
     }
 }
