@@ -1,4 +1,3 @@
-use crate::include::common::intops::umin;
 use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
@@ -318,7 +317,7 @@ pub fn get_skip_ctx(
             }
             _ => unreachable!(),
         }
-        dav1d_skip_ctx[umin(la & 0x3f, 4) as usize][umin(ll & 0x3f, 4) as usize]
+        dav1d_skip_ctx[std::cmp::min(la & 0x3f, 4) as usize][std::cmp::min(ll & 0x3f, 4) as usize]
     }
 }
 
