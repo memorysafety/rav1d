@@ -112,54 +112,54 @@ pub fn get_skip_ctx(
         let ss_hor = layout != DAV1D_PIXEL_LAYOUT_I444;
         let not_one_blk = b_dim[2] - (b_dim[2] != 0 && ss_hor) as u8 > t_dim.lw
             || b_dim[3] - (b_dim[3] != 0 && ss_ver) as u8 > t_dim.lh;
-        fn ne_0x40s<const N: usize>(al: &[u8]) -> bool {
-            al[..N] != [0x40; N]
+        fn merge_ctx<const N: usize>(dir: &[u8]) -> bool {
+            dir[..N] != [0x40; N]
         }
-        let [ca, cl] = [(a, t_dim.lw), (l, t_dim.lh)].map(|(al, lwh)| match lwh as i8 {
-            TX_4X4 => ne_0x40s::<1>(al),
-            TX_8X8 => ne_0x40s::<2>(al),
-            TX_16X16 => ne_0x40s::<4>(al),
-            TX_32X32 => ne_0x40s::<8>(al),
+        let [ca, cl] = [(a, t_dim.lw), (l, t_dim.lh)].map(|(dir, lwh)| match lwh as i8 {
+            TX_4X4 => merge_ctx::<1>(dir),
+            TX_8X8 => merge_ctx::<2>(dir),
+            TX_16X16 => merge_ctx::<4>(dir),
+            TX_32X32 => merge_ctx::<8>(dir),
             _ => unreachable!(),
         });
         (7 + (not_one_blk as u8) * 3) + (ca as u8) + (cl as u8)
     } else if b_dim[2] == t_dim.lw && b_dim[3] == t_dim.lh {
         0
     } else {
-        fn lal<T: ReadInt + Into<u32>>(al: &[u8], tx: TxfmSize) -> u32 {
-            let mut lal = 0;
+        fn merge_ctx<T: ReadInt + Into<u32>>(dir: &[u8], tx: TxfmSize) -> u32 {
+            let mut ldir = 0;
             if tx == TX_64X64 {
-                let mut tmp = u64::read_ne(al);
-                tmp |= u64::read_ne(&al[8..]);
-                lal = (tmp >> 32) as u32 | tmp as u32;
+                let mut tmp = u64::read_ne(dir);
+                tmp |= u64::read_ne(&dir[8..]);
+                ldir = (tmp >> 32) as u32 | tmp as u32;
             } else {
-                lal = T::read_ne(al).into()
+                ldir = T::read_ne(dir).into()
             }
             if tx == TX_32X32 {
-                lal |= T::read_ne(&al[std::mem::size_of::<T>()..]).into();
+                ldir |= T::read_ne(&dir[std::mem::size_of::<T>()..]).into();
             }
             if tx >= TX_16X16 {
-                lal |= lal >> 16;
+                ldir |= ldir >> 16;
             }
             if tx >= TX_8X8 {
-                lal |= lal >> 8;
+                ldir |= ldir >> 8;
             }
-            lal
+            ldir
         }
         let la = match t_dim.lw as i8 {
-            TX_4X4 => lal::<u8>(a, TX_4X4),
-            TX_8X8 => lal::<u16>(a, TX_8X8),
-            TX_16X16 => lal::<u32>(a, TX_16X16),
-            TX_32X32 => lal::<u32>(a, TX_32X32),
-            TX_64X64 => lal::<u32>(a, TX_64X64),
+            TX_4X4 => merge_ctx::<u8>(a, TX_4X4),
+            TX_8X8 => merge_ctx::<u16>(a, TX_8X8),
+            TX_16X16 => merge_ctx::<u32>(a, TX_16X16),
+            TX_32X32 => merge_ctx::<u32>(a, TX_32X32),
+            TX_64X64 => merge_ctx::<u32>(a, TX_64X64),
             _ => unreachable!(),
         };
         let ll = match t_dim.lh as i8 {
-            TX_4X4 => lal::<u8>(l, TX_4X4),
-            TX_8X8 => lal::<u16>(l, TX_8X8),
-            TX_16X16 => lal::<u32>(l, TX_16X16),
-            TX_32X32 => lal::<u32>(l, TX_32X32),
-            TX_64X64 => lal::<u32>(l, TX_64X64),
+            TX_4X4 => merge_ctx::<u8>(l, TX_4X4),
+            TX_8X8 => merge_ctx::<u16>(l, TX_8X8),
+            TX_16X16 => merge_ctx::<u32>(l, TX_16X16),
+            TX_32X32 => merge_ctx::<u32>(l, TX_32X32),
+            TX_64X64 => merge_ctx::<u32>(l, TX_64X64),
             _ => unreachable!(),
         };
         dav1d_skip_ctx[std::cmp::min(la & 0x3f, 4) as usize][std::cmp::min(ll & 0x3f, 4) as usize]
