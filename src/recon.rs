@@ -146,22 +146,17 @@ pub fn get_skip_ctx(
             }
             ldir
         }
-        let la = match t_dim.lw as i8 {
-            TX_4X4 => merge_ctx::<u8>(a, TX_4X4),
-            TX_8X8 => merge_ctx::<u16>(a, TX_8X8),
-            TX_16X16 => merge_ctx::<u32>(a, TX_16X16),
-            TX_32X32 => merge_ctx::<u32>(a, TX_32X32),
-            TX_64X64 => merge_ctx::<u32>(a, TX_64X64),
-            _ => unreachable!(),
-        };
-        let ll = match t_dim.lh as i8 {
-            TX_4X4 => merge_ctx::<u8>(l, TX_4X4),
-            TX_8X8 => merge_ctx::<u16>(l, TX_8X8),
-            TX_16X16 => merge_ctx::<u32>(l, TX_16X16),
-            TX_32X32 => merge_ctx::<u32>(l, TX_32X32),
-            TX_64X64 => merge_ctx::<u32>(l, TX_64X64),
-            _ => unreachable!(),
-        };
+        let [la, ll] = [(a, t_dim.lw), (l, t_dim.lh)].map(|(dir, lwh)| {
+            let lwh = lwh as i8;
+            match lwh {
+                TX_4X4 => merge_ctx::<u8>(dir, lwh),
+                TX_8X8 => merge_ctx::<u16>(dir, lwh),
+                TX_16X16 => merge_ctx::<u32>(dir, lwh),
+                TX_32X32 => merge_ctx::<u32>(dir, lwh),
+                TX_64X64 => merge_ctx::<u32>(dir, lwh),
+                _ => unreachable!(),
+            }
+        });
         dav1d_skip_ctx[std::cmp::min(la & 0x3f, 4) as usize][std::cmp::min(ll & 0x3f, 4) as usize]
     }
 }
