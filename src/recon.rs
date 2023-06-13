@@ -151,9 +151,7 @@ pub fn get_skip_ctx(
             match lwh {
                 TX_4X4 => merge_ctx::<u8>(dir, lwh),
                 TX_8X8 => merge_ctx::<u16>(dir, lwh),
-                TX_16X16 => merge_ctx::<u32>(dir, lwh),
-                TX_32X32 => merge_ctx::<u32>(dir, lwh),
-                TX_64X64 => merge_ctx::<u32>(dir, lwh),
+                TX_16X16 | TX_32X32 | TX_64X64 => merge_ctx::<u32>(dir, lwh),
                 _ => unreachable!(),
             }
         });
