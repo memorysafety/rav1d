@@ -4,6 +4,7 @@ use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 use crate::src::levels::BlockSize;
 use crate::src::levels::RectTxfmSize;
 use crate::src::levels::TxClass;
+use crate::src::levels::TxfmSize;
 use crate::src::levels::RTX_16X32;
 use crate::src::levels::RTX_16X4;
 use crate::src::levels::RTX_16X64;
@@ -125,210 +126,40 @@ pub fn get_skip_ctx(
     } else if b_dim[2] == t_dim.lw && b_dim[3] == t_dim.lh {
         0
     } else {
+        fn lal<T: ReadInt + Into<u32>>(al: &[u8], tx: TxfmSize) -> u32 {
+            let mut lal = 0;
+            if tx == TX_64X64 {
+                let mut tmp = u64::read_ne(al);
+                tmp |= u64::read_ne(&al[8..]);
+                lal = (tmp >> 32) as u32 | tmp as u32;
+            } else {
+                lal = T::read_ne(al).into()
+            }
+            if tx == TX_32X32 {
+                lal |= T::read_ne(&al[std::mem::size_of::<T>()..]).into();
+            }
+            if tx >= TX_16X16 {
+                lal |= lal >> 16;
+            }
+            if tx >= TX_8X8 {
+                lal |= lal >> 8;
+            }
+            lal
+        }
         let la = match t_dim.lw as i8 {
-            TX_4X4 => {
-                let mut la = 0;
-                if TX_4X4 == TX_64X64 {
-                    let mut tmp = u64::read_ne(a);
-                    tmp |= u64::read_ne(&a[8..]);
-                    la = (tmp >> 32) as libc::c_uint | tmp as libc::c_uint;
-                } else {
-                    la = u8::read_ne(a) as libc::c_uint;
-                }
-                if TX_4X4 == TX_32X32 {
-                    la |= u8::read_ne(&a[std::mem::size_of::<u8>()..]) as libc::c_uint;
-                }
-                if TX_4X4 >= TX_16X16 {
-                    la |= la >> 16;
-                }
-                if TX_4X4 >= TX_8X8 {
-                    la |= la >> 8;
-                }
-                la
-            }
-            TX_8X8 => {
-                let mut la = 0;
-                if TX_8X8 == TX_64X64 {
-                    let mut tmp = u64::read_ne(a);
-                    tmp |= u64::read_ne(&a[8..]);
-                    la = (tmp >> 32) as libc::c_uint | tmp as libc::c_uint;
-                } else {
-                    la = u16::read_ne(a) as libc::c_uint;
-                }
-                if TX_8X8 == TX_32X32 {
-                    la |= u16::read_ne(&a[std::mem::size_of::<u16>()..]) as libc::c_uint;
-                }
-                if TX_8X8 >= TX_16X16 {
-                    la |= la >> 16;
-                }
-                if TX_8X8 >= TX_8X8 {
-                    la |= la >> 8;
-                }
-                la
-            }
-            TX_16X16 => {
-                let mut la = 0;
-                if TX_16X16 == TX_64X64 {
-                    let mut tmp = u64::read_ne(a);
-                    tmp |= u64::read_ne(&a[8..]);
-                    la = (tmp >> 32) as libc::c_uint | tmp as libc::c_uint;
-                } else {
-                    la = u32::read_ne(a);
-                }
-                if TX_16X16 == TX_32X32 {
-                    la |= u32::read_ne(&a[std::mem::size_of::<u32>()..]);
-                }
-                if TX_16X16 >= TX_16X16 {
-                    la |= la >> 16;
-                }
-                if TX_16X16 >= TX_8X8 {
-                    la |= la >> 8;
-                }
-                la
-            }
-            TX_32X32 => {
-                let mut la = 0;
-                if TX_32X32 == TX_64X64 {
-                    let mut tmp = u64::read_ne(a);
-                    tmp |= u64::read_ne(&a[8..]);
-                    la = (tmp >> 32) as libc::c_uint | tmp as libc::c_uint;
-                } else {
-                    la = u32::read_ne(a);
-                }
-                if TX_32X32 == TX_32X32 {
-                    la |= u32::read_ne(&a[std::mem::size_of::<u32>()..]);
-                }
-                if TX_32X32 >= TX_16X16 {
-                    la |= la >> 16;
-                }
-                if TX_32X32 >= TX_8X8 {
-                    la |= la >> 8;
-                }
-                la
-            }
-            TX_64X64 => {
-                let mut la = 0;
-                if TX_64X64 == TX_64X64 {
-                    let mut tmp = u64::read_ne(a);
-                    tmp |= u64::read_ne(&a[8..]);
-                    la = (tmp >> 32) as libc::c_uint | tmp as libc::c_uint;
-                } else {
-                    la = u32::read_ne(a);
-                }
-                if TX_64X64 == TX_32X32 {
-                    la |= u32::read_ne(&a[std::mem::size_of::<u32>()..]);
-                }
-                if TX_64X64 >= TX_16X16 {
-                    la |= la >> 16;
-                }
-                if TX_64X64 >= TX_8X8 {
-                    la |= la >> 8;
-                }
-                la
-            }
+            TX_4X4 => lal::<u8>(a, TX_4X4),
+            TX_8X8 => lal::<u16>(a, TX_8X8),
+            TX_16X16 => lal::<u32>(a, TX_16X16),
+            TX_32X32 => lal::<u32>(a, TX_32X32),
+            TX_64X64 => lal::<u32>(a, TX_64X64),
             _ => unreachable!(),
         };
         let ll = match t_dim.lh as i8 {
-            TX_4X4 => {
-                let mut ll = 0;
-                if TX_4X4 == TX_64X64 {
-                    let mut tmp = u64::read_ne(l);
-                    tmp |= u64::read_ne(&l[8..]);
-                    ll = (tmp >> 32) as libc::c_uint | tmp as libc::c_uint;
-                } else {
-                    ll = u8::read_ne(l) as libc::c_uint;
-                }
-                if TX_4X4 == TX_32X32 {
-                    ll |= u8::read_ne(&l[std::mem::size_of::<u8>()..]) as libc::c_uint;
-                }
-                if TX_4X4 >= TX_16X16 {
-                    ll |= ll >> 16;
-                }
-                if TX_4X4 >= TX_8X8 {
-                    ll |= ll >> 8;
-                }
-                ll
-            }
-            TX_8X8 => {
-                let mut ll = 0;
-                if TX_8X8 == TX_64X64 {
-                    let mut tmp = u64::read_ne(l);
-                    tmp |= u64::read_ne(&l[8..]);
-                    ll = (tmp >> 32) as libc::c_uint | tmp as libc::c_uint;
-                } else {
-                    ll = u16::read_ne(l) as libc::c_uint;
-                }
-                if TX_8X8 == TX_32X32 {
-                    ll |= u16::read_ne(&l[std::mem::size_of::<u16>()..]) as libc::c_uint;
-                }
-                if TX_8X8 >= TX_16X16 {
-                    ll |= ll >> 16;
-                }
-                if TX_8X8 >= TX_8X8 {
-                    ll |= ll >> 8;
-                }
-                ll
-            }
-            TX_16X16 => {
-                let mut ll = 0;
-                if TX_16X16 == TX_64X64 {
-                    let mut tmp = u64::read_ne(l);
-                    tmp |= u64::read_ne(&l[8..]);
-                    ll = (tmp >> 32) as libc::c_uint | tmp as libc::c_uint;
-                } else {
-                    ll = u32::read_ne(l);
-                }
-                if TX_16X16 == TX_32X32 {
-                    ll |= u32::read_ne(&l[std::mem::size_of::<u32>()..]);
-                }
-                if TX_16X16 >= TX_16X16 {
-                    ll |= ll >> 16;
-                }
-                if TX_16X16 >= TX_8X8 {
-                    ll |= ll >> 8;
-                }
-                ll
-            }
-            TX_32X32 => {
-                let mut ll = 0;
-                if TX_32X32 == TX_64X64 {
-                    let mut tmp = u64::read_ne(l);
-                    tmp |= u64::read_ne(&l[8..]);
-                    ll = (tmp >> 32) as libc::c_uint | tmp as libc::c_uint;
-                } else {
-                    ll = u32::read_ne(l);
-                }
-                if TX_32X32 == TX_32X32 {
-                    ll |= u32::read_ne(&l[std::mem::size_of::<u32>()..]);
-                }
-                if TX_32X32 >= TX_16X16 {
-                    ll |= ll >> 16;
-                }
-                if TX_32X32 >= TX_8X8 {
-                    ll |= ll >> 8;
-                }
-                ll
-            }
-            TX_64X64 => {
-                let mut ll = 0;
-                if TX_64X64 == TX_64X64 {
-                    let mut tmp = u64::read_ne(l);
-                    tmp |= u64::read_ne(&l[8..]);
-                    ll = (tmp >> 32) as libc::c_uint | tmp as libc::c_uint;
-                } else {
-                    ll = u32::read_ne(l);
-                }
-                if TX_64X64 == TX_32X32 {
-                    ll |= u32::read_ne(&l[std::mem::size_of::<u32>()..]);
-                }
-                if TX_64X64 >= TX_16X16 {
-                    ll |= ll >> 16;
-                }
-                if TX_64X64 >= TX_8X8 {
-                    ll |= ll >> 8;
-                }
-                ll
-            }
+            TX_4X4 => lal::<u8>(l, TX_4X4),
+            TX_8X8 => lal::<u16>(l, TX_8X8),
+            TX_16X16 => lal::<u32>(l, TX_16X16),
+            TX_32X32 => lal::<u32>(l, TX_32X32),
+            TX_64X64 => lal::<u32>(l, TX_64X64),
             _ => unreachable!(),
         };
         dav1d_skip_ctx[std::cmp::min(la & 0x3f, 4) as usize][std::cmp::min(ll & 0x3f, 4) as usize]
