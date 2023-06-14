@@ -953,7 +953,6 @@ use crate::include::common::attributes::ctz;
 use crate::src::levels::MM_OBMC;
 use crate::src::levels::MM_TRANSLATION;
 use crate::src::levels::MM_WARP;
-use crate::src::refmvs::refmvs_candidate;
 
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
@@ -3043,7 +3042,7 @@ unsafe fn decode_b(
         }
     } else if is_key_or_intra(frame_hdr) {
         // intra block copy
-        let mut mvstack = [refmvs_candidate::default(); 8];
+        let mut mvstack = [Default::default(); 8];
         let mut n_mvs = 0;
         let mut ctx = 0;
         dav1d_refmvs_find(
