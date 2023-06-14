@@ -150,7 +150,7 @@ pub fn get_skip_ctx(
         fn merge_ctx<const N: usize>(dir: &[u8]) -> bool {
             dir[..N] != [0x40; N]
         }
-        let [ca, cl] = [(a, t_dim.lw), (l, t_dim.lh)].map(|(dir, lwh)| match lwh as i8 {
+        let [ca, cl] = [(a, t_dim.lw), (l, t_dim.lh)].map(|(dir, tx)| match tx as TxfmSize {
             TX_4X4 => merge_ctx::<1>(dir),
             TX_8X8 => merge_ctx::<2>(dir),
             TX_16X16 => merge_ctx::<4>(dir),
@@ -189,8 +189,10 @@ pub fn get_skip_ctx(
                 .merge()
             }
         }
-        let [la, ll] = [(a, t_dim.lw), (l, t_dim.lh)].map(|(dir, lwh)| merge_ctx(dir, lwh as i8));
-        dav1d_skip_ctx[std::cmp::min(la & 0x3f, 4) as usize][std::cmp::min(ll & 0x3f, 4) as usize]
+        let [la, ll] = [(a, t_dim.lw), (l, t_dim.lh)]
+            .map(|(dir, tx)| merge_ctx(dir, tx as TxfmSize))
+            .map(|ldir| std::cmp::min(ldir & 0x3f, 4) as usize);
+        dav1d_skip_ctx[la][ll]
     }
 }
 
