@@ -2802,7 +2802,7 @@ unsafe fn decode_b(
                 }
             }
 
-            if has_chroma && b.uv_mode() == DC_PRED as u8 {
+            if has_chroma && b.uv_mode() == DC_PRED {
                 let pal_ctx = b.pal_sz()[0] > 0;
                 let use_uv_pal = dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
@@ -2818,7 +2818,7 @@ unsafe fn decode_b(
             }
         }
 
-        if b.y_mode() == DC_PRED as u8
+        if b.y_mode() == DC_PRED
             && b.pal_sz()[0] == 0
             && std::cmp::max(b_dim[2], b_dim[3]) <= 3
             && (*f.seq_hdr).filter_intra != 0
