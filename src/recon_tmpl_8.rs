@@ -3233,7 +3233,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                     if !(init_x == 0 && init_y == 0) {
                         unreachable!();
                     }
-                    let ac: *mut int16_t = ((*t).scratch.c2rust_unnamed_0.ac).as_mut_ptr();
+                    let ac = &mut (*t).scratch.c2rust_unnamed_0.ac;
                     let mut y_src: *mut pixel = ((*f).cur.data[0] as *mut pixel)
                         .offset((4 * ((*t).bx & !ss_hor)) as isize)
                         .offset(((4 * ((*t).by & !ss_ver)) as isize * (*f).cur.stride[0]) as isize);
@@ -3251,7 +3251,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                         .wrapping_sub(1 as libc::c_int as libc::c_uint)
                         as usize])
                         .expect("non-null function pointer")(
-                        ac,
+                        ac.as_mut_ptr(),
                         y_src,
                         (*f).cur.stride[0],
                         cbw4 - (furthest_r >> ss_hor),
@@ -3299,7 +3299,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                                 edge,
                                 (*uv_t_dim).w as libc::c_int * 4,
                                 (*uv_t_dim).h as libc::c_int * 4,
-                                ac,
+                                ac.as_mut_ptr(),
                                 (*b).c2rust_unnamed.c2rust_unnamed.cfl_alpha[pl as usize]
                                     as libc::c_int,
                             );
