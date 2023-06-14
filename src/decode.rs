@@ -2224,7 +2224,6 @@ unsafe fn decode_b(
     let f = &*t.f;
     let frame_hdr = &mut *f.frame_hdr;
     let mut b_mem = Default::default();
-
     let b = if t.frame_thread.pass != 0 {
         &mut *f
             .frame_thread
@@ -2233,7 +2232,6 @@ unsafe fn decode_b(
     } else {
         &mut b_mem
     };
-
     let b_dim = &dav1d_block_dimensions[bs as usize];
     let bx4 = t.bx & 31;
     let by4 = t.by & 31;
@@ -2263,7 +2261,6 @@ unsafe fn decode_b(
             } else {
                 y_mode
             };
-
             CaseSet::<32, false>::many(
                 [&mut t.l, &mut *t.a],
                 [bh4 as usize, bw4 as usize],
@@ -2273,7 +2270,6 @@ unsafe fn decode_b(
                     case.set(&mut dir.intra.0, 1);
                 },
             );
-
             if is_inter_or_switch(frame_hdr) {
                 let r = t.rt.r[((t.by & 31) + 5 + bh4 - 1) as usize].offset(t.bx as isize);
                 for x in 0..bw4 {
@@ -2281,7 +2277,6 @@ unsafe fn decode_b(
                     block.0.r#ref.r#ref[0] = 0;
                     block.0.bs = bs as u8;
                 }
-
                 let mut rr = &t.rt.r[((t.by & 31) + 5) as usize..];
                 for y in 0..bh4 - 1 {
                     let block = &mut *rr[y as usize].offset((t.bx + bw4 - 1) as isize);
@@ -2312,7 +2307,6 @@ unsafe fn decode_b(
                     t.warpmv.matrix[5] = b.matrix()[3] as i32 + 0x10000;
                     dav1d_set_affine_mv2d(bw4, bh4, *b.mv2d(), &mut t.warpmv, t.bx, t.by);
                     dav1d_get_shear_params(&mut t.warpmv);
-
                     if DEBUG_BLOCK_INFO(f, t) {
                         println!(
                             "[ {} {} {}\n  {} {} {} ]\n\
@@ -2333,13 +2327,11 @@ unsafe fn decode_b(
                     }
                 }
             }
-
             if f.bd_fn.recon_b_inter(t, bs, b) != 0 {
                 return -1;
             }
 
             let filter = &dav1d_filter_dir[b.filter2d() as usize];
-
             CaseSet::<32, false>::many(
                 [&mut t.l, &mut *t.a],
                 [bh4 as usize, bw4 as usize],
@@ -2359,7 +2351,6 @@ unsafe fn decode_b(
                     r.0.mv.mv[0] = b.mv()[0];
                     r.0.bs = bs as u8;
                 }
-
                 let mut rr = &t.rt.r[((t.by & 31) + 5) as usize..];
                 for y in 0..bh4 as usize - 1 {
                     let r = &mut *rr[y].offset((t.bx + bw4 - 1) as isize);
@@ -2400,16 +2391,13 @@ unsafe fn decode_b(
             if !(f.prev_segmap).is_null() {
                 let mut seg_id =
                     get_prev_frame_segid(f, t.by, t.bx, w4, h4, f.prev_segmap, f.b4_stride);
-
                 if seg_id >= DAV1D_MAX_SEGMENTS.into() {
                     return -1;
                 }
-
                 b.seg_id = seg_id;
             } else {
                 b.seg_id = 0;
             }
-
             seg = Some(&frame_hdr.segmentation.seg_data.d[b.seg_id as usize]);
         } else if frame_hdr.segmentation.seg_data.preskip != 0 {
             if frame_hdr.segmentation.temporal != 0 && {
@@ -2420,14 +2408,13 @@ unsafe fn decode_b(
                 );
                 seg_pred
             } {
+                // temporal predicted seg_id
                 if !(f.prev_segmap).is_null() {
                     let mut seg_id =
                         get_prev_frame_segid(f, t.by, t.bx, w4, h4, f.prev_segmap, f.b4_stride);
-
                     if seg_id >= DAV1D_MAX_SEGMENTS.into() {
                         return -1;
                     }
-
                     b.seg_id = seg_id;
                 } else {
                     b.seg_id = 0;
@@ -2441,19 +2428,16 @@ unsafe fn decode_b(
                     DAV1D_MAX_SEGMENTS as size_t - 1,
                 );
                 let last_active_seg_id = frame_hdr.segmentation.seg_data.last_active_segid;
-
                 b.seg_id = neg_deinterleave(
                     diff as libc::c_int,
                     pred_seg_id as libc::c_int,
                     last_active_seg_id + 1,
                 ) as u8;
-
                 if b.seg_id as libc::c_int > last_active_seg_id {
-                    b.seg_id = 0;
+                    b.seg_id = 0; // error?
                 }
-
                 if b.seg_id >= DAV1D_MAX_SEGMENTS {
-                    b.seg_id = 0;
+                    b.seg_id = 0; // error?
                 }
             }
 
@@ -2478,7 +2462,6 @@ unsafe fn decode_b(
         b.skip_mode =
             dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.skip_mode.0[smctx as usize])
                 as u8;
-
         if DEBUG_BLOCK_INFO(f, t) {
             println!("Post-skipmode[{}]: r={}", b.skip_mode, ts.msac.rng);
         }
@@ -2493,7 +2476,6 @@ unsafe fn decode_b(
         let sctx = (*t.a).skip[bx4 as usize] + t.l.skip[by4 as usize];
         b.skip =
             dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.skip[sctx as usize]) as u8;
-
         if DEBUG_BLOCK_INFO(f, t) {
             println!("Post-skip[{}]: r={}", b.skip, ts.msac.rng);
         }
@@ -2516,11 +2498,9 @@ unsafe fn decode_b(
             if !(f.prev_segmap).is_null() {
                 let mut seg_id =
                     get_prev_frame_segid(f, t.by, t.bx, w4, h4, f.prev_segmap, f.b4_stride);
-
                 if seg_id >= DAV1D_MAX_SEGMENTS.into() {
                     return -1;
                 }
-
                 b.seg_id = seg_id;
             } else {
                 b.seg_id = 0;
@@ -2528,7 +2508,6 @@ unsafe fn decode_b(
         } else {
             let (pred_seg_id, seg_ctx) =
                 get_cur_frame_segid(t.by, t.bx, have_top, have_left, f.cur_segmap, f.b4_stride);
-
             if b.skip != 0 {
                 b.seg_id = pred_seg_id as u8;
             } else {
@@ -2538,20 +2517,17 @@ unsafe fn decode_b(
                     DAV1D_MAX_SEGMENTS as size_t - 1,
                 );
                 let last_active_seg_id = (*f.frame_hdr).segmentation.seg_data.last_active_segid;
-
                 b.seg_id = neg_deinterleave(
                     diff as libc::c_int,
                     pred_seg_id as libc::c_int,
                     last_active_seg_id + 1,
                 ) as u8;
-
                 if b.seg_id as i32 > last_active_seg_id {
-                    b.seg_id = 0;
+                    b.seg_id = 0; // error?
                 }
             }
-
             if b.seg_id >= DAV1D_MAX_SEGMENTS {
-                b.seg_id = 0;
+                b.seg_id = 0; // error?
             }
         }
 
@@ -2562,27 +2538,23 @@ unsafe fn decode_b(
         }
     }
 
+    // cdef index
     if b.skip == 0 {
         let idx = if (*f.seq_hdr).sb128 != 0 {
             ((t.bx & 16) >> 4) + ((t.by & 16) >> 3)
         } else {
             0
         } as isize;
-
         if *(t.cur_sb_cdef_idx_ptr).offset(idx) == -1 {
             let v =
                 dav1d_msac_decode_bools(&mut ts.msac, frame_hdr.cdef.n_bits as libc::c_uint) as i8;
-
             *(t.cur_sb_cdef_idx_ptr).offset(idx) = v;
-
             if bw4 > 16 {
                 *(t.cur_sb_cdef_idx_ptr).offset(idx + 1) = v;
             }
-
             if bh4 > 16 {
                 *(t.cur_sb_cdef_idx_ptr).offset(idx + 2) = v;
             }
-
             if bw4 == 32 && bh4 == 32 {
                 *(t.cur_sb_cdef_idx_ptr).offset(idx + 3) = v;
             }
@@ -2608,28 +2580,25 @@ unsafe fn decode_b(
                     BS_64x64
                 })
                 || b.skip == 0);
+
         let prev_delta_lf = ts.last_delta_lf;
 
         if have_delta_q {
             let mut delta_q =
                 dav1d_msac_decode_symbol_adapt4(&mut ts.msac, &mut ts.cdf.m.delta_q.0, 3)
                     as libc::c_int;
-
             if delta_q == 3 {
                 let n_bits = 1 + dav1d_msac_decode_bools(&mut ts.msac, 3);
                 delta_q = (dav1d_msac_decode_bools(&mut ts.msac, n_bits) + 1 + (1 << n_bits))
                     as libc::c_int;
             }
-
             if delta_q != 0 {
                 if dav1d_msac_decode_bool_equi(&mut ts.msac) {
                     delta_q = -delta_q;
                 }
                 delta_q *= 1 << frame_hdr.delta.q.res_log2;
             }
-
             ts.last_qidx = iclip(ts.last_qidx + delta_q, 1, 255);
-
             if have_delta_q && DEBUG_BLOCK_INFO(f, t) {
                 println!(
                     "Post-delta_q[{}->{}]: r={}",
@@ -2655,32 +2624,26 @@ unsafe fn decode_b(
                         &mut ts.cdf.m.delta_lf[delta_lf_index],
                         3,
                     ) as libc::c_int;
-
                     if delta_lf == 3 {
                         let n_bits = 1 + dav1d_msac_decode_bools(&mut ts.msac, 3);
                         delta_lf = (dav1d_msac_decode_bools(&mut ts.msac, n_bits)
                             + 1
                             + (1 << n_bits)) as libc::c_int;
                     }
-
                     if delta_lf != 0 {
                         if dav1d_msac_decode_bool_equi(&mut ts.msac) {
                             delta_lf = -delta_lf;
                         }
-
                         delta_lf *= 1 << frame_hdr.delta.lf.res_log2;
                     }
-
                     ts.last_delta_lf[i] =
                         iclip(ts.last_delta_lf[i] as libc::c_int + delta_lf, -63, 63) as i8;
-
                     if have_delta_q && DEBUG_BLOCK_INFO(f, t) {
                         println!("Post-delta_lf[{}:{}]: r={}", i, delta_lf, ts.msac.rng);
                     }
                 }
             }
         }
-
         if ts.last_qidx == frame_hdr.quant.yac {
             // assign frame-wide q values to this sb
             ts.dq = f.dq.as_ptr();
@@ -2689,7 +2652,6 @@ unsafe fn decode_b(
             init_quant_tables(&*f.seq_hdr, frame_hdr, ts.last_qidx, &mut ts.dqmem);
             ts.dq = ts.dqmem.as_ptr();
         }
-
         if ts.last_delta_lf == [0, 0, 0, 0] {
             // assign frame-wide lf values to this sb
             ts.lflvl = f.lf.lvl.as_ptr();
@@ -2710,14 +2672,12 @@ unsafe fn decode_b(
             b.intra =
                 (!dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.intra[ictx.into()]))
                     as u8;
-
             if DEBUG_BLOCK_INFO(f, t) {
                 println!("Post-intra[{}]: r={}", b.intra, ts.msac.rng);
             }
         }
     } else if frame_hdr.allow_intrabc != 0 {
         b.intra = (!dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.intrabc.0)) as uint8_t;
-
         if DEBUG_BLOCK_INFO(f, t) {
             println!("Post-intrabcflag[{}]: r={}", b.intra, ts.msac.rng);
         }
@@ -2734,13 +2694,11 @@ unsafe fn decode_b(
                 [dav1d_intra_mode_context[(*t.a).mode.0[bx4 as usize] as usize] as usize]
                 [dav1d_intra_mode_context[t.l.mode.0[by4 as usize] as usize] as usize]
         };
-
         *b.y_mode_mut() = dav1d_msac_decode_symbol_adapt16(
             &mut ts.msac,
             ymode_cdf,
             (N_INTRA_PRED_MODES - 1) as size_t,
         ) as u8;
-
         if DEBUG_BLOCK_INFO(f, t) {
             println!("Post-ymode[{}]: r={}", b.y_mode(), ts.msac.rng);
         }
@@ -2760,14 +2718,12 @@ unsafe fn decode_b(
             } else {
                 (cfl_allowed_mask & (1 << bs)) != 0
             };
-
             let uvmode_cdf = &mut ts.cdf.m.uv_mode[cfl_allowed as usize][b.y_mode() as usize];
             *b.uv_mode_mut() = dav1d_msac_decode_symbol_adapt16(
                 &mut ts.msac,
                 uvmode_cdf,
                 (N_UV_INTRA_PRED_MODES as size_t) - 1 - (!cfl_allowed as size_t),
             ) as u8;
-
             if DEBUG_BLOCK_INFO(f, t) {
                 println!("Post-uvmode[{}]: r={}", b.uv_mode(), ts.msac.rng);
             }
@@ -2778,9 +2734,7 @@ unsafe fn decode_b(
                     dav1d_msac_decode_symbol_adapt8(&mut ts.msac, &mut ts.cdf.m.cfl_sign.0, 7) + 1;
                 let sign_u = sign * 0x56 >> 8;
                 let sign_v = sign - sign_u * 3;
-
                 assert!(sign_u == sign / 3);
-
                 if sign_u != 0 {
                     let ctx = (sign_u == 2) as usize * 3 + sign_v as usize;
                     b.cfl_alpha_mut()[0] = dav1d_msac_decode_symbol_adapt16(
@@ -2789,14 +2743,12 @@ unsafe fn decode_b(
                         15,
                     ) as i8
                         + 1;
-
                     if sign_u == 1 {
                         b.cfl_alpha_mut()[0] = -b.cfl_alpha()[0];
                     }
                 } else {
                     b.cfl_alpha_mut()[0] = 0;
                 }
-
                 if sign_v != 0 {
                     let ctx = (sign_v == 2) as usize * 3 + sign_u as usize;
                     b.cfl_alpha_mut()[1] = dav1d_msac_decode_symbol_adapt16(
@@ -2805,14 +2757,12 @@ unsafe fn decode_b(
                         15,
                     ) as i8
                         + 1;
-
                     if sign_v == 1 {
                         b.cfl_alpha_mut()[1] = -b.cfl_alpha()[1];
                     }
                 } else {
                     b.cfl_alpha_mut()[1] = 0;
                 }
-
                 if DEBUG_BLOCK_INFO(f, t) {
                     println!(
                         "Post-uvalphas[{}/{}]: r={}",
@@ -2844,11 +2794,9 @@ unsafe fn decode_b(
                     &mut ts.msac,
                     &mut ts.cdf.m.pal_y[sz_ctx as usize][pal_ctx],
                 );
-
                 if DEBUG_BLOCK_INFO(f, t) {
                     println!("Post-y_pal[{}]: r={}", use_y_pal, ts.msac.rng);
                 }
-
                 if use_y_pal {
                     read_pal_plane(t, b, false, sz_ctx, bx4 as usize, by4 as usize);
                 }
@@ -2860,12 +2808,11 @@ unsafe fn decode_b(
                     &mut ts.msac,
                     &mut ts.cdf.m.pal_uv[pal_ctx as usize],
                 );
-
                 if DEBUG_BLOCK_INFO(f, t) {
                     println!("Post-uv_pal[{}]: r={}", use_uv_pal, ts.msac.rng);
                 }
-
                 if use_uv_pal {
+                    // see aomedia bug 2183 for why we use luma coordinates
                     read_pal_uv(t, b, sz_ctx, bx4 as usize, by4 as usize);
                 }
             }
@@ -2880,14 +2827,12 @@ unsafe fn decode_b(
                 &mut ts.msac,
                 &mut ts.cdf.m.use_filter_intra[bs as usize],
             );
-
             if is_filter {
                 *b.y_mode_mut() = FILTER_PRED as u8;
                 *b.y_angle_mut() =
                     dav1d_msac_decode_symbol_adapt4(&mut ts.msac, &mut ts.cdf.m.filter_intra.0, 4)
                         as i8;
             }
-
             if DEBUG_BLOCK_INFO(f, t) {
                 println!(
                     "Post-filterintramode[{}/{}]: r={}",
@@ -2910,7 +2855,6 @@ unsafe fn decode_b(
             } else {
                 pal_idx = &mut t.scratch.c2rust_unnamed_0.pal_idx;
             }
-
             read_pal_indices(
                 &mut *t.ts,
                 &mut t.scratch.c2rust_unnamed_0.c2rust_unnamed.c2rust_unnamed,
@@ -2922,7 +2866,6 @@ unsafe fn decode_b(
                 bw4,
                 bh4,
             );
-
             if DEBUG_BLOCK_INFO(f, t) {
                 println!("Post-y-pal-indices: r={}", ts.msac.rng);
             }
@@ -2940,7 +2883,6 @@ unsafe fn decode_b(
             } else {
                 pal_idx = &mut t.scratch.c2rust_unnamed_0.pal_idx[(bw4 * bh4 * 16) as usize..];
             }
-
             read_pal_indices(
                 &mut *t.ts,
                 &mut t.scratch.c2rust_unnamed_0.c2rust_unnamed.c2rust_unnamed,
@@ -2952,7 +2894,6 @@ unsafe fn decode_b(
                 cbw4,
                 cbh4,
             );
-
             if DEBUG_BLOCK_INFO(f, t) {
                 println!("Post-uv-pal-indices: r={}", ts.msac.rng);
             }
@@ -2967,7 +2908,6 @@ unsafe fn decode_b(
             *b.tx_mut() = dav1d_max_txfm_size_for_bs[bs as usize][0];
             b.uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
             t_dim = &dav1d_txfm_dimensions[b.tx() as usize];
-
             if frame_hdr.txfm_mode == DAV1D_TX_SWITCHABLE && t_dim.max > TX_4X4 as u8 {
                 let tctx = get_tx_ctx(&*t.a, &t.l, &*t_dim, by4, bx4);
                 let tx_cdf = &mut ts.cdf.m.txsz[(t_dim.max - 1) as usize][tctx as usize];
@@ -2982,7 +2922,6 @@ unsafe fn decode_b(
                     t_dim = &dav1d_txfm_dimensions[b.tx() as usize];
                 }
             }
-
             if DEBUG_BLOCK_INFO(f, t) {
                 println!("Post-tx[{}]: r={}", b.tx(), ts.msac.rng);
             }
@@ -3056,7 +2995,6 @@ unsafe fn decode_b(
                 }
             },
         );
-
         if b.pal_sz()[0] != 0 {
             let pal = if t.frame_thread.pass != 0 {
                 let index = ((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
@@ -3065,16 +3003,13 @@ unsafe fn decode_b(
             } else {
                 &t.scratch.c2rust_unnamed_0.pal[0]
             };
-
             for al_pal in &mut t.al_pal[0][bx4 as usize..][..bw4 as usize] {
                 al_pal[0] = *pal;
             }
-
             for al_pal in &mut t.al_pal[1][by4 as usize..][..bh4 as usize] {
                 al_pal[0] = *pal;
             }
         }
-
         if has_chroma {
             CaseSet::<32, false>::many(
                 [&mut t.l, &mut *t.a],
@@ -3084,7 +3019,6 @@ unsafe fn decode_b(
                     case.set(&mut dir.uvmode.0, b.uv_mode());
                 },
             );
-
             if b.pal_sz()[1] != 0 {
                 let pal = if t.frame_thread.pass != 0 {
                     let index = ((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
@@ -3093,19 +3027,17 @@ unsafe fn decode_b(
                 } else {
                     &t.scratch.c2rust_unnamed_0.pal
                 };
-
+                // see aomedia bug 2183 for why we use luma coordinates here
                 for pl in 1..=2 {
                     for x in 0..bw4 {
                         t.al_pal[0][(bx4 + x) as usize][pl] = pal[pl];
                     }
-
                     for y in 0..bh4 {
                         t.al_pal[1][(by4 + y) as usize][pl] = pal[pl];
                     }
                 }
             }
         }
-
         if is_inter_or_switch(frame_hdr) || frame_hdr.allow_intrabc != 0 {
             splat_intraref(&*f.c, t, bs, bw4 as usize, bh4 as usize);
         }
@@ -3148,12 +3080,10 @@ unsafe fn decode_b(
             if bw4 < 2 && ss_hor != 0 {
                 border_left += 4;
             }
-
             if bh4 < 2 && ss_ver != 0 {
                 border_top += 4;
             }
         }
-
         let mut src_left = t.bx * 4 + (b.mv()[0].x as libc::c_int >> 3);
         let mut src_top = t.by * 4 + (b.mv()[0].y as libc::c_int >> 3);
         let mut src_right = src_left + bw4 * 4;
@@ -3168,7 +3098,6 @@ unsafe fn decode_b(
             src_left -= src_right - border_right;
             src_right -= src_right - border_right;
         }
-
         // check against top tile boundary and adjust if necessary
         if src_top < border_top {
             src_bottom += border_top - src_top;
@@ -3178,7 +3107,6 @@ unsafe fn decode_b(
         let sbx = t.bx >> 4 + (*f.seq_hdr).sb128 << 6 + (*f.seq_hdr).sb128;
         let sby = t.by >> 4 + (*f.seq_hdr).sb128 << 6 + (*f.seq_hdr).sb128;
         let sb_size = 1 << 6 + (*f.seq_hdr).sb128;
-
         // check for overlap with current superblock
         if src_bottom > sby && src_right > sbx {
             if src_top - border_top >= src_bottom - sby {
@@ -3191,13 +3119,11 @@ unsafe fn decode_b(
                 src_right -= src_right - sbx;
             }
         }
-
         // move src up if it is below current superblock row
         if src_bottom > sby + sb_size {
             src_top -= src_bottom - (sby + sb_size);
             src_bottom -= src_bottom - (sby + sb_size);
         }
-
         // error out if mv still overlaps with the current superblock
         if src_bottom > sby && src_right > sbx {
             return -1;
@@ -3218,7 +3144,6 @@ unsafe fn decode_b(
                 ts.msac.rng,
             );
         }
-
         read_vartx_tree(t, b, bs, bx4, by4);
 
         // reconstruction
@@ -3247,7 +3172,6 @@ unsafe fn decode_b(
                 case.set(&mut dir.skip.0, b.skip);
             },
         );
-
         if has_chroma {
             CaseSet::<32, false>::many(
                 [&mut t.l, &mut *t.a],
@@ -3274,7 +3198,6 @@ unsafe fn decode_b(
             let ctx_2 = get_comp_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
             is_comp =
                 dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.comp[ctx_2 as usize]);
-
             if DEBUG_BLOCK_INFO(f, t) {
                 println!("Post-compflag[{}]: r={}", is_comp, ts.msac.rng);
             }
@@ -3310,7 +3233,6 @@ unsafe fn decode_b(
             *b.mv_mut() = mvstack[0].mv.mv;
             fix_mv_precision(frame_hdr, &mut b.mv_mut()[0]);
             fix_mv_precision(frame_hdr, &mut b.mv_mut()[1]);
-
             if DEBUG_BLOCK_INFO(f, t) {
                 println!(
                     "Post-skipmodeblock[mv=1:y={},x={},2:y={},x={},refs={}+{}",
@@ -3387,7 +3309,6 @@ unsafe fn decode_b(
                     }
                 }
             }
-
             if DEBUG_BLOCK_INFO(f, t) {
                 println!(
                     "Post-refs[{}/{}]: r={}",
@@ -3417,7 +3338,6 @@ unsafe fn decode_b(
                 &mut ts.cdf.m.comp_inter_mode[ctx_4 as usize],
                 N_COMP_INTER_PRED_MODES as size_t - 1,
             ) as u8;
-
             if DEBUG_BLOCK_INFO(f, t) {
                 println!(
                     "Post-compintermode[{},ctx={},n_mvs={}]: r={}",
@@ -3431,14 +3351,13 @@ unsafe fn decode_b(
             let im = &dav1d_comp_inter_pred_modes[b.inter_mode() as usize];
             *b.drl_idx_mut() = NEAREST_DRL as u8;
             if b.inter_mode() == NEWMV_NEWMV as u8 {
-                // NEARER, NEAR or NEARISH
                 if n_mvs > 1 {
+                    // NEARER, NEAR or NEARISH
                     let drl_ctx_v1 = get_drl_context(&mvstack, 0);
                     *b.drl_idx_mut() += dav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
                         &mut ts.cdf.m.drl_bit[drl_ctx_v1 as usize],
                     ) as u8;
-
                     if b.drl_idx() == NEARER_DRL as u8 && n_mvs > 2 {
                         let drl_ctx_v2 = get_drl_context(&mvstack, 1);
                         *b.drl_idx_mut() += dav1d_msac_decode_bool_adapt(
@@ -3446,7 +3365,6 @@ unsafe fn decode_b(
                             &mut ts.cdf.m.drl_bit[drl_ctx_v2 as usize],
                         ) as u8;
                     }
-
                     if DEBUG_BLOCK_INFO(f, t) {
                         println!(
                             "Post-drlidx[{},n_mvs={}]: r={}",
@@ -3458,15 +3376,13 @@ unsafe fn decode_b(
                 }
             } else if im[0] == NEARMV as u8 || im[1] == NEARMV as u8 {
                 *b.drl_idx_mut() = NEARER_DRL as u8;
-
-                // NEAR or NEARISH
                 if n_mvs > 2 {
+                    // NEAR or NEARISH
                     let drl_ctx_v2_0 = get_drl_context(&mvstack, 1);
                     *b.drl_idx_mut() += dav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
                         &mut ts.cdf.m.drl_bit[drl_ctx_v2_0 as usize],
                     ) as u8;
-
                     if b.drl_idx() == NEAR_DRL as u8 && n_mvs > 3 {
                         let drl_ctx_v3 = get_drl_context(&mvstack, 2);
                         *b.drl_idx_mut() += dav1d_msac_decode_bool_adapt(
@@ -3474,7 +3390,6 @@ unsafe fn decode_b(
                             &mut ts.cdf.m.drl_bit[drl_ctx_v3 as usize],
                         ) as u8;
                     }
-
                     if DEBUG_BLOCK_INFO(f, t) {
                         println!(
                             "Post-drlidx[{},n_mvs={}]: r={}",
@@ -3485,18 +3400,15 @@ unsafe fn decode_b(
                     }
                 }
             }
-
             assert!(b.drl_idx() >= NEAREST_DRL as u8 && b.drl_idx() <= NEARISH_DRL as u8);
 
             has_subpel_filter =
                 std::cmp::min(bw4, bh4) == 1 || b.inter_mode() != GLOBALMV_GLOBALMV as u8;
-
             let mut assign_comp_mv = |idx: usize| match im[idx] as InterPredMode {
                 NEARMV | NEARESTMV => {
                     b.mv_mut()[idx] = mvstack[b.drl_idx() as usize].mv.mv[idx];
                     fix_mv_precision(frame_hdr, &mut b.mv_mut()[idx]);
                 }
-
                 GLOBALMV => {
                     has_subpel_filter |=
                         frame_hdr.gmv[b.r#ref()[idx] as usize].type_0 == DAV1D_WM_TYPE_TRANSLATION;
@@ -3509,7 +3421,6 @@ unsafe fn decode_b(
                         frame_hdr,
                     );
                 }
-
                 NEWMV => {
                     b.mv_mut()[idx] = mvstack[b.drl_idx() as usize].mv.mv[idx];
                     read_mv_residual(
@@ -3523,7 +3434,6 @@ unsafe fn decode_b(
             };
             assign_comp_mv(0);
             assign_comp_mv(1);
-
             if DEBUG_BLOCK_INFO(f, t) {
                 println!(
                     "Post-residual_mv[1:y={},x={},2:y={},x={}]: r={}",
@@ -3543,7 +3453,6 @@ unsafe fn decode_b(
                     &mut ts.msac,
                     &mut ts.cdf.m.mask_comp[mask_ctx as usize],
                 );
-
                 if DEBUG_BLOCK_INFO(f, t) {
                     println!(
                         "Post-segwedge_vs_jntavg[{},ctx={}]: r={}",
@@ -3569,7 +3478,6 @@ unsafe fn decode_b(
                             &mut ts.msac,
                             &mut ts.cdf.m.jnt_comp[jnt_ctx as usize],
                         ) as u8;
-
                     if DEBUG_BLOCK_INFO(f, t) {
                         println!(
                             "Post-jnt_comp[{},ctx={}[ac:{},ar:{},lc:{},lr:{}]]: r={}",
@@ -3591,7 +3499,6 @@ unsafe fn decode_b(
                     *b.comp_type_mut() = COMP_INTER_WEDGE as u8
                         - dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.wedge_comp[ctx])
                             as u8;
-
                     if b.comp_type() == COMP_INTER_WEDGE as u8 {
                         *b.wedge_idx_mut() = dav1d_msac_decode_symbol_adapt16(
                             &mut ts.msac,
@@ -3602,9 +3509,7 @@ unsafe fn decode_b(
                 } else {
                     *b.comp_type_mut() = COMP_INTER_SEG as u8;
                 }
-
                 *b.mask_sign_mut() = dav1d_msac_decode_bool_equi(&mut ts.msac) as u8;
-
                 if DEBUG_BLOCK_INFO(f, t) {
                     println!(
                         "Post-seg/wedge[{},wedge_idx={},sign={}]: r={}",
@@ -3617,6 +3522,8 @@ unsafe fn decode_b(
             }
         } else {
             *b.comp_type_mut() = COMP_INTER_NONE as u8;
+
+            // ref
             if let Some(seg) = seg.filter(|seg| seg.r#ref > 0) {
                 b.ref_mut()[0] = seg.r#ref as i8 - 1;
             } else if let Some(_) = seg.filter(|seg| seg.globalmv != 0 || seg.skip != 0) {
@@ -3665,6 +3572,7 @@ unsafe fn decode_b(
                 }
             }
             b.ref_mut()[1] = -1;
+
             let mut mvstack = [Default::default(); 8];
             let mut n_mvs = 0;
             let mut ctx = 0;
@@ -3681,6 +3589,8 @@ unsafe fn decode_b(
                 t.by,
                 t.bx,
             );
+
+            // mode parsing and mv derivation from ref_mvs
             if seg
                 .map(|seg| seg.skip != 0 || seg.globalmv != 0)
                 .unwrap_or(false)
@@ -3714,9 +3624,11 @@ unsafe fn decode_b(
                         &mut ts.msac,
                         &mut ts.cdf.m.refmv_mode[(ctx >> 4 & 15) as usize],
                     ) {
+                        // NEAREST, NEARER, NEAR or NEARISH
                         *b.inter_mode_mut() = NEARMV as u8;
                         *b.drl_idx_mut() = NEARER_DRL as u8;
                         if n_mvs > 2 {
+                            // NEARER, NEAR or NEARISH
                             let drl_ctx_v2 = get_drl_context(&mvstack, 1);
                             *b.drl_idx_mut() = b.drl_idx()
                                 + dav1d_msac_decode_bool_adapt(
@@ -3724,6 +3636,7 @@ unsafe fn decode_b(
                                     &mut ts.cdf.m.drl_bit[drl_ctx_v2 as usize],
                                 ) as u8;
                             if b.drl_idx() == NEAR_DRL as u8 && n_mvs > 3 {
+                                // NEAR or NEARISH
                                 let drl_ctx_v3 = get_drl_context(&mvstack, 2);
                                 *b.drl_idx_mut() = b.drl_idx()
                                     + dav1d_msac_decode_bool_adapt(
@@ -3742,6 +3655,7 @@ unsafe fn decode_b(
                         fix_mv_precision(frame_hdr, &mut b.mv_mut()[0]);
                     }
                 }
+
                 if DEBUG_BLOCK_INFO(f, t) {
                     println!(
                         "Post-intermode[{},drl={},mv=y:{},x:{},n_mvs={}]: r={}",
@@ -3758,6 +3672,7 @@ unsafe fn decode_b(
                 *b.inter_mode_mut() = NEWMV as u8;
                 *b.drl_idx_mut() = NEAREST_DRL as u8;
                 if n_mvs > 1 {
+                    // NEARER, NEAR or NEARISH
                     let drl_ctx_v1 = get_drl_context(&mvstack, 0);
                     *b.drl_idx_mut() = b.drl_idx()
                         + dav1d_msac_decode_bool_adapt(
@@ -3765,6 +3680,7 @@ unsafe fn decode_b(
                             &mut ts.cdf.m.drl_bit[drl_ctx_v1 as usize],
                         ) as u8;
                     if b.drl_idx() == NEARER_DRL as u8 && n_mvs > 2 {
+                        // NEAR or NEARISH
                         let drl_ctx_v2 = get_drl_context(&mvstack, 1);
                         *b.drl_idx_mut() = b.drl_idx()
                             + dav1d_msac_decode_bool_adapt(
@@ -3804,6 +3720,8 @@ unsafe fn decode_b(
                     );
                 }
             }
+
+            // interintra flags
             let ii_sz_grp = dav1d_ymode_size_context[bs as usize] as libc::c_int;
             if (*f.seq_hdr).inter_intra != 0
                 && interintra_allowed_mask & (1 << bs) != 0
@@ -3845,15 +3763,21 @@ unsafe fn decode_b(
                     ts.msac.rng,
                 );
             }
+
+            // motion variation
             if frame_hdr.switchable_motion_mode != 0
                 && b.interintra_type() == INTER_INTRA_NONE as u8
                 && std::cmp::min(bw4, bh4) >= 2
+                // is not warped global motion
                 && !(frame_hdr.force_integer_mv == 0
                     && b.inter_mode() == GLOBALMV as u8
                     && frame_hdr.gmv[b.r#ref()[0] as usize].type_0 > DAV1D_WM_TYPE_TRANSLATION)
+                // has overlappable neighbours
                 && (have_left && findoddzero(&t.l.intra.0[by4 as usize..][..h4 as usize])
                     || have_top && findoddzero(&(*t.a).intra.0[bx4 as usize..][..w4 as usize]))
             {
+                // reaching here means the block allows obmc - check warp by
+                // finding matching-ref blocks in top/left edges
                 let mut mask = [0, 0];
                 find_matching_ref(
                     t,
@@ -3871,6 +3795,7 @@ unsafe fn decode_b(
                     && frame_hdr.force_integer_mv == 0
                     && frame_hdr.warp_motion != 0
                     && mask[0] | mask[1] != 0) as libc::c_int;
+
                 *b.motion_mode_mut() = if allow_warp != 0 {
                     dav1d_msac_decode_symbol_adapt4(
                         &mut ts.msac,
@@ -3913,6 +3838,7 @@ unsafe fn decode_b(
                         }
                     }
                 }
+
                 if DEBUG_BLOCK_INFO(f, t) {
                     println!(
                         "Post-motionmode[{}]: r={} [mask: 0x{:x}/0x{:x}]",
@@ -3926,6 +3852,8 @@ unsafe fn decode_b(
                 *b.motion_mode_mut() = MM_TRANSLATION as u8;
             }
         }
+
+        // subpel filter
         let mut filter = [DAV1D_FILTER_8TAP_REGULAR; 2];
         if frame_hdr.subpel_filter_mode == DAV1D_FILTER_SWITCHABLE {
             if has_subpel_filter {
@@ -3973,12 +3901,16 @@ unsafe fn decode_b(
             filter[0] = filter[1];
         }
         *b.filter2d_mut() = dav1d_filter_2d[filter[1] as usize][filter[0] as usize];
+
         read_vartx_tree(t, b, bs, bx4, by4);
+
+        // reconstruction
         if t.frame_thread.pass == 1 {
             f.bd_fn.read_coef_blocks(t, bs, b);
         } else if f.bd_fn.recon_b_inter(t, bs, b) != 0 {
             return -1;
         }
+
         if frame_hdr.loopfilter.level_y[0] != 0 || frame_hdr.loopfilter.level_y[1] != 0 {
             let is_globalmv = (b.inter_mode()
                 == if is_comp {
@@ -4027,6 +3959,8 @@ unsafe fn decode_b(
                 },
             );
         }
+
+        // context updates
         if is_comp {
             splat_tworef_mv(&*f.c, t, bs, b, bw4 as usize, bh4 as usize);
         } else {
@@ -4066,6 +4000,8 @@ unsafe fn decode_b(
             );
         }
     }
+
+    // update contexts
     if frame_hdr.segmentation.enabled != 0 && frame_hdr.segmentation.update_map != 0 {
         // Need checked casts here because we're using `from_raw_parts_mut` and an overflow would be UB.
         let [by, bx, bh4, bw4] = [t.by, t.bx, bh4, bw4].map(|it| usize::try_from(it).unwrap());
@@ -4093,14 +4029,18 @@ unsafe fn decode_b(
         {
             noskip_mask[bx_idx as usize] |= mask as u16;
             if bw4 == 32 {
+                // this should be mask >> 16, but it's 0xffffffff anyway
                 noskip_mask[1] |= mask as u16;
             }
         }
     }
+
     if t.frame_thread.pass == 1 && b.intra == 0 && frame_hdr.frame_type & 1 != 0 {
         let sby = t.by - ts.tiling.row_start >> f.sb_shift;
         let lowest_px = &mut *ts.lowest_pixel.offset(sby as isize);
+        // keep track of motion vectors for each reference
         if b.comp_type() == COMP_INTER_NONE as u8 {
+            // y
             if std::cmp::min(bw4, bh4) > 1
                 && (b.inter_mode() == GLOBALMV as u8
                     && f.gmv_warp_allowed[b.r#ref()[0] as usize] != 0
@@ -4130,7 +4070,10 @@ unsafe fn decode_b(
                     obmc_lowest_px(t, lowest_px, false, b_dim, bx4, by4, w4, h4);
                 }
             }
+
+            // uv
             if has_chroma {
+                // sub8x8 derivation
                 let mut is_sub8x8 = bw4 == ss_hor || bh4 == ss_ver;
                 let mut r = 0 as *const *mut refmvs_block;
                 if is_sub8x8 {
@@ -4149,6 +4092,8 @@ unsafe fn decode_b(
                             (*(*r.offset(-1)).offset((t.bx - 1) as isize)).0.r#ref.r#ref[0] > 0;
                     }
                 }
+
+                // chroma prediction
                 if is_sub8x8 {
                     assert!(ss_hor == 1);
                     if bw4 == 1 && bh4 == ss_ver {
@@ -4225,6 +4170,7 @@ unsafe fn decode_b(
                 }
             }
         } else {
+            // y
             let refmvs =
                 || std::iter::zip(b.r#ref(), b.mv()).map(|(r#ref, mv)| (r#ref as usize, mv));
             for (r#ref, mv) in refmvs() {
@@ -4265,6 +4211,8 @@ unsafe fn decode_b(
                     );
                 }
             }
+
+            // uv
             if has_chroma {
                 for (r#ref, mv) in refmvs() {
                     if b.inter_mode() == GLOBALMV_GLOBALMV as u8
@@ -4291,6 +4239,7 @@ unsafe fn decode_b(
             }
         }
     }
+
     0
 }
 
