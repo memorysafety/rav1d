@@ -333,6 +333,7 @@ use crate::src::lf_mask::Av1RestorationUnit;
 pub type coef = ();
 use crate::src::internal::CodedBlockInfo;
 use crate::src::levels::Av1Block;
+use crate::src::levels::MotionMode;
 
 use crate::src::levels::mv;
 
@@ -2295,7 +2296,10 @@ unsafe fn decode_b(
                 );
             }
         } else {
-            if is_inter_or_switch(frame_hdr) {
+            if is_inter_or_switch(frame_hdr)
+                && b.comp_type() == COMP_INTER_NONE
+                && b.motion_mode() as MotionMode == MM_WARP
+            {
                 if b.matrix()[0] == i16::MIN {
                     t.warpmv.type_0 = DAV1D_WM_TYPE_IDENTITY;
                 } else {
