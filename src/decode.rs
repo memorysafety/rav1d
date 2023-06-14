@@ -2933,7 +2933,7 @@ unsafe fn decode_b(
             f.bd_fn.recon_b_intra(t, bs, intra_edge_flags, b);
         }
 
-        if frame_hdr.loopfilter.level_y[0] != 0 || frame_hdr.loopfilter.level_y[1] != 0 {
+        if frame_hdr.loopfilter.level_y != [0, 0] {
             dav1d_create_lf_mask_intra(
                 &mut *t.lf_mask,
                 f.lf.level,
@@ -3909,7 +3909,7 @@ unsafe fn decode_b(
             return -1;
         }
 
-        if frame_hdr.loopfilter.level_y[0] != 0 || frame_hdr.loopfilter.level_y[1] != 0 {
+        if frame_hdr.loopfilter.level_y != [0, 0] {
             let is_globalmv = (b.inter_mode()
                 == if is_comp {
                     GLOBALMV_GLOBALMV as u8
