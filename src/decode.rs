@@ -2898,15 +2898,14 @@ unsafe fn decode_b(
             }
         }
 
-        let mut t_dim;
-        if frame_hdr.segmentation.lossless[b.seg_id as usize] != 0 {
+        let t_dim = if frame_hdr.segmentation.lossless[b.seg_id as usize] != 0 {
             b.uvtx = TX_4X4 as uint8_t;
             *b.tx_mut() = b.uvtx;
-            t_dim = &dav1d_txfm_dimensions[TX_4X4 as usize];
+            &dav1d_txfm_dimensions[TX_4X4 as usize]
         } else {
             *b.tx_mut() = dav1d_max_txfm_size_for_bs[bs as usize][0];
             b.uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
-            t_dim = &dav1d_txfm_dimensions[b.tx() as usize];
+            let mut t_dim = &dav1d_txfm_dimensions[b.tx() as usize];
             if frame_hdr.txfm_mode == DAV1D_TX_SWITCHABLE && t_dim.max > TX_4X4 as u8 {
                 let tctx = get_tx_ctx(&*t.a, &t.l, &*t_dim, by4, bx4);
                 let tx_cdf = &mut ts.cdf.m.txsz[(t_dim.max - 1) as usize][tctx as usize];
@@ -2924,7 +2923,8 @@ unsafe fn decode_b(
             if DEBUG_BLOCK_INFO(f, t) {
                 println!("Post-tx[{}]: r={}", b.tx(), ts.msac.rng);
             }
-        }
+            t_dim
+        };
 
         // reconstruction
         if t.frame_thread.pass == 1 {
