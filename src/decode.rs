@@ -3183,11 +3183,10 @@ unsafe fn decode_b(
         }
     } else {
         // inter-specific mode/mv coding
-        let mut is_comp = false;
         let mut has_subpel_filter = false;
 
-        if b.skip_mode != 0 {
-            is_comp = true;
+        let is_comp = if b.skip_mode != 0 {
+            true
         } else if seg
             .map(|seg| seg.r#ref == -1 && seg.globalmv == 0 && seg.skip == 0)
             .unwrap_or(true)
@@ -3195,13 +3194,15 @@ unsafe fn decode_b(
             && std::cmp::min(bw4, bh4) > 1
         {
             let ctx = get_comp_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
-            is_comp = dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.comp[ctx as usize]);
+            let is_comp =
+                dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.comp[ctx as usize]);
             if DEBUG_BLOCK_INFO(f, t) {
                 println!("Post-compflag[{}]: r={}", is_comp, ts.msac.rng);
             }
+            is_comp
         } else {
-            is_comp = false;
-        }
+            false
+        };
 
         if b.skip_mode != 0 {
             *b.ref_mut() = [
