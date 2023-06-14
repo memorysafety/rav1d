@@ -5,7 +5,7 @@ extern "C" {
 }
 
 #[inline]
-pub unsafe extern "C" fn ac_dump(
+pub unsafe fn ac_dump(
     mut buf: *const int16_t,
     mut w: libc::c_int,
     mut h: libc::c_int,
