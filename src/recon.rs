@@ -1,3 +1,5 @@
+use std::ops::BitOr;
+
 use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
@@ -97,6 +99,39 @@ impl_ReadInt!(u32);
 impl_ReadInt!(u64);
 impl_ReadInt!(u128);
 
+trait MergeInt: Sized + Copy {
+    type Output: BitOr<Self::Output, Output = Self::Output>;
+
+    fn lo(self) -> Self::Output;
+
+    fn hi(self) -> Self::Output;
+
+    fn merge(self) -> Self::Output {
+        self.lo() | self.hi()
+    }
+}
+
+macro_rules! impl_MergeInt {
+    ($T:ty, $U:ty) => {
+        impl MergeInt for $T {
+            type Output = $U;
+
+            fn lo(self) -> Self::Output {
+                self as $U
+            }
+
+            fn hi(self) -> Self::Output {
+                (self >> <$U>::BITS) as $U
+            }
+        }
+    };
+}
+
+impl_MergeInt!(u16, u8);
+impl_MergeInt!(u32, u16);
+impl_MergeInt!(u64, u32);
+impl_MergeInt!(u128, u64);
+
 #[inline]
 pub fn get_skip_ctx(
     t_dim: &TxfmInfo,
@@ -126,35 +161,35 @@ pub fn get_skip_ctx(
     } else if b_dim[2] == t_dim.lw && b_dim[3] == t_dim.lh {
         0
     } else {
-        fn merge_ctx<T: ReadInt + Into<u32>>(dir: &[u8], tx: TxfmSize) -> u32 {
-            let mut ldir = 0;
-            if tx == TX_64X64 {
-                let mut tmp = u64::read_ne(dir);
-                tmp |= u64::read_ne(&dir[8..]);
-                ldir = (tmp >> 32) as u32 | tmp as u32;
+        /// Read and xor all the bytes.
+        fn merge_ctx(dir: &[u8], tx: TxfmSize) -> u8 {
+            if tx == TX_4X4 {
+                u8::read_ne(dir)
             } else {
-                ldir = T::read_ne(dir).into()
+                (if tx == TX_8X8 {
+                    u16::read_ne(dir)
+                } else {
+                    (if tx == TX_16X16 {
+                        u32::read_ne(dir)
+                    } else {
+                        (if tx == TX_32X32 {
+                            u64::read_ne(dir)
+                        } else {
+                            (if tx == TX_64X64 {
+                                u128::read_ne(dir)
+                            } else {
+                                unreachable!()
+                            })
+                            .merge()
+                        })
+                        .merge()
+                    })
+                    .merge()
+                })
+                .merge()
             }
-            if tx == TX_32X32 {
-                ldir |= T::read_ne(&dir[std::mem::size_of::<T>()..]).into();
-            }
-            if tx >= TX_16X16 {
-                ldir |= ldir >> 16;
-            }
-            if tx >= TX_8X8 {
-                ldir |= ldir >> 8;
-            }
-            ldir
         }
-        let [la, ll] = [(a, t_dim.lw), (l, t_dim.lh)].map(|(dir, lwh)| {
-            let lwh = lwh as i8;
-            match lwh {
-                TX_4X4 => merge_ctx::<u8>(dir, lwh),
-                TX_8X8 => merge_ctx::<u16>(dir, lwh),
-                TX_16X16 | TX_32X32 | TX_64X64 => merge_ctx::<u32>(dir, lwh),
-                _ => unreachable!(),
-            }
-        });
+        let [la, ll] = [(a, t_dim.lw), (l, t_dim.lh)].map(|(dir, lwh)| merge_ctx(dir, lwh as i8));
         dav1d_skip_ctx[std::cmp::min(la & 0x3f, 4) as usize][std::cmp::min(ll & 0x3f, 4) as usize]
     }
 }
