@@ -3307,12 +3307,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                         pl += 1;
                     }
                     if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
-                        ac_dump(
-                            ac,
-                            4 * cbw4,
-                            4 * cbh4,
-                            b"ac\0" as *const u8 as *const libc::c_char,
-                        );
+                        ac_dump(ac, 4 * cbw4, 4 * cbh4, "ac");
                         hex_dump(
                             uv_dst[0],
                             stride,

@@ -1,17 +1,13 @@
 use crate::include::stdint::int16_t;
 
-extern "C" {
-    fn printf(_: *const libc::c_char, _: ...) -> libc::c_int;
-}
-
 #[inline]
 pub unsafe fn ac_dump(
     mut buf: *const int16_t,
     mut w: libc::c_int,
     mut h: libc::c_int,
-    mut what: *const libc::c_char,
+    what: &str,
 ) {
-    printf(b"%s\n\0" as *const u8 as *const libc::c_char, what);
+    println!("{}", what);
     loop {
         let fresh1 = h;
         h = h - 1;
@@ -20,13 +16,10 @@ pub unsafe fn ac_dump(
         }
         let mut x = 0;
         while x < w {
-            printf(
-                b" %03d\0" as *const u8 as *const libc::c_char,
-                *buf.offset(x as isize) as libc::c_int,
-            );
+            print!(" {:03}", *buf.offset(x as isize));
             x += 1;
         }
         buf = buf.offset(w as isize);
-        printf(b"\n\0" as *const u8 as *const libc::c_char);
+        println!();
     }
 }
