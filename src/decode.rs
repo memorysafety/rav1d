@@ -3853,12 +3853,11 @@ unsafe fn decode_b(
         }
 
         // subpel filter
-        let mut filter = [DAV1D_FILTER_8TAP_REGULAR; 2];
-        if frame_hdr.subpel_filter_mode == DAV1D_FILTER_SWITCHABLE {
+        let filter = if frame_hdr.subpel_filter_mode == DAV1D_FILTER_SWITCHABLE {
             if has_subpel_filter {
                 let comp = b.comp_type() != COMP_INTER_NONE as u8;
                 let ctx1 = get_filter_ctx(&*t.a, &t.l, comp, false, b.r#ref()[0], by4, bx4);
-                filter[0] = dav1d_msac_decode_symbol_adapt4(
+                let filter0 = dav1d_msac_decode_symbol_adapt4(
                     &mut ts.msac,
                     &mut ts.cdf.m.filter.0[0][ctx1 as usize],
                     DAV1D_N_SWITCHABLE_FILTERS as size_t - 1,
@@ -3868,10 +3867,10 @@ unsafe fn decode_b(
                     if DEBUG_BLOCK_INFO(f, t) {
                         println!(
                             "Post-subpel_filter1[{},ctx={}]: r={}",
-                            filter[0], ctx1, ts.msac.rng,
+                            filter0, ctx1, ts.msac.rng,
                         );
                     }
-                    filter[1] = dav1d_msac_decode_symbol_adapt4(
+                    let filter1 = dav1d_msac_decode_symbol_adapt4(
                         &mut ts.msac,
                         &mut ts.cdf.m.filter.0[1][ctx2 as usize],
                         DAV1D_N_SWITCHABLE_FILTERS as size_t - 1,
@@ -3879,26 +3878,25 @@ unsafe fn decode_b(
                     if DEBUG_BLOCK_INFO(f, t) {
                         println!(
                             "Post-subpel_filter2[{},ctx={}]: r={}",
-                            filter[1], ctx2, ts.msac.rng,
+                            filter1, ctx2, ts.msac.rng,
                         );
                     }
+                    [filter0, filter1]
                 } else {
-                    filter[1] = filter[0];
                     if DEBUG_BLOCK_INFO(f, t) {
                         println!(
                             "Post-subpel_filter[{},ctx={}]: r={}",
-                            filter[0], ctx1, ts.msac.rng
+                            filter0, ctx1, ts.msac.rng
                         );
                     }
+                    [filter0; 2]
                 }
             } else {
-                filter[1] = DAV1D_FILTER_8TAP_REGULAR;
-                filter[0] = filter[1];
+                [DAV1D_FILTER_8TAP_REGULAR; 2]
             }
         } else {
-            filter[1] = frame_hdr.subpel_filter_mode;
-            filter[0] = filter[1];
-        }
+            [frame_hdr.subpel_filter_mode; 2]
+        };
         *b.filter2d_mut() = dav1d_filter_2d[filter[1] as usize][filter[0] as usize];
 
         read_vartx_tree(t, b, bs, bx4, by4);
