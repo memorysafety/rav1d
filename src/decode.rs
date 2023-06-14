@@ -3045,12 +3045,12 @@ unsafe fn decode_b(
         // intra block copy
         let mut mvstack = [refmvs_candidate::default(); 8];
         let mut n_mvs = 0;
-        let mut ctx_1 = 0;
+        let mut ctx = 0;
         dav1d_refmvs_find(
             &mut t.rt,
             &mut mvstack,
             &mut n_mvs,
-            &mut ctx_1,
+            &mut ctx,
             [0, -1].into(),
             bs,
             intra_edge_flags,
@@ -3195,9 +3195,8 @@ unsafe fn decode_b(
             && frame_hdr.switchable_comp_refs != 0
             && std::cmp::min(bw4, bh4) > 1
         {
-            let ctx_2 = get_comp_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
-            is_comp =
-                dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.comp[ctx_2 as usize]);
+            let ctx = get_comp_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
+            is_comp = dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.comp[ctx as usize]);
             if DEBUG_BLOCK_INFO(f, t) {
                 println!("Post-compflag[{}]: r={}", is_comp, ts.msac.rng);
             }
@@ -3216,13 +3215,13 @@ unsafe fn decode_b(
             has_subpel_filter = false;
 
             let mut mvstack = [Default::default(); 8];
-            let mut n_mvs_0 = 0;
-            let mut ctx_3 = 0;
+            let mut n_mvs = 0;
+            let mut ctx = 0;
             dav1d_refmvs_find(
                 &mut t.rt,
                 &mut mvstack,
-                &mut n_mvs_0,
-                &mut ctx_3,
+                &mut n_mvs,
+                &mut ctx,
                 [b.r#ref()[0] + 1, b.r#ref()[1] + 1].into(),
                 bs,
                 intra_edge_flags,
@@ -3320,12 +3319,12 @@ unsafe fn decode_b(
 
             let mut mvstack = [Default::default(); 8];
             let mut n_mvs = 0;
-            let mut ctx_4 = 0;
+            let mut ctx = 0;
             dav1d_refmvs_find(
                 &mut t.rt,
                 &mut mvstack,
                 &mut n_mvs,
-                &mut ctx_4,
+                &mut ctx,
                 [b.r#ref()[0] + 1, b.r#ref()[1] + 1].into(),
                 bs,
                 intra_edge_flags,
@@ -3335,14 +3334,14 @@ unsafe fn decode_b(
 
             *b.inter_mode_mut() = dav1d_msac_decode_symbol_adapt8(
                 &mut ts.msac,
-                &mut ts.cdf.m.comp_inter_mode[ctx_4 as usize],
+                &mut ts.cdf.m.comp_inter_mode[ctx as usize],
                 N_COMP_INTER_PRED_MODES as size_t - 1,
             ) as u8;
             if DEBUG_BLOCK_INFO(f, t) {
                 println!(
                     "Post-compintermode[{},ctx={},n_mvs={}]: r={}",
                     b.inter_mode(),
-                    ctx_4,
+                    ctx,
                     n_mvs,
                     ts.msac.rng,
                 );
@@ -3378,10 +3377,10 @@ unsafe fn decode_b(
                 *b.drl_idx_mut() = NEARER_DRL as u8;
                 if n_mvs > 2 {
                     // NEAR or NEARISH
-                    let drl_ctx_v2_0 = get_drl_context(&mvstack, 1);
+                    let drl_ctx_v2 = get_drl_context(&mvstack, 1);
                     *b.drl_idx_mut() += dav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
-                        &mut ts.cdf.m.drl_bit[drl_ctx_v2_0 as usize],
+                        &mut ts.cdf.m.drl_bit[drl_ctx_v2 as usize],
                     ) as u8;
                     if b.drl_idx() == NEAR_DRL as u8 && n_mvs > 3 {
                         let drl_ctx_v3 = get_drl_context(&mvstack, 2);
