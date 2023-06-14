@@ -751,34 +751,8 @@ unsafe extern "C" fn hex_dump(
 ) {
     hex_fdump(stdout, buf, stride, w, h, what);
 }
-#[inline]
-unsafe extern "C" fn coef_dump(
-    mut buf: *const coef,
-    w: libc::c_int,
-    h: libc::c_int,
-    len: libc::c_int,
-    mut what: *const libc::c_char,
-) {
-    let mut y = 0;
-    printf(b"%s\n\0" as *const u8 as *const libc::c_char, what);
-    y = 0 as libc::c_int;
-    while y < h {
-        let mut x = 0;
-        x = 0 as libc::c_int;
-        while x < w {
-            printf(
-                b" %*d\0" as *const u8 as *const libc::c_char,
-                len,
-                *buf.offset(x as isize) as libc::c_int,
-            );
-            x += 1;
-        }
-        buf = buf.offset(w as isize);
-        printf(b"\n\0" as *const u8 as *const libc::c_char);
-        y += 1;
-    }
-}
 use crate::include::common::dump::ac_dump;
+use crate::include::common::dump::coef_dump;
 use crate::include::common::intops::apply_sign64;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::imax;
@@ -2179,10 +2153,10 @@ unsafe extern "C" fn read_coef_tree(
                 if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
                     coef_dump(
                         cf,
-                        imin((*t_dim).h as libc::c_int, 8 as libc::c_int) * 4,
-                        imin((*t_dim).w as libc::c_int, 8 as libc::c_int) * 4,
-                        3 as libc::c_int,
-                        b"dq\0" as *const u8 as *const libc::c_char,
+                        std::cmp::min((*t_dim).h as usize, 8) * 4,
+                        std::cmp::min((*t_dim).w as usize, 8) * 4,
+                        3,
+                        "dq",
                     );
                 }
                 ((*dsp).itx.itxfm_add[ytx as usize][txtp as usize])
@@ -3182,10 +3156,10 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                             if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
                                 coef_dump(
                                     cf,
-                                    imin((*t_dim).h as libc::c_int, 8 as libc::c_int) * 4,
-                                    imin((*t_dim).w as libc::c_int, 8 as libc::c_int) * 4,
-                                    3 as libc::c_int,
-                                    b"dq\0" as *const u8 as *const libc::c_char,
+                                    std::cmp::min((*t_dim).h as usize, 8) * 4,
+                                    std::cmp::min((*t_dim).w as usize, 8) * 4,
+                                    3,
+                                    "dq",
                                 );
                             }
                             ((*dsp).itx.itxfm_add[(*b).c2rust_unnamed.c2rust_unnamed.tx as usize]
@@ -3615,10 +3589,10 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                                     if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
                                         coef_dump(
                                             cf_0,
-                                            (*uv_t_dim).h as libc::c_int * 4,
-                                            (*uv_t_dim).w as libc::c_int * 4,
-                                            3 as libc::c_int,
-                                            b"dq\0" as *const u8 as *const libc::c_char,
+                                            (*uv_t_dim).h as usize * 4,
+                                            (*uv_t_dim).w as usize * 4,
+                                            3,
+                                            "dq",
                                         );
                                     }
                                     ((*dsp).itx.itxfm_add[(*b).uvtx as usize][txtp_0 as usize])
@@ -4854,10 +4828,10 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                                 if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
                                     coef_dump(
                                         cf,
-                                        (*uvtx).h as libc::c_int * 4,
-                                        (*uvtx).w as libc::c_int * 4,
-                                        3 as libc::c_int,
-                                        b"dq\0" as *const u8 as *const libc::c_char,
+                                        (*uvtx).h as usize * 4,
+                                        (*uvtx).w as usize * 4,
+                                        3,
+                                        "dq",
                                     );
                                 }
                                 ((*dsp).itx.itxfm_add[(*b).uvtx as usize][txtp as usize])
