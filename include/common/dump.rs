@@ -1,5 +1,5 @@
 #[inline]
-pub unsafe fn ac_dump(mut buf: &[i16], w: libc::c_int, h: libc::c_int, what: &str) {
+pub fn ac_dump(mut buf: &[i16], w: libc::c_int, h: libc::c_int, what: &str) {
     println!("{}", what);
     for _ in 0..h {
         for x in 0..w {
