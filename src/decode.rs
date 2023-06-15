@@ -953,7 +953,6 @@ use crate::include::common::attributes::ctz;
 use crate::src::levels::MM_OBMC;
 use crate::src::levels::MM_TRANSLATION;
 use crate::src::levels::MM_WARP;
-use crate::src::refmvs::refmvs_candidate;
 
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
@@ -2802,7 +2801,7 @@ unsafe fn decode_b(
                 }
             }
 
-            if has_chroma && b.uv_mode() == DC_PRED as u8 {
+            if has_chroma && b.uv_mode() == DC_PRED {
                 let pal_ctx = b.pal_sz()[0] > 0;
                 let use_uv_pal = dav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
@@ -2818,7 +2817,7 @@ unsafe fn decode_b(
             }
         }
 
-        if b.y_mode() == DC_PRED as u8
+        if b.y_mode() == DC_PRED
             && b.pal_sz()[0] == 0
             && std::cmp::max(b_dim[2], b_dim[3]) <= 3
             && (*f.seq_hdr).filter_intra != 0
@@ -2899,15 +2898,14 @@ unsafe fn decode_b(
             }
         }
 
-        let mut t_dim;
-        if frame_hdr.segmentation.lossless[b.seg_id as usize] != 0 {
+        let t_dim = if frame_hdr.segmentation.lossless[b.seg_id as usize] != 0 {
             b.uvtx = TX_4X4 as uint8_t;
             *b.tx_mut() = b.uvtx;
-            t_dim = &dav1d_txfm_dimensions[TX_4X4 as usize];
+            &dav1d_txfm_dimensions[TX_4X4 as usize]
         } else {
             *b.tx_mut() = dav1d_max_txfm_size_for_bs[bs as usize][0];
             b.uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
-            t_dim = &dav1d_txfm_dimensions[b.tx() as usize];
+            let mut t_dim = &dav1d_txfm_dimensions[b.tx() as usize];
             if frame_hdr.txfm_mode == DAV1D_TX_SWITCHABLE && t_dim.max > TX_4X4 as u8 {
                 let tctx = get_tx_ctx(&*t.a, &t.l, &*t_dim, by4, bx4);
                 let tx_cdf = &mut ts.cdf.m.txsz[(t_dim.max - 1) as usize][tctx as usize];
@@ -2925,7 +2923,8 @@ unsafe fn decode_b(
             if DEBUG_BLOCK_INFO(f, t) {
                 println!("Post-tx[{}]: r={}", b.tx(), ts.msac.rng);
             }
-        }
+            t_dim
+        };
 
         // reconstruction
         if t.frame_thread.pass == 1 {
@@ -2934,7 +2933,7 @@ unsafe fn decode_b(
             f.bd_fn.recon_b_intra(t, bs, intra_edge_flags, b);
         }
 
-        if frame_hdr.loopfilter.level_y[0] != 0 || frame_hdr.loopfilter.level_y[1] != 0 {
+        if frame_hdr.loopfilter.level_y != [0, 0] {
             dav1d_create_lf_mask_intra(
                 &mut *t.lf_mask,
                 f.lf.level,
@@ -3043,14 +3042,14 @@ unsafe fn decode_b(
         }
     } else if is_key_or_intra(frame_hdr) {
         // intra block copy
-        let mut mvstack = [refmvs_candidate::default(); 8];
+        let mut mvstack = [Default::default(); 8];
         let mut n_mvs = 0;
-        let mut ctx_1 = 0;
+        let mut ctx = 0;
         dav1d_refmvs_find(
             &mut t.rt,
             &mut mvstack,
             &mut n_mvs,
-            &mut ctx_1,
+            &mut ctx,
             [0, -1].into(),
             bs,
             intra_edge_flags,
@@ -3184,26 +3183,26 @@ unsafe fn decode_b(
         }
     } else {
         // inter-specific mode/mv coding
-        let mut is_comp = false;
         let mut has_subpel_filter = false;
 
-        if b.skip_mode != 0 {
-            is_comp = true;
+        let is_comp = if b.skip_mode != 0 {
+            true
         } else if seg
             .map(|seg| seg.r#ref == -1 && seg.globalmv == 0 && seg.skip == 0)
             .unwrap_or(true)
             && frame_hdr.switchable_comp_refs != 0
             && std::cmp::min(bw4, bh4) > 1
         {
-            let ctx_2 = get_comp_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
-            is_comp =
-                dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.comp[ctx_2 as usize]);
+            let ctx = get_comp_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
+            let is_comp =
+                dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.comp[ctx as usize]);
             if DEBUG_BLOCK_INFO(f, t) {
                 println!("Post-compflag[{}]: r={}", is_comp, ts.msac.rng);
             }
+            is_comp
         } else {
-            is_comp = false;
-        }
+            false
+        };
 
         if b.skip_mode != 0 {
             *b.ref_mut() = [
@@ -3216,13 +3215,13 @@ unsafe fn decode_b(
             has_subpel_filter = false;
 
             let mut mvstack = [Default::default(); 8];
-            let mut n_mvs_0 = 0;
-            let mut ctx_3 = 0;
+            let mut n_mvs = 0;
+            let mut ctx = 0;
             dav1d_refmvs_find(
                 &mut t.rt,
                 &mut mvstack,
-                &mut n_mvs_0,
-                &mut ctx_3,
+                &mut n_mvs,
+                &mut ctx,
                 [b.r#ref()[0] + 1, b.r#ref()[1] + 1].into(),
                 bs,
                 intra_edge_flags,
@@ -3320,12 +3319,12 @@ unsafe fn decode_b(
 
             let mut mvstack = [Default::default(); 8];
             let mut n_mvs = 0;
-            let mut ctx_4 = 0;
+            let mut ctx = 0;
             dav1d_refmvs_find(
                 &mut t.rt,
                 &mut mvstack,
                 &mut n_mvs,
-                &mut ctx_4,
+                &mut ctx,
                 [b.r#ref()[0] + 1, b.r#ref()[1] + 1].into(),
                 bs,
                 intra_edge_flags,
@@ -3335,14 +3334,14 @@ unsafe fn decode_b(
 
             *b.inter_mode_mut() = dav1d_msac_decode_symbol_adapt8(
                 &mut ts.msac,
-                &mut ts.cdf.m.comp_inter_mode[ctx_4 as usize],
+                &mut ts.cdf.m.comp_inter_mode[ctx as usize],
                 N_COMP_INTER_PRED_MODES as size_t - 1,
             ) as u8;
             if DEBUG_BLOCK_INFO(f, t) {
                 println!(
                     "Post-compintermode[{},ctx={},n_mvs={}]: r={}",
                     b.inter_mode(),
-                    ctx_4,
+                    ctx,
                     n_mvs,
                     ts.msac.rng,
                 );
@@ -3378,10 +3377,10 @@ unsafe fn decode_b(
                 *b.drl_idx_mut() = NEARER_DRL as u8;
                 if n_mvs > 2 {
                     // NEAR or NEARISH
-                    let drl_ctx_v2_0 = get_drl_context(&mvstack, 1);
+                    let drl_ctx_v2 = get_drl_context(&mvstack, 1);
                     *b.drl_idx_mut() += dav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
-                        &mut ts.cdf.m.drl_bit[drl_ctx_v2_0 as usize],
+                        &mut ts.cdf.m.drl_bit[drl_ctx_v2 as usize],
                     ) as u8;
                     if b.drl_idx() == NEAR_DRL as u8 && n_mvs > 3 {
                         let drl_ctx_v3 = get_drl_context(&mvstack, 2);
@@ -3854,12 +3853,11 @@ unsafe fn decode_b(
         }
 
         // subpel filter
-        let mut filter = [DAV1D_FILTER_8TAP_REGULAR; 2];
-        if frame_hdr.subpel_filter_mode == DAV1D_FILTER_SWITCHABLE {
+        let filter = if frame_hdr.subpel_filter_mode == DAV1D_FILTER_SWITCHABLE {
             if has_subpel_filter {
                 let comp = b.comp_type() != COMP_INTER_NONE as u8;
                 let ctx1 = get_filter_ctx(&*t.a, &t.l, comp, false, b.r#ref()[0], by4, bx4);
-                filter[0] = dav1d_msac_decode_symbol_adapt4(
+                let filter0 = dav1d_msac_decode_symbol_adapt4(
                     &mut ts.msac,
                     &mut ts.cdf.m.filter.0[0][ctx1 as usize],
                     DAV1D_N_SWITCHABLE_FILTERS as size_t - 1,
@@ -3869,10 +3867,10 @@ unsafe fn decode_b(
                     if DEBUG_BLOCK_INFO(f, t) {
                         println!(
                             "Post-subpel_filter1[{},ctx={}]: r={}",
-                            filter[0], ctx1, ts.msac.rng,
+                            filter0, ctx1, ts.msac.rng,
                         );
                     }
-                    filter[1] = dav1d_msac_decode_symbol_adapt4(
+                    let filter1 = dav1d_msac_decode_symbol_adapt4(
                         &mut ts.msac,
                         &mut ts.cdf.m.filter.0[1][ctx2 as usize],
                         DAV1D_N_SWITCHABLE_FILTERS as size_t - 1,
@@ -3880,26 +3878,25 @@ unsafe fn decode_b(
                     if DEBUG_BLOCK_INFO(f, t) {
                         println!(
                             "Post-subpel_filter2[{},ctx={}]: r={}",
-                            filter[1], ctx2, ts.msac.rng,
+                            filter1, ctx2, ts.msac.rng,
                         );
                     }
+                    [filter0, filter1]
                 } else {
-                    filter[1] = filter[0];
                     if DEBUG_BLOCK_INFO(f, t) {
                         println!(
                             "Post-subpel_filter[{},ctx={}]: r={}",
-                            filter[0], ctx1, ts.msac.rng
+                            filter0, ctx1, ts.msac.rng
                         );
                     }
+                    [filter0; 2]
                 }
             } else {
-                filter[1] = DAV1D_FILTER_8TAP_REGULAR;
-                filter[0] = filter[1];
+                [DAV1D_FILTER_8TAP_REGULAR; 2]
             }
         } else {
-            filter[1] = frame_hdr.subpel_filter_mode;
-            filter[0] = filter[1];
-        }
+            [frame_hdr.subpel_filter_mode; 2]
+        };
         *b.filter2d_mut() = dav1d_filter_2d[filter[1] as usize][filter[0] as usize];
 
         read_vartx_tree(t, b, bs, bx4, by4);
@@ -3911,7 +3908,7 @@ unsafe fn decode_b(
             return -1;
         }
 
-        if frame_hdr.loopfilter.level_y[0] != 0 || frame_hdr.loopfilter.level_y[1] != 0 {
+        if frame_hdr.loopfilter.level_y != [0, 0] {
             let is_globalmv = (b.inter_mode()
                 == if is_comp {
                     GLOBALMV_GLOBALMV as u8
