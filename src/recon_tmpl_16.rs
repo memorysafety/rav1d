@@ -3281,7 +3281,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_16bpc(
                     if !(init_x == 0 && init_y == 0) {
                         unreachable!();
                     }
-                    let ac: *mut int16_t = ((*t).scratch.c2rust_unnamed_0.ac).as_mut_ptr();
+                    let ac = &mut (*t).scratch.c2rust_unnamed_0.ac;
                     let mut y_src: *mut pixel = ((*f).cur.data[0] as *mut pixel)
                         .offset((4 * ((*t).bx & !ss_hor)) as isize)
                         .offset(
@@ -3303,7 +3303,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_16bpc(
                         .wrapping_sub(1 as libc::c_int as libc::c_uint)
                         as usize])
                         .expect("non-null function pointer")(
-                        ac,
+                        ac.as_mut_ptr(),
                         y_src,
                         (*f).cur.stride[0],
                         cbw4 - (furthest_r >> ss_hor),
@@ -3352,7 +3352,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_16bpc(
                                 edge,
                                 (*uv_t_dim).w as libc::c_int * 4,
                                 (*uv_t_dim).h as libc::c_int * 4,
-                                ac,
+                                ac.as_mut_ptr(),
                                 (*b).c2rust_unnamed.c2rust_unnamed.cfl_alpha[pl as usize]
                                     as libc::c_int,
                                 (*f).bitdepth_max,
@@ -3361,12 +3361,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_16bpc(
                         pl += 1;
                     }
                     if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
-                        ac_dump(
-                            ac,
-                            4 * cbw4,
-                            4 * cbh4,
-                            b"ac\0" as *const u8 as *const libc::c_char,
-                        );
+                        ac_dump(ac, 4 * cbw4 as usize, 4 * cbh4 as usize, "ac");
                         hex_dump(
                             uv_dst[0],
                             stride,
