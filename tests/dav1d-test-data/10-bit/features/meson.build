@@ -1,4 +1,4 @@
-# Copyright © 2022, VideoLAN and dav1d authors
+# Copyright © 2018, VideoLAN and dav1d authors
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -23,6 +23,5 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 tests += [
-	['test10100_579_8614', files('test10100_579_8614.obu'), 'abdc77b000e3bc7124a6ef781e63ce51'],
-	['test10218_6914', files('test10218_6914.obu'), '12b484fced270f53f3673c1234a38d19'],
+	['itut_t35', files('itut_t35.ivf'), '62463dae0e6544f52f9c9e06ea4c948f'],
 ]

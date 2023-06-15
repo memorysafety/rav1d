@@ -26,6 +26,7 @@ tests = []
 
 subdir('argon')
 subdir('data')
+subdir('features')
 subdir('issues')
 subdir('quantizer')
 
