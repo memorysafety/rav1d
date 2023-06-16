@@ -13,26 +13,26 @@ extern "C" {
 extern "C" {
     fn dav1d_wiener_filter5_16bpc_ssse3(
         dst: *mut pixel,
-        dst_stride: ptrdiff_t,
+                dst_stride: ptrdiff_t,
         left: const_left_pixel_row,
         lpf: *const pixel,
-        w: libc::c_int,
-        h: libc::c_int,
-        params: *const LooprestorationParams,
-        edges: LrEdgeFlags,
-        bitdepth_max: libc::c_int,
+                w: libc::c_int,
+                h: libc::c_int,
+                params: *const LooprestorationParams,
+                edges: LrEdgeFlags,
+                bitdepth_max: libc::c_int,
     );
     fn dav1d_wiener_filter7_16bpc_ssse3(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        left: const_left_pixel_row,
-        lpf: *const pixel,
-        w: libc::c_int,
-        h: libc::c_int,
-        params: *const LooprestorationParams,
-        edges: LrEdgeFlags,
-        bitdepth_max: libc::c_int,
-    );
+                        dst: *mut pixel,
+                        dst_stride: ptrdiff_t,
+                        left: const_left_pixel_row,
+                        lpf: *const pixel,
+                        w: libc::c_int,
+                        h: libc::c_int,
+                        params: *const LooprestorationParams,
+                        edges: LrEdgeFlags,
+                        bitdepth_max: libc::c_int,
+                    );
     fn dav1d_wiener_filter5_16bpc_avx2(
         dst: *mut pixel,
         dst_stride: ptrdiff_t,
@@ -307,25 +307,7 @@ use crate::src::looprestoration::LR_HAVE_TOP;
 pub type const_left_pixel_row = *const [pixel; 4];
 use crate::src::looprestoration::LooprestorationParams;
 
-pub type looprestorationfilter_fn = Option<
-    unsafe extern "C" fn(
-        *mut pixel,
-        ptrdiff_t,
-        const_left_pixel_row,
-        *const pixel,
-        libc::c_int,
-        libc::c_int,
-        *const LooprestorationParams,
-        LrEdgeFlags,
-        libc::c_int,
-    ) -> (),
->;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dLoopRestorationDSPContext {
-    pub wiener: [looprestorationfilter_fn; 2],
-    pub sgr: [looprestorationfilter_fn; 3],
-}
+use crate::src::internal::Dav1dLoopRestorationDSPContext;
 use crate::include::common::attributes::clz;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::imax;

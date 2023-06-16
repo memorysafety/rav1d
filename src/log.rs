@@ -105,24 +105,7 @@ pub struct Dav1dDSPContext {
     pub cdef: Dav1dCdefDSPContext,
     pub lr: Dav1dLoopRestorationDSPContext,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dLoopRestorationDSPContext {
-    pub wiener: [looprestorationfilter_fn; 2],
-    pub sgr: [looprestorationfilter_fn; 3],
-}
-pub type looprestorationfilter_fn = Option<
-    unsafe extern "C" fn(
-        *mut libc::c_void,
-        ptrdiff_t,
-        const_left_pixel_row,
-        *const libc::c_void,
-        libc::c_int,
-        libc::c_int,
-        *const LooprestorationParams,
-        LrEdgeFlags,
-    ) -> (),
->;
+use crate::src::internal::Dav1dLoopRestorationDSPContext;
 use crate::src::looprestoration::LooprestorationParams;
 use crate::src::looprestoration::LrEdgeFlags;
 
