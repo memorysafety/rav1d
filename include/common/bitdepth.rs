@@ -24,6 +24,8 @@ pub trait BitDepth {
         dest[..n].fill(val);
     }
 
+    fn display(pixel: Self::Pixel) -> Self::DisplayPixel;
+
     fn iclip_pixel(&self, pixel: Self::Pixel) -> Self::Pixel;
 
     fn pxstride(n: usize) -> usize;
@@ -54,6 +56,10 @@ impl BitDepth for BitDepth8 {
 
     fn new(bitdepth_max: Self::BitDepthMax) -> Self {
         Self { bitdepth_max }
+    }
+
+    fn display(pixel: Self::Pixel) -> Self::DisplayPixel {
+        DisplayPixel8(pixel)
     }
 
     fn iclip_pixel(&self, pixel: Self::Pixel) -> Self::Pixel {
@@ -96,6 +102,10 @@ impl BitDepth for BitDepth16 {
 
     fn new(bitdepth_max: Self::BitDepthMax) -> Self {
         Self { bitdepth_max }
+    }
+
+    fn display(pixel: Self::Pixel) -> Self::DisplayPixel {
+        DisplayPixel16(pixel)
     }
 
     fn iclip_pixel(&self, pixel: Self::Pixel) -> Self::Pixel {
