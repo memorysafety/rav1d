@@ -31,6 +31,10 @@ pub trait BitDepth {
     fn bitdepth(&self) -> u8;
 
     fn bitdepth_max(&self) -> Self::Pixel;
+
+    fn get_intermediate_bits(&self) -> u8;
+
+    const PREP_BIAS: i16;
 }
 
 struct BitDepth8 {
@@ -67,6 +71,13 @@ impl BitDepth for BitDepth8 {
     fn bitdepth_max(&self) -> Self::Pixel {
         ((1usize << Self::BITDEPTH) - 1) as Self::Pixel
     }
+
+    fn get_intermediate_bits(&self) -> u8 {
+        4
+    }
+
+    /// Output in interval `[-5132, 9212]`; fits in [`i16`] as is.
+    const PREP_BIAS: i16 = 0;
 }
 struct BitDepth16 {
     bitdepth_max: u16,
@@ -103,6 +114,16 @@ impl BitDepth for BitDepth16 {
     fn bitdepth_max(&self) -> Self::Pixel {
         self.bitdepth_max
     }
+
+    /// 4 for 10 bits/component.  
+    /// 2 for 12 bits/component.
+    fn get_intermediate_bits(&self) -> u8 {
+        14 - self.bitdepth()
+    }
+
+    /// Output in interval `[-20588, 36956]` (10-bit), `[-20602, 36983]` (12-bit)
+    /// Subtract a bias to ensure the output fits in [`i16`].
+    const PREP_BIAS: i16 = 8192;
 }
 
 struct DisplayPixel8(u8);
