@@ -1,4 +1,5 @@
 use std::ffi::{c_int, c_uint, c_ulonglong};
+use std::fmt::Debug;
 
 use crate::include::common::attributes::clz;
 use crate::include::common::attributes::clzll;
@@ -31,7 +32,7 @@ pub fn umin(a: c_uint, b: c_uint) -> c_uint {
 }
 
 #[inline]
-pub fn iclip(v: c_int, min: c_int, max: c_int) -> c_int {
+pub fn clip<T: Ord>(v: T, min: T, max: T) -> T {
     if v < min {
         min
     } else if v > max {
@@ -42,8 +43,22 @@ pub fn iclip(v: c_int, min: c_int, max: c_int) -> c_int {
 }
 
 #[inline]
+pub fn clip_u8<T>(v: T) -> u8
+where
+    T: Ord + From<u8> + TryInto<u8>,
+    <T as TryInto<u8>>::Error: Debug,
+{
+    clip(v, u8::MIN.into(), u8::MAX.into()).try_into().unwrap()
+}
+
+#[inline]
+pub fn iclip(v: c_int, min: c_int, max: c_int) -> c_int {
+    clip(v, min, max)
+}
+
+#[inline]
 pub fn iclip_u8(v: c_int) -> c_int {
-    iclip(v, 0, 255)
+    clip_u8(v).into()
 }
 
 #[inline]
