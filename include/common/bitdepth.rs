@@ -28,7 +28,7 @@ pub trait BitDepth {
 
     fn pxstride(n: usize) -> usize;
 
-    fn bitdepth_from_max(&self) -> u8;
+    fn bitdepth(&self) -> u8;
 
     fn bitdepth_max(&self) -> Self::Pixel;
 }
@@ -60,7 +60,7 @@ impl BitDepth for BitDepth8 {
         n
     }
 
-    fn bitdepth_from_max(&self) -> u8 {
+    fn bitdepth(&self) -> u8 {
         Self::BITDEPTH
     }
 
@@ -96,7 +96,7 @@ impl BitDepth for BitDepth16 {
         n >> 1
     }
 
-    fn bitdepth_from_max(&self) -> u8 {
+    fn bitdepth(&self) -> u8 {
         (Self::Pixel::BITS - self.bitdepth_max.leading_zeros()) as u8
     }
 
