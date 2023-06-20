@@ -3,6 +3,7 @@ use crate::include::stdint::*;
 
 use crate::stderr;
 use ::libc;
+use cfg_if::cfg_if;
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: size_t) -> *mut libc::c_void;
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: size_t) -> *mut libc::c_void;
@@ -805,21 +806,25 @@ pub unsafe extern "C" fn dav1d_default_settings(s: *mut Dav1dSettings) {
     (*s).decode_frame_type = DAV1D_DECODEFRAMETYPE_ALL;
 }
 #[cold]
-unsafe extern "C" fn get_stack_size_internal(thread_attr: *const pthread_attr_t) -> size_t {
+unsafe extern "C" fn get_stack_size_internal(_thread_attr: *const pthread_attr_t) -> size_t {
     if 0 != 0 {
         // TODO(perl): migrate the compile-time guard expression for this:
         // #if defined(__linux__) && defined(HAVE_DLSYM) && defined(__GLIBC__)
-        let get_minstack: Option<unsafe extern "C" fn(*const pthread_attr_t) -> size_t> =
-            ::core::mem::transmute::<
-                *mut libc::c_void,
-                Option<unsafe extern "C" fn(*const pthread_attr_t) -> size_t>,
-            >(dlsym(
-                0 as *mut libc::c_void,
-                b"__pthread_get_minstack\0" as *const u8 as *const libc::c_char,
-            ));
-        if get_minstack.is_some() {
-            return (get_minstack.expect("non-null function pointer")(thread_attr))
-                .wrapping_sub(__sysconf(75) as size_t);
+        cfg_if! {
+            if #[cfg(target_os = "linux")] {
+                let get_minstack: Option<unsafe extern "C" fn(*const pthread_attr_t) -> size_t> =
+                    ::core::mem::transmute::<
+                        *mut libc::c_void,
+                        Option<unsafe extern "C" fn(*const pthread_attr_t) -> size_t>,
+                    >(dlsym(
+                        0 as *mut libc::c_void,
+                        b"__pthread_get_minstack\0" as *const u8 as *const libc::c_char,
+                    ));
+                if get_minstack.is_some() {
+                    return (get_minstack.expect("non-null function pointer")(_thread_attr))
+                        .wrapping_sub(__sysconf(75) as size_t);
+                }
+            }
         }
     }
     return 0;
