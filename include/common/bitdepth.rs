@@ -40,7 +40,7 @@ pub trait BitDepth {
 }
 
 pub struct BitDepth8 {
-    bitdepth_max: (),
+    bitdepth_max: <Self as BitDepth>::BitDepthMax,
 }
 
 impl BitDepth for BitDepth8 {
@@ -86,7 +86,7 @@ impl BitDepth for BitDepth8 {
     const PREP_BIAS: i16 = 0;
 }
 pub struct BitDepth16 {
-    bitdepth_max: u16,
+    bitdepth_max: <Self as BitDepth>::BitDepthMax,
 }
 
 impl BitDepth for BitDepth16 {
@@ -136,7 +136,7 @@ impl BitDepth for BitDepth16 {
     const PREP_BIAS: i16 = 8192;
 }
 
-pub struct DisplayPixel8(u8);
+pub struct DisplayPixel8(<BitDepth8 as BitDepth>::Pixel);
 
 impl Display for DisplayPixel8 {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
@@ -144,7 +144,7 @@ impl Display for DisplayPixel8 {
     }
 }
 
-pub struct DisplayPixel16(u16);
+pub struct DisplayPixel16(<BitDepth16 as BitDepth>::Pixel);
 
 impl Display for DisplayPixel16 {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
