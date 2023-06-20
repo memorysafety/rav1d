@@ -407,6 +407,7 @@ pub type looprestorationfilter_fn_16bpc = unsafe extern "C" fn(
 ) -> ();
 
 #[derive(Clone, Copy)]
+#[repr(C)]
 pub enum LoopRestorationFilterFn {
     Bpc8(looprestorationfilter_fn_8bpc),
     Bpc16(looprestorationfilter_fn_16bpc),
@@ -1016,6 +1017,6 @@ pub struct Dav1dCdefDSPContext {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dLoopRestorationDSPContext {
-    pub wiener: [Option<LoopRestorationFilterFn>; 2],
-    pub sgr: [Option<LoopRestorationFilterFn>; 3],
+    pub wiener: [LoopRestorationFilterFn; 2],
+    pub sgr: [LoopRestorationFilterFn; 3],
 }

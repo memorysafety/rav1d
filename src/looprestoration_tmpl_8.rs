@@ -982,33 +982,19 @@ unsafe extern "C" fn loop_restoration_dsp_init_x86(
         return;
     }
 
-    (*c).wiener[0] = Some(crate::src::internal::LoopRestorationFilterFn::Bpc8(
-        dav1d_wiener_filter7_8bpc_sse2,
-    ));
-    (*c).wiener[1] = Some(crate::src::internal::LoopRestorationFilterFn::Bpc8(
-        dav1d_wiener_filter5_8bpc_sse2,
-    ));
+    (*c).wiener[0] = LoopRestorationFilterFn::Bpc8(dav1d_wiener_filter7_8bpc_sse2);
+    (*c).wiener[1] = LoopRestorationFilterFn::Bpc8(dav1d_wiener_filter5_8bpc_sse2);
 
     if flags & DAV1D_X86_CPU_FLAG_SSSE3 == 0 {
         return;
     }
 
-    (*c).wiener[0] = Some(crate::src::internal::LoopRestorationFilterFn::Bpc8(
-        dav1d_wiener_filter7_8bpc_ssse3,
-    ));
-    (*c).wiener[1] = Some(crate::src::internal::LoopRestorationFilterFn::Bpc8(
-        dav1d_wiener_filter5_8bpc_ssse3,
-    ));
+    (*c).wiener[0] = LoopRestorationFilterFn::Bpc8(dav1d_wiener_filter7_8bpc_ssse3);
+    (*c).wiener[1] = LoopRestorationFilterFn::Bpc8(dav1d_wiener_filter5_8bpc_ssse3);
 
-    (*c).sgr[0] = Some(crate::src::internal::LoopRestorationFilterFn::Bpc8(
-        dav1d_sgr_filter_5x5_8bpc_ssse3,
-    ));
-    (*c).sgr[1] = Some(crate::src::internal::LoopRestorationFilterFn::Bpc8(
-        dav1d_sgr_filter_3x3_8bpc_ssse3,
-    ));
-    (*c).sgr[2] = Some(crate::src::internal::LoopRestorationFilterFn::Bpc8(
-        dav1d_sgr_filter_mix_8bpc_ssse3,
-    ));
+    (*c).sgr[0] = LoopRestorationFilterFn::Bpc8(dav1d_sgr_filter_5x5_8bpc_ssse3);
+    (*c).sgr[1] = LoopRestorationFilterFn::Bpc8(dav1d_sgr_filter_3x3_8bpc_ssse3);
+    (*c).sgr[2] = LoopRestorationFilterFn::Bpc8(dav1d_sgr_filter_mix_8bpc_ssse3);
 
     #[cfg(target_arch = "x86_64")]
     {
@@ -1016,41 +1002,23 @@ unsafe extern "C" fn loop_restoration_dsp_init_x86(
             return;
         }
 
-        (*c).wiener[0] = Some(crate::src::internal::LoopRestorationFilterFn::Bpc8(
-            dav1d_wiener_filter7_8bpc_avx2,
-        ));
-        (*c).wiener[1] = Some(crate::src::internal::LoopRestorationFilterFn::Bpc8(
-            dav1d_wiener_filter5_8bpc_avx2,
-        ));
+        (*c).wiener[0] = LoopRestorationFilterFn::Bpc8(dav1d_wiener_filter7_8bpc_avx2);
+        (*c).wiener[1] = LoopRestorationFilterFn::Bpc8(dav1d_wiener_filter5_8bpc_avx2);
 
-        (*c).sgr[0] = Some(crate::src::internal::LoopRestorationFilterFn::Bpc8(
-            dav1d_sgr_filter_5x5_8bpc_avx2,
-        ));
-        (*c).sgr[1] = Some(crate::src::internal::LoopRestorationFilterFn::Bpc8(
-            dav1d_sgr_filter_3x3_8bpc_avx2,
-        ));
-        (*c).sgr[2] = Some(crate::src::internal::LoopRestorationFilterFn::Bpc8(
-            dav1d_sgr_filter_mix_8bpc_avx2,
-        ));
+        (*c).sgr[0] = LoopRestorationFilterFn::Bpc8(dav1d_sgr_filter_5x5_8bpc_avx2);
+        (*c).sgr[1] = LoopRestorationFilterFn::Bpc8(dav1d_sgr_filter_3x3_8bpc_avx2);
+        (*c).sgr[2] = LoopRestorationFilterFn::Bpc8(dav1d_sgr_filter_mix_8bpc_avx2);
 
         if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
             return;
         }
 
-        (*c).wiener[0] = Some(crate::src::internal::LoopRestorationFilterFn::Bpc8(
-            dav1d_wiener_filter7_8bpc_avx512icl,
-        ));
+        (*c).wiener[0] = LoopRestorationFilterFn::Bpc8(dav1d_wiener_filter7_8bpc_avx512icl);
         (*c).wiener[1] = (*c).wiener[0];
 
-        (*c).sgr[0] = Some(crate::src::internal::LoopRestorationFilterFn::Bpc8(
-            dav1d_sgr_filter_5x5_8bpc_avx512icl,
-        ));
-        (*c).sgr[1] = Some(crate::src::internal::LoopRestorationFilterFn::Bpc8(
-            dav1d_sgr_filter_3x3_8bpc_avx512icl,
-        ));
-        (*c).sgr[2] = Some(crate::src::internal::LoopRestorationFilterFn::Bpc8(
-            dav1d_sgr_filter_mix_8bpc_avx512icl,
-        ));
+        (*c).sgr[0] = LoopRestorationFilterFn::Bpc8(dav1d_sgr_filter_5x5_8bpc_avx512icl);
+        (*c).sgr[1] = LoopRestorationFilterFn::Bpc8(dav1d_sgr_filter_3x3_8bpc_avx512icl);
+        (*c).sgr[2] = LoopRestorationFilterFn::Bpc8(dav1d_sgr_filter_mix_8bpc_avx512icl);
     }
 }
 
@@ -1073,18 +1041,18 @@ unsafe extern "C" fn loop_restoration_dsp_init_arm(
 
     cfg_if! {
         if #[cfg(target_arch = "aarch64")] {
-            (*c).wiener[0] = Some(LoopRestorationFilterFn::Bpc8(dav1d_wiener_filter7_8bpc_neon));
-            (*c).wiener[1] = Some(LoopRestorationFilterFn::Bpc8(dav1d_wiener_filter5_8bpc_neon));
+            (*c).wiener[0] = LoopRestorationFilterFn::Bpc8(dav1d_wiener_filter7_8bpc_neon);
+            (*c).wiener[1] = LoopRestorationFilterFn::Bpc8(dav1d_wiener_filter5_8bpc_neon);
         } else {
             // TODO(perl): enable assembly routines here
-            // (*c).wiener[0] = Some(LoopRestorationFilterFn::Bpc8(dav1d_wiener_filter_neon));
-            // (*c).wiener[1] = Some(LoopRestorationFilterFn::Bpc8(dav1d_wiener_filter_neon));
+            // (*c).wiener[0] = LoopRestorationFilterFn::Bpc8(dav1d_wiener_filter_neon);
+            // (*c).wiener[1] = LoopRestorationFilterFn::Bpc8(dav1d_wiener_filter_neon);
         }
     }
 
-    (*c).sgr[0] = Some(LoopRestorationFilterFn::Bpc8(sgr_filter_5x5_neon));
-    (*c).sgr[1] = Some(LoopRestorationFilterFn::Bpc8(sgr_filter_3x3_neon));
-    (*c).sgr[2] = Some(LoopRestorationFilterFn::Bpc8(sgr_filter_mix_neon));
+    (*c).sgr[0] = LoopRestorationFilterFn::Bpc8(sgr_filter_5x5_neon);
+    (*c).sgr[1] = LoopRestorationFilterFn::Bpc8(sgr_filter_3x3_neon);
+    (*c).sgr[2] = LoopRestorationFilterFn::Bpc8(sgr_filter_mix_neon);
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
@@ -1320,11 +1288,11 @@ pub unsafe extern "C" fn dav1d_loop_restoration_dsp_init_8bpc(
     c: *mut Dav1dLoopRestorationDSPContext,
     _bpc: libc::c_int,
 ) {
-    (*c).wiener[1] = Some(LoopRestorationFilterFn::Bpc8(wiener_c));
+    (*c).wiener[1] = LoopRestorationFilterFn::Bpc8(wiener_c);
     (*c).wiener[0] = (*c).wiener[1];
-    (*c).sgr[0] = Some(LoopRestorationFilterFn::Bpc8(sgr_5x5_c));
-    (*c).sgr[1] = Some(LoopRestorationFilterFn::Bpc8(sgr_3x3_c));
-    (*c).sgr[2] = Some(LoopRestorationFilterFn::Bpc8(sgr_mix_c));
+    (*c).sgr[0] = LoopRestorationFilterFn::Bpc8(sgr_5x5_c);
+    (*c).sgr[1] = LoopRestorationFilterFn::Bpc8(sgr_3x3_c);
+    (*c).sgr[2] = LoopRestorationFilterFn::Bpc8(sgr_mix_c);
 
     #[cfg(feature = "asm")]
     cfg_if! {
