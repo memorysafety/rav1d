@@ -10,9 +10,9 @@ jobs:
         ]
         build: [
           # release build without optimized assembly routines
-          {name: "release", flags: "--release --no-default-features --features=bitdepth_8,bitdepth_16"},
+          {name: "release", flags: "--release --no-default-features --features=bitdepth_8,bitdepth_16", timeout_multiplier: 1},
           # debug build to catch overflows with optimized assembly routines
-          {name: "debug", flags: ""}
+          {name: "debug", flags: "", timeout_multiplier: 2}
         ]
     runs-on: ubuntu-latest
     steps:
@@ -50,7 +50,7 @@ jobs:
           cargo build --target ${{ matrix.target }} ${{ matrix.build.flags }}
       - name: meson test for ${{ matrix.target }} ${{ matrix.build.name }}
         run: |
-          .github/workflows/test.sh -r ../target/${{ matrix.target }}/${{ matrix.build.name }}/dav1d
+          .github/workflows/test.sh -r ../target/${{ matrix.target }}/${{ matrix.build.name }}/dav1d -t ${{ matrix.build.timeout_multiplier }}
           cp ${{ github.workspace }}/build/meson-logs/testlog.txt \
              ${{ github.workspace }}/build/meson-logs/testlog-${{ matrix.target }}-${{ matrix.build.name }}.txt
       - name: upload build artifacts
