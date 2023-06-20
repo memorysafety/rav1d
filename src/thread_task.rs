@@ -1,8 +1,8 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use crate::src::cdf::CdfContext;
-
 use ::libc;
+use cfg_if::cfg_if;
 extern "C" {
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: size_t) -> *mut libc::c_void;
     fn realloc(_: *mut libc::c_void, _: size_t) -> *mut libc::c_void;
@@ -12,7 +12,13 @@ extern "C" {
     fn pthread_cond_signal(__cond: *mut pthread_cond_t) -> libc::c_int;
     fn pthread_cond_wait(__cond: *mut pthread_cond_t, __mutex: *mut pthread_mutex_t)
         -> libc::c_int;
-    fn prctl(__option: libc::c_int, _: ...) -> libc::c_int;
+    cfg_if! {
+        if #[cfg(target_os = "linux")] {
+            fn prctl(__option: libc::c_int, _: ...) -> libc::c_int;
+        } else if #[cfg(target_os = "macos")] {
+            fn pthread_setname_np(name: *const libc::c_char);
+        }
+    }
     fn dav1d_cdf_thread_update(
         hdr: *const Dav1dFrameHeader,
         dst: *mut CdfContext,
@@ -131,7 +137,6 @@ use crate::src::internal::DAV1D_TASK_TYPE_FG_APPLY;
 use crate::src::internal::DAV1D_TASK_TYPE_FG_PREP;
 use crate::src::internal::DAV1D_TASK_TYPE_RECONSTRUCTION_PROGRESS;
 
-use libc::pthread_mutex_t;
 use crate::src::internal::DAV1D_TASK_TYPE_CDEF;
 use crate::src::internal::DAV1D_TASK_TYPE_DEBLOCK_COLS;
 use crate::src::internal::DAV1D_TASK_TYPE_DEBLOCK_ROWS;
@@ -141,6 +146,7 @@ use crate::src::internal::DAV1D_TASK_TYPE_INIT_CDF;
 use crate::src::internal::DAV1D_TASK_TYPE_SUPER_RESOLUTION;
 use crate::src::internal::DAV1D_TASK_TYPE_TILE_ENTROPY;
 use crate::src::internal::DAV1D_TASK_TYPE_TILE_RECONSTRUCTION;
+use libc::pthread_mutex_t;
 
 use crate::include::dav1d::headers::Dav1dContentLightLevel;
 use crate::include::dav1d::headers::Dav1dITUTT35;
@@ -675,7 +681,15 @@ use crate::include::common::attributes::ctz;
 use crate::src::internal::ScalableMotionParams;
 #[inline]
 unsafe extern "C" fn dav1d_set_thread_name(name: *const libc::c_char) {
-    prctl(15 as libc::c_int, name);
+    cfg_if::cfg_if! {
+        if #[cfg(target_os = "linux")] {
+            prctl(15 as libc::c_int, name);
+        } else if #[cfg(target_os = "macos")] {
+            pthread_setname_np(name);
+        } else {
+            unimplemented!();
+        }
+    }
 }
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::imax;
