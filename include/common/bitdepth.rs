@@ -2,6 +2,74 @@ use std::fmt::{self, Display, Formatter};
 
 use crate::include::common::intops::clip;
 
+pub trait FromPrimitive<T> {
+    fn from_prim(t: T) -> Self;
+}
+
+pub trait ToPrimitive<T> {
+    fn to_prim(self) -> T;
+}
+
+pub trait AsPrimitive {
+    fn as_<T>(self) -> T
+    where
+        Self: ToPrimitive<T>;
+}
+
+impl<T, U> ToPrimitive<U> for T
+where
+    U: FromPrimitive<T>,
+{
+    fn to_prim(self) -> U {
+        FromPrimitive::from_prim(self)
+    }
+}
+
+impl<U> AsPrimitive for U {
+    fn as_<T>(self) -> T
+    where
+        Self: ToPrimitive<T>,
+    {
+        self.to_prim()
+    }
+}
+
+macro_rules! impl_FromPrimitive {
+    ($T:ty => $U:ty) => {
+        impl FromPrimitive<$T> for $U {
+            fn from_prim(t: $T) -> $U {
+                t as $U
+            }
+        }
+    };
+    ($T:ty => {$($U:ty),*}) => {
+        $(impl_FromPrimitive!($T => $U);)*
+    };
+    ($T:ty => {$($U:ty),*, ...}) => {
+        $(impl_FromPrimitive!($T => $U);)*
+        impl_FromPrimitive!($T => {u8, u16, u32, u64, u128, usize});
+        impl_FromPrimitive!($T => {i8, i16, i32, i64, i128, isize});
+        impl_FromPrimitive!($T => {f32, f64});
+    };
+}
+
+impl_FromPrimitive!(u8 => {char, ...});
+impl_FromPrimitive!(u16 => {, ...});
+impl_FromPrimitive!(u32 => {, ...});
+impl_FromPrimitive!(u64 => {, ...});
+impl_FromPrimitive!(u128 => {, ...});
+impl_FromPrimitive!(usize => {, ...});
+
+impl_FromPrimitive!(i8 => {, ...});
+impl_FromPrimitive!(i16 => {, ...});
+impl_FromPrimitive!(i32 => {, ...});
+impl_FromPrimitive!(i64 => {, ...});
+impl_FromPrimitive!(i128 => {, ...});
+impl_FromPrimitive!(isize => {, ...});
+
+impl_FromPrimitive!(f32 => {, ...});
+impl_FromPrimitive!(f64 => {, ...});
+
 pub trait BitDepth {
     const BITDEPTH: u8;
 
