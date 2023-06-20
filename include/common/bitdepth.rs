@@ -1,12 +1,11 @@
 use std::fmt::{self, Display, Formatter};
 
 use crate::include::common::intops::clip;
-use crate::include::common::intops::clip_u8;
 
 pub trait BitDepth {
     const BITDEPTH: u8;
 
-    type Pixel: Copy;
+    type Pixel: Copy + Ord + From<u8>;
 
     type Coef: Copy;
 
@@ -26,7 +25,9 @@ pub trait BitDepth {
 
     fn display(pixel: Self::Pixel) -> Self::DisplayPixel;
 
-    fn iclip_pixel(&self, pixel: Self::Pixel) -> Self::Pixel;
+    fn iclip_pixel(&self, pixel: Self::Pixel) -> Self::Pixel {
+        clip(pixel, 0.into(), self.bitdepth_max())
+    }
 
     fn pxstride(n: usize) -> usize;
 
@@ -60,10 +61,6 @@ impl BitDepth for BitDepth8 {
 
     fn display(pixel: Self::Pixel) -> Self::DisplayPixel {
         DisplayPixel8(pixel)
-    }
-
-    fn iclip_pixel(&self, pixel: Self::Pixel) -> Self::Pixel {
-        clip_u8(pixel)
     }
 
     fn pxstride(n: usize) -> usize {
@@ -106,10 +103,6 @@ impl BitDepth for BitDepth16 {
 
     fn display(pixel: Self::Pixel) -> Self::DisplayPixel {
         DisplayPixel16(pixel)
-    }
-
-    fn iclip_pixel(&self, pixel: Self::Pixel) -> Self::Pixel {
-        clip(pixel, 0, self.bitdepth_max)
     }
 
     fn pxstride(n: usize) -> usize {
