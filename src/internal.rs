@@ -51,10 +51,10 @@ use super::looprestoration::LooprestorationParams;
 use super::looprestoration::LrEdgeFlags;
 use super::mem::Dav1dMemPool;
 use super::picture::PictureFlags;
-use super::refmvs::Dav1dRefmvsDSPContext;
 use super::refmvs::refmvs_frame;
 use super::refmvs::refmvs_temporal_block;
 use super::refmvs::refmvs_tile;
+use super::refmvs::Dav1dRefmvsDSPContext;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -373,19 +373,60 @@ pub type cdef_fn = Option<
 pub type cdef_dir_fn =
     Option<unsafe extern "C" fn(*const libc::c_void, ptrdiff_t, *mut libc::c_uint) -> libc::c_int>;
 
-pub type const_left_pixel_row = *const libc::c_void;
-pub type looprestorationfilter_fn = Option<
-    unsafe extern "C" fn(
-        *mut libc::c_void,
-        ptrdiff_t,
-        const_left_pixel_row,
-        *const libc::c_void,
-        libc::c_int,
-        libc::c_int,
-        *const LooprestorationParams,
-        LrEdgeFlags,
-    ) -> (),
->;
+pub type pixel_8bpc = uint8_t;
+pub type coef_8bpc = int16_t;
+
+pub type pixel_16bpc = uint16_t;
+pub type coef_16bpc = int32_t;
+
+pub type const_left_pixel_row<Pixel> = *const [Pixel; 4];
+
+pub type const_left_pixel_row_8bpc = const_left_pixel_row<pixel_8bpc>;
+pub type looprestorationfilter_fn_8bpc = unsafe extern "C" fn(
+    *mut pixel_8bpc,
+    ptrdiff_t,
+    const_left_pixel_row_8bpc,
+    *const pixel_8bpc,
+    libc::c_int,
+    libc::c_int,
+    *const LooprestorationParams,
+    LrEdgeFlags,
+) -> ();
+
+pub type const_left_pixel_row_16bpc = const_left_pixel_row<pixel_16bpc>;
+pub type looprestorationfilter_fn_16bpc = unsafe extern "C" fn(
+    *mut pixel_16bpc,
+    ptrdiff_t,
+    const_left_pixel_row_16bpc,
+    *const pixel_16bpc,
+    libc::c_int,
+    libc::c_int,
+    *const LooprestorationParams,
+    LrEdgeFlags,
+    libc::c_int,
+) -> ();
+
+#[derive(Clone, Copy)]
+pub enum LoopRestorationFilterFn {
+    Bpc8(looprestorationfilter_fn_8bpc),
+    Bpc16(looprestorationfilter_fn_16bpc),
+}
+
+impl LoopRestorationFilterFn {
+    pub fn as_8bpc(self) -> looprestorationfilter_fn_8bpc {
+        match self {
+            Self::Bpc8(inner) => inner,
+            _ => panic!("Function had incorrect bitdepth (expected 8, was 16)"),
+        }
+    }
+
+    pub fn as_16bpc(self) -> looprestorationfilter_fn_16bpc {
+        match self {
+            Self::Bpc16(inner) => inner,
+            _ => panic!("Function had incorrect bitdepth (expected 16, was 8)"),
+        }
+    }
+}
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -975,6 +1016,6 @@ pub struct Dav1dCdefDSPContext {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dLoopRestorationDSPContext {
-    pub wiener: [looprestorationfilter_fn; 2],
-    pub sgr: [looprestorationfilter_fn; 3],
+    pub wiener: [Option<LoopRestorationFilterFn>; 2],
+    pub sgr: [Option<LoopRestorationFilterFn>; 3],
 }
