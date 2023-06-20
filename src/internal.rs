@@ -1,7 +1,6 @@
 use crate::include::dav1d::data::Dav1dData;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::pthread::pthread_cond_t;
-use libc::pthread_mutex_t;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
 use crate::include::stdint::int16_t;
@@ -23,6 +22,7 @@ use crate::src::msac::MsacContext;
 use crate::src::picture::Dav1dThreadPicture;
 use crate::src::r#ref::Dav1dRef;
 use crate::src::thread_data::thread_data;
+use libc::pthread_mutex_t;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
