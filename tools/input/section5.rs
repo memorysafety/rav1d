@@ -9,7 +9,7 @@ extern "C" {
     fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut libc::FILE;
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
     fn fread(_: *mut libc::c_void, _: size_t, _: size_t, _: *mut libc::FILE) -> size_t;
-    fn fseeko64(__stream: *mut libc::FILE, __off: __off64_t, __whence: libc::c_int) -> libc::c_int;
+    fn fseeko(__stream: *mut libc::FILE, __off: __off_t, __whence: libc::c_int) -> libc::c_int;
     fn feof(__stream: *mut libc::FILE) -> libc::c_int;
     fn strerror(_: libc::c_int) -> *mut libc::c_char;
     fn dav1d_data_unref(data: *mut Dav1dData);
@@ -17,7 +17,7 @@ extern "C" {
 }
 use crate::include::dav1d::headers::Dav1dObuType;
 use crate::include::dav1d::headers::DAV1D_OBU_TD;
-use crate::include::sys::types::__off64_t;
+use crate::include::sys::types::__off_t;
 
 use crate::include::dav1d::data::Dav1dData;
 #[derive(Copy, Clone)]
@@ -241,9 +241,9 @@ unsafe extern "C" fn section5_open(
         if res < 0 {
             return -(1 as libc::c_int);
         }
-        fseeko64((*c).f, len as __off64_t, 1 as libc::c_int);
+        fseeko((*c).f, len as __off_t, 1 as libc::c_int);
     }
-    fseeko64((*c).f, 0, 0 as libc::c_int);
+    fseeko((*c).f, 0, 0 as libc::c_int);
     return 0 as libc::c_int;
 }
 unsafe extern "C" fn section5_read(
@@ -273,7 +273,7 @@ unsafe extern "C" fn section5_read(
                     return -(1 as libc::c_int);
                 }
             } else if obu_type as libc::c_uint == DAV1D_OBU_TD as libc::c_int as libc::c_uint {
-                fseeko64((*c).f, -(1 as libc::c_int) as __off64_t, 1);
+                fseeko((*c).f, -(1 as libc::c_int) as __off_t, 1);
                 break;
             }
             let has_length_field = byte[0] as libc::c_int & 0x2 as libc::c_int;
@@ -298,11 +298,11 @@ unsafe extern "C" fn section5_read(
             }
             total_bytes =
                 total_bytes.wrapping_add(((1 + has_extension + res) as size_t).wrapping_add(len));
-            fseeko64((*c).f, len as __off64_t, 1 as libc::c_int);
+            fseeko((*c).f, len as __off_t, 1 as libc::c_int);
             first = 0 as libc::c_int;
         }
     }
-    fseeko64((*c).f, -(total_bytes as __off64_t), 1 as libc::c_int);
+    fseeko((*c).f, -(total_bytes as __off_t), 1 as libc::c_int);
     let mut ptr: *mut uint8_t = dav1d_data_create(data, total_bytes);
     if ptr.is_null() {
         return -(1 as libc::c_int);

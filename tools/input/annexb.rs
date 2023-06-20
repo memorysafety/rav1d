@@ -4,7 +4,7 @@ use crate::include::stdint::*;
 use crate::stderr;
 use ::libc;
 use ::libc::fread;
-use ::libc::fseeko64;
+use ::libc::fseeko;
 extern "C" {
     pub type Dav1dRef;
     fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
@@ -14,7 +14,7 @@ extern "C" {
     fn dav1d_data_create(data: *mut Dav1dData, sz: size_t) -> *mut uint8_t;
     fn dav1d_data_unref(data: *mut Dav1dData);
 }
-use crate::include::sys::types::__off64_t;
+use crate::include::sys::types::__off_t;
 
 use crate::include::dav1d::headers::Dav1dObuType;
 use crate::include::dav1d::headers::DAV1D_OBU_TD;
@@ -256,10 +256,10 @@ unsafe extern "C" fn annexb_open(
         if res < 0 {
             break;
         }
-        fseeko64((*c).f, len as __off64_t, 1 as libc::c_int);
+        fseeko((*c).f, len as __off_t, 1 as libc::c_int);
         *num_frames = (*num_frames).wrapping_add(1);
     }
-    fseeko64((*c).f, 0, 0 as libc::c_int);
+    fseeko((*c).f, 0, 0 as libc::c_int);
     return 0 as libc::c_int;
 }
 unsafe extern "C" fn annexb_read(c: *mut AnnexbInputContext, data: *mut Dav1dData) -> libc::c_int {
