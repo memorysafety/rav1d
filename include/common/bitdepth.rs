@@ -1,3 +1,4 @@
+use std::ffi::{c_int, c_uint};
 use std::fmt::{self, Display, Formatter};
 
 use crate::include::common::intops::clip;
@@ -73,9 +74,14 @@ impl_FromPrimitive!(f64 => {, ...});
 pub trait BitDepth {
     const BITDEPTH: u8;
 
-    type Pixel: Copy + Ord + From<u8>;
+    type Pixel: Copy
+        + Ord
+        + From<u8>
+        + FromPrimitive<c_int>
+        + FromPrimitive<c_uint>
+        + ToPrimitive<c_uint>;
 
-    type Coef: Copy;
+    type Coef: Copy + FromPrimitive<c_int> + FromPrimitive<c_uint> + ToPrimitive<c_uint>;
 
     type BitDepthMax;
 
