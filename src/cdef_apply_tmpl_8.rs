@@ -241,8 +241,6 @@ pub struct Dav1dDSPContext {
 }
 use crate::src::internal::Dav1dLoopRestorationDSPContext;
 
-
-
 pub type const_left_pixel_row = *const [pixel; 4];
 #[derive(Copy, Clone)]
 #[repr(C)]
