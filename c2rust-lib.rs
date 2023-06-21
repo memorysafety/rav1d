@@ -108,6 +108,7 @@ pub mod src {
     pub mod lr_apply_tmpl_16;
     #[cfg(feature = "bitdepth_8")]
     pub mod lr_apply_tmpl_8;
+    pub mod mc;
     #[cfg(feature = "bitdepth_16")]
     pub mod mc_tmpl_16;
     #[cfg(feature = "bitdepth_8")]

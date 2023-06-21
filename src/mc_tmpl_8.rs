@@ -1,3 +1,5 @@
+use crate::include::common::bitdepth::BitDepth;
+use crate::include::common::bitdepth::BitDepth8;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use ::libc;
@@ -2035,30 +2037,7 @@ unsafe extern "C" fn put_c(
         }
     }
 }
-#[inline(never)]
-unsafe extern "C" fn prep_c(
-    mut tmp: *mut int16_t,
-    mut src: *const pixel,
-    src_stride: ptrdiff_t,
-    w: libc::c_int,
-    mut h: libc::c_int,
-) {
-    let intermediate_bits = 4;
-    loop {
-        let mut x = 0;
-        while x < w {
-            *tmp.offset(x as isize) =
-                (((*src.offset(x as isize) as libc::c_int) << intermediate_bits) - 0) as int16_t;
-            x += 1;
-        }
-        tmp = tmp.offset(w as isize);
-        src = src.offset(src_stride as isize);
-        h -= 1;
-        if !(h != 0) {
-            break;
-        }
-    }
-}
+use crate::src::mc::prep_c;
 #[inline(never)]
 unsafe extern "C" fn put_8tap_c(
     mut dst: *mut pixel,
@@ -2546,7 +2525,7 @@ unsafe extern "C" fn prep_8tap_c(
             }
         }
     } else {
-        prep_c(tmp, src, src_stride, w, h);
+        prep_c(tmp, src, src_stride, w, h, BitDepth8::new(()));
     };
 }
 #[inline(never)]
@@ -3755,7 +3734,7 @@ unsafe extern "C" fn prep_bilin_c(
             }
         }
     } else {
-        prep_c(tmp, src, src_stride, w, h);
+        prep_c(tmp, src, src_stride, w, h, BitDepth8::new(()));
     };
 }
 unsafe extern "C" fn prep_bilin_scaled_c(
