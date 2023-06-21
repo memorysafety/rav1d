@@ -2596,9 +2596,9 @@ unsafe extern "C" fn prep_8tap_c(
         prep_c(
             tmp,
             src,
-            src_stride,
-            w,
-            h,
+            src_stride as usize,
+            w as usize,
+            h as usize,
             BitDepth16::new(bitdepth_max as u16),
         );
     };
@@ -3897,9 +3897,9 @@ unsafe extern "C" fn prep_bilin_c(
         prep_c(
             tmp,
             src,
-            src_stride,
-            w,
-            h,
+            src_stride as usize,
+            w as usize,
+            h as usize,
             BitDepth16::new(bitdepth_max as u16),
         );
     };

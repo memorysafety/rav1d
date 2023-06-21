@@ -2525,7 +2525,14 @@ unsafe extern "C" fn prep_8tap_c(
             }
         }
     } else {
-        prep_c(tmp, src, src_stride, w, h, BitDepth8::new(()));
+        prep_c(
+            tmp,
+            src,
+            src_stride as usize,
+            w as usize,
+            h as usize,
+            BitDepth8::new(()),
+        );
     };
 }
 #[inline(never)]
@@ -3734,7 +3741,14 @@ unsafe extern "C" fn prep_bilin_c(
             }
         }
     } else {
-        prep_c(tmp, src, src_stride, w, h, BitDepth8::new(()));
+        prep_c(
+            tmp,
+            src,
+            src_stride as usize,
+            w as usize,
+            h as usize,
+            BitDepth8::new(()),
+        );
     };
 }
 unsafe extern "C" fn prep_bilin_scaled_c(

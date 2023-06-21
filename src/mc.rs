@@ -1,5 +1,3 @@
-use libc::ptrdiff_t;
-
 use crate::include::common::bitdepth::{AsPrimitive, BitDepth};
 
 // TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
@@ -7,9 +5,9 @@ use crate::include::common::bitdepth::{AsPrimitive, BitDepth};
 pub unsafe fn prep_c<BD: BitDepth>(
     mut tmp: *mut i16,
     mut src: *const BD::Pixel,
-    src_stride: ptrdiff_t,
-    w: libc::c_int,
-    h: libc::c_int,
+    src_stride: usize,
+    w: usize,
+    h: usize,
     bd: BD,
 ) {
     let intermediate_bits = bd.get_intermediate_bits();
