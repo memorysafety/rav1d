@@ -272,28 +272,6 @@ fn dav1d_msac_decode_symbol_adapt_rust(
     val
 }
 
-#[deny(unsafe_op_in_unsafe_fn)]
-unsafe extern "C" fn dav1d_msac_decode_symbol_adapt_c(
-    s: *mut MsacContext,
-    cdf: *mut u16,
-    n_symbols: size_t,
-) -> libc::c_uint {
-    // # Safety
-    //
-    // This is only called from [`dav1d_msac_decode_symbol_adapt16`],
-    // where it comes from a valid `&mut`.
-    let s = unsafe { &mut *s };
-
-    // # Safety
-    //
-    // This is only called from [`dav1d_msac_decode_symbol_adapt16`],
-    // where there is an `assert!(n_symbols < cdf.len());`.
-    // Thus, `n_symbols + 1` is a valid length for the slice `cdf` came from.
-    let cdf = unsafe { std::slice::from_raw_parts_mut(cdf, n_symbols + 1) };
-
-    dav1d_msac_decode_symbol_adapt_rust(s, cdf, n_symbols)
-}
-
 fn dav1d_msac_decode_bool_adapt_rust(s: &mut MsacContext, cdf: &mut [u16; 2]) -> bool {
     let bit = dav1d_msac_decode_bool(s, cdf[0] as libc::c_uint);
     if s.allow_update_cdf() {
