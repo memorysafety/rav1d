@@ -1,3 +1,5 @@
+use std::iter;
+
 use crate::include::common::bitdepth::{AsPrimitive, BitDepth};
 
 // TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
@@ -11,13 +13,12 @@ pub unsafe fn prep_c<BD: BitDepth>(
     bd: BD,
 ) {
     let mut tmp = std::slice::from_raw_parts_mut(tmp, w * h);
-    let mut src = std::slice::from_raw_parts(src, src_stride * h);
+    let mut src =
+        std::slice::from_raw_parts(src, if h == 0 { 0 } else { src_stride * (h - 1) + w });
     let intermediate_bits = bd.get_intermediate_bits();
-    for _ in 0..h {
-        for x in 0..w {
-            tmp[x] = ((src[x].as_::<i32>() << intermediate_bits) - (BD::PREP_BIAS as i32)) as i16;
+    for (tmp, src) in iter::zip(tmp.chunks_exact_mut(w), src.chunks(src_stride)).take(h) {
+        for (tmp, src) in iter::zip(tmp, &src[..w]) {
+            *tmp = (((*src).as_::<i32>() << intermediate_bits) - (BD::PREP_BIAS as i32)) as i16;
         }
-        tmp = &mut tmp[w..];
-        src = &src[src_stride..];
     }
 }
