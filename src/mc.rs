@@ -11,10 +11,10 @@ pub unsafe fn put_c<BD: BitDepth>(
     mut src: *const BD::Pixel,
     src_stride: ptrdiff_t,
     w: libc::c_int,
-    mut h: libc::c_int,
+    h: libc::c_int,
 ) {
     let w = w as usize;
-    loop {
+    for _ in 0..h {
         BD::pixel_copy(
             std::slice::from_raw_parts_mut(dst, w),
             std::slice::from_raw_parts(src, w),
@@ -22,10 +22,6 @@ pub unsafe fn put_c<BD: BitDepth>(
         );
         dst = dst.offset(dst_stride);
         src = src.offset(src_stride);
-        h -= 1;
-        if !(h != 0) {
-            break;
-        }
     }
 }
 
