@@ -1,5 +1,4 @@
 pub type pthread_t = libc::c_ulong;
-pub type pthread_once_t = libc::c_int;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct __pthread_internal_list {
@@ -54,4 +53,31 @@ pub union pthread_condattr_t {
 pub union pthread_mutexattr_t {
     pub __size: [libc::c_char; 4],
     pub __align: libc::c_int,
+}
+
+// NOTE: temporary code to support Linux and macOS, should be removed eventually
+cfg_if::cfg_if! {
+    if #[cfg(target_os = "linux")] {
+        pub type pthread_once_t = libc::c_int;
+
+        pub const fn pthread_once_init() -> pthread_once_t {
+            0
+        }
+    } else if #[cfg(target_os = "macos")] {
+        #[derive(Copy, Clone)]
+        #[repr(C)]
+        pub struct _opaque_pthread_once_t {
+            pub __sig: libc::c_long,
+            pub __opaque: [libc::c_char; 8],
+        }
+        pub type pthread_once_t = _opaque_pthread_once_t;
+
+        pub const fn pthread_once_init() -> pthread_once_t {
+            let init = _opaque_pthread_once_t {
+                __sig: 0x30b1bcba as libc::c_int as libc::c_long,
+                __opaque: [0 as libc::c_int as libc::c_char, 0, 0, 0, 0, 0, 0, 0],
+            };
+            init
+        }
+    }
 }
