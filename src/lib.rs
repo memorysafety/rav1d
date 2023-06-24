@@ -751,18 +751,13 @@ pub struct Dav1dSettings {
 use crate::include::pthread::pthread_attr_t;
 use crate::include::pthread::pthread_condattr_t;
 use crate::include::pthread::pthread_mutexattr_t;
+use crate::include::pthread::pthread_once_init;
+use crate::include::pthread::pthread_once_t;
 use crate::src::levels::BL_128X128;
 use crate::src::levels::BL_64X64;
 
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::umin;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _opaque_pthread_once_t {
-    pub __sig: libc::c_long,
-    pub __opaque: [libc::c_char; 8],
-}
-pub type pthread_once_t = _opaque_pthread_once_t;
 use crate::src::mem::dav1d_alloc_aligned;
 use crate::src::mem::dav1d_free_aligned;
 use crate::src::mem::dav1d_freep_aligned;
@@ -959,13 +954,7 @@ pub unsafe extern "C" fn dav1d_open(
     s: *const Dav1dSettings,
 ) -> libc::c_int {
     let mut current_block: u64;
-    static mut initted: pthread_once_t = {
-        let mut init = _opaque_pthread_once_t {
-            __sig: 0x30b1bcba as libc::c_int as libc::c_long,
-            __opaque: [0 as libc::c_int as libc::c_char, 0, 0, 0, 0, 0, 0, 0],
-        };
-        init
-    };
+    static mut initted: pthread_once_t = pthread_once_init();
     pthread_once(
         &mut initted,
         Some(init_internal as unsafe extern "C" fn() -> ()),
