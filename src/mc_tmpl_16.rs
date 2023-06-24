@@ -2069,29 +2069,7 @@ unsafe extern "C" fn pixel_set(dst: *mut pixel, val: libc::c_int, num: libc::c_i
         n += 1;
     }
 }
-#[inline(never)]
-unsafe extern "C" fn put_c(
-    mut dst: *mut pixel,
-    dst_stride: ptrdiff_t,
-    mut src: *const pixel,
-    src_stride: ptrdiff_t,
-    w: libc::c_int,
-    mut h: libc::c_int,
-) {
-    loop {
-        memcpy(
-            dst as *mut libc::c_void,
-            src as *const libc::c_void,
-            (w << 1) as libc::c_ulong,
-        );
-        dst = dst.offset(dst_stride as isize);
-        src = src.offset(src_stride as isize);
-        h -= 1;
-        if !(h != 0) {
-            break;
-        }
-    }
-}
+use crate::src::mc::put_c;
 use crate::src::mc::prep_c;
 #[inline(never)]
 unsafe extern "C" fn put_8tap_c(
@@ -2281,7 +2259,7 @@ unsafe extern "C" fn put_8tap_c(
             }
         }
     } else {
-        put_c(dst, dst_stride, src, src_stride, w, h);
+        put_c::<BitDepth16>(dst, dst_stride, src, src_stride, w, h);
     };
 }
 #[inline(never)]
@@ -3727,7 +3705,7 @@ unsafe extern "C" fn put_bilin_c(
             }
         }
     } else {
-        put_c(dst, dst_stride, src, src_stride, w, h);
+        put_c::<BitDepth16>(dst, dst_stride, src, src_stride, w, h);
     };
 }
 unsafe extern "C" fn put_bilin_scaled_c(
