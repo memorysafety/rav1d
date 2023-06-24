@@ -220,7 +220,7 @@ pub unsafe extern "C" fn dav1d_data_props_set_defaults(props: *mut Dav1dDataProp
         ::core::mem::size_of::<Dav1dDataProps>() as libc::c_ulong,
     );
     (*props).timestamp = i64::MIN;
-    (*props).offset = -(1 as libc::c_int) as int64_t;
+    (*props).offset = -1;
 }
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_data_props_unref_internal(props: *mut Dav1dDataProps) {

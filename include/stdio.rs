@@ -1,5 +1,4 @@
 use crate::include::stddef::size_t;
-use crate::include::sys::types::__off_t;
 
 pub type _IO_lock_t = ();
 
@@ -28,12 +27,12 @@ pub struct _IO_FILE {
     pub _chain: *mut _IO_FILE,
     pub _fileno: libc::c_int,
     pub _flags2: libc::c_int,
-    pub _old_offset: __off_t,
+    pub _old_offset: libc::off_t,
     pub _cur_column: libc::c_ushort,
     pub _vtable_offset: libc::c_schar,
     pub _shortbuf: [libc::c_char; 1],
     pub _lock: *mut libc::c_void,
-    pub _offset: __off_t,
+    pub _offset: libc::off_t,
     pub _codecvt: *mut _IO_codecvt,
     pub _wide_data: *mut _IO_wide_data,
     pub _freeres_list: *mut _IO_FILE,
