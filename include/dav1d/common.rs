@@ -14,7 +14,7 @@ pub struct Dav1dUserData {
 pub struct Dav1dDataProps {
     pub timestamp: int64_t,
     pub duration: int64_t,
-    pub offset: int64_t,
+    pub offset: libc::off_t,
     pub size: size_t,
     pub user_data: Dav1dUserData,
 }

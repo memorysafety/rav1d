@@ -36,9 +36,6 @@ pub mod include {
     pub mod stddef;
     pub mod stdint;
     pub mod stdio;
-    pub mod sys {
-        pub mod types;
-    } // mod sys
     pub mod time;
 } // mod include
 pub mod src {

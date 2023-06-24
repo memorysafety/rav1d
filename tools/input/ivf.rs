@@ -10,14 +10,13 @@ extern "C" {
     fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut libc::FILE;
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
     fn fread(_: *mut libc::c_void, _: size_t, _: size_t, _: *mut libc::FILE) -> libc::c_ulong;
-    fn fseeko(__stream: *mut libc::FILE, __off: __off_t, __whence: libc::c_int) -> libc::c_int;
-    fn ftello(__stream: *mut libc::FILE) -> __off_t;
+    fn fseeko(__stream: *mut libc::FILE, __off: libc::off_t, __whence: libc::c_int) -> libc::c_int;
+    fn ftello(__stream: *mut libc::FILE) -> libc::off_t;
     fn memcmp(_: *const libc::c_void, _: *const libc::c_void, _: size_t) -> libc::c_int;
     fn strerror(_: libc::c_int) -> *mut libc::c_char;
     fn dav1d_data_create(data: *mut Dav1dData, sz: size_t) -> *mut uint8_t;
     fn dav1d_data_unref(data: *mut Dav1dData);
 }
-use crate::include::sys::types::__off_t;
 
 use crate::include::dav1d::data::Dav1dData;
 #[derive(Copy, Clone)]
@@ -172,7 +171,7 @@ unsafe extern "C" fn ivf_open(
             (*c).broken = 1 as libc::c_int;
         }
         (*c).last_ts = ts;
-        fseeko((*c).f, sz as __off_t, 1 as libc::c_int);
+        fseeko((*c).f, sz as libc::off_t, 1 as libc::c_int);
         *num_frames = (*num_frames).wrapping_add(1);
     }
     let mut fps_num: uint64_t =
@@ -216,11 +215,11 @@ unsafe extern "C" fn ivf_open(
 unsafe extern "C" fn ivf_read_header(
     c: *mut IvfInputContext,
     sz: *mut ptrdiff_t,
-    off_: *mut int64_t,
+    off_: *mut libc::off_t,
     ts: *mut uint64_t,
 ) -> libc::c_int {
     let mut data: [uint8_t; 8] = [0; 8];
-    let off: int64_t = ftello((*c).f);
+    let off: libc::off_t = ftello((*c).f);
     if !off_.is_null() {
         *off_ = off;
     }
@@ -238,7 +237,7 @@ unsafe extern "C" fn ivf_read_header(
         }
         *ts = rl64(data.as_mut_ptr()) as uint64_t;
     } else {
-        if fseeko((*c).f, 8 as libc::c_int as __off_t, 1 as libc::c_int) != 0 {
+        if fseeko((*c).f, 8 as libc::off_t, 1 as libc::c_int) != 0 {
             return -(1 as libc::c_int);
         }
         *ts = if off > 32 {
@@ -252,7 +251,7 @@ unsafe extern "C" fn ivf_read_header(
 unsafe extern "C" fn ivf_read(c: *mut IvfInputContext, buf: *mut Dav1dData) -> libc::c_int {
     let mut ptr: *mut uint8_t = 0 as *mut uint8_t;
     let mut sz: ptrdiff_t = 0;
-    let mut off: int64_t = 0;
+    let mut off: libc::off_t = 0;
     let mut ts: uint64_t = 0;
     if ivf_read_header(c, &mut sz, &mut off, &mut ts) != 0 {
         return -(1 as libc::c_int);
@@ -301,18 +300,23 @@ unsafe extern "C" fn ivf_seek(c: *mut IvfInputContext, pts: uint64_t) -> libc::c
             }
             _ => {
                 let mut sz: ptrdiff_t = 0;
-                if ivf_read_header(c, &mut sz, 0 as *mut int64_t, &mut cur) != 0 {
+                if ivf_read_header(c, &mut sz, 0 as *mut libc::off_t, &mut cur) != 0 {
                     current_block = 679495355492430298;
                     continue;
                 }
                 if cur >= ts {
-                    if fseeko((*c).f, -(12 as libc::c_int) as __off_t, 1 as libc::c_int) != 0 {
+                    if fseeko(
+                        (*c).f,
+                        -(12 as libc::c_int) as libc::off_t,
+                        1 as libc::c_int,
+                    ) != 0
+                    {
                         current_block = 679495355492430298;
                         continue;
                     }
                     return 0 as libc::c_int;
                 } else {
-                    if fseeko((*c).f, sz as __off_t, 1 as libc::c_int) != 0 {
+                    if fseeko((*c).f, sz as libc::off_t, 1 as libc::c_int) != 0 {
                         current_block = 679495355492430298;
                         continue;
                     }
