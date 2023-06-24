@@ -1,5 +1,4 @@
 use std::ffi::{c_int, c_uint, c_ulonglong};
-use std::fmt::Debug;
 
 use crate::include::common::attributes::clz;
 use crate::include::common::attributes::clzll;
@@ -32,23 +31,33 @@ pub fn umin(a: c_uint, b: c_uint) -> c_uint {
 }
 
 #[inline]
-pub fn clip<T: Ord>(v: T, min: T, max: T) -> T {
-    if v < min {
+pub fn clip<T, U>(v: T, min: U, max: U) -> U
+where
+    U: Copy + Ord + Into<T>,
+    T: Copy + Ord + TryInto<U>,
+{
+    assert!(min <= max);
+    if v < min.into() {
         min
-    } else if v > max {
+    } else if v > max.into() {
         max
     } else {
-        v
+        let v = v.try_into();
+        // # Safety
+        // `min <= v <= max`, `min: U`, `max: U`,
+        // so `v` must be in `U`, too.
+        //
+        // Note that `v.try_into().unwrap()` is not always optimized out.
+        unsafe { v.unwrap_unchecked() }
     }
 }
 
 #[inline]
 pub fn clip_u8<T>(v: T) -> u8
 where
-    T: Ord + From<u8> + TryInto<u8>,
-    <T as TryInto<u8>>::Error: Debug,
+    T: Copy + Ord + From<u8> + TryInto<u8>,
 {
-    clip(v, u8::MIN.into(), u8::MAX.into()).try_into().unwrap()
+    clip(v, u8::MIN, u8::MAX)
 }
 
 #[inline]
