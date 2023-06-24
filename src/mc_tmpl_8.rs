@@ -2197,7 +2197,14 @@ unsafe extern "C" fn put_8tap_c(
             }
         }
     } else {
-        put_c::<BitDepth8>(dst, dst_stride, src, src_stride, w, h);
+        put_c::<BitDepth8>(
+            dst,
+            dst_stride as usize,
+            src,
+            src_stride as usize,
+            w as usize,
+            h as usize,
+        );
     };
 }
 #[inline(never)]
@@ -3556,7 +3563,14 @@ unsafe extern "C" fn put_bilin_c(
             }
         }
     } else {
-        put_c::<BitDepth8>(dst, dst_stride, src, src_stride, w, h);
+        put_c::<BitDepth8>(
+            dst,
+            dst_stride as usize,
+            src,
+            src_stride as usize,
+            w as usize,
+            h as usize,
+        );
     };
 }
 unsafe extern "C" fn put_bilin_scaled_c(

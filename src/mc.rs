@@ -1,27 +1,25 @@
 use std::iter;
 
 use crate::include::common::bitdepth::{AsPrimitive, BitDepth};
-use crate::include::stddef::ptrdiff_t;
 
 // TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
 #[inline(never)]
 pub unsafe fn put_c<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
-    dst_stride: ptrdiff_t,
+    dst_stride: usize,
     mut src: *const BD::Pixel,
-    src_stride: ptrdiff_t,
-    w: libc::c_int,
-    h: libc::c_int,
+    src_stride: usize,
+    w: usize,
+    h: usize,
 ) {
-    let w = w as usize;
     for _ in 0..h {
         BD::pixel_copy(
             std::slice::from_raw_parts_mut(dst, w),
             std::slice::from_raw_parts(src, w),
             w,
         );
-        dst = dst.offset(dst_stride);
-        src = src.offset(src_stride);
+        dst = dst.offset(dst_stride as isize);
+        src = src.offset(src_stride as isize);
     }
 }
 

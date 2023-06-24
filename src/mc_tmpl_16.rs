@@ -2069,8 +2069,8 @@ unsafe extern "C" fn pixel_set(dst: *mut pixel, val: libc::c_int, num: libc::c_i
         n += 1;
     }
 }
-use crate::src::mc::put_c;
 use crate::src::mc::prep_c;
+use crate::src::mc::put_c;
 #[inline(never)]
 unsafe extern "C" fn put_8tap_c(
     mut dst: *mut pixel,
@@ -2259,7 +2259,14 @@ unsafe extern "C" fn put_8tap_c(
             }
         }
     } else {
-        put_c::<BitDepth16>(dst, dst_stride, src, src_stride, w, h);
+        put_c::<BitDepth16>(
+            dst,
+            dst_stride as usize,
+            src,
+            src_stride as usize,
+            w as usize,
+            h as usize,
+        );
     };
 }
 #[inline(never)]
@@ -3705,7 +3712,14 @@ unsafe extern "C" fn put_bilin_c(
             }
         }
     } else {
-        put_c::<BitDepth16>(dst, dst_stride, src, src_stride, w, h);
+        put_c::<BitDepth16>(
+            dst,
+            dst_stride as usize,
+            src,
+            src_stride as usize,
+            w as usize,
+            h as usize,
+        );
     };
 }
 unsafe extern "C" fn put_bilin_scaled_c(
