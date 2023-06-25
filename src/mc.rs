@@ -52,3 +52,13 @@ unsafe fn filter_8tap<T: Into<i32>>(src: *const T, x: usize, f: &[i8; 8], stride
         })
         .sum()
 }
+
+unsafe fn dav1d_filter_8tap_rnd<T: Into<i32>>(
+    src: *const T,
+    x: usize,
+    f: &[i8; 8],
+    stride: usize,
+    sh: u8,
+) -> i32 {
+    (filter_8tap(src, x, f, stride) + ((1 << sh) >> 1)) >> sh
+}
