@@ -236,6 +236,8 @@ pub unsafe fn put_8tap_scaled_c<BD: BitDepth>(
     let mut mid_ptr = &mut mid[..];
     let [dst_stride, src_stride] = [dst_stride, src_stride].map(BD::pxstride);
 
+    let mut dst = std::slice::from_raw_parts_mut(dst, dst_stride * h);
+
     src = src.offset(-((src_stride * 3) as isize));
     for _ in 0..tmp_h {
         let mut imx = mx;
@@ -260,7 +262,7 @@ pub unsafe fn put_8tap_scaled_c<BD: BitDepth>(
         let fv = get_v_filter(my >> 6, h, filter_type);
 
         for x in 0..w {
-            *dst.offset(x as isize) = match fv {
+            dst[x] = match fv {
                 Some(fv) => {
                     dav1d_filter_8tap_clip(bd, mid_ptr.as_ptr(), x, fv, 128, 6 + intermediate_bits)
                 }
@@ -273,6 +275,6 @@ pub unsafe fn put_8tap_scaled_c<BD: BitDepth>(
         my += dy;
         mid_ptr = &mut mid_ptr[(my >> 10) * 128..];
         my &= 0x3ff;
-        dst = dst.offset(dst_stride as isize);
+        dst = &mut dst[dst_stride..];
     }
 }
