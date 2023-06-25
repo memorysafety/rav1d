@@ -33,8 +33,8 @@ pub fn umin(a: c_uint, b: c_uint) -> c_uint {
 #[inline]
 pub fn clip<T, U>(v: T, min: U, max: U) -> U
 where
-    U: Copy + Ord + Into<T>,
     T: Copy + Ord + TryInto<U>,
+    U: Copy + Ord + Into<T>,
 {
     assert!(min <= max);
     if v < min.into() {
