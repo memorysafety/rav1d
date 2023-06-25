@@ -1,6 +1,8 @@
 use std::iter;
 
 use crate::include::common::bitdepth::{AsPrimitive, BitDepth};
+use crate::include::dav1d::headers::Dav1dFilterMode;
+use crate::src::tables::dav1d_mc_subpel_filters;
 
 // TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
 #[inline(never)]
@@ -95,4 +97,14 @@ unsafe fn dav1d_filter_8tap_clip2<BD: BitDepth, T: Into<i32>>(
     sh: u8,
 ) -> BD::Pixel {
     bd.iclip_pixel(dav1d_filter_8tap_rnd2(src, x, f, stride, rnd, sh))
+}
+
+fn get_h_filter(mx: usize, w: usize, filter_type: Dav1dFilterMode) -> Option<&'static [i8; 8]> {
+    let mx = mx.checked_sub(1)?;
+    let i = if w > 4 {
+        filter_type & 3
+    } else {
+        3 + (filter_type & 1)
+    };
+    Some(&dav1d_mc_subpel_filters[i as usize][mx])
 }
