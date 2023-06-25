@@ -234,7 +234,7 @@ pub unsafe fn put_8tap_scaled_c<BD: BitDepth>(
     let tmp_h = ((h - 1) * dy + my >> 10) + 8;
     let mut mid = [0i16; 128 * (256 + 7)]; // Default::default()
     let mut mid_ptr = &mut mid[..];
-    let src_stride = BD::pxstride(src_stride);
+    let [dst_stride, src_stride] = [dst_stride, src_stride].map(BD::pxstride);
 
     src = src.offset(-((src_stride * 3) as isize));
     for _ in 0..tmp_h {
@@ -273,6 +273,6 @@ pub unsafe fn put_8tap_scaled_c<BD: BitDepth>(
         my += dy;
         mid_ptr = &mut mid_ptr[(my >> 10) * 128..];
         my &= 0x3ff;
-        dst = dst.offset(BD::pxstride(dst_stride) as isize);
+        dst = dst.offset(dst_stride as isize);
     }
 }
