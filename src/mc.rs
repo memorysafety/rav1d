@@ -279,8 +279,9 @@ pub unsafe fn put_8tap_scaled_c<BD: BitDepth>(
     }
 }
 
+// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
 #[inline(never)]
-unsafe fn prep_8tap_c<BD: BitDepth>(
+pub unsafe fn prep_8tap_c<BD: BitDepth>(
     mut tmp: *mut i16,
     mut src: *const BD::Pixel,
     src_stride: usize,
