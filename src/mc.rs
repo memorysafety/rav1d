@@ -73,3 +73,14 @@ unsafe fn dav1d_filter_8tap_rnd2<T: Into<i32>>(
 ) -> i32 {
     (filter_8tap(src, x, f, stride) + (rnd as i32)) >> sh
 }
+
+unsafe fn dav1d_filter_8tap_clip<BD: BitDepth, T: Into<i32>>(
+    bd: BD,
+    src: *const T,
+    x: usize,
+    f: &[i8; 8],
+    stride: usize,
+    sh: u8,
+) -> BD::Pixel {
+    bd.iclip_pixel(dav1d_filter_8tap_rnd(src, x, f, stride, sh))
+}

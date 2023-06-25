@@ -77,6 +77,8 @@ pub trait BitDepth: Clone + Copy {
     type Pixel: Copy
         + Ord
         + From<u8>
+        + Into<i32>
+        + TryFrom<i32>
         + FromPrimitive<c_int>
         + FromPrimitive<c_uint>
         + ToPrimitive<c_int>
