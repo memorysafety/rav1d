@@ -108,3 +108,13 @@ fn get_h_filter(mx: usize, w: usize, filter_type: Dav1dFilterMode) -> Option<&'s
     };
     Some(&dav1d_mc_subpel_filters[i as usize][mx])
 }
+
+fn get_v_filter(my: usize, h: usize, filter_type: Dav1dFilterMode) -> Option<&'static [i8; 8]> {
+    let mx = my.checked_sub(1)?;
+    let i = if h > 4 {
+        filter_type >> 2
+    } else {
+        3 + ((filter_type >> 2) & 1)
+    };
+    Some(&dav1d_mc_subpel_filters[i as usize][mx])
+}
