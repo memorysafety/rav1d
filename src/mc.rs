@@ -131,3 +131,83 @@ fn get_filters(
         get_v_filter(my, h, filter_type),
     )
 }
+
+#[inline(never)]
+unsafe fn put_8tap_c<BD: BitDepth>(
+    dst: *mut BD::Pixel,
+    dst_stride: usize,
+    mut src: *const BD::Pixel,
+    src_stride: usize,
+    w: usize,
+    h: usize,
+    mx: usize,
+    my: usize,
+    filter_type: Dav1dFilterMode,
+    bd: BD,
+) {
+    let intermediate_bits = bd.get_intermediate_bits();
+    let intermediate_rnd = 32 + (1 << 6 - intermediate_bits >> 1);
+
+    let (fh, fv) = get_filters(mx, my, w, h, filter_type);
+    let [dst_stride, src_stride] = [dst_stride, src_stride].map(BD::pxstride);
+
+    let mut dst = std::slice::from_raw_parts_mut(dst, dst_stride * h);
+
+    if let Some(fh) = fh {
+        if let Some(fv) = fv {
+            let tmp_h = h + 7;
+            let mut mid = [0i16; 128 * 135]; // Default::default()
+            let mut mid_ptr = &mut mid[..];
+
+            src = src.offset(-((src_stride * 3) as isize));
+            for _ in 0..tmp_h {
+                for x in 0..w {
+                    mid_ptr[x] = dav1d_filter_8tap_rnd(src, x, fh, 1, 6 - intermediate_bits) as i16;
+                }
+
+                mid_ptr = &mut mid_ptr[128..];
+                src = src.offset(src_stride as isize);
+            }
+
+            mid_ptr = &mut mid[128 * 3..];
+            for _ in 0..h {
+                for x in 0..w {
+                    dst[x] = dav1d_filter_8tap_clip(
+                        bd,
+                        mid_ptr.as_ptr(),
+                        x,
+                        fv,
+                        128,
+                        6 + intermediate_bits,
+                    );
+                }
+
+                mid_ptr = &mut mid_ptr[128..];
+                dst = &mut dst[dst_stride..];
+            }
+        } else {
+            let mut src = std::slice::from_raw_parts(src, src_stride * h);
+            for _ in 0..h {
+                for x in 0..w {
+                    dst[x] =
+                        dav1d_filter_8tap_clip2(bd, src.as_ptr(), x, fh, 1, intermediate_rnd, 6);
+                }
+
+                dst = &mut dst[dst_stride..];
+                src = &src[src_stride..];
+            }
+        }
+    } else if let Some(fv) = fv {
+        let mut src = std::slice::from_raw_parts(src, src_stride * h);
+        for _ in 0..h {
+            for x in 0..w {
+                dst[x] = dav1d_filter_8tap_clip(bd, src.as_ptr(), x, fv, src_stride, 6);
+            }
+
+            dst = &mut dst[dst_stride..];
+            src = &src[src_stride..];
+        }
+    } else {
+        put_c::<BD>(dst.as_mut_ptr(), dst_stride, src, src_stride, w, h);
+    }
+}
