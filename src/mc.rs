@@ -212,3 +212,66 @@ pub unsafe fn put_8tap_c<BD: BitDepth>(
         put_c::<BD>(dst.as_mut_ptr(), dst_stride, src, src_stride, w, h);
     }
 }
+
+#[inline(never)]
+unsafe fn put_8tap_scaled_c<BD: BitDepth>(
+    mut dst: *mut BD::Pixel,
+    dst_stride: usize,
+    mut src: *const BD::Pixel,
+    src_stride: usize,
+    w: usize,
+    mut h: usize,
+    mx: usize,
+    mut my: usize,
+    dx: usize,
+    dy: usize,
+    filter_type: Dav1dFilterMode,
+    bd: BD,
+) {
+    let intermediate_bits = bd.get_intermediate_bits();
+    let intermediate_rnd = (1 << intermediate_bits) >> 1;
+    let tmp_h = ((h - 1) * dy + my >> 10) + 8;
+    let mut mid = [0i16; 128 * (256 + 7)]; // Default::default()
+    let mut mid_ptr = &mut mid[..];
+    let src_stride = BD::pxstride(src_stride);
+
+    src = src.offset(-((src_stride * 3) as isize));
+    for _ in 0..tmp_h {
+        let mut imx = mx;
+        let mut ioff = 0;
+
+        for x in 0..w {
+            let fh = get_h_filter(imx >> 6, w, filter_type);
+            mid_ptr[x] = match fh {
+                Some(fh) => dav1d_filter_8tap_rnd(src, ioff, fh, 1, 6 - intermediate_bits) as i16,
+                None => ((*src.offset(ioff as isize)).as_::<i32>() as i16) << intermediate_bits,
+            };
+            imx += dx;
+            ioff += imx >> 10;
+            imx &= 0x3ff;
+        }
+
+        mid_ptr = &mut mid_ptr[128..];
+        src = src.offset(src_stride as isize);
+    }
+    mid_ptr = &mut mid[128 * 3..];
+    for _ in 0..h {
+        let fv = get_v_filter(my >> 6, h, filter_type);
+
+        for x in 0..w {
+            *dst.offset(x as isize) = match fv {
+                Some(fv) => {
+                    dav1d_filter_8tap_clip(bd, mid_ptr.as_ptr(), x, fv, 128, 6 + intermediate_bits)
+                }
+                None => {
+                    bd.iclip_pixel((i32::from(mid_ptr[x]) + intermediate_rnd) >> intermediate_bits)
+                }
+            };
+        }
+
+        my += dy;
+        mid_ptr = &mut mid_ptr[(my >> 10) * 128..];
+        my &= 0x3ff;
+        dst = dst.offset(BD::pxstride(dst_stride) as isize);
+    }
+}
