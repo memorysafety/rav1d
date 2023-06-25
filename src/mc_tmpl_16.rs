@@ -1845,7 +1845,6 @@ extern "C" {
     );
 }
 
-use crate::src::tables::dav1d_mc_subpel_filters;
 use crate::src::tables::dav1d_mc_warp_filter;
 use crate::src::tables::dav1d_obmc_masks;
 use crate::src::tables::dav1d_resize_filter;
@@ -2070,127 +2069,11 @@ unsafe extern "C" fn pixel_set(dst: *mut pixel, val: libc::c_int, num: libc::c_i
     }
 }
 use crate::src::mc::prep_8tap_c;
+use crate::src::mc::prep_8tap_scaled_c;
 use crate::src::mc::prep_c;
 use crate::src::mc::put_8tap_c;
 use crate::src::mc::put_8tap_scaled_c;
 use crate::src::mc::put_c;
-#[inline(never)]
-unsafe extern "C" fn prep_8tap_scaled_c(
-    mut tmp: *mut int16_t,
-    mut src: *const pixel,
-    mut src_stride: ptrdiff_t,
-    w: libc::c_int,
-    mut h: libc::c_int,
-    mx: libc::c_int,
-    mut my: libc::c_int,
-    dx: libc::c_int,
-    dy: libc::c_int,
-    filter_type: libc::c_int,
-    bitdepth_max: libc::c_int,
-) {
-    let intermediate_bits = 14 as libc::c_int - (32 - clz(bitdepth_max as libc::c_uint));
-    let mut tmp_h = ((h - 1) * dy + my >> 10) + 8;
-    let mut mid: [int16_t; 33664] = [0; 33664];
-    let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
-    src_stride = PXSTRIDE(src_stride);
-    src = src.offset(-((src_stride * 3) as isize));
-    loop {
-        let mut x = 0;
-        let mut imx = mx;
-        let mut ioff = 0;
-        x = 0 as libc::c_int;
-        while x < w {
-            let fh: *const int8_t = if imx >> 6 == 0 {
-                0 as *const int8_t
-            } else if w > 4 {
-                (dav1d_mc_subpel_filters[(filter_type & 3) as usize][((imx >> 6) - 1) as usize])
-                    .as_ptr()
-            } else {
-                (dav1d_mc_subpel_filters[(3 as libc::c_int + (filter_type & 1)) as usize]
-                    [((imx >> 6) - 1) as usize])
-                    .as_ptr()
-            };
-            *mid_ptr.offset(x as isize) = (if !fh.is_null() {
-                *fh.offset(0) as libc::c_int
-                    * *src.offset((ioff + -(3 as libc::c_int) * 1) as isize) as libc::c_int
-                    + *fh.offset(1) as libc::c_int
-                        * *src.offset((ioff + -(2 as libc::c_int) * 1) as isize) as libc::c_int
-                    + *fh.offset(2) as libc::c_int
-                        * *src.offset((ioff + -(1 as libc::c_int) * 1) as isize) as libc::c_int
-                    + *fh.offset(3) as libc::c_int
-                        * *src.offset((ioff + 0 * 1) as isize) as libc::c_int
-                    + *fh.offset(4) as libc::c_int
-                        * *src.offset((ioff + 1 * 1) as isize) as libc::c_int
-                    + *fh.offset(5) as libc::c_int
-                        * *src.offset((ioff + 2 * 1) as isize) as libc::c_int
-                    + *fh.offset(6) as libc::c_int
-                        * *src.offset((ioff + 3 * 1) as isize) as libc::c_int
-                    + *fh.offset(7) as libc::c_int
-                        * *src.offset((ioff + 4 * 1) as isize) as libc::c_int
-                    + ((1 as libc::c_int) << 6 - intermediate_bits >> 1)
-                    >> 6 - intermediate_bits
-            } else {
-                (*src.offset(ioff as isize) as libc::c_int) << intermediate_bits
-            }) as int16_t;
-            imx += dx;
-            ioff += imx >> 10;
-            imx &= 0x3ff as libc::c_int;
-            x += 1;
-        }
-        mid_ptr = mid_ptr.offset(128);
-        src = src.offset(src_stride as isize);
-        tmp_h -= 1;
-        if !(tmp_h != 0) {
-            break;
-        }
-    }
-    mid_ptr = mid.as_mut_ptr().offset((128 * 3) as isize);
-    let mut y = 0;
-    while y < h {
-        let mut x_0 = 0;
-        let fv: *const int8_t = if my >> 6 == 0 {
-            0 as *const int8_t
-        } else if h > 4 {
-            (dav1d_mc_subpel_filters[(filter_type >> 2) as usize][((my >> 6) - 1) as usize])
-                .as_ptr()
-        } else {
-            (dav1d_mc_subpel_filters[(3 as libc::c_int + (filter_type >> 2 & 1)) as usize]
-                [((my >> 6) - 1) as usize])
-                .as_ptr()
-        };
-        x_0 = 0 as libc::c_int;
-        while x_0 < w {
-            *tmp.offset(x_0 as isize) = ((if !fv.is_null() {
-                *fv.offset(0) as libc::c_int
-                    * *mid_ptr.offset((x_0 + -(3 as libc::c_int) * 128) as isize) as libc::c_int
-                    + *fv.offset(1) as libc::c_int
-                        * *mid_ptr.offset((x_0 + -(2 as libc::c_int) * 128) as isize) as libc::c_int
-                    + *fv.offset(2) as libc::c_int
-                        * *mid_ptr.offset((x_0 + -(1 as libc::c_int) * 128) as isize) as libc::c_int
-                    + *fv.offset(3) as libc::c_int
-                        * *mid_ptr.offset((x_0 + 0 * 128) as isize) as libc::c_int
-                    + *fv.offset(4) as libc::c_int
-                        * *mid_ptr.offset((x_0 + 1 * 128) as isize) as libc::c_int
-                    + *fv.offset(5) as libc::c_int
-                        * *mid_ptr.offset((x_0 + 2 * 128) as isize) as libc::c_int
-                    + *fv.offset(6) as libc::c_int
-                        * *mid_ptr.offset((x_0 + 3 * 128) as isize) as libc::c_int
-                    + *fv.offset(7) as libc::c_int
-                        * *mid_ptr.offset((x_0 + 4 * 128) as isize) as libc::c_int
-                    + ((1 as libc::c_int) << 6 >> 1)
-                    >> 6
-            } else {
-                *mid_ptr.offset(x_0 as isize) as libc::c_int
-            }) - 8192) as int16_t;
-            x_0 += 1;
-        }
-        my += dy;
-        mid_ptr = mid_ptr.offset(((my >> 10) * 128) as isize);
-        my &= 0x3ff as libc::c_int;
-        tmp = tmp.offset(w as isize);
-        y += 1;
-    }
-}
 unsafe extern "C" fn put_8tap_regular_c(
     dst: *mut pixel,
     dst_stride: ptrdiff_t,
@@ -2280,15 +2163,15 @@ unsafe extern "C" fn prep_8tap_regular_scaled_c(
     prep_8tap_scaled_c(
         tmp,
         src,
-        src_stride,
-        w,
-        h,
-        mx,
-        my,
-        dx,
-        dy,
-        DAV1D_FILTER_8TAP_REGULAR as libc::c_int | (DAV1D_FILTER_8TAP_REGULAR as libc::c_int) << 2,
-        bitdepth_max,
+        src_stride as usize,
+        w as usize,
+        h as usize,
+        mx as usize,
+        my as usize,
+        dx as usize,
+        dy as usize,
+        DAV1D_FILTER_8TAP_REGULAR | (DAV1D_FILTER_8TAP_REGULAR << 2),
+        BitDepth16::new(bitdepth_max as u16),
     );
 }
 unsafe extern "C" fn put_8tap_regular_sharp_c(
@@ -2330,15 +2213,15 @@ unsafe extern "C" fn prep_8tap_regular_sharp_scaled_c(
     prep_8tap_scaled_c(
         tmp,
         src,
-        src_stride,
-        w,
-        h,
-        mx,
-        my,
-        dx,
-        dy,
-        DAV1D_FILTER_8TAP_REGULAR as libc::c_int | (DAV1D_FILTER_8TAP_SHARP as libc::c_int) << 2,
-        bitdepth_max,
+        src_stride as usize,
+        w as usize,
+        h as usize,
+        mx as usize,
+        my as usize,
+        dx as usize,
+        dy as usize,
+        DAV1D_FILTER_8TAP_REGULAR | (DAV1D_FILTER_8TAP_SHARP << 2),
+        BitDepth16::new(bitdepth_max as u16),
     );
 }
 unsafe extern "C" fn prep_8tap_regular_sharp_c(
@@ -2406,15 +2289,15 @@ unsafe extern "C" fn prep_8tap_regular_smooth_scaled_c(
     prep_8tap_scaled_c(
         tmp,
         src,
-        src_stride,
-        w,
-        h,
-        mx,
-        my,
-        dx,
-        dy,
-        DAV1D_FILTER_8TAP_REGULAR as libc::c_int | (DAV1D_FILTER_8TAP_SMOOTH as libc::c_int) << 2,
-        bitdepth_max,
+        src_stride as usize,
+        w as usize,
+        h as usize,
+        mx as usize,
+        my as usize,
+        dx as usize,
+        dy as usize,
+        DAV1D_FILTER_8TAP_REGULAR | (DAV1D_FILTER_8TAP_SMOOTH << 2),
+        BitDepth16::new(bitdepth_max as u16),
     );
 }
 unsafe extern "C" fn prep_8tap_regular_smooth_c(
@@ -2506,15 +2389,15 @@ unsafe extern "C" fn prep_8tap_smooth_scaled_c(
     prep_8tap_scaled_c(
         tmp,
         src,
-        src_stride,
-        w,
-        h,
-        mx,
-        my,
-        dx,
-        dy,
-        DAV1D_FILTER_8TAP_SMOOTH as libc::c_int | (DAV1D_FILTER_8TAP_SMOOTH as libc::c_int) << 2,
-        bitdepth_max,
+        src_stride as usize,
+        w as usize,
+        h as usize,
+        mx as usize,
+        my as usize,
+        dx as usize,
+        dy as usize,
+        DAV1D_FILTER_8TAP_SMOOTH | (DAV1D_FILTER_8TAP_SMOOTH << 2),
+        BitDepth16::new(bitdepth_max as u16),
     );
 }
 unsafe extern "C" fn put_8tap_smooth_c(
@@ -2680,15 +2563,15 @@ unsafe extern "C" fn prep_8tap_smooth_regular_scaled_c(
     prep_8tap_scaled_c(
         tmp,
         src,
-        src_stride,
-        w,
-        h,
-        mx,
-        my,
-        dx,
-        dy,
-        DAV1D_FILTER_8TAP_SMOOTH as libc::c_int | (DAV1D_FILTER_8TAP_REGULAR as libc::c_int) << 2,
-        bitdepth_max,
+        src_stride as usize,
+        w as usize,
+        h as usize,
+        mx as usize,
+        my as usize,
+        dx as usize,
+        dy as usize,
+        DAV1D_FILTER_8TAP_SMOOTH | (DAV1D_FILTER_8TAP_REGULAR << 2),
+        BitDepth16::new(bitdepth_max as u16),
     );
 }
 unsafe extern "C" fn put_8tap_smooth_sharp_c(
@@ -2730,15 +2613,15 @@ unsafe extern "C" fn prep_8tap_smooth_sharp_scaled_c(
     prep_8tap_scaled_c(
         tmp,
         src,
-        src_stride,
-        w,
-        h,
-        mx,
-        my,
-        dx,
-        dy,
-        DAV1D_FILTER_8TAP_SMOOTH as libc::c_int | (DAV1D_FILTER_8TAP_SHARP as libc::c_int) << 2,
-        bitdepth_max,
+        src_stride as usize,
+        w as usize,
+        h as usize,
+        mx as usize,
+        my as usize,
+        dx as usize,
+        dy as usize,
+        DAV1D_FILTER_8TAP_SMOOTH | (DAV1D_FILTER_8TAP_SHARP << 2),
+        BitDepth16::new(bitdepth_max as u16),
     );
 }
 unsafe extern "C" fn put_8tap_smooth_sharp_scaled_c(
@@ -2880,15 +2763,15 @@ unsafe extern "C" fn prep_8tap_sharp_scaled_c(
     prep_8tap_scaled_c(
         tmp,
         src,
-        src_stride,
-        w,
-        h,
-        mx,
-        my,
-        dx,
-        dy,
-        DAV1D_FILTER_8TAP_SHARP as libc::c_int | (DAV1D_FILTER_8TAP_SHARP as libc::c_int) << 2,
-        bitdepth_max,
+        src_stride as usize,
+        w as usize,
+        h as usize,
+        mx as usize,
+        my as usize,
+        dx as usize,
+        dy as usize,
+        DAV1D_FILTER_8TAP_SHARP | (DAV1D_FILTER_8TAP_SHARP << 2),
+        BitDepth16::new(bitdepth_max as u16),
     );
 }
 unsafe extern "C" fn prep_8tap_sharp_regular_c(
@@ -2952,15 +2835,15 @@ unsafe extern "C" fn prep_8tap_sharp_regular_scaled_c(
     prep_8tap_scaled_c(
         tmp,
         src,
-        src_stride,
-        w,
-        h,
-        mx,
-        my,
-        dx,
-        dy,
-        DAV1D_FILTER_8TAP_SHARP as libc::c_int | (DAV1D_FILTER_8TAP_REGULAR as libc::c_int) << 2,
-        bitdepth_max,
+        src_stride as usize,
+        w as usize,
+        h as usize,
+        mx as usize,
+        my as usize,
+        dx as usize,
+        dy as usize,
+        DAV1D_FILTER_8TAP_SHARP | (DAV1D_FILTER_8TAP_REGULAR << 2),
+        BitDepth16::new(bitdepth_max as u16),
     );
 }
 unsafe extern "C" fn put_8tap_sharp_regular_scaled_c(
@@ -3080,15 +2963,15 @@ unsafe extern "C" fn prep_8tap_sharp_smooth_scaled_c(
     prep_8tap_scaled_c(
         tmp,
         src,
-        src_stride,
-        w,
-        h,
-        mx,
-        my,
-        dx,
-        dy,
-        DAV1D_FILTER_8TAP_SHARP as libc::c_int | (DAV1D_FILTER_8TAP_SMOOTH as libc::c_int) << 2,
-        bitdepth_max,
+        src_stride as usize,
+        w as usize,
+        h as usize,
+        mx as usize,
+        my as usize,
+        dx as usize,
+        dy as usize,
+        DAV1D_FILTER_8TAP_SHARP | (DAV1D_FILTER_8TAP_SMOOTH << 2),
+        BitDepth16::new(bitdepth_max as u16),
     );
 }
 unsafe extern "C" fn put_bilin_c(
