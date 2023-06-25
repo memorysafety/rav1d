@@ -18,6 +18,7 @@ extern crate libc;
 pub mod include {
     pub mod common {
         pub mod attributes;
+        pub mod bitdepth;
         pub mod dump;
         pub mod frame;
         pub mod intops;
