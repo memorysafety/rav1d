@@ -41,3 +41,14 @@ pub unsafe fn prep_c<BD: BitDepth>(
         }
     }
 }
+
+unsafe fn filter_8tap<T: Into<i32>>(src: *const T, x: usize, f: &[i8; 8], stride: usize) -> i32 {
+    f.into_iter()
+        .enumerate()
+        .map(|(i, &f)| {
+            let [i, x, stride] = [i, x, stride].map(|it| it as isize);
+            let j = x + (i - 3) * stride;
+            i32::from(f) * src.offset(j).read().into()
+        })
+        .sum()
+}
