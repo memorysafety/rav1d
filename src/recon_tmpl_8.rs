@@ -1,9 +1,9 @@
+use crate::include::common::bitdepth::BitDepth8;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use crate::src::ctx::CaseSet;
 use ::libc;
 
-use crate::stdout;
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::size_t) -> *mut libc::c_void;
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::size_t) -> *mut libc::c_void;
@@ -711,48 +711,9 @@ use crate::src::recon::define_DEBUG_BLOCK_INFO;
 
 define_DEBUG_BLOCK_INFO!();
 
-#[inline]
-unsafe extern "C" fn hex_fdump(
-    mut out: *mut libc::FILE,
-    mut buf: *const pixel,
-    mut stride: ptrdiff_t,
-    mut w: libc::c_int,
-    mut h: libc::c_int,
-    mut what: *const libc::c_char,
-) {
-    fprintf(out, b"%s\n\0" as *const u8 as *const libc::c_char, what);
-    loop {
-        let fresh0 = h;
-        h = h - 1;
-        if !(fresh0 != 0) {
-            break;
-        }
-        let mut x = 0;
-        x = 0 as libc::c_int;
-        while x < w {
-            fprintf(
-                out,
-                b" %02x\0" as *const u8 as *const libc::c_char,
-                *buf.offset(x as isize) as libc::c_int,
-            );
-            x += 1;
-        }
-        buf = buf.offset(stride as isize);
-        fprintf(out, b"\n\0" as *const u8 as *const libc::c_char);
-    }
-}
-#[inline]
-unsafe extern "C" fn hex_dump(
-    mut buf: *const pixel,
-    mut stride: ptrdiff_t,
-    mut w: libc::c_int,
-    mut h: libc::c_int,
-    mut what: *const libc::c_char,
-) {
-    hex_fdump(stdout, buf, stride, w, h, what);
-}
 use crate::include::common::dump::ac_dump;
 use crate::include::common::dump::coef_dump;
+use crate::include::common::dump::hex_dump;
 use crate::include::common::intops::apply_sign64;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::imax;
@@ -2164,12 +2125,12 @@ unsafe extern "C" fn read_coef_tree(
                     dst, (*f).cur.stride[0], cf, eob
                 );
                 if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
-                    hex_dump(
+                    hex_dump::<BitDepth8>(
                         dst,
-                        (*f).cur.stride[0],
-                        (*t_dim).w as libc::c_int * 4,
-                        (*t_dim).h as libc::c_int * 4,
-                        b"recon\0" as *const u8 as *const libc::c_char,
+                        (*f).cur.stride[0] as usize,
+                        (*t_dim).w as usize * 4,
+                        (*t_dim).h as usize * 4,
+                        "recon",
                     );
                 }
             }
@@ -2969,12 +2930,12 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                     bh4 * 4,
                 );
                 if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
-                    hex_dump(
+                    hex_dump::<BitDepth8>(
                         dst,
-                        (*f).cur.stride[0],
-                        bw4 * 4,
-                        bh4 * 4,
-                        b"y-pal-pred\0" as *const u8 as *const libc::c_char,
+                        (*f).cur.stride[0] as usize,
+                        bw4 as usize * 4,
+                        bh4 as usize * 4,
+                        "y-pal-pred",
                     );
                 }
             }
@@ -3065,33 +3026,27 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                             4 * (*f).bh - 4 * (*t).by,
                         );
                         if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
-                            hex_dump(
+                            hex_dump::<BitDepth8>(
                                 edge.offset(-(((*t_dim).h as libc::c_int * 4) as isize)),
-                                ((*t_dim).h as libc::c_int * 4) as ptrdiff_t,
-                                (*t_dim).h as libc::c_int * 4,
-                                2 as libc::c_int,
-                                b"l\0" as *const u8 as *const libc::c_char,
+                                (*t_dim).h as usize * 4,
+                                (*t_dim).h as usize * 4,
+                                2,
+                                "l",
                             );
-                            hex_dump(
-                                edge,
-                                0 as libc::c_int as ptrdiff_t,
-                                1 as libc::c_int,
-                                1 as libc::c_int,
-                                b"tl\0" as *const u8 as *const libc::c_char,
-                            );
-                            hex_dump(
+                            hex_dump::<BitDepth8>(edge, 0, 1, 1, "tl");
+                            hex_dump::<BitDepth8>(
                                 edge.offset(1),
-                                ((*t_dim).w as libc::c_int * 4) as ptrdiff_t,
-                                (*t_dim).w as libc::c_int * 4,
-                                2 as libc::c_int,
-                                b"t\0" as *const u8 as *const libc::c_char,
+                                (*t_dim).w as usize * 4,
+                                (*t_dim).w as usize * 4,
+                                2,
+                                "t",
                             );
-                            hex_dump(
+                            hex_dump::<BitDepth8>(
                                 dst_0,
-                                (*f).cur.stride[0],
-                                (*t_dim).w as libc::c_int * 4,
-                                (*t_dim).h as libc::c_int * 4,
-                                b"y-intra-pred\0" as *const u8 as *const libc::c_char,
+                                (*f).cur.stride[0] as usize,
+                                (*t_dim).w as usize * 4,
+                                (*t_dim).h as usize * 4,
+                                "y-intra-pred",
                             );
                         }
                     }
@@ -3171,12 +3126,12 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                                 eob,
                             );
                             if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
-                                hex_dump(
+                                hex_dump::<BitDepth8>(
                                     dst_0,
-                                    (*f).cur.stride[0],
-                                    (*t_dim).w as libc::c_int * 4,
-                                    (*t_dim).h as libc::c_int * 4,
-                                    b"recon\0" as *const u8 as *const libc::c_char,
+                                    (*f).cur.stride[0] as usize,
+                                    (*t_dim).w as usize * 4,
+                                    (*t_dim).h as usize * 4,
+                                    "recon",
                                 );
                             }
                         }
@@ -3282,19 +3237,19 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                     }
                     if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
                         ac_dump(ac, 4 * cbw4 as usize, 4 * cbh4 as usize, "ac");
-                        hex_dump(
+                        hex_dump::<BitDepth8>(
                             uv_dst[0],
-                            stride,
-                            cbw4 * 4,
-                            cbh4 * 4,
-                            b"u-cfl-pred\0" as *const u8 as *const libc::c_char,
+                            stride as usize,
+                            cbw4 as usize * 4,
+                            cbh4 as usize * 4,
+                            "u-cfl-pred",
                         );
-                        hex_dump(
+                        hex_dump::<BitDepth8>(
                             uv_dst[1],
-                            stride,
-                            cbw4 * 4,
-                            cbh4 * 4,
-                            b"v-cfl-pred\0" as *const u8 as *const libc::c_char,
+                            stride as usize,
+                            cbw4 as usize * 4,
+                            cbh4 as usize * 4,
+                            "v-cfl-pred",
                         );
                     }
                 } else if (*b).c2rust_unnamed.c2rust_unnamed.pal_sz[1] != 0 {
@@ -3343,19 +3298,19 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                         cbh4 * 4,
                     );
                     if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
-                        hex_dump(
+                        hex_dump::<BitDepth8>(
                             ((*f).cur.data[1] as *mut pixel).offset(uv_dstoff as isize),
-                            (*f).cur.stride[1],
-                            cbw4 * 4,
-                            cbh4 * 4,
-                            b"u-pal-pred\0" as *const u8 as *const libc::c_char,
+                            (*f).cur.stride[1] as usize,
+                            cbw4 as usize * 4,
+                            cbh4 as usize * 4,
+                            "u-pal-pred",
                         );
-                        hex_dump(
+                        hex_dump::<BitDepth8>(
                             ((*f).cur.data[2] as *mut pixel).offset(uv_dstoff as isize),
-                            (*f).cur.stride[1],
-                            cbw4 * 4,
-                            cbh4 * 4,
-                            b"v-pal-pred\0" as *const u8 as *const libc::c_char,
+                            (*f).cur.stride[1] as usize,
+                            cbw4 as usize * 4,
+                            cbh4 as usize * 4,
+                            "v-pal-pred",
                         );
                     }
                 }
@@ -3480,36 +3435,30 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                                     4 * (*f).bh + ss_ver - 4 * ((*t).by & !ss_ver) >> ss_ver,
                                 );
                                 if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
-                                    hex_dump(
+                                    hex_dump::<BitDepth8>(
                                         edge.offset(-(((*uv_t_dim).h as libc::c_int * 4) as isize)),
-                                        ((*uv_t_dim).h as libc::c_int * 4) as ptrdiff_t,
-                                        (*uv_t_dim).h as libc::c_int * 4,
-                                        2 as libc::c_int,
-                                        b"l\0" as *const u8 as *const libc::c_char,
+                                        (*uv_t_dim).h as usize * 4,
+                                        (*uv_t_dim).h as usize * 4,
+                                        2,
+                                        "l",
                                     );
-                                    hex_dump(
-                                        edge,
-                                        0 as libc::c_int as ptrdiff_t,
-                                        1 as libc::c_int,
-                                        1 as libc::c_int,
-                                        b"tl\0" as *const u8 as *const libc::c_char,
-                                    );
-                                    hex_dump(
+                                    hex_dump::<BitDepth8>(edge, 0, 1, 1, "tl");
+                                    hex_dump::<BitDepth8>(
                                         edge.offset(1),
-                                        ((*uv_t_dim).w as libc::c_int * 4) as ptrdiff_t,
-                                        (*uv_t_dim).w as libc::c_int * 4,
-                                        2 as libc::c_int,
-                                        b"t\0" as *const u8 as *const libc::c_char,
+                                        (*uv_t_dim).w as usize * 4,
+                                        (*uv_t_dim).w as usize * 4,
+                                        2,
+                                        "t",
                                     );
-                                    hex_dump(
+                                    hex_dump::<BitDepth8>(
                                         dst_1,
-                                        stride,
-                                        (*uv_t_dim).w as libc::c_int * 4,
-                                        (*uv_t_dim).h as libc::c_int * 4,
+                                        stride as usize,
+                                        (*uv_t_dim).w as usize * 4,
+                                        (*uv_t_dim).h as usize * 4,
                                         if pl_0 != 0 {
-                                            b"v-intra-pred\0" as *const u8 as *const libc::c_char
+                                            "v-intra-pred"
                                         } else {
-                                            b"u-intra-pred\0" as *const u8 as *const libc::c_char
+                                            "u-intra-pred"
                                         },
                                     );
                                 }
@@ -3600,12 +3549,12 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                                         dst_1, stride, cf_0, eob_0,
                                     );
                                     if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
-                                        hex_dump(
+                                        hex_dump::<BitDepth8>(
                                             dst_1,
-                                            stride,
-                                            (*uv_t_dim).w as libc::c_int * 4,
-                                            (*uv_t_dim).h as libc::c_int * 4,
-                                            b"recon\0" as *const u8 as *const libc::c_char,
+                                            stride as usize,
+                                            (*uv_t_dim).w as usize * 4,
+                                            (*uv_t_dim).h as usize * 4,
+                                            "recon",
                                         );
                                     }
                                 }
@@ -4651,27 +4600,27 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
         }
     }
     if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
-        hex_dump(
+        hex_dump::<BitDepth8>(
             dst,
-            (*f).cur.stride[0],
-            *b_dim.offset(0) as libc::c_int * 4,
-            *b_dim.offset(1) as libc::c_int * 4,
-            b"y-pred\0" as *const u8 as *const libc::c_char,
+            (*f).cur.stride[0] as usize,
+            *b_dim.offset(0) as usize * 4,
+            *b_dim.offset(1) as usize * 4,
+            "y-pred",
         );
         if has_chroma != 0 {
-            hex_dump(
+            hex_dump::<BitDepth8>(
                 &mut *(*((*f).cur.data).as_ptr().offset(1) as *mut pixel).offset(uvdstoff as isize),
-                (*f).cur.stride[1],
-                cbw4 * 4,
-                cbh4 * 4,
-                b"u-pred\0" as *const u8 as *const libc::c_char,
+                (*f).cur.stride[1] as usize,
+                cbw4 as usize * 4,
+                cbh4 as usize * 4,
+                "u-pred",
             );
-            hex_dump(
+            hex_dump::<BitDepth8>(
                 &mut *(*((*f).cur.data).as_ptr().offset(2) as *mut pixel).offset(uvdstoff as isize),
-                (*f).cur.stride[1],
-                cbw4 * 4,
-                cbh4 * 4,
-                b"v-pred\0" as *const u8 as *const libc::c_char,
+                (*f).cur.stride[1] as usize,
+                cbw4 as usize * 4,
+                cbh4 as usize * 4,
+                "v-pred",
             );
         }
     }
@@ -4842,12 +4791,12 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                                     eob,
                                 );
                                 if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
-                                    hex_dump(
+                                    hex_dump::<BitDepth8>(
                                         &mut *uvdst_1.offset((4 * x_0) as isize),
-                                        (*f).cur.stride[1],
-                                        (*uvtx).w as libc::c_int * 4,
-                                        (*uvtx).h as libc::c_int * 4,
-                                        b"recon\0" as *const u8 as *const libc::c_char,
+                                        (*f).cur.stride[1] as usize,
+                                        (*uvtx).w as usize * 4,
+                                        (*uvtx).h as usize * 4,
+                                        "recon",
                                     );
                                 }
                             }
