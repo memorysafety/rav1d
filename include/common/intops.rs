@@ -30,6 +30,10 @@ pub fn umin(a: c_uint, b: c_uint) -> c_uint {
     }
 }
 
+/// # Safety
+///
+/// `U: Into<T>` and `T: TryInto<U>` must be well-formed
+/// such that for all `u: U`, `u.into().try_into() == Ok(u)`.
 #[inline]
 pub fn clip<T, U>(v: T, min: U, max: U) -> U
 where
@@ -45,6 +49,7 @@ where
         let v = v.try_into();
         // # Safety
         // `min <= v <= max`, `min: U`, `max: U`,
+        // and for all `u: U`, `u.into().try_into() == Ok(u)`,
         // so `v` must be in `U`, too.
         //
         // Note that `v.try_into().unwrap()` is not always optimized out.
