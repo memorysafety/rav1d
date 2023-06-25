@@ -118,3 +118,16 @@ fn get_v_filter(my: usize, h: usize, filter_type: Dav1dFilterMode) -> Option<&'s
     };
     Some(&dav1d_mc_subpel_filters[i as usize][mx])
 }
+
+fn get_filters(
+    mx: usize,
+    my: usize,
+    w: usize,
+    h: usize,
+    filter_type: Dav1dFilterMode,
+) -> (Option<&'static [i8; 8]>, Option<&'static [i8; 8]>) {
+    (
+        get_h_filter(mx, w, filter_type),
+        get_v_filter(my, h, filter_type),
+    )
+}
