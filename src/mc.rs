@@ -132,8 +132,9 @@ fn get_filters(
     )
 }
 
+// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
 #[inline(never)]
-unsafe fn put_8tap_c<BD: BitDepth>(
+pub unsafe fn put_8tap_c<BD: BitDepth>(
     dst: *mut BD::Pixel,
     dst_stride: usize,
     mut src: *const BD::Pixel,
