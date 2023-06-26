@@ -31,3 +31,10 @@ default = ["asm", "bitdepth_8", "bitdepth_16"]
 asm = []
 bitdepth_8 = []
 bitdepth_16 = []
+
+[profile.dev]
+# As we port, we increasingly use operations that require more optimizations to be zero-cost,
+# so while `--release` perf stays the same, debug perf suffers a lot,
+# unless we enable the basic optimizations (`opt-level = 1`),
+# which don't increase compile-time that much.
+opt-level = 1
