@@ -687,7 +687,7 @@ unsafe extern "C" fn lr_stripe(
                     ^ edges as libc::c_uint)
                     & LR_HAVE_BOTTOM as libc::c_int as libc::c_uint,
         );
-        lr_fn.as_8bpc()(p, stride, left, lpf, unit_w, stripe_h, &mut params, edges);
+        lr_fn.call_8bpc(p, stride, left, lpf, unit_w, stripe_h, &mut params, edges);
         left = left.offset(stripe_h as isize);
         y += stripe_h;
         p = p.offset((stripe_h as isize * stride) as isize);

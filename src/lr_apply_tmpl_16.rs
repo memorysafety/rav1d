@@ -714,7 +714,7 @@ unsafe extern "C" fn lr_stripe(
                     ^ edges as libc::c_uint)
                     & LR_HAVE_BOTTOM as libc::c_int as libc::c_uint,
         );
-        lr_fn.as_16bpc()(
+        lr_fn.call_16bpc(
             p,
             stride,
             left,

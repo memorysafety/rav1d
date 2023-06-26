@@ -49,6 +49,7 @@ use super::levels::BlockSize;
 use super::levels::Filter2d;
 use super::looprestoration::LooprestorationParams;
 use super::looprestoration::LrEdgeFlags;
+use super::looprestoration::LoopRestorationFilterFn;
 use super::mem::Dav1dMemPool;
 use super::picture::PictureFlags;
 use super::refmvs::refmvs_frame;
@@ -405,29 +406,6 @@ pub type looprestorationfilter_fn_16bpc = unsafe extern "C" fn(
     LrEdgeFlags,
     libc::c_int,
 ) -> ();
-
-#[derive(Clone, Copy)]
-#[repr(C)]
-pub enum LoopRestorationFilterFn {
-    Bpc8(looprestorationfilter_fn_8bpc),
-    Bpc16(looprestorationfilter_fn_16bpc),
-}
-
-impl LoopRestorationFilterFn {
-    pub fn as_8bpc(self) -> looprestorationfilter_fn_8bpc {
-        match self {
-            Self::Bpc8(inner) => inner,
-            _ => panic!("Function had incorrect bitdepth (expected 8, was 16)"),
-        }
-    }
-
-    pub fn as_16bpc(self) -> looprestorationfilter_fn_16bpc {
-        match self {
-            Self::Bpc16(inner) => inner,
-            _ => panic!("Function had incorrect bitdepth (expected 16, was 8)"),
-        }
-    }
-}
 
 #[derive(Copy, Clone)]
 #[repr(C)]

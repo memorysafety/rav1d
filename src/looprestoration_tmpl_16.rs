@@ -5,7 +5,7 @@ use crate::src::align::Align16;
 use crate::src::internal::coef_16bpc as coef;
 use crate::src::internal::const_left_pixel_row_16bpc as const_left_pixel_row;
 use crate::src::internal::pixel_16bpc as pixel;
-use crate::src::internal::LoopRestorationFilterFn;
+use crate::src::looprestoration::LoopRestorationFilterFn;
 use ::libc;
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
@@ -16,7 +16,7 @@ extern "C" {
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 extern "C" {
-    fn dav1d_wiener_filter5_16bpc_ssse3(
+    pub fn dav1d_wiener_filter5_16bpc_ssse3(
         dst: *mut pixel,
         dst_stride: ptrdiff_t,
         left: const_left_pixel_row,
@@ -27,7 +27,7 @@ extern "C" {
         edges: LrEdgeFlags,
         bitdepth_max: libc::c_int,
     );
-    fn dav1d_wiener_filter7_16bpc_ssse3(
+    pub fn dav1d_wiener_filter7_16bpc_ssse3(
         dst: *mut pixel,
         dst_stride: ptrdiff_t,
         left: const_left_pixel_row,
@@ -38,7 +38,7 @@ extern "C" {
         edges: LrEdgeFlags,
         bitdepth_max: libc::c_int,
     );
-    fn dav1d_wiener_filter5_16bpc_avx2(
+    pub fn dav1d_wiener_filter5_16bpc_avx2(
         dst: *mut pixel,
         dst_stride: ptrdiff_t,
         left: const_left_pixel_row,
@@ -49,7 +49,7 @@ extern "C" {
         edges: LrEdgeFlags,
         bitdepth_max: libc::c_int,
     );
-    fn dav1d_wiener_filter7_16bpc_avx2(
+    pub fn dav1d_wiener_filter7_16bpc_avx2(
         dst: *mut pixel,
         dst_stride: ptrdiff_t,
         left: const_left_pixel_row,
@@ -60,7 +60,7 @@ extern "C" {
         edges: LrEdgeFlags,
         bitdepth_max: libc::c_int,
     );
-    fn dav1d_wiener_filter5_16bpc_avx512icl(
+    pub fn dav1d_wiener_filter5_16bpc_avx512icl(
         dst: *mut pixel,
         dst_stride: ptrdiff_t,
         left: const_left_pixel_row,
@@ -71,7 +71,7 @@ extern "C" {
         edges: LrEdgeFlags,
         bitdepth_max: libc::c_int,
     );
-    fn dav1d_wiener_filter7_16bpc_avx512icl(
+    pub fn dav1d_wiener_filter7_16bpc_avx512icl(
         dst: *mut pixel,
         dst_stride: ptrdiff_t,
         left: const_left_pixel_row,
@@ -82,7 +82,7 @@ extern "C" {
         edges: LrEdgeFlags,
         bitdepth_max: libc::c_int,
     );
-    fn dav1d_sgr_filter_mix_16bpc_ssse3(
+    pub fn dav1d_sgr_filter_mix_16bpc_ssse3(
         dst: *mut pixel,
         dst_stride: ptrdiff_t,
         left: const_left_pixel_row,
@@ -93,7 +93,7 @@ extern "C" {
         edges: LrEdgeFlags,
         bitdepth_max: libc::c_int,
     );
-    fn dav1d_sgr_filter_3x3_16bpc_ssse3(
+    pub fn dav1d_sgr_filter_3x3_16bpc_ssse3(
         dst: *mut pixel,
         dst_stride: ptrdiff_t,
         left: const_left_pixel_row,
@@ -104,7 +104,7 @@ extern "C" {
         edges: LrEdgeFlags,
         bitdepth_max: libc::c_int,
     );
-    fn dav1d_sgr_filter_5x5_16bpc_ssse3(
+    pub fn dav1d_sgr_filter_5x5_16bpc_ssse3(
         dst: *mut pixel,
         dst_stride: ptrdiff_t,
         left: const_left_pixel_row,
@@ -115,7 +115,7 @@ extern "C" {
         edges: LrEdgeFlags,
         bitdepth_max: libc::c_int,
     );
-    fn dav1d_sgr_filter_mix_16bpc_avx2(
+    pub fn dav1d_sgr_filter_mix_16bpc_avx2(
         dst: *mut pixel,
         dst_stride: ptrdiff_t,
         left: const_left_pixel_row,
@@ -126,7 +126,7 @@ extern "C" {
         edges: LrEdgeFlags,
         bitdepth_max: libc::c_int,
     );
-    fn dav1d_sgr_filter_3x3_16bpc_avx2(
+    pub fn dav1d_sgr_filter_3x3_16bpc_avx2(
         dst: *mut pixel,
         dst_stride: ptrdiff_t,
         left: const_left_pixel_row,
@@ -137,7 +137,7 @@ extern "C" {
         edges: LrEdgeFlags,
         bitdepth_max: libc::c_int,
     );
-    fn dav1d_sgr_filter_5x5_16bpc_avx2(
+    pub fn dav1d_sgr_filter_5x5_16bpc_avx2(
         dst: *mut pixel,
         dst_stride: ptrdiff_t,
         left: const_left_pixel_row,
@@ -148,7 +148,7 @@ extern "C" {
         edges: LrEdgeFlags,
         bitdepth_max: libc::c_int,
     );
-    fn dav1d_sgr_filter_5x5_16bpc_avx512icl(
+    pub fn dav1d_sgr_filter_5x5_16bpc_avx512icl(
         dst: *mut pixel,
         dst_stride: ptrdiff_t,
         left: const_left_pixel_row,
@@ -159,7 +159,7 @@ extern "C" {
         edges: LrEdgeFlags,
         bitdepth_max: libc::c_int,
     );
-    fn dav1d_sgr_filter_3x3_16bpc_avx512icl(
+    pub fn dav1d_sgr_filter_3x3_16bpc_avx512icl(
         dst: *mut pixel,
         dst_stride: ptrdiff_t,
         left: const_left_pixel_row,
@@ -170,7 +170,7 @@ extern "C" {
         edges: LrEdgeFlags,
         bitdepth_max: libc::c_int,
     );
-    fn dav1d_sgr_filter_mix_16bpc_avx512icl(
+    pub fn dav1d_sgr_filter_mix_16bpc_avx512icl(
         dst: *mut pixel,
         dst_stride: ptrdiff_t,
         left: const_left_pixel_row,
@@ -185,7 +185,7 @@ extern "C" {
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 extern "C" {
-    fn dav1d_wiener_filter7_16bpc_neon(
+    pub fn dav1d_wiener_filter7_16bpc_neon(
         p: *mut pixel,
         stride: ptrdiff_t,
         left: const_left_pixel_row,
@@ -196,7 +196,7 @@ extern "C" {
         edges: LrEdgeFlags,
         bitdepth_max: libc::c_int,
     );
-    fn dav1d_wiener_filter5_16bpc_neon(
+    pub fn dav1d_wiener_filter5_16bpc_neon(
         p: *mut pixel,
         stride: ptrdiff_t,
         left: const_left_pixel_row,
@@ -502,7 +502,7 @@ unsafe extern "C" fn padding(
         }
     };
 }
-unsafe extern "C" fn wiener_c(
+pub unsafe extern "C" fn wiener_c(
     mut p: *mut pixel,
     stride: ptrdiff_t,
     left: const_left_pixel_row,
@@ -864,7 +864,7 @@ unsafe extern "C" fn selfguided_filter(
         }
     };
 }
-unsafe extern "C" fn sgr_5x5_c(
+pub unsafe extern "C" fn sgr_5x5_c(
     mut p: *mut pixel,
     stride: ptrdiff_t,
     left: const_left_pixel_row,
@@ -905,7 +905,7 @@ unsafe extern "C" fn sgr_5x5_c(
         j += 1;
     }
 }
-unsafe extern "C" fn sgr_3x3_c(
+pub unsafe extern "C" fn sgr_3x3_c(
     mut p: *mut pixel,
     stride: ptrdiff_t,
     left: const_left_pixel_row,
@@ -946,7 +946,7 @@ unsafe extern "C" fn sgr_3x3_c(
         j += 1;
     }
 }
-unsafe extern "C" fn sgr_mix_c(
+pub unsafe extern "C" fn sgr_mix_c(
     mut p: *mut pixel,
     stride: ptrdiff_t,
     left: const_left_pixel_row,
@@ -1018,13 +1018,13 @@ unsafe extern "C" fn loop_restoration_dsp_init_x86(
         return;
     }
 
-    (*c).wiener[0] = LoopRestorationFilterFn::Bpc16(dav1d_wiener_filter7_16bpc_ssse3);
-    (*c).wiener[1] = LoopRestorationFilterFn::Bpc16(dav1d_wiener_filter5_16bpc_ssse3);
+    (*c).wiener[0] = LoopRestorationFilterFn::Wiener7_Sse3;
+    (*c).wiener[1] = LoopRestorationFilterFn::Wiener5_Sse3;
 
     if bpc == 10 {
-        (*c).sgr[0] = LoopRestorationFilterFn::Bpc16(dav1d_sgr_filter_5x5_16bpc_ssse3);
-        (*c).sgr[1] = LoopRestorationFilterFn::Bpc16(dav1d_sgr_filter_3x3_16bpc_ssse3);
-        (*c).sgr[2] = LoopRestorationFilterFn::Bpc16(dav1d_sgr_filter_mix_16bpc_ssse3);
+        (*c).sgr[0] = LoopRestorationFilterFn::Sgr5x5_Sse3;
+        (*c).sgr[1] = LoopRestorationFilterFn::Sgr3x3_Sse3;
+        (*c).sgr[2] = LoopRestorationFilterFn::SgrMix_Sse3;
     }
 
     #[cfg(target_arch = "x86_64")]
@@ -1033,26 +1033,26 @@ unsafe extern "C" fn loop_restoration_dsp_init_x86(
             return;
         }
 
-        (*c).wiener[0] = LoopRestorationFilterFn::Bpc16(dav1d_wiener_filter7_16bpc_avx2);
-        (*c).wiener[1] = LoopRestorationFilterFn::Bpc16(dav1d_wiener_filter5_16bpc_avx2);
+        (*c).wiener[0] = LoopRestorationFilterFn::Wiener7_Avx2;
+        (*c).wiener[1] = LoopRestorationFilterFn::Wiener5_Avx2;
 
         if bpc == 10 {
-            (*c).sgr[0] = LoopRestorationFilterFn::Bpc16(dav1d_sgr_filter_5x5_16bpc_avx2);
-            (*c).sgr[1] = LoopRestorationFilterFn::Bpc16(dav1d_sgr_filter_3x3_16bpc_avx2);
-            (*c).sgr[2] = LoopRestorationFilterFn::Bpc16(dav1d_sgr_filter_mix_16bpc_avx2);
+            (*c).sgr[0] = LoopRestorationFilterFn::Sgr5x5_Avx2;
+            (*c).sgr[1] = LoopRestorationFilterFn::Sgr3x3_Avx2;
+            (*c).sgr[2] = LoopRestorationFilterFn::SgrMix_Avx2;
         }
 
         if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
             return;
         }
 
-        (*c).wiener[0] = LoopRestorationFilterFn::Bpc16(dav1d_wiener_filter7_16bpc_avx512icl);
-        (*c).wiener[1] = LoopRestorationFilterFn::Bpc16(dav1d_wiener_filter5_16bpc_avx512icl);
+        (*c).wiener[0] = LoopRestorationFilterFn::Wiener7_Avx512;
+        (*c).wiener[1] = LoopRestorationFilterFn::Wiener5_Avx512;
 
         if bpc == 10 {
-            (*c).sgr[0] = LoopRestorationFilterFn::Bpc16(dav1d_sgr_filter_5x5_16bpc_avx512icl);
-            (*c).sgr[1] = LoopRestorationFilterFn::Bpc16(dav1d_sgr_filter_3x3_16bpc_avx512icl);
-            (*c).sgr[2] = LoopRestorationFilterFn::Bpc16(dav1d_sgr_filter_mix_16bpc_avx512icl);
+            (*c).sgr[0] = LoopRestorationFilterFn::Sgr5x5_Avx512;
+            (*c).sgr[1] = LoopRestorationFilterFn::Sgr3x3_Avx512;
+            (*c).sgr[2] = LoopRestorationFilterFn::SgrMix_Avx512;
         }
     }
 }
@@ -1337,11 +1337,11 @@ pub unsafe extern "C" fn dav1d_loop_restoration_dsp_init_16bpc(
     c: *mut Dav1dLoopRestorationDSPContext,
     _bpc: libc::c_int,
 ) {
-    (*c).wiener[1] = LoopRestorationFilterFn::Bpc16(wiener_c);
-    (*c).wiener[0] = (*c).wiener[1];
-    (*c).sgr[0] = LoopRestorationFilterFn::Bpc16(sgr_5x5_c);
-    (*c).sgr[1] = LoopRestorationFilterFn::Bpc16(sgr_3x3_c);
-    (*c).sgr[2] = LoopRestorationFilterFn::Bpc16(sgr_mix_c);
+    (*c).wiener[1] = LoopRestorationFilterFn::Wiener_Rust;
+    (*c).wiener[0] = LoopRestorationFilterFn::Wiener_Rust;
+    (*c).sgr[0] = LoopRestorationFilterFn::Sgr5x5_Rust;
+    (*c).sgr[1] = LoopRestorationFilterFn::Sgr3x3_Rust;
+    (*c).sgr[2] = LoopRestorationFilterFn::SgrMix_Rust;
 
     #[cfg(feature = "asm")]
     cfg_if! {
