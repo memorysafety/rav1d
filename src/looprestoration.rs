@@ -2,9 +2,10 @@ use crate::include::stddef::ptrdiff_t;
 use crate::include::stdint::int16_t;
 use crate::include::stdint::uint32_t;
 use crate::src::align::Align16;
-use crate::src::internal::{
-    const_left_pixel_row_16bpc, const_left_pixel_row_8bpc, pixel_16bpc, pixel_8bpc,
-};
+#[cfg(feature = "bitdepth_16")]
+use crate::src::internal::{const_left_pixel_row_16bpc, pixel_16bpc};
+#[cfg(feature = "bitdepth_8")]
+use crate::src::internal::{const_left_pixel_row_8bpc, pixel_8bpc};
 pub type LrEdgeFlags = libc::c_uint;
 pub const LR_HAVE_BOTTOM: LrEdgeFlags = 8;
 pub const LR_HAVE_TOP: LrEdgeFlags = 4;
@@ -60,6 +61,7 @@ macro_rules! looprestoration_filter_fn_enum {
         }
 
         impl $enum_name {
+            #[cfg(feature = "bitdepth_16")]
             #[inline]
             pub fn call_16bpc(
                 self,
@@ -109,6 +111,7 @@ macro_rules! looprestoration_filter_fn_enum {
                 }
             }
 
+            #[cfg(feature = "bitdepth_8")]
             #[inline]
             pub fn call_8bpc(
                 self,
