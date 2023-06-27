@@ -271,7 +271,7 @@ extern "C" {
         h: libc::c_int,
         edges: LrEdgeFlags,
     );
-    fn dav1d_wiener_filter7_8bpc_neon(
+    pub fn dav1d_wiener_filter7_8bpc_neon(
         p: *mut pixel,
         stride: ptrdiff_t,
         left: const_left_pixel_row,
@@ -281,7 +281,7 @@ extern "C" {
         params: *const LooprestorationParams,
         edges: LrEdgeFlags,
     );
-    fn dav1d_wiener_filter5_8bpc_neon(
+    pub fn dav1d_wiener_filter5_8bpc_neon(
         p: *mut pixel,
         stride: ptrdiff_t,
         left: const_left_pixel_row,
