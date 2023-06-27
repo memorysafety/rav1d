@@ -104,7 +104,11 @@ pub trait BitDepth {
 
     fn display(pixel: Self::Pixel) -> Self::DisplayPixel;
 
-    fn iclip_pixel(&self, pixel: Self::Pixel) -> Self::Pixel {
+    fn iclip_pixel<T>(&self, pixel: T) -> Self::Pixel
+    where
+        T: Copy + Ord + TryInto<Self::Pixel>,
+        Self::Pixel: Into<T>,
+    {
         clip(pixel, 0.into(), self.bitdepth_max())
     }
 
