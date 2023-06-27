@@ -278,3 +278,77 @@ pub unsafe fn put_8tap_scaled_c<BD: BitDepth>(
         dst = &mut dst[dst_stride..];
     }
 }
+
+// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
+#[inline(never)]
+pub unsafe fn prep_8tap_c<BD: BitDepth>(
+    mut tmp: *mut i16,
+    mut src: *const BD::Pixel,
+    src_stride: usize,
+    w: usize,
+    h: usize,
+    mx: usize,
+    my: usize,
+    filter_type: Dav1dFilterMode,
+    bd: BD,
+) {
+    let intermediate_bits = bd.get_intermediate_bits();
+    let (fh, fv) = get_filters(mx, my, w, h, filter_type);
+    let src_stride = BD::pxstride(src_stride);
+
+    if let Some(fh) = fh {
+        if let Some(fv) = fv {
+            let tmp_h = h + 7;
+            let mut mid = [0i16; 128 * 135]; // Default::default()
+            let mut mid_ptr = &mut mid[..];
+
+            src = src.offset(-((src_stride * 3) as isize));
+            for _ in 0..tmp_h {
+                for x in 0..w {
+                    mid_ptr[x] = dav1d_filter_8tap_rnd(src, x, fh, 1, 6 - intermediate_bits) as i16;
+                }
+
+                mid_ptr = &mut mid_ptr[128..];
+                src = src.offset(src_stride as isize);
+            }
+
+            mid_ptr = &mut mid[128 * 3..];
+            for _ in 0..h {
+                for x in 0..w {
+                    *tmp.offset(x as isize) =
+                        (dav1d_filter_8tap_rnd(mid_ptr.as_ptr(), x, fv, 128, 6)
+                            - i32::from(BD::PREP_BIAS))
+                        .try_into()
+                        .unwrap();
+                }
+
+                mid_ptr = &mut mid_ptr[128..];
+                tmp = tmp.offset(w as isize);
+            }
+        } else {
+            for _ in 0..h {
+                for x in 0..w {
+                    *tmp.offset(x as isize) =
+                        (dav1d_filter_8tap_rnd(src, x, fh, 1, 6 - intermediate_bits)
+                            - i32::from(BD::PREP_BIAS)) as i16;
+                }
+
+                tmp = tmp.offset(w as isize);
+                src = src.offset(src_stride as isize);
+            }
+        }
+    } else if let Some(fv) = fv {
+        for _ in 0..h {
+            for x in 0..w {
+                *tmp.offset(x as isize) =
+                    (dav1d_filter_8tap_rnd(src, x, fv, src_stride, 6 - intermediate_bits)
+                        - i32::from(BD::PREP_BIAS)) as i16;
+            }
+
+            tmp = tmp.offset(w as isize);
+            src = src.offset(src_stride as isize);
+        }
+    } else {
+        prep_c(tmp, src, src_stride, w, h, bd);
+    };
+}
