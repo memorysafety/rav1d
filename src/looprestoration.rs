@@ -201,11 +201,14 @@ looprestoration_filter_fn_enum! {
 
     #[any(target_arch = "arm", target_arch = "aarch64")]
     {
-        Wiener7_Neon => { dav1d_wiener_filter7_16bpc_neon, dav1d_wiener_filter7_8bpc_neon },
-        Wiener5_Neon => { dav1d_wiener_filter5_16bpc_neon, dav1d_wiener_filter5_8bpc_neon },
-
         Sgr5x5_Neon => { sgr_filter_5x5_neon, sgr_filter_5x5_neon },
         Sgr3x3_Neon => { sgr_filter_3x3_neon, sgr_filter_3x3_neon },
         SgrMix_Neon => { sgr_filter_mix_neon, sgr_filter_mix_neon },
+    }
+
+    #[target_arch = "aarch64"]
+    {
+        Wiener7_Neon => { dav1d_wiener_filter7_16bpc_neon, dav1d_wiener_filter7_8bpc_neon },
+        Wiener5_Neon => { dav1d_wiener_filter5_16bpc_neon, dav1d_wiener_filter5_8bpc_neon },
     }
 }
