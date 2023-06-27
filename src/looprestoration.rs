@@ -178,14 +178,19 @@ looprestoration_filter_fn_enum! {
         Wiener7_Sse2 => { wiener_c, dav1d_wiener_filter7_8bpc_sse2 },
         Wiener5_Sse3 => { dav1d_wiener_filter5_16bpc_ssse3, dav1d_wiener_filter5_8bpc_ssse3 },
         Wiener7_Sse3 => { dav1d_wiener_filter7_16bpc_ssse3, dav1d_wiener_filter7_8bpc_ssse3 },
+
+        SgrMix_Sse3 => { dav1d_sgr_filter_mix_16bpc_ssse3, dav1d_sgr_filter_mix_8bpc_ssse3 },
+        Sgr3x3_Sse3 => { dav1d_sgr_filter_3x3_16bpc_ssse3, dav1d_sgr_filter_3x3_8bpc_ssse3 },
+        Sgr5x5_Sse3 => { dav1d_sgr_filter_5x5_16bpc_ssse3, dav1d_sgr_filter_5x5_8bpc_ssse3 },
+    }
+
+    #[target_arch = "x86_64"]
+    {
         Wiener5_Avx2 => { dav1d_wiener_filter5_16bpc_avx2, dav1d_wiener_filter5_8bpc_avx2 },
         Wiener7_Avx2 => { dav1d_wiener_filter7_16bpc_avx2, dav1d_wiener_filter7_8bpc_avx2 },
         Wiener5_Avx512 => { dav1d_wiener_filter5_16bpc_avx512icl, dav1d_wiener_filter7_8bpc_avx512icl },
         Wiener7_Avx512=> { dav1d_wiener_filter7_16bpc_avx512icl, dav1d_wiener_filter7_8bpc_avx512icl },
 
-        SgrMix_Sse3 => { dav1d_sgr_filter_mix_16bpc_ssse3, dav1d_sgr_filter_mix_8bpc_ssse3 },
-        Sgr3x3_Sse3 => { dav1d_sgr_filter_3x3_16bpc_ssse3, dav1d_sgr_filter_3x3_8bpc_ssse3 },
-        Sgr5x5_Sse3 => { dav1d_sgr_filter_5x5_16bpc_ssse3, dav1d_sgr_filter_5x5_8bpc_ssse3 },
         SgrMix_Avx2 => { dav1d_sgr_filter_mix_16bpc_avx2, dav1d_sgr_filter_mix_8bpc_avx2 },
         Sgr3x3_Avx2 => { dav1d_sgr_filter_3x3_16bpc_avx2, dav1d_sgr_filter_3x3_8bpc_avx2 },
         Sgr5x5_Avx2 => { dav1d_sgr_filter_5x5_16bpc_avx2, dav1d_sgr_filter_5x5_8bpc_avx2 },
