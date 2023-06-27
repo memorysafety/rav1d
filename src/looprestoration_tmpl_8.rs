@@ -1164,7 +1164,7 @@ unsafe extern "C" fn dav1d_sgr_filter2_neon(
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-unsafe extern "C" fn sgr_filter_5x5_neon(
+pub unsafe extern "C" fn sgr_filter_5x5_neon(
     dst: *mut pixel,
     stride: ptrdiff_t,
     left: const_left_pixel_row,
@@ -1199,7 +1199,7 @@ unsafe extern "C" fn sgr_filter_5x5_neon(
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-unsafe extern "C" fn sgr_filter_3x3_neon(
+pub unsafe extern "C" fn sgr_filter_3x3_neon(
     dst: *mut pixel,
     stride: ptrdiff_t,
     left: const_left_pixel_row,
@@ -1234,7 +1234,7 @@ unsafe extern "C" fn sgr_filter_3x3_neon(
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-unsafe extern "C" fn sgr_filter_mix_neon(
+pub unsafe extern "C" fn sgr_filter_mix_neon(
     dst: *mut pixel,
     stride: ptrdiff_t,
     left: const_left_pixel_row,
