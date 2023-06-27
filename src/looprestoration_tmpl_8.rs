@@ -311,7 +311,7 @@ unsafe extern "C" fn padding(
     mut dst: *mut pixel,
     mut p: *const pixel,
     stride: ptrdiff_t,
-    mut left: *const [pixel; 4],
+    mut left: const_left_pixel_row,
     mut lpf: *const pixel,
     mut unit_w: libc::c_int,
     stripe_h: libc::c_int,
@@ -482,7 +482,7 @@ unsafe extern "C" fn padding(
 pub unsafe extern "C" fn wiener_c(
     mut p: *mut pixel,
     stride: ptrdiff_t,
-    left: *const [pixel; 4],
+    left: const_left_pixel_row,
     mut lpf: *const pixel,
     w: libc::c_int,
     h: libc::c_int,
@@ -847,7 +847,7 @@ unsafe extern "C" fn selfguided_filter(
 pub unsafe extern "C" fn sgr_5x5_c(
     mut p: *mut pixel,
     stride: ptrdiff_t,
-    left: *const [pixel; 4],
+    left: const_left_pixel_row,
     mut lpf: *const pixel,
     w: libc::c_int,
     h: libc::c_int,
@@ -884,7 +884,7 @@ pub unsafe extern "C" fn sgr_5x5_c(
 pub unsafe extern "C" fn sgr_3x3_c(
     mut p: *mut pixel,
     stride: ptrdiff_t,
-    left: *const [pixel; 4],
+    left: const_left_pixel_row,
     mut lpf: *const pixel,
     w: libc::c_int,
     h: libc::c_int,
@@ -921,7 +921,7 @@ pub unsafe extern "C" fn sgr_3x3_c(
 pub unsafe extern "C" fn sgr_mix_c(
     mut p: *mut pixel,
     stride: ptrdiff_t,
-    left: *const [pixel; 4],
+    left: const_left_pixel_row,
     mut lpf: *const pixel,
     w: libc::c_int,
     h: libc::c_int,
@@ -1060,7 +1060,7 @@ unsafe extern "C" fn dav1d_sgr_filter1_neon(
     mut tmp: *mut int16_t,
     mut src: *const pixel,
     stride: ptrdiff_t,
-    mut left: *const [pixel; 4],
+    mut left: const_left_pixel_row,
     mut lpf: *const pixel,
     w: libc::c_int,
     h: libc::c_int,
@@ -1084,7 +1084,7 @@ unsafe extern "C" fn dav1d_sgr_filter1_neon(
         dav1d_sgr_box3_h_8bpc_neon(
             &mut *sumsq.offset((-(2 as libc::c_int) * (384 + 16)) as isize),
             &mut *sum.offset((-(2 as libc::c_int) * (384 + 16)) as isize),
-            0 as *const [pixel; 4],
+            0 as const_left_pixel_row,
             lpf,
             stride,
             w,
@@ -1096,7 +1096,7 @@ unsafe extern "C" fn dav1d_sgr_filter1_neon(
         dav1d_sgr_box3_h_8bpc_neon(
             &mut *sumsq.offset((h * (384 + 16)) as isize),
             &mut *sum.offset((h * (384 + 16)) as isize),
-            0 as *const [pixel; 4],
+            0 as const_left_pixel_row,
             lpf.offset((6 * stride) as isize),
             stride,
             w,
@@ -1114,7 +1114,7 @@ unsafe extern "C" fn dav1d_sgr_filter2_neon(
     mut tmp: *mut int16_t,
     mut src: *const pixel,
     stride: ptrdiff_t,
-    mut left: *const [pixel; 4],
+    mut left: const_left_pixel_row,
     mut lpf: *const pixel,
     w: libc::c_int,
     h: libc::c_int,
@@ -1138,7 +1138,7 @@ unsafe extern "C" fn dav1d_sgr_filter2_neon(
         dav1d_sgr_box5_h_8bpc_neon(
             &mut *sumsq.offset((-(2 as libc::c_int) * (384 + 16)) as isize),
             &mut *sum.offset((-(2 as libc::c_int) * (384 + 16)) as isize),
-            0 as *const [pixel; 4],
+            0 as const_left_pixel_row,
             lpf,
             stride,
             w,
@@ -1150,7 +1150,7 @@ unsafe extern "C" fn dav1d_sgr_filter2_neon(
         dav1d_sgr_box5_h_8bpc_neon(
             &mut *sumsq.offset((h * (384 + 16)) as isize),
             &mut *sum.offset((h * (384 + 16)) as isize),
-            0 as *const [pixel; 4],
+            0 as const_left_pixel_row,
             lpf.offset((6 * stride) as isize),
             stride,
             w,
@@ -1167,7 +1167,7 @@ unsafe extern "C" fn dav1d_sgr_filter2_neon(
 unsafe extern "C" fn sgr_filter_5x5_neon(
     dst: *mut pixel,
     stride: ptrdiff_t,
-    left: *const [pixel; 4],
+    left: const_left_pixel_row,
     mut lpf: *const pixel,
     w: libc::c_int,
     h: libc::c_int,
@@ -1202,7 +1202,7 @@ unsafe extern "C" fn sgr_filter_5x5_neon(
 unsafe extern "C" fn sgr_filter_3x3_neon(
     dst: *mut pixel,
     stride: ptrdiff_t,
-    left: *const [pixel; 4],
+    left: const_left_pixel_row,
     mut lpf: *const pixel,
     w: libc::c_int,
     h: libc::c_int,
@@ -1237,7 +1237,7 @@ unsafe extern "C" fn sgr_filter_3x3_neon(
 unsafe extern "C" fn sgr_filter_mix_neon(
     dst: *mut pixel,
     stride: ptrdiff_t,
-    left: *const [pixel; 4],
+    left: const_left_pixel_row,
     mut lpf: *const pixel,
     w: libc::c_int,
     h: libc::c_int,
