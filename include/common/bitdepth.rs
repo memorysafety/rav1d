@@ -71,12 +71,14 @@ impl_FromPrimitive!(isize => {, ...});
 impl_FromPrimitive!(f32 => {, ...});
 impl_FromPrimitive!(f64 => {, ...});
 
-pub trait BitDepth {
+pub trait BitDepth: Clone + Copy {
     const BITDEPTH: u8;
 
     type Pixel: Copy
         + Ord
         + From<u8>
+        + Into<i32>
+        + TryFrom<i32>
         + FromPrimitive<c_int>
         + FromPrimitive<c_uint>
         + ToPrimitive<c_int>
@@ -123,6 +125,7 @@ pub trait BitDepth {
     const PREP_BIAS: i16;
 }
 
+#[derive(Clone, Copy)]
 pub struct BitDepth8 {
     bitdepth_max: <Self as BitDepth>::BitDepthMax,
 }
@@ -165,6 +168,8 @@ impl BitDepth for BitDepth8 {
     /// Output in interval `[-5132, 9212]`; fits in [`i16`] as is.
     const PREP_BIAS: i16 = 0;
 }
+
+#[derive(Clone, Copy)]
 pub struct BitDepth16 {
     bitdepth_max: <Self as BitDepth>::BitDepthMax,
 }
