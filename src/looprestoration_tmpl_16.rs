@@ -1076,8 +1076,8 @@ unsafe extern "C" fn loop_restoration_dsp_init_arm(
 
     cfg_if! {
         if #[cfg(target_arch = "aarch64")] {
-            (*c).wiener[0] = LoopRestorationFilterFn::Bpc16(dav1d_wiener_filter7_16bpc_neon);
-            (*c).wiener[1] = LoopRestorationFilterFn::Bpc16(dav1d_wiener_filter5_16bpc_neon);
+            (*c).wiener[0] = LoopRestorationFilterFn::Wiener7_Neon;
+            (*c).wiener[1] = LoopRestorationFilterFn::Wiener5_Neon;
         } else {
             // TODO(perl): enable assembly routines here
             // (*c).wiener[0] = LoopRestorationFilterFn::Bpc16(dav1d_wiener_filter_neon);
@@ -1086,9 +1086,9 @@ unsafe extern "C" fn loop_restoration_dsp_init_arm(
     }
 
     if bpc == 10 {
-        (*c).sgr[0] = LoopRestorationFilterFn::Bpc16(sgr_filter_5x5_neon);
-        (*c).sgr[1] = LoopRestorationFilterFn::Bpc16(sgr_filter_3x3_neon);
-        (*c).sgr[2] = LoopRestorationFilterFn::Bpc16(sgr_filter_mix_neon);
+        (*c).sgr[0] = LoopRestorationFilterFn::Sgr5x5_Neon;
+        (*c).sgr[1] = LoopRestorationFilterFn::Sgr3x3_Neon;
+        (*c).sgr[2] = LoopRestorationFilterFn::SgrMix_Neon;
     }
 }
 
