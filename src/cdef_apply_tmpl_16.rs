@@ -315,13 +315,11 @@ pub struct Dav1dInvTxfmDSPContext {
 }
 pub type itxfm_fn =
     Option<unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int, libc::c_int) -> ()>;
+use crate::src::mc::Dav1dMCDSPContextRust;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dMCDSPContext {
-    pub mc: [mc_fn; 10],
-    pub mc_scaled: [mc_scaled_fn; 10],
-    pub mct: [mct_fn; 10],
-    pub mct_scaled: [mct_scaled_fn; 10],
+    pub rust: Dav1dMCDSPContextRust,
     pub avg: avg_fn,
     pub w_avg: w_avg_fn,
     pub mask: mask_fn,

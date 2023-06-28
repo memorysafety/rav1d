@@ -1,12 +1,1025 @@
 use std::iter;
 
-use crate::include::common::bitdepth::{AsPrimitive, BitDepth};
-use crate::include::dav1d::headers::Dav1dFilterMode;
+use crate::include::common::bitdepth::AsPrimitive;
+use crate::include::common::bitdepth::BitDepth;
+use crate::include::common::bitdepth::BitDepth16;
+use crate::include::common::bitdepth::BitDepth8;
+use crate::src::levels::Filter2d8Tap;
+use crate::src::levels::Filter2dRust;
+use crate::src::levels::Filter8Tap;
 use crate::src::tables::dav1d_mc_subpel_filters;
 
-// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
+#[cfg(feature = "asm")]
+use {libc::ptrdiff_t, paste::paste, std::ffi::c_int};
+
+#[cfg(feature = "asm")]
+#[derive(Debug, Clone, Copy)]
+#[repr(u8)]
+pub enum FnAsmVersion {
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    SSE2,
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    SSSE3,
+    #[cfg(target_arch = "x86_64")]
+    AVX2,
+    #[cfg(target_arch = "x86_64")]
+    AVX512ICL,
+    #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+    Neon,
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+#[repr(u8)]
+pub enum FnVersion {
+    #[default]
+    Rust,
+    #[cfg(feature = "asm")]
+    Asm(FnAsmVersion),
+}
+
+/// [`BitDepthFnAsmMc`] has to be `pub`, but we don't want anyone else calling its methods,
+/// so require this public [`Token`] with a private constructor.
+pub struct Token(());
+
+pub trait BitDepthFnAsmMc: BitDepth {
+    #[cfg(feature = "asm")]
+    unsafe fn mc(
+        &self,
+        _: Token,
+        asm: FnAsmVersion,
+        filter_2d: Filter2dRust,
+        dst: *mut Self::Pixel,
+        dst_stride: usize,
+        src: *const Self::Pixel,
+        src_stride: usize,
+        w: usize,
+        h: usize,
+        mx: usize,
+        my: usize,
+    );
+
+    #[cfg(feature = "asm")]
+    unsafe fn mct(
+        &self,
+        _: Token,
+        asm: FnAsmVersion,
+        filter_2d: Filter2dRust,
+        tmp: *mut i16,
+        src: *const Self::Pixel,
+        src_stride: usize,
+        w: usize,
+        h: usize,
+        mx: usize,
+        my: usize,
+    );
+
+    #[cfg(feature = "asm")]
+    unsafe fn mc_scaled(
+        &self,
+        _: Token,
+        asm: FnAsmVersion,
+        filter_2d: Filter2dRust,
+        dst: *mut Self::Pixel,
+        dst_stride: usize,
+        src: *const Self::Pixel,
+        src_stride: usize,
+        w: usize,
+        h: usize,
+        mx: usize,
+        my: usize,
+        dx: usize,
+        dy: usize,
+    );
+
+    #[cfg(feature = "asm")]
+    unsafe fn mct_scaled(
+        &self,
+        _: Token,
+        asm: FnAsmVersion,
+        filter_2d: Filter2dRust,
+        tmp: *mut i16,
+        src: *const Self::Pixel,
+        src_stride: usize,
+        w: usize,
+        h: usize,
+        mx: usize,
+        my: usize,
+        dx: usize,
+        dy: usize,
+    );
+}
+
+impl BitDepthFnAsmMc for BitDepth8 {
+    #[cfg(feature = "asm")]
+    unsafe fn mc(
+        &self,
+        _: Token,
+        asm: FnAsmVersion,
+        filter_2d: Filter2dRust,
+        dst: *mut Self::Pixel,
+        dst_stride: usize,
+        src: *const Self::Pixel,
+        src_stride: usize,
+        w: usize,
+        h: usize,
+        mx: usize,
+        my: usize,
+    ) {
+        let [dst_stride, src_stride] = [dst_stride, src_stride].map(|it: usize| it as ptrdiff_t);
+        let [w, h, mx, my] = [w, h, mx, my].map(|it| it as c_int);
+        let args = (dst, dst_stride, src, src_stride, w, h, mx, my);
+
+        macro_rules! extern_fn {
+            ($args:expr, $name:ident) => {{
+                extern "C" {
+                    fn $name(
+                        dst: *mut <BitDepth8 as BitDepth>::Pixel,
+                        dst_stride: ptrdiff_t,
+                        src: *const <BitDepth8 as BitDepth>::Pixel,
+                        src_stride: ptrdiff_t,
+                        w: c_int,
+                        h: c_int,
+                        mx: c_int,
+                        my: c_int,
+                    );
+                }
+
+                let (dst, dst_stride, src, src_stride, w, h, mx, my) = args;
+                $name(dst, dst_stride, src, src_stride, w, h, mx, my)
+            }};
+            ($args:expr, $asm:expr, unreachable) => {{
+                let _ = args;
+                unreachable!("{asm:?}");
+            }};
+        }
+
+        macro_rules! asm_fn {
+            ($asm:expr, $args:expr, $name:ident) => {{
+                use FnAsmVersion::*;
+                paste! {
+                    match asm {
+                        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                        SSE2 => extern_fn!($args, asm, unreachable),
+                        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                        SSSE3 => extern_fn!($args, [<dav1d_put $name _8bpc_ssse3>]),
+                        #[cfg(target_arch = "x86_64")]
+                        AVX2 => extern_fn!($args, [<dav1d_put $name _8bpc_avx2>]),
+                        #[cfg(target_arch = "x86_64")]
+                        AVX512ICL => extern_fn!($args, [<dav1d_put $name _8bpc_avx512icl>]),
+                        #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+                        Neon => extern_fn!($args, [<dav1d_put $name _8bpc_neon>]),
+                    }
+                }
+            }};
+        }
+
+        use Filter8Tap::*;
+        match filter_2d {
+            Filter2dRust::Tap8(Filter2d8Tap { h, v }) => match (h, v) {
+                (Regular, Regular) => asm_fn!(asm, args, _8tap_regular),
+                (Regular, Smooth) => asm_fn!(asm, args, _8tap_regular_smooth),
+                (Regular, Sharp) => asm_fn!(asm, args, _8tap_regular_sharp),
+                (Smooth, Regular) => asm_fn!(asm, args, _8tap_smooth_regular),
+                (Smooth, Smooth) => asm_fn!(asm, args, _8tap_smooth),
+                (Smooth, Sharp) => asm_fn!(asm, args, _8tap_smooth_sharp),
+                (Sharp, Regular) => asm_fn!(asm, args, _8tap_sharp_regular),
+                (Sharp, Smooth) => asm_fn!(asm, args, _8tap_sharp_smooth),
+                (Sharp, Sharp) => asm_fn!(asm, args, _8tap_sharp),
+            },
+            Filter2dRust::BiLinear => asm_fn!(asm, args, _bilin),
+        }
+    }
+
+    #[cfg(feature = "asm")]
+    unsafe fn mct(
+        &self,
+        _: Token,
+        asm: FnAsmVersion,
+        filter_2d: Filter2dRust,
+        tmp: *mut i16,
+        src: *const Self::Pixel,
+        src_stride: usize,
+        w: usize,
+        h: usize,
+        mx: usize,
+        my: usize,
+    ) {
+        let src_stride = src_stride as ptrdiff_t;
+        let [w, h, mx, my] = [w, h, mx, my].map(|it| it as c_int);
+        let args = (tmp, src, src_stride, w, h, mx, my);
+
+        macro_rules! extern_fn {
+            ($args:expr, $name:ident) => {{
+                extern "C" {
+                    fn $name(
+                        tmp: *mut i16,
+                        src: *const <BitDepth8 as BitDepth>::Pixel,
+                        src_stride: ptrdiff_t,
+                        w: c_int,
+                        h: c_int,
+                        mx: c_int,
+                        my: c_int,
+                    );
+                }
+
+                let (tmp, src, src_stride, w, h, mx, my) = args;
+                $name(tmp, src, src_stride, w, h, mx, my)
+            }};
+            ($args:expr, $asm:expr, unreachable) => {{
+                let _ = args;
+                unreachable!("{asm:?}");
+            }};
+        }
+
+        macro_rules! asm_fn {
+            ($asm:expr, $args:expr, $name:ident) => {{
+                use FnAsmVersion::*;
+                paste! {
+                    match asm {
+                        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                        SSE2 => extern_fn!($args, [<dav1d_prep $name _8bpc_sse2>]),
+                        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                        SSSE3 => extern_fn!($args, [<dav1d_prep $name _8bpc_ssse3>]),
+                        #[cfg(target_arch = "x86_64")]
+                        AVX2 => extern_fn!($args, [<dav1d_prep $name _8bpc_avx2>]),
+                        #[cfg(target_arch = "x86_64")]
+                        AVX512ICL => extern_fn!($args, [<dav1d_prep $name _8bpc_avx512icl>]),
+                        #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+                        Neon => extern_fn!($args, [<dav1d_prep $name _8bpc_neon>]),
+                    }
+                }
+            }};
+        }
+
+        use Filter8Tap::*;
+        match filter_2d {
+            Filter2dRust::Tap8(Filter2d8Tap { h, v }) => match (h, v) {
+                (Regular, Regular) => asm_fn!(asm, args, _8tap_regular),
+                (Regular, Smooth) => asm_fn!(asm, args, _8tap_regular_smooth),
+                (Regular, Sharp) => asm_fn!(asm, args, _8tap_regular_sharp),
+                (Smooth, Regular) => asm_fn!(asm, args, _8tap_smooth_regular),
+                (Smooth, Smooth) => asm_fn!(asm, args, _8tap_smooth),
+                (Smooth, Sharp) => asm_fn!(asm, args, _8tap_smooth_sharp),
+                (Sharp, Regular) => asm_fn!(asm, args, _8tap_sharp_regular),
+                (Sharp, Smooth) => asm_fn!(asm, args, _8tap_sharp_smooth),
+                (Sharp, Sharp) => asm_fn!(asm, args, _8tap_sharp),
+            },
+            Filter2dRust::BiLinear => asm_fn!(asm, args, _bilin),
+        }
+    }
+
+    #[cfg(feature = "asm")]
+    unsafe fn mc_scaled(
+        &self,
+        _: Token,
+        asm: FnAsmVersion,
+        filter_2d: Filter2dRust,
+        dst: *mut Self::Pixel,
+        dst_stride: usize,
+        src: *const Self::Pixel,
+        src_stride: usize,
+        w: usize,
+        h: usize,
+        mx: usize,
+        my: usize,
+        dx: usize,
+        dy: usize,
+    ) {
+        let [dst_stride, src_stride] = [dst_stride, src_stride].map(|it: usize| it as ptrdiff_t);
+        let [w, h, mx, my, dx, dy] = [w, h, mx, my, dx, dy].map(|it| it as c_int);
+        let args = (dst, dst_stride, src, src_stride, w, h, mx, my, dx, dy);
+
+        macro_rules! extern_fn {
+            ($args:expr, $name:ident) => {{
+                extern "C" {
+                    fn $name(
+                        dst: *mut <BitDepth8 as BitDepth>::Pixel,
+                        dst_stride: ptrdiff_t,
+                        src: *const <BitDepth8 as BitDepth>::Pixel,
+                        src_stride: ptrdiff_t,
+                        w: c_int,
+                        h: c_int,
+                        mx: c_int,
+                        my: c_int,
+                        dx: c_int,
+                        dy: c_int,
+                    );
+                }
+
+                let (dst, dst_stride, src, src_stride, w, h, mx, my, dx, dy) = args;
+                $name(dst, dst_stride, src, src_stride, w, h, mx, my, dx, dy)
+            }};
+            ($args:expr, $asm:expr, unreachable) => {{
+                let _ = args;
+                unreachable!("{asm:?}");
+            }};
+        }
+
+        macro_rules! asm_fn {
+            ($asm:expr, $args:expr, $name:ident) => {{
+                use FnAsmVersion::*;
+                paste! {
+                    match asm {
+                        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                        SSE2 => extern_fn!($args, asm, unreachable),
+                        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                        SSSE3 => extern_fn!($args, [<dav1d_put $name _8bpc_ssse3>]),
+                        #[cfg(target_arch = "x86_64")]
+                        AVX2 => extern_fn!($args, [<dav1d_put $name _8bpc_avx2>]),
+                        #[cfg(target_arch = "x86_64")]
+                        AVX512ICL => extern_fn!($args, asm, unreachable),
+                        #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+                        Neon => extern_fn!($args, asm, unreachable),
+                    }
+                }
+            }};
+        }
+
+        use Filter8Tap::*;
+        match filter_2d {
+            Filter2dRust::Tap8(Filter2d8Tap { h, v }) => match (h, v) {
+                (Regular, Regular) => asm_fn!(asm, args, _8tap_scaled_regular),
+                (Regular, Smooth) => asm_fn!(asm, args, _8tap_scaled_regular_smooth),
+                (Regular, Sharp) => asm_fn!(asm, args, _8tap_scaled_regular_sharp),
+                (Smooth, Regular) => asm_fn!(asm, args, _8tap_scaled_smooth_regular),
+                (Smooth, Smooth) => asm_fn!(asm, args, _8tap_scaled_smooth),
+                (Smooth, Sharp) => asm_fn!(asm, args, _8tap_scaled_smooth_sharp),
+                (Sharp, Regular) => asm_fn!(asm, args, _8tap_scaled_sharp_regular),
+                (Sharp, Smooth) => asm_fn!(asm, args, _8tap_scaled_sharp_smooth),
+                (Sharp, Sharp) => asm_fn!(asm, args, _8tap_scaled_sharp),
+            },
+            Filter2dRust::BiLinear => asm_fn!(asm, args, _bilin_scaled),
+        }
+    }
+
+    #[cfg(feature = "asm")]
+    unsafe fn mct_scaled(
+        &self,
+        _: Token,
+        asm: FnAsmVersion,
+        filter_2d: Filter2dRust,
+        tmp: *mut i16,
+        src: *const Self::Pixel,
+        src_stride: usize,
+        w: usize,
+        h: usize,
+        mx: usize,
+        my: usize,
+        dx: usize,
+        dy: usize,
+    ) {
+        let src_stride = src_stride as ptrdiff_t;
+        let [w, h, mx, my, dx, dy] = [w, h, mx, my, dx, dy].map(|it| it as c_int);
+        let args = (tmp, src, src_stride, w, h, mx, my, dx, dy);
+
+        macro_rules! extern_fn {
+            ($args:expr, $name:ident) => {{
+                extern "C" {
+                    fn $name(
+                        tmp: *mut i16,
+                        src: *const <BitDepth8 as BitDepth>::Pixel,
+                        src_stride: ptrdiff_t,
+                        w: c_int,
+                        h: c_int,
+                        mx: c_int,
+                        my: c_int,
+                        dx: c_int,
+                        dy: c_int,
+                    );
+                }
+
+                let (tmp, src, src_stride, w, h, mx, my, dx, dy) = args;
+                $name(tmp, src, src_stride, w, h, mx, my, dx, dy)
+            }};
+            ($args:expr, $asm:expr, unreachable) => {{
+                let _ = args;
+                unreachable!("{asm:?}");
+            }};
+        }
+
+        macro_rules! asm_fn {
+            ($asm:expr, $args:expr, $name:ident) => {{
+                use FnAsmVersion::*;
+                paste! {
+                    match asm {
+                        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                        SSE2 => extern_fn!($args, asm, unreachable),
+                        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                        SSSE3 => extern_fn!($args, [<dav1d_prep $name _8bpc_ssse3>]),
+                        #[cfg(target_arch = "x86_64")]
+                        AVX2 => extern_fn!($args, [<dav1d_prep $name _8bpc_avx2>]),
+                        #[cfg(target_arch = "x86_64")]
+                        AVX512ICL => extern_fn!($args, asm, unreachable),
+                        #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+                        Neon => extern_fn!($args, asm, unreachable),
+                    }
+                }
+            }};
+        }
+
+        use Filter8Tap::*;
+        match filter_2d {
+            Filter2dRust::Tap8(Filter2d8Tap { h, v }) => match (h, v) {
+                (Regular, Regular) => asm_fn!(asm, args, _8tap_scaled_regular),
+                (Regular, Smooth) => asm_fn!(asm, args, _8tap_scaled_regular_smooth),
+                (Regular, Sharp) => asm_fn!(asm, args, _8tap_scaled_regular_sharp),
+                (Smooth, Regular) => asm_fn!(asm, args, _8tap_scaled_smooth_regular),
+                (Smooth, Smooth) => asm_fn!(asm, args, _8tap_scaled_smooth),
+                (Smooth, Sharp) => asm_fn!(asm, args, _8tap_scaled_smooth_sharp),
+                (Sharp, Regular) => asm_fn!(asm, args, _8tap_scaled_sharp_regular),
+                (Sharp, Smooth) => asm_fn!(asm, args, _8tap_scaled_sharp_smooth),
+                (Sharp, Sharp) => asm_fn!(asm, args, _8tap_scaled_sharp),
+            },
+            Filter2dRust::BiLinear => asm_fn!(asm, args, _bilin_scaled),
+        }
+    }
+}
+
+impl BitDepthFnAsmMc for BitDepth16 {
+    #[cfg(feature = "asm")]
+    unsafe fn mc(
+        &self,
+        _: Token,
+        asm: FnAsmVersion,
+        filter_2d: Filter2dRust,
+        dst: *mut Self::Pixel,
+        dst_stride: usize,
+        src: *const Self::Pixel,
+        src_stride: usize,
+        w: usize,
+        h: usize,
+        mx: usize,
+        my: usize,
+    ) {
+        let [dst_stride, src_stride] = [dst_stride, src_stride].map(|it: usize| it as ptrdiff_t);
+        let [w, h, mx, my] = [w, h, mx, my].map(|it| it as c_int);
+        let args = (
+            dst,
+            dst_stride,
+            src,
+            src_stride,
+            w,
+            h,
+            mx,
+            my,
+            self.bitdepth_max().as_::<c_int>(),
+        );
+
+        macro_rules! extern_fn {
+            ($args:expr, $name:ident) => {{
+                extern "C" {
+                    fn $name(
+                        dst: *mut <BitDepth16 as BitDepth>::Pixel,
+                        dst_stride: ptrdiff_t,
+                        src: *const <BitDepth16 as BitDepth>::Pixel,
+                        src_stride: ptrdiff_t,
+                        w: c_int,
+                        h: c_int,
+                        mx: c_int,
+                        my: c_int,
+                        bitdepth_max: c_int,
+                    );
+                }
+
+                let (dst, dst_stride, src, src_stride, w, h, mx, my, bitdepth_max) = args;
+                $name(dst, dst_stride, src, src_stride, w, h, mx, my, bitdepth_max)
+            }};
+            ($args:expr, $asm:expr, unreachable) => {{
+                let _ = args;
+                unreachable!("{asm:?}");
+            }};
+        }
+
+        macro_rules! asm_fn {
+            ($asm:expr, $args:expr, $name:ident) => {{
+                use FnAsmVersion::*;
+                paste! {
+                    match asm {
+                        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                        SSE2 => extern_fn!($args, asm, unreachable),
+                        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                        SSSE3 => extern_fn!($args, [<dav1d_put $name _16bpc_ssse3>]),
+                        #[cfg(target_arch = "x86_64")]
+                        AVX2 => extern_fn!($args, [<dav1d_put $name _16bpc_avx2>]),
+                        #[cfg(target_arch = "x86_64")]
+                        AVX512ICL => extern_fn!($args, [<dav1d_put $name _16bpc_avx512icl>]),
+                        #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+                        Neon => extern_fn!($args, [<dav1d_put $name _16bpc_neon>]),
+                    }
+                }
+            }};
+        }
+
+        use Filter8Tap::*;
+        match filter_2d {
+            Filter2dRust::Tap8(Filter2d8Tap { h, v }) => match (h, v) {
+                (Regular, Regular) => asm_fn!(asm, args, _8tap_regular),
+                (Regular, Smooth) => asm_fn!(asm, args, _8tap_regular_smooth),
+                (Regular, Sharp) => asm_fn!(asm, args, _8tap_regular_sharp),
+                (Smooth, Regular) => asm_fn!(asm, args, _8tap_smooth_regular),
+                (Smooth, Smooth) => asm_fn!(asm, args, _8tap_smooth),
+                (Smooth, Sharp) => asm_fn!(asm, args, _8tap_smooth_sharp),
+                (Sharp, Regular) => asm_fn!(asm, args, _8tap_sharp_regular),
+                (Sharp, Smooth) => asm_fn!(asm, args, _8tap_sharp_smooth),
+                (Sharp, Sharp) => asm_fn!(asm, args, _8tap_sharp),
+            },
+            Filter2dRust::BiLinear => asm_fn!(asm, args, _bilin),
+        }
+    }
+
+    #[cfg(feature = "asm")]
+    unsafe fn mct(
+        &self,
+        _: Token,
+        asm: FnAsmVersion,
+        filter_2d: Filter2dRust,
+        tmp: *mut i16,
+        src: *const Self::Pixel,
+        src_stride: usize,
+        w: usize,
+        h: usize,
+        mx: usize,
+        my: usize,
+    ) {
+        let src_stride = src_stride as ptrdiff_t;
+        let [w, h, mx, my] = [w, h, mx, my].map(|it| it as c_int);
+        let args = (
+            tmp,
+            src,
+            src_stride,
+            w,
+            h,
+            mx,
+            my,
+            self.bitdepth_max().as_::<c_int>(),
+        );
+
+        macro_rules! extern_fn {
+            ($args:expr, $name:ident) => {{
+                extern "C" {
+                    fn $name(
+                        tmp: *mut i16,
+                        src: *const <BitDepth16 as BitDepth>::Pixel,
+                        src_stride: ptrdiff_t,
+                        w: c_int,
+                        h: c_int,
+                        mx: c_int,
+                        my: c_int,
+                        bitdepth_max: c_int,
+                    );
+                }
+
+                let (tmp, src, src_stride, w, h, mx, my, bitdepth_max) = args;
+                $name(tmp, src, src_stride, w, h, mx, my, bitdepth_max)
+            }};
+            ($args:expr, $asm:expr, unreachable) => {{
+                let _ = args;
+                unreachable!("{asm:?}");
+            }};
+        }
+
+        macro_rules! asm_fn {
+            ($args:expr, $asm:expr, $name:ident) => {{
+                use FnAsmVersion::*;
+                paste! {
+                    match asm {
+                        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                        SSE2 => extern_fn!($args, asm, unreachable),
+                        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                        SSSE3 => extern_fn!($args, [<dav1d_prep $name _16bpc_ssse3>]),
+                        #[cfg(target_arch = "x86_64")]
+                        AVX2 => extern_fn!($args, [<dav1d_prep $name _16bpc_avx2>]),
+                        #[cfg(target_arch = "x86_64")]
+                        AVX512ICL => extern_fn!($args, [<dav1d_prep $name _16bpc_avx512icl>]),
+                        #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+                        Neon => extern_fn!($args, [<dav1d_prep $name _16bpc_neon>]),
+                    }
+                }
+            }};
+        }
+
+        use Filter8Tap::*;
+        match filter_2d {
+            Filter2dRust::Tap8(Filter2d8Tap { h, v }) => match (h, v) {
+                (Regular, Regular) => asm_fn!(asm, args, _8tap_regular),
+                (Regular, Smooth) => asm_fn!(asm, args, _8tap_regular_smooth),
+                (Regular, Sharp) => asm_fn!(asm, args, _8tap_regular_sharp),
+                (Smooth, Regular) => asm_fn!(asm, args, _8tap_smooth_regular),
+                (Smooth, Smooth) => asm_fn!(asm, args, _8tap_smooth),
+                (Smooth, Sharp) => asm_fn!(asm, args, _8tap_smooth_sharp),
+                (Sharp, Regular) => asm_fn!(asm, args, _8tap_sharp_regular),
+                (Sharp, Smooth) => asm_fn!(asm, args, _8tap_sharp_smooth),
+                (Sharp, Sharp) => asm_fn!(asm, args, _8tap_sharp),
+            },
+            Filter2dRust::BiLinear => asm_fn!(asm, args, _bilin),
+        }
+    }
+
+    #[cfg(feature = "asm")]
+    unsafe fn mc_scaled(
+        &self,
+        _: Token,
+        asm: FnAsmVersion,
+        filter_2d: Filter2dRust,
+        dst: *mut Self::Pixel,
+        dst_stride: usize,
+        src: *const Self::Pixel,
+        src_stride: usize,
+        w: usize,
+        h: usize,
+        mx: usize,
+        my: usize,
+        dx: usize,
+        dy: usize,
+    ) {
+        let [dst_stride, src_stride] = [dst_stride, src_stride].map(|it: usize| it as ptrdiff_t);
+        let [w, h, mx, my, dx, dy] = [w, h, mx, my, dx, dy].map(|it| it as c_int);
+        let args = (
+            dst,
+            dst_stride,
+            src,
+            src_stride,
+            w,
+            h,
+            mx,
+            my,
+            dx,
+            dy,
+            self.bitdepth_max().as_::<c_int>(),
+        );
+
+        macro_rules! extern_fn {
+            ($args:expr, $name:ident) => {{
+                extern "C" {
+                    fn $name(
+                        dst: *mut <BitDepth16 as BitDepth>::Pixel,
+                        dst_stride: ptrdiff_t,
+                        src: *const <BitDepth16 as BitDepth>::Pixel,
+                        src_stride: ptrdiff_t,
+                        w: c_int,
+                        h: c_int,
+                        mx: c_int,
+                        my: c_int,
+                        dx: c_int,
+                        dy: c_int,
+                        bitdepth_max: c_int,
+                    );
+                }
+
+                let (dst, dst_stride, src, src_stride, w, h, mx, my, dx, dy, bitdepth_max) = args;
+                $name(
+                    dst,
+                    dst_stride,
+                    src,
+                    src_stride,
+                    w,
+                    h,
+                    mx,
+                    my,
+                    dx,
+                    dy,
+                    bitdepth_max,
+                )
+            }};
+            ($args:expr, $asm:expr, unreachable) => {{
+                let _ = args;
+                unreachable!("{asm:?}");
+            }};
+        }
+
+        macro_rules! asm_fn {
+            ($asm:expr, $args:expr, $name:ident) => {{
+                use FnAsmVersion::*;
+                paste! {
+                    match asm {
+                        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                        SSE2 => extern_fn!($args, asm, unreachable),
+                        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                        SSSE3 => extern_fn!($args, [<dav1d_put $name _16bpc_ssse3>]),
+                        #[cfg(target_arch = "x86_64")]
+                        AVX2 => extern_fn!($args, [<dav1d_put $name _16bpc_avx2>]),
+                        #[cfg(target_arch = "x86_64")]
+                        AVX512ICL => extern_fn!($args, asm, unreachable),
+                        #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+                        Neon => extern_fn!($args, asm, unreachable),
+                    }
+                }
+            }};
+        }
+
+        use Filter8Tap::*;
+        match filter_2d {
+            Filter2dRust::Tap8(Filter2d8Tap { h, v }) => match (h, v) {
+                (Regular, Regular) => asm_fn!(asm, args, _8tap_scaled_regular),
+                (Regular, Smooth) => asm_fn!(asm, args, _8tap_scaled_regular_smooth),
+                (Regular, Sharp) => asm_fn!(asm, args, _8tap_scaled_regular_sharp),
+                (Smooth, Regular) => asm_fn!(asm, args, _8tap_scaled_smooth_regular),
+                (Smooth, Smooth) => asm_fn!(asm, args, _8tap_scaled_smooth),
+                (Smooth, Sharp) => asm_fn!(asm, args, _8tap_scaled_smooth_sharp),
+                (Sharp, Regular) => asm_fn!(asm, args, _8tap_scaled_sharp_regular),
+                (Sharp, Smooth) => asm_fn!(asm, args, _8tap_scaled_sharp_smooth),
+                (Sharp, Sharp) => asm_fn!(asm, args, _8tap_scaled_sharp),
+            },
+            Filter2dRust::BiLinear => asm_fn!(asm, args, _bilin_scaled),
+        }
+    }
+
+    #[cfg(feature = "asm")]
+    unsafe fn mct_scaled(
+        &self,
+        _: Token,
+        asm: FnAsmVersion,
+        filter_2d: Filter2dRust,
+        tmp: *mut i16,
+        src: *const Self::Pixel,
+        src_stride: usize,
+        w: usize,
+        h: usize,
+        mx: usize,
+        my: usize,
+        dx: usize,
+        dy: usize,
+    ) {
+        let src_stride = src_stride as ptrdiff_t;
+        let [w, h, mx, my, dx, dy] = [w, h, mx, my, dx, dy].map(|it| it as c_int);
+        let args = (
+            tmp,
+            src,
+            src_stride,
+            w,
+            h,
+            mx,
+            my,
+            dx,
+            dy,
+            self.bitdepth_max().as_::<c_int>(),
+        );
+
+        macro_rules! extern_fn {
+            ($args:expr, $name:ident) => {{
+                extern "C" {
+                    fn $name(
+                        tmp: *mut i16,
+                        src: *const <BitDepth16 as BitDepth>::Pixel,
+                        src_stride: ptrdiff_t,
+                        w: c_int,
+                        h: c_int,
+                        mx: c_int,
+                        my: c_int,
+                        dx: c_int,
+                        dy: c_int,
+                        bitdepth_max: c_int,
+                    );
+                }
+
+                let (tmp, src, src_stride, w, h, mx, my, dx, dy, bitdepth_max) = args;
+                $name(tmp, src, src_stride, w, h, mx, my, dx, dy, bitdepth_max)
+            }};
+            ($args:expr, $asm:expr, unreachable) => {{
+                let _ = args;
+                unreachable!("{asm:?}");
+            }};
+        }
+
+        macro_rules! asm_fn {
+            ($asm:expr, $args:expr, $name:ident) => {{
+                use FnAsmVersion::*;
+                paste! {
+                    match asm {
+                        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                        SSE2 => extern_fn!($args, asm, unreachable),
+                        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                        SSSE3 => extern_fn!($args, [<dav1d_prep $name _16bpc_ssse3>]),
+                        #[cfg(target_arch = "x86_64")]
+                        AVX2 => extern_fn!($args, [<dav1d_prep $name _16bpc_avx2>]),
+                        #[cfg(target_arch = "x86_64")]
+                        AVX512ICL => extern_fn!($args, asm, unreachable),
+                        #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+                        Neon => extern_fn!($args, asm, unreachable),
+                    }
+                }
+            }};
+        }
+
+        use Filter8Tap::*;
+        match filter_2d {
+            Filter2dRust::Tap8(Filter2d8Tap { h, v }) => match (h, v) {
+                (Regular, Regular) => asm_fn!(asm, args, _8tap_scaled_regular),
+                (Regular, Smooth) => asm_fn!(asm, args, _8tap_scaled_regular_smooth),
+                (Regular, Sharp) => asm_fn!(asm, args, _8tap_scaled_regular_sharp),
+                (Smooth, Regular) => asm_fn!(asm, args, _8tap_scaled_smooth_regular),
+                (Smooth, Smooth) => asm_fn!(asm, args, _8tap_scaled_smooth),
+                (Smooth, Sharp) => asm_fn!(asm, args, _8tap_scaled_smooth_sharp),
+                (Sharp, Regular) => asm_fn!(asm, args, _8tap_scaled_sharp_regular),
+                (Sharp, Smooth) => asm_fn!(asm, args, _8tap_scaled_sharp_smooth),
+                (Sharp, Sharp) => asm_fn!(asm, args, _8tap_scaled_sharp),
+            },
+            Filter2dRust::BiLinear => asm_fn!(asm, args, _bilin_scaled),
+        }
+    }
+}
+
+#[derive(Copy, Clone, Default)]
+#[repr(C)]
+pub struct Dav1dMCDSPContextRust {
+    pub mc: FnVersion,
+    pub mct: FnVersion,
+    pub mc_scaled: FnVersion,
+    pub mct_scaled: FnVersion,
+}
+
+impl Dav1dMCDSPContextRust {
+    pub unsafe fn mc<BD: BitDepthFnAsmMc>(
+        &self,
+        bd: BD,
+        filter_2d: Filter2dRust,
+        dst: *mut BD::Pixel,
+        dst_stride: usize,
+        src: *const BD::Pixel,
+        src_stride: usize,
+        w: usize,
+        h: usize,
+        mx: usize,
+        my: usize,
+    ) {
+        match self.mc {
+            FnVersion::Rust => match filter_2d {
+                Filter2dRust::Tap8(filter_type) => put_8tap_rust(
+                    bd,
+                    dst,
+                    dst_stride,
+                    src,
+                    src_stride,
+                    w,
+                    h,
+                    mx,
+                    my,
+                    filter_type,
+                ),
+                Filter2dRust::BiLinear => {
+                    put_bilin_rust(bd, dst, dst_stride, src, src_stride, w, h, mx, my)
+                }
+            },
+            #[cfg(feature = "asm")]
+            FnVersion::Asm(asm) => bd.mc(
+                Token(()),
+                asm,
+                filter_2d,
+                dst,
+                dst_stride,
+                src,
+                src_stride,
+                w,
+                h,
+                mx,
+                my,
+            ),
+        }
+    }
+
+    pub unsafe fn mct<BD: BitDepthFnAsmMc>(
+        &self,
+        bd: BD,
+        filter_2d: Filter2dRust,
+        tmp: *mut i16,
+        src: *const BD::Pixel,
+        src_stride: usize,
+        w: usize,
+        h: usize,
+        mx: usize,
+        my: usize,
+    ) {
+        match self.mct {
+            FnVersion::Rust => match filter_2d {
+                Filter2dRust::Tap8(filter_type) => {
+                    prep_8tap_rust(bd, tmp, src, src_stride, w, h, mx, my, filter_type)
+                }
+                Filter2dRust::BiLinear => prep_bilin_rust(bd, tmp, src, src_stride, w, h, mx, my),
+            },
+            #[cfg(feature = "asm")]
+            FnVersion::Asm(asm) => bd.mct(
+                Token(()),
+                asm,
+                filter_2d,
+                tmp,
+                src,
+                src_stride,
+                w,
+                h,
+                mx,
+                my,
+            ),
+        }
+    }
+
+    pub unsafe fn mc_scaled<BD: BitDepthFnAsmMc>(
+        &self,
+        bd: BD,
+        filter_2d: Filter2dRust,
+        dst: *mut BD::Pixel,
+        dst_stride: usize,
+        src: *const BD::Pixel,
+        src_stride: usize,
+        w: usize,
+        h: usize,
+        mx: usize,
+        my: usize,
+        dx: usize,
+        dy: usize,
+    ) {
+        match self.mc_scaled {
+            FnVersion::Rust => match filter_2d {
+                Filter2dRust::Tap8(filter_type) => put_8tap_scaled_rust(
+                    bd,
+                    dst,
+                    dst_stride,
+                    src,
+                    src_stride,
+                    w,
+                    h,
+                    mx,
+                    my,
+                    dx,
+                    dy,
+                    filter_type,
+                ),
+                Filter2dRust::BiLinear => put_bilin_scaled_rust(
+                    bd, dst, dst_stride, src, src_stride, w, h, mx, my, dx, dy,
+                ),
+            },
+            #[cfg(feature = "asm")]
+            FnVersion::Asm(asm) => bd.mc_scaled(
+                Token(()),
+                asm,
+                filter_2d,
+                dst,
+                dst_stride,
+                src,
+                src_stride,
+                w,
+                h,
+                mx,
+                my,
+                dx,
+                dy,
+            ),
+        }
+    }
+
+    pub unsafe fn mct_scaled<BD: BitDepthFnAsmMc>(
+        &self,
+        bd: BD,
+        filter_2d: Filter2dRust,
+        tmp: *mut i16,
+        src: *const BD::Pixel,
+        src_stride: usize,
+        w: usize,
+        h: usize,
+        mx: usize,
+        my: usize,
+        dx: usize,
+        dy: usize,
+    ) {
+        match self.mct_scaled {
+            FnVersion::Rust => match filter_2d {
+                Filter2dRust::Tap8(filter_type) => prep_8tap_scaled_rust(
+                    bd,
+                    tmp,
+                    src,
+                    src_stride,
+                    w,
+                    h,
+                    mx,
+                    my,
+                    dx,
+                    dy,
+                    filter_type,
+                ),
+                Filter2dRust::BiLinear => {
+                    prep_bilin_scaled_rust(bd, tmp, src, src_stride, w, h, mx, my, dx, dy)
+                }
+            },
+            #[cfg(feature = "asm")]
+            FnVersion::Asm(asm) => bd.mct_scaled(
+                Token(()),
+                asm,
+                filter_2d,
+                tmp,
+                src,
+                src_stride,
+                w,
+                h,
+                mx,
+                my,
+                dx,
+                dy,
+            ),
+        }
+    }
+}
+
 #[inline(never)]
-pub unsafe fn put_rust<BD: BitDepth>(
+unsafe fn put_rust<BD: BitDepth>(
     dst: *mut BD::Pixel,
     dst_stride: usize,
     src: *const BD::Pixel,
@@ -23,9 +1036,8 @@ pub unsafe fn put_rust<BD: BitDepth>(
     }
 }
 
-// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
 #[inline(never)]
-pub unsafe fn prep_rust<BD: BitDepth>(
+unsafe fn prep_rust<BD: BitDepth>(
     mut tmp: *mut i16,
     mut src: *const BD::Pixel,
     src_stride: usize,
@@ -99,42 +1111,25 @@ unsafe fn dav1d_filter_8tap_clip2<BD: BitDepth, T: Into<i32>>(
     bd.iclip_pixel(dav1d_filter_8tap_rnd2(src, x, f, stride, rnd, sh))
 }
 
-fn get_h_filter(mx: usize, w: usize, filter_type: Dav1dFilterMode) -> Option<&'static [i8; 8]> {
-    let mx = mx.checked_sub(1)?;
-    let i = if w > 4 {
-        filter_type & 3
+fn get_filter(mxy: usize, wh: usize, filter_type: Filter8Tap) -> Option<&'static [i8; 8]> {
+    let mxy = mxy.checked_sub(1)?;
+    use Filter8Tap::*;
+    let filter_type = match filter_type {
+        Regular => 0,
+        Smooth => 1,
+        Sharp => 2,
+    };
+    let i = if wh > 4 {
+        filter_type
     } else {
         3 + (filter_type & 1)
     };
-    Some(&dav1d_mc_subpel_filters[i as usize][mx])
+    Some(&dav1d_mc_subpel_filters[i][mxy])
 }
 
-fn get_v_filter(my: usize, h: usize, filter_type: Dav1dFilterMode) -> Option<&'static [i8; 8]> {
-    let mx = my.checked_sub(1)?;
-    let i = if h > 4 {
-        filter_type >> 2
-    } else {
-        3 + ((filter_type >> 2) & 1)
-    };
-    Some(&dav1d_mc_subpel_filters[i as usize][mx])
-}
-
-fn get_filters(
-    mx: usize,
-    my: usize,
-    w: usize,
-    h: usize,
-    filter_type: Dav1dFilterMode,
-) -> (Option<&'static [i8; 8]>, Option<&'static [i8; 8]>) {
-    (
-        get_h_filter(mx, w, filter_type),
-        get_v_filter(my, h, filter_type),
-    )
-}
-
-// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
 #[inline(never)]
-pub unsafe fn put_8tap_rust<BD: BitDepth>(
+unsafe fn put_8tap_rust<BD: BitDepth>(
+    bd: BD,
     dst: *mut BD::Pixel,
     dst_stride: usize,
     mut src: *const BD::Pixel,
@@ -143,13 +1138,13 @@ pub unsafe fn put_8tap_rust<BD: BitDepth>(
     h: usize,
     mx: usize,
     my: usize,
-    filter_type: Dav1dFilterMode,
-    bd: BD,
+    filter_type: Filter2d8Tap,
 ) {
     let intermediate_bits = bd.get_intermediate_bits();
     let intermediate_rnd = 32 + (1 << 6 - intermediate_bits >> 1);
 
-    let (fh, fv) = get_filters(mx, my, w, h, filter_type);
+    let fh = get_filter(mx, w, filter_type.h);
+    let fv = get_filter(my, h, filter_type.v);
     let [dst_stride, src_stride] = [dst_stride, src_stride].map(BD::pxstride);
 
     let mut dst = std::slice::from_raw_parts_mut(dst, dst_stride * h);
@@ -213,9 +1208,9 @@ pub unsafe fn put_8tap_rust<BD: BitDepth>(
     }
 }
 
-// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
 #[inline(never)]
-pub unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
+unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
+    bd: BD,
     mut dst: *mut BD::Pixel,
     dst_stride: usize,
     mut src: *const BD::Pixel,
@@ -226,8 +1221,7 @@ pub unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
     mut my: usize,
     dx: usize,
     dy: usize,
-    filter_type: Dav1dFilterMode,
-    bd: BD,
+    filter_type: Filter2d8Tap,
 ) {
     let intermediate_bits = bd.get_intermediate_bits();
     let intermediate_rnd = (1 << intermediate_bits) >> 1;
@@ -244,7 +1238,7 @@ pub unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
         let mut ioff = 0;
 
         for x in 0..w {
-            let fh = get_h_filter(imx >> 6, w, filter_type);
+            let fh = get_filter(imx >> 6, w, filter_type.h);
             mid_ptr[x] = match fh {
                 Some(fh) => dav1d_filter_8tap_rnd(src, ioff, fh, 1, 6 - intermediate_bits) as i16,
                 None => ((*src.offset(ioff as isize)).as_::<i32>() as i16) << intermediate_bits,
@@ -259,7 +1253,7 @@ pub unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
     }
     mid_ptr = &mut mid[128 * 3..];
     for _ in 0..h {
-        let fv = get_v_filter(my >> 6, h, filter_type);
+        let fv = get_filter(my >> 6, h, filter_type.v);
 
         for x in 0..w {
             dst[x] = match fv {
@@ -279,9 +1273,9 @@ pub unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
     }
 }
 
-// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
 #[inline(never)]
-pub unsafe fn prep_8tap_rust<BD: BitDepth>(
+unsafe fn prep_8tap_rust<BD: BitDepth>(
+    bd: BD,
     mut tmp: *mut i16,
     mut src: *const BD::Pixel,
     src_stride: usize,
@@ -289,11 +1283,11 @@ pub unsafe fn prep_8tap_rust<BD: BitDepth>(
     h: usize,
     mx: usize,
     my: usize,
-    filter_type: Dav1dFilterMode,
-    bd: BD,
+    filter_type: Filter2d8Tap,
 ) {
     let intermediate_bits = bd.get_intermediate_bits();
-    let (fh, fv) = get_filters(mx, my, w, h, filter_type);
+    let fh = get_filter(mx, w, filter_type.h);
+    let fv = get_filter(my, h, filter_type.v);
     let src_stride = BD::pxstride(src_stride);
 
     if let Some(fh) = fh {
@@ -353,9 +1347,9 @@ pub unsafe fn prep_8tap_rust<BD: BitDepth>(
     };
 }
 
-// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
 #[inline(never)]
-pub unsafe fn prep_8tap_scaled_rust<BD: BitDepth>(
+unsafe fn prep_8tap_scaled_rust<BD: BitDepth>(
+    bd: BD,
     mut tmp: *mut i16,
     mut src: *const BD::Pixel,
     src_stride: usize,
@@ -365,8 +1359,7 @@ pub unsafe fn prep_8tap_scaled_rust<BD: BitDepth>(
     mut my: usize,
     dx: usize,
     dy: usize,
-    filter_type: Dav1dFilterMode,
-    bd: BD,
+    filter_type: Filter2d8Tap,
 ) {
     let intermediate_bits = bd.get_intermediate_bits();
     let tmp_h = ((h - 1) * dy + my >> 10) + 8;
@@ -379,7 +1372,7 @@ pub unsafe fn prep_8tap_scaled_rust<BD: BitDepth>(
         let mut imx = mx;
         let mut ioff = 0;
         for x in 0..w {
-            let fh = get_h_filter(imx >> 6, w, filter_type);
+            let fh = get_filter(imx >> 6, w, filter_type.h);
             mid_ptr[x] = match fh {
                 Some(fh) => dav1d_filter_8tap_rnd(src, ioff, fh, 1, 6 - intermediate_bits) as i16,
                 None => ((*src.offset(ioff as isize)).as_::<i32>() as i16) << intermediate_bits,
@@ -395,7 +1388,7 @@ pub unsafe fn prep_8tap_scaled_rust<BD: BitDepth>(
 
     mid_ptr = &mut mid[128 * 3..];
     for _ in 0..h {
-        let fv = get_v_filter(my >> 6, h, filter_type);
+        let fv = get_filter(my >> 6, h, filter_type.v);
         for x in 0..w {
             *tmp.offset(x as isize) = ((match fv {
                 Some(fv) => dav1d_filter_8tap_rnd(mid_ptr.as_ptr(), x, fv, 128, 6),
@@ -435,8 +1428,8 @@ unsafe fn filter_bilin_clip<BD: BitDepth, T: Into<i32>>(
     bd.iclip_pixel(filter_bilin_rnd(src, x, mxy, stride, sh))
 }
 
-// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
-pub unsafe fn put_bilin_rust<BD: BitDepth>(
+unsafe fn put_bilin_rust<BD: BitDepth>(
+    bd: BD,
     mut dst: *mut BD::Pixel,
     dst_stride: usize,
     mut src: *const BD::Pixel,
@@ -445,7 +1438,6 @@ pub unsafe fn put_bilin_rust<BD: BitDepth>(
     h: usize,
     mx: usize,
     my: usize,
-    bd: BD,
 ) {
     let intermediate_bits = bd.get_intermediate_bits();
     let intermediate_rnd = (1 << intermediate_bits) >> 1;
@@ -501,8 +1493,8 @@ pub unsafe fn put_bilin_rust<BD: BitDepth>(
     };
 }
 
-// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
-pub unsafe fn put_bilin_scaled_rust<BD: BitDepth>(
+unsafe fn put_bilin_scaled_rust<BD: BitDepth>(
+    bd: BD,
     mut dst: *mut BD::Pixel,
     mut dst_stride: usize,
     mut src: *const BD::Pixel,
@@ -513,7 +1505,6 @@ pub unsafe fn put_bilin_scaled_rust<BD: BitDepth>(
     mut my: usize,
     dx: usize,
     dy: usize,
-    bd: BD,
 ) {
     let intermediate_bits = bd.get_intermediate_bits();
     let [dst_stride, src_stride] = [dst_stride, src_stride].map(BD::pxstride);
@@ -549,8 +1540,8 @@ pub unsafe fn put_bilin_scaled_rust<BD: BitDepth>(
     }
 }
 
-// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
-pub unsafe fn prep_bilin_rust<BD: BitDepth>(
+unsafe fn prep_bilin_rust<BD: BitDepth>(
+    bd: BD,
     mut tmp: *mut i16,
     mut src: *const BD::Pixel,
     src_stride: usize,
@@ -558,7 +1549,6 @@ pub unsafe fn prep_bilin_rust<BD: BitDepth>(
     h: usize,
     mx: usize,
     my: usize,
-    bd: BD,
 ) {
     let intermediate_bits = bd.get_intermediate_bits();
     let src_stride = BD::pxstride(src_stride);
@@ -615,8 +1605,8 @@ pub unsafe fn prep_bilin_rust<BD: BitDepth>(
     };
 }
 
-// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
-pub unsafe fn prep_bilin_scaled_rust<BD: BitDepth>(
+unsafe fn prep_bilin_scaled_rust<BD: BitDepth>(
+    bd: BD,
     mut tmp: *mut i16,
     mut src: *const BD::Pixel,
     src_stride: usize,
@@ -626,7 +1616,6 @@ pub unsafe fn prep_bilin_scaled_rust<BD: BitDepth>(
     mut my: usize,
     dx: usize,
     dy: usize,
-    bd: BD,
 ) {
     let intermediate_bits = bd.get_intermediate_bits();
     let src_stride = BD::pxstride(src_stride);

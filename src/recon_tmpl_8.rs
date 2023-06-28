@@ -1,3 +1,4 @@
+use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BitDepth8;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
@@ -387,13 +388,11 @@ pub struct Dav1dInvTxfmDSPContext {
 }
 pub type itxfm_fn =
     Option<unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> ()>;
+use crate::src::mc::Dav1dMCDSPContextRust;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dMCDSPContext {
-    pub mc: [mc_fn; 10],
-    pub mc_scaled: [mc_scaled_fn; 10],
-    pub mct: [mct_fn; 10],
-    pub mct_scaled: [mct_scaled_fn; 10],
+    pub rust: Dav1dMCDSPContextRust,
     pub avg: avg_fn,
     pub w_avg: w_avg_fn,
     pub mask: mask_fn,
@@ -2462,26 +2461,35 @@ unsafe extern "C" fn mc(
                 .offset((ref_stride * dy as isize) as isize)
                 .offset(dx as isize);
         }
+        let bd = BitDepth8::new(());
+        let filter_2d = filter_2d.into();
+        let [dst_stride, ref_stride] = [dst_stride, ref_stride].map(|it| it as usize);
+        let [bw4, bh4, h_mul, v_mul, mx, my] =
+            [bw4, bh4, h_mul, v_mul, mx, my].map(|it| it as usize);
         if !dst8.is_null() {
-            ((*(*f).dsp).mc.mc[filter_2d as usize]).expect("non-null function pointer")(
+            (*(*f).dsp).mc.rust.mc(
+                bd,
+                filter_2d,
                 dst8,
                 dst_stride,
                 r#ref,
                 ref_stride,
                 bw4 * h_mul,
                 bh4 * v_mul,
-                mx << (ss_hor == 0) as libc::c_int,
-                my << (ss_ver == 0) as libc::c_int,
+                mx << (ss_hor == 0) as u8,
+                my << (ss_ver == 0) as u8,
             );
         } else {
-            ((*(*f).dsp).mc.mct[filter_2d as usize]).expect("non-null function pointer")(
+            (*(*f).dsp).mc.rust.mct(
+                bd,
+                filter_2d,
                 dst16,
                 r#ref,
                 ref_stride,
                 bw4 * h_mul,
                 bh4 * v_mul,
-                mx << (ss_hor == 0) as libc::c_int,
-                my << (ss_ver == 0) as libc::c_int,
+                mx << (ss_hor == 0) as u8,
+                my << (ss_ver == 0) as u8,
             );
         }
     } else {
@@ -2555,30 +2563,39 @@ unsafe extern "C" fn mc(
                 .offset((ref_stride * top as isize) as isize)
                 .offset(left as isize);
         }
+        let bd = BitDepth8::new(());
+        let filter_2d = filter_2d.into();
+        let [dst_stride, ref_stride] = [dst_stride, ref_stride].map(|it| it as usize);
+        let [bw4, bh4, h_mul, v_mul, pos_x, pos_y] =
+            [bw4, bh4, h_mul, v_mul, pos_x, pos_y].map(|it| it as usize);
         if !dst8.is_null() {
-            ((*(*f).dsp).mc.mc_scaled[filter_2d as usize]).expect("non-null function pointer")(
+            (*(*f).dsp).mc.rust.mc_scaled(
+                bd,
+                filter_2d,
                 dst8,
                 dst_stride,
                 r#ref,
                 ref_stride,
                 bw4 * h_mul,
                 bh4 * v_mul,
-                pos_x & 0x3ff as libc::c_int,
-                pos_y & 0x3ff as libc::c_int,
-                (*f).svc[refidx as usize][0].step,
-                (*f).svc[refidx as usize][1].step,
+                pos_x & 0x3ff,
+                pos_y & 0x3ff,
+                (*f).svc[refidx as usize][0].step as usize,
+                (*f).svc[refidx as usize][1].step as usize,
             );
         } else {
-            ((*(*f).dsp).mc.mct_scaled[filter_2d as usize]).expect("non-null function pointer")(
+            (*(*f).dsp).mc.rust.mct_scaled(
+                bd,
+                filter_2d,
                 dst16,
                 r#ref,
                 ref_stride,
                 bw4 * h_mul,
                 bh4 * v_mul,
-                pos_x & 0x3ff as libc::c_int,
-                pos_y & 0x3ff as libc::c_int,
-                (*f).svc[refidx as usize][0].step,
-                (*f).svc[refidx as usize][1].step,
+                pos_x & 0x3ff,
+                pos_y & 0x3ff,
+                (*f).svc[refidx as usize][0].step as usize,
+                (*f).svc[refidx as usize][1].step as usize,
             );
         }
     }
@@ -3506,7 +3523,8 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                                     if DEBUG_BLOCK_INFO(&*f, &*t) {
                                         printf(
                                             b"Post-uv-cf-blk[pl=%d,tx=%d,txtp=%d,eob=%d]: r=%d [x=%d,cbx4=%d]\n\0"
-                                                as *const u8 as *const libc::c_char,
+                                                as *const u8
+                                                as *const libc::c_char,
                                             pl_0,
                                             (*b).uvtx as libc::c_int,
                                             txtp_0 as libc::c_uint,

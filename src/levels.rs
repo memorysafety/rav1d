@@ -133,6 +133,7 @@ pub const BS_64x64: BlockSize = 3;
 pub const BS_64x128: BlockSize = 2;
 pub const BS_128x64: BlockSize = 1;
 pub const BS_128x128: BlockSize = 0;
+
 pub type Filter2d = libc::c_uint;
 pub const N_2D_FILTERS: Filter2d = 10;
 pub const FILTER_2D_BILINEAR: Filter2d = 9;
@@ -145,6 +146,70 @@ pub const FILTER_2D_8TAP_SHARP_REGULAR: Filter2d = 3;
 pub const FILTER_2D_8TAP_REGULAR_SHARP: Filter2d = 2;
 pub const FILTER_2D_8TAP_REGULAR_SMOOTH: Filter2d = 1;
 pub const FILTER_2D_8TAP_REGULAR: Filter2d = 0;
+
+#[derive(Clone, Copy)]
+pub enum Filter8Tap {
+    Regular,
+    Smooth,
+    Sharp,
+}
+
+#[derive(Clone, Copy)]
+pub struct Filter2d8Tap {
+    pub h: Filter8Tap,
+    pub v: Filter8Tap,
+}
+
+#[derive(Clone, Copy)]
+pub enum Filter2dRust {
+    Tap8(Filter2d8Tap),
+    BiLinear,
+}
+
+impl From<Filter2d> for Filter2dRust {
+    fn from(filter: Filter2d) -> Self {
+        use Filter2dRust::*;
+        use Filter8Tap::*;
+        match filter {
+            FILTER_2D_8TAP_REGULAR => Tap8(Filter2d8Tap {
+                h: Regular,
+                v: Regular,
+            }),
+            FILTER_2D_8TAP_REGULAR_SMOOTH => Tap8(Filter2d8Tap {
+                h: Regular,
+                v: Smooth,
+            }),
+            FILTER_2D_8TAP_REGULAR_SHARP => Tap8(Filter2d8Tap {
+                h: Regular,
+                v: Sharp,
+            }),
+            FILTER_2D_8TAP_SHARP_REGULAR => Tap8(Filter2d8Tap {
+                h: Sharp,
+                v: Regular,
+            }),
+            FILTER_2D_8TAP_SHARP_SMOOTH => Tap8(Filter2d8Tap {
+                h: Sharp,
+                v: Smooth,
+            }),
+            FILTER_2D_8TAP_SHARP => Tap8(Filter2d8Tap { h: Sharp, v: Sharp }),
+            FILTER_2D_8TAP_SMOOTH_REGULAR => Tap8(Filter2d8Tap {
+                h: Smooth,
+                v: Regular,
+            }),
+            FILTER_2D_8TAP_SMOOTH => Tap8(Filter2d8Tap {
+                h: Smooth,
+                v: Smooth,
+            }),
+            FILTER_2D_8TAP_SMOOTH_SHARP => Tap8(Filter2d8Tap {
+                h: Smooth,
+                v: Sharp,
+            }),
+            FILTER_2D_BILINEAR => BiLinear,
+            _ => unreachable!(),
+        }
+    }
+}
+
 pub type MVJoint = libc::c_uint;
 pub const N_MV_JOINTS: MVJoint = 4;
 pub const MV_JOINT_HV: MVJoint = 3;
