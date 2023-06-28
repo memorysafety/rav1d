@@ -2068,12 +2068,12 @@ unsafe extern "C" fn pixel_set(dst: *mut pixel, val: libc::c_int, num: libc::c_i
         n += 1;
     }
 }
-use crate::src::mc::prep_8tap_c;
-use crate::src::mc::prep_8tap_scaled_c;
-use crate::src::mc::prep_c;
-use crate::src::mc::put_8tap_c;
-use crate::src::mc::put_8tap_scaled_c;
-use crate::src::mc::put_c;
+use crate::src::mc::prep_8tap_rust;
+use crate::src::mc::prep_8tap_scaled_rust;
+use crate::src::mc::prep_rust;
+use crate::src::mc::put_8tap_rust;
+use crate::src::mc::put_8tap_scaled_rust;
+use crate::src::mc::put_rust;
 unsafe extern "C" fn put_8tap_regular_c(
     dst: *mut pixel,
     dst_stride: ptrdiff_t,
@@ -2085,7 +2085,7 @@ unsafe extern "C" fn put_8tap_regular_c(
     my: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    put_8tap_c(
+    put_8tap_rust(
         dst,
         dst_stride as usize,
         src,
@@ -2111,7 +2111,7 @@ unsafe extern "C" fn put_8tap_regular_scaled_c(
     dy: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    put_8tap_scaled_c(
+    put_8tap_scaled_rust(
         dst,
         dst_stride as usize,
         src,
@@ -2136,7 +2136,7 @@ unsafe extern "C" fn prep_8tap_regular_c(
     my: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    prep_8tap_c(
+    prep_8tap_rust(
         tmp,
         src,
         src_stride as usize,
@@ -2160,7 +2160,7 @@ unsafe extern "C" fn prep_8tap_regular_scaled_c(
     dy: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    prep_8tap_scaled_c(
+    prep_8tap_scaled_rust(
         tmp,
         src,
         src_stride as usize,
@@ -2185,7 +2185,7 @@ unsafe extern "C" fn put_8tap_regular_sharp_c(
     my: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    put_8tap_c(
+    put_8tap_rust(
         dst,
         dst_stride as usize,
         src,
@@ -2210,7 +2210,7 @@ unsafe extern "C" fn prep_8tap_regular_sharp_scaled_c(
     dy: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    prep_8tap_scaled_c(
+    prep_8tap_scaled_rust(
         tmp,
         src,
         src_stride as usize,
@@ -2234,7 +2234,7 @@ unsafe extern "C" fn prep_8tap_regular_sharp_c(
     my: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    prep_8tap_c(
+    prep_8tap_rust(
         tmp,
         src,
         src_stride as usize,
@@ -2259,7 +2259,7 @@ unsafe extern "C" fn put_8tap_regular_sharp_scaled_c(
     dy: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    put_8tap_scaled_c(
+    put_8tap_scaled_rust(
         dst,
         dst_stride as usize,
         src,
@@ -2286,7 +2286,7 @@ unsafe extern "C" fn prep_8tap_regular_smooth_scaled_c(
     dy: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    prep_8tap_scaled_c(
+    prep_8tap_scaled_rust(
         tmp,
         src,
         src_stride as usize,
@@ -2310,7 +2310,7 @@ unsafe extern "C" fn prep_8tap_regular_smooth_c(
     my: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    prep_8tap_c(
+    prep_8tap_rust(
         tmp,
         src,
         src_stride as usize,
@@ -2335,7 +2335,7 @@ unsafe extern "C" fn put_8tap_regular_smooth_scaled_c(
     dy: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    put_8tap_scaled_c(
+    put_8tap_scaled_rust(
         dst,
         dst_stride as usize,
         src,
@@ -2361,7 +2361,7 @@ unsafe extern "C" fn put_8tap_regular_smooth_c(
     my: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    put_8tap_c(
+    put_8tap_rust(
         dst,
         dst_stride as usize,
         src,
@@ -2386,7 +2386,7 @@ unsafe extern "C" fn prep_8tap_smooth_scaled_c(
     dy: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    prep_8tap_scaled_c(
+    prep_8tap_scaled_rust(
         tmp,
         src,
         src_stride as usize,
@@ -2411,7 +2411,7 @@ unsafe extern "C" fn put_8tap_smooth_c(
     my: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    put_8tap_c(
+    put_8tap_rust(
         dst,
         dst_stride as usize,
         src,
@@ -2437,7 +2437,7 @@ unsafe extern "C" fn put_8tap_smooth_scaled_c(
     dy: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    put_8tap_scaled_c(
+    put_8tap_scaled_rust(
         dst,
         dst_stride as usize,
         src,
@@ -2462,7 +2462,7 @@ unsafe extern "C" fn prep_8tap_smooth_c(
     my: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    prep_8tap_c(
+    prep_8tap_rust(
         tmp,
         src,
         src_stride as usize,
@@ -2487,7 +2487,7 @@ unsafe extern "C" fn put_8tap_smooth_regular_scaled_c(
     dy: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    put_8tap_scaled_c(
+    put_8tap_scaled_rust(
         dst,
         dst_stride as usize,
         src,
@@ -2513,7 +2513,7 @@ unsafe extern "C" fn put_8tap_smooth_regular_c(
     my: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    put_8tap_c(
+    put_8tap_rust(
         dst,
         dst_stride as usize,
         src,
@@ -2536,7 +2536,7 @@ unsafe extern "C" fn prep_8tap_smooth_regular_c(
     my: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    prep_8tap_c(
+    prep_8tap_rust(
         tmp,
         src,
         src_stride as usize,
@@ -2560,7 +2560,7 @@ unsafe extern "C" fn prep_8tap_smooth_regular_scaled_c(
     dy: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    prep_8tap_scaled_c(
+    prep_8tap_scaled_rust(
         tmp,
         src,
         src_stride as usize,
@@ -2585,7 +2585,7 @@ unsafe extern "C" fn put_8tap_smooth_sharp_c(
     my: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    put_8tap_c(
+    put_8tap_rust(
         dst,
         dst_stride as usize,
         src,
@@ -2610,7 +2610,7 @@ unsafe extern "C" fn prep_8tap_smooth_sharp_scaled_c(
     dy: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    prep_8tap_scaled_c(
+    prep_8tap_scaled_rust(
         tmp,
         src,
         src_stride as usize,
@@ -2637,7 +2637,7 @@ unsafe extern "C" fn put_8tap_smooth_sharp_scaled_c(
     dy: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    put_8tap_scaled_c(
+    put_8tap_scaled_rust(
         dst,
         dst_stride as usize,
         src,
@@ -2662,7 +2662,7 @@ unsafe extern "C" fn prep_8tap_smooth_sharp_c(
     my: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    prep_8tap_c(
+    prep_8tap_rust(
         tmp,
         src,
         src_stride as usize,
@@ -2684,7 +2684,7 @@ unsafe extern "C" fn prep_8tap_sharp_c(
     my: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    prep_8tap_c(
+    prep_8tap_rust(
         tmp,
         src,
         src_stride as usize,
@@ -2709,7 +2709,7 @@ unsafe extern "C" fn put_8tap_sharp_scaled_c(
     dy: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    put_8tap_scaled_c(
+    put_8tap_scaled_rust(
         dst,
         dst_stride as usize,
         src,
@@ -2735,7 +2735,7 @@ unsafe extern "C" fn put_8tap_sharp_c(
     my: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    put_8tap_c(
+    put_8tap_rust(
         dst,
         dst_stride as usize,
         src,
@@ -2760,7 +2760,7 @@ unsafe extern "C" fn prep_8tap_sharp_scaled_c(
     dy: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    prep_8tap_scaled_c(
+    prep_8tap_scaled_rust(
         tmp,
         src,
         src_stride as usize,
@@ -2784,7 +2784,7 @@ unsafe extern "C" fn prep_8tap_sharp_regular_c(
     my: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    prep_8tap_c(
+    prep_8tap_rust(
         tmp,
         src,
         src_stride as usize,
@@ -2807,7 +2807,7 @@ unsafe extern "C" fn put_8tap_sharp_regular_c(
     my: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    put_8tap_c(
+    put_8tap_rust(
         dst,
         dst_stride as usize,
         src,
@@ -2832,7 +2832,7 @@ unsafe extern "C" fn prep_8tap_sharp_regular_scaled_c(
     dy: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    prep_8tap_scaled_c(
+    prep_8tap_scaled_rust(
         tmp,
         src,
         src_stride as usize,
@@ -2859,7 +2859,7 @@ unsafe extern "C" fn put_8tap_sharp_regular_scaled_c(
     dy: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    put_8tap_scaled_c(
+    put_8tap_scaled_rust(
         dst,
         dst_stride as usize,
         src,
@@ -2884,7 +2884,7 @@ unsafe extern "C" fn prep_8tap_sharp_smooth_c(
     my: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    prep_8tap_c(
+    prep_8tap_rust(
         tmp,
         src,
         src_stride as usize,
@@ -2909,7 +2909,7 @@ unsafe extern "C" fn put_8tap_sharp_smooth_scaled_c(
     dy: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    put_8tap_scaled_c(
+    put_8tap_scaled_rust(
         dst,
         dst_stride as usize,
         src,
@@ -2935,7 +2935,7 @@ unsafe extern "C" fn put_8tap_sharp_smooth_c(
     my: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    put_8tap_c(
+    put_8tap_rust(
         dst,
         dst_stride as usize,
         src,
@@ -2960,7 +2960,7 @@ unsafe extern "C" fn prep_8tap_sharp_smooth_scaled_c(
     dy: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    prep_8tap_scaled_c(
+    prep_8tap_scaled_rust(
         tmp,
         src,
         src_stride as usize,
@@ -3081,7 +3081,7 @@ unsafe extern "C" fn put_bilin_c(
             }
         }
     } else {
-        put_c::<BitDepth16>(
+        put_rust::<BitDepth16>(
             dst,
             dst_stride as usize,
             src,
@@ -3255,7 +3255,7 @@ unsafe extern "C" fn prep_bilin_c(
             }
         }
     } else {
-        prep_c(
+        prep_rust(
             tmp,
             src,
             src_stride as usize,
