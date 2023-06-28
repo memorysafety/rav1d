@@ -435,7 +435,8 @@ unsafe fn filter_bilin_clip<BD: BitDepth, T: Into<i32>>(
     bd.iclip_pixel(filter_bilin_rnd(src, x, mxy, stride, sh))
 }
 
-unsafe fn put_bilin_rust<BD: BitDepth>(
+// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
+pub unsafe fn put_bilin_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     dst_stride: usize,
     mut src: *const BD::Pixel,
