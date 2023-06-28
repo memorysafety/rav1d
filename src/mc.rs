@@ -500,3 +500,50 @@ pub unsafe fn put_bilin_rust<BD: BitDepth>(
         put_rust::<BD>(dst, dst_stride, src, src_stride, w, h);
     };
 }
+
+unsafe fn put_bilin_scaled_rust<BD: BitDepth>(
+    mut dst: *mut BD::Pixel,
+    mut dst_stride: usize,
+    mut src: *const BD::Pixel,
+    mut src_stride: usize,
+    w: usize,
+    h: usize,
+    mut mx: usize,
+    mut my: usize,
+    dx: usize,
+    dy: usize,
+    bd: BD,
+) {
+    let intermediate_bits = bd.get_intermediate_bits();
+    let [dst_stride, src_stride] = [dst_stride, src_stride].map(BD::pxstride);
+    let tmp_h = ((h - 1) * dy + my >> 10) + 2;
+    let mut mid = [0i16; 128 * (256 + 1)];
+    let mut mid_ptr = &mut mid[..];
+
+    for _ in 0..tmp_h {
+        let mut imx = mx;
+        let mut ioff = 0;
+
+        for x in 0..w {
+            mid_ptr[x] = filter_bilin_rnd(src, ioff, imx >> 6, 1, 4 - intermediate_bits) as i16;
+            imx += dx;
+            ioff += imx >> 10;
+            imx &= 0x3ff;
+        }
+
+        mid_ptr = &mut mid_ptr[128..];
+        src = src.offset(src_stride as isize);
+    }
+    mid_ptr = &mut mid[..];
+    for _ in 0..h {
+        for x in 0..w {
+            *dst.offset(x as isize) =
+                filter_bilin_clip(bd, mid_ptr.as_ptr(), x, my >> 6, 128, 4 + intermediate_bits);
+        }
+
+        my += dy;
+        mid_ptr = &mut mid_ptr[(my >> 10) * 128..];
+        my &= 0x3ff;
+        dst = dst.offset(dst_stride as isize);
+    }
+}
