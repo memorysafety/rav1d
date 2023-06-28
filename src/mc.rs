@@ -548,3 +548,68 @@ pub unsafe fn put_bilin_scaled_rust<BD: BitDepth>(
         dst = dst.offset(dst_stride as isize);
     }
 }
+
+unsafe fn prep_bilin_rust<BD: BitDepth>(
+    mut tmp: *mut i16,
+    mut src: *const BD::Pixel,
+    src_stride: usize,
+    w: usize,
+    h: usize,
+    mx: usize,
+    my: usize,
+    bd: BD,
+) {
+    let intermediate_bits = bd.get_intermediate_bits();
+    let src_stride = BD::pxstride(src_stride);
+    if mx != 0 {
+        if my != 0 {
+            let mut mid = [0i16; 128 * 129];
+            let mut mid_ptr = &mut mid[..];
+            let tmp_h = h + 1;
+
+            for _ in 0..tmp_h {
+                for x in 0..w {
+                    mid_ptr[x] = filter_bilin_rnd(src, x, mx, 1, 4 - intermediate_bits) as i16;
+                }
+
+                mid_ptr = &mut mid_ptr[128..];
+                src = src.offset(src_stride as isize);
+            }
+            mid_ptr = &mut mid[..];
+            for _ in 0..h {
+                for x in 0..w {
+                    *tmp.offset(x as isize) = (filter_bilin_rnd(mid_ptr.as_ptr(), x, my, 128, 4)
+                        - i32::from(BD::PREP_BIAS))
+                        as i16;
+                }
+
+                mid_ptr = &mut mid_ptr[128..];
+                tmp = tmp.offset(w as isize);
+            }
+        } else {
+            for _ in 0..h {
+                for x in 0..w {
+                    *tmp.offset(x as isize) =
+                        (filter_bilin_rnd(src, x, mx, 1, 4 - intermediate_bits)
+                            - i32::from(BD::PREP_BIAS)) as i16;
+                }
+
+                tmp = tmp.offset(w as isize);
+                src = src.offset(src_stride as isize);
+            }
+        }
+    } else if my != 0 {
+        for _ in 0..h {
+            for x in 0..w {
+                *tmp.offset(x as isize) =
+                    (filter_bilin_rnd(src, x, my, src_stride, 4 - intermediate_bits)
+                        - i32::from(BD::PREP_BIAS)) as i16;
+            }
+
+            tmp = tmp.offset(w as isize);
+            src = src.offset(src_stride as isize);
+        }
+    } else {
+        prep_rust(tmp, src, src_stride, w, h, bd);
+    };
+}
