@@ -3046,6 +3046,7 @@ unsafe extern "C" fn prep_bilin_c(
         BitDepth16::new(bitdepth_max as u16),
     )
 }
+use crate::src::mc::prep_bilin_scaled_rust;
 unsafe extern "C" fn prep_bilin_scaled_c(
     mut tmp: *mut int16_t,
     mut src: *const pixel,
@@ -3058,57 +3059,18 @@ unsafe extern "C" fn prep_bilin_scaled_c(
     dy: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    let intermediate_bits = 14 as libc::c_int - (32 - clz(bitdepth_max as libc::c_uint));
-    let mut tmp_h = ((h - 1) * dy + my >> 10) + 2;
-    let mut mid: [int16_t; 32896] = [0; 32896];
-    let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
-    loop {
-        let mut x = 0;
-        let mut imx = mx;
-        let mut ioff = 0;
-        x = 0 as libc::c_int;
-        while x < w {
-            *mid_ptr.offset(x as isize) = (16 * *src.offset(ioff as isize) as libc::c_int
-                + (imx >> 6)
-                    * (*src.offset((ioff + 1) as isize) as libc::c_int
-                        - *src.offset(ioff as isize) as libc::c_int)
-                + ((1 as libc::c_int) << 4 - intermediate_bits >> 1)
-                >> 4 - intermediate_bits) as int16_t;
-            imx += dx;
-            ioff += imx >> 10;
-            imx &= 0x3ff as libc::c_int;
-            x += 1;
-        }
-        mid_ptr = mid_ptr.offset(128);
-        src = src.offset(PXSTRIDE(src_stride) as isize);
-        tmp_h -= 1;
-        if !(tmp_h != 0) {
-            break;
-        }
-    }
-    mid_ptr = mid.as_mut_ptr();
-    loop {
-        let mut x_0 = 0;
-        x_0 = 0 as libc::c_int;
-        while x_0 < w {
-            *tmp.offset(x_0 as isize) = ((16 * *mid_ptr.offset(x_0 as isize) as libc::c_int
-                + (my >> 6)
-                    * (*mid_ptr.offset((x_0 + 128) as isize) as libc::c_int
-                        - *mid_ptr.offset(x_0 as isize) as libc::c_int)
-                + ((1 as libc::c_int) << 4 >> 1)
-                >> 4)
-                - 8192) as int16_t;
-            x_0 += 1;
-        }
-        my += dy;
-        mid_ptr = mid_ptr.offset(((my >> 10) * 128) as isize);
-        my &= 0x3ff as libc::c_int;
-        tmp = tmp.offset(w as isize);
-        h -= 1;
-        if !(h != 0) {
-            break;
-        }
-    }
+    prep_bilin_scaled_rust(
+        tmp,
+        src,
+        src_stride as usize,
+        w as usize,
+        h as usize,
+        mx as usize,
+        my as usize,
+        dx as usize,
+        dy as usize,
+        BitDepth16::new(bitdepth_max as u16),
+    )
 }
 unsafe extern "C" fn avg_c(
     mut dst: *mut pixel,

@@ -615,7 +615,8 @@ pub unsafe fn prep_bilin_rust<BD: BitDepth>(
     };
 }
 
-unsafe fn prep_bilin_scaled_rust<BD: BitDepth>(
+// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
+pub unsafe fn prep_bilin_scaled_rust<BD: BitDepth>(
     mut tmp: *mut i16,
     mut src: *const BD::Pixel,
     src_stride: usize,
