@@ -408,3 +408,8 @@ pub unsafe fn prep_8tap_scaled_rust<BD: BitDepth>(
         tmp = tmp.offset(w as isize);
     }
 }
+
+unsafe fn filter_bilin<T: Into<i32>>(src: *const T, x: usize, mxy: i32, stride: usize) -> i32 {
+    let src = |i: usize| -> i32 { src.offset(i as isize).read().into() };
+    16 * src(x) + (mxy * (src(x + stride) - src(x)))
+}
