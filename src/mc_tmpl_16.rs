@@ -2070,7 +2070,6 @@ unsafe extern "C" fn pixel_set(dst: *mut pixel, val: libc::c_int, num: libc::c_i
 }
 use crate::src::mc::prep_8tap_rust;
 use crate::src::mc::prep_8tap_scaled_rust;
-use crate::src::mc::prep_rust;
 use crate::src::mc::put_8tap_rust;
 use crate::src::mc::put_8tap_scaled_rust;
 unsafe extern "C" fn put_8tap_regular_c(
@@ -3025,6 +3024,7 @@ unsafe extern "C" fn put_bilin_scaled_c(
         BitDepth16::new(bitdepth_max as u16),
     )
 }
+use crate::src::mc::prep_bilin_rust;
 unsafe extern "C" fn prep_bilin_c(
     mut tmp: *mut int16_t,
     mut src: *const pixel,
@@ -3035,101 +3035,16 @@ unsafe extern "C" fn prep_bilin_c(
     my: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    let intermediate_bits = 14 as libc::c_int - (32 - clz(bitdepth_max as libc::c_uint));
-    src_stride = PXSTRIDE(src_stride);
-    if mx != 0 {
-        if my != 0 {
-            let mut mid: [int16_t; 16512] = [0; 16512];
-            let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
-            let mut tmp_h = h + 1;
-            loop {
-                let mut x = 0;
-                while x < w {
-                    *mid_ptr.offset(x as isize) = (16 * *src.offset(x as isize) as libc::c_int
-                        + mx * (*src.offset((x + 1) as isize) as libc::c_int
-                            - *src.offset(x as isize) as libc::c_int)
-                        + ((1 as libc::c_int) << 4 - intermediate_bits >> 1)
-                        >> 4 - intermediate_bits)
-                        as int16_t;
-                    x += 1;
-                }
-                mid_ptr = mid_ptr.offset(128);
-                src = src.offset(src_stride as isize);
-                tmp_h -= 1;
-                if !(tmp_h != 0) {
-                    break;
-                }
-            }
-            mid_ptr = mid.as_mut_ptr();
-            loop {
-                let mut x_0 = 0;
-                while x_0 < w {
-                    *tmp.offset(x_0 as isize) = ((16 as libc::c_int
-                        * *mid_ptr.offset(x_0 as isize) as libc::c_int
-                        + my * (*mid_ptr.offset((x_0 + 128) as isize) as libc::c_int
-                            - *mid_ptr.offset(x_0 as isize) as libc::c_int)
-                        + ((1 as libc::c_int) << 4 >> 1)
-                        >> 4)
-                        - 8192) as int16_t;
-                    x_0 += 1;
-                }
-                mid_ptr = mid_ptr.offset(128);
-                tmp = tmp.offset(w as isize);
-                h -= 1;
-                if !(h != 0) {
-                    break;
-                }
-            }
-        } else {
-            loop {
-                let mut x_1 = 0;
-                while x_1 < w {
-                    *tmp.offset(x_1 as isize) = ((16 as libc::c_int
-                        * *src.offset(x_1 as isize) as libc::c_int
-                        + mx * (*src.offset((x_1 + 1) as isize) as libc::c_int
-                            - *src.offset(x_1 as isize) as libc::c_int)
-                        + ((1 as libc::c_int) << 4 - intermediate_bits >> 1)
-                        >> 4 - intermediate_bits)
-                        - 8192) as int16_t;
-                    x_1 += 1;
-                }
-                tmp = tmp.offset(w as isize);
-                src = src.offset(src_stride as isize);
-                h -= 1;
-                if !(h != 0) {
-                    break;
-                }
-            }
-        }
-    } else if my != 0 {
-        loop {
-            let mut x_2 = 0;
-            while x_2 < w {
-                *tmp.offset(x_2 as isize) = ((16 * *src.offset(x_2 as isize) as libc::c_int
-                    + my * (*src.offset((x_2 as isize + src_stride) as isize) as libc::c_int
-                        - *src.offset(x_2 as isize) as libc::c_int)
-                    + ((1 as libc::c_int) << 4 - intermediate_bits >> 1)
-                    >> 4 - intermediate_bits)
-                    - 8192) as int16_t;
-                x_2 += 1;
-            }
-            tmp = tmp.offset(w as isize);
-            src = src.offset(src_stride as isize);
-            h -= 1;
-            if !(h != 0) {
-                break;
-            }
-        }
-    } else {
-        prep_rust(
-            tmp,
-            src,
-            src_stride as usize,
-            w as usize,
-            h as usize,
-            BitDepth16::new(bitdepth_max as u16),
-        );
-    };
+    prep_bilin_rust(
+        tmp,
+        src,
+        src_stride as usize,
+        w as usize,
+        h as usize,
+        mx as usize,
+        my as usize,
+        BitDepth16::new(bitdepth_max as u16),
+    )
 }
 unsafe extern "C" fn prep_bilin_scaled_c(
     mut tmp: *mut int16_t,
