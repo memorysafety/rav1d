@@ -434,3 +434,68 @@ unsafe fn filter_bilin_clip<BD: BitDepth, T: Into<i32>>(
 ) -> BD::Pixel {
     bd.iclip_pixel(filter_bilin_rnd(src, x, mxy, stride, sh))
 }
+
+unsafe fn put_bilin_rust<BD: BitDepth>(
+    mut dst: *mut BD::Pixel,
+    dst_stride: usize,
+    mut src: *const BD::Pixel,
+    src_stride: usize,
+    w: usize,
+    h: usize,
+    mx: i32,
+    my: i32,
+    bd: BD,
+) {
+    let intermediate_bits = bd.get_intermediate_bits();
+    let intermediate_rnd = (1 << intermediate_bits) >> 1;
+    let [dst_stride, src_stride] = [dst_stride, src_stride].map(BD::pxstride);
+
+    if mx != 0 {
+        if my != 0 {
+            let mut mid = [0i16; 128 * 129]; // Default::default()
+            let mut mid_ptr = &mut mid[..];
+            let tmp_h = h + 1;
+
+            for _ in 0..tmp_h {
+                for x in 0..w {
+                    mid_ptr[x] = filter_bilin_rnd(src, x, mx, 1, 4 - intermediate_bits) as i16;
+                }
+
+                mid_ptr = &mut mid_ptr[128..];
+                src = src.offset(src_stride as isize);
+            }
+            mid_ptr = &mut mid[..];
+            for _ in 0..h {
+                for x in 0..w {
+                    *dst.offset(x as isize) =
+                        filter_bilin_clip(bd, mid_ptr.as_ptr(), x, my, 128, 4 + intermediate_bits);
+                }
+
+                mid_ptr = &mut mid_ptr[128..];
+                dst = dst.offset(dst_stride as isize);
+            }
+        } else {
+            for _ in 0..h {
+                for x in 0..w {
+                    let px = filter_bilin_rnd(src, x, mx, 1, 4 - intermediate_bits);
+                    *dst.offset(x as isize) =
+                        bd.iclip_pixel((px + intermediate_rnd) >> intermediate_bits);
+                }
+
+                dst = dst.offset(dst_stride as isize);
+                src = src.offset(src_stride as isize);
+            }
+        }
+    } else if my != 0 {
+        for _ in 0..h {
+            for x in 0..w {
+                *dst.offset(x as isize) = filter_bilin_clip(bd, src, x, my, src_stride, 4);
+            }
+
+            dst = dst.offset(dst_stride as isize);
+            src = src.offset(src_stride as isize);
+        }
+    } else {
+        put_rust::<BD>(dst, dst_stride, src, src_stride, w, h);
+    };
+}
