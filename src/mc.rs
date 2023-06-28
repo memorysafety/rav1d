@@ -6,7 +6,7 @@ use crate::src::tables::dav1d_mc_subpel_filters;
 
 // TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
 #[inline(never)]
-pub unsafe fn put_c<BD: BitDepth>(
+pub unsafe fn put_rust<BD: BitDepth>(
     dst: *mut BD::Pixel,
     dst_stride: usize,
     src: *const BD::Pixel,
@@ -25,7 +25,7 @@ pub unsafe fn put_c<BD: BitDepth>(
 
 // TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
 #[inline(never)]
-pub unsafe fn prep_c<BD: BitDepth>(
+pub unsafe fn prep_rust<BD: BitDepth>(
     mut tmp: *mut i16,
     mut src: *const BD::Pixel,
     src_stride: usize,
@@ -134,7 +134,7 @@ fn get_filters(
 
 // TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
 #[inline(never)]
-pub unsafe fn put_8tap_c<BD: BitDepth>(
+pub unsafe fn put_8tap_rust<BD: BitDepth>(
     dst: *mut BD::Pixel,
     dst_stride: usize,
     mut src: *const BD::Pixel,
@@ -209,13 +209,13 @@ pub unsafe fn put_8tap_c<BD: BitDepth>(
             src = &src[src_stride..];
         }
     } else {
-        put_c::<BD>(dst.as_mut_ptr(), dst_stride, src, src_stride, w, h);
+        put_rust::<BD>(dst.as_mut_ptr(), dst_stride, src, src_stride, w, h);
     }
 }
 
 // TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
 #[inline(never)]
-pub unsafe fn put_8tap_scaled_c<BD: BitDepth>(
+pub unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     dst_stride: usize,
     mut src: *const BD::Pixel,
@@ -281,7 +281,7 @@ pub unsafe fn put_8tap_scaled_c<BD: BitDepth>(
 
 // TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
 #[inline(never)]
-pub unsafe fn prep_8tap_c<BD: BitDepth>(
+pub unsafe fn prep_8tap_rust<BD: BitDepth>(
     mut tmp: *mut i16,
     mut src: *const BD::Pixel,
     src_stride: usize,
@@ -349,13 +349,13 @@ pub unsafe fn prep_8tap_c<BD: BitDepth>(
             src = src.offset(src_stride as isize);
         }
     } else {
-        prep_c(tmp, src, src_stride, w, h, bd);
+        prep_rust(tmp, src, src_stride, w, h, bd);
     };
 }
 
 // TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
 #[inline(never)]
-pub unsafe fn prep_8tap_scaled_c<BD: BitDepth>(
+pub unsafe fn prep_8tap_scaled_rust<BD: BitDepth>(
     mut tmp: *mut i16,
     mut src: *const BD::Pixel,
     src_stride: usize,
