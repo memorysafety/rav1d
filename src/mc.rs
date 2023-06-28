@@ -409,15 +409,15 @@ pub unsafe fn prep_8tap_scaled_rust<BD: BitDepth>(
     }
 }
 
-unsafe fn filter_bilin<T: Into<i32>>(src: *const T, x: usize, mxy: i32, stride: usize) -> i32 {
+unsafe fn filter_bilin<T: Into<i32>>(src: *const T, x: usize, mxy: usize, stride: usize) -> i32 {
     let src = |i: usize| -> i32 { src.offset(i as isize).read().into() };
-    16 * src(x) + (mxy * (src(x + stride) - src(x)))
+    16 * src(x) + ((mxy as i32) * (src(x + stride) - src(x)))
 }
 
 unsafe fn filter_bilin_rnd<T: Into<i32>>(
     src: *const T,
     x: usize,
-    mxy: i32,
+    mxy: usize,
     stride: usize,
     sh: u8,
 ) -> i32 {
@@ -428,7 +428,7 @@ unsafe fn filter_bilin_clip<BD: BitDepth, T: Into<i32>>(
     bd: BD,
     src: *const T,
     x: usize,
-    mxy: i32,
+    mxy: usize,
     stride: usize,
     sh: u8,
 ) -> BD::Pixel {
@@ -443,8 +443,8 @@ pub unsafe fn put_bilin_rust<BD: BitDepth>(
     src_stride: usize,
     w: usize,
     h: usize,
-    mx: i32,
-    my: i32,
+    mx: usize,
+    my: usize,
     bd: BD,
 ) {
     let intermediate_bits = bd.get_intermediate_bits();

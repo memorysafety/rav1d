@@ -2992,8 +2992,8 @@ unsafe extern "C" fn put_bilin_c(
         src_stride as usize,
         w as usize,
         h as usize,
-        mx,
-        my,
+        mx as usize,
+        my as usize,
         BitDepth16::new(bitdepth_max as u16),
     )
 }
