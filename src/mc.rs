@@ -413,3 +413,13 @@ unsafe fn filter_bilin<T: Into<i32>>(src: *const T, x: usize, mxy: i32, stride: 
     let src = |i: usize| -> i32 { src.offset(i as isize).read().into() };
     16 * src(x) + (mxy * (src(x + stride) - src(x)))
 }
+
+unsafe fn filter_bilin_rnd<T: Into<i32>>(
+    src: *const T,
+    x: usize,
+    mxy: i32,
+    stride: usize,
+    sh: u8,
+) -> i32 {
+    (filter_bilin(src, x, mxy, stride) + ((1 << sh) >> 1)) >> sh
+}
