@@ -501,7 +501,8 @@ pub unsafe fn put_bilin_rust<BD: BitDepth>(
     };
 }
 
-unsafe fn put_bilin_scaled_rust<BD: BitDepth>(
+// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
+pub unsafe fn put_bilin_scaled_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     mut dst_stride: usize,
     mut src: *const BD::Pixel,
