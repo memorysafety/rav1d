@@ -510,34 +510,6 @@ use crate::src::tables::dav1d_resize_filter;
 
 pub type pixel = uint16_t;
 
-pub type mc_fn = Option<
-    unsafe extern "C" fn(
-        *mut pixel,
-        ptrdiff_t,
-        *const pixel,
-        ptrdiff_t,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
-pub type mc_scaled_fn = Option<
-    unsafe extern "C" fn(
-        *mut pixel,
-        ptrdiff_t,
-        *const pixel,
-        ptrdiff_t,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
 pub type warp8x8_fn = Option<
     unsafe extern "C" fn(
         *mut pixel,
@@ -545,32 +517,6 @@ pub type warp8x8_fn = Option<
         *const pixel,
         ptrdiff_t,
         *const int16_t,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
-pub type mct_fn = Option<
-    unsafe extern "C" fn(
-        *mut int16_t,
-        *const pixel,
-        ptrdiff_t,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
-pub type mct_scaled_fn = Option<
-    unsafe extern "C" fn(
-        *mut int16_t,
-        *const pixel,
-        ptrdiff_t,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
         libc::c_int,
         libc::c_int,
         libc::c_int,
