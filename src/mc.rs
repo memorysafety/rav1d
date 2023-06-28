@@ -423,3 +423,14 @@ unsafe fn filter_bilin_rnd<T: Into<i32>>(
 ) -> i32 {
     (filter_bilin(src, x, mxy, stride) + ((1 << sh) >> 1)) >> sh
 }
+
+unsafe fn filter_bilin_clip<BD: BitDepth, T: Into<i32>>(
+    bd: BD,
+    src: *const T,
+    x: usize,
+    mxy: i32,
+    stride: usize,
+    sh: u8,
+) -> BD::Pixel {
+    bd.iclip_pixel(filter_bilin_rnd(src, x, mxy, stride, sh))
+}
