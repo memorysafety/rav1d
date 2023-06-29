@@ -1,3 +1,5 @@
+use crate::include::common::bitdepth::BitDepth;
+use crate::include::common::bitdepth::BitDepth16;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 
@@ -244,25 +246,7 @@ pub struct Dav1dDSPContext {
     pub cdef: Dav1dCdefDSPContext,
     pub lr: Dav1dLoopRestorationDSPContext,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dLoopRestorationDSPContext {
-    pub wiener: [looprestorationfilter_fn; 2],
-    pub sgr: [looprestorationfilter_fn; 3],
-}
-pub type looprestorationfilter_fn = Option<
-    unsafe extern "C" fn(
-        *mut pixel,
-        ptrdiff_t,
-        const_left_pixel_row,
-        *const pixel,
-        libc::c_int,
-        libc::c_int,
-        *const LooprestorationParams,
-        LrEdgeFlags,
-        libc::c_int,
-    ) -> (),
->;
+use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
 use crate::src::looprestoration::LooprestorationParams;
 use crate::src::looprestoration::LrEdgeFlags;
 use crate::src::looprestoration::LR_HAVE_BOTTOM;
@@ -576,6 +560,8 @@ use crate::include::common::intops::imin;
 use crate::src::lr_apply::LR_RESTORE_U;
 use crate::src::lr_apply::LR_RESTORE_V;
 use crate::src::lr_apply::LR_RESTORE_Y;
+
+use super::looprestoration::FilterFn;
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     if x & 1 != 0 {
@@ -615,7 +601,7 @@ unsafe extern "C" fn lr_stripe(
         )
         .offset(x as isize);
     let mut stripe_h = imin(64 - 8 * (y == 0) as libc::c_int >> ss_ver, row_h - y);
-    let mut lr_fn: looprestorationfilter_fn = None;
+    let mut lr_fn: FilterFn;
     let mut params: LooprestorationParams = LooprestorationParams {
         filter: [[0; 8]; 2].into(),
     };
@@ -650,9 +636,11 @@ unsafe extern "C" fn lr_stripe(
                 + (*filter.offset(1))[1] as libc::c_int
                 + (*filter.offset(1))[2] as libc::c_int)
                 * 2) as int16_t;
-        lr_fn = (*dsp).lr.wiener[((*filter.offset(0))[0] as libc::c_int
-            | (*filter.offset(1))[0] as libc::c_int
-            == 0) as libc::c_int as usize];
+        lr_fn = FilterFn::wiener(
+            ((*filter.offset(0))[0] as libc::c_int | (*filter.offset(1))[0] as libc::c_int == 0)
+                as libc::c_int as usize,
+        )
+        .into();
     } else {
         if !((*lr).type_0 as libc::c_int == DAV1D_RESTORATION_SGRPROJ as libc::c_int) {
             unreachable!();
@@ -664,9 +652,12 @@ unsafe extern "C" fn lr_stripe(
         params.sgr.w1 = (128 as libc::c_int
             - ((*lr).sgr_weights[0] as libc::c_int + (*lr).sgr_weights[1] as libc::c_int))
             as int16_t;
-        lr_fn = (*dsp).lr.sgr[((*sgr_params.offset(0) != 0) as libc::c_int
-            + (*sgr_params.offset(1) != 0) as libc::c_int * 2
-            - 1) as usize];
+        lr_fn = FilterFn::sgr(
+            ((*sgr_params.offset(0) != 0) as libc::c_int
+                + (*sgr_params.offset(1) != 0) as libc::c_int * 2
+                - 1) as usize,
+        )
+        .into();
     }
     while y + stripe_h <= row_h {
         edges = ::core::mem::transmute::<libc::c_uint, LrEdgeFlags>(
@@ -676,7 +667,8 @@ unsafe extern "C" fn lr_stripe(
                     ^ edges as libc::c_uint)
                     & LR_HAVE_BOTTOM as libc::c_int as libc::c_uint,
         );
-        lr_fn.expect("non-null function pointer")(
+        (*dsp).lr.call(
+            lr_fn,
             p,
             stride,
             left,
@@ -685,7 +677,7 @@ unsafe extern "C" fn lr_stripe(
             stripe_h,
             &mut params,
             edges,
-            (*f).bitdepth_max,
+            BitDepth16::new((*f).bitdepth_max as u16),
         );
         left = left.offset(stripe_h as isize);
         y += stripe_h;
