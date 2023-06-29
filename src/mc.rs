@@ -690,8 +690,8 @@ pub unsafe fn avg_rust<BD: BitDepth>(
     }
 }
 
-unsafe fn w_avg_rust<BD: BitDepth>(
-    bd: BD,
+// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
+pub unsafe fn w_avg_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     dst_stride: usize,
     mut tmp1: *const i16,
@@ -699,6 +699,7 @@ unsafe fn w_avg_rust<BD: BitDepth>(
     w: usize,
     h: usize,
     weight: i32,
+    bd: BD,
 ) {
     let intermediate_bits = bd.get_intermediate_bits();
     let sh = intermediate_bits + 4;

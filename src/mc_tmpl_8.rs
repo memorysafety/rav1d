@@ -2996,37 +2996,26 @@ unsafe extern "C" fn avg_c(
         BitDepth8::new(()),
     )
 }
+use crate::src::mc::w_avg_rust;
 unsafe extern "C" fn w_avg_c(
-    mut dst: *mut pixel,
+    dst: *mut pixel,
     dst_stride: ptrdiff_t,
-    mut tmp1: *const int16_t,
-    mut tmp2: *const int16_t,
+    tmp1: *const int16_t,
+    tmp2: *const int16_t,
     w: libc::c_int,
-    mut h: libc::c_int,
+    h: libc::c_int,
     weight: libc::c_int,
 ) {
-    let intermediate_bits = 4;
-    let sh = intermediate_bits + 4;
-    let rnd = ((8 as libc::c_int) << intermediate_bits) + 0 * 16;
-    loop {
-        let mut x = 0;
-        while x < w {
-            *dst.offset(x as isize) = iclip_u8(
-                *tmp1.offset(x as isize) as libc::c_int * weight
-                    + *tmp2.offset(x as isize) as libc::c_int * (16 - weight)
-                    + rnd
-                    >> sh,
-            ) as pixel;
-            x += 1;
-        }
-        tmp1 = tmp1.offset(w as isize);
-        tmp2 = tmp2.offset(w as isize);
-        dst = dst.offset(dst_stride as isize);
-        h -= 1;
-        if !(h != 0) {
-            break;
-        }
-    }
+    w_avg_rust(
+        dst,
+        dst_stride as usize,
+        tmp1,
+        tmp2,
+        w as usize,
+        h as usize,
+        weight,
+        BitDepth8::new(()),
+    )
 }
 unsafe extern "C" fn mask_c(
     mut dst: *mut pixel,
