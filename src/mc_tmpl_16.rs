@@ -3072,6 +3072,7 @@ unsafe extern "C" fn prep_bilin_scaled_c(
         BitDepth16::new(bitdepth_max as u16),
     )
 }
+use crate::src::mc::avg_rust;
 unsafe extern "C" fn avg_c(
     mut dst: *mut pixel,
     dst_stride: ptrdiff_t,
@@ -3081,30 +3082,15 @@ unsafe extern "C" fn avg_c(
     mut h: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    let intermediate_bits = 14 as libc::c_int - (32 - clz(bitdepth_max as libc::c_uint));
-    let sh = intermediate_bits + 1;
-    let rnd = ((1 as libc::c_int) << intermediate_bits) + 8192 * 2;
-    loop {
-        let mut x = 0;
-        while x < w {
-            *dst.offset(x as isize) = iclip(
-                *tmp1.offset(x as isize) as libc::c_int
-                    + *tmp2.offset(x as isize) as libc::c_int
-                    + rnd
-                    >> sh,
-                0 as libc::c_int,
-                bitdepth_max,
-            ) as pixel;
-            x += 1;
-        }
-        tmp1 = tmp1.offset(w as isize);
-        tmp2 = tmp2.offset(w as isize);
-        dst = dst.offset(PXSTRIDE(dst_stride) as isize);
-        h -= 1;
-        if !(h != 0) {
-            break;
-        }
-    }
+    avg_rust(
+        dst,
+        dst_stride as usize,
+        tmp1,
+        tmp2,
+        w as usize,
+        h as usize,
+        BitDepth16::new(bitdepth_max as u16),
+    )
 }
 unsafe extern "C" fn w_avg_c(
     mut dst: *mut pixel,
