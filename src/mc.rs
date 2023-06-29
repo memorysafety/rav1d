@@ -1787,3 +1787,24 @@ unsafe fn blend_v_rust<BD: BitDepth>(
         tmp = tmp.offset(w as isize);
     }
 }
+
+unsafe fn blend_h_rust<BD: BitDepth>(
+    mut dst: *mut BD::Pixel,
+    dst_stride: usize,
+    mut tmp: *const BD::Pixel,
+    w: usize,
+    h: usize,
+) {
+    let mask = &dav1d_obmc_masks.0[h..];
+    let h = h * 3 >> 2;
+    let dst_stride = BD::pxstride(dst_stride);
+    for y in 0..h {
+        for x in 0..w {
+            *dst.offset(x as isize) =
+                blend_px::<BD>(*dst.offset(x as isize), *tmp.offset(x as isize), mask[y]);
+        }
+
+        dst = dst.offset(dst_stride as isize);
+        tmp = tmp.offset(w as isize);
+    }
+}
