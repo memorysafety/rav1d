@@ -1706,3 +1706,34 @@ unsafe fn w_avg_rust<BD: BitDepth>(
         dst = dst.offset(dst_stride as isize);
     }
 }
+
+unsafe fn mask_rust<BD: BitDepth>(
+    bd: BD,
+    mut dst: *mut BD::Pixel,
+    dst_stride: usize,
+    mut tmp1: *const i16,
+    mut tmp2: *const i16,
+    w: usize,
+    h: usize,
+    mut mask: *const u8,
+) {
+    let intermediate_bits = bd.get_intermediate_bits();
+    let sh = intermediate_bits + 6;
+    let rnd = (32 << intermediate_bits) + BD::PREP_BIAS * 64;
+    let dst_stride = BD::pxstride(dst_stride);
+    for _ in 0..h {
+        for x in 0..w {
+            *dst.offset(x as isize) = bd.iclip_pixel(
+                (*tmp1.offset(x as isize) as i32 * *mask.offset(x as isize) as i32
+                    + *tmp2.offset(x as isize) as i32 * (64 - *mask.offset(x as isize) as i32)
+                    + rnd as i32)
+                    >> sh,
+            );
+        }
+
+        tmp1 = tmp1.offset(w as isize);
+        tmp2 = tmp2.offset(w as isize);
+        mask = mask.offset(w as isize);
+        dst = dst.offset(dst_stride as isize);
+    }
+}
