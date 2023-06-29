@@ -1,5 +1,6 @@
 use std::ffi::{c_int, c_uint};
 use std::fmt::{self, Display, Formatter};
+use std::ops::{Add, Mul, Shr};
 
 use crate::include::common::intops::clip;
 
@@ -76,6 +77,9 @@ pub trait BitDepth: Clone + Copy {
 
     type Pixel: Copy
         + Ord
+        + Add<Output = Self::Pixel>
+        + Mul<Output = Self::Pixel>
+        + Shr<u8, Output = Self::Pixel>
         + From<u8>
         + Into<i32>
         + TryFrom<i32>
