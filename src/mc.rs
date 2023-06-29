@@ -3,6 +3,7 @@ use std::iter;
 use crate::include::common::bitdepth::{AsPrimitive, BitDepth};
 use crate::include::dav1d::headers::Dav1dFilterMode;
 use crate::src::tables::dav1d_mc_subpel_filters;
+use crate::src::tables::dav1d_obmc_masks;
 
 // TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
 #[inline(never)]
@@ -780,5 +781,25 @@ pub unsafe fn blend_rust<BD: BitDepth>(
         dst = dst.offset(dst_stride as isize);
         tmp = tmp.offset(w as isize);
         mask = mask.offset(w as isize);
+    }
+}
+
+unsafe fn blend_v_rust<BD: BitDepth>(
+    mut dst: *mut BD::Pixel,
+    dst_stride: usize,
+    mut tmp: *const BD::Pixel,
+    w: usize,
+    h: usize,
+) {
+    let mask = &dav1d_obmc_masks.0[w..];
+    let dst_stride = BD::pxstride(dst_stride);
+    for _ in 0..h {
+        for x in 0..(w * 3 >> 2) {
+            *dst.offset(x as isize) =
+                blend_px::<BD>(*dst.offset(x as isize), *tmp.offset(x as isize), mask[x])
+        }
+
+        dst = dst.offset(dst_stride as isize);
+        tmp = tmp.offset(w as isize);
     }
 }
