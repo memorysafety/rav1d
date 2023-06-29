@@ -1676,3 +1676,33 @@ unsafe fn avg_rust<BD: BitDepth>(
         dst = dst.offset(dst_stride as isize);
     }
 }
+
+unsafe fn w_avg_rust<BD: BitDepth>(
+    bd: BD,
+    mut dst: *mut BD::Pixel,
+    dst_stride: usize,
+    mut tmp1: *const i16,
+    mut tmp2: *const i16,
+    w: usize,
+    h: usize,
+    weight: i32,
+) {
+    let intermediate_bits = bd.get_intermediate_bits();
+    let sh = intermediate_bits + 4;
+    let rnd = (8 << intermediate_bits) + BD::PREP_BIAS * 16;
+    let dst_stride = BD::pxstride(dst_stride);
+    for _ in 0..h {
+        for x in 0..w {
+            *dst.offset(x as isize) = bd.iclip_pixel(
+                (*tmp1.offset(x as isize) as i32 * weight
+                    + *tmp2.offset(x as isize) as i32 * (16 - weight)
+                    + rnd as i32)
+                    >> sh,
+            );
+        }
+
+        tmp1 = tmp1.offset(w as isize);
+        tmp2 = tmp2.offset(w as isize);
+        dst = dst.offset(dst_stride as isize);
+    }
+}
