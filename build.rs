@@ -49,6 +49,8 @@ fn build_nasm_files(x86_64: bool) {
         config_file.write(b"%define STACK_ALIGNMENT 4\n").unwrap();
     }
     config_file.write(b"%define PIC 1\n").unwrap();
+    #[cfg(target_os = "macos")]
+    config_file.write(b"%define PREFIX 1\n").unwrap();
     config_file
         .write(b"%define FORCE_VEX_ENCODING 0\n")
         .unwrap();
