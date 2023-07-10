@@ -1327,7 +1327,7 @@ use crate::src::cpu::dav1d_get_cpu_flags;
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 #[inline(always)]
 unsafe extern "C" fn mc_dsp_init_x86(c: *mut Dav1dMCDSPContext) {
-    use crate::src::mc::{FnAsmVersion::*, FnVersion::*};
+    use crate::src::cpu::{FnAsmVersion::*, FnVersion::*};
     use crate::src::x86::cpu::*;
 
     let flags = dav1d_get_cpu_flags();
@@ -1420,7 +1420,7 @@ unsafe extern "C" fn mc_dsp_init_x86(c: *mut Dav1dMCDSPContext) {
 #[inline(always)]
 unsafe extern "C" fn mc_dsp_init_arm(c: *mut Dav1dMCDSPContext) {
     use crate::src::arm::cpu::DAV1D_ARM_CPU_FLAG_NEON;
-    use crate::src::mc::{FnAsmVersion::*, FnVersion::*};
+    use crate::src::cpu::{FnAsmVersion::*, FnVersion::*};
 
     let flags = dav1d_get_cpu_flags();
 

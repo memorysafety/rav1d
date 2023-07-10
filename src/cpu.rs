@@ -33,6 +33,45 @@ static dav1d_cpu_flags: AtomicU32 = AtomicU32::new(0);
 static dav1d_cpu_flags_mask: AtomicU32 = AtomicU32::new(!0);
 
 #[cfg(feature = "asm")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+pub enum FnAsmVersion {
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    SSE2,
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    SSSE3,
+    #[cfg(target_arch = "x86_64")]
+    AVX2,
+    #[cfg(target_arch = "x86_64")]
+    AVX512ICL,
+    #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+    Neon,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[repr(u8)]
+pub enum FnVersion {
+    #[default]
+    Rust,
+    #[cfg(feature = "asm")]
+    Asm(FnAsmVersion),
+}
+
+#[cfg(feature = "asm")]
+impl FnVersion {
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    pub const SSE2: Self = FnVersion::Asm(FnAsmVersion::SSE2);
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    pub const SSSE3: Self = FnVersion::Asm(FnAsmVersion::SSSE3);
+    #[cfg(target_arch = "x86_64")]
+    pub const AVX2: Self = FnVersion::Asm(FnAsmVersion::AVX2);
+    #[cfg(target_arch = "x86_64")]
+    pub const AVX512ICL: Self = FnVersion::Asm(FnAsmVersion::AVX512ICL);
+    #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+    pub const NEON: Self = FnVersion::Asm(FnAsmVersion::Neon);
+}
+
+#[cfg(feature = "asm")]
 #[inline(always)]
 pub fn dav1d_get_cpu_flags() -> libc::c_uint {
     let mut flags =

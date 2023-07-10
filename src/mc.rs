@@ -4,6 +4,9 @@ use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BitDepth16;
 use crate::include::common::bitdepth::BitDepth8;
+#[cfg(feature = "asm")]
+use crate::src::cpu::FnAsmVersion;
+use crate::src::cpu::FnVersion;
 use crate::src::levels::Filter2d8Tap;
 use crate::src::levels::Filter2dRust;
 use crate::src::levels::Filter8Tap;
@@ -11,31 +14,6 @@ use crate::src::tables::dav1d_mc_subpel_filters;
 
 #[cfg(feature = "asm")]
 use {libc::ptrdiff_t, paste::paste, std::ffi::c_int};
-
-#[cfg(feature = "asm")]
-#[derive(Debug, Clone, Copy)]
-#[repr(u8)]
-pub enum FnAsmVersion {
-    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-    SSE2,
-    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-    SSSE3,
-    #[cfg(target_arch = "x86_64")]
-    AVX2,
-    #[cfg(target_arch = "x86_64")]
-    AVX512ICL,
-    #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
-    Neon,
-}
-
-#[derive(Debug, Clone, Copy, Default)]
-#[repr(u8)]
-pub enum FnVersion {
-    #[default]
-    Rust,
-    #[cfg(feature = "asm")]
-    Asm(FnAsmVersion),
-}
 
 /// [`BitDepthFnAsmMc`] has to be `pub`, but we don't want anyone else calling its methods,
 /// so require this public [`Token`] with a private constructor.
