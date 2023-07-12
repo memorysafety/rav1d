@@ -8,6 +8,7 @@ version = "0.0.0"
 publish = false
 edition = "2021"
 autobins = false
+autotests = false
 
 [lib]
 name = "c2rust_out"
@@ -16,6 +17,9 @@ crate-type = ["staticlib", "rlib"]
 [[bin]]
 path = "tools/dav1d.rs"
 name = "dav1d"
+[[bin]]
+path = "tests/seek_stress.rs"
+name = "seek_stress"
 [dependencies]
 c2rust-bitfields= "0.3"
 cfg-if = "1.0.0"

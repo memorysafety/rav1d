@@ -50,7 +50,10 @@ jobs:
           cargo build --target ${{ matrix.target }} ${{ matrix.build.flags }}
       - name: meson test for ${{ matrix.target }} ${{ matrix.build.name }}
         run: |
-          .github/workflows/test.sh -r ../target/${{ matrix.target }}/${{ matrix.build.name }}/dav1d -t ${{ matrix.build.timeout_multiplier }}
+          .github/workflows/test.sh \
+              -r ../target/${{ matrix.target }}/${{ matrix.build.name }}/dav1d \
+              -s ../target/${{ matrix.target }}/${{ matrix.build.name }}/seek_stress \
+              -t ${{ matrix.build.timeout_multiplier }}
           cp ${{ github.workspace }}/build/meson-logs/testlog.txt \
              ${{ github.workspace }}/build/meson-logs/testlog-${{ matrix.target }}-${{ matrix.build.name }}.txt
       - name: upload build artifacts
@@ -94,7 +97,8 @@ jobs:
           cargo build --release
       - name: meson test for x86_64-apple-darwin
         run: |
-          .github/workflows/test.sh -r ../target/release/dav1d
+          .github/workflows/test.sh -r ../target/release/dav1d \
+              -s ../target/release/seek_stress
           cp ${{ github.workspace }}/build/meson-logs/testlog.txt \
               ${{ github.workspace }}/build/meson-logs/testlog-x86_64-apple-darwin.txt
       - name: upload build artifacts
