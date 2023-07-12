@@ -288,6 +288,30 @@ extern "C" {
     );
 }
 
+#[cfg(all(feature = "asm", target_arch = "arm"))]
+extern "C" {
+    fn dav1d_wiener_filter_h_8bpc_neon(
+        dst: *mut int16_t,
+        left: *const [pixel; 4],
+        src: *const pixel,
+        stride: ptrdiff_t,
+        fh: *const int16_t,
+        w: intptr_t,
+        h: libc::c_int,
+        edges: LrEdgeFlags,
+    );
+    fn dav1d_wiener_filter_v_8bpc_neon(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        mid: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        fv: *const int16_t,
+        edges: LrEdgeFlags,
+        mid_stride: ptrdiff_t,
+    );
+}
+
 use crate::src::tables::dav1d_sgr_x_by_x;
 
 pub type pixel = uint8_t;
@@ -1037,7 +1061,70 @@ unsafe extern "C" fn loop_restoration_dsp_init_x86(
         (*c).sgr[2] = Some(dav1d_sgr_filter_mix_8bpc_avx512icl);
     }
 }
-
+#[cfg(all(feature = "asm", target_arch = "arm"))]
+unsafe extern "C" fn wiener_filter_neon(
+    dst: *mut pixel,
+    stride: ptrdiff_t,
+    left: *const [pixel; 4],
+    mut lpf: *const pixel,
+    w: libc::c_int,
+    h: libc::c_int,
+    params: *const LooprestorationParams,
+    edges: LrEdgeFlags,
+) {
+    let filter: *const [int16_t; 8] = (*params).filter.0.as_ptr();
+    let mut mid: Align16<[int16_t; 68 * 384]> = Align16([0; 68 * 384]);
+    let mut mid_stride: libc::c_int = w + 7 & !7;
+    // Horizontal filter
+    dav1d_wiener_filter_h_8bpc_neon(
+        &mut *mid.0.as_mut_ptr().offset((2 * mid_stride) as isize),
+        left,
+        dst,
+        stride,
+        (*filter.offset(0)).as_ptr(),
+        w as isize,
+        h,
+        edges,
+    );
+    if edges & LR_HAVE_TOP != 0 {
+        dav1d_wiener_filter_h_8bpc_neon(
+            mid.0.as_mut_ptr(),
+            core::ptr::null(),
+            lpf,
+            stride,
+            (*filter.offset(0)).as_ptr(),
+            w as isize,
+            2,
+            edges,
+        );
+    }
+    if edges & LR_HAVE_BOTTOM != 0 {
+        dav1d_wiener_filter_h_8bpc_neon(
+            &mut *mid
+                .0
+                .as_mut_ptr()
+                .offset(((2 as libc::c_int + h) * mid_stride) as isize),
+            core::ptr::null(),
+            lpf.offset((6 * stride) as isize),
+            stride,
+            (*filter.offset(0)).as_ptr(),
+            w as isize,
+            2,
+            edges,
+        );
+    }
+    // Vertical filter
+    dav1d_wiener_filter_v_8bpc_neon(
+        dst,
+        stride,
+        &mut *mid.0.as_mut_ptr().offset((2 * mid_stride) as isize),
+        w,
+        h,
+        (*filter.offset(1)).as_ptr(),
+        edges,
+        (mid_stride as usize * ::core::mem::size_of::<int16_t>()) as ptrdiff_t,
+    );
+}
 #[cfg(feature = "asm")]
 use crate::src::cpu::dav1d_get_cpu_flags;
 
@@ -1060,9 +1147,8 @@ unsafe extern "C" fn loop_restoration_dsp_init_arm(
             (*c).wiener[0] = Some(dav1d_wiener_filter7_8bpc_neon);
             (*c).wiener[1] = Some(dav1d_wiener_filter5_8bpc_neon);
         } else {
-            // TODO(perl): enable assembly routines here
-            // (*c).wiener[0] = Some(dav1d_wiener_filter_neon);
-            // (*c).wiener[1] = Some(dav1d_wiener_filter_neon);
+            (*c).wiener[0] = Some(wiener_filter_neon);
+            (*c).wiener[1] = Some(wiener_filter_neon);
         }
     }
 
