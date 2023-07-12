@@ -50,7 +50,8 @@ jobs:
             --platform linux/arm/v7 \
             ghcr.io/immunant/rav1d/debian-bullseye-arm7:latest \
             .github/workflows/test.sh -t 2 \
-                -r ../target/armv7-unknown-linux-gnueabihf/release/dav1d
+                -r ../target/armv7-unknown-linux-gnueabihf/release/dav1d \
+                -s ../target/armv7-unknown-linux-gnueabihf/release/seek_stress
       - name: upload build artifacts
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v3

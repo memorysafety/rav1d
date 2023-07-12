@@ -74,3 +74,8 @@ option('test_rust_path',
     type: 'string',
     value: '',
     description: 'Use specified Rust binary instead of building it. Path must be relative to build directory.')
+
+option('seek_stress_test_rust_path',
+    type: 'string',
+    value: '',
+    description: 'Use specified Rust binary instead of building it. Path must be relative to build directory.')
