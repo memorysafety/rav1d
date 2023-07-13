@@ -147,6 +147,7 @@ endif
 
 test_rust_path = get_option('test_rust_path')
 if test_rust_path == ''
+    message('running cargo since test_rust_path is not set...')
     if get_option('debug')
         run_command('cargo', 'build', check: true)
         test_rust_path = '../target/debug/dav1d'
@@ -165,7 +166,7 @@ seek_stress_test_rust_path = get_option('seek_stress_test_rust_path')
 # This will cause the Rust executables to be tested instead of the C versions.
 if get_option('test_rust')
     dav1d = files(test_rust_path)
-    seek_stress = files(seek_stress_test_rust_path) 
+    seek_stress = files(seek_stress_test_rust_path)
 endif
 
 # Include dav1d test data repository with additional tests
