@@ -23,11 +23,12 @@ done
 if [ -d "./build" ]
 then
     # also pass --reconfigure since $rust_test_path, etc. may have changed
-    meson setup build $debug_opt $rust_test_path $seek_stress_test_rust_path \
-        --reconfigure 
+    meson setup build $debug_opt -Dtest_rust=true $rust_test_path \
+        $seek_stress_test_rust_path --reconfigure
 else
     # since build doesn't exist, it would be an error if we passed --reconfigure
-    meson setup build $debug_opt $rust_test_path $seek_stress_test_rust_path
+    meson setup build $debug_opt -Dtest_rust=true $rust_test_path \
+        $seek_stress_test_rust_path
 fi
 
 if [[ -z $seek_stress_test_rust_path ]]; then
