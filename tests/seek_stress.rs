@@ -10,18 +10,21 @@
 #![feature(extern_types)]
 #![feature(c_variadic)]
 extern crate c2rust_out;
+use c2rust_out::include::dav1d::common::Dav1dDataProps;
+use c2rust_out::include::dav1d::common::Dav1dUserData;
+use c2rust_out::include::dav1d::data::Dav1dData;
+use c2rust_out::include::dav1d::headers::Dav1dSequenceHeader;
+use c2rust_out::include::dav1d::headers::Dav1dSequenceHeaderOperatingParameterInfo;
+use c2rust_out::include::dav1d::headers::Dav1dSequenceHeaderOperatingPoint;
+use c2rust_out::src::r#ref::Dav1dRef;
 extern "C" {
-    pub type _IO_wide_data;
-    pub type _IO_codecvt;
-    pub type _IO_marker;
-    pub type Dav1dRef;
     pub type Dav1dContext;
     pub type DemuxerContext;
     pub type DemuxerPriv;
     fn llround(_: libc::c_double) -> libc::c_longlong;
-    static mut stderr: *mut FILE;
-    fn fprintf(_: *mut FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
-    fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
+    static mut stderr: *mut libc::FILE;
+    fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
+    fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::size_t) -> *mut libc::c_void;
     fn strcmp(_: *const libc::c_char, _: *const libc::c_char) -> libc::c_int;
     fn strerror(_: libc::c_int) -> *mut libc::c_char;
     fn dav1d_version() -> *const libc::c_char;
@@ -63,55 +66,19 @@ pub struct __va_list_tag {
     pub overflow_arg_area: *mut libc::c_void,
     pub reg_save_area: *mut libc::c_void,
 }
-pub type __int8_t = libc::c_schar;
-pub type __uint8_t = libc::c_uchar;
-pub type __int16_t = libc::c_short;
-pub type __uint16_t = libc::c_ushort;
-pub type __int32_t = libc::c_int;
-pub type __uint32_t = libc::c_uint;
-pub type __int64_t = libc::c_long;
-pub type __uint64_t = libc::c_ulong;
-pub type __off_t = libc::c_long;
-pub type __off64_t = libc::c_long;
-pub type __time_t = libc::c_long;
-pub type __clockid_t = libc::c_int;
+pub type __int8_t = i8;
+pub type __uint8_t = u8;
+pub type __int16_t = i16;
+pub type __uint16_t = u16;
+pub type __int32_t = i32;
+pub type __uint32_t = u32;
+pub type __int64_t = i64;
+pub type __uint64_t = u64;
+pub type __off_t = libc::off_t;
+pub type __time_t = libc::time_t;
+pub type __clockid_t = libc::clockid_t;
 pub type __syscall_slong_t = libc::c_long;
-pub type size_t = libc::c_ulong;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _IO_FILE {
-    pub _flags: libc::c_int,
-    pub _IO_read_ptr: *mut libc::c_char,
-    pub _IO_read_end: *mut libc::c_char,
-    pub _IO_read_base: *mut libc::c_char,
-    pub _IO_write_base: *mut libc::c_char,
-    pub _IO_write_ptr: *mut libc::c_char,
-    pub _IO_write_end: *mut libc::c_char,
-    pub _IO_buf_base: *mut libc::c_char,
-    pub _IO_buf_end: *mut libc::c_char,
-    pub _IO_save_base: *mut libc::c_char,
-    pub _IO_backup_base: *mut libc::c_char,
-    pub _IO_save_end: *mut libc::c_char,
-    pub _markers: *mut _IO_marker,
-    pub _chain: *mut _IO_FILE,
-    pub _fileno: libc::c_int,
-    pub _flags2: libc::c_int,
-    pub _old_offset: __off_t,
-    pub _cur_column: libc::c_ushort,
-    pub _vtable_offset: libc::c_schar,
-    pub _shortbuf: [libc::c_char; 1],
-    pub _lock: *mut libc::c_void,
-    pub _offset: __off64_t,
-    pub _codecvt: *mut _IO_codecvt,
-    pub _wide_data: *mut _IO_wide_data,
-    pub _freeres_list: *mut _IO_FILE,
-    pub _freeres_buf: *mut libc::c_void,
-    pub __pad5: size_t,
-    pub _mode: libc::c_int,
-    pub _unused2: [libc::c_char; 20],
-}
-pub type _IO_lock_t = ();
-pub type FILE = _IO_FILE;
+pub type size_t = libc::size_t;
 pub type clockid_t = __clockid_t;
 pub type int8_t = __int8_t;
 pub type int16_t = __int16_t;
@@ -123,27 +90,12 @@ pub struct timespec {
     pub tv_sec: __time_t,
     pub tv_nsec: __syscall_slong_t,
 }
-pub type ptrdiff_t = libc::c_long;
+pub type ptrdiff_t = libc::ptrdiff_t;
 pub type uint8_t = __uint8_t;
 pub type uint16_t = __uint16_t;
 pub type uint32_t = __uint32_t;
 pub type uint64_t = __uint64_t;
-pub type uintptr_t = libc::c_ulong;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dUserData {
-    pub data: *const uint8_t,
-    pub ref_0: *mut Dav1dRef,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dDataProps {
-    pub timestamp: int64_t,
-    pub duration: int64_t,
-    pub offset: int64_t,
-    pub size: size_t,
-    pub user_data: Dav1dUserData,
-}
+pub type uintptr_t = libc::uintptr_t;
 pub type Dav1dTxfmMode = libc::c_uint;
 pub const DAV1D_N_TX_MODES: Dav1dTxfmMode = 3;
 pub const DAV1D_TX_SWITCHABLE: Dav1dTxfmMode = 2;
@@ -276,81 +228,6 @@ pub struct Dav1dITUTT35 {
     pub country_code_extension_byte: uint8_t,
     pub payload_size: size_t,
     pub payload: *mut uint8_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dSequenceHeader {
-    pub profile: libc::c_int,
-    pub max_width: libc::c_int,
-    pub max_height: libc::c_int,
-    pub layout: Dav1dPixelLayout,
-    pub pri: Dav1dColorPrimaries,
-    pub trc: Dav1dTransferCharacteristics,
-    pub mtrx: Dav1dMatrixCoefficients,
-    pub chr: Dav1dChromaSamplePosition,
-    pub hbd: libc::c_int,
-    pub color_range: libc::c_int,
-    pub num_operating_points: libc::c_int,
-    pub operating_points: [Dav1dSequenceHeaderOperatingPoint; 32],
-    pub still_picture: libc::c_int,
-    pub reduced_still_picture_header: libc::c_int,
-    pub timing_info_present: libc::c_int,
-    pub num_units_in_tick: libc::c_int,
-    pub time_scale: libc::c_int,
-    pub equal_picture_interval: libc::c_int,
-    pub num_ticks_per_picture: libc::c_uint,
-    pub decoder_model_info_present: libc::c_int,
-    pub encoder_decoder_buffer_delay_length: libc::c_int,
-    pub num_units_in_decoding_tick: libc::c_int,
-    pub buffer_removal_delay_length: libc::c_int,
-    pub frame_presentation_delay_length: libc::c_int,
-    pub display_model_info_present: libc::c_int,
-    pub width_n_bits: libc::c_int,
-    pub height_n_bits: libc::c_int,
-    pub frame_id_numbers_present: libc::c_int,
-    pub delta_frame_id_n_bits: libc::c_int,
-    pub frame_id_n_bits: libc::c_int,
-    pub sb128: libc::c_int,
-    pub filter_intra: libc::c_int,
-    pub intra_edge_filter: libc::c_int,
-    pub inter_intra: libc::c_int,
-    pub masked_compound: libc::c_int,
-    pub warped_motion: libc::c_int,
-    pub dual_filter: libc::c_int,
-    pub order_hint: libc::c_int,
-    pub jnt_comp: libc::c_int,
-    pub ref_frame_mvs: libc::c_int,
-    pub screen_content_tools: Dav1dAdaptiveBoolean,
-    pub force_integer_mv: Dav1dAdaptiveBoolean,
-    pub order_hint_n_bits: libc::c_int,
-    pub super_res: libc::c_int,
-    pub cdef: libc::c_int,
-    pub restoration: libc::c_int,
-    pub ss_hor: libc::c_int,
-    pub ss_ver: libc::c_int,
-    pub monochrome: libc::c_int,
-    pub color_description_present: libc::c_int,
-    pub separate_uv_delta_q: libc::c_int,
-    pub film_grain_present: libc::c_int,
-    pub operating_parameter_info: [Dav1dSequenceHeaderOperatingParameterInfo; 32],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dSequenceHeaderOperatingParameterInfo {
-    pub decoder_buffer_delay: libc::c_int,
-    pub encoder_buffer_delay: libc::c_int,
-    pub low_delay_mode: libc::c_int,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dSequenceHeaderOperatingPoint {
-    pub major_level: libc::c_int,
-    pub minor_level: libc::c_int,
-    pub initial_display_delay: libc::c_int,
-    pub idc: libc::c_int,
-    pub tier: libc::c_int,
-    pub decoder_model_param_present: libc::c_int,
-    pub display_model_param_present: libc::c_int,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -597,14 +474,6 @@ pub struct Dav1dPicAllocator {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct Dav1dData {
-    pub data: *const uint8_t,
-    pub sz: size_t,
-    pub ref_0: *mut Dav1dRef,
-    pub m: Dav1dDataProps,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
 pub struct Dav1dLogger {
     pub cookie: *mut libc::c_void,
     pub callback: Option<
@@ -720,7 +589,7 @@ unsafe extern "C" fn decode_frame(
     memset(
         p as *mut libc::c_void,
         0 as libc::c_int,
-        ::core::mem::size_of::<Dav1dPicture>() as libc::c_ulong,
+        ::core::mem::size_of::<Dav1dPicture>(),
     );
     res = dav1d_send_data(c, data);
     if res < 0 as libc::c_int {
@@ -773,7 +642,7 @@ unsafe extern "C" fn decode_rand(
             size: 0,
             user_data: Dav1dUserData {
                 data: 0 as *const uint8_t,
-                ref_0: 0 as *mut Dav1dRef,
+                r#ref: 0 as *mut Dav1dRef,
             },
         },
         content_light: 0 as *mut Dav1dContentLightLevel,
@@ -797,7 +666,7 @@ unsafe extern "C" fn decode_rand(
         if res != 0 {
             break;
         }
-        if input_read(in_0, data) != 0 || (*data).sz == 0 as libc::c_int as libc::c_ulong {
+        if input_read(in_0, data) != 0 || (*data).sz == 0 {
             break;
         }
         i += 1;
@@ -828,7 +697,7 @@ unsafe extern "C" fn decode_all(
             size: 0,
             user_data: Dav1dUserData {
                 data: 0 as *const uint8_t,
-                ref_0: 0 as *mut Dav1dRef,
+                r#ref: 0 as *mut Dav1dRef,
             },
         },
         content_light: 0 as *mut Dav1dContentLightLevel,
@@ -849,7 +718,7 @@ unsafe extern "C" fn decode_all(
         if res != 0 {
             break;
         }
-        if !(input_read(in_0, data) == 0 && (*data).sz > 0 as libc::c_int as libc::c_ulong) {
+        if !(input_read(in_0, data) == 0 && (*data).sz > 0) {
             break;
         }
     }
@@ -1005,7 +874,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
     let mut data: Dav1dData = Dav1dData {
         data: 0 as *const uint8_t,
         sz: 0,
-        ref_0: 0 as *mut Dav1dRef,
+        r#ref: 0 as *mut Dav1dRef,
         m: Dav1dDataProps {
             timestamp: 0,
             duration: 0,
@@ -1013,7 +882,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
             size: 0,
             user_data: Dav1dUserData {
                 data: 0 as *const uint8_t,
-                ref_0: 0 as *mut Dav1dRef,
+                r#ref: 0 as *mut Dav1dRef,
             },
         },
     };
@@ -1091,17 +960,15 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
                     };
                     let diff: libc::c_float =
                         (xor128_rand() % 100 as libc::c_int) as libc::c_float / 100.0f32;
-                    let mut new_pts: int64_t = pts.wrapping_add(
-                        (sign as libc::c_ulong).wrapping_mul(llround(
-                            diff as libc::c_double * fps * spf * 1000000000.0f64,
-                        ) as uint64_t),
-                    ) as int64_t;
+                    let mut new_pts: int64_t = pts.wrapping_add((sign as uint64_t).wrapping_mul(
+                        llround(diff as libc::c_double * fps * spf * 1000000000.0f64) as uint64_t,
+                    )) as int64_t;
                     let new_ts: int64_t =
                         llround(new_pts as libc::c_double / (timebase * 1000000000.0f64))
                             as int64_t;
                     new_pts = llround(new_ts as libc::c_double * timebase * 1000000000.0f64)
                         as uint64_t as int64_t;
-                    if new_pts < 0 as libc::c_int as libc::c_long
+                    if new_pts < 0
                         || new_pts as uint64_t
                             >= llround(total as libc::c_double * spf * 1000000000.0f64) as uint64_t
                     {
