@@ -17,12 +17,12 @@ use c2rust_out::include::dav1d::headers::Dav1dSequenceHeader;
 use c2rust_out::include::dav1d::headers::Dav1dSequenceHeaderOperatingParameterInfo;
 use c2rust_out::include::dav1d::headers::Dav1dSequenceHeaderOperatingPoint;
 use c2rust_out::src::r#ref::Dav1dRef;
+use c2rust_out::stderr;
 extern "C" {
     pub type Dav1dContext;
     pub type DemuxerContext;
     pub type DemuxerPriv;
     fn llround(_: libc::c_double) -> libc::c_longlong;
-    static mut stderr: *mut libc::FILE;
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::size_t) -> *mut libc::c_void;
     fn strcmp(_: *const libc::c_char, _: *const libc::c_char) -> libc::c_int;
@@ -554,7 +554,7 @@ unsafe extern "C" fn get_seed() -> libc::c_uint {
         tv_sec: 0,
         tv_nsec: 0,
     };
-    clock_gettime(1 as libc::c_int, &mut ts);
+    clock_gettime(1, &mut ts);
     return (1000000000 as libc::c_ulonglong)
         .wrapping_mul(ts.tv_sec as libc::c_ulonglong)
         .wrapping_add(ts.tv_nsec as libc::c_ulonglong) as libc::c_uint;
