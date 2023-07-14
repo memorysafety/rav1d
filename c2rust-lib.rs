@@ -36,7 +36,6 @@ pub mod include {
     pub mod stddef;
     pub mod stdint;
     pub mod stdio;
-    pub mod time;
 } // mod include
 pub mod src {
     pub mod align;
