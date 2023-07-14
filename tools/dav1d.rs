@@ -12,7 +12,7 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use crate::src::r#ref::Dav1dRef;
-use ::c2rust_out::*;
+use ::rav1d::*;
 extern "C" {
     pub type Dav1dContext;
     pub type DemuxerContext;
