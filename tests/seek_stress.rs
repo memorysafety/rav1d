@@ -14,6 +14,9 @@ use c2rust_out::include::dav1d::common::Dav1dDataProps;
 use c2rust_out::include::dav1d::common::Dav1dUserData;
 use c2rust_out::include::dav1d::data::Dav1dData;
 use c2rust_out::include::dav1d::dav1d::Dav1dLogger;
+use c2rust_out::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_ALL;
+use c2rust_out::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
+use c2rust_out::include::dav1d::headers::Dav1dColorPrimaries;
 use c2rust_out::include::dav1d::headers::Dav1dContentLightLevel;
 use c2rust_out::include::dav1d::headers::Dav1dFrameHeader;
 use c2rust_out::include::dav1d::headers::Dav1dITUTT35;
@@ -21,42 +24,33 @@ use c2rust_out::include::dav1d::headers::Dav1dMasteringDisplay;
 use c2rust_out::include::dav1d::headers::Dav1dSequenceHeader;
 use c2rust_out::include::dav1d::headers::Dav1dSequenceHeaderOperatingParameterInfo;
 use c2rust_out::include::dav1d::headers::Dav1dSequenceHeaderOperatingPoint;
-use c2rust_out::include::dav1d::headers::Dav1dWarpedMotionType;
+use c2rust_out::include::dav1d::headers::Dav1dTransferCharacteristics;
+use c2rust_out::include::dav1d::headers::DAV1D_CHR_UNKNOWN;
+use c2rust_out::include::dav1d::headers::DAV1D_MC_IDENTITY;
 use c2rust_out::include::dav1d::headers::DAV1D_OFF;
+use c2rust_out::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
 use c2rust_out::include::dav1d::picture::Dav1dPicAllocator;
 use c2rust_out::include::dav1d::picture::Dav1dPicture;
 use c2rust_out::include::dav1d::picture::Dav1dPictureParameters;
-use c2rust_out::include::stdint::int16_t;
-use c2rust_out::include::stdint::int32_t;
 use c2rust_out::include::stdint::int64_t;
-use c2rust_out::include::stdint::int8_t;
 use c2rust_out::include::stdint::uint32_t;
 use c2rust_out::include::stdint::uint64_t;
 use c2rust_out::include::stdint::uint8_t;
+use c2rust_out::src::lib::dav1d_close;
+use c2rust_out::src::lib::dav1d_flush;
+use c2rust_out::src::lib::dav1d_get_picture;
+use c2rust_out::src::lib::dav1d_open;
+use c2rust_out::src::lib::dav1d_parse_sequence_header;
+use c2rust_out::src::lib::dav1d_picture_unref;
+use c2rust_out::src::lib::dav1d_send_data;
+use c2rust_out::src::lib::dav1d_version;
+use c2rust_out::src::lib::Dav1dContext;
 use c2rust_out::src::lib::Dav1dSettings;
 use c2rust_out::src::r#ref::Dav1dRef;
 use c2rust_out::stderr;
+use c2rust_out::tools::input::input::DemuxerContext;
 extern "C" {
-    pub type Dav1dContext;
-    pub type DemuxerContext;
-    pub type DemuxerPriv;
     fn llround(_: libc::c_double) -> libc::c_longlong;
-    fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
-    fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::size_t) -> *mut libc::c_void;
-    fn strcmp(_: *const libc::c_char, _: *const libc::c_char) -> libc::c_int;
-    fn strerror(_: libc::c_int) -> *mut libc::c_char;
-    fn dav1d_version() -> *const libc::c_char;
-    fn dav1d_open(c_out: *mut *mut Dav1dContext, s: *const Dav1dSettings) -> libc::c_int;
-    fn dav1d_parse_sequence_header(
-        out: *mut Dav1dSequenceHeader,
-        buf: *const uint8_t,
-        sz: libc::size_t,
-    ) -> libc::c_int;
-    fn dav1d_send_data(c: *mut Dav1dContext, in_0: *mut Dav1dData) -> libc::c_int;
-    fn dav1d_get_picture(c: *mut Dav1dContext, out: *mut Dav1dPicture) -> libc::c_int;
-    fn dav1d_close(c_out: *mut *mut Dav1dContext);
-    fn dav1d_flush(c: *mut Dav1dContext);
-    fn dav1d_picture_unref(p: *mut Dav1dPicture);
     fn input_open(
         c_out: *mut *mut DemuxerContext,
         name: *const libc::c_char,
@@ -74,179 +68,6 @@ extern "C" {
         cli_settings: *mut CLISettings,
         lib_settings: *mut Dav1dSettings,
     );
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dWarpedMotionParams {
-    pub type_0: Dav1dWarpedMotionType,
-    pub matrix: [int32_t; 6],
-    pub u: Dav1dWarpedMotionParams_u,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union Dav1dWarpedMotionParams_u {
-    pub p: Dav1dWarpedMotionParams_u_p,
-    pub abcd: [int16_t; 4],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dWarpedMotionParams_u_p {
-    pub alpha: int16_t,
-    pub beta: int16_t,
-    pub gamma: int16_t,
-    pub delta: int16_t,
-}
-pub type Dav1dPixelLayout = libc::c_uint;
-pub const DAV1D_PIXEL_LAYOUT_I444: Dav1dPixelLayout = 3;
-pub const DAV1D_PIXEL_LAYOUT_I422: Dav1dPixelLayout = 2;
-pub const DAV1D_PIXEL_LAYOUT_I420: Dav1dPixelLayout = 1;
-pub const DAV1D_PIXEL_LAYOUT_I400: Dav1dPixelLayout = 0;
-pub type Dav1dFrameType = libc::c_uint;
-pub const DAV1D_FRAME_TYPE_SWITCH: Dav1dFrameType = 3;
-pub const DAV1D_FRAME_TYPE_INTRA: Dav1dFrameType = 2;
-pub const DAV1D_FRAME_TYPE_INTER: Dav1dFrameType = 1;
-pub const DAV1D_FRAME_TYPE_KEY: Dav1dFrameType = 0;
-pub type Dav1dColorPrimaries = libc::c_uint;
-pub const DAV1D_COLOR_PRI_RESERVED: Dav1dColorPrimaries = 255;
-pub const DAV1D_COLOR_PRI_EBU3213: Dav1dColorPrimaries = 22;
-pub const DAV1D_COLOR_PRI_SMPTE432: Dav1dColorPrimaries = 12;
-pub const DAV1D_COLOR_PRI_SMPTE431: Dav1dColorPrimaries = 11;
-pub const DAV1D_COLOR_PRI_XYZ: Dav1dColorPrimaries = 10;
-pub const DAV1D_COLOR_PRI_BT2020: Dav1dColorPrimaries = 9;
-pub const DAV1D_COLOR_PRI_FILM: Dav1dColorPrimaries = 8;
-pub const DAV1D_COLOR_PRI_SMPTE240: Dav1dColorPrimaries = 7;
-pub const DAV1D_COLOR_PRI_BT601: Dav1dColorPrimaries = 6;
-pub const DAV1D_COLOR_PRI_BT470BG: Dav1dColorPrimaries = 5;
-pub const DAV1D_COLOR_PRI_BT470M: Dav1dColorPrimaries = 4;
-pub const DAV1D_COLOR_PRI_UNKNOWN: Dav1dColorPrimaries = 2;
-pub const DAV1D_COLOR_PRI_BT709: Dav1dColorPrimaries = 1;
-pub type Dav1dTransferCharacteristics = libc::c_uint;
-pub const DAV1D_TRC_RESERVED: Dav1dTransferCharacteristics = 255;
-pub const DAV1D_TRC_HLG: Dav1dTransferCharacteristics = 18;
-pub const DAV1D_TRC_SMPTE428: Dav1dTransferCharacteristics = 17;
-pub const DAV1D_TRC_SMPTE2084: Dav1dTransferCharacteristics = 16;
-pub const DAV1D_TRC_BT2020_12BIT: Dav1dTransferCharacteristics = 15;
-pub const DAV1D_TRC_BT2020_10BIT: Dav1dTransferCharacteristics = 14;
-pub const DAV1D_TRC_SRGB: Dav1dTransferCharacteristics = 13;
-pub const DAV1D_TRC_BT1361: Dav1dTransferCharacteristics = 12;
-pub const DAV1D_TRC_IEC61966: Dav1dTransferCharacteristics = 11;
-pub const DAV1D_TRC_LOG100_SQRT10: Dav1dTransferCharacteristics = 10;
-pub const DAV1D_TRC_LOG100: Dav1dTransferCharacteristics = 9;
-pub const DAV1D_TRC_LINEAR: Dav1dTransferCharacteristics = 8;
-pub const DAV1D_TRC_SMPTE240: Dav1dTransferCharacteristics = 7;
-pub const DAV1D_TRC_BT601: Dav1dTransferCharacteristics = 6;
-pub const DAV1D_TRC_BT470BG: Dav1dTransferCharacteristics = 5;
-pub const DAV1D_TRC_BT470M: Dav1dTransferCharacteristics = 4;
-pub const DAV1D_TRC_UNKNOWN: Dav1dTransferCharacteristics = 2;
-pub const DAV1D_TRC_BT709: Dav1dTransferCharacteristics = 1;
-pub type Dav1dMatrixCoefficients = libc::c_uint;
-pub const DAV1D_MC_RESERVED: Dav1dMatrixCoefficients = 255;
-pub const DAV1D_MC_ICTCP: Dav1dMatrixCoefficients = 14;
-pub const DAV1D_MC_CHROMAT_CL: Dav1dMatrixCoefficients = 13;
-pub const DAV1D_MC_CHROMAT_NCL: Dav1dMatrixCoefficients = 12;
-pub const DAV1D_MC_SMPTE2085: Dav1dMatrixCoefficients = 11;
-pub const DAV1D_MC_BT2020_CL: Dav1dMatrixCoefficients = 10;
-pub const DAV1D_MC_BT2020_NCL: Dav1dMatrixCoefficients = 9;
-pub const DAV1D_MC_SMPTE_YCGCO: Dav1dMatrixCoefficients = 8;
-pub const DAV1D_MC_SMPTE240: Dav1dMatrixCoefficients = 7;
-pub const DAV1D_MC_BT601: Dav1dMatrixCoefficients = 6;
-pub const DAV1D_MC_BT470BG: Dav1dMatrixCoefficients = 5;
-pub const DAV1D_MC_FCC: Dav1dMatrixCoefficients = 4;
-pub const DAV1D_MC_UNKNOWN: Dav1dMatrixCoefficients = 2;
-pub const DAV1D_MC_BT709: Dav1dMatrixCoefficients = 1;
-pub const DAV1D_MC_IDENTITY: Dav1dMatrixCoefficients = 0;
-pub type Dav1dChromaSamplePosition = libc::c_uint;
-pub const DAV1D_CHR_COLOCATED: Dav1dChromaSamplePosition = 2;
-pub const DAV1D_CHR_VERTICAL: Dav1dChromaSamplePosition = 1;
-pub const DAV1D_CHR_UNKNOWN: Dav1dChromaSamplePosition = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dSegmentationData {
-    pub delta_q: libc::c_int,
-    pub delta_lf_y_v: libc::c_int,
-    pub delta_lf_y_h: libc::c_int,
-    pub delta_lf_u: libc::c_int,
-    pub delta_lf_v: libc::c_int,
-    pub ref_0: libc::c_int,
-    pub skip: libc::c_int,
-    pub globalmv: libc::c_int,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dSegmentationDataSet {
-    pub d: [Dav1dSegmentationData; 8],
-    pub preskip: libc::c_int,
-    pub last_active_segid: libc::c_int,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dLoopfilterModeRefDeltas {
-    pub mode_delta: [libc::c_int; 2],
-    pub ref_delta: [libc::c_int; 8],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFilmGrainData {
-    pub seed: libc::c_uint,
-    pub num_y_points: libc::c_int,
-    pub y_points: [[uint8_t; 2]; 14],
-    pub chroma_scaling_from_luma: libc::c_int,
-    pub num_uv_points: [libc::c_int; 2],
-    pub uv_points: [[[uint8_t; 2]; 10]; 2],
-    pub scaling_shift: libc::c_int,
-    pub ar_coeff_lag: libc::c_int,
-    pub ar_coeffs_y: [int8_t; 24],
-    pub ar_coeffs_uv: [[int8_t; 28]; 2],
-    pub ar_coeff_shift: uint64_t,
-    pub grain_scale_shift: libc::c_int,
-    pub uv_mult: [libc::c_int; 2],
-    pub uv_luma_mult: [libc::c_int; 2],
-    pub uv_offset: [libc::c_int; 2],
-    pub overlap_flag: libc::c_int,
-    pub clip_to_restricted_range: libc::c_int,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFrameHeaderOperatingPoint {
-    pub buffer_removal_time: libc::c_int,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dFrameHeader_film_grain {
-    pub data: Dav1dFilmGrainData,
-    pub present: libc::c_int,
-    pub update: libc::c_int,
-}
-pub type Dav1dInloopFilterType = libc::c_uint;
-pub const DAV1D_INLOOPFILTER_ALL: Dav1dInloopFilterType = 7;
-pub const DAV1D_INLOOPFILTER_RESTORATION: Dav1dInloopFilterType = 4;
-pub const DAV1D_INLOOPFILTER_CDEF: Dav1dInloopFilterType = 2;
-pub const DAV1D_INLOOPFILTER_DEBLOCK: Dav1dInloopFilterType = 1;
-pub const DAV1D_INLOOPFILTER_NONE: Dav1dInloopFilterType = 0;
-pub type Dav1dDecodeFrameType = libc::c_uint;
-pub const DAV1D_DECODEFRAMETYPE_KEY: Dav1dDecodeFrameType = 3;
-pub const DAV1D_DECODEFRAMETYPE_INTRA: Dav1dDecodeFrameType = 2;
-pub const DAV1D_DECODEFRAMETYPE_REFERENCE: Dav1dDecodeFrameType = 1;
-pub const DAV1D_DECODEFRAMETYPE_ALL: Dav1dDecodeFrameType = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Demuxer {
-    pub priv_data_size: libc::c_int,
-    pub name: *const libc::c_char,
-    pub probe_sz: libc::c_int,
-    pub probe: Option<unsafe extern "C" fn(*const uint8_t) -> libc::c_int>,
-    pub open: Option<
-        unsafe extern "C" fn(
-            *mut DemuxerPriv,
-            *const libc::c_char,
-            *mut libc::c_uint,
-            *mut libc::c_uint,
-            *mut libc::c_uint,
-        ) -> libc::c_int,
-    >,
-    pub read: Option<unsafe extern "C" fn(*mut DemuxerPriv, *mut Dav1dData) -> libc::c_int>,
-    pub seek: Option<unsafe extern "C" fn(*mut DemuxerPriv, uint64_t) -> libc::c_int>,
-    pub close: Option<unsafe extern "C" fn(*mut DemuxerPriv) -> ()>,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -280,24 +101,22 @@ unsafe extern "C" fn get_seed() -> libc::c_uint {
         .wrapping_add(ts.tv_nsec as libc::c_ulonglong) as libc::c_uint;
 }
 static mut xs_state: [uint32_t; 4] = [0; 4];
-unsafe extern "C" fn xor128_srand(mut seed: libc::c_uint) {
-    xs_state[0 as libc::c_int as usize] = seed;
-    xs_state[1 as libc::c_int as usize] =
-        seed & 0xffff0000 as libc::c_uint | !seed & 0xffff as libc::c_int as libc::c_uint;
-    xs_state[2 as libc::c_int as usize] =
-        !seed & 0xffff0000 as libc::c_uint | seed & 0xffff as libc::c_int as libc::c_uint;
-    xs_state[3 as libc::c_int as usize] = !seed;
+unsafe fn xor128_srand(mut seed: libc::c_uint) {
+    xs_state[0] = seed;
+    xs_state[1] = seed & 0xffff0000 | !seed & 0xffff;
+    xs_state[2] = !seed & 0xffff0000 | seed & 0xffff;
+    xs_state[3] = !seed;
 }
-unsafe extern "C" fn xor128_rand() -> libc::c_int {
-    let x: uint32_t = xs_state[0 as libc::c_int as usize];
-    let t: uint32_t = x ^ x << 11 as libc::c_int;
-    xs_state[0 as libc::c_int as usize] = xs_state[1 as libc::c_int as usize];
-    xs_state[1 as libc::c_int as usize] = xs_state[2 as libc::c_int as usize];
-    xs_state[2 as libc::c_int as usize] = xs_state[3 as libc::c_int as usize];
-    let mut w: uint32_t = xs_state[3 as libc::c_int as usize];
-    w = w ^ w >> 19 as libc::c_int ^ (t ^ t >> 8 as libc::c_int);
-    xs_state[3 as libc::c_int as usize] = w;
-    return (w >> 1 as libc::c_int) as libc::c_int;
+unsafe fn xor128_rand() -> libc::c_int {
+    let x: uint32_t = xs_state[0];
+    let t: uint32_t = x ^ x << 11;
+    xs_state[0] = xs_state[1];
+    xs_state[1] = xs_state[2];
+    xs_state[2] = xs_state[3];
+    let mut w: uint32_t = xs_state[3];
+    w = w ^ w >> 19 ^ (t ^ t >> 8);
+    xs_state[3] = w;
+    return w as libc::c_int >> 1;
 }
 #[inline]
 unsafe extern "C" fn decode_frame(
@@ -306,29 +125,29 @@ unsafe extern "C" fn decode_frame(
     data: *mut Dav1dData,
 ) -> libc::c_int {
     let mut res: libc::c_int = 0;
-    memset(
+    libc::memset(
         p as *mut libc::c_void,
-        0 as libc::c_int,
+        0,
         ::core::mem::size_of::<Dav1dPicture>(),
     );
     res = dav1d_send_data(c, data);
-    if res < 0 as libc::c_int {
-        if res != -(11 as libc::c_int) {
-            fprintf(
+    if res < 0 {
+        if res != -11 {
+            libc::fprintf(
                 stderr,
                 b"Error decoding frame: %s\n\0" as *const u8 as *const libc::c_char,
-                strerror(-res),
+                libc::strerror(-res),
             );
             return res;
         }
     }
     res = dav1d_get_picture(c, p);
-    if res < 0 as libc::c_int {
+    if res < 0 {
         if res != -(11 as libc::c_int) {
-            fprintf(
+            libc::fprintf(
                 stderr,
                 b"Error decoding frame: %s\n\0" as *const u8 as *const libc::c_char,
-                strerror(-res),
+                libc::strerror(-res),
             );
             return res;
         }
@@ -343,7 +162,7 @@ unsafe extern "C" fn decode_rand(
     data: *mut Dav1dData,
     fps: libc::c_double,
 ) -> libc::c_int {
-    let mut res: libc::c_int = 0 as libc::c_int;
+    let mut res: libc::c_int = 0;
     let mut p: Dav1dPicture = Dav1dPicture {
         seq_hdr: 0 as *mut Dav1dSequenceHeader,
         frame_hdr: 0 as *mut Dav1dFrameHeader,
@@ -538,12 +357,12 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
     let mut shift: libc::c_uint = 0;
     let mut current_block: u64;
     let mut version: *const libc::c_char = dav1d_version();
-    if strcmp(
+    if libc::strcmp(
         version,
         b"1.0.0-130-g26eca15\0" as *const u8 as *const libc::c_char,
     ) != 0
     {
-        fprintf(
+        libc::fprintf(
             stderr,
             b"Version mismatch (library: %s, executable: %s)\n\0" as *const u8
                 as *const libc::c_char,
@@ -623,24 +442,21 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
         &mut total,
         i_timebase.as_mut_ptr(),
     ) < 0 as libc::c_int
-        || i_timebase[0 as libc::c_int as usize] == 0
-        || i_timebase[1 as libc::c_int as usize] == 0
-        || i_fps[0 as libc::c_int as usize] == 0
-        || i_fps[1 as libc::c_int as usize] == 0
+        || i_timebase[0] == 0
+        || i_timebase[1] == 0
+        || i_fps[0] == 0
+        || i_fps[1] == 0
     {
-        return 0 as libc::c_int;
+        return libc::EXIT_SUCCESS;
     }
     if dav1d_open(&mut c, &mut lib_settings) != 0 {
-        return 1 as libc::c_int;
+        return libc::EXIT_FAILURE;
     }
-    timebase = i_timebase[1 as libc::c_int as usize] as libc::c_double
-        / i_timebase[0 as libc::c_int as usize] as libc::c_double;
-    spf = i_fps[1 as libc::c_int as usize] as libc::c_double
-        / i_fps[0 as libc::c_int as usize] as libc::c_double;
-    fps = i_fps[0 as libc::c_int as usize] as libc::c_double
-        / i_fps[1 as libc::c_int as usize] as libc::c_double;
-    if !(fps < 1 as libc::c_int as libc::c_double) {
-        let mut i: libc::c_int = 0 as libc::c_int;
+    timebase = i_timebase[1] as libc::c_double / i_timebase[0] as libc::c_double;
+    spf = i_fps[1] as libc::c_double / i_fps[0] as libc::c_double;
+    fps = i_fps[0] as libc::c_double / i_fps[1] as libc::c_double;
+    if !(fps < 1 as libc::c_double) {
+        let mut i: libc::c_int = 0;
         loop {
             if !(i < 3 as libc::c_int) {
                 current_block = 5948590327928692120;
@@ -751,7 +567,8 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
                                 break;
                             }
                         }
-                        let mut i_1: libc::c_int = 0 as libc::c_int;
+                        // simulate seeking after the end of the file
+                        let mut i_1: libc::c_int = 0;
                         while i_1 < 2 as libc::c_int {
                             if seek(
                                 in_0,
@@ -769,13 +586,10 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
                             if decode_all(in_0, c, &mut data) != 0 {
                                 break;
                             }
-                            let mut num_flush: libc::c_int = 1 as libc::c_int
-                                + 64 as libc::c_int
-                                + xor128_rand() % 64 as libc::c_int;
+                            let mut num_flush: libc::c_int = 1 + 64 + xor128_rand() % 64;
                             loop {
-                                let fresh0 = num_flush;
-                                num_flush = num_flush - 1;
-                                if !(fresh0 != 0) {
+                                num_flush -= 1;
+                                if num_flush == 0 {
                                     break;
                                 }
                                 dav1d_flush(c);
@@ -789,7 +603,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
     }
     input_close(in_0);
     dav1d_close(&mut c);
-    return 0 as libc::c_int;
+    return libc::EXIT_SUCCESS;
 }
 pub fn main() {
     let mut args: Vec<*mut libc::c_char> = Vec::new();
