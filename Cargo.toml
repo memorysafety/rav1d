@@ -11,8 +11,8 @@ autobins = false
 autotests = false
 
 [lib]
-name = "c2rust_out"
-path = "c2rust-lib.rs"
+name = "rav1d"
+path = "lib.rs"
 crate-type = ["staticlib", "rlib"]
 [[bin]]
 path = "tools/dav1d.rs"
