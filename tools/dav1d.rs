@@ -35,8 +35,6 @@ extern "C" {
     fn strcmp(_: *const libc::c_char, _: *const libc::c_char) -> libc::c_int;
     fn strerror(_: libc::c_int) -> *mut libc::c_char;
     fn strcpy(_: *mut libc::c_char, _: *const libc::c_char) -> *mut libc::c_char;
-    fn nanosleep(__requested_time: *const timespec, __remaining: *mut timespec) -> libc::c_int;
-    fn clock_gettime(__clock_id: clockid_t, __tp: *mut timespec) -> libc::c_int;
     fn isatty(__fd: libc::c_int) -> libc::c_int;
     fn dav1d_data_unref(data: *mut Dav1dData);
     fn dav1d_close(c_out: *mut *mut Dav1dContext);
@@ -76,10 +74,6 @@ extern "C" {
         lib_settings: *mut Dav1dSettings,
     );
 }
-use crate::include::time::__syscall_slong_t;
-use crate::include::time::clockid_t;
-use crate::include::time::time_t;
-use crate::include::time::timespec;
 
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::common::Dav1dUserData;
@@ -152,24 +146,25 @@ pub const REALTIME_CUSTOM: CLISettings_realtime = 2;
 pub const REALTIME_INPUT: CLISettings_realtime = 1;
 pub const REALTIME_DISABLE: CLISettings_realtime = 0;
 unsafe extern "C" fn get_time_nanos() -> uint64_t {
-    let mut ts: timespec = timespec {
+    let mut ts: libc::timespec = libc::timespec {
         tv_sec: 0,
         tv_nsec: 0,
     };
-    clock_gettime(1 as libc::c_int, &mut ts);
+    libc::clock_gettime(1, &mut ts);
     return (1000000000 as libc::c_ulonglong)
         .wrapping_mul(ts.tv_sec as libc::c_ulonglong)
         .wrapping_add(ts.tv_nsec as libc::c_ulonglong) as uint64_t;
 }
 unsafe extern "C" fn sleep_nanos(mut d: uint64_t) {
-    let ts: timespec = {
-        let mut init = timespec {
-            tv_sec: d.wrapping_div(1000000000 as uint64_t) as time_t,
-            tv_nsec: d.wrapping_rem(1000000000 as uint64_t) as __syscall_slong_t,
+    // TODO: C version has Windows specific code path
+    let ts: libc::timespec = {
+        let mut init = libc::timespec {
+            tv_sec: d as libc::time_t / 1000000000,
+            tv_nsec: d as libc::time_t % 1000000000,
         };
         init
     };
-    nanosleep(&ts, 0 as *mut timespec);
+    libc::nanosleep(&ts, std::ptr::null_mut::<libc::timespec>());
 }
 unsafe extern "C" fn synchronize(
     realtime: libc::c_int,
