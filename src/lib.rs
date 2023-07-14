@@ -1021,7 +1021,7 @@ pub unsafe extern "C" fn dav1d_open(
         );
         return -(22 as libc::c_int);
     }
-    let mut thread_attr: pthread_attr_t = pthread_attr_t { __size: [0; 56] };
+    let mut thread_attr: pthread_attr_t = std::mem::zeroed();
     if pthread_attr_init(&mut thread_attr) != 0 {
         return -(12 as libc::c_int);
     }
