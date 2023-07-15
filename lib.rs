@@ -136,22 +136,6 @@ pub mod src {
         pub mod cpu;
     } // mod arm
 } // mod src
-pub mod tools {
-    pub mod dav1d_cli_parse;
-    pub mod input {
-        pub mod annexb;
-        pub mod input;
-        pub mod ivf;
-        pub mod section5;
-    } // mod input
-    pub mod output {
-        pub mod md5;
-        pub mod null;
-        pub mod output;
-        pub mod y4m2;
-        pub mod yuv;
-    } // mod output
-} // mod tools
 
 // NOTE: temporary code to support Linux and macOS, should be removed eventually
 cfg_if::cfg_if! {
@@ -167,9 +151,9 @@ cfg_if::cfg_if! {
     } else if #[cfg(target_os = "macos")] {
         extern "C" {
             #[link_name = "__stdoutp"]
-            pub static mut stdout: *mut libc::FILE;
+            static mut stdout: *mut libc::FILE;
             #[link_name = "__stderrp"]
-            pub static mut stderr: *mut libc::FILE;
+            static mut stderr: *mut libc::FILE;
         }
 
         unsafe fn errno_location() -> *mut libc::c_int {

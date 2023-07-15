@@ -1,6 +1,7 @@
-use crate::include::stdint::*;
-use crate::stderr;
 use ::libc;
+use rav1d::include::stdint::uint64_t;
+use rav1d::include::stdint::uint8_t;
+use crate::stderr;
 extern "C" {
     pub type Dav1dRef;
     static mut optarg: *mut libc::c_char;
@@ -36,19 +37,19 @@ pub struct option {
     pub val: libc::c_int,
 }
 
-use crate::include::dav1d::dav1d::Dav1dDecodeFrameType;
-use crate::include::dav1d::dav1d::Dav1dInloopFilterType;
-use crate::include::dav1d::dav1d::Dav1dLogger;
-use crate::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_ALL;
-use crate::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_INTRA;
-use crate::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_KEY;
-use crate::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_REFERENCE;
-use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_ALL;
-use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_CDEF;
-use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_DEBLOCK;
-use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
-use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_RESTORATION;
-use crate::include::dav1d::picture::Dav1dPicAllocator;
+use rav1d::include::dav1d::dav1d::Dav1dDecodeFrameType;
+use rav1d::include::dav1d::dav1d::Dav1dInloopFilterType;
+use rav1d::include::dav1d::dav1d::Dav1dLogger;
+use rav1d::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_ALL;
+use rav1d::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_INTRA;
+use rav1d::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_KEY;
+use rav1d::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_REFERENCE;
+use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_ALL;
+use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_CDEF;
+use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_DEBLOCK;
+use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
+use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_RESTORATION;
+use rav1d::include::dav1d::picture::Dav1dPicAllocator;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dSettings {

@@ -1,10 +1,11 @@
-use crate::errno_location;
-use crate::include::stddef::*;
-use crate::include::stdint::*;
-use crate::stderr;
 use ::libc;
 use ::libc::fread;
 use ::libc::fseeko;
+use crate::errno_location;
+use rav1d::include::stddef::size_t;
+use rav1d::include::stdint::uint64_t;
+use rav1d::include::stdint::uint8_t;
+use crate::stderr;
 extern "C" {
     pub type Dav1dRef;
     fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
@@ -15,10 +16,10 @@ extern "C" {
     fn dav1d_data_unref(data: *mut Dav1dData);
 }
 
-use crate::include::dav1d::headers::Dav1dObuType;
-use crate::include::dav1d::headers::DAV1D_OBU_TD;
+use rav1d::include::dav1d::headers::Dav1dObuType;
+use rav1d::include::dav1d::headers::DAV1D_OBU_TD;
 
-use crate::include::dav1d::data::Dav1dData;
+use rav1d::include::dav1d::data::Dav1dData;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct DemuxerPriv {
@@ -47,7 +48,7 @@ pub struct Demuxer {
     pub close: Option<unsafe extern "C" fn(*mut DemuxerPriv) -> ()>,
 }
 pub type AnnexbInputContext = DemuxerPriv;
-use crate::include::common::intops::imin;
+use rav1d::include::common::intops::imin;
 unsafe extern "C" fn leb128(f: *mut libc::FILE, len: *mut size_t) -> libc::c_int {
     let mut val: uint64_t = 0 as libc::c_int as uint64_t;
     let mut i: libc::c_uint = 0 as libc::c_int as libc::c_uint;

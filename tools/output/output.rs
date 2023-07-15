@@ -1,7 +1,7 @@
-use crate::include::stddef::*;
-use crate::include::stdint::*;
-use crate::stderr;
 use ::libc;
+use libc::size_t;
+use rav1d::include::stdint::uint64_t;
+use crate::stderr;
 extern "C" {
     pub type Dav1dRef;
     pub type MuxerPriv;
@@ -19,8 +19,8 @@ extern "C" {
     static yuv_muxer: Muxer;
     static y4m2_muxer: Muxer;
 }
-use crate::include::dav1d::picture::Dav1dPicture;
-use crate::include::dav1d::picture::Dav1dPictureParameters;
+use rav1d::include::dav1d::picture::Dav1dPicture;
+use rav1d::include::dav1d::picture::Dav1dPictureParameters;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct MuxerContext {
@@ -51,7 +51,7 @@ pub struct Muxer {
     pub write_trailer: Option<unsafe extern "C" fn(*mut MuxerPriv) -> ()>,
     pub verify: Option<unsafe extern "C" fn(*mut MuxerPriv, *const libc::c_char) -> libc::c_int>,
 }
-use crate::include::common::intops::imin;
+use rav1d::include::common::intops::imin;
 static mut muxers: [*const Muxer; 5] = unsafe {
     [
         &null_muxer as *const Muxer,

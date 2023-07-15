@@ -1,7 +1,9 @@
-use crate::errno_location;
-use crate::include::stdint::*;
-use crate::{stderr, stdout};
 use ::libc;
+use crate::errno_location;
+use rav1d::include::stdint::uint32_t;
+use rav1d::include::stdint::uint64_t;
+use rav1d::include::stdint::uint8_t;
+use crate::{stderr, stdout};
 extern "C" {
     pub type Dav1dRef;
     fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
@@ -16,13 +18,13 @@ extern "C" {
     fn dav1d_picture_unref(p: *mut Dav1dPicture);
 }
 
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
+use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
+use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
+use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 
-use crate::include::dav1d::picture::Dav1dPicture;
-use crate::include::dav1d::picture::Dav1dPictureParameters;
+use rav1d::include::dav1d::picture::Dav1dPicture;
+use rav1d::include::dav1d::picture::Dav1dPictureParameters;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct MuxerPriv {
@@ -57,7 +59,7 @@ pub struct Muxer {
     pub verify: Option<unsafe extern "C" fn(*mut MuxerPriv, *const libc::c_char) -> libc::c_int>,
 }
 pub type MD5Context = MuxerPriv;
-use crate::include::common::intops::umin;
+use rav1d::include::common::intops::umin;
 static mut k: [uint32_t; 64] = [
     0xd76aa478 as libc::c_uint,
     0xe8c7b756 as libc::c_uint,
