@@ -13,6 +13,20 @@ use crate::include::stddef::*;
 use crate::include::stdint::*;
 use crate::src::r#ref::Dav1dRef;
 use ::rav1d::*;
+mod input {
+    mod annexb;
+    mod input;
+    mod ivf;
+    mod section5;
+} // mod input
+mod output {
+    mod md5;
+    mod null;
+    mod output;
+    mod y4m2;
+    mod yuv;
+} // mod output
+mod dav1d_cli_parse;
 extern "C" {
     pub type Dav1dContext;
     pub type DemuxerContext;
@@ -73,6 +87,30 @@ extern "C" {
         cli_settings: *mut CLISettings,
         lib_settings: *mut Dav1dSettings,
     );
+}
+// NOTE: temporary code to support Linux and macOS, should be removed eventually
+cfg_if::cfg_if! {
+    if #[cfg(target_os = "linux")] {
+        extern "C" {
+            static mut stdout: *mut libc::FILE;
+            static mut stderr: *mut libc::FILE;
+        }
+
+        unsafe fn errno_location() -> *mut libc::c_int {
+            libc::__errno_location()
+        }
+    } else if #[cfg(target_os = "macos")] {
+        extern "C" {
+            #[link_name = "__stdoutp"]
+            static mut stdout: *mut libc::FILE;
+            #[link_name = "__stderrp"]
+            static mut stderr: *mut libc::FILE;
+        }
+
+        unsafe fn errno_location() -> *mut libc::c_int {
+            libc::__error()
+        }
+    }
 }
 
 use crate::include::dav1d::common::Dav1dDataProps;

@@ -1,8 +1,12 @@
-use crate::errno_location;
-use crate::include::stddef::*;
-use crate::include::stdint::*;
-use crate::stderr;
 use ::libc;
+use crate::errno_location;
+use rav1d::include::stddef::ptrdiff_t;
+use rav1d::include::stddef::size_t;
+use rav1d::include::stdint::int64_t;
+use rav1d::include::stdint::uint32_t;
+use rav1d::include::stdint::uint64_t;
+use rav1d::include::stdint::uint8_t;
+use crate::stderr;
 extern "C" {
     pub type Dav1dRef;
     fn llround(_: libc::c_double) -> libc::c_longlong;
@@ -18,7 +22,7 @@ extern "C" {
     fn dav1d_data_unref(data: *mut Dav1dData);
 }
 
-use crate::include::dav1d::data::Dav1dData;
+use rav1d::include::dav1d::data::Dav1dData;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct DemuxerPriv {

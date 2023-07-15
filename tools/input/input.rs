@@ -1,7 +1,8 @@
-use crate::errno_location;
-use crate::include::stdint::*;
-use crate::stderr;
 use ::libc;
+use crate::errno_location;
+use rav1d::include::stdint::uint64_t;
+use rav1d::include::stdint::uint8_t;
+use crate::stderr;
 extern "C" {
     pub type Dav1dRef;
     pub type DemuxerPriv;
@@ -23,7 +24,7 @@ extern "C" {
     static annexb_demuxer: Demuxer;
     static section5_demuxer: Demuxer;
 }
-use crate::include::dav1d::data::Dav1dData;
+use rav1d::include::dav1d::data::Dav1dData;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct DemuxerContext {
@@ -51,7 +52,7 @@ pub struct Demuxer {
     pub seek: Option<unsafe extern "C" fn(*mut DemuxerPriv, uint64_t) -> libc::c_int>,
     pub close: Option<unsafe extern "C" fn(*mut DemuxerPriv) -> ()>,
 }
-use crate::include::common::intops::imax;
+use rav1d::include::common::intops::imax;
 static mut demuxers: [*const Demuxer; 4] = unsafe {
     [
         &ivf_demuxer as *const Demuxer,

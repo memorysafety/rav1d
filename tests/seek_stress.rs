@@ -10,6 +10,21 @@
 #![feature(extern_types)]
 #![feature(c_variadic)]
 extern crate rav1d;
+#[path = "../tools/input"]
+mod input {
+    mod annexb;
+    mod input;
+    mod ivf;
+    mod section5;
+} // mod input
+#[path = "../tools/output"]
+mod output {
+    mod md5;
+    mod null;
+    mod output;
+    mod y4m2;
+    mod yuv;
+} // mod output
 use rav1d::include::dav1d::common::Dav1dDataProps;
 use rav1d::include::dav1d::common::Dav1dUserData;
 use rav1d::include::dav1d::data::Dav1dData;
@@ -47,9 +62,10 @@ use rav1d::src::lib::dav1d_version;
 use rav1d::src::lib::Dav1dContext;
 use rav1d::src::lib::Dav1dSettings;
 use rav1d::src::r#ref::Dav1dRef;
-use rav1d::stderr;
-use rav1d::tools::input::input::DemuxerContext;
+#[path = "../tools/dav1d_cli_parse.rs"]
+mod dav1d_cli_parse;
 extern "C" {
+    pub type DemuxerContext;
     fn llround(_: libc::c_double) -> libc::c_longlong;
     fn input_open(
         c_out: *mut *mut DemuxerContext,
@@ -68,6 +84,30 @@ extern "C" {
         cli_settings: *mut CLISettings,
         lib_settings: *mut Dav1dSettings,
     );
+}
+// NOTE: temporary code to support Linux and macOS, should be removed eventually
+cfg_if::cfg_if! {
+    if #[cfg(target_os = "linux")] {
+        extern "C" {
+            pub static mut stdout: *mut libc::FILE;
+            pub static mut stderr: *mut libc::FILE;
+        }
+
+        unsafe fn errno_location() -> *mut libc::c_int {
+            libc::__errno_location()
+        }
+    } else if #[cfg(target_os = "macos")] {
+        extern "C" {
+            #[link_name = "__stdoutp"]
+            static mut stdout: *mut libc::FILE;
+            #[link_name = "__stderrp"]
+            static mut stderr: *mut libc::FILE;
+        }
+
+        unsafe fn errno_location() -> *mut libc::c_int {
+            libc::__error()
+        }
+    }
 }
 #[derive(Copy, Clone)]
 #[repr(C)]

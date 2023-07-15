@@ -5,8 +5,8 @@ extern "C" {
     fn dav1d_picture_unref(p: *mut Dav1dPicture);
 }
 
-use crate::include::dav1d::picture::Dav1dPicture;
-use crate::include::dav1d::picture::Dav1dPictureParameters;
+use rav1d::include::dav1d::picture::Dav1dPicture;
+use rav1d::include::dav1d::picture::Dav1dPictureParameters;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Muxer {

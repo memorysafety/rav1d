@@ -772,7 +772,7 @@ unsafe extern "C" fn init_internal() {
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_version() -> *const libc::c_char {
-    return b"1.0.0-130-g26eca15\0" as *const u8 as *const libc::c_char;
+    return b"6202dcf5\0" as *const u8 as *const libc::c_char;
 }
 #[no_mangle]
 #[cold]
