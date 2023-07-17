@@ -189,133 +189,111 @@ pub(crate) unsafe fn padding(
 
     // Copy more pixels if we don't have to pad them
     unit_w += 3 * have_left + 3 * have_right;
-    let mut dst_l = dst[(3 * (have_left == 0) as libc::c_int) as usize..].as_mut_ptr();
+    let mut dst_l = &mut dst[(3 * (have_left == 0) as libc::c_int) as usize..];
     p = p.offset(-((3 * have_left) as isize));
     lpf = lpf.offset(-((3 * have_left) as isize));
 
-    if edges as libc::c_uint & LR_HAVE_TOP as libc::c_int as libc::c_uint != 0 {
-        let above_1: *const pixel = lpf;
-        let above_2: *const pixel = above_1.offset(PXSTRIDE(stride) as isize);
-        memcpy(
-            dst_l as *mut libc::c_void,
-            above_1 as *const libc::c_void,
-            (unit_w << 1) as libc::c_ulong,
-        );
-        memcpy(
-            dst_l.offset(390) as *mut libc::c_void,
-            above_1 as *const libc::c_void,
-            (unit_w << 1) as libc::c_ulong,
-        );
-        memcpy(
-            dst_l.offset((2 * 390) as isize) as *mut libc::c_void,
-            above_2 as *const libc::c_void,
-            (unit_w << 1) as libc::c_ulong,
-        );
+    if edges & LR_HAVE_TOP != 0 {
+        // Copy previous loop filtered rows
+        let stride = BD::pxstride(stride as usize);
+        let above_1 = std::slice::from_raw_parts(lpf, stride + unit_w as usize);
+        let above_2 = &above_1[stride..];
+
+        BD::pixel_copy(dst_l, above_1, unit_w as usize);
+        BD::pixel_copy(&mut dst_l[REST_UNIT_STRIDE..], above_1, unit_w as usize);
+        BD::pixel_copy(&mut dst_l[2 * REST_UNIT_STRIDE..], above_2, unit_w as usize);
     } else {
-        memcpy(
-            dst_l as *mut libc::c_void,
-            p as *const libc::c_void,
-            (unit_w << 1) as libc::c_ulong,
-        );
-        memcpy(
-            dst_l.offset(390) as *mut libc::c_void,
-            p as *const libc::c_void,
-            (unit_w << 1) as libc::c_ulong,
-        );
-        memcpy(
-            dst_l.offset((2 * 390) as isize) as *mut libc::c_void,
-            p as *const libc::c_void,
-            (unit_w << 1) as libc::c_ulong,
-        );
+        // Pad with first row
+        let p = std::slice::from_raw_parts(p, unit_w as usize);
+
+        BD::pixel_copy(dst_l, p, unit_w as usize);
+        BD::pixel_copy(&mut dst_l[REST_UNIT_STRIDE..], p, unit_w as usize);
+        BD::pixel_copy(&mut dst_l[2 * REST_UNIT_STRIDE..], p, unit_w as usize);
+
         if have_left != 0 {
-            memcpy(
-                dst_l as *mut libc::c_void,
-                &*(*left.offset(0)).as_ptr().offset(1) as *const pixel as *const libc::c_void,
-                ((3 as libc::c_int) << 1) as libc::c_ulong,
-            );
-            memcpy(
-                dst_l.offset(390) as *mut libc::c_void,
-                &*(*left.offset(0)).as_ptr().offset(1) as *const pixel as *const libc::c_void,
-                ((3 as libc::c_int) << 1) as libc::c_ulong,
-            );
-            memcpy(
-                dst_l.offset((2 * 390) as isize) as *mut libc::c_void,
-                &*(*left.offset(0)).as_ptr().offset(1) as *const pixel as *const libc::c_void,
-                ((3 as libc::c_int) << 1) as libc::c_ulong,
-            );
+            let left = &(*left.offset(0))[1..];
+            BD::pixel_copy(dst_l, left, 3);
+            BD::pixel_copy(&mut dst_l[REST_UNIT_STRIDE..], left, 3);
+            BD::pixel_copy(&mut dst_l[2 * REST_UNIT_STRIDE..], left, 3);
         }
     }
-    let mut dst_tl: *mut pixel = dst_l.offset((3 * 390) as isize);
+
+    let mut dst_tl = &mut dst_l[3 * REST_UNIT_STRIDE..];
     if edges as libc::c_uint & LR_HAVE_BOTTOM as libc::c_int as libc::c_uint != 0 {
         let below_1: *const pixel = lpf.offset(6 * PXSTRIDE(stride));
         let below_2: *const pixel = below_1.offset(PXSTRIDE(stride) as isize);
         memcpy(
-            dst_tl.offset((stripe_h * 390) as isize) as *mut libc::c_void,
+            dst_tl.as_mut_ptr().offset((stripe_h * 390) as isize) as *mut libc::c_void,
             below_1 as *const libc::c_void,
             (unit_w << 1) as libc::c_ulong,
         );
         memcpy(
-            dst_tl.offset(((stripe_h + 1) * 390) as isize) as *mut libc::c_void,
+            dst_tl.as_mut_ptr().offset(((stripe_h + 1) * 390) as isize) as *mut libc::c_void,
             below_2 as *const libc::c_void,
             (unit_w << 1) as libc::c_ulong,
         );
         memcpy(
-            dst_tl.offset(((stripe_h + 2) * 390) as isize) as *mut libc::c_void,
+            dst_tl.as_mut_ptr().offset(((stripe_h + 2) * 390) as isize) as *mut libc::c_void,
             below_2 as *const libc::c_void,
             (unit_w << 1) as libc::c_ulong,
         );
     } else {
         let src: *const pixel = p.offset(((stripe_h - 1) as isize * PXSTRIDE(stride)) as isize);
         memcpy(
-            dst_tl.offset((stripe_h * 390) as isize) as *mut libc::c_void,
+            dst_tl.as_mut_ptr().offset((stripe_h * 390) as isize) as *mut libc::c_void,
             src as *const libc::c_void,
             (unit_w << 1) as libc::c_ulong,
         );
         memcpy(
-            dst_tl.offset(((stripe_h + 1) * 390) as isize) as *mut libc::c_void,
+            dst_tl.as_mut_ptr().offset(((stripe_h + 1) * 390) as isize) as *mut libc::c_void,
             src as *const libc::c_void,
             (unit_w << 1) as libc::c_ulong,
         );
         memcpy(
-            dst_tl.offset(((stripe_h + 2) * 390) as isize) as *mut libc::c_void,
+            dst_tl.as_mut_ptr().offset(((stripe_h + 2) * 390) as isize) as *mut libc::c_void,
             src as *const libc::c_void,
             (unit_w << 1) as libc::c_ulong,
         );
         if have_left != 0 {
             memcpy(
-                dst_tl.offset((stripe_h * 390) as isize) as *mut libc::c_void,
+                dst_tl.as_mut_ptr().offset((stripe_h * 390) as isize) as *mut libc::c_void,
                 &*(*left.offset((stripe_h - 1) as isize)).as_ptr().offset(1) as *const pixel
                     as *const libc::c_void,
                 ((3 as libc::c_int) << 1) as libc::c_ulong,
             );
             memcpy(
-                dst_tl.offset(((stripe_h + 1) * 390) as isize) as *mut libc::c_void,
+                dst_tl.as_mut_ptr().offset(((stripe_h + 1) * 390) as isize) as *mut libc::c_void,
                 &*(*left.offset((stripe_h - 1) as isize)).as_ptr().offset(1) as *const pixel
                     as *const libc::c_void,
                 ((3 as libc::c_int) << 1) as libc::c_ulong,
             );
             memcpy(
-                dst_tl.offset(((stripe_h + 2) * 390) as isize) as *mut libc::c_void,
+                dst_tl.as_mut_ptr().offset(((stripe_h + 2) * 390) as isize) as *mut libc::c_void,
                 &*(*left.offset((stripe_h - 1) as isize)).as_ptr().offset(1) as *const pixel
                     as *const libc::c_void,
                 ((3 as libc::c_int) << 1) as libc::c_ulong,
             );
         }
     }
-    let mut j = 0;
-    while j < stripe_h {
-        memcpy(
-            dst_tl.offset((3 * have_left) as isize) as *mut libc::c_void,
-            p.offset((3 * have_left) as isize) as *const libc::c_void,
-            (unit_w - 3 * have_left << 1) as libc::c_ulong,
+
+    // Inner UNIT_WxSTRIPE_H
+    let len = (unit_w - 3 * have_left) as usize;
+    for j in 0..stripe_h as usize {
+        let p = std::slice::from_raw_parts(
+            p.offset((j * BD::pxstride(stride as usize)) as isize + (3 * have_left) as isize),
+            len,
         );
-        dst_tl = dst_tl.offset(390);
-        p = p.offset(PXSTRIDE(stride) as isize);
-        j += 1;
+        BD::pixel_copy(
+            &mut dst_tl[j * REST_UNIT_STRIDE + (3 * have_left) as usize..],
+            p,
+            len,
+        );
     }
+
     if have_right == 0 {
-        let mut pad: *mut pixel = dst_l.offset(unit_w as isize);
-        let mut row_last: *mut pixel = &mut *dst_l.offset((unit_w - 1) as isize) as *mut pixel;
+        let mut pad: *mut pixel = dst_l.as_mut_ptr().offset(unit_w as isize);
+        let mut row_last: *mut pixel =
+            &mut *dst_l.as_mut_ptr().offset((unit_w - 1) as isize) as *mut pixel;
         let mut j_0 = 0;
         while j_0 < stripe_h + 6 {
             pixel_set(pad, *row_last as libc::c_int, 3 as libc::c_int);
@@ -329,7 +307,7 @@ pub(crate) unsafe fn padding(
             let offset = j * REST_UNIT_STRIDE;
             pixel_set(
                 dst[offset..].as_mut_ptr(),
-                *dst_l.offset(offset as isize) as libc::c_int,
+                dst[3 + offset] as libc::c_int,
                 3,
             );
         }
