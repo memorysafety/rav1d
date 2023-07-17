@@ -141,49 +141,21 @@ decl_looprestorationfilter_fns! {
 // 256 * 1.5 + 3 + 3 = 390
 const REST_UNIT_STRIDE: usize = 390;
 
-type BD = crate::include::common::bitdepth::BitDepth16;
-type pixel = <BD as BitDepth>::Pixel;
-
 // TODO Reuse p when no padding is needed (add and remove lpf pixels in p)
 // TODO Chroma only requires 2 rows of padding.
 // TODO(randomPoison): Temporarily pub until remaining looprestoration fns have
 // been deduplicated.
 #[inline(never)]
-pub(crate) unsafe fn padding(
-    mut dst: &mut [pixel; 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE],
-    mut p: *const pixel,
+pub(crate) unsafe fn padding<BD: BitDepth>(
+    mut dst: &mut [BD::Pixel; 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE],
+    mut p: *const BD::Pixel,
     stride: ptrdiff_t,
-    mut left: *const [pixel; 4],
-    mut lpf: *const pixel,
+    mut left: *const [BD::Pixel; 4],
+    mut lpf: *const BD::Pixel,
     mut unit_w: libc::c_int,
     stripe_h: libc::c_int,
     edges: LrEdgeFlags,
 ) {
-    extern "C" {
-        fn memcpy(
-            _: *mut libc::c_void,
-            _: *const libc::c_void,
-            _: libc::c_ulong,
-        ) -> *mut libc::c_void;
-    }
-
-    #[inline]
-    unsafe fn pixel_set(dst: *mut pixel, val: libc::c_int, num: libc::c_int) {
-        let mut n = 0;
-        while n < num {
-            *dst.offset(n as isize) = val as pixel;
-            n += 1;
-        }
-    }
-
-    #[inline]
-    unsafe fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
-        if x & 1 != 0 {
-            unreachable!();
-        }
-        return x >> 1;
-    }
-
     let have_left = (edges & LR_HAVE_LEFT != 0) as libc::c_int;
     let have_right = (edges & LR_HAVE_RIGHT != 0) as libc::c_int;
 

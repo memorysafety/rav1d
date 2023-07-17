@@ -1,3 +1,4 @@
+use crate::include::common::bitdepth::BitDepth16;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
@@ -198,7 +199,7 @@ pub(crate) unsafe extern "C" fn wiener_rust(
 ) {
     let mut tmp: [pixel; 27300] = [0; 27300];
     let mut tmp_ptr: *mut pixel = tmp.as_mut_ptr();
-    padding(&mut tmp, p, stride, left, lpf, w, h, edges);
+    padding::<BitDepth16>(&mut tmp, p, stride, left, lpf, w, h, edges);
     let mut hor: [uint16_t; 27300] = [0; 27300];
     let mut hor_ptr: *mut uint16_t = hor.as_mut_ptr();
     let filter: *const [int16_t; 8] = ((*params).filter.0).as_ptr();
@@ -585,7 +586,7 @@ unsafe extern "C" fn sgr_5x5_rust(
 ) {
     let mut tmp: [pixel; 27300] = [0; 27300];
     let mut dst: [coef; 24576] = [0; 24576];
-    padding(&mut tmp, p, stride, left, lpf, w, h, edges);
+    padding::<BitDepth16>(&mut tmp, p, stride, left, lpf, w, h, edges);
     selfguided_filter(
         dst.as_mut_ptr(),
         tmp.as_mut_ptr(),
@@ -651,7 +652,7 @@ unsafe extern "C" fn sgr_3x3_rust(
 ) {
     let mut tmp: [pixel; 27300] = [0; 27300];
     let mut dst: [coef; 24576] = [0; 24576];
-    padding(&mut tmp, p, stride, left, lpf, w, h, edges);
+    padding::<BitDepth16>(&mut tmp, p, stride, left, lpf, w, h, edges);
     selfguided_filter(
         dst.as_mut_ptr(),
         tmp.as_mut_ptr(),
@@ -718,7 +719,7 @@ unsafe extern "C" fn sgr_mix_rust(
     let mut tmp: [pixel; 27300] = [0; 27300];
     let mut dst0: [coef; 24576] = [0; 24576];
     let mut dst1: [coef; 24576] = [0; 24576];
-    padding(&mut tmp, p, stride, left, lpf, w, h, edges);
+    padding::<BitDepth16>(&mut tmp, p, stride, left, lpf, w, h, edges);
     selfguided_filter(
         dst0.as_mut_ptr(),
         tmp.as_mut_ptr(),
