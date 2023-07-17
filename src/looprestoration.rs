@@ -295,35 +295,28 @@ pub(crate) unsafe fn padding(
     }
 
     if have_right == 0 {
-        let mut pad: *mut pixel = dst_l.as_mut_ptr().offset(unit_w as isize);
-        let mut row_last: *mut pixel =
-            &mut *dst_l.as_mut_ptr().offset((unit_w - 1) as isize) as *mut pixel;
-        let mut j_0 = 0;
-        while j_0 < stripe_h + 6 {
-            pixel_set(pad, *row_last as libc::c_int, 3 as libc::c_int);
-            pad = pad.offset(390);
-            row_last = row_last.offset(390);
-            j_0 += 1;
+        // Pad 3x(STRIPE_H+6) with last column
+        for j in 0..stripe_h as usize + 6 {
+            let mut row_last = dst_l[(unit_w - 1) as usize + j * REST_UNIT_STRIDE];
+            let mut pad = &mut dst_l[unit_w as usize + j * REST_UNIT_STRIDE..];
+            BD::pixel_set(pad, row_last, 3);
         }
     }
+
     if have_left == 0 {
         for j in 0..stripe_h as usize + 6 {
             let offset = j * REST_UNIT_STRIDE;
-            pixel_set(
-                dst[offset..].as_mut_ptr(),
-                dst[3 + offset] as libc::c_int,
-                3,
-            );
+            let val = dst[3 + offset];
+            BD::pixel_set(&mut dst[offset..], val, 3);
         }
     } else {
         let dst = &mut dst[3 * REST_UNIT_STRIDE..];
 
         for j in 0..stripe_h as usize {
-            memcpy(
-                dst[j * REST_UNIT_STRIDE..].as_mut_ptr() as *mut libc::c_void,
-                &*(*left.offset(j as isize)).as_ptr().offset(1) as *const pixel
-                    as *const libc::c_void,
-                ((3 as libc::c_int) << 1) as libc::c_ulong,
+            BD::pixel_copy(
+                &mut dst[j * REST_UNIT_STRIDE..],
+                &(*left.offset(j as isize))[1..],
+                3,
             );
         }
     };
