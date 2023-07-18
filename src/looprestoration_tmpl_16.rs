@@ -856,6 +856,9 @@ unsafe extern "C" fn wiener_filter_neon(
     edges: LrEdgeFlags,
     bitdepth_max: libc::c_int,
 ) {
+    use crate::src::looprestoration::LR_HAVE_BOTTOM;
+    use crate::src::looprestoration::LR_HAVE_TOP;
+
     let filter: *const [int16_t; 8] = (*params).filter.0.as_ptr();
     let mut mid: Align16<[int16_t; 68 * 384]> = Align16([0; 68 * 384]);
     let mut mid_stride: libc::c_int = w + 7 & !7;
