@@ -156,6 +156,8 @@ pub(crate) unsafe fn padding<BD: BitDepth>(
     stripe_h: libc::c_int,
     edges: LrEdgeFlags,
 ) {
+    let stride = BD::pxstride(stride as usize);
+
     let have_left = (edges & LR_HAVE_LEFT != 0) as libc::c_int;
     let have_right = (edges & LR_HAVE_RIGHT != 0) as libc::c_int;
 
@@ -167,7 +169,6 @@ pub(crate) unsafe fn padding<BD: BitDepth>(
 
     if edges & LR_HAVE_TOP != 0 {
         // Copy previous loop filtered rows
-        let stride = BD::pxstride(stride as usize);
         let above_1 = std::slice::from_raw_parts(lpf, stride + unit_w as usize);
         let above_2 = &above_1[stride..];
 
@@ -193,9 +194,8 @@ pub(crate) unsafe fn padding<BD: BitDepth>(
     let mut dst_tl = &mut dst_l[3 * REST_UNIT_STRIDE..];
     if edges & LR_HAVE_BOTTOM != 0 {
         // Copy next loop filtered rows
-        let stride = BD::pxstride(stride as usize) as isize;
-        let below_1 = std::slice::from_raw_parts(lpf.offset(6 * stride), unit_w as usize);
-        let below_2 = std::slice::from_raw_parts(lpf.offset(7 * stride), unit_w as usize);
+        let below_1 = std::slice::from_raw_parts(lpf.offset(6 * stride as isize), unit_w as usize);
+        let below_2 = std::slice::from_raw_parts(lpf.offset(7 * stride as isize), unit_w as usize);
 
         BD::pixel_copy(
             &mut dst_tl[stripe_h as usize * REST_UNIT_STRIDE..],
@@ -215,7 +215,7 @@ pub(crate) unsafe fn padding<BD: BitDepth>(
     } else {
         // Pad with last row
         let src = std::slice::from_raw_parts(
-            p.offset(((stripe_h - 1) as isize * BD::pxstride(stride as usize) as isize) as isize),
+            p.offset(((stripe_h - 1) as isize * stride as isize) as isize),
             unit_w as usize,
         );
 
@@ -256,7 +256,7 @@ pub(crate) unsafe fn padding<BD: BitDepth>(
     let len = (unit_w - 3 * have_left) as usize;
     for j in 0..stripe_h as usize {
         let p = std::slice::from_raw_parts(
-            p.offset((j * BD::pxstride(stride as usize)) as isize + (3 * have_left) as isize),
+            p.offset((j * stride + 3 * have_left as usize) as isize),
             len,
         );
         BD::pixel_copy(
@@ -276,6 +276,7 @@ pub(crate) unsafe fn padding<BD: BitDepth>(
     }
 
     if have_left == 0 {
+        // Pad 3x(STRIPE_H+6) with first column
         for j in 0..stripe_h as usize + 6 {
             let offset = j * REST_UNIT_STRIDE;
             let val = dst[3 + offset];
