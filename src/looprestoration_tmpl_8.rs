@@ -920,6 +920,9 @@ unsafe extern "C" fn dav1d_sgr_filter1_neon(
     strength: libc::c_int,
     edges: LrEdgeFlags,
 ) {
+    use crate::src::looprestoration::LR_HAVE_BOTTOM;
+    use crate::src::looprestoration::LR_HAVE_TOP;
+
     let mut sumsq_mem: Align16<[int32_t; 27208]> = Align16([0; 27208]);
     let sumsq: *mut int32_t = &mut *sumsq_mem
         .0
@@ -974,6 +977,9 @@ unsafe extern "C" fn dav1d_sgr_filter2_neon(
     strength: libc::c_int,
     edges: LrEdgeFlags,
 ) {
+    use crate::src::looprestoration::LR_HAVE_BOTTOM;
+    use crate::src::looprestoration::LR_HAVE_TOP;
+
     let mut sumsq_mem: Align16<[int32_t; 27208]> = Align16([0; 27208]);
     let sumsq: *mut int32_t = &mut *sumsq_mem
         .0

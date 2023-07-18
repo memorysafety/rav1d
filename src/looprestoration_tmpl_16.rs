@@ -6,6 +6,7 @@ use crate::src::align::Align16;
 use ::libc;
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
+
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
 }
@@ -1026,6 +1027,9 @@ unsafe extern "C" fn dav1d_sgr_filter1_neon(
     edges: LrEdgeFlags,
     bitdepth_max: libc::c_int,
 ) {
+    use crate::src::looprestoration::LR_HAVE_BOTTOM;
+    use crate::src::looprestoration::LR_HAVE_TOP;
+
     let mut sumsq_mem: Align16<[int32_t; 27208]> = Align16([0; 27208]);
     let sumsq: *mut int32_t = &mut *sumsq_mem
         .0
@@ -1081,6 +1085,9 @@ unsafe extern "C" fn dav1d_sgr_filter2_neon(
     edges: LrEdgeFlags,
     bitdepth_max: libc::c_int,
 ) {
+    use crate::src::looprestoration::LR_HAVE_BOTTOM;
+    use crate::src::looprestoration::LR_HAVE_TOP;
+
     let mut sumsq_mem: Align16<[int32_t; 27208]> = Align16([0; 27208]);
     let sumsq: *mut int32_t = &mut *sumsq_mem
         .0
