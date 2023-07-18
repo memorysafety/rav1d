@@ -127,10 +127,9 @@ impl BitDepthFnAsmMc for BitDepth8 {
     ) {
         let [dst_stride, src_stride] = [dst_stride, src_stride].map(|it: usize| it as ptrdiff_t);
         let [w, h, mx, my] = [w, h, mx, my].map(|it| it as c_int);
-        let args = (dst, dst_stride, src, src_stride, w, h, mx, my);
 
         macro_rules! extern_fn {
-            ($args:expr, $name:ident) => {{
+            ($name:ident) => {{
                 extern "C" {
                     fn $name(
                         dst: *mut <BitDepth8 as BitDepth>::Pixel,
@@ -144,50 +143,50 @@ impl BitDepthFnAsmMc for BitDepth8 {
                     );
                 }
 
-                let (dst, dst_stride, src, src_stride, w, h, mx, my) = args;
-                $name(dst, dst_stride, src, src_stride, w, h, mx, my)
+                $name
             }};
-            ($args:expr, $asm:expr, unreachable) => {{
-                let _ = args;
-                unreachable!("{asm:?}");
+            ($asm:expr, unreachable) => {{
+                unreachable!("{asm:?}")
             }};
         }
 
         macro_rules! asm_fn {
-            ($asm:expr, $args:expr, $name:ident) => {{
+            ($asm:expr, $name:ident) => {{
                 use FnAsmVersion::*;
                 paste! {
                     match asm {
                         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-                        SSE2 => extern_fn!($args, asm, unreachable),
+                        SSE2 => extern_fn!(asm, unreachable),
                         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-                        SSSE3 => extern_fn!($args, [<dav1d_put $name _8bpc_ssse3>]),
+                        SSSE3 => extern_fn!([<dav1d_put $name _8bpc_ssse3>]),
                         #[cfg(target_arch = "x86_64")]
-                        AVX2 => extern_fn!($args, [<dav1d_put $name _8bpc_avx2>]),
+                        AVX2 => extern_fn!([<dav1d_put $name _8bpc_avx2>]),
                         #[cfg(target_arch = "x86_64")]
-                        AVX512ICL => extern_fn!($args, [<dav1d_put $name _8bpc_avx512icl>]),
+                        AVX512ICL => extern_fn!([<dav1d_put $name _8bpc_avx512icl>]),
                         #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
-                        Neon => extern_fn!($args, [<dav1d_put $name _8bpc_neon>]),
+                        Neon => extern_fn!([<dav1d_put $name _8bpc_neon>]),
                     }
                 }
             }};
         }
 
         use Filter8Tap::*;
-        match filter_2d {
+        let fn_ptr = match filter_2d {
             Filter2dRust::Tap8(Filter2d8Tap { h, v }) => match (h, v) {
-                (Regular, Regular) => asm_fn!(asm, args, _8tap_regular),
-                (Regular, Smooth) => asm_fn!(asm, args, _8tap_regular_smooth),
-                (Regular, Sharp) => asm_fn!(asm, args, _8tap_regular_sharp),
-                (Smooth, Regular) => asm_fn!(asm, args, _8tap_smooth_regular),
-                (Smooth, Smooth) => asm_fn!(asm, args, _8tap_smooth),
-                (Smooth, Sharp) => asm_fn!(asm, args, _8tap_smooth_sharp),
-                (Sharp, Regular) => asm_fn!(asm, args, _8tap_sharp_regular),
-                (Sharp, Smooth) => asm_fn!(asm, args, _8tap_sharp_smooth),
-                (Sharp, Sharp) => asm_fn!(asm, args, _8tap_sharp),
+                (Regular, Regular) => asm_fn!(asm, _8tap_regular),
+                (Regular, Smooth) => asm_fn!(asm, _8tap_regular_smooth),
+                (Regular, Sharp) => asm_fn!(asm, _8tap_regular_sharp),
+                (Smooth, Regular) => asm_fn!(asm, _8tap_smooth_regular),
+                (Smooth, Smooth) => asm_fn!(asm, _8tap_smooth),
+                (Smooth, Sharp) => asm_fn!(asm, _8tap_smooth_sharp),
+                (Sharp, Regular) => asm_fn!(asm, _8tap_sharp_regular),
+                (Sharp, Smooth) => asm_fn!(asm, _8tap_sharp_smooth),
+                (Sharp, Sharp) => asm_fn!(asm, _8tap_sharp),
             },
-            Filter2dRust::BiLinear => asm_fn!(asm, args, _bilin),
-        }
+            Filter2dRust::BiLinear => asm_fn!(asm, _bilin),
+        };
+
+        fn_ptr(dst, dst_stride, src, src_stride, w, h, mx, my)
     }
 
     #[cfg(feature = "asm")]
@@ -206,10 +205,9 @@ impl BitDepthFnAsmMc for BitDepth8 {
     ) {
         let src_stride = src_stride as ptrdiff_t;
         let [w, h, mx, my] = [w, h, mx, my].map(|it| it as c_int);
-        let args = (tmp, src, src_stride, w, h, mx, my);
 
         macro_rules! extern_fn {
-            ($args:expr, $name:ident) => {{
+            ($name:ident) => {{
                 extern "C" {
                     fn $name(
                         tmp: *mut i16,
@@ -222,50 +220,50 @@ impl BitDepthFnAsmMc for BitDepth8 {
                     );
                 }
 
-                let (tmp, src, src_stride, w, h, mx, my) = args;
-                $name(tmp, src, src_stride, w, h, mx, my)
+                $name
             }};
-            ($args:expr, $asm:expr, unreachable) => {{
-                let _ = args;
-                unreachable!("{asm:?}");
+            ($asm:expr, unreachable) => {{
+                unreachable!("{asm:?}")
             }};
         }
 
         macro_rules! asm_fn {
-            ($asm:expr, $args:expr, $name:ident) => {{
+            ($asm:expr, $name:ident) => {{
                 use FnAsmVersion::*;
                 paste! {
                     match asm {
                         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-                        SSE2 => extern_fn!($args, [<dav1d_prep $name _8bpc_sse2>]),
+                        SSE2 => extern_fn!([<dav1d_prep $name _8bpc_sse2>]),
                         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-                        SSSE3 => extern_fn!($args, [<dav1d_prep $name _8bpc_ssse3>]),
+                        SSSE3 => extern_fn!([<dav1d_prep $name _8bpc_ssse3>]),
                         #[cfg(target_arch = "x86_64")]
-                        AVX2 => extern_fn!($args, [<dav1d_prep $name _8bpc_avx2>]),
+                        AVX2 => extern_fn!([<dav1d_prep $name _8bpc_avx2>]),
                         #[cfg(target_arch = "x86_64")]
-                        AVX512ICL => extern_fn!($args, [<dav1d_prep $name _8bpc_avx512icl>]),
+                        AVX512ICL => extern_fn!([<dav1d_prep $name _8bpc_avx512icl>]),
                         #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
-                        Neon => extern_fn!($args, [<dav1d_prep $name _8bpc_neon>]),
+                        Neon => extern_fn!([<dav1d_prep $name _8bpc_neon>]),
                     }
                 }
             }};
         }
 
         use Filter8Tap::*;
-        match filter_2d {
+        let fn_ptr = match filter_2d {
             Filter2dRust::Tap8(Filter2d8Tap { h, v }) => match (h, v) {
-                (Regular, Regular) => asm_fn!(asm, args, _8tap_regular),
-                (Regular, Smooth) => asm_fn!(asm, args, _8tap_regular_smooth),
-                (Regular, Sharp) => asm_fn!(asm, args, _8tap_regular_sharp),
-                (Smooth, Regular) => asm_fn!(asm, args, _8tap_smooth_regular),
-                (Smooth, Smooth) => asm_fn!(asm, args, _8tap_smooth),
-                (Smooth, Sharp) => asm_fn!(asm, args, _8tap_smooth_sharp),
-                (Sharp, Regular) => asm_fn!(asm, args, _8tap_sharp_regular),
-                (Sharp, Smooth) => asm_fn!(asm, args, _8tap_sharp_smooth),
-                (Sharp, Sharp) => asm_fn!(asm, args, _8tap_sharp),
+                (Regular, Regular) => asm_fn!(asm, _8tap_regular),
+                (Regular, Smooth) => asm_fn!(asm, _8tap_regular_smooth),
+                (Regular, Sharp) => asm_fn!(asm, _8tap_regular_sharp),
+                (Smooth, Regular) => asm_fn!(asm, _8tap_smooth_regular),
+                (Smooth, Smooth) => asm_fn!(asm, _8tap_smooth),
+                (Smooth, Sharp) => asm_fn!(asm, _8tap_smooth_sharp),
+                (Sharp, Regular) => asm_fn!(asm, _8tap_sharp_regular),
+                (Sharp, Smooth) => asm_fn!(asm, _8tap_sharp_smooth),
+                (Sharp, Sharp) => asm_fn!(asm, _8tap_sharp),
             },
-            Filter2dRust::BiLinear => asm_fn!(asm, args, _bilin),
-        }
+            Filter2dRust::BiLinear => asm_fn!(asm, _bilin),
+        };
+
+        fn_ptr(tmp, src, src_stride, w, h, mx, my)
     }
 
     #[cfg(feature = "asm")]
@@ -287,10 +285,9 @@ impl BitDepthFnAsmMc for BitDepth8 {
     ) {
         let [dst_stride, src_stride] = [dst_stride, src_stride].map(|it: usize| it as ptrdiff_t);
         let [w, h, mx, my, dx, dy] = [w, h, mx, my, dx, dy].map(|it| it as c_int);
-        let args = (dst, dst_stride, src, src_stride, w, h, mx, my, dx, dy);
 
         macro_rules! extern_fn {
-            ($args:expr, $name:ident) => {{
+            ($name:ident) => {{
                 extern "C" {
                     fn $name(
                         dst: *mut <BitDepth8 as BitDepth>::Pixel,
@@ -306,50 +303,50 @@ impl BitDepthFnAsmMc for BitDepth8 {
                     );
                 }
 
-                let (dst, dst_stride, src, src_stride, w, h, mx, my, dx, dy) = args;
-                $name(dst, dst_stride, src, src_stride, w, h, mx, my, dx, dy)
+                $name
             }};
-            ($args:expr, $asm:expr, unreachable) => {{
-                let _ = args;
-                unreachable!("{asm:?}");
+            ($asm:expr, unreachable) => {{
+                unreachable!("{asm:?}")
             }};
         }
 
         macro_rules! asm_fn {
-            ($asm:expr, $args:expr, $name:ident) => {{
+            ($asm:expr, $name:ident) => {{
                 use FnAsmVersion::*;
                 paste! {
                     match asm {
                         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-                        SSE2 => extern_fn!($args, asm, unreachable),
+                        SSE2 => extern_fn!(asm, unreachable),
                         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-                        SSSE3 => extern_fn!($args, [<dav1d_put $name _8bpc_ssse3>]),
+                        SSSE3 => extern_fn!([<dav1d_put $name _8bpc_ssse3>]),
                         #[cfg(target_arch = "x86_64")]
-                        AVX2 => extern_fn!($args, [<dav1d_put $name _8bpc_avx2>]),
+                        AVX2 => extern_fn!([<dav1d_put $name _8bpc_avx2>]),
                         #[cfg(target_arch = "x86_64")]
-                        AVX512ICL => extern_fn!($args, asm, unreachable),
+                        AVX512ICL => extern_fn!(asm, unreachable),
                         #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
-                        Neon => extern_fn!($args, asm, unreachable),
+                        Neon => extern_fn!(asm, unreachable),
                     }
                 }
             }};
         }
 
         use Filter8Tap::*;
-        match filter_2d {
+        let fn_ptr = match filter_2d {
             Filter2dRust::Tap8(Filter2d8Tap { h, v }) => match (h, v) {
-                (Regular, Regular) => asm_fn!(asm, args, _8tap_scaled_regular),
-                (Regular, Smooth) => asm_fn!(asm, args, _8tap_scaled_regular_smooth),
-                (Regular, Sharp) => asm_fn!(asm, args, _8tap_scaled_regular_sharp),
-                (Smooth, Regular) => asm_fn!(asm, args, _8tap_scaled_smooth_regular),
-                (Smooth, Smooth) => asm_fn!(asm, args, _8tap_scaled_smooth),
-                (Smooth, Sharp) => asm_fn!(asm, args, _8tap_scaled_smooth_sharp),
-                (Sharp, Regular) => asm_fn!(asm, args, _8tap_scaled_sharp_regular),
-                (Sharp, Smooth) => asm_fn!(asm, args, _8tap_scaled_sharp_smooth),
-                (Sharp, Sharp) => asm_fn!(asm, args, _8tap_scaled_sharp),
+                (Regular, Regular) => asm_fn!(asm, _8tap_scaled_regular),
+                (Regular, Smooth) => asm_fn!(asm, _8tap_scaled_regular_smooth),
+                (Regular, Sharp) => asm_fn!(asm, _8tap_scaled_regular_sharp),
+                (Smooth, Regular) => asm_fn!(asm, _8tap_scaled_smooth_regular),
+                (Smooth, Smooth) => asm_fn!(asm, _8tap_scaled_smooth),
+                (Smooth, Sharp) => asm_fn!(asm, _8tap_scaled_smooth_sharp),
+                (Sharp, Regular) => asm_fn!(asm, _8tap_scaled_sharp_regular),
+                (Sharp, Smooth) => asm_fn!(asm, _8tap_scaled_sharp_smooth),
+                (Sharp, Sharp) => asm_fn!(asm, _8tap_scaled_sharp),
             },
-            Filter2dRust::BiLinear => asm_fn!(asm, args, _bilin_scaled),
-        }
+            Filter2dRust::BiLinear => asm_fn!(asm, _bilin_scaled),
+        };
+
+        fn_ptr(dst, dst_stride, src, src_stride, w, h, mx, my, dx, dy)
     }
 
     #[cfg(feature = "asm")]
@@ -370,10 +367,9 @@ impl BitDepthFnAsmMc for BitDepth8 {
     ) {
         let src_stride = src_stride as ptrdiff_t;
         let [w, h, mx, my, dx, dy] = [w, h, mx, my, dx, dy].map(|it| it as c_int);
-        let args = (tmp, src, src_stride, w, h, mx, my, dx, dy);
 
         macro_rules! extern_fn {
-            ($args:expr, $name:ident) => {{
+            ($name:ident) => {{
                 extern "C" {
                     fn $name(
                         tmp: *mut i16,
@@ -388,50 +384,50 @@ impl BitDepthFnAsmMc for BitDepth8 {
                     );
                 }
 
-                let (tmp, src, src_stride, w, h, mx, my, dx, dy) = args;
-                $name(tmp, src, src_stride, w, h, mx, my, dx, dy)
+                $name
             }};
-            ($args:expr, $asm:expr, unreachable) => {{
-                let _ = args;
-                unreachable!("{asm:?}");
+            ($asm:expr, unreachable) => {{
+                unreachable!("{asm:?}")
             }};
         }
 
         macro_rules! asm_fn {
-            ($asm:expr, $args:expr, $name:ident) => {{
+            ($asm:expr, $name:ident) => {{
                 use FnAsmVersion::*;
                 paste! {
                     match asm {
                         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-                        SSE2 => extern_fn!($args, asm, unreachable),
+                        SSE2 => extern_fn!(asm, unreachable),
                         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-                        SSSE3 => extern_fn!($args, [<dav1d_prep $name _8bpc_ssse3>]),
+                        SSSE3 => extern_fn!([<dav1d_prep $name _8bpc_ssse3>]),
                         #[cfg(target_arch = "x86_64")]
-                        AVX2 => extern_fn!($args, [<dav1d_prep $name _8bpc_avx2>]),
+                        AVX2 => extern_fn!([<dav1d_prep $name _8bpc_avx2>]),
                         #[cfg(target_arch = "x86_64")]
-                        AVX512ICL => extern_fn!($args, asm, unreachable),
+                        AVX512ICL => extern_fn!(asm, unreachable),
                         #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
-                        Neon => extern_fn!($args, asm, unreachable),
+                        Neon => extern_fn!(asm, unreachable),
                     }
                 }
             }};
         }
 
         use Filter8Tap::*;
-        match filter_2d {
+        let fn_ptr = match filter_2d {
             Filter2dRust::Tap8(Filter2d8Tap { h, v }) => match (h, v) {
-                (Regular, Regular) => asm_fn!(asm, args, _8tap_scaled_regular),
-                (Regular, Smooth) => asm_fn!(asm, args, _8tap_scaled_regular_smooth),
-                (Regular, Sharp) => asm_fn!(asm, args, _8tap_scaled_regular_sharp),
-                (Smooth, Regular) => asm_fn!(asm, args, _8tap_scaled_smooth_regular),
-                (Smooth, Smooth) => asm_fn!(asm, args, _8tap_scaled_smooth),
-                (Smooth, Sharp) => asm_fn!(asm, args, _8tap_scaled_smooth_sharp),
-                (Sharp, Regular) => asm_fn!(asm, args, _8tap_scaled_sharp_regular),
-                (Sharp, Smooth) => asm_fn!(asm, args, _8tap_scaled_sharp_smooth),
-                (Sharp, Sharp) => asm_fn!(asm, args, _8tap_scaled_sharp),
+                (Regular, Regular) => asm_fn!(asm, _8tap_scaled_regular),
+                (Regular, Smooth) => asm_fn!(asm, _8tap_scaled_regular_smooth),
+                (Regular, Sharp) => asm_fn!(asm, _8tap_scaled_regular_sharp),
+                (Smooth, Regular) => asm_fn!(asm, _8tap_scaled_smooth_regular),
+                (Smooth, Smooth) => asm_fn!(asm, _8tap_scaled_smooth),
+                (Smooth, Sharp) => asm_fn!(asm, _8tap_scaled_smooth_sharp),
+                (Sharp, Regular) => asm_fn!(asm, _8tap_scaled_sharp_regular),
+                (Sharp, Smooth) => asm_fn!(asm, _8tap_scaled_sharp_smooth),
+                (Sharp, Sharp) => asm_fn!(asm, _8tap_scaled_sharp),
             },
-            Filter2dRust::BiLinear => asm_fn!(asm, args, _bilin_scaled),
-        }
+            Filter2dRust::BiLinear => asm_fn!(asm, _bilin_scaled),
+        };
+
+        fn_ptr(tmp, src, src_stride, w, h, mx, my, dx, dy)
     }
 }
 
@@ -453,20 +449,9 @@ impl BitDepthFnAsmMc for BitDepth16 {
     ) {
         let [dst_stride, src_stride] = [dst_stride, src_stride].map(|it: usize| it as ptrdiff_t);
         let [w, h, mx, my] = [w, h, mx, my].map(|it| it as c_int);
-        let args = (
-            dst,
-            dst_stride,
-            src,
-            src_stride,
-            w,
-            h,
-            mx,
-            my,
-            self.bitdepth_max().as_::<c_int>(),
-        );
 
         macro_rules! extern_fn {
-            ($args:expr, $name:ident) => {{
+            ($name:ident) => {{
                 extern "C" {
                     fn $name(
                         dst: *mut <BitDepth16 as BitDepth>::Pixel,
@@ -481,50 +466,60 @@ impl BitDepthFnAsmMc for BitDepth16 {
                     );
                 }
 
-                let (dst, dst_stride, src, src_stride, w, h, mx, my, bitdepth_max) = args;
-                $name(dst, dst_stride, src, src_stride, w, h, mx, my, bitdepth_max)
+                $name
             }};
-            ($args:expr, $asm:expr, unreachable) => {{
-                let _ = args;
-                unreachable!("{asm:?}");
+            ($asm:expr, unreachable) => {{
+                unreachable!("{asm:?}")
             }};
         }
 
         macro_rules! asm_fn {
-            ($asm:expr, $args:expr, $name:ident) => {{
+            ($asm:expr, $name:ident) => {{
                 use FnAsmVersion::*;
                 paste! {
                     match asm {
                         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-                        SSE2 => extern_fn!($args, asm, unreachable),
+                        SSE2 => extern_fn!(asm, unreachable),
                         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-                        SSSE3 => extern_fn!($args, [<dav1d_put $name _16bpc_ssse3>]),
+                        SSSE3 => extern_fn!([<dav1d_put $name _16bpc_ssse3>]),
                         #[cfg(target_arch = "x86_64")]
-                        AVX2 => extern_fn!($args, [<dav1d_put $name _16bpc_avx2>]),
+                        AVX2 => extern_fn!([<dav1d_put $name _16bpc_avx2>]),
                         #[cfg(target_arch = "x86_64")]
-                        AVX512ICL => extern_fn!($args, [<dav1d_put $name _16bpc_avx512icl>]),
+                        AVX512ICL => extern_fn!([<dav1d_put $name _16bpc_avx512icl>]),
                         #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
-                        Neon => extern_fn!($args, [<dav1d_put $name _16bpc_neon>]),
+                        Neon => extern_fn!([<dav1d_put $name _16bpc_neon>]),
                     }
                 }
             }};
         }
 
         use Filter8Tap::*;
-        match filter_2d {
+        let fn_ptr = match filter_2d {
             Filter2dRust::Tap8(Filter2d8Tap { h, v }) => match (h, v) {
-                (Regular, Regular) => asm_fn!(asm, args, _8tap_regular),
-                (Regular, Smooth) => asm_fn!(asm, args, _8tap_regular_smooth),
-                (Regular, Sharp) => asm_fn!(asm, args, _8tap_regular_sharp),
-                (Smooth, Regular) => asm_fn!(asm, args, _8tap_smooth_regular),
-                (Smooth, Smooth) => asm_fn!(asm, args, _8tap_smooth),
-                (Smooth, Sharp) => asm_fn!(asm, args, _8tap_smooth_sharp),
-                (Sharp, Regular) => asm_fn!(asm, args, _8tap_sharp_regular),
-                (Sharp, Smooth) => asm_fn!(asm, args, _8tap_sharp_smooth),
-                (Sharp, Sharp) => asm_fn!(asm, args, _8tap_sharp),
+                (Regular, Regular) => asm_fn!(asm, _8tap_regular),
+                (Regular, Smooth) => asm_fn!(asm, _8tap_regular_smooth),
+                (Regular, Sharp) => asm_fn!(asm, _8tap_regular_sharp),
+                (Smooth, Regular) => asm_fn!(asm, _8tap_smooth_regular),
+                (Smooth, Smooth) => asm_fn!(asm, _8tap_smooth),
+                (Smooth, Sharp) => asm_fn!(asm, _8tap_smooth_sharp),
+                (Sharp, Regular) => asm_fn!(asm, _8tap_sharp_regular),
+                (Sharp, Smooth) => asm_fn!(asm, _8tap_sharp_smooth),
+                (Sharp, Sharp) => asm_fn!(asm, _8tap_sharp),
             },
-            Filter2dRust::BiLinear => asm_fn!(asm, args, _bilin),
-        }
+            Filter2dRust::BiLinear => asm_fn!(asm, _bilin),
+        };
+
+        fn_ptr(
+            dst,
+            dst_stride,
+            src,
+            src_stride,
+            w,
+            h,
+            mx,
+            my,
+            self.bitdepth_max().as_::<c_int>(),
+        )
     }
 
     #[cfg(feature = "asm")]
@@ -543,19 +538,9 @@ impl BitDepthFnAsmMc for BitDepth16 {
     ) {
         let src_stride = src_stride as ptrdiff_t;
         let [w, h, mx, my] = [w, h, mx, my].map(|it| it as c_int);
-        let args = (
-            tmp,
-            src,
-            src_stride,
-            w,
-            h,
-            mx,
-            my,
-            self.bitdepth_max().as_::<c_int>(),
-        );
 
         macro_rules! extern_fn {
-            ($args:expr, $name:ident) => {{
+            ($name:ident) => {{
                 extern "C" {
                     fn $name(
                         tmp: *mut i16,
@@ -569,50 +554,59 @@ impl BitDepthFnAsmMc for BitDepth16 {
                     );
                 }
 
-                let (tmp, src, src_stride, w, h, mx, my, bitdepth_max) = args;
-                $name(tmp, src, src_stride, w, h, mx, my, bitdepth_max)
+                $name
             }};
-            ($args:expr, $asm:expr, unreachable) => {{
-                let _ = args;
-                unreachable!("{asm:?}");
+            ($asm:expr, unreachable) => {{
+                unreachable!("{asm:?}")
             }};
         }
 
         macro_rules! asm_fn {
-            ($args:expr, $asm:expr, $name:ident) => {{
+            ($asm:expr, $name:ident) => {{
                 use FnAsmVersion::*;
                 paste! {
                     match asm {
                         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-                        SSE2 => extern_fn!($args, asm, unreachable),
+                        SSE2 => extern_fn!(asm, unreachable),
                         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-                        SSSE3 => extern_fn!($args, [<dav1d_prep $name _16bpc_ssse3>]),
+                        SSSE3 => extern_fn!([<dav1d_prep $name _16bpc_ssse3>]),
                         #[cfg(target_arch = "x86_64")]
-                        AVX2 => extern_fn!($args, [<dav1d_prep $name _16bpc_avx2>]),
+                        AVX2 => extern_fn!([<dav1d_prep $name _16bpc_avx2>]),
                         #[cfg(target_arch = "x86_64")]
-                        AVX512ICL => extern_fn!($args, [<dav1d_prep $name _16bpc_avx512icl>]),
+                        AVX512ICL => extern_fn!([<dav1d_prep $name _16bpc_avx512icl>]),
                         #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
-                        Neon => extern_fn!($args, [<dav1d_prep $name _16bpc_neon>]),
+                        Neon => extern_fn!([<dav1d_prep $name _16bpc_neon>]),
                     }
                 }
             }};
         }
 
         use Filter8Tap::*;
-        match filter_2d {
+        let fn_ptr = match filter_2d {
             Filter2dRust::Tap8(Filter2d8Tap { h, v }) => match (h, v) {
-                (Regular, Regular) => asm_fn!(asm, args, _8tap_regular),
-                (Regular, Smooth) => asm_fn!(asm, args, _8tap_regular_smooth),
-                (Regular, Sharp) => asm_fn!(asm, args, _8tap_regular_sharp),
-                (Smooth, Regular) => asm_fn!(asm, args, _8tap_smooth_regular),
-                (Smooth, Smooth) => asm_fn!(asm, args, _8tap_smooth),
-                (Smooth, Sharp) => asm_fn!(asm, args, _8tap_smooth_sharp),
-                (Sharp, Regular) => asm_fn!(asm, args, _8tap_sharp_regular),
-                (Sharp, Smooth) => asm_fn!(asm, args, _8tap_sharp_smooth),
-                (Sharp, Sharp) => asm_fn!(asm, args, _8tap_sharp),
+                (Regular, Regular) => asm_fn!(asm, _8tap_regular),
+                (Regular, Smooth) => asm_fn!(asm, _8tap_regular_smooth),
+                (Regular, Sharp) => asm_fn!(asm, _8tap_regular_sharp),
+                (Smooth, Regular) => asm_fn!(asm, _8tap_smooth_regular),
+                (Smooth, Smooth) => asm_fn!(asm, _8tap_smooth),
+                (Smooth, Sharp) => asm_fn!(asm, _8tap_smooth_sharp),
+                (Sharp, Regular) => asm_fn!(asm, _8tap_sharp_regular),
+                (Sharp, Smooth) => asm_fn!(asm, _8tap_sharp_smooth),
+                (Sharp, Sharp) => asm_fn!(asm, _8tap_sharp),
             },
-            Filter2dRust::BiLinear => asm_fn!(asm, args, _bilin),
-        }
+            Filter2dRust::BiLinear => asm_fn!(asm, _bilin),
+        };
+
+        fn_ptr(
+            tmp,
+            src,
+            src_stride,
+            w,
+            h,
+            mx,
+            my,
+            self.bitdepth_max().as_::<c_int>(),
+        )
     }
 
     #[cfg(feature = "asm")]
@@ -634,22 +628,9 @@ impl BitDepthFnAsmMc for BitDepth16 {
     ) {
         let [dst_stride, src_stride] = [dst_stride, src_stride].map(|it: usize| it as ptrdiff_t);
         let [w, h, mx, my, dx, dy] = [w, h, mx, my, dx, dy].map(|it| it as c_int);
-        let args = (
-            dst,
-            dst_stride,
-            src,
-            src_stride,
-            w,
-            h,
-            mx,
-            my,
-            dx,
-            dy,
-            self.bitdepth_max().as_::<c_int>(),
-        );
 
         macro_rules! extern_fn {
-            ($args:expr, $name:ident) => {{
+            ($name:ident) => {{
                 extern "C" {
                     fn $name(
                         dst: *mut <BitDepth16 as BitDepth>::Pixel,
@@ -666,62 +647,62 @@ impl BitDepthFnAsmMc for BitDepth16 {
                     );
                 }
 
-                let (dst, dst_stride, src, src_stride, w, h, mx, my, dx, dy, bitdepth_max) = args;
-                $name(
-                    dst,
-                    dst_stride,
-                    src,
-                    src_stride,
-                    w,
-                    h,
-                    mx,
-                    my,
-                    dx,
-                    dy,
-                    bitdepth_max,
-                )
+                $name
             }};
-            ($args:expr, $asm:expr, unreachable) => {{
-                let _ = args;
-                unreachable!("{asm:?}");
+            ($asm:expr, unreachable) => {{
+                unreachable!("{asm:?}")
             }};
         }
 
         macro_rules! asm_fn {
-            ($asm:expr, $args:expr, $name:ident) => {{
+            ($asm:expr, $name:ident) => {{
                 use FnAsmVersion::*;
                 paste! {
                     match asm {
                         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-                        SSE2 => extern_fn!($args, asm, unreachable),
+                        SSE2 => extern_fn!(asm, unreachable),
                         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-                        SSSE3 => extern_fn!($args, [<dav1d_put $name _16bpc_ssse3>]),
+                        SSSE3 => extern_fn!([<dav1d_put $name _16bpc_ssse3>]),
                         #[cfg(target_arch = "x86_64")]
-                        AVX2 => extern_fn!($args, [<dav1d_put $name _16bpc_avx2>]),
+                        AVX2 => extern_fn!([<dav1d_put $name _16bpc_avx2>]),
                         #[cfg(target_arch = "x86_64")]
-                        AVX512ICL => extern_fn!($args, asm, unreachable),
+                        AVX512ICL => extern_fn!(asm, unreachable),
                         #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
-                        Neon => extern_fn!($args, asm, unreachable),
+                        Neon => extern_fn!(asm, unreachable),
                     }
                 }
             }};
         }
 
         use Filter8Tap::*;
-        match filter_2d {
+        let fn_ptr = match filter_2d {
             Filter2dRust::Tap8(Filter2d8Tap { h, v }) => match (h, v) {
-                (Regular, Regular) => asm_fn!(asm, args, _8tap_scaled_regular),
-                (Regular, Smooth) => asm_fn!(asm, args, _8tap_scaled_regular_smooth),
-                (Regular, Sharp) => asm_fn!(asm, args, _8tap_scaled_regular_sharp),
-                (Smooth, Regular) => asm_fn!(asm, args, _8tap_scaled_smooth_regular),
-                (Smooth, Smooth) => asm_fn!(asm, args, _8tap_scaled_smooth),
-                (Smooth, Sharp) => asm_fn!(asm, args, _8tap_scaled_smooth_sharp),
-                (Sharp, Regular) => asm_fn!(asm, args, _8tap_scaled_sharp_regular),
-                (Sharp, Smooth) => asm_fn!(asm, args, _8tap_scaled_sharp_smooth),
-                (Sharp, Sharp) => asm_fn!(asm, args, _8tap_scaled_sharp),
+                (Regular, Regular) => asm_fn!(asm, _8tap_scaled_regular),
+                (Regular, Smooth) => asm_fn!(asm, _8tap_scaled_regular_smooth),
+                (Regular, Sharp) => asm_fn!(asm, _8tap_scaled_regular_sharp),
+                (Smooth, Regular) => asm_fn!(asm, _8tap_scaled_smooth_regular),
+                (Smooth, Smooth) => asm_fn!(asm, _8tap_scaled_smooth),
+                (Smooth, Sharp) => asm_fn!(asm, _8tap_scaled_smooth_sharp),
+                (Sharp, Regular) => asm_fn!(asm, _8tap_scaled_sharp_regular),
+                (Sharp, Smooth) => asm_fn!(asm, _8tap_scaled_sharp_smooth),
+                (Sharp, Sharp) => asm_fn!(asm, _8tap_scaled_sharp),
             },
-            Filter2dRust::BiLinear => asm_fn!(asm, args, _bilin_scaled),
-        }
+            Filter2dRust::BiLinear => asm_fn!(asm, _bilin_scaled),
+        };
+
+        fn_ptr(
+            dst,
+            dst_stride,
+            src,
+            src_stride,
+            w,
+            h,
+            mx,
+            my,
+            dx,
+            dy,
+            self.bitdepth_max().as_::<c_int>(),
+        )
     }
 
     #[cfg(feature = "asm")]
@@ -742,21 +723,9 @@ impl BitDepthFnAsmMc for BitDepth16 {
     ) {
         let src_stride = src_stride as ptrdiff_t;
         let [w, h, mx, my, dx, dy] = [w, h, mx, my, dx, dy].map(|it| it as c_int);
-        let args = (
-            tmp,
-            src,
-            src_stride,
-            w,
-            h,
-            mx,
-            my,
-            dx,
-            dy,
-            self.bitdepth_max().as_::<c_int>(),
-        );
 
         macro_rules! extern_fn {
-            ($args:expr, $name:ident) => {{
+            ($name:ident) => {{
                 extern "C" {
                     fn $name(
                         tmp: *mut i16,
@@ -772,50 +741,61 @@ impl BitDepthFnAsmMc for BitDepth16 {
                     );
                 }
 
-                let (tmp, src, src_stride, w, h, mx, my, dx, dy, bitdepth_max) = args;
-                $name(tmp, src, src_stride, w, h, mx, my, dx, dy, bitdepth_max)
+                $name
             }};
-            ($args:expr, $asm:expr, unreachable) => {{
-                let _ = args;
-                unreachable!("{asm:?}");
+            ($asm:expr, unreachable) => {{
+                unreachable!("{asm:?}")
             }};
         }
 
         macro_rules! asm_fn {
-            ($asm:expr, $args:expr, $name:ident) => {{
+            ($asm:expr, $name:ident) => {{
                 use FnAsmVersion::*;
                 paste! {
                     match asm {
                         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-                        SSE2 => extern_fn!($args, asm, unreachable),
+                        SSE2 => extern_fn!(asm, unreachable),
                         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-                        SSSE3 => extern_fn!($args, [<dav1d_prep $name _16bpc_ssse3>]),
+                        SSSE3 => extern_fn!([<dav1d_prep $name _16bpc_ssse3>]),
                         #[cfg(target_arch = "x86_64")]
-                        AVX2 => extern_fn!($args, [<dav1d_prep $name _16bpc_avx2>]),
+                        AVX2 => extern_fn!([<dav1d_prep $name _16bpc_avx2>]),
                         #[cfg(target_arch = "x86_64")]
-                        AVX512ICL => extern_fn!($args, asm, unreachable),
+                        AVX512ICL => extern_fn!(asm, unreachable),
                         #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
-                        Neon => extern_fn!($args, asm, unreachable),
+                        Neon => extern_fn!(asm, unreachable),
                     }
                 }
             }};
         }
 
         use Filter8Tap::*;
-        match filter_2d {
+        let fn_ptr = match filter_2d {
             Filter2dRust::Tap8(Filter2d8Tap { h, v }) => match (h, v) {
-                (Regular, Regular) => asm_fn!(asm, args, _8tap_scaled_regular),
-                (Regular, Smooth) => asm_fn!(asm, args, _8tap_scaled_regular_smooth),
-                (Regular, Sharp) => asm_fn!(asm, args, _8tap_scaled_regular_sharp),
-                (Smooth, Regular) => asm_fn!(asm, args, _8tap_scaled_smooth_regular),
-                (Smooth, Smooth) => asm_fn!(asm, args, _8tap_scaled_smooth),
-                (Smooth, Sharp) => asm_fn!(asm, args, _8tap_scaled_smooth_sharp),
-                (Sharp, Regular) => asm_fn!(asm, args, _8tap_scaled_sharp_regular),
-                (Sharp, Smooth) => asm_fn!(asm, args, _8tap_scaled_sharp_smooth),
-                (Sharp, Sharp) => asm_fn!(asm, args, _8tap_scaled_sharp),
+                (Regular, Regular) => asm_fn!(asm, _8tap_scaled_regular),
+                (Regular, Smooth) => asm_fn!(asm, _8tap_scaled_regular_smooth),
+                (Regular, Sharp) => asm_fn!(asm, _8tap_scaled_regular_sharp),
+                (Smooth, Regular) => asm_fn!(asm, _8tap_scaled_smooth_regular),
+                (Smooth, Smooth) => asm_fn!(asm, _8tap_scaled_smooth),
+                (Smooth, Sharp) => asm_fn!(asm, _8tap_scaled_smooth_sharp),
+                (Sharp, Regular) => asm_fn!(asm, _8tap_scaled_sharp_regular),
+                (Sharp, Smooth) => asm_fn!(asm, _8tap_scaled_sharp_smooth),
+                (Sharp, Sharp) => asm_fn!(asm, _8tap_scaled_sharp),
             },
-            Filter2dRust::BiLinear => asm_fn!(asm, args, _bilin_scaled),
-        }
+            Filter2dRust::BiLinear => asm_fn!(asm, _bilin_scaled),
+        };
+
+        fn_ptr(
+            tmp,
+            src,
+            src_stride,
+            w,
+            h,
+            mx,
+            my,
+            dx,
+            dy,
+            self.bitdepth_max().as_::<c_int>(),
+        )
     }
 }
 
