@@ -141,11 +141,11 @@ use crate::src::looprestoration::LR_HAVE_TOP;
 pub type const_left_pixel_row = *const [pixel; 4];
 use crate::src::looprestoration::LooprestorationParams;
 
-use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
 use crate::include::common::attributes::clz;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::imax;
 use crate::include::common::intops::umin;
+use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
 #[inline]
 unsafe extern "C" fn pixel_set(dst: *mut pixel, val: libc::c_int, num: libc::c_int) {
     let mut n = 0;
@@ -938,8 +938,8 @@ unsafe extern "C" fn loop_restoration_dsp_init_x86(
     c: *mut Dav1dLoopRestorationDSPContext,
     bpc: libc::c_int,
 ) {
-    use crate::src::x86::cpu::*;
     use crate::src::looprestoration::*;
+    use crate::src::x86::cpu::*;
 
     let flags = dav1d_get_cpu_flags();
 
@@ -1120,7 +1120,6 @@ unsafe extern "C" fn loop_restoration_dsp_init_arm(
         (*c).sgr[2] = Some(sgr_filter_mix_neon_erased);
     }
 }
-
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe extern "C" fn sgr_filter_3x3_neon_erased(

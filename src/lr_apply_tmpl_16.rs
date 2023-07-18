@@ -244,8 +244,8 @@ pub struct Dav1dDSPContext {
     pub cdef: Dav1dCdefDSPContext,
     pub lr: Dav1dLoopRestorationDSPContext,
 }
-use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
 use crate::src::looprestoration::looprestorationfilter_fn;
+use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
 use crate::src::looprestoration::LooprestorationParams;
 use crate::src::looprestoration::LrEdgeFlags;
 use crate::src::looprestoration::LR_HAVE_BOTTOM;
