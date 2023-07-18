@@ -629,9 +629,5 @@ pub unsafe extern "C" fn dav1d_log(
     }
     let mut ap: ::core::ffi::VaListImpl;
     ap = args.clone();
-    ((*c).logger.callback).expect("non-null function pointer")(
-        (*c).logger.cookie,
-        format,
-        ap.as_va_list(),
-    );
+    ((*c).logger.callback).unwrap_unchecked()((*c).logger.cookie, format, ap.as_va_list());
 }

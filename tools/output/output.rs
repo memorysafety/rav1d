@@ -186,12 +186,7 @@ pub unsafe extern "C" fn output_open(
         (*c).filename = filename;
         (*c).framenum = 0 as libc::c_int;
     } else if ((*impl_0).write_header).is_some() && {
-        res = ((*impl_0).write_header).expect("non-null function pointer")(
-            (*c).data,
-            filename,
-            p,
-            fps,
-        );
+        res = ((*impl_0).write_header).unwrap_unchecked()((*c).data, filename, p, fps);
         res < 0
     } {
         free(c as *mut libc::c_void);
@@ -353,7 +348,7 @@ pub unsafe extern "C" fn output_write(ctx: *mut MuxerContext, p: *mut Dav1dPictu
             ::core::mem::size_of::<[libc::c_char; 1024]>() as libc::c_ulong as libc::c_int,
             &mut (*p).p,
         );
-        res = ((*(*ctx).impl_0).write_header).expect("non-null function pointer")(
+        res = ((*(*ctx).impl_0).write_header).unwrap_unchecked()(
             (*ctx).data,
             filename.as_mut_ptr(),
             &mut (*p).p,
@@ -363,19 +358,19 @@ pub unsafe extern "C" fn output_write(ctx: *mut MuxerContext, p: *mut Dav1dPictu
             return res;
         }
     }
-    res = ((*(*ctx).impl_0).write_picture).expect("non-null function pointer")((*ctx).data, p);
+    res = ((*(*ctx).impl_0).write_picture).unwrap_unchecked()((*ctx).data, p);
     if res < 0 {
         return res;
     }
     if (*ctx).one_file_per_frame != 0 && ((*(*ctx).impl_0).write_trailer).is_some() {
-        ((*(*ctx).impl_0).write_trailer).expect("non-null function pointer")((*ctx).data);
+        ((*(*ctx).impl_0).write_trailer).unwrap_unchecked()((*ctx).data);
     }
     return 0 as libc::c_int;
 }
 #[no_mangle]
 pub unsafe extern "C" fn output_close(ctx: *mut MuxerContext) {
     if (*ctx).one_file_per_frame == 0 && ((*(*ctx).impl_0).write_trailer).is_some() {
-        ((*(*ctx).impl_0).write_trailer).expect("non-null function pointer")((*ctx).data);
+        ((*(*ctx).impl_0).write_trailer).unwrap_unchecked()((*ctx).data);
     }
     free(ctx as *mut libc::c_void);
 }
@@ -385,7 +380,7 @@ pub unsafe extern "C" fn output_verify(
     md5_str: *const libc::c_char,
 ) -> libc::c_int {
     let res = if ((*(*ctx).impl_0).verify).is_some() {
-        ((*(*ctx).impl_0).verify).expect("non-null function pointer")((*ctx).data, md5_str)
+        ((*(*ctx).impl_0).verify).unwrap_unchecked()((*ctx).data, md5_str)
     } else {
         0 as libc::c_int
     };

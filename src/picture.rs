@@ -709,7 +709,7 @@ pub unsafe extern "C" fn dav1d_default_picture_release(
 }
 unsafe extern "C" fn free_buffer(_data: *const uint8_t, user_data: *mut libc::c_void) {
     let mut pic_ctx: *mut pic_ctx_context = user_data as *mut pic_ctx_context;
-    ((*pic_ctx).allocator.release_picture_callback).expect("non-null function pointer")(
+    ((*pic_ctx).allocator.release_picture_callback).unwrap_unchecked()(
         &mut (*pic_ctx).pic,
         (*pic_ctx).allocator.cookie,
     );
@@ -762,10 +762,7 @@ unsafe extern "C" fn picture_alloc_with_edges(
     (*p).p.layout = (*seq_hdr).layout;
     (*p).p.bpc = bpc;
     dav1d_data_props_set_defaults(&mut (*p).m);
-    let res = ((*p_allocator).alloc_picture_callback).expect("non-null function pointer")(
-        p,
-        (*p_allocator).cookie,
-    );
+    let res = ((*p_allocator).alloc_picture_callback).unwrap_unchecked()(p, (*p_allocator).cookie);
     if res < 0 {
         free(pic_ctx as *mut libc::c_void);
         return res;
@@ -778,10 +775,7 @@ unsafe extern "C" fn picture_alloc_with_edges(
         pic_ctx as *mut libc::c_void,
     );
     if ((*p).r#ref).is_null() {
-        ((*p_allocator).release_picture_callback).expect("non-null function pointer")(
-            p,
-            (*p_allocator).cookie,
-        );
+        ((*p_allocator).release_picture_callback).unwrap_unchecked()(p, (*p_allocator).cookie);
         free(pic_ctx as *mut libc::c_void);
         dav1d_log(
             c,

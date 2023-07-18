@@ -703,7 +703,7 @@ unsafe extern "C" fn backup_lpf(
     if lr_backup != 0 && (*(*f).frame_hdr).width[0] != (*(*f).frame_hdr).width[1] {
         while row + stripe_h <= row_h {
             let n_lines = 4 as libc::c_int - (row + stripe_h + 1 == h) as libc::c_int;
-            ((*(*f).dsp).mc.resize).expect("non-null function pointer")(
+            ((*(*f).dsp).mc.resize).unwrap_unchecked()(
                 dst,
                 dst_stride,
                 src,
@@ -949,7 +949,7 @@ unsafe extern "C" fn filter_plane_cols_y(
                 hmask[2] = (*mask.offset(x as isize))[2][1] as uint32_t;
             }
             hmask[3] = 0 as libc::c_int as uint32_t;
-            ((*dsp).lf.loop_filter_sb[0][0]).expect("non-null function pointer")(
+            ((*dsp).lf.loop_filter_sb[0][0]).unwrap_unchecked()(
                 &mut *dst.offset((x * 4) as isize),
                 ls,
                 hmask.as_mut_ptr(),
@@ -990,7 +990,7 @@ unsafe extern "C" fn filter_plane_rows_y(
                     | ((*mask.offset(y as isize))[2][1] as libc::c_uint) << 16,
                 0 as libc::c_int as uint32_t,
             ];
-            ((*dsp).lf.loop_filter_sb[0][1]).expect("non-null function pointer")(
+            ((*dsp).lf.loop_filter_sb[0][1]).unwrap_unchecked()(
                 dst,
                 ls,
                 vmask.as_ptr(),
@@ -1040,7 +1040,7 @@ unsafe extern "C" fn filter_plane_cols_uv(
                 hmask[1] = (*mask.offset(x as isize))[1][1] as uint32_t;
             }
             hmask[2] = 0 as libc::c_int as uint32_t;
-            ((*dsp).lf.loop_filter_sb[1][0]).expect("non-null function pointer")(
+            ((*dsp).lf.loop_filter_sb[1][0]).unwrap_unchecked()(
                 &mut *u.offset((x * 4) as isize),
                 ls,
                 hmask.as_mut_ptr(),
@@ -1051,7 +1051,7 @@ unsafe extern "C" fn filter_plane_cols_uv(
                 endy4 - starty4,
                 (*f).bitdepth_max,
             );
-            ((*dsp).lf.loop_filter_sb[1][0]).expect("non-null function pointer")(
+            ((*dsp).lf.loop_filter_sb[1][0]).unwrap_unchecked()(
                 &mut *v.offset((x * 4) as isize),
                 ls,
                 hmask.as_mut_ptr(),
@@ -1093,7 +1093,7 @@ unsafe extern "C" fn filter_plane_rows_uv(
                     | ((*mask.offset(y as isize))[1][1] as libc::c_uint) << (16 >> ss_hor),
                 0 as libc::c_int as uint32_t,
             ];
-            ((*dsp).lf.loop_filter_sb[1][1]).expect("non-null function pointer")(
+            ((*dsp).lf.loop_filter_sb[1][1]).unwrap_unchecked()(
                 &mut *u.offset(off_l as isize),
                 ls,
                 vmask.as_ptr(),
@@ -1103,7 +1103,7 @@ unsafe extern "C" fn filter_plane_rows_uv(
                 w,
                 (*f).bitdepth_max,
             );
-            ((*dsp).lf.loop_filter_sb[1][1]).expect("non-null function pointer")(
+            ((*dsp).lf.loop_filter_sb[1][1]).unwrap_unchecked()(
                 &mut *v.offset(off_l as isize),
                 ls,
                 vmask.as_ptr(),

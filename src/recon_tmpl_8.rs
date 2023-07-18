@@ -2120,9 +2120,11 @@ unsafe extern "C" fn read_coef_tree(
                         "dq",
                     );
                 }
-                ((*dsp).itx.itxfm_add[ytx as usize][txtp as usize])
-                    .expect("non-null function pointer")(
-                    dst, (*f).cur.stride[0], cf, eob
+                ((*dsp).itx.itxfm_add[ytx as usize][txtp as usize]).unwrap_unchecked()(
+                    dst,
+                    (*f).cur.stride[0],
+                    cf,
+                    eob,
                 );
                 if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
                     hex_dump::<BitDepth8>(
@@ -2437,7 +2439,7 @@ unsafe extern "C" fn mc(
         {
             let emu_edge_buf: *mut pixel =
                 ((*t).scratch.c2rust_unnamed.c2rust_unnamed_0.emu_edge_8bpc).as_mut_ptr();
-            ((*(*f).dsp).mc.emu_edge).expect("non-null function pointer")(
+            ((*(*f).dsp).mc.emu_edge).unwrap_unchecked()(
                 (bw4 * h_mul + (mx != 0) as libc::c_int * 7) as intptr_t,
                 (bh4 * v_mul + (my != 0) as libc::c_int * 7) as intptr_t,
                 w as intptr_t,
@@ -2463,7 +2465,7 @@ unsafe extern "C" fn mc(
                 .offset(dx as isize);
         }
         if !dst8.is_null() {
-            ((*(*f).dsp).mc.mc[filter_2d as usize]).expect("non-null function pointer")(
+            ((*(*f).dsp).mc.mc[filter_2d as usize]).unwrap_unchecked()(
                 dst8,
                 dst_stride,
                 r#ref,
@@ -2474,7 +2476,7 @@ unsafe extern "C" fn mc(
                 my << (ss_ver == 0) as libc::c_int,
             );
         } else {
-            ((*(*f).dsp).mc.mct[filter_2d as usize]).expect("non-null function pointer")(
+            ((*(*f).dsp).mc.mct[filter_2d as usize]).unwrap_unchecked()(
                 dst16,
                 r#ref,
                 ref_stride,
@@ -2529,7 +2531,7 @@ unsafe extern "C" fn mc(
         if left < 3 || top < 3 || right + 4 > w_0 || bottom + 4 > h_0 {
             let emu_edge_buf_0: *mut pixel =
                 ((*t).scratch.c2rust_unnamed.c2rust_unnamed_0.emu_edge_8bpc).as_mut_ptr();
-            ((*(*f).dsp).mc.emu_edge).expect("non-null function pointer")(
+            ((*(*f).dsp).mc.emu_edge).unwrap_unchecked()(
                 (right - left + 7) as intptr_t,
                 (bottom - top + 7) as intptr_t,
                 w_0 as intptr_t,
@@ -2556,7 +2558,7 @@ unsafe extern "C" fn mc(
                 .offset(left as isize);
         }
         if !dst8.is_null() {
-            ((*(*f).dsp).mc.mc_scaled[filter_2d as usize]).expect("non-null function pointer")(
+            ((*(*f).dsp).mc.mc_scaled[filter_2d as usize]).unwrap_unchecked()(
                 dst8,
                 dst_stride,
                 r#ref,
@@ -2569,7 +2571,7 @@ unsafe extern "C" fn mc(
                 (*f).svc[refidx as usize][1].step,
             );
         } else {
-            ((*(*f).dsp).mc.mct_scaled[filter_2d as usize]).expect("non-null function pointer")(
+            ((*(*f).dsp).mc.mct_scaled[filter_2d as usize]).unwrap_unchecked()(
                 dst16,
                 r#ref,
                 ref_stride,
@@ -2659,7 +2661,7 @@ unsafe extern "C" fn obmc(
                 if res != 0 {
                     return res;
                 }
-                ((*(*f).dsp).mc.blend_h).expect("non-null function pointer")(
+                ((*(*f).dsp).mc.blend_h).unwrap_unchecked()(
                     &mut *dst.offset((x * h_mul) as isize),
                     dst_stride,
                     lap,
@@ -2711,7 +2713,7 @@ unsafe extern "C" fn obmc(
                 if res != 0 {
                     return res;
                 }
-                ((*(*f).dsp).mc.blend_v).expect("non-null function pointer")(
+                ((*(*f).dsp).mc.blend_v).unwrap_unchecked()(
                     &mut *dst.offset(((y * v_mul) as isize * dst_stride) as isize),
                     dst_stride,
                     lap,
@@ -2788,7 +2790,7 @@ unsafe extern "C" fn warp_affine(
             if dx < 3 || dx + 8 + 4 > width || dy < 3 || dy + 8 + 4 > height {
                 let emu_edge_buf: *mut pixel =
                     ((*t).scratch.c2rust_unnamed.c2rust_unnamed_0.emu_edge_8bpc).as_mut_ptr();
-                ((*(*f).dsp).mc.emu_edge).expect("non-null function pointer")(
+                ((*(*f).dsp).mc.emu_edge).unwrap_unchecked()(
                     15 as libc::c_int as intptr_t,
                     15 as libc::c_int as intptr_t,
                     width as intptr_t,
@@ -2812,7 +2814,7 @@ unsafe extern "C" fn warp_affine(
                     .offset(dx as isize);
             }
             if !dst16.is_null() {
-                ((*dsp).mc.warp8x8t).expect("non-null function pointer")(
+                ((*dsp).mc.warp8x8t).unwrap_unchecked()(
                     &mut *dst16.offset(x as isize),
                     dstride,
                     ref_ptr,
@@ -2822,7 +2824,7 @@ unsafe extern "C" fn warp_affine(
                     my,
                 );
             } else {
-                ((*dsp).mc.warp8x8).expect("non-null function pointer")(
+                ((*dsp).mc.warp8x8).unwrap_unchecked()(
                     &mut *dst8.offset(x as isize),
                     dstride,
                     ref_ptr,
@@ -2921,7 +2923,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                 } else {
                     ((*t).scratch.c2rust_unnamed_0.pal[0]).as_mut_ptr()
                 };
-                ((*(*f).dsp).ipred.pal_pred).expect("non-null function pointer")(
+                ((*(*f).dsp).ipred.pal_pred).unwrap_unchecked()(
                     dst,
                     (*f).cur.stride[0],
                     pal,
@@ -3015,7 +3017,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                             (*(*f).seq_hdr).intra_edge_filter,
                             edge,
                         );
-                        ((*dsp).ipred.intra_pred[m as usize]).expect("non-null function pointer")(
+                        ((*dsp).ipred.intra_pred[m as usize]).unwrap_unchecked()(
                             dst_0,
                             (*f).cur.stride[0],
                             edge,
@@ -3119,11 +3121,8 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                             }
                             ((*dsp).itx.itxfm_add[(*b).c2rust_unnamed.c2rust_unnamed.tx as usize]
                                 [txtp as usize])
-                                .expect("non-null function pointer")(
-                                dst_0,
-                                (*f).cur.stride[0],
-                                cf,
-                                eob,
+                                .unwrap_unchecked()(
+                                dst_0, (*f).cur.stride[0], cf, eob
                             );
                             if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
                                 hex_dump::<BitDepth8>(
@@ -3179,7 +3178,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                     ((*dsp).ipred.cfl_ac[((*f).cur.p.layout as libc::c_uint)
                         .wrapping_sub(1 as libc::c_int as libc::c_uint)
                         as usize])
-                        .expect("non-null function pointer")(
+                        .unwrap_unchecked()(
                         ac.as_mut_ptr(),
                         y_src,
                         (*f).cur.stride[0],
@@ -3221,8 +3220,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                                 0 as libc::c_int,
                                 edge,
                             );
-                            ((*dsp).ipred.cfl_pred[m_0 as usize])
-                                .expect("non-null function pointer")(
+                            ((*dsp).ipred.cfl_pred[m_0 as usize]).unwrap_unchecked()(
                                 uv_dst[pl as usize],
                                 stride,
                                 edge,
@@ -3281,7 +3279,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                             .offset((bw4 * bh4 * 16) as isize)
                             as *mut uint8_t;
                     }
-                    ((*(*f).dsp).ipred.pal_pred).expect("non-null function pointer")(
+                    ((*(*f).dsp).ipred.pal_pred).unwrap_unchecked()(
                         ((*f).cur.data[1] as *mut pixel).offset(uv_dstoff as isize),
                         (*f).cur.stride[1],
                         (*pal_0.offset(1)).as_ptr(),
@@ -3289,7 +3287,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                         cbw4 * 4,
                         cbh4 * 4,
                     );
-                    ((*(*f).dsp).ipred.pal_pred).expect("non-null function pointer")(
+                    ((*(*f).dsp).ipred.pal_pred).unwrap_unchecked()(
                         ((*f).cur.data[2] as *mut pixel).offset(uv_dstoff as isize),
                         (*f).cur.stride[1],
                         (*pal_0.offset(2)).as_ptr(),
@@ -3423,8 +3421,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                                     edge,
                                 );
                                 angle_1 |= intra_edge_filter_flag;
-                                ((*dsp).ipred.intra_pred[m_1 as usize])
-                                    .expect("non-null function pointer")(
+                                ((*dsp).ipred.intra_pred[m_1 as usize]).unwrap_unchecked()(
                                     dst_1,
                                     stride,
                                     edge,
@@ -3545,8 +3542,8 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                                         );
                                     }
                                     ((*dsp).itx.itxfm_add[(*b).uvtx as usize][txtp_0 as usize])
-                                        .expect("non-null function pointer")(
-                                        dst_1, stride, cf_0, eob_0,
+                                        .unwrap_unchecked()(
+                                        dst_1, stride, cf_0, eob_0
                                     );
                                     if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
                                         hex_dump::<BitDepth8>(
@@ -3824,7 +3821,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                 0 as libc::c_int,
                 tl_edge,
             );
-            ((*dsp).ipred.intra_pred[m as usize]).expect("non-null function pointer")(
+            ((*dsp).ipred.intra_pred[m as usize]).unwrap_unchecked()(
                 tmp,
                 ((4 * bw4) as libc::c_ulong)
                     .wrapping_mul(::core::mem::size_of::<pixel>() as libc::c_ulong)
@@ -3854,7 +3851,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                     .c2rust_unnamed
                     .wedge_idx as usize]
             };
-            ((*dsp).mc.blend).expect("non-null function pointer")(
+            ((*dsp).mc.blend).unwrap_unchecked()(
                 dst,
                 (*f).cur.stride[0],
                 tmp,
@@ -4270,7 +4267,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                             0 as libc::c_int,
                             tl_edge_0,
                         );
-                        ((*dsp).ipred.intra_pred[m_0 as usize]).expect("non-null function pointer")(
+                        ((*dsp).ipred.intra_pred[m_0 as usize]).unwrap_unchecked()(
                             tmp_0,
                             ((cbw4 * 4) as libc::c_ulong)
                                 .wrapping_mul(::core::mem::size_of::<pixel>() as libc::c_ulong)
@@ -4282,7 +4279,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                             0 as libc::c_int,
                             0 as libc::c_int,
                         );
-                        ((*dsp).mc.blend).expect("non-null function pointer")(
+                        ((*dsp).mc.blend).unwrap_unchecked()(
                             uvdst,
                             (*f).cur.stride[1],
                             tmp_0,
@@ -4373,7 +4370,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
         }
         match (*b).c2rust_unnamed.c2rust_unnamed_0.comp_type as libc::c_int {
             2 => {
-                ((*dsp).mc.avg).expect("non-null function pointer")(
+                ((*dsp).mc.avg).unwrap_unchecked()(
                     dst,
                     (*f).cur.stride[0],
                     (*tmp_1.offset(0)).as_mut_ptr(),
@@ -4387,7 +4384,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                     [(*b).c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize]
                     [(*b).c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as usize]
                     as libc::c_int;
-                ((*dsp).mc.w_avg).expect("non-null function pointer")(
+                ((*dsp).mc.w_avg).unwrap_unchecked()(
                     dst,
                     (*f).cur.stride[0],
                     (*tmp_1.offset(0)).as_mut_ptr(),
@@ -4398,7 +4395,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                 );
             }
             3 => {
-                ((*dsp).mc.w_mask[chr_layout_idx as usize]).expect("non-null function pointer")(
+                ((*dsp).mc.w_mask[chr_layout_idx as usize]).unwrap_unchecked()(
                     dst,
                     (*f).cur.stride[0],
                     (*tmp_1.offset(
@@ -4438,7 +4435,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                     .c2rust_unnamed
                     .wedge_idx
                     as usize];
-                ((*dsp).mc.mask).expect("non-null function pointer")(
+                ((*dsp).mc.mask).unwrap_unchecked()(
                     dst,
                     (*f).cur.stride[0],
                     (*tmp_1.offset(
@@ -4546,7 +4543,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                     ((*f).cur.data[(1 + pl_7) as usize] as *mut pixel).offset(uvdstoff as isize);
                 match (*b).c2rust_unnamed.c2rust_unnamed_0.comp_type as libc::c_int {
                     2 => {
-                        ((*dsp).mc.avg).expect("non-null function pointer")(
+                        ((*dsp).mc.avg).unwrap_unchecked()(
                             uvdst_0,
                             (*f).cur.stride[1],
                             (*tmp_1.offset(0)).as_mut_ptr(),
@@ -4556,7 +4553,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                         );
                     }
                     1 => {
-                        ((*dsp).mc.w_avg).expect("non-null function pointer")(
+                        ((*dsp).mc.w_avg).unwrap_unchecked()(
                             uvdst_0,
                             (*f).cur.stride[1],
                             (*tmp_1.offset(0)).as_mut_ptr(),
@@ -4567,7 +4564,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                         );
                     }
                     4 | 3 => {
-                        ((*dsp).mc.mask).expect("non-null function pointer")(
+                        ((*dsp).mc.mask).unwrap_unchecked()(
                             uvdst_0,
                             (*f).cur.stride[1],
                             (*tmp_1.offset(
@@ -4784,7 +4781,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                                     );
                                 }
                                 ((*dsp).itx.itxfm_add[(*b).uvtx as usize][txtp as usize])
-                                    .expect("non-null function pointer")(
+                                    .unwrap_unchecked()(
                                     &mut *uvdst_1.offset((4 * x_0) as isize),
                                     (*f).cur.stride[1],
                                     cf,
@@ -4972,7 +4969,7 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_resize_8bpc(
         let dst_w = (*f).sr_cur.p.p.w + ss_hor >> ss_hor;
         let src_w = 4 * (*f).bw + ss_hor >> ss_hor;
         let img_h = (*f).cur.p.h - sbsz * 4 * sby + ss_ver_0 >> ss_ver_0;
-        ((*(*f).dsp).mc.resize).expect("non-null function pointer")(
+        ((*(*f).dsp).mc.resize).unwrap_unchecked()(
             dst,
             dst_stride,
             src,

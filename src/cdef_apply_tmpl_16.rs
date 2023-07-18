@@ -960,7 +960,7 @@ pub unsafe extern "C" fn dav1d_cdef_brow_16bpc(
                         dir = 0;
                         variance = 0;
                         if y_pri_lvl != 0 || uv_pri_lvl != 0 {
-                            dir = ((*dsp).cdef.dir).expect("non-null function pointer")(
+                            dir = ((*dsp).cdef.dir).unwrap_unchecked()(
                                 bptrs[0],
                                 (*f).cur.stride[0],
                                 &mut variance,
@@ -1030,7 +1030,7 @@ pub unsafe extern "C" fn dav1d_cdef_brow_16bpc(
                         if y_pri_lvl != 0 {
                             let adj_y_pri_lvl = adjust_strength(y_pri_lvl, variance);
                             if adj_y_pri_lvl != 0 || y_sec_lvl != 0 {
-                                ((*dsp).cdef.fb[0]).expect("non-null function pointer")(
+                                ((*dsp).cdef.fb[0]).unwrap_unchecked()(
                                     bptrs[0],
                                     (*f).cur.stride[0],
                                     (lr_bak[bit as usize][0]).as_mut_ptr()
@@ -1046,7 +1046,7 @@ pub unsafe extern "C" fn dav1d_cdef_brow_16bpc(
                                 );
                             }
                         } else if y_sec_lvl != 0 {
-                            ((*dsp).cdef.fb[0]).expect("non-null function pointer")(
+                            ((*dsp).cdef.fb[0]).unwrap_unchecked()(
                                 bptrs[0],
                                 (*f).cur.stride[0],
                                 (lr_bak[bit as usize][0]).as_mut_ptr() as const_left_pixel_row_2px,
@@ -1150,8 +1150,7 @@ pub unsafe extern "C" fn dav1d_cdef_brow_16bpc(
                                     }
                                     _ => {}
                                 }
-                                ((*dsp).cdef.fb[uv_idx as usize])
-                                    .expect("non-null function pointer")(
+                                ((*dsp).cdef.fb[uv_idx as usize]).unwrap_unchecked()(
                                     bptrs[pl as usize],
                                     (*f).cur.stride[1],
                                     (lr_bak[bit as usize][pl as usize]).as_mut_ptr()

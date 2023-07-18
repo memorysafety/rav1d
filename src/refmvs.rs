@@ -229,14 +229,7 @@ impl Dav1dRefmvsDSPContext {
         bw4: usize,
         bh4: usize,
     ) {
-        self.splat_mv.expect("non-null function pointer")(
-            rr.as_mut_ptr(),
-            rr.len(),
-            rmv,
-            bx4,
-            bw4,
-            bh4,
-        );
+        self.splat_mv.unwrap_unchecked()(rr.as_mut_ptr(), rr.len(), rmv, bx4, bw4, bh4);
     }
 }
 
@@ -1146,7 +1139,7 @@ pub unsafe extern "C" fn dav1d_refmvs_save_tmvs(
     let ref_sign: *const uint8_t = ((*rf).mfmv_sign).as_ptr();
     let mut rp: *mut refmvs_temporal_block = (*rf).rp.offset(row_start8 as isize * stride);
 
-    (*dsp).save_tmvs.expect("non-null function pointer")(
+    (*dsp).save_tmvs.unwrap_unchecked()(
         rp,
         stride,
         (*rt).r.as_ptr().offset(6) as *const *const refmvs_block,

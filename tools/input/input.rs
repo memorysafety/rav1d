@@ -141,8 +141,7 @@ pub unsafe extern "C" fn input_open(
         }
         i = 0 as libc::c_int;
         while !(demuxers[i as usize]).is_null() {
-            if ((*demuxers[i as usize]).probe).expect("non-null function pointer")(probe_data) != 0
-            {
+            if ((*demuxers[i as usize]).probe).unwrap_unchecked()(probe_data) != 0 {
                 impl_0 = demuxers[i as usize];
                 break;
             } else {
@@ -172,13 +171,7 @@ pub unsafe extern "C" fn input_open(
     }
     (*c).impl_0 = impl_0;
     (*c).data = ((*c).priv_data).as_mut_ptr() as *mut DemuxerPriv;
-    res = ((*impl_0).open).expect("non-null function pointer")(
-        (*c).data,
-        filename,
-        fps,
-        num_frames,
-        timebase,
-    );
+    res = ((*impl_0).open).unwrap_unchecked()((*c).data, filename, fps, num_frames, timebase);
     if res < 0 {
         free(c as *mut libc::c_void);
         return res;
@@ -188,18 +181,18 @@ pub unsafe extern "C" fn input_open(
 }
 #[no_mangle]
 pub unsafe extern "C" fn input_read(ctx: *mut DemuxerContext, data: *mut Dav1dData) -> libc::c_int {
-    return ((*(*ctx).impl_0).read).expect("non-null function pointer")((*ctx).data, data);
+    return ((*(*ctx).impl_0).read).unwrap_unchecked()((*ctx).data, data);
 }
 #[no_mangle]
 pub unsafe extern "C" fn input_seek(ctx: *mut DemuxerContext, pts: uint64_t) -> libc::c_int {
     return if ((*(*ctx).impl_0).seek).is_some() {
-        ((*(*ctx).impl_0).seek).expect("non-null function pointer")((*ctx).data, pts)
+        ((*(*ctx).impl_0).seek).unwrap_unchecked()((*ctx).data, pts)
     } else {
         -(1 as libc::c_int)
     };
 }
 #[no_mangle]
 pub unsafe extern "C" fn input_close(ctx: *mut DemuxerContext) {
-    ((*(*ctx).impl_0).close).expect("non-null function pointer")((*ctx).data);
+    ((*(*ctx).impl_0).close).unwrap_unchecked()((*ctx).data);
     free(ctx as *mut libc::c_void);
 }

@@ -127,15 +127,12 @@ pub unsafe extern "C" fn dav1d_prep_grain_8bpc(
     mut grain_lut: *mut [[entry; 82]; 74],
 ) {
     let data: *const Dav1dFilmGrainData = &mut (*(*out).frame_hdr).film_grain.data;
-    ((*dsp).generate_grain_y).expect("non-null function pointer")(
-        (*grain_lut.offset(0)).as_mut_ptr(),
-        data,
-    );
+    ((*dsp).generate_grain_y).unwrap_unchecked()((*grain_lut.offset(0)).as_mut_ptr(), data);
     if (*data).num_uv_points[0] != 0 || (*data).chroma_scaling_from_luma != 0 {
         ((*dsp).generate_grain_uv[((*in_0).p.layout as libc::c_uint)
             .wrapping_sub(1 as libc::c_int as libc::c_uint)
             as usize])
-            .expect("non-null function pointer")(
+            .unwrap_unchecked()(
             (*grain_lut.offset(1)).as_mut_ptr(),
             (*grain_lut.offset(0)).as_mut_ptr() as *const [entry; 82],
             data,
@@ -146,7 +143,7 @@ pub unsafe extern "C" fn dav1d_prep_grain_8bpc(
         ((*dsp).generate_grain_uv[((*in_0).p.layout as libc::c_uint)
             .wrapping_sub(1 as libc::c_int as libc::c_uint)
             as usize])
-            .expect("non-null function pointer")(
+            .unwrap_unchecked()(
             (*grain_lut.offset(2)).as_mut_ptr(),
             (*grain_lut.offset(0)).as_mut_ptr() as *const [entry; 82],
             data,
@@ -262,7 +259,7 @@ pub unsafe extern "C" fn dav1d_apply_grain_row_8bpc(
         ((*in_0).data[0] as *mut pixel).offset(((row * 32) as isize * (*in_0).stride[0]) as isize);
     if (*data).num_y_points != 0 {
         let bh = imin((*out).p.h - row * 32, 32 as libc::c_int);
-        ((*dsp).fgy_32x32xn).expect("non-null function pointer")(
+        ((*dsp).fgy_32x32xn).unwrap_unchecked()(
             ((*out).data[0] as *mut pixel)
                 .offset(((row * 32) as isize * (*out).stride[0]) as isize),
             luma_src,
@@ -298,7 +295,7 @@ pub unsafe extern "C" fn dav1d_apply_grain_row_8bpc(
             ((*dsp).fguv_32x32xn[((*in_0).p.layout as libc::c_uint)
                 .wrapping_sub(1 as libc::c_int as libc::c_uint)
                 as usize])
-                .expect("non-null function pointer")(
+                .unwrap_unchecked()(
                 ((*out).data[(1 + pl) as usize] as *mut pixel).offset(uv_off as isize),
                 ((*in_0).data[(1 + pl) as usize] as *const pixel).offset(uv_off as isize),
                 (*in_0).stride[1],
@@ -322,7 +319,7 @@ pub unsafe extern "C" fn dav1d_apply_grain_row_8bpc(
                 ((*dsp).fguv_32x32xn[((*in_0).p.layout as libc::c_uint)
                     .wrapping_sub(1 as libc::c_int as libc::c_uint)
                     as usize])
-                    .expect("non-null function pointer")(
+                    .unwrap_unchecked()(
                     ((*out).data[(1 + pl_0) as usize] as *mut pixel).offset(uv_off as isize),
                     ((*in_0).data[(1 + pl_0) as usize] as *const pixel).offset(uv_off as isize),
                     (*in_0).stride[1],

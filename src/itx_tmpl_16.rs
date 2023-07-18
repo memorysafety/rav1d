@@ -5034,7 +5034,7 @@ unsafe extern "C" fn inv_txfm_add_c(
                 x_1 += 1;
             }
         }
-        first_1d_fn.expect("non-null function pointer")(
+        first_1d_fn.unwrap_unchecked()(
             c,
             1 as libc::c_int as ptrdiff_t,
             row_clip_min,
@@ -5057,7 +5057,7 @@ unsafe extern "C" fn inv_txfm_add_c(
     }
     let mut x_2 = 0;
     while x_2 < w {
-        second_1d_fn.expect("non-null function pointer")(
+        second_1d_fn.unwrap_unchecked()(
             &mut *tmp.as_mut_ptr().offset(x_2 as isize),
             w as ptrdiff_t,
             col_clip_min,

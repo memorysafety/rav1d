@@ -822,7 +822,7 @@ unsafe extern "C" fn get_stack_size_internal(_thread_attr: *const pthread_attr_t
                         b"__pthread_get_minstack\0" as *const u8 as *const libc::c_char,
                     ));
                 if get_minstack.is_some() {
-                    return (get_minstack.expect("non-null function pointer")(_thread_attr))
+                    return (get_minstack.unwrap_unchecked()(_thread_attr))
                         .wrapping_sub(__sysconf(75) as size_t);
                 }
             }

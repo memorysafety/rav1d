@@ -130,7 +130,7 @@ pub unsafe extern "C" fn dav1d_ref_dec(pref: *mut *mut Dav1dRef) {
     ) == 1
     {
         let free_ref = (*r#ref).free_ref;
-        ((*r#ref).free_callback).expect("non-null function pointer")(
+        ((*r#ref).free_callback).unwrap_unchecked()(
             (*r#ref).const_data as *const uint8_t,
             (*r#ref).user_data,
         );

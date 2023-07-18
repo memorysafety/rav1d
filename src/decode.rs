@@ -367,7 +367,7 @@ impl Dav1dFrameContext_bd_fn {
         flags: EdgeFlags,
         block: *const Av1Block,
     ) {
-        self.recon_b_intra.expect("non-null function pointer")(context, block_size, flags, block);
+        self.recon_b_intra.unwrap_unchecked()(context, block_size, flags, block);
     }
 
     pub unsafe fn recon_b_inter(
@@ -376,7 +376,7 @@ impl Dav1dFrameContext_bd_fn {
         block_size: BlockSize,
         block: *const Av1Block,
     ) -> libc::c_int {
-        self.recon_b_inter.expect("non-null function pointer")(context, block_size, block)
+        self.recon_b_inter.unwrap_unchecked()(context, block_size, block)
     }
 
     pub unsafe fn read_coef_blocks(
@@ -385,7 +385,7 @@ impl Dav1dFrameContext_bd_fn {
         block_size: BlockSize,
         block: *const Av1Block,
     ) {
-        self.read_coef_blocks.expect("non-null function pointer")(context, block_size, block);
+        self.read_coef_blocks.unwrap_unchecked()(context, block_size, block);
     }
 }
 
@@ -5340,17 +5340,14 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> li
             }
             (*t).bx += sb_step;
         }
-        ((*f).bd_fn.backup_ipred_edge).expect("non-null function pointer")(t);
+        ((*f).bd_fn.backup_ipred_edge).unwrap_unchecked()(t);
         return 0 as libc::c_int;
     }
     if (*ts).msac.cnt < -(15 as libc::c_int) {
         return 1 as libc::c_int;
     }
     if (*(*f).c).n_tc > 1 as libc::c_uint && (*(*f).frame_hdr).use_ref_frame_mvs != 0 {
-        (*(*f).c)
-            .refmvs_dsp
-            .load_tmvs
-            .expect("non-null function pointer")(
+        (*(*f).c).refmvs_dsp.load_tmvs.unwrap_unchecked()(
             &(*f).rf,
             (*ts).tiling.row,
             (*ts).tiling.col_start >> 1,
@@ -5480,7 +5477,7 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> li
         );
     }
     if (*t).frame_thread.pass != 1 as libc::c_int {
-        ((*f).bd_fn.backup_ipred_edge).expect("non-null function pointer")(t);
+        ((*f).bd_fn.backup_ipred_edge).unwrap_unchecked()(t);
     }
     let mut align_h = (*f).bh + 31 & !(31 as libc::c_int);
     memcpy(
@@ -6756,10 +6753,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
             (*t).by = sby << 4 + (*(*f).seq_hdr).sb128;
             let by_end = (*t).by + (*f).sb_step >> 1;
             if (*(*f).frame_hdr).use_ref_frame_mvs != 0 {
-                (*(*f).c)
-                    .refmvs_dsp
-                    .load_tmvs
-                    .expect("non-null function pointer")(
+                (*(*f).c).refmvs_dsp.load_tmvs.unwrap_unchecked()(
                     &mut (*f).rf,
                     tile_row,
                     0 as libc::c_int,
@@ -6789,7 +6783,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
                     by_end,
                 );
             }
-            ((*f).bd_fn.filter_sbrow).expect("non-null function pointer")(f, sby);
+            ((*f).bd_fn.filter_sbrow).unwrap_unchecked()(f, sby);
             sby += 1;
         }
         tile_row += 1;

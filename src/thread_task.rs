@@ -2177,9 +2177,8 @@ pub unsafe extern "C" fn dav1d_worker_task(mut data: *mut libc::c_void) -> *mut 
                                         &mut (*f).task_thread.error as *mut atomic_int,
                                     ) == 0
                                     {
-                                        ((*f).bd_fn.filter_sbrow_deblock_cols)
-                                            .expect("non-null function pointer")(
-                                            f, sby
+                                        ((*f).bd_fn.filter_sbrow_deblock_cols).unwrap_unchecked()(
+                                            f, sby,
                                         );
                                     }
                                     if ensure_progress(
@@ -2232,9 +2231,8 @@ pub unsafe extern "C" fn dav1d_worker_task(mut data: *mut libc::c_void) -> *mut 
                                     &mut (*f).task_thread.error as *mut atomic_int,
                                 ) == 0
                                 {
-                                    ((*f).bd_fn.filter_sbrow_deblock_rows)
-                                        .expect("non-null function pointer")(
-                                        f, sby
+                                    ((*f).bd_fn.filter_sbrow_deblock_rows).unwrap_unchecked()(
+                                        f, sby,
                                     );
                                 }
                                 if (*(*f).frame_hdr).loopfilter.level_y[0] != 0
@@ -2297,10 +2295,7 @@ pub unsafe extern "C" fn dav1d_worker_task(mut data: *mut libc::c_void) -> *mut 
                                         &mut (*f).task_thread.error as *mut atomic_int,
                                     ) == 0
                                     {
-                                        ((*f).bd_fn.filter_sbrow_cdef)
-                                            .expect("non-null function pointer")(
-                                            tc, sby
-                                        );
+                                        ((*f).bd_fn.filter_sbrow_cdef).unwrap_unchecked()(tc, sby);
                                     }
                                     reset_task_cur_async(ttd, (*t).frame_idx, (*c).n_fc);
                                     if ::core::intrinsics::atomic_or_seqcst(
@@ -2322,10 +2317,7 @@ pub unsafe extern "C" fn dav1d_worker_task(mut data: *mut libc::c_void) -> *mut 
                                         &mut (*f).task_thread.error as *mut atomic_int,
                                     ) == 0
                                     {
-                                        ((*f).bd_fn.filter_sbrow_resize)
-                                            .expect("non-null function pointer")(
-                                            f, sby
-                                        );
+                                        ((*f).bd_fn.filter_sbrow_resize).unwrap_unchecked()(f, sby);
                                     }
                                 }
                                 current_block = 563177965161376451;
@@ -2339,10 +2331,7 @@ pub unsafe extern "C" fn dav1d_worker_task(mut data: *mut libc::c_void) -> *mut 
                                 ) == 0
                                     && (*f).lf.restore_planes != 0
                                 {
-                                    ((*f).bd_fn.filter_sbrow_lr)
-                                        .expect("non-null function pointer")(
-                                        f, sby
-                                    );
+                                    ((*f).bd_fn.filter_sbrow_lr).unwrap_unchecked()(f, sby);
                                 }
                                 current_block = 18238912670629178022;
                             }
