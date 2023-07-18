@@ -48,3 +48,360 @@ pub struct Dav1dLoopRestorationDSPContext {
     pub wiener: [looprestorationfilter_fn; 2],
     pub sgr: [looprestorationfilter_fn; 3],
 }
+
+#[cfg(all(
+    feature = "bitdepth_8",
+    feature = "asm",
+    any(target_arch = "x86", target_arch = "x86_64"),
+))]
+extern "C" {
+    pub(crate) fn dav1d_wiener_filter7_8bpc_sse2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_wiener_filter5_8bpc_sse2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_wiener_filter7_8bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_wiener_filter5_8bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_wiener_filter5_8bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_wiener_filter7_8bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_wiener_filter7_8bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_sgr_filter_mix_8bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_sgr_filter_3x3_8bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_sgr_filter_5x5_8bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_sgr_filter_mix_8bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_sgr_filter_3x3_8bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_sgr_filter_5x5_8bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_sgr_filter_mix_8bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_sgr_filter_3x3_8bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_sgr_filter_5x5_8bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+}
+
+#[cfg(all(
+    feature = "bitdepth_16",
+    feature = "asm",
+    any(target_arch = "x86", target_arch = "x86_64"),
+))]
+extern "C" {
+    pub(crate) fn dav1d_wiener_filter5_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_wiener_filter7_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_wiener_filter5_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_wiener_filter7_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_wiener_filter5_16bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_wiener_filter7_16bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_sgr_filter_mix_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_sgr_filter_3x3_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_sgr_filter_5x5_16bpc_ssse3(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_sgr_filter_mix_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_sgr_filter_3x3_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_sgr_filter_5x5_16bpc_avx2(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_sgr_filter_5x5_16bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_sgr_filter_3x3_16bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_sgr_filter_mix_16bpc_avx512icl(
+        dst: *mut pixel,
+        dst_stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+}

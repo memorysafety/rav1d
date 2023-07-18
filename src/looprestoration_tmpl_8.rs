@@ -11,170 +11,6 @@ extern "C" {
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: size_t) -> *mut libc::c_void;
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
-extern "C" {
-    fn dav1d_wiener_filter7_8bpc_sse2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        left: const_left_pixel_row,
-        lpf: *const pixel,
-        w: libc::c_int,
-        h: libc::c_int,
-        params: *const LooprestorationParams,
-        edges: LrEdgeFlags,
-    );
-    fn dav1d_wiener_filter5_8bpc_sse2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        left: const_left_pixel_row,
-        lpf: *const pixel,
-        w: libc::c_int,
-        h: libc::c_int,
-        params: *const LooprestorationParams,
-        edges: LrEdgeFlags,
-    );
-    fn dav1d_wiener_filter7_8bpc_ssse3(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        left: const_left_pixel_row,
-        lpf: *const pixel,
-        w: libc::c_int,
-        h: libc::c_int,
-        params: *const LooprestorationParams,
-        edges: LrEdgeFlags,
-    );
-    fn dav1d_wiener_filter5_8bpc_ssse3(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        left: const_left_pixel_row,
-        lpf: *const pixel,
-        w: libc::c_int,
-        h: libc::c_int,
-        params: *const LooprestorationParams,
-        edges: LrEdgeFlags,
-    );
-    fn dav1d_wiener_filter5_8bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        left: const_left_pixel_row,
-        lpf: *const pixel,
-        w: libc::c_int,
-        h: libc::c_int,
-        params: *const LooprestorationParams,
-        edges: LrEdgeFlags,
-    );
-    fn dav1d_wiener_filter7_8bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        left: const_left_pixel_row,
-        lpf: *const pixel,
-        w: libc::c_int,
-        h: libc::c_int,
-        params: *const LooprestorationParams,
-        edges: LrEdgeFlags,
-    );
-    fn dav1d_wiener_filter7_8bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        left: const_left_pixel_row,
-        lpf: *const pixel,
-        w: libc::c_int,
-        h: libc::c_int,
-        params: *const LooprestorationParams,
-        edges: LrEdgeFlags,
-    );
-    fn dav1d_sgr_filter_mix_8bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        left: const_left_pixel_row,
-        lpf: *const pixel,
-        w: libc::c_int,
-        h: libc::c_int,
-        params: *const LooprestorationParams,
-        edges: LrEdgeFlags,
-    );
-    fn dav1d_sgr_filter_3x3_8bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        left: const_left_pixel_row,
-        lpf: *const pixel,
-        w: libc::c_int,
-        h: libc::c_int,
-        params: *const LooprestorationParams,
-        edges: LrEdgeFlags,
-    );
-    fn dav1d_sgr_filter_5x5_8bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        left: const_left_pixel_row,
-        lpf: *const pixel,
-        w: libc::c_int,
-        h: libc::c_int,
-        params: *const LooprestorationParams,
-        edges: LrEdgeFlags,
-    );
-    fn dav1d_sgr_filter_mix_8bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        left: const_left_pixel_row,
-        lpf: *const pixel,
-        w: libc::c_int,
-        h: libc::c_int,
-        params: *const LooprestorationParams,
-        edges: LrEdgeFlags,
-    );
-    fn dav1d_sgr_filter_3x3_8bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        left: const_left_pixel_row,
-        lpf: *const pixel,
-        w: libc::c_int,
-        h: libc::c_int,
-        params: *const LooprestorationParams,
-        edges: LrEdgeFlags,
-    );
-    fn dav1d_sgr_filter_5x5_8bpc_avx2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        left: const_left_pixel_row,
-        lpf: *const pixel,
-        w: libc::c_int,
-        h: libc::c_int,
-        params: *const LooprestorationParams,
-        edges: LrEdgeFlags,
-    );
-    fn dav1d_sgr_filter_mix_8bpc_ssse3(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        left: const_left_pixel_row,
-        lpf: *const pixel,
-        w: libc::c_int,
-        h: libc::c_int,
-        params: *const LooprestorationParams,
-        edges: LrEdgeFlags,
-    );
-    fn dav1d_sgr_filter_3x3_8bpc_ssse3(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        left: const_left_pixel_row,
-        lpf: *const pixel,
-        w: libc::c_int,
-        h: libc::c_int,
-        params: *const LooprestorationParams,
-        edges: LrEdgeFlags,
-    );
-    fn dav1d_sgr_filter_5x5_8bpc_ssse3(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        left: const_left_pixel_row,
-        lpf: *const pixel,
-        w: libc::c_int,
-        h: libc::c_int,
-        params: *const LooprestorationParams,
-        edges: LrEdgeFlags,
-    );
-}
-
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 extern "C" {
     fn dav1d_sgr_box5_h_8bpc_neon(
@@ -322,8 +158,8 @@ use crate::src::looprestoration::LR_HAVE_LEFT;
 use crate::src::looprestoration::LR_HAVE_RIGHT;
 use crate::src::looprestoration::LR_HAVE_TOP;
 pub type const_left_pixel_row = *const [pixel; 4];
-use crate::src::looprestoration::LooprestorationParams;
 use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
+use crate::src::looprestoration::LooprestorationParams;
 
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
@@ -502,7 +338,31 @@ unsafe extern "C" fn padding(
         }
     };
 }
+
 unsafe extern "C" fn wiener_c(
+    mut p: *mut libc::c_void,
+    stride: ptrdiff_t,
+    left: *const libc::c_void,
+    mut lpf: *const libc::c_void,
+    w: libc::c_int,
+    h: libc::c_int,
+    params: *const LooprestorationParams,
+    edges: LrEdgeFlags,
+    _bitdepth_max: libc::c_int,
+) {
+    wiener_rust(
+        p.cast(),
+        stride,
+        left.cast(),
+        lpf.cast(),
+        w,
+        h,
+        params,
+        edges,
+    )
+}
+
+unsafe extern "C" fn wiener_rust(
     mut p: *mut pixel,
     stride: ptrdiff_t,
     left: *const [pixel; 4],
@@ -867,7 +727,31 @@ unsafe extern "C" fn selfguided_filter(
         }
     };
 }
+
 unsafe extern "C" fn sgr_5x5_c(
+    mut p: *mut libc::c_void,
+    stride: ptrdiff_t,
+    left: *const libc::c_void,
+    mut lpf: *const libc::c_void,
+    w: libc::c_int,
+    h: libc::c_int,
+    params: *const LooprestorationParams,
+    edges: LrEdgeFlags,
+    _bitdepth_max: libc::c_int,
+) {
+    sgr_5x5_rust(
+        p.cast(),
+        stride,
+        left.cast(),
+        lpf.cast(),
+        w,
+        h,
+        params,
+        edges,
+    )
+}
+
+unsafe extern "C" fn sgr_5x5_rust(
     mut p: *mut pixel,
     stride: ptrdiff_t,
     left: *const [pixel; 4],
@@ -904,7 +788,31 @@ unsafe extern "C" fn sgr_5x5_c(
         j += 1;
     }
 }
+
 unsafe extern "C" fn sgr_3x3_c(
+    mut p: *mut libc::c_void,
+    stride: ptrdiff_t,
+    left: *const libc::c_void,
+    mut lpf: *const libc::c_void,
+    w: libc::c_int,
+    h: libc::c_int,
+    params: *const LooprestorationParams,
+    edges: LrEdgeFlags,
+    _bitdepth_max: libc::c_int,
+) {
+    sgr_3x3_rust(
+        p.cast(),
+        stride,
+        left.cast(),
+        lpf.cast(),
+        w,
+        h,
+        params,
+        edges,
+    )
+}
+
+unsafe extern "C" fn sgr_3x3_rust(
     mut p: *mut pixel,
     stride: ptrdiff_t,
     left: *const [pixel; 4],
@@ -941,7 +849,31 @@ unsafe extern "C" fn sgr_3x3_c(
         j += 1;
     }
 }
+
 unsafe extern "C" fn sgr_mix_c(
+    mut p: *mut libc::c_void,
+    stride: ptrdiff_t,
+    left: *const libc::c_void,
+    mut lpf: *const libc::c_void,
+    w: libc::c_int,
+    h: libc::c_int,
+    params: *const LooprestorationParams,
+    edges: LrEdgeFlags,
+    _bitdepth_max: libc::c_int,
+) {
+    sgr_mix_rust(
+        p.cast(),
+        stride,
+        left.cast(),
+        lpf.cast(),
+        w,
+        h,
+        params,
+        edges,
+    )
+}
+
+unsafe extern "C" fn sgr_mix_rust(
     mut p: *mut pixel,
     stride: ptrdiff_t,
     left: *const [pixel; 4],
@@ -997,6 +929,7 @@ unsafe extern "C" fn loop_restoration_dsp_init_x86(
     c: *mut Dav1dLoopRestorationDSPContext,
     _bpc: libc::c_int,
 ) {
+    use crate::src::looprestoration::*;
     use crate::src::x86::cpu::*;
 
     let flags = dav1d_get_cpu_flags();

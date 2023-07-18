@@ -688,14 +688,15 @@ unsafe extern "C" fn lr_stripe(
                     & LR_HAVE_BOTTOM as libc::c_int as libc::c_uint,
         );
         lr_fn.expect("non-null function pointer")(
-            p,
+            p.cast(),
             stride,
-            left,
-            lpf,
+            left.cast(),
+            lpf.cast(),
             unit_w,
             stripe_h,
             &mut params,
             edges,
+            8,
         );
         left = left.offset(stripe_h as isize);
         y += stripe_h;
