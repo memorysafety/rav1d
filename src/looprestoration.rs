@@ -49,6 +49,7 @@ pub struct Dav1dLoopRestorationDSPContext {
     pub sgr: [looprestorationfilter_fn; 3],
 }
 
+// TODO(randomPoison): Temporarily pub until init fns are deduplicated.
 #[cfg(all(
     feature = "bitdepth_8",
     feature = "asm",
@@ -233,6 +234,7 @@ extern "C" {
     );
 }
 
+// TODO(randomPoison): Temporarily pub until init fns are deduplicated.
 #[cfg(all(
     feature = "bitdepth_16",
     feature = "asm",
@@ -406,6 +408,7 @@ extern "C" {
     );
 }
 
+// TODO(randomPoison): Temporarily pub until init fns are deduplicated.
 #[cfg(all(
     feature = "bitdepth_16",
     feature = "asm",
@@ -436,6 +439,7 @@ extern "C" {
     );
 }
 
+// TODO(randomPoison): Temporarily pub until init fns are deduplicated.
 #[cfg(all(
     feature = "bitdepth_8",
     feature = "asm",
