@@ -405,3 +405,63 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
 }
+
+#[cfg(all(
+    feature = "bitdepth_16",
+    feature = "asm",
+    any(target_arch = "arm", target_arch = "aarch64"),
+))]
+extern "C" {
+    pub(crate) fn dav1d_wiener_filter7_16bpc_neon(
+        p: *mut pixel,
+        stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_wiener_filter5_16bpc_neon(
+        p: *mut pixel,
+        stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+}
+
+#[cfg(all(
+    feature = "bitdepth_8",
+    feature = "asm",
+    any(target_arch = "arm", target_arch = "aarch64"),
+))]
+extern "C" {
+    pub(crate) fn dav1d_wiener_filter7_8bpc_neon(
+        p: *mut pixel,
+        stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_wiener_filter5_8bpc_neon(
+        p: *mut pixel,
+        stride: ptrdiff_t,
+        left: const_left_pixel_row,
+        lpf: *const pixel,
+        w: libc::c_int,
+        h: libc::c_int,
+        params: *const LooprestorationParams,
+        edges: LrEdgeFlags,
+        bitdepth_max: libc::c_int,
+    );
+}

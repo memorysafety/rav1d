@@ -11,28 +11,6 @@ extern "C" {
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 extern "C" {
-    fn dav1d_wiener_filter7_16bpc_neon(
-        p: *mut pixel,
-        stride: ptrdiff_t,
-        left: *const [pixel; 4],
-        lpf: *const pixel,
-        w: libc::c_int,
-        h: libc::c_int,
-        params: *const LooprestorationParams,
-        edges: LrEdgeFlags,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_wiener_filter5_16bpc_neon(
-        p: *mut pixel,
-        stride: ptrdiff_t,
-        left: *const [pixel; 4],
-        lpf: *const pixel,
-        w: libc::c_int,
-        h: libc::c_int,
-        params: *const LooprestorationParams,
-        edges: LrEdgeFlags,
-        bitdepth_max: libc::c_int,
-    );
     fn dav1d_sgr_box5_v_neon(
         sumsq: *mut int32_t,
         sum: *mut int16_t,
@@ -1011,6 +989,32 @@ unsafe extern "C" fn loop_restoration_dsp_init_x86(
         }
     }
 }
+
+#[cfg(all(feature = "asm", target_arch = "arm"))]
+unsafe extern "C" fn wiener_filter_neon_erased(
+    mut p: *mut libc::c_void,
+    stride: ptrdiff_t,
+    left: *const libc::c_void,
+    mut lpf: *const libc::c_void,
+    w: libc::c_int,
+    h: libc::c_int,
+    params: *const LooprestorationParams,
+    edges: LrEdgeFlags,
+    bitdepth_max: libc::c_int,
+) {
+    wiener_filter_neon(
+        p.cast(),
+        stride,
+        left.cast(),
+        lpf.cast(),
+        w,
+        h,
+        params,
+        edges,
+        bitdepth_max,
+    )
+}
+
 #[cfg(all(feature = "asm", target_arch = "arm"))]
 unsafe extern "C" fn wiener_filter_neon(
     dst: *mut pixel,
@@ -1091,6 +1095,8 @@ unsafe extern "C" fn loop_restoration_dsp_init_arm(
     mut bpc: libc::c_int,
 ) {
     use crate::src::arm::cpu::DAV1D_ARM_CPU_FLAG_NEON;
+    #[cfg(target_arch = "aarch64")]
+    use crate::src::looprestoration::*;
 
     let flags: libc::c_uint = dav1d_get_cpu_flags();
 
@@ -1103,16 +1109,42 @@ unsafe extern "C" fn loop_restoration_dsp_init_arm(
             (*c).wiener[0] = Some(dav1d_wiener_filter7_16bpc_neon);
             (*c).wiener[1] = Some(dav1d_wiener_filter5_16bpc_neon);
         } else {
-            (*c).wiener[0] = Some(wiener_filter_neon);
-            (*c).wiener[1] = Some(wiener_filter_neon);
+            (*c).wiener[0] = Some(wiener_filter_neon_erased);
+            (*c).wiener[1] = Some(wiener_filter_neon_erased);
         }
     }
 
     if bpc == 10 {
-        (*c).sgr[0] = Some(sgr_filter_5x5_neon);
-        (*c).sgr[1] = Some(sgr_filter_3x3_neon);
-        (*c).sgr[2] = Some(sgr_filter_mix_neon);
+        (*c).sgr[0] = Some(sgr_filter_5x5_neon_erased);
+        (*c).sgr[1] = Some(sgr_filter_3x3_neon_erased);
+        (*c).sgr[2] = Some(sgr_filter_mix_neon_erased);
     }
+}
+
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+unsafe extern "C" fn sgr_filter_3x3_neon_erased(
+    mut p: *mut libc::c_void,
+    stride: ptrdiff_t,
+    left: *const libc::c_void,
+    mut lpf: *const libc::c_void,
+    w: libc::c_int,
+    h: libc::c_int,
+    params: *const LooprestorationParams,
+    edges: LrEdgeFlags,
+    bitdepth_max: libc::c_int,
+) {
+    sgr_filter_3x3_neon(
+        p.cast(),
+        stride,
+        left.cast(),
+        lpf.cast(),
+        w,
+        h,
+        params,
+        edges,
+        bitdepth_max,
+    )
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
@@ -1264,6 +1296,31 @@ unsafe extern "C" fn dav1d_sgr_filter2_neon(
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+unsafe extern "C" fn sgr_filter_5x5_neon_erased(
+    mut p: *mut libc::c_void,
+    stride: ptrdiff_t,
+    left: *const libc::c_void,
+    mut lpf: *const libc::c_void,
+    w: libc::c_int,
+    h: libc::c_int,
+    params: *const LooprestorationParams,
+    edges: LrEdgeFlags,
+    bitdepth_max: libc::c_int,
+) {
+    sgr_filter_5x5_neon(
+        p.cast(),
+        stride,
+        left.cast(),
+        lpf.cast(),
+        w,
+        h,
+        params,
+        edges,
+        bitdepth_max,
+    )
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe extern "C" fn sgr_filter_5x5_neon(
     dst: *mut pixel,
     stride: ptrdiff_t,
@@ -1299,6 +1356,31 @@ unsafe extern "C" fn sgr_filter_5x5_neon(
         (*params).sgr.w0 as libc::c_int,
         bitdepth_max,
     );
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+unsafe extern "C" fn sgr_filter_mix_neon_erased(
+    mut p: *mut libc::c_void,
+    stride: ptrdiff_t,
+    left: *const libc::c_void,
+    mut lpf: *const libc::c_void,
+    w: libc::c_int,
+    h: libc::c_int,
+    params: *const LooprestorationParams,
+    edges: LrEdgeFlags,
+    bitdepth_max: libc::c_int,
+) {
+    sgr_filter_mix_neon(
+        p.cast(),
+        stride,
+        left.cast(),
+        lpf.cast(),
+        w,
+        h,
+        params,
+        edges,
+        bitdepth_max,
+    )
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
