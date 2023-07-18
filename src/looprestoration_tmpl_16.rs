@@ -332,25 +332,7 @@ use crate::src::looprestoration::LR_HAVE_TOP;
 pub type const_left_pixel_row = *const [pixel; 4];
 use crate::src::looprestoration::LooprestorationParams;
 
-pub type looprestorationfilter_fn = Option<
-    unsafe extern "C" fn(
-        *mut pixel,
-        ptrdiff_t,
-        const_left_pixel_row,
-        *const pixel,
-        libc::c_int,
-        libc::c_int,
-        *const LooprestorationParams,
-        LrEdgeFlags,
-        libc::c_int,
-    ) -> (),
->;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dLoopRestorationDSPContext {
-    pub wiener: [looprestorationfilter_fn; 2],
-    pub sgr: [looprestorationfilter_fn; 3],
-}
+use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
 use crate::include::common::attributes::clz;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::imax;

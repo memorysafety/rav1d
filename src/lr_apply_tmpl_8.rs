@@ -245,24 +245,8 @@ pub struct Dav1dDSPContext {
     pub cdef: Dav1dCdefDSPContext,
     pub lr: Dav1dLoopRestorationDSPContext,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dLoopRestorationDSPContext {
-    pub wiener: [looprestorationfilter_fn; 2],
-    pub sgr: [looprestorationfilter_fn; 3],
-}
-pub type looprestorationfilter_fn = Option<
-    unsafe extern "C" fn(
-        *mut pixel,
-        ptrdiff_t,
-        const_left_pixel_row,
-        *const pixel,
-        libc::c_int,
-        libc::c_int,
-        *const LooprestorationParams,
-        LrEdgeFlags,
-    ) -> (),
->;
+use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
+use crate::src::looprestoration::looprestorationfilter_fn;
 use crate::src::looprestoration::LooprestorationParams;
 use crate::src::looprestoration::LrEdgeFlags;
 use crate::src::looprestoration::LR_HAVE_BOTTOM;
@@ -270,7 +254,6 @@ use crate::src::looprestoration::LR_HAVE_LEFT;
 use crate::src::looprestoration::LR_HAVE_RIGHT;
 use crate::src::looprestoration::LR_HAVE_TOP;
 
-pub type const_left_pixel_row = *const [pixel; 4];
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dCdefDSPContext {
