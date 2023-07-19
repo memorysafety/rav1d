@@ -938,6 +938,7 @@ unsafe extern "C" fn loop_restoration_dsp_init_x86(
     c: *mut Dav1dLoopRestorationDSPContext,
     bpc: libc::c_int,
 ) {
+    // TODO(randomPoison): Import temporarily needed until init fns are deduplicated.
     use crate::src::looprestoration::*;
     use crate::src::x86::cpu::*;
 
@@ -992,10 +993,10 @@ unsafe extern "C" fn loop_restoration_dsp_init_x86(
 
 #[cfg(all(feature = "asm", target_arch = "arm"))]
 unsafe extern "C" fn wiener_filter_neon_erased(
-    mut p: *mut libc::c_void,
+    p: *mut libc::c_void,
     stride: ptrdiff_t,
     left: *const libc::c_void,
-    mut lpf: *const libc::c_void,
+    lpf: *const libc::c_void,
     w: libc::c_int,
     h: libc::c_int,
     params: *const LooprestorationParams,
@@ -1095,6 +1096,7 @@ unsafe extern "C" fn loop_restoration_dsp_init_arm(
     mut bpc: libc::c_int,
 ) {
     use crate::src::arm::cpu::DAV1D_ARM_CPU_FLAG_NEON;
+    // TODO(randomPoison): Import temporarily needed until init fns are deduplicated.
     #[cfg(target_arch = "aarch64")]
     use crate::src::looprestoration::*;
 
@@ -1123,10 +1125,10 @@ unsafe extern "C" fn loop_restoration_dsp_init_arm(
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe extern "C" fn sgr_filter_3x3_neon_erased(
-    mut p: *mut libc::c_void,
+    p: *mut libc::c_void,
     stride: ptrdiff_t,
     left: *const libc::c_void,
-    mut lpf: *const libc::c_void,
+    lpf: *const libc::c_void,
     w: libc::c_int,
     h: libc::c_int,
     params: *const LooprestorationParams,
@@ -1296,10 +1298,10 @@ unsafe extern "C" fn dav1d_sgr_filter2_neon(
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe extern "C" fn sgr_filter_5x5_neon_erased(
-    mut p: *mut libc::c_void,
+    p: *mut libc::c_void,
     stride: ptrdiff_t,
     left: *const libc::c_void,
-    mut lpf: *const libc::c_void,
+    lpf: *const libc::c_void,
     w: libc::c_int,
     h: libc::c_int,
     params: *const LooprestorationParams,
@@ -1359,10 +1361,10 @@ unsafe extern "C" fn sgr_filter_5x5_neon(
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe extern "C" fn sgr_filter_mix_neon_erased(
-    mut p: *mut libc::c_void,
+    p: *mut libc::c_void,
     stride: ptrdiff_t,
     left: *const libc::c_void,
-    mut lpf: *const libc::c_void,
+    lpf: *const libc::c_void,
     w: libc::c_int,
     h: libc::c_int,
     params: *const LooprestorationParams,

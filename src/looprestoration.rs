@@ -49,8 +49,8 @@ pub struct Dav1dLoopRestorationDSPContext {
     pub sgr: [looprestorationfilter_fn; 3],
 }
 
-macro_rules! extern_fn {
-    ( $( $name:ident, )* ) => {
+macro_rules! decl_looprestorationfilter_fn {
+    ( $( fn $name:ident, )* ) => {
         extern "C" {
             $(
                 // TODO(randomPoison): Temporarily pub until init fns are deduplicated.
@@ -75,23 +75,23 @@ macro_rules! extern_fn {
     feature = "asm",
     any(target_arch = "x86", target_arch = "x86_64"),
 ))]
-extern_fn! {
-    dav1d_wiener_filter7_8bpc_sse2,
-    dav1d_wiener_filter5_8bpc_sse2,
-    dav1d_wiener_filter7_8bpc_ssse3,
-    dav1d_wiener_filter5_8bpc_ssse3,
-    dav1d_wiener_filter5_8bpc_avx2,
-    dav1d_wiener_filter7_8bpc_avx2,
-    dav1d_wiener_filter7_8bpc_avx512icl,
-    dav1d_sgr_filter_mix_8bpc_avx512icl,
-    dav1d_sgr_filter_3x3_8bpc_avx512icl,
-    dav1d_sgr_filter_5x5_8bpc_avx512icl,
-    dav1d_sgr_filter_mix_8bpc_avx2,
-    dav1d_sgr_filter_3x3_8bpc_avx2,
-    dav1d_sgr_filter_5x5_8bpc_avx2,
-    dav1d_sgr_filter_mix_8bpc_ssse3,
-    dav1d_sgr_filter_3x3_8bpc_ssse3,
-    dav1d_sgr_filter_5x5_8bpc_ssse3,
+decl_looprestorationfilter_fn! {
+    fn dav1d_wiener_filter7_8bpc_sse2,
+    fn dav1d_wiener_filter5_8bpc_sse2,
+    fn dav1d_wiener_filter7_8bpc_ssse3,
+    fn dav1d_wiener_filter5_8bpc_ssse3,
+    fn dav1d_wiener_filter5_8bpc_avx2,
+    fn dav1d_wiener_filter7_8bpc_avx2,
+    fn dav1d_wiener_filter7_8bpc_avx512icl,
+    fn dav1d_sgr_filter_mix_8bpc_avx512icl,
+    fn dav1d_sgr_filter_3x3_8bpc_avx512icl,
+    fn dav1d_sgr_filter_5x5_8bpc_avx512icl,
+    fn dav1d_sgr_filter_mix_8bpc_avx2,
+    fn dav1d_sgr_filter_3x3_8bpc_avx2,
+    fn dav1d_sgr_filter_5x5_8bpc_avx2,
+    fn dav1d_sgr_filter_mix_8bpc_ssse3,
+    fn dav1d_sgr_filter_3x3_8bpc_ssse3,
+    fn dav1d_sgr_filter_5x5_8bpc_ssse3,
 }
 
 #[cfg(all(
@@ -99,22 +99,22 @@ extern_fn! {
     feature = "asm",
     any(target_arch = "x86", target_arch = "x86_64"),
 ))]
-extern_fn! {
-    dav1d_wiener_filter5_16bpc_ssse3,
-    dav1d_wiener_filter7_16bpc_ssse3,
-    dav1d_wiener_filter5_16bpc_avx2,
-    dav1d_wiener_filter7_16bpc_avx2,
-    dav1d_wiener_filter5_16bpc_avx512icl,
-    dav1d_wiener_filter7_16bpc_avx512icl,
-    dav1d_sgr_filter_mix_16bpc_ssse3,
-    dav1d_sgr_filter_3x3_16bpc_ssse3,
-    dav1d_sgr_filter_5x5_16bpc_ssse3,
-    dav1d_sgr_filter_mix_16bpc_avx2,
-    dav1d_sgr_filter_3x3_16bpc_avx2,
-    dav1d_sgr_filter_5x5_16bpc_avx2,
-    dav1d_sgr_filter_5x5_16bpc_avx512icl,
-    dav1d_sgr_filter_3x3_16bpc_avx512icl,
-    dav1d_sgr_filter_mix_16bpc_avx512icl,
+decl_looprestorationfilter_fn! {
+    fn dav1d_wiener_filter5_16bpc_ssse3,
+    fn dav1d_wiener_filter7_16bpc_ssse3,
+    fn dav1d_wiener_filter5_16bpc_avx2,
+    fn dav1d_wiener_filter7_16bpc_avx2,
+    fn dav1d_wiener_filter5_16bpc_avx512icl,
+    fn dav1d_wiener_filter7_16bpc_avx512icl,
+    fn dav1d_sgr_filter_mix_16bpc_ssse3,
+    fn dav1d_sgr_filter_3x3_16bpc_ssse3,
+    fn dav1d_sgr_filter_5x5_16bpc_ssse3,
+    fn dav1d_sgr_filter_mix_16bpc_avx2,
+    fn dav1d_sgr_filter_3x3_16bpc_avx2,
+    fn dav1d_sgr_filter_5x5_16bpc_avx2,
+    fn dav1d_sgr_filter_5x5_16bpc_avx512icl,
+    fn dav1d_sgr_filter_3x3_16bpc_avx512icl,
+    fn dav1d_sgr_filter_mix_16bpc_avx512icl,
 }
 
 #[cfg(all(
@@ -122,9 +122,9 @@ extern_fn! {
     feature = "asm",
     any(target_arch = "arm", target_arch = "aarch64"),
 ))]
-extern_fn! {
-    dav1d_wiener_filter7_8bpc_neon,
-    dav1d_wiener_filter5_8bpc_neon,
+decl_looprestorationfilter_fn! {
+    fn dav1d_wiener_filter7_8bpc_neon,
+    fn dav1d_wiener_filter5_8bpc_neon,
 }
 
 #[cfg(all(
@@ -132,7 +132,7 @@ extern_fn! {
     feature = "asm",
     any(target_arch = "arm", target_arch = "aarch64"),
 ))]
-extern_fn! {
-    dav1d_wiener_filter7_16bpc_neon,
-    dav1d_wiener_filter5_16bpc_neon,
+decl_looprestorationfilter_fn! {
+    fn dav1d_wiener_filter7_16bpc_neon,
+    fn dav1d_wiener_filter5_16bpc_neon,
 }
