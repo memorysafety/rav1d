@@ -7,10 +7,6 @@ use ::libc;
 use ::libc::size_t;
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
-extern "C" {
-    fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: size_t) -> *mut libc::c_void;
-    fn memset(_: *mut libc::c_void, _: libc::c_int, _: size_t) -> *mut libc::c_void;
-}
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 extern "C" {
