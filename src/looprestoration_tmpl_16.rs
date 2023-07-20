@@ -143,14 +143,6 @@ use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
 use crate::src::looprestoration::padding;
 
 #[inline]
-unsafe extern "C" fn pixel_set(dst: *mut pixel, val: libc::c_int, num: libc::c_int) {
-    let mut n = 0;
-    while n < num {
-        *dst.offset(n as isize) = val as pixel;
-        n += 1;
-    }
-}
-#[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     if x & 1 != 0 {
         unreachable!();
