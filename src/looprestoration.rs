@@ -309,7 +309,7 @@ pub(crate) unsafe extern "C" fn wiener_c_erased<BD: BitDepth>(
     edges: LrEdgeFlags,
     bitdepth_max: libc::c_int,
 ) {
-    let bd = BD::new(bitdepth_max.as_());
+    let bd = BD::from_c(bitdepth_max);
     wiener_rust::<BD>(
         p.cast(),
         stride,
@@ -323,7 +323,7 @@ pub(crate) unsafe extern "C" fn wiener_c_erased<BD: BitDepth>(
     )
 }
 
-unsafe extern "C" fn wiener_rust<BD: BitDepth>(
+unsafe fn wiener_rust<BD: BitDepth>(
     mut p: *mut BD::Pixel,
     stride: ptrdiff_t,
     left: *const [BD::Pixel; 4],

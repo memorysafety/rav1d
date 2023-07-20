@@ -2037,7 +2037,7 @@ unsafe extern "C" fn put_8tap_regular_c(
         mx as usize,
         my as usize,
         DAV1D_FILTER_8TAP_REGULAR | (DAV1D_FILTER_8TAP_REGULAR << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn put_8tap_regular_scaled_c(
@@ -2064,7 +2064,7 @@ unsafe extern "C" fn put_8tap_regular_scaled_c(
         dx as usize,
         dy as usize,
         DAV1D_FILTER_8TAP_REGULAR | (DAV1D_FILTER_8TAP_REGULAR << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn prep_8tap_regular_c(
@@ -2085,7 +2085,7 @@ unsafe extern "C" fn prep_8tap_regular_c(
         mx as usize,
         my as usize,
         DAV1D_FILTER_8TAP_REGULAR | (DAV1D_FILTER_8TAP_REGULAR << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn prep_8tap_regular_scaled_c(
@@ -2110,7 +2110,7 @@ unsafe extern "C" fn prep_8tap_regular_scaled_c(
         dx as usize,
         dy as usize,
         DAV1D_FILTER_8TAP_REGULAR | (DAV1D_FILTER_8TAP_REGULAR << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn prep_8tap_regular_sharp_scaled_c(
@@ -2135,7 +2135,7 @@ unsafe extern "C" fn prep_8tap_regular_sharp_scaled_c(
         dx as usize,
         dy as usize,
         DAV1D_FILTER_8TAP_REGULAR | (DAV1D_FILTER_8TAP_SHARP << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn prep_8tap_regular_sharp_c(
@@ -2156,7 +2156,7 @@ unsafe extern "C" fn prep_8tap_regular_sharp_c(
         mx as usize,
         my as usize,
         DAV1D_FILTER_8TAP_REGULAR | (DAV1D_FILTER_8TAP_SHARP << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn put_8tap_regular_sharp_scaled_c(
@@ -2183,7 +2183,7 @@ unsafe extern "C" fn put_8tap_regular_sharp_scaled_c(
         dx as usize,
         dy as usize,
         DAV1D_FILTER_8TAP_REGULAR | (DAV1D_FILTER_8TAP_SHARP << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn put_8tap_regular_sharp_c(
@@ -2206,7 +2206,7 @@ unsafe extern "C" fn put_8tap_regular_sharp_c(
         mx as usize,
         my as usize,
         DAV1D_FILTER_8TAP_REGULAR | (DAV1D_FILTER_8TAP_SHARP << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn prep_8tap_regular_smooth_scaled_c(
@@ -2231,7 +2231,7 @@ unsafe extern "C" fn prep_8tap_regular_smooth_scaled_c(
         dx as usize,
         dy as usize,
         DAV1D_FILTER_8TAP_REGULAR | (DAV1D_FILTER_8TAP_SMOOTH << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn prep_8tap_regular_smooth_c(
@@ -2252,7 +2252,7 @@ unsafe extern "C" fn prep_8tap_regular_smooth_c(
         mx as usize,
         my as usize,
         DAV1D_FILTER_8TAP_REGULAR | (DAV1D_FILTER_8TAP_SMOOTH << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn put_8tap_regular_smooth_scaled_c(
@@ -2279,7 +2279,7 @@ unsafe extern "C" fn put_8tap_regular_smooth_scaled_c(
         dx as usize,
         dy as usize,
         DAV1D_FILTER_8TAP_REGULAR | (DAV1D_FILTER_8TAP_SMOOTH << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn put_8tap_regular_smooth_c(
@@ -2302,7 +2302,7 @@ unsafe extern "C" fn put_8tap_regular_smooth_c(
         mx as usize,
         my as usize,
         DAV1D_FILTER_8TAP_REGULAR | (DAV1D_FILTER_8TAP_SMOOTH << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn put_8tap_smooth_scaled_c(
@@ -2329,7 +2329,7 @@ unsafe extern "C" fn put_8tap_smooth_scaled_c(
         dx as usize,
         dy as usize,
         DAV1D_FILTER_8TAP_SMOOTH | (DAV1D_FILTER_8TAP_SMOOTH << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn prep_8tap_smooth_scaled_c(
@@ -2354,7 +2354,7 @@ unsafe extern "C" fn prep_8tap_smooth_scaled_c(
         dx as usize,
         dy as usize,
         DAV1D_FILTER_8TAP_SMOOTH | (DAV1D_FILTER_8TAP_SMOOTH << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn prep_8tap_smooth_c(
@@ -2375,7 +2375,7 @@ unsafe extern "C" fn prep_8tap_smooth_c(
         mx as usize,
         my as usize,
         DAV1D_FILTER_8TAP_SMOOTH | (DAV1D_FILTER_8TAP_SMOOTH << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn put_8tap_smooth_c(
@@ -2398,7 +2398,7 @@ unsafe extern "C" fn put_8tap_smooth_c(
         mx as usize,
         my as usize,
         DAV1D_FILTER_8TAP_SMOOTH | (DAV1D_FILTER_8TAP_SMOOTH << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn prep_8tap_smooth_regular_scaled_c(
@@ -2423,7 +2423,7 @@ unsafe extern "C" fn prep_8tap_smooth_regular_scaled_c(
         dx as usize,
         dy as usize,
         DAV1D_FILTER_8TAP_SMOOTH | (DAV1D_FILTER_8TAP_REGULAR << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn put_8tap_smooth_regular_c(
@@ -2446,7 +2446,7 @@ unsafe extern "C" fn put_8tap_smooth_regular_c(
         mx as usize,
         my as usize,
         DAV1D_FILTER_8TAP_SMOOTH | (DAV1D_FILTER_8TAP_REGULAR << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn put_8tap_smooth_regular_scaled_c(
@@ -2473,7 +2473,7 @@ unsafe extern "C" fn put_8tap_smooth_regular_scaled_c(
         dx as usize,
         dy as usize,
         DAV1D_FILTER_8TAP_SMOOTH | (DAV1D_FILTER_8TAP_REGULAR << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn prep_8tap_smooth_regular_c(
@@ -2494,7 +2494,7 @@ unsafe extern "C" fn prep_8tap_smooth_regular_c(
         mx as usize,
         my as usize,
         DAV1D_FILTER_8TAP_SMOOTH | (DAV1D_FILTER_8TAP_REGULAR << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn prep_8tap_smooth_sharp_scaled_c(
@@ -2519,7 +2519,7 @@ unsafe extern "C" fn prep_8tap_smooth_sharp_scaled_c(
         dx as usize,
         dy as usize,
         DAV1D_FILTER_8TAP_SMOOTH | (DAV1D_FILTER_8TAP_SHARP << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn put_8tap_smooth_sharp_c(
@@ -2542,7 +2542,7 @@ unsafe extern "C" fn put_8tap_smooth_sharp_c(
         mx as usize,
         my as usize,
         DAV1D_FILTER_8TAP_SMOOTH | (DAV1D_FILTER_8TAP_SHARP << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn put_8tap_smooth_sharp_scaled_c(
@@ -2569,7 +2569,7 @@ unsafe extern "C" fn put_8tap_smooth_sharp_scaled_c(
         dx as usize,
         dy as usize,
         DAV1D_FILTER_8TAP_SMOOTH | (DAV1D_FILTER_8TAP_SHARP << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn prep_8tap_smooth_sharp_c(
@@ -2590,7 +2590,7 @@ unsafe extern "C" fn prep_8tap_smooth_sharp_c(
         mx as usize,
         my as usize,
         DAV1D_FILTER_8TAP_SMOOTH | (DAV1D_FILTER_8TAP_SHARP << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn put_8tap_sharp_c(
@@ -2613,7 +2613,7 @@ unsafe extern "C" fn put_8tap_sharp_c(
         mx as usize,
         my as usize,
         DAV1D_FILTER_8TAP_SHARP | (DAV1D_FILTER_8TAP_SHARP << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn prep_8tap_sharp_c(
@@ -2634,7 +2634,7 @@ unsafe extern "C" fn prep_8tap_sharp_c(
         mx as usize,
         my as usize,
         DAV1D_FILTER_8TAP_SHARP | (DAV1D_FILTER_8TAP_SHARP << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn prep_8tap_sharp_scaled_c(
@@ -2659,7 +2659,7 @@ unsafe extern "C" fn prep_8tap_sharp_scaled_c(
         dx as usize,
         dy as usize,
         DAV1D_FILTER_8TAP_SHARP | (DAV1D_FILTER_8TAP_SHARP << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn put_8tap_sharp_scaled_c(
@@ -2686,7 +2686,7 @@ unsafe extern "C" fn put_8tap_sharp_scaled_c(
         dx as usize,
         dy as usize,
         DAV1D_FILTER_8TAP_SHARP | (DAV1D_FILTER_8TAP_SHARP << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn put_8tap_sharp_regular_scaled_c(
@@ -2713,7 +2713,7 @@ unsafe extern "C" fn put_8tap_sharp_regular_scaled_c(
         dx as usize,
         dy as usize,
         DAV1D_FILTER_8TAP_SHARP | (DAV1D_FILTER_8TAP_REGULAR << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn prep_8tap_sharp_regular_scaled_c(
@@ -2738,7 +2738,7 @@ unsafe extern "C" fn prep_8tap_sharp_regular_scaled_c(
         dx as usize,
         dy as usize,
         DAV1D_FILTER_8TAP_SHARP | (DAV1D_FILTER_8TAP_REGULAR << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn prep_8tap_sharp_regular_c(
@@ -2759,7 +2759,7 @@ unsafe extern "C" fn prep_8tap_sharp_regular_c(
         mx as usize,
         my as usize,
         DAV1D_FILTER_8TAP_SHARP | (DAV1D_FILTER_8TAP_REGULAR << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn put_8tap_sharp_regular_c(
@@ -2782,7 +2782,7 @@ unsafe extern "C" fn put_8tap_sharp_regular_c(
         mx as usize,
         my as usize,
         DAV1D_FILTER_8TAP_SHARP | (DAV1D_FILTER_8TAP_REGULAR << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn put_8tap_sharp_smooth_c(
@@ -2805,7 +2805,7 @@ unsafe extern "C" fn put_8tap_sharp_smooth_c(
         mx as usize,
         my as usize,
         DAV1D_FILTER_8TAP_SHARP | (DAV1D_FILTER_8TAP_SMOOTH << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn prep_8tap_sharp_smooth_scaled_c(
@@ -2830,7 +2830,7 @@ unsafe extern "C" fn prep_8tap_sharp_smooth_scaled_c(
         dx as usize,
         dy as usize,
         DAV1D_FILTER_8TAP_SHARP | (DAV1D_FILTER_8TAP_SMOOTH << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn prep_8tap_sharp_smooth_c(
@@ -2851,7 +2851,7 @@ unsafe extern "C" fn prep_8tap_sharp_smooth_c(
         mx as usize,
         my as usize,
         DAV1D_FILTER_8TAP_SHARP | (DAV1D_FILTER_8TAP_SMOOTH << 2),
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 unsafe extern "C" fn put_8tap_sharp_smooth_scaled_c(
@@ -2878,7 +2878,7 @@ unsafe extern "C" fn put_8tap_sharp_smooth_scaled_c(
         dx as usize,
         dy as usize,
         DAV1D_FILTER_8TAP_SHARP | (DAV1D_FILTER_8TAP_SMOOTH) << 2,
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     );
 }
 use crate::src::mc::put_bilin_rust;
@@ -2901,7 +2901,7 @@ unsafe extern "C" fn put_bilin_c(
         h as usize,
         mx as usize,
         my as usize,
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     )
 }
 use crate::src::mc::put_bilin_scaled_rust;
@@ -2928,7 +2928,7 @@ unsafe extern "C" fn put_bilin_scaled_c(
         my as usize,
         dx as usize,
         dy as usize,
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     )
 }
 use crate::src::mc::prep_bilin_rust;
@@ -2949,7 +2949,7 @@ unsafe extern "C" fn prep_bilin_c(
         h as usize,
         mx as usize,
         my as usize,
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     )
 }
 use crate::src::mc::prep_bilin_scaled_rust;
@@ -2974,7 +2974,7 @@ unsafe extern "C" fn prep_bilin_scaled_c(
         my as usize,
         dx as usize,
         dy as usize,
-        BitDepth8::new(8),
+        BitDepth8::new(()),
     )
 }
 unsafe extern "C" fn avg_c(
