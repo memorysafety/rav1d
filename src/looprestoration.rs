@@ -49,7 +49,7 @@ pub struct Dav1dLoopRestorationDSPContext {
     pub sgr: [looprestorationfilter_fn; 3],
 }
 
-macro_rules! decl_looprestorationfilter_fn {
+macro_rules! decl_looprestorationfilter_fns {
     ( $( fn $name:ident, )* ) => {
         extern "C" {
             $(
@@ -75,7 +75,7 @@ macro_rules! decl_looprestorationfilter_fn {
     feature = "asm",
     any(target_arch = "x86", target_arch = "x86_64"),
 ))]
-decl_looprestorationfilter_fn! {
+decl_looprestorationfilter_fns! {
     fn dav1d_wiener_filter7_8bpc_sse2,
     fn dav1d_wiener_filter5_8bpc_sse2,
     fn dav1d_wiener_filter7_8bpc_ssse3,
@@ -99,7 +99,7 @@ decl_looprestorationfilter_fn! {
     feature = "asm",
     any(target_arch = "x86", target_arch = "x86_64"),
 ))]
-decl_looprestorationfilter_fn! {
+decl_looprestorationfilter_fns! {
     fn dav1d_wiener_filter5_16bpc_ssse3,
     fn dav1d_wiener_filter7_16bpc_ssse3,
     fn dav1d_wiener_filter5_16bpc_avx2,
@@ -122,7 +122,7 @@ decl_looprestorationfilter_fn! {
     feature = "asm",
     any(target_arch = "arm", target_arch = "aarch64"),
 ))]
-decl_looprestorationfilter_fn! {
+decl_looprestorationfilter_fns! {
     fn dav1d_wiener_filter7_8bpc_neon,
     fn dav1d_wiener_filter5_8bpc_neon,
 }
@@ -132,7 +132,7 @@ decl_looprestorationfilter_fn! {
     feature = "asm",
     any(target_arch = "arm", target_arch = "aarch64"),
 ))]
-decl_looprestorationfilter_fn! {
+decl_looprestorationfilter_fns! {
     fn dav1d_wiener_filter7_16bpc_neon,
     fn dav1d_wiener_filter5_16bpc_neon,
 }
