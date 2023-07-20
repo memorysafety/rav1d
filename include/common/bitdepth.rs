@@ -90,7 +90,7 @@ pub trait BitDepth: Clone + Copy {
         + ToPrimitive<c_int>
         + ToPrimitive<c_uint>;
 
-    type BitDepthMax;
+    type BitDepthMax: Copy + FromPrimitive<c_int>;
 
     type DisplayPixel: Display;
 
@@ -137,7 +137,7 @@ impl BitDepth for BitDepth8 {
 
     type Coef = i16;
 
-    type BitDepthMax = ();
+    type BitDepthMax = u8;
 
     type DisplayPixel = DisplayPixel8;
 

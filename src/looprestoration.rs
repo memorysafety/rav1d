@@ -1,4 +1,3 @@
-use crate::include::common::attributes::clz;
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::intops::iclip;
@@ -52,6 +51,7 @@ pub struct Dav1dLoopRestorationDSPContext {
     pub sgr: [looprestorationfilter_fn; 3],
 }
 
+#[cfg(feature = "asm")]
 macro_rules! decl_looprestorationfilter_fns {
     ( $( fn $name:ident, )* ) => {
         extern "C" {
@@ -309,6 +309,7 @@ pub(crate) unsafe extern "C" fn wiener_c_erased<BD: BitDepth>(
     edges: LrEdgeFlags,
     bitdepth_max: libc::c_int,
 ) {
+    let bd = BD::new(bitdepth_max.as_());
     wiener_rust::<BD>(
         p.cast(),
         stride,
@@ -318,7 +319,7 @@ pub(crate) unsafe extern "C" fn wiener_c_erased<BD: BitDepth>(
         h,
         params,
         edges,
-        bitdepth_max,
+        bd,
     )
 }
 
@@ -331,15 +332,17 @@ unsafe extern "C" fn wiener_rust<BD: BitDepth>(
     h: libc::c_int,
     params: *const LooprestorationParams,
     edges: LrEdgeFlags,
-    bitdepth_max: libc::c_int,
+    bd: BD,
 ) {
     let mut tmp: [BD::Pixel; 27300] = [0.as_(); 27300];
     let mut tmp_ptr: *mut BD::Pixel = tmp.as_mut_ptr();
+
     padding::<BD>(&mut tmp, p, stride, left, lpf, w, h, edges);
+
     let mut hor: [uint16_t; 27300] = [0; 27300];
     let mut hor_ptr: *mut uint16_t = hor.as_mut_ptr();
     let filter: *const [int16_t; 8] = ((*params).filter.0).as_ptr();
-    let bitdepth = 32 - clz(bitdepth_max as libc::c_uint);
+    let bitdepth = bd.bitdepth().as_::<libc::c_int>();
     let round_bits_h = 3 as libc::c_int + (bitdepth == 12) as libc::c_int * 2;
     let rounding_off_h = (1 as libc::c_int) << round_bits_h - 1;
     let clip_limit = (1 as libc::c_int) << bitdepth + 1 + 7 - round_bits_h;
@@ -388,7 +391,7 @@ unsafe extern "C" fn wiener_rust<BD: BitDepth>(
                 iclip(
                     sum_0 + rounding_off_v >> round_bits_v,
                     0 as libc::c_int,
-                    bitdepth_max,
+                    bd.bitdepth_max().as_(),
                 )
                 .as_();
             i_0 += 1;
