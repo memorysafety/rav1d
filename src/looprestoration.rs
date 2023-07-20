@@ -3,6 +3,7 @@ use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::intops::iclip;
 use crate::include::stddef::ptrdiff_t;
 use crate::include::stdint::int16_t;
+use crate::include::stdint::int32_t;
 use crate::include::stdint::uint16_t;
 use crate::include::stdint::uint32_t;
 use crate::src::align::Align16;
@@ -397,5 +398,142 @@ unsafe fn wiener_rust<BD: BitDepth>(
             i_0 += 1;
         }
         j_0 += 1;
+    }
+}
+
+// TODO(randomPoison): Temporarily pub until callers are deduplicated.
+pub(crate) unsafe fn boxsum3<BD: BitDepth>(
+    mut sumsq: *mut int32_t,
+    mut sum: *mut BD::Coef,
+    mut src: *const BD::Pixel,
+    w: libc::c_int,
+    h: libc::c_int,
+) {
+    src = src.offset(390);
+    let mut x = 1;
+    while x < w - 1 {
+        let mut sum_v: *mut BD::Coef = sum.offset(x as isize);
+        let mut sumsq_v: *mut int32_t = sumsq.offset(x as isize);
+        let mut s: *const BD::Pixel = src.offset(x as isize);
+        let mut a: libc::c_int = (*s.offset(0)).as_();
+        let mut a2 = a * a;
+        let mut b: libc::c_int = (*s.offset(390)).as_();
+        let mut b2 = b * b;
+        let mut y = 2;
+        while y < h - 2 {
+            s = s.offset(390);
+            let c: libc::c_int = (*s.offset(390)).as_();
+            let c2 = c * c;
+            sum_v = sum_v.offset(390);
+            sumsq_v = sumsq_v.offset(390);
+            *sum_v = (a + b + c).as_();
+            *sumsq_v = a2 + b2 + c2;
+            a = b;
+            a2 = b2;
+            b = c;
+            b2 = c2;
+            y += 1;
+        }
+        x += 1;
+    }
+    sum = sum.offset(390);
+    sumsq = sumsq.offset(390);
+    let mut y_0 = 2;
+    while y_0 < h - 2 {
+        let mut a_0 = *sum.offset(1);
+        let mut a2_0 = *sumsq.offset(1);
+        let mut b_0 = *sum.offset(2);
+        let mut b2_0 = *sumsq.offset(2);
+        let mut x_0 = 2;
+        while x_0 < w - 2 {
+            let c_0 = *sum.offset((x_0 + 1) as isize);
+            let c2_0 = *sumsq.offset((x_0 + 1) as isize);
+            *sum.offset(x_0 as isize) = a_0 + b_0 + c_0;
+            *sumsq.offset(x_0 as isize) = a2_0 + b2_0 + c2_0;
+            a_0 = b_0;
+            a2_0 = b2_0;
+            b_0 = c_0;
+            b2_0 = c2_0;
+            x_0 += 1;
+        }
+        sum = sum.offset(390);
+        sumsq = sumsq.offset(390);
+        y_0 += 1;
+    }
+}
+
+// TODO(randomPoison): Temporarily pub until callers are deduplicated.
+pub(crate) unsafe fn boxsum5<BD: BitDepth>(
+    mut sumsq: *mut int32_t,
+    mut sum: *mut BD::Coef,
+    src: *const BD::Pixel,
+    w: libc::c_int,
+    h: libc::c_int,
+) {
+    let mut x = 0;
+    while x < w {
+        let mut sum_v: *mut BD::Coef = sum.offset(x as isize);
+        let mut sumsq_v: *mut int32_t = sumsq.offset(x as isize);
+        let mut s: *const BD::Pixel = src.offset((3 * 390) as isize).offset(x as isize);
+        let mut a: libc::c_int = (*s.offset((-(3 as libc::c_int) * 390) as isize)).as_();
+        let mut a2 = a * a;
+        let mut b: libc::c_int = (*s.offset((-(2 as libc::c_int) * 390) as isize)).as_();
+        let mut b2 = b * b;
+        let mut c: libc::c_int = (*s.offset((-(1 as libc::c_int) * 390) as isize)).as_();
+        let mut c2 = c * c;
+        let mut d: libc::c_int = (*s.offset(0)).as_();
+        let mut d2 = d * d;
+        let mut y = 2;
+        while y < h - 2 {
+            s = s.offset(390);
+            let e: libc::c_int = (*s).as_();
+            let e2 = e * e;
+            sum_v = sum_v.offset(390);
+            sumsq_v = sumsq_v.offset(390);
+            *sum_v = (a + b + c + d + e).as_();
+            *sumsq_v = a2 + b2 + c2 + d2 + e2;
+            a = b;
+            b = c;
+            c = d;
+            d = e;
+            a2 = b2;
+            b2 = c2;
+            c2 = d2;
+            d2 = e2;
+            y += 1;
+        }
+        x += 1;
+    }
+    sum = sum.offset(390);
+    sumsq = sumsq.offset(390);
+    let mut y_0 = 2;
+    while y_0 < h - 2 {
+        let mut a_0 = *sum.offset(0);
+        let mut a2_0 = *sumsq.offset(0);
+        let mut b_0 = *sum.offset(1);
+        let mut b2_0 = *sumsq.offset(1);
+        let mut c_0 = *sum.offset(2);
+        let mut c2_0 = *sumsq.offset(2);
+        let mut d_0 = *sum.offset(3);
+        let mut d2_0 = *sumsq.offset(3);
+        let mut x_0 = 2;
+        while x_0 < w - 2 {
+            let e_0 = *sum.offset((x_0 + 2) as isize);
+            let e2_0 = *sumsq.offset((x_0 + 2) as isize);
+            *sum.offset(x_0 as isize) = a_0 + b_0 + c_0 + d_0 + e_0;
+            *sumsq.offset(x_0 as isize) = a2_0 + b2_0 + c2_0 + d2_0 + e2_0;
+            a_0 = b_0;
+            b_0 = c_0;
+            c_0 = d_0;
+            d_0 = e_0;
+            a2_0 = b2_0;
+            b2_0 = c2_0;
+            c2_0 = d2_0;
+            d2_0 = e2_0;
+            x_0 += 1;
+        }
+        sum = sum.offset(390);
+        sumsq = sumsq.offset(390);
+        y_0 += 1;
     }
 }
