@@ -139,8 +139,8 @@ use crate::include::common::attributes::clz;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::imax;
 use crate::include::common::intops::umin;
-use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
 use crate::src::looprestoration::padding;
+use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
 
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {

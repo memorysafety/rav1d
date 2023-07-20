@@ -130,8 +130,8 @@ pub type pixel = uint8_t;
 pub type coef = int16_t;
 use crate::src::looprestoration::LrEdgeFlags;
 pub type const_left_pixel_row = *const [pixel; 4];
-use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
 use crate::src::looprestoration::padding;
+use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
 use crate::src::looprestoration::LooprestorationParams;
 
 use crate::include::common::intops::iclip;
