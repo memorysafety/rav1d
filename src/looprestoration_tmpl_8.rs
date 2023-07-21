@@ -1,6 +1,4 @@
-use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BitDepth8;
-use crate::include::stddef::*;
 use crate::include::stdint::*;
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
 use crate::src::align::Align16;
@@ -127,89 +125,17 @@ extern "C" {
 
 pub type pixel = uint8_t;
 pub type coef = int16_t;
-use crate::src::looprestoration::LrEdgeFlags;
 pub type const_left_pixel_row = *const [pixel; 4];
-use crate::src::looprestoration::padding;
-use crate::src::looprestoration::selfguided_filter;
 use crate::src::looprestoration::wiener_c_erased;
 use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
-use crate::src::looprestoration::LooprestorationParams;
-use crate::src::looprestoration::{sgr_3x3_c, sgr_5x5_c};
+use crate::src::looprestoration::{sgr_3x3_c, sgr_5x5_c, sgr_mix_c};
 
-use crate::include::common::intops::iclip_u8;
-
-unsafe extern "C" fn sgr_mix_c(
-    mut p: *mut libc::c_void,
-    stride: ptrdiff_t,
-    left: *const libc::c_void,
-    mut lpf: *const libc::c_void,
-    w: libc::c_int,
-    h: libc::c_int,
-    params: *const LooprestorationParams,
-    edges: LrEdgeFlags,
-    _bitdepth_max: libc::c_int,
-) {
-    sgr_mix_rust(
-        p.cast(),
-        stride,
-        left.cast(),
-        lpf.cast(),
-        w,
-        h,
-        params,
-        edges,
-    )
-}
-
-unsafe extern "C" fn sgr_mix_rust(
-    mut p: *mut pixel,
-    stride: ptrdiff_t,
-    left: *const [pixel; 4],
-    mut lpf: *const pixel,
-    w: libc::c_int,
-    h: libc::c_int,
-    params: *const LooprestorationParams,
-    edges: LrEdgeFlags,
-) {
-    let mut tmp: [pixel; 27300] = [0; 27300];
-    let mut dst0: [coef; 24576] = [0; 24576];
-    let mut dst1: [coef; 24576] = [0; 24576];
-    padding::<BitDepth8>(&mut tmp, p, stride, left, lpf, w, h, edges);
-    selfguided_filter(
-        dst0.as_mut_ptr(),
-        tmp.as_mut_ptr(),
-        390 as libc::c_int as ptrdiff_t,
-        w,
-        h,
-        25 as libc::c_int,
-        (*params).sgr.s0,
-        BitDepth8::new(()),
-    );
-    selfguided_filter(
-        dst1.as_mut_ptr(),
-        tmp.as_mut_ptr(),
-        390 as libc::c_int as ptrdiff_t,
-        w,
-        h,
-        9 as libc::c_int,
-        (*params).sgr.s1,
-        BitDepth8::new(()),
-    );
-    let w0 = (*params).sgr.w0 as libc::c_int;
-    let w1 = (*params).sgr.w1 as libc::c_int;
-    let mut j = 0;
-    while j < h {
-        let mut i = 0;
-        while i < w {
-            let v = w0 * dst0[(j * 384 + i) as usize] as libc::c_int
-                + w1 * dst1[(j * 384 + i) as usize] as libc::c_int;
-            *p.offset(i as isize) = iclip_u8(
-                *p.offset(i as isize) as libc::c_int + (v + ((1 as libc::c_int) << 10) >> 11),
-            ) as pixel;
-            i += 1;
-        }
-        p = p.offset(stride as isize);
-        j += 1;
+#[cfg(feature = "asm")]
+cfg_if! {
+    if #[cfg(any(target_arch = "arm", target_arch = "aarch64"))] {
+        use crate::include::stddef::*;
+        use crate::src::looprestoration::LrEdgeFlags;
+        use crate::src::looprestoration::LooprestorationParams;
     }
 }
 
@@ -710,7 +636,7 @@ pub unsafe extern "C" fn dav1d_loop_restoration_dsp_init_8bpc(
     (*c).wiener[0] = (*c).wiener[1];
     (*c).sgr[0] = sgr_5x5_c::<BitDepth8>;
     (*c).sgr[1] = sgr_3x3_c::<BitDepth8>;
-    (*c).sgr[2] = sgr_mix_c;
+    (*c).sgr[2] = sgr_mix_c::<BitDepth8>;
 
     #[cfg(feature = "asm")]
     cfg_if! {
