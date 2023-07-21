@@ -1,3 +1,4 @@
+use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BitDepth8;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
@@ -124,191 +125,17 @@ extern "C" {
     );
 }
 
-use crate::src::tables::dav1d_sgr_x_by_x;
-
 pub type pixel = uint8_t;
 pub type coef = int16_t;
 use crate::src::looprestoration::LrEdgeFlags;
 pub type const_left_pixel_row = *const [pixel; 4];
-use crate::src::looprestoration::boxsum3;
-use crate::src::looprestoration::boxsum5;
 use crate::src::looprestoration::padding;
+use crate::src::looprestoration::selfguided_filter;
 use crate::src::looprestoration::wiener_c_erased;
 use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
 use crate::src::looprestoration::LooprestorationParams;
 
 use crate::include::common::intops::iclip_u8;
-use crate::include::common::intops::imax;
-use crate::include::common::intops::umin;
-
-#[inline(never)]
-unsafe extern "C" fn selfguided_filter(
-    mut dst: *mut coef,
-    mut src: *const pixel,
-    _src_stride: ptrdiff_t,
-    w: libc::c_int,
-    h: libc::c_int,
-    n: libc::c_int,
-    s: libc::c_uint,
-) {
-    let sgr_one_by_x: libc::c_uint = (if n == 25 {
-        164 as libc::c_int
-    } else {
-        455 as libc::c_int
-    }) as libc::c_uint;
-    let mut sumsq: [int32_t; 26520] = [0; 26520];
-    let mut A: *mut int32_t = sumsq.as_mut_ptr().offset((2 * 390) as isize).offset(3);
-    let mut sum: [coef; 26520] = [0; 26520];
-    let mut B: *mut coef = sum.as_mut_ptr().offset((2 * 390) as isize).offset(3);
-    let step = (n == 25) as libc::c_int + 1;
-    if n == 25 {
-        boxsum5::<BitDepth8>(sumsq.as_mut_ptr(), sum.as_mut_ptr(), src, w + 6, h + 6);
-    } else {
-        boxsum3::<BitDepth8>(sumsq.as_mut_ptr(), sum.as_mut_ptr(), src, w + 6, h + 6);
-    }
-    let bitdepth_min_8 = 8 - 8;
-    let mut AA: *mut int32_t = A.offset(-(390 as libc::c_int as isize));
-    let mut BB: *mut coef = B.offset(-(390 as libc::c_int as isize));
-    let mut j = -(1 as libc::c_int);
-    while j < h + 1 {
-        let mut i = -(1 as libc::c_int);
-        while i < w + 1 {
-            let a = *AA.offset(i as isize) + ((1 as libc::c_int) << 2 * bitdepth_min_8 >> 1)
-                >> 2 * bitdepth_min_8;
-            let b = *BB.offset(i as isize) as libc::c_int
-                + ((1 as libc::c_int) << bitdepth_min_8 >> 1)
-                >> bitdepth_min_8;
-            let p: libc::c_uint = imax(a * n - b * b, 0 as libc::c_int) as libc::c_uint;
-            let z: libc::c_uint = p
-                .wrapping_mul(s)
-                .wrapping_add(((1 as libc::c_int) << 19) as libc::c_uint)
-                >> 20;
-            let x: libc::c_uint = dav1d_sgr_x_by_x
-                [umin(z, 255 as libc::c_int as libc::c_uint) as usize]
-                as libc::c_uint;
-            *AA.offset(i as isize) = (x
-                .wrapping_mul(*BB.offset(i as isize) as libc::c_uint)
-                .wrapping_mul(sgr_one_by_x)
-                .wrapping_add(((1 as libc::c_int) << 11) as libc::c_uint)
-                >> 12) as int32_t;
-            *BB.offset(i as isize) = x as coef;
-            i += 1;
-        }
-        AA = AA.offset((step * 390) as isize);
-        BB = BB.offset((step * 390) as isize);
-        j += step;
-    }
-    src = src.offset((3 * 390 + 3) as isize);
-    if n == 25 {
-        let mut j_0 = 0;
-        while j_0 < h - 1 {
-            let mut i_0 = 0;
-            while i_0 < w {
-                let a_0 = (*B.offset((i_0 - 390) as isize) as libc::c_int
-                    + *B.offset((i_0 + 390) as isize) as libc::c_int)
-                    * 6
-                    + (*B.offset((i_0 - 1 - 390) as isize) as libc::c_int
-                        + *B.offset((i_0 - 1 + 390) as isize) as libc::c_int
-                        + *B.offset((i_0 + 1 - 390) as isize) as libc::c_int
-                        + *B.offset((i_0 + 1 + 390) as isize) as libc::c_int)
-                        * 5;
-                let b_0 = (*A.offset((i_0 - 390) as isize) + *A.offset((i_0 + 390) as isize)) * 6
-                    + (*A.offset((i_0 - 1 - 390) as isize)
-                        + *A.offset((i_0 - 1 + 390) as isize)
-                        + *A.offset((i_0 + 1 - 390) as isize)
-                        + *A.offset((i_0 + 1 + 390) as isize))
-                        * 5;
-                *dst.offset(i_0 as isize) = (b_0 - a_0 * *src.offset(i_0 as isize) as libc::c_int
-                    + ((1 as libc::c_int) << 8)
-                    >> 9) as coef;
-                i_0 += 1;
-            }
-            dst = dst.offset(384);
-            src = src.offset(390);
-            B = B.offset(390);
-            A = A.offset(390);
-            let mut i_1 = 0;
-            while i_1 < w {
-                let a_1 = *B.offset(i_1 as isize) as libc::c_int * 6
-                    + (*B.offset((i_1 - 1) as isize) as libc::c_int
-                        + *B.offset((i_1 + 1) as isize) as libc::c_int)
-                        * 5;
-                let b_1 = *A.offset(i_1 as isize) * 6
-                    + (*A.offset((i_1 - 1) as isize) + *A.offset((i_1 + 1) as isize)) * 5;
-                *dst.offset(i_1 as isize) = (b_1 - a_1 * *src.offset(i_1 as isize) as libc::c_int
-                    + ((1 as libc::c_int) << 7)
-                    >> 8) as coef;
-                i_1 += 1;
-            }
-            dst = dst.offset(384);
-            src = src.offset(390);
-            B = B.offset(390);
-            A = A.offset(390);
-            j_0 += 2 as libc::c_int;
-        }
-        if j_0 + 1 == h {
-            let mut i_2 = 0;
-            while i_2 < w {
-                let a_2 = (*B.offset((i_2 - 390) as isize) as libc::c_int
-                    + *B.offset((i_2 + 390) as isize) as libc::c_int)
-                    * 6
-                    + (*B.offset((i_2 - 1 - 390) as isize) as libc::c_int
-                        + *B.offset((i_2 - 1 + 390) as isize) as libc::c_int
-                        + *B.offset((i_2 + 1 - 390) as isize) as libc::c_int
-                        + *B.offset((i_2 + 1 + 390) as isize) as libc::c_int)
-                        * 5;
-                let b_2 = (*A.offset((i_2 - 390) as isize) + *A.offset((i_2 + 390) as isize)) * 6
-                    + (*A.offset((i_2 - 1 - 390) as isize)
-                        + *A.offset((i_2 - 1 + 390) as isize)
-                        + *A.offset((i_2 + 1 - 390) as isize)
-                        + *A.offset((i_2 + 1 + 390) as isize))
-                        * 5;
-                *dst.offset(i_2 as isize) = (b_2 - a_2 * *src.offset(i_2 as isize) as libc::c_int
-                    + ((1 as libc::c_int) << 8)
-                    >> 9) as coef;
-                i_2 += 1;
-            }
-        }
-    } else {
-        let mut j_1 = 0;
-        while j_1 < h {
-            let mut i_3 = 0;
-            while i_3 < w {
-                let a_3 = (*B.offset(i_3 as isize) as libc::c_int
-                    + *B.offset((i_3 - 1) as isize) as libc::c_int
-                    + *B.offset((i_3 + 1) as isize) as libc::c_int
-                    + *B.offset((i_3 - 390) as isize) as libc::c_int
-                    + *B.offset((i_3 + 390) as isize) as libc::c_int)
-                    * 4
-                    + (*B.offset((i_3 - 1 - 390) as isize) as libc::c_int
-                        + *B.offset((i_3 - 1 + 390) as isize) as libc::c_int
-                        + *B.offset((i_3 + 1 - 390) as isize) as libc::c_int
-                        + *B.offset((i_3 + 1 + 390) as isize) as libc::c_int)
-                        * 3;
-                let b_3 = (*A.offset(i_3 as isize)
-                    + *A.offset((i_3 - 1) as isize)
-                    + *A.offset((i_3 + 1) as isize)
-                    + *A.offset((i_3 - 390) as isize)
-                    + *A.offset((i_3 + 390) as isize))
-                    * 4
-                    + (*A.offset((i_3 - 1 - 390) as isize)
-                        + *A.offset((i_3 - 1 + 390) as isize)
-                        + *A.offset((i_3 + 1 - 390) as isize)
-                        + *A.offset((i_3 + 1 + 390) as isize))
-                        * 3;
-                *dst.offset(i_3 as isize) = (b_3 - a_3 * *src.offset(i_3 as isize) as libc::c_int
-                    + ((1 as libc::c_int) << 8)
-                    >> 9) as coef;
-                i_3 += 1;
-            }
-            dst = dst.offset(384);
-            src = src.offset(390);
-            B = B.offset(390);
-            A = A.offset(390);
-            j_1 += 1;
-        }
-    };
-}
 
 unsafe extern "C" fn sgr_5x5_c(
     mut p: *mut libc::c_void,
@@ -354,6 +181,7 @@ unsafe extern "C" fn sgr_5x5_rust(
         h,
         25 as libc::c_int,
         (*params).sgr.s0,
+        BitDepth8::new(()),
     );
     let w0 = (*params).sgr.w0 as libc::c_int;
     let mut j = 0;
@@ -415,6 +243,7 @@ unsafe extern "C" fn sgr_3x3_rust(
         h,
         9 as libc::c_int,
         (*params).sgr.s1,
+        BitDepth8::new(()),
     );
     let w1 = (*params).sgr.w1 as libc::c_int;
     let mut j = 0;
@@ -477,6 +306,7 @@ unsafe extern "C" fn sgr_mix_rust(
         h,
         25 as libc::c_int,
         (*params).sgr.s0,
+        BitDepth8::new(()),
     );
     selfguided_filter(
         dst1.as_mut_ptr(),
@@ -486,6 +316,7 @@ unsafe extern "C" fn sgr_mix_rust(
         h,
         9 as libc::c_int,
         (*params).sgr.s1,
+        BitDepth8::new(()),
     );
     let w0 = (*params).sgr.w0 as libc::c_int;
     let w1 = (*params).sgr.w1 as libc::c_int;
