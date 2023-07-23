@@ -177,18 +177,15 @@ pub(crate) unsafe fn padding<BD: BitDepth>(
         // Copy previous loop filtered rows
         let above_1 = std::slice::from_raw_parts(lpf, stride + unit_w as usize);
         let above_2 = &above_1[stride..];
-
         BD::pixel_copy(dst_l, above_1, unit_w as usize);
         BD::pixel_copy(&mut dst_l[REST_UNIT_STRIDE..], above_1, unit_w as usize);
         BD::pixel_copy(&mut dst_l[2 * REST_UNIT_STRIDE..], above_2, unit_w as usize);
     } else {
         // Pad with first row
         let p = std::slice::from_raw_parts(p, unit_w as usize);
-
         BD::pixel_copy(dst_l, p, unit_w as usize);
         BD::pixel_copy(&mut dst_l[REST_UNIT_STRIDE..], p, unit_w as usize);
         BD::pixel_copy(&mut dst_l[2 * REST_UNIT_STRIDE..], p, unit_w as usize);
-
         if have_left != 0 {
             let left = &(*left.offset(0))[1..];
             BD::pixel_copy(dst_l, left, 3);
@@ -202,7 +199,6 @@ pub(crate) unsafe fn padding<BD: BitDepth>(
         // Copy next loop filtered rows
         let below_1 = std::slice::from_raw_parts(lpf.offset(6 * stride as isize), unit_w as usize);
         let below_2 = std::slice::from_raw_parts(lpf.offset(7 * stride as isize), unit_w as usize);
-
         BD::pixel_copy(
             &mut dst_tl[stripe_h as usize * REST_UNIT_STRIDE..],
             below_1,
@@ -224,7 +220,6 @@ pub(crate) unsafe fn padding<BD: BitDepth>(
             p.offset(((stripe_h - 1) as isize * stride as isize) as isize),
             unit_w as usize,
         );
-
         BD::pixel_copy(
             &mut dst_tl[stripe_h as usize * REST_UNIT_STRIDE..],
             src,
@@ -240,10 +235,8 @@ pub(crate) unsafe fn padding<BD: BitDepth>(
             src,
             unit_w as usize,
         );
-
         if have_left != 0 {
             let left = &(*left.offset((stripe_h - 1) as isize))[1..];
-
             BD::pixel_copy(&mut dst_tl[stripe_h as usize * REST_UNIT_STRIDE..], left, 3);
             BD::pixel_copy(
                 &mut dst_tl[(stripe_h + 1) as usize * REST_UNIT_STRIDE..],
