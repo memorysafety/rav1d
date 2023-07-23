@@ -154,10 +154,10 @@ const REST_UNIT_STRIDE: usize = 390;
 #[inline(never)]
 pub(crate) unsafe fn padding<BD: BitDepth>(
     dst: &mut [BD::Pixel; 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE],
-    mut p: *const BD::Pixel,
+    p: *const BD::Pixel,
     stride: usize,
     mut left: *const [BD::Pixel; 4],
-    mut lpf: *const BD::Pixel,
+    lpf: *const BD::Pixel,
     unit_w: usize,
     stripe_h: usize,
     edges: LrEdgeFlags,
@@ -172,8 +172,8 @@ pub(crate) unsafe fn padding<BD: BitDepth>(
     // Copy more pixels if we don't have to pad them
     let unit_w = unit_w + have_left_3 + have_right_3;
     let dst_l = &mut dst[3 - have_left_3..];
-    p = p.offset(-(have_left_3 as isize));
-    lpf = lpf.offset(-(have_left_3 as isize));
+    let p = p.offset(-(have_left_3 as isize));
+    let lpf = lpf.offset(-(have_left_3 as isize));
 
     if have_top {
         // Copy previous loop filtered rows
