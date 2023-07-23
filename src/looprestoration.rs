@@ -158,14 +158,14 @@ pub(crate) unsafe fn padding<BD: BitDepth>(
     stride: ptrdiff_t,
     mut left: *const [BD::Pixel; 4],
     mut lpf: *const BD::Pixel,
-    mut unit_w: libc::c_int,
-    stripe_h: libc::c_int,
+    mut unit_w: usize,
+    stripe_h: usize,
     edges: LrEdgeFlags,
 ) {
     let stride = BD::pxstride(stride as usize);
 
-    let have_left = (edges & LR_HAVE_LEFT != 0) as libc::c_int;
-    let have_right = (edges & LR_HAVE_RIGHT != 0) as libc::c_int;
+    let have_left = (edges & LR_HAVE_LEFT != 0) as usize;
+    let have_right = (edges & LR_HAVE_RIGHT != 0) as usize;
 
     // Copy more pixels if we don't have to pad them
     unit_w += 3 * have_left + 3 * have_right;
@@ -175,17 +175,17 @@ pub(crate) unsafe fn padding<BD: BitDepth>(
 
     if edges & LR_HAVE_TOP != 0 {
         // Copy previous loop filtered rows
-        let above_1 = std::slice::from_raw_parts(lpf, stride + unit_w as usize);
+        let above_1 = std::slice::from_raw_parts(lpf, stride + unit_w);
         let above_2 = &above_1[stride..];
-        BD::pixel_copy(dst_l, above_1, unit_w as usize);
-        BD::pixel_copy(&mut dst_l[REST_UNIT_STRIDE..], above_1, unit_w as usize);
-        BD::pixel_copy(&mut dst_l[2 * REST_UNIT_STRIDE..], above_2, unit_w as usize);
+        BD::pixel_copy(dst_l, above_1, unit_w);
+        BD::pixel_copy(&mut dst_l[REST_UNIT_STRIDE..], above_1, unit_w);
+        BD::pixel_copy(&mut dst_l[2 * REST_UNIT_STRIDE..], above_2, unit_w);
     } else {
         // Pad with first row
-        let p = std::slice::from_raw_parts(p, unit_w as usize);
-        BD::pixel_copy(dst_l, p, unit_w as usize);
-        BD::pixel_copy(&mut dst_l[REST_UNIT_STRIDE..], p, unit_w as usize);
-        BD::pixel_copy(&mut dst_l[2 * REST_UNIT_STRIDE..], p, unit_w as usize);
+        let p = std::slice::from_raw_parts(p, unit_w);
+        BD::pixel_copy(dst_l, p, unit_w);
+        BD::pixel_copy(&mut dst_l[REST_UNIT_STRIDE..], p, unit_w);
+        BD::pixel_copy(&mut dst_l[2 * REST_UNIT_STRIDE..], p, unit_w);
         if have_left != 0 {
             let left = &(*left.offset(0))[1..];
             BD::pixel_copy(dst_l, left, 3);
@@ -197,89 +197,73 @@ pub(crate) unsafe fn padding<BD: BitDepth>(
     let mut dst_tl = &mut dst_l[3 * REST_UNIT_STRIDE..];
     if edges & LR_HAVE_BOTTOM != 0 {
         // Copy next loop filtered rows
-        let lpf = std::slice::from_raw_parts(lpf, 7 * stride + unit_w as usize);
+        let lpf = std::slice::from_raw_parts(lpf, 7 * stride + unit_w);
         let below_1 = &lpf[6 * stride..];
         let below_2 = &below_1[stride..];
+        BD::pixel_copy(&mut dst_tl[stripe_h * REST_UNIT_STRIDE..], below_1, unit_w);
         BD::pixel_copy(
-            &mut dst_tl[stripe_h as usize * REST_UNIT_STRIDE..],
-            below_1,
-            unit_w as usize,
+            &mut dst_tl[(stripe_h + 1) * REST_UNIT_STRIDE..],
+            below_2,
+            unit_w,
         );
         BD::pixel_copy(
-            &mut dst_tl[(stripe_h + 1) as usize * REST_UNIT_STRIDE..],
+            &mut dst_tl[(stripe_h + 2) * REST_UNIT_STRIDE..],
             below_2,
-            unit_w as usize,
-        );
-        BD::pixel_copy(
-            &mut dst_tl[(stripe_h + 2) as usize * REST_UNIT_STRIDE..],
-            below_2,
-            unit_w as usize,
+            unit_w,
         );
     } else {
         // Pad with last row
-        let p = std::slice::from_raw_parts(p, (stripe_h as usize - 1) * stride + unit_w as usize);
-        let src = &p[(stripe_h as usize - 1) * stride..];
+        let p = std::slice::from_raw_parts(p, (stripe_h - 1) * stride + unit_w);
+        let src = &p[(stripe_h - 1) * stride..];
+        BD::pixel_copy(&mut dst_tl[stripe_h * REST_UNIT_STRIDE..], src, unit_w);
         BD::pixel_copy(
-            &mut dst_tl[stripe_h as usize * REST_UNIT_STRIDE..],
+            &mut dst_tl[(stripe_h + 1) * REST_UNIT_STRIDE..],
             src,
-            unit_w as usize,
+            unit_w,
         );
         BD::pixel_copy(
-            &mut dst_tl[(stripe_h + 1) as usize * REST_UNIT_STRIDE..],
+            &mut dst_tl[(stripe_h + 2) * REST_UNIT_STRIDE..],
             src,
-            unit_w as usize,
-        );
-        BD::pixel_copy(
-            &mut dst_tl[(stripe_h + 2) as usize * REST_UNIT_STRIDE..],
-            src,
-            unit_w as usize,
+            unit_w,
         );
         if have_left != 0 {
             let left = &(*left.offset((stripe_h - 1) as isize))[1..];
-            BD::pixel_copy(&mut dst_tl[stripe_h as usize * REST_UNIT_STRIDE..], left, 3);
-            BD::pixel_copy(
-                &mut dst_tl[(stripe_h + 1) as usize * REST_UNIT_STRIDE..],
-                left,
-                3,
-            );
-            BD::pixel_copy(
-                &mut dst_tl[(stripe_h + 2) as usize * REST_UNIT_STRIDE..],
-                left,
-                3,
-            );
+            BD::pixel_copy(&mut dst_tl[stripe_h * REST_UNIT_STRIDE..], left, 3);
+            BD::pixel_copy(&mut dst_tl[(stripe_h + 1) * REST_UNIT_STRIDE..], left, 3);
+            BD::pixel_copy(&mut dst_tl[(stripe_h + 2) * REST_UNIT_STRIDE..], left, 3);
         }
     }
 
     // Inner UNIT_WxSTRIPE_H
-    let len = (unit_w - 3 * have_left) as usize;
+    let len = unit_w - 3 * have_left;
     let p = std::slice::from_raw_parts(
         p,
         if stripe_h == 0 {
             0
         } else {
-            3 * have_left as usize + (stripe_h as usize - 1) * stride + len
+            3 * have_left + (stripe_h - 1) * stride + len
         },
     );
-    for j in 0..stripe_h as usize {
+    for j in 0..stripe_h {
         BD::pixel_copy(
-            &mut dst_tl[j * REST_UNIT_STRIDE + (3 * have_left) as usize..],
-            &p[j * stride + (3 * have_left as usize)..],
+            &mut dst_tl[j * REST_UNIT_STRIDE + 3 * have_left..],
+            &p[j * stride + 3 * have_left..],
             len,
         );
     }
 
     if have_right == 0 {
         // Pad 3x(STRIPE_H+6) with last column
-        for j in 0..stripe_h as usize + 6 {
-            let mut row_last = dst_l[(unit_w - 1) as usize + j * REST_UNIT_STRIDE];
-            let mut pad = &mut dst_l[unit_w as usize + j * REST_UNIT_STRIDE..];
+        for j in 0..stripe_h + 6 {
+            let mut row_last = dst_l[(unit_w - 1) + j * REST_UNIT_STRIDE];
+            let mut pad = &mut dst_l[unit_w + j * REST_UNIT_STRIDE..];
             BD::pixel_set(pad, row_last, 3);
         }
     }
 
     if have_left == 0 {
         // Pad 3x(STRIPE_H+6) with first column
-        for j in 0..stripe_h as usize + 6 {
+        for j in 0..stripe_h + 6 {
             let offset = j * REST_UNIT_STRIDE;
             // This would be `dst_l[offset]` in C,
             // but that results in multiple mutable borrows of `dst`,
@@ -290,8 +274,8 @@ pub(crate) unsafe fn padding<BD: BitDepth>(
         }
     } else {
         let dst = &mut dst[3 * REST_UNIT_STRIDE..];
-        let left = std::slice::from_raw_parts(left, stripe_h as usize);
-        for j in 0..stripe_h as usize {
+        let left = std::slice::from_raw_parts(left, stripe_h);
+        for j in 0..stripe_h {
             BD::pixel_copy(&mut dst[j * REST_UNIT_STRIDE..], &left[j][1..], 3);
         }
     };
@@ -337,7 +321,9 @@ unsafe fn wiener_rust<BD: BitDepth>(
     let mut tmp: [BD::Pixel; 27300] = [0.as_(); 27300];
     let mut tmp_ptr: *mut BD::Pixel = tmp.as_mut_ptr();
 
-    padding::<BD>(&mut tmp, p, stride, left, lpf, w, h, edges);
+    padding::<BD>(
+        &mut tmp, p, stride, left, lpf, w as usize, h as usize, edges,
+    );
 
     let mut hor: [uint16_t; 27300] = [0; 27300];
     let mut hor_ptr: *mut uint16_t = hor.as_mut_ptr();
@@ -758,7 +744,9 @@ unsafe fn sgr_5x5_rust<BD: BitDepth>(
 ) {
     let mut tmp: [BD::Pixel; 27300] = [0.as_(); 27300];
     let mut dst: [BD::Coef; 24576] = [0.as_(); 24576];
-    padding::<BD>(&mut tmp, p, stride, left, lpf, w, h, edges);
+    padding::<BD>(
+        &mut tmp, p, stride, left, lpf, w as usize, h as usize, edges,
+    );
     selfguided_filter(
         dst.as_mut_ptr(),
         tmp.as_mut_ptr(),
@@ -824,7 +812,9 @@ unsafe fn sgr_3x3_rust<BD: BitDepth>(
 ) {
     let mut tmp: [BD::Pixel; 27300] = [0.as_(); 27300];
     let mut dst: [BD::Coef; 24576] = [0.as_(); 24576];
-    padding::<BD>(&mut tmp, p, stride, left, lpf, w, h, edges);
+    padding::<BD>(
+        &mut tmp, p, stride, left, lpf, w as usize, h as usize, edges,
+    );
     selfguided_filter(
         dst.as_mut_ptr(),
         tmp.as_mut_ptr(),
@@ -891,7 +881,9 @@ unsafe fn sgr_mix_rust<BD: BitDepth>(
     let mut tmp: [BD::Pixel; 27300] = [0.as_(); 27300];
     let mut dst0: [BD::Coef; 24576] = [0.as_(); 24576];
     let mut dst1: [BD::Coef; 24576] = [0.as_(); 24576];
-    padding::<BD>(&mut tmp, p, stride, left, lpf, w, h, edges);
+    padding::<BD>(
+        &mut tmp, p, stride, left, lpf, w as usize, h as usize, edges,
+    );
     selfguided_filter(
         dst0.as_mut_ptr(),
         tmp.as_mut_ptr(),
