@@ -158,7 +158,7 @@ pub(crate) unsafe fn padding<BD: BitDepth>(
     stride: usize,
     mut left: *const [BD::Pixel; 4],
     mut lpf: *const BD::Pixel,
-    mut unit_w: usize,
+    unit_w: usize,
     stripe_h: usize,
     edges: LrEdgeFlags,
 ) {
@@ -168,7 +168,7 @@ pub(crate) unsafe fn padding<BD: BitDepth>(
     let have_right = (edges & LR_HAVE_RIGHT != 0) as usize;
 
     // Copy more pixels if we don't have to pad them
-    unit_w += 3 * have_left + 3 * have_right;
+    let unit_w = unit_w + 3 * have_left + 3 * have_right;
     let dst_l = &mut dst[(3 * (have_left == 0) as libc::c_int) as usize..];
     p = p.offset(-((3 * have_left) as isize));
     lpf = lpf.offset(-((3 * have_left) as isize));
