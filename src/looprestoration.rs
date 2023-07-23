@@ -197,8 +197,9 @@ pub(crate) unsafe fn padding<BD: BitDepth>(
     let mut dst_tl = &mut dst_l[3 * REST_UNIT_STRIDE..];
     if edges & LR_HAVE_BOTTOM != 0 {
         // Copy next loop filtered rows
-        let below_1 = std::slice::from_raw_parts(lpf.offset(6 * stride as isize), unit_w as usize);
-        let below_2 = std::slice::from_raw_parts(lpf.offset(7 * stride as isize), unit_w as usize);
+        let lpf = std::slice::from_raw_parts(lpf, 7 * stride + unit_w as usize);
+        let below_1 = &lpf[6 * stride..];
+        let below_2 = &below_1[stride..];
         BD::pixel_copy(
             &mut dst_tl[stripe_h as usize * REST_UNIT_STRIDE..],
             below_1,
@@ -216,10 +217,8 @@ pub(crate) unsafe fn padding<BD: BitDepth>(
         );
     } else {
         // Pad with last row
-        let src = std::slice::from_raw_parts(
-            p.offset(((stripe_h - 1) as isize * stride as isize) as isize),
-            unit_w as usize,
-        );
+        let p = std::slice::from_raw_parts(p, (stripe_h as usize - 1) * stride + unit_w as usize);
+        let src = &p[(stripe_h as usize - 1) * stride..];
         BD::pixel_copy(
             &mut dst_tl[stripe_h as usize * REST_UNIT_STRIDE..],
             src,
@@ -253,14 +252,18 @@ pub(crate) unsafe fn padding<BD: BitDepth>(
 
     // Inner UNIT_WxSTRIPE_H
     let len = (unit_w - 3 * have_left) as usize;
+    let p = std::slice::from_raw_parts(
+        p,
+        if stripe_h == 0 {
+            0
+        } else {
+            3 * have_left as usize + (stripe_h as usize - 1) * stride + len
+        },
+    );
     for j in 0..stripe_h as usize {
-        let p = std::slice::from_raw_parts(
-            p.offset((j * stride + 3 * have_left as usize) as isize),
-            len,
-        );
         BD::pixel_copy(
             &mut dst_tl[j * REST_UNIT_STRIDE + (3 * have_left) as usize..],
-            p,
+            &p[j * stride + (3 * have_left as usize)..],
             len,
         );
     }
@@ -287,12 +290,9 @@ pub(crate) unsafe fn padding<BD: BitDepth>(
         }
     } else {
         let dst = &mut dst[3 * REST_UNIT_STRIDE..];
+        let left = std::slice::from_raw_parts(left, stripe_h as usize);
         for j in 0..stripe_h as usize {
-            BD::pixel_copy(
-                &mut dst[j * REST_UNIT_STRIDE..],
-                &(*left.offset(j as isize))[1..],
-                3,
-            );
+            BD::pixel_copy(&mut dst[j * REST_UNIT_STRIDE..], &left[j][1..], 3);
         }
     };
 }
