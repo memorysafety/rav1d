@@ -285,12 +285,15 @@ pub(crate) unsafe fn padding<BD: BitDepth>(
         // Pad 3x(STRIPE_H+6) with first column
         for j in 0..stripe_h as usize + 6 {
             let offset = j * REST_UNIT_STRIDE;
+            // This would be `dst_l[offset]` in C,
+            // but that results in multiple mutable borrows of `dst`,
+            // so we recalculate `dst_l` here.
+            // `3 * (have_left == 0) as libc::c_int` simplifies to `3 * 1` and then `3`.
             let val = dst[3 + offset];
             BD::pixel_set(&mut dst[offset..], val, 3);
         }
     } else {
         let dst = &mut dst[3 * REST_UNIT_STRIDE..];
-
         for j in 0..stripe_h as usize {
             BD::pixel_copy(
                 &mut dst[j * REST_UNIT_STRIDE..],
