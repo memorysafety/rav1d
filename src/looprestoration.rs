@@ -156,7 +156,7 @@ pub(crate) unsafe fn padding<BD: BitDepth>(
     dst: &mut [BD::Pixel; 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE],
     p: *const BD::Pixel,
     stride: usize,
-    mut left: *const [BD::Pixel; 4],
+    left: *const [BD::Pixel; 4],
     lpf: *const BD::Pixel,
     unit_w: usize,
     stripe_h: usize,
@@ -196,7 +196,7 @@ pub(crate) unsafe fn padding<BD: BitDepth>(
         }
     }
 
-    let mut dst_tl = &mut dst_l[3 * REST_UNIT_STRIDE..];
+    let dst_tl = &mut dst_l[3 * REST_UNIT_STRIDE..];
     if have_bottom {
         // Copy next loop filtered rows
         let lpf = std::slice::from_raw_parts(lpf, 7 * stride + unit_w);
