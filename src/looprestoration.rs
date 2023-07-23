@@ -155,7 +155,7 @@ const REST_UNIT_STRIDE: usize = 390;
 pub(crate) unsafe fn padding<BD: BitDepth>(
     dst: &mut [BD::Pixel; 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE],
     mut p: *const BD::Pixel,
-    stride: ptrdiff_t,
+    stride: usize,
     mut left: *const [BD::Pixel; 4],
     mut lpf: *const BD::Pixel,
     mut unit_w: usize,
@@ -322,7 +322,14 @@ unsafe fn wiener_rust<BD: BitDepth>(
     let mut tmp_ptr: *mut BD::Pixel = tmp.as_mut_ptr();
 
     padding::<BD>(
-        &mut tmp, p, stride, left, lpf, w as usize, h as usize, edges,
+        &mut tmp,
+        p,
+        stride as usize,
+        left,
+        lpf,
+        w as usize,
+        h as usize,
+        edges,
     );
 
     let mut hor: [uint16_t; 27300] = [0; 27300];
@@ -745,7 +752,14 @@ unsafe fn sgr_5x5_rust<BD: BitDepth>(
     let mut tmp: [BD::Pixel; 27300] = [0.as_(); 27300];
     let mut dst: [BD::Coef; 24576] = [0.as_(); 24576];
     padding::<BD>(
-        &mut tmp, p, stride, left, lpf, w as usize, h as usize, edges,
+        &mut tmp,
+        p,
+        stride as usize,
+        left,
+        lpf,
+        w as usize,
+        h as usize,
+        edges,
     );
     selfguided_filter(
         dst.as_mut_ptr(),
@@ -813,7 +827,14 @@ unsafe fn sgr_3x3_rust<BD: BitDepth>(
     let mut tmp: [BD::Pixel; 27300] = [0.as_(); 27300];
     let mut dst: [BD::Coef; 24576] = [0.as_(); 24576];
     padding::<BD>(
-        &mut tmp, p, stride, left, lpf, w as usize, h as usize, edges,
+        &mut tmp,
+        p,
+        stride as usize,
+        left,
+        lpf,
+        w as usize,
+        h as usize,
+        edges,
     );
     selfguided_filter(
         dst.as_mut_ptr(),
@@ -882,7 +903,14 @@ unsafe fn sgr_mix_rust<BD: BitDepth>(
     let mut dst0: [BD::Coef; 24576] = [0.as_(); 24576];
     let mut dst1: [BD::Coef; 24576] = [0.as_(); 24576];
     padding::<BD>(
-        &mut tmp, p, stride, left, lpf, w as usize, h as usize, edges,
+        &mut tmp,
+        p,
+        stride as usize,
+        left,
+        lpf,
+        w as usize,
+        h as usize,
+        edges,
     );
     selfguided_filter(
         dst0.as_mut_ptr(),
