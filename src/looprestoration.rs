@@ -153,7 +153,7 @@ const REST_UNIT_STRIDE: usize = 390;
 // been deduplicated.
 #[inline(never)]
 pub(crate) unsafe fn padding<BD: BitDepth>(
-    mut dst: &mut [BD::Pixel; 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE],
+    dst: &mut [BD::Pixel; 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE],
     mut p: *const BD::Pixel,
     stride: ptrdiff_t,
     mut left: *const [BD::Pixel; 4],
@@ -169,7 +169,7 @@ pub(crate) unsafe fn padding<BD: BitDepth>(
 
     // Copy more pixels if we don't have to pad them
     unit_w += 3 * have_left + 3 * have_right;
-    let mut dst_l = &mut dst[(3 * (have_left == 0) as libc::c_int) as usize..];
+    let dst_l = &mut dst[(3 * (have_left == 0) as libc::c_int) as usize..];
     p = p.offset(-((3 * have_left) as isize));
     lpf = lpf.offset(-((3 * have_left) as isize));
 
