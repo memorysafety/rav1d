@@ -171,7 +171,7 @@ pub(crate) unsafe fn padding<BD: BitDepth>(
 
     // Copy more pixels if we don't have to pad them
     let unit_w = unit_w + have_left_3 + have_right_3;
-    let dst_l = &mut dst[3 * !have_left as usize..];
+    let dst_l = &mut dst[3 - have_left_3..];
     p = p.offset(-(have_left_3 as isize));
     lpf = lpf.offset(-(have_left_3 as isize));
 
