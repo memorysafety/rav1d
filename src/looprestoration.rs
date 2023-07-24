@@ -29,19 +29,17 @@ pub union LooprestorationParams {
 type pixel = libc::c_void;
 pub type const_left_pixel_row = *const libc::c_void; // *const [pixel; 4]
 
-pub type looprestorationfilter_fn = Option<
-    unsafe extern "C" fn(
-        *mut pixel,
-        ptrdiff_t,
-        const_left_pixel_row,
-        *const pixel,
-        libc::c_int,
-        libc::c_int,
-        *const LooprestorationParams,
-        LrEdgeFlags,
-        libc::c_int,
-    ) -> (),
->;
+pub type looprestorationfilter_fn = unsafe extern "C" fn(
+    *mut pixel,
+    ptrdiff_t,
+    const_left_pixel_row,
+    *const pixel,
+    libc::c_int,
+    libc::c_int,
+    *const LooprestorationParams,
+    LrEdgeFlags,
+    libc::c_int,
+) -> ();
 
 #[derive(Copy, Clone)]
 #[repr(C)]

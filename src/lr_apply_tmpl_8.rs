@@ -628,7 +628,7 @@ unsafe extern "C" fn lr_stripe(
         )
         .offset(x as isize);
     let mut stripe_h = imin(64 - 8 * (y == 0) as libc::c_int >> ss_ver, row_h - y);
-    let mut lr_fn: looprestorationfilter_fn = None;
+    let mut lr_fn: looprestorationfilter_fn;
     let mut params: LooprestorationParams = LooprestorationParams {
         filter: [[0; 8]; 2].into(),
     };
@@ -687,7 +687,7 @@ unsafe extern "C" fn lr_stripe(
                     ^ edges as libc::c_uint)
                     & LR_HAVE_BOTTOM as libc::c_int as libc::c_uint,
         );
-        lr_fn.expect("non-null function pointer")(
+        lr_fn(
             p.cast(),
             stride,
             left.cast(),
