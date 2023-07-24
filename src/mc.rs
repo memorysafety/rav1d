@@ -758,7 +758,8 @@ fn blend_px<BD: BitDepth>(a: BD::Pixel, b: BD::Pixel, m: u8) -> BD::Pixel {
     ((a.as_::<u32>() * (64 - m) + b.as_::<u32>() * m + 32) >> 6).as_::<BD::Pixel>()
 }
 
-unsafe fn blend_rust<BD: BitDepth>(
+// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
+pub unsafe fn blend_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     dst_stride: usize,
     mut tmp: *const BD::Pixel,

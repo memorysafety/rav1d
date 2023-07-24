@@ -3136,32 +3136,16 @@ unsafe extern "C" fn mask_c(
         BitDepth16::new(bitdepth_max as u16),
     )
 }
+use crate::src::mc::blend_rust;
 unsafe extern "C" fn blend_c(
-    mut dst: *mut pixel,
+    dst: *mut pixel,
     dst_stride: ptrdiff_t,
-    mut tmp: *const pixel,
+    tmp: *const pixel,
     w: libc::c_int,
-    mut h: libc::c_int,
-    mut mask: *const uint8_t,
+    h: libc::c_int,
+    mask: *const uint8_t,
 ) {
-    loop {
-        let mut x = 0;
-        while x < w {
-            *dst.offset(x as isize) = (*dst.offset(x as isize) as libc::c_int
-                * (64 - *mask.offset(x as isize) as libc::c_int)
-                + *tmp.offset(x as isize) as libc::c_int * *mask.offset(x as isize) as libc::c_int
-                + 32
-                >> 6) as pixel;
-            x += 1;
-        }
-        dst = dst.offset(PXSTRIDE(dst_stride) as isize);
-        tmp = tmp.offset(w as isize);
-        mask = mask.offset(w as isize);
-        h -= 1;
-        if !(h != 0) {
-            break;
-        }
-    }
+    blend_rust::<BitDepth16>(dst, dst_stride as usize, tmp, w as usize, h as usize, mask)
 }
 unsafe extern "C" fn blend_v_c(
     mut dst: *mut pixel,
