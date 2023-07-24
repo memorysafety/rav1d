@@ -1,15 +1,11 @@
+use crate::include::common::bitdepth::BitDepth8;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
 use crate::src::align::Align16;
 use ::libc;
-use ::libc::size_t;
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
-extern "C" {
-    fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: size_t) -> *mut libc::c_void;
-    fn memset(_: *mut libc::c_void, _: libc::c_int, _: size_t) -> *mut libc::c_void;
-}
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 extern "C" {
@@ -133,11 +129,8 @@ use crate::src::tables::dav1d_sgr_x_by_x;
 pub type pixel = uint8_t;
 pub type coef = int16_t;
 use crate::src::looprestoration::LrEdgeFlags;
-use crate::src::looprestoration::LR_HAVE_BOTTOM;
-use crate::src::looprestoration::LR_HAVE_LEFT;
-use crate::src::looprestoration::LR_HAVE_RIGHT;
-use crate::src::looprestoration::LR_HAVE_TOP;
 pub type const_left_pixel_row = *const [pixel; 4];
+use crate::src::looprestoration::padding;
 use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
 use crate::src::looprestoration::LooprestorationParams;
 
@@ -145,179 +138,6 @@ use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
 use crate::include::common::intops::imax;
 use crate::include::common::intops::umin;
-#[inline(never)]
-unsafe extern "C" fn padding(
-    mut dst: *mut pixel,
-    mut p: *const pixel,
-    stride: ptrdiff_t,
-    mut left: *const [pixel; 4],
-    mut lpf: *const pixel,
-    mut unit_w: libc::c_int,
-    stripe_h: libc::c_int,
-    edges: LrEdgeFlags,
-) {
-    let have_left =
-        (edges as libc::c_uint & LR_HAVE_LEFT as libc::c_int as libc::c_uint != 0) as libc::c_int;
-    let have_right =
-        (edges as libc::c_uint & LR_HAVE_RIGHT as libc::c_int as libc::c_uint != 0) as libc::c_int;
-    unit_w += 3 * have_left + 3 * have_right;
-    let mut dst_l: *mut pixel = dst.offset((3 * (have_left == 0) as libc::c_int) as isize);
-    p = p.offset(-((3 * have_left) as isize));
-    lpf = lpf.offset(-((3 * have_left) as isize));
-    if edges as libc::c_uint & LR_HAVE_TOP as libc::c_int as libc::c_uint != 0 {
-        let above_1: *const pixel = lpf;
-        let above_2: *const pixel = above_1.offset(stride as isize);
-        memcpy(
-            dst_l as *mut libc::c_void,
-            above_1 as *const libc::c_void,
-            unit_w as size_t,
-        );
-        memcpy(
-            dst_l.offset(390) as *mut libc::c_void,
-            above_1 as *const libc::c_void,
-            unit_w as size_t,
-        );
-        memcpy(
-            dst_l.offset((2 * 390) as isize) as *mut libc::c_void,
-            above_2 as *const libc::c_void,
-            unit_w as size_t,
-        );
-    } else {
-        memcpy(
-            dst_l as *mut libc::c_void,
-            p as *const libc::c_void,
-            unit_w as size_t,
-        );
-        memcpy(
-            dst_l.offset(390) as *mut libc::c_void,
-            p as *const libc::c_void,
-            unit_w as size_t,
-        );
-        memcpy(
-            dst_l.offset((2 * 390) as isize) as *mut libc::c_void,
-            p as *const libc::c_void,
-            unit_w as size_t,
-        );
-        if have_left != 0 {
-            memcpy(
-                dst_l as *mut libc::c_void,
-                &*(*left.offset(0)).as_ptr().offset(1) as *const pixel as *const libc::c_void,
-                3,
-            );
-            memcpy(
-                dst_l.offset(390) as *mut libc::c_void,
-                &*(*left.offset(0)).as_ptr().offset(1) as *const pixel as *const libc::c_void,
-                3,
-            );
-            memcpy(
-                dst_l.offset((2 * 390) as isize) as *mut libc::c_void,
-                &*(*left.offset(0)).as_ptr().offset(1) as *const pixel as *const libc::c_void,
-                3,
-            );
-        }
-    }
-    let mut dst_tl: *mut pixel = dst_l.offset((3 * 390) as isize);
-    if edges as libc::c_uint & LR_HAVE_BOTTOM as libc::c_int as libc::c_uint != 0 {
-        let below_1: *const pixel = lpf.offset((6 * stride) as isize);
-        let below_2: *const pixel = below_1.offset(stride as isize);
-        memcpy(
-            dst_tl.offset((stripe_h * 390) as isize) as *mut libc::c_void,
-            below_1 as *const libc::c_void,
-            unit_w as size_t,
-        );
-        memcpy(
-            dst_tl.offset(((stripe_h + 1) * 390) as isize) as *mut libc::c_void,
-            below_2 as *const libc::c_void,
-            unit_w as size_t,
-        );
-        memcpy(
-            dst_tl.offset(((stripe_h + 2) * 390) as isize) as *mut libc::c_void,
-            below_2 as *const libc::c_void,
-            unit_w as size_t,
-        );
-    } else {
-        let src: *const pixel = p.offset(((stripe_h - 1) as isize * stride) as isize);
-        memcpy(
-            dst_tl.offset((stripe_h * 390) as isize) as *mut libc::c_void,
-            src as *const libc::c_void,
-            unit_w as size_t,
-        );
-        memcpy(
-            dst_tl.offset(((stripe_h + 1) * 390) as isize) as *mut libc::c_void,
-            src as *const libc::c_void,
-            unit_w as size_t,
-        );
-        memcpy(
-            dst_tl.offset(((stripe_h + 2) * 390) as isize) as *mut libc::c_void,
-            src as *const libc::c_void,
-            unit_w as size_t,
-        );
-        if have_left != 0 {
-            memcpy(
-                dst_tl.offset((stripe_h * 390) as isize) as *mut libc::c_void,
-                &*(*left.offset((stripe_h - 1) as isize)).as_ptr().offset(1) as *const pixel
-                    as *const libc::c_void,
-                3,
-            );
-            memcpy(
-                dst_tl.offset(((stripe_h + 1) * 390) as isize) as *mut libc::c_void,
-                &*(*left.offset((stripe_h - 1) as isize)).as_ptr().offset(1) as *const pixel
-                    as *const libc::c_void,
-                3,
-            );
-            memcpy(
-                dst_tl.offset(((stripe_h + 2) * 390) as isize) as *mut libc::c_void,
-                &*(*left.offset((stripe_h - 1) as isize)).as_ptr().offset(1) as *const pixel
-                    as *const libc::c_void,
-                3,
-            );
-        }
-    }
-    let mut j = 0;
-    while j < stripe_h {
-        memcpy(
-            dst_tl.offset((3 * have_left) as isize) as *mut libc::c_void,
-            p.offset((3 * have_left) as isize) as *const libc::c_void,
-            (unit_w - 3 * have_left) as size_t,
-        );
-        dst_tl = dst_tl.offset(390);
-        p = p.offset(stride as isize);
-        j += 1;
-    }
-    if have_right == 0 {
-        let mut pad: *mut pixel = dst_l.offset(unit_w as isize);
-        let mut row_last: *mut pixel = &mut *dst_l.offset((unit_w - 1) as isize) as *mut pixel;
-        let mut j_0 = 0;
-        while j_0 < stripe_h + 6 {
-            memset(pad as *mut libc::c_void, *row_last as libc::c_int, 3);
-            pad = pad.offset(390);
-            row_last = row_last.offset(390);
-            j_0 += 1;
-        }
-    }
-    if have_left == 0 {
-        let mut j_1 = 0;
-        while j_1 < stripe_h + 6 {
-            memset(dst as *mut libc::c_void, *dst_l as libc::c_int, 3);
-            dst = dst.offset(390);
-            dst_l = dst_l.offset(390);
-            j_1 += 1;
-        }
-    } else {
-        dst = dst.offset((3 * 390) as isize);
-        let mut j_2 = 0;
-        while j_2 < stripe_h {
-            memcpy(
-                dst as *mut libc::c_void,
-                &*(*left.offset(j_2 as isize)).as_ptr().offset(1) as *const pixel
-                    as *const libc::c_void,
-                3,
-            );
-            dst = dst.offset(390);
-            j_2 += 1;
-        }
-    };
-}
 
 unsafe extern "C" fn wiener_c(
     mut p: *mut libc::c_void,
@@ -342,6 +162,7 @@ unsafe extern "C" fn wiener_c(
     )
 }
 
+// TODO(randompoison): Temporarily public until we can move this to `looprestoration.rs`.
 unsafe extern "C" fn wiener_rust(
     mut p: *mut pixel,
     stride: ptrdiff_t,
@@ -354,7 +175,7 @@ unsafe extern "C" fn wiener_rust(
 ) {
     let mut tmp: [pixel; 27300] = [0; 27300];
     let mut tmp_ptr: *mut pixel = tmp.as_mut_ptr();
-    padding(tmp.as_mut_ptr(), p, stride, left, lpf, w, h, edges);
+    padding::<BitDepth8>(&mut tmp, p, stride, left, lpf, w, h, edges);
     let mut hor: [uint16_t; 27300] = [0; 27300];
     let mut hor_ptr: *mut uint16_t = hor.as_mut_ptr();
     let filter: *const [int16_t; 8] = ((*params).filter.0).as_ptr();
@@ -743,7 +564,7 @@ unsafe extern "C" fn sgr_5x5_rust(
 ) {
     let mut tmp: [pixel; 27300] = [0; 27300];
     let mut dst: [coef; 24576] = [0; 24576];
-    padding(tmp.as_mut_ptr(), p, stride, left, lpf, w, h, edges);
+    padding::<BitDepth8>(&mut tmp, p, stride, left, lpf, w, h, edges);
     selfguided_filter(
         dst.as_mut_ptr(),
         tmp.as_mut_ptr(),
@@ -804,7 +625,7 @@ unsafe extern "C" fn sgr_3x3_rust(
 ) {
     let mut tmp: [pixel; 27300] = [0; 27300];
     let mut dst: [coef; 24576] = [0; 24576];
-    padding(tmp.as_mut_ptr(), p, stride, left, lpf, w, h, edges);
+    padding::<BitDepth8>(&mut tmp, p, stride, left, lpf, w, h, edges);
     selfguided_filter(
         dst.as_mut_ptr(),
         tmp.as_mut_ptr(),
@@ -866,7 +687,7 @@ unsafe extern "C" fn sgr_mix_rust(
     let mut tmp: [pixel; 27300] = [0; 27300];
     let mut dst0: [coef; 24576] = [0; 24576];
     let mut dst1: [coef; 24576] = [0; 24576];
-    padding(tmp.as_mut_ptr(), p, stride, left, lpf, w, h, edges);
+    padding::<BitDepth8>(&mut tmp, p, stride, left, lpf, w, h, edges);
     selfguided_filter(
         dst0.as_mut_ptr(),
         tmp.as_mut_ptr(),
@@ -994,6 +815,9 @@ unsafe extern "C" fn wiener_filter_neon(
     params: *const LooprestorationParams,
     edges: LrEdgeFlags,
 ) {
+    use crate::src::looprestoration::LR_HAVE_BOTTOM;
+    use crate::src::looprestoration::LR_HAVE_TOP;
+
     let filter: *const [int16_t; 8] = (*params).filter.0.as_ptr();
     let mut mid: Align16<[int16_t; 68 * 384]> = Align16([0; 68 * 384]);
     let mut mid_stride: libc::c_int = w + 7 & !7;
@@ -1094,6 +918,9 @@ unsafe extern "C" fn dav1d_sgr_filter1_neon(
     strength: libc::c_int,
     edges: LrEdgeFlags,
 ) {
+    use crate::src::looprestoration::LR_HAVE_BOTTOM;
+    use crate::src::looprestoration::LR_HAVE_TOP;
+
     let mut sumsq_mem: Align16<[int32_t; 27208]> = Align16([0; 27208]);
     let sumsq: *mut int32_t = &mut *sumsq_mem
         .0
@@ -1148,6 +975,9 @@ unsafe extern "C" fn dav1d_sgr_filter2_neon(
     strength: libc::c_int,
     edges: LrEdgeFlags,
 ) {
+    use crate::src::looprestoration::LR_HAVE_BOTTOM;
+    use crate::src::looprestoration::LR_HAVE_TOP;
+
     let mut sumsq_mem: Align16<[int32_t; 27208]> = Align16([0; 27208]);
     let sumsq: *mut int32_t = &mut *sumsq_mem
         .0
