@@ -725,11 +725,11 @@ pub(crate) unsafe extern "C" fn selfguided_filter<BD: BitDepth>(
 }
 
 // TODO(randomPoison): Temporarily pub until init logic is deduplicated.
-pub(crate) unsafe extern "C" fn sgr_5x5_c<BD: BitDepth>(
-    mut p: *mut libc::c_void,
+pub(crate) unsafe extern "C" fn sgr_5x5_c_erased<BD: BitDepth>(
+    p: *mut libc::c_void,
     stride: ptrdiff_t,
     left: *const libc::c_void,
-    mut lpf: *const libc::c_void,
+    lpf: *const libc::c_void,
     w: libc::c_int,
     h: libc::c_int,
     params: *const LooprestorationParams,
@@ -753,7 +753,7 @@ unsafe fn sgr_5x5_rust<BD: BitDepth>(
     mut p: *mut BD::Pixel,
     stride: ptrdiff_t,
     left: *const [BD::Pixel; 4],
-    mut lpf: *const BD::Pixel,
+    lpf: *const BD::Pixel,
     w: libc::c_int,
     h: libc::c_int,
     params: *const LooprestorationParams,
@@ -779,13 +779,10 @@ unsafe fn sgr_5x5_rust<BD: BitDepth>(
         let mut i = 0;
         while i < w {
             let v = w0 * dst[(j * 384 + i) as usize].as_::<libc::c_int>();
-            *p.offset(i as isize) = iclip(
+            *p.offset(i as isize) = bd.iclip_pixel(
                 (*p.offset(i as isize)).as_::<libc::c_int>()
                     + (v + ((1 as libc::c_int) << 10) >> 11),
-                0 as libc::c_int,
-                bd.bitdepth_max().as_(),
-            )
-            .as_();
+            );
             i += 1;
         }
         p = p.offset(BD::pxstride(stride as usize) as isize);
@@ -794,11 +791,11 @@ unsafe fn sgr_5x5_rust<BD: BitDepth>(
 }
 
 // TODO(randomPoison): Temporarily pub until init logic is deduplicated.
-pub(crate) unsafe extern "C" fn sgr_3x3_c<BD: BitDepth>(
-    mut p: *mut libc::c_void,
+pub(crate) unsafe extern "C" fn sgr_3x3_c_erased<BD: BitDepth>(
+    p: *mut libc::c_void,
     stride: ptrdiff_t,
     left: *const libc::c_void,
-    mut lpf: *const libc::c_void,
+    lpf: *const libc::c_void,
     w: libc::c_int,
     h: libc::c_int,
     params: *const LooprestorationParams,
@@ -822,7 +819,7 @@ unsafe fn sgr_3x3_rust<BD: BitDepth>(
     mut p: *mut BD::Pixel,
     stride: ptrdiff_t,
     left: *const [BD::Pixel; 4],
-    mut lpf: *const BD::Pixel,
+    lpf: *const BD::Pixel,
     w: libc::c_int,
     h: libc::c_int,
     params: *const LooprestorationParams,
@@ -848,13 +845,10 @@ unsafe fn sgr_3x3_rust<BD: BitDepth>(
         let mut i = 0;
         while i < w {
             let v = w1 * dst[(j * 384 + i) as usize].as_::<libc::c_int>();
-            *p.offset(i as isize) = iclip(
+            *p.offset(i as isize) = bd.iclip_pixel(
                 (*p.offset(i as isize)).as_::<libc::c_int>()
                     + (v + ((1 as libc::c_int) << 10) >> 11),
-                0 as libc::c_int,
-                bd.bitdepth_max().as_(),
-            )
-            .as_();
+            );
             i += 1;
         }
         p = p.offset(BD::pxstride(stride as usize) as isize);
@@ -863,11 +857,11 @@ unsafe fn sgr_3x3_rust<BD: BitDepth>(
 }
 
 // TODO(randomPoison): Temporarily pub until init logic is deduplicated.
-pub(crate) unsafe extern "C" fn sgr_mix_c<BD: BitDepth>(
-    mut p: *mut libc::c_void,
+pub(crate) unsafe extern "C" fn sgr_mix_c_erased<BD: BitDepth>(
+    p: *mut libc::c_void,
     stride: ptrdiff_t,
     left: *const libc::c_void,
-    mut lpf: *const libc::c_void,
+    lpf: *const libc::c_void,
     w: libc::c_int,
     h: libc::c_int,
     params: *const LooprestorationParams,
@@ -891,7 +885,7 @@ unsafe fn sgr_mix_rust<BD: BitDepth>(
     mut p: *mut BD::Pixel,
     stride: ptrdiff_t,
     left: *const [BD::Pixel; 4],
-    mut lpf: *const BD::Pixel,
+    lpf: *const BD::Pixel,
     w: libc::c_int,
     h: libc::c_int,
     params: *const LooprestorationParams,
@@ -930,13 +924,10 @@ unsafe fn sgr_mix_rust<BD: BitDepth>(
         while i < w {
             let v = w0 * dst0[(j * 384 + i) as usize].as_::<libc::c_int>()
                 + w1 * dst1[(j * 384 + i) as usize].as_::<libc::c_int>();
-            *p.offset(i as isize) = iclip(
+            *p.offset(i as isize) = bd.iclip_pixel(
                 (*p.offset(i as isize)).as_::<libc::c_int>()
                     + (v + ((1 as libc::c_int) << 10) >> 11),
-                0 as libc::c_int,
-                bd.bitdepth_max().as_(),
-            )
-            .as_();
+            );
             i += 1;
         }
         p = p.offset(BD::pxstride(stride as usize) as isize);

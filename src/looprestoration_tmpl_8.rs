@@ -126,18 +126,19 @@ extern "C" {
 pub type pixel = uint8_t;
 pub type coef = int16_t;
 pub type const_left_pixel_row = *const [pixel; 4];
+use crate::src::looprestoration::sgr_3x3_c_erased;
+use crate::src::looprestoration::sgr_5x5_c_erased;
+use crate::src::looprestoration::sgr_mix_c_erased;
 use crate::src::looprestoration::wiener_c_erased;
 use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
-use crate::src::looprestoration::{sgr_3x3_c, sgr_5x5_c, sgr_mix_c};
 
-#[cfg(feature = "asm")]
-cfg_if! {
-    if #[cfg(any(target_arch = "arm", target_arch = "aarch64"))] {
-        use crate::include::stddef::*;
-        use crate::src::looprestoration::LrEdgeFlags;
-        use crate::src::looprestoration::LooprestorationParams;
-    }
-}
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[rustfmt::skip]
+use crate::{
+    include::stddef::ptrdiff_t,
+    src::looprestoration::LrEdgeFlags,
+    src::looprestoration::LooprestorationParams,
+};
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 #[inline(always)]
@@ -634,9 +635,9 @@ pub unsafe extern "C" fn dav1d_loop_restoration_dsp_init_8bpc(
 ) {
     (*c).wiener[1] = wiener_c_erased::<BitDepth8>;
     (*c).wiener[0] = (*c).wiener[1];
-    (*c).sgr[0] = sgr_5x5_c::<BitDepth8>;
-    (*c).sgr[1] = sgr_3x3_c::<BitDepth8>;
-    (*c).sgr[2] = sgr_mix_c::<BitDepth8>;
+    (*c).sgr[0] = sgr_5x5_c_erased::<BitDepth8>;
+    (*c).sgr[1] = sgr_3x3_c_erased::<BitDepth8>;
+    (*c).sgr[2] = sgr_mix_c_erased::<BitDepth8>;
 
     #[cfg(feature = "asm")]
     cfg_if! {
