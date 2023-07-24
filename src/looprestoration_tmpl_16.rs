@@ -140,6 +140,7 @@ use crate::include::common::intops::iclip;
 use crate::include::common::intops::imax;
 use crate::include::common::intops::umin;
 use crate::src::looprestoration::padding;
+use crate::src::looprestoration::wiener_c_erased;
 use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
 
 #[inline]
@@ -150,98 +151,6 @@ unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     return x >> 1;
 }
 
-unsafe extern "C" fn wiener_c(
-    mut p: *mut libc::c_void,
-    stride: ptrdiff_t,
-    left: *const libc::c_void,
-    mut lpf: *const libc::c_void,
-    w: libc::c_int,
-    h: libc::c_int,
-    params: *const LooprestorationParams,
-    edges: LrEdgeFlags,
-    bitdepth_max: libc::c_int,
-) {
-    wiener_rust(
-        p.cast(),
-        stride,
-        left.cast(),
-        lpf.cast(),
-        w,
-        h,
-        params,
-        edges,
-        bitdepth_max,
-    )
-}
-
-// TODO(randompoison): Temporarily public until we can move this to `looprestoration.rs`.
-pub(crate) unsafe extern "C" fn wiener_rust(
-    mut p: *mut pixel,
-    stride: ptrdiff_t,
-    left: *const [pixel; 4],
-    mut lpf: *const pixel,
-    w: libc::c_int,
-    h: libc::c_int,
-    params: *const LooprestorationParams,
-    edges: LrEdgeFlags,
-    bitdepth_max: libc::c_int,
-) {
-    let mut tmp: [pixel; 27300] = [0; 27300];
-    let mut tmp_ptr: *mut pixel = tmp.as_mut_ptr();
-    padding::<BitDepth16>(&mut tmp, p, stride, left, lpf, w, h, edges);
-    let mut hor: [uint16_t; 27300] = [0; 27300];
-    let mut hor_ptr: *mut uint16_t = hor.as_mut_ptr();
-    let filter: *const [int16_t; 8] = ((*params).filter.0).as_ptr();
-    let bitdepth = 32 - clz(bitdepth_max as libc::c_uint);
-    let round_bits_h = 3 as libc::c_int + (bitdepth == 12) as libc::c_int * 2;
-    let rounding_off_h = (1 as libc::c_int) << round_bits_h - 1;
-    let clip_limit = (1 as libc::c_int) << bitdepth + 1 + 7 - round_bits_h;
-    let mut j = 0;
-    while j < h + 6 {
-        let mut i = 0;
-        while i < w {
-            let mut sum = (1 as libc::c_int) << bitdepth + 6;
-            let mut k = 0;
-            while k < 7 {
-                sum += *tmp_ptr.offset((i + k) as isize) as libc::c_int
-                    * (*filter.offset(0))[k as usize] as libc::c_int;
-                k += 1;
-            }
-            *hor_ptr.offset(i as isize) = iclip(
-                sum + rounding_off_h >> round_bits_h,
-                0 as libc::c_int,
-                clip_limit - 1,
-            ) as uint16_t;
-            i += 1;
-        }
-        tmp_ptr = tmp_ptr.offset(390);
-        hor_ptr = hor_ptr.offset(390);
-        j += 1;
-    }
-    let round_bits_v = 11 as libc::c_int - (bitdepth == 12) as libc::c_int * 2;
-    let rounding_off_v = (1 as libc::c_int) << round_bits_v - 1;
-    let round_offset = (1 as libc::c_int) << bitdepth + (round_bits_v - 1);
-    let mut j_0 = 0;
-    while j_0 < h {
-        let mut i_0 = 0;
-        while i_0 < w {
-            let mut sum_0 = -round_offset;
-            let mut k_0 = 0;
-            while k_0 < 7 {
-                sum_0 += hor[((j_0 + k_0) * 390 + i_0) as usize] as libc::c_int
-                    * (*filter.offset(1))[k_0 as usize] as libc::c_int;
-                k_0 += 1;
-            }
-            *p.offset(j_0 as isize * PXSTRIDE(stride) + i_0 as isize) = iclip(
-                sum_0 + rounding_off_v >> round_bits_v,
-                0 as libc::c_int,
-                bitdepth_max,
-            ) as pixel;
-            i_0 += 1;
-        }
-        j_0 += 1;
-    }
-}
 unsafe extern "C" fn boxsum3(
     mut sumsq: *mut int32_t,
     mut sum: *mut coef,
@@ -1268,7 +1177,7 @@ pub unsafe extern "C" fn dav1d_loop_restoration_dsp_init_16bpc(
     c: *mut Dav1dLoopRestorationDSPContext,
     _bpc: libc::c_int,
 ) {
-    (*c).wiener[1] = wiener_c;
+    (*c).wiener[1] = wiener_c_erased::<BitDepth16>;
     (*c).wiener[0] = (*c).wiener[1];
     (*c).sgr[0] = sgr_5x5_c;
     (*c).sgr[1] = sgr_3x3_c;
