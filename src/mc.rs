@@ -784,7 +784,8 @@ pub unsafe fn blend_rust<BD: BitDepth>(
     }
 }
 
-unsafe fn blend_v_rust<BD: BitDepth>(
+// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
+pub unsafe fn blend_v_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     dst_stride: usize,
     mut tmp: *const BD::Pixel,

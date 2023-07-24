@@ -3049,31 +3049,15 @@ unsafe extern "C" fn blend_c(
 ) {
     blend_rust::<BitDepth8>(dst, dst_stride as usize, tmp, w as usize, h as usize, mask)
 }
+use crate::src::mc::blend_v_rust;
 unsafe extern "C" fn blend_v_c(
-    mut dst: *mut pixel,
+    dst: *mut pixel,
     dst_stride: ptrdiff_t,
-    mut tmp: *const pixel,
+    tmp: *const pixel,
     w: libc::c_int,
-    mut h: libc::c_int,
+    h: libc::c_int,
 ) {
-    let mask: *const uint8_t = &*dav1d_obmc_masks.0.as_ptr().offset(w as isize) as *const uint8_t;
-    loop {
-        let mut x = 0;
-        while x < w * 3 >> 2 {
-            *dst.offset(x as isize) = (*dst.offset(x as isize) as libc::c_int
-                * (64 - *mask.offset(x as isize) as libc::c_int)
-                + *tmp.offset(x as isize) as libc::c_int * *mask.offset(x as isize) as libc::c_int
-                + 32
-                >> 6) as pixel;
-            x += 1;
-        }
-        dst = dst.offset(dst_stride as isize);
-        tmp = tmp.offset(w as isize);
-        h -= 1;
-        if !(h != 0) {
-            break;
-        }
-    }
+    blend_v_rust::<BitDepth8>(dst, dst_stride as usize, tmp, w as usize, h as usize)
 }
 unsafe extern "C" fn blend_h_c(
     mut dst: *mut pixel,
