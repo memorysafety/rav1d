@@ -98,7 +98,15 @@ pub trait BitDepth: Clone + Copy {
 
     fn new(bitdepth_max: Self::BitDepthMax) -> Self;
 
-    fn from_c(bitdepth_max: libc::c_int) -> Self;
+    /// While [`BitDepth::new`] is the implementation specific way to
+    /// construct a [`BitDepth`], [`BitDepth::from_c`] is a uniform way to
+    /// construct a [`BitDepth`] from its C representation, a [`c_int`].
+    ///
+    /// Since [`BitDepth`]-dependent `fn` ptr types use type erasure, they
+    /// always pass the `bitdepth_max` last argument (even for `8bpc``fn`s
+    /// where it's superfluous (it's constant)), so we need to convert from
+    /// that `bitdepth_max: c_int` arg back to a [`BitDepth`].
+    fn from_c(bitdepth_max: c_int) -> Self;
 
     fn pixel_copy(dest: &mut [Self::Pixel], src: &[Self::Pixel], n: usize) {
         dest[..n].copy_from_slice(&src[..n]);
@@ -149,7 +157,7 @@ impl BitDepth for BitDepth8 {
         Self { bitdepth_max }
     }
 
-    fn from_c(_bitdepth_max: libc::c_int) -> Self {
+    fn from_c(_bitdepth_max: c_int) -> Self {
         Self::new(())
     }
 
@@ -197,8 +205,8 @@ impl BitDepth for BitDepth16 {
         Self { bitdepth_max }
     }
 
-    fn from_c(bitdepth_max: libc::c_int) -> Self {
-        Self::new(bitdepth_max as Self::BitDepthMax)
+    fn from_c(bitdepth_max: c_int) -> Self {
+        Self::new(bitdepth_max.as_())
     }
 
     fn display(pixel: Self::Pixel) -> Self::DisplayPixel {
