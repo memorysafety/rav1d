@@ -14,13 +14,13 @@ extern "C" {
     fn dav1d_msac_decode_bool_equi_sse2(s: *mut MsacContext) -> libc::c_uint;
     fn dav1d_msac_decode_bool_adapt_sse2(s: *mut MsacContext, cdf: *mut uint16_t) -> libc::c_uint;
     fn dav1d_msac_decode_symbol_adapt16_avx2(
-        s: *mut MsacContext,
+        s: &mut MsacContext,
         cdf: *mut uint16_t,
         n_symbols: size_t,
         _cdf_len: usize,
     ) -> libc::c_uint;
     fn dav1d_msac_decode_symbol_adapt16_sse2(
-        s: *mut MsacContext,
+        s: &mut MsacContext,
         cdf: *mut uint16_t,
         n_symbols: size_t,
         _cdf_len: usize,
@@ -73,7 +73,7 @@ pub struct MsacContext {
     allow_update_cdf: libc::c_int,
     #[cfg(all(feature = "asm", target_arch = "x86_64"))]
     pub symbol_adapt16:
-        unsafe extern "C" fn(*mut MsacContext, *mut uint16_t, size_t, usize) -> libc::c_uint,
+        unsafe extern "C" fn(&mut MsacContext, *mut uint16_t, size_t, usize) -> libc::c_uint,
 }
 
 impl MsacContext {
@@ -269,17 +269,11 @@ fn dav1d_msac_decode_symbol_adapt_rust(
 
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn dav1d_msac_decode_symbol_adapt_c(
-    s: *mut MsacContext,
+    s: &mut MsacContext,
     cdf: *mut u16,
     n_symbols: size_t,
     cdf_len: usize,
 ) -> libc::c_uint {
-    // # Safety
-    //
-    // This is only called from [`dav1d_msac_decode_symbol_adapt16`],
-    // where it comes from a valid `&mut`.
-    let s = unsafe { &mut *s };
-
     // # Safety
     //
     // This is only called from [`dav1d_msac_decode_symbol_adapt16`],
