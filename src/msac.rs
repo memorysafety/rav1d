@@ -71,7 +71,7 @@ pub struct MsacContext {
     allow_update_cdf: libc::c_int,
     #[cfg(all(feature = "asm", target_arch = "x86_64"))]
     pub symbol_adapt16:
-        Option<unsafe extern "C" fn(*mut MsacContext, *mut uint16_t, size_t) -> libc::c_uint>,
+        unsafe extern "C" fn(*mut MsacContext, *mut uint16_t, size_t) -> libc::c_uint,
 }
 
 impl MsacContext {
@@ -134,10 +134,10 @@ fn msac_init_x86(s: &mut MsacContext) {
 
     let flags = dav1d_get_cpu_flags();
     if flags & DAV1D_X86_CPU_FLAG_SSE2 != 0 {
-        s.symbol_adapt16 = Some(dav1d_msac_decode_symbol_adapt16_sse2);
+        s.symbol_adapt16 = dav1d_msac_decode_symbol_adapt16_sse2;
     }
     if flags & DAV1D_X86_CPU_FLAG_AVX2 != 0 {
-        s.symbol_adapt16 = Some(dav1d_msac_decode_symbol_adapt16_avx2);
+        s.symbol_adapt16 = dav1d_msac_decode_symbol_adapt16_avx2;
     }
 }
 
@@ -338,7 +338,7 @@ pub unsafe fn dav1d_msac_init(
 
     #[cfg(all(feature = "asm", target_arch = "x86_64"))]
     {
-        s.symbol_adapt16 = Some(dav1d_msac_decode_symbol_adapt_c);
+        s.symbol_adapt16 = dav1d_msac_decode_symbol_adapt_c;
         msac_init_x86(s);
     }
 }
@@ -397,7 +397,7 @@ pub fn dav1d_msac_decode_symbol_adapt16(
             assert!(n_symbols < cdf.len());
             // Safety: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_symbol_adapt_rust`].
             unsafe {
-                (s.symbol_adapt16).expect("non-null function pointer")(s, cdf.as_mut_ptr(), n_symbols)
+                (s.symbol_adapt16)(s, cdf.as_mut_ptr(), n_symbols)
             }
         } else if #[cfg(all(feature = "asm", target_arch = "aarch64"))] {
             // Safety: `checkasm` has verified that it is equivalent to [`dav1d_msac_decode_symbol_adapt_rust`].
