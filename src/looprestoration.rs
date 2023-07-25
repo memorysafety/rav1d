@@ -1,5 +1,7 @@
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+use crate::include::common::bitdepth::{BitDepth16, BitDepth8};
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::imax;
 use crate::include::common::intops::umin;
@@ -142,6 +144,25 @@ decl_looprestorationfilter_fns! {
 decl_looprestorationfilter_fns! {
     fn dav1d_wiener_filter7_16bpc_neon,
     fn dav1d_wiener_filter5_16bpc_neon,
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+extern "C" {
+    fn dav1d_sgr_box3_v_neon(
+        sumsq: *mut int32_t,
+        sum: *mut int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        edges: LrEdgeFlags,
+    );
+    fn dav1d_sgr_calc_ab1_neon(
+        a: *mut int32_t,
+        b: *mut int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        strength: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
 }
 
 // 256 * 1.5 + 3 + 3 = 390
@@ -933,4 +954,195 @@ unsafe fn sgr_mix_rust<BD: BitDepth>(
         p = p.offset(BD::pxstride(stride as usize) as isize);
         j += 1;
     }
+}
+
+// TODO(randomPoison): Temporarily pub until all usages can be made private.
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+pub(crate) trait BitDepthLooprestorationArm: BitDepth {
+    fn dav1d_sgr_box3_h_neon(
+        sumsq: *mut int32_t,
+        sum: *mut int16_t,
+        left: *const [Self::Pixel; 4],
+        src: *const Self::Pixel,
+        stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        edges: LrEdgeFlags,
+    );
+
+    fn dav1d_sgr_finish_filter1_neon(
+        tmp: *mut int16_t,
+        src: *const Self::Pixel,
+        stride: ptrdiff_t,
+        a: *const int32_t,
+        b: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+    );
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+impl BitDepthLooprestorationArm for BitDepth8 {
+    #[inline(always)]
+    fn dav1d_sgr_box3_h_neon(
+        sumsq: *mut int32_t,
+        sum: *mut int16_t,
+        left: *const [Self::Pixel; 4],
+        src: *const Self::Pixel,
+        stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        edges: LrEdgeFlags,
+    ) {
+        extern "C" {
+            fn dav1d_sgr_box3_h_8bpc_neon(
+                sumsq: *mut int32_t,
+                sum: *mut int16_t,
+                left: *const [<BitDepth8 as BitDepth>::Pixel; 4],
+                src: *const <BitDepth8 as BitDepth>::Pixel,
+                stride: ptrdiff_t,
+                w: libc::c_int,
+                h: libc::c_int,
+                edges: LrEdgeFlags,
+            );
+        }
+
+        unsafe { dav1d_sgr_box3_h_8bpc_neon(sumsq, sum, left, src, stride, w, h, edges) }
+    }
+
+    #[inline(always)]
+    fn dav1d_sgr_finish_filter1_neon(
+        tmp: *mut int16_t,
+        src: *const Self::Pixel,
+        stride: ptrdiff_t,
+        a: *const int32_t,
+        b: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+    ) {
+        extern "C" {
+            fn dav1d_sgr_finish_filter1_8bpc_neon(
+                tmp: *mut int16_t,
+                src: *const <BitDepth8 as BitDepth>::Pixel,
+                stride: ptrdiff_t,
+                a: *const int32_t,
+                b: *const int16_t,
+                w: libc::c_int,
+                h: libc::c_int,
+            );
+        }
+
+        unsafe { dav1d_sgr_finish_filter1_8bpc_neon(tmp, src, stride, a, b, w, h) }
+    }
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+impl BitDepthLooprestorationArm for BitDepth16 {
+    #[inline(always)]
+    fn dav1d_sgr_box3_h_neon(
+        sumsq: *mut int32_t,
+        sum: *mut int16_t,
+        left: *const [Self::Pixel; 4],
+        src: *const Self::Pixel,
+        stride: ptrdiff_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        edges: LrEdgeFlags,
+    ) {
+        extern "C" {
+            fn dav1d_sgr_box3_h_16bpc_neon(
+                sumsq: *mut int32_t,
+                sum: *mut int16_t,
+                left: *const [<BitDepth16 as BitDepth>::Pixel; 4],
+                src: *const <BitDepth16 as BitDepth>::Pixel,
+                stride: ptrdiff_t,
+                w: libc::c_int,
+                h: libc::c_int,
+                edges: LrEdgeFlags,
+            );
+        }
+
+        unsafe { dav1d_sgr_box3_h_16bpc_neon(sumsq, sum, left, src, stride, w, h, edges) }
+    }
+
+    #[inline(always)]
+    fn dav1d_sgr_finish_filter1_neon(
+        tmp: *mut int16_t,
+        src: *const Self::Pixel,
+        stride: ptrdiff_t,
+        a: *const int32_t,
+        b: *const int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+    ) {
+        extern "C" {
+            fn dav1d_sgr_finish_filter1_16bpc_neon(
+                tmp: *mut int16_t,
+                src: *const <BitDepth16 as BitDepth>::Pixel,
+                stride: ptrdiff_t,
+                a: *const int32_t,
+                b: *const int16_t,
+                w: libc::c_int,
+                h: libc::c_int,
+            );
+        }
+
+        unsafe { dav1d_sgr_finish_filter1_16bpc_neon(tmp, src, stride, a, b, w, h) }
+    }
+}
+
+// TODO(randomPoison): Temporarily pub until callers are deduplicated.
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+pub(crate) unsafe fn dav1d_sgr_filter1_neon<BD: BitDepthLooprestorationArm>(
+    mut tmp: *mut int16_t,
+    mut src: *const BD::Pixel,
+    stride: ptrdiff_t,
+    mut left: *const [BD::Pixel; 4],
+    mut lpf: *const BD::Pixel,
+    w: libc::c_int,
+    h: libc::c_int,
+    strength: libc::c_int,
+    edges: LrEdgeFlags,
+    bd: BD,
+) {
+    let mut sumsq_mem: Align16<[int32_t; 27208]> = Align16([0; 27208]);
+    let sumsq: *mut int32_t = &mut *sumsq_mem
+        .0
+        .as_mut_ptr()
+        .offset(((384 + 16) * 2 + 8) as isize) as *mut int32_t;
+    let a: *mut int32_t = sumsq;
+    let mut sum_mem: Align16<[int16_t; 27216]> = Align16([0; 27216]);
+    let sum: *mut int16_t = &mut *sum_mem
+        .0
+        .as_mut_ptr()
+        .offset(((384 + 16) * 2 + 16) as isize) as *mut int16_t;
+    let b: *mut int16_t = sum;
+    BD::dav1d_sgr_box3_h_neon(sumsq, sum, left, src, stride, w, h, edges);
+    if edges as libc::c_uint & LR_HAVE_TOP as libc::c_int as libc::c_uint != 0 {
+        BD::dav1d_sgr_box3_h_neon(
+            &mut *sumsq.offset((-(2 as libc::c_int) * (384 + 16)) as isize),
+            &mut *sum.offset((-(2 as libc::c_int) * (384 + 16)) as isize),
+            0 as *const [BD::Pixel; 4],
+            lpf,
+            stride,
+            w,
+            2 as libc::c_int,
+            edges,
+        );
+    }
+    if edges as libc::c_uint & LR_HAVE_BOTTOM as libc::c_int as libc::c_uint != 0 {
+        BD::dav1d_sgr_box3_h_neon(
+            &mut *sumsq.offset((h * (384 + 16)) as isize),
+            &mut *sum.offset((h * (384 + 16)) as isize),
+            0 as *const [BD::Pixel; 4],
+            lpf.offset((6 * BD::pxstride(stride as usize)) as isize),
+            stride,
+            w,
+            2 as libc::c_int,
+            edges,
+        );
+    }
+    dav1d_sgr_box3_v_neon(sumsq, sum, w, h, edges);
+    dav1d_sgr_calc_ab1_neon(a, b, w, h, strength, bd.bitdepth_max().as_());
+    BD::dav1d_sgr_finish_filter1_neon(tmp, src, stride, a, b, w, h);
 }
