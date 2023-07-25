@@ -1817,7 +1817,6 @@ extern "C" {
 }
 
 use crate::src::tables::dav1d_mc_warp_filter;
-use crate::src::tables::dav1d_obmc_masks;
 use crate::src::tables::dav1d_resize_filter;
 
 pub type pixel = uint8_t;
@@ -2977,6 +2976,7 @@ unsafe extern "C" fn prep_bilin_scaled_c(
         BitDepth8::new(()),
     )
 }
+use crate::src::mc::avg_rust;
 unsafe extern "C" fn avg_c(
     mut dst: *mut pixel,
     dst_stride: ptrdiff_t,
@@ -2985,177 +2985,88 @@ unsafe extern "C" fn avg_c(
     w: libc::c_int,
     mut h: libc::c_int,
 ) {
-    let intermediate_bits = 4;
-    let sh = intermediate_bits + 1;
-    let rnd = ((1 as libc::c_int) << intermediate_bits) + 0 * 2;
-    loop {
-        let mut x = 0;
-        while x < w {
-            *dst.offset(x as isize) = iclip_u8(
-                *tmp1.offset(x as isize) as libc::c_int
-                    + *tmp2.offset(x as isize) as libc::c_int
-                    + rnd
-                    >> sh,
-            ) as pixel;
-            x += 1;
-        }
-        tmp1 = tmp1.offset(w as isize);
-        tmp2 = tmp2.offset(w as isize);
-        dst = dst.offset(dst_stride as isize);
-        h -= 1;
-        if !(h != 0) {
-            break;
-        }
-    }
+    avg_rust(
+        dst,
+        dst_stride as usize,
+        tmp1,
+        tmp2,
+        w as usize,
+        h as usize,
+        BitDepth8::new(()),
+    )
 }
+use crate::src::mc::w_avg_rust;
 unsafe extern "C" fn w_avg_c(
-    mut dst: *mut pixel,
+    dst: *mut pixel,
     dst_stride: ptrdiff_t,
-    mut tmp1: *const int16_t,
-    mut tmp2: *const int16_t,
+    tmp1: *const int16_t,
+    tmp2: *const int16_t,
     w: libc::c_int,
-    mut h: libc::c_int,
+    h: libc::c_int,
     weight: libc::c_int,
 ) {
-    let intermediate_bits = 4;
-    let sh = intermediate_bits + 4;
-    let rnd = ((8 as libc::c_int) << intermediate_bits) + 0 * 16;
-    loop {
-        let mut x = 0;
-        while x < w {
-            *dst.offset(x as isize) = iclip_u8(
-                *tmp1.offset(x as isize) as libc::c_int * weight
-                    + *tmp2.offset(x as isize) as libc::c_int * (16 - weight)
-                    + rnd
-                    >> sh,
-            ) as pixel;
-            x += 1;
-        }
-        tmp1 = tmp1.offset(w as isize);
-        tmp2 = tmp2.offset(w as isize);
-        dst = dst.offset(dst_stride as isize);
-        h -= 1;
-        if !(h != 0) {
-            break;
-        }
-    }
+    w_avg_rust(
+        dst,
+        dst_stride as usize,
+        tmp1,
+        tmp2,
+        w as usize,
+        h as usize,
+        weight,
+        BitDepth8::new(()),
+    )
 }
+use crate::src::mc::mask_rust;
 unsafe extern "C" fn mask_c(
-    mut dst: *mut pixel,
+    dst: *mut pixel,
     dst_stride: ptrdiff_t,
-    mut tmp1: *const int16_t,
-    mut tmp2: *const int16_t,
+    tmp1: *const int16_t,
+    tmp2: *const int16_t,
     w: libc::c_int,
-    mut h: libc::c_int,
-    mut mask: *const uint8_t,
+    h: libc::c_int,
+    mask: *const uint8_t,
 ) {
-    let intermediate_bits = 4;
-    let sh = intermediate_bits + 6;
-    let rnd = ((32 as libc::c_int) << intermediate_bits) + 0 * 64;
-    loop {
-        let mut x = 0;
-        while x < w {
-            *dst.offset(x as isize) = iclip_u8(
-                *tmp1.offset(x as isize) as libc::c_int * *mask.offset(x as isize) as libc::c_int
-                    + *tmp2.offset(x as isize) as libc::c_int
-                        * (64 - *mask.offset(x as isize) as libc::c_int)
-                    + rnd
-                    >> sh,
-            ) as pixel;
-            x += 1;
-        }
-        tmp1 = tmp1.offset(w as isize);
-        tmp2 = tmp2.offset(w as isize);
-        mask = mask.offset(w as isize);
-        dst = dst.offset(dst_stride as isize);
-        h -= 1;
-        if !(h != 0) {
-            break;
-        }
-    }
+    mask_rust(
+        dst,
+        dst_stride as usize,
+        tmp1,
+        tmp2,
+        w as usize,
+        h as usize,
+        mask,
+        BitDepth8::new(()),
+    )
 }
+use crate::src::mc::blend_rust;
 unsafe extern "C" fn blend_c(
-    mut dst: *mut pixel,
+    dst: *mut pixel,
     dst_stride: ptrdiff_t,
-    mut tmp: *const pixel,
+    tmp: *const pixel,
     w: libc::c_int,
-    mut h: libc::c_int,
-    mut mask: *const uint8_t,
+    h: libc::c_int,
+    mask: *const uint8_t,
 ) {
-    loop {
-        let mut x = 0;
-        while x < w {
-            *dst.offset(x as isize) = (*dst.offset(x as isize) as libc::c_int
-                * (64 - *mask.offset(x as isize) as libc::c_int)
-                + *tmp.offset(x as isize) as libc::c_int * *mask.offset(x as isize) as libc::c_int
-                + 32
-                >> 6) as pixel;
-            x += 1;
-        }
-        dst = dst.offset(dst_stride as isize);
-        tmp = tmp.offset(w as isize);
-        mask = mask.offset(w as isize);
-        h -= 1;
-        if !(h != 0) {
-            break;
-        }
-    }
+    blend_rust::<BitDepth8>(dst, dst_stride as usize, tmp, w as usize, h as usize, mask)
 }
+use crate::src::mc::blend_v_rust;
 unsafe extern "C" fn blend_v_c(
-    mut dst: *mut pixel,
+    dst: *mut pixel,
     dst_stride: ptrdiff_t,
-    mut tmp: *const pixel,
+    tmp: *const pixel,
     w: libc::c_int,
-    mut h: libc::c_int,
+    h: libc::c_int,
 ) {
-    let mask: *const uint8_t = &*dav1d_obmc_masks.0.as_ptr().offset(w as isize) as *const uint8_t;
-    loop {
-        let mut x = 0;
-        while x < w * 3 >> 2 {
-            *dst.offset(x as isize) = (*dst.offset(x as isize) as libc::c_int
-                * (64 - *mask.offset(x as isize) as libc::c_int)
-                + *tmp.offset(x as isize) as libc::c_int * *mask.offset(x as isize) as libc::c_int
-                + 32
-                >> 6) as pixel;
-            x += 1;
-        }
-        dst = dst.offset(dst_stride as isize);
-        tmp = tmp.offset(w as isize);
-        h -= 1;
-        if !(h != 0) {
-            break;
-        }
-    }
+    blend_v_rust::<BitDepth8>(dst, dst_stride as usize, tmp, w as usize, h as usize)
 }
+use crate::src::mc::blend_h_rust;
 unsafe extern "C" fn blend_h_c(
-    mut dst: *mut pixel,
+    dst: *mut pixel,
     dst_stride: ptrdiff_t,
-    mut tmp: *const pixel,
+    tmp: *const pixel,
     w: libc::c_int,
-    mut h: libc::c_int,
+    h: libc::c_int,
 ) {
-    let mut mask: *const uint8_t =
-        &*dav1d_obmc_masks.0.as_ptr().offset(h as isize) as *const uint8_t;
-    h = h * 3 >> 2;
-    loop {
-        let fresh0 = mask;
-        mask = mask.offset(1);
-        let m = *fresh0 as libc::c_int;
-        let mut x = 0;
-        while x < w {
-            *dst.offset(x as isize) = (*dst.offset(x as isize) as libc::c_int * (64 - m)
-                + *tmp.offset(x as isize) as libc::c_int * m
-                + 32
-                >> 6) as pixel;
-            x += 1;
-        }
-        dst = dst.offset(dst_stride as isize);
-        tmp = tmp.offset(w as isize);
-        h -= 1;
-        if !(h != 0) {
-            break;
-        }
-    }
+    blend_h_rust::<BitDepth8>(dst, dst_stride as usize, tmp, w as usize, h as usize)
 }
 unsafe extern "C" fn w_mask_c(
     mut dst: *mut pixel,

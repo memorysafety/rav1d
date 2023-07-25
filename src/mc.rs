@@ -3,6 +3,7 @@ use std::iter;
 use crate::include::common::bitdepth::{AsPrimitive, BitDepth};
 use crate::include::dav1d::headers::Dav1dFilterMode;
 use crate::src::tables::dav1d_mc_subpel_filters;
+use crate::src::tables::dav1d_obmc_masks;
 
 // TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
 #[inline(never)]
@@ -658,6 +659,170 @@ pub unsafe fn prep_bilin_scaled_rust<BD: BitDepth>(
         my += dy;
         mid_ptr = &mut mid_ptr[(my >> 10) * 128..];
         my &= 0x3ff;
+        tmp = tmp.offset(w as isize);
+    }
+}
+
+// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
+pub unsafe fn avg_rust<BD: BitDepth>(
+    mut dst: *mut BD::Pixel,
+    dst_stride: usize,
+    mut tmp1: *const i16,
+    mut tmp2: *const i16,
+    w: usize,
+    h: usize,
+    bd: BD,
+) {
+    let intermediate_bits = bd.get_intermediate_bits();
+    let sh = intermediate_bits + 1;
+    let rnd = (1 << intermediate_bits) + i32::from(BD::PREP_BIAS) * 2;
+    let dst_stride = BD::pxstride(dst_stride);
+    for _ in 0..h {
+        for x in 0..w {
+            *dst.offset(x as isize) = bd.iclip_pixel(
+                ((*tmp1.offset(x as isize) as i32 + *tmp2.offset(x as isize) as i32 + rnd) >> sh)
+                    .into(),
+            );
+        }
+
+        tmp1 = tmp1.offset(w as isize);
+        tmp2 = tmp2.offset(w as isize);
+        dst = dst.offset(dst_stride as isize);
+    }
+}
+
+// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
+pub unsafe fn w_avg_rust<BD: BitDepth>(
+    mut dst: *mut BD::Pixel,
+    dst_stride: usize,
+    mut tmp1: *const i16,
+    mut tmp2: *const i16,
+    w: usize,
+    h: usize,
+    weight: i32,
+    bd: BD,
+) {
+    let intermediate_bits = bd.get_intermediate_bits();
+    let sh = intermediate_bits + 4;
+    let rnd = (8 << intermediate_bits) + i32::from(BD::PREP_BIAS) * 16;
+    let dst_stride = BD::pxstride(dst_stride);
+    for _ in 0..h {
+        for x in 0..w {
+            *dst.offset(x as isize) = bd.iclip_pixel(
+                (*tmp1.offset(x as isize) as i32 * weight
+                    + *tmp2.offset(x as isize) as i32 * (16 - weight)
+                    + rnd)
+                    >> sh,
+            );
+        }
+
+        tmp1 = tmp1.offset(w as isize);
+        tmp2 = tmp2.offset(w as isize);
+        dst = dst.offset(dst_stride as isize);
+    }
+}
+
+// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
+pub unsafe fn mask_rust<BD: BitDepth>(
+    mut dst: *mut BD::Pixel,
+    dst_stride: usize,
+    mut tmp1: *const i16,
+    mut tmp2: *const i16,
+    w: usize,
+    h: usize,
+    mut mask: *const u8,
+    bd: BD,
+) {
+    let intermediate_bits = bd.get_intermediate_bits();
+    let sh = intermediate_bits + 6;
+    let rnd = (32 << intermediate_bits) + i32::from(BD::PREP_BIAS) * 64;
+    let dst_stride = BD::pxstride(dst_stride);
+    for _ in 0..h {
+        for x in 0..w {
+            *dst.offset(x as isize) = bd.iclip_pixel(
+                (*tmp1.offset(x as isize) as i32 * *mask.offset(x as isize) as i32
+                    + *tmp2.offset(x as isize) as i32 * (64 - *mask.offset(x as isize) as i32)
+                    + rnd)
+                    >> sh,
+            );
+        }
+
+        tmp1 = tmp1.offset(w as isize);
+        tmp2 = tmp2.offset(w as isize);
+        mask = mask.offset(w as isize);
+        dst = dst.offset(dst_stride as isize);
+    }
+}
+
+fn blend_px<BD: BitDepth>(a: BD::Pixel, b: BD::Pixel, m: u8) -> BD::Pixel {
+    let m = m as u32;
+    ((a.as_::<u32>() * (64 - m) + b.as_::<u32>() * m + 32) >> 6).as_::<BD::Pixel>()
+}
+
+// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
+pub unsafe fn blend_rust<BD: BitDepth>(
+    mut dst: *mut BD::Pixel,
+    dst_stride: usize,
+    mut tmp: *const BD::Pixel,
+    w: usize,
+    h: usize,
+    mut mask: *const u8,
+) {
+    let dst_stride = BD::pxstride(dst_stride);
+    for _ in 0..h {
+        for x in 0..w {
+            *dst.offset(x as isize) = blend_px::<BD>(
+                *dst.offset(x as isize),
+                *tmp.offset(x as isize),
+                *mask.offset(x as isize),
+            )
+        }
+
+        dst = dst.offset(dst_stride as isize);
+        tmp = tmp.offset(w as isize);
+        mask = mask.offset(w as isize);
+    }
+}
+
+// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
+pub unsafe fn blend_v_rust<BD: BitDepth>(
+    mut dst: *mut BD::Pixel,
+    dst_stride: usize,
+    mut tmp: *const BD::Pixel,
+    w: usize,
+    h: usize,
+) {
+    let mask = &dav1d_obmc_masks.0[w..];
+    let dst_stride = BD::pxstride(dst_stride);
+    for _ in 0..h {
+        for x in 0..(w * 3 >> 2) {
+            *dst.offset(x as isize) =
+                blend_px::<BD>(*dst.offset(x as isize), *tmp.offset(x as isize), mask[x])
+        }
+
+        dst = dst.offset(dst_stride as isize);
+        tmp = tmp.offset(w as isize);
+    }
+}
+
+// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
+pub unsafe fn blend_h_rust<BD: BitDepth>(
+    mut dst: *mut BD::Pixel,
+    dst_stride: usize,
+    mut tmp: *const BD::Pixel,
+    w: usize,
+    h: usize,
+) {
+    let mask = &dav1d_obmc_masks.0[h..];
+    let h = h * 3 >> 2;
+    let dst_stride = BD::pxstride(dst_stride);
+    for y in 0..h {
+        for x in 0..w {
+            *dst.offset(x as isize) =
+                blend_px::<BD>(*dst.offset(x as isize), *tmp.offset(x as isize), mask[y]);
+        }
+
+        dst = dst.offset(dst_stride as isize);
         tmp = tmp.offset(w as isize);
     }
 }
