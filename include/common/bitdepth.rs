@@ -1,5 +1,6 @@
 use std::ffi::{c_int, c_uint};
 use std::fmt::{self, Display, Formatter};
+use std::ops::Add;
 
 use crate::include::common::intops::clip;
 
@@ -88,7 +89,8 @@ pub trait BitDepth: Clone + Copy {
         + FromPrimitive<c_int>
         + FromPrimitive<c_uint>
         + ToPrimitive<c_int>
-        + ToPrimitive<c_uint>;
+        + ToPrimitive<c_uint>
+        + Add<Output = Self::Coef>;
 
     type BitDepthMax;
 

@@ -130,6 +130,8 @@ pub type pixel = uint8_t;
 pub type coef = int16_t;
 use crate::src::looprestoration::LrEdgeFlags;
 pub type const_left_pixel_row = *const [pixel; 4];
+use crate::src::looprestoration::boxsum3;
+use crate::src::looprestoration::boxsum5;
 use crate::src::looprestoration::padding;
 use crate::src::looprestoration::wiener_c_erased;
 use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
@@ -139,139 +141,6 @@ use crate::include::common::intops::iclip_u8;
 use crate::include::common::intops::imax;
 use crate::include::common::intops::umin;
 
-unsafe extern "C" fn boxsum3(
-    mut sumsq: *mut int32_t,
-    mut sum: *mut coef,
-    mut src: *const pixel,
-    w: libc::c_int,
-    h: libc::c_int,
-) {
-    src = src.offset(390);
-    let mut x = 1;
-    while x < w - 1 {
-        let mut sum_v: *mut coef = sum.offset(x as isize);
-        let mut sumsq_v: *mut int32_t = sumsq.offset(x as isize);
-        let mut s: *const pixel = src.offset(x as isize);
-        let mut a = *s.offset(0) as libc::c_int;
-        let mut a2 = a * a;
-        let mut b = *s.offset(390) as libc::c_int;
-        let mut b2 = b * b;
-        let mut y = 2;
-        while y < h - 2 {
-            s = s.offset(390);
-            let c = *s.offset(390) as libc::c_int;
-            let c2 = c * c;
-            sum_v = sum_v.offset(390);
-            sumsq_v = sumsq_v.offset(390);
-            *sum_v = (a + b + c) as coef;
-            *sumsq_v = a2 + b2 + c2;
-            a = b;
-            a2 = b2;
-            b = c;
-            b2 = c2;
-            y += 1;
-        }
-        x += 1;
-    }
-    sum = sum.offset(390);
-    sumsq = sumsq.offset(390);
-    let mut y_0 = 2;
-    while y_0 < h - 2 {
-        let mut a_0 = *sum.offset(1) as libc::c_int;
-        let mut a2_0 = *sumsq.offset(1);
-        let mut b_0 = *sum.offset(2) as libc::c_int;
-        let mut b2_0 = *sumsq.offset(2);
-        let mut x_0 = 2;
-        while x_0 < w - 2 {
-            let c_0 = *sum.offset((x_0 + 1) as isize) as libc::c_int;
-            let c2_0 = *sumsq.offset((x_0 + 1) as isize);
-            *sum.offset(x_0 as isize) = (a_0 + b_0 + c_0) as coef;
-            *sumsq.offset(x_0 as isize) = a2_0 + b2_0 + c2_0;
-            a_0 = b_0;
-            a2_0 = b2_0;
-            b_0 = c_0;
-            b2_0 = c2_0;
-            x_0 += 1;
-        }
-        sum = sum.offset(390);
-        sumsq = sumsq.offset(390);
-        y_0 += 1;
-    }
-}
-unsafe extern "C" fn boxsum5(
-    mut sumsq: *mut int32_t,
-    mut sum: *mut coef,
-    src: *const pixel,
-    w: libc::c_int,
-    h: libc::c_int,
-) {
-    let mut x = 0;
-    while x < w {
-        let mut sum_v: *mut coef = sum.offset(x as isize);
-        let mut sumsq_v: *mut int32_t = sumsq.offset(x as isize);
-        let mut s: *const pixel = src.offset((3 * 390) as isize).offset(x as isize);
-        let mut a = *s.offset((-(3 as libc::c_int) * 390) as isize) as libc::c_int;
-        let mut a2 = a * a;
-        let mut b = *s.offset((-(2 as libc::c_int) * 390) as isize) as libc::c_int;
-        let mut b2 = b * b;
-        let mut c = *s.offset((-(1 as libc::c_int) * 390) as isize) as libc::c_int;
-        let mut c2 = c * c;
-        let mut d = *s.offset(0) as libc::c_int;
-        let mut d2 = d * d;
-        let mut y = 2;
-        while y < h - 2 {
-            s = s.offset(390);
-            let e = *s as libc::c_int;
-            let e2 = e * e;
-            sum_v = sum_v.offset(390);
-            sumsq_v = sumsq_v.offset(390);
-            *sum_v = (a + b + c + d + e) as coef;
-            *sumsq_v = a2 + b2 + c2 + d2 + e2;
-            a = b;
-            b = c;
-            c = d;
-            d = e;
-            a2 = b2;
-            b2 = c2;
-            c2 = d2;
-            d2 = e2;
-            y += 1;
-        }
-        x += 1;
-    }
-    sum = sum.offset(390);
-    sumsq = sumsq.offset(390);
-    let mut y_0 = 2;
-    while y_0 < h - 2 {
-        let mut a_0 = *sum.offset(0) as libc::c_int;
-        let mut a2_0 = *sumsq.offset(0);
-        let mut b_0 = *sum.offset(1) as libc::c_int;
-        let mut b2_0 = *sumsq.offset(1);
-        let mut c_0 = *sum.offset(2) as libc::c_int;
-        let mut c2_0 = *sumsq.offset(2);
-        let mut d_0 = *sum.offset(3) as libc::c_int;
-        let mut d2_0 = *sumsq.offset(3);
-        let mut x_0 = 2;
-        while x_0 < w - 2 {
-            let e_0 = *sum.offset((x_0 + 2) as isize) as libc::c_int;
-            let e2_0 = *sumsq.offset((x_0 + 2) as isize);
-            *sum.offset(x_0 as isize) = (a_0 + b_0 + c_0 + d_0 + e_0) as coef;
-            *sumsq.offset(x_0 as isize) = a2_0 + b2_0 + c2_0 + d2_0 + e2_0;
-            a_0 = b_0;
-            b_0 = c_0;
-            c_0 = d_0;
-            d_0 = e_0;
-            a2_0 = b2_0;
-            b2_0 = c2_0;
-            c2_0 = d2_0;
-            d2_0 = e2_0;
-            x_0 += 1;
-        }
-        sum = sum.offset(390);
-        sumsq = sumsq.offset(390);
-        y_0 += 1;
-    }
-}
 #[inline(never)]
 unsafe extern "C" fn selfguided_filter(
     mut dst: *mut coef,
@@ -293,9 +162,9 @@ unsafe extern "C" fn selfguided_filter(
     let mut B: *mut coef = sum.as_mut_ptr().offset((2 * 390) as isize).offset(3);
     let step = (n == 25) as libc::c_int + 1;
     if n == 25 {
-        boxsum5(sumsq.as_mut_ptr(), sum.as_mut_ptr(), src, w + 6, h + 6);
+        boxsum5::<BitDepth8>(sumsq.as_mut_ptr(), sum.as_mut_ptr(), src, w + 6, h + 6);
     } else {
-        boxsum3(sumsq.as_mut_ptr(), sum.as_mut_ptr(), src, w + 6, h + 6);
+        boxsum3::<BitDepth8>(sumsq.as_mut_ptr(), sum.as_mut_ptr(), src, w + 6, h + 6);
     }
     let bitdepth_min_8 = 8 - 8;
     let mut AA: *mut int32_t = A.offset(-(390 as libc::c_int as isize));
