@@ -1,7 +1,7 @@
+use crate::stderr;
 use ::libc;
 use libc::size_t;
 use rav1d::include::stdint::uint64_t;
-use crate::stderr;
 extern "C" {
     pub type Dav1dRef;
     pub type MuxerPriv;

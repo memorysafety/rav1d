@@ -570,12 +570,12 @@ pub type generate_grain_y_fn =
 use crate::include::stdatomic::atomic_uint;
 use crate::src::cdf::CdfThreadContext;
 
-use crate::include::pthread::pthread_cond_t;
 use crate::src::internal::Dav1dContext_frame_thread;
 use crate::src::internal::Dav1dContext_refs;
 use crate::src::internal::Dav1dTileGroup;
 use crate::src::internal::TaskThreadData;
 use crate::src::picture::Dav1dThreadPicture;
+use libc::pthread_cond_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTaskContext {
@@ -603,9 +603,9 @@ pub struct Dav1dTaskContext {
 use crate::src::internal::Dav1dTaskContext_task_thread;
 use crate::src::internal::FrameTileThreadData;
 
-use crate::include::pthread::pthread_t;
 use crate::src::internal::Dav1dTaskContext_frame_thread;
 use crate::src::levels::Filter2d;
+use libc::pthread_t;
 
 use crate::src::internal::Dav1dTaskContext_cf;
 use crate::src::internal::Dav1dTaskContext_scratch;
@@ -728,13 +728,13 @@ pub struct Dav1dSettings {
     pub decode_frame_type: Dav1dDecodeFrameType,
     pub reserved: [uint8_t; 16],
 }
-use crate::include::pthread::pthread_attr_t;
-use crate::include::pthread::pthread_condattr_t;
-use crate::include::pthread::pthread_mutexattr_t;
 use crate::include::pthread::pthread_once_init;
 use crate::include::pthread::pthread_once_t;
 use crate::src::levels::BL_128X128;
 use crate::src::levels::BL_64X64;
+use libc::pthread_attr_t;
+use libc::pthread_condattr_t;
+use libc::pthread_mutexattr_t;
 
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::umin;

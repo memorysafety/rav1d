@@ -1,7 +1,7 @@
+use crate::stderr;
 use ::libc;
 use rav1d::include::stdint::uint64_t;
 use rav1d::include::stdint::uint8_t;
-use crate::stderr;
 extern "C" {
     pub type Dav1dRef;
     static mut optarg: *mut libc::c_char;

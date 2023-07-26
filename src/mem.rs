@@ -34,7 +34,7 @@ pub struct Dav1dMemPoolBuffer {
     pub data: *mut libc::c_void,
     pub next: *mut Dav1dMemPoolBuffer,
 }
-use crate::include::pthread::pthread_mutexattr_t;
+use libc::pthread_mutexattr_t;
 
 #[inline]
 pub unsafe extern "C" fn dav1d_alloc_aligned(
