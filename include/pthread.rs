@@ -1,8 +1,3 @@
-pub type pthread_t = libc::pthread_t;
-pub type pthread_cond_t = libc::pthread_cond_t;
-pub type pthread_attr_t = libc::pthread_attr_t;
-pub type pthread_condattr_t = libc::pthread_condattr_t;
-pub type pthread_mutexattr_t = libc::pthread_mutexattr_t;
 // NOTE: temporary code to support Linux and macOS, should be removed eventually
 cfg_if::cfg_if! {
     if #[cfg(target_os = "linux")] {

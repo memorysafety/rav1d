@@ -161,7 +161,7 @@ use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 
-use crate::include::pthread::pthread_cond_t;
+use libc::pthread_cond_t;
 
 use crate::src::internal::Dav1dFrameContext_lf;
 use crate::src::lf_mask::Av1Filter;

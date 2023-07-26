@@ -321,7 +321,7 @@ use crate::include::dav1d::headers::DAV1D_RESTORATION_SGRPROJ;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_SWITCHABLE;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_WIENER;
 
-use crate::include::pthread::pthread_cond_t;
+use libc::pthread_cond_t;
 
 use crate::src::internal::Dav1dFrameContext_lf;
 use crate::src::lf_mask::Av1Filter;

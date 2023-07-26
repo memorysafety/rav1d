@@ -1,9 +1,9 @@
-use ::libc;
 use crate::errno_location;
+use crate::stderr;
+use ::libc;
 use rav1d::include::stddef::size_t;
 use rav1d::include::stdint::uint64_t;
 use rav1d::include::stdint::uint8_t;
-use crate::stderr;
 extern "C" {
     pub type Dav1dRef;
     fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
