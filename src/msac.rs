@@ -72,7 +72,7 @@ pub struct MsacContext {
     pub cnt: libc::c_int,
     allow_update_cdf: libc::c_int,
     #[cfg(all(feature = "asm", target_arch = "x86_64"))]
-    pub symbol_adapt16:
+    symbol_adapt16:
         unsafe extern "C" fn(&mut MsacContext, *mut uint16_t, size_t, usize) -> libc::c_uint,
 }
 
