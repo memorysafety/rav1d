@@ -397,17 +397,13 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
     let mut shift: libc::c_uint = 0;
     let mut current_block: u64;
     let mut version: *const libc::c_char = dav1d_version();
-    if libc::strcmp(
-        version,
-        b"1.0.0-130-g26eca15\0" as *const u8 as *const libc::c_char,
-    ) != 0
-    {
+    if libc::strcmp(version, b"966d63c1\0" as *const u8 as *const libc::c_char) != 0 {
         libc::fprintf(
             stderr,
             b"Version mismatch (library: %s, executable: %s)\n\0" as *const u8
                 as *const libc::c_char,
             version,
-            b"1.0.0-130-g26eca15\0" as *const u8 as *const libc::c_char,
+            b"966d63c1\0" as *const u8 as *const libc::c_char,
         );
         return 1 as libc::c_int;
     }
