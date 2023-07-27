@@ -60,18 +60,18 @@ jobs:
             argon_coveragetool_av1_base_and_extended_profiles_v2.1.1.zip
       - name: cargo build for ${{ matrix.target }} ${{ matrix.build.name }}
         run: |
-          cargo clean
           rustup target add ${{ matrix.target }}
           cargo build --target ${{ matrix.target }} ${{ matrix.build.flags }}
         env:
           RUSTFLAGS: "-C overflow-checks=on"
       - name: download, check, and unpack argon test vectors
         if: ${{ steps.cache-argon.outputs.cache-hit != 'true' }}
-        run: |
+        run: | # delete the downloaded .zip to avoid out-of-diskspace errors
           curl --silent -O $ARGON_URL
           curl --silent -O $ARGON_URL_MD5
           md5sum --check argon_coveragetool_av1_base_and_extended_profiles_v2.1.1.zip.md5sum
           unzip -q argon_coveragetool_av1_base_and_extended_profiles_v2.1.1.zip
+          rm argon_coveragetool_av1_base_and_extended_profiles_v2.1.1.zip
           mv argon_coveragetool_av1_base_and_extended_profiles_v2.1 tests/argon
         env:
           ARGON_URL: https://storage.googleapis.com/downloads.aomedia.org/assets/zip/argon_coveragetool_av1_base_and_extended_profiles_v2.1.1.zip
