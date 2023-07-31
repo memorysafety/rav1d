@@ -1142,6 +1142,7 @@ pub unsafe extern "C" fn dav1d_task_create_tile_sbrow(
         &mut (*f).task_thread.pending_tasks.merge,
         1 as libc::c_int,
     );
+    ::core::intrinsics::atomic_store_seqcst(&mut (*f).task_thread.init_done, 1 as libc::c_int);
     pthread_mutex_unlock(&mut (*f).task_thread.pending_tasks.lock);
     return 0 as libc::c_int;
 }
@@ -1972,20 +1973,12 @@ pub unsafe extern "C" fn dav1d_worker_task(mut data: *mut libc::c_void) -> *mut 
                                                     );
                                                     (*f).n_tile_data = 0 as libc::c_int;
                                                     pthread_cond_signal(&mut (*f).task_thread.cond);
-                                                    ::core::intrinsics::atomic_store_seqcst(
-                                                        &mut (*f).task_thread.init_done,
-                                                        1 as libc::c_int,
-                                                    );
                                                 } else {
                                                     pthread_mutex_unlock(&mut (*ttd).lock);
                                                 }
                                             }
                                             p_0 += 1;
                                         }
-                                        ::core::intrinsics::atomic_store_seqcst(
-                                            &mut (*f).task_thread.init_done,
-                                            1 as libc::c_int,
-                                        );
                                         pthread_mutex_lock(&mut (*ttd).lock);
                                     } else {
                                         pthread_mutex_lock(&mut (*ttd).lock);
