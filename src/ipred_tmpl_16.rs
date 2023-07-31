@@ -1,3 +1,5 @@
+use crate::include::common::bitdepth::BitDepth;
+use crate::include::common::bitdepth::BitDepth16;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 #[cfg(feature = "asm")]
@@ -743,6 +745,42 @@ extern "C" {
         in_0: *const pixel,
         end: libc::c_int,
         strength: libc::c_int,
+    );
+    fn dav1d_ipred_z2_fill3_16bpc_neon(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        top: *const pixel,
+        left: *const pixel,
+        width: libc::c_int,
+        height: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+    );
+    fn dav1d_ipred_z2_fill2_16bpc_neon(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        top: *const pixel,
+        left: *const pixel,
+        width: libc::c_int,
+        height: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+    );
+    fn dav1d_ipred_z2_fill1_16bpc_neon(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        top: *const pixel,
+        left: *const pixel,
+        width: libc::c_int,
+        height: libc::c_int,
+        dx: libc::c_int,
+        dy: libc::c_int,
+    );
+    fn dav1d_ipred_z2_upsample_edge_16bpc_neon(
+        out: *mut pixel,
+        hsz: libc::c_int,
+        in_0: *const pixel,
+        bitdepth_max: libc::c_int,
     );
     fn dav1d_ipred_reverse_16bpc_neon(dst: *mut pixel, src: *const pixel, n: libc::c_int);
     fn dav1d_ipred_z3_fill2_16bpc_neon(
@@ -2118,6 +2156,7 @@ unsafe extern "C" fn intra_pred_dsp_init_arm(c: *mut Dav1dIntraPredDSPContext) {
     #[cfg(target_arch = "aarch64")]
     {
         (*c).intra_pred[Z1_PRED as usize] = Some(ipred_z1_neon);
+        (*c).intra_pred[Z2_PRED as usize] = Some(ipred_z2_neon);
         (*c).intra_pred[Z3_PRED as usize] = Some(ipred_z3_neon);
     }
     (*c).intra_pred[FILTER_PRED as usize] = Some(dav1d_ipred_filter_16bpc_neon);
@@ -2233,6 +2272,184 @@ unsafe extern "C" fn ipred_z3_neon(
             height,
             dy,
             max_base_y,
+        );
+    };
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
+unsafe extern "C" fn ipred_z2_neon(
+    mut dst: *mut pixel,
+    stride: ptrdiff_t,
+    topleft_in: *const pixel,
+    width: libc::c_int,
+    height: libc::c_int,
+    mut angle: libc::c_int,
+    max_width: libc::c_int,
+    max_height: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    let is_sm = angle >> 9 & 0x1 as libc::c_int;
+    let enable_intra_edge_filter = angle >> 10;
+    angle &= 511 as libc::c_int;
+    if !(angle > 90 && angle < 180) {
+        unreachable!();
+    }
+    let mut dy = dav1d_dr_intra_derivative[((angle - 90) >> 1) as usize] as libc::c_int;
+    let mut dx = dav1d_dr_intra_derivative[((180 - angle) >> 1) as usize] as libc::c_int;
+    let mut buf: [pixel; 3 * (64 + 1)] = [0; 3 * (64 + 1)]; // NOTE: C code doesn't initialize
+
+    // The asm can underread below the start of top[] and left[]; to avoid
+    // surprising behaviour, make sure this is within the allocated stack space.
+    let mut left_offset: isize = 2 * (64 + 1);
+    let mut top_offset: isize = 1 * (64 + 1);
+    let mut flipped_offset: isize = 0 * (64 + 1);
+
+    let upsample_left = if enable_intra_edge_filter != 0 {
+        get_upsample(width + height, 180 - angle, is_sm)
+    } else {
+        0 as libc::c_int
+    };
+    let upsample_above = if enable_intra_edge_filter != 0 {
+        get_upsample(width + height, angle - 90, is_sm)
+    } else {
+        0 as libc::c_int
+    };
+
+    if upsample_above != 0 {
+        dav1d_ipred_z2_upsample_edge_16bpc_neon(
+            buf.as_mut_ptr().offset(top_offset),
+            width,
+            topleft_in,
+            bitdepth_max,
+        );
+        dx <<= 1;
+    } else {
+        let filter_strength = if enable_intra_edge_filter != 0 {
+            get_filter_strength(width + height, angle - 90, is_sm)
+        } else {
+            0 as libc::c_int
+        };
+
+        if filter_strength != 0 {
+            dav1d_ipred_z1_filter_edge_16bpc_neon(
+                buf.as_mut_ptr().offset(1 + top_offset),
+                imin(max_width, width),
+                topleft_in,
+                width,
+                filter_strength,
+            );
+
+            if max_width < width {
+                memcpy(
+                    buf.as_mut_ptr().offset(top_offset + 1 + max_width as isize)
+                        as *mut libc::c_void,
+                    topleft_in.offset(1 + max_width as isize) as *const libc::c_void,
+                    ((width - max_width) as libc::c_ulong)
+                        .wrapping_mul(::core::mem::size_of::<pixel>() as libc::c_ulong),
+                );
+            }
+        } else {
+            BitDepth16::pixel_copy(
+                &mut buf[1 + top_offset as usize..],
+                core::slice::from_raw_parts(topleft_in.offset(1), width as usize),
+                width as usize,
+            );
+        }
+    }
+
+    if upsample_left != 0 {
+        buf[flipped_offset as usize] = *topleft_in;
+        dav1d_ipred_reverse_16bpc_neon(
+            &mut *buf.as_mut_ptr().offset(1 + flipped_offset),
+            topleft_in,
+            height,
+        );
+        dav1d_ipred_z2_upsample_edge_16bpc_neon(
+            buf.as_mut_ptr().offset(left_offset),
+            height,
+            buf.as_ptr().offset(flipped_offset),
+            bitdepth_max,
+        );
+        dy <<= 1;
+    } else {
+        let filter_strength = if enable_intra_edge_filter != 0 {
+            get_filter_strength(width + height, 180 - angle, is_sm)
+        } else {
+            0 as libc::c_int
+        };
+        if filter_strength != 0 {
+            buf[flipped_offset as usize] = *topleft_in;
+            dav1d_ipred_reverse_16bpc_neon(
+                &mut *buf.as_mut_ptr().offset(1 + flipped_offset),
+                topleft_in,
+                height,
+            );
+            dav1d_ipred_z1_filter_edge_16bpc_neon(
+                buf.as_mut_ptr().offset(1 + left_offset),
+                imin(max_height, height),
+                buf.as_ptr().offset(flipped_offset),
+                height,
+                filter_strength,
+            );
+            if max_height < height {
+                memcpy(
+                    buf.as_mut_ptr()
+                        .offset(left_offset + 1 + max_height as isize)
+                        as *mut libc::c_void,
+                    buf.as_mut_ptr()
+                        .offset(flipped_offset + 1 + max_height as isize)
+                        as *const libc::c_void,
+                    ((height - max_height) as libc::c_ulong)
+                        .wrapping_mul(::core::mem::size_of::<pixel>() as libc::c_ulong),
+                );
+            }
+        } else {
+            dav1d_ipred_reverse_16bpc_neon(
+                buf.as_mut_ptr().offset(left_offset + 1),
+                topleft_in,
+                height,
+            );
+        }
+    }
+    buf[top_offset as usize] = *topleft_in;
+    buf[left_offset as usize] = *topleft_in;
+
+    if upsample_above != 0 && upsample_left != 0 {
+        unreachable!();
+    }
+
+    if upsample_above == 0 && upsample_left == 0 {
+        dav1d_ipred_z2_fill1_16bpc_neon(
+            dst,
+            stride,
+            buf.as_ptr().offset(top_offset),
+            buf.as_ptr().offset(left_offset),
+            width,
+            height,
+            dx,
+            dy,
+        );
+    } else if upsample_above != 0 {
+        dav1d_ipred_z2_fill2_16bpc_neon(
+            dst,
+            stride,
+            buf.as_ptr().offset(top_offset),
+            buf.as_ptr().offset(left_offset),
+            width,
+            height,
+            dx,
+            dy,
+        );
+    } else {
+        dav1d_ipred_z2_fill3_16bpc_neon(
+            dst,
+            stride,
+            buf.as_ptr().offset(top_offset),
+            buf.as_ptr().offset(left_offset),
+            width,
+            height,
+            dx,
+            dy,
         );
     };
 }
