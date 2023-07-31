@@ -1,5 +1,6 @@
+use crate::include::stdint::uint8_t;
 use ::libc;
-pub type EdgeFlags = libc::c_uint;
+pub type EdgeFlags = uint8_t;
 pub const EDGE_I420_LEFT_HAS_BOTTOM: EdgeFlags = 32;
 pub const EDGE_I422_LEFT_HAS_BOTTOM: EdgeFlags = 16;
 pub const EDGE_I444_LEFT_HAS_BOTTOM: EdgeFlags = 8;
@@ -128,11 +129,7 @@ unsafe extern "C" fn init_edges(node: *mut EdgeNode, bl: BlockLevel, edge_flags:
                 | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int) as libc::c_uint)
             as EdgeFlags;
         if bl as libc::c_uint == BL_16X16 as libc::c_int as libc::c_uint {
-            (*nwc).h4[1] = ::core::mem::transmute::<libc::c_uint, EdgeFlags>(
-                (*nwc).h4[1] as libc::c_uint
-                    | edge_flags as libc::c_uint
-                        & EDGE_I420_TOP_HAS_RIGHT as libc::c_int as libc::c_uint,
-            );
+            (*nwc).h4[1] = (*nwc).h4[1] | edge_flags & EDGE_I420_TOP_HAS_RIGHT;
         }
         (*nwc).v4[0] = (edge_flags as libc::c_uint
             | (EDGE_I444_TOP_HAS_RIGHT as libc::c_int
@@ -149,13 +146,8 @@ unsafe extern "C" fn init_edges(node: *mut EdgeNode, bl: BlockLevel, edge_flags:
                 | EDGE_I420_TOP_HAS_RIGHT as libc::c_int) as libc::c_uint)
             as EdgeFlags;
         if bl as libc::c_uint == BL_16X16 as libc::c_int as libc::c_uint {
-            (*nwc).v4[1] = ::core::mem::transmute::<libc::c_uint, EdgeFlags>(
-                (*nwc).v4[1] as libc::c_uint
-                    | edge_flags as libc::c_uint
-                        & (EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int
-                            | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int)
-                            as libc::c_uint,
-            );
+            (*nwc).v4[1] =
+                (*nwc).v4[1] | edge_flags & (EDGE_I420_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM);
         }
         (*nwc).tls[0] = (EDGE_I444_TOP_HAS_RIGHT as libc::c_int
             | EDGE_I422_TOP_HAS_RIGHT as libc::c_int
