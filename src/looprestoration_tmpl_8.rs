@@ -1,25 +1,10 @@
 use crate::include::common::bitdepth::BitDepth8;
 use crate::include::stdint::*;
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
+#[cfg(all(feature = "asm", target_arch = "arm"))]
 use crate::src::align::Align16;
 use ::libc;
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
-
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-extern "C" {
-    fn dav1d_sgr_weighted2_8bpc_neon(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        src: *const pixel,
-        src_stride: ptrdiff_t,
-        t1: *const int16_t,
-        t2: *const int16_t,
-        w: libc::c_int,
-        h: libc::c_int,
-        wt: *const int16_t,
-    );
-}
 
 #[cfg(all(feature = "asm", target_arch = "arm"))]
 extern "C" {
@@ -54,7 +39,7 @@ use crate::src::looprestoration::sgr_mix_c_erased;
 use crate::src::looprestoration::wiener_c_erased;
 use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[cfg(all(feature = "asm", target_arch = "arm"))]
 #[rustfmt::skip]
 use crate::{
     include::stddef::ptrdiff_t,
@@ -220,7 +205,6 @@ unsafe extern "C" fn loop_restoration_dsp_init_arm(
 ) {
     use crate::src::arm::cpu::DAV1D_ARM_CPU_FLAG_NEON;
     // TODO(randomPoison): Import temporarily needed until init fns are deduplicated.
-    #[cfg(target_arch = "aarch64")]
     use crate::src::looprestoration::*;
 
     let flags = dav1d_get_cpu_flags();
@@ -241,86 +225,7 @@ unsafe extern "C" fn loop_restoration_dsp_init_arm(
 
     (*c).sgr[0] = sgr_filter_5x5_neon_erased::<BitDepth8>;
     (*c).sgr[1] = sgr_filter_3x3_neon_erased::<BitDepth8>;
-    (*c).sgr[2] = sgr_filter_mix_neon_erased;
-}
-
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-unsafe extern "C" fn sgr_filter_mix_neon_erased(
-    p: *mut libc::c_void,
-    stride: ptrdiff_t,
-    left: *const libc::c_void,
-    lpf: *const libc::c_void,
-    w: libc::c_int,
-    h: libc::c_int,
-    params: *const LooprestorationParams,
-    edges: LrEdgeFlags,
-    _bitdepth_max: libc::c_int,
-) {
-    sgr_filter_mix_neon(
-        p.cast(),
-        stride,
-        left.cast(),
-        lpf.cast(),
-        w,
-        h,
-        params,
-        edges,
-    )
-}
-
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-unsafe extern "C" fn sgr_filter_mix_neon(
-    dst: *mut pixel,
-    stride: ptrdiff_t,
-    left: *const [pixel; 4],
-    mut lpf: *const pixel,
-    w: libc::c_int,
-    h: libc::c_int,
-    params: *const LooprestorationParams,
-    edges: LrEdgeFlags,
-) {
-    use crate::include::common::bitdepth::BitDepth;
-    use crate::src::looprestoration::dav1d_sgr_filter1_neon;
-    use crate::src::looprestoration::dav1d_sgr_filter2_neon;
-
-    let mut tmp1: Align16<[int16_t; 24576]> = Align16([0; 24576]);
-    let mut tmp2: Align16<[int16_t; 24576]> = Align16([0; 24576]);
-    dav1d_sgr_filter2_neon(
-        tmp1.0.as_mut_ptr(),
-        dst,
-        stride,
-        left,
-        lpf,
-        w,
-        h,
-        (*params).sgr.s0 as libc::c_int,
-        edges,
-        BitDepth8::new(()),
-    );
-    dav1d_sgr_filter1_neon(
-        tmp2.0.as_mut_ptr(),
-        dst,
-        stride,
-        left,
-        lpf,
-        w,
-        h,
-        (*params).sgr.s1 as libc::c_int,
-        edges,
-        BitDepth8::new(()),
-    );
-    let wt: [int16_t; 2] = [(*params).sgr.w0, (*params).sgr.w1];
-    dav1d_sgr_weighted2_8bpc_neon(
-        dst,
-        stride,
-        dst,
-        stride,
-        tmp1.0.as_mut_ptr(),
-        tmp2.0.as_mut_ptr(),
-        w,
-        h,
-        wt.as_ptr(),
-    );
+    (*c).sgr[2] = sgr_filter_mix_neon_erased::<BitDepth8>;
 }
 
 #[no_mangle]
