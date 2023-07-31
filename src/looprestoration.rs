@@ -1318,6 +1318,70 @@ pub(crate) unsafe fn dav1d_sgr_filter2_neon<BD: BitDepthLooprestorationArm>(
     BD::dav1d_sgr_finish_filter2_neon(tmp, src, stride, a, b, w, h);
 }
 
+// TODO: Temporarily pub until init logic is deduplicated.
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+pub(crate) unsafe extern "C" fn sgr_filter_5x5_neon_erased<BD: BitDepthLooprestorationArm>(
+    p: *mut libc::c_void,
+    stride: ptrdiff_t,
+    left: *const libc::c_void,
+    lpf: *const libc::c_void,
+    w: libc::c_int,
+    h: libc::c_int,
+    params: *const LooprestorationParams,
+    edges: LrEdgeFlags,
+    bitdepth_max: libc::c_int,
+) {
+    sgr_filter_5x5_neon(
+        p.cast(),
+        stride,
+        left.cast(),
+        lpf.cast(),
+        w,
+        h,
+        params,
+        edges,
+        BD::from_c(bitdepth_max),
+    )
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+unsafe fn sgr_filter_5x5_neon<BD: BitDepthLooprestorationArm>(
+    dst: *mut BD::Pixel,
+    stride: ptrdiff_t,
+    left: *const [BD::Pixel; 4],
+    mut lpf: *const BD::Pixel,
+    w: libc::c_int,
+    h: libc::c_int,
+    params: *const LooprestorationParams,
+    edges: LrEdgeFlags,
+    bd: BD,
+) {
+    let mut tmp: Align16<[int16_t; 24576]> = Align16([0; 24576]);
+    dav1d_sgr_filter2_neon(
+        tmp.0.as_mut_ptr(),
+        dst,
+        stride,
+        left,
+        lpf,
+        w,
+        h,
+        (*params).sgr.s0 as libc::c_int,
+        edges,
+        bd,
+    );
+    BD::dav1d_sgr_weighted1_neon(
+        dst,
+        stride,
+        dst,
+        stride,
+        tmp.0.as_mut_ptr(),
+        w,
+        h,
+        (*params).sgr.w0 as libc::c_int,
+        bd.bitdepth_max().as_(),
+    );
+}
+
 // TODO(randomPoison): Temporarily pub until init logic is deduplicated.
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 pub(crate) unsafe extern "C" fn sgr_filter_3x3_neon_erased<BD: BitDepthLooprestorationArm>(
