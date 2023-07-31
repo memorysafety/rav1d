@@ -273,76 +273,11 @@ unsafe extern "C" fn loop_restoration_dsp_init_arm(
 
     if bpc == 10 {
         (*c).sgr[0] = sgr_filter_5x5_neon_erased;
-        (*c).sgr[1] = sgr_filter_3x3_neon_erased;
+        (*c).sgr[1] = sgr_filter_3x3_neon_erased::<BitDepth16>;
         (*c).sgr[2] = sgr_filter_mix_neon_erased;
     }
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-unsafe extern "C" fn sgr_filter_3x3_neon_erased(
-    p: *mut libc::c_void,
-    stride: ptrdiff_t,
-    left: *const libc::c_void,
-    lpf: *const libc::c_void,
-    w: libc::c_int,
-    h: libc::c_int,
-    params: *const LooprestorationParams,
-    edges: LrEdgeFlags,
-    bitdepth_max: libc::c_int,
-) {
-    sgr_filter_3x3_neon(
-        p.cast(),
-        stride,
-        left.cast(),
-        lpf.cast(),
-        w,
-        h,
-        params,
-        edges,
-        bitdepth_max,
-    )
-}
-
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-unsafe extern "C" fn sgr_filter_3x3_neon(
-    dst: *mut pixel,
-    stride: ptrdiff_t,
-    left: *const [pixel; 4],
-    mut lpf: *const pixel,
-    w: libc::c_int,
-    h: libc::c_int,
-    params: *const LooprestorationParams,
-    edges: LrEdgeFlags,
-    bitdepth_max: libc::c_int,
-) {
-    use crate::include::common::bitdepth::BitDepth;
-    use crate::src::looprestoration::dav1d_sgr_filter1_neon;
-
-    let mut tmp: Align16<[int16_t; 24576]> = Align16([0; 24576]);
-    dav1d_sgr_filter1_neon(
-        tmp.0.as_mut_ptr(),
-        dst,
-        stride,
-        left,
-        lpf,
-        w,
-        h,
-        (*params).sgr.s1 as libc::c_int,
-        edges,
-        BitDepth16::from_c(bitdepth_max),
-    );
-    dav1d_sgr_weighted1_16bpc_neon(
-        dst,
-        stride,
-        dst,
-        stride,
-        tmp.0.as_mut_ptr(),
-        w,
-        h,
-        (*params).sgr.w1 as libc::c_int,
-        bitdepth_max,
-    );
-}
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe extern "C" fn sgr_filter_5x5_neon_erased(
