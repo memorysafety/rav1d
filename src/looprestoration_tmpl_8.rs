@@ -8,21 +8,6 @@ use cfg_if::cfg_if;
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 extern "C" {
-    fn dav1d_sgr_box5_v_neon(
-        sumsq: *mut int32_t,
-        sum: *mut int16_t,
-        w: libc::c_int,
-        h: libc::c_int,
-        edges: LrEdgeFlags,
-    );
-    fn dav1d_sgr_calc_ab2_neon(
-        a: *mut int32_t,
-        b: *mut int16_t,
-        w: libc::c_int,
-        h: libc::c_int,
-        strength: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
     fn dav1d_sgr_weighted1_8bpc_neon(
         dst: *mut pixel,
         dst_stride: ptrdiff_t,
