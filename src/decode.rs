@@ -1,3 +1,7 @@
+#[cfg(feature = "bitdepth_16")]
+use crate::include::common::bitdepth::BitDepth16;
+#[cfg(feature = "bitdepth_8")]
+use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::frame::{is_inter_or_switch, is_key_or_intra};
 use crate::include::dav1d::headers::{Dav1dTxfmMode, DAV1D_MAX_SEGMENTS};
 use crate::include::stddef::*;
@@ -93,16 +97,6 @@ extern "C" {
     fn dav1d_loop_filter_dsp_init_8bpc(c: *mut Dav1dLoopFilterDSPContext);
     #[cfg(feature = "bitdepth_16")]
     fn dav1d_loop_filter_dsp_init_16bpc(c: *mut Dav1dLoopFilterDSPContext);
-    #[cfg(feature = "bitdepth_8")]
-    fn dav1d_loop_restoration_dsp_init_8bpc(
-        c: *mut Dav1dLoopRestorationDSPContext,
-        bpc: libc::c_int,
-    );
-    #[cfg(feature = "bitdepth_16")]
-    fn dav1d_loop_restoration_dsp_init_16bpc(
-        c: *mut Dav1dLoopRestorationDSPContext,
-        bpc: libc::c_int,
-    );
     #[cfg(feature = "bitdepth_8")]
     fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext);
     #[cfg(feature = "bitdepth_16")]
@@ -981,6 +975,8 @@ use crate::src::msac::dav1d_msac_decode_uniform;
 use crate::src::recon::define_DEBUG_BLOCK_INFO;
 
 use crate::src::internal::Dav1dTaskContext_scratch_pal;
+
+use crate::src::looprestoration::dav1d_loop_restoration_dsp_init;
 
 define_DEBUG_BLOCK_INFO!();
 
@@ -6994,7 +6990,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 dav1d_intra_pred_dsp_init_8bpc(&mut (*dsp).ipred);
                 dav1d_itx_dsp_init_8bpc(&mut (*dsp).itx, bpc);
                 dav1d_loop_filter_dsp_init_8bpc(&mut (*dsp).lf);
-                dav1d_loop_restoration_dsp_init_8bpc(&mut (*dsp).lr, bpc);
+                dav1d_loop_restoration_dsp_init::<BitDepth8>(&mut (*dsp).lr, bpc);
                 dav1d_mc_dsp_init_8bpc(&mut (*dsp).mc);
                 dav1d_film_grain_dsp_init_8bpc(&mut (*dsp).fg);
                 current_block = 313581471991351815;
@@ -7005,7 +7001,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 dav1d_intra_pred_dsp_init_16bpc(&mut (*dsp).ipred);
                 dav1d_itx_dsp_init_16bpc(&mut (*dsp).itx, bpc);
                 dav1d_loop_filter_dsp_init_16bpc(&mut (*dsp).lf);
-                dav1d_loop_restoration_dsp_init_16bpc(&mut (*dsp).lr, bpc);
+                dav1d_loop_restoration_dsp_init::<BitDepth16>(&mut (*dsp).lr, bpc);
                 dav1d_mc_dsp_init_16bpc(&mut (*dsp).mc);
                 dav1d_film_grain_dsp_init_16bpc(&mut (*dsp).fg);
                 current_block = 313581471991351815;

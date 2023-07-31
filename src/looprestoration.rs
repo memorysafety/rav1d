@@ -1,7 +1,7 @@
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-use crate::include::common::bitdepth::{BitDepth16, BitDepth8};
+use crate::include::common::bitdepth::BitDepth16;
+use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::imax;
 use crate::include::common::intops::umin;
@@ -12,7 +12,11 @@ use crate::include::stdint::intptr_t;
 use crate::include::stdint::uint16_t;
 use crate::include::stdint::uint32_t;
 use crate::src::align::Align16;
+#[cfg(feature = "asm")]
+use crate::src::cpu::dav1d_get_cpu_flags;
 use crate::src::tables::dav1d_sgr_x_by_x;
+#[cfg(feature = "asm")]
+use cfg_if::cfg_if;
 
 pub type LrEdgeFlags = libc::c_uint;
 pub const LR_HAVE_BOTTOM: LrEdgeFlags = 8;
@@ -1062,7 +1066,10 @@ type fn_dav1d_wiener_filter_v_neon<BD> = unsafe extern "C" fn(
 
 // TODO(randomPoison): Temporarily pub until all usages can be made private.
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-pub(crate) trait BitDepthLooprestorationArm: BitDepth {
+pub(crate) trait BitDepthLoopRestorationAsm: BitDepth {
+    const dav1d_wiener_filter7_neon: looprestorationfilter_fn;
+    const dav1d_wiener_filter5_neon: looprestorationfilter_fn;
+
     const dav1d_sgr_box3_h_neon: fn_dav1d_sgr_box_h_neon<Self>;
     const dav1d_sgr_box5_h_neon: fn_dav1d_sgr_box_h_neon<Self>;
     const dav1d_sgr_finish_filter1_neon: fn_dav1d_sgr_finish_filter_neon<Self>;
@@ -1077,7 +1084,10 @@ pub(crate) trait BitDepthLooprestorationArm: BitDepth {
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-impl BitDepthLooprestorationArm for BitDepth8 {
+impl BitDepthLoopRestorationAsm for BitDepth8 {
+    const dav1d_wiener_filter7_neon: looprestorationfilter_fn = dav1d_wiener_filter7_8bpc_neon;
+    const dav1d_wiener_filter5_neon: looprestorationfilter_fn = dav1d_wiener_filter5_8bpc_neon;
+
     const dav1d_sgr_box3_h_neon: fn_dav1d_sgr_box_h_neon<Self> = {
         extern "C" {
             fn dav1d_sgr_box3_h_8bpc_neon(
@@ -1221,7 +1231,10 @@ impl BitDepthLooprestorationArm for BitDepth8 {
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-impl BitDepthLooprestorationArm for BitDepth16 {
+impl BitDepthLoopRestorationAsm for BitDepth16 {
+    const dav1d_wiener_filter7_neon: looprestorationfilter_fn = dav1d_wiener_filter7_16bpc_neon;
+    const dav1d_wiener_filter5_neon: looprestorationfilter_fn = dav1d_wiener_filter5_16bpc_neon;
+
     const dav1d_sgr_box3_h_neon: fn_dav1d_sgr_box_h_neon<Self> = {
         extern "C" {
             fn dav1d_sgr_box3_h_16bpc_neon(
@@ -1366,7 +1379,7 @@ impl BitDepthLooprestorationArm for BitDepth16 {
 
 // TODO(randomPoison): Temporarily pub until callers are deduplicated.
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-pub(crate) unsafe fn dav1d_sgr_filter1_neon<BD: BitDepthLooprestorationArm>(
+pub(crate) unsafe fn dav1d_sgr_filter1_neon<BD: BitDepthLoopRestorationAsm>(
     mut tmp: *mut int16_t,
     mut src: *const BD::Pixel,
     stride: ptrdiff_t,
@@ -1422,7 +1435,7 @@ pub(crate) unsafe fn dav1d_sgr_filter1_neon<BD: BitDepthLooprestorationArm>(
 
 // TODO(randomPoison): Temporarily pub until callers are deduplicated.
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-pub(crate) unsafe fn dav1d_sgr_filter2_neon<BD: BitDepthLooprestorationArm>(
+pub(crate) unsafe fn dav1d_sgr_filter2_neon<BD: BitDepthLoopRestorationAsm>(
     mut tmp: *mut int16_t,
     mut src: *const BD::Pixel,
     stride: ptrdiff_t,
@@ -1478,7 +1491,7 @@ pub(crate) unsafe fn dav1d_sgr_filter2_neon<BD: BitDepthLooprestorationArm>(
 
 // TODO(randomPoison): Temporarily pub until init logic is deduplicated.
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-pub(crate) unsafe extern "C" fn sgr_filter_5x5_neon_erased<BD: BitDepthLooprestorationArm>(
+pub(crate) unsafe extern "C" fn sgr_filter_5x5_neon_erased<BD: BitDepthLoopRestorationAsm>(
     p: *mut libc::c_void,
     stride: ptrdiff_t,
     left: *const libc::c_void,
@@ -1503,7 +1516,7 @@ pub(crate) unsafe extern "C" fn sgr_filter_5x5_neon_erased<BD: BitDepthLoopresto
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-unsafe fn sgr_filter_5x5_neon<BD: BitDepthLooprestorationArm>(
+unsafe fn sgr_filter_5x5_neon<BD: BitDepthLoopRestorationAsm>(
     dst: *mut BD::Pixel,
     stride: ptrdiff_t,
     left: *const [BD::Pixel; 4],
@@ -1542,7 +1555,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepthLooprestorationArm>(
 
 // TODO(randomPoison): Temporarily pub until init logic is deduplicated.
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-pub(crate) unsafe extern "C" fn sgr_filter_3x3_neon_erased<BD: BitDepthLooprestorationArm>(
+pub(crate) unsafe extern "C" fn sgr_filter_3x3_neon_erased<BD: BitDepthLoopRestorationAsm>(
     p: *mut libc::c_void,
     stride: ptrdiff_t,
     left: *const libc::c_void,
@@ -1567,7 +1580,7 @@ pub(crate) unsafe extern "C" fn sgr_filter_3x3_neon_erased<BD: BitDepthLoopresto
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-unsafe fn sgr_filter_3x3_neon<BD: BitDepthLooprestorationArm>(
+unsafe fn sgr_filter_3x3_neon<BD: BitDepthLoopRestorationAsm>(
     dst: *mut BD::Pixel,
     stride: ptrdiff_t,
     left: *const [BD::Pixel; 4],
@@ -1606,7 +1619,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepthLooprestorationArm>(
 
 // TODO(randomPoison): Temporarily pub until init logic is deduplicated.
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-pub(crate) unsafe extern "C" fn sgr_filter_mix_neon_erased<BD: BitDepthLooprestorationArm>(
+pub(crate) unsafe extern "C" fn sgr_filter_mix_neon_erased<BD: BitDepthLoopRestorationAsm>(
     p: *mut libc::c_void,
     stride: ptrdiff_t,
     left: *const libc::c_void,
@@ -1631,7 +1644,7 @@ pub(crate) unsafe extern "C" fn sgr_filter_mix_neon_erased<BD: BitDepthLoopresto
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-unsafe extern "C" fn sgr_filter_mix_neon<BD: BitDepthLooprestorationArm>(
+unsafe extern "C" fn sgr_filter_mix_neon<BD: BitDepthLoopRestorationAsm>(
     dst: *mut BD::Pixel,
     stride: ptrdiff_t,
     left: *const [BD::Pixel; 4],
@@ -1685,7 +1698,7 @@ unsafe extern "C" fn sgr_filter_mix_neon<BD: BitDepthLooprestorationArm>(
 
 // TODO(randomPoison): Temporarily pub until init logic is deduplicated.
 #[cfg(all(feature = "asm", target_arch = "arm"))]
-pub(crate) unsafe extern "C" fn wiener_filter_neon_erased<BD: BitDepthLooprestorationArm>(
+pub(crate) unsafe extern "C" fn wiener_filter_neon_erased<BD: BitDepthLoopRestorationAsm>(
     p: *mut libc::c_void,
     stride: ptrdiff_t,
     left: *const libc::c_void,
@@ -1710,7 +1723,7 @@ pub(crate) unsafe extern "C" fn wiener_filter_neon_erased<BD: BitDepthLooprestor
 }
 
 #[cfg(all(feature = "asm", target_arch = "arm"))]
-unsafe fn wiener_filter_neon<BD: BitDepthLooprestorationArm>(
+unsafe fn wiener_filter_neon<BD: BitDepthLoopRestorationAsm>(
     dst: *mut BD::Pixel,
     stride: ptrdiff_t,
     left: *const [BD::Pixel; 4],
@@ -1778,4 +1791,213 @@ unsafe fn wiener_filter_neon<BD: BitDepthLooprestorationArm>(
         (mid_stride as usize * ::core::mem::size_of::<int16_t>()) as ptrdiff_t,
         bd.bitdepth_max().as_(),
     );
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+pub(crate) trait BitDepthLoopRestorationAsm: BitDepth {
+    const dav1d_wiener_filter7_sse2: looprestorationfilter_fn;
+    const dav1d_wiener_filter5_sse2: looprestorationfilter_fn;
+    const dav1d_wiener_filter7_ssse3: looprestorationfilter_fn;
+    const dav1d_wiener_filter5_ssse3: looprestorationfilter_fn;
+    const dav1d_sgr_filter_5x5_ssse3: looprestorationfilter_fn;
+    const dav1d_sgr_filter_3x3_ssse3: looprestorationfilter_fn;
+    const dav1d_sgr_filter_mix_ssse3: looprestorationfilter_fn;
+    const dav1d_wiener_filter7_avx2: looprestorationfilter_fn;
+    const dav1d_wiener_filter5_avx2: looprestorationfilter_fn;
+    const dav1d_sgr_filter_5x5_avx2: looprestorationfilter_fn;
+    const dav1d_sgr_filter_3x3_avx2: looprestorationfilter_fn;
+    const dav1d_sgr_filter_mix_avx2: looprestorationfilter_fn;
+    const dav1d_wiener_filter7_avx512icl: looprestorationfilter_fn;
+    const dav1d_wiener_filter5_avx512icl: looprestorationfilter_fn;
+    const dav1d_sgr_filter_5x5_avx512icl: looprestorationfilter_fn;
+    const dav1d_sgr_filter_3x3_avx512icl: looprestorationfilter_fn;
+    const dav1d_sgr_filter_mix_avx512icl: looprestorationfilter_fn;
+}
+
+#[cfg(all(
+    feature = "bitdepth_8",
+    feature = "asm",
+    any(target_arch = "x86", target_arch = "x86_64"),
+))]
+impl BitDepthLoopRestorationAsm for BitDepth8 {
+    const dav1d_wiener_filter7_sse2: looprestorationfilter_fn = dav1d_wiener_filter7_8bpc_sse2;
+    const dav1d_wiener_filter5_sse2: looprestorationfilter_fn = dav1d_wiener_filter5_8bpc_sse2;
+    const dav1d_wiener_filter7_ssse3: looprestorationfilter_fn = dav1d_wiener_filter7_8bpc_ssse3;
+    const dav1d_wiener_filter5_ssse3: looprestorationfilter_fn = dav1d_wiener_filter5_8bpc_ssse3;
+    const dav1d_sgr_filter_5x5_ssse3: looprestorationfilter_fn = dav1d_sgr_filter_5x5_8bpc_ssse3;
+    const dav1d_sgr_filter_3x3_ssse3: looprestorationfilter_fn = dav1d_sgr_filter_3x3_8bpc_ssse3;
+    const dav1d_sgr_filter_mix_ssse3: looprestorationfilter_fn = dav1d_sgr_filter_mix_8bpc_ssse3;
+    const dav1d_wiener_filter7_avx2: looprestorationfilter_fn = dav1d_wiener_filter7_8bpc_avx2;
+    const dav1d_wiener_filter5_avx2: looprestorationfilter_fn = dav1d_wiener_filter5_8bpc_avx2;
+    const dav1d_sgr_filter_5x5_avx2: looprestorationfilter_fn = dav1d_sgr_filter_5x5_8bpc_avx2;
+    const dav1d_sgr_filter_3x3_avx2: looprestorationfilter_fn = dav1d_sgr_filter_3x3_8bpc_avx2;
+    const dav1d_sgr_filter_mix_avx2: looprestorationfilter_fn = dav1d_sgr_filter_mix_8bpc_avx2;
+    const dav1d_wiener_filter7_avx512icl: looprestorationfilter_fn =
+        dav1d_wiener_filter7_8bpc_avx512icl;
+    // With VNNI we don't need a 5-tap version.
+    const dav1d_wiener_filter5_avx512icl: looprestorationfilter_fn =
+        dav1d_wiener_filter7_8bpc_avx512icl;
+    const dav1d_sgr_filter_5x5_avx512icl: looprestorationfilter_fn =
+        dav1d_sgr_filter_5x5_8bpc_avx512icl;
+    const dav1d_sgr_filter_3x3_avx512icl: looprestorationfilter_fn =
+        dav1d_sgr_filter_3x3_8bpc_avx512icl;
+    const dav1d_sgr_filter_mix_avx512icl: looprestorationfilter_fn =
+        dav1d_sgr_filter_mix_8bpc_avx512icl;
+}
+
+#[cfg(all(
+    feature = "bitdepth_16",
+    feature = "asm",
+    any(target_arch = "x86", target_arch = "x86_64"),
+))]
+impl BitDepthLoopRestorationAsm for BitDepth16 {
+    // NOTE: There are no SSE2 versions of the wiener filter for 16bpc so we fall back
+    // to the C version.
+    const dav1d_wiener_filter7_sse2: looprestorationfilter_fn = wiener_c_erased::<Self>;
+    const dav1d_wiener_filter5_sse2: looprestorationfilter_fn = wiener_c_erased::<Self>;
+    const dav1d_wiener_filter7_ssse3: looprestorationfilter_fn = dav1d_wiener_filter7_16bpc_ssse3;
+    const dav1d_wiener_filter5_ssse3: looprestorationfilter_fn = dav1d_wiener_filter5_16bpc_ssse3;
+    const dav1d_sgr_filter_5x5_ssse3: looprestorationfilter_fn = dav1d_sgr_filter_5x5_16bpc_ssse3;
+    const dav1d_sgr_filter_3x3_ssse3: looprestorationfilter_fn = dav1d_sgr_filter_3x3_16bpc_ssse3;
+    const dav1d_sgr_filter_mix_ssse3: looprestorationfilter_fn = dav1d_sgr_filter_mix_16bpc_ssse3;
+    const dav1d_wiener_filter7_avx2: looprestorationfilter_fn = dav1d_wiener_filter7_16bpc_avx2;
+    const dav1d_wiener_filter5_avx2: looprestorationfilter_fn = dav1d_wiener_filter5_16bpc_avx2;
+    const dav1d_sgr_filter_5x5_avx2: looprestorationfilter_fn = dav1d_sgr_filter_5x5_16bpc_avx2;
+    const dav1d_sgr_filter_3x3_avx2: looprestorationfilter_fn = dav1d_sgr_filter_3x3_16bpc_avx2;
+    const dav1d_sgr_filter_mix_avx2: looprestorationfilter_fn = dav1d_sgr_filter_mix_16bpc_avx2;
+    const dav1d_wiener_filter7_avx512icl: looprestorationfilter_fn =
+        dav1d_wiener_filter7_16bpc_avx512icl;
+    const dav1d_wiener_filter5_avx512icl: looprestorationfilter_fn =
+        dav1d_wiener_filter5_16bpc_avx512icl;
+    const dav1d_sgr_filter_5x5_avx512icl: looprestorationfilter_fn =
+        dav1d_sgr_filter_5x5_16bpc_avx512icl;
+    const dav1d_sgr_filter_3x3_avx512icl: looprestorationfilter_fn =
+        dav1d_sgr_filter_3x3_16bpc_avx512icl;
+    const dav1d_sgr_filter_mix_avx512icl: looprestorationfilter_fn =
+        dav1d_sgr_filter_mix_16bpc_avx512icl;
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+#[inline(always)]
+fn loop_restoration_dsp_init_x86<BD: BitDepthLoopRestorationAsm>(
+    c: &mut Dav1dLoopRestorationDSPContext,
+    bpc: libc::c_int,
+) {
+    // TODO(randomPoison): Import temporarily needed until init fns are deduplicated.
+    use crate::src::looprestoration::*;
+    use crate::src::x86::cpu::*;
+
+    let flags = dav1d_get_cpu_flags();
+
+    if flags & DAV1D_X86_CPU_FLAG_SSE2 == 0 {
+        return;
+    }
+
+    c.wiener[0] = BD::dav1d_wiener_filter7_sse2;
+    c.wiener[1] = BD::dav1d_wiener_filter5_sse2;
+
+    if flags & DAV1D_X86_CPU_FLAG_SSSE3 == 0 {
+        return;
+    }
+
+    c.wiener[0] = BD::dav1d_wiener_filter7_ssse3;
+    c.wiener[1] = BD::dav1d_wiener_filter5_ssse3;
+
+    if BD::BITDEPTH == 8 || bpc == 10 {
+        c.sgr[0] = BD::dav1d_sgr_filter_5x5_ssse3;
+        c.sgr[1] = BD::dav1d_sgr_filter_3x3_ssse3;
+        c.sgr[2] = BD::dav1d_sgr_filter_mix_ssse3;
+    }
+
+    #[cfg(target_arch = "x86_64")]
+    {
+        if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
+            return;
+        }
+
+        c.wiener[0] = BD::dav1d_wiener_filter7_avx2;
+        c.wiener[1] = BD::dav1d_wiener_filter5_avx2;
+
+        if BD::BITDEPTH == 8 || bpc == 10 {
+            c.sgr[0] = BD::dav1d_sgr_filter_5x5_avx2;
+            c.sgr[1] = BD::dav1d_sgr_filter_3x3_avx2;
+            c.sgr[2] = BD::dav1d_sgr_filter_mix_avx2;
+        }
+
+        if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
+            return;
+        }
+
+        c.wiener[0] = BD::dav1d_wiener_filter7_avx512icl;
+        c.wiener[1] = BD::dav1d_wiener_filter5_avx512icl;
+
+        if BD::BITDEPTH == 8 || bpc == 10 {
+            c.sgr[0] = BD::dav1d_sgr_filter_5x5_avx512icl;
+            c.sgr[1] = BD::dav1d_sgr_filter_3x3_avx512icl;
+            c.sgr[2] = BD::dav1d_sgr_filter_mix_avx512icl;
+        }
+    }
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[inline(always)]
+fn loop_restoration_dsp_init_arm<BD: BitDepthLoopRestorationAsm>(
+    c: &mut Dav1dLoopRestorationDSPContext,
+    mut bpc: libc::c_int,
+) {
+    use crate::src::arm::cpu::DAV1D_ARM_CPU_FLAG_NEON;
+    // TODO(randomPoison): Import temporarily needed until init fns are deduplicated.
+    use crate::src::looprestoration::*;
+
+    let flags = dav1d_get_cpu_flags();
+
+    if flags & DAV1D_ARM_CPU_FLAG_NEON == 0 {
+        return;
+    }
+
+    cfg_if! {
+        if #[cfg(target_arch = "aarch64")] {
+            c.wiener[0] = BD::dav1d_wiener_filter7_neon;
+            c.wiener[1] = BD::dav1d_wiener_filter5_neon;
+        } else {
+            c.wiener[0] = wiener_filter_neon_erased::<BD>;
+            c.wiener[1] = wiener_filter_neon_erased::<BD>;
+        }
+    }
+
+    if BD::BITDEPTH == 8 || bpc == 10 {
+        c.sgr[0] = sgr_filter_5x5_neon_erased::<BD>;
+        c.sgr[1] = sgr_filter_3x3_neon_erased::<BD>;
+        c.sgr[2] = sgr_filter_mix_neon_erased::<BD>;
+    }
+}
+
+#[cfg(not(feature = "asm"))]
+pub(crate) trait BitDepthLoopRestorationAsm: BitDepth {}
+
+#[cfg(not(feature = "asm"))]
+impl BitDepthLoopRestorationAsm for BitDepth8 {}
+
+#[cfg(not(feature = "asm"))]
+impl BitDepthLoopRestorationAsm for BitDepth16 {}
+
+#[cold]
+pub(crate) unsafe fn dav1d_loop_restoration_dsp_init<BD: BitDepthLoopRestorationAsm>(
+    c: &mut Dav1dLoopRestorationDSPContext,
+    _bpc: libc::c_int,
+) {
+    c.wiener[1] = wiener_c_erased::<BD>;
+    c.wiener[0] = c.wiener[1];
+    c.sgr[0] = sgr_5x5_c_erased::<BD>;
+    c.sgr[1] = sgr_3x3_c_erased::<BD>;
+    c.sgr[2] = sgr_mix_c_erased::<BD>;
+
+    #[cfg(feature = "asm")]
+    cfg_if! {
+        if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
+            loop_restoration_dsp_init_x86::<BD>(c, _bpc);
+        } else if #[cfg(any(target_arch = "arm", target_arch = "aarch64"))] {
+            loop_restoration_dsp_init_arm::<BD>(c, _bpc);
+        }
+    }
 }
