@@ -1420,18 +1420,17 @@ pub const fn av1_default_cdf() -> CdfModeContext {
     };
     init
 }
-pub fn default_mv_component_cdf() -> CdfMvComponent {
+pub const fn default_mv_component_cdf() -> CdfMvComponent {
     let mut init = CdfMvComponent {
-        classes: cdf0d([
+        classes: Align32(cdf0d([
             28672, 30976, 31858, 32320, 32551, 32656, 32740, 32757, 32762, 32767,
-        ])
-        .into(),
-        class0_fp: cdf1d([[16384, 24576, 26624], [12288, 21248, 24128]]).into(),
-        classN_fp: cdf0d([8192, 17408, 21248]).into(),
-        class0_hp: cdf0d([20480]).into(),
-        classN_hp: cdf0d([16384]).into(),
-        class0: cdf0d([27648]).into(),
-        classN: cdf1d([
+        ])),
+        class0_fp: Align8(cdf1d([[16384, 24576, 26624], [12288, 21248, 24128]])),
+        classN_fp: Align8(cdf0d([8192, 17408, 21248])),
+        class0_hp: Align4(cdf0d([20480])),
+        classN_hp: Align4(cdf0d([16384])),
+        class0: Align4(cdf0d([27648])),
+        classN: Align4(cdf1d([
             [17408],
             [17920],
             [18944],
@@ -1442,9 +1441,8 @@ pub fn default_mv_component_cdf() -> CdfMvComponent {
             [29952],
             [29952],
             [30720],
-        ])
-        .into(),
-        sign: cdf0d([16384]).into(),
+        ])),
+        sign: Align4(cdf0d([16384])),
     };
     init
 }
