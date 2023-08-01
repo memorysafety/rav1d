@@ -710,6 +710,49 @@ use crate::src::levels::N_MV_JOINTS;
 use crate::include::common::intops::imin;
 use crate::src::levels::N_COMP_INTER_PRED_MODES;
 use crate::src::r#ref::dav1d_ref_inc;
+const fn cdf0d<const P: usize, const N: usize>(probs: [u16; P]) -> [u16; N] {
+    assert!(P < N);
+    let mut cdf0d = [0; N];
+    let mut i = 0;
+    while i < P {
+        cdf0d[i] = (32768 - probs[i]) & !32768;
+        i += 1;
+    }
+    cdf0d
+}
+const fn cdf1d<const P: usize, const N: usize, const M: usize>(
+    probs: [[u16; P]; M],
+) -> [[u16; N]; M] {
+    let mut cdf1d = [[0; N]; M];
+    let mut i = 0;
+    while i < M {
+        cdf1d[i] = cdf0d(probs[i]);
+        i += 1;
+    }
+    cdf1d
+}
+const fn cdf2d<const P: usize, const N: usize, const M: usize, const L: usize>(
+    probs: [[[u16; P]; M]; L],
+) -> [[[u16; N]; M]; L] {
+    let mut cdf2d = [[[0; N]; M]; L];
+    let mut i = 0;
+    while i < L {
+        cdf2d[i] = cdf1d(probs[i]);
+        i += 1;
+    }
+    cdf2d
+}
+const fn cdf3d<const P: usize, const N: usize, const M: usize, const L: usize, const K: usize>(
+    probs: [[[[u16; P]; M]; L]; K],
+) -> [[[[u16; N]; M]; L]; K] {
+    let mut cdf3d = [[[[0; N]; M]; L]; K];
+    let mut i = 0;
+    while i < K {
+        cdf3d[i] = cdf2d(probs[i]);
+        i += 1;
+    }
+    cdf3d
+}
 pub fn av1_default_cdf() -> CdfModeContext {
     let mut init = CdfModeContext {
         y_mode: [
