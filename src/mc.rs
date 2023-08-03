@@ -831,8 +831,8 @@ pub unsafe fn blend_h_rust<BD: BitDepth>(
 pub unsafe fn w_mask_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     dst_stride: usize,
-    mut tmp1: *const i16,
-    mut tmp2: *const i16,
+    tmp1: *const i16,
+    tmp2: *const i16,
     w: usize,
     h: usize,
     mut mask: *mut u8,
@@ -841,6 +841,8 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
     ss_ver: bool,
     bd: BD,
 ) {
+    let [mut tmp1, mut tmp2] = [tmp1, tmp2].map(|tmp| std::slice::from_raw_parts(tmp, h * w));
+
     let intermediate_bits = bd.get_intermediate_bits();
     let bitdepth = bd.bitdepth();
     let sh = intermediate_bits + 6;
@@ -851,34 +853,22 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
         let mut x = 0;
         while x < w {
             let m = std::cmp::min(
-                38 + ((*tmp1.offset(x as isize) as libc::c_int
-                    - *tmp2.offset(x as isize) as libc::c_int)
-                    .abs()
-                    + mask_rnd
+                38 + ((tmp1[x] as libc::c_int - tmp2[x] as libc::c_int).abs() + mask_rnd
                     >> mask_sh),
                 64,
             );
             *dst.offset(x as isize) = bd.iclip_pixel(
-                *tmp1.offset(x as isize) as libc::c_int * m
-                    + *tmp2.offset(x as isize) as libc::c_int * (64 - m)
-                    + rnd
-                    >> sh,
+                tmp1[x] as libc::c_int * m + tmp2[x] as libc::c_int * (64 - m) + rnd >> sh,
             );
             if ss_hor {
                 x += 1;
                 let n = std::cmp::min(
-                    38 + ((*tmp1.offset(x as isize) as libc::c_int
-                        - *tmp2.offset(x as isize) as libc::c_int)
-                        .abs()
-                        + mask_rnd
+                    38 + ((tmp1[x] as libc::c_int - tmp2[x] as libc::c_int).abs() + mask_rnd
                         >> mask_sh),
                     64,
                 );
                 *dst.offset(x as isize) = bd.iclip_pixel(
-                    *tmp1.offset(x as isize) as libc::c_int * n
-                        + *tmp2.offset(x as isize) as libc::c_int * (64 - n)
-                        + rnd
-                        >> sh,
+                    tmp1[x] as libc::c_int * n + tmp2[x] as libc::c_int * (64 - n) + rnd >> sh,
                 );
                 if h & ss_ver as usize != 0 {
                     *mask.offset((x >> 1) as isize) =
@@ -894,8 +884,8 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
             }
             x += 1;
         }
-        tmp1 = tmp1.offset(w as isize);
-        tmp2 = tmp2.offset(w as isize);
+        tmp1 = &tmp1[w..];
+        tmp2 = &tmp2[w..];
         dst = dst.offset(BD::pxstride(dst_stride) as isize);
         if !ss_ver || h & 1 != 0 {
             mask = mask.offset((w >> ss_hor as usize) as isize);
