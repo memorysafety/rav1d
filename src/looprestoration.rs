@@ -8,6 +8,7 @@ use crate::include::common::intops::umin;
 use crate::include::stddef::ptrdiff_t;
 use crate::include::stdint::int16_t;
 use crate::include::stdint::int32_t;
+use crate::include::stdint::intptr_t;
 use crate::include::stdint::uint16_t;
 use crate::include::stdint::uint32_t;
 use crate::src::align::Align16;
@@ -1035,6 +1036,30 @@ type fn_dav1d_sgr_weighted2_neon<BD> = unsafe extern "C" fn(
     bitdepth_max: libc::c_int,
 );
 
+type fn_dav1d_wiener_filter_h_neon<BD> = unsafe extern "C" fn(
+    dst: *mut int16_t,
+    left: *const [<BD as BitDepth>::Pixel; 4],
+    src: *const <BD as BitDepth>::Pixel,
+    stride: ptrdiff_t,
+    fh: *const int16_t,
+    w: intptr_t,
+    h: libc::c_int,
+    edges: LrEdgeFlags,
+    bitdepth_max: libc::c_int,
+);
+
+type fn_dav1d_wiener_filter_v_neon<BD> = unsafe extern "C" fn(
+    dst: *mut <BD as BitDepth>::Pixel,
+    stride: ptrdiff_t,
+    mid: *const int16_t,
+    w: libc::c_int,
+    h: libc::c_int,
+    fv: *const int16_t,
+    edges: LrEdgeFlags,
+    mid_stride: ptrdiff_t,
+    bitdepth_max: libc::c_int,
+);
+
 // TODO(randomPoison): Temporarily pub until all usages can be made private.
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 pub(crate) trait BitDepthLooprestorationArm: BitDepth {
@@ -1044,6 +1069,11 @@ pub(crate) trait BitDepthLooprestorationArm: BitDepth {
     const dav1d_sgr_finish_filter2_neon: fn_dav1d_sgr_finish_filter_neon<Self>;
     const dav1d_sgr_weighted1_neon: fn_dav1d_sgr_weighted1_neon<Self>;
     const dav1d_sgr_weighted2_neon: fn_dav1d_sgr_weighted2_neon<Self>;
+
+    #[cfg(target_arch = "arm")]
+    const dav1d_wiener_filter_h_neon: fn_dav1d_wiener_filter_h_neon<Self>;
+    #[cfg(target_arch = "arm")]
+    const dav1d_wiener_filter_v_neon: fn_dav1d_wiener_filter_v_neon<Self>;
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
@@ -1150,6 +1180,44 @@ impl BitDepthLooprestorationArm for BitDepth8 {
 
         dav1d_sgr_weighted2_8bpc_neon
     };
+
+    #[cfg(target_arch = "arm")]
+    const dav1d_wiener_filter_h_neon: fn_dav1d_wiener_filter_h_neon<Self> = {
+        extern "C" {
+            fn dav1d_wiener_filter_h_8bpc_neon(
+                dst: *mut int16_t,
+                left: *const [<BitDepth8 as BitDepth>::Pixel; 4],
+                src: *const <BitDepth8 as BitDepth>::Pixel,
+                stride: ptrdiff_t,
+                fh: *const int16_t,
+                w: intptr_t,
+                h: libc::c_int,
+                edges: LrEdgeFlags,
+                bitdepth_max: libc::c_int,
+            );
+        }
+
+        dav1d_wiener_filter_h_8bpc_neon
+    };
+
+    #[cfg(target_arch = "arm")]
+    const dav1d_wiener_filter_v_neon: fn_dav1d_wiener_filter_v_neon<Self> = {
+        extern "C" {
+            fn dav1d_wiener_filter_v_8bpc_neon(
+                dst: *mut <BitDepth8 as BitDepth>::Pixel,
+                stride: ptrdiff_t,
+                mid: *const int16_t,
+                w: libc::c_int,
+                h: libc::c_int,
+                fv: *const int16_t,
+                edges: LrEdgeFlags,
+                mid_stride: ptrdiff_t,
+                bitdepth_max: libc::c_int,
+            );
+        }
+
+        dav1d_wiener_filter_v_8bpc_neon
+    };
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
@@ -1255,6 +1323,44 @@ impl BitDepthLooprestorationArm for BitDepth16 {
         }
 
         dav1d_sgr_weighted2_16bpc_neon
+    };
+
+    #[cfg(target_arch = "arm")]
+    const dav1d_wiener_filter_h_neon: fn_dav1d_wiener_filter_h_neon<Self> = {
+        extern "C" {
+            fn dav1d_wiener_filter_h_16bpc_neon(
+                dst: *mut int16_t,
+                left: *const [<BitDepth16 as BitDepth>::Pixel; 4],
+                src: *const <BitDepth16 as BitDepth>::Pixel,
+                stride: ptrdiff_t,
+                fh: *const int16_t,
+                w: intptr_t,
+                h: libc::c_int,
+                edges: LrEdgeFlags,
+                bitdepth_max: libc::c_int,
+            );
+        }
+
+        dav1d_wiener_filter_h_16bpc_neon
+    };
+
+    #[cfg(target_arch = "arm")]
+    const dav1d_wiener_filter_v_neon: fn_dav1d_wiener_filter_v_neon<Self> = {
+        extern "C" {
+            fn dav1d_wiener_filter_v_16bpc_neon(
+                dst: *mut <BitDepth16 as BitDepth>::Pixel,
+                stride: ptrdiff_t,
+                mid: *const int16_t,
+                w: libc::c_int,
+                h: libc::c_int,
+                fv: *const int16_t,
+                edges: LrEdgeFlags,
+                mid_stride: ptrdiff_t,
+                bitdepth_max: libc::c_int,
+            );
+        }
+
+        dav1d_wiener_filter_v_16bpc_neon
     };
 }
 
@@ -1573,6 +1679,103 @@ unsafe extern "C" fn sgr_filter_mix_neon<BD: BitDepthLooprestorationArm>(
         w,
         h,
         wt.as_ptr(),
+        bd.bitdepth_max().as_(),
+    );
+}
+
+// TODO(randomPoison): Temporarily pub until init logic is deduplicated.
+#[cfg(all(feature = "asm", target_arch = "arm"))]
+pub(crate) unsafe extern "C" fn wiener_filter_neon_erased<BD: BitDepthLooprestorationArm>(
+    p: *mut libc::c_void,
+    stride: ptrdiff_t,
+    left: *const libc::c_void,
+    lpf: *const libc::c_void,
+    w: libc::c_int,
+    h: libc::c_int,
+    params: *const LooprestorationParams,
+    edges: LrEdgeFlags,
+    bitdepth_max: libc::c_int,
+) {
+    wiener_filter_neon(
+        p.cast(),
+        stride,
+        left.cast(),
+        lpf.cast(),
+        w,
+        h,
+        params,
+        edges,
+        BD::from_c(bitdepth_max),
+    )
+}
+
+#[cfg(all(feature = "asm", target_arch = "arm"))]
+unsafe fn wiener_filter_neon<BD: BitDepthLooprestorationArm>(
+    dst: *mut BD::Pixel,
+    stride: ptrdiff_t,
+    left: *const [BD::Pixel; 4],
+    mut lpf: *const BD::Pixel,
+    w: libc::c_int,
+    h: libc::c_int,
+    params: *const LooprestorationParams,
+    edges: LrEdgeFlags,
+    bd: BD,
+) {
+    let filter: *const [int16_t; 8] = (*params).filter.0.as_ptr();
+    let mut mid: Align16<[int16_t; 68 * 384]> = Align16([0; 68 * 384]);
+    let mut mid_stride: libc::c_int = w + 7 & !7;
+    BD::dav1d_wiener_filter_h_neon(
+        &mut *mid.0.as_mut_ptr().offset((2 * mid_stride) as isize),
+        left,
+        dst,
+        stride,
+        (*filter.offset(0)).as_ptr(),
+        w as intptr_t,
+        h,
+        edges,
+        bd.bitdepth_max().as_(),
+    );
+    if edges & LR_HAVE_TOP != 0 {
+        BD::dav1d_wiener_filter_h_neon(
+            mid.0.as_mut_ptr(),
+            core::ptr::null(),
+            lpf,
+            stride,
+            (*filter.offset(0)).as_ptr(),
+            w as intptr_t,
+            2,
+            edges,
+            bd.bitdepth_max().as_(),
+        );
+    }
+    if edges & LR_HAVE_BOTTOM != 0 {
+        BD::dav1d_wiener_filter_h_neon(
+            &mut *mid
+                .0
+                .as_mut_ptr()
+                .offset(((2 as libc::c_int + h) * mid_stride) as isize),
+            core::ptr::null(),
+            lpf.offset((6 * BD::pxstride(stride as usize)) as isize),
+            stride,
+            (*filter.offset(0)).as_ptr(),
+            w as intptr_t,
+            2,
+            edges,
+            bd.bitdepth_max().as_(),
+        );
+    }
+    BD::dav1d_wiener_filter_v_neon(
+        dst,
+        stride,
+        &mut *mid
+            .0
+            .as_mut_ptr()
+            .offset((2 as libc::c_int * mid_stride) as isize),
+        w,
+        h,
+        (*filter.offset(1)).as_ptr(),
+        edges,
+        (mid_stride as usize * ::core::mem::size_of::<int16_t>()) as ptrdiff_t,
         bd.bitdepth_max().as_(),
     );
 }
