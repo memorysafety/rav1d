@@ -72,7 +72,13 @@ impl_FromPrimitive!(isize => {, ...});
 impl_FromPrimitive!(f32 => {, ...});
 impl_FromPrimitive!(f64 => {, ...});
 
+pub enum BPC {
+    BPC8,
+    BPC16,
+}
+
 pub trait BitDepth: Clone + Copy {
+    const BPC: BPC;
     const BITDEPTH: u8;
 
     type Pixel: Copy
@@ -146,6 +152,7 @@ pub struct BitDepth8 {
 }
 
 impl BitDepth for BitDepth8 {
+    const BPC: BPC = BPC::BPC8;
     const BITDEPTH: u8 = 8;
 
     type Pixel = u8;
@@ -194,6 +201,7 @@ pub struct BitDepth16 {
 }
 
 impl BitDepth for BitDepth16 {
+    const BPC: BPC = BPC::BPC16;
     const BITDEPTH: u8 = 16;
 
     type Pixel = u16;
