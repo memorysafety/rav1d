@@ -846,6 +846,7 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
     let [mut tmp1, mut tmp2] = [tmp1, tmp2].map(|tmp| std::slice::from_raw_parts(tmp, h * w));
     let mut mask =
         std::slice::from_raw_parts_mut(mask, (w >> ss_hor as usize) * (h >> ss_ver as usize));
+    let sign = sign as u8;
 
     let intermediate_bits = bd.get_intermediate_bits();
     let bitdepth = bd.bitdepth();
@@ -856,33 +857,27 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
     for h in 0..h {
         let mut x = 0;
         while x < w {
-            let m = std::cmp::min(
-                38 + (((tmp1[x] as libc::c_int - tmp2[x] as libc::c_int).abs() + mask_rnd)
-                    >> mask_sh),
-                64,
-            );
+            let m =
+                std::cmp::min(38 + ((tmp1[x].abs_diff(tmp2[x]) + mask_rnd) >> mask_sh), 64) as u8;
             dst[x] = bd.iclip_pixel(
-                (tmp1[x] as libc::c_int * m + tmp2[x] as libc::c_int * (64 - m) + rnd) >> sh,
+                (tmp1[x] as i32 * m as i32 + tmp2[x] as i32 * (64 - m as i32) + rnd) >> sh,
             );
             if ss_hor {
                 x += 1;
-                let n = std::cmp::min(
-                    38 + (((tmp1[x] as libc::c_int - tmp2[x] as libc::c_int).abs() + mask_rnd)
-                        >> mask_sh),
-                    64,
-                );
+                let n = std::cmp::min(38 + ((tmp1[x].abs_diff(tmp2[x]) + mask_rnd) >> mask_sh), 64)
+                    as u8;
                 dst[x] = bd.iclip_pixel(
-                    (tmp1[x] as libc::c_int * n + tmp2[x] as libc::c_int * (64 - n) + rnd) >> sh,
+                    (tmp1[x] as i32 * n as i32 + tmp2[x] as i32 * (64 - n as i32) + rnd) >> sh,
                 );
                 if h & ss_ver as usize != 0 {
-                    mask[x >> 1] = ((m + n + mask[x >> 1] as libc::c_int + 2 - sign as libc::c_int) >> 2) as u8;
+                    mask[x >> 1] = ((m + n + mask[x >> 1] + 2 - sign) >> 2) as u8;
                 } else if ss_ver {
-                    mask[x >> 1] = (m + n) as u8;
+                    mask[x >> 1] = m + n;
                 } else {
-                    mask[x >> 1] = ((m + n + 1 - sign as libc::c_int) >> 1) as u8;
+                    mask[x >> 1] = ((m + n + 1 - sign) >> 1) as u8;
                 }
             } else {
-                mask[x] = m as u8;
+                mask[x] = m;
             }
             x += 1;
         }
