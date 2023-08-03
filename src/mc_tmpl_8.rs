@@ -3131,88 +3131,26 @@ unsafe extern "C" fn w_mask_420_c(
 ) {
     w_mask_c(dst, dst_stride, tmp1, tmp2, w, h, mask, sign, true, true)
 }
+use crate::src::mc::warp_affine_8x8_rust;
 unsafe extern "C" fn warp_affine_8x8_c(
-    mut dst: *mut pixel,
+    dst: *mut pixel,
     dst_stride: ptrdiff_t,
-    mut src: *const pixel,
+    src: *const pixel,
     src_stride: ptrdiff_t,
     abcd: *const int16_t,
-    mut mx: libc::c_int,
-    mut my: libc::c_int,
+    mx: libc::c_int,
+    my: libc::c_int,
 ) {
-    let intermediate_bits = 4;
-    let mut mid: [int16_t; 120] = [0; 120];
-    let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
-    src = src.offset(-((3 * src_stride) as isize));
-    let mut y = 0;
-    while y < 15 {
-        let mut x = 0;
-        let mut tmx = mx;
-        while x < 8 {
-            let filter: *const int8_t =
-                (dav1d_mc_warp_filter[(64 as libc::c_int + (tmx + 512 >> 10)) as usize]).as_ptr();
-            *mid_ptr.offset(x as isize) = (*filter.offset(0) as libc::c_int
-                * *src.offset((x - 3 * 1) as isize) as libc::c_int
-                + *filter.offset(1) as libc::c_int
-                    * *src.offset((x - 2 * 1) as isize) as libc::c_int
-                + *filter.offset(2) as libc::c_int
-                    * *src.offset((x - 1 * 1) as isize) as libc::c_int
-                + *filter.offset(3) as libc::c_int
-                    * *src.offset((x + 0 * 1) as isize) as libc::c_int
-                + *filter.offset(4) as libc::c_int
-                    * *src.offset((x + 1 * 1) as isize) as libc::c_int
-                + *filter.offset(5) as libc::c_int
-                    * *src.offset((x + 2 * 1) as isize) as libc::c_int
-                + *filter.offset(6) as libc::c_int
-                    * *src.offset((x + 3 * 1) as isize) as libc::c_int
-                + *filter.offset(7) as libc::c_int
-                    * *src.offset((x + 4 * 1) as isize) as libc::c_int
-                + ((1 as libc::c_int) << 7 - intermediate_bits >> 1)
-                >> 7 - intermediate_bits) as int16_t;
-            x += 1;
-            tmx += *abcd.offset(0) as libc::c_int;
-        }
-        src = src.offset(src_stride as isize);
-        mid_ptr = mid_ptr.offset(8);
-        y += 1;
-        mx += *abcd.offset(1) as libc::c_int;
-    }
-    mid_ptr = &mut *mid.as_mut_ptr().offset((3 * 8) as isize) as *mut int16_t;
-    let mut y_0 = 0;
-    while y_0 < 8 {
-        let mut x_0 = 0;
-        let mut tmy = my;
-        while x_0 < 8 {
-            let filter_0: *const int8_t =
-                (dav1d_mc_warp_filter[(64 as libc::c_int + (tmy + 512 >> 10)) as usize]).as_ptr();
-            *dst.offset(x_0 as isize) = iclip_u8(
-                *filter_0.offset(0) as libc::c_int
-                    * *mid_ptr.offset((x_0 - 3 * 8) as isize) as libc::c_int
-                    + *filter_0.offset(1) as libc::c_int
-                        * *mid_ptr.offset((x_0 - 2 * 8) as isize) as libc::c_int
-                    + *filter_0.offset(2) as libc::c_int
-                        * *mid_ptr.offset((x_0 - 1 * 8) as isize) as libc::c_int
-                    + *filter_0.offset(3) as libc::c_int
-                        * *mid_ptr.offset((x_0 + 0 * 8) as isize) as libc::c_int
-                    + *filter_0.offset(4) as libc::c_int
-                        * *mid_ptr.offset((x_0 + 1 * 8) as isize) as libc::c_int
-                    + *filter_0.offset(5) as libc::c_int
-                        * *mid_ptr.offset((x_0 + 2 * 8) as isize) as libc::c_int
-                    + *filter_0.offset(6) as libc::c_int
-                        * *mid_ptr.offset((x_0 + 3 * 8) as isize) as libc::c_int
-                    + *filter_0.offset(7) as libc::c_int
-                        * *mid_ptr.offset((x_0 + 4 * 8) as isize) as libc::c_int
-                    + ((1 as libc::c_int) << 7 + intermediate_bits >> 1)
-                    >> 7 + intermediate_bits,
-            ) as pixel;
-            x_0 += 1;
-            tmy += *abcd.offset(2) as libc::c_int;
-        }
-        mid_ptr = mid_ptr.offset(8);
-        dst = dst.offset(dst_stride as isize);
-        y_0 += 1;
-        my += *abcd.offset(3) as libc::c_int;
-    }
+    warp_affine_8x8_rust(
+        dst,
+        dst_stride,
+        src,
+        src_stride,
+        abcd,
+        mx,
+        my,
+        BitDepth8::new(()),
+    )
 }
 unsafe extern "C" fn warp_affine_8x8t_c(
     mut tmp: *mut int16_t,
