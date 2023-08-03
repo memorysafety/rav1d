@@ -835,7 +835,7 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
     tmp2: *const i16,
     w: usize,
     h: usize,
-    mut mask: *mut u8,
+    mask: *mut u8,
     sign: libc::c_int,
     ss_hor: bool,
     ss_ver: bool,
@@ -844,6 +844,8 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
     let dst_stride = BD::pxstride(dst_stride);
     let mut dst = std::slice::from_raw_parts_mut(dst, h * dst_stride + w);
     let [mut tmp1, mut tmp2] = [tmp1, tmp2].map(|tmp| std::slice::from_raw_parts(tmp, h * w));
+    let mut mask =
+        std::slice::from_raw_parts_mut(mask, (w >> ss_hor as usize) * (h >> ss_ver as usize));
 
     let intermediate_bits = bd.get_intermediate_bits();
     let bitdepth = bd.bitdepth();
@@ -873,16 +875,14 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
                     tmp1[x] as libc::c_int * n + tmp2[x] as libc::c_int * (64 - n) + rnd >> sh,
                 );
                 if h & ss_ver as usize != 0 {
-                    *mask.offset((x >> 1) as isize) =
-                        (m + n + *mask.offset((x >> 1) as isize) as libc::c_int + 2 - sign >> 2)
-                            as u8;
+                    mask[x >> 1] = (m + n + mask[x >> 1] as libc::c_int + 2 - sign >> 2) as u8;
                 } else if ss_ver {
-                    *mask.offset((x >> 1) as isize) = (m + n) as u8;
+                    mask[x >> 1] = (m + n) as u8;
                 } else {
-                    *mask.offset((x >> 1) as isize) = (m + n + 1 - sign >> 1) as u8;
+                    mask[x >> 1] = (m + n + 1 - sign >> 1) as u8;
                 }
             } else {
-                *mask.offset(x as isize) = m as u8;
+                mask[x] = m as u8;
             }
             x += 1;
         }
@@ -890,7 +890,7 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
         tmp2 = &tmp2[w..];
         dst = &mut dst[dst_stride..];
         if !ss_ver || h & 1 != 0 {
-            mask = mask.offset((w >> ss_hor as usize) as isize);
+            mask = &mut mask[w >> ss_hor as usize..];
         }
     }
 }
