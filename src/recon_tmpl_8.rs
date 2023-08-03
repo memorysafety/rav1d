@@ -985,7 +985,7 @@ unsafe fn decode_coefs(
                     &dav1d_lo_ctx_offsets
                         [nonsquare_tx.wrapping_add(tx as libc::c_uint & nonsquare_tx) as usize],
                 );
-                scan = dav1d_scans[tx as usize];
+                scan = dav1d_scans[tx as usize].as_ptr();
                 let stride: ptrdiff_t = (4 * sh) as ptrdiff_t;
                 let shift: libc::c_uint = (if ((*t_dim).lh as libc::c_int) < 4 {
                     (*t_dim).lh as libc::c_int + 2
