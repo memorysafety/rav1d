@@ -424,7 +424,7 @@ unsafe fn wiener_rust<BD: BitDepth>(
                 iclip(
                     sum_0 + rounding_off_v >> round_bits_v,
                     0 as libc::c_int,
-                    bd.bitdepth_max().into(),
+                    bd.into_c(),
                 )
                 .as_();
             i_0 += 1;
@@ -1033,7 +1033,7 @@ unsafe fn dav1d_wiener_filter_h_neon<BD: BitDepth>(
         w,
         h,
         edges,
-        bd.bitdepth_max().into(),
+        bd.into_c(),
     )
 }
 
@@ -1079,7 +1079,7 @@ unsafe fn dav1d_wiener_filter_v_neon<BD: BitDepth>(
         fv,
         edges,
         mid_stride,
-        bd.bitdepth_max().into(),
+        bd.into_c(),
     )
 }
 
@@ -1298,7 +1298,7 @@ pub(crate) unsafe fn dav1d_sgr_filter1_neon<BD: BitDepth>(
         );
     }
     dav1d_sgr_box3_v_neon(sumsq, sum, w, h, edges);
-    dav1d_sgr_calc_ab1_neon(a, b, w, h, strength, bd.bitdepth_max().into());
+    dav1d_sgr_calc_ab1_neon(a, b, w, h, strength, bd.into_c());
     dav1d_sgr_finish_filter1_neon::<BD>(tmp, src, stride, a, b, w, h);
 }
 
@@ -1420,7 +1420,7 @@ pub(crate) unsafe fn dav1d_sgr_filter2_neon<BD: BitDepth>(
         );
     }
     dav1d_sgr_box5_v_neon(sumsq, sum, w, h, edges);
-    dav1d_sgr_calc_ab2_neon(a, b, w, h, strength, bd.bitdepth_max().into());
+    dav1d_sgr_calc_ab2_neon(a, b, w, h, strength, bd.into_c());
     dav1d_sgr_finish_filter2_neon::<BD>(tmp, src, stride, a, b, w, h);
 }
 
@@ -1466,7 +1466,7 @@ unsafe fn dav1d_sgr_weighted1_neon<BD: BitDepth>(
         w,
         h,
         wt,
-        bd.bitdepth_max().into(),
+        bd.into_c(),
     )
 }
 
@@ -1515,7 +1515,7 @@ unsafe fn dav1d_sgr_weighted2_neon<BD: BitDepth>(
         w,
         h,
         wt,
-        bd.bitdepth_max().into(),
+        bd.into_c(),
     )
 }
 

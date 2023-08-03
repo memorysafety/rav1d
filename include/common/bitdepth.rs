@@ -117,6 +117,11 @@ pub trait BitDepth: Clone + Copy {
     /// that `bitdepth_max: c_int` arg back to a [`BitDepth`].
     fn from_c(bitdepth_max: c_int) -> Self;
 
+    /// The opposite of [`BitDepth::from_c`].
+    fn into_c(self) -> c_int {
+        self.bitdepth_max().into()
+    }
+
     fn pixel_copy(dest: &mut [Self::Pixel], src: &[Self::Pixel], n: usize) {
         dest[..n].copy_from_slice(&src[..n]);
     }
