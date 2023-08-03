@@ -6,6 +6,7 @@ use crate::include::dav1d::headers::Dav1dFilterMode;
 use crate::src::tables::dav1d_mc_subpel_filters;
 use crate::src::tables::dav1d_mc_warp_filter;
 use crate::src::tables::dav1d_obmc_masks;
+use crate::src::tables::dav1d_resize_filter;
 
 // TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
 #[inline(never)]
@@ -1162,5 +1163,66 @@ pub unsafe fn emu_edge_rust<BD: BitDepth>(
         );
         dst = dst.offset(BD::pxstride(dst_stride as usize) as isize);
         y_2 += 1;
+    }
+}
+
+// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
+pub unsafe fn resize_rust<BD: BitDepth>(
+    mut dst: *mut BD::Pixel,
+    dst_stride: libc::ptrdiff_t,
+    mut src: *const BD::Pixel,
+    src_stride: libc::ptrdiff_t,
+    dst_w: libc::c_int,
+    mut h: libc::c_int,
+    src_w: libc::c_int,
+    dx: libc::c_int,
+    mx0: libc::c_int,
+    bd: BD,
+) {
+    loop {
+        let mut mx = mx0;
+        let mut src_x = -(1 as libc::c_int);
+        let mut x = 0;
+        while x < dst_w {
+            let F: *const i8 = (dav1d_resize_filter[(mx >> 8) as usize]).as_ptr();
+            *dst.offset(x as isize) = bd.iclip_pixel(
+                -(*F.offset(0) as libc::c_int
+                    * (*src.offset(iclip(src_x - 3, 0 as libc::c_int, src_w - 1) as isize))
+                        .as_::<libc::c_int>()
+                    + *F.offset(1) as libc::c_int
+                        * (*src.offset(iclip(src_x - 2, 0 as libc::c_int, src_w - 1) as isize))
+                            .as_::<libc::c_int>()
+                    + *F.offset(2) as libc::c_int
+                        * (*src.offset(iclip(src_x - 1, 0 as libc::c_int, src_w - 1) as isize))
+                            .as_::<libc::c_int>()
+                    + *F.offset(3) as libc::c_int
+                        * (*src.offset(iclip(src_x + 0, 0 as libc::c_int, src_w - 1) as isize))
+                            .as_::<libc::c_int>()
+                    + *F.offset(4) as libc::c_int
+                        * (*src.offset(iclip(src_x + 1, 0 as libc::c_int, src_w - 1) as isize))
+                            .as_::<libc::c_int>()
+                    + *F.offset(5) as libc::c_int
+                        * (*src.offset(iclip(src_x + 2, 0 as libc::c_int, src_w - 1) as isize))
+                            .as_::<libc::c_int>()
+                    + *F.offset(6) as libc::c_int
+                        * (*src.offset(iclip(src_x + 3, 0 as libc::c_int, src_w - 1) as isize))
+                            .as_::<libc::c_int>()
+                    + *F.offset(7) as libc::c_int
+                        * (*src.offset(iclip(src_x + 4, 0 as libc::c_int, src_w - 1) as isize))
+                            .as_::<libc::c_int>())
+                    + 64
+                    >> 7,
+            );
+            mx += dx;
+            src_x += mx >> 14;
+            mx &= 0x3fff as libc::c_int;
+            x += 1;
+        }
+        dst = dst.offset(BD::pxstride(dst_stride as usize) as isize);
+        src = src.offset(BD::pxstride(src_stride as usize) as isize);
+        h -= 1;
+        if !(h != 0) {
+            break;
+        }
     }
 }

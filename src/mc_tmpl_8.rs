@@ -1816,8 +1816,6 @@ extern "C" {
     );
 }
 
-use crate::src::tables::dav1d_resize_filter;
-
 pub type pixel = uint8_t;
 
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
@@ -2008,8 +2006,6 @@ pub struct Dav1dMCDSPContext {
     pub emu_edge: emu_edge_fn,
     pub resize: resize_fn,
 }
-use crate::include::common::intops::iclip;
-use crate::include::common::intops::iclip_u8;
 use crate::src::mc::prep_8tap_rust;
 use crate::src::mc::prep_8tap_scaled_rust;
 use crate::src::mc::put_8tap_rust;
@@ -3187,63 +3183,30 @@ unsafe extern "C" fn emu_edge_c(
 ) {
     emu_edge_rust::<BitDepth8>(bw, bh, iw, ih, x, y, dst, dst_stride, r#ref, ref_stride)
 }
+use crate::src::mc::resize_rust;
 unsafe extern "C" fn resize_c(
-    mut dst: *mut pixel,
+    dst: *mut pixel,
     dst_stride: ptrdiff_t,
-    mut src: *const pixel,
+    src: *const pixel,
     src_stride: ptrdiff_t,
     dst_w: libc::c_int,
-    mut h: libc::c_int,
+    h: libc::c_int,
     src_w: libc::c_int,
     dx: libc::c_int,
     mx0: libc::c_int,
 ) {
-    loop {
-        let mut mx = mx0;
-        let mut src_x = -(1 as libc::c_int);
-        let mut x = 0;
-        while x < dst_w {
-            let F: *const int8_t = (dav1d_resize_filter[(mx >> 8) as usize]).as_ptr();
-            *dst.offset(x as isize) = iclip_u8(
-                -(*F.offset(0) as libc::c_int
-                    * *src.offset(iclip(src_x - 3, 0 as libc::c_int, src_w - 1) as isize)
-                        as libc::c_int
-                    + *F.offset(1) as libc::c_int
-                        * *src.offset(iclip(src_x - 2, 0 as libc::c_int, src_w - 1) as isize)
-                            as libc::c_int
-                    + *F.offset(2) as libc::c_int
-                        * *src.offset(iclip(src_x - 1, 0 as libc::c_int, src_w - 1) as isize)
-                            as libc::c_int
-                    + *F.offset(3) as libc::c_int
-                        * *src.offset(iclip(src_x + 0, 0 as libc::c_int, src_w - 1) as isize)
-                            as libc::c_int
-                    + *F.offset(4) as libc::c_int
-                        * *src.offset(iclip(src_x + 1, 0 as libc::c_int, src_w - 1) as isize)
-                            as libc::c_int
-                    + *F.offset(5) as libc::c_int
-                        * *src.offset(iclip(src_x + 2, 0 as libc::c_int, src_w - 1) as isize)
-                            as libc::c_int
-                    + *F.offset(6) as libc::c_int
-                        * *src.offset(iclip(src_x + 3, 0 as libc::c_int, src_w - 1) as isize)
-                            as libc::c_int
-                    + *F.offset(7) as libc::c_int
-                        * *src.offset(iclip(src_x + 4, 0 as libc::c_int, src_w - 1) as isize)
-                            as libc::c_int)
-                    + 64
-                    >> 7,
-            ) as pixel;
-            mx += dx;
-            src_x += mx >> 14;
-            mx &= 0x3fff as libc::c_int;
-            x += 1;
-        }
-        dst = dst.offset(dst_stride as isize);
-        src = src.offset(src_stride as isize);
-        h -= 1;
-        if !(h != 0) {
-            break;
-        }
-    }
+    resize_rust(
+        dst,
+        dst_stride,
+        src,
+        src_stride,
+        dst_w,
+        h,
+        src_w,
+        dx,
+        mx0,
+        BitDepth8::new(()),
+    )
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
