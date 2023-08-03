@@ -829,7 +829,7 @@ pub unsafe fn blend_h_rust<BD: BitDepth>(
 
 // TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
 pub unsafe fn w_mask_rust<BD: BitDepth>(
-    mut dst: *mut BD::Pixel,
+    dst: *mut BD::Pixel,
     dst_stride: usize,
     tmp1: *const i16,
     tmp2: *const i16,
@@ -841,6 +841,8 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
     ss_ver: bool,
     bd: BD,
 ) {
+    let dst_stride = BD::pxstride(dst_stride);
+    let mut dst = std::slice::from_raw_parts_mut(dst, h * dst_stride + w);
     let [mut tmp1, mut tmp2] = [tmp1, tmp2].map(|tmp| std::slice::from_raw_parts(tmp, h * w));
 
     let intermediate_bits = bd.get_intermediate_bits();
@@ -857,7 +859,7 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
                     >> mask_sh),
                 64,
             );
-            *dst.offset(x as isize) = bd.iclip_pixel(
+            dst[x] = bd.iclip_pixel(
                 tmp1[x] as libc::c_int * m + tmp2[x] as libc::c_int * (64 - m) + rnd >> sh,
             );
             if ss_hor {
@@ -867,7 +869,7 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
                         >> mask_sh),
                     64,
                 );
-                *dst.offset(x as isize) = bd.iclip_pixel(
+                dst[x] = bd.iclip_pixel(
                     tmp1[x] as libc::c_int * n + tmp2[x] as libc::c_int * (64 - n) + rnd >> sh,
                 );
                 if h & ss_ver as usize != 0 {
@@ -886,7 +888,7 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
         }
         tmp1 = &tmp1[w..];
         tmp2 = &tmp2[w..];
-        dst = dst.offset(BD::pxstride(dst_stride) as isize);
+        dst = &mut dst[dst_stride..];
         if !ss_ver || h & 1 != 0 {
             mask = mask.offset((w >> ss_hor as usize) as isize);
         }
