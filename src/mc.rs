@@ -837,8 +837,8 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
     h: libc::c_int,
     mut mask: *mut u8,
     sign: libc::c_int,
-    ss_hor: libc::c_int,
-    ss_ver: libc::c_int,
+    ss_hor: bool,
+    ss_ver: bool,
     bd: BD,
 ) {
     let intermediate_bits = bd.get_intermediate_bits();
@@ -864,7 +864,7 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
                     + rnd
                     >> sh,
             );
-            if ss_hor != 0 {
+            if ss_hor {
                 x += 1;
                 let n = std::cmp::min(
                     38 + ((*tmp1.offset(x as isize) as libc::c_int
@@ -880,11 +880,11 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
                         + rnd
                         >> sh,
                 );
-                if h & ss_ver != 0 {
+                if h & ss_ver as libc::c_int != 0 {
                     *mask.offset((x >> 1) as isize) =
                         (m + n + *mask.offset((x >> 1) as isize) as libc::c_int + 2 - sign >> 2)
                             as u8;
-                } else if ss_ver != 0 {
+                } else if ss_ver {
                     *mask.offset((x >> 1) as isize) = (m + n) as u8;
                 } else {
                     *mask.offset((x >> 1) as isize) = (m + n + 1 - sign >> 1) as u8;
@@ -897,8 +897,8 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
         tmp1 = tmp1.offset(w as isize);
         tmp2 = tmp2.offset(w as isize);
         dst = dst.offset(BD::pxstride(dst_stride as usize) as isize);
-        if ss_ver == 0 || h & 1 != 0 {
-            mask = mask.offset((w >> ss_hor) as isize);
+        if !ss_ver || h & 1 != 0 {
+            mask = mask.offset((w >> ss_hor as libc::c_int) as isize);
         }
     }
 }

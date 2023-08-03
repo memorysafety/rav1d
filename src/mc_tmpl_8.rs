@@ -3089,8 +3089,8 @@ unsafe extern "C" fn w_mask_c(
         h,
         mask,
         sign,
-        ss_hor,
-        ss_ver,
+        ss_hor != 0,
+        ss_ver != 0,
         BitDepth8::new(()),
     )
 }
