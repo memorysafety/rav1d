@@ -51,7 +51,6 @@ extern "C" {
     );
     fn dav1d_copy_lpf_8bpc(f: *mut Dav1dFrameContext, src: *const *mut pixel, sby: libc::c_int);
     fn dav1d_lr_sbrow_8bpc(f: *mut Dav1dFrameContext, dst: *const *mut pixel, sby: libc::c_int);
-    static dav1d_scans: [*const uint16_t; 19];
     static mut dav1d_wedge_masks: [[[[*const uint8_t; 16]; 2]; 3]; 22];
     static mut dav1d_ii_masks: [[[*const uint8_t; 4]; 3]; 22];
 }
@@ -62,11 +61,11 @@ use crate::src::msac::dav1d_msac_decode_hi_tok;
 use crate::src::msac::dav1d_msac_decode_symbol_adapt16;
 use crate::src::msac::dav1d_msac_decode_symbol_adapt4;
 use crate::src::msac::dav1d_msac_decode_symbol_adapt8;
+use crate::src::scan::dav1d_scans;
 use crate::src::tables::dav1d_block_dimensions;
 use crate::src::tables::dav1d_filter_2d;
 use crate::src::tables::dav1d_filter_mode_to_y_mode;
 use crate::src::tables::dav1d_lo_ctx_offsets;
-
 use crate::src::tables::dav1d_tx_type_class;
 use crate::src::tables::dav1d_tx_types_per_set;
 use crate::src::tables::dav1d_txfm_dimensions;
