@@ -842,8 +842,9 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
     bd: BD,
 ) {
     let dst_stride = BD::pxstride(dst_stride);
-    let mut dst = std::slice::from_raw_parts_mut(dst, h * dst_stride + w);
-    let [mut tmp1, mut tmp2] = [tmp1, tmp2].map(|tmp| std::slice::from_raw_parts(tmp, h * w));
+    let dst =
+        std::slice::from_raw_parts_mut(dst, if h == 0 { 0 } else { (h - 1) * dst_stride + w });
+    let [tmp1, tmp2] = [tmp1, tmp2].map(|tmp| std::slice::from_raw_parts(tmp, h * w));
     let mut mask =
         std::slice::from_raw_parts_mut(mask, (w >> ss_hor as usize) * (h >> ss_ver as usize));
     let sign = sign as u8;
@@ -854,7 +855,10 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
     let rnd = (32 << intermediate_bits) + i32::from(BD::PREP_BIAS) * 64;
     let mask_sh = bitdepth + intermediate_bits - 4;
     let mask_rnd = 1 << (mask_sh - 5);
-    for h in 0..h {
+    for (h, ((tmp1, tmp2), dst)) in iter::zip(tmp1.chunks_exact(w), tmp2.chunks_exact(w))
+        .zip(dst.chunks_mut(dst_stride))
+        .enumerate()
+    {
         let mut x = 0;
         while x < w {
             let m =
@@ -881,9 +885,6 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
             }
             x += 1;
         }
-        tmp1 = &tmp1[w..];
-        tmp2 = &tmp2[w..];
-        dst = &mut dst[dst_stride..];
         if !ss_ver || h & 1 != 0 {
             mask = &mut mask[w >> ss_hor as usize..];
         }
