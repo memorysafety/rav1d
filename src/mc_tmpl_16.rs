@@ -2056,14 +2056,6 @@ unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     }
     return x >> 1;
 }
-#[inline]
-unsafe extern "C" fn pixel_set(dst: *mut pixel, val: libc::c_int, num: libc::c_int) {
-    let mut n = 0;
-    while n < num {
-        *dst.offset(n as isize) = val as pixel;
-        n += 1;
-    }
-}
 use crate::src::mc::prep_8tap_rust;
 use crate::src::mc::prep_8tap_scaled_rust;
 use crate::src::mc::put_8tap_rust;
@@ -3311,6 +3303,7 @@ unsafe extern "C" fn warp_affine_8x8t_c(
         BitDepth16::new(bitdepth_max as u16),
     )
 }
+use crate::src::mc::emu_edge_rust;
 unsafe extern "C" fn emu_edge_c(
     bw: intptr_t,
     bh: intptr_t,
@@ -3318,82 +3311,12 @@ unsafe extern "C" fn emu_edge_c(
     ih: intptr_t,
     x: intptr_t,
     y: intptr_t,
-    mut dst: *mut pixel,
+    dst: *mut pixel,
     dst_stride: ptrdiff_t,
-    mut r#ref: *const pixel,
+    r#ref: *const pixel,
     ref_stride: ptrdiff_t,
 ) {
-    r#ref = r#ref.offset(
-        iclip(y as libc::c_int, 0 as libc::c_int, ih as libc::c_int - 1) as isize
-            * PXSTRIDE(ref_stride)
-            + iclip(x as libc::c_int, 0 as libc::c_int, iw as libc::c_int - 1) as isize,
-    );
-    let left_ext = iclip(-x as libc::c_int, 0 as libc::c_int, bw as libc::c_int - 1);
-    let right_ext = iclip(
-        (x + bw - iw) as libc::c_int,
-        0 as libc::c_int,
-        bw as libc::c_int - 1,
-    );
-    if !(((left_ext + right_ext) as isize) < bw) {
-        unreachable!();
-    }
-    let top_ext = iclip(-y as libc::c_int, 0 as libc::c_int, bh as libc::c_int - 1);
-    let bottom_ext = iclip(
-        (y + bh - ih) as libc::c_int,
-        0 as libc::c_int,
-        bh as libc::c_int - 1,
-    );
-    if !(((top_ext + bottom_ext) as isize) < bh) {
-        unreachable!();
-    }
-    let mut blk: *mut pixel = dst.offset((top_ext as isize * PXSTRIDE(dst_stride)) as isize);
-    let center_w = (bw - left_ext as isize - right_ext as isize) as libc::c_int;
-    let center_h = (bh - top_ext as isize - bottom_ext as isize) as libc::c_int;
-    let mut y_0 = 0;
-    while y_0 < center_h {
-        memcpy(
-            blk.offset(left_ext as isize) as *mut libc::c_void,
-            r#ref as *const libc::c_void,
-            (center_w << 1) as libc::c_ulong,
-        );
-        if left_ext != 0 {
-            pixel_set(blk, *blk.offset(left_ext as isize) as libc::c_int, left_ext);
-        }
-        if right_ext != 0 {
-            pixel_set(
-                blk.offset(left_ext as isize).offset(center_w as isize),
-                *blk.offset((left_ext + center_w - 1) as isize) as libc::c_int,
-                right_ext,
-            );
-        }
-        r#ref = r#ref.offset(PXSTRIDE(ref_stride) as isize);
-        blk = blk.offset(PXSTRIDE(dst_stride) as isize);
-        y_0 += 1;
-    }
-    blk = dst.offset((top_ext as isize * PXSTRIDE(dst_stride)) as isize);
-    let mut y_1 = 0;
-    while y_1 < top_ext {
-        memcpy(
-            dst as *mut libc::c_void,
-            blk as *const libc::c_void,
-            (bw << 1) as libc::c_ulong,
-        );
-        dst = dst.offset(PXSTRIDE(dst_stride) as isize);
-        y_1 += 1;
-    }
-    dst = dst.offset((center_h as isize * PXSTRIDE(dst_stride)) as isize);
-    let mut y_2 = 0;
-    while y_2 < bottom_ext {
-        memcpy(
-            dst as *mut libc::c_void,
-            &mut *dst.offset(
-                -(PXSTRIDE as unsafe extern "C" fn(ptrdiff_t) -> ptrdiff_t)(dst_stride) as isize,
-            ) as *mut pixel as *const libc::c_void,
-            (bw << 1) as libc::c_ulong,
-        );
-        dst = dst.offset(PXSTRIDE(dst_stride) as isize);
-        y_2 += 1;
-    }
+    emu_edge_rust::<BitDepth16>(bw, bh, iw, ih, x, y, dst, dst_stride, r#ref, ref_stride)
 }
 unsafe extern "C" fn resize_c(
     mut dst: *mut pixel,
