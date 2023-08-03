@@ -993,11 +993,11 @@ unsafe fn sgr_mix_rust<BD: BitDepth>(
 
 #[cfg(all(feature = "asm", target_arch = "arm"))]
 unsafe fn dav1d_wiener_filter_h_neon<BD: BitDepth>(
-    dst: *mut int16_t,
+    dst: &mut [i16],
     left: *const [BD::Pixel; 4],
     src: *const BD::Pixel,
     stride: ptrdiff_t,
-    fh: *const int16_t,
+    fh: *const [i16; 8],
     w: intptr_t,
     h: libc::c_int,
     edges: LrEdgeFlags,
@@ -1025,11 +1025,11 @@ unsafe fn dav1d_wiener_filter_h_neon<BD: BitDepth>(
         BPC::BPC8 => asm_fn!(dav1d_wiener_filter_h_8bpc_neon),
         BPC::BPC16 => asm_fn!(dav1d_wiener_filter_h_16bpc_neon),
     })(
-        dst,
+        dst.as_mut_ptr(),
         left.cast(),
         src.cast(),
         stride,
-        fh,
+        fh.cast(),
         w,
         h,
         edges,
@@ -1041,10 +1041,10 @@ unsafe fn dav1d_wiener_filter_h_neon<BD: BitDepth>(
 unsafe fn dav1d_wiener_filter_v_neon<BD: BitDepth>(
     dst: *mut BD::Pixel,
     stride: ptrdiff_t,
-    mid: *const int16_t,
+    mid: &mut [i16],
     w: libc::c_int,
     h: libc::c_int,
-    fv: *const int16_t,
+    fv: *const [i16; 8],
     edges: LrEdgeFlags,
     mid_stride: ptrdiff_t,
     bd: BD,
@@ -1073,10 +1073,10 @@ unsafe fn dav1d_wiener_filter_v_neon<BD: BitDepth>(
     })(
         dst.cast(),
         stride,
-        mid,
+        mid.as_mut_ptr(),
         w,
         h,
-        fv,
+        fv.cast(),
         edges,
         mid_stride,
         bd.into_c(),
@@ -1125,11 +1125,11 @@ unsafe fn wiener_filter_neon<BD: BitDepth>(
     let mut mid: Align16<[int16_t; 68 * 384]> = Align16([0; 68 * 384]);
     let mut mid_stride: libc::c_int = w + 7 & !7;
     dav1d_wiener_filter_h_neon(
-        &mut *mid.0.as_mut_ptr().offset((2 * mid_stride) as isize),
+        &mut mid.0[2 * mid_stride as usize..],
         left,
         dst,
         stride,
-        (*filter.offset(0)).as_ptr(),
+        filter.offset(0),
         w as intptr_t,
         h,
         edges,
@@ -1137,11 +1137,11 @@ unsafe fn wiener_filter_neon<BD: BitDepth>(
     );
     if edges & LR_HAVE_TOP != 0 {
         dav1d_wiener_filter_h_neon(
-            mid.0.as_mut_ptr(),
+            &mut mid.0[..],
             core::ptr::null(),
             lpf,
             stride,
-            (*filter.offset(0)).as_ptr(),
+            filter.offset(0),
             w as intptr_t,
             2,
             edges,
@@ -1150,14 +1150,11 @@ unsafe fn wiener_filter_neon<BD: BitDepth>(
     }
     if edges & LR_HAVE_BOTTOM != 0 {
         dav1d_wiener_filter_h_neon(
-            &mut *mid
-                .0
-                .as_mut_ptr()
-                .offset(((2 as libc::c_int + h) * mid_stride) as isize),
+            &mut mid.0[(2 + h as usize) * mid_stride as usize..],
             core::ptr::null(),
             lpf.offset((6 * BD::pxstride(stride as usize)) as isize),
             stride,
-            (*filter.offset(0)).as_ptr(),
+            filter.offset(0),
             w as intptr_t,
             2,
             edges,
@@ -1167,13 +1164,10 @@ unsafe fn wiener_filter_neon<BD: BitDepth>(
     dav1d_wiener_filter_v_neon(
         dst,
         stride,
-        &mut *mid
-            .0
-            .as_mut_ptr()
-            .offset((2 as libc::c_int * mid_stride) as isize),
+        &mut mid.0[2 * mid_stride as usize..],
         w,
         h,
-        (*filter.offset(1)).as_ptr(),
+        filter.offset(1),
         edges,
         (mid_stride as usize * ::core::mem::size_of::<int16_t>()) as ptrdiff_t,
         bd,
@@ -1216,7 +1210,7 @@ unsafe fn dav1d_sgr_box3_h_neon<BD: BitDepth>(
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe fn dav1d_sgr_finish_filter1_neon<BD: BitDepth>(
-    tmp: *mut int16_t,
+    tmp: &mut [i16; 64 * 384],
     src: *const BD::Pixel,
     stride: ptrdiff_t,
     a: *const int32_t,
@@ -1243,20 +1237,20 @@ unsafe fn dav1d_sgr_finish_filter1_neon<BD: BitDepth>(
     (match BD::BPC {
         BPC::BPC8 => asm_fn!(dav1d_sgr_finish_filter1_8bpc_neon),
         BPC::BPC16 => asm_fn!(dav1d_sgr_finish_filter1_16bpc_neon),
-    })(tmp, src.cast(), stride, a, b, w, h)
+    })(tmp.as_mut_ptr(), src.cast(), stride, a, b, w, h)
 }
 
 // TODO(randomPoison): Temporarily pub until callers are deduplicated.
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 pub(crate) unsafe fn dav1d_sgr_filter1_neon<BD: BitDepth>(
-    tmp: *mut int16_t,
+    tmp: &mut [i16; 64 * 384],
     src: *const BD::Pixel,
     stride: ptrdiff_t,
     left: *const [BD::Pixel; 4],
     lpf: *const BD::Pixel,
     w: libc::c_int,
     h: libc::c_int,
-    strength: libc::c_int,
+    strength: u32,
     edges: LrEdgeFlags,
     bd: BD,
 ) {
@@ -1298,7 +1292,7 @@ pub(crate) unsafe fn dav1d_sgr_filter1_neon<BD: BitDepth>(
         );
     }
     dav1d_sgr_box3_v_neon(sumsq, sum, w, h, edges);
-    dav1d_sgr_calc_ab1_neon(a, b, w, h, strength, bd.into_c());
+    dav1d_sgr_calc_ab1_neon(a, b, w, h, strength as libc::c_int, bd.into_c());
     dav1d_sgr_finish_filter1_neon::<BD>(tmp, src, stride, a, b, w, h);
 }
 
@@ -1338,7 +1332,7 @@ unsafe fn dav1d_sgr_box5_h_neon<BD: BitDepth>(
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe fn dav1d_sgr_finish_filter2_neon<BD: BitDepth>(
-    tmp: *mut int16_t,
+    tmp: &mut [i16; 64 * 384],
     src: *const BD::Pixel,
     stride: ptrdiff_t,
     a: *const int32_t,
@@ -1365,20 +1359,20 @@ unsafe fn dav1d_sgr_finish_filter2_neon<BD: BitDepth>(
     (match BD::BPC {
         BPC::BPC8 => asm_fn!(dav1d_sgr_finish_filter2_8bpc_neon),
         BPC::BPC16 => asm_fn!(dav1d_sgr_finish_filter2_16bpc_neon),
-    })(tmp, src.cast(), stride, a, b, w, h)
+    })(tmp.as_mut_ptr(), src.cast(), stride, a, b, w, h)
 }
 
 // TODO(randomPoison): Temporarily pub until callers are deduplicated.
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 pub(crate) unsafe fn dav1d_sgr_filter2_neon<BD: BitDepth>(
-    tmp: *mut int16_t,
+    tmp: &mut [i16; 64 * 384],
     src: *const BD::Pixel,
     stride: ptrdiff_t,
     left: *const [BD::Pixel; 4],
     lpf: *const BD::Pixel,
     w: libc::c_int,
     h: libc::c_int,
-    strength: libc::c_int,
+    strength: u32,
     edges: LrEdgeFlags,
     bd: BD,
 ) {
@@ -1420,7 +1414,7 @@ pub(crate) unsafe fn dav1d_sgr_filter2_neon<BD: BitDepth>(
         );
     }
     dav1d_sgr_box5_v_neon(sumsq, sum, w, h, edges);
-    dav1d_sgr_calc_ab2_neon(a, b, w, h, strength, bd.into_c());
+    dav1d_sgr_calc_ab2_neon(a, b, w, h, strength as libc::c_int, bd.into_c());
     dav1d_sgr_finish_filter2_neon::<BD>(tmp, src, stride, a, b, w, h);
 }
 
@@ -1430,10 +1424,10 @@ unsafe fn dav1d_sgr_weighted1_neon<BD: BitDepth>(
     dst_stride: ptrdiff_t,
     src: *const BD::Pixel,
     src_stride: ptrdiff_t,
-    t1: *const int16_t,
+    t1: &mut [i16; 64 * 384],
     w: libc::c_int,
     h: libc::c_int,
-    wt: libc::c_int,
+    wt: i16,
     bd: BD,
 ) {
     macro_rules! asm_fn {
@@ -1462,10 +1456,10 @@ unsafe fn dav1d_sgr_weighted1_neon<BD: BitDepth>(
         dst_stride,
         src.cast(),
         src_stride,
-        t1,
+        t1.as_mut_ptr(),
         w,
         h,
-        wt,
+        wt.into(),
         bd.into_c(),
     )
 }
@@ -1476,11 +1470,11 @@ unsafe fn dav1d_sgr_weighted2_neon<BD: BitDepth>(
     dst_stride: ptrdiff_t,
     src: *const BD::Pixel,
     src_stride: ptrdiff_t,
-    t1: *const int16_t,
-    t2: *const int16_t,
+    t1: &mut [i16; 64 * 384],
+    t2: &mut [i16; 64 * 384],
     w: libc::c_int,
     h: libc::c_int,
-    wt: *const int16_t,
+    wt: &[i16; 2],
     bd: BD,
 ) {
     macro_rules! asm_fn {
@@ -1510,11 +1504,11 @@ unsafe fn dav1d_sgr_weighted2_neon<BD: BitDepth>(
         dst_stride,
         src.cast(),
         src_stride,
-        t1,
-        t2,
+        t1.as_mut_ptr(),
+        t2.as_mut_ptr(),
         w,
         h,
-        wt,
+        wt.as_ptr(),
         bd.into_c(),
     )
 }
@@ -1559,14 +1553,14 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
 ) {
     let mut tmp: Align16<[int16_t; 24576]> = Align16([0; 24576]);
     dav1d_sgr_filter2_neon(
-        tmp.0.as_mut_ptr(),
+        &mut tmp.0,
         dst,
         stride,
         left,
         lpf,
         w,
         h,
-        (*params).sgr.s0 as libc::c_int,
+        (*params).sgr.s0,
         edges,
         bd,
     );
@@ -1575,10 +1569,10 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
         stride,
         dst,
         stride,
-        tmp.0.as_mut_ptr(),
+        &mut tmp.0,
         w,
         h,
-        (*params).sgr.w0 as libc::c_int,
+        (*params).sgr.w0,
         bd,
     );
 }
@@ -1623,14 +1617,14 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
 ) {
     let mut tmp: Align16<[int16_t; 24576]> = Align16([0; 24576]);
     dav1d_sgr_filter1_neon(
-        tmp.0.as_mut_ptr(),
+        &mut tmp.0,
         dst,
         stride,
         left,
         lpf,
         w,
         h,
-        (*params).sgr.s1 as libc::c_int,
+        (*params).sgr.s1,
         edges,
         bd,
     );
@@ -1639,10 +1633,10 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
         stride,
         dst,
         stride,
-        tmp.0.as_mut_ptr(),
+        &mut tmp.0,
         w,
         h,
-        (*params).sgr.w1 as libc::c_int,
+        (*params).sgr.w1,
         bd,
     );
 }
@@ -1688,26 +1682,26 @@ unsafe extern "C" fn sgr_filter_mix_neon<BD: BitDepth>(
     let mut tmp1: Align16<[int16_t; 24576]> = Align16([0; 24576]);
     let mut tmp2: Align16<[int16_t; 24576]> = Align16([0; 24576]);
     dav1d_sgr_filter2_neon(
-        tmp1.0.as_mut_ptr(),
+        &mut tmp1.0,
         dst,
         stride,
         left,
         lpf,
         w,
         h,
-        (*params).sgr.s0 as libc::c_int,
+        (*params).sgr.s0,
         edges,
         bd,
     );
     dav1d_sgr_filter1_neon(
-        tmp2.0.as_mut_ptr(),
+        &mut tmp2.0,
         dst,
         stride,
         left,
         lpf,
         w,
         h,
-        (*params).sgr.s1 as libc::c_int,
+        (*params).sgr.s1,
         edges,
         bd,
     );
@@ -1717,11 +1711,11 @@ unsafe extern "C" fn sgr_filter_mix_neon<BD: BitDepth>(
         stride,
         dst,
         stride,
-        tmp1.0.as_mut_ptr(),
-        tmp2.0.as_mut_ptr(),
+        &mut tmp1.0,
+        &mut tmp2.0,
         w,
         h,
-        wt.as_ptr(),
+        &wt,
         bd,
     );
 }
