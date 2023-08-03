@@ -423,7 +423,7 @@ unsafe fn wiener_rust<BD: BitDepth>(
                 iclip(
                     sum_0 + rounding_off_v >> round_bits_v,
                     0 as libc::c_int,
-                    bd.bitdepth_max().as_(),
+                    bd.bitdepth_max().into(),
                 )
                 .as_();
             i_0 += 1;
@@ -1416,18 +1416,18 @@ pub(crate) unsafe fn dav1d_sgr_filter1_neon<BD: BitDepthLooprestorationArm>(
         );
     }
     dav1d_sgr_box3_v_neon(sumsq, sum, w, h, edges);
-    dav1d_sgr_calc_ab1_neon(a, b, w, h, strength, bd.bitdepth_max().as_());
+    dav1d_sgr_calc_ab1_neon(a, b, w, h, strength, bd.bitdepth_max().into());
     BD::dav1d_sgr_finish_filter1_neon(tmp, src, stride, a, b, w, h);
 }
 
 // TODO(randomPoison): Temporarily pub until callers are deduplicated.
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 pub(crate) unsafe fn dav1d_sgr_filter2_neon<BD: BitDepthLooprestorationArm>(
-    mut tmp: *mut int16_t,
-    mut src: *const BD::Pixel,
+    tmp: *mut int16_t,
+    src: *const BD::Pixel,
     stride: ptrdiff_t,
-    mut left: *const [BD::Pixel; 4],
-    mut lpf: *const BD::Pixel,
+    left: *const [BD::Pixel; 4],
+    lpf: *const BD::Pixel,
     w: libc::c_int,
     h: libc::c_int,
     strength: libc::c_int,
@@ -1472,7 +1472,7 @@ pub(crate) unsafe fn dav1d_sgr_filter2_neon<BD: BitDepthLooprestorationArm>(
         );
     }
     dav1d_sgr_box5_v_neon(sumsq, sum, w, h, edges);
-    dav1d_sgr_calc_ab2_neon(a, b, w, h, strength, bd.bitdepth_max().as_());
+    dav1d_sgr_calc_ab2_neon(a, b, w, h, strength, bd.bitdepth_max().into());
     BD::dav1d_sgr_finish_filter2_neon(tmp, src, stride, a, b, w, h);
 }
 
@@ -1536,7 +1536,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepthLooprestorationArm>(
         w,
         h,
         (*params).sgr.w0 as libc::c_int,
-        bd.bitdepth_max().as_(),
+        bd.bitdepth_max().into(),
     );
 }
 
