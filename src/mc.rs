@@ -857,29 +857,29 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
         let mut x = 0;
         while x < w {
             let m = std::cmp::min(
-                38 + ((tmp1[x] as libc::c_int - tmp2[x] as libc::c_int).abs() + mask_rnd
+                38 + (((tmp1[x] as libc::c_int - tmp2[x] as libc::c_int).abs() + mask_rnd)
                     >> mask_sh),
                 64,
             );
             dst[x] = bd.iclip_pixel(
-                tmp1[x] as libc::c_int * m + tmp2[x] as libc::c_int * (64 - m) + rnd >> sh,
+                (tmp1[x] as libc::c_int * m + tmp2[x] as libc::c_int * (64 - m) + rnd) >> sh,
             );
             if ss_hor {
                 x += 1;
                 let n = std::cmp::min(
-                    38 + ((tmp1[x] as libc::c_int - tmp2[x] as libc::c_int).abs() + mask_rnd
+                    38 + (((tmp1[x] as libc::c_int - tmp2[x] as libc::c_int).abs() + mask_rnd)
                         >> mask_sh),
                     64,
                 );
                 dst[x] = bd.iclip_pixel(
-                    tmp1[x] as libc::c_int * n + tmp2[x] as libc::c_int * (64 - n) + rnd >> sh,
+                    (tmp1[x] as libc::c_int * n + tmp2[x] as libc::c_int * (64 - n) + rnd) >> sh,
                 );
                 if h & ss_ver as usize != 0 {
-                    mask[x >> 1] = (m + n + mask[x >> 1] as libc::c_int + 2 - sign >> 2) as u8;
+                    mask[x >> 1] = ((m + n + mask[x >> 1] as libc::c_int + 2 - sign) >> 2) as u8;
                 } else if ss_ver {
                     mask[x >> 1] = (m + n) as u8;
                 } else {
-                    mask[x >> 1] = (m + n + 1 - sign >> 1) as u8;
+                    mask[x >> 1] = ((m + n + 1 - sign) >> 1) as u8;
                 }
             } else {
                 mask[x] = m as u8;
