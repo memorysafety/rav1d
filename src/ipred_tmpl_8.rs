@@ -1,5 +1,3 @@
-use crate::include::common::bitdepth::BitDepth;
-use crate::include::common::bitdepth::BitDepth8;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 
@@ -2241,6 +2239,9 @@ unsafe extern "C" fn ipred_z2_neon(
     max_width: libc::c_int,
     max_height: libc::c_int,
 ) {
+    use crate::include::common::bitdepth::BitDepth;
+    use crate::include::common::bitdepth::BitDepth8;
+
     let is_sm = angle >> 9 & 0x1 as libc::c_int;
     let enable_intra_edge_filter = angle >> 10;
     angle &= 511 as libc::c_int;
