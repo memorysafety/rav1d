@@ -851,13 +851,12 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
         let mut x = 0;
         while x < w {
             let m = std::cmp::min(
-                38 as libc::c_int
-                    + ((*tmp1.offset(x as isize) as libc::c_int
-                        - *tmp2.offset(x as isize) as libc::c_int)
-                        .abs()
-                        + mask_rnd
-                        >> mask_sh),
-                64 as libc::c_int,
+                38 + ((*tmp1.offset(x as isize) as libc::c_int
+                    - *tmp2.offset(x as isize) as libc::c_int)
+                    .abs()
+                    + mask_rnd
+                    >> mask_sh),
+                64,
             );
             *dst.offset(x as isize) = bd.iclip_pixel(
                 *tmp1.offset(x as isize) as libc::c_int * m
@@ -868,13 +867,12 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
             if ss_hor != 0 {
                 x += 1;
                 let n = std::cmp::min(
-                    38 as libc::c_int
-                        + ((*tmp1.offset(x as isize) as libc::c_int
-                            - *tmp2.offset(x as isize) as libc::c_int)
-                            .abs()
-                            + mask_rnd
-                            >> mask_sh),
-                    64 as libc::c_int,
+                    38 + ((*tmp1.offset(x as isize) as libc::c_int
+                        - *tmp2.offset(x as isize) as libc::c_int)
+                        .abs()
+                        + mask_rnd
+                        >> mask_sh),
+                    64,
                 );
                 *dst.offset(x as isize) = bd.iclip_pixel(
                     *tmp1.offset(x as isize) as libc::c_int * n
