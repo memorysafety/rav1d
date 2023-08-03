@@ -3179,6 +3179,7 @@ unsafe extern "C" fn w_mask_c(
     ss_ver: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
+    debug_assert!(sign == 0 || sign == 1);
     w_mask_rust(
         dst,
         dst_stride as usize,
@@ -3187,7 +3188,7 @@ unsafe extern "C" fn w_mask_c(
         w as usize,
         h as usize,
         mask,
-        sign,
+        sign != 0,
         ss_hor != 0,
         ss_ver != 0,
         BitDepth16::new(bitdepth_max as u16),

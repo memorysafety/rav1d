@@ -836,7 +836,7 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
     w: usize,
     h: usize,
     mask: *mut u8,
-    sign: libc::c_int,
+    sign: bool,
     ss_hor: bool,
     ss_ver: bool,
     bd: BD,
@@ -875,11 +875,11 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
                     (tmp1[x] as libc::c_int * n + tmp2[x] as libc::c_int * (64 - n) + rnd) >> sh,
                 );
                 if h & ss_ver as usize != 0 {
-                    mask[x >> 1] = ((m + n + mask[x >> 1] as libc::c_int + 2 - sign) >> 2) as u8;
+                    mask[x >> 1] = ((m + n + mask[x >> 1] as libc::c_int + 2 - sign as libc::c_int) >> 2) as u8;
                 } else if ss_ver {
                     mask[x >> 1] = (m + n) as u8;
                 } else {
-                    mask[x >> 1] = ((m + n + 1 - sign) >> 1) as u8;
+                    mask[x >> 1] = ((m + n + 1 - sign as libc::c_int) >> 1) as u8;
                 }
             } else {
                 mask[x] = m as u8;
