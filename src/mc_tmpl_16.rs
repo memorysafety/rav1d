@@ -1845,7 +1845,6 @@ extern "C" {
     );
 }
 
-use crate::src::tables::dav1d_mc_warp_filter;
 use crate::src::tables::dav1d_resize_filter;
 
 pub type pixel = uint16_t;
@@ -2049,7 +2048,6 @@ pub struct Dav1dMCDSPContext {
     pub emu_edge: emu_edge_fn,
     pub resize: resize_fn,
 }
-use crate::include::common::attributes::clz;
 use crate::include::common::intops::iclip;
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
@@ -3291,88 +3289,27 @@ unsafe extern "C" fn warp_affine_8x8_c(
         BitDepth16::new(bitdepth_max as u16),
     )
 }
+use crate::src::mc::warp_affine_8x8t_rust;
 unsafe extern "C" fn warp_affine_8x8t_c(
-    mut tmp: *mut int16_t,
+    tmp: *mut int16_t,
     tmp_stride: ptrdiff_t,
-    mut src: *const pixel,
+    src: *const pixel,
     src_stride: ptrdiff_t,
     abcd: *const int16_t,
-    mut mx: libc::c_int,
-    mut my: libc::c_int,
+    mx: libc::c_int,
+    my: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    let intermediate_bits = 14 as libc::c_int - (32 - clz(bitdepth_max as libc::c_uint));
-    let mut mid: [int16_t; 120] = [0; 120];
-    let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
-    src = src.offset(-((3 * PXSTRIDE(src_stride)) as isize));
-    let mut y = 0;
-    while y < 15 {
-        let mut x = 0;
-        let mut tmx = mx;
-        while x < 8 {
-            let filter: *const int8_t =
-                (dav1d_mc_warp_filter[(64 as libc::c_int + (tmx + 512 >> 10)) as usize]).as_ptr();
-            *mid_ptr.offset(x as isize) = (*filter.offset(0) as libc::c_int
-                * *src.offset((x - 3 * 1) as isize) as libc::c_int
-                + *filter.offset(1) as libc::c_int
-                    * *src.offset((x - 2 * 1) as isize) as libc::c_int
-                + *filter.offset(2) as libc::c_int
-                    * *src.offset((x - 1 * 1) as isize) as libc::c_int
-                + *filter.offset(3) as libc::c_int
-                    * *src.offset((x + 0 * 1) as isize) as libc::c_int
-                + *filter.offset(4) as libc::c_int
-                    * *src.offset((x + 1 * 1) as isize) as libc::c_int
-                + *filter.offset(5) as libc::c_int
-                    * *src.offset((x + 2 * 1) as isize) as libc::c_int
-                + *filter.offset(6) as libc::c_int
-                    * *src.offset((x + 3 * 1) as isize) as libc::c_int
-                + *filter.offset(7) as libc::c_int
-                    * *src.offset((x + 4 * 1) as isize) as libc::c_int
-                + ((1 as libc::c_int) << 7 - intermediate_bits >> 1)
-                >> 7 - intermediate_bits) as int16_t;
-            x += 1;
-            tmx += *abcd.offset(0) as libc::c_int;
-        }
-        src = src.offset(PXSTRIDE(src_stride) as isize);
-        mid_ptr = mid_ptr.offset(8);
-        y += 1;
-        mx += *abcd.offset(1) as libc::c_int;
-    }
-    mid_ptr = &mut *mid.as_mut_ptr().offset((3 * 8) as isize) as *mut int16_t;
-    let mut y_0 = 0;
-    while y_0 < 8 {
-        let mut x_0 = 0;
-        let mut tmy = my;
-        while x_0 < 8 {
-            let filter_0: *const int8_t =
-                (dav1d_mc_warp_filter[(64 as libc::c_int + (tmy + 512 >> 10)) as usize]).as_ptr();
-            *tmp.offset(x_0 as isize) = ((*filter_0.offset(0) as libc::c_int
-                * *mid_ptr.offset((x_0 - 3 * 8) as isize) as libc::c_int
-                + *filter_0.offset(1) as libc::c_int
-                    * *mid_ptr.offset((x_0 - 2 * 8) as isize) as libc::c_int
-                + *filter_0.offset(2) as libc::c_int
-                    * *mid_ptr.offset((x_0 - 1 * 8) as isize) as libc::c_int
-                + *filter_0.offset(3) as libc::c_int
-                    * *mid_ptr.offset((x_0 + 0 * 8) as isize) as libc::c_int
-                + *filter_0.offset(4) as libc::c_int
-                    * *mid_ptr.offset((x_0 + 1 * 8) as isize) as libc::c_int
-                + *filter_0.offset(5) as libc::c_int
-                    * *mid_ptr.offset((x_0 + 2 * 8) as isize) as libc::c_int
-                + *filter_0.offset(6) as libc::c_int
-                    * *mid_ptr.offset((x_0 + 3 * 8) as isize) as libc::c_int
-                + *filter_0.offset(7) as libc::c_int
-                    * *mid_ptr.offset((x_0 + 4 * 8) as isize) as libc::c_int
-                + ((1 as libc::c_int) << 7 >> 1)
-                >> 7)
-                - 8192) as int16_t;
-            x_0 += 1;
-            tmy += *abcd.offset(2) as libc::c_int;
-        }
-        mid_ptr = mid_ptr.offset(8);
-        tmp = tmp.offset(tmp_stride as isize);
-        y_0 += 1;
-        my += *abcd.offset(3) as libc::c_int;
-    }
+    warp_affine_8x8t_rust(
+        tmp,
+        tmp_stride,
+        src,
+        src_stride,
+        abcd,
+        mx,
+        my,
+        BitDepth16::new(bitdepth_max as u16),
+    )
 }
 unsafe extern "C" fn emu_edge_c(
     bw: intptr_t,
