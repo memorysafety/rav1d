@@ -3082,11 +3082,11 @@ unsafe extern "C" fn w_mask_c(
 ) {
     w_mask_rust(
         dst,
-        dst_stride,
+        dst_stride as usize,
         tmp1,
         tmp2,
-        w,
-        h,
+        w as usize,
+        h as usize,
         mask,
         sign,
         ss_hor != 0,

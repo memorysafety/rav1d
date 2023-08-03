@@ -830,11 +830,11 @@ pub unsafe fn blend_h_rust<BD: BitDepth>(
 // TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
 pub unsafe fn w_mask_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
-    dst_stride: libc::ptrdiff_t,
+    dst_stride: usize,
     mut tmp1: *const i16,
     mut tmp2: *const i16,
-    w: libc::c_int,
-    h: libc::c_int,
+    w: usize,
+    h: usize,
     mut mask: *mut u8,
     sign: libc::c_int,
     ss_hor: bool,
@@ -880,7 +880,7 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
                         + rnd
                         >> sh,
                 );
-                if h & ss_ver as libc::c_int != 0 {
+                if h & ss_ver as usize != 0 {
                     *mask.offset((x >> 1) as isize) =
                         (m + n + *mask.offset((x >> 1) as isize) as libc::c_int + 2 - sign >> 2)
                             as u8;
@@ -896,9 +896,9 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
         }
         tmp1 = tmp1.offset(w as isize);
         tmp2 = tmp2.offset(w as isize);
-        dst = dst.offset(BD::pxstride(dst_stride as usize) as isize);
+        dst = dst.offset(BD::pxstride(dst_stride) as isize);
         if !ss_ver || h & 1 != 0 {
-            mask = mask.offset((w >> ss_hor as libc::c_int) as isize);
+            mask = mask.offset((w >> ss_hor as usize) as isize);
         }
     }
 }
