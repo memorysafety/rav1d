@@ -322,10 +322,10 @@ pub(crate) unsafe fn padding<BD: BitDepth>(
 
 // TODO(randompoison): Temporarily public until init logic is deduplicated.
 pub(crate) unsafe extern "C" fn wiener_c_erased<BD: BitDepth>(
-    mut p: *mut libc::c_void,
+    p: *mut libc::c_void,
     stride: ptrdiff_t,
     left: *const libc::c_void,
-    mut lpf: *const libc::c_void,
+    lpf: *const libc::c_void,
     w: libc::c_int,
     h: libc::c_int,
     params: *const LooprestorationParams,
@@ -1367,11 +1367,11 @@ impl BitDepthLooprestorationArm for BitDepth16 {
 // TODO(randomPoison): Temporarily pub until callers are deduplicated.
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 pub(crate) unsafe fn dav1d_sgr_filter1_neon<BD: BitDepthLooprestorationArm>(
-    mut tmp: *mut int16_t,
-    mut src: *const BD::Pixel,
+    tmp: *mut int16_t,
+    src: *const BD::Pixel,
     stride: ptrdiff_t,
-    mut left: *const [BD::Pixel; 4],
-    mut lpf: *const BD::Pixel,
+    left: *const [BD::Pixel; 4],
+    lpf: *const BD::Pixel,
     w: libc::c_int,
     h: libc::c_int,
     strength: libc::c_int,
@@ -1507,7 +1507,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepthLooprestorationArm>(
     dst: *mut BD::Pixel,
     stride: ptrdiff_t,
     left: *const [BD::Pixel; 4],
-    mut lpf: *const BD::Pixel,
+    lpf: *const BD::Pixel,
     w: libc::c_int,
     h: libc::c_int,
     params: *const LooprestorationParams,
@@ -1571,7 +1571,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepthLooprestorationArm>(
     dst: *mut BD::Pixel,
     stride: ptrdiff_t,
     left: *const [BD::Pixel; 4],
-    mut lpf: *const BD::Pixel,
+    lpf: *const BD::Pixel,
     w: libc::c_int,
     h: libc::c_int,
     params: *const LooprestorationParams,
@@ -1600,7 +1600,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepthLooprestorationArm>(
         w,
         h,
         (*params).sgr.w1 as libc::c_int,
-        bd.bitdepth_max().as_(),
+        bd.bitdepth_max().into(),
     );
 }
 
@@ -1635,7 +1635,7 @@ unsafe extern "C" fn sgr_filter_mix_neon<BD: BitDepthLooprestorationArm>(
     dst: *mut BD::Pixel,
     stride: ptrdiff_t,
     left: *const [BD::Pixel; 4],
-    mut lpf: *const BD::Pixel,
+    lpf: *const BD::Pixel,
     w: libc::c_int,
     h: libc::c_int,
     params: *const LooprestorationParams,
@@ -1679,7 +1679,7 @@ unsafe extern "C" fn sgr_filter_mix_neon<BD: BitDepthLooprestorationArm>(
         w,
         h,
         wt.as_ptr(),
-        bd.bitdepth_max().as_(),
+        bd.bitdepth_max().into(),
     );
 }
 
@@ -1714,7 +1714,7 @@ unsafe fn wiener_filter_neon<BD: BitDepthLooprestorationArm>(
     dst: *mut BD::Pixel,
     stride: ptrdiff_t,
     left: *const [BD::Pixel; 4],
-    mut lpf: *const BD::Pixel,
+    lpf: *const BD::Pixel,
     w: libc::c_int,
     h: libc::c_int,
     params: *const LooprestorationParams,
@@ -1733,7 +1733,7 @@ unsafe fn wiener_filter_neon<BD: BitDepthLooprestorationArm>(
         w as intptr_t,
         h,
         edges,
-        bd.bitdepth_max().as_(),
+        bd.bitdepth_max().into(),
     );
     if edges & LR_HAVE_TOP != 0 {
         BD::dav1d_wiener_filter_h_neon(
@@ -1745,7 +1745,7 @@ unsafe fn wiener_filter_neon<BD: BitDepthLooprestorationArm>(
             w as intptr_t,
             2,
             edges,
-            bd.bitdepth_max().as_(),
+            bd.bitdepth_max().into(),
         );
     }
     if edges & LR_HAVE_BOTTOM != 0 {
@@ -1761,7 +1761,7 @@ unsafe fn wiener_filter_neon<BD: BitDepthLooprestorationArm>(
             w as intptr_t,
             2,
             edges,
-            bd.bitdepth_max().as_(),
+            bd.bitdepth_max().into(),
         );
     }
     BD::dav1d_wiener_filter_v_neon(
@@ -1776,6 +1776,6 @@ unsafe fn wiener_filter_neon<BD: BitDepthLooprestorationArm>(
         (*filter.offset(1)).as_ptr(),
         edges,
         (mid_stride as usize * ::core::mem::size_of::<int16_t>()) as ptrdiff_t,
-        bd.bitdepth_max().as_(),
+        bd.bitdepth_max().into(),
     );
 }
