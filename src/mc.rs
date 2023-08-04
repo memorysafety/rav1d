@@ -849,6 +849,8 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
         std::slice::from_raw_parts_mut(mask, (w >> ss_hor as usize) * (h >> ss_ver as usize));
     let sign = sign as u8;
 
+    // store mask at 2x2 resolution, i.e. store 2x1 sum for even rows,
+    // and then load this intermediate to calculate final value for odd rows
     let intermediate_bits = bd.get_intermediate_bits();
     let bitdepth = bd.bitdepth();
     let sh = intermediate_bits + 6;
@@ -866,13 +868,16 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
             dst[x] = bd.iclip_pixel(
                 (tmp1[x] as i32 * m as i32 + tmp2[x] as i32 * (64 - m as i32) + rnd) >> sh,
             );
+
             if ss_hor {
                 x += 1;
+
                 let n = std::cmp::min(38 + ((tmp1[x].abs_diff(tmp2[x]) + mask_rnd) >> mask_sh), 64)
                     as u8;
                 dst[x] = bd.iclip_pixel(
                     (tmp1[x] as i32 * n as i32 + tmp2[x] as i32 * (64 - n as i32) + rnd) >> sh,
                 );
+
                 if h & ss_ver as usize != 0 {
                     mask[x >> 1] = ((m + n + mask[x >> 1] + 2 - sign) >> 2) as u8;
                 } else if ss_ver {
@@ -885,6 +890,7 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
             }
             x += 1;
         }
+
         if !ss_ver || h & 1 != 0 {
             mask = &mut mask[w >> ss_hor as usize..];
         }
