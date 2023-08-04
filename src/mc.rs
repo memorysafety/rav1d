@@ -871,28 +871,32 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
         .zip(dst.chunks_mut(dst_stride))
         .enumerate()
     {
-        let mut x = 0;
-        while x < w {
-            let m = calc_mn(tmp1[x], tmp2[x]);
-            dst[x] = calc_dst(tmp1[x], tmp2[x], m);
+        if ss_hor {
+            for (((&[t1m, t1n], &[t2m, t2n]), [dst_m, dst_n]), mask) in
+                iter::zip(tmp1.as_chunks().0, tmp2.as_chunks().0)
+                    .zip(dst.as_chunks_mut().0)
+                    .zip(mask.iter_mut())
+            {
+                let m = calc_mn(t1m, t2m);
+                *dst_m = calc_dst(t1m, t2m, m);
 
-            if ss_hor {
-                x += 1;
+                let n = calc_mn(t1n, t2n);
+                *dst_n = calc_dst(t1n, t2n, n);
 
-                let n = calc_mn(tmp1[x], tmp2[x]);
-                dst[x] = calc_dst(tmp1[x], tmp2[x], n);
-
-                mask[x >> 1] = if h & ss_ver as usize != 0 {
-                    ((m + n + mask[x >> 1] + 2 - sign) >> 2) as u8
+                *mask = if h & ss_ver as usize != 0 {
+                    ((m + n + *mask + 2 - sign) >> 2) as u8
                 } else if ss_ver {
                     m + n
                 } else {
                     ((m + n + 1 - sign) >> 1) as u8
                 };
-            } else {
-                mask[x] = m;
             }
-            x += 1;
+        } else {
+            for (((&t1, &t2), dst), mask) in iter::zip(tmp1, tmp2).zip(dst).zip(mask.iter_mut()) {
+                let m = calc_mn(t1, t2);
+                *dst = calc_dst(t1, t2, m);
+                *mask = m;
+            }
         }
 
         if !ss_ver || h & 1 != 0 {
