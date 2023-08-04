@@ -860,14 +860,17 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
     let rnd = (32 << intermediate_bits) + i32::from(BD::PREP_BIAS) * 64;
     let mask_sh = bitdepth + intermediate_bits - 4;
     let mask_rnd = 1 << (mask_sh - 5);
+
+    let calc_mn =
+        |t1, t2| std::cmp::min(38 + ((i16::abs_diff(t1, t2) + mask_rnd) >> mask_sh), 64) as u8;
+
     for (h, ((tmp1, tmp2), dst)) in iter::zip(tmp1.chunks_exact(w), tmp2.chunks_exact(w))
         .zip(dst.chunks_mut(dst_stride))
         .enumerate()
     {
         let mut x = 0;
         while x < w {
-            let m =
-                std::cmp::min(38 + ((tmp1[x].abs_diff(tmp2[x]) + mask_rnd) >> mask_sh), 64) as u8;
+            let m = calc_mn(tmp1[x], tmp2[x]);
             dst[x] = bd.iclip_pixel(
                 (tmp1[x] as i32 * m as i32 + tmp2[x] as i32 * (64 - m as i32) + rnd) >> sh,
             );
@@ -875,8 +878,7 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
             if ss_hor {
                 x += 1;
 
-                let n = std::cmp::min(38 + ((tmp1[x].abs_diff(tmp2[x]) + mask_rnd) >> mask_sh), 64)
-                    as u8;
+                let n = calc_mn(tmp1[x], tmp2[x]);
                 dst[x] = bd.iclip_pixel(
                     (tmp1[x] as i32 * n as i32 + tmp2[x] as i32 * (64 - n as i32) + rnd) >> sh,
                 );
