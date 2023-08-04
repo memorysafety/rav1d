@@ -878,13 +878,13 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
                     (tmp1[x] as i32 * n as i32 + tmp2[x] as i32 * (64 - n as i32) + rnd) >> sh,
                 );
 
-                if h & ss_ver as usize != 0 {
-                    mask[x >> 1] = ((m + n + mask[x >> 1] + 2 - sign) >> 2) as u8;
+                mask[x >> 1] = if h & ss_ver as usize != 0 {
+                    ((m + n + mask[x >> 1] + 2 - sign) >> 2) as u8
                 } else if ss_ver {
-                    mask[x >> 1] = m + n;
+                    m + n
                 } else {
-                    mask[x >> 1] = ((m + n + 1 - sign) >> 1) as u8;
-                }
+                    ((m + n + 1 - sign) >> 1) as u8
+                };
             } else {
                 mask[x] = m;
             }
