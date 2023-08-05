@@ -3,6 +3,7 @@ use std::iter;
 use crate::include::common::bitdepth::{AsPrimitive, BitDepth};
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Dav1dFilterMode;
+use crate::src::ext::SliceExt;
 use crate::src::tables::dav1d_mc_subpel_filters;
 use crate::src::tables::dav1d_mc_warp_filter;
 use crate::src::tables::dav1d_obmc_masks;
@@ -873,8 +874,8 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
     {
         if ss_hor {
             for (((&[t1m, t1n], &[t2m, t2n]), [dst_m, dst_n]), mask) in
-                iter::zip(tmp1.as_chunks().0, tmp2.as_chunks().0)
-                    .zip(dst.as_chunks_mut().0)
+                iter::zip(tmp1.ext_as_chunks().0, tmp2.ext_as_chunks().0)
+                    .zip(dst.ext_as_chunks_mut().0)
                     .zip(mask.iter_mut())
             {
                 let m = calc_mn(t1m, t2m);

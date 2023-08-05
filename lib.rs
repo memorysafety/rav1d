@@ -8,7 +8,6 @@
 #![feature(c_variadic)]
 #![feature(core_intrinsics)]
 #![feature(extern_types)]
-#![feature(slice_as_chunks)]
 
 #[cfg(not(any(feature = "bitdepth_8", feature = "bitdepth_16")))]
 compile_error!("No bitdepths enabled. Enable one or more of the following features: `bitdepth_8`, `bitdepth_16`");
@@ -56,6 +55,7 @@ pub mod src {
     pub mod decode;
     pub mod dequant_tables;
     pub mod env;
+    mod ext;
     #[cfg(feature = "bitdepth_16")]
     pub mod fg_apply_tmpl_16;
     #[cfg(feature = "bitdepth_8")]
