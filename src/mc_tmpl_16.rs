@@ -3175,8 +3175,8 @@ unsafe extern "C" fn w_mask_c(
     h: libc::c_int,
     mask: *mut uint8_t,
     sign: libc::c_int,
-    ss_hor: libc::c_int,
-    ss_ver: libc::c_int,
+    ss_hor: bool,
+    ss_ver: bool,
     bitdepth_max: libc::c_int,
 ) {
     debug_assert!(sign == 0 || sign == 1);
@@ -3189,8 +3189,8 @@ unsafe extern "C" fn w_mask_c(
         h as usize,
         mask,
         sign != 0,
-        ss_hor != 0,
-        ss_ver != 0,
+        ss_hor,
+        ss_ver,
         BitDepth16::new(bitdepth_max as u16),
     )
 }
@@ -3214,10 +3214,10 @@ unsafe extern "C" fn w_mask_444_c(
         h,
         mask,
         sign,
-        0 as libc::c_int,
-        0 as libc::c_int,
+        false,
+        false,
         bitdepth_max,
-    );
+    )
 }
 unsafe extern "C" fn w_mask_422_c(
     dst: *mut pixel,
@@ -3239,10 +3239,10 @@ unsafe extern "C" fn w_mask_422_c(
         h,
         mask,
         sign,
-        1 as libc::c_int,
-        0 as libc::c_int,
+        true,
+        false,
         bitdepth_max,
-    );
+    )
 }
 unsafe extern "C" fn w_mask_420_c(
     dst: *mut pixel,
@@ -3264,10 +3264,10 @@ unsafe extern "C" fn w_mask_420_c(
         h,
         mask,
         sign,
-        1 as libc::c_int,
-        1 as libc::c_int,
+        true,
+        true,
         bitdepth_max,
-    );
+    )
 }
 unsafe extern "C" fn warp_affine_8x8_c(
     mut dst: *mut pixel,
