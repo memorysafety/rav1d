@@ -52,7 +52,6 @@ extern "C" {
     );
     fn dav1d_copy_lpf_16bpc(f: *mut Dav1dFrameContext, src: *const *mut pixel, sby: libc::c_int);
     fn dav1d_lr_sbrow_16bpc(f: *mut Dav1dFrameContext, dst: *const *mut pixel, sby: libc::c_int);
-    static dav1d_scans: [*const uint16_t; 19];
     static mut dav1d_wedge_masks: [[[[*const uint8_t; 16]; 2]; 3]; 22];
     static mut dav1d_ii_masks: [[[*const uint8_t; 4]; 3]; 22];
 }
@@ -63,11 +62,11 @@ use crate::src::msac::dav1d_msac_decode_hi_tok;
 use crate::src::msac::dav1d_msac_decode_symbol_adapt16;
 use crate::src::msac::dav1d_msac_decode_symbol_adapt4;
 use crate::src::msac::dav1d_msac_decode_symbol_adapt8;
+use crate::src::scan::dav1d_scans;
 use crate::src::tables::dav1d_block_dimensions;
 use crate::src::tables::dav1d_filter_2d;
 use crate::src::tables::dav1d_filter_mode_to_y_mode;
 use crate::src::tables::dav1d_lo_ctx_offsets;
-
 use crate::src::tables::dav1d_tx_type_class;
 use crate::src::tables::dav1d_tx_types_per_set;
 use crate::src::tables::dav1d_txfm_dimensions;
@@ -1013,7 +1012,7 @@ unsafe fn decode_coefs(
                     &dav1d_lo_ctx_offsets
                         [nonsquare_tx.wrapping_add(tx as libc::c_uint & nonsquare_tx) as usize],
                 );
-                scan = dav1d_scans[tx as usize];
+                scan = dav1d_scans[tx as usize].as_ptr();
                 let stride: ptrdiff_t = (4 * sh) as ptrdiff_t;
                 let shift: libc::c_uint = (if ((*t_dim).lh as libc::c_int) < 4 {
                     (*t_dim).lh as libc::c_int + 2
