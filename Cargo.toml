@@ -9,6 +9,7 @@ publish = false
 edition = "2021"
 autobins = false
 autotests = false
+default-run = "dav1d"
 
 [lib]
 name = "rav1d"
