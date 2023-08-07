@@ -72,6 +72,7 @@ impl_FromPrimitive!(isize => {, ...});
 impl_FromPrimitive!(f32 => {, ...});
 impl_FromPrimitive!(f64 => {, ...});
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BPC {
     BPC8,
     BPC16,
