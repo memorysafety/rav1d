@@ -2051,7 +2051,6 @@ pub struct Dav1dMCDSPContext {
 }
 use crate::include::common::attributes::clz;
 use crate::include::common::intops::iclip;
-use crate::include::common::intops::imin;
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     if x & 1 != 0 {
@@ -3166,89 +3165,33 @@ unsafe extern "C" fn blend_h_c(
 ) {
     blend_h_rust::<BitDepth16>(dst, dst_stride as usize, tmp, w as usize, h as usize)
 }
+use crate::src::mc::w_mask_rust;
 unsafe extern "C" fn w_mask_c(
-    mut dst: *mut pixel,
+    dst: *mut pixel,
     dst_stride: ptrdiff_t,
-    mut tmp1: *const int16_t,
-    mut tmp2: *const int16_t,
+    tmp1: *const int16_t,
+    tmp2: *const int16_t,
     w: libc::c_int,
-    mut h: libc::c_int,
-    mut mask: *mut uint8_t,
+    h: libc::c_int,
+    mask: *mut uint8_t,
     sign: libc::c_int,
     ss_hor: libc::c_int,
     ss_ver: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    let intermediate_bits = 14 as libc::c_int - (32 - clz(bitdepth_max as libc::c_uint));
-    let bitdepth = 32 - clz(bitdepth_max as libc::c_uint);
-    let sh = intermediate_bits + 6;
-    let rnd = ((32 as libc::c_int) << intermediate_bits) + 8192 * 64;
-    let mask_sh = bitdepth + intermediate_bits - 4;
-    let mask_rnd = (1 as libc::c_int) << mask_sh - 5;
-    loop {
-        let mut x = 0;
-        while x < w {
-            let m = imin(
-                38 as libc::c_int
-                    + ((*tmp1.offset(x as isize) as libc::c_int
-                        - *tmp2.offset(x as isize) as libc::c_int)
-                        .abs()
-                        + mask_rnd
-                        >> mask_sh),
-                64 as libc::c_int,
-            );
-            *dst.offset(x as isize) = iclip(
-                *tmp1.offset(x as isize) as libc::c_int * m
-                    + *tmp2.offset(x as isize) as libc::c_int * (64 - m)
-                    + rnd
-                    >> sh,
-                0 as libc::c_int,
-                bitdepth_max,
-            ) as pixel;
-            if ss_hor != 0 {
-                x += 1;
-                let n = imin(
-                    38 as libc::c_int
-                        + ((*tmp1.offset(x as isize) as libc::c_int
-                            - *tmp2.offset(x as isize) as libc::c_int)
-                            .abs()
-                            + mask_rnd
-                            >> mask_sh),
-                    64 as libc::c_int,
-                );
-                *dst.offset(x as isize) = iclip(
-                    *tmp1.offset(x as isize) as libc::c_int * n
-                        + *tmp2.offset(x as isize) as libc::c_int * (64 - n)
-                        + rnd
-                        >> sh,
-                    0 as libc::c_int,
-                    bitdepth_max,
-                ) as pixel;
-                if h & ss_ver != 0 {
-                    *mask.offset((x >> 1) as isize) =
-                        (m + n + *mask.offset((x >> 1) as isize) as libc::c_int + 2 - sign >> 2)
-                            as uint8_t;
-                } else if ss_ver != 0 {
-                    *mask.offset((x >> 1) as isize) = (m + n) as uint8_t;
-                } else {
-                    *mask.offset((x >> 1) as isize) = (m + n + 1 - sign >> 1) as uint8_t;
-                }
-            } else {
-                *mask.offset(x as isize) = m as uint8_t;
-            }
-            x += 1;
-        }
-        tmp1 = tmp1.offset(w as isize);
-        tmp2 = tmp2.offset(w as isize);
-        dst = dst.offset(PXSTRIDE(dst_stride) as isize);
-        if ss_ver == 0 || h & 1 != 0 {
-            mask = mask.offset((w >> ss_hor) as isize);
-        }
-        h -= 1;
-        if !(h != 0) {
-            break;
-        }
-    }
+    w_mask_rust(
+        dst,
+        dst_stride,
+        tmp1,
+        tmp2,
+        w,
+        h,
+        mask,
+        sign,
+        ss_hor,
+        ss_ver,
+        BitDepth16::new(bitdepth_max as u16),
+    )
 }
 unsafe extern "C" fn w_mask_444_c(
     dst: *mut pixel,
