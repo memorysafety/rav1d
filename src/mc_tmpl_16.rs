@@ -1845,9 +1845,6 @@ extern "C" {
     );
 }
 
-use crate::src::tables::dav1d_mc_warp_filter;
-use crate::src::tables::dav1d_resize_filter;
-
 pub type pixel = uint16_t;
 
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
@@ -2048,23 +2045,6 @@ pub struct Dav1dMCDSPContext {
     pub warp8x8t: warp8x8t_fn,
     pub emu_edge: emu_edge_fn,
     pub resize: resize_fn,
-}
-use crate::include::common::attributes::clz;
-use crate::include::common::intops::iclip;
-#[inline]
-unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
-    if x & 1 != 0 {
-        unreachable!();
-    }
-    return x >> 1;
-}
-#[inline]
-unsafe extern "C" fn pixel_set(dst: *mut pixel, val: libc::c_int, num: libc::c_int) {
-    let mut n = 0;
-    while n < num {
-        *dst.offset(n as isize) = val as pixel;
-        n += 1;
-    }
 }
 use crate::src::mc::prep_8tap_rust;
 use crate::src::mc::prep_8tap_scaled_rust;
@@ -3269,175 +3249,51 @@ unsafe extern "C" fn w_mask_420_c(
         bitdepth_max,
     )
 }
+use crate::src::mc::warp_affine_8x8_rust;
 unsafe extern "C" fn warp_affine_8x8_c(
-    mut dst: *mut pixel,
+    dst: *mut pixel,
     dst_stride: ptrdiff_t,
-    mut src: *const pixel,
+    src: *const pixel,
     src_stride: ptrdiff_t,
     abcd: *const int16_t,
-    mut mx: libc::c_int,
-    mut my: libc::c_int,
+    mx: libc::c_int,
+    my: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    let intermediate_bits = 14 as libc::c_int - (32 - clz(bitdepth_max as libc::c_uint));
-    let mut mid: [int16_t; 120] = [0; 120];
-    let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
-    src = src.offset(-((3 * PXSTRIDE(src_stride)) as isize));
-    let mut y = 0;
-    while y < 15 {
-        let mut x = 0;
-        let mut tmx = mx;
-        while x < 8 {
-            let filter: *const int8_t =
-                (dav1d_mc_warp_filter[(64 as libc::c_int + (tmx + 512 >> 10)) as usize]).as_ptr();
-            *mid_ptr.offset(x as isize) = (*filter.offset(0) as libc::c_int
-                * *src.offset((x - 3 * 1) as isize) as libc::c_int
-                + *filter.offset(1) as libc::c_int
-                    * *src.offset((x - 2 * 1) as isize) as libc::c_int
-                + *filter.offset(2) as libc::c_int
-                    * *src.offset((x - 1 * 1) as isize) as libc::c_int
-                + *filter.offset(3) as libc::c_int
-                    * *src.offset((x + 0 * 1) as isize) as libc::c_int
-                + *filter.offset(4) as libc::c_int
-                    * *src.offset((x + 1 * 1) as isize) as libc::c_int
-                + *filter.offset(5) as libc::c_int
-                    * *src.offset((x + 2 * 1) as isize) as libc::c_int
-                + *filter.offset(6) as libc::c_int
-                    * *src.offset((x + 3 * 1) as isize) as libc::c_int
-                + *filter.offset(7) as libc::c_int
-                    * *src.offset((x + 4 * 1) as isize) as libc::c_int
-                + ((1 as libc::c_int) << 7 - intermediate_bits >> 1)
-                >> 7 - intermediate_bits) as int16_t;
-            x += 1;
-            tmx += *abcd.offset(0) as libc::c_int;
-        }
-        src = src.offset(PXSTRIDE(src_stride) as isize);
-        mid_ptr = mid_ptr.offset(8);
-        y += 1;
-        mx += *abcd.offset(1) as libc::c_int;
-    }
-    mid_ptr = &mut *mid.as_mut_ptr().offset((3 * 8) as isize) as *mut int16_t;
-    let mut y_0 = 0;
-    while y_0 < 8 {
-        let mut x_0 = 0;
-        let mut tmy = my;
-        while x_0 < 8 {
-            let filter_0: *const int8_t =
-                (dav1d_mc_warp_filter[(64 as libc::c_int + (tmy + 512 >> 10)) as usize]).as_ptr();
-            *dst.offset(x_0 as isize) = iclip(
-                *filter_0.offset(0) as libc::c_int
-                    * *mid_ptr.offset((x_0 - 3 * 8) as isize) as libc::c_int
-                    + *filter_0.offset(1) as libc::c_int
-                        * *mid_ptr.offset((x_0 - 2 * 8) as isize) as libc::c_int
-                    + *filter_0.offset(2) as libc::c_int
-                        * *mid_ptr.offset((x_0 - 1 * 8) as isize) as libc::c_int
-                    + *filter_0.offset(3) as libc::c_int
-                        * *mid_ptr.offset((x_0 + 0 * 8) as isize) as libc::c_int
-                    + *filter_0.offset(4) as libc::c_int
-                        * *mid_ptr.offset((x_0 + 1 * 8) as isize) as libc::c_int
-                    + *filter_0.offset(5) as libc::c_int
-                        * *mid_ptr.offset((x_0 + 2 * 8) as isize) as libc::c_int
-                    + *filter_0.offset(6) as libc::c_int
-                        * *mid_ptr.offset((x_0 + 3 * 8) as isize) as libc::c_int
-                    + *filter_0.offset(7) as libc::c_int
-                        * *mid_ptr.offset((x_0 + 4 * 8) as isize) as libc::c_int
-                    + ((1 as libc::c_int) << 7 + intermediate_bits >> 1)
-                    >> 7 + intermediate_bits,
-                0 as libc::c_int,
-                bitdepth_max,
-            ) as pixel;
-            x_0 += 1;
-            tmy += *abcd.offset(2) as libc::c_int;
-        }
-        mid_ptr = mid_ptr.offset(8);
-        dst = dst.offset(PXSTRIDE(dst_stride) as isize);
-        y_0 += 1;
-        my += *abcd.offset(3) as libc::c_int;
-    }
+    warp_affine_8x8_rust(
+        dst,
+        dst_stride,
+        src,
+        src_stride,
+        abcd,
+        mx,
+        my,
+        BitDepth16::new(bitdepth_max as u16),
+    )
 }
+use crate::src::mc::warp_affine_8x8t_rust;
 unsafe extern "C" fn warp_affine_8x8t_c(
-    mut tmp: *mut int16_t,
+    tmp: *mut int16_t,
     tmp_stride: ptrdiff_t,
-    mut src: *const pixel,
+    src: *const pixel,
     src_stride: ptrdiff_t,
     abcd: *const int16_t,
-    mut mx: libc::c_int,
-    mut my: libc::c_int,
+    mx: libc::c_int,
+    my: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    let intermediate_bits = 14 as libc::c_int - (32 - clz(bitdepth_max as libc::c_uint));
-    let mut mid: [int16_t; 120] = [0; 120];
-    let mut mid_ptr: *mut int16_t = mid.as_mut_ptr();
-    src = src.offset(-((3 * PXSTRIDE(src_stride)) as isize));
-    let mut y = 0;
-    while y < 15 {
-        let mut x = 0;
-        let mut tmx = mx;
-        while x < 8 {
-            let filter: *const int8_t =
-                (dav1d_mc_warp_filter[(64 as libc::c_int + (tmx + 512 >> 10)) as usize]).as_ptr();
-            *mid_ptr.offset(x as isize) = (*filter.offset(0) as libc::c_int
-                * *src.offset((x - 3 * 1) as isize) as libc::c_int
-                + *filter.offset(1) as libc::c_int
-                    * *src.offset((x - 2 * 1) as isize) as libc::c_int
-                + *filter.offset(2) as libc::c_int
-                    * *src.offset((x - 1 * 1) as isize) as libc::c_int
-                + *filter.offset(3) as libc::c_int
-                    * *src.offset((x + 0 * 1) as isize) as libc::c_int
-                + *filter.offset(4) as libc::c_int
-                    * *src.offset((x + 1 * 1) as isize) as libc::c_int
-                + *filter.offset(5) as libc::c_int
-                    * *src.offset((x + 2 * 1) as isize) as libc::c_int
-                + *filter.offset(6) as libc::c_int
-                    * *src.offset((x + 3 * 1) as isize) as libc::c_int
-                + *filter.offset(7) as libc::c_int
-                    * *src.offset((x + 4 * 1) as isize) as libc::c_int
-                + ((1 as libc::c_int) << 7 - intermediate_bits >> 1)
-                >> 7 - intermediate_bits) as int16_t;
-            x += 1;
-            tmx += *abcd.offset(0) as libc::c_int;
-        }
-        src = src.offset(PXSTRIDE(src_stride) as isize);
-        mid_ptr = mid_ptr.offset(8);
-        y += 1;
-        mx += *abcd.offset(1) as libc::c_int;
-    }
-    mid_ptr = &mut *mid.as_mut_ptr().offset((3 * 8) as isize) as *mut int16_t;
-    let mut y_0 = 0;
-    while y_0 < 8 {
-        let mut x_0 = 0;
-        let mut tmy = my;
-        while x_0 < 8 {
-            let filter_0: *const int8_t =
-                (dav1d_mc_warp_filter[(64 as libc::c_int + (tmy + 512 >> 10)) as usize]).as_ptr();
-            *tmp.offset(x_0 as isize) = ((*filter_0.offset(0) as libc::c_int
-                * *mid_ptr.offset((x_0 - 3 * 8) as isize) as libc::c_int
-                + *filter_0.offset(1) as libc::c_int
-                    * *mid_ptr.offset((x_0 - 2 * 8) as isize) as libc::c_int
-                + *filter_0.offset(2) as libc::c_int
-                    * *mid_ptr.offset((x_0 - 1 * 8) as isize) as libc::c_int
-                + *filter_0.offset(3) as libc::c_int
-                    * *mid_ptr.offset((x_0 + 0 * 8) as isize) as libc::c_int
-                + *filter_0.offset(4) as libc::c_int
-                    * *mid_ptr.offset((x_0 + 1 * 8) as isize) as libc::c_int
-                + *filter_0.offset(5) as libc::c_int
-                    * *mid_ptr.offset((x_0 + 2 * 8) as isize) as libc::c_int
-                + *filter_0.offset(6) as libc::c_int
-                    * *mid_ptr.offset((x_0 + 3 * 8) as isize) as libc::c_int
-                + *filter_0.offset(7) as libc::c_int
-                    * *mid_ptr.offset((x_0 + 4 * 8) as isize) as libc::c_int
-                + ((1 as libc::c_int) << 7 >> 1)
-                >> 7)
-                - 8192) as int16_t;
-            x_0 += 1;
-            tmy += *abcd.offset(2) as libc::c_int;
-        }
-        mid_ptr = mid_ptr.offset(8);
-        tmp = tmp.offset(tmp_stride as isize);
-        y_0 += 1;
-        my += *abcd.offset(3) as libc::c_int;
-    }
+    warp_affine_8x8t_rust(
+        tmp,
+        tmp_stride,
+        src,
+        src_stride,
+        abcd,
+        mx,
+        my,
+        BitDepth16::new(bitdepth_max as u16),
+    )
 }
+use crate::src::mc::emu_edge_rust;
 unsafe extern "C" fn emu_edge_c(
     bw: intptr_t,
     bh: intptr_t,
@@ -3445,143 +3301,38 @@ unsafe extern "C" fn emu_edge_c(
     ih: intptr_t,
     x: intptr_t,
     y: intptr_t,
-    mut dst: *mut pixel,
+    dst: *mut pixel,
     dst_stride: ptrdiff_t,
-    mut r#ref: *const pixel,
+    r#ref: *const pixel,
     ref_stride: ptrdiff_t,
 ) {
-    r#ref = r#ref.offset(
-        iclip(y as libc::c_int, 0 as libc::c_int, ih as libc::c_int - 1) as isize
-            * PXSTRIDE(ref_stride)
-            + iclip(x as libc::c_int, 0 as libc::c_int, iw as libc::c_int - 1) as isize,
-    );
-    let left_ext = iclip(-x as libc::c_int, 0 as libc::c_int, bw as libc::c_int - 1);
-    let right_ext = iclip(
-        (x + bw - iw) as libc::c_int,
-        0 as libc::c_int,
-        bw as libc::c_int - 1,
-    );
-    if !(((left_ext + right_ext) as isize) < bw) {
-        unreachable!();
-    }
-    let top_ext = iclip(-y as libc::c_int, 0 as libc::c_int, bh as libc::c_int - 1);
-    let bottom_ext = iclip(
-        (y + bh - ih) as libc::c_int,
-        0 as libc::c_int,
-        bh as libc::c_int - 1,
-    );
-    if !(((top_ext + bottom_ext) as isize) < bh) {
-        unreachable!();
-    }
-    let mut blk: *mut pixel = dst.offset((top_ext as isize * PXSTRIDE(dst_stride)) as isize);
-    let center_w = (bw - left_ext as isize - right_ext as isize) as libc::c_int;
-    let center_h = (bh - top_ext as isize - bottom_ext as isize) as libc::c_int;
-    let mut y_0 = 0;
-    while y_0 < center_h {
-        memcpy(
-            blk.offset(left_ext as isize) as *mut libc::c_void,
-            r#ref as *const libc::c_void,
-            (center_w << 1) as libc::c_ulong,
-        );
-        if left_ext != 0 {
-            pixel_set(blk, *blk.offset(left_ext as isize) as libc::c_int, left_ext);
-        }
-        if right_ext != 0 {
-            pixel_set(
-                blk.offset(left_ext as isize).offset(center_w as isize),
-                *blk.offset((left_ext + center_w - 1) as isize) as libc::c_int,
-                right_ext,
-            );
-        }
-        r#ref = r#ref.offset(PXSTRIDE(ref_stride) as isize);
-        blk = blk.offset(PXSTRIDE(dst_stride) as isize);
-        y_0 += 1;
-    }
-    blk = dst.offset((top_ext as isize * PXSTRIDE(dst_stride)) as isize);
-    let mut y_1 = 0;
-    while y_1 < top_ext {
-        memcpy(
-            dst as *mut libc::c_void,
-            blk as *const libc::c_void,
-            (bw << 1) as libc::c_ulong,
-        );
-        dst = dst.offset(PXSTRIDE(dst_stride) as isize);
-        y_1 += 1;
-    }
-    dst = dst.offset((center_h as isize * PXSTRIDE(dst_stride)) as isize);
-    let mut y_2 = 0;
-    while y_2 < bottom_ext {
-        memcpy(
-            dst as *mut libc::c_void,
-            &mut *dst.offset(
-                -(PXSTRIDE as unsafe extern "C" fn(ptrdiff_t) -> ptrdiff_t)(dst_stride) as isize,
-            ) as *mut pixel as *const libc::c_void,
-            (bw << 1) as libc::c_ulong,
-        );
-        dst = dst.offset(PXSTRIDE(dst_stride) as isize);
-        y_2 += 1;
-    }
+    emu_edge_rust::<BitDepth16>(bw, bh, iw, ih, x, y, dst, dst_stride, r#ref, ref_stride)
 }
+use crate::src::mc::resize_rust;
 unsafe extern "C" fn resize_c(
-    mut dst: *mut pixel,
+    dst: *mut pixel,
     dst_stride: ptrdiff_t,
-    mut src: *const pixel,
+    src: *const pixel,
     src_stride: ptrdiff_t,
     dst_w: libc::c_int,
-    mut h: libc::c_int,
+    h: libc::c_int,
     src_w: libc::c_int,
     dx: libc::c_int,
     mx0: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    loop {
-        let mut mx = mx0;
-        let mut src_x = -(1 as libc::c_int);
-        let mut x = 0;
-        while x < dst_w {
-            let F: *const int8_t = (dav1d_resize_filter[(mx >> 8) as usize]).as_ptr();
-            *dst.offset(x as isize) = iclip(
-                -(*F.offset(0) as libc::c_int
-                    * *src.offset(iclip(src_x - 3, 0 as libc::c_int, src_w - 1) as isize)
-                        as libc::c_int
-                    + *F.offset(1) as libc::c_int
-                        * *src.offset(iclip(src_x - 2, 0 as libc::c_int, src_w - 1) as isize)
-                            as libc::c_int
-                    + *F.offset(2) as libc::c_int
-                        * *src.offset(iclip(src_x - 1, 0 as libc::c_int, src_w - 1) as isize)
-                            as libc::c_int
-                    + *F.offset(3) as libc::c_int
-                        * *src.offset(iclip(src_x + 0, 0 as libc::c_int, src_w - 1) as isize)
-                            as libc::c_int
-                    + *F.offset(4) as libc::c_int
-                        * *src.offset(iclip(src_x + 1, 0 as libc::c_int, src_w - 1) as isize)
-                            as libc::c_int
-                    + *F.offset(5) as libc::c_int
-                        * *src.offset(iclip(src_x + 2, 0 as libc::c_int, src_w - 1) as isize)
-                            as libc::c_int
-                    + *F.offset(6) as libc::c_int
-                        * *src.offset(iclip(src_x + 3, 0 as libc::c_int, src_w - 1) as isize)
-                            as libc::c_int
-                    + *F.offset(7) as libc::c_int
-                        * *src.offset(iclip(src_x + 4, 0 as libc::c_int, src_w - 1) as isize)
-                            as libc::c_int)
-                    + 64
-                    >> 7,
-                0 as libc::c_int,
-                bitdepth_max,
-            ) as pixel;
-            mx += dx;
-            src_x += mx >> 14;
-            mx &= 0x3fff as libc::c_int;
-            x += 1;
-        }
-        dst = dst.offset(PXSTRIDE(dst_stride) as isize);
-        src = src.offset(PXSTRIDE(src_stride) as isize);
-        h -= 1;
-        if !(h != 0) {
-            break;
-        }
-    }
+    resize_rust(
+        dst,
+        dst_stride,
+        src,
+        src_stride,
+        dst_w,
+        h,
+        src_w,
+        dx,
+        mx0,
+        BitDepth16::new(bitdepth_max as u16),
+    )
 }
 
 #[cfg(feature = "asm")]
