@@ -78,6 +78,7 @@ pub mod src {
     pub mod ipred_tmpl_16;
     #[cfg(feature = "bitdepth_8")]
     pub mod ipred_tmpl_8;
+    pub mod itx;
     pub mod itx_1d;
     #[cfg(feature = "bitdepth_16")]
     pub mod itx_tmpl_16;
