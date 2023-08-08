@@ -866,8 +866,10 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
     {
         let mut x = 0;
         while x < w {
-            let m =
-                std::cmp::min(38 + ((tmp1[x].abs_diff(tmp2[x]) + mask_rnd) >> mask_sh), 64) as u8;
+            let m = std::cmp::min(
+                38 + (tmp1[x].abs_diff(tmp2[x]).saturating_add(mask_rnd) >> mask_sh),
+                64,
+            ) as u8;
             dst[x] = bd.iclip_pixel(
                 (tmp1[x] as i32 * m as i32 + tmp2[x] as i32 * (64 - m as i32) + rnd) >> sh,
             );
@@ -875,18 +877,20 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
             if ss_hor {
                 x += 1;
 
-                let n = std::cmp::min(38 + ((tmp1[x].abs_diff(tmp2[x]) + mask_rnd) >> mask_sh), 64)
-                    as u8;
+                let n = std::cmp::min(
+                    38 + (tmp1[x].abs_diff(tmp2[x]).saturating_add(mask_rnd) >> mask_sh),
+                    64,
+                ) as u8;
                 dst[x] = bd.iclip_pixel(
                     (tmp1[x] as i32 * n as i32 + tmp2[x] as i32 * (64 - n as i32) + rnd) >> sh,
                 );
 
                 mask[x >> 1] = if h & ss_ver as usize != 0 {
-                    ((m + n + mask[x >> 1] + 2 - sign) >> 2) as u8
+                    (((m + n + 2 - sign) as u16 + mask[x >> 1] as u16) >> 2) as u8
                 } else if ss_ver {
                     m + n
                 } else {
-                    ((m + n + 1 - sign) >> 1) as u8
+                    (m + n + 1 - sign) >> 1
                 };
             } else {
                 mask[x] = m;
