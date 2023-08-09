@@ -729,18 +729,24 @@ unsafe extern "C" fn parse_seq_hdr(
                 if (*hdr).timing_info_present != 0 {
                     (*hdr).num_units_in_tick = dav1d_get_bits(gb, 32 as libc::c_int) as libc::c_int;
                     (*hdr).time_scale = dav1d_get_bits(gb, 32 as libc::c_int) as libc::c_int;
-                    (*hdr).equal_picture_interval = dav1d_get_bit(gb) as libc::c_int;
-                    if (*hdr).equal_picture_interval != 0 {
-                        let num_ticks_per_picture: libc::c_uint = dav1d_get_vlc(gb);
-                        if num_ticks_per_picture == 0xffffffff as libc::c_uint {
-                            current_block = 181392771181400725;
+                    if (*c).strict_std_compliance != 0
+                        && ((*hdr).num_units_in_tick == 0 || (*hdr).time_scale == 0)
+                    {
+                        current_block = 181392771181400725;
+                    } else {
+                        (*hdr).equal_picture_interval = dav1d_get_bit(gb) as libc::c_int;
+                        if (*hdr).equal_picture_interval != 0 {
+                            let num_ticks_per_picture: libc::c_uint = dav1d_get_vlc(gb);
+                            if num_ticks_per_picture == 0xffffffff as libc::c_uint {
+                                current_block = 181392771181400725;
+                            } else {
+                                (*hdr).num_ticks_per_picture = num_ticks_per_picture
+                                    .wrapping_add(1 as libc::c_int as libc::c_uint);
+                                current_block = 10048703153582371463;
+                            }
                         } else {
-                            (*hdr).num_ticks_per_picture = num_ticks_per_picture
-                                .wrapping_add(1 as libc::c_int as libc::c_uint);
                             current_block = 10048703153582371463;
                         }
-                    } else {
-                        current_block = 10048703153582371463;
                     }
                     match current_block {
                         181392771181400725 => {}
@@ -753,16 +759,24 @@ unsafe extern "C" fn parse_seq_hdr(
                                         as libc::c_int;
                                 (*hdr).num_units_in_decoding_tick =
                                     dav1d_get_bits(gb, 32 as libc::c_int) as libc::c_int;
-                                (*hdr).buffer_removal_delay_length =
-                                    (dav1d_get_bits(gb, 5 as libc::c_int))
-                                        .wrapping_add(1 as libc::c_int as libc::c_uint)
-                                        as libc::c_int;
-                                (*hdr).frame_presentation_delay_length =
-                                    (dav1d_get_bits(gb, 5 as libc::c_int))
-                                        .wrapping_add(1 as libc::c_int as libc::c_uint)
-                                        as libc::c_int;
+                                if (*c).strict_std_compliance != 0
+                                    && (*hdr).num_units_in_decoding_tick == 0
+                                {
+                                    current_block = 181392771181400725;
+                                } else {
+                                    (*hdr).buffer_removal_delay_length =
+                                        (dav1d_get_bits(gb, 5 as libc::c_int))
+                                            .wrapping_add(1 as libc::c_int as libc::c_uint)
+                                            as libc::c_int;
+                                    (*hdr).frame_presentation_delay_length =
+                                        (dav1d_get_bits(gb, 5 as libc::c_int))
+                                            .wrapping_add(1 as libc::c_int as libc::c_uint)
+                                            as libc::c_int;
+                                    current_block = 4808432441040389987;
+                                }
+                            } else {
+                                current_block = 4808432441040389987;
                             }
-                            current_block = 4808432441040389987;
                         }
                     }
                 } else {
