@@ -142,6 +142,17 @@ extern "C" {
         max_height: libc::c_int,
         bitdepth_max: libc::c_int,
     );
+    fn dav1d_ipred_z2_16bpc_ssse3(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        topleft: *const pixel,
+        width: libc::c_int,
+        height: libc::c_int,
+        angle: libc::c_int,
+        max_width: libc::c_int,
+        max_height: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
     fn dav1d_ipred_z3_16bpc_ssse3(
         dst: *mut pixel,
         stride: ptrdiff_t,
@@ -2065,6 +2076,7 @@ unsafe extern "C" fn intra_pred_dsp_init_x86(c: *mut Dav1dIntraPredDSPContext) {
     (*c).intra_pred[SMOOTH_H_PRED as usize] = Some(dav1d_ipred_smooth_h_16bpc_ssse3);
     (*c).intra_pred[SMOOTH_V_PRED as usize] = Some(dav1d_ipred_smooth_v_16bpc_ssse3);
     (*c).intra_pred[Z1_PRED as usize] = Some(dav1d_ipred_z1_16bpc_ssse3);
+    (*c).intra_pred[Z2_PRED as usize] = Some(dav1d_ipred_z2_16bpc_ssse3);
     (*c).intra_pred[Z3_PRED as usize] = Some(dav1d_ipred_z3_16bpc_ssse3);
     (*c).intra_pred[FILTER_PRED as usize] = Some(dav1d_ipred_filter_16bpc_ssse3);
 
