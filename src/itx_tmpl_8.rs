@@ -3860,9 +3860,12 @@ pub struct Dav1dInvTxfmDSPContext {
 }
 pub type itx_1d_fn =
     Option<unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> ()>;
+use crate::include::common::bitdepth::BitDepth;
+use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
 use crate::include::common::intops::imin;
+use crate::src::itx::inv_txfm_add_rust;
 #[inline(never)]
 unsafe extern "C" fn inv_txfm_add_c(
     mut dst: *mut pixel,
@@ -3876,108 +3879,19 @@ unsafe extern "C" fn inv_txfm_add_c(
     second_1d_fn: itx_1d_fn,
     has_dconly: libc::c_int,
 ) {
-    if !(w >= 4 && w <= 64) {
-        unreachable!();
-    }
-    if !(h >= 4 && h <= 64) {
-        unreachable!();
-    }
-    if !(eob >= 0) {
-        unreachable!();
-    }
-    let is_rect2: libc::c_int = (w * 2 == h || h * 2 == w) as libc::c_int;
-    let rnd = (1 as libc::c_int) << shift >> 1;
-    if eob < has_dconly {
-        let mut dc = *coeff.offset(0) as libc::c_int;
-        *coeff.offset(0) = 0 as libc::c_int as coef;
-        if is_rect2 != 0 {
-            dc = dc * 181 + 128 >> 8;
-        }
-        dc = dc * 181 + 128 >> 8;
-        dc = dc + rnd >> shift;
-        dc = dc * 181 + 128 + 2048 >> 12;
-        let mut y = 0;
-        while y < h {
-            let mut x = 0;
-            while x < w {
-                *dst.offset(x as isize) =
-                    iclip_u8(*dst.offset(x as isize) as libc::c_int + dc) as pixel;
-                x += 1;
-            }
-            y += 1;
-            dst = dst.offset(stride as isize);
-        }
-        return;
-    }
-    let sh = imin(h, 32 as libc::c_int);
-    let sw = imin(w, 32 as libc::c_int);
-    let row_clip_min = -(32767 as libc::c_int) - 1;
-    let col_clip_min = -(32767 as libc::c_int) - 1;
-    let row_clip_max = !row_clip_min;
-    let col_clip_max = !col_clip_min;
-    let mut tmp: [int32_t; 4096] = [0; 4096];
-    let mut c: *mut int32_t = tmp.as_mut_ptr();
-    let mut y_0 = 0;
-    while y_0 < sh {
-        if is_rect2 != 0 {
-            let mut x_0 = 0;
-            while x_0 < sw {
-                *c.offset(x_0 as isize) =
-                    *coeff.offset((y_0 + x_0 * sh) as isize) as libc::c_int * 181 + 128 >> 8;
-                x_0 += 1;
-            }
-        } else {
-            let mut x_1 = 0;
-            while x_1 < sw {
-                *c.offset(x_1 as isize) = *coeff.offset((y_0 + x_1 * sh) as isize) as int32_t;
-                x_1 += 1;
-            }
-        }
-        first_1d_fn.expect("non-null function pointer")(
-            c,
-            1 as libc::c_int as ptrdiff_t,
-            row_clip_min,
-            row_clip_max,
-        );
-        y_0 += 1;
-        c = c.offset(w as isize);
-    }
-    memset(
-        coeff as *mut libc::c_void,
-        0 as libc::c_int,
-        (::core::mem::size_of::<coef>() as libc::c_ulong)
-            .wrapping_mul(sw as libc::c_ulong)
-            .wrapping_mul(sh as libc::c_ulong),
+    inv_txfm_add_rust(
+        dst,
+        stride,
+        coeff,
+        eob,
+        w,
+        h,
+        shift,
+        first_1d_fn,
+        second_1d_fn,
+        has_dconly,
+        BitDepth8::from_c(8),
     );
-    let mut i = 0;
-    while i < w * sh {
-        tmp[i as usize] = iclip(tmp[i as usize] + rnd >> shift, col_clip_min, col_clip_max);
-        i += 1;
-    }
-    let mut x_2 = 0;
-    while x_2 < w {
-        second_1d_fn.expect("non-null function pointer")(
-            &mut *tmp.as_mut_ptr().offset(x_2 as isize),
-            w as ptrdiff_t,
-            col_clip_min,
-            col_clip_max,
-        );
-        x_2 += 1;
-    }
-    c = tmp.as_mut_ptr();
-    let mut y_1 = 0;
-    while y_1 < h {
-        let mut x_3 = 0;
-        while x_3 < w {
-            let fresh0 = c;
-            c = c.offset(1);
-            *dst.offset(x_3 as isize) =
-                iclip_u8(*dst.offset(x_3 as isize) as libc::c_int + (*fresh0 + 8 >> 4)) as pixel;
-            x_3 += 1;
-        }
-        y_1 += 1;
-        dst = dst.offset(stride as isize);
-    }
 }
 unsafe extern "C" fn inv_txfm_add_flipadst_flipadst_4x4_c(
     mut dst: *mut pixel,
