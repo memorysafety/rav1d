@@ -3891,7 +3891,7 @@ unsafe extern "C" fn inv_txfm_add_c(
         second_1d_fn,
         has_dconly,
         BitDepth8::from_c(8),
-    );
+    )
 }
 unsafe extern "C" fn inv_txfm_add_flipadst_flipadst_4x4_c(
     mut dst: *mut pixel,

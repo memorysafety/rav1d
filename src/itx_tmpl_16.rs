@@ -4977,7 +4977,7 @@ unsafe extern "C" fn inv_txfm_add_c(
     has_dconly: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    return inv_txfm_add_rust(
+    inv_txfm_add_rust(
         dst,
         stride,
         coeff,
@@ -4989,7 +4989,7 @@ unsafe extern "C" fn inv_txfm_add_c(
         second_1d_fn,
         has_dconly,
         BitDepth16::from_c(bitdepth_max),
-    );
+    )
 }
 unsafe extern "C" fn inv_txfm_add_identity_identity_4x4_c(
     mut dst: *mut pixel,
