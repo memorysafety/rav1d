@@ -26,7 +26,7 @@ pub unsafe extern "C" fn inv_txfm_add_rust<BD: BitDepth>(
     has_dconly: libc::c_int,
     bd: BD,
 ) {
-    let bitdepth_max: libc::c_int = bd.bitdepth_max().to_prim();
+    let bitdepth_max: libc::c_int = bd.bitdepth_max().as_();
     let stride = stride as usize;
     if !(w >= 4 && w <= 64) {
         unreachable!();
@@ -40,8 +40,8 @@ pub unsafe extern "C" fn inv_txfm_add_rust<BD: BitDepth>(
     let is_rect2: libc::c_int = (w * 2 == h || h * 2 == w) as libc::c_int;
     let rnd = (1 as libc::c_int) << shift >> 1;
     if eob < has_dconly {
-        let mut dc: libc::c_int = BD::Coef::to_prim(*coeff.offset(0));
-        *coeff.offset(0) = BD::Coef::from_prim(0);
+        let mut dc: libc::c_int = (*coeff.offset(0)).as_();
+        *coeff.offset(0) = 0.as_();
         if is_rect2 != 0 {
             dc = dc * 181 + 128 >> 8;
         }
@@ -89,7 +89,7 @@ pub unsafe extern "C" fn inv_txfm_add_rust<BD: BitDepth>(
         } else {
             let mut x_1 = 0;
             while x_1 < sw {
-                *c.offset(x_1 as isize) = (*coeff.offset((y_0 + x_1 * sh) as isize)).to_prim();
+                *c.offset(x_1 as isize) = (*coeff.offset((y_0 + x_1 * sh) as isize)).as_();
                 x_1 += 1;
             }
         }
