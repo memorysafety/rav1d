@@ -16,6 +16,7 @@ use crate::include::stdint::intptr_t;
 use crate::include::stdint::uint16_t;
 use crate::include::stdint::uint32_t;
 use crate::src::align::Align16;
+use crate::src::cursor::CursorMut;
 use crate::src::tables::dav1d_sgr_x_by_x;
 
 pub type LrEdgeFlags = libc::c_uint;
@@ -671,11 +672,9 @@ unsafe extern "C" fn selfguided_filter<BD: BitDepth>(
     // Selfguided filter is applied to a maximum stripe height of 64 + 3 pixels
     // of padding above and below
     let mut sumsq = [0; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE];
-    let mut A = sumsq.as_mut_ptr().offset((2 * 390) as isize).offset(3);
     // By inverting A and B after the boxsums, B can be of size coef instead
     // of int32_t
     let mut sum = [0.as_::<BD::Coef>(); 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE];
-    let mut B = sum.as_mut_ptr().offset((2 * 390) as isize).offset(3);
 
     let step = (n == 25) as libc::c_int + 1;
     if n == 25 {
@@ -685,127 +684,102 @@ unsafe extern "C" fn selfguided_filter<BD: BitDepth>(
     }
     let bitdepth_min_8 = bd.bitdepth() - 8;
 
-    let mut AA = A.offset(-(REST_UNIT_STRIDE as isize));
-    let mut BB = B.offset(-(REST_UNIT_STRIDE as isize));
+    let mut A = CursorMut::new(&mut sumsq) + 2 * REST_UNIT_STRIDE + 3;
+    let mut B = CursorMut::new(&mut sum) + 2 * REST_UNIT_STRIDE + 3;
+
+    let mut AA = A.clone() - REST_UNIT_STRIDE;
+    let mut BB = B.clone() - REST_UNIT_STRIDE;
     for _ in (-1..h + 1).step_by(step as usize) {
         for i in -1..w + 1 {
-            let a = *AA.offset(i as isize) + (1 << 2 * bitdepth_min_8 >> 1) >> 2 * bitdepth_min_8;
-            let b = (*BB.offset(i as isize)).as_::<libc::c_int>() + (1 << bitdepth_min_8 >> 1)
-                >> bitdepth_min_8;
+            let a = AA[i] + (1 << 2 * bitdepth_min_8 >> 1) >> 2 * bitdepth_min_8;
+            let b = BB[i].as_::<libc::c_int>() + (1 << bitdepth_min_8 >> 1) >> bitdepth_min_8;
 
             let p = imax(a * n - b * b, 0) as libc::c_uint;
             let z = (p * s + (1 << 19)) >> 20;
             let x = dav1d_sgr_x_by_x[umin(z, 255) as usize] as libc::c_uint;
 
             // This is where we invert A and B, so that B is of size coef.
-            *AA.offset(i as isize) =
-                ((x * (*BB.offset(i as isize)).as_::<libc::c_uint>() * sgr_one_by_x + (1 << 11))
-                    >> 12) as libc::c_int;
-            *BB.offset(i as isize) = x.as_::<BD::Coef>();
+            AA[i] =
+                ((x * BB[i].as_::<libc::c_uint>() * sgr_one_by_x + (1 << 11)) >> 12) as libc::c_int;
+            BB[i] = x.as_::<BD::Coef>();
         }
-        AA = AA.offset(step as isize * REST_UNIT_STRIDE as isize);
-        BB = BB.offset(step as isize * REST_UNIT_STRIDE as isize);
+        AA += step as usize * REST_UNIT_STRIDE;
+        BB += step as usize * REST_UNIT_STRIDE;
     }
 
-    unsafe fn six_neighbors<P>(p: *mut P, i: isize) -> libc::c_int
+    fn six_neighbors<P>(p: &CursorMut<P>, i: isize) -> libc::c_int
     where
         P: Add<Output = P> + ToPrimitive<libc::c_int> + Copy,
     {
-        (*p.offset(i - REST_UNIT_STRIDE as isize) + (*p.offset(i + REST_UNIT_STRIDE as isize)))
-            .as_::<libc::c_int>()
-            * 6
-            + (*p.offset(i - 1 - REST_UNIT_STRIDE as isize)
-                + *p.offset(i - 1 + REST_UNIT_STRIDE as isize)
-                + *p.offset(i + 1 - REST_UNIT_STRIDE as isize)
-                + *p.offset(i + 1 + REST_UNIT_STRIDE as isize))
-            .as_::<libc::c_int>()
+        let stride = REST_UNIT_STRIDE as isize;
+        (p[i - stride] + p[i + stride]).as_::<libc::c_int>() * 6
+            + (p[i - 1 - stride] + p[i - 1 + stride] + p[i + 1 - stride] + p[i + 1 + stride])
+                .as_::<libc::c_int>()
                 * 5
     }
 
-    src = src.offset((3 * 390 + 3) as isize);
+    fn eight_neighbors<P>(p: &CursorMut<P>, i: isize) -> libc::c_int
+    where
+        P: Add<Output = P> + ToPrimitive<libc::c_int> + Copy,
+    {
+        let stride = REST_UNIT_STRIDE as isize;
+        (p[i] + p[i - 1] + p[i + 1] + p[i - stride] + p[i + stride]).as_::<libc::c_int>() * 4
+            + (p[i - 1 - stride] + p[i - 1 + stride] + p[i + 1 - stride] + p[i + 1 + stride])
+                .as_::<libc::c_int>()
+                * 3
+    }
+
+    src = src.offset((3 * REST_UNIT_STRIDE + 3) as isize);
     if n == 25 {
         let mut j = 0;
         while j < h - 1 {
             for i in 0..w {
-                let a = six_neighbors(B, i as isize);
-                let b = six_neighbors(A, i as isize);
+                let a = six_neighbors(&B, i as isize);
+                let b = six_neighbors(&A, i as isize);
                 *dst.offset(i as isize) =
                     ((b - a * (*src.offset(i as isize)).as_::<libc::c_int>() + (1 << 8)) >> 9)
                         .as_();
             }
             dst = dst.offset(384 /* Maximum restoration width is 384 (256 * 1.5) */);
             src = src.offset(REST_UNIT_STRIDE as isize);
-            B = B.offset(REST_UNIT_STRIDE as isize);
-            A = A.offset(REST_UNIT_STRIDE as isize);
-            let mut i = 0;
-            while i < w {
-                let a: libc::c_int = (*B.offset(i as isize)).as_::<libc::c_int>() * 6
-                    + (*B.offset((i - 1) as isize) + *B.offset((i + 1) as isize))
-                        .as_::<libc::c_int>()
-                        * 5;
-                let b = *A.offset(i as isize) * 6
-                    + (*A.offset((i - 1) as isize) + *A.offset((i + 1) as isize)) * 5;
+            B += REST_UNIT_STRIDE;
+            A += REST_UNIT_STRIDE;
+            for i in 0..w {
+                let a =
+                    B[i].as_::<libc::c_int>() * 6 + (B[i - 1] + B[i + 1]).as_::<libc::c_int>() * 5;
+                let b = A[i] * 6 + (A[i - 1] + A[i + 1]) * 5;
                 *dst.offset(i as isize) =
                     (b - a * (*src.offset(i as isize)).as_::<libc::c_int>() + (1 << 7) >> 8).as_();
-                i += 1;
             }
-            dst = dst.offset(384);
-            src = src.offset(390);
-            B = B.offset(390);
-            A = A.offset(390);
-            j += 2 as libc::c_int;
+            dst = dst.offset(384 /* Maximum restoration width is 384 (256 * 1.5) */);
+            src = src.offset(REST_UNIT_STRIDE as isize);
+            B += REST_UNIT_STRIDE;
+            A += REST_UNIT_STRIDE;
+            j += 2;
         }
+        // Last row, when number of rows is odd
         if j + 1 == h {
             for i in 0..w {
-                let a = six_neighbors(B, i as isize);
-                let b = six_neighbors(A, i as isize);
-                *dst.offset(i as isize) = (b - a * (*src.offset(i as isize)).as_::<libc::c_int>()
-                    + ((1 as libc::c_int) << 8)
-                    >> 9)
-                    .as_();
+                let a = six_neighbors(&B, i as isize);
+                let b = six_neighbors(&A, i as isize);
+                *dst.offset(i as isize) =
+                    (b - a * (*src.offset(i as isize)).as_::<libc::c_int>() + (1 << 8) >> 9).as_();
             }
         }
     } else {
-        let mut j_1 = 0;
-        while j_1 < h {
-            let mut i_3 = 0;
-            while i_3 < w {
-                let a_3: libc::c_int = (*B.offset(i_3 as isize)
-                    + *B.offset((i_3 - 1) as isize)
-                    + *B.offset((i_3 + 1) as isize)
-                    + *B.offset((i_3 - 390) as isize)
-                    + *B.offset((i_3 + 390) as isize))
-                .as_::<libc::c_int>()
-                    * 4
-                    + (*B.offset((i_3 - 1 - 390) as isize)
-                        + *B.offset((i_3 - 1 + 390) as isize)
-                        + *B.offset((i_3 + 1 - 390) as isize)
-                        + *B.offset((i_3 + 1 + 390) as isize))
-                    .as_::<libc::c_int>()
-                        * 3;
-                let b_3 = (*A.offset(i_3 as isize)
-                    + *A.offset((i_3 - 1) as isize)
-                    + *A.offset((i_3 + 1) as isize)
-                    + *A.offset((i_3 - 390) as isize)
-                    + *A.offset((i_3 + 390) as isize))
-                    * 4
-                    + (*A.offset((i_3 - 1 - 390) as isize)
-                        + *A.offset((i_3 - 1 + 390) as isize)
-                        + *A.offset((i_3 + 1 - 390) as isize)
-                        + *A.offset((i_3 + 1 + 390) as isize))
-                        * 3;
-                *dst.offset(i_3 as isize) = (b_3
-                    - a_3 * (*src.offset(i_3 as isize)).as_::<libc::c_int>()
-                    + ((1 as libc::c_int) << 8)
-                    >> 9)
-                    .as_();
-                i_3 += 1;
+        for _ in 0..h {
+            let mut i = 0;
+            while i < w {
+                let a = eight_neighbors(&B, i as isize);
+                let b = eight_neighbors(&A, i as isize);
+                *dst.offset(i as isize) =
+                    (b - a * (*src.offset(i as isize)).as_::<libc::c_int>() + (1 << 8) >> 9).as_();
+                i += 1;
             }
             dst = dst.offset(384);
-            src = src.offset(390);
-            B = B.offset(390);
-            A = A.offset(390);
-            j_1 += 1;
+            src = src.offset(REST_UNIT_STRIDE as isize);
+            B += REST_UNIT_STRIDE;
+            A += REST_UNIT_STRIDE;
         }
     };
 }
