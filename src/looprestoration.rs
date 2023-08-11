@@ -657,9 +657,9 @@ unsafe fn boxsum5<BD: BitDepth>(
 }
 
 #[inline(never)]
-unsafe extern "C" fn selfguided_filter<BD: BitDepth>(
-    mut dst: *mut BD::Coef,
-    mut src: *const BD::Pixel,
+fn selfguided_filter<BD: BitDepth>(
+    mut dst: &mut [BD::Coef; 24576],
+    mut src: &[BD::Pixel; 27300],
     _src_stride: ptrdiff_t,
     w: libc::c_int,
     h: libc::c_int,
@@ -678,9 +678,27 @@ unsafe extern "C" fn selfguided_filter<BD: BitDepth>(
 
     let step = (n == 25) as libc::c_int + 1;
     if n == 25 {
-        boxsum5::<BD>(&mut sumsq, &mut sum, src, w + 6, h + 6);
+        // TODO: Update `boxsum5` to take safe arguments.
+        unsafe {
+            boxsum5::<BD>(
+                &mut sumsq,
+                &mut sum,
+                src.as_ptr(),
+                w + 6,
+                h + 6,
+            );
+        }
     } else {
-        boxsum3::<BD>(&mut sumsq, &mut sum, src, w + 6, h + 6);
+        // TODO: Update `boxsum3` to take safe arguments.
+        unsafe {
+            boxsum3::<BD>(
+                &mut sumsq,
+                &mut sum,
+                src.as_ptr(),
+                w + 6,
+                h + 6,
+            );
+        }
     }
     let bitdepth_min_8 = bd.bitdepth() - 8;
 
@@ -729,30 +747,30 @@ unsafe extern "C" fn selfguided_filter<BD: BitDepth>(
                 * 3
     }
 
-    src = src.offset((3 * REST_UNIT_STRIDE + 3) as isize);
+    let mut src = &src[3 * REST_UNIT_STRIDE + 3..];
+    let mut dst = dst.as_mut_slice();
     if n == 25 {
         let mut j = 0;
         while j < h - 1 {
             for i in 0..w {
                 let a = six_neighbors(&B, i as isize);
                 let b = six_neighbors(&A, i as isize);
-                *dst.offset(i as isize) =
-                    ((b - a * (*src.offset(i as isize)).as_::<libc::c_int>() + (1 << 8)) >> 9)
-                        .as_();
+                dst[i as usize] =
+                    ((b - a * (src[i as usize]).as_::<libc::c_int>() + (1 << 8)) >> 9).as_();
             }
-            dst = dst.offset(384 /* Maximum restoration width is 384 (256 * 1.5) */);
-            src = src.offset(REST_UNIT_STRIDE as isize);
+            dst = &mut dst[384.. /* Maximum restoration width is 384 (256 * 1.5) */];
+            src = &src[REST_UNIT_STRIDE..];
             B += REST_UNIT_STRIDE;
             A += REST_UNIT_STRIDE;
             for i in 0..w {
                 let a =
                     B[i].as_::<libc::c_int>() * 6 + (B[i - 1] + B[i + 1]).as_::<libc::c_int>() * 5;
                 let b = A[i] * 6 + (A[i - 1] + A[i + 1]) * 5;
-                *dst.offset(i as isize) =
-                    (b - a * (*src.offset(i as isize)).as_::<libc::c_int>() + (1 << 7) >> 8).as_();
+                dst[i as usize] =
+                    (b - a * (src[i as usize]).as_::<libc::c_int>() + (1 << 7) >> 8).as_();
             }
-            dst = dst.offset(384 /* Maximum restoration width is 384 (256 * 1.5) */);
-            src = src.offset(REST_UNIT_STRIDE as isize);
+            dst = &mut dst[384.. /* Maximum restoration width is 384 (256 * 1.5) */];
+            src = &src[REST_UNIT_STRIDE..];
             B += REST_UNIT_STRIDE;
             A += REST_UNIT_STRIDE;
             j += 2;
@@ -762,22 +780,20 @@ unsafe extern "C" fn selfguided_filter<BD: BitDepth>(
             for i in 0..w {
                 let a = six_neighbors(&B, i as isize);
                 let b = six_neighbors(&A, i as isize);
-                *dst.offset(i as isize) =
-                    (b - a * (*src.offset(i as isize)).as_::<libc::c_int>() + (1 << 8) >> 9).as_();
+                dst[i as usize] =
+                    (b - a * (src[i as usize]).as_::<libc::c_int>() + (1 << 8) >> 9).as_();
             }
         }
     } else {
         for _ in 0..h {
-            let mut i = 0;
-            while i < w {
+            for i in 0..w {
                 let a = eight_neighbors(&B, i as isize);
                 let b = eight_neighbors(&A, i as isize);
-                *dst.offset(i as isize) =
-                    (b - a * (*src.offset(i as isize)).as_::<libc::c_int>() + (1 << 8) >> 9).as_();
-                i += 1;
+                dst[i as usize] =
+                    (b - a * (src[i as usize]).as_::<libc::c_int>() + (1 << 8) >> 9).as_();
             }
-            dst = dst.offset(384);
-            src = src.offset(REST_UNIT_STRIDE as isize);
+            dst = &mut dst[384..];
+            src = &src[REST_UNIT_STRIDE..];
             B += REST_UNIT_STRIDE;
             A += REST_UNIT_STRIDE;
         }
@@ -832,8 +848,8 @@ unsafe fn sgr_5x5_rust<BD: BitDepth>(
         edges,
     );
     selfguided_filter(
-        dst.as_mut_ptr(),
-        tmp.as_mut_ptr(),
+        &mut dst,
+        &mut tmp,
         390 as libc::c_int as ptrdiff_t,
         w,
         h,
@@ -906,8 +922,8 @@ unsafe fn sgr_3x3_rust<BD: BitDepth>(
         edges,
     );
     selfguided_filter(
-        dst.as_mut_ptr(),
-        tmp.as_mut_ptr(),
+        &mut dst,
+        &mut tmp,
         390 as libc::c_int as ptrdiff_t,
         w,
         h,
@@ -981,8 +997,8 @@ unsafe fn sgr_mix_rust<BD: BitDepth>(
         edges,
     );
     selfguided_filter(
-        dst0.as_mut_ptr(),
-        tmp.as_mut_ptr(),
+        &mut dst0,
+        &mut tmp,
         390 as libc::c_int as ptrdiff_t,
         w,
         h,
@@ -991,8 +1007,8 @@ unsafe fn sgr_mix_rust<BD: BitDepth>(
         bd,
     );
     selfguided_filter(
-        dst1.as_mut_ptr(),
-        tmp.as_mut_ptr(),
+        &mut dst1,
+        &mut tmp,
         390 as libc::c_int as ptrdiff_t,
         w,
         h,
