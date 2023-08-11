@@ -493,28 +493,30 @@ unsafe fn boxsum3<BD: BitDepth>(
     }
 }
 
-// Sum over a 5x5 area
-// The dst and src pointers are positioned 3 pixels above and 3 pixels to the
-// left of the top left corner. However, the self guided filter only needs 1
-// pixel above and one pixel to the left. As for the pixels below and to the
-// right they must be computed in the sums, but don't need to be stored.
-//
-// Example for a 4x4 block:
-//      c c c c c c c c c c
-//      c c c c c c c c c c
-//      i i s s s s s s i i
-//      i i s s s s s s i i
-//      i i s s s s s s i i
-//      i i s s s s s s i i
-//      i i s s s s s s i i
-//      i i s s s s s s i i
-//      c c c c c c c c c c
-//      c c c c c c c c c c
-//
-// s: Pixel summed and stored
-// i: Pixel summed and stored (between loops)
-// c: Pixel summed not stored
-// x: Pixel not summed not stored
+/// Sum over a 5x5 area
+///
+/// The `dst` and `src` pointers are positioned 3 pixels above and 3 pixels to the
+/// left of the top left corner. However, the self guided filter only needs 1
+/// pixel above and one pixel to the left. As for the pixels below and to the
+/// right they must be computed in the sums, but don't need to be stored.
+///
+/// Example for a 4x4 block:
+///
+///     c c c c c c c c c c
+///     c c c c c c c c c c
+///     i i s s s s s s i i
+///     i i s s s s s s i i
+///     i i s s s s s s i i
+///     i i s s s s s s i i
+///     i i s s s s s s i i
+///     i i s s s s s s i i
+///     c c c c c c c c c c
+///     c c c c c c c c c c
+///
+/// * s: Pixel summed and stored
+/// * i: Pixel summed and stored (between loops)
+/// * c: Pixel summed not stored
+/// * x: Pixel not summed not stored
 unsafe fn boxsum5<BD: BitDepth>(
     mut sumsq: &mut [int32_t; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
     mut sum: &mut [BD::Coef; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
