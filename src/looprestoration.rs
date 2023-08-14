@@ -681,25 +681,13 @@ fn selfguided_filter<BD: BitDepth>(
         // TODO: Update `boxsum5` to take safe arguments.
         // SAFETY: All args are safe.
         unsafe {
-            boxsum5::<BD>(
-                &mut sumsq,
-                &mut sum,
-                src.as_ptr(),
-                w + 6,
-                h + 6,
-            );
+            boxsum5::<BD>(&mut sumsq, &mut sum, src.as_ptr(), w + 6, h + 6);
         }
     } else {
         // TODO: Update `boxsum3` to take safe arguments.
         // SAFETY: All args are safe.
         unsafe {
-            boxsum3::<BD>(
-                &mut sumsq,
-                &mut sum,
-                src.as_ptr(),
-                w + 6,
-                h + 6,
-            );
+            boxsum3::<BD>(&mut sumsq, &mut sum, src.as_ptr(), w + 6, h + 6);
         }
     }
     let bitdepth_min_8 = bd.bitdepth() - 8;
