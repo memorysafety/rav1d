@@ -480,31 +480,33 @@ unsafe fn boxsum3<BD: BitDepth>(
 /// * i: Pixel summed and stored (between loops)
 /// * c: Pixel summed not stored
 /// * x: Pixel not summed not stored
-unsafe fn boxsum5<BD: BitDepth>(
+fn boxsum5<BD: BitDepth>(
     mut sumsq: &mut [int32_t; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
     mut sum: &mut [BD::Coef; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
-    src: *const BD::Pixel,
+    src: &[BD::Pixel; 27300],
     w: libc::c_int,
     h: libc::c_int,
 ) {
     for x in 0..w as usize {
         let mut sum_v = &mut sum[x..];
         let mut sumsq_v = &mut sumsq[x..];
-        let mut s: *const BD::Pixel = src.offset((3 * REST_UNIT_STRIDE + x) as isize);
-        let mut a: libc::c_int = (*s.offset(-3 * REST_UNIT_STRIDE as isize)).as_();
+        let mut s = &src[x..];
+        let mut a: libc::c_int = (s[0]).as_();
         let mut a2 = a * a;
-        let mut b: libc::c_int = (*s.offset(-2 * REST_UNIT_STRIDE as isize)).as_();
+        let mut b: libc::c_int = (s[1 * REST_UNIT_STRIDE]).as_();
         let mut b2 = b * b;
-        let mut c: libc::c_int = (*s.offset(-1 * REST_UNIT_STRIDE as isize)).as_();
+        let mut c: libc::c_int = (s[2 * REST_UNIT_STRIDE]).as_();
         let mut c2 = c * c;
-        let mut d: libc::c_int = (*s.offset(0)).as_();
+        let mut d: libc::c_int = (s[3 * REST_UNIT_STRIDE]).as_();
         let mut d2 = d * d;
+
+        let mut s = &src[3 * REST_UNIT_STRIDE + x..];
 
         // We skip the first 2 rows, as they are skipped in the next loop and
         // we don't need the last 2 row as it is skipped in the next loop
         for _ in 2..h - 2 {
-            s = s.offset(REST_UNIT_STRIDE as isize);
-            let e: libc::c_int = (*s).as_();
+            s = &s[REST_UNIT_STRIDE..];
+            let e: libc::c_int = s[0].as_();
             let e2 = e * e;
             sum_v = &mut sum_v[REST_UNIT_STRIDE..];
             sumsq_v = &mut sumsq_v[REST_UNIT_STRIDE..];
@@ -575,11 +577,7 @@ fn selfguided_filter<BD: BitDepth>(
 
     let step = (n == 25) as libc::c_int + 1;
     if n == 25 {
-        // TODO: Update `boxsum5` to take safe arguments.
-        // SAFETY: All args are safe.
-        unsafe {
-            boxsum5::<BD>(&mut sumsq, &mut sum, src.as_ptr(), w + 6, h + 6);
-        }
+        boxsum5::<BD>(&mut sumsq, &mut sum, src, w + 6, h + 6);
     } else {
         // TODO: Update `boxsum3` to take safe arguments.
         // SAFETY: All args are safe.
