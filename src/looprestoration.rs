@@ -679,6 +679,7 @@ fn selfguided_filter<BD: BitDepth>(
     let step = (n == 25) as libc::c_int + 1;
     if n == 25 {
         // TODO: Update `boxsum5` to take safe arguments.
+        // SAFETY: All args are safe.
         unsafe {
             boxsum5::<BD>(
                 &mut sumsq,
@@ -690,6 +691,7 @@ fn selfguided_filter<BD: BitDepth>(
         }
     } else {
         // TODO: Update `boxsum3` to take safe arguments.
+        // SAFETY: All args are safe.
         unsafe {
             boxsum3::<BD>(
                 &mut sumsq,
