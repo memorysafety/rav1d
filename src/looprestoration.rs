@@ -465,63 +465,93 @@ unsafe fn wiener_rust<BD: BitDepth>(
     }
 }
 
+/// Sum over a 3x3 area
+///
+/// The `dst` and `src` pointers are positioned 3 pixels above and 3 pixels to the
+/// left of the top left corner. However, the self guided filter only needs 1
+/// pixel above and one pixel to the left. As for the pixels below and to the
+/// right they must be computed in the sums, but don't need to be stored.
+///
+/// Example for a 4x4 block:
+///
+///     x x x x x x x x x x
+///     x c c c c c c c c x
+///     x i s s s s s s i x
+///     x i s s s s s s i x
+///     x i s s s s s s i x
+///     x i s s s s s s i x
+///     x i s s s s s s i x
+///     x i s s s s s s i x
+///     x c c c c c c c c x
+///     x x x x x x x x x x
+///
+/// * s: Pixel summed and stored
+/// * i: Pixel summed and stored (between loops)
+/// * c: Pixel summed not stored
+/// * x: Pixel not summed not stored
 unsafe fn boxsum3<BD: BitDepth>(
-    mut sumsq: *mut int32_t,
-    mut sum: *mut BD::Coef,
+    mut sumsq: &mut [int32_t; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
+    mut sum: &mut [BD::Coef; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
     mut src: *const BD::Pixel,
     w: libc::c_int,
     h: libc::c_int,
 ) {
-    src = src.offset(390);
-    let mut x = 1;
-    while x < w - 1 {
-        let mut sum_v: *mut BD::Coef = sum.offset(x as isize);
-        let mut sumsq_v: *mut int32_t = sumsq.offset(x as isize);
-        let mut s: *const BD::Pixel = src.offset(x as isize);
+    // We skip the first row, as it is never used
+    src = src.offset(REST_UNIT_STRIDE as isize);
+
+    // We skip the first and last columns, as they are never used
+    for x in 1..w - 1 {
+        let mut sum_v = &mut sum[x as usize..];
+        let mut sumsq_v = &mut sumsq[x as usize..];
+        let mut s = src.offset(x as isize);
         let mut a: libc::c_int = (*s.offset(0)).as_();
         let mut a2 = a * a;
-        let mut b: libc::c_int = (*s.offset(390)).as_();
+        let mut b: libc::c_int = (*s.offset(REST_UNIT_STRIDE as isize)).as_();
         let mut b2 = b * b;
-        let mut y = 2;
-        while y < h - 2 {
-            s = s.offset(390);
-            let c: libc::c_int = (*s.offset(390)).as_();
+
+        // We skip the first 2 rows, as they are skipped in the next loop and
+        // we don't need the last 2 row as it is skipped in the next loop
+        for _ in 2..h - 2 {
+            s = s.offset(REST_UNIT_STRIDE as isize);
+            let c: libc::c_int = (*s.offset(REST_UNIT_STRIDE as isize)).as_();
             let c2 = c * c;
-            sum_v = sum_v.offset(390);
-            sumsq_v = sumsq_v.offset(390);
-            *sum_v = (a + b + c).as_();
-            *sumsq_v = a2 + b2 + c2;
+            sum_v = &mut sum_v[REST_UNIT_STRIDE..];
+            sumsq_v = &mut sumsq_v[REST_UNIT_STRIDE..];
+            sum_v[0] = (a + b + c).as_();
+            sumsq_v[0] = a2 + b2 + c2;
             a = b;
             a2 = b2;
             b = c;
             b2 = c2;
-            y += 1;
         }
-        x += 1;
     }
-    sum = sum.offset(390);
-    sumsq = sumsq.offset(390);
-    let mut y_0 = 2;
-    while y_0 < h - 2 {
-        let mut a_0 = *sum.offset(1);
-        let mut a2_0 = *sumsq.offset(1);
-        let mut b_0 = *sum.offset(2);
-        let mut b2_0 = *sumsq.offset(2);
-        let mut x_0 = 2;
-        while x_0 < w - 2 {
-            let c_0 = *sum.offset((x_0 + 1) as isize);
-            let c2_0 = *sumsq.offset((x_0 + 1) as isize);
-            *sum.offset(x_0 as isize) = a_0 + b_0 + c_0;
-            *sumsq.offset(x_0 as isize) = a2_0 + b2_0 + c2_0;
-            a_0 = b_0;
-            a2_0 = b2_0;
-            b_0 = c_0;
-            b2_0 = c2_0;
-            x_0 += 1;
+
+    // We skip the first row as it is never read
+    let mut sum = &mut sum[REST_UNIT_STRIDE..];
+    let mut sumsq = &mut sumsq[REST_UNIT_STRIDE..];
+
+    // We skip the last 2 rows as it is never read
+    for _ in 2..h - 2 {
+        let mut a = sum[1];
+        let mut a2 = sumsq[1];
+        let mut b = sum[2];
+        let mut b2 = sumsq[2];
+
+        // We don't store the first column as it is never read and
+        // we don't store the last 2 columns as they are never read
+        for x in 2..w as usize - 2 {
+            let c = sum[x + 1];
+            let c2 = sumsq[x + 1];
+            sum[x] = a + b + c;
+            sumsq[x] = a2 + b2 + c2;
+            a = b;
+            a2 = b2;
+            b = c;
+            b2 = c2;
         }
-        sum = sum.offset(390);
-        sumsq = sumsq.offset(390);
-        y_0 += 1;
+
+        sum = &mut sum[REST_UNIT_STRIDE..];
+        sumsq = &mut sumsq[REST_UNIT_STRIDE..];
     }
 }
 
@@ -624,7 +654,7 @@ unsafe extern "C" fn selfguided_filter<BD: BitDepth>(
     if n == 25 {
         boxsum5::<BD>(sumsq.as_mut_ptr(), sum.as_mut_ptr(), src, w + 6, h + 6);
     } else {
-        boxsum3::<BD>(sumsq.as_mut_ptr(), sum.as_mut_ptr(), src, w + 6, h + 6);
+        boxsum3::<BD>(&mut sumsq, &mut sum, src, w + 6, h + 6);
     }
     let bitdepth_min_8 = bd.bitdepth() - 8;
     let mut AA: *mut int32_t = A.offset(-(390 as libc::c_int as isize));
