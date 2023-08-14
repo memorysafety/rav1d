@@ -390,31 +390,31 @@ unsafe fn wiener_rust<BD: BitDepth>(
 /// * i: Pixel summed and stored (between loops)
 /// * c: Pixel summed not stored
 /// * x: Pixel not summed not stored
-unsafe fn boxsum3<BD: BitDepth>(
+fn boxsum3<BD: BitDepth>(
     mut sumsq: &mut [int32_t; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
     mut sum: &mut [BD::Coef; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
-    mut src: *const BD::Pixel,
+    mut src: &[BD::Pixel; 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE],
     w: libc::c_int,
     h: libc::c_int,
 ) {
     // We skip the first row, as it is never used
-    src = src.offset(REST_UNIT_STRIDE as isize);
+    let mut src = &src[REST_UNIT_STRIDE..];
 
     // We skip the first and last columns, as they are never used
     for x in 1..w - 1 {
         let mut sum_v = &mut sum[x as usize..];
         let mut sumsq_v = &mut sumsq[x as usize..];
-        let mut s = src.offset(x as isize);
-        let mut a: libc::c_int = (*s.offset(0)).as_();
+        let mut s = &src[x as usize..];
+        let mut a: libc::c_int = s[0].as_();
         let mut a2 = a * a;
-        let mut b: libc::c_int = (*s.offset(REST_UNIT_STRIDE as isize)).as_();
+        let mut b: libc::c_int = s[REST_UNIT_STRIDE].as_();
         let mut b2 = b * b;
 
         // We skip the first 2 rows, as they are skipped in the next loop and
         // we don't need the last 2 row as it is skipped in the next loop
         for _ in 2..h - 2 {
-            s = s.offset(REST_UNIT_STRIDE as isize);
-            let c: libc::c_int = (*s.offset(REST_UNIT_STRIDE as isize)).as_();
+            s = &s[REST_UNIT_STRIDE..];
+            let c: libc::c_int = s[REST_UNIT_STRIDE].as_();
             let c2 = c * c;
             sum_v = &mut sum_v[REST_UNIT_STRIDE..];
             sumsq_v = &mut sumsq_v[REST_UNIT_STRIDE..];
@@ -483,7 +483,7 @@ unsafe fn boxsum3<BD: BitDepth>(
 fn boxsum5<BD: BitDepth>(
     mut sumsq: &mut [int32_t; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
     mut sum: &mut [BD::Coef; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
-    src: &[BD::Pixel; 27300],
+    src: &[BD::Pixel; 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE],
     w: libc::c_int,
     h: libc::c_int,
 ) {
@@ -579,11 +579,7 @@ fn selfguided_filter<BD: BitDepth>(
     if n == 25 {
         boxsum5::<BD>(&mut sumsq, &mut sum, src, w + 6, h + 6);
     } else {
-        // TODO: Update `boxsum3` to take safe arguments.
-        // SAFETY: All args are safe.
-        unsafe {
-            boxsum3::<BD>(&mut sumsq, &mut sum, src.as_ptr(), w + 6, h + 6);
-        }
+        boxsum3::<BD>(&mut sumsq, &mut sum, src, w + 6, h + 6);
     }
     let bitdepth_min_8 = bd.bitdepth() - 8;
 
