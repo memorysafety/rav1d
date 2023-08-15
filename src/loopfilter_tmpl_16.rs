@@ -4,196 +4,12 @@ use ::libc;
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
 
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
-extern "C" {
-    fn dav1d_lpf_v_sb_uv_16bpc_avx512icl(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        mask: *const uint32_t,
-        lvl: *const [uint8_t; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_lpf_h_sb_uv_16bpc_avx512icl(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        mask: *const uint32_t,
-        lvl: *const [uint8_t; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_lpf_v_sb_y_16bpc_avx512icl(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        mask: *const uint32_t,
-        lvl: *const [uint8_t; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_lpf_h_sb_y_16bpc_avx512icl(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        mask: *const uint32_t,
-        lvl: *const [uint8_t; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_lpf_v_sb_uv_16bpc_avx2(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        mask: *const uint32_t,
-        lvl: *const [uint8_t; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_lpf_h_sb_uv_16bpc_avx2(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        mask: *const uint32_t,
-        lvl: *const [uint8_t; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_lpf_v_sb_y_16bpc_avx2(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        mask: *const uint32_t,
-        lvl: *const [uint8_t; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_lpf_h_sb_y_16bpc_avx2(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        mask: *const uint32_t,
-        lvl: *const [uint8_t; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_lpf_v_sb_uv_16bpc_ssse3(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        mask: *const uint32_t,
-        lvl: *const [uint8_t; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_lpf_h_sb_uv_16bpc_ssse3(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        mask: *const uint32_t,
-        lvl: *const [uint8_t; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_lpf_v_sb_y_16bpc_ssse3(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        mask: *const uint32_t,
-        lvl: *const [uint8_t; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_lpf_h_sb_y_16bpc_ssse3(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        mask: *const uint32_t,
-        lvl: *const [uint8_t; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-}
-
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-extern "C" {
-    fn dav1d_lpf_v_sb_uv_16bpc_neon(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        mask: *const uint32_t,
-        lvl: *const [uint8_t; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_lpf_h_sb_uv_16bpc_neon(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        mask: *const uint32_t,
-        lvl: *const [uint8_t; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_lpf_v_sb_y_16bpc_neon(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        mask: *const uint32_t,
-        lvl: *const [uint8_t; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_lpf_h_sb_y_16bpc_neon(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        mask: *const uint32_t,
-        lvl: *const [uint8_t; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-}
-
 pub type pixel = uint16_t;
-use crate::src::lf_mask::Av1FilterLUT;
-pub type loopfilter_sb_fn = Option<
-    unsafe extern "C" fn(
-        *mut pixel,
-        ptrdiff_t,
-        *const uint32_t,
-        *const [uint8_t; 4],
-        ptrdiff_t,
-        *const Av1FilterLUT,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dLoopFilterDSPContext {
-    pub loop_filter_sb: [[loopfilter_sb_fn; 2]; 2],
-}
 use crate::include::common::attributes::clz;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::imin;
+use crate::src::lf_mask::Av1FilterLUT;
+use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     if x & 1 != 0 {
@@ -379,7 +195,28 @@ unsafe extern "C" fn loop_filter(
         dst = dst.offset(stridea as isize);
     }
 }
-unsafe extern "C" fn loop_filter_h_sb128y_c(
+unsafe extern "C" fn loop_filter_h_sb128y_c_erased(
+    dst: *mut libc::c_void,
+    stride: ptrdiff_t,
+    vmask: *const uint32_t,
+    l: *const [uint8_t; 4],
+    b4_stride: ptrdiff_t,
+    lut: *const Av1FilterLUT,
+    h: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    loop_filter_h_sb128y_rust(
+        dst.cast(),
+        stride,
+        vmask,
+        l,
+        b4_stride,
+        lut,
+        h,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn loop_filter_h_sb128y_rust(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     vmask: *const uint32_t,
@@ -424,7 +261,28 @@ unsafe extern "C" fn loop_filter_h_sb128y_c(
         l = l.offset(b4_stride as isize);
     }
 }
-unsafe extern "C" fn loop_filter_v_sb128y_c(
+unsafe extern "C" fn loop_filter_v_sb128y_c_erased(
+    dst: *mut libc::c_void,
+    stride: ptrdiff_t,
+    vmask: *const uint32_t,
+    l: *const [uint8_t; 4],
+    b4_stride: ptrdiff_t,
+    lut: *const Av1FilterLUT,
+    w: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    loop_filter_v_sb128y_rust(
+        dst.cast(),
+        stride,
+        vmask,
+        l,
+        b4_stride,
+        lut,
+        w,
+        bitdepth_max,
+    );
+}
+unsafe extern "C" fn loop_filter_v_sb128y_rust(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     vmask: *const uint32_t,
@@ -469,7 +327,28 @@ unsafe extern "C" fn loop_filter_v_sb128y_c(
         l = l.offset(1);
     }
 }
-unsafe extern "C" fn loop_filter_h_sb128uv_c(
+unsafe extern "C" fn loop_filter_h_sb128uv_c_erased(
+    dst: *mut libc::c_void,
+    stride: ptrdiff_t,
+    vmask: *const uint32_t,
+    l: *const [uint8_t; 4],
+    b4_stride: ptrdiff_t,
+    lut: *const Av1FilterLUT,
+    h: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    loop_filter_h_sb128uv_rust(
+        dst.cast(),
+        stride,
+        vmask,
+        l,
+        b4_stride,
+        lut,
+        h,
+        bitdepth_max,
+    )
+}
+unsafe extern "C" fn loop_filter_h_sb128uv_rust(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     vmask: *const uint32_t,
@@ -510,7 +389,28 @@ unsafe extern "C" fn loop_filter_h_sb128uv_c(
         l = l.offset(b4_stride as isize);
     }
 }
-unsafe extern "C" fn loop_filter_v_sb128uv_c(
+unsafe extern "C" fn loop_filter_v_sb128uv_c_erased(
+    dst: *mut libc::c_void,
+    stride: ptrdiff_t,
+    vmask: *const uint32_t,
+    l: *const [uint8_t; 4],
+    b4_stride: ptrdiff_t,
+    lut: *const Av1FilterLUT,
+    w: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    loop_filter_v_sb128uv_rust(
+        dst.cast(),
+        stride,
+        vmask,
+        l,
+        b4_stride,
+        lut,
+        w,
+        bitdepth_max,
+    )
+}
+unsafe extern "C" fn loop_filter_v_sb128uv_rust(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     vmask: *const uint32_t,
@@ -559,6 +459,8 @@ use crate::src::cpu::dav1d_get_cpu_flags;
 #[inline(always)]
 unsafe extern "C" fn loop_filter_dsp_init_x86(c: *mut Dav1dLoopFilterDSPContext) {
     use crate::src::x86::cpu::*;
+    // TODO(legare): Temporarily import until init fns are deduplicated.
+    use crate::src::loopfilter::*;
 
     let flags = dav1d_get_cpu_flags();
 
@@ -566,10 +468,10 @@ unsafe extern "C" fn loop_filter_dsp_init_x86(c: *mut Dav1dLoopFilterDSPContext)
         return;
     }
 
-    (*c).loop_filter_sb[0][0] = Some(dav1d_lpf_h_sb_y_16bpc_ssse3);
-    (*c).loop_filter_sb[0][1] = Some(dav1d_lpf_v_sb_y_16bpc_ssse3);
-    (*c).loop_filter_sb[1][0] = Some(dav1d_lpf_h_sb_uv_16bpc_ssse3);
-    (*c).loop_filter_sb[1][1] = Some(dav1d_lpf_v_sb_uv_16bpc_ssse3);
+    (*c).loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_16bpc_ssse3;
+    (*c).loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_16bpc_ssse3;
+    (*c).loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_16bpc_ssse3;
+    (*c).loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_16bpc_ssse3;
 
     #[cfg(target_arch = "x86_64")]
     {
@@ -577,19 +479,19 @@ unsafe extern "C" fn loop_filter_dsp_init_x86(c: *mut Dav1dLoopFilterDSPContext)
             return;
         }
 
-        (*c).loop_filter_sb[0][0] = Some(dav1d_lpf_h_sb_y_16bpc_avx2);
-        (*c).loop_filter_sb[0][1] = Some(dav1d_lpf_v_sb_y_16bpc_avx2);
-        (*c).loop_filter_sb[1][0] = Some(dav1d_lpf_h_sb_uv_16bpc_avx2);
-        (*c).loop_filter_sb[1][1] = Some(dav1d_lpf_v_sb_uv_16bpc_avx2);
+        (*c).loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_16bpc_avx2;
+        (*c).loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_16bpc_avx2;
+        (*c).loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_16bpc_avx2;
+        (*c).loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_16bpc_avx2;
 
         if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
             return;
         }
 
-        (*c).loop_filter_sb[0][0] = Some(dav1d_lpf_h_sb_y_16bpc_avx512icl);
-        (*c).loop_filter_sb[0][1] = Some(dav1d_lpf_v_sb_y_16bpc_avx512icl);
-        (*c).loop_filter_sb[1][0] = Some(dav1d_lpf_h_sb_uv_16bpc_avx512icl);
-        (*c).loop_filter_sb[1][1] = Some(dav1d_lpf_v_sb_uv_16bpc_avx512icl);
+        (*c).loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_16bpc_avx512icl;
+        (*c).loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_16bpc_avx512icl;
+        (*c).loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_16bpc_avx512icl;
+        (*c).loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_16bpc_avx512icl;
     }
 }
 
@@ -597,6 +499,8 @@ unsafe extern "C" fn loop_filter_dsp_init_x86(c: *mut Dav1dLoopFilterDSPContext)
 #[inline(always)]
 unsafe extern "C" fn loop_filter_dsp_init_arm(c: *mut Dav1dLoopFilterDSPContext) {
     use crate::src::arm::cpu::DAV1D_ARM_CPU_FLAG_NEON;
+    // TODO(legare): Temporarily import until init fns are deduplicated.
+    use crate::src::loopfilter::*;
 
     let flags = dav1d_get_cpu_flags();
 
@@ -604,19 +508,19 @@ unsafe extern "C" fn loop_filter_dsp_init_arm(c: *mut Dav1dLoopFilterDSPContext)
         return;
     }
 
-    (*c).loop_filter_sb[0][0] = Some(dav1d_lpf_h_sb_y_16bpc_neon);
-    (*c).loop_filter_sb[0][1] = Some(dav1d_lpf_v_sb_y_16bpc_neon);
-    (*c).loop_filter_sb[1][0] = Some(dav1d_lpf_h_sb_uv_16bpc_neon);
-    (*c).loop_filter_sb[1][1] = Some(dav1d_lpf_v_sb_uv_16bpc_neon);
+    (*c).loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_16bpc_neon;
+    (*c).loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_16bpc_neon;
+    (*c).loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_16bpc_neon;
+    (*c).loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_16bpc_neon;
 }
 
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_loop_filter_dsp_init_16bpc(c: *mut Dav1dLoopFilterDSPContext) {
-    (*c).loop_filter_sb[0][0] = Some(loop_filter_h_sb128y_c);
-    (*c).loop_filter_sb[0][1] = Some(loop_filter_v_sb128y_c);
-    (*c).loop_filter_sb[1][0] = Some(loop_filter_h_sb128uv_c);
-    (*c).loop_filter_sb[1][1] = Some(loop_filter_v_sb128uv_c);
+    (*c).loop_filter_sb[0][0] = loop_filter_h_sb128y_c_erased;
+    (*c).loop_filter_sb[0][1] = loop_filter_v_sb128y_c_erased;
+    (*c).loop_filter_sb[1][0] = loop_filter_h_sb128uv_c_erased;
+    (*c).loop_filter_sb[1][1] = loop_filter_v_sb128uv_c_erased;
 
     #[cfg(feature = "asm")]
     cfg_if! {
