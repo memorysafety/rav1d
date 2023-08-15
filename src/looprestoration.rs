@@ -1016,9 +1016,10 @@ unsafe fn sgr_mix_rust<BD: BitDepth>(
     edges: LrEdgeFlags,
     bd: BD,
 ) {
-    let mut tmp: [BD::Pixel; 27300] = [0.as_(); 27300];
-    let mut dst0: [BD::Coef; 24576] = [0.as_(); 24576];
-    let mut dst1: [BD::Coef; 24576] = [0.as_(); 24576];
+    let mut tmp = [0.as_(); 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE];
+    let mut dst0 = [0.as_(); 64 * 384];
+    let mut dst1 = [0.as_(); 64 * 384];
+
     padding::<BD>(
         &mut tmp,
         p,
@@ -1032,39 +1033,34 @@ unsafe fn sgr_mix_rust<BD: BitDepth>(
     selfguided_filter(
         dst0.as_mut_ptr(),
         tmp.as_mut_ptr(),
-        390 as libc::c_int as ptrdiff_t,
+        REST_UNIT_STRIDE as ptrdiff_t,
         w,
         h,
-        25 as libc::c_int,
+        25,
         (*params).sgr.s0,
         bd,
     );
     selfguided_filter(
         dst1.as_mut_ptr(),
         tmp.as_mut_ptr(),
-        390 as libc::c_int as ptrdiff_t,
+        REST_UNIT_STRIDE as ptrdiff_t,
         w,
         h,
-        9 as libc::c_int,
+        9,
         (*params).sgr.s1,
         bd,
     );
+
     let w0 = (*params).sgr.w0 as libc::c_int;
     let w1 = (*params).sgr.w1 as libc::c_int;
-    let mut j = 0;
-    while j < h {
-        let mut i = 0;
-        while i < w {
+    for j in 0..h {
+        for i in 0..w {
             let v = w0 * dst0[(j * 384 + i) as usize].as_::<libc::c_int>()
                 + w1 * dst1[(j * 384 + i) as usize].as_::<libc::c_int>();
-            *p.offset(i as isize) = bd.iclip_pixel(
-                (*p.offset(i as isize)).as_::<libc::c_int>()
-                    + (v + ((1 as libc::c_int) << 10) >> 11),
-            );
-            i += 1;
+            *p.offset(i as isize) = bd
+                .iclip_pixel((*p.offset(i as isize)).as_::<libc::c_int>() + (v + (1 << 10) >> 11));
         }
         p = p.offset(BD::pxstride(stride as usize) as isize);
-        j += 1;
     }
 }
 
