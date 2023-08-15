@@ -9,16 +9,15 @@ use cfg_if::cfg_if;
 use crate::src::tables::dav1d_cdef_directions;
 
 pub type pixel = uint8_t;
+use crate::include::common::intops::iclip;
+use crate::include::common::intops::imax;
+use crate::include::common::intops::umin;
 use crate::src::cdef::CdefEdgeFlags;
+use crate::src::cdef::Dav1dCdefDSPContext;
 use crate::src::cdef::CDEF_HAVE_BOTTOM;
 use crate::src::cdef::CDEF_HAVE_LEFT;
 use crate::src::cdef::CDEF_HAVE_RIGHT;
 use crate::src::cdef::CDEF_HAVE_TOP;
-pub type const_left_pixel_row_2px = *const [pixel; 2];
-use crate::include::common::intops::iclip;
-use crate::include::common::intops::imax;
-use crate::include::common::intops::umin;
-use crate::src::cdef::Dav1dCdefDSPContext;
 
 use crate::include::common::intops::ulog2;
 use crate::src::cdef::constrain;
@@ -295,6 +294,7 @@ unsafe extern "C" fn cdef_filter_block_4x4_c_erased(
     dir: libc::c_int,
     damping: libc::c_int,
     edges: CdefEdgeFlags,
+    _bitdepth_max: libc::c_int,
 ) {
     cdef_filter_block_c(
         dst.cast(),
@@ -322,6 +322,7 @@ unsafe extern "C" fn cdef_filter_block_4x8_c_erased(
     dir: libc::c_int,
     damping: libc::c_int,
     edges: CdefEdgeFlags,
+    _bitdepth_max: libc::c_int,
 ) {
     cdef_filter_block_c(
         dst.cast(),
@@ -349,6 +350,7 @@ unsafe extern "C" fn cdef_filter_block_8x8_c_erased(
     dir: libc::c_int,
     damping: libc::c_int,
     edges: CdefEdgeFlags,
+    _bitdepth_max: libc::c_int,
 ) {
     cdef_filter_block_c(
         dst.cast(),
@@ -369,6 +371,7 @@ unsafe extern "C" fn cdef_find_dir_c_erased(
     mut img: *const libc::c_void,
     stride: ptrdiff_t,
     var: *mut libc::c_uint,
+    _bitdepth_max: libc::c_int,
 ) -> libc::c_int {
     cdef_find_dir_rust(img.cast(), stride, var)
 }
@@ -584,13 +587,14 @@ unsafe extern "C" fn cdef_filter_4x4_neon_erased(
     dir: libc::c_int,
     damping: libc::c_int,
     edges: CdefEdgeFlags,
+    _bitdepth_max: libc::c_int,
 ) {
     // TODO(legare): Temporary import until this fn is deduplicated.
     use crate::src::cdef::*;
 
     let mut tmp_buf = Align16([0; 104]);
     let mut tmp = tmp_buf.0.as_mut_ptr().offset(2 * 8).offset(8);
-    dav1d_cdef_padding4_8bpc_neon(tmp, dst, stride, left.cast(), top, bottom, 4, edges);
+    dav1d_cdef_padding4_8bpc_neon(tmp, dst, stride, left, top, bottom, 4, edges);
     dav1d_cdef_filter4_8bpc_neon(
         dst,
         stride,
@@ -617,13 +621,14 @@ unsafe extern "C" fn cdef_filter_4x8_neon_erased(
     dir: libc::c_int,
     damping: libc::c_int,
     edges: CdefEdgeFlags,
+    _bitdepth_max: libc::c_int,
 ) {
     // TODO(legare): Temporary import until this fn is deduplicated.
     use crate::src::cdef::*;
 
     let mut tmp_buf = Align16([0; 104]);
     let mut tmp = tmp_buf.0.as_mut_ptr().offset(2 * 8).offset(8);
-    dav1d_cdef_padding4_8bpc_neon(tmp, dst, stride, left.cast(), top, bottom, 8, edges);
+    dav1d_cdef_padding4_8bpc_neon(tmp, dst, stride, left, top, bottom, 8, edges);
     dav1d_cdef_filter4_8bpc_neon(
         dst,
         stride,
@@ -650,13 +655,14 @@ unsafe extern "C" fn cdef_filter_8x8_neon_erased(
     dir: libc::c_int,
     damping: libc::c_int,
     edges: CdefEdgeFlags,
+    _bitdepth_max: libc::c_int,
 ) {
     // TODO(legare): Temporary import until this fn is deduplicated.
     use crate::src::cdef::*;
 
     let mut tmp_buf = Align16([0; 200]);
     let mut tmp = tmp_buf.0.as_mut_ptr().offset(2 * 16).offset(8);
-    dav1d_cdef_padding8_8bpc_neon(tmp, dst, stride, left.cast(), top, bottom, 8, edges);
+    dav1d_cdef_padding8_8bpc_neon(tmp, dst, stride, left, top, bottom, 8, edges);
     dav1d_cdef_filter8_8bpc_neon(
         dst,
         stride,
