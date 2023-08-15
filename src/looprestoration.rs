@@ -946,8 +946,9 @@ unsafe fn sgr_3x3_rust<BD: BitDepth>(
     edges: LrEdgeFlags,
     bd: BD,
 ) {
-    let mut tmp: [BD::Pixel; 27300] = [0.as_(); 27300];
-    let mut dst: [BD::Coef; 24576] = [0.as_(); 24576];
+    let mut tmp = [0.as_(); 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE];
+    let mut dst = [0.as_(); 64 * 384];
+
     padding::<BD>(
         &mut tmp,
         p,
@@ -961,27 +962,22 @@ unsafe fn sgr_3x3_rust<BD: BitDepth>(
     selfguided_filter(
         dst.as_mut_ptr(),
         tmp.as_mut_ptr(),
-        390 as libc::c_int as ptrdiff_t,
+        REST_UNIT_STRIDE as ptrdiff_t,
         w,
         h,
-        9 as libc::c_int,
+        9,
         (*params).sgr.s1,
         bd,
     );
+
     let w1 = (*params).sgr.w1 as libc::c_int;
-    let mut j = 0;
-    while j < h {
-        let mut i = 0;
-        while i < w {
+    for j in 0..h {
+        for i in 0..w {
             let v = w1 * dst[(j * 384 + i) as usize].as_::<libc::c_int>();
-            *p.offset(i as isize) = bd.iclip_pixel(
-                (*p.offset(i as isize)).as_::<libc::c_int>()
-                    + (v + ((1 as libc::c_int) << 10) >> 11),
-            );
-            i += 1;
+            *p.offset(i as isize) = bd
+                .iclip_pixel((*p.offset(i as isize)).as_::<libc::c_int>() + (v + (1 << 10) >> 11));
         }
         p = p.offset(BD::pxstride(stride as usize) as isize);
-        j += 1;
     }
 }
 
