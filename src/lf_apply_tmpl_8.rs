@@ -92,7 +92,6 @@ use crate::include::dav1d::headers::Dav1dSequenceHeader;
 
 use crate::src::internal::Dav1dFrameContext_lf;
 use crate::src::lf_mask::Av1Filter;
-use crate::src::lf_mask::Av1FilterLUT;
 
 use crate::src::internal::Dav1dFrameContext_frame_thread;
 
@@ -262,22 +261,7 @@ use crate::src::cdef::CdefEdgeFlags;
 pub type const_left_pixel_row_2px = *const [pixel; 2];
 pub type cdef_dir_fn =
     Option<unsafe extern "C" fn(*const pixel, ptrdiff_t, *mut libc::c_uint) -> libc::c_int>;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dLoopFilterDSPContext {
-    pub loop_filter_sb: [[loopfilter_sb_fn; 2]; 2],
-}
-pub type loopfilter_sb_fn = Option<
-    unsafe extern "C" fn(
-        *mut pixel,
-        ptrdiff_t,
-        *const uint32_t,
-        *const [uint8_t; 4],
-        ptrdiff_t,
-        *const Av1FilterLUT,
-        libc::c_int,
-    ) -> (),
->;
+use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dInvTxfmDSPContext {
