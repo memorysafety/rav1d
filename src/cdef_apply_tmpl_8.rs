@@ -97,7 +97,6 @@ use crate::src::align::Align16;
 use crate::src::internal::Dav1dFrameContext_frame_thread;
 use crate::src::internal::Dav1dFrameContext_lf;
 use crate::src::lf_mask::Av1Filter;
-use crate::src::lf_mask::Av1FilterLUT;
 
 use crate::src::levels::Av1Block;
 use crate::src::refmvs::refmvs_frame;
@@ -247,22 +246,7 @@ use crate::src::cdef::CDEF_HAVE_BOTTOM;
 use crate::src::cdef::CDEF_HAVE_LEFT;
 use crate::src::cdef::CDEF_HAVE_RIGHT;
 use crate::src::cdef::CDEF_HAVE_TOP;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dLoopFilterDSPContext {
-    pub loop_filter_sb: [[loopfilter_sb_fn; 2]; 2],
-}
-pub type loopfilter_sb_fn = Option<
-    unsafe extern "C" fn(
-        *mut pixel,
-        ptrdiff_t,
-        *const uint32_t,
-        *const [uint8_t; 4],
-        ptrdiff_t,
-        *const Av1FilterLUT,
-        libc::c_int,
-    ) -> (),
->;
+use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dInvTxfmDSPContext {

@@ -92,7 +92,6 @@ use crate::include::dav1d::headers::Dav1dSequenceHeader;
 
 use crate::src::internal::Dav1dFrameContext_lf;
 use crate::src::lf_mask::Av1Filter;
-use crate::src::lf_mask::Av1FilterLUT;
 
 use crate::src::internal::Dav1dFrameContext_frame_thread;
 
@@ -237,23 +236,8 @@ pub struct Dav1dDSPContext {
     pub lr: Dav1dLoopRestorationDSPContext,
 }
 use crate::src::cdef::Dav1dCdefDSPContext;
+use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
 use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dLoopFilterDSPContext {
-    pub loop_filter_sb: [[loopfilter_sb_fn; 2]; 2],
-}
-pub type loopfilter_sb_fn = Option<
-    unsafe extern "C" fn(
-        *mut pixel,
-        ptrdiff_t,
-        *const uint32_t,
-        *const [uint8_t; 4],
-        ptrdiff_t,
-        *const Av1FilterLUT,
-        libc::c_int,
-    ) -> (),
->;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dInvTxfmDSPContext {
@@ -852,8 +836,8 @@ unsafe extern "C" fn filter_plane_cols_y(
                 hmask[2] = (*mask.offset(x as isize))[2][1] as uint32_t;
             }
             hmask[3] = 0 as libc::c_int as uint32_t;
-            ((*dsp).lf.loop_filter_sb[0][0]).expect("non-null function pointer")(
-                &mut *dst.offset((x * 4) as isize),
+            (*dsp).lf.loop_filter_sb[0][0](
+                dst.offset((x * 4) as isize).cast(),
                 ls,
                 hmask.as_mut_ptr(),
                 &*(*lvl.offset(x as isize)).as_ptr().offset(0) as *const uint8_t
@@ -861,6 +845,7 @@ unsafe extern "C" fn filter_plane_cols_y(
                 b4_stride,
                 &(*f).lf.lim_lut.0,
                 endy4 - starty4,
+                8,
             );
         }
         x += 1;
@@ -892,14 +877,15 @@ unsafe extern "C" fn filter_plane_rows_y(
                     | ((*mask.offset(y as isize))[2][1] as libc::c_uint) << 16,
                 0 as libc::c_int as uint32_t,
             ];
-            ((*dsp).lf.loop_filter_sb[0][1]).expect("non-null function pointer")(
-                dst,
+            (*dsp).lf.loop_filter_sb[0][1](
+                dst.cast(),
                 ls,
                 vmask.as_ptr(),
                 &*(*lvl.offset(0)).as_ptr().offset(1) as *const uint8_t as *const [uint8_t; 4],
                 b4_stride,
                 &(*f).lf.lim_lut.0,
                 w,
+                8,
             );
         }
         y += 1;
@@ -941,8 +927,8 @@ unsafe extern "C" fn filter_plane_cols_uv(
                 hmask[1] = (*mask.offset(x as isize))[1][1] as uint32_t;
             }
             hmask[2] = 0 as libc::c_int as uint32_t;
-            ((*dsp).lf.loop_filter_sb[1][0]).expect("non-null function pointer")(
-                &mut *u.offset((x * 4) as isize),
+            (*dsp).lf.loop_filter_sb[1][0](
+                u.offset((x * 4) as isize).cast(),
                 ls,
                 hmask.as_mut_ptr(),
                 &*(*lvl.offset(x as isize)).as_ptr().offset(2) as *const uint8_t
@@ -950,9 +936,10 @@ unsafe extern "C" fn filter_plane_cols_uv(
                 b4_stride,
                 &(*f).lf.lim_lut.0,
                 endy4 - starty4,
+                8,
             );
-            ((*dsp).lf.loop_filter_sb[1][0]).expect("non-null function pointer")(
-                &mut *v.offset((x * 4) as isize),
+            (*dsp).lf.loop_filter_sb[1][0](
+                v.offset((x * 4) as isize).cast(),
                 ls,
                 hmask.as_mut_ptr(),
                 &*(*lvl.offset(x as isize)).as_ptr().offset(3) as *const uint8_t
@@ -960,6 +947,7 @@ unsafe extern "C" fn filter_plane_cols_uv(
                 b4_stride,
                 &(*f).lf.lim_lut.0,
                 endy4 - starty4,
+                8,
             );
         }
         x += 1;
@@ -992,23 +980,25 @@ unsafe extern "C" fn filter_plane_rows_uv(
                     | ((*mask.offset(y as isize))[1][1] as libc::c_uint) << (16 >> ss_hor),
                 0 as libc::c_int as uint32_t,
             ];
-            ((*dsp).lf.loop_filter_sb[1][1]).expect("non-null function pointer")(
-                &mut *u.offset(off_l as isize),
+            (*dsp).lf.loop_filter_sb[1][1](
+                u.offset(off_l as isize).cast(),
                 ls,
                 vmask.as_ptr(),
                 &*(*lvl.offset(0)).as_ptr().offset(2) as *const uint8_t as *const [uint8_t; 4],
                 b4_stride,
                 &(*f).lf.lim_lut.0,
                 w,
+                8,
             );
-            ((*dsp).lf.loop_filter_sb[1][1]).expect("non-null function pointer")(
-                &mut *v.offset(off_l as isize),
+            (*dsp).lf.loop_filter_sb[1][1](
+                v.offset(off_l as isize).cast(),
                 ls,
                 vmask.as_ptr(),
                 &*(*lvl.offset(0)).as_ptr().offset(3) as *const uint8_t as *const [uint8_t; 4],
                 b4_stride,
                 &(*f).lf.lim_lut.0,
                 w,
+                8,
             );
         }
         y += 1;
