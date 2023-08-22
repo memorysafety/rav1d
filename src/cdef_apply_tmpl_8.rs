@@ -241,34 +241,12 @@ pub struct Dav1dDSPContext {
 }
 use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dCdefDSPContext {
-    pub dir: cdef_dir_fn,
-    pub fb: [cdef_fn; 3],
-}
-pub type cdef_fn = Option<
-    unsafe extern "C" fn(
-        *mut pixel,
-        ptrdiff_t,
-        const_left_pixel_row_2px,
-        *const pixel,
-        *const pixel,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        CdefEdgeFlags,
-    ) -> (),
->;
 use crate::src::cdef::CdefEdgeFlags;
+use crate::src::cdef::Dav1dCdefDSPContext;
 use crate::src::cdef::CDEF_HAVE_BOTTOM;
 use crate::src::cdef::CDEF_HAVE_LEFT;
 use crate::src::cdef::CDEF_HAVE_RIGHT;
 use crate::src::cdef::CDEF_HAVE_TOP;
-pub type const_left_pixel_row_2px = *const [pixel; 2];
-pub type cdef_dir_fn =
-    Option<unsafe extern "C" fn(*const pixel, ptrdiff_t, *mut libc::c_uint) -> libc::c_int>;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dLoopFilterDSPContext {
@@ -913,10 +891,11 @@ pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
                         dir = 0;
                         variance = 0;
                         if y_pri_lvl != 0 || uv_pri_lvl != 0 {
-                            dir = ((*dsp).cdef.dir).expect("non-null function pointer")(
-                                bptrs[0],
+                            dir = ((*dsp).cdef.dir)(
+                                bptrs[0].cast(),
                                 (*f).cur.stride[0],
                                 &mut variance,
+                                8,
                             );
                         }
                         top = 0 as *const pixel;
@@ -982,32 +961,33 @@ pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
                         if y_pri_lvl != 0 {
                             let adj_y_pri_lvl = adjust_strength(y_pri_lvl, variance);
                             if adj_y_pri_lvl != 0 || y_sec_lvl != 0 {
-                                ((*dsp).cdef.fb[0]).expect("non-null function pointer")(
-                                    bptrs[0],
+                                (*dsp).cdef.fb[0](
+                                    bptrs[0].cast(),
                                     (*f).cur.stride[0],
-                                    (lr_bak[bit as usize][0]).as_mut_ptr()
-                                        as const_left_pixel_row_2px,
-                                    top,
-                                    bot,
+                                    (lr_bak[bit as usize][0]).as_mut_ptr().cast(),
+                                    top.cast(),
+                                    bot.cast(),
                                     adj_y_pri_lvl,
                                     y_sec_lvl,
                                     dir,
                                     damping,
                                     edges,
+                                    8,
                                 );
                             }
                         } else if y_sec_lvl != 0 {
-                            ((*dsp).cdef.fb[0]).expect("non-null function pointer")(
-                                bptrs[0],
+                            (*dsp).cdef.fb[0](
+                                bptrs[0].cast(),
                                 (*f).cur.stride[0],
-                                (lr_bak[bit as usize][0]).as_mut_ptr() as const_left_pixel_row_2px,
-                                top,
-                                bot,
+                                (lr_bak[bit as usize][0]).as_mut_ptr().cast(),
+                                top.cast(),
+                                bot.cast(),
                                 0 as libc::c_int,
                                 y_sec_lvl,
                                 0 as libc::c_int,
                                 damping,
                                 edges,
+                                8,
                             );
                         }
                         if !(uv_lvl == 0) {
@@ -1100,19 +1080,18 @@ pub unsafe extern "C" fn dav1d_cdef_brow_8bpc(
                                     }
                                     _ => {}
                                 }
-                                ((*dsp).cdef.fb[uv_idx as usize])
-                                    .expect("non-null function pointer")(
-                                    bptrs[pl as usize],
+                                (*dsp).cdef.fb[uv_idx as usize](
+                                    bptrs[pl as usize].cast(),
                                     (*f).cur.stride[1],
-                                    (lr_bak[bit as usize][pl as usize]).as_mut_ptr()
-                                        as const_left_pixel_row_2px,
-                                    top,
-                                    bot,
+                                    (lr_bak[bit as usize][pl as usize]).as_mut_ptr().cast(),
+                                    top.cast(),
+                                    bot.cast(),
                                     uv_pri_lvl,
                                     uv_sec_lvl,
                                     uvdir,
                                     damping - 1,
                                     edges,
+                                    8,
                                 );
                                 pl += 1;
                             }
