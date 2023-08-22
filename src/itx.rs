@@ -1,7 +1,5 @@
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
-use crate::include::common::bitdepth::FromPrimitive;
-use crate::include::common::bitdepth::ToPrimitive;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::imin;
 use crate::include::stddef::*;
