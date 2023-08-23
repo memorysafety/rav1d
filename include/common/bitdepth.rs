@@ -272,3 +272,6 @@ impl Display for DisplayPixel16 {
 
 pub type DynPixel = c_void;
 pub type DynCoef = c_void;
+
+pub type LeftPixelRow<Pixel> = [Pixel; 4];
+pub type LeftPixelRow2px<Pixel> = [Pixel; 2];
