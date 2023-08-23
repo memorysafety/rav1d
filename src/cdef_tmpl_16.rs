@@ -1,3 +1,5 @@
+use crate::include::common::bitdepth::DynPixel;
+use crate::include::common::bitdepth::LeftPixelRow2px;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use ::libc;
@@ -291,11 +293,11 @@ unsafe extern "C" fn cdef_filter_block_c(
     };
 }
 unsafe extern "C" fn cdef_filter_block_4x4_c_erased(
-    dst: *mut libc::c_void,
+    dst: *mut DynPixel,
     stride: ptrdiff_t,
-    left: *const libc::c_void,
-    top: *const libc::c_void,
-    bottom: *const libc::c_void,
+    left: *const LeftPixelRow2px<DynPixel>,
+    top: *const DynPixel,
+    bottom: *const DynPixel,
     pri_strength: libc::c_int,
     sec_strength: libc::c_int,
     dir: libc::c_int,
@@ -320,11 +322,11 @@ unsafe extern "C" fn cdef_filter_block_4x4_c_erased(
     );
 }
 unsafe extern "C" fn cdef_filter_block_4x8_c_erased(
-    dst: *mut libc::c_void,
+    dst: *mut DynPixel,
     stride: ptrdiff_t,
-    left: *const libc::c_void,
-    top: *const libc::c_void,
-    bottom: *const libc::c_void,
+    left: *const LeftPixelRow2px<DynPixel>,
+    top: *const DynPixel,
+    bottom: *const DynPixel,
     pri_strength: libc::c_int,
     sec_strength: libc::c_int,
     dir: libc::c_int,
@@ -349,11 +351,11 @@ unsafe extern "C" fn cdef_filter_block_4x8_c_erased(
     );
 }
 unsafe extern "C" fn cdef_filter_block_8x8_c_erased(
-    dst: *mut libc::c_void,
+    dst: *mut DynPixel,
     stride: ptrdiff_t,
-    left: *const libc::c_void,
-    top: *const libc::c_void,
-    bottom: *const libc::c_void,
+    left: *const LeftPixelRow2px<DynPixel>,
+    top: *const DynPixel,
+    bottom: *const DynPixel,
     pri_strength: libc::c_int,
     sec_strength: libc::c_int,
     dir: libc::c_int,
@@ -576,9 +578,9 @@ unsafe extern "C" fn cdef_dsp_init_arm(c: *mut Dav1dCdefDSPContext) {
 unsafe extern "C" fn cdef_filter_8x8_neon_erased(
     dst: *mut libc::c_void,
     stride: ptrdiff_t,
-    left: *const libc::c_void,
-    top: *const libc::c_void,
-    bottom: *const libc::c_void,
+    left: *const LeftPixelRow2px<DynPixel>,
+    top: *const DynPixel,
+    bottom: *const DynPixel,
     pri_strength: libc::c_int,
     sec_strength: libc::c_int,
     dir: libc::c_int,
@@ -611,9 +613,9 @@ unsafe extern "C" fn cdef_filter_8x8_neon_erased(
 unsafe extern "C" fn cdef_filter_4x8_neon_erased(
     mut dst: *mut libc::c_void,
     stride: ptrdiff_t,
-    mut left: *const libc::c_void,
-    top: *const libc::c_void,
-    bottom: *const libc::c_void,
+    mut left: *const LeftPixelRow2px<DynPixel>,
+    top: *const DynPixel,
+    bottom: *const DynPixel,
     pri_strength: libc::c_int,
     sec_strength: libc::c_int,
     dir: libc::c_int,
@@ -646,9 +648,9 @@ unsafe extern "C" fn cdef_filter_4x8_neon_erased(
 unsafe extern "C" fn cdef_filter_4x4_neon_erased(
     mut dst: *mut libc::c_void,
     stride: ptrdiff_t,
-    mut left: *const libc::c_void,
-    top: *const libc::c_void,
-    bottom: *const libc::c_void,
+    mut left: *const LeftPixelRow2px<DynPixel>,
+    top: *const DynPixel,
+    bottom: *const DynPixel,
     pri_strength: libc::c_int,
     sec_strength: libc::c_int,
     dir: libc::c_int,
