@@ -1,4 +1,4 @@
-use std::ffi::{c_int, c_uint};
+use std::ffi::{c_int, c_uint, c_void};
 use std::fmt::{self, Display, Formatter};
 use std::ops::{Add, Mul, Shr};
 
@@ -269,3 +269,6 @@ impl Display for DisplayPixel16 {
         write!(f, "{:03x}", self.0)
     }
 }
+
+pub type DynPixel = c_void;
+pub type DynCoef = c_void;
