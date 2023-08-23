@@ -1704,7 +1704,6 @@ fn loop_restoration_dsp_init_x86<BD: BitDepth>(
         return;
     }
 
-    #[cfg(feature = "bitdepth_8")]
     if BD::BPC == BPC::BPC8 {
         c.wiener[0] = decl_looprestorationfilter_fn!(fn dav1d_wiener_filter7_8bpc_sse2);
         c.wiener[1] = decl_looprestorationfilter_fn!(fn dav1d_wiener_filter5_8bpc_sse2);
