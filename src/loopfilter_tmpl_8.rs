@@ -1,3 +1,4 @@
+use crate::include::common::bitdepth::DynPixel;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use ::libc;
@@ -186,7 +187,7 @@ unsafe extern "C" fn loop_filter(
 }
 
 unsafe extern "C" fn loop_filter_h_sb128y_c_erased(
-    dst: *mut libc::c_void,
+    dst: *mut DynPixel,
     stride: ptrdiff_t,
     vmask: *const uint32_t,
     l: *const [uint8_t; 4],
@@ -243,7 +244,7 @@ unsafe fn loop_filter_h_sb128y_rust(
 }
 
 unsafe extern "C" fn loop_filter_v_sb128y_c_erased(
-    dst: *mut libc::c_void,
+    dst: *mut DynPixel,
     stride: ptrdiff_t,
     vmask: *const uint32_t,
     l: *const [uint8_t; 4],
@@ -300,7 +301,7 @@ unsafe fn loop_filter_v_sb128y_rust(
 }
 
 unsafe extern "C" fn loop_filter_h_sb128uv_c_erased(
-    dst: *mut libc::c_void,
+    dst: *mut DynPixel,
     stride: ptrdiff_t,
     vmask: *const uint32_t,
     l: *const [uint8_t; 4],
@@ -353,7 +354,7 @@ unsafe fn loop_filter_h_sb128uv_rust(
 }
 
 unsafe extern "C" fn loop_filter_v_sb128uv_c_erased(
-    dst: *mut libc::c_void,
+    dst: *mut DynPixel,
     stride: ptrdiff_t,
     vmask: *const uint32_t,
     l: *const [uint8_t; 4],

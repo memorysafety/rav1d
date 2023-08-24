@@ -1,5 +1,7 @@
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
+use crate::include::common::bitdepth::DynPixel;
+use crate::include::common::bitdepth::LeftPixelRow;
 #[cfg(feature = "asm")]
 use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::iclip;
@@ -37,14 +39,11 @@ pub union LooprestorationParams {
     pub sgr: LooprestorationParams_sgr,
 }
 
-type pixel = libc::c_void;
-pub type const_left_pixel_row = *const libc::c_void; // *const [pixel; 4]
-
 pub type looprestorationfilter_fn = unsafe extern "C" fn(
-    *mut pixel,
+    *mut DynPixel,
     ptrdiff_t,
-    const_left_pixel_row,
-    *const pixel,
+    *const LeftPixelRow<DynPixel>,
+    *const DynPixel,
     libc::c_int,
     libc::c_int,
     *const LooprestorationParams,
@@ -67,10 +66,10 @@ macro_rules! decl_looprestorationfilter_fn {
     (fn $name:ident) => {{
         extern "C" {
             fn $name(
-                dst: *mut pixel,
+                dst: *mut DynPixel,
                 dst_stride: ptrdiff_t,
-                left: const_left_pixel_row,
-                lpf: *const pixel,
+                left: *const LeftPixelRow<DynPixel>,
+                lpf: *const DynPixel,
                 w: libc::c_int,
                 h: libc::c_int,
                 params: *const LooprestorationParams,
@@ -258,10 +257,10 @@ unsafe fn padding<BD: BitDepth>(
 }
 
 unsafe extern "C" fn wiener_c_erased<BD: BitDepth>(
-    p: *mut libc::c_void,
+    p: *mut DynPixel,
     stride: ptrdiff_t,
-    left: *const libc::c_void,
-    lpf: *const libc::c_void,
+    left: *const LeftPixelRow<DynPixel>,
+    lpf: *const DynPixel,
     w: libc::c_int,
     h: libc::c_int,
     params: *const LooprestorationParams,
@@ -740,10 +739,10 @@ unsafe extern "C" fn selfguided_filter<BD: BitDepth>(
 }
 
 unsafe extern "C" fn sgr_5x5_c_erased<BD: BitDepth>(
-    p: *mut libc::c_void,
+    p: *mut DynPixel,
     stride: ptrdiff_t,
-    left: *const libc::c_void,
-    lpf: *const libc::c_void,
+    left: *const LeftPixelRow<DynPixel>,
+    lpf: *const DynPixel,
     w: libc::c_int,
     h: libc::c_int,
     params: *const LooprestorationParams,
@@ -815,10 +814,10 @@ unsafe fn sgr_5x5_rust<BD: BitDepth>(
 }
 
 unsafe extern "C" fn sgr_3x3_c_erased<BD: BitDepth>(
-    p: *mut libc::c_void,
+    p: *mut DynPixel,
     stride: ptrdiff_t,
-    left: *const libc::c_void,
-    lpf: *const libc::c_void,
+    left: *const LeftPixelRow<DynPixel>,
+    lpf: *const DynPixel,
     w: libc::c_int,
     h: libc::c_int,
     params: *const LooprestorationParams,
@@ -885,10 +884,10 @@ unsafe fn sgr_3x3_rust<BD: BitDepth>(
 }
 
 unsafe extern "C" fn sgr_mix_c_erased<BD: BitDepth>(
-    p: *mut libc::c_void,
+    p: *mut DynPixel,
     stride: ptrdiff_t,
-    left: *const libc::c_void,
-    lpf: *const libc::c_void,
+    left: *const LeftPixelRow<DynPixel>,
+    lpf: *const DynPixel,
     w: libc::c_int,
     h: libc::c_int,
     params: *const LooprestorationParams,
@@ -1061,10 +1060,10 @@ unsafe fn dav1d_wiener_filter_v_neon<BD: BitDepth>(
 
 #[cfg(all(feature = "asm", target_arch = "arm"))]
 unsafe extern "C" fn wiener_filter_neon_erased<BD: BitDepth>(
-    p: *mut libc::c_void,
+    p: *mut DynPixel,
     stride: ptrdiff_t,
-    left: *const libc::c_void,
-    lpf: *const libc::c_void,
+    left: *const LeftPixelRow<DynPixel>,
+    lpf: *const DynPixel,
     w: libc::c_int,
     h: libc::c_int,
     params: *const LooprestorationParams,
@@ -1407,9 +1406,9 @@ unsafe fn dav1d_sgr_weighted1_neon<BD: BitDepth>(
         ($name:ident) => {{
             extern "C" {
                 fn $name(
-                    dst: *mut libc::c_void,
+                    dst: *mut DynPixel,
                     dst_stride: ptrdiff_t,
-                    src: *const libc::c_void,
+                    src: *const DynPixel,
                     src_stride: ptrdiff_t,
                     t1: *const int16_t,
                     w: libc::c_int,
@@ -1488,10 +1487,10 @@ unsafe fn dav1d_sgr_weighted2_neon<BD: BitDepth>(
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe extern "C" fn sgr_filter_5x5_neon_erased<BD: BitDepth>(
-    p: *mut libc::c_void,
+    p: *mut DynPixel,
     stride: ptrdiff_t,
-    left: *const libc::c_void,
-    lpf: *const libc::c_void,
+    left: *const LeftPixelRow<DynPixel>,
+    lpf: *const DynPixel,
     w: libc::c_int,
     h: libc::c_int,
     params: *const LooprestorationParams,
@@ -1551,10 +1550,10 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe extern "C" fn sgr_filter_3x3_neon_erased<BD: BitDepth>(
-    p: *mut libc::c_void,
+    p: *mut DynPixel,
     stride: ptrdiff_t,
-    left: *const libc::c_void,
-    lpf: *const libc::c_void,
+    left: *const LeftPixelRow<DynPixel>,
+    lpf: *const DynPixel,
     w: libc::c_int,
     h: libc::c_int,
     params: *const LooprestorationParams,
@@ -1614,10 +1613,10 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe extern "C" fn sgr_filter_mix_neon_erased<BD: BitDepth>(
-    p: *mut libc::c_void,
+    p: *mut DynPixel,
     stride: ptrdiff_t,
-    left: *const libc::c_void,
-    lpf: *const libc::c_void,
+    left: *const LeftPixelRow<DynPixel>,
+    lpf: *const DynPixel,
     w: libc::c_int,
     h: libc::c_int,
     params: *const LooprestorationParams,

@@ -1,4 +1,4 @@
-use std::ffi::{c_int, c_uint};
+use std::ffi::{c_int, c_uint, c_void};
 use std::fmt::{self, Display, Formatter};
 use std::ops::{Add, Mul, Shr};
 
@@ -269,3 +269,12 @@ impl Display for DisplayPixel16 {
         write!(f, "{:03x}", self.0)
     }
 }
+
+#[repr(transparent)]
+pub struct DynPixel(c_void);
+
+#[repr(transparent)]
+pub struct DynCoef(c_void);
+
+pub type LeftPixelRow<Pixel> = [Pixel; 4];
+pub type LeftPixelRow2px<Pixel> = [Pixel; 2];

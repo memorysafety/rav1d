@@ -1,3 +1,5 @@
+use crate::include::common::bitdepth::DynPixel;
+use crate::include::common::bitdepth::LeftPixelRow2px;
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
@@ -14,14 +16,12 @@ pub const CDEF_HAVE_TOP: CdefEdgeFlags = 4;
 pub const CDEF_HAVE_RIGHT: CdefEdgeFlags = 2;
 pub const CDEF_HAVE_LEFT: CdefEdgeFlags = 1;
 
-pub type pixel = libc::c_void;
-pub type const_left_pixel_row_2px = *const libc::c_void; // const_left_pixel_row_2px
 pub type cdef_fn = unsafe extern "C" fn(
-    *mut pixel,
+    *mut DynPixel,
     ptrdiff_t,
-    const_left_pixel_row_2px,
-    *const pixel,
-    *const pixel,
+    *const LeftPixelRow2px<DynPixel>,
+    *const DynPixel,
+    *const DynPixel,
     libc::c_int,
     libc::c_int,
     libc::c_int,
@@ -30,7 +30,7 @@ pub type cdef_fn = unsafe extern "C" fn(
     libc::c_int,
 ) -> ();
 pub type cdef_dir_fn =
-    unsafe extern "C" fn(*const pixel, ptrdiff_t, *mut libc::c_uint, libc::c_int) -> libc::c_int;
+    unsafe extern "C" fn(*const DynPixel, ptrdiff_t, *mut libc::c_uint, libc::c_int) -> libc::c_int;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dCdefDSPContext {
@@ -46,11 +46,11 @@ pub struct Dav1dCdefDSPContext {
 ))]
 extern "C" {
     pub(crate) fn dav1d_cdef_filter_8x8_8bpc_ssse3(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
+        left: *const LeftPixelRow2px<DynPixel>,
+        top: *const DynPixel,
+        bottom: *const DynPixel,
         pri_strength: libc::c_int,
         sec_strength: libc::c_int,
         dir: libc::c_int,
@@ -59,11 +59,11 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_cdef_filter_4x8_8bpc_ssse3(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
+        left: *const LeftPixelRow2px<DynPixel>,
+        top: *const DynPixel,
+        bottom: *const DynPixel,
         pri_strength: libc::c_int,
         sec_strength: libc::c_int,
         dir: libc::c_int,
@@ -72,11 +72,11 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_cdef_filter_4x4_8bpc_ssse3(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
+        left: *const LeftPixelRow2px<DynPixel>,
+        top: *const DynPixel,
+        bottom: *const DynPixel,
         pri_strength: libc::c_int,
         sec_strength: libc::c_int,
         dir: libc::c_int,
@@ -85,17 +85,17 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_cdef_dir_8bpc_sse4(
-        dst: *const pixel,
+        dst: *const DynPixel,
         dst_stride: ptrdiff_t,
         var: *mut libc::c_uint,
         bitdepth_max: libc::c_int,
     ) -> libc::c_int;
     pub(crate) fn dav1d_cdef_filter_8x8_8bpc_sse4(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
+        left: *const LeftPixelRow2px<DynPixel>,
+        top: *const DynPixel,
+        bottom: *const DynPixel,
         pri_strength: libc::c_int,
         sec_strength: libc::c_int,
         dir: libc::c_int,
@@ -104,11 +104,11 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_cdef_filter_4x8_8bpc_sse4(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
+        left: *const LeftPixelRow2px<DynPixel>,
+        top: *const DynPixel,
+        bottom: *const DynPixel,
         pri_strength: libc::c_int,
         sec_strength: libc::c_int,
         dir: libc::c_int,
@@ -117,11 +117,11 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_cdef_filter_4x4_8bpc_sse4(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
+        left: *const LeftPixelRow2px<DynPixel>,
+        top: *const DynPixel,
+        bottom: *const DynPixel,
         pri_strength: libc::c_int,
         sec_strength: libc::c_int,
         dir: libc::c_int,
@@ -130,17 +130,17 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_cdef_dir_8bpc_avx2(
-        dst: *const pixel,
+        dst: *const DynPixel,
         dst_stride: ptrdiff_t,
         var: *mut libc::c_uint,
         bitdepth_max: libc::c_int,
     ) -> libc::c_int;
     pub(crate) fn dav1d_cdef_filter_8x8_8bpc_avx2(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
+        left: *const LeftPixelRow2px<DynPixel>,
+        top: *const DynPixel,
+        bottom: *const DynPixel,
         pri_strength: libc::c_int,
         sec_strength: libc::c_int,
         dir: libc::c_int,
@@ -149,11 +149,11 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_cdef_filter_4x8_8bpc_avx2(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
+        left: *const LeftPixelRow2px<DynPixel>,
+        top: *const DynPixel,
+        bottom: *const DynPixel,
         pri_strength: libc::c_int,
         sec_strength: libc::c_int,
         dir: libc::c_int,
@@ -162,11 +162,11 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_cdef_filter_4x4_8bpc_avx2(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
+        left: *const LeftPixelRow2px<DynPixel>,
+        top: *const DynPixel,
+        bottom: *const DynPixel,
         pri_strength: libc::c_int,
         sec_strength: libc::c_int,
         dir: libc::c_int,
@@ -175,11 +175,11 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_cdef_filter_8x8_8bpc_avx512icl(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
+        left: *const LeftPixelRow2px<DynPixel>,
+        top: *const DynPixel,
+        bottom: *const DynPixel,
         pri_strength: libc::c_int,
         sec_strength: libc::c_int,
         dir: libc::c_int,
@@ -188,11 +188,11 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_cdef_filter_4x8_8bpc_avx512icl(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
+        left: *const LeftPixelRow2px<DynPixel>,
+        top: *const DynPixel,
+        bottom: *const DynPixel,
         pri_strength: libc::c_int,
         sec_strength: libc::c_int,
         dir: libc::c_int,
@@ -201,11 +201,11 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_cdef_filter_4x4_8bpc_avx512icl(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
+        left: *const LeftPixelRow2px<DynPixel>,
+        top: *const DynPixel,
+        bottom: *const DynPixel,
         pri_strength: libc::c_int,
         sec_strength: libc::c_int,
         dir: libc::c_int,
@@ -214,11 +214,11 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_cdef_filter_4x8_8bpc_sse2(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
+        left: *const LeftPixelRow2px<DynPixel>,
+        top: *const DynPixel,
+        bottom: *const DynPixel,
         pri_strength: libc::c_int,
         sec_strength: libc::c_int,
         dir: libc::c_int,
@@ -227,17 +227,17 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_cdef_dir_8bpc_ssse3(
-        dst: *const pixel,
+        dst: *const DynPixel,
         dst_stride: ptrdiff_t,
         var: *mut libc::c_uint,
         bitdepth_max: libc::c_int,
     ) -> libc::c_int;
     pub(crate) fn dav1d_cdef_filter_4x4_8bpc_sse2(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
+        left: *const LeftPixelRow2px<DynPixel>,
+        top: *const DynPixel,
+        bottom: *const DynPixel,
         pri_strength: libc::c_int,
         sec_strength: libc::c_int,
         dir: libc::c_int,
@@ -246,11 +246,11 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_cdef_filter_8x8_8bpc_sse2(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
+        left: *const LeftPixelRow2px<DynPixel>,
+        top: *const DynPixel,
+        bottom: *const DynPixel,
         pri_strength: libc::c_int,
         sec_strength: libc::c_int,
         dir: libc::c_int,
@@ -268,33 +268,33 @@ extern "C" {
 ))]
 extern "C" {
     pub(crate) fn dav1d_cdef_find_dir_8bpc_neon(
-        dst: *const pixel,
+        dst: *const DynPixel,
         dst_stride: ptrdiff_t,
         var: *mut libc::c_uint,
         bitdepth_max: libc::c_int,
     ) -> libc::c_int;
     pub(crate) fn dav1d_cdef_padding4_8bpc_neon(
         tmp: *mut uint16_t,
-        src: *const pixel,
+        src: *const DynPixel,
         src_stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
+        left: *const LeftPixelRow2px<DynPixel>,
+        top: *const DynPixel,
+        bottom: *const DynPixel,
         h: libc::c_int,
         edges: CdefEdgeFlags,
     );
     pub(crate) fn dav1d_cdef_padding8_8bpc_neon(
         tmp: *mut uint16_t,
-        src: *const pixel,
+        src: *const DynPixel,
         src_stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
+        left: *const LeftPixelRow2px<DynPixel>,
+        top: *const DynPixel,
+        bottom: *const DynPixel,
         h: libc::c_int,
         edges: CdefEdgeFlags,
     );
     pub(crate) fn dav1d_cdef_filter4_8bpc_neon(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         dst_stride: ptrdiff_t,
         tmp: *const uint16_t,
         pri_strength: libc::c_int,
@@ -305,7 +305,7 @@ extern "C" {
         edges: size_t,
     );
     pub(crate) fn dav1d_cdef_filter8_8bpc_neon(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         dst_stride: ptrdiff_t,
         tmp: *const uint16_t,
         pri_strength: libc::c_int,
@@ -325,11 +325,11 @@ extern "C" {
 ))]
 extern "C" {
     pub(crate) fn dav1d_cdef_filter_4x4_16bpc_avx512icl(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
+        left: *const LeftPixelRow2px<DynPixel>,
+        top: *const DynPixel,
+        bottom: *const DynPixel,
         pri_strength: libc::c_int,
         sec_strength: libc::c_int,
         dir: libc::c_int,
@@ -338,11 +338,11 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_cdef_filter_4x8_16bpc_avx512icl(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
+        left: *const LeftPixelRow2px<DynPixel>,
+        top: *const DynPixel,
+        bottom: *const DynPixel,
         pri_strength: libc::c_int,
         sec_strength: libc::c_int,
         dir: libc::c_int,
@@ -351,11 +351,11 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_cdef_filter_8x8_16bpc_avx512icl(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
+        left: *const LeftPixelRow2px<DynPixel>,
+        top: *const DynPixel,
+        bottom: *const DynPixel,
         pri_strength: libc::c_int,
         sec_strength: libc::c_int,
         dir: libc::c_int,
@@ -364,11 +364,11 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_cdef_filter_4x4_16bpc_avx2(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
+        left: *const LeftPixelRow2px<DynPixel>,
+        top: *const DynPixel,
+        bottom: *const DynPixel,
         pri_strength: libc::c_int,
         sec_strength: libc::c_int,
         dir: libc::c_int,
@@ -377,11 +377,11 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_cdef_filter_4x8_16bpc_avx2(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
+        left: *const LeftPixelRow2px<DynPixel>,
+        top: *const DynPixel,
+        bottom: *const DynPixel,
         pri_strength: libc::c_int,
         sec_strength: libc::c_int,
         dir: libc::c_int,
@@ -390,11 +390,11 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_cdef_filter_8x8_16bpc_avx2(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
+        left: *const LeftPixelRow2px<DynPixel>,
+        top: *const DynPixel,
+        bottom: *const DynPixel,
         pri_strength: libc::c_int,
         sec_strength: libc::c_int,
         dir: libc::c_int,
@@ -403,23 +403,23 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_cdef_dir_16bpc_avx2(
-        dst: *const pixel,
+        dst: *const DynPixel,
         dst_stride: ptrdiff_t,
         var: *mut libc::c_uint,
         bitdepth_max: libc::c_int,
     ) -> libc::c_int;
     pub(crate) fn dav1d_cdef_dir_16bpc_sse4(
-        dst: *const pixel,
+        dst: *const DynPixel,
         dst_stride: ptrdiff_t,
         var: *mut libc::c_uint,
         bitdepth_max: libc::c_int,
     ) -> libc::c_int;
     pub(crate) fn dav1d_cdef_filter_4x4_16bpc_ssse3(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
+        left: *const LeftPixelRow2px<DynPixel>,
+        top: *const DynPixel,
+        bottom: *const DynPixel,
         pri_strength: libc::c_int,
         sec_strength: libc::c_int,
         dir: libc::c_int,
@@ -428,11 +428,11 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_cdef_filter_4x8_16bpc_ssse3(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
+        left: *const LeftPixelRow2px<DynPixel>,
+        top: *const DynPixel,
+        bottom: *const DynPixel,
         pri_strength: libc::c_int,
         sec_strength: libc::c_int,
         dir: libc::c_int,
@@ -441,11 +441,11 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_cdef_filter_8x8_16bpc_ssse3(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
+        left: *const LeftPixelRow2px<DynPixel>,
+        top: *const DynPixel,
+        bottom: *const DynPixel,
         pri_strength: libc::c_int,
         sec_strength: libc::c_int,
         dir: libc::c_int,
@@ -454,7 +454,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_cdef_dir_16bpc_ssse3(
-        dst: *const pixel,
+        dst: *const DynPixel,
         dst_stride: ptrdiff_t,
         var: *mut libc::c_uint,
         bitdepth_max: libc::c_int,
@@ -469,33 +469,33 @@ extern "C" {
 ))]
 extern "C" {
     pub(crate) fn dav1d_cdef_find_dir_16bpc_neon(
-        dst: *const pixel,
+        dst: *const DynPixel,
         dst_stride: ptrdiff_t,
         var: *mut libc::c_uint,
         bitdepth_max: libc::c_int,
     ) -> libc::c_int;
     pub(crate) fn dav1d_cdef_padding4_16bpc_neon(
         tmp: *mut uint16_t,
-        src: *const pixel,
+        src: *const DynPixel,
         src_stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
+        left: *const LeftPixelRow2px<DynPixel>,
+        top: *const DynPixel,
+        bottom: *const DynPixel,
         h: libc::c_int,
         edges: CdefEdgeFlags,
     );
     pub(crate) fn dav1d_cdef_padding8_16bpc_neon(
         tmp: *mut uint16_t,
-        src: *const pixel,
+        src: *const DynPixel,
         src_stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
+        left: *const LeftPixelRow2px<DynPixel>,
+        top: *const DynPixel,
+        bottom: *const DynPixel,
         h: libc::c_int,
         edges: CdefEdgeFlags,
     );
     pub(crate) fn dav1d_cdef_filter4_16bpc_neon(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         dst_stride: ptrdiff_t,
         tmp: *const uint16_t,
         pri_strength: libc::c_int,
@@ -507,7 +507,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_cdef_filter8_16bpc_neon(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         dst_stride: ptrdiff_t,
         tmp: *const uint16_t,
         pri_strength: libc::c_int,

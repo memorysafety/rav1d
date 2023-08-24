@@ -1,12 +1,11 @@
+use crate::include::common::bitdepth::DynPixel;
 use crate::include::stddef::ptrdiff_t;
 use crate::include::stdint::uint32_t;
 use crate::include::stdint::uint8_t;
 use crate::src::lf_mask::Av1FilterLUT;
 
-pub type pixel = libc::c_void;
-
 pub type loopfilter_sb_fn = unsafe extern "C" fn(
-    *mut pixel,
+    *mut DynPixel,
     ptrdiff_t,
     *const uint32_t,
     *const [uint8_t; 4],
@@ -30,7 +29,7 @@ pub struct Dav1dLoopFilterDSPContext {
 ))]
 extern "C" {
     pub(crate) fn dav1d_lpf_v_sb_uv_8bpc_avx512icl(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
@@ -40,7 +39,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_lpf_h_sb_uv_8bpc_avx512icl(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
@@ -50,7 +49,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_lpf_v_sb_y_8bpc_avx512icl(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
@@ -60,7 +59,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_lpf_h_sb_y_8bpc_avx512icl(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
@@ -70,7 +69,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_lpf_v_sb_uv_8bpc_avx2(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
@@ -80,7 +79,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_lpf_h_sb_uv_8bpc_avx2(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
@@ -90,7 +89,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_lpf_v_sb_y_8bpc_avx2(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
@@ -100,7 +99,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_lpf_h_sb_y_8bpc_avx2(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
@@ -110,7 +109,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_lpf_v_sb_uv_8bpc_ssse3(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
@@ -120,7 +119,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_lpf_h_sb_uv_8bpc_ssse3(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
@@ -130,7 +129,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_lpf_v_sb_y_8bpc_ssse3(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
@@ -140,7 +139,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_lpf_h_sb_y_8bpc_ssse3(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
@@ -159,7 +158,7 @@ extern "C" {
 ))]
 extern "C" {
     pub(crate) fn dav1d_lpf_h_sb_uv_8bpc_neon(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
@@ -169,7 +168,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_lpf_v_sb_y_8bpc_neon(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
@@ -179,7 +178,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_lpf_h_sb_y_8bpc_neon(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
@@ -189,7 +188,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_lpf_v_sb_uv_8bpc_neon(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
@@ -208,7 +207,7 @@ extern "C" {
 ))]
 extern "C" {
     pub(crate) fn dav1d_lpf_v_sb_uv_16bpc_avx512icl(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
@@ -218,7 +217,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_lpf_h_sb_uv_16bpc_avx512icl(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
@@ -228,7 +227,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_lpf_v_sb_y_16bpc_avx512icl(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
@@ -238,7 +237,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_lpf_h_sb_y_16bpc_avx512icl(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
@@ -248,7 +247,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_lpf_v_sb_uv_16bpc_avx2(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
@@ -258,7 +257,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_lpf_h_sb_uv_16bpc_avx2(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
@@ -268,7 +267,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_lpf_v_sb_y_16bpc_avx2(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
@@ -278,7 +277,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_lpf_h_sb_y_16bpc_avx2(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
@@ -288,7 +287,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_lpf_v_sb_uv_16bpc_ssse3(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
@@ -298,7 +297,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_lpf_h_sb_uv_16bpc_ssse3(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
@@ -308,7 +307,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_lpf_v_sb_y_16bpc_ssse3(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
@@ -318,7 +317,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_lpf_h_sb_y_16bpc_ssse3(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
@@ -337,7 +336,7 @@ extern "C" {
 ))]
 extern "C" {
     pub(crate) fn dav1d_lpf_v_sb_uv_16bpc_neon(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
@@ -347,7 +346,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_lpf_h_sb_uv_16bpc_neon(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
@@ -357,7 +356,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_lpf_v_sb_y_16bpc_neon(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
@@ -367,7 +366,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_lpf_h_sb_y_16bpc_neon(
-        dst: *mut pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
         lvl: *const [uint8_t; 4],
