@@ -4189,10 +4189,12 @@ unsafe fn decode_sb(
     let hsz = 16 >> bl;
     let have_h_split = f.bw > t.bx + hsz;
     let have_v_split = f.bh > t.by + hsz;
+
     if !have_h_split && !have_v_split {
         assert!(bl < BL_8X8);
         return decode_sb(t, bl + 1, (*(node as *const EdgeBranch)).split[0]);
     }
+
     let mut pc = &mut Default::default();
     let mut bp;
     let mut ctx = 0;
@@ -4214,6 +4216,7 @@ unsafe fn decode_sb(
         ctx = get_partition_ctx(&*t.a, &t.l, bl, by8, bx8);
         pc = &mut ts.cdf.m.partition[bl as usize][ctx as usize];
     }
+
     if have_h_split && have_v_split {
         if t.frame_thread.pass == 2 {
             let b = &mut *(f.frame_thread.b).offset(t.by as isize * f.b4_stride + t.bx as isize);
@@ -4250,6 +4253,7 @@ unsafe fn decode_sb(
             }
         }
         let b = &dav1d_block_sizes[bl as usize][bp as usize];
+
         match bp {
             PARTITION_NONE => {
                 let node = &*node;
@@ -4304,6 +4308,9 @@ unsafe fn decode_sb(
                     t.bx -= 1;
                     t.by -= 1;
                     if cfg!(target_arch = "x86_64") && t.frame_thread.pass != 0 {
+                        // In 8-bit mode with 2-pass decoding the coefficient buffer
+                        // can end up misaligned due to skips here.
+                        // Work around the issue by explicitly realigning the buffer.
                         let p = (t.frame_thread.pass & 1) as usize;
                         ts.frame_thread[p].cf = (((ts.frame_thread[p].cf as uintptr_t) + 63) & !63)
                             as *mut libc::c_void;
@@ -4546,6 +4553,7 @@ unsafe fn decode_sb(
                 );
             }
         }
+
         assert!(bl < BL_8X8);
         if is_split {
             let branch = &*(node as *const EdgeBranch);
@@ -4599,6 +4607,7 @@ unsafe fn decode_sb(
                 );
             }
         }
+
         assert!(bl < BL_8X8);
         if is_split {
             let branch = &*(node as *const EdgeBranch);
@@ -4625,6 +4634,7 @@ unsafe fn decode_sb(
             }
         }
     }
+
     if t.frame_thread.pass != 2 && (bp != PARTITION_SPLIT || bl == BL_8X8) {
         CaseSet::<16, false>::many(
             [(&mut *t.a, 0), (&mut t.l, 1)],
@@ -4638,6 +4648,7 @@ unsafe fn decode_sb(
             },
         );
     }
+
     0
 }
 
