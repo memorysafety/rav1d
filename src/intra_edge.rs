@@ -1,4 +1,5 @@
 use std::iter;
+use std::ptr;
 use std::slice;
 
 use crate::include::stdint::uint8_t;
@@ -199,8 +200,8 @@ unsafe fn init_mode_node(
 pub unsafe fn dav1d_init_mode_tree(root_node: *mut EdgeNode, nt: *mut EdgeTip, allow_sb128: bool) {
     let root: *mut EdgeBranch = root_node as *mut EdgeBranch;
     let mut mem: ModeSelMem = ModeSelMem {
-        nwc: [0 as *mut EdgeBranch; 3],
-        nt: 0 as *mut EdgeTip,
+        nwc: [ptr::null_mut(); 3],
+        nt: ptr::null_mut(),
     };
     mem.nt = nt;
     if allow_sb128 {
@@ -213,7 +214,7 @@ pub unsafe fn dav1d_init_mode_tree(root_node: *mut EdgeNode, nt: *mut EdgeTip, a
         assert_eq!(mem.nwc[BL_32X32 as usize], root.offset(1 + 4 + 16 + 64));
         assert_eq!(mem.nt, nt.offset(256));
     } else {
-        mem.nwc[BL_128X128 as usize] = 0 as *mut EdgeBranch;
+        mem.nwc[BL_128X128 as usize] = ptr::null_mut();
         mem.nwc[BL_64X64 as usize] = root.offset(1);
         mem.nwc[BL_32X32 as usize] = root.offset(1 + 4);
         init_mode_node(&mut *root, BL_64X64, &mut mem, true, false);
