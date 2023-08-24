@@ -4185,7 +4185,7 @@ unsafe fn decode_sb(
     node: *const EdgeNode,
 ) -> libc::c_int {
     let f = &*t.f;
-    let ts: *mut Dav1dTileState = t.ts;
+    let ts = &mut *t.ts;
     let hsz = 16 >> bl as libc::c_uint;
     let have_h_split = (f.bw > t.bx + hsz) as libc::c_int;
     let have_v_split = (f.bh > t.by + hsz) as libc::c_int;
@@ -4212,13 +4212,13 @@ unsafe fn decode_sb(
                 t.by,
                 t.bx,
                 bl as libc::c_uint,
-                (*ts).msac.rng,
+                ts.msac.rng,
             );
         }
         bx8 = (t.bx & 31) >> 1;
         by8 = (t.by & 31) >> 1;
         ctx = get_partition_ctx(&*t.a, &t.l, bl, by8, bx8);
-        pc = &mut (*ts).cdf.m.partition[bl as usize][ctx as usize];
+        pc = &mut ts.cdf.m.partition[bl as usize][ctx as usize];
     }
     if have_h_split != 0 && have_v_split != 0 {
         if t.frame_thread.pass == 2 {
@@ -4232,7 +4232,7 @@ unsafe fn decode_sb(
             }) as BlockPartition;
         } else {
             bp = dav1d_msac_decode_symbol_adapt16(
-                &mut (*ts).msac,
+                &mut ts.msac,
                 pc,
                 dav1d_partition_type_count[bl as usize] as size_t,
             ) as BlockPartition;
@@ -4255,7 +4255,7 @@ unsafe fn decode_sb(
                     bl as libc::c_uint,
                     ctx as libc::c_int,
                     bp as libc::c_uint,
-                    (*ts).msac.rng,
+                    ts.msac.rng,
                 );
             }
         }
@@ -4349,9 +4349,11 @@ unsafe fn decode_sb(
                     t.by -= 1;
                     if t.frame_thread.pass != 0 {
                         let p = t.frame_thread.pass & 1;
-                        (*ts).frame_thread[p as usize].cf =
-                            (((*ts).frame_thread[p as usize].cf as uintptr_t).wrapping_add(63)
-                                & !(63)) as *mut libc::c_void;
+                        ts.frame_thread[p as usize].cf = ((ts.frame_thread[p as usize].cf
+                            as uintptr_t)
+                            .wrapping_add(63)
+                            & !(63))
+                            as *mut libc::c_void;
                     }
                 } else {
                     let branch: *const EdgeBranch = node as *const EdgeBranch;
@@ -4660,7 +4662,7 @@ unsafe fn decode_sb(
             is_split =
                 ((*b_1).bl as libc::c_uint != bl as libc::c_uint) as libc::c_int as libc::c_uint;
         } else {
-            is_split = dav1d_msac_decode_bool(&mut (*ts).msac, gather_top_partition_prob(pc, bl))
+            is_split = dav1d_msac_decode_bool(&mut ts.msac, gather_top_partition_prob(pc, bl))
                 as libc::c_uint;
             if DEBUG_BLOCK_INFO(f, t) {
                 printf(
@@ -4676,7 +4678,7 @@ unsafe fn decode_sb(
                     } else {
                         PARTITION_H as libc::c_int
                     },
-                    (*ts).msac.rng,
+                    ts.msac.rng,
                 );
             }
         }
@@ -4729,7 +4731,7 @@ unsafe fn decode_sb(
             is_split_0 =
                 ((*b_2).bl as libc::c_uint != bl as libc::c_uint) as libc::c_int as libc::c_uint;
         } else {
-            is_split_0 = dav1d_msac_decode_bool(&mut (*ts).msac, gather_left_partition_prob(pc, bl))
+            is_split_0 = dav1d_msac_decode_bool(&mut ts.msac, gather_left_partition_prob(pc, bl))
                 as libc::c_uint;
             if f.cur.p.layout as libc::c_uint
                 == DAV1D_PIXEL_LAYOUT_I422 as libc::c_int as libc::c_uint
@@ -4751,7 +4753,7 @@ unsafe fn decode_sb(
                     } else {
                         PARTITION_V as libc::c_int
                     },
-                    (*ts).msac.rng,
+                    ts.msac.rng,
                 );
             }
         }
