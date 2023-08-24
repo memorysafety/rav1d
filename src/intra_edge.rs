@@ -159,11 +159,11 @@ unsafe fn init_mode_node(
     );
     if bl == BL_16X16 {
         for n in 0..4 {
-            let nt = mem.nt;
+            let nt = &mut *mem.nt;
             mem.nt = mem.nt.offset(1);
-            nwc.split[n] = &mut (*nt).node;
+            nwc.split[n] = &mut nt.node;
             init_edges(
-                &mut (*nt).node,
+                &mut nt.node,
                 bl + 1,
                 ((if n == 3 || n == 1 && !top_has_right {
                     0 as EdgeFlags
@@ -180,11 +180,11 @@ unsafe fn init_mode_node(
         }
     } else {
         for n in 0..4 {
-            let nwc_child = mem.nwc[bl as usize];
+            let nwc_child = &mut *mem.nwc[bl as usize];
             mem.nwc[bl as usize] = mem.nwc[bl as usize].offset(1);
-            nwc.split[n] = &mut (*nwc_child).node;
+            nwc.split[n] = &mut nwc_child.node;
             init_mode_node(
-                &mut *nwc_child,
+                nwc_child,
                 bl + 1,
                 mem,
                 !(n == 3 || n == 1 && !top_has_right),
