@@ -370,7 +370,7 @@ unsafe extern "C" fn cdef_filter_block_8x8_c_erased(
     );
 }
 unsafe extern "C" fn cdef_find_dir_c_erased(
-    mut img: *const libc::c_void,
+    mut img: *const DynPixel,
     stride: ptrdiff_t,
     var: *mut libc::c_uint,
     _bitdepth_max: libc::c_int,

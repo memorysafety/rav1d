@@ -380,7 +380,7 @@ unsafe extern "C" fn cdef_filter_block_8x8_c_erased(
     );
 }
 unsafe extern "C" fn cdef_find_dir_c_erased(
-    mut img: *const libc::c_void,
+    mut img: *const DynPixel,
     stride: ptrdiff_t,
     var: *mut libc::c_uint,
     bitdepth_max: libc::c_int,
@@ -576,7 +576,7 @@ unsafe extern "C" fn cdef_dsp_init_arm(c: *mut Dav1dCdefDSPContext) {
 #[inline(always)]
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
 unsafe extern "C" fn cdef_filter_8x8_neon_erased(
-    dst: *mut libc::c_void,
+    dst: *mut DynPixel,
     stride: ptrdiff_t,
     left: *const LeftPixelRow2px<DynPixel>,
     top: *const DynPixel,
@@ -611,7 +611,7 @@ unsafe extern "C" fn cdef_filter_8x8_neon_erased(
 #[inline(always)]
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
 unsafe extern "C" fn cdef_filter_4x8_neon_erased(
-    mut dst: *mut libc::c_void,
+    mut dst: *mut DynPixel,
     stride: ptrdiff_t,
     mut left: *const LeftPixelRow2px<DynPixel>,
     top: *const DynPixel,
@@ -646,7 +646,7 @@ unsafe extern "C" fn cdef_filter_4x8_neon_erased(
 #[inline(always)]
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
 unsafe extern "C" fn cdef_filter_4x4_neon_erased(
-    mut dst: *mut libc::c_void,
+    mut dst: *mut DynPixel,
     stride: ptrdiff_t,
     mut left: *const LeftPixelRow2px<DynPixel>,
     top: *const DynPixel,

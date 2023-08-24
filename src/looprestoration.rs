@@ -257,7 +257,7 @@ unsafe fn padding<BD: BitDepth>(
 }
 
 unsafe extern "C" fn wiener_c_erased<BD: BitDepth>(
-    p: *mut libc::c_void,
+    p: *mut DynPixel,
     stride: ptrdiff_t,
     left: *const LeftPixelRow<DynPixel>,
     lpf: *const DynPixel,
@@ -739,7 +739,7 @@ unsafe extern "C" fn selfguided_filter<BD: BitDepth>(
 }
 
 unsafe extern "C" fn sgr_5x5_c_erased<BD: BitDepth>(
-    p: *mut libc::c_void,
+    p: *mut DynPixel,
     stride: ptrdiff_t,
     left: *const LeftPixelRow<DynPixel>,
     lpf: *const DynPixel,
@@ -814,7 +814,7 @@ unsafe fn sgr_5x5_rust<BD: BitDepth>(
 }
 
 unsafe extern "C" fn sgr_3x3_c_erased<BD: BitDepth>(
-    p: *mut libc::c_void,
+    p: *mut DynPixel,
     stride: ptrdiff_t,
     left: *const LeftPixelRow<DynPixel>,
     lpf: *const DynPixel,
@@ -884,7 +884,7 @@ unsafe fn sgr_3x3_rust<BD: BitDepth>(
 }
 
 unsafe extern "C" fn sgr_mix_c_erased<BD: BitDepth>(
-    p: *mut libc::c_void,
+    p: *mut DynPixel,
     stride: ptrdiff_t,
     left: *const LeftPixelRow<DynPixel>,
     lpf: *const DynPixel,
@@ -1060,7 +1060,7 @@ unsafe fn dav1d_wiener_filter_v_neon<BD: BitDepth>(
 
 #[cfg(all(feature = "asm", target_arch = "arm"))]
 unsafe extern "C" fn wiener_filter_neon_erased<BD: BitDepth>(
-    p: *mut libc::c_void,
+    p: *mut DynPixel,
     stride: ptrdiff_t,
     left: *const LeftPixelRow<DynPixel>,
     lpf: *const DynPixel,
@@ -1406,9 +1406,9 @@ unsafe fn dav1d_sgr_weighted1_neon<BD: BitDepth>(
         ($name:ident) => {{
             extern "C" {
                 fn $name(
-                    dst: *mut libc::c_void,
+                    dst: *mut DynPixel,
                     dst_stride: ptrdiff_t,
-                    src: *const libc::c_void,
+                    src: *const DynPixel,
                     src_stride: ptrdiff_t,
                     t1: *const int16_t,
                     w: libc::c_int,
@@ -1487,7 +1487,7 @@ unsafe fn dav1d_sgr_weighted2_neon<BD: BitDepth>(
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe extern "C" fn sgr_filter_5x5_neon_erased<BD: BitDepth>(
-    p: *mut libc::c_void,
+    p: *mut DynPixel,
     stride: ptrdiff_t,
     left: *const LeftPixelRow<DynPixel>,
     lpf: *const DynPixel,
@@ -1550,7 +1550,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe extern "C" fn sgr_filter_3x3_neon_erased<BD: BitDepth>(
-    p: *mut libc::c_void,
+    p: *mut DynPixel,
     stride: ptrdiff_t,
     left: *const LeftPixelRow<DynPixel>,
     lpf: *const DynPixel,
@@ -1613,7 +1613,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe extern "C" fn sgr_filter_mix_neon_erased<BD: BitDepth>(
-    p: *mut libc::c_void,
+    p: *mut DynPixel,
     stride: ptrdiff_t,
     left: *const LeftPixelRow<DynPixel>,
     lpf: *const DynPixel,
