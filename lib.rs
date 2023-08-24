@@ -92,6 +92,7 @@ pub mod src {
     pub mod lf_mask;
     pub mod lib;
     pub mod log;
+    pub mod loopfilter;
     #[cfg(feature = "bitdepth_16")]
     pub mod loopfilter_tmpl_16;
     #[cfg(feature = "bitdepth_8")]

@@ -3862,9 +3862,7 @@ pub type itx_1d_fn =
     Option<unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> ()>;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BitDepth8;
-use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
-use crate::include::common::intops::imin;
 use crate::src::itx::inv_txfm_add_rust;
 #[inline(never)]
 unsafe extern "C" fn inv_txfm_add_c(

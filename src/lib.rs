@@ -232,50 +232,9 @@ pub struct Dav1dDSPContext {
     pub cdef: Dav1dCdefDSPContext,
     pub lr: Dav1dLoopRestorationDSPContext,
 }
+use crate::src::cdef::Dav1dCdefDSPContext;
+use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
 use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
-
-pub type pixel = ();
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dCdefDSPContext {
-    pub dir: cdef_dir_fn,
-    pub fb: [cdef_fn; 3],
-}
-pub type cdef_fn = Option<
-    unsafe extern "C" fn(
-        *mut libc::c_void,
-        ptrdiff_t,
-        const_left_pixel_row_2px,
-        *const libc::c_void,
-        *const libc::c_void,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        CdefEdgeFlags,
-    ) -> (),
->;
-use crate::src::cdef::CdefEdgeFlags;
-pub type const_left_pixel_row_2px = *const libc::c_void;
-pub type cdef_dir_fn =
-    Option<unsafe extern "C" fn(*const libc::c_void, ptrdiff_t, *mut libc::c_uint) -> libc::c_int>;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dLoopFilterDSPContext {
-    pub loop_filter_sb: [[loopfilter_sb_fn; 2]; 2],
-}
-pub type loopfilter_sb_fn = Option<
-    unsafe extern "C" fn(
-        *mut libc::c_void,
-        ptrdiff_t,
-        *const uint32_t,
-        *const [uint8_t; 4],
-        ptrdiff_t,
-        *const Av1FilterLUT,
-        libc::c_int,
-    ) -> (),
->;
-use crate::src::lf_mask::Av1FilterLUT;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dInvTxfmDSPContext {
