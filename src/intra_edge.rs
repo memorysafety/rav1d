@@ -147,21 +147,17 @@ unsafe fn init_mode_node(
     init_edges(
         &mut (*nwc).node,
         bl,
-        ((if top_has_right != 0 {
-            EDGE_I444_TOP_HAS_RIGHT as libc::c_int
-                | EDGE_I422_TOP_HAS_RIGHT as libc::c_int
-                | EDGE_I420_TOP_HAS_RIGHT as libc::c_int
+        (if top_has_right != 0 {
+            EDGE_I444_TOP_HAS_RIGHT | EDGE_I422_TOP_HAS_RIGHT | EDGE_I420_TOP_HAS_RIGHT
         } else {
-            0 as libc::c_int
+            0 as EdgeFlags
         }) | (if left_has_bottom != 0 {
-            EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int
-                | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int
-                | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int
+            EDGE_I444_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM | EDGE_I420_LEFT_HAS_BOTTOM
         } else {
-            0 as libc::c_int
-        })) as EdgeFlags,
+            0 as EdgeFlags
+        }),
     );
-    if bl as libc::c_uint == BL_16X16 as libc::c_int as libc::c_uint {
+    if bl == BL_16X16 {
         let mut n = 0;
         while n < 4 {
             let fresh0 = (*mem).nt;
@@ -170,19 +166,17 @@ unsafe fn init_mode_node(
             (*nwc).split[n as usize] = &mut (*nt).node;
             init_edges(
                 &mut (*nt).node,
-                (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as BlockLevel,
+                bl.wrapping_add(1),
                 ((if n == 3 || n == 1 && top_has_right == 0 {
-                    0 as libc::c_int
+                    0 as EdgeFlags
                 } else {
-                    EDGE_I444_TOP_HAS_RIGHT as libc::c_int
-                        | EDGE_I422_TOP_HAS_RIGHT as libc::c_int
-                        | EDGE_I420_TOP_HAS_RIGHT as libc::c_int
+                    EDGE_I444_TOP_HAS_RIGHT | EDGE_I422_TOP_HAS_RIGHT | EDGE_I420_TOP_HAS_RIGHT
                 }) | (if !(n == 0 || n == 2 && left_has_bottom != 0) {
-                    0 as libc::c_int
+                    0 as EdgeFlags
                 } else {
-                    EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int
-                        | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int
-                        | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int
+                    EDGE_I444_LEFT_HAS_BOTTOM
+                        | EDGE_I422_LEFT_HAS_BOTTOM
+                        | EDGE_I420_LEFT_HAS_BOTTOM
                 })) as EdgeFlags,
             );
             n += 1;
@@ -196,7 +190,7 @@ unsafe fn init_mode_node(
             (*nwc).split[n_0 as usize] = &mut (*nwc_child).node;
             init_mode_node(
                 nwc_child,
-                (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as BlockLevel,
+                bl.wrapping_add(1),
                 mem,
                 !(n_0 == 3 || n_0 == 1 && top_has_right == 0) as libc::c_int,
                 (n_0 == 0 || n_0 == 2 && left_has_bottom != 0) as libc::c_int,
