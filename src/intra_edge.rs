@@ -159,9 +159,8 @@ unsafe fn init_mode_node(
     );
     if bl == BL_16X16 {
         for n in 0..4 {
-            let fresh0 = mem.nt;
-            mem.nt = (mem.nt).offset(1);
-            let nt: *mut EdgeTip = fresh0;
+            let nt = mem.nt;
+            mem.nt = mem.nt.offset(1);
             nwc.split[n] = &mut (*nt).node;
             init_edges(
                 &mut (*nt).node,
@@ -181,9 +180,8 @@ unsafe fn init_mode_node(
         }
     } else {
         for n in 0..4 {
-            let fresh1 = mem.nwc[bl as usize];
-            mem.nwc[bl as usize] = (mem.nwc[bl as usize]).offset(1);
-            let nwc_child: *mut EdgeBranch = fresh1;
+            let nwc_child = mem.nwc[bl as usize];
+            mem.nwc[bl as usize] = mem.nwc[bl as usize].offset(1);
             nwc.split[n] = &mut (*nwc_child).node;
             init_mode_node(
                 &mut *nwc_child,
