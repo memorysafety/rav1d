@@ -4179,7 +4179,7 @@ unsafe fn decode_b(
     0
 }
 
-unsafe extern "C" fn decode_sb(
+unsafe fn decode_sb(
     t: *mut Dav1dTaskContext,
     bl: BlockLevel,
     node: *const EdgeNode,
@@ -4811,6 +4811,7 @@ unsafe extern "C" fn decode_sb(
     }
     return 0 as libc::c_int;
 }
+
 unsafe extern "C" fn reset_context(
     ctx: *mut BlockContext,
     keyframe: libc::c_int,
