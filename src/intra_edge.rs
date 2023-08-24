@@ -70,7 +70,7 @@ unsafe fn init_edges(node: *mut EdgeNode, bl: BlockLevel, edge_flags: EdgeFlags)
         nt.split[3] = edge_flags
             & (EDGE_I420_TOP_HAS_RIGHT | EDGE_I420_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM);
     } else {
-        let nwc: *mut EdgeBranch = node as *mut EdgeBranch;
+        let nwc = &mut *(node as *mut EdgeBranch);
         (*node).h[0] = edge_flags
             | (EDGE_I444_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM | EDGE_I420_LEFT_HAS_BOTTOM);
         (*node).h[1] = edge_flags
@@ -79,51 +79,47 @@ unsafe fn init_edges(node: *mut EdgeNode, bl: BlockLevel, edge_flags: EdgeFlags)
             | (EDGE_I444_TOP_HAS_RIGHT | EDGE_I422_TOP_HAS_RIGHT | EDGE_I420_TOP_HAS_RIGHT);
         (*node).v[1] = edge_flags
             & (EDGE_I444_TOP_HAS_RIGHT | EDGE_I422_TOP_HAS_RIGHT | EDGE_I420_TOP_HAS_RIGHT);
-        (*nwc).h4[0] = edge_flags
+        nwc.h4[0] = edge_flags
             | (EDGE_I444_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM | EDGE_I420_LEFT_HAS_BOTTOM);
-        (*nwc).h4[2] =
+        nwc.h4[2] =
             EDGE_I444_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM | EDGE_I420_LEFT_HAS_BOTTOM;
-        (*nwc).h4[1] = (*nwc).h4[2];
-        (*nwc).h4[3] = edge_flags
+        nwc.h4[1] = nwc.h4[2];
+        nwc.h4[3] = edge_flags
             & (EDGE_I444_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM | EDGE_I420_LEFT_HAS_BOTTOM);
         if bl == BL_16X16 {
-            (*nwc).h4[1] |= edge_flags & EDGE_I420_TOP_HAS_RIGHT;
+            nwc.h4[1] |= edge_flags & EDGE_I420_TOP_HAS_RIGHT;
         }
-        (*nwc).v4[0] = edge_flags
+        nwc.v4[0] = edge_flags
             | (EDGE_I444_TOP_HAS_RIGHT | EDGE_I422_TOP_HAS_RIGHT | EDGE_I420_TOP_HAS_RIGHT);
-        (*nwc).v4[2] = EDGE_I444_TOP_HAS_RIGHT | EDGE_I422_TOP_HAS_RIGHT | EDGE_I420_TOP_HAS_RIGHT;
-        (*nwc).v4[1] = (*nwc).v4[2];
-        (*nwc).v4[3] = edge_flags
+        nwc.v4[2] = EDGE_I444_TOP_HAS_RIGHT | EDGE_I422_TOP_HAS_RIGHT | EDGE_I420_TOP_HAS_RIGHT;
+        nwc.v4[1] = nwc.v4[2];
+        nwc.v4[3] = edge_flags
             & (EDGE_I444_TOP_HAS_RIGHT | EDGE_I422_TOP_HAS_RIGHT | EDGE_I420_TOP_HAS_RIGHT);
         if bl == BL_16X16 {
-            (*nwc).v4[1] |= edge_flags & (EDGE_I420_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM);
+            nwc.v4[1] |= edge_flags & (EDGE_I420_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM);
         }
-        (*nwc).tls[0] = (EDGE_I444_TOP_HAS_RIGHT
-            | EDGE_I422_TOP_HAS_RIGHT
-            | EDGE_I420_TOP_HAS_RIGHT)
+        nwc.tls[0] = (EDGE_I444_TOP_HAS_RIGHT | EDGE_I422_TOP_HAS_RIGHT | EDGE_I420_TOP_HAS_RIGHT)
             | (EDGE_I444_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM | EDGE_I420_LEFT_HAS_BOTTOM);
-        (*nwc).tls[1] = edge_flags
+        nwc.tls[1] = edge_flags
             & (EDGE_I444_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM | EDGE_I420_LEFT_HAS_BOTTOM);
-        (*nwc).tls[2] = edge_flags
+        nwc.tls[2] = edge_flags
             & (EDGE_I444_TOP_HAS_RIGHT | EDGE_I422_TOP_HAS_RIGHT | EDGE_I420_TOP_HAS_RIGHT);
-        (*nwc).trs[0] = edge_flags
+        nwc.trs[0] = edge_flags
             | (EDGE_I444_TOP_HAS_RIGHT | EDGE_I422_TOP_HAS_RIGHT | EDGE_I420_TOP_HAS_RIGHT);
-        (*nwc).trs[1] = edge_flags
+        nwc.trs[1] = edge_flags
             | (EDGE_I444_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM | EDGE_I420_LEFT_HAS_BOTTOM);
-        (*nwc).trs[2] = 0 as EdgeFlags;
-        (*nwc).tts[0] = (EDGE_I444_TOP_HAS_RIGHT
-            | EDGE_I422_TOP_HAS_RIGHT
-            | EDGE_I420_TOP_HAS_RIGHT)
+        nwc.trs[2] = 0 as EdgeFlags;
+        nwc.tts[0] = (EDGE_I444_TOP_HAS_RIGHT | EDGE_I422_TOP_HAS_RIGHT | EDGE_I420_TOP_HAS_RIGHT)
             | (EDGE_I444_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM | EDGE_I420_LEFT_HAS_BOTTOM);
-        (*nwc).tts[1] = edge_flags
+        nwc.tts[1] = edge_flags
             & (EDGE_I444_TOP_HAS_RIGHT | EDGE_I422_TOP_HAS_RIGHT | EDGE_I420_TOP_HAS_RIGHT);
-        (*nwc).tts[2] = edge_flags
+        nwc.tts[2] = edge_flags
             & (EDGE_I444_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM | EDGE_I420_LEFT_HAS_BOTTOM);
-        (*nwc).tbs[0] = edge_flags
+        nwc.tbs[0] = edge_flags
             | (EDGE_I444_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM | EDGE_I420_LEFT_HAS_BOTTOM);
-        (*nwc).tbs[1] = edge_flags
+        nwc.tbs[1] = edge_flags
             | (EDGE_I444_TOP_HAS_RIGHT | EDGE_I422_TOP_HAS_RIGHT | EDGE_I420_TOP_HAS_RIGHT);
-        (*nwc).tbs[2] = 0 as EdgeFlags;
+        nwc.tbs[2] = 0 as EdgeFlags;
     };
 }
 unsafe extern "C" fn init_mode_node(
