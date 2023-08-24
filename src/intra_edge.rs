@@ -215,7 +215,6 @@ pub unsafe fn dav1d_init_mode_tree(
         assert_eq!(mem.nwc[BL_128X128 as usize], root.offset(1 + 4));
         assert_eq!(mem.nwc[BL_64X64 as usize], root.offset(1 + 4 + 16));
         assert_eq!(mem.nwc[BL_32X32 as usize], root.offset(1 + 4 + 16 + 64));
-        assert_eq!(mem.nt, nt[256..].as_mut_ptr());
     } else {
         mem.nwc[BL_128X128 as usize] = ptr::null_mut();
         mem.nwc[BL_64X64 as usize] = root.offset(1);
@@ -223,6 +222,6 @@ pub unsafe fn dav1d_init_mode_tree(
         init_mode_node(&mut *root, BL_64X64, &mut mem, true, false);
         assert_eq!(mem.nwc[BL_64X64 as usize], root.offset(1 + 4));
         assert_eq!(mem.nwc[BL_32X32 as usize], root.offset(1 + 4 + 16));
-        assert_eq!(mem.nt, nt[64..].as_mut_ptr());
     };
+    assert_eq!(mem.nt, nt.as_mut_ptr_range().end);
 }
