@@ -49,7 +49,7 @@ use crate::src::levels::BL_8X8;
 unsafe fn init_edges(node: *mut EdgeNode, bl: BlockLevel, edge_flags: EdgeFlags) {
     (*node).o = edge_flags;
     if bl == BL_8X8 {
-        let nt: *mut EdgeTip = node as *mut EdgeTip;
+        let nt = &mut *(node as *mut EdgeTip);
         (*node).h[0] = edge_flags
             | (EDGE_I444_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM | EDGE_I420_LEFT_HAS_BOTTOM);
         (*node).h[1] = edge_flags
@@ -61,15 +61,13 @@ unsafe fn init_edges(node: *mut EdgeNode, bl: BlockLevel, edge_flags: EdgeFlags)
             & ((EDGE_I444_TOP_HAS_RIGHT | EDGE_I422_TOP_HAS_RIGHT | EDGE_I420_TOP_HAS_RIGHT)
                 | EDGE_I420_LEFT_HAS_BOTTOM
                 | EDGE_I422_LEFT_HAS_BOTTOM);
-        (*nt).split[0] = (EDGE_I444_TOP_HAS_RIGHT
-            | EDGE_I422_TOP_HAS_RIGHT
-            | EDGE_I420_TOP_HAS_RIGHT)
+        nt.split[0] = (EDGE_I444_TOP_HAS_RIGHT | EDGE_I422_TOP_HAS_RIGHT | EDGE_I420_TOP_HAS_RIGHT)
             | (EDGE_I444_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM | EDGE_I420_LEFT_HAS_BOTTOM);
-        (*nt).split[1] = (edge_flags
+        nt.split[1] = (edge_flags
             & (EDGE_I444_TOP_HAS_RIGHT | EDGE_I422_TOP_HAS_RIGHT | EDGE_I420_TOP_HAS_RIGHT))
             | EDGE_I422_LEFT_HAS_BOTTOM;
-        (*nt).split[2] = edge_flags | EDGE_I444_TOP_HAS_RIGHT;
-        (*nt).split[3] = edge_flags
+        nt.split[2] = edge_flags | EDGE_I444_TOP_HAS_RIGHT;
+        nt.split[3] = edge_flags
             & (EDGE_I420_TOP_HAS_RIGHT | EDGE_I420_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM);
     } else {
         let nwc: *mut EdgeBranch = node as *mut EdgeBranch;
