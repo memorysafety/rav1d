@@ -4184,11 +4184,11 @@ unsafe fn decode_sb(
     bl: BlockLevel,
     node: *const EdgeNode,
 ) -> libc::c_int {
-    let f: *const Dav1dFrameContext = t.f;
+    let f = &*t.f;
     let ts: *mut Dav1dTileState = t.ts;
     let hsz = 16 >> bl as libc::c_uint;
-    let have_h_split = ((*f).bw > t.bx + hsz) as libc::c_int;
-    let have_v_split = ((*f).bh > t.by + hsz) as libc::c_int;
+    let have_h_split = (f.bw > t.bx + hsz) as libc::c_int;
+    let have_v_split = (f.bh > t.by + hsz) as libc::c_int;
     if have_h_split == 0 && have_v_split == 0 {
         if !((bl as libc::c_uint) < BL_8X8 as libc::c_int as libc::c_uint) {
             unreachable!();
@@ -4208,7 +4208,7 @@ unsafe fn decode_sb(
         if 0 as libc::c_int != 0 && bl as libc::c_uint == BL_64X64 as libc::c_int as libc::c_uint {
             printf(
                 b"poc=%d,y=%d,x=%d,bl=%d,r=%d\n\0" as *const u8 as *const libc::c_char,
-                (*(*f).frame_hdr).frame_offset,
+                (*f.frame_hdr).frame_offset,
                 t.by,
                 t.bx,
                 bl as libc::c_uint,
@@ -4222,8 +4222,8 @@ unsafe fn decode_sb(
     }
     if have_h_split != 0 && have_v_split != 0 {
         if t.frame_thread.pass == 2 {
-            let b: *const Av1Block = &mut *((*f).frame_thread.b)
-                .offset((t.by as isize * (*f).b4_stride + t.bx as isize) as isize)
+            let b: *const Av1Block = &mut *(f.frame_thread.b)
+                .offset((t.by as isize * f.b4_stride + t.bx as isize) as isize)
                 as *mut Av1Block;
             bp = (if (*b).bl as libc::c_uint == bl as libc::c_uint {
                 (*b).bp as libc::c_int
@@ -4236,7 +4236,7 @@ unsafe fn decode_sb(
                 pc,
                 dav1d_partition_type_count[bl as usize] as size_t,
             ) as BlockPartition;
-            if (*f).cur.p.layout as libc::c_uint
+            if f.cur.p.layout as libc::c_uint
                 == DAV1D_PIXEL_LAYOUT_I422 as libc::c_int as libc::c_uint
                 && (bp as libc::c_uint == PARTITION_V as libc::c_int as libc::c_uint
                     || bp as libc::c_uint == PARTITION_V4 as libc::c_int as libc::c_uint
@@ -4245,11 +4245,11 @@ unsafe fn decode_sb(
             {
                 return 1 as libc::c_int;
             }
-            if DEBUG_BLOCK_INFO(&*f, t) {
+            if DEBUG_BLOCK_INFO(f, t) {
                 printf(
                     b"poc=%d,y=%d,x=%d,bl=%d,ctx=%d,bp=%d: r=%d\n\0" as *const u8
                         as *const libc::c_char,
-                    (*(*f).frame_hdr).frame_offset,
+                    (*f.frame_hdr).frame_offset,
                     t.by,
                     t.bx,
                     bl as libc::c_uint,
@@ -4582,7 +4582,7 @@ unsafe fn decode_sb(
                     return -(1 as libc::c_int);
                 }
                 t.by += hsz >> 1;
-                if t.by < (*f).bh {
+                if t.by < f.bh {
                     if decode_b(
                         t,
                         bl,
@@ -4631,7 +4631,7 @@ unsafe fn decode_sb(
                     return -(1 as libc::c_int);
                 }
                 t.bx += hsz >> 1;
-                if t.bx < (*f).bw {
+                if t.bx < f.bw {
                     if decode_b(
                         t,
                         bl,
@@ -4654,19 +4654,19 @@ unsafe fn decode_sb(
     } else if have_h_split != 0 {
         let mut is_split: libc::c_uint = 0;
         if t.frame_thread.pass == 2 {
-            let b_1: *const Av1Block = &mut *((*f).frame_thread.b)
-                .offset((t.by as isize * (*f).b4_stride + t.bx as isize) as isize)
+            let b_1: *const Av1Block = &mut *(f.frame_thread.b)
+                .offset((t.by as isize * f.b4_stride + t.bx as isize) as isize)
                 as *mut Av1Block;
             is_split =
                 ((*b_1).bl as libc::c_uint != bl as libc::c_uint) as libc::c_int as libc::c_uint;
         } else {
             is_split = dav1d_msac_decode_bool(&mut (*ts).msac, gather_top_partition_prob(pc, bl))
                 as libc::c_uint;
-            if DEBUG_BLOCK_INFO(&*f, t) {
+            if DEBUG_BLOCK_INFO(f, t) {
                 printf(
                     b"poc=%d,y=%d,x=%d,bl=%d,ctx=%d,bp=%d: r=%d\n\0" as *const u8
                         as *const libc::c_char,
-                    (*(*f).frame_hdr).frame_offset,
+                    (*f.frame_hdr).frame_offset,
                     t.by,
                     t.bx,
                     bl as libc::c_uint,
@@ -4723,25 +4723,25 @@ unsafe fn decode_sb(
         }
         let mut is_split_0: libc::c_uint = 0;
         if t.frame_thread.pass == 2 {
-            let b_2: *const Av1Block = &mut *((*f).frame_thread.b)
-                .offset((t.by as isize * (*f).b4_stride + t.bx as isize) as isize)
+            let b_2: *const Av1Block = &mut *(f.frame_thread.b)
+                .offset((t.by as isize * f.b4_stride + t.bx as isize) as isize)
                 as *mut Av1Block;
             is_split_0 =
                 ((*b_2).bl as libc::c_uint != bl as libc::c_uint) as libc::c_int as libc::c_uint;
         } else {
             is_split_0 = dav1d_msac_decode_bool(&mut (*ts).msac, gather_left_partition_prob(pc, bl))
                 as libc::c_uint;
-            if (*f).cur.p.layout as libc::c_uint
+            if f.cur.p.layout as libc::c_uint
                 == DAV1D_PIXEL_LAYOUT_I422 as libc::c_int as libc::c_uint
                 && is_split_0 == 0
             {
                 return 1 as libc::c_int;
             }
-            if DEBUG_BLOCK_INFO(&*f, t) {
+            if DEBUG_BLOCK_INFO(f, t) {
                 printf(
                     b"poc=%d,y=%d,x=%d,bl=%d,ctx=%d,bp=%d: r=%d\n\0" as *const u8
                         as *const libc::c_char,
-                    (*(*f).frame_hdr).frame_offset,
+                    (*f.frame_hdr).frame_offset,
                     t.by,
                     t.bx,
                     bl as libc::c_uint,
