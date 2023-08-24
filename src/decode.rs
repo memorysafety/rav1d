@@ -4247,11 +4247,7 @@ unsafe fn decode_sb(
             }
         } else {
             let b = &mut *(f.frame_thread.b).offset(t.by as isize * f.b4_stride + t.bx as isize);
-            bp = if b.bl == bl {
-                b.bp as BlockPartition
-            } else {
-                PARTITION_SPLIT
-            };
+            bp = if b.bl == bl { b.bp } else { PARTITION_SPLIT };
         }
         let b = &dav1d_block_sizes[bl as usize][bp as usize];
 
