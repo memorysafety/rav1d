@@ -165,7 +165,7 @@ unsafe fn init_mode_node(
             nwc.split[n] = &mut (*nt).node;
             init_edges(
                 &mut (*nt).node,
-                bl.wrapping_add(1),
+                bl + 1,
                 ((if n == 3 || n == 1 && !top_has_right {
                     0 as EdgeFlags
                 } else {
@@ -187,7 +187,7 @@ unsafe fn init_mode_node(
             nwc.split[n] = &mut (*nwc_child).node;
             init_mode_node(
                 &mut *nwc_child,
-                bl.wrapping_add(1),
+                bl + 1,
                 mem,
                 !(n == 3 || n == 1 && !top_has_right),
                 n == 0 || n == 2 && left_has_bottom,
