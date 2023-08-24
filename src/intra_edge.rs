@@ -1,3 +1,6 @@
+use std::iter;
+use std::slice;
+
 use crate::include::stdint::uint8_t;
 use ::libc;
 pub type EdgeFlags = uint8_t;
@@ -158,9 +161,9 @@ unsafe fn init_mode_node(
         }),
     );
     if bl == BL_16X16 {
-        for (n, split) in nwc.split.iter_mut().enumerate() {
-            let nt = &mut *mem.nt;
-            mem.nt = mem.nt.offset(1);
+        let nt = slice::from_raw_parts_mut(mem.nt, nwc.split.len());
+        mem.nt = mem.nt.offset(nt.len() as isize);
+        for (n, (split, nt)) in iter::zip(&mut nwc.split, nt).enumerate() {
             *split = &mut nt.node;
             init_edges(
                 &mut nt.node,
@@ -179,9 +182,9 @@ unsafe fn init_mode_node(
             );
         }
     } else {
-        for (n, split) in nwc.split.iter_mut().enumerate() {
-            let nwc_child = &mut *mem.nwc[bl as usize];
-            mem.nwc[bl as usize] = mem.nwc[bl as usize].offset(1);
+        let nwc_children = slice::from_raw_parts_mut(mem.nwc[bl as usize], nwc.split.len());
+        mem.nwc[bl as usize] = mem.nwc[bl as usize].offset(nwc_children.len() as isize);
+        for (n, (split, nwc_child)) in iter::zip(&mut nwc.split, nwc_children).enumerate() {
             *split = &mut nwc_child.node;
             init_mode_node(
                 nwc_child,
