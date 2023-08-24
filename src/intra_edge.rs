@@ -165,11 +165,11 @@ unsafe fn init_mode_node(
             init_edges(
                 &mut nt.node,
                 bl + 1,
-                ((if n == 3 || n == 1 && !top_has_right {
+                ((if n == 3 || (n == 1 && !top_has_right) {
                     0 as EdgeFlags
                 } else {
                     EDGE_I444_TOP_HAS_RIGHT | EDGE_I422_TOP_HAS_RIGHT | EDGE_I420_TOP_HAS_RIGHT
-                }) | (if !(n == 0 || n == 2 && left_has_bottom) {
+                }) | (if !(n == 0 || (n == 2 && left_has_bottom)) {
                     0 as EdgeFlags
                 } else {
                     EDGE_I444_LEFT_HAS_BOTTOM
@@ -187,8 +187,8 @@ unsafe fn init_mode_node(
                 nwc_child,
                 bl + 1,
                 mem,
-                !(n == 3 || n == 1 && !top_has_right),
-                n == 0 || n == 2 && left_has_bottom,
+                !(n == 3 || (n == 1 && !top_has_right)),
+                n == 0 || (n == 2 && left_has_bottom),
             );
         }
     };
