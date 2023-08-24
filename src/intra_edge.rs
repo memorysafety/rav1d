@@ -141,17 +141,17 @@ unsafe fn init_mode_node(
     nwc: &mut EdgeBranch,
     bl: BlockLevel,
     mem: &mut ModeSelMem,
-    top_has_right: libc::c_int,
-    left_has_bottom: libc::c_int,
+    top_has_right: bool,
+    left_has_bottom: bool,
 ) {
     init_edges(
         &mut nwc.node,
         bl,
-        (if top_has_right != 0 {
+        (if top_has_right {
             EDGE_I444_TOP_HAS_RIGHT | EDGE_I422_TOP_HAS_RIGHT | EDGE_I420_TOP_HAS_RIGHT
         } else {
             0 as EdgeFlags
-        }) | (if left_has_bottom != 0 {
+        }) | (if left_has_bottom {
             EDGE_I444_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM | EDGE_I420_LEFT_HAS_BOTTOM
         } else {
             0 as EdgeFlags
@@ -167,11 +167,11 @@ unsafe fn init_mode_node(
             init_edges(
                 &mut (*nt).node,
                 bl.wrapping_add(1),
-                ((if n == 3 || n == 1 && top_has_right == 0 {
+                ((if n == 3 || n == 1 && !top_has_right {
                     0 as EdgeFlags
                 } else {
                     EDGE_I444_TOP_HAS_RIGHT | EDGE_I422_TOP_HAS_RIGHT | EDGE_I420_TOP_HAS_RIGHT
-                }) | (if !(n == 0 || n == 2 && left_has_bottom != 0) {
+                }) | (if !(n == 0 || n == 2 && left_has_bottom) {
                     0 as EdgeFlags
                 } else {
                     EDGE_I444_LEFT_HAS_BOTTOM
@@ -192,8 +192,8 @@ unsafe fn init_mode_node(
                 &mut *nwc_child,
                 bl.wrapping_add(1),
                 mem,
-                !(n == 3 || n == 1 && top_has_right == 0) as libc::c_int,
-                (n == 0 || n == 2 && left_has_bottom != 0) as libc::c_int,
+                !(n == 3 || n == 1 && !top_has_right),
+                n == 0 || n == 2 && left_has_bottom,
             );
             n += 1;
         }
@@ -217,13 +217,7 @@ pub unsafe extern "C" fn dav1d_init_mode_tree(
             &mut *root.offset((1 + 4) as isize) as *mut EdgeBranch;
         mem.nwc[BL_32X32 as libc::c_int as usize] =
             &mut *root.offset((1 + 4 + 16) as isize) as *mut EdgeBranch;
-        init_mode_node(
-            &mut *root,
-            BL_128X128,
-            &mut mem,
-            1 as libc::c_int,
-            0 as libc::c_int,
-        );
+        init_mode_node(&mut *root, BL_128X128, &mut mem, true, false);
         if !(mem.nwc[BL_128X128 as libc::c_int as usize]
             == &mut *root.offset((1 + 4) as isize) as *mut EdgeBranch)
         {
@@ -247,13 +241,7 @@ pub unsafe extern "C" fn dav1d_init_mode_tree(
         mem.nwc[BL_64X64 as libc::c_int as usize] = &mut *root.offset(1) as *mut EdgeBranch;
         mem.nwc[BL_32X32 as libc::c_int as usize] =
             &mut *root.offset((1 + 4) as isize) as *mut EdgeBranch;
-        init_mode_node(
-            &mut *root,
-            BL_64X64,
-            &mut mem,
-            1 as libc::c_int,
-            0 as libc::c_int,
-        );
+        init_mode_node(&mut *root, BL_64X64, &mut mem, true, false);
         if !(mem.nwc[BL_64X64 as libc::c_int as usize]
             == &mut *root.offset((1 + 4) as isize) as *mut EdgeBranch)
         {
