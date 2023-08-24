@@ -50,14 +50,15 @@ unsafe fn init_edges(node: *mut EdgeNode, bl: BlockLevel, edge_flags: EdgeFlags)
     (*node).o = edge_flags;
     if bl == BL_8X8 {
         let nt = &mut *(node as *mut EdgeTip);
-        (*node).h[0] = edge_flags
+        let node = &mut nt.node;
+        node.h[0] = edge_flags
             | (EDGE_I444_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM | EDGE_I420_LEFT_HAS_BOTTOM);
-        (*node).h[1] = edge_flags
+        node.h[1] = edge_flags
             & ((EDGE_I444_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM | EDGE_I420_LEFT_HAS_BOTTOM)
                 | EDGE_I420_TOP_HAS_RIGHT);
-        (*node).v[0] = edge_flags
+        node.v[0] = edge_flags
             | (EDGE_I444_TOP_HAS_RIGHT | EDGE_I422_TOP_HAS_RIGHT | EDGE_I420_TOP_HAS_RIGHT);
-        (*node).v[1] = edge_flags
+        node.v[1] = edge_flags
             & ((EDGE_I444_TOP_HAS_RIGHT | EDGE_I422_TOP_HAS_RIGHT | EDGE_I420_TOP_HAS_RIGHT)
                 | EDGE_I420_LEFT_HAS_BOTTOM
                 | EDGE_I422_LEFT_HAS_BOTTOM);
@@ -71,13 +72,14 @@ unsafe fn init_edges(node: *mut EdgeNode, bl: BlockLevel, edge_flags: EdgeFlags)
             & (EDGE_I420_TOP_HAS_RIGHT | EDGE_I420_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM);
     } else {
         let nwc = &mut *(node as *mut EdgeBranch);
-        (*node).h[0] = edge_flags
+        let node = &mut nwc.node;
+        node.h[0] = edge_flags
             | (EDGE_I444_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM | EDGE_I420_LEFT_HAS_BOTTOM);
-        (*node).h[1] = edge_flags
+        node.h[1] = edge_flags
             & (EDGE_I444_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM | EDGE_I420_LEFT_HAS_BOTTOM);
-        (*node).v[0] = edge_flags
+        node.v[0] = edge_flags
             | (EDGE_I444_TOP_HAS_RIGHT | EDGE_I422_TOP_HAS_RIGHT | EDGE_I420_TOP_HAS_RIGHT);
-        (*node).v[1] = edge_flags
+        node.v[1] = edge_flags
             & (EDGE_I444_TOP_HAS_RIGHT | EDGE_I422_TOP_HAS_RIGHT | EDGE_I420_TOP_HAS_RIGHT);
         nwc.h4[0] = edge_flags
             | (EDGE_I444_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM | EDGE_I420_LEFT_HAS_BOTTOM);
