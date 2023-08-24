@@ -3,6 +3,13 @@ use std::ptr;
 use std::slice;
 
 use crate::include::stdint::uint8_t;
+use crate::src::levels::BlockLevel;
+use crate::src::levels::BL_128X128;
+use crate::src::levels::BL_16X16;
+use crate::src::levels::BL_32X32;
+use crate::src::levels::BL_64X64;
+use crate::src::levels::BL_8X8;
+
 pub type EdgeFlags = uint8_t;
 pub const EDGE_I420_LEFT_HAS_BOTTOM: EdgeFlags = 32;
 pub const EDGE_I422_LEFT_HAS_BOTTOM: EdgeFlags = 16;
@@ -10,6 +17,7 @@ pub const EDGE_I444_LEFT_HAS_BOTTOM: EdgeFlags = 8;
 pub const EDGE_I420_TOP_HAS_RIGHT: EdgeFlags = 4;
 pub const EDGE_I422_TOP_HAS_RIGHT: EdgeFlags = 2;
 pub const EDGE_I444_TOP_HAS_RIGHT: EdgeFlags = 1;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct EdgeNode {
@@ -17,12 +25,14 @@ pub struct EdgeNode {
     pub h: [EdgeFlags; 2],
     pub v: [EdgeFlags; 2],
 }
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct EdgeTip {
     pub node: EdgeNode,
     pub split: [EdgeFlags; 4],
 }
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct EdgeBranch {
@@ -35,19 +45,13 @@ pub struct EdgeBranch {
     pub v4: [EdgeFlags; 4],
     pub split: [*mut EdgeNode; 4],
 }
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ModeSelMem {
     pub nwc: [*mut EdgeBranch; 3],
     pub nt: *mut EdgeTip,
 }
-use crate::src::levels::BlockLevel;
-use crate::src::levels::BL_32X32;
-use crate::src::levels::BL_64X64;
-
-use crate::src::levels::BL_128X128;
-use crate::src::levels::BL_16X16;
-use crate::src::levels::BL_8X8;
 
 unsafe fn init_edges(node: *mut EdgeNode, bl: BlockLevel, edge_flags: EdgeFlags) {
     (*node).o = edge_flags;
