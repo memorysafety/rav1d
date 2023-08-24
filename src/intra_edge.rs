@@ -158,10 +158,10 @@ unsafe fn init_mode_node(
         }),
     );
     if bl == BL_16X16 {
-        for n in 0..4 {
+        for (n, split) in nwc.split.iter_mut().enumerate() {
             let nt = &mut *mem.nt;
             mem.nt = mem.nt.offset(1);
-            nwc.split[n] = &mut nt.node;
+            *split = &mut nt.node;
             init_edges(
                 &mut nt.node,
                 bl + 1,
@@ -179,10 +179,10 @@ unsafe fn init_mode_node(
             );
         }
     } else {
-        for n in 0..4 {
+        for (n, split) in nwc.split.iter_mut().enumerate() {
             let nwc_child = &mut *mem.nwc[bl as usize];
             mem.nwc[bl as usize] = mem.nwc[bl as usize].offset(1);
-            nwc.split[n] = &mut nwc_child.node;
+            *split = &mut nwc_child.node;
             init_mode_node(
                 nwc_child,
                 bl + 1,
