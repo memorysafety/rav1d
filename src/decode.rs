@@ -4216,11 +4216,9 @@ unsafe fn decode_sb(
     }
     if have_h_split && have_v_split {
         if t.frame_thread.pass == 2 {
-            let b: *const Av1Block = &mut *(f.frame_thread.b)
-                .offset((t.by as isize * f.b4_stride + t.bx as isize) as isize)
-                as *mut Av1Block;
-            bp = if (*b).bl as BlockLevel == bl {
-                (*b).bp as BlockPartition
+            let b = &mut *(f.frame_thread.b).offset(t.by as isize * f.b4_stride + t.bx as isize);
+            bp = if b.bl as BlockLevel == bl {
+                b.bp as BlockPartition
             } else {
                 PARTITION_SPLIT
             };
@@ -4527,10 +4525,8 @@ unsafe fn decode_sb(
     } else if have_h_split {
         let mut is_split;
         if t.frame_thread.pass == 2 {
-            let b: *const Av1Block = &mut *(f.frame_thread.b)
-                .offset((t.by as isize * f.b4_stride + t.bx as isize) as isize)
-                as *mut Av1Block;
-            is_split = (*b).bl as BlockLevel != bl;
+            let b = &mut *(f.frame_thread.b).offset(t.by as isize * f.b4_stride + t.bx as isize);
+            is_split = b.bl as BlockLevel != bl;
         } else {
             is_split = dav1d_msac_decode_bool(&mut ts.msac, gather_top_partition_prob(pc, bl));
             if DEBUG_BLOCK_INFO(f, t) {
@@ -4579,10 +4575,8 @@ unsafe fn decode_sb(
         assert!(have_v_split);
         let mut is_split;
         if t.frame_thread.pass == 2 {
-            let b: *const Av1Block = &mut *(f.frame_thread.b)
-                .offset((t.by as isize * f.b4_stride + t.bx as isize) as isize)
-                as *mut Av1Block;
-            is_split = (*b).bl as BlockLevel != bl;
+            let b = &mut *(f.frame_thread.b).offset(t.by as isize * f.b4_stride + t.bx as isize);
+            is_split = b.bl as BlockLevel != bl;
         } else {
             is_split = dav1d_msac_decode_bool(&mut ts.msac, gather_left_partition_prob(pc, bl));
             if f.cur.p.layout == DAV1D_PIXEL_LAYOUT_I422 && !is_split {
