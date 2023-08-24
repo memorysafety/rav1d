@@ -4226,7 +4226,7 @@ unsafe fn decode_sb(
             bp = dav1d_msac_decode_symbol_adapt16(
                 &mut ts.msac,
                 pc,
-                dav1d_partition_type_count[bl as usize] as size_t,
+                dav1d_partition_type_count[bl as usize].into(),
             ) as BlockPartition;
             if f.cur.p.layout == DAV1D_PIXEL_LAYOUT_I422
                 && (bp == PARTITION_V
