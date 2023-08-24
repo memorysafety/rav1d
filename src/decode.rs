@@ -13,6 +13,8 @@ use crate::src::looprestoration::dav1d_loop_restoration_dsp_init;
 
 use libc;
 
+use sptr::Strict;
+
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: size_t) -> *mut libc::c_void;
@@ -4312,8 +4314,11 @@ unsafe fn decode_sb(
                         // can end up misaligned due to skips here.
                         // Work around the issue by explicitly realigning the buffer.
                         let p = (t.frame_thread.pass & 1) as usize;
-                        ts.frame_thread[p].cf = (((ts.frame_thread[p].cf as uintptr_t) + 63) & !63)
-                            as *mut libc::c_void;
+                        let cf = &mut ts.frame_thread[p].cf;
+                        #[allow(unstable_name_collisions)]
+                        {
+                            *cf = cf.map_addr(|addr| (addr + 63) & !63);
+                        }
                     }
                 } else {
                     let branch = &*(node as *const EdgeBranch);
