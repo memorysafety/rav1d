@@ -4305,9 +4305,8 @@ unsafe fn decode_sb(
                     t.by -= 1;
                     if t.frame_thread.pass != 0 {
                         let p = (t.frame_thread.pass & 1) as usize;
-                        ts.frame_thread[p].cf =
-                            ((ts.frame_thread[p].cf as uintptr_t).wrapping_add(63) & !(63))
-                                as *mut libc::c_void;
+                        ts.frame_thread[p].cf = (((ts.frame_thread[p].cf as uintptr_t) + 63) & !63)
+                            as *mut libc::c_void;
                     }
                 } else {
                     let branch = &*(node as *const EdgeBranch);
