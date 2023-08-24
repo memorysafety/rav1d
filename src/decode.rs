@@ -4644,7 +4644,7 @@ unsafe fn decode_sb(
             },
         );
     }
-    return 0;
+    0
 }
 
 unsafe extern "C" fn reset_context(
