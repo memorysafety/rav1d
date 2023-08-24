@@ -2,7 +2,6 @@ use std::iter;
 use std::slice;
 
 use crate::include::stdint::uint8_t;
-use ::libc;
 pub type EdgeFlags = uint8_t;
 pub const EDGE_I420_LEFT_HAS_BOTTOM: EdgeFlags = 32;
 pub const EDGE_I422_LEFT_HAS_BOTTOM: EdgeFlags = 16;
@@ -197,18 +196,14 @@ unsafe fn init_mode_node(
     };
 }
 
-pub unsafe fn dav1d_init_mode_tree(
-    root_node: *mut EdgeNode,
-    nt: *mut EdgeTip,
-    allow_sb128: libc::c_int,
-) {
+pub unsafe fn dav1d_init_mode_tree(root_node: *mut EdgeNode, nt: *mut EdgeTip, allow_sb128: bool) {
     let root: *mut EdgeBranch = root_node as *mut EdgeBranch;
     let mut mem: ModeSelMem = ModeSelMem {
         nwc: [0 as *mut EdgeBranch; 3],
         nt: 0 as *mut EdgeTip,
     };
     mem.nt = nt;
-    if allow_sb128 != 0 {
+    if allow_sb128 {
         mem.nwc[BL_128X128 as usize] = root.offset(1);
         mem.nwc[BL_64X64 as usize] = root.offset(1 + 4);
         mem.nwc[BL_32X32 as usize] = root.offset(1 + 4 + 16);
