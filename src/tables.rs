@@ -30,6 +30,7 @@ use crate::src::levels::BS_8x16;
 use crate::src::levels::BS_8x32;
 use crate::src::levels::BS_8x4;
 use crate::src::levels::BS_8x8;
+use crate::src::levels::BlockSize;
 use crate::src::levels::ADST_ADST;
 use crate::src::levels::ADST_DCT;
 use crate::src::levels::ADST_FLIPADST;
@@ -119,7 +120,7 @@ pub static dav1d_al_part_ctx: [[[u8; 10]; 5]; 2] = [
     ],
 ];
 
-pub static dav1d_block_sizes: [[[u8; 2]; 10]; 5] = [
+pub static dav1d_block_sizes: [[[BlockSize; 2]; 10]; 5] = [
     [
         [BS_128x128 as u8, 0],
         [BS_128x64 as u8, 0],

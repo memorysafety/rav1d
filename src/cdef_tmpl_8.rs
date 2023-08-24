@@ -1,3 +1,5 @@
+use crate::include::common::bitdepth::DynPixel;
+use crate::include::common::bitdepth::LeftPixelRow2px;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
@@ -6,290 +8,18 @@ use ::libc;
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
 
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
-extern "C" {
-    fn dav1d_cdef_filter_8x8_8bpc_ssse3(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
-        pri_strength: libc::c_int,
-        sec_strength: libc::c_int,
-        dir: libc::c_int,
-        damping: libc::c_int,
-        edges: CdefEdgeFlags,
-    );
-    fn dav1d_cdef_filter_4x8_8bpc_ssse3(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
-        pri_strength: libc::c_int,
-        sec_strength: libc::c_int,
-        dir: libc::c_int,
-        damping: libc::c_int,
-        edges: CdefEdgeFlags,
-    );
-    fn dav1d_cdef_filter_4x4_8bpc_ssse3(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
-        pri_strength: libc::c_int,
-        sec_strength: libc::c_int,
-        dir: libc::c_int,
-        damping: libc::c_int,
-        edges: CdefEdgeFlags,
-    );
-    fn dav1d_cdef_dir_8bpc_sse4(
-        dst: *const pixel,
-        dst_stride: ptrdiff_t,
-        var: *mut libc::c_uint,
-    ) -> libc::c_int;
-    fn dav1d_cdef_filter_8x8_8bpc_sse4(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
-        pri_strength: libc::c_int,
-        sec_strength: libc::c_int,
-        dir: libc::c_int,
-        damping: libc::c_int,
-        edges: CdefEdgeFlags,
-    );
-    fn dav1d_cdef_filter_4x8_8bpc_sse4(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
-        pri_strength: libc::c_int,
-        sec_strength: libc::c_int,
-        dir: libc::c_int,
-        damping: libc::c_int,
-        edges: CdefEdgeFlags,
-    );
-    fn dav1d_cdef_filter_4x4_8bpc_sse4(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
-        pri_strength: libc::c_int,
-        sec_strength: libc::c_int,
-        dir: libc::c_int,
-        damping: libc::c_int,
-        edges: CdefEdgeFlags,
-    );
-    fn dav1d_cdef_dir_8bpc_avx2(
-        dst: *const pixel,
-        dst_stride: ptrdiff_t,
-        var: *mut libc::c_uint,
-    ) -> libc::c_int;
-    fn dav1d_cdef_filter_8x8_8bpc_avx2(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
-        pri_strength: libc::c_int,
-        sec_strength: libc::c_int,
-        dir: libc::c_int,
-        damping: libc::c_int,
-        edges: CdefEdgeFlags,
-    );
-    fn dav1d_cdef_filter_4x8_8bpc_avx2(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
-        pri_strength: libc::c_int,
-        sec_strength: libc::c_int,
-        dir: libc::c_int,
-        damping: libc::c_int,
-        edges: CdefEdgeFlags,
-    );
-    fn dav1d_cdef_filter_4x4_8bpc_avx2(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
-        pri_strength: libc::c_int,
-        sec_strength: libc::c_int,
-        dir: libc::c_int,
-        damping: libc::c_int,
-        edges: CdefEdgeFlags,
-    );
-    fn dav1d_cdef_filter_8x8_8bpc_avx512icl(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
-        pri_strength: libc::c_int,
-        sec_strength: libc::c_int,
-        dir: libc::c_int,
-        damping: libc::c_int,
-        edges: CdefEdgeFlags,
-    );
-    fn dav1d_cdef_filter_4x8_8bpc_avx512icl(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
-        pri_strength: libc::c_int,
-        sec_strength: libc::c_int,
-        dir: libc::c_int,
-        damping: libc::c_int,
-        edges: CdefEdgeFlags,
-    );
-    fn dav1d_cdef_filter_4x4_8bpc_avx512icl(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
-        pri_strength: libc::c_int,
-        sec_strength: libc::c_int,
-        dir: libc::c_int,
-        damping: libc::c_int,
-        edges: CdefEdgeFlags,
-    );
-    fn dav1d_cdef_filter_4x8_8bpc_sse2(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
-        pri_strength: libc::c_int,
-        sec_strength: libc::c_int,
-        dir: libc::c_int,
-        damping: libc::c_int,
-        edges: CdefEdgeFlags,
-    );
-    fn dav1d_cdef_dir_8bpc_ssse3(
-        dst: *const pixel,
-        dst_stride: ptrdiff_t,
-        var: *mut libc::c_uint,
-    ) -> libc::c_int;
-    fn dav1d_cdef_filter_4x4_8bpc_sse2(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
-        pri_strength: libc::c_int,
-        sec_strength: libc::c_int,
-        dir: libc::c_int,
-        damping: libc::c_int,
-        edges: CdefEdgeFlags,
-    );
-    fn dav1d_cdef_filter_8x8_8bpc_sse2(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        left: const_left_pixel_row_2px,
-        top: *const pixel,
-        bottom: *const pixel,
-        pri_strength: libc::c_int,
-        sec_strength: libc::c_int,
-        dir: libc::c_int,
-        damping: libc::c_int,
-        edges: CdefEdgeFlags,
-    );
-}
-
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-extern "C" {
-    fn dav1d_cdef_find_dir_8bpc_neon(
-        dst: *const pixel,
-        dst_stride: ptrdiff_t,
-        var: *mut libc::c_uint,
-    ) -> libc::c_int;
-    fn dav1d_cdef_padding4_8bpc_neon(
-        tmp: *mut uint16_t,
-        src: *const pixel,
-        src_stride: ptrdiff_t,
-        left: *const [pixel; 2],
-        top: *const pixel,
-        bottom: *const pixel,
-        h: libc::c_int,
-        edges: CdefEdgeFlags,
-    );
-    fn dav1d_cdef_padding8_8bpc_neon(
-        tmp: *mut uint16_t,
-        src: *const pixel,
-        src_stride: ptrdiff_t,
-        left: *const [pixel; 2],
-        top: *const pixel,
-        bottom: *const pixel,
-        h: libc::c_int,
-        edges: CdefEdgeFlags,
-    );
-    fn dav1d_cdef_filter4_8bpc_neon(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        tmp: *const uint16_t,
-        pri_strength: libc::c_int,
-        sec_strength: libc::c_int,
-        dir: libc::c_int,
-        damping: libc::c_int,
-        h: libc::c_int,
-        edges: size_t,
-    );
-    fn dav1d_cdef_filter8_8bpc_neon(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        tmp: *const uint16_t,
-        pri_strength: libc::c_int,
-        sec_strength: libc::c_int,
-        dir: libc::c_int,
-        damping: libc::c_int,
-        h: libc::c_int,
-        edges: size_t,
-    );
-}
-
 use crate::src::tables::dav1d_cdef_directions;
 
 pub type pixel = uint8_t;
+use crate::include::common::intops::iclip;
+use crate::include::common::intops::imax;
+use crate::include::common::intops::umin;
 use crate::src::cdef::CdefEdgeFlags;
+use crate::src::cdef::Dav1dCdefDSPContext;
 use crate::src::cdef::CDEF_HAVE_BOTTOM;
 use crate::src::cdef::CDEF_HAVE_LEFT;
 use crate::src::cdef::CDEF_HAVE_RIGHT;
 use crate::src::cdef::CDEF_HAVE_TOP;
-pub type const_left_pixel_row_2px = *const [pixel; 2];
-pub type cdef_fn = Option<
-    unsafe extern "C" fn(
-        *mut pixel,
-        ptrdiff_t,
-        const_left_pixel_row_2px,
-        *const pixel,
-        *const pixel,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        CdefEdgeFlags,
-    ) -> (),
->;
-pub type cdef_dir_fn =
-    Option<unsafe extern "C" fn(*const pixel, ptrdiff_t, *mut libc::c_uint) -> libc::c_int>;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dCdefDSPContext {
-    pub dir: cdef_dir_fn,
-    pub fb: [cdef_fn; 3],
-}
-use crate::include::common::intops::iclip;
-use crate::include::common::intops::imax;
-use crate::include::common::intops::umin;
 
 use crate::include::common::intops::ulog2;
 use crate::src::cdef::constrain;
@@ -555,24 +285,25 @@ unsafe extern "C" fn cdef_filter_block_c(
         }
     };
 }
-unsafe extern "C" fn cdef_filter_block_4x4_c(
-    dst: *mut pixel,
+unsafe extern "C" fn cdef_filter_block_4x4_c_erased(
+    dst: *mut DynPixel,
     stride: ptrdiff_t,
-    mut left: *const [pixel; 2],
-    top: *const pixel,
-    bottom: *const pixel,
+    mut left: *const LeftPixelRow2px<DynPixel>,
+    top: *const DynPixel,
+    bottom: *const DynPixel,
     pri_strength: libc::c_int,
     sec_strength: libc::c_int,
     dir: libc::c_int,
     damping: libc::c_int,
     edges: CdefEdgeFlags,
+    _bitdepth_max: libc::c_int,
 ) {
     cdef_filter_block_c(
-        dst,
+        dst.cast(),
         stride,
-        left,
-        top,
-        bottom,
+        left.cast(),
+        top.cast(),
+        bottom.cast(),
         pri_strength,
         sec_strength,
         dir,
@@ -582,24 +313,25 @@ unsafe extern "C" fn cdef_filter_block_4x4_c(
         edges,
     );
 }
-unsafe extern "C" fn cdef_filter_block_4x8_c(
-    dst: *mut pixel,
+unsafe extern "C" fn cdef_filter_block_4x8_c_erased(
+    dst: *mut DynPixel,
     stride: ptrdiff_t,
-    mut left: *const [pixel; 2],
-    top: *const pixel,
-    bottom: *const pixel,
+    left: *const LeftPixelRow2px<DynPixel>,
+    top: *const DynPixel,
+    bottom: *const DynPixel,
     pri_strength: libc::c_int,
     sec_strength: libc::c_int,
     dir: libc::c_int,
     damping: libc::c_int,
     edges: CdefEdgeFlags,
+    _bitdepth_max: libc::c_int,
 ) {
     cdef_filter_block_c(
-        dst,
+        dst.cast(),
         stride,
-        left,
-        top,
-        bottom,
+        left.cast(),
+        top.cast(),
+        bottom.cast(),
         pri_strength,
         sec_strength,
         dir,
@@ -609,24 +341,25 @@ unsafe extern "C" fn cdef_filter_block_4x8_c(
         edges,
     );
 }
-unsafe extern "C" fn cdef_filter_block_8x8_c(
-    dst: *mut pixel,
+unsafe extern "C" fn cdef_filter_block_8x8_c_erased(
+    dst: *mut DynPixel,
     stride: ptrdiff_t,
-    mut left: *const [pixel; 2],
-    top: *const pixel,
-    bottom: *const pixel,
+    left: *const LeftPixelRow2px<DynPixel>,
+    top: *const DynPixel,
+    bottom: *const DynPixel,
     pri_strength: libc::c_int,
     sec_strength: libc::c_int,
     dir: libc::c_int,
     damping: libc::c_int,
     edges: CdefEdgeFlags,
+    _bitdepth_max: libc::c_int,
 ) {
     cdef_filter_block_c(
-        dst,
+        dst.cast(),
         stride,
-        left,
-        top,
-        bottom,
+        left.cast(),
+        top.cast(),
+        bottom.cast(),
         pri_strength,
         sec_strength,
         dir,
@@ -636,7 +369,15 @@ unsafe extern "C" fn cdef_filter_block_8x8_c(
         edges,
     );
 }
-unsafe extern "C" fn cdef_find_dir_c(
+unsafe extern "C" fn cdef_find_dir_c_erased(
+    mut img: *const DynPixel,
+    stride: ptrdiff_t,
+    var: *mut libc::c_uint,
+    _bitdepth_max: libc::c_int,
+) -> libc::c_int {
+    cdef_find_dir_rust(img.cast(), stride, var)
+}
+unsafe fn cdef_find_dir_rust(
     mut img: *const pixel,
     stride: ptrdiff_t,
     var: *mut libc::c_uint,
@@ -764,6 +505,8 @@ use crate::src::cpu::dav1d_get_cpu_flags;
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
 unsafe extern "C" fn cdef_dsp_init_x86(c: *mut Dav1dCdefDSPContext) {
     use crate::src::x86::cpu::*;
+    // TODO(legare): Temporary import until init fns are deduplicated.
+    use crate::src::cdef::*;
 
     let flags: libc::c_uint = dav1d_get_cpu_flags();
 
@@ -771,27 +514,27 @@ unsafe extern "C" fn cdef_dsp_init_x86(c: *mut Dav1dCdefDSPContext) {
         return;
     }
 
-    (*c).fb[0] = Some(dav1d_cdef_filter_8x8_8bpc_sse2);
-    (*c).fb[1] = Some(dav1d_cdef_filter_4x8_8bpc_sse2);
-    (*c).fb[2] = Some(dav1d_cdef_filter_4x4_8bpc_sse2);
+    (*c).fb[0] = dav1d_cdef_filter_8x8_8bpc_sse2;
+    (*c).fb[1] = dav1d_cdef_filter_4x8_8bpc_sse2;
+    (*c).fb[2] = dav1d_cdef_filter_4x4_8bpc_sse2;
 
     if flags & DAV1D_X86_CPU_FLAG_SSSE3 == 0 {
         return;
     }
 
-    (*c).dir = Some(dav1d_cdef_dir_8bpc_ssse3);
-    (*c).fb[0] = Some(dav1d_cdef_filter_8x8_8bpc_ssse3);
-    (*c).fb[1] = Some(dav1d_cdef_filter_4x8_8bpc_ssse3);
-    (*c).fb[2] = Some(dav1d_cdef_filter_4x4_8bpc_ssse3);
+    (*c).dir = dav1d_cdef_dir_8bpc_ssse3;
+    (*c).fb[0] = dav1d_cdef_filter_8x8_8bpc_ssse3;
+    (*c).fb[1] = dav1d_cdef_filter_4x8_8bpc_ssse3;
+    (*c).fb[2] = dav1d_cdef_filter_4x4_8bpc_ssse3;
 
     if flags & DAV1D_X86_CPU_FLAG_SSE41 == 0 {
         return;
     }
 
-    (*c).dir = Some(dav1d_cdef_dir_8bpc_sse4);
-    (*c).fb[0] = Some(dav1d_cdef_filter_8x8_8bpc_sse4);
-    (*c).fb[1] = Some(dav1d_cdef_filter_4x8_8bpc_sse4);
-    (*c).fb[2] = Some(dav1d_cdef_filter_4x4_8bpc_sse4);
+    (*c).dir = dav1d_cdef_dir_8bpc_sse4;
+    (*c).fb[0] = dav1d_cdef_filter_8x8_8bpc_sse4;
+    (*c).fb[1] = dav1d_cdef_filter_4x8_8bpc_sse4;
+    (*c).fb[2] = dav1d_cdef_filter_4x4_8bpc_sse4;
 
     #[cfg(target_arch = "x86_64")]
     {
@@ -799,18 +542,18 @@ unsafe extern "C" fn cdef_dsp_init_x86(c: *mut Dav1dCdefDSPContext) {
             return;
         }
 
-        (*c).dir = Some(dav1d_cdef_dir_8bpc_avx2);
-        (*c).fb[0] = Some(dav1d_cdef_filter_8x8_8bpc_avx2);
-        (*c).fb[1] = Some(dav1d_cdef_filter_4x8_8bpc_avx2);
-        (*c).fb[2] = Some(dav1d_cdef_filter_4x4_8bpc_avx2);
+        (*c).dir = dav1d_cdef_dir_8bpc_avx2;
+        (*c).fb[0] = dav1d_cdef_filter_8x8_8bpc_avx2;
+        (*c).fb[1] = dav1d_cdef_filter_4x8_8bpc_avx2;
+        (*c).fb[2] = dav1d_cdef_filter_4x4_8bpc_avx2;
 
         if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
             return;
         }
 
-        (*c).fb[0] = Some(dav1d_cdef_filter_8x8_8bpc_avx512icl);
-        (*c).fb[1] = Some(dav1d_cdef_filter_4x8_8bpc_avx512icl);
-        (*c).fb[2] = Some(dav1d_cdef_filter_4x4_8bpc_avx512icl);
+        (*c).fb[0] = dav1d_cdef_filter_8x8_8bpc_avx512icl;
+        (*c).fb[1] = dav1d_cdef_filter_4x8_8bpc_avx512icl;
+        (*c).fb[2] = dav1d_cdef_filter_4x4_8bpc_avx512icl;
     }
 }
 
@@ -818,6 +561,8 @@ unsafe extern "C" fn cdef_dsp_init_x86(c: *mut Dav1dCdefDSPContext) {
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
 unsafe extern "C" fn cdef_dsp_init_arm(c: *mut Dav1dCdefDSPContext) {
     use crate::src::arm::cpu::DAV1D_ARM_CPU_FLAG_NEON;
+    // TODO(legare): Temporary import until init fns are deduplicated.
+    use crate::src::cdef::*;
 
     let flags: libc::c_uint = dav1d_get_cpu_flags();
 
@@ -825,26 +570,30 @@ unsafe extern "C" fn cdef_dsp_init_arm(c: *mut Dav1dCdefDSPContext) {
         return;
     }
 
-    (*c).dir = Some(dav1d_cdef_find_dir_8bpc_neon);
-    (*c).fb[0] = Some(cdef_filter_8x8_neon);
-    (*c).fb[1] = Some(cdef_filter_4x8_neon);
-    (*c).fb[2] = Some(cdef_filter_4x4_neon);
+    (*c).dir = dav1d_cdef_find_dir_8bpc_neon;
+    (*c).fb[0] = cdef_filter_8x8_neon_erased;
+    (*c).fb[1] = cdef_filter_4x8_neon_erased;
+    (*c).fb[2] = cdef_filter_4x4_neon_erased;
 }
 
 #[inline(always)]
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
-unsafe extern "C" fn cdef_filter_4x4_neon(
-    mut dst: *mut pixel,
+unsafe extern "C" fn cdef_filter_4x4_neon_erased(
+    dst: *mut DynPixel,
     stride: ptrdiff_t,
-    mut left: *const [pixel; 2],
-    top: *const pixel,
-    bottom: *const pixel,
+    left: *const LeftPixelRow2px<DynPixel>,
+    top: *const DynPixel,
+    bottom: *const DynPixel,
     pri_strength: libc::c_int,
     sec_strength: libc::c_int,
     dir: libc::c_int,
     damping: libc::c_int,
     edges: CdefEdgeFlags,
+    _bitdepth_max: libc::c_int,
 ) {
+    // TODO(legare): Temporary import until this fn is deduplicated.
+    use crate::src::cdef::*;
+
     let mut tmp_buf = Align16([0; 104]);
     let mut tmp = tmp_buf.0.as_mut_ptr().offset(2 * 8).offset(8);
     dav1d_cdef_padding4_8bpc_neon(tmp, dst, stride, left, top, bottom, 4, edges);
@@ -863,18 +612,22 @@ unsafe extern "C" fn cdef_filter_4x4_neon(
 
 #[inline(always)]
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
-unsafe extern "C" fn cdef_filter_4x8_neon(
-    mut dst: *mut pixel,
+unsafe extern "C" fn cdef_filter_4x8_neon_erased(
+    dst: *mut DynPixel,
     stride: ptrdiff_t,
-    mut left: *const [pixel; 2],
-    top: *const pixel,
-    bottom: *const pixel,
+    left: *const LeftPixelRow2px<DynPixel>,
+    top: *const DynPixel,
+    bottom: *const DynPixel,
     pri_strength: libc::c_int,
     sec_strength: libc::c_int,
     dir: libc::c_int,
     damping: libc::c_int,
     edges: CdefEdgeFlags,
+    _bitdepth_max: libc::c_int,
 ) {
+    // TODO(legare): Temporary import until this fn is deduplicated.
+    use crate::src::cdef::*;
+
     let mut tmp_buf = Align16([0; 104]);
     let mut tmp = tmp_buf.0.as_mut_ptr().offset(2 * 8).offset(8);
     dav1d_cdef_padding4_8bpc_neon(tmp, dst, stride, left, top, bottom, 8, edges);
@@ -893,18 +646,22 @@ unsafe extern "C" fn cdef_filter_4x8_neon(
 
 #[inline(always)]
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
-unsafe extern "C" fn cdef_filter_8x8_neon(
-    mut dst: *mut pixel,
+unsafe extern "C" fn cdef_filter_8x8_neon_erased(
+    dst: *mut DynPixel,
     stride: ptrdiff_t,
-    mut left: *const [pixel; 2],
-    top: *const pixel,
-    bottom: *const pixel,
+    left: *const LeftPixelRow2px<DynPixel>,
+    top: *const DynPixel,
+    bottom: *const DynPixel,
     pri_strength: libc::c_int,
     sec_strength: libc::c_int,
     dir: libc::c_int,
     damping: libc::c_int,
     edges: CdefEdgeFlags,
+    _bitdepth_max: libc::c_int,
 ) {
+    // TODO(legare): Temporary import until this fn is deduplicated.
+    use crate::src::cdef::*;
+
     let mut tmp_buf = Align16([0; 200]);
     let mut tmp = tmp_buf.0.as_mut_ptr().offset(2 * 16).offset(8);
     dav1d_cdef_padding8_8bpc_neon(tmp, dst, stride, left, top, bottom, 8, edges);
@@ -924,10 +681,10 @@ unsafe extern "C" fn cdef_filter_8x8_neon(
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_cdef_dsp_init_8bpc(c: *mut Dav1dCdefDSPContext) {
-    (*c).dir = Some(cdef_find_dir_c);
-    (*c).fb[0] = Some(cdef_filter_block_8x8_c);
-    (*c).fb[1] = Some(cdef_filter_block_4x8_c);
-    (*c).fb[2] = Some(cdef_filter_block_4x4_c);
+    (*c).dir = cdef_find_dir_c_erased;
+    (*c).fb[0] = cdef_filter_block_8x8_c_erased;
+    (*c).fb[1] = cdef_filter_block_4x8_c_erased;
+    (*c).fb[2] = cdef_filter_block_4x4_c_erased;
 
     #[cfg(feature = "asm")]
     cfg_if! {

@@ -1,5 +1,7 @@
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
+use crate::include::common::bitdepth::DynPixel;
+use crate::include::common::bitdepth::LeftPixelRow;
 use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::imax;
@@ -36,14 +38,11 @@ pub union LooprestorationParams {
     pub sgr: LooprestorationParams_sgr,
 }
 
-type pixel = libc::c_void;
-pub type const_left_pixel_row = *const libc::c_void; // *const [pixel; 4]
-
 pub type looprestorationfilter_fn = unsafe extern "C" fn(
-    *mut pixel,
+    *mut DynPixel,
     ptrdiff_t,
-    const_left_pixel_row,
-    *const pixel,
+    *const LeftPixelRow<DynPixel>,
+    *const DynPixel,
     libc::c_int,
     libc::c_int,
     *const LooprestorationParams,
@@ -58,127 +57,28 @@ pub struct Dav1dLoopRestorationDSPContext {
     pub sgr: [looprestorationfilter_fn; 3],
 }
 
-/// Generates a generic wrapper function that delegates to the appropriate
-/// bitdepth-specific extern function.
-macro_rules! decl_looprestorationfilter_bd_fn {
-    ($name:ident, $suffix:ident) => {
-        paste::paste! {
-            #[cfg(feature = "asm")]
-            unsafe extern "C" fn [<$name $suffix>]<BD: BitDepth>(
-                dst: *mut pixel,
+#[cfg(all(
+    feature = "asm",
+    any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
+))]
+macro_rules! decl_looprestorationfilter_fn {
+    (fn $name:ident) => {{
+        extern "C" {
+            fn $name(
+                dst: *mut DynPixel,
                 dst_stride: ptrdiff_t,
-                left: const_left_pixel_row,
-                lpf: *const pixel,
+                left: *const LeftPixelRow<DynPixel>,
+                lpf: *const DynPixel,
                 w: libc::c_int,
                 h: libc::c_int,
                 params: *const LooprestorationParams,
                 edges: LrEdgeFlags,
                 bitdepth_max: libc::c_int,
-            ) {
-                (match BD::BPC {
-                    BPC::BPC8 => {
-                        extern "C" {
-                            fn [<$name _8bpc $suffix>](
-                                dst: *mut pixel,
-                                dst_stride: ptrdiff_t,
-                                left: const_left_pixel_row,
-                                lpf: *const pixel,
-                                w: libc::c_int,
-                                h: libc::c_int,
-                                params: *const LooprestorationParams,
-                                edges: LrEdgeFlags,
-                                bitdepth_max: libc::c_int,
-                            );
-                        }
-                        [<$name _8bpc $suffix>]
-                    }
-
-                    BPC::BPC16 => {
-                        extern "C" {
-                            fn [<$name _16bpc $suffix>](
-                                dst: *mut pixel,
-                                dst_stride: ptrdiff_t,
-                                left: const_left_pixel_row,
-                                lpf: *const pixel,
-                                w: libc::c_int,
-                                h: libc::c_int,
-                                params: *const LooprestorationParams,
-                                edges: LrEdgeFlags,
-                                bitdepth_max: libc::c_int,
-                            );
-                        }
-                        [<$name _16bpc $suffix>]
-                    }
-                })(dst, dst_stride, left, lpf, w, h, params, edges, bitdepth_max)
-            }
+            );
         }
-    };
-}
 
-decl_looprestorationfilter_bd_fn!(dav1d_wiener_filter7, _ssse3);
-decl_looprestorationfilter_bd_fn!(dav1d_wiener_filter5, _ssse3);
-decl_looprestorationfilter_bd_fn!(dav1d_wiener_filter5, _avx2);
-decl_looprestorationfilter_bd_fn!(dav1d_wiener_filter7, _avx2);
-decl_looprestorationfilter_bd_fn!(dav1d_wiener_filter7, _avx512icl);
-decl_looprestorationfilter_bd_fn!(dav1d_sgr_filter_mix, _avx512icl);
-decl_looprestorationfilter_bd_fn!(dav1d_sgr_filter_3x3, _avx512icl);
-decl_looprestorationfilter_bd_fn!(dav1d_sgr_filter_5x5, _avx512icl);
-decl_looprestorationfilter_bd_fn!(dav1d_sgr_filter_mix, _avx2);
-decl_looprestorationfilter_bd_fn!(dav1d_sgr_filter_3x3, _avx2);
-decl_looprestorationfilter_bd_fn!(dav1d_sgr_filter_5x5, _avx2);
-decl_looprestorationfilter_bd_fn!(dav1d_sgr_filter_mix, _ssse3);
-decl_looprestorationfilter_bd_fn!(dav1d_sgr_filter_3x3, _ssse3);
-decl_looprestorationfilter_bd_fn!(dav1d_sgr_filter_5x5, _ssse3);
-decl_looprestorationfilter_bd_fn!(dav1d_wiener_filter7, _neon);
-decl_looprestorationfilter_bd_fn!(dav1d_wiener_filter5, _neon);
-
-#[cfg(all(
-    feature = "bitdepth_8",
-    feature = "asm",
-    any(target_arch = "x86", target_arch = "x86_64"),
-))]
-extern "C" {
-    fn dav1d_wiener_filter7_8bpc_sse2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        left: const_left_pixel_row,
-        lpf: *const pixel,
-        w: libc::c_int,
-        h: libc::c_int,
-        params: *const LooprestorationParams,
-        edges: LrEdgeFlags,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_wiener_filter5_8bpc_sse2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        left: const_left_pixel_row,
-        lpf: *const pixel,
-        w: libc::c_int,
-        h: libc::c_int,
-        params: *const LooprestorationParams,
-        edges: LrEdgeFlags,
-        bitdepth_max: libc::c_int,
-    );
-}
-
-#[cfg(all(
-    feature = "bitdepth_16",
-    feature = "asm",
-    any(target_arch = "x86", target_arch = "x86_64"),
-))]
-extern "C" {
-    fn dav1d_wiener_filter5_16bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        left: const_left_pixel_row,
-        lpf: *const pixel,
-        w: libc::c_int,
-        h: libc::c_int,
-        params: *const LooprestorationParams,
-        edges: LrEdgeFlags,
-        bitdepth_max: libc::c_int,
-    );
+        $name
+    }};
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
@@ -199,6 +99,7 @@ extern "C" {
         strength: libc::c_int,
         bitdepth_max: libc::c_int,
     );
+
     fn dav1d_sgr_box5_v_neon(
         sumsq: *mut int32_t,
         sum: *mut int16_t,
@@ -206,6 +107,7 @@ extern "C" {
         h: libc::c_int,
         edges: LrEdgeFlags,
     );
+
     fn dav1d_sgr_calc_ab2_neon(
         a: *mut int32_t,
         b: *mut int16_t,
@@ -354,10 +256,10 @@ unsafe fn padding<BD: BitDepth>(
 }
 
 unsafe extern "C" fn wiener_c_erased<BD: BitDepth>(
-    p: *mut libc::c_void,
+    p: *mut DynPixel,
     stride: ptrdiff_t,
-    left: *const libc::c_void,
-    lpf: *const libc::c_void,
+    left: *const LeftPixelRow<DynPixel>,
+    lpf: *const DynPixel,
     w: libc::c_int,
     h: libc::c_int,
     params: *const LooprestorationParams,
@@ -455,95 +357,150 @@ unsafe fn wiener_rust<BD: BitDepth>(
     }
 }
 
+/// Sum over a 3x3 area
+///
+/// The `dst` and `src` pointers are positioned 3 pixels above and 3 pixels to the
+/// left of the top left corner. However, the self guided filter only needs 1
+/// pixel above and one pixel to the left. As for the pixels below and to the
+/// right they must be computed in the sums, but don't need to be stored.
+///
+/// Example for a 4x4 block:
+///
+///     x x x x x x x x x x
+///     x c c c c c c c c x
+///     x i s s s s s s i x
+///     x i s s s s s s i x
+///     x i s s s s s s i x
+///     x i s s s s s s i x
+///     x i s s s s s s i x
+///     x i s s s s s s i x
+///     x c c c c c c c c x
+///     x x x x x x x x x x
+///
+/// * s: Pixel summed and stored
+/// * i: Pixel summed and stored (between loops)
+/// * c: Pixel summed not stored
+/// * x: Pixel not summed not stored
 unsafe fn boxsum3<BD: BitDepth>(
-    mut sumsq: *mut int32_t,
-    mut sum: *mut BD::Coef,
+    mut sumsq: &mut [int32_t; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
+    mut sum: &mut [BD::Coef; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
     mut src: *const BD::Pixel,
     w: libc::c_int,
     h: libc::c_int,
 ) {
-    src = src.offset(390);
-    let mut x = 1;
-    while x < w - 1 {
-        let mut sum_v: *mut BD::Coef = sum.offset(x as isize);
-        let mut sumsq_v: *mut int32_t = sumsq.offset(x as isize);
-        let mut s: *const BD::Pixel = src.offset(x as isize);
+    // We skip the first row, as it is never used
+    src = src.offset(REST_UNIT_STRIDE as isize);
+
+    // We skip the first and last columns, as they are never used
+    for x in 1..w - 1 {
+        let mut sum_v = &mut sum[x as usize..];
+        let mut sumsq_v = &mut sumsq[x as usize..];
+        let mut s = src.offset(x as isize);
         let mut a: libc::c_int = (*s.offset(0)).as_();
         let mut a2 = a * a;
-        let mut b: libc::c_int = (*s.offset(390)).as_();
+        let mut b: libc::c_int = (*s.offset(REST_UNIT_STRIDE as isize)).as_();
         let mut b2 = b * b;
-        let mut y = 2;
-        while y < h - 2 {
-            s = s.offset(390);
-            let c: libc::c_int = (*s.offset(390)).as_();
+
+        // We skip the first 2 rows, as they are skipped in the next loop and
+        // we don't need the last 2 row as it is skipped in the next loop
+        for _ in 2..h - 2 {
+            s = s.offset(REST_UNIT_STRIDE as isize);
+            let c: libc::c_int = (*s.offset(REST_UNIT_STRIDE as isize)).as_();
             let c2 = c * c;
-            sum_v = sum_v.offset(390);
-            sumsq_v = sumsq_v.offset(390);
-            *sum_v = (a + b + c).as_();
-            *sumsq_v = a2 + b2 + c2;
+            sum_v = &mut sum_v[REST_UNIT_STRIDE..];
+            sumsq_v = &mut sumsq_v[REST_UNIT_STRIDE..];
+            sum_v[0] = (a + b + c).as_();
+            sumsq_v[0] = a2 + b2 + c2;
             a = b;
             a2 = b2;
             b = c;
             b2 = c2;
-            y += 1;
         }
-        x += 1;
     }
-    sum = sum.offset(390);
-    sumsq = sumsq.offset(390);
-    let mut y_0 = 2;
-    while y_0 < h - 2 {
-        let mut a_0 = *sum.offset(1);
-        let mut a2_0 = *sumsq.offset(1);
-        let mut b_0 = *sum.offset(2);
-        let mut b2_0 = *sumsq.offset(2);
-        let mut x_0 = 2;
-        while x_0 < w - 2 {
-            let c_0 = *sum.offset((x_0 + 1) as isize);
-            let c2_0 = *sumsq.offset((x_0 + 1) as isize);
-            *sum.offset(x_0 as isize) = a_0 + b_0 + c_0;
-            *sumsq.offset(x_0 as isize) = a2_0 + b2_0 + c2_0;
-            a_0 = b_0;
-            a2_0 = b2_0;
-            b_0 = c_0;
-            b2_0 = c2_0;
-            x_0 += 1;
+
+    // We skip the first row as it is never read
+    let mut sum = &mut sum[REST_UNIT_STRIDE..];
+    let mut sumsq = &mut sumsq[REST_UNIT_STRIDE..];
+
+    // We skip the last 2 rows as it is never read
+    for _ in 2..h - 2 {
+        let mut a = sum[1];
+        let mut a2 = sumsq[1];
+        let mut b = sum[2];
+        let mut b2 = sumsq[2];
+
+        // We don't store the first column as it is never read and
+        // we don't store the last 2 columns as they are never read
+        for x in 2..w as usize - 2 {
+            let c = sum[x + 1];
+            let c2 = sumsq[x + 1];
+            sum[x] = a + b + c;
+            sumsq[x] = a2 + b2 + c2;
+            a = b;
+            a2 = b2;
+            b = c;
+            b2 = c2;
         }
-        sum = sum.offset(390);
-        sumsq = sumsq.offset(390);
-        y_0 += 1;
+
+        sum = &mut sum[REST_UNIT_STRIDE..];
+        sumsq = &mut sumsq[REST_UNIT_STRIDE..];
     }
 }
 
+/// Sum over a 5x5 area
+///
+/// The `dst` and `src` pointers are positioned 3 pixels above and 3 pixels to the
+/// left of the top left corner. However, the self guided filter only needs 1
+/// pixel above and one pixel to the left. As for the pixels below and to the
+/// right they must be computed in the sums, but don't need to be stored.
+///
+/// Example for a 4x4 block:
+///
+///     c c c c c c c c c c
+///     c c c c c c c c c c
+///     i i s s s s s s i i
+///     i i s s s s s s i i
+///     i i s s s s s s i i
+///     i i s s s s s s i i
+///     i i s s s s s s i i
+///     i i s s s s s s i i
+///     c c c c c c c c c c
+///     c c c c c c c c c c
+///
+/// * s: Pixel summed and stored
+/// * i: Pixel summed and stored (between loops)
+/// * c: Pixel summed not stored
+/// * x: Pixel not summed not stored
 unsafe fn boxsum5<BD: BitDepth>(
-    mut sumsq: *mut int32_t,
-    mut sum: *mut BD::Coef,
+    mut sumsq: &mut [int32_t; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
+    mut sum: &mut [BD::Coef; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
     src: *const BD::Pixel,
     w: libc::c_int,
     h: libc::c_int,
 ) {
-    let mut x = 0;
-    while x < w {
-        let mut sum_v: *mut BD::Coef = sum.offset(x as isize);
-        let mut sumsq_v: *mut int32_t = sumsq.offset(x as isize);
-        let mut s: *const BD::Pixel = src.offset((3 * 390) as isize).offset(x as isize);
-        let mut a: libc::c_int = (*s.offset((-(3 as libc::c_int) * 390) as isize)).as_();
+    for x in 0..w as usize {
+        let mut sum_v = &mut sum[x..];
+        let mut sumsq_v = &mut sumsq[x..];
+        let mut s: *const BD::Pixel = src.offset((3 * REST_UNIT_STRIDE + x) as isize);
+        let mut a: libc::c_int = (*s.offset(-3 * REST_UNIT_STRIDE as isize)).as_();
         let mut a2 = a * a;
-        let mut b: libc::c_int = (*s.offset((-(2 as libc::c_int) * 390) as isize)).as_();
+        let mut b: libc::c_int = (*s.offset(-2 * REST_UNIT_STRIDE as isize)).as_();
         let mut b2 = b * b;
-        let mut c: libc::c_int = (*s.offset((-(1 as libc::c_int) * 390) as isize)).as_();
+        let mut c: libc::c_int = (*s.offset(-1 * REST_UNIT_STRIDE as isize)).as_();
         let mut c2 = c * c;
         let mut d: libc::c_int = (*s.offset(0)).as_();
         let mut d2 = d * d;
-        let mut y = 2;
-        while y < h - 2 {
-            s = s.offset(390);
+
+        // We skip the first 2 rows, as they are skipped in the next loop and
+        // we don't need the last 2 row as it is skipped in the next loop
+        for _ in 2..h - 2 {
+            s = s.offset(REST_UNIT_STRIDE as isize);
             let e: libc::c_int = (*s).as_();
             let e2 = e * e;
-            sum_v = sum_v.offset(390);
-            sumsq_v = sumsq_v.offset(390);
-            *sum_v = (a + b + c + d + e).as_();
-            *sumsq_v = a2 + b2 + c2 + d2 + e2;
+            sum_v = &mut sum_v[REST_UNIT_STRIDE..];
+            sumsq_v = &mut sumsq_v[REST_UNIT_STRIDE..];
+            sum_v[0] = (a + b + c + d + e).as_();
+            sumsq_v[0] = a2 + b2 + c2 + d2 + e2;
             a = b;
             b = c;
             c = d;
@@ -552,41 +509,38 @@ unsafe fn boxsum5<BD: BitDepth>(
             b2 = c2;
             c2 = d2;
             d2 = e2;
-            y += 1;
         }
-        x += 1;
     }
-    sum = sum.offset(390);
-    sumsq = sumsq.offset(390);
-    let mut y_0 = 2;
-    while y_0 < h - 2 {
-        let mut a_0 = *sum.offset(0);
-        let mut a2_0 = *sumsq.offset(0);
-        let mut b_0 = *sum.offset(1);
-        let mut b2_0 = *sumsq.offset(1);
-        let mut c_0 = *sum.offset(2);
-        let mut c2_0 = *sumsq.offset(2);
-        let mut d_0 = *sum.offset(3);
-        let mut d2_0 = *sumsq.offset(3);
-        let mut x_0 = 2;
-        while x_0 < w - 2 {
-            let e_0 = *sum.offset((x_0 + 2) as isize);
-            let e2_0 = *sumsq.offset((x_0 + 2) as isize);
-            *sum.offset(x_0 as isize) = a_0 + b_0 + c_0 + d_0 + e_0;
-            *sumsq.offset(x_0 as isize) = a2_0 + b2_0 + c2_0 + d2_0 + e2_0;
-            a_0 = b_0;
-            b_0 = c_0;
-            c_0 = d_0;
-            d_0 = e_0;
-            a2_0 = b2_0;
-            b2_0 = c2_0;
-            c2_0 = d2_0;
-            d2_0 = e2_0;
-            x_0 += 1;
+
+    // We skip the first row as it is never read
+    let mut sum = &mut sum[REST_UNIT_STRIDE..];
+    let mut sumsq = &mut sumsq[REST_UNIT_STRIDE..];
+    for _ in 2..h - 2 {
+        let mut a = sum[0];
+        let mut a2 = sumsq[0];
+        let mut b = sum[1];
+        let mut b2 = sumsq[1];
+        let mut c = sum[2];
+        let mut c2 = sumsq[2];
+        let mut d = sum[3];
+        let mut d2 = sumsq[3];
+
+        for x in 2..w as usize - 2 {
+            let e = sum[x + 2];
+            let e2 = sumsq[x + 2];
+            sum[x] = a + b + c + d + e;
+            sumsq[x] = a2 + b2 + c2 + d2 + e2;
+            a = b;
+            b = c;
+            c = d;
+            d = e;
+            a2 = b2;
+            b2 = c2;
+            c2 = d2;
+            d2 = e2;
         }
-        sum = sum.offset(390);
-        sumsq = sumsq.offset(390);
-        y_0 += 1;
+        sum = &mut sum[REST_UNIT_STRIDE..];
+        sumsq = &mut sumsq[REST_UNIT_STRIDE..];
     }
 }
 
@@ -612,9 +566,9 @@ unsafe extern "C" fn selfguided_filter<BD: BitDepth>(
     let mut B: *mut BD::Coef = sum.as_mut_ptr().offset((2 * 390) as isize).offset(3);
     let step = (n == 25) as libc::c_int + 1;
     if n == 25 {
-        boxsum5::<BD>(sumsq.as_mut_ptr(), sum.as_mut_ptr(), src, w + 6, h + 6);
+        boxsum5::<BD>(&mut sumsq, &mut sum, src, w + 6, h + 6);
     } else {
-        boxsum3::<BD>(sumsq.as_mut_ptr(), sum.as_mut_ptr(), src, w + 6, h + 6);
+        boxsum3::<BD>(&mut sumsq, &mut sum, src, w + 6, h + 6);
     }
     let bitdepth_min_8 = bd.bitdepth() - 8;
     let mut AA: *mut int32_t = A.offset(-(390 as libc::c_int as isize));
@@ -775,10 +729,10 @@ unsafe extern "C" fn selfguided_filter<BD: BitDepth>(
 }
 
 unsafe extern "C" fn sgr_5x5_c_erased<BD: BitDepth>(
-    p: *mut libc::c_void,
+    p: *mut DynPixel,
     stride: ptrdiff_t,
-    left: *const libc::c_void,
-    lpf: *const libc::c_void,
+    left: *const LeftPixelRow<DynPixel>,
+    lpf: *const DynPixel,
     w: libc::c_int,
     h: libc::c_int,
     params: *const LooprestorationParams,
@@ -809,8 +763,14 @@ unsafe fn sgr_5x5_rust<BD: BitDepth>(
     edges: LrEdgeFlags,
     bd: BD,
 ) {
-    let mut tmp: [BD::Pixel; 27300] = [0.as_(); 27300];
-    let mut dst: [BD::Coef; 24576] = [0.as_(); 24576];
+    // Selfguided filter is applied to a maximum stripe height of 64 + 3 pixels
+    // of padding above and below
+    let mut tmp = [0.as_(); 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE];
+
+    // Selfguided filter outputs to a maximum stripe height of 64 and a
+    // maximum restoration width of 384 (256 * 1.5)
+    let mut dst = [0.as_(); 64 * 384];
+
     padding::<BD>(
         &mut tmp,
         p,
@@ -824,35 +784,30 @@ unsafe fn sgr_5x5_rust<BD: BitDepth>(
     selfguided_filter(
         dst.as_mut_ptr(),
         tmp.as_mut_ptr(),
-        390 as libc::c_int as ptrdiff_t,
+        REST_UNIT_STRIDE as ptrdiff_t,
         w,
         h,
-        25 as libc::c_int,
+        25,
         (*params).sgr.s0,
         bd,
     );
+
     let w0 = (*params).sgr.w0 as libc::c_int;
-    let mut j = 0;
-    while j < h {
-        let mut i = 0;
-        while i < w {
+    for j in 0..h {
+        for i in 0..w {
             let v = w0 * dst[(j * 384 + i) as usize].as_::<libc::c_int>();
-            *p.offset(i as isize) = bd.iclip_pixel(
-                (*p.offset(i as isize)).as_::<libc::c_int>()
-                    + (v + ((1 as libc::c_int) << 10) >> 11),
-            );
-            i += 1;
+            *p.offset(i as isize) = bd
+                .iclip_pixel((*p.offset(i as isize)).as_::<libc::c_int>() + (v + (1 << 10) >> 11));
         }
         p = p.offset(BD::pxstride(stride as usize) as isize);
-        j += 1;
     }
 }
 
 unsafe extern "C" fn sgr_3x3_c_erased<BD: BitDepth>(
-    p: *mut libc::c_void,
+    p: *mut DynPixel,
     stride: ptrdiff_t,
-    left: *const libc::c_void,
-    lpf: *const libc::c_void,
+    left: *const LeftPixelRow<DynPixel>,
+    lpf: *const DynPixel,
     w: libc::c_int,
     h: libc::c_int,
     params: *const LooprestorationParams,
@@ -883,8 +838,9 @@ unsafe fn sgr_3x3_rust<BD: BitDepth>(
     edges: LrEdgeFlags,
     bd: BD,
 ) {
-    let mut tmp: [BD::Pixel; 27300] = [0.as_(); 27300];
-    let mut dst: [BD::Coef; 24576] = [0.as_(); 24576];
+    let mut tmp = [0.as_(); 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE];
+    let mut dst = [0.as_(); 64 * 384];
+
     padding::<BD>(
         &mut tmp,
         p,
@@ -898,35 +854,30 @@ unsafe fn sgr_3x3_rust<BD: BitDepth>(
     selfguided_filter(
         dst.as_mut_ptr(),
         tmp.as_mut_ptr(),
-        390 as libc::c_int as ptrdiff_t,
+        REST_UNIT_STRIDE as ptrdiff_t,
         w,
         h,
-        9 as libc::c_int,
+        9,
         (*params).sgr.s1,
         bd,
     );
+
     let w1 = (*params).sgr.w1 as libc::c_int;
-    let mut j = 0;
-    while j < h {
-        let mut i = 0;
-        while i < w {
+    for j in 0..h {
+        for i in 0..w {
             let v = w1 * dst[(j * 384 + i) as usize].as_::<libc::c_int>();
-            *p.offset(i as isize) = bd.iclip_pixel(
-                (*p.offset(i as isize)).as_::<libc::c_int>()
-                    + (v + ((1 as libc::c_int) << 10) >> 11),
-            );
-            i += 1;
+            *p.offset(i as isize) = bd
+                .iclip_pixel((*p.offset(i as isize)).as_::<libc::c_int>() + (v + (1 << 10) >> 11));
         }
         p = p.offset(BD::pxstride(stride as usize) as isize);
-        j += 1;
     }
 }
 
 unsafe extern "C" fn sgr_mix_c_erased<BD: BitDepth>(
-    p: *mut libc::c_void,
+    p: *mut DynPixel,
     stride: ptrdiff_t,
-    left: *const libc::c_void,
-    lpf: *const libc::c_void,
+    left: *const LeftPixelRow<DynPixel>,
+    lpf: *const DynPixel,
     w: libc::c_int,
     h: libc::c_int,
     params: *const LooprestorationParams,
@@ -957,9 +908,10 @@ unsafe fn sgr_mix_rust<BD: BitDepth>(
     edges: LrEdgeFlags,
     bd: BD,
 ) {
-    let mut tmp: [BD::Pixel; 27300] = [0.as_(); 27300];
-    let mut dst0: [BD::Coef; 24576] = [0.as_(); 24576];
-    let mut dst1: [BD::Coef; 24576] = [0.as_(); 24576];
+    let mut tmp = [0.as_(); 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE];
+    let mut dst0 = [0.as_(); 64 * 384];
+    let mut dst1 = [0.as_(); 64 * 384];
+
     padding::<BD>(
         &mut tmp,
         p,
@@ -973,39 +925,34 @@ unsafe fn sgr_mix_rust<BD: BitDepth>(
     selfguided_filter(
         dst0.as_mut_ptr(),
         tmp.as_mut_ptr(),
-        390 as libc::c_int as ptrdiff_t,
+        REST_UNIT_STRIDE as ptrdiff_t,
         w,
         h,
-        25 as libc::c_int,
+        25,
         (*params).sgr.s0,
         bd,
     );
     selfguided_filter(
         dst1.as_mut_ptr(),
         tmp.as_mut_ptr(),
-        390 as libc::c_int as ptrdiff_t,
+        REST_UNIT_STRIDE as ptrdiff_t,
         w,
         h,
-        9 as libc::c_int,
+        9,
         (*params).sgr.s1,
         bd,
     );
+
     let w0 = (*params).sgr.w0 as libc::c_int;
     let w1 = (*params).sgr.w1 as libc::c_int;
-    let mut j = 0;
-    while j < h {
-        let mut i = 0;
-        while i < w {
+    for j in 0..h {
+        for i in 0..w {
             let v = w0 * dst0[(j * 384 + i) as usize].as_::<libc::c_int>()
                 + w1 * dst1[(j * 384 + i) as usize].as_::<libc::c_int>();
-            *p.offset(i as isize) = bd.iclip_pixel(
-                (*p.offset(i as isize)).as_::<libc::c_int>()
-                    + (v + ((1 as libc::c_int) << 10) >> 11),
-            );
-            i += 1;
+            *p.offset(i as isize) = bd
+                .iclip_pixel((*p.offset(i as isize)).as_::<libc::c_int>() + (v + (1 << 10) >> 11));
         }
         p = p.offset(BD::pxstride(stride as usize) as isize);
-        j += 1;
     }
 }
 
@@ -1103,10 +1050,10 @@ unsafe fn dav1d_wiener_filter_v_neon<BD: BitDepth>(
 
 #[cfg(all(feature = "asm", target_arch = "arm"))]
 unsafe extern "C" fn wiener_filter_neon_erased<BD: BitDepth>(
-    p: *mut libc::c_void,
+    p: *mut DynPixel,
     stride: ptrdiff_t,
-    left: *const libc::c_void,
-    lpf: *const libc::c_void,
+    left: *const LeftPixelRow<DynPixel>,
+    lpf: *const DynPixel,
     w: libc::c_int,
     h: libc::c_int,
     params: *const LooprestorationParams,
@@ -1449,9 +1396,9 @@ unsafe fn dav1d_sgr_weighted1_neon<BD: BitDepth>(
         ($name:ident) => {{
             extern "C" {
                 fn $name(
-                    dst: *mut libc::c_void,
+                    dst: *mut DynPixel,
                     dst_stride: ptrdiff_t,
-                    src: *const libc::c_void,
+                    src: *const DynPixel,
                     src_stride: ptrdiff_t,
                     t1: *const int16_t,
                     w: libc::c_int,
@@ -1530,10 +1477,10 @@ unsafe fn dav1d_sgr_weighted2_neon<BD: BitDepth>(
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe extern "C" fn sgr_filter_5x5_neon_erased<BD: BitDepth>(
-    p: *mut libc::c_void,
+    p: *mut DynPixel,
     stride: ptrdiff_t,
-    left: *const libc::c_void,
-    lpf: *const libc::c_void,
+    left: *const LeftPixelRow<DynPixel>,
+    lpf: *const DynPixel,
     w: libc::c_int,
     h: libc::c_int,
     params: *const LooprestorationParams,
@@ -1593,10 +1540,10 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe extern "C" fn sgr_filter_3x3_neon_erased<BD: BitDepth>(
-    p: *mut libc::c_void,
+    p: *mut DynPixel,
     stride: ptrdiff_t,
-    left: *const libc::c_void,
-    lpf: *const libc::c_void,
+    left: *const LeftPixelRow<DynPixel>,
+    lpf: *const DynPixel,
     w: libc::c_int,
     h: libc::c_int,
     params: *const LooprestorationParams,
@@ -1656,10 +1603,10 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe extern "C" fn sgr_filter_mix_neon_erased<BD: BitDepth>(
-    p: *mut libc::c_void,
+    p: *mut DynPixel,
     stride: ptrdiff_t,
-    left: *const libc::c_void,
-    lpf: *const libc::c_void,
+    left: *const LeftPixelRow<DynPixel>,
+    lpf: *const DynPixel,
     w: libc::c_int,
     h: libc::c_int,
     params: *const LooprestorationParams,
@@ -1746,23 +1693,37 @@ fn loop_restoration_dsp_init_x86<BD: BitDepth>(
         return;
     }
 
-    #[cfg(feature = "bitdepth_8")]
     if BD::BPC == BPC::BPC8 {
-        c.wiener[0] = dav1d_wiener_filter7_8bpc_sse2;
-        c.wiener[1] = dav1d_wiener_filter5_8bpc_sse2;
+        c.wiener[0] = decl_looprestorationfilter_fn!(fn dav1d_wiener_filter7_8bpc_sse2);
+        c.wiener[1] = decl_looprestorationfilter_fn!(fn dav1d_wiener_filter5_8bpc_sse2);
     }
 
     if flags & DAV1D_X86_CPU_FLAG_SSSE3 == 0 {
         return;
     }
 
-    c.wiener[0] = dav1d_wiener_filter7_ssse3::<BD>;
-    c.wiener[1] = dav1d_wiener_filter5_ssse3::<BD>;
+    c.wiener[0] = match BD::BPC {
+        BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter7_8bpc_ssse3),
+        BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter7_16bpc_ssse3),
+    };
+    c.wiener[1] = match BD::BPC {
+        BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter5_8bpc_ssse3),
+        BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter5_16bpc_ssse3),
+    };
 
     if BD::BPC == BPC::BPC8 || bpc == 10 {
-        c.sgr[0] = dav1d_sgr_filter_5x5_ssse3::<BD>;
-        c.sgr[1] = dav1d_sgr_filter_3x3_ssse3::<BD>;
-        c.sgr[2] = dav1d_sgr_filter_mix_ssse3::<BD>;
+        c.sgr[0] = match BD::BPC {
+            BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_5x5_8bpc_ssse3),
+            BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_5x5_16bpc_ssse3),
+        };
+        c.sgr[1] = match BD::BPC {
+            BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_3x3_8bpc_ssse3),
+            BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_3x3_16bpc_ssse3),
+        };
+        c.sgr[2] = match BD::BPC {
+            BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_mix_8bpc_ssse3),
+            BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_mix_16bpc_ssse3),
+        };
     }
 
     #[cfg(target_arch = "x86_64")]
@@ -1771,35 +1732,63 @@ fn loop_restoration_dsp_init_x86<BD: BitDepth>(
             return;
         }
 
-        c.wiener[0] = dav1d_wiener_filter7_avx2::<BD>;
-        c.wiener[1] = dav1d_wiener_filter5_avx2::<BD>;
+        c.wiener[0] = match BD::BPC {
+            BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter7_8bpc_avx2),
+            BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter7_16bpc_avx2),
+        };
+        c.wiener[1] = match BD::BPC {
+            BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter5_8bpc_avx2),
+            BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter5_16bpc_avx2),
+        };
 
         if BD::BPC == BPC::BPC8 || bpc == 10 {
-            c.sgr[0] = dav1d_sgr_filter_5x5_avx2::<BD>;
-            c.sgr[1] = dav1d_sgr_filter_3x3_avx2::<BD>;
-            c.sgr[2] = dav1d_sgr_filter_mix_avx2::<BD>;
+            c.sgr[0] = match BD::BPC {
+                BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_5x5_8bpc_avx2),
+                BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_5x5_16bpc_avx2),
+            };
+            c.sgr[1] = match BD::BPC {
+                BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_3x3_8bpc_avx2),
+                BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_3x3_16bpc_avx2),
+            };
+            c.sgr[2] = match BD::BPC {
+                BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_mix_8bpc_avx2),
+                BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_mix_16bpc_avx2),
+            };
         }
 
         if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
             return;
         }
 
-        c.wiener[0] = dav1d_wiener_filter7_avx512icl::<BD>;
+        c.wiener[0] = match BD::BPC {
+            BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter7_8bpc_avx512icl),
+            BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter7_16bpc_avx512icl),
+        };
         c.wiener[1] = match BD::BPC {
             // With VNNI we don't need a 5-tap version.
             BPC::BPC8 => c.wiener[0],
-
-            #[cfg(feature = "bitdepth_16")]
-            BPC::BPC16 => dav1d_wiener_filter5_16bpc_avx512icl,
-
-            #[cfg(not(feature = "bitdepth_16"))]
-            BPC::BPC16 => unreachable!(),
+            BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter5_16bpc_avx512icl),
         };
 
         if BD::BPC == BPC::BPC8 || bpc == 10 {
-            c.sgr[0] = dav1d_sgr_filter_5x5_avx512icl::<BD>;
-            c.sgr[1] = dav1d_sgr_filter_3x3_avx512icl::<BD>;
-            c.sgr[2] = dav1d_sgr_filter_mix_avx512icl::<BD>;
+            c.sgr[0] = match BD::BPC {
+                BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_5x5_8bpc_avx512icl),
+                BPC::BPC16 => {
+                    decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_5x5_16bpc_avx512icl)
+                }
+            };
+            c.sgr[1] = match BD::BPC {
+                BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_3x3_8bpc_avx512icl),
+                BPC::BPC16 => {
+                    decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_3x3_16bpc_avx512icl)
+                }
+            };
+            c.sgr[2] = match BD::BPC {
+                BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_mix_8bpc_avx512icl),
+                BPC::BPC16 => {
+                    decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_mix_16bpc_avx512icl)
+                }
+            };
         }
     }
 }
@@ -1823,8 +1812,14 @@ fn loop_restoration_dsp_init_arm<BD: BitDepth>(
 
     cfg_if::cfg_if! {
         if #[cfg(target_arch = "aarch64")] {
-            c.wiener[0] = dav1d_wiener_filter7_neon::<BD>;
-            c.wiener[1] = dav1d_wiener_filter5_neon::<BD>;
+            c.wiener[0] = match BD::BPC {
+                BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter7_8bpc_neon),
+                BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter7_16bpc_neon),
+            };
+            c.wiener[1] = match BD::BPC {
+                BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter5_8bpc_neon),
+                BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter5_16bpc_neon),
+            };
         } else {
             c.wiener[0] = wiener_filter_neon_erased::<BD>;
             c.wiener[1] = wiener_filter_neon_erased::<BD>;

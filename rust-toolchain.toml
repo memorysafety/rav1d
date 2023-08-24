@@ -1,5 +1,5 @@
 [toolchain]
-channel = "nightly-2023-05-10"
+channel = "nightly-2023-08-24"
 targets = [
     "x86_64-unknown-linux-gnu",
     "i686-unknown-linux-gnu",
