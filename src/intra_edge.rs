@@ -89,7 +89,7 @@ unsafe fn init_edges(node: *mut EdgeNode, bl: BlockLevel, edge_flags: EdgeFlags)
         (*nwc).h4[3] = edge_flags
             & (EDGE_I444_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM | EDGE_I420_LEFT_HAS_BOTTOM);
         if bl == BL_16X16 {
-            (*nwc).h4[1] = (*nwc).h4[1] | edge_flags & EDGE_I420_TOP_HAS_RIGHT;
+            (*nwc).h4[1] |= edge_flags & EDGE_I420_TOP_HAS_RIGHT;
         }
         (*nwc).v4[0] = edge_flags
             | (EDGE_I444_TOP_HAS_RIGHT | EDGE_I422_TOP_HAS_RIGHT | EDGE_I420_TOP_HAS_RIGHT);
@@ -98,8 +98,7 @@ unsafe fn init_edges(node: *mut EdgeNode, bl: BlockLevel, edge_flags: EdgeFlags)
         (*nwc).v4[3] = edge_flags
             & (EDGE_I444_TOP_HAS_RIGHT | EDGE_I422_TOP_HAS_RIGHT | EDGE_I420_TOP_HAS_RIGHT);
         if bl == BL_16X16 {
-            (*nwc).v4[1] =
-                (*nwc).v4[1] | edge_flags & (EDGE_I420_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM);
+            (*nwc).v4[1] |= edge_flags & (EDGE_I420_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM);
         }
         (*nwc).tls[0] = (EDGE_I444_TOP_HAS_RIGHT
             | EDGE_I422_TOP_HAS_RIGHT
