@@ -4187,9 +4187,9 @@ unsafe fn decode_sb(
     let f = &*t.f;
     let ts = &mut *t.ts;
     let hsz = 16 >> bl as libc::c_uint;
-    let have_h_split = (f.bw > t.bx + hsz) as libc::c_int;
-    let have_v_split = (f.bh > t.by + hsz) as libc::c_int;
-    if have_h_split == 0 && have_v_split == 0 {
+    let have_h_split = f.bw > t.bx + hsz;
+    let have_v_split = f.bh > t.by + hsz;
+    if !have_h_split && !have_v_split {
         if !((bl as libc::c_uint) < BL_8X8 as libc::c_int as libc::c_uint) {
             unreachable!();
         }
@@ -4220,7 +4220,7 @@ unsafe fn decode_sb(
         ctx = get_partition_ctx(&*t.a, &t.l, bl, by8, bx8);
         pc = &mut ts.cdf.m.partition[bl as usize][ctx as usize];
     }
-    if have_h_split != 0 && have_v_split != 0 {
+    if have_h_split && have_v_split {
         if t.frame_thread.pass == 2 {
             let b: *const Av1Block = &mut *(f.frame_thread.b)
                 .offset((t.by as isize * f.b4_stride + t.bx as isize) as isize)
@@ -4653,7 +4653,7 @@ unsafe fn decode_sb(
                 }
             }
         }
-    } else if have_h_split != 0 {
+    } else if have_h_split {
         let mut is_split: libc::c_uint = 0;
         if t.frame_thread.pass == 2 {
             let b_1: *const Av1Block = &mut *(f.frame_thread.b)
@@ -4720,7 +4720,7 @@ unsafe fn decode_sb(
             }
         }
     } else {
-        if have_v_split == 0 {
+        if !have_v_split {
             unreachable!();
         }
         let mut is_split_0: libc::c_uint = 0;
