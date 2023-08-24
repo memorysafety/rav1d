@@ -395,7 +395,7 @@ unsafe fn wiener_rust<BD: BitDepth>(
 ) {
     // Wiener filtering is applied to a maximum stripe height of 64 + 3 pixels
     // of padding above and below
-    let mut tmp = [0.as_(); 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE];
+    let mut tmp = [0.into(); 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE];
 
     padding::<BD>(
         &mut tmp,
@@ -409,27 +409,28 @@ unsafe fn wiener_rust<BD: BitDepth>(
     );
 
     // Values stored between horizontal and vertical filtering don't
-    // fit in a uint8_t.
-    let mut hor = [0u16; 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE];
+    // fit in a u8.
+    let mut hor = [0; 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE];
 
     let filter = &params.filter.0;
     let bitdepth = bd.bitdepth().as_::<libc::c_int>();
     let round_bits_h = 3 + (bitdepth == 12) as libc::c_int * 2;
     let rounding_off_h = 1 << round_bits_h - 1;
     let clip_limit = 1 << bitdepth + 1 + 7 - round_bits_h;
-    let chunks = tmp
+    for (tmp, hor) in tmp
         .chunks_exact(REST_UNIT_STRIDE)
-        .zip(hor.chunks_exact_mut(REST_UNIT_STRIDE));
-    for (tmp, hor) in chunks.take((h + 6) as usize) {
+        .zip(hor.chunks_exact_mut(REST_UNIT_STRIDE))
+        .take((h + 6) as usize)
+    {
         for i in 0..w as usize {
             let mut sum = 1 << bitdepth + 6;
 
             if BD::BPC == BPC::BPC8 {
-                sum += tmp[i + 3].as_::<libc::c_int>() * 128;
+                sum += tmp[i + 3].into() * 128;
             }
 
-            for k in 0..7 {
-                sum += tmp[i + k].as_::<libc::c_int>() * filter[0][k] as libc::c_int;
+            for (&tmp, &filter) in std::iter::zip(&tmp[i..i + 7], &filter[0][..7]) {
+                sum += tmp.into() * filter as libc::c_int;
             }
 
             hor[i] = iclip(sum + rounding_off_h >> round_bits_h, 0, clip_limit - 1) as uint16_t;
