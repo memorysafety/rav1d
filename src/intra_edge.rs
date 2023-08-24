@@ -138,14 +138,14 @@ unsafe fn init_edges(node: *mut EdgeNode, bl: BlockLevel, edge_flags: EdgeFlags)
 }
 
 unsafe fn init_mode_node(
-    nwc: *mut EdgeBranch,
+    nwc: &mut EdgeBranch,
     bl: BlockLevel,
     mem: *mut ModeSelMem,
     top_has_right: libc::c_int,
     left_has_bottom: libc::c_int,
 ) {
     init_edges(
-        &mut (*nwc).node,
+        &mut nwc.node,
         bl,
         (if top_has_right != 0 {
             EDGE_I444_TOP_HAS_RIGHT | EDGE_I422_TOP_HAS_RIGHT | EDGE_I420_TOP_HAS_RIGHT
@@ -163,7 +163,7 @@ unsafe fn init_mode_node(
             let fresh0 = (*mem).nt;
             (*mem).nt = ((*mem).nt).offset(1);
             let nt: *mut EdgeTip = fresh0;
-            (*nwc).split[n as usize] = &mut (*nt).node;
+            nwc.split[n as usize] = &mut (*nt).node;
             init_edges(
                 &mut (*nt).node,
                 bl.wrapping_add(1),
@@ -187,9 +187,9 @@ unsafe fn init_mode_node(
             let fresh1 = (*mem).nwc[bl as usize];
             (*mem).nwc[bl as usize] = ((*mem).nwc[bl as usize]).offset(1);
             let nwc_child: *mut EdgeBranch = fresh1;
-            (*nwc).split[n as usize] = &mut (*nwc_child).node;
+            nwc.split[n as usize] = &mut (*nwc_child).node;
             init_mode_node(
-                nwc_child,
+                &mut *nwc_child,
                 bl.wrapping_add(1),
                 mem,
                 !(n == 3 || n == 1 && top_has_right == 0) as libc::c_int,
@@ -218,7 +218,7 @@ pub unsafe extern "C" fn dav1d_init_mode_tree(
         mem.nwc[BL_32X32 as libc::c_int as usize] =
             &mut *root.offset((1 + 4 + 16) as isize) as *mut EdgeBranch;
         init_mode_node(
-            root,
+            &mut *root,
             BL_128X128,
             &mut mem,
             1 as libc::c_int,
@@ -247,7 +247,13 @@ pub unsafe extern "C" fn dav1d_init_mode_tree(
         mem.nwc[BL_64X64 as libc::c_int as usize] = &mut *root.offset(1) as *mut EdgeBranch;
         mem.nwc[BL_32X32 as libc::c_int as usize] =
             &mut *root.offset((1 + 4) as isize) as *mut EdgeBranch;
-        init_mode_node(root, BL_64X64, &mut mem, 1 as libc::c_int, 0 as libc::c_int);
+        init_mode_node(
+            &mut *root,
+            BL_64X64,
+            &mut mem,
+            1 as libc::c_int,
+            0 as libc::c_int,
+        );
         if !(mem.nwc[BL_64X64 as libc::c_int as usize]
             == &mut *root.offset((1 + 4) as isize) as *mut EdgeBranch)
         {
