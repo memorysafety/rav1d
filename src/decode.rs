@@ -4286,7 +4286,7 @@ unsafe fn decode_sb(
                     if decode_b(t, bl, BS_4x4, PARTITION_SPLIT, tip.split[0]) != 0 {
                         return -1;
                     }
-                    let tl_filter: Filter2d = t.tl_4x4_filter;
+                    let tl_filter = t.tl_4x4_filter;
                     t.bx += 1;
                     if decode_b(t, bl, BS_4x4, PARTITION_SPLIT, tip.split[1]) != 0 {
                         return -1;
