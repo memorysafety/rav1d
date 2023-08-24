@@ -4194,7 +4194,7 @@ unsafe fn decode_sb(
         return decode_sb(t, bl + 1, (*(node as *const EdgeBranch)).split[0]);
     }
     let mut pc = &mut Default::default();
-    let mut bp: BlockPartition = PARTITION_NONE;
+    let mut bp;
     let mut ctx = 0;
     let mut bx8 = 0;
     let mut by8 = 0;
