@@ -4251,29 +4251,29 @@ unsafe fn decode_sb(
                 );
             }
         }
-        let b: *const uint8_t = (dav1d_block_sizes[bl as usize][bp as usize]).as_ptr();
+        let b = &dav1d_block_sizes[bl as usize][bp as usize];
         match bp as libc::c_uint {
             0 => {
-                if decode_b(t, bl, *b.offset(0) as BlockSize, PARTITION_NONE, (*node).o) != 0 {
+                if decode_b(t, bl, b[0] as BlockSize, PARTITION_NONE, (*node).o) != 0 {
                     return -1;
                 }
             }
             1 => {
-                if decode_b(t, bl, *b.offset(0) as BlockSize, PARTITION_H, (*node).h[0]) != 0 {
+                if decode_b(t, bl, b[0] as BlockSize, PARTITION_H, (*node).h[0]) != 0 {
                     return -1;
                 }
                 t.by += hsz;
-                if decode_b(t, bl, *b.offset(0) as BlockSize, PARTITION_H, (*node).h[1]) != 0 {
+                if decode_b(t, bl, b[0] as BlockSize, PARTITION_H, (*node).h[1]) != 0 {
                     return -1;
                 }
                 t.by -= hsz;
             }
             2 => {
-                if decode_b(t, bl, *b.offset(0) as BlockSize, PARTITION_V, (*node).v[0]) != 0 {
+                if decode_b(t, bl, b[0] as BlockSize, PARTITION_V, (*node).v[0]) != 0 {
                     return -1;
                 }
                 t.bx += hsz;
-                if decode_b(t, bl, *b.offset(0) as BlockSize, PARTITION_V, (*node).v[1]) != 0 {
+                if decode_b(t, bl, b[0] as BlockSize, PARTITION_V, (*node).v[1]) != 0 {
                     return -1;
                 }
                 t.bx -= hsz;
@@ -4337,7 +4337,7 @@ unsafe fn decode_sb(
                 if decode_b(
                     t,
                     bl,
-                    *b.offset(0) as BlockSize,
+                    b[0] as BlockSize,
                     PARTITION_T_TOP_SPLIT,
                     (*branch).tts[0],
                 ) != 0
@@ -4348,7 +4348,7 @@ unsafe fn decode_sb(
                 if decode_b(
                     t,
                     bl,
-                    *b.offset(0) as BlockSize,
+                    b[0] as BlockSize,
                     PARTITION_T_TOP_SPLIT,
                     (*branch).tts[1],
                 ) != 0
@@ -4360,7 +4360,7 @@ unsafe fn decode_sb(
                 if decode_b(
                     t,
                     bl,
-                    *b.offset(1) as BlockSize,
+                    b[1] as BlockSize,
                     PARTITION_T_TOP_SPLIT,
                     (*branch).tts[2],
                 ) != 0
@@ -4374,7 +4374,7 @@ unsafe fn decode_sb(
                 if decode_b(
                     t,
                     bl,
-                    *b.offset(0) as BlockSize,
+                    b[0] as BlockSize,
                     PARTITION_T_BOTTOM_SPLIT,
                     (*branch).tbs[0],
                 ) != 0
@@ -4385,7 +4385,7 @@ unsafe fn decode_sb(
                 if decode_b(
                     t,
                     bl,
-                    *b.offset(1) as BlockSize,
+                    b[1] as BlockSize,
                     PARTITION_T_BOTTOM_SPLIT,
                     (*branch).tbs[1],
                 ) != 0
@@ -4396,7 +4396,7 @@ unsafe fn decode_sb(
                 if decode_b(
                     t,
                     bl,
-                    *b.offset(1) as BlockSize,
+                    b[1] as BlockSize,
                     PARTITION_T_BOTTOM_SPLIT,
                     (*branch).tbs[2],
                 ) != 0
@@ -4411,7 +4411,7 @@ unsafe fn decode_sb(
                 if decode_b(
                     t,
                     bl,
-                    *b.offset(0) as BlockSize,
+                    b[0] as BlockSize,
                     PARTITION_T_LEFT_SPLIT,
                     (*branch).tls[0],
                 ) != 0
@@ -4422,7 +4422,7 @@ unsafe fn decode_sb(
                 if decode_b(
                     t,
                     bl,
-                    *b.offset(0) as BlockSize,
+                    b[0] as BlockSize,
                     PARTITION_T_LEFT_SPLIT,
                     (*branch).tls[1],
                 ) != 0
@@ -4434,7 +4434,7 @@ unsafe fn decode_sb(
                 if decode_b(
                     t,
                     bl,
-                    *b.offset(1) as BlockSize,
+                    b[1] as BlockSize,
                     PARTITION_T_LEFT_SPLIT,
                     (*branch).tls[2],
                 ) != 0
@@ -4448,7 +4448,7 @@ unsafe fn decode_sb(
                 if decode_b(
                     t,
                     bl,
-                    *b.offset(0) as BlockSize,
+                    b[0] as BlockSize,
                     PARTITION_T_RIGHT_SPLIT,
                     (*branch).trs[0],
                 ) != 0
@@ -4459,7 +4459,7 @@ unsafe fn decode_sb(
                 if decode_b(
                     t,
                     bl,
-                    *b.offset(1) as BlockSize,
+                    b[1] as BlockSize,
                     PARTITION_T_RIGHT_SPLIT,
                     (*branch).trs[1],
                 ) != 0
@@ -4470,7 +4470,7 @@ unsafe fn decode_sb(
                 if decode_b(
                     t,
                     bl,
-                    *b.offset(1) as BlockSize,
+                    b[1] as BlockSize,
                     PARTITION_T_RIGHT_SPLIT,
                     (*branch).trs[2],
                 ) != 0
@@ -4482,48 +4482,20 @@ unsafe fn decode_sb(
             }
             8 => {
                 let branch: *const EdgeBranch = node as *const EdgeBranch;
-                if decode_b(
-                    t,
-                    bl,
-                    *b.offset(0) as BlockSize,
-                    PARTITION_H4,
-                    (*branch).h4[0],
-                ) != 0
-                {
+                if decode_b(t, bl, b[0] as BlockSize, PARTITION_H4, (*branch).h4[0]) != 0 {
                     return -1;
                 }
                 t.by += hsz >> 1;
-                if decode_b(
-                    t,
-                    bl,
-                    *b.offset(0) as BlockSize,
-                    PARTITION_H4,
-                    (*branch).h4[1],
-                ) != 0
-                {
+                if decode_b(t, bl, b[0] as BlockSize, PARTITION_H4, (*branch).h4[1]) != 0 {
                     return -1;
                 }
                 t.by += hsz >> 1;
-                if decode_b(
-                    t,
-                    bl,
-                    *b.offset(0) as BlockSize,
-                    PARTITION_H4,
-                    (*branch).h4[2],
-                ) != 0
-                {
+                if decode_b(t, bl, b[0] as BlockSize, PARTITION_H4, (*branch).h4[2]) != 0 {
                     return -1;
                 }
                 t.by += hsz >> 1;
                 if t.by < f.bh {
-                    if decode_b(
-                        t,
-                        bl,
-                        *b.offset(0) as BlockSize,
-                        PARTITION_H4,
-                        (*branch).h4[3],
-                    ) != 0
-                    {
+                    if decode_b(t, bl, b[0] as BlockSize, PARTITION_H4, (*branch).h4[3]) != 0 {
                         return -1;
                     }
                 }
@@ -4531,48 +4503,20 @@ unsafe fn decode_sb(
             }
             9 => {
                 let branch: *const EdgeBranch = node as *const EdgeBranch;
-                if decode_b(
-                    t,
-                    bl,
-                    *b.offset(0) as BlockSize,
-                    PARTITION_V4,
-                    (*branch).v4[0],
-                ) != 0
-                {
+                if decode_b(t, bl, b[0] as BlockSize, PARTITION_V4, (*branch).v4[0]) != 0 {
                     return -1;
                 }
                 t.bx += hsz >> 1;
-                if decode_b(
-                    t,
-                    bl,
-                    *b.offset(0) as BlockSize,
-                    PARTITION_V4,
-                    (*branch).v4[1],
-                ) != 0
-                {
+                if decode_b(t, bl, b[0] as BlockSize, PARTITION_V4, (*branch).v4[1]) != 0 {
                     return -1;
                 }
                 t.bx += hsz >> 1;
-                if decode_b(
-                    t,
-                    bl,
-                    *b.offset(0) as BlockSize,
-                    PARTITION_V4,
-                    (*branch).v4[2],
-                ) != 0
-                {
+                if decode_b(t, bl, b[0] as BlockSize, PARTITION_V4, (*branch).v4[2]) != 0 {
                     return -1;
                 }
                 t.bx += hsz >> 1;
                 if t.bx < f.bw {
-                    if decode_b(
-                        t,
-                        bl,
-                        *b.offset(0) as BlockSize,
-                        PARTITION_V4,
-                        (*branch).v4[3],
-                    ) != 0
-                    {
+                    if decode_b(t, bl, b[0] as BlockSize, PARTITION_V4, (*branch).v4[3]) != 0 {
                         return -1;
                     }
                 }
