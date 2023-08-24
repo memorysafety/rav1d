@@ -136,7 +136,8 @@ unsafe fn init_edges(node: *mut EdgeNode, bl: BlockLevel, edge_flags: EdgeFlags)
         nwc.tbs[2] = 0 as EdgeFlags;
     };
 }
-unsafe extern "C" fn init_mode_node(
+
+unsafe fn init_mode_node(
     nwc: *mut EdgeBranch,
     bl: BlockLevel,
     mem: *mut ModeSelMem,
