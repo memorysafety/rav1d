@@ -45,7 +45,8 @@ use crate::src::levels::BL_64X64;
 use crate::src::levels::BL_128X128;
 use crate::src::levels::BL_16X16;
 use crate::src::levels::BL_8X8;
-unsafe extern "C" fn init_edges(node: *mut EdgeNode, bl: BlockLevel, edge_flags: EdgeFlags) {
+
+unsafe fn init_edges(node: *mut EdgeNode, bl: BlockLevel, edge_flags: EdgeFlags) {
     (*node).o = edge_flags;
     if bl as libc::c_uint == BL_8X8 as libc::c_int as libc::c_uint {
         let nt: *mut EdgeTip = node as *mut EdgeTip;
