@@ -4179,626 +4179,465 @@ unsafe fn decode_b(
     0
 }
 
-unsafe extern "C" fn decode_sb(
-    t: *mut Dav1dTaskContext,
+unsafe fn decode_sb(
+    t: &mut Dav1dTaskContext,
     bl: BlockLevel,
     node: *const EdgeNode,
 ) -> libc::c_int {
-    let f: *const Dav1dFrameContext = (*t).f;
-    let ts: *mut Dav1dTileState = (*t).ts;
-    let hsz = 16 >> bl as libc::c_uint;
-    let have_h_split = ((*f).bw > (*t).bx + hsz) as libc::c_int;
-    let have_v_split = ((*f).bh > (*t).by + hsz) as libc::c_int;
-    if have_h_split == 0 && have_v_split == 0 {
-        if !((bl as libc::c_uint) < BL_8X8 as libc::c_int as libc::c_uint) {
-            unreachable!();
-        }
-        return decode_sb(
-            t,
-            (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as BlockLevel,
-            (*(node as *const EdgeBranch)).split[0],
-        );
+    let f = &*t.f;
+    let ts = &mut *t.ts;
+    let hsz = 16 >> bl;
+    let have_h_split = f.bw > t.bx + hsz;
+    let have_v_split = f.bh > t.by + hsz;
+
+    if !have_h_split && !have_v_split {
+        assert!(bl < BL_8X8);
+        return decode_sb(t, bl + 1, (*(node as *const EdgeBranch)).split[0]);
     }
+
     let mut pc = &mut Default::default();
-    let mut bp: BlockPartition = PARTITION_NONE;
+    let mut bp;
     let mut ctx = 0;
     let mut bx8 = 0;
     let mut by8 = 0;
-    if (*t).frame_thread.pass != 2 as libc::c_int {
-        if 0 as libc::c_int != 0 && bl as libc::c_uint == BL_64X64 as libc::c_int as libc::c_uint {
-            printf(
-                b"poc=%d,y=%d,x=%d,bl=%d,r=%d\n\0" as *const u8 as *const libc::c_char,
-                (*(*f).frame_hdr).frame_offset,
-                (*t).by,
-                (*t).bx,
-                bl as libc::c_uint,
-                (*ts).msac.rng,
+    if t.frame_thread.pass != 2 {
+        if bl == BL_64X64 {
+            println!(
+                "poc={},y={},x={},bl={},r={}",
+                (*f.frame_hdr).frame_offset,
+                t.by,
+                t.bx,
+                bl,
+                ts.msac.rng,
             );
         }
-        bx8 = ((*t).bx & 31) >> 1;
-        by8 = ((*t).by & 31) >> 1;
-        ctx = get_partition_ctx(&*(*t).a, &(*t).l, bl, by8, bx8);
-        pc = &mut (*ts).cdf.m.partition[bl as usize][ctx as usize];
+        bx8 = (t.bx & 31) >> 1;
+        by8 = (t.by & 31) >> 1;
+        ctx = get_partition_ctx(&*t.a, &t.l, bl, by8, bx8);
+        pc = &mut ts.cdf.m.partition[bl as usize][ctx as usize];
     }
-    if have_h_split != 0 && have_v_split != 0 {
-        if (*t).frame_thread.pass == 2 {
-            let b: *const Av1Block = &mut *((*f).frame_thread.b)
-                .offset(((*t).by as isize * (*f).b4_stride + (*t).bx as isize) as isize)
-                as *mut Av1Block;
-            bp = (if (*b).bl as libc::c_uint == bl as libc::c_uint {
-                (*b).bp as libc::c_int
+
+    if have_h_split && have_v_split {
+        if t.frame_thread.pass == 2 {
+            let b = &mut *(f.frame_thread.b).offset(t.by as isize * f.b4_stride + t.bx as isize);
+            bp = if b.bl as BlockLevel == bl {
+                b.bp as BlockPartition
             } else {
-                PARTITION_SPLIT as libc::c_int
-            }) as BlockPartition;
+                PARTITION_SPLIT
+            };
         } else {
             bp = dav1d_msac_decode_symbol_adapt16(
-                &mut (*ts).msac,
+                &mut ts.msac,
                 pc,
-                dav1d_partition_type_count[bl as usize] as size_t,
+                dav1d_partition_type_count[bl as usize].into(),
             ) as BlockPartition;
-            if (*f).cur.p.layout as libc::c_uint
-                == DAV1D_PIXEL_LAYOUT_I422 as libc::c_int as libc::c_uint
-                && (bp as libc::c_uint == PARTITION_V as libc::c_int as libc::c_uint
-                    || bp as libc::c_uint == PARTITION_V4 as libc::c_int as libc::c_uint
-                    || bp as libc::c_uint == PARTITION_T_LEFT_SPLIT as libc::c_int as libc::c_uint
-                    || bp as libc::c_uint == PARTITION_T_RIGHT_SPLIT as libc::c_int as libc::c_uint)
+            if f.cur.p.layout == DAV1D_PIXEL_LAYOUT_I422
+                && (bp == PARTITION_V
+                    || bp == PARTITION_V4
+                    || bp == PARTITION_T_LEFT_SPLIT
+                    || bp == PARTITION_T_RIGHT_SPLIT)
             {
-                return 1 as libc::c_int;
+                return 1;
             }
-            if DEBUG_BLOCK_INFO(&*f, &*t) {
-                printf(
-                    b"poc=%d,y=%d,x=%d,bl=%d,ctx=%d,bp=%d: r=%d\n\0" as *const u8
-                        as *const libc::c_char,
-                    (*(*f).frame_hdr).frame_offset,
-                    (*t).by,
-                    (*t).bx,
-                    bl as libc::c_uint,
-                    ctx as libc::c_int,
-                    bp as libc::c_uint,
-                    (*ts).msac.rng,
+            if DEBUG_BLOCK_INFO(f, t) {
+                println!(
+                    "poc={},y={},x={},bl={},ctx={},bp={}: r={}",
+                    (*f.frame_hdr).frame_offset,
+                    t.by,
+                    t.bx,
+                    bl,
+                    ctx,
+                    bp,
+                    ts.msac.rng,
                 );
             }
         }
-        let b_0: *const uint8_t = (dav1d_block_sizes[bl as usize][bp as usize]).as_ptr();
-        match bp as libc::c_uint {
-            0 => {
-                if decode_b(
-                    &mut *t,
-                    bl,
-                    *b_0.offset(0) as BlockSize,
-                    PARTITION_NONE,
-                    (*node).o,
-                ) != 0
-                {
-                    return -(1 as libc::c_int);
+        let b = &dav1d_block_sizes[bl as usize][bp as usize];
+
+        match bp {
+            PARTITION_NONE => {
+                let node = &*node;
+                if decode_b(t, bl, b[0] as BlockSize, PARTITION_NONE, node.o) != 0 {
+                    return -1;
                 }
             }
-            1 => {
-                if decode_b(
-                    &mut *t,
-                    bl,
-                    *b_0.offset(0) as BlockSize,
-                    PARTITION_H,
-                    (*node).h[0],
-                ) != 0
-                {
-                    return -(1 as libc::c_int);
+            PARTITION_H => {
+                let node = &*node;
+                if decode_b(t, bl, b[0] as BlockSize, PARTITION_H, node.h[0]) != 0 {
+                    return -1;
                 }
-                (*t).by += hsz;
-                if decode_b(
-                    &mut *t,
-                    bl,
-                    *b_0.offset(0) as BlockSize,
-                    PARTITION_H,
-                    (*node).h[1],
-                ) != 0
-                {
-                    return -(1 as libc::c_int);
+                t.by += hsz;
+                if decode_b(t, bl, b[0] as BlockSize, PARTITION_H, node.h[1]) != 0 {
+                    return -1;
                 }
-                (*t).by -= hsz;
+                t.by -= hsz;
             }
-            2 => {
-                if decode_b(
-                    &mut *t,
-                    bl,
-                    *b_0.offset(0) as BlockSize,
-                    PARTITION_V,
-                    (*node).v[0],
-                ) != 0
-                {
-                    return -(1 as libc::c_int);
+            PARTITION_V => {
+                let node = &*node;
+                if decode_b(t, bl, b[0] as BlockSize, PARTITION_V, node.v[0]) != 0 {
+                    return -1;
                 }
-                (*t).bx += hsz;
-                if decode_b(
-                    &mut *t,
-                    bl,
-                    *b_0.offset(0) as BlockSize,
-                    PARTITION_V,
-                    (*node).v[1],
-                ) != 0
-                {
-                    return -(1 as libc::c_int);
+                t.bx += hsz;
+                if decode_b(t, bl, b[0] as BlockSize, PARTITION_V, node.v[1]) != 0 {
+                    return -1;
                 }
-                (*t).bx -= hsz;
+                t.bx -= hsz;
             }
-            3 => {
-                if bl as libc::c_uint == BL_8X8 as libc::c_int as libc::c_uint {
-                    let tip: *const EdgeTip = node as *const EdgeTip;
-                    if !(hsz == 1) {
-                        unreachable!();
+            PARTITION_SPLIT => {
+                if bl == BL_8X8 {
+                    let tip = &*(node as *const EdgeTip);
+                    assert!(hsz == 1);
+                    if decode_b(t, bl, BS_4x4, PARTITION_SPLIT, tip.split[0]) != 0 {
+                        return -1;
                     }
-                    if decode_b(&mut *t, bl, BS_4x4, PARTITION_SPLIT, (*tip).split[0]) != 0 {
-                        return -(1 as libc::c_int);
+                    let tl_filter = t.tl_4x4_filter;
+                    t.bx += 1;
+                    if decode_b(t, bl, BS_4x4, PARTITION_SPLIT, tip.split[1]) != 0 {
+                        return -1;
                     }
-                    let tl_filter: Filter2d = (*t).tl_4x4_filter;
-                    (*t).bx += 1;
-                    if decode_b(&mut *t, bl, BS_4x4, PARTITION_SPLIT, (*tip).split[1]) != 0 {
-                        return -(1 as libc::c_int);
+                    t.bx -= 1;
+                    t.by += 1;
+                    if decode_b(t, bl, BS_4x4, PARTITION_SPLIT, tip.split[2]) != 0 {
+                        return -1;
                     }
-                    (*t).bx -= 1;
-                    (*t).by += 1;
-                    if decode_b(&mut *t, bl, BS_4x4, PARTITION_SPLIT, (*tip).split[2]) != 0 {
-                        return -(1 as libc::c_int);
+                    t.bx += 1;
+                    t.tl_4x4_filter = tl_filter;
+                    if decode_b(t, bl, BS_4x4, PARTITION_SPLIT, tip.split[3]) != 0 {
+                        return -1;
                     }
-                    (*t).bx += 1;
-                    (*t).tl_4x4_filter = tl_filter;
-                    if decode_b(&mut *t, bl, BS_4x4, PARTITION_SPLIT, (*tip).split[3]) != 0 {
-                        return -(1 as libc::c_int);
-                    }
-                    (*t).bx -= 1;
-                    (*t).by -= 1;
-                    if (*t).frame_thread.pass != 0 {
-                        let p = (*t).frame_thread.pass & 1;
-                        (*ts).frame_thread[p as usize].cf =
-                            (((*ts).frame_thread[p as usize].cf as uintptr_t).wrapping_add(63)
-                                & !(63)) as *mut libc::c_void;
+                    t.bx -= 1;
+                    t.by -= 1;
+                    if cfg!(target_arch = "x86_64") && t.frame_thread.pass != 0 {
+                        // In 8-bit mode with 2-pass decoding the coefficient buffer
+                        // can end up misaligned due to skips here.
+                        // Work around the issue by explicitly realigning the buffer.
+                        let p = (t.frame_thread.pass & 1) as usize;
+                        ts.frame_thread[p].cf = (((ts.frame_thread[p].cf as uintptr_t) + 63) & !63)
+                            as *mut libc::c_void;
                     }
                 } else {
-                    let branch: *const EdgeBranch = node as *const EdgeBranch;
-                    if decode_sb(
-                        t,
-                        (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint)
-                            as BlockLevel,
-                        (*branch).split[0],
-                    ) != 0
-                    {
-                        return 1 as libc::c_int;
+                    let branch = &*(node as *const EdgeBranch);
+                    if decode_sb(t, bl + 1, branch.split[0]) != 0 {
+                        return 1;
                     }
-                    (*t).bx += hsz;
-                    if decode_sb(
-                        t,
-                        (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint)
-                            as BlockLevel,
-                        (*branch).split[1],
-                    ) != 0
-                    {
-                        return 1 as libc::c_int;
+                    t.bx += hsz;
+                    if decode_sb(t, bl + 1, branch.split[1]) != 0 {
+                        return 1;
                     }
-                    (*t).bx -= hsz;
-                    (*t).by += hsz;
-                    if decode_sb(
-                        t,
-                        (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint)
-                            as BlockLevel,
-                        (*branch).split[2],
-                    ) != 0
-                    {
-                        return 1 as libc::c_int;
+                    t.bx -= hsz;
+                    t.by += hsz;
+                    if decode_sb(t, bl + 1, branch.split[2]) != 0 {
+                        return 1;
                     }
-                    (*t).bx += hsz;
-                    if decode_sb(
-                        t,
-                        (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint)
-                            as BlockLevel,
-                        (*branch).split[3],
-                    ) != 0
-                    {
-                        return 1 as libc::c_int;
+                    t.bx += hsz;
+                    if decode_sb(t, bl + 1, branch.split[3]) != 0 {
+                        return 1;
                     }
-                    (*t).bx -= hsz;
-                    (*t).by -= hsz;
+                    t.bx -= hsz;
+                    t.by -= hsz;
                 }
             }
-            4 => {
-                let branch_0: *const EdgeBranch = node as *const EdgeBranch;
+            PARTITION_T_TOP_SPLIT => {
+                let branch = &*(node as *const EdgeBranch);
                 if decode_b(
-                    &mut *t,
+                    t,
                     bl,
-                    *b_0.offset(0) as BlockSize,
+                    b[0] as BlockSize,
                     PARTITION_T_TOP_SPLIT,
-                    (*branch_0).tts[0],
+                    branch.tts[0],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
-                (*t).bx += hsz;
+                t.bx += hsz;
                 if decode_b(
-                    &mut *t,
+                    t,
                     bl,
-                    *b_0.offset(0) as BlockSize,
+                    b[0] as BlockSize,
                     PARTITION_T_TOP_SPLIT,
-                    (*branch_0).tts[1],
+                    branch.tts[1],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
-                (*t).bx -= hsz;
-                (*t).by += hsz;
+                t.bx -= hsz;
+                t.by += hsz;
                 if decode_b(
-                    &mut *t,
+                    t,
                     bl,
-                    *b_0.offset(1) as BlockSize,
+                    b[1] as BlockSize,
                     PARTITION_T_TOP_SPLIT,
-                    (*branch_0).tts[2],
+                    branch.tts[2],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
-                (*t).by -= hsz;
+                t.by -= hsz;
             }
-            5 => {
-                let branch_1: *const EdgeBranch = node as *const EdgeBranch;
+            PARTITION_T_BOTTOM_SPLIT => {
+                let branch = &*(node as *const EdgeBranch);
                 if decode_b(
-                    &mut *t,
+                    t,
                     bl,
-                    *b_0.offset(0) as BlockSize,
+                    b[0] as BlockSize,
                     PARTITION_T_BOTTOM_SPLIT,
-                    (*branch_1).tbs[0],
+                    branch.tbs[0],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
-                (*t).by += hsz;
+                t.by += hsz;
                 if decode_b(
-                    &mut *t,
+                    t,
                     bl,
-                    *b_0.offset(1) as BlockSize,
+                    b[1] as BlockSize,
                     PARTITION_T_BOTTOM_SPLIT,
-                    (*branch_1).tbs[1],
+                    branch.tbs[1],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
-                (*t).bx += hsz;
+                t.bx += hsz;
                 if decode_b(
-                    &mut *t,
+                    t,
                     bl,
-                    *b_0.offset(1) as BlockSize,
+                    b[1] as BlockSize,
                     PARTITION_T_BOTTOM_SPLIT,
-                    (*branch_1).tbs[2],
+                    branch.tbs[2],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
-                (*t).bx -= hsz;
-                (*t).by -= hsz;
+                t.bx -= hsz;
+                t.by -= hsz;
             }
-            6 => {
-                let branch_2: *const EdgeBranch = node as *const EdgeBranch;
+            PARTITION_T_LEFT_SPLIT => {
+                let branch = &*(node as *const EdgeBranch);
                 if decode_b(
-                    &mut *t,
+                    t,
                     bl,
-                    *b_0.offset(0) as BlockSize,
+                    b[0] as BlockSize,
                     PARTITION_T_LEFT_SPLIT,
-                    (*branch_2).tls[0],
+                    branch.tls[0],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
-                (*t).by += hsz;
+                t.by += hsz;
                 if decode_b(
-                    &mut *t,
+                    t,
                     bl,
-                    *b_0.offset(0) as BlockSize,
+                    b[0] as BlockSize,
                     PARTITION_T_LEFT_SPLIT,
-                    (*branch_2).tls[1],
+                    branch.tls[1],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
-                (*t).by -= hsz;
-                (*t).bx += hsz;
+                t.by -= hsz;
+                t.bx += hsz;
                 if decode_b(
-                    &mut *t,
+                    t,
                     bl,
-                    *b_0.offset(1) as BlockSize,
+                    b[1] as BlockSize,
                     PARTITION_T_LEFT_SPLIT,
-                    (*branch_2).tls[2],
+                    branch.tls[2],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
-                (*t).bx -= hsz;
+                t.bx -= hsz;
             }
-            7 => {
-                let branch_3: *const EdgeBranch = node as *const EdgeBranch;
+            PARTITION_T_RIGHT_SPLIT => {
+                let branch = &*(node as *const EdgeBranch);
                 if decode_b(
-                    &mut *t,
+                    t,
                     bl,
-                    *b_0.offset(0) as BlockSize,
+                    b[0] as BlockSize,
                     PARTITION_T_RIGHT_SPLIT,
-                    (*branch_3).trs[0],
+                    branch.trs[0],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
-                (*t).bx += hsz;
+                t.bx += hsz;
                 if decode_b(
-                    &mut *t,
+                    t,
                     bl,
-                    *b_0.offset(1) as BlockSize,
+                    b[1] as BlockSize,
                     PARTITION_T_RIGHT_SPLIT,
-                    (*branch_3).trs[1],
+                    branch.trs[1],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
-                (*t).by += hsz;
+                t.by += hsz;
                 if decode_b(
-                    &mut *t,
+                    t,
                     bl,
-                    *b_0.offset(1) as BlockSize,
+                    b[1] as BlockSize,
                     PARTITION_T_RIGHT_SPLIT,
-                    (*branch_3).trs[2],
+                    (*branch).trs[2],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
-                (*t).by -= hsz;
-                (*t).bx -= hsz;
+                t.by -= hsz;
+                t.bx -= hsz;
             }
-            8 => {
-                let branch_4: *const EdgeBranch = node as *const EdgeBranch;
-                if decode_b(
-                    &mut *t,
-                    bl,
-                    *b_0.offset(0) as BlockSize,
-                    PARTITION_H4,
-                    (*branch_4).h4[0],
-                ) != 0
-                {
-                    return -(1 as libc::c_int);
+            PARTITION_H4 => {
+                let branch = &*(node as *const EdgeBranch);
+                if decode_b(t, bl, b[0] as BlockSize, PARTITION_H4, branch.h4[0]) != 0 {
+                    return -1;
                 }
-                (*t).by += hsz >> 1;
-                if decode_b(
-                    &mut *t,
-                    bl,
-                    *b_0.offset(0) as BlockSize,
-                    PARTITION_H4,
-                    (*branch_4).h4[1],
-                ) != 0
-                {
-                    return -(1 as libc::c_int);
+                t.by += hsz >> 1;
+                if decode_b(t, bl, b[0] as BlockSize, PARTITION_H4, branch.h4[1]) != 0 {
+                    return -1;
                 }
-                (*t).by += hsz >> 1;
-                if decode_b(
-                    &mut *t,
-                    bl,
-                    *b_0.offset(0) as BlockSize,
-                    PARTITION_H4,
-                    (*branch_4).h4[2],
-                ) != 0
-                {
-                    return -(1 as libc::c_int);
+                t.by += hsz >> 1;
+                if decode_b(t, bl, b[0] as BlockSize, PARTITION_H4, branch.h4[2]) != 0 {
+                    return -1;
                 }
-                (*t).by += hsz >> 1;
-                if (*t).by < (*f).bh {
-                    if decode_b(
-                        &mut *t,
-                        bl,
-                        *b_0.offset(0) as BlockSize,
-                        PARTITION_H4,
-                        (*branch_4).h4[3],
-                    ) != 0
-                    {
-                        return -(1 as libc::c_int);
+                t.by += hsz >> 1;
+                if t.by < f.bh {
+                    if decode_b(t, bl, b[0] as BlockSize, PARTITION_H4, branch.h4[3]) != 0 {
+                        return -1;
                     }
                 }
-                (*t).by -= hsz * 3 >> 1;
+                t.by -= hsz * 3 >> 1;
             }
-            9 => {
-                let branch_5: *const EdgeBranch = node as *const EdgeBranch;
-                if decode_b(
-                    &mut *t,
-                    bl,
-                    *b_0.offset(0) as BlockSize,
-                    PARTITION_V4,
-                    (*branch_5).v4[0],
-                ) != 0
-                {
-                    return -(1 as libc::c_int);
+            PARTITION_V4 => {
+                let branch = &*(node as *const EdgeBranch);
+                if decode_b(t, bl, b[0] as BlockSize, PARTITION_V4, branch.v4[0]) != 0 {
+                    return -1;
                 }
-                (*t).bx += hsz >> 1;
-                if decode_b(
-                    &mut *t,
-                    bl,
-                    *b_0.offset(0) as BlockSize,
-                    PARTITION_V4,
-                    (*branch_5).v4[1],
-                ) != 0
-                {
-                    return -(1 as libc::c_int);
+                t.bx += hsz >> 1;
+                if decode_b(t, bl, b[0] as BlockSize, PARTITION_V4, branch.v4[1]) != 0 {
+                    return -1;
                 }
-                (*t).bx += hsz >> 1;
-                if decode_b(
-                    &mut *t,
-                    bl,
-                    *b_0.offset(0) as BlockSize,
-                    PARTITION_V4,
-                    (*branch_5).v4[2],
-                ) != 0
-                {
-                    return -(1 as libc::c_int);
+                t.bx += hsz >> 1;
+                if decode_b(t, bl, b[0] as BlockSize, PARTITION_V4, branch.v4[2]) != 0 {
+                    return -1;
                 }
-                (*t).bx += hsz >> 1;
-                if (*t).bx < (*f).bw {
-                    if decode_b(
-                        &mut *t,
-                        bl,
-                        *b_0.offset(0) as BlockSize,
-                        PARTITION_V4,
-                        (*branch_5).v4[3],
-                    ) != 0
-                    {
-                        return -(1 as libc::c_int);
+                t.bx += hsz >> 1;
+                if t.bx < f.bw {
+                    if decode_b(t, bl, b[0] as BlockSize, PARTITION_V4, branch.v4[3]) != 0 {
+                        return -1;
                     }
                 }
-                (*t).bx -= hsz * 3 >> 1;
+                t.bx -= hsz * 3 >> 1;
             }
-            _ => {
-                if 0 == 0 {
-                    unreachable!();
-                }
-            }
+            _ => unreachable!(),
         }
-    } else if have_h_split != 0 {
-        let mut is_split: libc::c_uint = 0;
-        if (*t).frame_thread.pass == 2 {
-            let b_1: *const Av1Block = &mut *((*f).frame_thread.b)
-                .offset(((*t).by as isize * (*f).b4_stride + (*t).bx as isize) as isize)
-                as *mut Av1Block;
-            is_split =
-                ((*b_1).bl as libc::c_uint != bl as libc::c_uint) as libc::c_int as libc::c_uint;
+    } else if have_h_split {
+        let mut is_split;
+        if t.frame_thread.pass == 2 {
+            let b = &mut *(f.frame_thread.b).offset(t.by as isize * f.b4_stride + t.bx as isize);
+            is_split = b.bl as BlockLevel != bl;
         } else {
-            is_split = dav1d_msac_decode_bool(&mut (*ts).msac, gather_top_partition_prob(pc, bl))
-                as libc::c_uint;
-            if DEBUG_BLOCK_INFO(&*f, &*t) {
-                printf(
-                    b"poc=%d,y=%d,x=%d,bl=%d,ctx=%d,bp=%d: r=%d\n\0" as *const u8
-                        as *const libc::c_char,
-                    (*(*f).frame_hdr).frame_offset,
-                    (*t).by,
-                    (*t).bx,
-                    bl as libc::c_uint,
-                    ctx as libc::c_int,
-                    if is_split != 0 {
-                        PARTITION_SPLIT as libc::c_int
+            is_split = dav1d_msac_decode_bool(&mut ts.msac, gather_top_partition_prob(pc, bl));
+            if DEBUG_BLOCK_INFO(f, t) {
+                println!(
+                    "poc={},y={},x={},bl={},ctx={},bp={}: r={}",
+                    (*f.frame_hdr).frame_offset,
+                    t.by,
+                    t.bx,
+                    bl,
+                    ctx,
+                    if is_split {
+                        PARTITION_SPLIT
                     } else {
-                        PARTITION_H as libc::c_int
+                        PARTITION_H
                     },
-                    (*ts).msac.rng,
+                    ts.msac.rng,
                 );
             }
         }
-        if !((bl as libc::c_uint) < BL_8X8 as libc::c_int as libc::c_uint) {
-            unreachable!();
-        }
-        if is_split != 0 {
-            let branch_6: *const EdgeBranch = node as *const EdgeBranch;
+
+        assert!(bl < BL_8X8);
+        if is_split {
+            let branch = &*(node as *const EdgeBranch);
             bp = PARTITION_SPLIT;
-            if decode_sb(
-                t,
-                (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as BlockLevel,
-                (*branch_6).split[0],
-            ) != 0
-            {
-                return 1 as libc::c_int;
+            if decode_sb(t, bl + 1, branch.split[0]) != 0 {
+                return 1;
             }
-            (*t).bx += hsz;
-            if decode_sb(
-                t,
-                (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as BlockLevel,
-                (*branch_6).split[1],
-            ) != 0
-            {
-                return 1 as libc::c_int;
+            t.bx += hsz;
+            if decode_sb(t, bl + 1, branch.split[1]) != 0 {
+                return 1;
             }
-            (*t).bx -= hsz;
+            t.bx -= hsz;
         } else {
             bp = PARTITION_H;
             if decode_b(
-                &mut *t,
+                t,
                 bl,
-                dav1d_block_sizes[bl as usize][PARTITION_H as libc::c_int as usize][0] as BlockSize,
+                dav1d_block_sizes[bl as usize][PARTITION_H as usize][0] as BlockSize,
                 PARTITION_H,
                 (*node).h[0],
             ) != 0
             {
-                return -(1 as libc::c_int);
+                return -1;
             }
         }
     } else {
-        if have_v_split == 0 {
-            unreachable!();
-        }
-        let mut is_split_0: libc::c_uint = 0;
-        if (*t).frame_thread.pass == 2 {
-            let b_2: *const Av1Block = &mut *((*f).frame_thread.b)
-                .offset(((*t).by as isize * (*f).b4_stride + (*t).bx as isize) as isize)
-                as *mut Av1Block;
-            is_split_0 =
-                ((*b_2).bl as libc::c_uint != bl as libc::c_uint) as libc::c_int as libc::c_uint;
+        assert!(have_v_split);
+        let mut is_split;
+        if t.frame_thread.pass == 2 {
+            let b = &mut *(f.frame_thread.b).offset(t.by as isize * f.b4_stride + t.bx as isize);
+            is_split = b.bl as BlockLevel != bl;
         } else {
-            is_split_0 = dav1d_msac_decode_bool(&mut (*ts).msac, gather_left_partition_prob(pc, bl))
-                as libc::c_uint;
-            if (*f).cur.p.layout as libc::c_uint
-                == DAV1D_PIXEL_LAYOUT_I422 as libc::c_int as libc::c_uint
-                && is_split_0 == 0
-            {
-                return 1 as libc::c_int;
+            is_split = dav1d_msac_decode_bool(&mut ts.msac, gather_left_partition_prob(pc, bl));
+            if f.cur.p.layout == DAV1D_PIXEL_LAYOUT_I422 && !is_split {
+                return 1;
             }
-            if DEBUG_BLOCK_INFO(&*f, &*t) {
-                printf(
-                    b"poc=%d,y=%d,x=%d,bl=%d,ctx=%d,bp=%d: r=%d\n\0" as *const u8
-                        as *const libc::c_char,
-                    (*(*f).frame_hdr).frame_offset,
-                    (*t).by,
-                    (*t).bx,
-                    bl as libc::c_uint,
-                    ctx as libc::c_int,
-                    if is_split_0 != 0 {
-                        PARTITION_SPLIT as libc::c_int
+            if DEBUG_BLOCK_INFO(f, t) {
+                println!(
+                    "poc={},y={},x={},bl={},ctx={},bp={}: r={}",
+                    (*f.frame_hdr).frame_offset,
+                    t.by,
+                    t.bx,
+                    bl,
+                    ctx,
+                    if is_split {
+                        PARTITION_SPLIT
                     } else {
-                        PARTITION_V as libc::c_int
+                        PARTITION_V
                     },
-                    (*ts).msac.rng,
+                    ts.msac.rng,
                 );
             }
         }
-        if !((bl as libc::c_uint) < BL_8X8 as libc::c_int as libc::c_uint) {
-            unreachable!();
-        }
-        if is_split_0 != 0 {
-            let branch_7: *const EdgeBranch = node as *const EdgeBranch;
+
+        assert!(bl < BL_8X8);
+        if is_split {
+            let branch = &*(node as *const EdgeBranch);
             bp = PARTITION_SPLIT;
-            if decode_sb(
-                t,
-                (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as BlockLevel,
-                (*branch_7).split[0],
-            ) != 0
-            {
-                return 1 as libc::c_int;
+            if decode_sb(t, bl + 1, branch.split[0]) != 0 {
+                return 1;
             }
-            (*t).by += hsz;
-            if decode_sb(
-                t,
-                (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as BlockLevel,
-                (*branch_7).split[2],
-            ) != 0
-            {
-                return 1 as libc::c_int;
+            t.by += hsz;
+            if decode_sb(t, bl + 1, branch.split[2]) != 0 {
+                return 1;
             }
-            (*t).by -= hsz;
+            t.by -= hsz;
         } else {
             bp = PARTITION_V;
             if decode_b(
-                &mut *t,
+                t,
                 bl,
-                dav1d_block_sizes[bl as usize][PARTITION_V as libc::c_int as usize][0] as BlockSize,
+                dav1d_block_sizes[bl as usize][PARTITION_V as usize][0] as BlockSize,
                 PARTITION_V,
                 (*node).v[0],
             ) != 0
             {
-                return -(1 as libc::c_int);
+                return -1;
             }
         }
     }
-    if (*t).frame_thread.pass != 2 as libc::c_int
-        && (bp as libc::c_uint != PARTITION_SPLIT as libc::c_int as libc::c_uint
-            || bl as libc::c_uint == BL_8X8 as libc::c_int as libc::c_uint)
-    {
+
+    if t.frame_thread.pass != 2 && (bp != PARTITION_SPLIT || bl == BL_8X8) {
         CaseSet::<16, false>::many(
-            [(&mut *(*t).a, 0), (&mut (*t).l, 1)],
+            [(&mut *t.a, 0), (&mut t.l, 1)],
             [hsz as usize; 2],
             [bx8 as usize, by8 as usize],
             |case, (dir, dir_index)| {
@@ -4809,8 +4648,10 @@ unsafe extern "C" fn decode_sb(
             },
         );
     }
-    return 0 as libc::c_int;
+
+    0
 }
+
 unsafe extern "C" fn reset_context(
     ctx: *mut BlockContext,
     keyframe: libc::c_int,
@@ -5267,7 +5108,7 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> li
             if ::core::intrinsics::atomic_load_acquire((*c).flush) != 0 {
                 return 1 as libc::c_int;
             }
-            if decode_sb(t, root_bl, (*c).intra_edge.root[root_bl as usize]) != 0 {
+            if decode_sb(&mut *t, root_bl, (*c).intra_edge.root[root_bl as usize]) != 0 {
                 return 1 as libc::c_int;
             }
             if (*t).bx & 16 != 0 || (*(*f).seq_hdr).sb128 != 0 {
@@ -5392,7 +5233,7 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> li
             }
             p += 1;
         }
-        if decode_sb(t, root_bl, (*c).intra_edge.root[root_bl as usize]) != 0 {
+        if decode_sb(&mut *t, root_bl, (*c).intra_edge.root[root_bl as usize]) != 0 {
             return 1 as libc::c_int;
         }
         if (*t).bx & 16 != 0 || (*(*f).seq_hdr).sb128 != 0 {
