@@ -158,12 +158,11 @@ unsafe fn init_mode_node(
         }),
     );
     if bl == BL_16X16 {
-        let mut n = 0;
-        while n < 4 {
+        for n in 0..4 {
             let fresh0 = mem.nt;
             mem.nt = (mem.nt).offset(1);
             let nt: *mut EdgeTip = fresh0;
-            nwc.split[n as usize] = &mut (*nt).node;
+            nwc.split[n] = &mut (*nt).node;
             init_edges(
                 &mut (*nt).node,
                 bl.wrapping_add(1),
@@ -179,15 +178,13 @@ unsafe fn init_mode_node(
                         | EDGE_I420_LEFT_HAS_BOTTOM
                 })) as EdgeFlags,
             );
-            n += 1;
         }
     } else {
-        let mut n = 0;
-        while n < 4 {
+        for n in 0..4 {
             let fresh1 = mem.nwc[bl as usize];
             mem.nwc[bl as usize] = (mem.nwc[bl as usize]).offset(1);
             let nwc_child: *mut EdgeBranch = fresh1;
-            nwc.split[n as usize] = &mut (*nwc_child).node;
+            nwc.split[n] = &mut (*nwc_child).node;
             init_mode_node(
                 &mut *nwc_child,
                 bl.wrapping_add(1),
@@ -195,7 +192,6 @@ unsafe fn init_mode_node(
                 !(n == 3 || n == 1 && !top_has_right),
                 n == 0 || n == 2 && left_has_bottom,
             );
-            n += 1;
         }
     };
 }
