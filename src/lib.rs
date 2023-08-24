@@ -1,6 +1,6 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
-
+use crate::src::intra_edge::dav1d_init_mode_tree;
 use crate::stderr;
 use ::libc;
 use cfg_if::cfg_if;
@@ -73,7 +73,6 @@ extern "C" {
         __arg: *mut libc::c_void,
     ) -> libc::c_int;
     fn dav1d_refmvs_dsp_init(dsp: *mut Dav1dRefmvsDSPContext);
-    fn dav1d_init_mode_tree(root: *mut EdgeNode, nt: *mut EdgeTip, allow_sb128: libc::c_int);
     fn pthread_join(__th: pthread_t, __thread_return: *mut *mut libc::c_void) -> libc::c_int;
     fn dav1d_refmvs_clear(rf: *mut refmvs_frame);
     fn dav1d_cdf_thread_unref(cdf: *mut CdfThreadContext);
@@ -217,8 +216,6 @@ use crate::src::picture::PICTURE_FLAG_NEW_TEMPORAL_UNIT;
 use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
 use crate::src::internal::Dav1dContext_intra_edge;
 use crate::src::intra_edge::EdgeFlags;
-use crate::src::intra_edge::EdgeNode;
-use crate::src::intra_edge::EdgeTip;
 
 use crate::src::refmvs::Dav1dRefmvsDSPContext;
 #[derive(Copy, Clone)]

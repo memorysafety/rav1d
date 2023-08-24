@@ -196,8 +196,8 @@ unsafe fn init_mode_node(
         }
     };
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_init_mode_tree(
+
+pub unsafe fn dav1d_init_mode_tree(
     root_node: *mut EdgeNode,
     nt: *mut EdgeTip,
     allow_sb128: libc::c_int,
