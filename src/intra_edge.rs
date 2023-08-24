@@ -198,8 +198,8 @@ unsafe fn init_mode_node(
 }
 
 pub unsafe fn dav1d_init_mode_tree(root_node: *mut EdgeNode, nt: *mut EdgeTip, allow_sb128: bool) {
-    let root: *mut EdgeBranch = root_node as *mut EdgeBranch;
-    let mut mem: ModeSelMem = ModeSelMem {
+    let root = root_node as *mut EdgeBranch;
+    let mut mem = ModeSelMem {
         nwc: [ptr::null_mut(); 3],
         nt: ptr::null_mut(),
     };
