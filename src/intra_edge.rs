@@ -205,9 +205,8 @@ pub unsafe fn dav1d_init_mode_tree(
     let root = root_node as *mut EdgeBranch;
     let mut mem = ModeSelMem {
         nwc: [ptr::null_mut(); 3],
-        nt: ptr::null_mut(),
+        nt: nt.as_mut_ptr(),
     };
-    mem.nt = nt.as_mut_ptr();
     if allow_sb128 {
         mem.nwc[BL_128X128 as usize] = root.offset(1);
         mem.nwc[BL_64X64 as usize] = root.offset(1 + 4);
