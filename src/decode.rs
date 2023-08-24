@@ -4195,12 +4195,13 @@ unsafe fn decode_sb(
         return decode_sb(t, bl + 1, (*(node as *const EdgeBranch)).split[0]);
     }
 
-    let mut pc = &mut Default::default();
     let mut bp;
     let mut ctx = 0;
     let mut bx8 = 0;
     let mut by8 = 0;
-    if t.frame_thread.pass != 2 {
+    let pc = if t.frame_thread.pass == 2 {
+        None
+    } else {
         if bl == BL_64X64 {
             println!(
                 "poc={},y={},x={},bl={},r={}",
@@ -4214,18 +4215,11 @@ unsafe fn decode_sb(
         bx8 = (t.bx & 31) >> 1;
         by8 = (t.by & 31) >> 1;
         ctx = get_partition_ctx(&*t.a, &t.l, bl, by8, bx8);
-        pc = &mut ts.cdf.m.partition[bl as usize][ctx as usize];
-    }
+        Some(&mut ts.cdf.m.partition[bl as usize][ctx as usize])
+    };
 
     if have_h_split && have_v_split {
-        if t.frame_thread.pass == 2 {
-            let b = &mut *(f.frame_thread.b).offset(t.by as isize * f.b4_stride + t.bx as isize);
-            bp = if b.bl as BlockLevel == bl {
-                b.bp as BlockPartition
-            } else {
-                PARTITION_SPLIT
-            };
-        } else {
+        if let Some(pc) = pc {
             bp = dav1d_msac_decode_symbol_adapt16(
                 &mut ts.msac,
                 pc,
@@ -4251,6 +4245,13 @@ unsafe fn decode_sb(
                     ts.msac.rng,
                 );
             }
+        } else {
+            let b = &mut *(f.frame_thread.b).offset(t.by as isize * f.b4_stride + t.bx as isize);
+            bp = if b.bl as BlockLevel == bl {
+                b.bp as BlockPartition
+            } else {
+                PARTITION_SPLIT
+            };
         }
         let b = &dav1d_block_sizes[bl as usize][bp as usize];
 
@@ -4531,10 +4532,7 @@ unsafe fn decode_sb(
         }
     } else if have_h_split {
         let mut is_split;
-        if t.frame_thread.pass == 2 {
-            let b = &mut *(f.frame_thread.b).offset(t.by as isize * f.b4_stride + t.bx as isize);
-            is_split = b.bl as BlockLevel != bl;
-        } else {
+        if let Some(pc) = pc {
             is_split = dav1d_msac_decode_bool(&mut ts.msac, gather_top_partition_prob(pc, bl));
             if DEBUG_BLOCK_INFO(f, t) {
                 println!(
@@ -4552,6 +4550,9 @@ unsafe fn decode_sb(
                     ts.msac.rng,
                 );
             }
+        } else {
+            let b = &mut *(f.frame_thread.b).offset(t.by as isize * f.b4_stride + t.bx as isize);
+            is_split = b.bl as BlockLevel != bl;
         }
 
         assert!(bl < BL_8X8);
@@ -4582,10 +4583,7 @@ unsafe fn decode_sb(
     } else {
         assert!(have_v_split);
         let mut is_split;
-        if t.frame_thread.pass == 2 {
-            let b = &mut *(f.frame_thread.b).offset(t.by as isize * f.b4_stride + t.bx as isize);
-            is_split = b.bl as BlockLevel != bl;
-        } else {
+        if let Some(pc) = pc {
             is_split = dav1d_msac_decode_bool(&mut ts.msac, gather_left_partition_prob(pc, bl));
             if f.cur.p.layout == DAV1D_PIXEL_LAYOUT_I422 && !is_split {
                 return 1;
@@ -4606,6 +4604,9 @@ unsafe fn decode_sb(
                     ts.msac.rng,
                 );
             }
+        } else {
+            let b = &mut *(f.frame_thread.b).offset(t.by as isize * f.b4_stride + t.bx as isize);
+            is_split = b.bl as BlockLevel != bl;
         }
 
         assert!(bl < BL_8X8);
