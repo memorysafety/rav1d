@@ -197,13 +197,17 @@ unsafe fn init_mode_node(
     };
 }
 
-pub unsafe fn dav1d_init_mode_tree(root_node: *mut EdgeNode, nt: *mut EdgeTip, allow_sb128: bool) {
+pub unsafe fn dav1d_init_mode_tree(
+    root_node: *mut EdgeNode,
+    nt: &mut [EdgeTip],
+    allow_sb128: bool,
+) {
     let root = root_node as *mut EdgeBranch;
     let mut mem = ModeSelMem {
         nwc: [ptr::null_mut(); 3],
         nt: ptr::null_mut(),
     };
-    mem.nt = nt;
+    mem.nt = nt.as_mut_ptr();
     if allow_sb128 {
         mem.nwc[BL_128X128 as usize] = root.offset(1);
         mem.nwc[BL_64X64 as usize] = root.offset(1 + 4);
@@ -212,7 +216,7 @@ pub unsafe fn dav1d_init_mode_tree(root_node: *mut EdgeNode, nt: *mut EdgeTip, a
         assert_eq!(mem.nwc[BL_128X128 as usize], root.offset(1 + 4));
         assert_eq!(mem.nwc[BL_64X64 as usize], root.offset(1 + 4 + 16));
         assert_eq!(mem.nwc[BL_32X32 as usize], root.offset(1 + 4 + 16 + 64));
-        assert_eq!(mem.nt, nt.offset(256));
+        assert_eq!(mem.nt, nt[256..].as_mut_ptr());
     } else {
         mem.nwc[BL_128X128 as usize] = ptr::null_mut();
         mem.nwc[BL_64X64 as usize] = root.offset(1);
@@ -220,6 +224,6 @@ pub unsafe fn dav1d_init_mode_tree(root_node: *mut EdgeNode, nt: *mut EdgeTip, a
         init_mode_node(&mut *root, BL_64X64, &mut mem, true, false);
         assert_eq!(mem.nwc[BL_64X64 as usize], root.offset(1 + 4));
         assert_eq!(mem.nwc[BL_32X32 as usize], root.offset(1 + 4 + 16));
-        assert_eq!(mem.nt, nt.offset(64));
+        assert_eq!(mem.nt, nt[64..].as_mut_ptr());
     };
 }

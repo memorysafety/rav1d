@@ -1282,8 +1282,7 @@ pub unsafe extern "C" fn dav1d_open(
                                                                 (*c).intra_edge.root[BL_128X128
                                                                     as libc::c_int
                                                                     as usize],
-                                                                ((*c).intra_edge.tip_sb128)
-                                                                    .as_mut_ptr(),
+                                                                &mut (*c).intra_edge.tip_sb128,
                                                                 true,
                                                             );
                                                             (*c).intra_edge.root[BL_64X64
@@ -1298,8 +1297,7 @@ pub unsafe extern "C" fn dav1d_open(
                                                                 (*c).intra_edge.root[BL_64X64
                                                                     as libc::c_int
                                                                     as usize],
-                                                                ((*c).intra_edge.tip_sb64)
-                                                                    .as_mut_ptr(),
+                                                                &mut (*c).intra_edge.tip_sb64,
                                                                 false,
                                                             );
                                                             pthread_attr_destroy(&mut thread_attr);
