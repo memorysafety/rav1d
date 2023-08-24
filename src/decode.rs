@@ -4190,9 +4190,7 @@ unsafe fn decode_sb(
     let have_h_split = f.bw > t.bx + hsz;
     let have_v_split = f.bh > t.by + hsz;
     if !have_h_split && !have_v_split {
-        if !((bl as libc::c_uint) < BL_8X8 as libc::c_int as libc::c_uint) {
-            unreachable!();
-        }
+        assert!((bl as libc::c_uint) < BL_8X8 as libc::c_int as libc::c_uint);
         return decode_sb(
             t,
             (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as BlockLevel,
@@ -4324,9 +4322,7 @@ unsafe fn decode_sb(
             3 => {
                 if bl as libc::c_uint == BL_8X8 as libc::c_int as libc::c_uint {
                     let tip: *const EdgeTip = node as *const EdgeTip;
-                    if !(hsz == 1) {
-                        unreachable!();
-                    }
+                    assert!(hsz == 1);
                     if decode_b(t, bl, BS_4x4, PARTITION_SPLIT, (*tip).split[0]) != 0 {
                         return -(1 as libc::c_int);
                     }
@@ -4647,11 +4643,7 @@ unsafe fn decode_sb(
                 }
                 t.bx -= hsz * 3 >> 1;
             }
-            _ => {
-                if 0 == 0 {
-                    unreachable!();
-                }
-            }
+            _ => unreachable!(),
         }
     } else if have_h_split {
         let mut is_split: libc::c_uint = 0;
@@ -4682,9 +4674,7 @@ unsafe fn decode_sb(
                 );
             }
         }
-        if !((bl as libc::c_uint) < BL_8X8 as libc::c_int as libc::c_uint) {
-            unreachable!();
-        }
+        assert!((bl as libc::c_uint) < BL_8X8 as libc::c_int as libc::c_uint);
         if is_split != 0 {
             let branch_6: *const EdgeBranch = node as *const EdgeBranch;
             bp = PARTITION_SPLIT;
@@ -4720,9 +4710,7 @@ unsafe fn decode_sb(
             }
         }
     } else {
-        if !have_v_split {
-            unreachable!();
-        }
+        assert!(have_v_split);
         let mut is_split_0: libc::c_uint = 0;
         if t.frame_thread.pass == 2 {
             let b_2: *const Av1Block = &mut *(f.frame_thread.b)
@@ -4757,9 +4745,7 @@ unsafe fn decode_sb(
                 );
             }
         }
-        if !((bl as libc::c_uint) < BL_8X8 as libc::c_int as libc::c_uint) {
-            unreachable!();
-        }
+        assert!((bl as libc::c_uint) < BL_8X8 as libc::c_int as libc::c_uint);
         if is_split_0 != 0 {
             let branch_7: *const EdgeBranch = node as *const EdgeBranch;
             bp = PARTITION_SPLIT;
