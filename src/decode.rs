@@ -4247,7 +4247,7 @@ unsafe fn decode_sb(
             }
         } else {
             let b = &mut *(f.frame_thread.b).offset(t.by as isize * f.b4_stride + t.bx as isize);
-            bp = if b.bl as BlockLevel == bl {
+            bp = if b.bl == bl {
                 b.bp as BlockPartition
             } else {
                 PARTITION_SPLIT
@@ -4552,7 +4552,7 @@ unsafe fn decode_sb(
             }
         } else {
             let b = &mut *(f.frame_thread.b).offset(t.by as isize * f.b4_stride + t.bx as isize);
-            is_split = b.bl as BlockLevel != bl;
+            is_split = b.bl != bl;
         }
 
         assert!(bl < BL_8X8);
@@ -4606,7 +4606,7 @@ unsafe fn decode_sb(
             }
         } else {
             let b = &mut *(f.frame_thread.b).offset(t.by as isize * f.b4_stride + t.bx as isize);
-            is_split = b.bl as BlockLevel != bl;
+            is_split = b.bl != bl;
         }
 
         assert!(bl < BL_8X8);
