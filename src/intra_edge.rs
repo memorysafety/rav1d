@@ -209,47 +209,34 @@ pub unsafe fn dav1d_init_mode_tree(
     };
     mem.nt = nt;
     if allow_sb128 != 0 {
-        mem.nwc[BL_128X128 as libc::c_int as usize] = &mut *root.offset(1) as *mut EdgeBranch;
-        mem.nwc[BL_64X64 as libc::c_int as usize] =
-            &mut *root.offset((1 + 4) as isize) as *mut EdgeBranch;
-        mem.nwc[BL_32X32 as libc::c_int as usize] =
-            &mut *root.offset((1 + 4 + 16) as isize) as *mut EdgeBranch;
+        mem.nwc[BL_128X128 as usize] = root.offset(1);
+        mem.nwc[BL_64X64 as usize] = root.offset(1 + 4);
+        mem.nwc[BL_32X32 as usize] = root.offset(1 + 4 + 16);
         init_mode_node(&mut *root, BL_128X128, &mut mem, true, false);
-        if !(mem.nwc[BL_128X128 as libc::c_int as usize]
-            == &mut *root.offset((1 + 4) as isize) as *mut EdgeBranch)
-        {
+        if !(mem.nwc[BL_128X128 as usize] == root.offset(1 + 4)) {
             unreachable!();
         }
-        if !(mem.nwc[BL_64X64 as libc::c_int as usize]
-            == &mut *root.offset((1 + 4 + 16) as isize) as *mut EdgeBranch)
-        {
+        if !(mem.nwc[BL_64X64 as usize] == root.offset(1 + 4 + 16)) {
             unreachable!();
         }
-        if !(mem.nwc[BL_32X32 as libc::c_int as usize]
-            == &mut *root.offset((1 + 4 + 16 + 64) as isize) as *mut EdgeBranch)
-        {
+        if !(mem.nwc[BL_32X32 as usize] == root.offset(1 + 4 + 16 + 64)) {
             unreachable!();
         }
-        if !(mem.nt == &mut *nt.offset(256) as *mut EdgeTip) {
+        if !(mem.nt == nt.offset(256)) {
             unreachable!();
         }
     } else {
-        mem.nwc[BL_128X128 as libc::c_int as usize] = 0 as *mut EdgeBranch;
-        mem.nwc[BL_64X64 as libc::c_int as usize] = &mut *root.offset(1) as *mut EdgeBranch;
-        mem.nwc[BL_32X32 as libc::c_int as usize] =
-            &mut *root.offset((1 + 4) as isize) as *mut EdgeBranch;
+        mem.nwc[BL_128X128 as usize] = 0 as *mut EdgeBranch;
+        mem.nwc[BL_64X64 as usize] = root.offset(1);
+        mem.nwc[BL_32X32 as usize] = root.offset(1 + 4);
         init_mode_node(&mut *root, BL_64X64, &mut mem, true, false);
-        if !(mem.nwc[BL_64X64 as libc::c_int as usize]
-            == &mut *root.offset((1 + 4) as isize) as *mut EdgeBranch)
-        {
+        if !(mem.nwc[BL_64X64 as usize] == root.offset(1 + 4)) {
             unreachable!();
         }
-        if !(mem.nwc[BL_32X32 as libc::c_int as usize]
-            == &mut *root.offset((1 + 4 + 16) as isize) as *mut EdgeBranch)
-        {
+        if !(mem.nwc[BL_32X32 as usize] == root.offset(1 + 4 + 16)) {
             unreachable!();
         }
-        if !(mem.nt == &mut *nt.offset(64) as *mut EdgeTip) {
+        if !(mem.nt == nt.offset(64)) {
             unreachable!();
         }
     };
