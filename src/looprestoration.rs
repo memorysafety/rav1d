@@ -59,13 +59,14 @@ pub struct Dav1dLoopRestorationDSPContext {
     pub sgr: [looprestorationfilter_fn; 3],
 }
 
-/// Generates a generic wrapper function that delegates to the appropriate
-/// bitdepth-specific extern function.
-macro_rules! decl_looprestorationfilter_bd_fn {
-    ($name:ident, $suffix:ident) => {
-        paste::paste! {
-            #[cfg(feature = "asm")]
-            unsafe extern "C" fn [<$name $suffix>]<BD: BitDepth>(
+#[cfg(all(
+    feature = "asm",
+    any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
+))]
+macro_rules! decl_looprestorationfilter_fn {
+    (fn $name:ident) => {{
+        extern "C" {
+            fn $name(
                 dst: *mut pixel,
                 dst_stride: ptrdiff_t,
                 left: const_left_pixel_row,
@@ -75,111 +76,11 @@ macro_rules! decl_looprestorationfilter_bd_fn {
                 params: *const LooprestorationParams,
                 edges: LrEdgeFlags,
                 bitdepth_max: libc::c_int,
-            ) {
-                (match BD::BPC {
-                    BPC::BPC8 => {
-                        extern "C" {
-                            fn [<$name _8bpc $suffix>](
-                                dst: *mut pixel,
-                                dst_stride: ptrdiff_t,
-                                left: const_left_pixel_row,
-                                lpf: *const pixel,
-                                w: libc::c_int,
-                                h: libc::c_int,
-                                params: *const LooprestorationParams,
-                                edges: LrEdgeFlags,
-                                bitdepth_max: libc::c_int,
-                            );
-                        }
-                        [<$name _8bpc $suffix>]
-                    }
-
-                    BPC::BPC16 => {
-                        extern "C" {
-                            fn [<$name _16bpc $suffix>](
-                                dst: *mut pixel,
-                                dst_stride: ptrdiff_t,
-                                left: const_left_pixel_row,
-                                lpf: *const pixel,
-                                w: libc::c_int,
-                                h: libc::c_int,
-                                params: *const LooprestorationParams,
-                                edges: LrEdgeFlags,
-                                bitdepth_max: libc::c_int,
-                            );
-                        }
-                        [<$name _16bpc $suffix>]
-                    }
-                })(dst, dst_stride, left, lpf, w, h, params, edges, bitdepth_max)
-            }
+            );
         }
-    };
-}
 
-decl_looprestorationfilter_bd_fn!(dav1d_wiener_filter7, _ssse3);
-decl_looprestorationfilter_bd_fn!(dav1d_wiener_filter5, _ssse3);
-decl_looprestorationfilter_bd_fn!(dav1d_wiener_filter5, _avx2);
-decl_looprestorationfilter_bd_fn!(dav1d_wiener_filter7, _avx2);
-decl_looprestorationfilter_bd_fn!(dav1d_wiener_filter7, _avx512icl);
-decl_looprestorationfilter_bd_fn!(dav1d_sgr_filter_mix, _avx512icl);
-decl_looprestorationfilter_bd_fn!(dav1d_sgr_filter_3x3, _avx512icl);
-decl_looprestorationfilter_bd_fn!(dav1d_sgr_filter_5x5, _avx512icl);
-decl_looprestorationfilter_bd_fn!(dav1d_sgr_filter_mix, _avx2);
-decl_looprestorationfilter_bd_fn!(dav1d_sgr_filter_3x3, _avx2);
-decl_looprestorationfilter_bd_fn!(dav1d_sgr_filter_5x5, _avx2);
-decl_looprestorationfilter_bd_fn!(dav1d_sgr_filter_mix, _ssse3);
-decl_looprestorationfilter_bd_fn!(dav1d_sgr_filter_3x3, _ssse3);
-decl_looprestorationfilter_bd_fn!(dav1d_sgr_filter_5x5, _ssse3);
-decl_looprestorationfilter_bd_fn!(dav1d_wiener_filter7, _neon);
-decl_looprestorationfilter_bd_fn!(dav1d_wiener_filter5, _neon);
-
-#[cfg(all(
-    feature = "bitdepth_8",
-    feature = "asm",
-    any(target_arch = "x86", target_arch = "x86_64"),
-))]
-extern "C" {
-    fn dav1d_wiener_filter7_8bpc_sse2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        left: const_left_pixel_row,
-        lpf: *const pixel,
-        w: libc::c_int,
-        h: libc::c_int,
-        params: *const LooprestorationParams,
-        edges: LrEdgeFlags,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_wiener_filter5_8bpc_sse2(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        left: const_left_pixel_row,
-        lpf: *const pixel,
-        w: libc::c_int,
-        h: libc::c_int,
-        params: *const LooprestorationParams,
-        edges: LrEdgeFlags,
-        bitdepth_max: libc::c_int,
-    );
-}
-
-#[cfg(all(
-    feature = "bitdepth_16",
-    feature = "asm",
-    any(target_arch = "x86", target_arch = "x86_64"),
-))]
-extern "C" {
-    fn dav1d_wiener_filter5_16bpc_avx512icl(
-        dst: *mut pixel,
-        dst_stride: ptrdiff_t,
-        left: const_left_pixel_row,
-        lpf: *const pixel,
-        w: libc::c_int,
-        h: libc::c_int,
-        params: *const LooprestorationParams,
-        edges: LrEdgeFlags,
-        bitdepth_max: libc::c_int,
-    );
+        $name
+    }};
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
@@ -200,6 +101,7 @@ extern "C" {
         strength: libc::c_int,
         bitdepth_max: libc::c_int,
     );
+
     fn dav1d_sgr_box5_v_neon(
         sumsq: *mut int32_t,
         sum: *mut int16_t,
@@ -207,6 +109,7 @@ extern "C" {
         h: libc::c_int,
         edges: LrEdgeFlags,
     );
+
     fn dav1d_sgr_calc_ab2_neon(
         a: *mut int32_t,
         b: *mut int16_t,
@@ -1801,23 +1704,37 @@ fn loop_restoration_dsp_init_x86<BD: BitDepth>(
         return;
     }
 
-    #[cfg(feature = "bitdepth_8")]
     if BD::BPC == BPC::BPC8 {
-        c.wiener[0] = dav1d_wiener_filter7_8bpc_sse2;
-        c.wiener[1] = dav1d_wiener_filter5_8bpc_sse2;
+        c.wiener[0] = decl_looprestorationfilter_fn!(fn dav1d_wiener_filter7_8bpc_sse2);
+        c.wiener[1] = decl_looprestorationfilter_fn!(fn dav1d_wiener_filter5_8bpc_sse2);
     }
 
     if flags & DAV1D_X86_CPU_FLAG_SSSE3 == 0 {
         return;
     }
 
-    c.wiener[0] = dav1d_wiener_filter7_ssse3::<BD>;
-    c.wiener[1] = dav1d_wiener_filter5_ssse3::<BD>;
+    c.wiener[0] = match BD::BPC {
+        BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter7_8bpc_ssse3),
+        BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter7_16bpc_ssse3),
+    };
+    c.wiener[1] = match BD::BPC {
+        BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter5_8bpc_ssse3),
+        BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter5_16bpc_ssse3),
+    };
 
     if BD::BPC == BPC::BPC8 || bpc == 10 {
-        c.sgr[0] = dav1d_sgr_filter_5x5_ssse3::<BD>;
-        c.sgr[1] = dav1d_sgr_filter_3x3_ssse3::<BD>;
-        c.sgr[2] = dav1d_sgr_filter_mix_ssse3::<BD>;
+        c.sgr[0] = match BD::BPC {
+            BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_5x5_8bpc_ssse3),
+            BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_5x5_16bpc_ssse3),
+        };
+        c.sgr[1] = match BD::BPC {
+            BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_3x3_8bpc_ssse3),
+            BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_3x3_16bpc_ssse3),
+        };
+        c.sgr[2] = match BD::BPC {
+            BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_mix_8bpc_ssse3),
+            BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_mix_16bpc_ssse3),
+        };
     }
 
     #[cfg(target_arch = "x86_64")]
@@ -1826,35 +1743,63 @@ fn loop_restoration_dsp_init_x86<BD: BitDepth>(
             return;
         }
 
-        c.wiener[0] = dav1d_wiener_filter7_avx2::<BD>;
-        c.wiener[1] = dav1d_wiener_filter5_avx2::<BD>;
+        c.wiener[0] = match BD::BPC {
+            BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter7_8bpc_avx2),
+            BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter7_16bpc_avx2),
+        };
+        c.wiener[1] = match BD::BPC {
+            BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter5_8bpc_avx2),
+            BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter5_16bpc_avx2),
+        };
 
         if BD::BPC == BPC::BPC8 || bpc == 10 {
-            c.sgr[0] = dav1d_sgr_filter_5x5_avx2::<BD>;
-            c.sgr[1] = dav1d_sgr_filter_3x3_avx2::<BD>;
-            c.sgr[2] = dav1d_sgr_filter_mix_avx2::<BD>;
+            c.sgr[0] = match BD::BPC {
+                BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_5x5_8bpc_avx2),
+                BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_5x5_16bpc_avx2),
+            };
+            c.sgr[1] = match BD::BPC {
+                BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_3x3_8bpc_avx2),
+                BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_3x3_16bpc_avx2),
+            };
+            c.sgr[2] = match BD::BPC {
+                BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_mix_8bpc_avx2),
+                BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_mix_16bpc_avx2),
+            };
         }
 
         if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
             return;
         }
 
-        c.wiener[0] = dav1d_wiener_filter7_avx512icl::<BD>;
+        c.wiener[0] = match BD::BPC {
+            BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter7_8bpc_avx512icl),
+            BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter7_16bpc_avx512icl),
+        };
         c.wiener[1] = match BD::BPC {
             // With VNNI we don't need a 5-tap version.
             BPC::BPC8 => c.wiener[0],
-
-            #[cfg(feature = "bitdepth_16")]
-            BPC::BPC16 => dav1d_wiener_filter5_16bpc_avx512icl,
-
-            #[cfg(not(feature = "bitdepth_16"))]
-            BPC::BPC16 => unreachable!(),
+            BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter5_16bpc_avx512icl),
         };
 
         if BD::BPC == BPC::BPC8 || bpc == 10 {
-            c.sgr[0] = dav1d_sgr_filter_5x5_avx512icl::<BD>;
-            c.sgr[1] = dav1d_sgr_filter_3x3_avx512icl::<BD>;
-            c.sgr[2] = dav1d_sgr_filter_mix_avx512icl::<BD>;
+            c.sgr[0] = match BD::BPC {
+                BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_5x5_8bpc_avx512icl),
+                BPC::BPC16 => {
+                    decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_5x5_16bpc_avx512icl)
+                }
+            };
+            c.sgr[1] = match BD::BPC {
+                BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_3x3_8bpc_avx512icl),
+                BPC::BPC16 => {
+                    decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_3x3_16bpc_avx512icl)
+                }
+            };
+            c.sgr[2] = match BD::BPC {
+                BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_mix_8bpc_avx512icl),
+                BPC::BPC16 => {
+                    decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_mix_16bpc_avx512icl)
+                }
+            };
         }
     }
 }
@@ -1878,8 +1823,14 @@ fn loop_restoration_dsp_init_arm<BD: BitDepth>(
 
     cfg_if::cfg_if! {
         if #[cfg(target_arch = "aarch64")] {
-            c.wiener[0] = dav1d_wiener_filter7_neon::<BD>;
-            c.wiener[1] = dav1d_wiener_filter5_neon::<BD>;
+            c.wiener[0] = match BD::BPC {
+                BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter7_8bpc_neon),
+                BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter7_16bpc_neon),
+            };
+            c.wiener[1] = match BD::BPC {
+                BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter5_8bpc_neon),
+                BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter5_16bpc_neon),
+            };
         } else {
             c.wiener[0] = wiener_filter_neon_erased::<BD>;
             c.wiener[1] = wiener_filter_neon_erased::<BD>;
