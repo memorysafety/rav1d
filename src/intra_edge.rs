@@ -208,31 +208,17 @@ pub unsafe fn dav1d_init_mode_tree(root_node: *mut EdgeNode, nt: *mut EdgeTip, a
         mem.nwc[BL_64X64 as usize] = root.offset(1 + 4);
         mem.nwc[BL_32X32 as usize] = root.offset(1 + 4 + 16);
         init_mode_node(&mut *root, BL_128X128, &mut mem, true, false);
-        if !(mem.nwc[BL_128X128 as usize] == root.offset(1 + 4)) {
-            unreachable!();
-        }
-        if !(mem.nwc[BL_64X64 as usize] == root.offset(1 + 4 + 16)) {
-            unreachable!();
-        }
-        if !(mem.nwc[BL_32X32 as usize] == root.offset(1 + 4 + 16 + 64)) {
-            unreachable!();
-        }
-        if !(mem.nt == nt.offset(256)) {
-            unreachable!();
-        }
+        assert!(mem.nwc[BL_128X128 as usize] == root.offset(1 + 4));
+        assert!(mem.nwc[BL_64X64 as usize] == root.offset(1 + 4 + 16));
+        assert!(mem.nwc[BL_32X32 as usize] == root.offset(1 + 4 + 16 + 64));
+        assert!(mem.nt == nt.offset(256));
     } else {
         mem.nwc[BL_128X128 as usize] = 0 as *mut EdgeBranch;
         mem.nwc[BL_64X64 as usize] = root.offset(1);
         mem.nwc[BL_32X32 as usize] = root.offset(1 + 4);
         init_mode_node(&mut *root, BL_64X64, &mut mem, true, false);
-        if !(mem.nwc[BL_64X64 as usize] == root.offset(1 + 4)) {
-            unreachable!();
-        }
-        if !(mem.nwc[BL_32X32 as usize] == root.offset(1 + 4 + 16)) {
-            unreachable!();
-        }
-        if !(mem.nt == nt.offset(64)) {
-            unreachable!();
-        }
+        assert!(mem.nwc[BL_64X64 as usize] == root.offset(1 + 4));
+        assert!(mem.nwc[BL_32X32 as usize] == root.offset(1 + 4 + 16));
+        assert!(mem.nt == nt.offset(64));
     };
 }
