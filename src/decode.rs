@@ -4186,24 +4186,20 @@ unsafe fn decode_sb(
 ) -> libc::c_int {
     let f = &*t.f;
     let ts = &mut *t.ts;
-    let hsz = 16 >> bl as libc::c_uint;
+    let hsz = 16 >> bl;
     let have_h_split = f.bw > t.bx + hsz;
     let have_v_split = f.bh > t.by + hsz;
     if !have_h_split && !have_v_split {
-        assert!((bl as libc::c_uint) < BL_8X8 as libc::c_int as libc::c_uint);
-        return decode_sb(
-            t,
-            (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as BlockLevel,
-            (*(node as *const EdgeBranch)).split[0],
-        );
+        assert!(bl < BL_8X8);
+        return decode_sb(t, bl + 1, (*(node as *const EdgeBranch)).split[0]);
     }
     let mut pc = &mut Default::default();
     let mut bp: BlockPartition = PARTITION_NONE;
     let mut ctx = 0;
     let mut bx8 = 0;
     let mut by8 = 0;
-    if t.frame_thread.pass != 2 as libc::c_int {
-        if 0 as libc::c_int != 0 && bl as libc::c_uint == BL_64X64 as libc::c_int as libc::c_uint {
+    if t.frame_thread.pass != 2 {
+        if bl == BL_64X64 {
             printf(
                 b"poc=%d,y=%d,x=%d,bl=%d,r=%d\n\0" as *const u8 as *const libc::c_char,
                 (*f.frame_hdr).frame_offset,
@@ -4223,25 +4219,24 @@ unsafe fn decode_sb(
             let b: *const Av1Block = &mut *(f.frame_thread.b)
                 .offset((t.by as isize * f.b4_stride + t.bx as isize) as isize)
                 as *mut Av1Block;
-            bp = (if (*b).bl as libc::c_uint == bl as libc::c_uint {
-                (*b).bp as libc::c_int
+            bp = if (*b).bl as BlockLevel == bl {
+                (*b).bp as BlockPartition
             } else {
-                PARTITION_SPLIT as libc::c_int
-            }) as BlockPartition;
+                PARTITION_SPLIT
+            };
         } else {
             bp = dav1d_msac_decode_symbol_adapt16(
                 &mut ts.msac,
                 pc,
                 dav1d_partition_type_count[bl as usize] as size_t,
             ) as BlockPartition;
-            if f.cur.p.layout as libc::c_uint
-                == DAV1D_PIXEL_LAYOUT_I422 as libc::c_int as libc::c_uint
-                && (bp as libc::c_uint == PARTITION_V as libc::c_int as libc::c_uint
-                    || bp as libc::c_uint == PARTITION_V4 as libc::c_int as libc::c_uint
-                    || bp as libc::c_uint == PARTITION_T_LEFT_SPLIT as libc::c_int as libc::c_uint
-                    || bp as libc::c_uint == PARTITION_T_RIGHT_SPLIT as libc::c_int as libc::c_uint)
+            if f.cur.p.layout == DAV1D_PIXEL_LAYOUT_I422
+                && (bp == PARTITION_V
+                    || bp == PARTITION_V4
+                    || bp == PARTITION_T_LEFT_SPLIT
+                    || bp == PARTITION_T_RIGHT_SPLIT)
             {
-                return 1 as libc::c_int;
+                return 1;
             }
             if DEBUG_BLOCK_INFO(f, t) {
                 printf(
@@ -4268,7 +4263,7 @@ unsafe fn decode_sb(
                     (*node).o,
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
             }
             1 => {
@@ -4280,7 +4275,7 @@ unsafe fn decode_sb(
                     (*node).h[0],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
                 t.by += hsz;
                 if decode_b(
@@ -4291,7 +4286,7 @@ unsafe fn decode_sb(
                     (*node).h[1],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
                 t.by -= hsz;
             }
@@ -4304,7 +4299,7 @@ unsafe fn decode_sb(
                     (*node).v[0],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
                 t.bx += hsz;
                 if decode_b(
@@ -4315,31 +4310,31 @@ unsafe fn decode_sb(
                     (*node).v[1],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
                 t.bx -= hsz;
             }
             3 => {
-                if bl as libc::c_uint == BL_8X8 as libc::c_int as libc::c_uint {
+                if bl == BL_8X8 {
                     let tip: *const EdgeTip = node as *const EdgeTip;
                     assert!(hsz == 1);
                     if decode_b(t, bl, BS_4x4, PARTITION_SPLIT, (*tip).split[0]) != 0 {
-                        return -(1 as libc::c_int);
+                        return -1;
                     }
                     let tl_filter: Filter2d = t.tl_4x4_filter;
                     t.bx += 1;
                     if decode_b(t, bl, BS_4x4, PARTITION_SPLIT, (*tip).split[1]) != 0 {
-                        return -(1 as libc::c_int);
+                        return -1;
                     }
                     t.bx -= 1;
                     t.by += 1;
                     if decode_b(t, bl, BS_4x4, PARTITION_SPLIT, (*tip).split[2]) != 0 {
-                        return -(1 as libc::c_int);
+                        return -1;
                     }
                     t.bx += 1;
                     t.tl_4x4_filter = tl_filter;
                     if decode_b(t, bl, BS_4x4, PARTITION_SPLIT, (*tip).split[3]) != 0 {
-                        return -(1 as libc::c_int);
+                        return -1;
                     }
                     t.bx -= 1;
                     t.by -= 1;
@@ -4353,45 +4348,21 @@ unsafe fn decode_sb(
                     }
                 } else {
                     let branch: *const EdgeBranch = node as *const EdgeBranch;
-                    if decode_sb(
-                        t,
-                        (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint)
-                            as BlockLevel,
-                        (*branch).split[0],
-                    ) != 0
-                    {
-                        return 1 as libc::c_int;
+                    if decode_sb(t, bl + 1, (*branch).split[0]) != 0 {
+                        return 1;
                     }
                     t.bx += hsz;
-                    if decode_sb(
-                        t,
-                        (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint)
-                            as BlockLevel,
-                        (*branch).split[1],
-                    ) != 0
-                    {
-                        return 1 as libc::c_int;
+                    if decode_sb(t, bl + 1, (*branch).split[1]) != 0 {
+                        return 1;
                     }
                     t.bx -= hsz;
                     t.by += hsz;
-                    if decode_sb(
-                        t,
-                        (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint)
-                            as BlockLevel,
-                        (*branch).split[2],
-                    ) != 0
-                    {
-                        return 1 as libc::c_int;
+                    if decode_sb(t, bl + 1, (*branch).split[2]) != 0 {
+                        return 1;
                     }
                     t.bx += hsz;
-                    if decode_sb(
-                        t,
-                        (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint)
-                            as BlockLevel,
-                        (*branch).split[3],
-                    ) != 0
-                    {
-                        return 1 as libc::c_int;
+                    if decode_sb(t, bl + 1, (*branch).split[3]) != 0 {
+                        return 1;
                     }
                     t.bx -= hsz;
                     t.by -= hsz;
@@ -4407,7 +4378,7 @@ unsafe fn decode_sb(
                     (*branch_0).tts[0],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
                 t.bx += hsz;
                 if decode_b(
@@ -4418,7 +4389,7 @@ unsafe fn decode_sb(
                     (*branch_0).tts[1],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
                 t.bx -= hsz;
                 t.by += hsz;
@@ -4430,7 +4401,7 @@ unsafe fn decode_sb(
                     (*branch_0).tts[2],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
                 t.by -= hsz;
             }
@@ -4444,7 +4415,7 @@ unsafe fn decode_sb(
                     (*branch_1).tbs[0],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
                 t.by += hsz;
                 if decode_b(
@@ -4455,7 +4426,7 @@ unsafe fn decode_sb(
                     (*branch_1).tbs[1],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
                 t.bx += hsz;
                 if decode_b(
@@ -4466,7 +4437,7 @@ unsafe fn decode_sb(
                     (*branch_1).tbs[2],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
                 t.bx -= hsz;
                 t.by -= hsz;
@@ -4481,7 +4452,7 @@ unsafe fn decode_sb(
                     (*branch_2).tls[0],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
                 t.by += hsz;
                 if decode_b(
@@ -4492,7 +4463,7 @@ unsafe fn decode_sb(
                     (*branch_2).tls[1],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
                 t.by -= hsz;
                 t.bx += hsz;
@@ -4504,7 +4475,7 @@ unsafe fn decode_sb(
                     (*branch_2).tls[2],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
                 t.bx -= hsz;
             }
@@ -4518,7 +4489,7 @@ unsafe fn decode_sb(
                     (*branch_3).trs[0],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
                 t.bx += hsz;
                 if decode_b(
@@ -4529,7 +4500,7 @@ unsafe fn decode_sb(
                     (*branch_3).trs[1],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
                 t.by += hsz;
                 if decode_b(
@@ -4540,7 +4511,7 @@ unsafe fn decode_sb(
                     (*branch_3).trs[2],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
                 t.by -= hsz;
                 t.bx -= hsz;
@@ -4555,7 +4526,7 @@ unsafe fn decode_sb(
                     (*branch_4).h4[0],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
                 t.by += hsz >> 1;
                 if decode_b(
@@ -4566,7 +4537,7 @@ unsafe fn decode_sb(
                     (*branch_4).h4[1],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
                 t.by += hsz >> 1;
                 if decode_b(
@@ -4577,7 +4548,7 @@ unsafe fn decode_sb(
                     (*branch_4).h4[2],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
                 t.by += hsz >> 1;
                 if t.by < f.bh {
@@ -4589,7 +4560,7 @@ unsafe fn decode_sb(
                         (*branch_4).h4[3],
                     ) != 0
                     {
-                        return -(1 as libc::c_int);
+                        return -1;
                     }
                 }
                 t.by -= hsz * 3 >> 1;
@@ -4604,7 +4575,7 @@ unsafe fn decode_sb(
                     (*branch_5).v4[0],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
                 t.bx += hsz >> 1;
                 if decode_b(
@@ -4615,7 +4586,7 @@ unsafe fn decode_sb(
                     (*branch_5).v4[1],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
                 t.bx += hsz >> 1;
                 if decode_b(
@@ -4626,7 +4597,7 @@ unsafe fn decode_sb(
                     (*branch_5).v4[2],
                 ) != 0
                 {
-                    return -(1 as libc::c_int);
+                    return -1;
                 }
                 t.bx += hsz >> 1;
                 if t.bx < f.bw {
@@ -4638,7 +4609,7 @@ unsafe fn decode_sb(
                         (*branch_5).v4[3],
                     ) != 0
                     {
-                        return -(1 as libc::c_int);
+                        return -1;
                     }
                 }
                 t.bx -= hsz * 3 >> 1;
@@ -4651,8 +4622,7 @@ unsafe fn decode_sb(
             let b_1: *const Av1Block = &mut *(f.frame_thread.b)
                 .offset((t.by as isize * f.b4_stride + t.bx as isize) as isize)
                 as *mut Av1Block;
-            is_split =
-                ((*b_1).bl as libc::c_uint != bl as libc::c_uint) as libc::c_int as libc::c_uint;
+            is_split = ((*b_1).bl as BlockLevel != bl) as libc::c_uint;
         } else {
             is_split = dav1d_msac_decode_bool(&mut ts.msac, gather_top_partition_prob(pc, bl))
                 as libc::c_uint;
@@ -4674,26 +4644,16 @@ unsafe fn decode_sb(
                 );
             }
         }
-        assert!((bl as libc::c_uint) < BL_8X8 as libc::c_int as libc::c_uint);
+        assert!(bl < BL_8X8);
         if is_split != 0 {
             let branch_6: *const EdgeBranch = node as *const EdgeBranch;
             bp = PARTITION_SPLIT;
-            if decode_sb(
-                t,
-                (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as BlockLevel,
-                (*branch_6).split[0],
-            ) != 0
-            {
-                return 1 as libc::c_int;
+            if decode_sb(t, bl + 1, (*branch_6).split[0]) != 0 {
+                return 1;
             }
             t.bx += hsz;
-            if decode_sb(
-                t,
-                (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as BlockLevel,
-                (*branch_6).split[1],
-            ) != 0
-            {
-                return 1 as libc::c_int;
+            if decode_sb(t, bl + 1, (*branch_6).split[1]) != 0 {
+                return 1;
             }
             t.bx -= hsz;
         } else {
@@ -4701,12 +4661,12 @@ unsafe fn decode_sb(
             if decode_b(
                 t,
                 bl,
-                dav1d_block_sizes[bl as usize][PARTITION_H as libc::c_int as usize][0] as BlockSize,
+                dav1d_block_sizes[bl as usize][PARTITION_H as usize][0] as BlockSize,
                 PARTITION_H,
                 (*node).h[0],
             ) != 0
             {
-                return -(1 as libc::c_int);
+                return -1;
             }
         }
     } else {
@@ -4716,16 +4676,12 @@ unsafe fn decode_sb(
             let b_2: *const Av1Block = &mut *(f.frame_thread.b)
                 .offset((t.by as isize * f.b4_stride + t.bx as isize) as isize)
                 as *mut Av1Block;
-            is_split_0 =
-                ((*b_2).bl as libc::c_uint != bl as libc::c_uint) as libc::c_int as libc::c_uint;
+            is_split_0 = ((*b_2).bl as BlockLevel != bl) as libc::c_uint;
         } else {
             is_split_0 = dav1d_msac_decode_bool(&mut ts.msac, gather_left_partition_prob(pc, bl))
                 as libc::c_uint;
-            if f.cur.p.layout as libc::c_uint
-                == DAV1D_PIXEL_LAYOUT_I422 as libc::c_int as libc::c_uint
-                && is_split_0 == 0
-            {
-                return 1 as libc::c_int;
+            if f.cur.p.layout == DAV1D_PIXEL_LAYOUT_I422 && is_split_0 == 0 {
+                return 1;
             }
             if DEBUG_BLOCK_INFO(f, t) {
                 printf(
@@ -4745,26 +4701,16 @@ unsafe fn decode_sb(
                 );
             }
         }
-        assert!((bl as libc::c_uint) < BL_8X8 as libc::c_int as libc::c_uint);
+        assert!(bl < BL_8X8);
         if is_split_0 != 0 {
             let branch_7: *const EdgeBranch = node as *const EdgeBranch;
             bp = PARTITION_SPLIT;
-            if decode_sb(
-                t,
-                (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as BlockLevel,
-                (*branch_7).split[0],
-            ) != 0
-            {
-                return 1 as libc::c_int;
+            if decode_sb(t, bl + 1, (*branch_7).split[0]) != 0 {
+                return 1;
             }
             t.by += hsz;
-            if decode_sb(
-                t,
-                (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as BlockLevel,
-                (*branch_7).split[2],
-            ) != 0
-            {
-                return 1 as libc::c_int;
+            if decode_sb(t, bl + 1, (*branch_7).split[2]) != 0 {
+                return 1;
             }
             t.by -= hsz;
         } else {
@@ -4772,19 +4718,16 @@ unsafe fn decode_sb(
             if decode_b(
                 t,
                 bl,
-                dav1d_block_sizes[bl as usize][PARTITION_V as libc::c_int as usize][0] as BlockSize,
+                dav1d_block_sizes[bl as usize][PARTITION_V as usize][0] as BlockSize,
                 PARTITION_V,
                 (*node).v[0],
             ) != 0
             {
-                return -(1 as libc::c_int);
+                return -1;
             }
         }
     }
-    if t.frame_thread.pass != 2 as libc::c_int
-        && (bp as libc::c_uint != PARTITION_SPLIT as libc::c_int as libc::c_uint
-            || bl as libc::c_uint == BL_8X8 as libc::c_int as libc::c_uint)
-    {
+    if t.frame_thread.pass != 2 && (bp != PARTITION_SPLIT || bl == BL_8X8) {
         CaseSet::<16, false>::many(
             [(&mut *t.a, 0), (&mut t.l, 1)],
             [hsz as usize; 2],
@@ -4797,7 +4740,7 @@ unsafe fn decode_sb(
             },
         );
     }
-    return 0 as libc::c_int;
+    return 0;
 }
 
 unsafe extern "C" fn reset_context(
