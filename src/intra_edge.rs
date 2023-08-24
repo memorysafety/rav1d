@@ -140,7 +140,7 @@ unsafe fn init_edges(node: *mut EdgeNode, bl: BlockLevel, edge_flags: EdgeFlags)
 unsafe fn init_mode_node(
     nwc: &mut EdgeBranch,
     bl: BlockLevel,
-    mem: *mut ModeSelMem,
+    mem: &mut ModeSelMem,
     top_has_right: libc::c_int,
     left_has_bottom: libc::c_int,
 ) {
@@ -160,8 +160,8 @@ unsafe fn init_mode_node(
     if bl == BL_16X16 {
         let mut n = 0;
         while n < 4 {
-            let fresh0 = (*mem).nt;
-            (*mem).nt = ((*mem).nt).offset(1);
+            let fresh0 = mem.nt;
+            mem.nt = (mem.nt).offset(1);
             let nt: *mut EdgeTip = fresh0;
             nwc.split[n as usize] = &mut (*nt).node;
             init_edges(
@@ -184,8 +184,8 @@ unsafe fn init_mode_node(
     } else {
         let mut n = 0;
         while n < 4 {
-            let fresh1 = (*mem).nwc[bl as usize];
-            (*mem).nwc[bl as usize] = ((*mem).nwc[bl as usize]).offset(1);
+            let fresh1 = mem.nwc[bl as usize];
+            mem.nwc[bl as usize] = (mem.nwc[bl as usize]).offset(1);
             let nwc_child: *mut EdgeBranch = fresh1;
             nwc.split[n as usize] = &mut (*nwc_child).node;
             init_mode_node(
