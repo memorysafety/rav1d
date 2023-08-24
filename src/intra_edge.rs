@@ -182,20 +182,20 @@ unsafe fn init_mode_node(
             n += 1;
         }
     } else {
-        let mut n_0 = 0;
-        while n_0 < 4 {
+        let mut n = 0;
+        while n < 4 {
             let fresh1 = (*mem).nwc[bl as usize];
             (*mem).nwc[bl as usize] = ((*mem).nwc[bl as usize]).offset(1);
             let nwc_child: *mut EdgeBranch = fresh1;
-            (*nwc).split[n_0 as usize] = &mut (*nwc_child).node;
+            (*nwc).split[n as usize] = &mut (*nwc_child).node;
             init_mode_node(
                 nwc_child,
                 bl.wrapping_add(1),
                 mem,
-                !(n_0 == 3 || n_0 == 1 && top_has_right == 0) as libc::c_int,
-                (n_0 == 0 || n_0 == 2 && left_has_bottom != 0) as libc::c_int,
+                !(n == 3 || n == 1 && top_has_right == 0) as libc::c_int,
+                (n == 0 || n == 2 && left_has_bottom != 0) as libc::c_int,
             );
-            n_0 += 1;
+            n += 1;
         }
     };
 }
