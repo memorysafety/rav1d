@@ -45,9 +45,7 @@ pub struct EdgeBranch {
     pub split: [*mut EdgeNode; 4],
 }
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ModeSelMem {
+struct ModeSelMem {
     pub nwc: [*mut EdgeBranch; 3],
     pub nt: *mut EdgeTip,
 }
