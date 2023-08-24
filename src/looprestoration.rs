@@ -2,7 +2,6 @@ use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::LeftPixelRow;
-#[cfg(feature = "asm")]
 use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::imax;
@@ -275,25 +274,30 @@ unsafe extern "C" fn wiener_c_erased<BD: BitDepth>(
         lpf.cast(),
         w,
         h,
-        params,
+        &*params,
         edges,
         bd,
     )
 }
 
+// FIXME Could split into luma and chroma specific functions,
+// (since first and last tops are always 0 for chroma)
+// FIXME Could implement a version that requires less temporary memory
+// (should be possible to implement with only 6 rows of temp storage)
 unsafe fn wiener_rust<BD: BitDepth>(
-    mut p: *mut BD::Pixel,
+    p: *mut BD::Pixel,
     stride: ptrdiff_t,
     left: *const [BD::Pixel; 4],
-    mut lpf: *const BD::Pixel,
+    lpf: *const BD::Pixel,
     w: libc::c_int,
     h: libc::c_int,
-    params: *const LooprestorationParams,
+    params: &LooprestorationParams,
     edges: LrEdgeFlags,
     bd: BD,
 ) {
-    let mut tmp: [BD::Pixel; 27300] = [0.as_(); 27300];
-    let mut tmp_ptr: *mut BD::Pixel = tmp.as_mut_ptr();
+    // Wiener filtering is applied to a maximum stripe height of 64 + 3 pixels
+    // of padding above and below
+    let mut tmp = [0.into(); 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE];
 
     padding::<BD>(
         &mut tmp,
@@ -306,64 +310,50 @@ unsafe fn wiener_rust<BD: BitDepth>(
         edges,
     );
 
-    let mut hor: [uint16_t; 27300] = [0; 27300];
-    let mut hor_ptr: *mut uint16_t = hor.as_mut_ptr();
-    let filter: *const [int16_t; 8] = ((*params).filter.0).as_ptr();
+    // Values stored between horizontal and vertical filtering don't
+    // fit in a u8.
+    let mut hor = [0; 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE];
+
+    let filter = &params.filter.0;
     let bitdepth = bd.bitdepth().as_::<libc::c_int>();
-    let round_bits_h = 3 as libc::c_int + (bitdepth == 12) as libc::c_int * 2;
-    let rounding_off_h = (1 as libc::c_int) << round_bits_h - 1;
-    let clip_limit = (1 as libc::c_int) << bitdepth + 1 + 7 - round_bits_h;
-    let mut j = 0;
-    while j < h + 6 {
-        let mut i = 0;
-        while i < w {
-            let mut sum = (1 as libc::c_int) << bitdepth + 6;
+    let round_bits_h = 3 + (bitdepth == 12) as libc::c_int * 2;
+    let rounding_off_h = 1 << round_bits_h - 1;
+    let clip_limit = 1 << bitdepth + 1 + 7 - round_bits_h;
+    for (tmp, hor) in tmp
+        .chunks_exact(REST_UNIT_STRIDE)
+        .zip(hor.chunks_exact_mut(REST_UNIT_STRIDE))
+        .take((h + 6) as usize)
+    {
+        for i in 0..w as usize {
+            let mut sum = 1 << bitdepth + 6;
 
-            if BD::BITDEPTH == 8 {
-                sum += (*tmp_ptr.offset((i + 3) as isize)).as_::<libc::c_int>() * 128;
+            if BD::BPC == BPC::BPC8 {
+                sum += tmp[i + 3].into() * 128;
             }
 
-            let mut k = 0;
-            while k < 7 {
-                sum += (*tmp_ptr.offset((i + k) as isize)).as_::<libc::c_int>()
-                    * (*filter.offset(0))[k as usize] as libc::c_int;
-                k += 1;
+            for (&tmp, &filter) in std::iter::zip(&tmp[i..i + 7], &filter[0][..7]) {
+                sum += tmp.into() * filter as libc::c_int;
             }
-            *hor_ptr.offset(i as isize) = iclip(
-                sum + rounding_off_h >> round_bits_h,
-                0 as libc::c_int,
-                clip_limit - 1,
-            ) as uint16_t;
-            i += 1;
+
+            hor[i] = iclip(sum + rounding_off_h >> round_bits_h, 0, clip_limit - 1) as uint16_t;
         }
-        tmp_ptr = tmp_ptr.offset(390);
-        hor_ptr = hor_ptr.offset(390);
-        j += 1;
     }
-    let round_bits_v = 11 as libc::c_int - (bitdepth == 12) as libc::c_int * 2;
-    let rounding_off_v = (1 as libc::c_int) << round_bits_v - 1;
-    let round_offset = (1 as libc::c_int) << bitdepth + (round_bits_v - 1);
-    let mut j_0 = 0;
-    while j_0 < h {
-        let mut i_0 = 0;
-        while i_0 < w {
-            let mut sum_0 = -round_offset;
-            let mut k_0 = 0;
-            while k_0 < 7 {
-                sum_0 += hor[((j_0 + k_0) * 390 + i_0) as usize] as libc::c_int
-                    * (*filter.offset(1))[k_0 as usize] as libc::c_int;
-                k_0 += 1;
+
+    let round_bits_v = 11 - (bitdepth == 12) as libc::c_int * 2;
+    let rounding_off_v = 1 << round_bits_v - 1;
+    let round_offset = 1 << bitdepth + (round_bits_v - 1);
+    for j in 0..h {
+        for i in 0..w {
+            let mut sum = -round_offset;
+
+            for k in 0..7 {
+                sum += hor[((j + k) * REST_UNIT_STRIDE as libc::c_int + i) as usize] as libc::c_int
+                    * filter[1][k as usize] as libc::c_int;
             }
-            *p.offset(j_0 as isize * BD::pxstride(stride as usize) as isize + i_0 as isize) =
-                iclip(
-                    sum_0 + rounding_off_v >> round_bits_v,
-                    0 as libc::c_int,
-                    bd.into_c(),
-                )
-                .as_();
-            i_0 += 1;
+
+            *p.offset(j as isize * BD::pxstride(stride as usize) as isize + i as isize) =
+                iclip(sum + rounding_off_v >> round_bits_v, 0, bd.into_c()).as_();
         }
-        j_0 += 1;
     }
 }
 
