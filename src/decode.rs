@@ -4200,12 +4200,12 @@ unsafe fn decode_sb(
     let mut by8 = 0;
     if t.frame_thread.pass != 2 {
         if bl == BL_64X64 {
-            printf(
-                b"poc=%d,y=%d,x=%d,bl=%d,r=%d\n\0" as *const u8 as *const libc::c_char,
+            println!(
+                "poc={},y={},x={},bl={},r={}",
                 (*f.frame_hdr).frame_offset,
                 t.by,
                 t.bx,
-                bl as libc::c_uint,
+                bl,
                 ts.msac.rng,
             );
         }
@@ -4239,15 +4239,14 @@ unsafe fn decode_sb(
                 return 1;
             }
             if DEBUG_BLOCK_INFO(f, t) {
-                printf(
-                    b"poc=%d,y=%d,x=%d,bl=%d,ctx=%d,bp=%d: r=%d\n\0" as *const u8
-                        as *const libc::c_char,
+                println!(
+                    "poc={},y={},x={},bl={},ctx={},bp={}: r={}",
                     (*f.frame_hdr).frame_offset,
                     t.by,
                     t.bx,
-                    bl as libc::c_uint,
-                    ctx as libc::c_int,
-                    bp as libc::c_uint,
+                    bl,
+                    ctx,
+                    bp,
                     ts.msac.rng,
                 );
             }
@@ -4592,18 +4591,17 @@ unsafe fn decode_sb(
             is_split = dav1d_msac_decode_bool(&mut ts.msac, gather_top_partition_prob(pc, bl))
                 as libc::c_uint;
             if DEBUG_BLOCK_INFO(f, t) {
-                printf(
-                    b"poc=%d,y=%d,x=%d,bl=%d,ctx=%d,bp=%d: r=%d\n\0" as *const u8
-                        as *const libc::c_char,
+                println!(
+                    "poc={},y={},x={},bl={},ctx={},bp={}: r={}",
                     (*f.frame_hdr).frame_offset,
                     t.by,
                     t.bx,
-                    bl as libc::c_uint,
-                    ctx as libc::c_int,
+                    bl,
+                    ctx,
                     if is_split != 0 {
-                        PARTITION_SPLIT as libc::c_int
+                        PARTITION_SPLIT
                     } else {
-                        PARTITION_H as libc::c_int
+                        PARTITION_H
                     },
                     ts.msac.rng,
                 );
@@ -4649,18 +4647,17 @@ unsafe fn decode_sb(
                 return 1;
             }
             if DEBUG_BLOCK_INFO(f, t) {
-                printf(
-                    b"poc=%d,y=%d,x=%d,bl=%d,ctx=%d,bp=%d: r=%d\n\0" as *const u8
-                        as *const libc::c_char,
+                println!(
+                    "poc={},y={},x={},bl={},ctx={},bp={}: r={}",
                     (*f.frame_hdr).frame_offset,
                     t.by,
                     t.bx,
-                    bl as libc::c_uint,
-                    ctx as libc::c_int,
+                    bl,
+                    ctx,
                     if is_split != 0 {
-                        PARTITION_SPLIT as libc::c_int
+                        PARTITION_SPLIT
                     } else {
-                        PARTITION_V as libc::c_int
+                        PARTITION_V
                     },
                     ts.msac.rng,
                 );
