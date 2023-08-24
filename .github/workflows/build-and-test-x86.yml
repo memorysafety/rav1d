@@ -54,6 +54,9 @@ jobs:
               -r ../target/${{ matrix.target }}/${{ matrix.build.name }}/dav1d \
               -s ../target/${{ matrix.target }}/${{ matrix.build.name }}/seek_stress \
               -t ${{ matrix.build.timeout_multiplier }}
+      - name: copy log files
+        if: ${{ !cancelled() }}
+        run: |
           cp ${{ github.workspace }}/build/meson-logs/testlog.txt \
              ${{ github.workspace }}/build/meson-logs/testlog-${{ matrix.target }}-${{ matrix.build.name }}.txt
       - name: upload build artifacts
@@ -99,6 +102,9 @@ jobs:
         run: |
           .github/workflows/test.sh -r ../target/release/dav1d \
               -s ../target/release/seek_stress
+      - name: copy log files
+        if: ${{ !cancelled() }}
+        run: |
           cp ${{ github.workspace }}/build/meson-logs/testlog.txt \
               ${{ github.workspace }}/build/meson-logs/testlog-x86_64-apple-darwin.txt
       - name: upload build artifacts
