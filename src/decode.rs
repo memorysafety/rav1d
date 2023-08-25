@@ -4565,11 +4565,7 @@ unsafe fn decode_sb(
     0
 }
 
-unsafe extern "C" fn reset_context(
-    ctx: *mut BlockContext,
-    keyframe: libc::c_int,
-    pass: libc::c_int,
-) {
+unsafe fn reset_context(ctx: *mut BlockContext, keyframe: libc::c_int, pass: libc::c_int) {
     memset(
         ((*ctx).intra.0).as_mut_ptr() as *mut libc::c_void,
         keyframe,
