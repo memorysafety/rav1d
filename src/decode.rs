@@ -4619,9 +4619,8 @@ unsafe fn setup_tile(
     let row_sb_end = (*f.frame_hdr).tiling.row_start_sb[(tile_row + 1) as usize] as libc::c_int;
     let sb_shift = f.sb_shift;
     let size_mul: *const uint8_t = (ss_size_mul[f.cur.p.layout as usize]).as_ptr();
-    let mut p = 0;
-    while p < 2 {
-        ts.frame_thread[p as usize].pal_idx = if !(f.frame_thread.pal_idx).is_null() {
+    for p in 0..2 {
+        ts.frame_thread[p].pal_idx = if !(f.frame_thread.pal_idx).is_null() {
             &mut *(f.frame_thread.pal_idx).offset(
                 (tile_start_off as size_t)
                     .wrapping_mul(*size_mul.offset(1) as size_t)
@@ -4630,7 +4629,7 @@ unsafe fn setup_tile(
         } else {
             0 as *mut uint8_t
         };
-        ts.frame_thread[p as usize].cf = (if !(f.frame_thread.cf).is_null() {
+        ts.frame_thread[p].cf = (if !(f.frame_thread.cf).is_null() {
             (f.frame_thread.cf as *mut uint8_t).offset(
                 ((tile_start_off as size_t).wrapping_mul(*size_mul.offset(0) as size_t)
                     >> ((*f.seq_hdr).hbd == 0) as libc::c_int) as isize,
@@ -4638,7 +4637,6 @@ unsafe fn setup_tile(
         } else {
             0 as *mut uint8_t
         }) as *mut libc::c_void;
-        p += 1;
     }
     dav1d_cdf_thread_copy(&mut ts.cdf, &f.in_cdf);
     ts.last_qidx = (*f.frame_hdr).quant.yac;
@@ -4669,8 +4667,7 @@ unsafe fn setup_tile(
         unit_idx = ((ts.tiling.row_start & 16) >> 3) + ((ts.tiling.col_start & 16) >> 4);
     }
     let mut current_block_31: u64;
-    let mut p = 0;
-    while p < 3 {
+    for p in 0..3 {
         if !((f.lf.restore_planes >> p) as libc::c_uint & 1 as libc::c_uint == 0) {
             if (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1] {
                 let ss_hor = (p != 0
@@ -4689,7 +4686,7 @@ unsafe fn setup_tile(
                 if sb128x >= f.sr_sb128w {
                     current_block_31 = 2370887241019905314;
                 } else {
-                    ts.lr_ref[p as usize] =
+                    ts.lr_ref[p] =
                         &mut *(*((*(f.lf.lr_mask).offset((sb_idx + sb128x) as isize)).lr)
                             .as_mut_ptr()
                             .offset(p as isize))
@@ -4698,7 +4695,7 @@ unsafe fn setup_tile(
                     current_block_31 = 1608152415753874203;
                 }
             } else {
-                ts.lr_ref[p as usize] = &mut *(*((*(f.lf.lr_mask).offset(sb_idx as isize)).lr)
+                ts.lr_ref[p] = &mut *(*((*(f.lf.lr_mask).offset(sb_idx as isize)).lr)
                     .as_mut_ptr()
                     .offset(p as isize))
                 .as_mut_ptr()
@@ -4709,25 +4706,22 @@ unsafe fn setup_tile(
             match current_block_31 {
                 2370887241019905314 => {}
                 _ => {
-                    (*ts.lr_ref[p as usize]).filter_v[0] = 3 as libc::c_int as int8_t;
-                    (*ts.lr_ref[p as usize]).filter_v[1] = -(7 as libc::c_int) as int8_t;
-                    (*ts.lr_ref[p as usize]).filter_v[2] = 15 as libc::c_int as int8_t;
-                    (*ts.lr_ref[p as usize]).filter_h[0] = 3 as libc::c_int as int8_t;
-                    (*ts.lr_ref[p as usize]).filter_h[1] = -(7 as libc::c_int) as int8_t;
-                    (*ts.lr_ref[p as usize]).filter_h[2] = 15 as libc::c_int as int8_t;
-                    (*ts.lr_ref[p as usize]).sgr_weights[0] = -(32 as libc::c_int) as int8_t;
-                    (*ts.lr_ref[p as usize]).sgr_weights[1] = 31 as libc::c_int as int8_t;
+                    (*ts.lr_ref[p]).filter_v[0] = 3 as libc::c_int as int8_t;
+                    (*ts.lr_ref[p]).filter_v[1] = -(7 as libc::c_int) as int8_t;
+                    (*ts.lr_ref[p]).filter_v[2] = 15 as libc::c_int as int8_t;
+                    (*ts.lr_ref[p]).filter_h[0] = 3 as libc::c_int as int8_t;
+                    (*ts.lr_ref[p]).filter_h[1] = -(7 as libc::c_int) as int8_t;
+                    (*ts.lr_ref[p]).filter_h[2] = 15 as libc::c_int as int8_t;
+                    (*ts.lr_ref[p]).sgr_weights[0] = -(32 as libc::c_int) as int8_t;
+                    (*ts.lr_ref[p]).sgr_weights[1] = 31 as libc::c_int as int8_t;
                 }
             }
         }
-        p += 1;
     }
     if (*f.c).n_tc > 1 as libc::c_uint {
-        let mut p = 0;
-        while p < 2 {
+        for p in 0..2 {
             *(&mut *(ts.progress).as_mut_ptr().offset(p as isize) as *mut atomic_int) =
                 row_sb_start;
-            p += 1;
         }
     }
 }
