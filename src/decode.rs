@@ -4565,20 +4565,20 @@ unsafe fn decode_sb(
     0
 }
 
-unsafe fn reset_context(ctx: *mut BlockContext, keyframe: libc::c_int, pass: libc::c_int) {
+unsafe fn reset_context(ctx: &mut BlockContext, keyframe: libc::c_int, pass: libc::c_int) {
     memset(
-        ((*ctx).intra.0).as_mut_ptr() as *mut libc::c_void,
+        (ctx.intra.0).as_mut_ptr() as *mut libc::c_void,
         keyframe,
         ::core::mem::size_of::<[uint8_t; 32]>(),
     );
     memset(
-        ((*ctx).uvmode.0).as_mut_ptr() as *mut libc::c_void,
+        (ctx.uvmode.0).as_mut_ptr() as *mut libc::c_void,
         DC_PRED as libc::c_int,
         ::core::mem::size_of::<[uint8_t; 32]>(),
     );
     if keyframe != 0 {
         memset(
-            ((*ctx).mode.0).as_mut_ptr() as *mut libc::c_void,
+            (ctx.mode.0).as_mut_ptr() as *mut libc::c_void,
             DC_PRED as libc::c_int,
             ::core::mem::size_of::<[uint8_t; 32]>(),
         );
@@ -4587,79 +4587,79 @@ unsafe fn reset_context(ctx: *mut BlockContext, keyframe: libc::c_int, pass: lib
         return;
     }
     memset(
-        ((*ctx).partition.0).as_mut_ptr() as *mut libc::c_void,
+        (ctx.partition.0).as_mut_ptr() as *mut libc::c_void,
         0 as libc::c_int,
         ::core::mem::size_of::<[uint8_t; 16]>(),
     );
     memset(
-        ((*ctx).skip.0).as_mut_ptr() as *mut libc::c_void,
+        (ctx.skip.0).as_mut_ptr() as *mut libc::c_void,
         0 as libc::c_int,
         ::core::mem::size_of::<[uint8_t; 32]>(),
     );
     memset(
-        ((*ctx).skip_mode.0).as_mut_ptr() as *mut libc::c_void,
+        (ctx.skip_mode.0).as_mut_ptr() as *mut libc::c_void,
         0 as libc::c_int,
         ::core::mem::size_of::<[uint8_t; 32]>(),
     );
     memset(
-        ((*ctx).tx_lpf_y.0).as_mut_ptr() as *mut libc::c_void,
+        (ctx.tx_lpf_y.0).as_mut_ptr() as *mut libc::c_void,
         2 as libc::c_int,
         ::core::mem::size_of::<[uint8_t; 32]>(),
     );
     memset(
-        ((*ctx).tx_lpf_uv.0).as_mut_ptr() as *mut libc::c_void,
+        (ctx.tx_lpf_uv.0).as_mut_ptr() as *mut libc::c_void,
         1 as libc::c_int,
         ::core::mem::size_of::<[uint8_t; 32]>(),
     );
     memset(
-        ((*ctx).tx_intra.0).as_mut_ptr() as *mut libc::c_void,
+        (ctx.tx_intra.0).as_mut_ptr() as *mut libc::c_void,
         -(1 as libc::c_int),
         ::core::mem::size_of::<[int8_t; 32]>(),
     );
     memset(
-        ((*ctx).tx.0).as_mut_ptr() as *mut libc::c_void,
+        (ctx.tx.0).as_mut_ptr() as *mut libc::c_void,
         TX_64X64 as libc::c_int,
         ::core::mem::size_of::<[int8_t; 32]>(),
     );
     if keyframe == 0 {
         memset(
-            ((*ctx).r#ref.0).as_mut_ptr() as *mut libc::c_void,
+            (ctx.r#ref.0).as_mut_ptr() as *mut libc::c_void,
             -(1 as libc::c_int),
             ::core::mem::size_of::<[[int8_t; 32]; 2]>(),
         );
         memset(
-            ((*ctx).comp_type.0).as_mut_ptr() as *mut libc::c_void,
+            (ctx.comp_type.0).as_mut_ptr() as *mut libc::c_void,
             0 as libc::c_int,
             ::core::mem::size_of::<[uint8_t; 32]>(),
         );
         memset(
-            ((*ctx).mode.0).as_mut_ptr() as *mut libc::c_void,
+            (ctx.mode.0).as_mut_ptr() as *mut libc::c_void,
             NEARESTMV as libc::c_int,
             ::core::mem::size_of::<[uint8_t; 32]>(),
         );
     }
     memset(
-        ((*ctx).lcoef.0).as_mut_ptr() as *mut libc::c_void,
+        (ctx.lcoef.0).as_mut_ptr() as *mut libc::c_void,
         0x40 as libc::c_int,
         ::core::mem::size_of::<[uint8_t; 32]>(),
     );
     memset(
-        ((*ctx).ccoef.0).as_mut_ptr() as *mut libc::c_void,
+        (ctx.ccoef.0).as_mut_ptr() as *mut libc::c_void,
         0x40 as libc::c_int,
         ::core::mem::size_of::<[[uint8_t; 32]; 2]>(),
     );
     memset(
-        ((*ctx).filter.0).as_mut_ptr() as *mut libc::c_void,
+        (ctx.filter.0).as_mut_ptr() as *mut libc::c_void,
         DAV1D_N_SWITCHABLE_FILTERS as libc::c_int,
         ::core::mem::size_of::<[[uint8_t; 32]; 2]>(),
     );
     memset(
-        ((*ctx).seg_pred.0).as_mut_ptr() as *mut libc::c_void,
+        (ctx.seg_pred.0).as_mut_ptr() as *mut libc::c_void,
         0 as libc::c_int,
         ::core::mem::size_of::<[uint8_t; 32]>(),
     );
     memset(
-        ((*ctx).pal_sz.0).as_mut_ptr() as *mut libc::c_void,
+        (ctx.pal_sz.0).as_mut_ptr() as *mut libc::c_void,
         0 as libc::c_int,
         ::core::mem::size_of::<[uint8_t; 32]>(),
     );
