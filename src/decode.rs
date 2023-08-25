@@ -4571,9 +4571,11 @@ fn reset_context(ctx: &mut BlockContext, keyframe: bool, pass: libc::c_int) {
     if keyframe {
         ctx.mode.0.fill(DC_PRED);
     }
+
     if pass == 2 {
         return;
     }
+
     ctx.partition.0.fill(0);
     ctx.skip.0.fill(0);
     ctx.skip_mode.0.fill(0);
