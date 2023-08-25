@@ -853,7 +853,6 @@ use crate::src::levels::PARTITION_T_TOP_SPLIT;
 use crate::src::levels::PARTITION_V;
 use crate::src::levels::PARTITION_V4;
 
-use crate::src::levels::InterPredMode;
 use crate::src::levels::MV_JOINT_H;
 use crate::src::levels::MV_JOINT_HV;
 use crate::src::levels::MV_JOINT_V;
@@ -1885,7 +1884,7 @@ unsafe fn splat_oneref_mv(
     bw4: usize,
     bh4: usize,
 ) {
-    let mode = b.inter_mode() as InterPredMode;
+    let mode = b.inter_mode();
     let tmpl = Align16(refmvs_block(refmvs_block_unaligned {
         mv: refmvs_mvpair {
             mv: [b.mv()[0], mv::ZERO],
@@ -3312,7 +3311,7 @@ unsafe fn decode_b(
                         );
                     }
                 }
-            } else if im[0] == NEARMV as u8 || im[1] == NEARMV as u8 {
+            } else if im[0] == NEARMV || im[1] == NEARMV {
                 *b.drl_idx_mut() = NEARER_DRL as u8;
                 if n_mvs > 2 {
                     // NEAR or NEARISH
@@ -3342,7 +3341,7 @@ unsafe fn decode_b(
 
             has_subpel_filter =
                 std::cmp::min(bw4, bh4) == 1 || b.inter_mode() != GLOBALMV_GLOBALMV as u8;
-            let mut assign_comp_mv = |idx: usize| match im[idx] as InterPredMode {
+            let mut assign_comp_mv = |idx: usize| match im[idx] {
                 NEARMV | NEARESTMV => {
                     b.mv_mut()[idx] = mvstack[b.drl_idx() as usize].mv.mv[idx];
                     fix_mv_precision(frame_hdr, &mut b.mv_mut()[idx]);
@@ -3545,7 +3544,7 @@ unsafe fn decode_b(
                         &mut ts.cdf.m.globalmv_mode[(ctx >> 3 & 1) as usize],
                     )
                 {
-                    *b.inter_mode_mut() = GLOBALMV as u8;
+                    *b.inter_mode_mut() = GLOBALMV;
                     b.mv_mut()[0] = get_gmv_2d(
                         &frame_hdr.gmv[b.r#ref()[0] as usize],
                         t.bx,
@@ -3563,7 +3562,7 @@ unsafe fn decode_b(
                         &mut ts.cdf.m.refmv_mode[(ctx >> 4 & 15) as usize],
                     ) {
                         // NEAREST, NEARER, NEAR or NEARISH
-                        *b.inter_mode_mut() = NEARMV as u8;
+                        *b.inter_mode_mut() = NEARMV;
                         *b.drl_idx_mut() = NEARER_DRL as u8;
                         if n_mvs > 2 {
                             // NEARER, NEAR or NEARISH
@@ -3607,7 +3606,7 @@ unsafe fn decode_b(
                 }
             } else {
                 has_subpel_filter = true;
-                *b.inter_mode_mut() = NEWMV as u8;
+                *b.inter_mode_mut() = NEWMV;
                 *b.drl_idx_mut() = NEAREST_DRL as u8;
                 if n_mvs > 1 {
                     // NEARER, NEAR or NEARISH
@@ -3708,7 +3707,7 @@ unsafe fn decode_b(
                 && std::cmp::min(bw4, bh4) >= 2
                 // is not warped global motion
                 && !(frame_hdr.force_integer_mv == 0
-                    && b.inter_mode() == GLOBALMV as u8
+                    && b.inter_mode() == GLOBALMV
                     && frame_hdr.gmv[b.r#ref()[0] as usize].type_0 > DAV1D_WM_TYPE_TRANSLATION)
                 // has overlappable neighbours
                 && (have_left && findoddzero(&t.l.intra.0[by4 as usize..][..h4 as usize])
@@ -3852,7 +3851,7 @@ unsafe fn decode_b(
                 == if is_comp {
                     GLOBALMV_GLOBALMV as u8
                 } else {
-                    GLOBALMV as u8
+                    GLOBALMV
                 }) as libc::c_int;
             let tx_split = [b.tx_split0() as u16, b.tx_split1()];
             let mut ytx = b.max_ytx() as RectTxfmSize;
@@ -3978,7 +3977,7 @@ unsafe fn decode_b(
         if b.comp_type() == COMP_INTER_NONE as u8 {
             // y
             if std::cmp::min(bw4, bh4) > 1
-                && (b.inter_mode() == GLOBALMV as u8
+                && (b.inter_mode() == GLOBALMV
                     && f.gmv_warp_allowed[b.r#ref()[0] as usize] != 0
                     || b.motion_mode() == MM_WARP as u8
                         && t.warpmv.type_0 > DAV1D_WM_TYPE_TRANSLATION)
@@ -4076,7 +4075,7 @@ unsafe fn decode_b(
                         &f.svc[b.r#ref()[0] as usize][1],
                     );
                 } else if std::cmp::min(cbw4, cbh4) > 1
-                    && (b.inter_mode() == GLOBALMV as u8
+                    && (b.inter_mode() == GLOBALMV
                         && f.gmv_warp_allowed[b.r#ref()[0] as usize] != 0
                         || b.motion_mode() == MM_WARP as u8
                             && t.warpmv.type_0 > DAV1D_WM_TYPE_TRANSLATION)
@@ -4588,7 +4587,7 @@ fn reset_context(ctx: &mut BlockContext, keyframe: bool, pass: libc::c_int) {
             r#ref.fill(-1);
         }
         ctx.comp_type.0.fill(0);
-        ctx.mode.0.fill(NEARESTMV as u8);
+        ctx.mode.0.fill(NEARESTMV);
     }
     ctx.lcoef.0.fill(0x40);
     for ccoef in &mut ctx.ccoef.0 {
