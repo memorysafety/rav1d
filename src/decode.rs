@@ -4664,16 +4664,12 @@ unsafe fn setup_tile(
     }
     let mut current_block_31: u64;
     for p in 0..3 {
-        if !((f.lf.restore_planes >> p) as libc::c_uint & 1 as libc::c_uint == 0) {
+        if !((f.lf.restore_planes >> p) & 1 == 0) {
             if (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1] {
-                let ss_hor = (p != 0
-                    && f.cur.p.layout as libc::c_uint
-                        != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint)
-                    as libc::c_int;
+                let ss_hor = (p != 0 && f.cur.p.layout != DAV1D_PIXEL_LAYOUT_I444) as libc::c_int;
                 let d = (*f.frame_hdr).super_res.width_scale_denominator;
-                let unit_size_log2 =
-                    (*f.frame_hdr).restoration.unit_size[(p != 0) as libc::c_int as usize];
-                let rnd = ((8 as libc::c_int) << unit_size_log2) - 1;
+                let unit_size_log2 = (*f.frame_hdr).restoration.unit_size[(p != 0) as usize];
+                let rnd = (8 << unit_size_log2) - 1;
                 let shift = unit_size_log2 + 3;
                 let x = (4 * ts.tiling.col_start * d >> ss_hor) + rnd >> shift;
                 let px_x = x << unit_size_log2 + ss_hor;
@@ -4702,19 +4698,19 @@ unsafe fn setup_tile(
             match current_block_31 {
                 2370887241019905314 => {}
                 _ => {
-                    (*ts.lr_ref[p]).filter_v[0] = 3 as libc::c_int as int8_t;
-                    (*ts.lr_ref[p]).filter_v[1] = -(7 as libc::c_int) as int8_t;
-                    (*ts.lr_ref[p]).filter_v[2] = 15 as libc::c_int as int8_t;
-                    (*ts.lr_ref[p]).filter_h[0] = 3 as libc::c_int as int8_t;
-                    (*ts.lr_ref[p]).filter_h[1] = -(7 as libc::c_int) as int8_t;
-                    (*ts.lr_ref[p]).filter_h[2] = 15 as libc::c_int as int8_t;
-                    (*ts.lr_ref[p]).sgr_weights[0] = -(32 as libc::c_int) as int8_t;
-                    (*ts.lr_ref[p]).sgr_weights[1] = 31 as libc::c_int as int8_t;
+                    (*ts.lr_ref[p]).filter_v[0] = 3;
+                    (*ts.lr_ref[p]).filter_v[1] = -7;
+                    (*ts.lr_ref[p]).filter_v[2] = 15;
+                    (*ts.lr_ref[p]).filter_h[0] = 3;
+                    (*ts.lr_ref[p]).filter_h[1] = -7;
+                    (*ts.lr_ref[p]).filter_h[2] = 15;
+                    (*ts.lr_ref[p]).sgr_weights[0] = -32;
+                    (*ts.lr_ref[p]).sgr_weights[1] = 31;
                 }
             }
         }
     }
-    if (*f.c).n_tc > 1 as libc::c_uint {
+    if (*f.c).n_tc > 1 {
         ts.progress.fill(row_sb_start as atomic_int);
     }
 }
