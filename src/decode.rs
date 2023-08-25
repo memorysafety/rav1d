@@ -4653,7 +4653,8 @@ unsafe fn setup_tile(
     ts.tiling.col_end = std::cmp::min(col_sb_end << sb_shift, f.bw);
     ts.tiling.row_start = row_sb_start << sb_shift;
     ts.tiling.row_end = std::cmp::min(row_sb_end << sb_shift, f.bh);
-    let (sb_idx, unit_idx) = if (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1] {
+    let diff_width = (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1];
+    let (sb_idx, unit_idx) = if diff_width {
         (
             (ts.tiling.row_start >> 5) * f.sr_sb128w,
             (ts.tiling.row_start & 16) >> 3,
@@ -4668,7 +4669,7 @@ unsafe fn setup_tile(
         if !((f.lf.restore_planes >> p) & 1 != 0) {
             continue;
         }
-        let lr_ref = if (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1] {
+        let lr_ref = if diff_width {
             let ss_hor = (p != 0 && f.cur.p.layout != DAV1D_PIXEL_LAYOUT_I444) as libc::c_int;
             let d = (*f.frame_hdr).super_res.width_scale_denominator;
             let unit_size_log2 = (*f.frame_hdr).restoration.unit_size[(p != 0) as usize];
