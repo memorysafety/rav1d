@@ -309,6 +309,94 @@ extern "C" {
     decl_itx_fns!(_12bpc, _avx2);
     decl_itx_fns!(_sse4);
     decl_itx_fns!(_ssse3);
-    // decl_itx_fn!(dav1d_inv_txfm_add_wht_wht_4x4_16bpc_avx2);
     decl_itx_fn!(dav1d_inv_txfm_add_wht_wht_4x4, _sse2);
 }
+
+macro_rules! inv_txfm_fn {
+    ($type1:ident, $type2:ident, $w:literal, $h:literal, $shift:literal, $has_dconly:literal) => {
+        paste::paste! {
+            // TODO(legare): Temporarily pub until init fns are deduplicated.
+            pub(crate) unsafe extern "C" fn [<inv_txfm_add_ $type1 _ $type2 _ $w x $h _c_erased>] <BD: BitDepth> (
+                mut dst: *mut DynPixel,
+                stride: ptrdiff_t,
+                coeff: *mut DynCoef,
+                eob: libc::c_int,
+                bitdepth_max: libc::c_int,
+            ) {
+                use crate::src::itx_1d::*;
+                inv_txfm_add_rust(
+                    dst.cast(),
+                    stride,
+                    coeff.cast(),
+                    eob,
+                    $w,
+                    $h,
+                    $shift,
+                    Some([<dav1d_inv_ $type1 $w _1d_c>]),
+                    Some([<dav1d_inv_ $type2 $h _1d_c>]),
+                    $has_dconly,
+                    BD::from_c(bitdepth_max),
+                );
+            }
+        }
+    };
+}
+
+macro_rules! inv_txfm_fn64 {
+    ($w:literal, $h:literal, $shift:literal) => {
+        inv_txfm_fn!(dct, dct, $w, $h, $shift, 1);
+    };
+}
+
+macro_rules! inv_txfm_fn32 {
+    ($w:literal, $h:literal, $shift:literal) => {
+        inv_txfm_fn64!($w, $h, $shift);
+        inv_txfm_fn!(identity, identity, $w, $h, $shift, 0);
+    };
+}
+
+macro_rules! inv_txfm_fn16 {
+    ($w:literal, $h:literal, $shift:literal) => {
+        inv_txfm_fn32!($w, $h, $shift);
+        inv_txfm_fn!(adst,     dct,      $w, $h, $shift, 0);
+        inv_txfm_fn!(dct,      adst,     $w, $h, $shift, 0);
+        inv_txfm_fn!(adst,     adst,     $w, $h, $shift, 0);
+        inv_txfm_fn!(dct,      flipadst, $w, $h, $shift, 0);
+        inv_txfm_fn!(flipadst, dct,      $w, $h, $shift, 0);
+        inv_txfm_fn!(adst,     flipadst, $w, $h, $shift, 0);
+        inv_txfm_fn!(flipadst, adst,     $w, $h, $shift, 0);
+        inv_txfm_fn!(flipadst, flipadst, $w, $h, $shift, 0);
+        inv_txfm_fn!(identity, dct,      $w, $h, $shift, 0);
+        inv_txfm_fn!(dct,      identity, $w, $h, $shift, 0);
+    };
+}
+
+macro_rules! inv_txfm_fn84 {
+    ($w:literal, $h:literal, $shift:literal) => {
+        inv_txfm_fn16!($w, $h, $shift);
+        inv_txfm_fn!(identity, flipadst, $w, $h, $shift, 0);
+        inv_txfm_fn!(flipadst, identity, $w, $h, $shift, 0);
+        inv_txfm_fn!(identity, adst,     $w, $h, $shift, 0);
+        inv_txfm_fn!(adst,     identity, $w, $h, $shift, 0);
+    };
+}
+
+inv_txfm_fn84!( 4,  4, 0);
+inv_txfm_fn84!( 4,  8, 0);
+inv_txfm_fn84!( 4, 16, 1);
+inv_txfm_fn84!( 8,  4, 0);
+inv_txfm_fn84!( 8,  8, 1);
+inv_txfm_fn84!( 8, 16, 1);
+inv_txfm_fn32!( 8, 32, 2);
+inv_txfm_fn84!(16,  4, 1);
+inv_txfm_fn84!(16,  8, 1);
+inv_txfm_fn16!(16, 16, 2);
+inv_txfm_fn32!(16, 32, 1);
+inv_txfm_fn64!(16, 64, 2);
+inv_txfm_fn32!(32,  8, 2);
+inv_txfm_fn32!(32, 16, 1);
+inv_txfm_fn32!(32, 32, 2);
+inv_txfm_fn64!(32, 64, 1);
+inv_txfm_fn64!(64, 16, 2);
+inv_txfm_fn64!(64, 32, 1);
+inv_txfm_fn64!(64, 64, 2);
