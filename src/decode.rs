@@ -4603,7 +4603,7 @@ static ss_size_mul: [[u8; 2]; 4] = {
     a
 };
 
-unsafe extern "C" fn setup_tile(
+unsafe fn setup_tile(
     ts: *mut Dav1dTileState,
     f: *const Dav1dFrameContext,
     data: *const uint8_t,
@@ -4731,6 +4731,7 @@ unsafe extern "C" fn setup_tile(
         }
     }
 }
+
 unsafe extern "C" fn read_restoration_info(
     t: *mut Dav1dTaskContext,
     lr: *mut Av1RestorationUnit,
