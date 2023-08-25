@@ -6589,15 +6589,13 @@ pub unsafe extern "C" fn dav1d_decode_frame(f: *mut Dav1dFrameContext) -> libc::
     (*f).n_tile_data = 0 as libc::c_int;
     return res;
 }
-unsafe extern "C" fn get_upscale_x0(
-    in_w: libc::c_int,
-    out_w: libc::c_int,
-    step: libc::c_int,
-) -> libc::c_int {
+
+fn get_upscale_x0(in_w: libc::c_int, out_w: libc::c_int, step: libc::c_int) -> libc::c_int {
     let err = out_w * step - (in_w << 14);
     let x0 = (-(out_w - in_w << 13) + (out_w >> 1)) / out_w + 128 - err / 2;
-    return x0 & 0x3fff as libc::c_int;
+    x0 & 0x3fff
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int {
     let mut ref_coded_width: [libc::c_int; 7] = [0; 7];
