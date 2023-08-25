@@ -3671,12 +3671,12 @@ unsafe fn decode_b(
                     N_INTER_INTRA_PRED_MODES as size_t - 1,
                 ) as u8;
                 let wedge_ctx = dav1d_wedge_ctx_lut[bs as usize] as libc::c_int;
-                *b.interintra_type_mut() = INTER_INTRA_BLEND as u8
+                *b.interintra_type_mut() = INTER_INTRA_BLEND
                     + dav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
                         &mut ts.cdf.m.interintra_wedge[wedge_ctx as usize],
                     ) as u8;
-                if b.interintra_type() == INTER_INTRA_WEDGE as u8 {
+                if b.interintra_type() == INTER_INTRA_WEDGE {
                     *b.wedge_idx_mut() = dav1d_msac_decode_symbol_adapt16(
                         &mut ts.msac,
                         &mut ts.cdf.m.wedge_idx[wedge_ctx as usize],
@@ -3684,7 +3684,7 @@ unsafe fn decode_b(
                     ) as u8;
                 }
             } else {
-                *b.interintra_type_mut() = INTER_INTRA_NONE as u8;
+                *b.interintra_type_mut() = INTER_INTRA_NONE;
             }
             if DEBUG_BLOCK_INFO(f, t)
                 && (*f.seq_hdr).inter_intra != 0
@@ -3701,7 +3701,7 @@ unsafe fn decode_b(
 
             // motion variation
             if frame_hdr.switchable_motion_mode != 0
-                && b.interintra_type() == INTER_INTRA_NONE as u8
+                && b.interintra_type() == INTER_INTRA_NONE
                 && std::cmp::min(bw4, bh4) >= 2
                 // is not warped global motion
                 && !(frame_hdr.force_integer_mv == 0
