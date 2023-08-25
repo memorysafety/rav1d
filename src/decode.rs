@@ -4647,8 +4647,7 @@ unsafe fn setup_tile(
     ts.last_delta_lf.fill(0);
     dav1d_msac_init(
         &mut ts.msac,
-        data,
-        sz,
+        std::slice::from_raw_parts(data, sz),
         (*f.frame_hdr).disable_cdf_update != 0,
     );
     ts.tiling.row = tile_row as libc::c_int;

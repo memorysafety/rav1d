@@ -317,15 +317,13 @@ fn dav1d_msac_decode_hi_tok_rust(s: &mut MsacContext, cdf: &mut [u16; 4]) -> lib
 
 /// # Safety
 ///
-/// `data` and `sz` must form a valid slice,
-/// and must live longer than all of the other functions called on [`MsacContext`].
+/// `data` must live longer than all of the other functions called on [`MsacContext`].
 pub unsafe fn dav1d_msac_init(
     s: &mut MsacContext,
-    data: *const uint8_t,
-    sz: size_t,
+    data: &[u8],
     disable_cdf_update_flag: bool,
 ) {
-    s.set_buf(std::slice::from_raw_parts(data, sz));
+    s.set_buf(data);
     s.dif = (1 << (EC_WIN_SIZE - 1)) - 1;
     s.rng = 0x8000;
     s.cnt = -15;
