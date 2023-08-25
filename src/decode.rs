@@ -4621,18 +4621,16 @@ unsafe fn setup_tile(
     let size_mul = &ss_size_mul[f.cur.p.layout as usize];
     for p in 0..2 {
         ts.frame_thread[p].pal_idx = if !(f.frame_thread.pal_idx).is_null() {
-            &mut *(f.frame_thread.pal_idx).offset(
-                tile_start_off
-                    .wrapping_mul(size_mul[1] as size_t)
-                    .wrapping_div(4) as isize,
-            ) as *mut uint8_t
+            &mut *(f.frame_thread.pal_idx)
+                .offset((tile_start_off * size_mul[1] as size_t / 4) as isize)
+                as *mut uint8_t
         } else {
             0 as *mut uint8_t
         };
         ts.frame_thread[p].cf = (if !(f.frame_thread.cf).is_null() {
             (f.frame_thread.cf as *mut uint8_t).offset(
-                (tile_start_off.wrapping_mul(size_mul[0] as size_t)
-                    >> ((*f.seq_hdr).hbd == 0) as libc::c_int) as isize,
+                (tile_start_off * size_mul[0] as size_t >> ((*f.seq_hdr).hbd == 0) as libc::c_int)
+                    as isize,
             )
         } else {
             0 as *mut uint8_t
