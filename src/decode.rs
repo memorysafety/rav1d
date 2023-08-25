@@ -4565,7 +4565,7 @@ unsafe fn decode_sb(
     0
 }
 
-unsafe fn reset_context(ctx: &mut BlockContext, keyframe: libc::c_int, pass: libc::c_int) {
+fn reset_context(ctx: &mut BlockContext, keyframe: libc::c_int, pass: libc::c_int) {
     ctx.intra.0.fill(keyframe as u8);
     ctx.uvmode.0.fill(DC_PRED);
     if keyframe != 0 {
