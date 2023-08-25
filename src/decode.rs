@@ -4650,9 +4650,9 @@ unsafe fn setup_tile(
     ts.tiling.row = tile_row;
     ts.tiling.col = tile_col;
     ts.tiling.col_start = col_sb_start << sb_shift;
-    ts.tiling.col_end = imin(col_sb_end << sb_shift, f.bw);
+    ts.tiling.col_end = std::cmp::min(col_sb_end << sb_shift, f.bw);
     ts.tiling.row_start = row_sb_start << sb_shift;
-    ts.tiling.row_end = imin(row_sb_end << sb_shift, f.bh);
+    ts.tiling.row_end = std::cmp::min(row_sb_end << sb_shift, f.bh);
     let mut sb_idx = 0;
     let mut unit_idx = 0;
     if (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1] {
