@@ -4608,15 +4608,15 @@ unsafe fn setup_tile(
     f: &Dav1dFrameContext,
     data: *const uint8_t,
     sz: size_t,
-    tile_row: libc::c_int,
-    tile_col: libc::c_int,
+    tile_row: usize,
+    tile_col: usize,
     tile_start_off: libc::c_int,
 ) {
-    let col_sb_start = (*f.frame_hdr).tiling.col_start_sb[tile_col as usize] as libc::c_int;
+    let col_sb_start = (*f.frame_hdr).tiling.col_start_sb[tile_col] as libc::c_int;
     let col_sb128_start = col_sb_start >> ((*f.seq_hdr).sb128 == 0) as libc::c_int;
-    let col_sb_end = (*f.frame_hdr).tiling.col_start_sb[(tile_col + 1) as usize] as libc::c_int;
-    let row_sb_start = (*f.frame_hdr).tiling.row_start_sb[tile_row as usize] as libc::c_int;
-    let row_sb_end = (*f.frame_hdr).tiling.row_start_sb[(tile_row + 1) as usize] as libc::c_int;
+    let col_sb_end = (*f.frame_hdr).tiling.col_start_sb[tile_col + 1] as libc::c_int;
+    let row_sb_start = (*f.frame_hdr).tiling.row_start_sb[tile_row] as libc::c_int;
+    let row_sb_end = (*f.frame_hdr).tiling.row_start_sb[tile_row + 1] as libc::c_int;
     let sb_shift = f.sb_shift;
     let size_mul = &ss_size_mul[f.cur.p.layout as usize];
     for p in 0..2 {
@@ -4647,8 +4647,8 @@ unsafe fn setup_tile(
         sz,
         (*f.frame_hdr).disable_cdf_update != 0,
     );
-    ts.tiling.row = tile_row;
-    ts.tiling.col = tile_col;
+    ts.tiling.row = tile_row as libc::c_int;
+    ts.tiling.col = tile_col as libc::c_int;
     ts.tiling.col_start = col_sb_start << sb_shift;
     ts.tiling.col_end = std::cmp::min(col_sb_end << sb_shift, f.bw);
     ts.tiling.row_start = row_sb_start << sb_shift;
@@ -6259,8 +6259,8 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
                 &*f,
                 data,
                 tile_sz,
-                tile_row,
-                fresh38,
+                tile_row as usize,
+                fresh38 as usize,
                 if (*c).n_fc > 1 as libc::c_uint {
                     *((*f).frame_thread.tile_start_off).offset(j as isize)
                 } else {
