@@ -4679,17 +4679,10 @@ unsafe fn setup_tile(
             if sb128x >= f.sr_sb128w {
                 continue;
             }
-            ts.lr_ref[p] = &mut *(*((*(f.lf.lr_mask).offset((sb_idx + sb128x) as isize)).lr)
-                .as_mut_ptr()
-                .offset(p as isize))
-            .as_mut_ptr()
-            .offset(u_idx as isize) as *mut Av1RestorationUnit;
+            ts.lr_ref[p] =
+                &mut (*f.lf.lr_mask.offset((sb_idx + sb128x) as isize)).lr[p][u_idx as usize];
         } else {
-            ts.lr_ref[p] = &mut *(*((*(f.lf.lr_mask).offset(sb_idx as isize)).lr)
-                .as_mut_ptr()
-                .offset(p as isize))
-            .as_mut_ptr()
-            .offset(unit_idx as isize) as *mut Av1RestorationUnit;
+            ts.lr_ref[p] = &mut (*f.lf.lr_mask.offset(sb_idx as isize)).lr[p][unit_idx as usize];
         }
         (*ts.lr_ref[p]).filter_v[0] = 3;
         (*ts.lr_ref[p]).filter_v[1] = -7;
