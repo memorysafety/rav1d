@@ -4610,7 +4610,7 @@ unsafe fn setup_tile(
     sz: size_t,
     tile_row: usize,
     tile_col: usize,
-    tile_start_off: libc::c_int,
+    tile_start_off: usize,
 ) {
     let col_sb_start = (*f.frame_hdr).tiling.col_start_sb[tile_col] as libc::c_int;
     let col_sb128_start = col_sb_start >> ((*f.seq_hdr).sb128 == 0) as libc::c_int;
@@ -4622,7 +4622,7 @@ unsafe fn setup_tile(
     for p in 0..2 {
         ts.frame_thread[p].pal_idx = if !(f.frame_thread.pal_idx).is_null() {
             &mut *(f.frame_thread.pal_idx).offset(
-                (tile_start_off as size_t)
+                tile_start_off
                     .wrapping_mul(size_mul[1] as size_t)
                     .wrapping_div(4) as isize,
             ) as *mut uint8_t
@@ -4631,7 +4631,7 @@ unsafe fn setup_tile(
         };
         ts.frame_thread[p].cf = (if !(f.frame_thread.cf).is_null() {
             (f.frame_thread.cf as *mut uint8_t).offset(
-                ((tile_start_off as size_t).wrapping_mul(size_mul[0] as size_t)
+                (tile_start_off.wrapping_mul(size_mul[0] as size_t)
                     >> ((*f.seq_hdr).hbd == 0) as libc::c_int) as isize,
             )
         } else {
@@ -6262,9 +6262,9 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
                 tile_row as usize,
                 fresh38 as usize,
                 if (*c).n_fc > 1 as libc::c_uint {
-                    *((*f).frame_thread.tile_start_off).offset(j as isize)
+                    *((*f).frame_thread.tile_start_off).offset(j as isize) as usize
                 } else {
-                    0 as libc::c_int
+                    0
                 },
             );
             if tile_col == (*(*f).frame_hdr).tiling.cols {
