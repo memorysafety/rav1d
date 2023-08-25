@@ -31,6 +31,7 @@ use crate::src::levels::BS_8x32;
 use crate::src::levels::BS_8x4;
 use crate::src::levels::BS_8x8;
 use crate::src::levels::BlockSize;
+use crate::src::levels::InterPredMode;
 use crate::src::levels::ADST_ADST;
 use crate::src::levels::ADST_DCT;
 use crate::src::levels::ADST_FLIPADST;
@@ -483,15 +484,15 @@ pub static dav1d_txtp_from_uvmode: [u8; 14] = [
     0,
 ];
 
-pub static dav1d_comp_inter_pred_modes: [[u8; 2]; 8] = [
-    [NEARESTMV as u8, NEARESTMV as u8],
-    [NEARMV as u8, NEARMV as u8],
-    [NEARESTMV as u8, NEWMV as u8],
-    [NEWMV as u8, NEARESTMV as u8],
-    [NEARMV as u8, NEWMV as u8],
-    [NEWMV as u8, NEARMV as u8],
-    [GLOBALMV as u8, GLOBALMV as u8],
-    [NEWMV as u8, NEWMV as u8],
+pub static dav1d_comp_inter_pred_modes: [[InterPredMode; 2]; 8] = [
+    [NEARESTMV, NEARESTMV],
+    [NEARMV, NEARMV],
+    [NEARESTMV, NEWMV],
+    [NEWMV, NEARESTMV],
+    [NEARMV, NEWMV],
+    [NEWMV, NEARMV],
+    [GLOBALMV, GLOBALMV],
+    [NEWMV, NEWMV],
 ];
 
 pub static dav1d_partition_type_count: [u8; 5] = [

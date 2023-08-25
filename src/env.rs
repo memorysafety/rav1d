@@ -247,14 +247,14 @@ pub fn get_comp_dir_ctx(
             let edge = if a_intra { l } else { a };
             let off = if a_intra { yb4 } else { xb4 };
 
-            if edge.comp_type[off as usize] == COMP_INTER_NONE as u8 {
+            if edge.comp_type[off as usize] == COMP_INTER_NONE {
                 return 2;
             }
             return 1 + 2 * has_uni_comp(edge, off) as u8;
         }
 
-        let a_comp = a.comp_type[xb4 as usize] != COMP_INTER_NONE as u8;
-        let l_comp = l.comp_type[yb4 as usize] != COMP_INTER_NONE as u8;
+        let a_comp = a.comp_type[xb4 as usize] != COMP_INTER_NONE;
+        let l_comp = l.comp_type[yb4 as usize] != COMP_INTER_NONE;
         let a_ref0 = a.r#ref[0][xb4 as usize];
         let l_ref0 = l.r#ref[0][yb4 as usize];
 
@@ -287,7 +287,7 @@ pub fn get_comp_dir_ctx(
         if edge.intra[off as usize] != 0 {
             return 2;
         }
-        if edge.comp_type[off as usize] == COMP_INTER_NONE as u8 {
+        if edge.comp_type[off as usize] == COMP_INTER_NONE {
             return 2;
         }
         return 4 * has_uni_comp(edge, off) as u8;
@@ -335,7 +335,7 @@ pub fn get_jnt_comp_ctx(
     .abs();
     let offset = (d0 == d1) as u8;
     let [a_ctx, l_ctx] = [(a, xb4), (l, yb4)].map(|(al, b4)| {
-        (al.comp_type[b4 as usize] >= COMP_INTER_AVG as u8 || al.r#ref[0][b4 as usize] == 6) as u8
+        (al.comp_type[b4 as usize] >= COMP_INTER_AVG || al.r#ref[0][b4 as usize] == 6) as u8
     });
 
     3 * offset + a_ctx + l_ctx
@@ -349,7 +349,7 @@ pub fn get_mask_comp_ctx(
     xb4: libc::c_int,
 ) -> u8 {
     let [a_ctx, l_ctx] = [(a, xb4), (l, yb4)].map(|(al, b4)| {
-        if al.comp_type[b4 as usize] >= COMP_INTER_SEG as u8 {
+        if al.comp_type[b4 as usize] >= COMP_INTER_SEG {
             1
         } else if al.r#ref[0][b4 as usize] == 6 {
             3
