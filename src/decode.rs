@@ -4653,15 +4653,17 @@ unsafe fn setup_tile(
     ts.tiling.col_end = std::cmp::min(col_sb_end << sb_shift, f.bw);
     ts.tiling.row_start = row_sb_start << sb_shift;
     ts.tiling.row_end = std::cmp::min(row_sb_end << sb_shift, f.bh);
-    let mut sb_idx = 0;
-    let mut unit_idx = 0;
-    if (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1] {
-        sb_idx = (ts.tiling.row_start >> 5) * f.sr_sb128w;
-        unit_idx = (ts.tiling.row_start & 16) >> 3;
+    let (sb_idx, unit_idx) = if (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1] {
+        (
+            (ts.tiling.row_start >> 5) * f.sr_sb128w,
+            (ts.tiling.row_start & 16) >> 3,
+        )
     } else {
-        sb_idx = (ts.tiling.row_start >> 5) * f.sb128w + col_sb128_start;
-        unit_idx = ((ts.tiling.row_start & 16) >> 3) + ((ts.tiling.col_start & 16) >> 4);
-    }
+        (
+            (ts.tiling.row_start >> 5) * f.sb128w + col_sb128_start,
+            ((ts.tiling.row_start & 16) >> 3) + ((ts.tiling.col_start & 16) >> 4),
+        )
+    };
     for p in 0..3 {
         if !((f.lf.restore_planes >> p) & 1 != 0) {
             continue;
