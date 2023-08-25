@@ -3408,7 +3408,7 @@ unsafe fn decode_b(
                         by4,
                         bx4,
                     );
-                    *b.comp_type_mut() = COMP_INTER_WEIGHTED_AVG as u8
+                    *b.comp_type_mut() = COMP_INTER_WEIGHTED_AVG
                         + dav1d_msac_decode_bool_adapt(
                             &mut ts.msac,
                             &mut ts.cdf.m.jnt_comp[jnt_ctx as usize],
@@ -3416,7 +3416,7 @@ unsafe fn decode_b(
                     if DEBUG_BLOCK_INFO(f, t) {
                         println!(
                             "Post-jnt_comp[{},ctx={}[ac:{},ar:{},lc:{},lr:{}]]: r={}",
-                            b.comp_type() == COMP_INTER_AVG as u8,
+                            b.comp_type() == COMP_INTER_AVG,
                             jnt_ctx,
                             (*t.a).comp_type[bx4 as usize],
                             (*t.a).r#ref[0][bx4 as usize],
@@ -3426,15 +3426,15 @@ unsafe fn decode_b(
                         );
                     }
                 } else {
-                    *b.comp_type_mut() = COMP_INTER_AVG as u8;
+                    *b.comp_type_mut() = COMP_INTER_AVG;
                 }
             } else {
                 if wedge_allowed_mask & (1 << bs) != 0 {
                     let ctx = dav1d_wedge_ctx_lut[bs as usize] as usize;
-                    *b.comp_type_mut() = COMP_INTER_WEDGE as u8
+                    *b.comp_type_mut() = COMP_INTER_WEDGE
                         - dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.wedge_comp[ctx])
                             as u8;
-                    if b.comp_type() == COMP_INTER_WEDGE as u8 {
+                    if b.comp_type() == COMP_INTER_WEDGE {
                         *b.wedge_idx_mut() = dav1d_msac_decode_symbol_adapt16(
                             &mut ts.msac,
                             &mut ts.cdf.m.wedge_idx[ctx],
@@ -3442,13 +3442,13 @@ unsafe fn decode_b(
                         ) as u8;
                     }
                 } else {
-                    *b.comp_type_mut() = COMP_INTER_SEG as u8;
+                    *b.comp_type_mut() = COMP_INTER_SEG;
                 }
                 *b.mask_sign_mut() = dav1d_msac_decode_bool_equi(&mut ts.msac) as u8;
                 if DEBUG_BLOCK_INFO(f, t) {
                     println!(
                         "Post-seg/wedge[{},wedge_idx={},sign={}]: r={}",
-                        b.comp_type() == COMP_INTER_WEDGE as u8,
+                        b.comp_type() == COMP_INTER_WEDGE,
                         b.wedge_idx(),
                         b.mask_sign(),
                         ts.msac.rng,
@@ -3456,7 +3456,7 @@ unsafe fn decode_b(
                 }
             }
         } else {
-            *b.comp_type_mut() = COMP_INTER_NONE as u8;
+            *b.comp_type_mut() = COMP_INTER_NONE;
 
             // ref
             if let Some(seg) = seg.filter(|seg| seg.r#ref > 0) {
@@ -3791,7 +3791,7 @@ unsafe fn decode_b(
         // subpel filter
         let filter = if frame_hdr.subpel_filter_mode == DAV1D_FILTER_SWITCHABLE {
             if has_subpel_filter {
-                let comp = b.comp_type() != COMP_INTER_NONE as u8;
+                let comp = b.comp_type() != COMP_INTER_NONE;
                 let ctx1 = get_filter_ctx(&*t.a, &t.l, comp, false, b.r#ref()[0], by4, bx4);
                 let filter0 = dav1d_msac_decode_symbol_adapt4(
                     &mut ts.msac,
@@ -3968,7 +3968,7 @@ unsafe fn decode_b(
         let sby = t.by - ts.tiling.row_start >> f.sb_shift;
         let lowest_px = &mut *ts.lowest_pixel.offset(sby as isize);
         // keep track of motion vectors for each reference
-        if b.comp_type() == COMP_INTER_NONE as u8 {
+        if b.comp_type() == COMP_INTER_NONE {
             // y
             if std::cmp::min(bw4, bh4) > 1
                 && (b.inter_mode() == GLOBALMV && f.gmv_warp_allowed[b.r#ref()[0] as usize] != 0
