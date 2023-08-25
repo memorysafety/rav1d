@@ -257,7 +257,7 @@ pub struct Dav1dTileState_frame_thread {
 #[repr(C)]
 pub struct Dav1dTileState {
     pub cdf: CdfContext,
-    pub msac: MsacContext,
+    pub msac: MsacContext<'static>,
     pub tiling: Dav1dTileState_tiling,
     pub progress: [atomic_int; 2],
     pub frame_thread: [Dav1dTileState_frame_thread; 2],

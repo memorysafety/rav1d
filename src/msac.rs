@@ -4,6 +4,7 @@ use crate::include::common::intops::ulog2;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use cfg_if::cfg_if;
+use std::marker::PhantomData;
 use std::mem;
 use std::ops::Range;
 
@@ -64,7 +65,8 @@ pub type ec_win = size_t;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct MsacContext {
+pub struct MsacContext<'a> {
+    _buf_lifetime: PhantomData<&'a ()>,
     buf_pos: *const uint8_t,
     buf_end: *const uint8_t,
     pub dif: ec_win,
@@ -76,8 +78,8 @@ pub struct MsacContext {
         unsafe extern "C" fn(&mut MsacContext, *mut uint16_t, size_t, usize) -> libc::c_uint,
 }
 
-impl MsacContext {
-    fn set_buf(&mut self, buf: &[u8]) {
+impl<'a> MsacContext<'a> {
+    fn set_buf(&mut self, buf: &'a [u8]) {
         let Range { start, end } = buf.as_ptr_range();
         self.buf_pos = start;
         self.buf_end = end;
@@ -315,14 +317,7 @@ fn dav1d_msac_decode_hi_tok_rust(s: &mut MsacContext, cdf: &mut [u16; 4]) -> lib
     tok
 }
 
-/// # Safety
-///
-/// `data` must live longer than all of the other functions called on [`MsacContext`].
-pub unsafe fn dav1d_msac_init(
-    s: &mut MsacContext,
-    data: &[u8],
-    disable_cdf_update_flag: bool,
-) {
+pub fn dav1d_msac_init<'a>(s: &mut MsacContext<'a>, data: &'a [u8], disable_cdf_update_flag: bool) {
     s.set_buf(data);
     s.dif = (1 << (EC_WIN_SIZE - 1)) - 1;
     s.rng = 0x8000;
