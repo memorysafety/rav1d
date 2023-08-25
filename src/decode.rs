@@ -4668,12 +4668,9 @@ unsafe extern "C" fn reset_context(
         ::core::mem::size_of::<[uint8_t; 32]>(),
     );
 }
-static mut ss_size_mul: [[uint8_t; 2]; 4] = [
-    [4 as libc::c_int as uint8_t, 4 as libc::c_int as uint8_t],
-    [6 as libc::c_int as uint8_t, 5 as libc::c_int as uint8_t],
-    [8 as libc::c_int as uint8_t, 6 as libc::c_int as uint8_t],
-    [12 as libc::c_int as uint8_t, 8 as libc::c_int as uint8_t],
-];
+
+static mut ss_size_mul: [[uint8_t; 2]; 4] = [[4, 4], [6, 5], [8, 6], [12, 8]];
+
 unsafe extern "C" fn setup_tile(
     ts: *mut Dav1dTileState,
     f: *const Dav1dFrameContext,
