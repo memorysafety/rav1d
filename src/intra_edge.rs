@@ -1,3 +1,6 @@
+use std::iter;
+use std::slice;
+
 use crate::include::stdint::uint8_t;
 use ::libc;
 pub type EdgeFlags = uint8_t;
@@ -136,71 +139,60 @@ unsafe fn init_edges(node: *mut EdgeNode, bl: BlockLevel, edge_flags: EdgeFlags)
         nwc.tbs[2] = 0 as EdgeFlags;
     };
 }
-unsafe extern "C" fn init_mode_node(
-    nwc: *mut EdgeBranch,
+
+unsafe fn init_mode_node(
+    nwc: &mut EdgeBranch,
     bl: BlockLevel,
-    mem: *mut ModeSelMem,
-    top_has_right: libc::c_int,
-    left_has_bottom: libc::c_int,
+    mem: &mut ModeSelMem,
+    top_has_right: bool,
+    left_has_bottom: bool,
 ) {
     init_edges(
-        &mut (*nwc).node,
+        &mut nwc.node,
         bl,
-        ((if top_has_right != 0 {
-            EDGE_I444_TOP_HAS_RIGHT as libc::c_int
-                | EDGE_I422_TOP_HAS_RIGHT as libc::c_int
-                | EDGE_I420_TOP_HAS_RIGHT as libc::c_int
+        (if top_has_right {
+            EDGE_I444_TOP_HAS_RIGHT | EDGE_I422_TOP_HAS_RIGHT | EDGE_I420_TOP_HAS_RIGHT
         } else {
-            0 as libc::c_int
-        }) | (if left_has_bottom != 0 {
-            EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int
-                | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int
-                | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int
+            0 as EdgeFlags
+        }) | (if left_has_bottom {
+            EDGE_I444_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM | EDGE_I420_LEFT_HAS_BOTTOM
         } else {
-            0 as libc::c_int
-        })) as EdgeFlags,
+            0 as EdgeFlags
+        }),
     );
-    if bl as libc::c_uint == BL_16X16 as libc::c_int as libc::c_uint {
-        let mut n = 0;
-        while n < 4 {
-            let fresh0 = (*mem).nt;
-            (*mem).nt = ((*mem).nt).offset(1);
-            let nt: *mut EdgeTip = fresh0;
-            (*nwc).split[n as usize] = &mut (*nt).node;
+    if bl == BL_16X16 {
+        let nt = slice::from_raw_parts_mut(mem.nt, nwc.split.len());
+        mem.nt = mem.nt.offset(nt.len() as isize);
+        for (n, (split, nt)) in iter::zip(&mut nwc.split, nt).enumerate() {
+            *split = &mut nt.node;
             init_edges(
-                &mut (*nt).node,
-                (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as BlockLevel,
-                ((if n == 3 || n == 1 && top_has_right == 0 {
-                    0 as libc::c_int
+                &mut nt.node,
+                bl + 1,
+                ((if n == 3 || (n == 1 && !top_has_right) {
+                    0 as EdgeFlags
                 } else {
-                    EDGE_I444_TOP_HAS_RIGHT as libc::c_int
-                        | EDGE_I422_TOP_HAS_RIGHT as libc::c_int
-                        | EDGE_I420_TOP_HAS_RIGHT as libc::c_int
-                }) | (if !(n == 0 || n == 2 && left_has_bottom != 0) {
-                    0 as libc::c_int
+                    EDGE_I444_TOP_HAS_RIGHT | EDGE_I422_TOP_HAS_RIGHT | EDGE_I420_TOP_HAS_RIGHT
+                }) | (if !(n == 0 || (n == 2 && left_has_bottom)) {
+                    0 as EdgeFlags
                 } else {
-                    EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int
-                        | EDGE_I422_LEFT_HAS_BOTTOM as libc::c_int
-                        | EDGE_I420_LEFT_HAS_BOTTOM as libc::c_int
+                    EDGE_I444_LEFT_HAS_BOTTOM
+                        | EDGE_I422_LEFT_HAS_BOTTOM
+                        | EDGE_I420_LEFT_HAS_BOTTOM
                 })) as EdgeFlags,
             );
-            n += 1;
         }
     } else {
-        let mut n_0 = 0;
-        while n_0 < 4 {
-            let fresh1 = (*mem).nwc[bl as usize];
-            (*mem).nwc[bl as usize] = ((*mem).nwc[bl as usize]).offset(1);
-            let nwc_child: *mut EdgeBranch = fresh1;
-            (*nwc).split[n_0 as usize] = &mut (*nwc_child).node;
+        let nwc_children = slice::from_raw_parts_mut(mem.nwc[bl as usize], nwc.split.len());
+        mem.nwc[bl as usize] = mem.nwc[bl as usize].offset(nwc_children.len() as isize);
+        for (n, (split, nwc_child)) in iter::zip(&mut nwc.split, nwc_children).enumerate() {
+            *split = &mut nwc_child.node;
             init_mode_node(
                 nwc_child,
-                (bl as libc::c_uint).wrapping_add(1 as libc::c_int as libc::c_uint) as BlockLevel,
+                bl + 1,
                 mem,
-                !(n_0 == 3 || n_0 == 1 && top_has_right == 0) as libc::c_int,
-                (n_0 == 0 || n_0 == 2 && left_has_bottom != 0) as libc::c_int,
+                !(n == 3 || (n == 1 && !top_has_right)),
+                n == 0 || (n == 2 && left_has_bottom),
             );
-            n_0 += 1;
         }
     };
 }
@@ -222,13 +214,7 @@ pub unsafe extern "C" fn dav1d_init_mode_tree(
             &mut *root.offset((1 + 4) as isize) as *mut EdgeBranch;
         mem.nwc[BL_32X32 as libc::c_int as usize] =
             &mut *root.offset((1 + 4 + 16) as isize) as *mut EdgeBranch;
-        init_mode_node(
-            root,
-            BL_128X128,
-            &mut mem,
-            1 as libc::c_int,
-            0 as libc::c_int,
-        );
+        init_mode_node(&mut *root, BL_128X128, &mut mem, true, false);
         if !(mem.nwc[BL_128X128 as libc::c_int as usize]
             == &mut *root.offset((1 + 4) as isize) as *mut EdgeBranch)
         {
@@ -252,7 +238,7 @@ pub unsafe extern "C" fn dav1d_init_mode_tree(
         mem.nwc[BL_64X64 as libc::c_int as usize] = &mut *root.offset(1) as *mut EdgeBranch;
         mem.nwc[BL_32X32 as libc::c_int as usize] =
             &mut *root.offset((1 + 4) as isize) as *mut EdgeBranch;
-        init_mode_node(root, BL_64X64, &mut mem, 1 as libc::c_int, 0 as libc::c_int);
+        init_mode_node(&mut *root, BL_64X64, &mut mem, true, false);
         if !(mem.nwc[BL_64X64 as libc::c_int as usize]
             == &mut *root.offset((1 + 4) as isize) as *mut EdgeBranch)
         {
