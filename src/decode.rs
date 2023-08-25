@@ -863,7 +863,6 @@ use crate::src::levels::NEARESTMV;
 use crate::src::levels::NEARMV;
 use crate::src::levels::NEWMV;
 
-use crate::src::levels::CompInterPredMode;
 use crate::src::levels::GLOBALMV_GLOBALMV;
 use crate::src::levels::NEARER_DRL;
 use crate::src::levels::NEAREST_DRL;
@@ -1943,7 +1942,7 @@ unsafe fn splat_tworef_mv(
     bh4: usize,
 ) {
     assert!(bw4 >= 2 && bh4 >= 2);
-    let mode = b.inter_mode() as CompInterPredMode;
+    let mode = b.inter_mode();
     let tmpl = Align16(refmvs_block(refmvs_block_unaligned {
         mv: refmvs_mvpair { mv: *b.mv() },
         r#ref: refmvs_refpair {
@@ -3148,7 +3147,7 @@ unsafe fn decode_b(
                 frame_hdr.skip_mode_refs[1] as i8,
             ];
             *b.comp_type_mut() = COMP_INTER_AVG;
-            *b.inter_mode_mut() = NEARESTMV_NEARESTMV as u8;
+            *b.inter_mode_mut() = NEARESTMV_NEARESTMV;
             *b.drl_idx_mut() = NEAREST_DRL as u8;
             has_subpel_filter = false;
 
@@ -3287,7 +3286,7 @@ unsafe fn decode_b(
 
             let im = &dav1d_comp_inter_pred_modes[b.inter_mode() as usize];
             *b.drl_idx_mut() = NEAREST_DRL as u8;
-            if b.inter_mode() == NEWMV_NEWMV as u8 {
+            if b.inter_mode() == NEWMV_NEWMV {
                 if n_mvs > 1 {
                     // NEARER, NEAR or NEARISH
                     let drl_ctx_v1 = get_drl_context(&mvstack, 0);
@@ -3339,8 +3338,7 @@ unsafe fn decode_b(
             }
             assert!(b.drl_idx() >= NEAREST_DRL as u8 && b.drl_idx() <= NEARISH_DRL as u8);
 
-            has_subpel_filter =
-                std::cmp::min(bw4, bh4) == 1 || b.inter_mode() != GLOBALMV_GLOBALMV as u8;
+            has_subpel_filter = std::cmp::min(bw4, bh4) == 1 || b.inter_mode() != GLOBALMV_GLOBALMV;
             let mut assign_comp_mv = |idx: usize| match im[idx] {
                 NEARMV | NEARESTMV => {
                     b.mv_mut()[idx] = mvstack[b.drl_idx() as usize].mv.mv[idx];
@@ -3847,12 +3845,8 @@ unsafe fn decode_b(
         }
 
         if frame_hdr.loopfilter.level_y != [0, 0] {
-            let is_globalmv = (b.inter_mode()
-                == if is_comp {
-                    GLOBALMV_GLOBALMV as u8
-                } else {
-                    GLOBALMV
-                }) as libc::c_int;
+            let is_globalmv = (b.inter_mode() == if is_comp { GLOBALMV_GLOBALMV } else { GLOBALMV })
+                as libc::c_int;
             let tx_split = [b.tx_split0() as u16, b.tx_split1()];
             let mut ytx = b.max_ytx() as RectTxfmSize;
             let mut uvtx = b.uvtx as RectTxfmSize;
@@ -3977,8 +3971,7 @@ unsafe fn decode_b(
         if b.comp_type() == COMP_INTER_NONE as u8 {
             // y
             if std::cmp::min(bw4, bh4) > 1
-                && (b.inter_mode() == GLOBALMV
-                    && f.gmv_warp_allowed[b.r#ref()[0] as usize] != 0
+                && (b.inter_mode() == GLOBALMV && f.gmv_warp_allowed[b.r#ref()[0] as usize] != 0
                     || b.motion_mode() == MM_WARP as u8
                         && t.warpmv.type_0 > DAV1D_WM_TYPE_TRANSLATION)
             {
@@ -4109,7 +4102,7 @@ unsafe fn decode_b(
             let refmvs =
                 || std::iter::zip(b.r#ref(), b.mv()).map(|(r#ref, mv)| (r#ref as usize, mv));
             for (r#ref, mv) in refmvs() {
-                if b.inter_mode() == GLOBALMV_GLOBALMV as u8 && f.gmv_warp_allowed[r#ref] != 0 {
+                if b.inter_mode() == GLOBALMV_GLOBALMV && f.gmv_warp_allowed[r#ref] != 0 {
                     affine_lowest_px_luma(
                         t,
                         &mut lowest_px[r#ref][0],
@@ -4128,7 +4121,7 @@ unsafe fn decode_b(
                 }
             }
             for (r#ref, mv) in refmvs() {
-                if b.inter_mode() == GLOBALMV_GLOBALMV as u8 && f.gmv_warp_allowed[r#ref] != 0 {
+                if b.inter_mode() == GLOBALMV_GLOBALMV && f.gmv_warp_allowed[r#ref] != 0 {
                     affine_lowest_px_luma(
                         t,
                         &mut lowest_px[r#ref][0],
@@ -4150,7 +4143,7 @@ unsafe fn decode_b(
             // uv
             if has_chroma {
                 for (r#ref, mv) in refmvs() {
-                    if b.inter_mode() == GLOBALMV_GLOBALMV as u8
+                    if b.inter_mode() == GLOBALMV_GLOBALMV
                         && std::cmp::min(cbw4, cbh4) > 1
                         && f.gmv_warp_allowed[r#ref] != 0
                     {
