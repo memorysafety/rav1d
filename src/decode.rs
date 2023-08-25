@@ -3148,7 +3148,7 @@ unsafe fn decode_b(
             ];
             *b.comp_type_mut() = COMP_INTER_AVG;
             *b.inter_mode_mut() = NEARESTMV_NEARESTMV;
-            *b.drl_idx_mut() = NEAREST_DRL as u8;
+            *b.drl_idx_mut() = NEAREST_DRL;
             has_subpel_filter = false;
 
             let mut mvstack = [Default::default(); 8];
@@ -3285,7 +3285,7 @@ unsafe fn decode_b(
             }
 
             let im = &dav1d_comp_inter_pred_modes[b.inter_mode() as usize];
-            *b.drl_idx_mut() = NEAREST_DRL as u8;
+            *b.drl_idx_mut() = NEAREST_DRL;
             if b.inter_mode() == NEWMV_NEWMV {
                 if n_mvs > 1 {
                     // NEARER, NEAR or NEARISH
@@ -3294,7 +3294,7 @@ unsafe fn decode_b(
                         &mut ts.msac,
                         &mut ts.cdf.m.drl_bit[drl_ctx_v1 as usize],
                     ) as u8;
-                    if b.drl_idx() == NEARER_DRL as u8 && n_mvs > 2 {
+                    if b.drl_idx() == NEARER_DRL && n_mvs > 2 {
                         let drl_ctx_v2 = get_drl_context(&mvstack, 1);
                         *b.drl_idx_mut() += dav1d_msac_decode_bool_adapt(
                             &mut ts.msac,
@@ -3311,7 +3311,7 @@ unsafe fn decode_b(
                     }
                 }
             } else if im[0] == NEARMV || im[1] == NEARMV {
-                *b.drl_idx_mut() = NEARER_DRL as u8;
+                *b.drl_idx_mut() = NEARER_DRL;
                 if n_mvs > 2 {
                     // NEAR or NEARISH
                     let drl_ctx_v2 = get_drl_context(&mvstack, 1);
@@ -3319,7 +3319,7 @@ unsafe fn decode_b(
                         &mut ts.msac,
                         &mut ts.cdf.m.drl_bit[drl_ctx_v2 as usize],
                     ) as u8;
-                    if b.drl_idx() == NEAR_DRL as u8 && n_mvs > 3 {
+                    if b.drl_idx() == NEAR_DRL && n_mvs > 3 {
                         let drl_ctx_v3 = get_drl_context(&mvstack, 2);
                         *b.drl_idx_mut() += dav1d_msac_decode_bool_adapt(
                             &mut ts.msac,
@@ -3336,7 +3336,7 @@ unsafe fn decode_b(
                     }
                 }
             }
-            assert!(b.drl_idx() >= NEAREST_DRL as u8 && b.drl_idx() <= NEARISH_DRL as u8);
+            assert!(b.drl_idx() >= NEAREST_DRL && b.drl_idx() <= NEARISH_DRL);
 
             has_subpel_filter = std::cmp::min(bw4, bh4) == 1 || b.inter_mode() != GLOBALMV_GLOBALMV;
             let mut assign_comp_mv = |idx: usize| match im[idx] {
@@ -3561,7 +3561,7 @@ unsafe fn decode_b(
                     ) {
                         // NEAREST, NEARER, NEAR or NEARISH
                         *b.inter_mode_mut() = NEARMV;
-                        *b.drl_idx_mut() = NEARER_DRL as u8;
+                        *b.drl_idx_mut() = NEARER_DRL;
                         if n_mvs > 2 {
                             // NEARER, NEAR or NEARISH
                             let drl_ctx_v2 = get_drl_context(&mvstack, 1);
@@ -3570,7 +3570,7 @@ unsafe fn decode_b(
                                     &mut ts.msac,
                                     &mut ts.cdf.m.drl_bit[drl_ctx_v2 as usize],
                                 ) as u8;
-                            if b.drl_idx() == NEAR_DRL as u8 && n_mvs > 3 {
+                            if b.drl_idx() == NEAR_DRL && n_mvs > 3 {
                                 // NEAR or NEARISH
                                 let drl_ctx_v3 = get_drl_context(&mvstack, 2);
                                 *b.drl_idx_mut() = b.drl_idx()
@@ -3582,11 +3582,11 @@ unsafe fn decode_b(
                         }
                     } else {
                         *b.inter_mode_mut() = NEARESTMV as u8;
-                        *b.drl_idx_mut() = NEAREST_DRL as u8;
+                        *b.drl_idx_mut() = NEAREST_DRL;
                     }
-                    assert!(b.drl_idx() >= NEAREST_DRL as u8 && b.drl_idx() <= NEARISH_DRL as u8);
+                    assert!(b.drl_idx() >= NEAREST_DRL && b.drl_idx() <= NEARISH_DRL);
                     b.mv_mut()[0] = mvstack[b.drl_idx() as usize].mv.mv[0];
-                    if b.drl_idx() < NEAR_DRL as u8 {
+                    if b.drl_idx() < NEAR_DRL {
                         fix_mv_precision(frame_hdr, &mut b.mv_mut()[0]);
                     }
                 }
@@ -3605,7 +3605,7 @@ unsafe fn decode_b(
             } else {
                 has_subpel_filter = true;
                 *b.inter_mode_mut() = NEWMV;
-                *b.drl_idx_mut() = NEAREST_DRL as u8;
+                *b.drl_idx_mut() = NEAREST_DRL;
                 if n_mvs > 1 {
                     // NEARER, NEAR or NEARISH
                     let drl_ctx_v1 = get_drl_context(&mvstack, 0);
@@ -3614,7 +3614,7 @@ unsafe fn decode_b(
                             &mut ts.msac,
                             &mut ts.cdf.m.drl_bit[drl_ctx_v1 as usize],
                         ) as u8;
-                    if b.drl_idx() == NEARER_DRL as u8 && n_mvs > 2 {
+                    if b.drl_idx() == NEARER_DRL && n_mvs > 2 {
                         // NEAR or NEARISH
                         let drl_ctx_v2 = get_drl_context(&mvstack, 1);
                         *b.drl_idx_mut() = b.drl_idx()
@@ -3624,7 +3624,7 @@ unsafe fn decode_b(
                             ) as u8;
                     }
                 }
-                assert!(b.drl_idx() >= NEAREST_DRL as u8 && b.drl_idx() <= NEARISH_DRL as u8);
+                assert!(b.drl_idx() >= NEAREST_DRL && b.drl_idx() <= NEARISH_DRL);
                 if n_mvs > 1 {
                     b.mv_mut()[0] = mvstack[b.drl_idx() as usize].mv.mv[0];
                 } else {
