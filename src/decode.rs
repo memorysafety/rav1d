@@ -4618,12 +4618,12 @@ unsafe fn setup_tile(
     let row_sb_start = (*f.frame_hdr).tiling.row_start_sb[tile_row as usize] as libc::c_int;
     let row_sb_end = (*f.frame_hdr).tiling.row_start_sb[(tile_row + 1) as usize] as libc::c_int;
     let sb_shift = f.sb_shift;
-    let size_mul: *const uint8_t = (ss_size_mul[f.cur.p.layout as usize]).as_ptr();
+    let size_mul = &ss_size_mul[f.cur.p.layout as usize];
     for p in 0..2 {
         ts.frame_thread[p].pal_idx = if !(f.frame_thread.pal_idx).is_null() {
             &mut *(f.frame_thread.pal_idx).offset(
                 (tile_start_off as size_t)
-                    .wrapping_mul(*size_mul.offset(1) as size_t)
+                    .wrapping_mul(size_mul[1] as size_t)
                     .wrapping_div(4) as isize,
             ) as *mut uint8_t
         } else {
@@ -4631,7 +4631,7 @@ unsafe fn setup_tile(
         };
         ts.frame_thread[p].cf = (if !(f.frame_thread.cf).is_null() {
             (f.frame_thread.cf as *mut uint8_t).offset(
-                ((tile_start_off as size_t).wrapping_mul(*size_mul.offset(0) as size_t)
+                ((tile_start_off as size_t).wrapping_mul(size_mul[0] as size_t)
                     >> ((*f.seq_hdr).hbd == 0) as libc::c_int) as isize,
             )
         } else {
