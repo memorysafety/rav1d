@@ -4669,7 +4669,7 @@ unsafe extern "C" fn reset_context(
     );
 }
 
-// { Y+U+V, Y+U } * 4
+/// `{ Y+U+V, Y+U } * 4`
 static ss_size_mul: [[u8; 2]; 4] = {
     let mut a = [[0; 2]; 4];
     a[DAV1D_PIXEL_LAYOUT_I400 as usize] = [4, 4];
