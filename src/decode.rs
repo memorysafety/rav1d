@@ -4623,20 +4623,24 @@ unsafe fn setup_tile(
     let size_mul = &ss_size_mul[f.cur.p.layout as usize];
     for p in 0..2 {
         ts.frame_thread[p].pal_idx = if !(f.frame_thread.pal_idx).is_null() {
-            &mut *(f.frame_thread.pal_idx)
+            f.frame_thread
+                .pal_idx
                 .offset((tile_start_off * size_mul[1] as size_t / 4) as isize)
-                as *mut uint8_t
         } else {
             ptr::null_mut()
         };
-        ts.frame_thread[p].cf = (if !(f.frame_thread.cf).is_null() {
-            (f.frame_thread.cf as *mut uint8_t).offset(
-                (tile_start_off * size_mul[0] as size_t >> ((*f.seq_hdr).hbd == 0) as libc::c_int)
-                    as isize,
-            )
+        ts.frame_thread[p].cf = if !f.frame_thread.cf.is_null() {
+            f.frame_thread
+                .cf
+                .cast::<u8>()
+                .offset(
+                    (tile_start_off * size_mul[0] as size_t
+                        >> ((*f.seq_hdr).hbd == 0) as libc::c_int) as isize,
+                )
+                .cast::<libc::c_void>()
         } else {
             ptr::null_mut()
-        }) as *mut libc::c_void;
+        };
     }
     dav1d_cdf_thread_copy(&mut ts.cdf, &f.in_cdf);
     ts.last_qidx = (*f.frame_hdr).quant.yac;
