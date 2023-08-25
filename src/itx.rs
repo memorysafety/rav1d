@@ -140,14 +140,16 @@ pub unsafe extern "C" fn inv_txfm_add_rust<BD: BitDepth>(
     }
 }
 
-pub type itxfm_fn =
-    Option<unsafe extern "C" fn(*mut DynPixel, ptrdiff_t, *mut DynCoef, libc::c_int, libc::c_int) -> ()>;
+pub type itxfm_fn = Option<
+    unsafe extern "C" fn(*mut DynPixel, ptrdiff_t, *mut DynCoef, libc::c_int, libc::c_int) -> (),
+>;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dInvTxfmDSPContext {
     pub itxfm_add: [[itxfm_fn; 17]; 19],
 }
 
+#[cfg(feature = "asm")]
 macro_rules! decl_itx_fn {
     ($name:ident) => {
         // TODO(legare): Temporarily pub until init fns are deduplicated.
@@ -174,6 +176,7 @@ macro_rules! decl_itx_fn {
     };
 }
 
+#[cfg(feature = "asm")]
 macro_rules! decl_itx2_fns {
     ($wxh:ident, $opt:ident) => {
         paste::paste! {
@@ -190,6 +193,7 @@ macro_rules! decl_itx2_fns {
     };
 }
 
+#[cfg(feature = "asm")]
 macro_rules! decl_itx12_fns {
     ($wxh:ident, $opt:ident) => {
         paste::paste! {
@@ -224,6 +228,7 @@ macro_rules! decl_itx12_fns {
     };
 }
 
+#[cfg(feature = "asm")]
 macro_rules! decl_itx16_fns {
     ($wxh:ident, $opt:ident) => {
         paste::paste! {
@@ -246,6 +251,7 @@ macro_rules! decl_itx16_fns {
     };
 }
 
+#[cfg(feature = "asm")]
 macro_rules! decl_itx17_fns {
     ($wxh:ident, $opt:ident) => {
         paste::paste! {
@@ -255,6 +261,7 @@ macro_rules! decl_itx17_fns {
     };
 }
 
+#[cfg(feature = "asm")]
 macro_rules! decl_itx_fns {
     ($ext:ident) => {
         decl_itx17_fns!(_4x4, $ext);
@@ -301,6 +308,7 @@ macro_rules! decl_itx_fns {
     };
 }
 
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 extern "C" {
     decl_itx_fns!(_avx512icl);
     decl_itx_fns!(_10bpc, _avx512icl);
@@ -310,6 +318,11 @@ extern "C" {
     decl_itx_fns!(_sse4);
     decl_itx_fns!(_ssse3);
     decl_itx_fn!(dav1d_inv_txfm_add_wht_wht_4x4, _sse2);
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+extern "C" {
+    decl_itx_fns!(_neon);
 }
 
 macro_rules! inv_txfm_fn {
@@ -358,16 +371,16 @@ macro_rules! inv_txfm_fn32 {
 macro_rules! inv_txfm_fn16 {
     ($w:literal, $h:literal, $shift:literal) => {
         inv_txfm_fn32!($w, $h, $shift);
-        inv_txfm_fn!(adst,     dct,      $w, $h, $shift, 0);
-        inv_txfm_fn!(dct,      adst,     $w, $h, $shift, 0);
-        inv_txfm_fn!(adst,     adst,     $w, $h, $shift, 0);
-        inv_txfm_fn!(dct,      flipadst, $w, $h, $shift, 0);
-        inv_txfm_fn!(flipadst, dct,      $w, $h, $shift, 0);
-        inv_txfm_fn!(adst,     flipadst, $w, $h, $shift, 0);
-        inv_txfm_fn!(flipadst, adst,     $w, $h, $shift, 0);
+        inv_txfm_fn!(adst, dct, $w, $h, $shift, 0);
+        inv_txfm_fn!(dct, adst, $w, $h, $shift, 0);
+        inv_txfm_fn!(adst, adst, $w, $h, $shift, 0);
+        inv_txfm_fn!(dct, flipadst, $w, $h, $shift, 0);
+        inv_txfm_fn!(flipadst, dct, $w, $h, $shift, 0);
+        inv_txfm_fn!(adst, flipadst, $w, $h, $shift, 0);
+        inv_txfm_fn!(flipadst, adst, $w, $h, $shift, 0);
         inv_txfm_fn!(flipadst, flipadst, $w, $h, $shift, 0);
-        inv_txfm_fn!(identity, dct,      $w, $h, $shift, 0);
-        inv_txfm_fn!(dct,      identity, $w, $h, $shift, 0);
+        inv_txfm_fn!(identity, dct, $w, $h, $shift, 0);
+        inv_txfm_fn!(dct, identity, $w, $h, $shift, 0);
     };
 }
 
@@ -376,24 +389,24 @@ macro_rules! inv_txfm_fn84 {
         inv_txfm_fn16!($w, $h, $shift);
         inv_txfm_fn!(identity, flipadst, $w, $h, $shift, 0);
         inv_txfm_fn!(flipadst, identity, $w, $h, $shift, 0);
-        inv_txfm_fn!(identity, adst,     $w, $h, $shift, 0);
-        inv_txfm_fn!(adst,     identity, $w, $h, $shift, 0);
+        inv_txfm_fn!(identity, adst, $w, $h, $shift, 0);
+        inv_txfm_fn!(adst, identity, $w, $h, $shift, 0);
     };
 }
 
-inv_txfm_fn84!( 4,  4, 0);
-inv_txfm_fn84!( 4,  8, 0);
-inv_txfm_fn84!( 4, 16, 1);
-inv_txfm_fn84!( 8,  4, 0);
-inv_txfm_fn84!( 8,  8, 1);
-inv_txfm_fn84!( 8, 16, 1);
-inv_txfm_fn32!( 8, 32, 2);
-inv_txfm_fn84!(16,  4, 1);
-inv_txfm_fn84!(16,  8, 1);
+inv_txfm_fn84!(4, 4, 0);
+inv_txfm_fn84!(4, 8, 0);
+inv_txfm_fn84!(4, 16, 1);
+inv_txfm_fn84!(8, 4, 0);
+inv_txfm_fn84!(8, 8, 1);
+inv_txfm_fn84!(8, 16, 1);
+inv_txfm_fn32!(8, 32, 2);
+inv_txfm_fn84!(16, 4, 1);
+inv_txfm_fn84!(16, 8, 1);
 inv_txfm_fn16!(16, 16, 2);
 inv_txfm_fn32!(16, 32, 1);
 inv_txfm_fn64!(16, 64, 2);
-inv_txfm_fn32!(32,  8, 2);
+inv_txfm_fn32!(32, 8, 2);
 inv_txfm_fn32!(32, 16, 1);
 inv_txfm_fn32!(32, 32, 2);
 inv_txfm_fn64!(32, 64, 1);
