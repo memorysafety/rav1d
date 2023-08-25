@@ -4640,11 +4640,7 @@ unsafe fn setup_tile(
     }
     dav1d_cdf_thread_copy(&mut ts.cdf, &f.in_cdf);
     ts.last_qidx = (*f.frame_hdr).quant.yac;
-    memset(
-        (ts.last_delta_lf).as_mut_ptr() as *mut libc::c_void,
-        0 as libc::c_int,
-        ::core::mem::size_of::<[int8_t; 4]>(),
-    );
+    ts.last_delta_lf.fill(0);
     dav1d_msac_init(
         &mut ts.msac,
         data,
