@@ -4566,103 +4566,37 @@ unsafe fn decode_sb(
 }
 
 unsafe fn reset_context(ctx: &mut BlockContext, keyframe: libc::c_int, pass: libc::c_int) {
-    memset(
-        (ctx.intra.0).as_mut_ptr() as *mut libc::c_void,
-        keyframe,
-        ::core::mem::size_of::<[uint8_t; 32]>(),
-    );
-    memset(
-        (ctx.uvmode.0).as_mut_ptr() as *mut libc::c_void,
-        DC_PRED as libc::c_int,
-        ::core::mem::size_of::<[uint8_t; 32]>(),
-    );
+    ctx.intra.0.fill(keyframe as u8);
+    ctx.uvmode.0.fill(DC_PRED);
     if keyframe != 0 {
-        memset(
-            (ctx.mode.0).as_mut_ptr() as *mut libc::c_void,
-            DC_PRED as libc::c_int,
-            ::core::mem::size_of::<[uint8_t; 32]>(),
-        );
+        ctx.mode.0.fill(DC_PRED);
     }
     if pass == 2 {
         return;
     }
-    memset(
-        (ctx.partition.0).as_mut_ptr() as *mut libc::c_void,
-        0 as libc::c_int,
-        ::core::mem::size_of::<[uint8_t; 16]>(),
-    );
-    memset(
-        (ctx.skip.0).as_mut_ptr() as *mut libc::c_void,
-        0 as libc::c_int,
-        ::core::mem::size_of::<[uint8_t; 32]>(),
-    );
-    memset(
-        (ctx.skip_mode.0).as_mut_ptr() as *mut libc::c_void,
-        0 as libc::c_int,
-        ::core::mem::size_of::<[uint8_t; 32]>(),
-    );
-    memset(
-        (ctx.tx_lpf_y.0).as_mut_ptr() as *mut libc::c_void,
-        2 as libc::c_int,
-        ::core::mem::size_of::<[uint8_t; 32]>(),
-    );
-    memset(
-        (ctx.tx_lpf_uv.0).as_mut_ptr() as *mut libc::c_void,
-        1 as libc::c_int,
-        ::core::mem::size_of::<[uint8_t; 32]>(),
-    );
-    memset(
-        (ctx.tx_intra.0).as_mut_ptr() as *mut libc::c_void,
-        -(1 as libc::c_int),
-        ::core::mem::size_of::<[int8_t; 32]>(),
-    );
-    memset(
-        (ctx.tx.0).as_mut_ptr() as *mut libc::c_void,
-        TX_64X64 as libc::c_int,
-        ::core::mem::size_of::<[int8_t; 32]>(),
-    );
+    ctx.partition.0.fill(0);
+    ctx.skip.0.fill(0);
+    ctx.skip_mode.0.fill(0);
+    ctx.tx_lpf_y.0.fill(2);
+    ctx.tx_lpf_uv.0.fill(1);
+    ctx.tx_intra.0.fill(-1);
+    ctx.tx.0.fill(TX_64X64);
     if keyframe == 0 {
-        memset(
-            (ctx.r#ref.0).as_mut_ptr() as *mut libc::c_void,
-            -(1 as libc::c_int),
-            ::core::mem::size_of::<[[int8_t; 32]; 2]>(),
-        );
-        memset(
-            (ctx.comp_type.0).as_mut_ptr() as *mut libc::c_void,
-            0 as libc::c_int,
-            ::core::mem::size_of::<[uint8_t; 32]>(),
-        );
-        memset(
-            (ctx.mode.0).as_mut_ptr() as *mut libc::c_void,
-            NEARESTMV as libc::c_int,
-            ::core::mem::size_of::<[uint8_t; 32]>(),
-        );
+        for r#ref in &mut ctx.r#ref.0 {
+            r#ref.fill(-1);
+        }
+        ctx.comp_type.0.fill(0);
+        ctx.mode.0.fill(NEARESTMV as u8);
     }
-    memset(
-        (ctx.lcoef.0).as_mut_ptr() as *mut libc::c_void,
-        0x40 as libc::c_int,
-        ::core::mem::size_of::<[uint8_t; 32]>(),
-    );
-    memset(
-        (ctx.ccoef.0).as_mut_ptr() as *mut libc::c_void,
-        0x40 as libc::c_int,
-        ::core::mem::size_of::<[[uint8_t; 32]; 2]>(),
-    );
-    memset(
-        (ctx.filter.0).as_mut_ptr() as *mut libc::c_void,
-        DAV1D_N_SWITCHABLE_FILTERS as libc::c_int,
-        ::core::mem::size_of::<[[uint8_t; 32]; 2]>(),
-    );
-    memset(
-        (ctx.seg_pred.0).as_mut_ptr() as *mut libc::c_void,
-        0 as libc::c_int,
-        ::core::mem::size_of::<[uint8_t; 32]>(),
-    );
-    memset(
-        (ctx.pal_sz.0).as_mut_ptr() as *mut libc::c_void,
-        0 as libc::c_int,
-        ::core::mem::size_of::<[uint8_t; 32]>(),
-    );
+    ctx.lcoef.0.fill(0x40);
+    for ccoef in &mut ctx.ccoef.0 {
+        ccoef.fill(0x40);
+    }
+    for filter in &mut ctx.filter.0 {
+        filter.fill(DAV1D_N_SWITCHABLE_FILTERS);
+    }
+    ctx.seg_pred.0.fill(0);
+    ctx.pal_sz.0.fill(0);
 }
 
 /// `{ Y+U+V, Y+U } * 4`
