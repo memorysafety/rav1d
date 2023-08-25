@@ -4683,14 +4683,12 @@ unsafe fn setup_tile(
         } else {
             &mut (*f.lf.lr_mask.offset(sb_idx as isize)).lr[p][unit_idx as usize]
         };
-        lr_ref.filter_v[0] = 3;
-        lr_ref.filter_v[1] = -7;
-        lr_ref.filter_v[2] = 15;
-        lr_ref.filter_h[0] = 3;
-        lr_ref.filter_h[1] = -7;
-        lr_ref.filter_h[2] = 15;
-        lr_ref.sgr_weights[0] = -32;
-        lr_ref.sgr_weights[1] = 31;
+        *lr_ref = Av1RestorationUnit {
+            filter_v: [3, -7, 15],
+            filter_h: [3, -7, 15],
+            sgr_weights: [-32, 31],
+            ..*lr_ref
+        };
         ts.lr_ref[p] = lr_ref;
     }
     if (*f.c).n_tc > 1 {
