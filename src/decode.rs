@@ -4666,7 +4666,7 @@ unsafe fn setup_tile(
         if !((f.lf.restore_planes >> p) & 1 != 0) {
             continue;
         }
-        if (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1] {
+        let lr_ref = if (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1] {
             let ss_hor = (p != 0 && f.cur.p.layout != DAV1D_PIXEL_LAYOUT_I444) as libc::c_int;
             let d = (*f.frame_hdr).super_res.width_scale_denominator;
             let unit_size_log2 = (*f.frame_hdr).restoration.unit_size[(p != 0) as usize];
@@ -4679,19 +4679,19 @@ unsafe fn setup_tile(
             if sb128x >= f.sr_sb128w {
                 continue;
             }
-            ts.lr_ref[p] =
-                &mut (*f.lf.lr_mask.offset((sb_idx + sb128x) as isize)).lr[p][u_idx as usize];
+            &mut (*f.lf.lr_mask.offset((sb_idx + sb128x) as isize)).lr[p][u_idx as usize]
         } else {
-            ts.lr_ref[p] = &mut (*f.lf.lr_mask.offset(sb_idx as isize)).lr[p][unit_idx as usize];
-        }
-        (*ts.lr_ref[p]).filter_v[0] = 3;
-        (*ts.lr_ref[p]).filter_v[1] = -7;
-        (*ts.lr_ref[p]).filter_v[2] = 15;
-        (*ts.lr_ref[p]).filter_h[0] = 3;
-        (*ts.lr_ref[p]).filter_h[1] = -7;
-        (*ts.lr_ref[p]).filter_h[2] = 15;
-        (*ts.lr_ref[p]).sgr_weights[0] = -32;
-        (*ts.lr_ref[p]).sgr_weights[1] = 31;
+            &mut (*f.lf.lr_mask.offset(sb_idx as isize)).lr[p][unit_idx as usize]
+        };
+        lr_ref.filter_v[0] = 3;
+        lr_ref.filter_v[1] = -7;
+        lr_ref.filter_v[2] = 15;
+        lr_ref.filter_h[0] = 3;
+        lr_ref.filter_h[1] = -7;
+        lr_ref.filter_h[2] = 15;
+        lr_ref.sgr_weights[0] = -32;
+        lr_ref.sgr_weights[1] = 31;
+        ts.lr_ref[p] = lr_ref;
     }
     if (*f.c).n_tc > 1 {
         ts.progress.fill(row_sb_start as atomic_int);
