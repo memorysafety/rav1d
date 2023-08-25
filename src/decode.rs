@@ -4565,10 +4565,10 @@ unsafe fn decode_sb(
     0
 }
 
-fn reset_context(ctx: &mut BlockContext, keyframe: libc::c_int, pass: libc::c_int) {
-    ctx.intra.0.fill(keyframe as u8);
+fn reset_context(ctx: &mut BlockContext, keyframe: bool, pass: libc::c_int) {
+    ctx.intra.0.fill(keyframe.into());
     ctx.uvmode.0.fill(DC_PRED);
-    if keyframe != 0 {
+    if keyframe {
         ctx.mode.0.fill(DC_PRED);
     }
     if pass == 2 {
@@ -4581,7 +4581,7 @@ fn reset_context(ctx: &mut BlockContext, keyframe: libc::c_int, pass: libc::c_in
     ctx.tx_lpf_uv.0.fill(1);
     ctx.tx_intra.0.fill(-1);
     ctx.tx.0.fill(TX_64X64);
-    if keyframe == 0 {
+    if !keyframe {
         for r#ref in &mut ctx.r#ref.0 {
             r#ref.fill(-1);
         }
@@ -4938,7 +4938,7 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> li
     }
     reset_context(
         &mut (*t).l,
-        ((*(*f).frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint == 0) as libc::c_int,
+        (*(*f).frame_hdr).frame_type & 1 == 0,
         (*t).frame_thread.pass,
     );
     if (*t).frame_thread.pass == 2 {
@@ -6326,8 +6326,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
                 while n < (*f).sb128w * (*(*f).frame_hdr).tiling.rows * (1 + uses_2pass) {
                     reset_context(
                         &mut *((*f).a).offset(n as isize),
-                        ((*(*f).frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint == 0)
-                            as libc::c_int,
+                        (*(*f).frame_hdr).frame_type & 1 == 0,
                         if uses_2pass != 0 {
                             1 as libc::c_int
                                 + (n >= (*f).sb128w * (*(*f).frame_hdr).tiling.rows) as libc::c_int
@@ -6360,7 +6359,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
     while n < (*f).sb128w * (*(*f).frame_hdr).tiling.rows {
         reset_context(
             &mut *((*f).a).offset(n as isize),
-            ((*(*f).frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint == 0) as libc::c_int,
+            (*(*f).frame_hdr).frame_type & 1 == 0,
             0 as libc::c_int,
         );
         n += 1;
