@@ -4716,8 +4716,7 @@ unsafe fn setup_tile(
     }
     if (*f.c).n_tc > 1 as libc::c_uint {
         for p in 0..2 {
-            *(&mut *(ts.progress).as_mut_ptr().offset(p as isize) as *mut atomic_int) =
-                row_sb_start;
+            ts.progress[p] = row_sb_start as atomic_int;
         }
     }
 }
