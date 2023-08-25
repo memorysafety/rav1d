@@ -4605,24 +4605,24 @@ static ss_size_mul: [[u8; 2]; 4] = {
 
 unsafe fn setup_tile(
     ts: &mut Dav1dTileState,
-    f: *const Dav1dFrameContext,
+    f: &Dav1dFrameContext,
     data: *const uint8_t,
     sz: size_t,
     tile_row: libc::c_int,
     tile_col: libc::c_int,
     tile_start_off: libc::c_int,
 ) {
-    let col_sb_start = (*(*f).frame_hdr).tiling.col_start_sb[tile_col as usize] as libc::c_int;
-    let col_sb128_start = col_sb_start >> ((*(*f).seq_hdr).sb128 == 0) as libc::c_int;
-    let col_sb_end = (*(*f).frame_hdr).tiling.col_start_sb[(tile_col + 1) as usize] as libc::c_int;
-    let row_sb_start = (*(*f).frame_hdr).tiling.row_start_sb[tile_row as usize] as libc::c_int;
-    let row_sb_end = (*(*f).frame_hdr).tiling.row_start_sb[(tile_row + 1) as usize] as libc::c_int;
-    let sb_shift = (*f).sb_shift;
-    let size_mul: *const uint8_t = (ss_size_mul[(*f).cur.p.layout as usize]).as_ptr();
+    let col_sb_start = (*f.frame_hdr).tiling.col_start_sb[tile_col as usize] as libc::c_int;
+    let col_sb128_start = col_sb_start >> ((*f.seq_hdr).sb128 == 0) as libc::c_int;
+    let col_sb_end = (*f.frame_hdr).tiling.col_start_sb[(tile_col + 1) as usize] as libc::c_int;
+    let row_sb_start = (*f.frame_hdr).tiling.row_start_sb[tile_row as usize] as libc::c_int;
+    let row_sb_end = (*f.frame_hdr).tiling.row_start_sb[(tile_row + 1) as usize] as libc::c_int;
+    let sb_shift = f.sb_shift;
+    let size_mul: *const uint8_t = (ss_size_mul[f.cur.p.layout as usize]).as_ptr();
     let mut p = 0;
     while p < 2 {
-        ts.frame_thread[p as usize].pal_idx = if !((*f).frame_thread.pal_idx).is_null() {
-            &mut *((*f).frame_thread.pal_idx).offset(
+        ts.frame_thread[p as usize].pal_idx = if !(f.frame_thread.pal_idx).is_null() {
+            &mut *(f.frame_thread.pal_idx).offset(
                 (tile_start_off as size_t)
                     .wrapping_mul(*size_mul.offset(1) as size_t)
                     .wrapping_div(4) as isize,
@@ -4630,18 +4630,18 @@ unsafe fn setup_tile(
         } else {
             0 as *mut uint8_t
         };
-        ts.frame_thread[p as usize].cf = (if !((*f).frame_thread.cf).is_null() {
-            ((*f).frame_thread.cf as *mut uint8_t).offset(
+        ts.frame_thread[p as usize].cf = (if !(f.frame_thread.cf).is_null() {
+            (f.frame_thread.cf as *mut uint8_t).offset(
                 ((tile_start_off as size_t).wrapping_mul(*size_mul.offset(0) as size_t)
-                    >> ((*(*f).seq_hdr).hbd == 0) as libc::c_int) as isize,
+                    >> ((*f.seq_hdr).hbd == 0) as libc::c_int) as isize,
             )
         } else {
             0 as *mut uint8_t
         }) as *mut libc::c_void;
         p += 1;
     }
-    dav1d_cdf_thread_copy(&mut ts.cdf, &(*f).in_cdf);
-    ts.last_qidx = (*(*f).frame_hdr).quant.yac;
+    dav1d_cdf_thread_copy(&mut ts.cdf, &f.in_cdf);
+    ts.last_qidx = (*f.frame_hdr).quant.yac;
     memset(
         (ts.last_delta_lf).as_mut_ptr() as *mut libc::c_void,
         0 as libc::c_int,
@@ -4651,46 +4651,46 @@ unsafe fn setup_tile(
         &mut ts.msac,
         data,
         sz,
-        (*(*f).frame_hdr).disable_cdf_update != 0,
+        (*f.frame_hdr).disable_cdf_update != 0,
     );
     ts.tiling.row = tile_row;
     ts.tiling.col = tile_col;
     ts.tiling.col_start = col_sb_start << sb_shift;
-    ts.tiling.col_end = imin(col_sb_end << sb_shift, (*f).bw);
+    ts.tiling.col_end = imin(col_sb_end << sb_shift, f.bw);
     ts.tiling.row_start = row_sb_start << sb_shift;
-    ts.tiling.row_end = imin(row_sb_end << sb_shift, (*f).bh);
+    ts.tiling.row_end = imin(row_sb_end << sb_shift, f.bh);
     let mut sb_idx = 0;
     let mut unit_idx = 0;
-    if (*(*f).frame_hdr).width[0] != (*(*f).frame_hdr).width[1] {
-        sb_idx = (ts.tiling.row_start >> 5) * (*f).sr_sb128w;
+    if (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1] {
+        sb_idx = (ts.tiling.row_start >> 5) * f.sr_sb128w;
         unit_idx = (ts.tiling.row_start & 16) >> 3;
     } else {
-        sb_idx = (ts.tiling.row_start >> 5) * (*f).sb128w + col_sb128_start;
+        sb_idx = (ts.tiling.row_start >> 5) * f.sb128w + col_sb128_start;
         unit_idx = ((ts.tiling.row_start & 16) >> 3) + ((ts.tiling.col_start & 16) >> 4);
     }
     let mut current_block_31: u64;
     let mut p_0 = 0;
     while p_0 < 3 {
-        if !(((*f).lf.restore_planes >> p_0) as libc::c_uint & 1 as libc::c_uint == 0) {
-            if (*(*f).frame_hdr).width[0] != (*(*f).frame_hdr).width[1] {
+        if !((f.lf.restore_planes >> p_0) as libc::c_uint & 1 as libc::c_uint == 0) {
+            if (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1] {
                 let ss_hor = (p_0 != 0
-                    && (*f).cur.p.layout as libc::c_uint
+                    && f.cur.p.layout as libc::c_uint
                         != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint)
                     as libc::c_int;
-                let d = (*(*f).frame_hdr).super_res.width_scale_denominator;
+                let d = (*f.frame_hdr).super_res.width_scale_denominator;
                 let unit_size_log2 =
-                    (*(*f).frame_hdr).restoration.unit_size[(p_0 != 0) as libc::c_int as usize];
+                    (*f.frame_hdr).restoration.unit_size[(p_0 != 0) as libc::c_int as usize];
                 let rnd = ((8 as libc::c_int) << unit_size_log2) - 1;
                 let shift = unit_size_log2 + 3;
                 let x = (4 * ts.tiling.col_start * d >> ss_hor) + rnd >> shift;
                 let px_x = x << unit_size_log2 + ss_hor;
                 let u_idx = unit_idx + ((px_x & 64) >> 6);
                 let sb128x = px_x >> 7;
-                if sb128x >= (*f).sr_sb128w {
+                if sb128x >= f.sr_sb128w {
                     current_block_31 = 2370887241019905314;
                 } else {
                     ts.lr_ref[p_0 as usize] =
-                        &mut *(*((*((*f).lf.lr_mask).offset((sb_idx + sb128x) as isize)).lr)
+                        &mut *(*((*(f.lf.lr_mask).offset((sb_idx + sb128x) as isize)).lr)
                             .as_mut_ptr()
                             .offset(p_0 as isize))
                         .as_mut_ptr()
@@ -4698,7 +4698,7 @@ unsafe fn setup_tile(
                     current_block_31 = 1608152415753874203;
                 }
             } else {
-                ts.lr_ref[p_0 as usize] = &mut *(*((*((*f).lf.lr_mask).offset(sb_idx as isize)).lr)
+                ts.lr_ref[p_0 as usize] = &mut *(*((*(f.lf.lr_mask).offset(sb_idx as isize)).lr)
                     .as_mut_ptr()
                     .offset(p_0 as isize))
                 .as_mut_ptr()
@@ -4722,7 +4722,7 @@ unsafe fn setup_tile(
         }
         p_0 += 1;
     }
-    if (*(*f).c).n_tc > 1 as libc::c_uint {
+    if (*f.c).n_tc > 1 as libc::c_uint {
         let mut p_1 = 0;
         while p_1 < 2 {
             *(&mut *(ts.progress).as_mut_ptr().offset(p_1 as isize) as *mut atomic_int) =
@@ -6289,7 +6289,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
             tile_col = tile_col + 1;
             setup_tile(
                 &mut *((*f).ts).offset(j as isize),
-                f,
+                &*f,
                 data,
                 tile_sz,
                 tile_row,
