@@ -4669,7 +4669,7 @@ unsafe extern "C" fn reset_context(
     );
 }
 
-static ss_size_mul: [[uint8_t; 2]; 4] = [[4, 4], [6, 5], [8, 6], [12, 8]];
+static ss_size_mul: [[u8; 2]; 4] = [[4, 4], [6, 5], [8, 6], [12, 8]];
 
 unsafe extern "C" fn setup_tile(
     ts: *mut Dav1dTileState,
