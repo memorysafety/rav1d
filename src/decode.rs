@@ -4669,7 +4669,14 @@ unsafe extern "C" fn reset_context(
     );
 }
 
-static ss_size_mul: [[u8; 2]; 4] = [[4, 4], [6, 5], [8, 6], [12, 8]];
+static ss_size_mul: [[u8; 2]; 4] = {
+    let mut a = [[0; 2]; 4];
+    a[DAV1D_PIXEL_LAYOUT_I400 as usize] = [4, 4];
+    a[DAV1D_PIXEL_LAYOUT_I420 as usize] = [6, 5];
+    a[DAV1D_PIXEL_LAYOUT_I422 as usize] = [8, 6];
+    a[DAV1D_PIXEL_LAYOUT_I444 as usize] = [12, 8];
+    a
+};
 
 unsafe extern "C" fn setup_tile(
     ts: *mut Dav1dTileState,
