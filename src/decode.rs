@@ -1,3 +1,5 @@
+use std::ptr;
+
 #[cfg(feature = "bitdepth_16")]
 use crate::include::common::bitdepth::BitDepth16;
 #[cfg(feature = "bitdepth_8")]
@@ -4625,7 +4627,7 @@ unsafe fn setup_tile(
                 .offset((tile_start_off * size_mul[1] as size_t / 4) as isize)
                 as *mut uint8_t
         } else {
-            0 as *mut uint8_t
+            ptr::null_mut()
         };
         ts.frame_thread[p].cf = (if !(f.frame_thread.cf).is_null() {
             (f.frame_thread.cf as *mut uint8_t).offset(
@@ -4633,7 +4635,7 @@ unsafe fn setup_tile(
                     as isize,
             )
         } else {
-            0 as *mut uint8_t
+            ptr::null_mut()
         }) as *mut libc::c_void;
     }
     dav1d_cdf_thread_copy(&mut ts.cdf, &f.in_cdf);
