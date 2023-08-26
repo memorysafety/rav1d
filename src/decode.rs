@@ -4706,7 +4706,7 @@ unsafe fn setup_tile(
 unsafe fn read_restoration_info(
     t: &mut Dav1dTaskContext,
     lr: &mut Av1RestorationUnit,
-    p: libc::c_int,
+    p: usize,
     frame_type: Dav1dRestorationType,
 ) {
     let f = &*t.f;
@@ -4748,20 +4748,20 @@ unsafe fn read_restoration_info(
         } else {
             dav1d_msac_decode_subexp(
                 &mut ts.msac,
-                ((*ts.lr_ref[p as usize]).filter_v[0] + 5) as libc::c_uint,
+                ((*ts.lr_ref[p]).filter_v[0] + 5) as libc::c_uint,
                 16,
                 1,
             ) - 5
         }) as int8_t;
         lr.filter_v[1] = (dav1d_msac_decode_subexp(
             &mut ts.msac,
-            ((*ts.lr_ref[p as usize]).filter_v[1] + 23) as libc::c_uint,
+            ((*ts.lr_ref[p]).filter_v[1] + 23) as libc::c_uint,
             32,
             2,
         ) - 23) as int8_t;
         lr.filter_v[2] = (dav1d_msac_decode_subexp(
             &mut ts.msac,
-            ((*ts.lr_ref[p as usize]).filter_v[2] + 17) as libc::c_uint,
+            ((*ts.lr_ref[p]).filter_v[2] + 17) as libc::c_uint,
             64,
             3,
         ) - 17) as int8_t;
@@ -4770,25 +4770,25 @@ unsafe fn read_restoration_info(
         } else {
             dav1d_msac_decode_subexp(
                 &mut ts.msac,
-                ((*ts.lr_ref[p as usize]).filter_h[0] + 5) as libc::c_uint,
+                ((*ts.lr_ref[p]).filter_h[0] + 5) as libc::c_uint,
                 16,
                 1,
             ) - 5
         }) as int8_t;
         lr.filter_h[1] = (dav1d_msac_decode_subexp(
             &mut ts.msac,
-            ((*ts.lr_ref[p as usize]).filter_h[1] + 23) as libc::c_uint,
+            ((*ts.lr_ref[p]).filter_h[1] + 23) as libc::c_uint,
             32,
             2,
         ) - 23) as int8_t;
         lr.filter_h[2] = (dav1d_msac_decode_subexp(
             &mut ts.msac,
-            ((*ts.lr_ref[p as usize]).filter_h[2] + 17) as libc::c_uint,
+            ((*ts.lr_ref[p]).filter_h[2] + 17) as libc::c_uint,
             64,
             3,
         ) - 17) as int8_t;
-        lr.sgr_weights = (*ts.lr_ref[p as usize]).sgr_weights;
-        ts.lr_ref[p as usize] = lr;
+        lr.sgr_weights = (*ts.lr_ref[p]).sgr_weights;
+        ts.lr_ref[p] = lr;
         if DEBUG_BLOCK_INFO(f, t) {
             println!(
                 "Post-lr_wiener[pl={},v[{},{},{}],h[{},{},{}]]: r={}",
@@ -4805,31 +4805,31 @@ unsafe fn read_restoration_info(
     } else if lr.type_0 as libc::c_int == DAV1D_RESTORATION_SGRPROJ as libc::c_int {
         let idx: libc::c_uint =
             dav1d_msac_decode_bools(&mut ts.msac, 4 as libc::c_int as libc::c_uint);
-        let sgr_params: *const uint16_t = (dav1d_sgr_params[idx as usize]).as_ptr();
+        let sgr_params = &dav1d_sgr_params[idx as usize];
         lr.sgr_idx = idx as uint8_t;
-        lr.sgr_weights[0] = (if *sgr_params.offset(0) as libc::c_int != 0 {
+        lr.sgr_weights[0] = (if sgr_params[0] as libc::c_int != 0 {
             dav1d_msac_decode_subexp(
                 &mut ts.msac,
-                ((*ts.lr_ref[p as usize]).sgr_weights[0] + 96) as libc::c_uint,
+                ((*ts.lr_ref[p]).sgr_weights[0] + 96) as libc::c_uint,
                 128,
                 4,
             ) - 96
         } else {
             0 as libc::c_int
         }) as int8_t;
-        lr.sgr_weights[1] = (if *sgr_params.offset(1) as libc::c_int != 0 {
+        lr.sgr_weights[1] = (if sgr_params[1] as libc::c_int != 0 {
             dav1d_msac_decode_subexp(
                 &mut ts.msac,
-                ((*ts.lr_ref[p as usize]).sgr_weights[1] + 32) as libc::c_uint,
+                ((*ts.lr_ref[p]).sgr_weights[1] + 32) as libc::c_uint,
                 128,
                 4,
             ) - 32
         } else {
             95 as libc::c_int
         }) as int8_t;
-        lr.filter_v = (*ts.lr_ref[p as usize]).filter_v;
-        lr.filter_h = (*ts.lr_ref[p as usize]).filter_h;
-        ts.lr_ref[p as usize] = lr;
+        lr.filter_v = (*ts.lr_ref[p]).filter_v;
+        lr.filter_h = (*ts.lr_ref[p]).filter_h;
+        ts.lr_ref[p] = lr;
         if DEBUG_BLOCK_INFO(f, t) {
             println!(
                 "Post-lr_sgrproj[pl={},idx={},w[{},{}]]: r={}",
