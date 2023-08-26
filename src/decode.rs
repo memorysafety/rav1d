@@ -4703,7 +4703,7 @@ unsafe fn setup_tile(
     }
 }
 
-unsafe extern "C" fn read_restoration_info(
+unsafe fn read_restoration_info(
     t: *mut Dav1dTaskContext,
     lr: *mut Av1RestorationUnit,
     p: libc::c_int,
@@ -4856,6 +4856,7 @@ unsafe extern "C" fn read_restoration_info(
         }
     }
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> libc::c_int {
     let f: *const Dav1dFrameContext = (*t).f;
