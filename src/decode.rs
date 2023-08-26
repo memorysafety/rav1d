@@ -4787,11 +4787,7 @@ unsafe fn read_restoration_info(
             64,
             3,
         ) - 17) as int8_t;
-        memcpy(
-            (lr.sgr_weights).as_mut_ptr() as *mut libc::c_void,
-            ((*ts.lr_ref[p as usize]).sgr_weights).as_mut_ptr() as *const libc::c_void,
-            ::core::mem::size_of::<[int8_t; 2]>() as libc::c_ulong,
-        );
+        lr.sgr_weights = (*ts.lr_ref[p as usize]).sgr_weights;
         ts.lr_ref[p as usize] = lr;
         if DEBUG_BLOCK_INFO(f, t) {
             println!(
@@ -4831,16 +4827,8 @@ unsafe fn read_restoration_info(
         } else {
             95 as libc::c_int
         }) as int8_t;
-        memcpy(
-            (lr.filter_v).as_mut_ptr() as *mut libc::c_void,
-            ((*ts.lr_ref[p as usize]).filter_v).as_mut_ptr() as *const libc::c_void,
-            ::core::mem::size_of::<[int8_t; 3]>() as libc::c_ulong,
-        );
-        memcpy(
-            (lr.filter_h).as_mut_ptr() as *mut libc::c_void,
-            ((*ts.lr_ref[p as usize]).filter_h).as_mut_ptr() as *const libc::c_void,
-            ::core::mem::size_of::<[int8_t; 3]>() as libc::c_ulong,
-        );
+        lr.filter_v = (*ts.lr_ref[p as usize]).filter_v;
+        lr.filter_h = (*ts.lr_ref[p as usize]).filter_h;
         ts.lr_ref[p as usize] = lr;
         if DEBUG_BLOCK_INFO(f, t) {
             println!(
