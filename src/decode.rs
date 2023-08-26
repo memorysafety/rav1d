@@ -4800,9 +4800,9 @@ unsafe fn read_restoration_info(
             );
         }
     } else if lr.r#type == DAV1D_RESTORATION_SGRPROJ {
-        let idx: libc::c_uint = dav1d_msac_decode_bools(&mut ts.msac, 4);
-        let sgr_params = &dav1d_sgr_params[idx as usize];
-        lr.sgr_idx = idx as uint8_t;
+        let idx = dav1d_msac_decode_bools(&mut ts.msac, 4) as u8;
+        let sgr_params = &dav1d_sgr_params[idx.into()];
+        lr.sgr_idx = idx;
         lr.sgr_weights[0] = if sgr_params[0] != 0 {
             (dav1d_msac_decode_subexp(
                 &mut ts.msac,
