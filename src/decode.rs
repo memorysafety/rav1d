@@ -4713,8 +4713,7 @@ unsafe fn read_restoration_info(
     let ts = &mut *t.ts;
     if frame_type == DAV1D_RESTORATION_SWITCHABLE {
         let filter =
-            dav1d_msac_decode_symbol_adapt4(&mut ts.msac, &mut ts.cdf.m.restore_switchable.0, 2)
-                as libc::c_int;
+            dav1d_msac_decode_symbol_adapt4(&mut ts.msac, &mut ts.cdf.m.restore_switchable.0, 2);
         lr.r#type = if filter != 0 {
             if filter == 2 {
                 DAV1D_RESTORATION_SGRPROJ
