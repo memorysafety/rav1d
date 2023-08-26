@@ -4620,6 +4620,7 @@ unsafe fn setup_tile(
     let row_sb_start = (*f.frame_hdr).tiling.row_start_sb[tile_row] as libc::c_int;
     let row_sb_end = (*f.frame_hdr).tiling.row_start_sb[tile_row + 1] as libc::c_int;
     let sb_shift = f.sb_shift;
+
     let size_mul = &ss_size_mul[f.cur.p.layout as usize];
     for p in 0..2 {
         ts.frame_thread[p].pal_idx = if !(f.frame_thread.pal_idx).is_null() {
@@ -4642,15 +4643,18 @@ unsafe fn setup_tile(
             ptr::null_mut()
         };
     }
+
     dav1d_cdf_thread_copy(&mut ts.cdf, &f.in_cdf);
     ts.last_qidx = (*f.frame_hdr).quant.yac;
     ts.last_delta_lf.fill(0);
+
     dav1d_msac_init(
         &mut ts.msac,
         data,
         sz,
         (*f.frame_hdr).disable_cdf_update != 0,
     );
+
     ts.tiling.row = tile_row as libc::c_int;
     ts.tiling.col = tile_col as libc::c_int;
     ts.tiling.col_start = col_sb_start << sb_shift;
@@ -4658,7 +4662,10 @@ unsafe fn setup_tile(
     ts.tiling.row_start = row_sb_start << sb_shift;
     ts.tiling.row_end = std::cmp::min(row_sb_end << sb_shift, f.bh);
     let diff_width = (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1];
+
+    // Reference Restoration Unit (used for exp coding)
     let (sb_idx, unit_idx) = if diff_width {
+        // vertical components only
         (
             (ts.tiling.row_start >> 5) * f.sr_sb128w,
             (ts.tiling.row_start & 16) >> 3,
@@ -4673,6 +4680,7 @@ unsafe fn setup_tile(
         if !((f.lf.restore_planes >> p) & 1 != 0) {
             continue;
         }
+
         let lr_ref = if diff_width {
             let ss_hor = (p != 0 && f.cur.p.layout != DAV1D_PIXEL_LAYOUT_I444) as libc::c_int;
             let d = (*f.frame_hdr).super_res.width_scale_denominator;
@@ -4690,6 +4698,7 @@ unsafe fn setup_tile(
         } else {
             &mut (*f.lf.lr_mask.offset(sb_idx as isize)).lr[p][unit_idx as usize]
         };
+
         *lr_ref = Av1RestorationUnit {
             filter_v: [3, -7, 15],
             filter_h: [3, -7, 15],
@@ -4698,6 +4707,7 @@ unsafe fn setup_tile(
         };
         ts.lr_ref[p] = lr_ref;
     }
+
     if (*f.c).n_tc > 1 {
         ts.progress.fill(row_sb_start as atomic_int);
     }
