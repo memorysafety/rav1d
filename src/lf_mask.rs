@@ -25,7 +25,7 @@ pub struct Av1FilterLUT {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Av1RestorationUnit {
-    pub type_0: Dav1dRestorationType,
+    pub r#type: Dav1dRestorationType,
     pub filter_h: [i8; 3],
     pub filter_v: [i8; 3],
     pub sgr_idx: u8,
