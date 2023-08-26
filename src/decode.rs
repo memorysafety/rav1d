@@ -4748,20 +4748,20 @@ unsafe fn read_restoration_info(
                 ((*ts.lr_ref[p]).filter_v[0] + 5) as libc::c_uint,
                 16,
                 1,
-            ) - 5) as int8_t
+            ) - 5) as i8
         };
         lr.filter_v[1] = (dav1d_msac_decode_subexp(
             &mut ts.msac,
             ((*ts.lr_ref[p]).filter_v[1] + 23) as libc::c_uint,
             32,
             2,
-        ) - 23) as int8_t;
+        ) - 23) as i8;
         lr.filter_v[2] = (dav1d_msac_decode_subexp(
             &mut ts.msac,
             ((*ts.lr_ref[p]).filter_v[2] + 17) as libc::c_uint,
             64,
             3,
-        ) - 17) as int8_t;
+        ) - 17) as i8;
         lr.filter_h[0] = if p != 0 {
             0
         } else {
@@ -4770,20 +4770,20 @@ unsafe fn read_restoration_info(
                 ((*ts.lr_ref[p]).filter_h[0] + 5) as libc::c_uint,
                 16,
                 1,
-            ) - 5) as int8_t
+            ) - 5) as i8
         };
         lr.filter_h[1] = (dav1d_msac_decode_subexp(
             &mut ts.msac,
             ((*ts.lr_ref[p]).filter_h[1] + 23) as libc::c_uint,
             32,
             2,
-        ) - 23) as int8_t;
+        ) - 23) as i8;
         lr.filter_h[2] = (dav1d_msac_decode_subexp(
             &mut ts.msac,
             ((*ts.lr_ref[p]).filter_h[2] + 17) as libc::c_uint,
             64,
             3,
-        ) - 17) as int8_t;
+        ) - 17) as i8;
         lr.sgr_weights = (*ts.lr_ref[p]).sgr_weights;
         ts.lr_ref[p] = lr;
         if DEBUG_BLOCK_INFO(f, t) {
@@ -4809,7 +4809,7 @@ unsafe fn read_restoration_info(
                 ((*ts.lr_ref[p]).sgr_weights[0] + 96) as libc::c_uint,
                 128,
                 4,
-            ) - 96) as int8_t
+            ) - 96) as i8
         } else {
             0
         };
@@ -4819,7 +4819,7 @@ unsafe fn read_restoration_info(
                 ((*ts.lr_ref[p]).sgr_weights[1] + 32) as libc::c_uint,
                 128,
                 4,
-            ) - 32) as int8_t
+            ) - 32) as i8
         } else {
             95
         };
