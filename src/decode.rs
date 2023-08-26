@@ -4711,6 +4711,7 @@ unsafe fn read_restoration_info(
 ) {
     let f = &*t.f;
     let ts = &mut *t.ts;
+    let lr_ref = &*ts.lr_ref[p];
     if frame_type == DAV1D_RESTORATION_SWITCHABLE {
         let filter =
             dav1d_msac_decode_symbol_adapt4(&mut ts.msac, &mut ts.cdf.m.restore_switchable.0, 2);
@@ -4744,20 +4745,20 @@ unsafe fn read_restoration_info(
         } else {
             (dav1d_msac_decode_subexp(
                 &mut ts.msac,
-                ((*ts.lr_ref[p]).filter_v[0] + 5) as libc::c_uint,
+                (lr_ref.filter_v[0] + 5) as libc::c_uint,
                 16,
                 1,
             ) - 5) as i8
         };
         lr.filter_v[1] = (dav1d_msac_decode_subexp(
             &mut ts.msac,
-            ((*ts.lr_ref[p]).filter_v[1] + 23) as libc::c_uint,
+            (lr_ref.filter_v[1] + 23) as libc::c_uint,
             32,
             2,
         ) - 23) as i8;
         lr.filter_v[2] = (dav1d_msac_decode_subexp(
             &mut ts.msac,
-            ((*ts.lr_ref[p]).filter_v[2] + 17) as libc::c_uint,
+            (lr_ref.filter_v[2] + 17) as libc::c_uint,
             64,
             3,
         ) - 17) as i8;
@@ -4766,24 +4767,24 @@ unsafe fn read_restoration_info(
         } else {
             (dav1d_msac_decode_subexp(
                 &mut ts.msac,
-                ((*ts.lr_ref[p]).filter_h[0] + 5) as libc::c_uint,
+                (lr_ref.filter_h[0] + 5) as libc::c_uint,
                 16,
                 1,
             ) - 5) as i8
         };
         lr.filter_h[1] = (dav1d_msac_decode_subexp(
             &mut ts.msac,
-            ((*ts.lr_ref[p]).filter_h[1] + 23) as libc::c_uint,
+            (lr_ref.filter_h[1] + 23) as libc::c_uint,
             32,
             2,
         ) - 23) as i8;
         lr.filter_h[2] = (dav1d_msac_decode_subexp(
             &mut ts.msac,
-            ((*ts.lr_ref[p]).filter_h[2] + 17) as libc::c_uint,
+            (lr_ref.filter_h[2] + 17) as libc::c_uint,
             64,
             3,
         ) - 17) as i8;
-        lr.sgr_weights = (*ts.lr_ref[p]).sgr_weights;
+        lr.sgr_weights = lr_ref.sgr_weights;
         ts.lr_ref[p] = lr;
         if DEBUG_BLOCK_INFO(f, t) {
             println!(
@@ -4805,7 +4806,7 @@ unsafe fn read_restoration_info(
         lr.sgr_weights[0] = if sgr_params[0] != 0 {
             (dav1d_msac_decode_subexp(
                 &mut ts.msac,
-                ((*ts.lr_ref[p]).sgr_weights[0] + 96) as libc::c_uint,
+                (lr_ref.sgr_weights[0] + 96) as libc::c_uint,
                 128,
                 4,
             ) - 96) as i8
@@ -4815,15 +4816,15 @@ unsafe fn read_restoration_info(
         lr.sgr_weights[1] = if sgr_params[1] != 0 {
             (dav1d_msac_decode_subexp(
                 &mut ts.msac,
-                ((*ts.lr_ref[p]).sgr_weights[1] + 32) as libc::c_uint,
+                (lr_ref.sgr_weights[1] + 32) as libc::c_uint,
                 128,
                 4,
             ) - 32) as i8
         } else {
             95
         };
-        lr.filter_v = (*ts.lr_ref[p]).filter_v;
-        lr.filter_h = (*ts.lr_ref[p]).filter_h;
+        lr.filter_v = lr_ref.filter_v;
+        lr.filter_h = lr_ref.filter_h;
         ts.lr_ref[p] = lr;
         if DEBUG_BLOCK_INFO(f, t) {
             println!(
