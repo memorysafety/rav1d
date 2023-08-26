@@ -4725,7 +4725,7 @@ unsafe fn read_restoration_info(
             DAV1D_RESTORATION_NONE
         };
     } else {
-        let type_0: libc::c_uint = dav1d_msac_decode_bool_adapt(
+        let r#type: libc::c_uint = dav1d_msac_decode_bool_adapt(
             &mut ts.msac,
             if frame_type == DAV1D_RESTORATION_WIENER {
                 &mut ts.cdf.m.restore_wiener.0
@@ -4733,7 +4733,7 @@ unsafe fn read_restoration_info(
                 &mut ts.cdf.m.restore_sgrproj.0
             },
         ) as libc::c_uint;
-        lr.r#type = if type_0 != 0 {
+        lr.r#type = if r#type != 0 {
             frame_type
         } else {
             DAV1D_RESTORATION_NONE
