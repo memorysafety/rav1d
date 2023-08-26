@@ -4715,7 +4715,7 @@ unsafe fn read_restoration_info(
         let filter =
             dav1d_msac_decode_symbol_adapt4(&mut ts.msac, &mut ts.cdf.m.restore_switchable.0, 2)
                 as libc::c_int;
-        lr.type_0 = (if filter != 0 {
+        lr.type_0 = if filter != 0 {
             if filter == 2 {
                 DAV1D_RESTORATION_SGRPROJ
             } else {
@@ -4723,7 +4723,7 @@ unsafe fn read_restoration_info(
             }
         } else {
             DAV1D_RESTORATION_NONE
-        }) as uint8_t;
+        };
     } else {
         let type_0: libc::c_uint = dav1d_msac_decode_bool_adapt(
             &mut ts.msac,
@@ -4733,13 +4733,13 @@ unsafe fn read_restoration_info(
                 &mut ts.cdf.m.restore_sgrproj.0
             },
         ) as libc::c_uint;
-        lr.type_0 = (if type_0 != 0 {
+        lr.type_0 = if type_0 != 0 {
             frame_type
         } else {
             DAV1D_RESTORATION_NONE
-        }) as uint8_t;
+        };
     }
-    if lr.type_0 == DAV1D_RESTORATION_WIENER as u8 {
+    if lr.type_0 == DAV1D_RESTORATION_WIENER {
         lr.filter_v[0] = if p != 0 {
             0
         } else {
@@ -4799,7 +4799,7 @@ unsafe fn read_restoration_info(
                 ts.msac.rng,
             );
         }
-    } else if lr.type_0 == DAV1D_RESTORATION_SGRPROJ as u8 {
+    } else if lr.type_0 == DAV1D_RESTORATION_SGRPROJ {
         let idx: libc::c_uint = dav1d_msac_decode_bools(&mut ts.msac, 4);
         let sgr_params = &dav1d_sgr_params[idx as usize];
         lr.sgr_idx = idx as uint8_t;
