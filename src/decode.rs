@@ -4704,13 +4704,13 @@ unsafe fn setup_tile(
 }
 
 unsafe fn read_restoration_info(
-    t: *mut Dav1dTaskContext,
+    t: &mut Dav1dTaskContext,
     lr: *mut Av1RestorationUnit,
     p: libc::c_int,
     frame_type: Dav1dRestorationType,
 ) {
-    let f: *const Dav1dFrameContext = (*t).f;
-    let ts: *mut Dav1dTileState = (*t).ts;
+    let f: *const Dav1dFrameContext = t.f;
+    let ts: *mut Dav1dTileState = t.ts;
     if frame_type as libc::c_uint == DAV1D_RESTORATION_SWITCHABLE as libc::c_int as libc::c_uint {
         let filter = dav1d_msac_decode_symbol_adapt4(
             &mut (*ts).msac,
@@ -4793,7 +4793,7 @@ unsafe fn read_restoration_info(
             ::core::mem::size_of::<[int8_t; 2]>() as libc::c_ulong,
         );
         (*ts).lr_ref[p as usize] = lr;
-        if DEBUG_BLOCK_INFO(&*f, &*t) {
+        if DEBUG_BLOCK_INFO(&*f, t) {
             printf(
                 b"Post-lr_wiener[pl=%d,v[%d,%d,%d],h[%d,%d,%d]]: r=%d\n\0" as *const u8
                     as *const libc::c_char,
@@ -4843,7 +4843,7 @@ unsafe fn read_restoration_info(
             ::core::mem::size_of::<[int8_t; 3]>() as libc::c_ulong,
         );
         (*ts).lr_ref[p as usize] = lr;
-        if DEBUG_BLOCK_INFO(&*f, &*t) {
+        if DEBUG_BLOCK_INFO(&*f, t) {
             printf(
                 b"Post-lr_sgrproj[pl=%d,idx=%d,w[%d,%d]]: r=%d\n\0" as *const u8
                     as *const libc::c_char,
@@ -5022,7 +5022,7 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> li
                                     .as_mut_ptr()
                                     .offset(unit_idx as isize)
                                         as *mut Av1RestorationUnit;
-                                read_restoration_info(t, lr, p, frame_type);
+                                read_restoration_info(&mut *t, lr, p, frame_type);
                                 x += 1;
                             }
                         } else {
@@ -5039,7 +5039,7 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> li
                                         .as_mut_ptr()
                                         .offset(unit_idx_0 as isize)
                                             as *mut Av1RestorationUnit;
-                                    read_restoration_info(t, lr_0, p, frame_type);
+                                    read_restoration_info(&mut *t, lr_0, p, frame_type);
                                 }
                             }
                         }
