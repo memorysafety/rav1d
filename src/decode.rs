@@ -4711,48 +4711,45 @@ unsafe fn read_restoration_info(
 ) {
     let f = &*t.f;
     let ts = &mut *t.ts;
-    if frame_type as libc::c_uint == DAV1D_RESTORATION_SWITCHABLE as libc::c_int as libc::c_uint {
-        let filter = dav1d_msac_decode_symbol_adapt4(
-            &mut ts.msac,
-            &mut ts.cdf.m.restore_switchable.0,
-            2 as libc::c_int as size_t,
-        ) as libc::c_int;
+    if frame_type == DAV1D_RESTORATION_SWITCHABLE {
+        let filter =
+            dav1d_msac_decode_symbol_adapt4(&mut ts.msac, &mut ts.cdf.m.restore_switchable.0, 2)
+                as libc::c_int;
         lr.type_0 = (if filter != 0 {
             if filter == 2 {
-                DAV1D_RESTORATION_SGRPROJ as libc::c_int
+                DAV1D_RESTORATION_SGRPROJ
             } else {
-                DAV1D_RESTORATION_WIENER as libc::c_int
+                DAV1D_RESTORATION_WIENER
             }
         } else {
-            DAV1D_RESTORATION_NONE as libc::c_int
+            DAV1D_RESTORATION_NONE
         }) as uint8_t;
     } else {
         let type_0: libc::c_uint = dav1d_msac_decode_bool_adapt(
             &mut ts.msac,
-            if frame_type as libc::c_uint == DAV1D_RESTORATION_WIENER as libc::c_int as libc::c_uint
-            {
+            if frame_type == DAV1D_RESTORATION_WIENER {
                 &mut ts.cdf.m.restore_wiener.0
             } else {
                 &mut ts.cdf.m.restore_sgrproj.0
             },
         ) as libc::c_uint;
         lr.type_0 = (if type_0 != 0 {
-            frame_type as libc::c_uint
+            frame_type
         } else {
-            DAV1D_RESTORATION_NONE as libc::c_int as libc::c_uint
+            DAV1D_RESTORATION_NONE
         }) as uint8_t;
     }
-    if lr.type_0 as libc::c_int == DAV1D_RESTORATION_WIENER as libc::c_int {
-        lr.filter_v[0] = (if p != 0 {
-            0 as libc::c_int
+    if lr.type_0 == DAV1D_RESTORATION_WIENER as u8 {
+        lr.filter_v[0] = if p != 0 {
+            0
         } else {
-            dav1d_msac_decode_subexp(
+            (dav1d_msac_decode_subexp(
                 &mut ts.msac,
                 ((*ts.lr_ref[p]).filter_v[0] + 5) as libc::c_uint,
                 16,
                 1,
-            ) - 5
-        }) as int8_t;
+            ) - 5) as int8_t
+        };
         lr.filter_v[1] = (dav1d_msac_decode_subexp(
             &mut ts.msac,
             ((*ts.lr_ref[p]).filter_v[1] + 23) as libc::c_uint,
@@ -4765,16 +4762,16 @@ unsafe fn read_restoration_info(
             64,
             3,
         ) - 17) as int8_t;
-        lr.filter_h[0] = (if p != 0 {
-            0 as libc::c_int
+        lr.filter_h[0] = if p != 0 {
+            0
         } else {
-            dav1d_msac_decode_subexp(
+            (dav1d_msac_decode_subexp(
                 &mut ts.msac,
                 ((*ts.lr_ref[p]).filter_h[0] + 5) as libc::c_uint,
                 16,
                 1,
-            ) - 5
-        }) as int8_t;
+            ) - 5) as int8_t
+        };
         lr.filter_h[1] = (dav1d_msac_decode_subexp(
             &mut ts.msac,
             ((*ts.lr_ref[p]).filter_h[1] + 23) as libc::c_uint,
@@ -4802,31 +4799,30 @@ unsafe fn read_restoration_info(
                 ts.msac.rng,
             );
         }
-    } else if lr.type_0 as libc::c_int == DAV1D_RESTORATION_SGRPROJ as libc::c_int {
-        let idx: libc::c_uint =
-            dav1d_msac_decode_bools(&mut ts.msac, 4 as libc::c_int as libc::c_uint);
+    } else if lr.type_0 == DAV1D_RESTORATION_SGRPROJ as u8 {
+        let idx: libc::c_uint = dav1d_msac_decode_bools(&mut ts.msac, 4);
         let sgr_params = &dav1d_sgr_params[idx as usize];
         lr.sgr_idx = idx as uint8_t;
-        lr.sgr_weights[0] = (if sgr_params[0] as libc::c_int != 0 {
-            dav1d_msac_decode_subexp(
+        lr.sgr_weights[0] = if sgr_params[0] != 0 {
+            (dav1d_msac_decode_subexp(
                 &mut ts.msac,
                 ((*ts.lr_ref[p]).sgr_weights[0] + 96) as libc::c_uint,
                 128,
                 4,
-            ) - 96
+            ) - 96) as int8_t
         } else {
-            0 as libc::c_int
-        }) as int8_t;
-        lr.sgr_weights[1] = (if sgr_params[1] as libc::c_int != 0 {
-            dav1d_msac_decode_subexp(
+            0
+        };
+        lr.sgr_weights[1] = if sgr_params[1] != 0 {
+            (dav1d_msac_decode_subexp(
                 &mut ts.msac,
                 ((*ts.lr_ref[p]).sgr_weights[1] + 32) as libc::c_uint,
                 128,
                 4,
-            ) - 32
+            ) - 32) as int8_t
         } else {
-            95 as libc::c_int
-        }) as int8_t;
+            95
+        };
         lr.filter_v = (*ts.lr_ref[p]).filter_v;
         lr.filter_h = (*ts.lr_ref[p]).filter_h;
         ts.lr_ref[p] = lr;
