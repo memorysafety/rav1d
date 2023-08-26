@@ -4712,6 +4712,7 @@ unsafe fn read_restoration_info(
     let f = &*t.f;
     let ts = &mut *t.ts;
     let lr_ref = &*ts.lr_ref[p];
+
     if frame_type == DAV1D_RESTORATION_SWITCHABLE {
         let filter =
             dav1d_msac_decode_symbol_adapt4(&mut ts.msac, &mut ts.cdf.m.restore_switchable.0, 2);
@@ -4739,6 +4740,7 @@ unsafe fn read_restoration_info(
             DAV1D_RESTORATION_NONE
         };
     }
+
     if lr.r#type == DAV1D_RESTORATION_WIENER {
         lr.filter_v[0] = if p != 0 {
             0
@@ -4762,6 +4764,7 @@ unsafe fn read_restoration_info(
             64,
             3,
         ) - 17) as i8;
+
         lr.filter_h[0] = if p != 0 {
             0
         } else {
