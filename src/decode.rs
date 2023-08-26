@@ -4794,16 +4794,15 @@ unsafe fn read_restoration_info(
         );
         ts.lr_ref[p as usize] = lr;
         if DEBUG_BLOCK_INFO(f, t) {
-            printf(
-                b"Post-lr_wiener[pl=%d,v[%d,%d,%d],h[%d,%d,%d]]: r=%d\n\0" as *const u8
-                    as *const libc::c_char,
+            println!(
+                "Post-lr_wiener[pl={},v[{},{},{}],h[{},{},{}]]: r={}",
                 p,
-                lr.filter_v[0] as libc::c_int,
-                lr.filter_v[1] as libc::c_int,
-                lr.filter_v[2] as libc::c_int,
-                lr.filter_h[0] as libc::c_int,
-                lr.filter_h[1] as libc::c_int,
-                lr.filter_h[2] as libc::c_int,
+                lr.filter_v[0],
+                lr.filter_v[1],
+                lr.filter_v[2],
+                lr.filter_h[0],
+                lr.filter_h[1],
+                lr.filter_h[2],
                 ts.msac.rng,
             );
         }
@@ -4844,14 +4843,9 @@ unsafe fn read_restoration_info(
         );
         ts.lr_ref[p as usize] = lr;
         if DEBUG_BLOCK_INFO(f, t) {
-            printf(
-                b"Post-lr_sgrproj[pl=%d,idx=%d,w[%d,%d]]: r=%d\n\0" as *const u8
-                    as *const libc::c_char,
-                p,
-                lr.sgr_idx as libc::c_int,
-                lr.sgr_weights[0] as libc::c_int,
-                lr.sgr_weights[1] as libc::c_int,
-                ts.msac.rng,
+            println!(
+                "Post-lr_sgrproj[pl={},idx={},w[{},{}]]: r={}",
+                p, lr.sgr_idx, lr.sgr_weights[0], lr.sgr_weights[1], ts.msac.rng,
             );
         }
     }
