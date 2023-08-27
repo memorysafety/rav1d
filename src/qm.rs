@@ -1,8 +1,3 @@
-use ::libc;
-extern "C" {
-    fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
-}
-
 use crate::src::levels::RTX_16X32;
 use crate::src::levels::RTX_16X4;
 use crate::src::levels::RTX_16X64;
