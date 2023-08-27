@@ -2997,7 +2997,8 @@ unsafe extern "C" fn subsample(
         y += 1;
     }
 }
-unsafe extern "C" fn transpose(
+
+unsafe fn transpose(
     dst: *mut uint8_t,
     src: *const uint8_t,
     w: libc::c_int,
