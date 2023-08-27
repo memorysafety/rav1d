@@ -3018,24 +3018,16 @@ unsafe extern "C" fn transpose(
     }
 }
 
-unsafe fn untriangle(mut dst: *mut uint8_t, mut src: *const uint8_t, sz: libc::c_int) {
-    let mut y = 0;
-    while y < sz {
-        memcpy(
-            dst as *mut libc::c_void,
-            src as *const libc::c_void,
-            (y + 1) as libc::c_ulong,
-        );
-        let mut src_ptr: *const uint8_t = &*src.offset(y as isize) as *const uint8_t;
-        let mut x = y + 1;
-        while x < sz {
-            src_ptr = src_ptr.offset(x as isize);
-            *dst.offset(x as isize) = *src_ptr;
-            x += 1;
+fn untriangle(mut dst: &mut [u8], mut src: &[u8], sz: usize) {
+    for y in 0..sz {
+        dst[..y + 1].copy_from_slice(&src[..y + 1]);
+        let mut src_ptr = &src[y..];
+        for x in y + 1..sz {
+            src_ptr = &src_ptr[x..];
+            dst[x] = src_ptr[0];
         }
-        dst = dst.offset(sz as isize);
-        src = src.offset((y + 1) as isize);
-        y += 1;
+        dst = &mut dst[sz..];
+        src = &src[y + 1..];
     }
 }
 
@@ -3087,21 +3079,9 @@ pub unsafe fn dav1d_init_qm_tables() {
             dav1d_qm_tbl[i][j][TX_8X8 as usize] = qm_tbl_8x8[i][j].as_mut_ptr();
             dav1d_qm_tbl[i][j][TX_16X16 as usize] = qm_tbl_16x16[i][j].as_mut_ptr();
             dav1d_qm_tbl[i][j][TX_32X32 as usize] = qm_tbl_32x32[i][j].as_mut_ptr();
-            untriangle(
-                qm_tbl_4x4[i][j].as_mut_ptr(),
-                qm_tbl_4x4_t[i][j].as_ptr(),
-                4,
-            );
-            untriangle(
-                qm_tbl_8x8[i][j].as_mut_ptr(),
-                qm_tbl_8x8_t[i][j].as_ptr(),
-                8,
-            );
-            untriangle(
-                qm_tbl_32x32[i][j].as_mut_ptr(),
-                qm_tbl_32x32_t[i][j].as_ptr(),
-                32,
-            );
+            untriangle(&mut qm_tbl_4x4[i][j], &qm_tbl_4x4_t[i][j], 4);
+            untriangle(&mut qm_tbl_8x8[i][j], &qm_tbl_8x8_t[i][j], 8);
+            untriangle(&mut qm_tbl_32x32[i][j], &qm_tbl_32x32_t[i][j], 32);
             subsample(
                 qm_tbl_16x16[i][j].as_mut_ptr(),
                 qm_tbl_32x32[i][j].as_mut_ptr(),
