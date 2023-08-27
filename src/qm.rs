@@ -17,6 +17,7 @@ use crate::src::levels::TX_32X32;
 use crate::src::levels::TX_4X4;
 use crate::src::levels::TX_64X64;
 use crate::src::levels::TX_8X8;
+
 static qm_tbl_4x4_t: [[[u8; 10]; 2]; 15] = [
     [
         [32, 43, 67, 73, 94, 137, 97, 110, 150, 200],
@@ -79,6 +80,7 @@ static qm_tbl_4x4_t: [[[u8; 10]; 2]; 15] = [
         [31, 31, 31, 31, 31, 31, 31, 31, 31, 31],
     ],
 ];
+
 static qm_tbl_8x4: [[[u8; 32]; 2]; 15] = [
     [
         [
@@ -231,6 +233,7 @@ static qm_tbl_8x4: [[[u8; 32]; 2]; 15] = [
         ],
     ],
 ];
+
 static qm_tbl_8x8_t: [[[u8; 36]; 2]; 15] = [
     [
         [
@@ -383,6 +386,7 @@ static qm_tbl_8x8_t: [[[u8; 36]; 2]; 15] = [
         ],
     ],
 ];
+
 static qm_tbl_16x4: [[[u8; 64]; 2]; 15] = [
     [
         [
@@ -570,6 +574,7 @@ static qm_tbl_16x4: [[[u8; 64]; 2]; 15] = [
         ],
     ],
 ];
+
 static qm_tbl_16x8: [[[u8; 128]; 2]; 15] = [
     [
         [
@@ -847,6 +852,7 @@ static qm_tbl_16x8: [[[u8; 128]; 2]; 15] = [
         ],
     ],
 ];
+
 static qm_tbl_32x8: [[[u8; 256]; 2]; 15] = [
     [
         [
@@ -1306,6 +1312,7 @@ static qm_tbl_32x8: [[[u8; 256]; 2]; 15] = [
         ],
     ],
 ];
+
 static qm_tbl_32x16: [[[u8; 512]; 2]; 15] = [
     [
         [
@@ -2129,6 +2136,7 @@ static qm_tbl_32x16: [[[u8; 512]; 2]; 15] = [
         ],
     ],
 ];
+
 static qm_tbl_32x32_t: [[[u8; 528]; 2]; 15] = [
     [
         [
@@ -2963,8 +2971,10 @@ static qm_tbl_32x32_t: [[[u8; 528]; 2]; 15] = [
         ],
     ],
 ];
+
 #[no_mangle]
 pub static mut dav1d_qm_tbl: [[[*const u8; 19]; 2]; 16] = [[[0 as *const u8; 19]; 2]; 16];
+
 static mut qm_tbl_4x4: [[[u8; 16]; 2]; 15] = [[[0; 16]; 2]; 15];
 static mut qm_tbl_4x8: [[[u8; 32]; 2]; 15] = [[[0; 32]; 2]; 15];
 static mut qm_tbl_4x16: [[[u8; 64]; 2]; 15] = [[[0; 64]; 2]; 15];
