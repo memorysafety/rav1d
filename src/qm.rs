@@ -3037,9 +3037,9 @@ unsafe extern "C" fn untriangle(mut dst: *mut uint8_t, mut src: *const uint8_t, 
         y += 1;
     }
 }
-#[no_mangle]
+
 #[cold]
-pub unsafe extern "C" fn dav1d_init_qm_tables() {
+pub unsafe fn dav1d_init_qm_tables() {
     let mut i = 0;
     while i < 15 {
         let mut j = 0;
