@@ -1,3 +1,4 @@
+use crate::src::levels::N_RECT_TX_SIZES;
 use crate::src::levels::RTX_16X32;
 use crate::src::levels::RTX_16X4;
 use crate::src::levels::RTX_16X64;
@@ -2972,13 +2973,13 @@ static qm_tbl_32x32_t: [[[u8; 528]; 2]; 15] = [
     ],
 ];
 
-pub static dav1d_qm_tbl: [[[Option<&'static [u8]>; 19]; 2]; 16] = {
-    let mut table = [[[None; 19]; 2]; 16];
+pub static dav1d_qm_tbl: [[[Option<&'static [u8]>; N_RECT_TX_SIZES]; 2]; 16] = {
+    let mut table = [[[None; N_RECT_TX_SIZES]; 2]; 16];
     let mut i = 0;
     while i < 15 {
         let mut j = 0;
         while j < 2 {
-            let mut row: [Option<&'static [u8]>; 19] = [None; 19];
+            let mut row: [Option<&'static [u8]>; N_RECT_TX_SIZES] = [None; N_RECT_TX_SIZES];
 
             // note that the w/h in the assignment is inverted, this is on purpose
             // because we store coefficients transposed
