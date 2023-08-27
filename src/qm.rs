@@ -2994,14 +2994,21 @@ fn subsample(dst: &mut [u8], src: &[u8], sz: usize, step: usize) {
     }
 }
 
-fn transpose(dst: &mut [u8], src: &[u8], w: usize, h: usize) {
-    assert_eq!(w * h, dst.len());
-    assert_eq!(w * h, src.len());
-    for y in 0..h {
-        for x in 0..w {
+const fn transposed<const N: usize>(src: &[u8; N], w: usize, h: usize) -> [u8; N] {
+    assert!(w * h == N);
+    let mut dst = [0; N];
+
+    let mut y = 0;
+    while y < h {
+        let mut x = 0;
+        while x < w {
             dst[x * h + y] = src[y * w + x];
+            x += 1;
         }
+        y += 1;
     }
+
+    dst
 }
 
 fn untriangle(mut dst: &mut [u8], mut src: &[u8], sz: usize) {
@@ -3029,19 +3036,19 @@ pub unsafe fn dav1d_init_qm_tables() {
         for j in 0..2 {
             // note that the w/h in the assignment is inverted, this is on purpose
             // because we store coefficients transposed
-            transpose(&mut qm_tbl_4x8[i][j], &qm_tbl_8x4[i][j], 8, 4);
+            qm_tbl_4x8[i][j] = transposed(&qm_tbl_8x4[i][j], 8, 4);
             dav1d_qm_tbl[i][j][RTX_4X8 as usize] = Some(&qm_tbl_8x4[i][j]);
             dav1d_qm_tbl[i][j][RTX_8X4 as usize] = Some(&qm_tbl_4x8[i][j]);
-            transpose(&mut qm_tbl_4x16[i][j], &qm_tbl_16x4[i][j], 16, 4);
+            qm_tbl_4x16[i][j] = transposed(&qm_tbl_16x4[i][j], 16, 4);
             dav1d_qm_tbl[i][j][RTX_4X16 as usize] = Some(&qm_tbl_16x4[i][j]);
             dav1d_qm_tbl[i][j][RTX_16X4 as usize] = Some(&qm_tbl_4x16[i][j]);
-            transpose(&mut qm_tbl_8x16[i][j], &qm_tbl_16x8[i][j], 16, 8);
+            qm_tbl_8x16[i][j] = transposed(&qm_tbl_16x8[i][j], 16, 8);
             dav1d_qm_tbl[i][j][RTX_8X16 as usize] = Some(&qm_tbl_16x8[i][j]);
             dav1d_qm_tbl[i][j][RTX_16X8 as usize] = Some(&qm_tbl_8x16[i][j]);
-            transpose(&mut qm_tbl_8x32[i][j], &qm_tbl_32x8[i][j], 32, 8);
+            qm_tbl_8x32[i][j] = transposed(&qm_tbl_32x8[i][j], 32, 8);
             dav1d_qm_tbl[i][j][RTX_8X32 as usize] = Some(&qm_tbl_32x8[i][j]);
             dav1d_qm_tbl[i][j][RTX_32X8 as usize] = Some(&qm_tbl_8x32[i][j]);
-            transpose(&mut qm_tbl_16x32[i][j], &qm_tbl_32x16[i][j], 32, 16);
+            qm_tbl_16x32[i][j] = transposed(&qm_tbl_32x16[i][j], 32, 16);
             dav1d_qm_tbl[i][j][RTX_16X32 as usize] = Some(&qm_tbl_32x16[i][j]);
             dav1d_qm_tbl[i][j][RTX_32X16 as usize] = Some(&qm_tbl_16x32[i][j]);
 
