@@ -2973,78 +2973,6 @@ static qm_tbl_32x32_t: [[[u8; (32 * (32 + 1)) / 2]; 2]; 15] = [
     ],
 ];
 
-pub static dav1d_qm_tbl: [[[Option<&'static [u8]>; N_RECT_TX_SIZES]; 2]; 16] = {
-    let mut table = [[[None; N_RECT_TX_SIZES]; 2]; 16];
-    let mut i = 0;
-    while i < table.len() - 1 {
-        // last row is empty
-        let mut j = 0;
-        while j < table[j].len() {
-            let mut row: [Option<&'static [u8]>; N_RECT_TX_SIZES] = [None; N_RECT_TX_SIZES];
-
-            // note that the w/h in the assignment is inverted, this is on purpose
-            // because we store coefficients transposed
-            row[RTX_4X8 as usize] = Some(&qm_tbl_8x4[i][j]);
-            row[RTX_8X4 as usize] = Some(&qm_tbl_4x8[i][j]);
-            row[RTX_4X16 as usize] = Some(&qm_tbl_16x4[i][j]);
-            row[RTX_16X4 as usize] = Some(&qm_tbl_4x16[i][j]);
-            row[RTX_8X16 as usize] = Some(&qm_tbl_16x8[i][j]);
-            row[RTX_16X8 as usize] = Some(&qm_tbl_8x16[i][j]);
-            row[RTX_8X32 as usize] = Some(&qm_tbl_32x8[i][j]);
-            row[RTX_32X8 as usize] = Some(&qm_tbl_8x32[i][j]);
-            row[RTX_16X32 as usize] = Some(&qm_tbl_32x16[i][j]);
-            row[RTX_32X16 as usize] = Some(&qm_tbl_16x32[i][j]);
-
-            row[TX_4X4 as usize] = Some(&qm_tbl_4x4[i][j]);
-            row[TX_8X8 as usize] = Some(&qm_tbl_8x8[i][j]);
-            row[TX_16X16 as usize] = Some(&qm_tbl_16x16[i][j]);
-            row[TX_32X32 as usize] = Some(&qm_tbl_32x32[i][j]);
-
-            row[TX_64X64 as usize] = row[TX_32X32 as usize];
-            row[RTX_64X32 as usize] = row[TX_32X32 as usize];
-            row[RTX_64X16 as usize] = row[RTX_32X16 as usize];
-            row[RTX_32X64 as usize] = row[TX_32X32 as usize];
-            row[RTX_16X64 as usize] = row[RTX_16X32 as usize];
-
-            table[i][j] = row;
-            j += 1;
-        }
-        i += 1;
-    }
-    table
-};
-
-macro_rules! generate_table {
-    ($const_fn:ident, $src:expr, $($arg:expr),*) => {{
-        const fn generate<const N: usize, const M: usize>(src: &[[[u8; N]; 2]; 15]) -> [[[u8; M]; 2]; 15] {
-            let mut table = [[[0; M]; 2]; 15];
-            let mut i = 0;
-            while i < 15 {
-                let mut j = 0;
-                while j < 2 {
-                    // const closures don't exist yet
-                    table[i][j] = $const_fn(&src[i][j], $($arg,)*);
-                    j += 1;
-                }
-                i += 1;
-            }
-            table
-        }
-
-        generate(&$src)
-    }};
-}
-
-static qm_tbl_4x4: [[[u8; 4 * 4]; 2]; 15] = generate_table!(untriangled, qm_tbl_4x4_t, 4);
-static qm_tbl_4x8: [[[u8; 4 * 8]; 2]; 15] = generate_table!(transposed, qm_tbl_8x4, 8, 4);
-static qm_tbl_4x16: [[[u8; 4 * 16]; 2]; 15] = generate_table!(transposed, qm_tbl_16x4, 16, 4);
-static qm_tbl_8x8: [[[u8; 8 * 8]; 2]; 15] = generate_table!(untriangled, qm_tbl_8x8_t, 8);
-static qm_tbl_8x16: [[[u8; 8 * 16]; 2]; 15] = generate_table!(transposed, qm_tbl_16x8, 16, 8);
-static qm_tbl_8x32: [[[u8; 8 * 32]; 2]; 15] = generate_table!(transposed, qm_tbl_32x8, 32, 8);
-static qm_tbl_16x16: [[[u8; 16 * 16]; 2]; 15] = generate_table!(subsampled, qm_tbl_32x32, 16, 2);
-static qm_tbl_16x32: [[[u8; 16 * 32]; 2]; 15] = generate_table!(transposed, qm_tbl_32x16, 32, 16);
-static qm_tbl_32x32: [[[u8; 32 * 32]; 2]; 15] = generate_table!(untriangled, qm_tbl_32x32_t, 32);
-
 const fn subsampled<const N: usize, const M: usize>(
     src: &[u8; N],
     sz: usize,
@@ -3113,3 +3041,75 @@ const fn untriangled<const N: usize, const M: usize>(src: &[u8; N], sz: usize) -
 
     dst
 }
+
+macro_rules! generate_table {
+    ($const_fn:ident, $src:expr, $($arg:expr),*) => {{
+        const fn generate<const N: usize, const M: usize>(src: &[[[u8; N]; 2]; 15]) -> [[[u8; M]; 2]; 15] {
+            let mut table = [[[0; M]; 2]; 15];
+            let mut i = 0;
+            while i < 15 {
+                let mut j = 0;
+                while j < 2 {
+                    // const closures don't exist yet
+                    table[i][j] = $const_fn(&src[i][j], $($arg,)*);
+                    j += 1;
+                }
+                i += 1;
+            }
+            table
+        }
+
+        generate(&$src)
+    }};
+}
+
+static qm_tbl_4x4: [[[u8; 4 * 4]; 2]; 15] = generate_table!(untriangled, qm_tbl_4x4_t, 4);
+static qm_tbl_4x8: [[[u8; 4 * 8]; 2]; 15] = generate_table!(transposed, qm_tbl_8x4, 8, 4);
+static qm_tbl_4x16: [[[u8; 4 * 16]; 2]; 15] = generate_table!(transposed, qm_tbl_16x4, 16, 4);
+static qm_tbl_8x8: [[[u8; 8 * 8]; 2]; 15] = generate_table!(untriangled, qm_tbl_8x8_t, 8);
+static qm_tbl_8x16: [[[u8; 8 * 16]; 2]; 15] = generate_table!(transposed, qm_tbl_16x8, 16, 8);
+static qm_tbl_8x32: [[[u8; 8 * 32]; 2]; 15] = generate_table!(transposed, qm_tbl_32x8, 32, 8);
+static qm_tbl_16x16: [[[u8; 16 * 16]; 2]; 15] = generate_table!(subsampled, qm_tbl_32x32, 16, 2);
+static qm_tbl_16x32: [[[u8; 16 * 32]; 2]; 15] = generate_table!(transposed, qm_tbl_32x16, 32, 16);
+static qm_tbl_32x32: [[[u8; 32 * 32]; 2]; 15] = generate_table!(untriangled, qm_tbl_32x32_t, 32);
+
+pub static dav1d_qm_tbl: [[[Option<&'static [u8]>; N_RECT_TX_SIZES]; 2]; 16] = {
+    let mut table = [[[None; N_RECT_TX_SIZES]; 2]; 16];
+    let mut i = 0;
+    while i < table.len() - 1 {
+        // last row is empty
+        let mut j = 0;
+        while j < table[j].len() {
+            let mut row: [Option<&'static [u8]>; N_RECT_TX_SIZES] = [None; N_RECT_TX_SIZES];
+
+            // note that the w/h in the assignment is inverted, this is on purpose
+            // because we store coefficients transposed
+            row[RTX_4X8 as usize] = Some(&qm_tbl_8x4[i][j]);
+            row[RTX_8X4 as usize] = Some(&qm_tbl_4x8[i][j]);
+            row[RTX_4X16 as usize] = Some(&qm_tbl_16x4[i][j]);
+            row[RTX_16X4 as usize] = Some(&qm_tbl_4x16[i][j]);
+            row[RTX_8X16 as usize] = Some(&qm_tbl_16x8[i][j]);
+            row[RTX_16X8 as usize] = Some(&qm_tbl_8x16[i][j]);
+            row[RTX_8X32 as usize] = Some(&qm_tbl_32x8[i][j]);
+            row[RTX_32X8 as usize] = Some(&qm_tbl_8x32[i][j]);
+            row[RTX_16X32 as usize] = Some(&qm_tbl_32x16[i][j]);
+            row[RTX_32X16 as usize] = Some(&qm_tbl_16x32[i][j]);
+
+            row[TX_4X4 as usize] = Some(&qm_tbl_4x4[i][j]);
+            row[TX_8X8 as usize] = Some(&qm_tbl_8x8[i][j]);
+            row[TX_16X16 as usize] = Some(&qm_tbl_16x16[i][j]);
+            row[TX_32X32 as usize] = Some(&qm_tbl_32x32[i][j]);
+
+            row[TX_64X64 as usize] = row[TX_32X32 as usize];
+            row[RTX_64X32 as usize] = row[TX_32X32 as usize];
+            row[RTX_64X16 as usize] = row[RTX_32X16 as usize];
+            row[RTX_32X64 as usize] = row[TX_32X32 as usize];
+            row[RTX_16X64 as usize] = row[RTX_16X32 as usize];
+
+            table[i][j] = row;
+            j += 1;
+        }
+        i += 1;
+    }
+    table
+};
