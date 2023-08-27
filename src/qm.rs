@@ -3019,6 +3019,10 @@ unsafe extern "C" fn transpose(
 }
 
 fn untriangle(mut dst: &mut [u8], mut src: &[u8], sz: usize) {
+    // Will hopefully eliminate bounds checks.
+    assert_eq!(sz * sz, dst.len());
+    assert_eq!((sz * (sz + 1)) / 2, src.len()); // triangular
+
     for y in 0..sz {
         dst[..y + 1].copy_from_slice(&src[..y + 1]);
         let mut src_ptr = &src[y..];
