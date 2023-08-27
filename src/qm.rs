@@ -2980,12 +2980,8 @@ static mut qm_tbl_8x32: [[[uint8_t; 256]; 2]; 15] = [[[0; 256]; 2]; 15];
 static mut qm_tbl_16x16: [[[uint8_t; 256]; 2]; 15] = [[[0; 256]; 2]; 15];
 static mut qm_tbl_16x32: [[[uint8_t; 512]; 2]; 15] = [[[0; 512]; 2]; 15];
 static mut qm_tbl_32x32: [[[uint8_t; 1024]; 2]; 15] = [[[0; 1024]; 2]; 15];
-unsafe extern "C" fn subsample(
-    dst: *mut uint8_t,
-    src: *const uint8_t,
-    sz: libc::c_int,
-    step: libc::c_int,
-) {
+
+unsafe fn subsample(dst: *mut uint8_t, src: *const uint8_t, sz: libc::c_int, step: libc::c_int) {
     let mut y = 0;
     while y < sz {
         let mut x = 0;
