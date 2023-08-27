@@ -1,7 +1,6 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use crate::src::intra_edge::dav1d_init_mode_tree;
-use crate::src::qm::dav1d_init_qm_tables;
 use crate::stderr;
 use ::libc;
 use cfg_if::cfg_if;
@@ -702,7 +701,6 @@ use crate::src::mem::freep;
 unsafe extern "C" fn init_internal() {
     dav1d_init_cpu();
     dav1d_init_interintra_masks();
-    dav1d_init_qm_tables();
     dav1d_init_wedge_masks();
 }
 #[no_mangle]

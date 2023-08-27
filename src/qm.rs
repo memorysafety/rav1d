@@ -2972,7 +2972,42 @@ static qm_tbl_32x32_t: [[[u8; 528]; 2]; 15] = [
     ],
 ];
 
-pub static mut dav1d_qm_tbl: [[[Option<&'static [u8]>; 19]; 2]; 16] = [[[None; 19]; 2]; 16];
+pub static dav1d_qm_tbl: [[[Option<&'static [u8]>; 19]; 2]; 16] = {
+    let mut table: [[[Option<&'static [u8]>; 19]; 2]; 16] = [[[None; 19]; 2]; 16];
+    let mut i = 0;
+    while i < 15 {
+        let mut j = 0;
+        while j < 2 {
+            // note that the w/h in the assignment is inverted, this is on purpose
+            // because we store coefficients transposed
+            table[i][j][RTX_4X8 as usize] = Some(&qm_tbl_8x4[i][j]);
+            table[i][j][RTX_8X4 as usize] = Some(&qm_tbl_4x8[i][j]);
+            table[i][j][RTX_4X16 as usize] = Some(&qm_tbl_16x4[i][j]);
+            table[i][j][RTX_16X4 as usize] = Some(&qm_tbl_4x16[i][j]);
+            table[i][j][RTX_8X16 as usize] = Some(&qm_tbl_16x8[i][j]);
+            table[i][j][RTX_16X8 as usize] = Some(&qm_tbl_8x16[i][j]);
+            table[i][j][RTX_8X32 as usize] = Some(&qm_tbl_32x8[i][j]);
+            table[i][j][RTX_32X8 as usize] = Some(&qm_tbl_8x32[i][j]);
+            table[i][j][RTX_16X32 as usize] = Some(&qm_tbl_32x16[i][j]);
+            table[i][j][RTX_32X16 as usize] = Some(&qm_tbl_16x32[i][j]);
+
+            table[i][j][TX_4X4 as usize] = Some(&qm_tbl_4x4[i][j]);
+            table[i][j][TX_8X8 as usize] = Some(&qm_tbl_8x8[i][j]);
+            table[i][j][TX_16X16 as usize] = Some(&qm_tbl_16x16[i][j]);
+            table[i][j][TX_32X32 as usize] = Some(&qm_tbl_32x32[i][j]);
+
+            table[i][j][TX_64X64 as usize] = table[i][j][TX_32X32 as usize];
+            table[i][j][RTX_64X32 as usize] = table[i][j][TX_32X32 as usize];
+            table[i][j][RTX_64X16 as usize] = table[i][j][RTX_32X16 as usize];
+            table[i][j][RTX_32X64 as usize] = table[i][j][TX_32X32 as usize];
+            table[i][j][RTX_16X64 as usize] = table[i][j][RTX_16X32 as usize];
+
+            j += 1;
+        }
+        i += 1;
+    }
+    table
+};
 
 macro_rules! generate_table {
     ($const_fn:ident, $src:expr, $($arg:expr),*) => {{
@@ -3072,37 +3107,4 @@ const fn untriangled<const N: usize, const M: usize>(src: &[u8; N], sz: usize) -
     }
 
     dst
-}
-
-#[cold]
-pub unsafe fn dav1d_init_qm_tables() {
-    // This function is guaranteed to be called only once
-
-    for i in 0..15 {
-        for j in 0..2 {
-            // note that the w/h in the assignment is inverted, this is on purpose
-            // because we store coefficients transposed
-            dav1d_qm_tbl[i][j][RTX_4X8 as usize] = Some(&qm_tbl_8x4[i][j]);
-            dav1d_qm_tbl[i][j][RTX_8X4 as usize] = Some(&qm_tbl_4x8[i][j]);
-            dav1d_qm_tbl[i][j][RTX_4X16 as usize] = Some(&qm_tbl_16x4[i][j]);
-            dav1d_qm_tbl[i][j][RTX_16X4 as usize] = Some(&qm_tbl_4x16[i][j]);
-            dav1d_qm_tbl[i][j][RTX_8X16 as usize] = Some(&qm_tbl_16x8[i][j]);
-            dav1d_qm_tbl[i][j][RTX_16X8 as usize] = Some(&qm_tbl_8x16[i][j]);
-            dav1d_qm_tbl[i][j][RTX_8X32 as usize] = Some(&qm_tbl_32x8[i][j]);
-            dav1d_qm_tbl[i][j][RTX_32X8 as usize] = Some(&qm_tbl_8x32[i][j]);
-            dav1d_qm_tbl[i][j][RTX_16X32 as usize] = Some(&qm_tbl_32x16[i][j]);
-            dav1d_qm_tbl[i][j][RTX_32X16 as usize] = Some(&qm_tbl_16x32[i][j]);
-
-            dav1d_qm_tbl[i][j][TX_4X4 as usize] = Some(&qm_tbl_4x4[i][j]);
-            dav1d_qm_tbl[i][j][TX_8X8 as usize] = Some(&qm_tbl_8x8[i][j]);
-            dav1d_qm_tbl[i][j][TX_16X16 as usize] = Some(&qm_tbl_16x16[i][j]);
-            dav1d_qm_tbl[i][j][TX_32X32 as usize] = Some(&qm_tbl_32x32[i][j]);
-
-            dav1d_qm_tbl[i][j][TX_64X64 as usize] = dav1d_qm_tbl[i][j][TX_32X32 as usize];
-            dav1d_qm_tbl[i][j][RTX_64X32 as usize] = dav1d_qm_tbl[i][j][TX_32X32 as usize];
-            dav1d_qm_tbl[i][j][RTX_64X16 as usize] = dav1d_qm_tbl[i][j][RTX_32X16 as usize];
-            dav1d_qm_tbl[i][j][RTX_32X64 as usize] = dav1d_qm_tbl[i][j][TX_32X32 as usize];
-            dav1d_qm_tbl[i][j][RTX_16X64 as usize] = dav1d_qm_tbl[i][j][RTX_16X32 as usize];
-        }
-    }
 }
