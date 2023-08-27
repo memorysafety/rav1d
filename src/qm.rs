@@ -19,7 +19,7 @@ use crate::src::levels::TX_4X4;
 use crate::src::levels::TX_64X64;
 use crate::src::levels::TX_8X8;
 
-static qm_tbl_4x4_t: [[[u8; 10]; 2]; 15] = [
+static qm_tbl_4x4_t: [[[u8; (4 * (4 + 1)) / 2]; 2]; 15] = [
     [
         [32, 43, 67, 73, 94, 137, 97, 110, 150, 200],
         [35, 46, 60, 57, 69, 90, 66, 71, 90, 109],
@@ -82,7 +82,7 @@ static qm_tbl_4x4_t: [[[u8; 10]; 2]; 15] = [
     ],
 ];
 
-static qm_tbl_8x4: [[[u8; 32]; 2]; 15] = [
+static qm_tbl_8x4: [[[u8; 8 * 4]; 2]; 15] = [
     [
         [
             32, 33, 37, 49, 65, 80, 91, 104, 42, 42, 58, 71, 84, 97, 100, 112, 75, 69, 84, 103,
@@ -235,7 +235,7 @@ static qm_tbl_8x4: [[[u8; 32]; 2]; 15] = [
     ],
 ];
 
-static qm_tbl_8x8_t: [[[u8; 36]; 2]; 15] = [
+static qm_tbl_8x8_t: [[[u8; (8 * (8 + 1)) / 2]; 2]; 15] = [
     [
         [
             32, 32, 35, 38, 40, 54, 51, 49, 65, 82, 68, 63, 78, 97, 117, 84, 76, 91, 111, 134, 152,
@@ -388,7 +388,7 @@ static qm_tbl_8x8_t: [[[u8; 36]; 2]; 15] = [
     ],
 ];
 
-static qm_tbl_16x4: [[[u8; 64]; 2]; 15] = [
+static qm_tbl_16x4: [[[u8; 16 * 4]; 2]; 15] = [
     [
         [
             31, 32, 32, 34, 34, 41, 45, 54, 60, 72, 75, 83, 88, 94, 101, 108, 44, 41, 42, 48, 54,
@@ -576,7 +576,7 @@ static qm_tbl_16x4: [[[u8; 64]; 2]; 15] = [
     ],
 ];
 
-static qm_tbl_16x8: [[[u8; 128]; 2]; 15] = [
+static qm_tbl_16x8: [[[u8; 16 * 8]; 2]; 15] = [
     [
         [
             32, 31, 32, 34, 36, 44, 48, 58, 65, 79, 82, 91, 97, 103, 110, 118, 32, 33, 34, 37, 38,
@@ -854,7 +854,7 @@ static qm_tbl_16x8: [[[u8; 128]; 2]; 15] = [
     ],
 ];
 
-static qm_tbl_32x8: [[[u8; 256]; 2]; 15] = [
+static qm_tbl_32x8: [[[u8; 32 * 8]; 2]; 15] = [
     [
         [
             32, 31, 31, 31, 32, 32, 34, 35, 36, 39, 44, 46, 48, 53, 58, 61, 65, 71, 79, 81, 82, 88,
@@ -1314,7 +1314,7 @@ static qm_tbl_32x8: [[[u8; 256]; 2]; 15] = [
     ],
 ];
 
-static qm_tbl_32x16: [[[u8; 512]; 2]; 15] = [
+static qm_tbl_32x16: [[[u8; 32 * 16]; 2]; 15] = [
     [
         [
             32, 31, 31, 31, 32, 32, 34, 35, 36, 39, 44, 46, 48, 53, 58, 61, 65, 71, 79, 81, 82, 88,
@@ -2138,7 +2138,7 @@ static qm_tbl_32x16: [[[u8; 512]; 2]; 15] = [
     ],
 ];
 
-static qm_tbl_32x32_t: [[[u8; 528]; 2]; 15] = [
+static qm_tbl_32x32_t: [[[u8; (32 * (32 + 1)) / 2]; 2]; 15] = [
     [
         [
             32, 31, 32, 31, 32, 32, 31, 32, 32, 32, 31, 32, 32, 33, 33, 32, 32, 32, 33, 34, 35, 34,
@@ -2976,7 +2976,8 @@ static qm_tbl_32x32_t: [[[u8; 528]; 2]; 15] = [
 pub static dav1d_qm_tbl: [[[Option<&'static [u8]>; N_RECT_TX_SIZES]; 2]; 16] = {
     let mut table = [[[None; N_RECT_TX_SIZES]; 2]; 16];
     let mut i = 0;
-    while i < table.len() - 1 { // last row is empty
+    while i < table.len() - 1 {
+        // last row is empty
         let mut j = 0;
         while j < table[j].len() {
             let mut row: [Option<&'static [u8]>; N_RECT_TX_SIZES] = [None; N_RECT_TX_SIZES];
@@ -3034,15 +3035,15 @@ macro_rules! generate_table {
     }};
 }
 
-static qm_tbl_4x4: [[[u8; 16]; 2]; 15] = generate_table!(untriangled, qm_tbl_4x4_t, 4);
-static qm_tbl_4x8: [[[u8; 32]; 2]; 15] = generate_table!(transposed, qm_tbl_8x4, 8, 4);
-static qm_tbl_4x16: [[[u8; 64]; 2]; 15] = generate_table!(transposed, qm_tbl_16x4, 16, 4);
-static qm_tbl_8x8: [[[u8; 64]; 2]; 15] = generate_table!(untriangled, qm_tbl_8x8_t, 8);
-static qm_tbl_8x16: [[[u8; 128]; 2]; 15] = generate_table!(transposed, qm_tbl_16x8, 16, 8);
-static qm_tbl_8x32: [[[u8; 256]; 2]; 15] = generate_table!(transposed, qm_tbl_32x8, 32, 8);
-static qm_tbl_16x16: [[[u8; 256]; 2]; 15] = generate_table!(subsampled, qm_tbl_32x32, 16, 2);
-static qm_tbl_16x32: [[[u8; 512]; 2]; 15] = generate_table!(transposed, qm_tbl_32x16, 32, 16);
-static qm_tbl_32x32: [[[u8; 1024]; 2]; 15] = generate_table!(untriangled, qm_tbl_32x32_t, 32);
+static qm_tbl_4x4: [[[u8; 4 * 4]; 2]; 15] = generate_table!(untriangled, qm_tbl_4x4_t, 4);
+static qm_tbl_4x8: [[[u8; 4 * 8]; 2]; 15] = generate_table!(transposed, qm_tbl_8x4, 8, 4);
+static qm_tbl_4x16: [[[u8; 4 * 16]; 2]; 15] = generate_table!(transposed, qm_tbl_16x4, 16, 4);
+static qm_tbl_8x8: [[[u8; 8 * 8]; 2]; 15] = generate_table!(untriangled, qm_tbl_8x8_t, 8);
+static qm_tbl_8x16: [[[u8; 8 * 16]; 2]; 15] = generate_table!(transposed, qm_tbl_16x8, 16, 8);
+static qm_tbl_8x32: [[[u8; 8 * 32]; 2]; 15] = generate_table!(transposed, qm_tbl_32x8, 32, 8);
+static qm_tbl_16x16: [[[u8; 16 * 16]; 2]; 15] = generate_table!(subsampled, qm_tbl_32x32, 16, 2);
+static qm_tbl_16x32: [[[u8; 16 * 32]; 2]; 15] = generate_table!(transposed, qm_tbl_32x16, 32, 16);
+static qm_tbl_32x32: [[[u8; 32 * 32]; 2]; 15] = generate_table!(untriangled, qm_tbl_32x32_t, 32);
 
 const fn subsampled<const N: usize, const M: usize>(
     src: &[u8; N],
