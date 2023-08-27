@@ -2999,6 +2999,8 @@ unsafe extern "C" fn subsample(
 }
 
 fn transpose(dst: &mut [u8], src: &[u8], w: usize, h: usize) {
+    assert_eq!(w * h, dst.len());
+    assert_eq!(w * h, src.len());
     for y in 0..h {
         for x in 0..w {
             dst[x * h + y] = src[y * w + x];
