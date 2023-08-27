@@ -3040,6 +3040,7 @@ pub unsafe fn dav1d_init_qm_tables() {
             transpose(&mut qm_tbl_16x32[i][j], &qm_tbl_32x16[i][j], 32, 16);
             dav1d_qm_tbl[i][j][RTX_16X32 as usize] = qm_tbl_32x16[i][j].as_ptr();
             dav1d_qm_tbl[i][j][RTX_32X16 as usize] = qm_tbl_16x32[i][j].as_mut_ptr();
+
             untriangle(&mut qm_tbl_4x4[i][j], &qm_tbl_4x4_t[i][j], 4);
             dav1d_qm_tbl[i][j][TX_4X4 as usize] = qm_tbl_4x4[i][j].as_mut_ptr();
             untriangle(&mut qm_tbl_8x8[i][j], &qm_tbl_8x8_t[i][j], 8);
@@ -3048,6 +3049,7 @@ pub unsafe fn dav1d_init_qm_tables() {
             dav1d_qm_tbl[i][j][TX_16X16 as usize] = qm_tbl_16x16[i][j].as_mut_ptr();
             subsample(&mut qm_tbl_16x16[i][j], &qm_tbl_32x32[i][j], 16, 2);
             dav1d_qm_tbl[i][j][TX_32X32 as usize] = qm_tbl_32x32[i][j].as_mut_ptr();
+
             dav1d_qm_tbl[i][j][TX_64X64 as usize] = dav1d_qm_tbl[i][j][TX_32X32 as usize];
             dav1d_qm_tbl[i][j][RTX_64X32 as usize] = dav1d_qm_tbl[i][j][TX_32X32 as usize];
             dav1d_qm_tbl[i][j][RTX_64X16 as usize] = dav1d_qm_tbl[i][j][RTX_32X16 as usize];
