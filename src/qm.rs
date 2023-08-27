@@ -2984,14 +2984,26 @@ static mut qm_tbl_16x16: [[[u8; 256]; 2]; 15] = [[[0; 256]; 2]; 15];
 static mut qm_tbl_16x32: [[[u8; 512]; 2]; 15] = [[[0; 512]; 2]; 15];
 static mut qm_tbl_32x32: [[[u8; 1024]; 2]; 15] = [[[0; 1024]; 2]; 15];
 
-fn subsample(dst: &mut [u8], src: &[u8], sz: usize, step: usize) {
-    assert_eq!(sz * sz, dst.len());
-    assert_eq!((sz * step) * (sz * step), src.len());
-    for y in 0..sz {
-        for x in 0..sz {
+const fn subsampled<const N: usize, const M: usize>(
+    src: &[u8; N],
+    sz: usize,
+    step: usize,
+) -> [u8; M] {
+    assert!((sz * step) * (sz * step) == N);
+    assert!(sz * sz == M);
+    let mut dst = [0; M];
+
+    let mut y = 0;
+    while y < sz {
+        let mut x = 0;
+        while x < sz {
             dst[y * sz + x] = src[y * sz * step * step + x * step];
+            x += 1;
         }
+        y += 1;
     }
+
+    dst
 }
 
 const fn transposed<const N: usize>(src: &[u8; N], w: usize, h: usize) -> [u8; N] {
@@ -3058,7 +3070,7 @@ pub unsafe fn dav1d_init_qm_tables() {
             dav1d_qm_tbl[i][j][TX_8X8 as usize] = Some(&qm_tbl_8x8[i][j]);
             untriangle(&mut qm_tbl_32x32[i][j], &qm_tbl_32x32_t[i][j], 32);
             dav1d_qm_tbl[i][j][TX_16X16 as usize] = Some(&qm_tbl_16x16[i][j]);
-            subsample(&mut qm_tbl_16x16[i][j], &qm_tbl_32x32[i][j], 16, 2);
+            qm_tbl_16x16[i][j] = subsampled(&qm_tbl_32x32[i][j], 16, 2);
             dav1d_qm_tbl[i][j][TX_32X32 as usize] = Some(&qm_tbl_32x32[i][j]);
 
             dav1d_qm_tbl[i][j][TX_64X64 as usize] = dav1d_qm_tbl[i][j][TX_32X32 as usize];
