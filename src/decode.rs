@@ -6038,18 +6038,15 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                                                                                                 while i < N_RECT_TX_SIZES as libc::c_int {
                                                                                                     (*f)
                                                                                                         .qm[i
-                                                                                                        as usize][0 as libc::c_int
-                                                                                                        as usize] = dav1d_qm_tbl[(*(*f).frame_hdr).quant.qm_y
+                                                                                                        as usize][0] = dav1d_qm_tbl[(*(*f).frame_hdr).quant.qm_y
                                                                                                         as usize][0][i as usize];
                                                                                                     (*f)
                                                                                                         .qm[i
-                                                                                                        as usize][1 as libc::c_int
-                                                                                                        as usize] = dav1d_qm_tbl[(*(*f).frame_hdr).quant.qm_u
+                                                                                                        as usize][1] = dav1d_qm_tbl[(*(*f).frame_hdr).quant.qm_u
                                                                                                         as usize][1][i as usize];
                                                                                                     (*f)
                                                                                                         .qm[i
-                                                                                                        as usize][2 as libc::c_int
-                                                                                                        as usize] = dav1d_qm_tbl[(*(*f).frame_hdr).quant.qm_v
+                                                                                                        as usize][2] = dav1d_qm_tbl[(*(*f).frame_hdr).quant.qm_v
                                                                                                         as usize][1][i as usize];
                                                                                                     i += 1;
                                                                                                 }
