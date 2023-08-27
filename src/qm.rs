@@ -3017,7 +3017,8 @@ unsafe extern "C" fn transpose(
         y_off += w;
     }
 }
-unsafe extern "C" fn untriangle(mut dst: *mut uint8_t, mut src: *const uint8_t, sz: libc::c_int) {
+
+unsafe fn untriangle(mut dst: *mut uint8_t, mut src: *const uint8_t, sz: libc::c_int) {
     let mut y = 0;
     while y < sz {
         memcpy(
