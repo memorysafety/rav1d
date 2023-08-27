@@ -3000,10 +3000,8 @@ unsafe extern "C" fn subsample(
 
 fn transpose(dst: &mut [u8], src: &[u8], w: usize, h: usize) {
     for y in 0..h {
-        let y_off = y * w;
         for x in 0..w {
-            let x_off = x * h;
-            dst[x_off + y] = src[y_off + x];
+            dst[x * h + y] = src[y * w + x];
         }
     }
 }
