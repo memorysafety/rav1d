@@ -1,4 +1,3 @@
-use crate::include::stdint::*;
 use ::libc;
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
@@ -23,7 +22,7 @@ use crate::src::levels::TX_32X32;
 use crate::src::levels::TX_4X4;
 use crate::src::levels::TX_64X64;
 use crate::src::levels::TX_8X8;
-static qm_tbl_4x4_t: [[[uint8_t; 10]; 2]; 15] = [
+static qm_tbl_4x4_t: [[[u8; 10]; 2]; 15] = [
     [
         [32, 43, 67, 73, 94, 137, 97, 110, 150, 200],
         [35, 46, 60, 57, 69, 90, 66, 71, 90, 109],
@@ -85,7 +84,7 @@ static qm_tbl_4x4_t: [[[uint8_t; 10]; 2]; 15] = [
         [31, 31, 31, 31, 31, 31, 31, 31, 31, 31],
     ],
 ];
-static qm_tbl_8x4: [[[uint8_t; 32]; 2]; 15] = [
+static qm_tbl_8x4: [[[u8; 32]; 2]; 15] = [
     [
         [
             32, 33, 37, 49, 65, 80, 91, 104, 42, 42, 58, 71, 84, 97, 100, 112, 75, 69, 84, 103,
@@ -237,7 +236,7 @@ static qm_tbl_8x4: [[[uint8_t; 32]; 2]; 15] = [
         ],
     ],
 ];
-static qm_tbl_8x8_t: [[[uint8_t; 36]; 2]; 15] = [
+static qm_tbl_8x8_t: [[[u8; 36]; 2]; 15] = [
     [
         [
             32, 32, 35, 38, 40, 54, 51, 49, 65, 82, 68, 63, 78, 97, 117, 84, 76, 91, 111, 134, 152,
@@ -389,7 +388,7 @@ static qm_tbl_8x8_t: [[[uint8_t; 36]; 2]; 15] = [
         ],
     ],
 ];
-static qm_tbl_16x4: [[[uint8_t; 64]; 2]; 15] = [
+static qm_tbl_16x4: [[[u8; 64]; 2]; 15] = [
     [
         [
             31, 32, 32, 34, 34, 41, 45, 54, 60, 72, 75, 83, 88, 94, 101, 108, 44, 41, 42, 48, 54,
@@ -576,7 +575,7 @@ static qm_tbl_16x4: [[[uint8_t; 64]; 2]; 15] = [
         ],
     ],
 ];
-static qm_tbl_16x8: [[[uint8_t; 128]; 2]; 15] = [
+static qm_tbl_16x8: [[[u8; 128]; 2]; 15] = [
     [
         [
             32, 31, 32, 34, 36, 44, 48, 58, 65, 79, 82, 91, 97, 103, 110, 118, 32, 33, 34, 37, 38,
@@ -853,7 +852,7 @@ static qm_tbl_16x8: [[[uint8_t; 128]; 2]; 15] = [
         ],
     ],
 ];
-static qm_tbl_32x8: [[[uint8_t; 256]; 2]; 15] = [
+static qm_tbl_32x8: [[[u8; 256]; 2]; 15] = [
     [
         [
             32, 31, 31, 31, 32, 32, 34, 35, 36, 39, 44, 46, 48, 53, 58, 61, 65, 71, 79, 81, 82, 88,
@@ -1312,7 +1311,7 @@ static qm_tbl_32x8: [[[uint8_t; 256]; 2]; 15] = [
         ],
     ],
 ];
-static qm_tbl_32x16: [[[uint8_t; 512]; 2]; 15] = [
+static qm_tbl_32x16: [[[u8; 512]; 2]; 15] = [
     [
         [
             32, 31, 31, 31, 32, 32, 34, 35, 36, 39, 44, 46, 48, 53, 58, 61, 65, 71, 79, 81, 82, 88,
@@ -2135,7 +2134,7 @@ static qm_tbl_32x16: [[[uint8_t; 512]; 2]; 15] = [
         ],
     ],
 ];
-static qm_tbl_32x32_t: [[[uint8_t; 528]; 2]; 15] = [
+static qm_tbl_32x32_t: [[[u8; 528]; 2]; 15] = [
     [
         [
             32, 31, 32, 31, 32, 32, 31, 32, 32, 32, 31, 32, 32, 33, 33, 32, 32, 32, 33, 34, 35, 34,
@@ -2970,16 +2969,16 @@ static qm_tbl_32x32_t: [[[uint8_t; 528]; 2]; 15] = [
     ],
 ];
 #[no_mangle]
-pub static mut dav1d_qm_tbl: [[[*const uint8_t; 19]; 2]; 16] = [[[0 as *const uint8_t; 19]; 2]; 16];
-static mut qm_tbl_4x4: [[[uint8_t; 16]; 2]; 15] = [[[0; 16]; 2]; 15];
-static mut qm_tbl_4x8: [[[uint8_t; 32]; 2]; 15] = [[[0; 32]; 2]; 15];
-static mut qm_tbl_4x16: [[[uint8_t; 64]; 2]; 15] = [[[0; 64]; 2]; 15];
-static mut qm_tbl_8x8: [[[uint8_t; 64]; 2]; 15] = [[[0; 64]; 2]; 15];
-static mut qm_tbl_8x16: [[[uint8_t; 128]; 2]; 15] = [[[0; 128]; 2]; 15];
-static mut qm_tbl_8x32: [[[uint8_t; 256]; 2]; 15] = [[[0; 256]; 2]; 15];
-static mut qm_tbl_16x16: [[[uint8_t; 256]; 2]; 15] = [[[0; 256]; 2]; 15];
-static mut qm_tbl_16x32: [[[uint8_t; 512]; 2]; 15] = [[[0; 512]; 2]; 15];
-static mut qm_tbl_32x32: [[[uint8_t; 1024]; 2]; 15] = [[[0; 1024]; 2]; 15];
+pub static mut dav1d_qm_tbl: [[[*const u8; 19]; 2]; 16] = [[[0 as *const u8; 19]; 2]; 16];
+static mut qm_tbl_4x4: [[[u8; 16]; 2]; 15] = [[[0; 16]; 2]; 15];
+static mut qm_tbl_4x8: [[[u8; 32]; 2]; 15] = [[[0; 32]; 2]; 15];
+static mut qm_tbl_4x16: [[[u8; 64]; 2]; 15] = [[[0; 64]; 2]; 15];
+static mut qm_tbl_8x8: [[[u8; 64]; 2]; 15] = [[[0; 64]; 2]; 15];
+static mut qm_tbl_8x16: [[[u8; 128]; 2]; 15] = [[[0; 128]; 2]; 15];
+static mut qm_tbl_8x32: [[[u8; 256]; 2]; 15] = [[[0; 256]; 2]; 15];
+static mut qm_tbl_16x16: [[[u8; 256]; 2]; 15] = [[[0; 256]; 2]; 15];
+static mut qm_tbl_16x32: [[[u8; 512]; 2]; 15] = [[[0; 512]; 2]; 15];
+static mut qm_tbl_32x32: [[[u8; 1024]; 2]; 15] = [[[0; 1024]; 2]; 15];
 
 fn subsample(dst: &mut [u8], src: &[u8], sz: usize, step: usize) {
     assert_eq!(sz * sz, dst.len());
