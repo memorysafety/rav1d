@@ -2982,6 +2982,8 @@ static mut qm_tbl_16x32: [[[uint8_t; 512]; 2]; 15] = [[[0; 512]; 2]; 15];
 static mut qm_tbl_32x32: [[[uint8_t; 1024]; 2]; 15] = [[[0; 1024]; 2]; 15];
 
 fn subsample(dst: &mut [u8], src: &[u8], sz: usize, step: usize) {
+    assert_eq!(sz * sz, dst.len());
+    assert_eq!((sz * step) * (sz * step), src.len());
     for y in 0..sz {
         for x in 0..sz {
             dst[y * sz + x] = src[y * sz * step * step + x * step];
