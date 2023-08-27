@@ -179,7 +179,6 @@ extern "C" {
     #[cfg(feature = "bitdepth_16")]
     fn dav1d_read_coef_blocks_16bpc(t: *mut Dav1dTaskContext, bs: BlockSize, b: *const Av1Block);
     fn dav1d_log(c: *mut Dav1dContext, format: *const libc::c_char, _: ...);
-    static mut dav1d_qm_tbl: [[[*const uint8_t; 19]; 2]; 16];
     fn dav1d_task_create_tile_sbrow(
         f: *mut Dav1dFrameContext,
         pass: libc::c_int,
@@ -201,6 +200,7 @@ use crate::src::msac::dav1d_msac_decode_symbol_adapt16;
 use crate::src::msac::dav1d_msac_decode_symbol_adapt4;
 use crate::src::msac::dav1d_msac_decode_symbol_adapt8;
 use crate::src::msac::dav1d_msac_init;
+use crate::src::qm::dav1d_qm_tbl;
 use crate::src::refmvs::dav1d_refmvs_find;
 use crate::src::tables::dav1d_al_part_ctx;
 use crate::src::tables::dav1d_block_dimensions;
