@@ -3023,8 +3023,12 @@ fn untriangle(mut dst: &mut [u8], mut src: &[u8], sz: usize) {
 
 #[cold]
 pub unsafe fn dav1d_init_qm_tables() {
+    // This function is guaranteed to be called only once
+
     for i in 0..15 {
         for j in 0..2 {
+            // note that the w/h in the assignment is inverted, this is on purpose
+            // because we store coefficients transposed
             transpose(&mut qm_tbl_4x8[i][j], &qm_tbl_8x4[i][j], 8, 4);
             dav1d_qm_tbl[i][j][RTX_4X8 as usize] = qm_tbl_8x4[i][j].as_ptr();
             dav1d_qm_tbl[i][j][RTX_8X4 as usize] = qm_tbl_4x8[i][j].as_mut_ptr();
