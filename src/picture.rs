@@ -574,7 +574,7 @@ pub struct pic_ctx_context {
     pub extra_ptr: *mut libc::c_void,
 }
 use crate::src::r#ref::dav1d_ref_inc;
-#[no_mangle]
+
 pub unsafe extern "C" fn dav1d_default_picture_alloc(
     p: *mut Dav1dPicture,
     cookie: *mut libc::c_void,
