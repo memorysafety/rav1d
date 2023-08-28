@@ -34,7 +34,6 @@ extern "C" {
     fn dav1d_picture_unref_internal(p: *mut Dav1dPicture);
     fn dav1d_thread_picture_ref(dst: *mut Dav1dThreadPicture, src: *const Dav1dThreadPicture);
     fn dav1d_picture_get_event_flags(p: *const Dav1dThreadPicture) -> Dav1dEventFlags;
-    fn dav1d_picture_move_ref(dst: *mut Dav1dPicture, src: *mut Dav1dPicture);
     fn dav1d_picture_alloc_copy(
         c: *mut Dav1dContext,
         dst: *mut Dav1dPicture,
@@ -515,6 +514,7 @@ use crate::src::internal::Dav1dTileGroup;
 use crate::src::internal::TaskThreadData;
 use crate::src::picture::dav1d_default_picture_alloc;
 use crate::src::picture::dav1d_default_picture_release;
+use crate::src::picture::dav1d_picture_move_ref;
 use crate::src::picture::dav1d_picture_ref;
 use crate::src::picture::Dav1dThreadPicture;
 use libc::pthread_cond_t;

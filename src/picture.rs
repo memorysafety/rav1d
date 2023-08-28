@@ -904,8 +904,8 @@ pub unsafe fn dav1d_picture_ref(dst: *mut Dav1dPicture, src: *const Dav1dPicture
     }
     *dst = *src;
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_picture_move_ref(dst: *mut Dav1dPicture, src: *mut Dav1dPicture) {
+
+pub unsafe fn dav1d_picture_move_ref(dst: *mut Dav1dPicture, src: *mut Dav1dPicture) {
     if dst.is_null() {
         fprintf(
             stderr,
