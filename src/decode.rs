@@ -9,7 +9,8 @@ use crate::include::dav1d::headers::{Dav1dTxfmMode, DAV1D_MAX_SEGMENTS};
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use crate::src::align::Align16;
-use crate::src::cdf::{CdfContext, CdfMvComponent, CdfMvContext};
+use crate::src::cdf::CdfMvComponent;
+use crate::src::cdf::CdfMvContext;
 use crate::src::ctx::CaseSet;
 use crate::src::looprestoration::dav1d_loop_restoration_dsp_init;
 
@@ -41,7 +42,6 @@ extern "C" {
         cdf: *mut CdfThreadContext,
         have_frame_mt: libc::c_int,
     ) -> libc::c_int;
-    fn dav1d_cdf_thread_copy(dst: *mut CdfContext, src: *const CdfThreadContext);
     fn dav1d_cdf_thread_ref(dst: *mut CdfThreadContext, src: *mut CdfThreadContext);
     fn dav1d_cdf_thread_unref(cdf: *mut CdfThreadContext);
     fn dav1d_data_props_copy(dst: *mut Dav1dDataProps, src: *const Dav1dDataProps);
@@ -800,6 +800,7 @@ pub type generate_grain_uv_fn = Option<
 >;
 pub type generate_grain_y_fn =
     Option<unsafe extern "C" fn(*mut [entry; 82], *const Dav1dFilmGrainData) -> ()>;
+use crate::src::cdf::dav1d_cdf_thread_copy;
 use crate::src::cdf::dav1d_cdf_thread_init_static;
 use crate::src::cdf::dav1d_cdf_thread_update;
 use crate::src::cdf::CdfThreadContext;
