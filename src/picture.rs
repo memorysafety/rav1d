@@ -975,8 +975,8 @@ pub unsafe fn dav1d_thread_picture_ref(
     (*dst).progress = (*src).progress;
     (*dst).flags = (*src).flags;
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_thread_picture_move_ref(
+
+pub unsafe fn dav1d_thread_picture_move_ref(
     dst: *mut Dav1dThreadPicture,
     src: *mut Dav1dThreadPicture,
 ) {

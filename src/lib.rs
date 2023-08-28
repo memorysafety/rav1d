@@ -39,7 +39,6 @@ extern "C" {
         w: libc::c_int,
         src: *const Dav1dPicture,
     ) -> libc::c_int;
-    fn dav1d_thread_picture_move_ref(dst: *mut Dav1dThreadPicture, src: *mut Dav1dThreadPicture);
     fn pthread_attr_init(__attr: *mut pthread_attr_t) -> libc::c_int;
     fn __sysconf(__name: libc::c_int) -> libc::c_long;
     fn dav1d_refmvs_init(rf: *mut refmvs_frame);
@@ -515,6 +514,7 @@ use crate::src::picture::dav1d_default_picture_alloc;
 use crate::src::picture::dav1d_default_picture_release;
 use crate::src::picture::dav1d_picture_move_ref;
 use crate::src::picture::dav1d_picture_ref;
+use crate::src::picture::dav1d_thread_picture_move_ref;
 use crate::src::picture::dav1d_thread_picture_ref;
 use crate::src::picture::Dav1dThreadPicture;
 use libc::pthread_cond_t;
