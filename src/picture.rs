@@ -1034,8 +1034,8 @@ pub unsafe fn dav1d_picture_unref_internal(p: *mut Dav1dPicture) {
     );
     dav1d_data_props_set_defaults(&mut (*p).m);
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_thread_picture_unref(p: *mut Dav1dThreadPicture) {
+
+pub unsafe fn dav1d_thread_picture_unref(p: *mut Dav1dThreadPicture) {
     dav1d_picture_unref_internal(&mut (*p).p);
     (*p).progress = 0 as *mut atomic_uint;
 }

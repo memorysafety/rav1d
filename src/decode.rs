@@ -103,7 +103,6 @@ extern "C" {
         w: libc::c_int,
         src: *const Dav1dPicture,
     ) -> libc::c_int;
-    fn dav1d_thread_picture_unref(p: *mut Dav1dThreadPicture);
     fn dav1d_picture_get_event_flags(p: *const Dav1dThreadPicture) -> Dav1dEventFlags;
     #[cfg(feature = "bitdepth_8")]
     fn dav1d_recon_b_intra_8bpc(
@@ -808,6 +807,7 @@ use crate::src::internal::Dav1dTileGroup;
 use crate::src::picture::dav1d_picture_ref;
 use crate::src::picture::dav1d_picture_unref_internal;
 use crate::src::picture::dav1d_thread_picture_ref;
+use crate::src::picture::dav1d_thread_picture_unref;
 use crate::src::picture::Dav1dThreadPicture;
 pub type backup_ipred_edge_fn = Option<unsafe extern "C" fn(*mut Dav1dTaskContext) -> ()>;
 pub type filter_sbrow_fn = Option<unsafe extern "C" fn(*mut Dav1dFrameContext, libc::c_int) -> ()>;

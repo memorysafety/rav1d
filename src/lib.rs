@@ -50,7 +50,6 @@ extern "C" {
     fn dav1d_refmvs_dsp_init(dsp: *mut Dav1dRefmvsDSPContext);
     fn pthread_join(__th: pthread_t, __thread_return: *mut *mut libc::c_void) -> libc::c_int;
     fn dav1d_refmvs_clear(rf: *mut refmvs_frame);
-    fn dav1d_thread_picture_unref(p: *mut Dav1dThreadPicture);
     fn pthread_attr_destroy(__attr: *mut pthread_attr_t) -> libc::c_int;
     fn pthread_once(
         __once_control: *mut pthread_once_t,
@@ -516,6 +515,7 @@ use crate::src::picture::dav1d_picture_ref;
 use crate::src::picture::dav1d_picture_unref_internal;
 use crate::src::picture::dav1d_thread_picture_move_ref;
 use crate::src::picture::dav1d_thread_picture_ref;
+use crate::src::picture::dav1d_thread_picture_unref;
 use crate::src::picture::Dav1dThreadPicture;
 use libc::pthread_cond_t;
 #[derive(Copy, Clone)]
