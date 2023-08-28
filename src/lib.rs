@@ -46,7 +46,6 @@ extern "C" {
     ) -> libc::c_int;
     fn dav1d_refmvs_dsp_init(dsp: *mut Dav1dRefmvsDSPContext);
     fn pthread_join(__th: pthread_t, __thread_return: *mut *mut libc::c_void) -> libc::c_int;
-    fn pthread_attr_destroy(__attr: *mut pthread_attr_t) -> libc::c_int;
     fn pthread_once(
         __once_control: *mut pthread_once_t,
         __init_routine: Option<unsafe extern "C" fn() -> ()>,
@@ -171,6 +170,7 @@ pub struct Dav1dContext {
 }
 use crate::src::mem::Dav1dMemPool;
 
+use libc::pthread_attr_destroy;
 use libc::pthread_mutex_t;
 
 use crate::include::dav1d::dav1d::Dav1dDecodeFrameType;
