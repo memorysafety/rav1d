@@ -2997,24 +2997,14 @@ unsafe extern "C" fn subsample(
         y += 1;
     }
 }
-unsafe extern "C" fn transpose(
-    dst: *mut uint8_t,
-    src: *const uint8_t,
-    w: libc::c_int,
-    h: libc::c_int,
-) {
-    let mut y = 0;
-    let mut y_off = 0;
-    while y < h {
-        let mut x = 0;
-        let mut x_off = 0;
-        while x < w {
-            *dst.offset((x_off + y) as isize) = *src.offset((y_off + x) as isize);
-            x += 1;
-            x_off += h;
+
+fn transpose(dst: &mut [u8], src: &[u8], w: usize, h: usize) {
+    assert_eq!(w * h, dst.len());
+    assert_eq!(w * h, src.len());
+    for y in 0..h {
+        for x in 0..w {
+            dst[x * h + y] = src[y * w + x];
         }
-        y += 1;
-        y_off += w;
     }
 }
 
@@ -3041,44 +3031,19 @@ pub unsafe fn dav1d_init_qm_tables() {
         for j in 0..2 {
             dav1d_qm_tbl[i][j][RTX_4X8 as usize] = qm_tbl_8x4[i][j].as_ptr();
             dav1d_qm_tbl[i][j][RTX_8X4 as usize] = qm_tbl_4x8[i][j].as_mut_ptr();
-            transpose(
-                qm_tbl_4x8[i][j].as_mut_ptr(),
-                qm_tbl_8x4[i][j].as_ptr(),
-                8,
-                4,
-            );
+            transpose(&mut qm_tbl_4x8[i][j], &qm_tbl_8x4[i][j], 8, 4);
             dav1d_qm_tbl[i][j][RTX_4X16 as usize] = qm_tbl_16x4[i][j].as_ptr();
             dav1d_qm_tbl[i][j][RTX_16X4 as usize] = qm_tbl_4x16[i][j].as_mut_ptr();
-            transpose(
-                qm_tbl_4x16[i][j].as_mut_ptr(),
-                qm_tbl_16x4[i][j].as_ptr(),
-                16,
-                4,
-            );
+            transpose(&mut qm_tbl_4x16[i][j], &qm_tbl_16x4[i][j], 16, 4);
             dav1d_qm_tbl[i][j][RTX_8X16 as usize] = qm_tbl_16x8[i][j].as_ptr();
             dav1d_qm_tbl[i][j][RTX_16X8 as usize] = qm_tbl_8x16[i][j].as_mut_ptr();
-            transpose(
-                qm_tbl_8x16[i][j].as_mut_ptr(),
-                qm_tbl_16x8[i][j].as_ptr(),
-                16,
-                8,
-            );
+            transpose(&mut qm_tbl_8x16[i][j], &qm_tbl_16x8[i][j], 16, 8);
             dav1d_qm_tbl[i][j][RTX_8X32 as usize] = qm_tbl_32x8[i][j].as_ptr();
             dav1d_qm_tbl[i][j][RTX_32X8 as usize] = qm_tbl_8x32[i][j].as_mut_ptr();
-            transpose(
-                qm_tbl_8x32[i][j].as_mut_ptr(),
-                qm_tbl_32x8[i][j].as_ptr(),
-                32,
-                8,
-            );
+            transpose(&mut qm_tbl_8x32[i][j], &qm_tbl_32x8[i][j], 32, 8);
             dav1d_qm_tbl[i][j][RTX_16X32 as usize] = qm_tbl_32x16[i][j].as_ptr();
             dav1d_qm_tbl[i][j][RTX_32X16 as usize] = qm_tbl_16x32[i][j].as_mut_ptr();
-            transpose(
-                qm_tbl_16x32[i][j].as_mut_ptr(),
-                qm_tbl_32x16[i][j].as_ptr(),
-                32,
-                16,
-            );
+            transpose(&mut qm_tbl_16x32[i][j], &qm_tbl_32x16[i][j], 32, 16);
             dav1d_qm_tbl[i][j][TX_4X4 as usize] = qm_tbl_4x4[i][j].as_mut_ptr();
             dav1d_qm_tbl[i][j][TX_8X8 as usize] = qm_tbl_8x8[i][j].as_mut_ptr();
             dav1d_qm_tbl[i][j][TX_16X16 as usize] = qm_tbl_16x16[i][j].as_mut_ptr();
