@@ -1,6 +1,7 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use crate::src::intra_edge::dav1d_init_mode_tree;
+use crate::src::qm::dav1d_init_qm_tables;
 use crate::stderr;
 use ::libc;
 use cfg_if::cfg_if;
@@ -113,7 +114,6 @@ extern "C" {
         in_0: *mut Dav1dData,
         global: libc::c_int,
     ) -> libc::c_int;
-    fn dav1d_init_qm_tables();
     fn dav1d_task_delayed_fg(
         c: *mut Dav1dContext,
         out: *mut Dav1dPicture,
