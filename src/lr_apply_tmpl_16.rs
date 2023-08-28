@@ -614,7 +614,7 @@ unsafe extern "C" fn lr_stripe(
     let mut params: LooprestorationParams = LooprestorationParams {
         filter: [[0; 8]; 2].into(),
     };
-    if (*lr).type_0 as libc::c_int == DAV1D_RESTORATION_WIENER as libc::c_int {
+    if (*lr).r#type as libc::c_int == DAV1D_RESTORATION_WIENER as libc::c_int {
         let filter: *mut [int16_t; 8] = (params.filter.0).as_mut_ptr();
         let ref mut fresh0 = (*filter.offset(0))[6];
         *fresh0 = (*lr).filter_h[0] as int16_t;
@@ -649,7 +649,7 @@ unsafe extern "C" fn lr_stripe(
             | (*filter.offset(1))[0] as libc::c_int
             == 0) as libc::c_int as usize];
     } else {
-        if !((*lr).type_0 as libc::c_int == DAV1D_RESTORATION_SGRPROJ as libc::c_int) {
+        if !((*lr).r#type as libc::c_int == DAV1D_RESTORATION_SGRPROJ as libc::c_int) {
             unreachable!();
         }
         let sgr_params: *const uint16_t = (dav1d_sgr_params[(*lr).sgr_idx as usize]).as_ptr();
@@ -756,7 +756,7 @@ unsafe extern "C" fn lr_sbrow(
     .as_mut_ptr()
     .offset(unit_idx as isize) as *mut Av1RestorationUnit;
     let mut restore =
-        ((*lr[0]).type_0 as libc::c_int != DAV1D_RESTORATION_NONE as libc::c_int) as libc::c_int;
+        ((*lr[0]).r#type as libc::c_int != DAV1D_RESTORATION_NONE as libc::c_int) as libc::c_int;
     let mut x = 0;
     let mut bit = 0;
     while x + max_unit_size <= w {
@@ -768,7 +768,7 @@ unsafe extern "C" fn lr_sbrow(
                 .offset(plane as isize))
             .as_mut_ptr()
             .offset(next_u_idx as isize) as *mut Av1RestorationUnit;
-        let restore_next = ((*lr[(bit == 0) as libc::c_int as usize]).type_0 as libc::c_int
+        let restore_next = ((*lr[(bit == 0) as libc::c_int as usize]).r#type as libc::c_int
             != DAV1D_RESTORATION_NONE as libc::c_int) as libc::c_int;
         if restore_next != 0 {
             backup4xU(

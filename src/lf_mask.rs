@@ -2,6 +2,7 @@ use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dLoopfilterModeRefDeltas;
 use crate::include::dav1d::headers::Dav1dPixelLayout;
+use crate::include::dav1d::headers::Dav1dRestorationType;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 use crate::include::stddef::ptrdiff_t;
@@ -24,7 +25,7 @@ pub struct Av1FilterLUT {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Av1RestorationUnit {
-    pub type_0: u8,
+    pub r#type: Dav1dRestorationType,
     pub filter_h: [i8; 3],
     pub filter_v: [i8; 3],
     pub sgr_idx: u8,
