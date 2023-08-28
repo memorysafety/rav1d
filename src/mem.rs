@@ -99,11 +99,8 @@ pub unsafe fn dav1d_mem_pool_push(pool: *mut Dav1dMemPool, buf: *mut Dav1dMemPoo
         }
     };
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_mem_pool_pop(
-    pool: *mut Dav1dMemPool,
-    size: size_t,
-) -> *mut Dav1dMemPoolBuffer {
+
+pub unsafe fn dav1d_mem_pool_pop(pool: *mut Dav1dMemPool, size: size_t) -> *mut Dav1dMemPoolBuffer {
     if size & ::core::mem::size_of::<*mut libc::c_void>().wrapping_sub(1) != 0 {
         unreachable!();
     }
