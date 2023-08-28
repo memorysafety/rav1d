@@ -17,7 +17,6 @@ extern "C" {
     ) -> libc::c_int;
     fn abort() -> !;
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
-    fn dav1d_init_cpu();
     fn dav1d_num_logical_processors(c: *mut Dav1dContext) -> libc::c_int;
     #[cfg(feature = "bitdepth_16")]
     fn dav1d_apply_grain_16bpc(
@@ -86,6 +85,7 @@ extern "C" {
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::common::Dav1dUserData;
 use crate::include::stdatomic::atomic_int;
+use crate::src::cpu::dav1d_init_cpu;
 use crate::src::data::dav1d_data_create_internal;
 use crate::src::data::dav1d_data_props_copy;
 use crate::src::data::dav1d_data_props_set_defaults;

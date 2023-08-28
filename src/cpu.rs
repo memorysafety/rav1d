@@ -46,7 +46,6 @@ pub fn dav1d_get_cpu_flags() -> libc::c_uint {
     flags
 }
 
-#[no_mangle]
 #[cold]
 pub unsafe fn dav1d_init_cpu() {
     #[cfg(feature = "asm")]
