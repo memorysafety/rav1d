@@ -47,7 +47,6 @@ extern "C" {
     ) -> libc::c_int;
     fn dav1d_refmvs_dsp_init(dsp: *mut Dav1dRefmvsDSPContext);
     fn pthread_join(__th: pthread_t, __thread_return: *mut *mut libc::c_void) -> libc::c_int;
-    fn dav1d_refmvs_clear(rf: *mut refmvs_frame);
     fn pthread_attr_destroy(__attr: *mut pthread_attr_t) -> libc::c_int;
     fn pthread_once(
         __once_control: *mut pthread_once_t,
@@ -192,6 +191,7 @@ use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
 use crate::src::internal::Dav1dContext_intra_edge;
 use crate::src::intra_edge::EdgeFlags;
 
+use crate::src::refmvs::dav1d_refmvs_clear;
 use crate::src::refmvs::dav1d_refmvs_init;
 use crate::src::refmvs::Dav1dRefmvsDSPContext;
 #[derive(Copy, Clone)]

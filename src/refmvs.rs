@@ -1587,8 +1587,8 @@ pub unsafe fn dav1d_refmvs_init(rf: *mut refmvs_frame) {
     (*rf).rp_proj = 0 as *mut refmvs_temporal_block;
     (*rf).rp_stride = 0 as libc::c_int as ptrdiff_t;
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_refmvs_clear(rf: *mut refmvs_frame) {
+
+pub unsafe fn dav1d_refmvs_clear(rf: *mut refmvs_frame) {
     if !((*rf).r).is_null() {
         dav1d_freep_aligned(&mut (*rf).r as *mut *mut refmvs_block as *mut libc::c_void);
     }
