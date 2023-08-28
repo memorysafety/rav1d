@@ -34,13 +34,6 @@ extern "C" {
     fn dav1d_data_props_unref_internal(props: *mut Dav1dDataProps);
     fn dav1d_picture_unref_internal(p: *mut Dav1dPicture);
     fn dav1d_data_props_copy(dst: *mut Dav1dDataProps, src: *const Dav1dDataProps);
-    fn dav1d_data_wrap_internal(
-        buf: *mut Dav1dData,
-        ptr: *const uint8_t,
-        sz: size_t,
-        free_callback: Option<unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> ()>,
-        user_data: *mut libc::c_void,
-    ) -> libc::c_int;
     fn dav1d_thread_picture_ref(dst: *mut Dav1dThreadPicture, src: *const Dav1dThreadPicture);
     fn dav1d_picture_get_event_flags(p: *const Dav1dThreadPicture) -> Dav1dEventFlags;
     fn dav1d_picture_move_ref(dst: *mut Dav1dPicture, src: *mut Dav1dPicture);
@@ -122,6 +115,7 @@ use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::common::Dav1dUserData;
 use crate::include::stdatomic::atomic_int;
 use crate::src::data::dav1d_data_create_internal;
+use crate::src::data::dav1d_data_wrap_internal;
 use crate::src::r#ref::dav1d_ref_dec;
 use crate::src::r#ref::Dav1dRef;
 

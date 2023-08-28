@@ -42,8 +42,8 @@ pub unsafe fn dav1d_data_create_internal(buf: *mut Dav1dData, sz: size_t) -> *mu
     (*buf).m.size = sz;
     return (*(*buf).r#ref).data as *mut uint8_t;
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_data_wrap_internal(
+
+pub unsafe fn dav1d_data_wrap_internal(
     buf: *mut Dav1dData,
     ptr: *const uint8_t,
     sz: size_t,
