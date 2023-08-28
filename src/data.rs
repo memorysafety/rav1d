@@ -199,8 +199,8 @@ pub unsafe fn dav1d_data_props_copy(dst: *mut Dav1dDataProps, src: *const Dav1dD
         dav1d_ref_inc((*dst).user_data.r#ref);
     }
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_data_props_set_defaults(props: *mut Dav1dDataProps) {
+
+pub unsafe fn dav1d_data_props_set_defaults(props: *mut Dav1dDataProps) {
     if props.is_null() {
         unreachable!();
     }

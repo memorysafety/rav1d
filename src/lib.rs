@@ -47,7 +47,6 @@ extern "C" {
     fn dav1d_thread_picture_move_ref(dst: *mut Dav1dThreadPicture, src: *mut Dav1dThreadPicture);
     fn pthread_attr_init(__attr: *mut pthread_attr_t) -> libc::c_int;
     fn __sysconf(__name: libc::c_int) -> libc::c_long;
-    fn dav1d_data_props_set_defaults(props: *mut Dav1dDataProps);
     fn dav1d_refmvs_init(rf: *mut refmvs_frame);
     fn pthread_create(
         __newthread: *mut pthread_t,
@@ -108,6 +107,7 @@ use crate::include::dav1d::common::Dav1dUserData;
 use crate::include::stdatomic::atomic_int;
 use crate::src::data::dav1d_data_create_internal;
 use crate::src::data::dav1d_data_props_copy;
+use crate::src::data::dav1d_data_props_set_defaults;
 use crate::src::data::dav1d_data_ref;
 use crate::src::data::dav1d_data_wrap_internal;
 use crate::src::data::dav1d_data_wrap_user_data_internal;
