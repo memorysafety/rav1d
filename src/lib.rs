@@ -54,7 +54,6 @@ extern "C" {
     ) -> libc::c_int;
     fn pthread_mutex_lock(__mutex: *mut pthread_mutex_t) -> libc::c_int;
     fn pthread_mutex_unlock(__mutex: *mut pthread_mutex_t) -> libc::c_int;
-    fn pthread_mutex_destroy(__mutex: *mut pthread_mutex_t) -> libc::c_int;
     fn dav1d_log(c: *mut Dav1dContext, format: *const libc::c_char, _: ...);
     fn dav1d_parse_obus(
         c: *mut Dav1dContext,
@@ -167,6 +166,7 @@ use libc::pthread_cond_destroy;
 use libc::pthread_cond_init;
 use libc::pthread_cond_wait;
 use libc::pthread_join;
+use libc::pthread_mutex_destroy;
 use libc::pthread_mutex_t;
 
 use crate::include::dav1d::dav1d::Dav1dDecodeFrameType;
