@@ -230,8 +230,8 @@ pub unsafe fn dav1d_data_props_unref_internal(props: *mut Dav1dDataProps) {
     dav1d_data_props_set_defaults(props);
     dav1d_ref_dec(&mut user_data_ref);
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_data_unref_internal(buf: *mut Dav1dData) {
+
+pub unsafe fn dav1d_data_unref_internal(buf: *mut Dav1dData) {
     if buf.is_null() {
         fprintf(
             stderr,

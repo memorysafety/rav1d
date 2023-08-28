@@ -36,7 +36,6 @@ extern "C" {
     fn dav1d_picture_get_event_flags(p: *const Dav1dThreadPicture) -> Dav1dEventFlags;
     fn dav1d_picture_move_ref(dst: *mut Dav1dPicture, src: *mut Dav1dPicture);
     fn dav1d_picture_ref(dst: *mut Dav1dPicture, src: *const Dav1dPicture);
-    fn dav1d_data_unref_internal(buf: *mut Dav1dData);
     fn dav1d_picture_alloc_copy(
         c: *mut Dav1dContext,
         dst: *mut Dav1dPicture,
@@ -109,6 +108,7 @@ use crate::src::data::dav1d_data_props_copy;
 use crate::src::data::dav1d_data_props_set_defaults;
 use crate::src::data::dav1d_data_props_unref_internal;
 use crate::src::data::dav1d_data_ref;
+use crate::src::data::dav1d_data_unref_internal;
 use crate::src::data::dav1d_data_wrap_internal;
 use crate::src::data::dav1d_data_wrap_user_data_internal;
 use crate::src::r#ref::dav1d_ref_dec;
