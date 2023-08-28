@@ -9,7 +9,6 @@ extern "C" {
     fn free(_: *mut libc::c_void);
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: size_t) -> *mut libc::c_void;
     fn strerror(_: libc::c_int) -> *mut libc::c_char;
-    fn dav1d_mem_pool_push(pool: *mut Dav1dMemPool, buf: *mut Dav1dMemPoolBuffer);
     fn dav1d_mem_pool_pop(pool: *mut Dav1dMemPool, size: size_t) -> *mut Dav1dMemPoolBuffer;
     fn dav1d_data_props_copy(dst: *mut Dav1dDataProps, src: *const Dav1dDataProps);
     fn dav1d_data_props_set_defaults(props: *mut Dav1dDataProps);
@@ -225,6 +224,7 @@ use crate::include::dav1d::dav1d::Dav1dEventFlags;
 use crate::include::dav1d::dav1d::Dav1dLogger;
 use crate::include::dav1d::dav1d::DAV1D_EVENT_FLAG_NEW_OP_PARAMS_INFO;
 use crate::include::dav1d::dav1d::DAV1D_EVENT_FLAG_NEW_SEQUENCE;
+use crate::src::mem::dav1d_mem_pool_push;
 use crate::src::mem::Dav1dMemPool;
 use crate::src::mem::Dav1dMemPoolBuffer;
 pub type PictureFlags = libc::c_uint;

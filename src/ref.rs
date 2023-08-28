@@ -9,7 +9,6 @@ extern "C" {
         __alignment: size_t,
         __size: size_t,
     ) -> libc::c_int;
-    fn dav1d_mem_pool_push(pool: *mut Dav1dMemPool, buf: *mut Dav1dMemPoolBuffer);
     fn dav1d_mem_pool_pop(pool: *mut Dav1dMemPool, size: size_t) -> *mut Dav1dMemPoolBuffer;
 }
 #[derive(Copy, Clone)]
@@ -26,6 +25,7 @@ use crate::include::stdatomic::atomic_int;
 
 use crate::src::mem::dav1d_alloc_aligned;
 use crate::src::mem::dav1d_free_aligned;
+use crate::src::mem::dav1d_mem_pool_push;
 use crate::src::mem::Dav1dMemPool;
 use crate::src::mem::Dav1dMemPoolBuffer;
 
