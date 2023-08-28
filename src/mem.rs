@@ -2,7 +2,6 @@ use crate::include::stddef::*;
 use crate::include::stdint::*;
 use ::libc;
 extern "C" {
-    fn pthread_mutex_unlock(__mutex: *mut pthread_mutex_t) -> libc::c_int;
     fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
     fn free(_: *mut libc::c_void);
     fn posix_memalign(
@@ -16,6 +15,7 @@ use libc::pthread_mutex_destroy;
 use libc::pthread_mutex_init;
 use libc::pthread_mutex_lock;
 use libc::pthread_mutex_t;
+use libc::pthread_mutex_unlock;
 
 #[derive(Copy, Clone)]
 #[repr(C)]

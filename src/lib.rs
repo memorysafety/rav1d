@@ -48,7 +48,6 @@ extern "C" {
         __once_control: *mut pthread_once_t,
         __init_routine: Option<unsafe extern "C" fn() -> ()>,
     ) -> libc::c_int;
-    fn pthread_mutex_unlock(__mutex: *mut pthread_mutex_t) -> libc::c_int;
     fn dav1d_log(c: *mut Dav1dContext, format: *const libc::c_char, _: ...);
     fn dav1d_parse_obus(
         c: *mut Dav1dContext,
@@ -164,7 +163,7 @@ use libc::pthread_join;
 use libc::pthread_mutex_destroy;
 use libc::pthread_mutex_init;
 use libc::pthread_mutex_lock;
-use libc::pthread_mutex_t;
+use libc::pthread_mutex_unlock;
 
 use crate::include::dav1d::dav1d::Dav1dDecodeFrameType;
 use crate::include::dav1d::dav1d::Dav1dEventFlags;

@@ -6,7 +6,6 @@ extern "C" {
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: size_t) -> *mut libc::c_void;
     fn realloc(_: *mut libc::c_void, _: size_t) -> *mut libc::c_void;
     fn abort() -> !;
-    fn pthread_mutex_unlock(__mutex: *mut pthread_mutex_t) -> libc::c_int;
     cfg_if! {
         if #[cfg(target_os = "linux")] {
             fn prctl(__option: libc::c_int, _: ...) -> libc::c_int;
@@ -139,7 +138,7 @@ use crate::src::internal::DAV1D_TASK_TYPE_TILE_RECONSTRUCTION;
 use libc::pthread_cond_signal;
 use libc::pthread_cond_wait;
 use libc::pthread_mutex_lock;
-use libc::pthread_mutex_t;
+use libc::pthread_mutex_unlock;
 
 use crate::include::dav1d::headers::Dav1dContentLightLevel;
 use crate::include::dav1d::headers::Dav1dITUTT35;
