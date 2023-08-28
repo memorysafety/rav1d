@@ -179,7 +179,6 @@ extern "C" {
     #[cfg(feature = "bitdepth_16")]
     fn dav1d_read_coef_blocks_16bpc(t: *mut Dav1dTaskContext, bs: BlockSize, b: *const Av1Block);
     fn dav1d_log(c: *mut Dav1dContext, format: *const libc::c_char, _: ...);
-    static mut dav1d_qm_tbl: [[[*const uint8_t; 19]; 2]; 16];
     fn dav1d_task_create_tile_sbrow(
         f: *mut Dav1dFrameContext,
         pass: libc::c_int,
@@ -201,6 +200,7 @@ use crate::src::msac::dav1d_msac_decode_symbol_adapt16;
 use crate::src::msac::dav1d_msac_decode_symbol_adapt4;
 use crate::src::msac::dav1d_msac_decode_symbol_adapt8;
 use crate::src::msac::dav1d_msac_init;
+use crate::src::qm::dav1d_qm_tbl;
 use crate::src::refmvs::dav1d_refmvs_find;
 use crate::src::tables::dav1d_al_part_ctx;
 use crate::src::tables::dav1d_block_dimensions;
@@ -6026,24 +6026,10 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                                                                                                 &mut (*f).dq,
                                                                                             );
                                                                                             if (*(*f).frame_hdr).quant.qm != 0 {
-                                                                                                let mut i = 0;
-                                                                                                while i < N_RECT_TX_SIZES as libc::c_int {
-                                                                                                    (*f)
-                                                                                                        .qm[i
-                                                                                                        as usize][0 as libc::c_int
-                                                                                                        as usize] = dav1d_qm_tbl[(*(*f).frame_hdr).quant.qm_y
-                                                                                                        as usize][0][i as usize];
-                                                                                                    (*f)
-                                                                                                        .qm[i
-                                                                                                        as usize][1 as libc::c_int
-                                                                                                        as usize] = dav1d_qm_tbl[(*(*f).frame_hdr).quant.qm_u
-                                                                                                        as usize][1][i as usize];
-                                                                                                    (*f)
-                                                                                                        .qm[i
-                                                                                                        as usize][2 as libc::c_int
-                                                                                                        as usize] = dav1d_qm_tbl[(*(*f).frame_hdr).quant.qm_v
-                                                                                                        as usize][1][i as usize];
-                                                                                                    i += 1;
+                                                                                                for i in 0..N_RECT_TX_SIZES as usize {
+                                                                                                    (*f).qm[i][0] = dav1d_qm_tbl[(*(*f).frame_hdr).quant.qm_y as usize][0][i];
+                                                                                                    (*f).qm[i][1] = dav1d_qm_tbl[(*(*f).frame_hdr).quant.qm_u as usize][1][i];
+                                                                                                    (*f).qm[i][2] = dav1d_qm_tbl[(*(*f).frame_hdr).quant.qm_v as usize][1][i];
                                                                                                 }
                                                                                             } else {
                                                                                                 memset(

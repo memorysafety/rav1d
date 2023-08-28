@@ -2972,7 +2972,6 @@ static qm_tbl_32x32_t: [[[u8; 528]; 2]; 15] = [
     ],
 ];
 
-#[no_mangle]
 pub static mut dav1d_qm_tbl: [[[*const u8; 19]; 2]; 16] = [[[0 as *const u8; 19]; 2]; 16];
 
 static mut qm_tbl_4x4: [[[u8; 16]; 2]; 15] = [[[0; 16]; 2]; 15];
