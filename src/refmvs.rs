@@ -1124,8 +1124,7 @@ pub unsafe fn dav1d_refmvs_find(
 
 // cache the current tile/sbrow (or frame/sbrow)'s projectable motion vectors
 // into buffers for use in future frame's temporal MV prediction
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_refmvs_save_tmvs(
+pub unsafe fn dav1d_refmvs_save_tmvs(
     dsp: *const Dav1dRefmvsDSPContext,
     rt: *const refmvs_tile,
     col_start8: libc::c_int,

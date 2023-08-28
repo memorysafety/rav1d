@@ -53,14 +53,6 @@ extern "C" {
         n_tile_threads: libc::c_int,
         n_frame_threads: libc::c_int,
     ) -> libc::c_int;
-    fn dav1d_refmvs_save_tmvs(
-        dsp: *const Dav1dRefmvsDSPContext,
-        rt: *const refmvs_tile,
-        col_start8: libc::c_int,
-        col_end8: libc::c_int,
-        row_start8: libc::c_int,
-        row_end8: libc::c_int,
-    );
     fn dav1d_refmvs_tile_sbrow_init(
         rt: *mut refmvs_tile,
         rf: *const refmvs_frame,
@@ -185,6 +177,7 @@ use crate::src::msac::dav1d_msac_decode_symbol_adapt8;
 use crate::src::msac::dav1d_msac_init;
 use crate::src::qm::dav1d_qm_tbl;
 use crate::src::refmvs::dav1d_refmvs_find;
+use crate::src::refmvs::dav1d_refmvs_save_tmvs;
 use crate::src::tables::dav1d_al_part_ctx;
 use crate::src::tables::dav1d_block_dimensions;
 use crate::src::tables::dav1d_block_sizes;
