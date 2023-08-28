@@ -36,7 +36,6 @@ extern "C" {
         w: libc::c_int,
         src: *const Dav1dPicture,
     ) -> libc::c_int;
-    fn pthread_attr_init(__attr: *mut pthread_attr_t) -> libc::c_int;
     fn __sysconf(__name: libc::c_int) -> libc::c_long;
     fn pthread_create(
         __newthread: *mut pthread_t,
@@ -171,6 +170,7 @@ pub struct Dav1dContext {
 use crate::src::mem::Dav1dMemPool;
 
 use libc::pthread_attr_destroy;
+use libc::pthread_attr_init;
 use libc::pthread_mutex_t;
 
 use crate::include::dav1d::dav1d::Dav1dDecodeFrameType;
