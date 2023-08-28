@@ -1157,8 +1157,7 @@ pub unsafe fn dav1d_refmvs_save_tmvs(
     );
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_refmvs_tile_sbrow_init(
+pub unsafe fn dav1d_refmvs_tile_sbrow_init(
     rt: *mut refmvs_tile,
     rf: *const refmvs_frame,
     tile_col_start4: libc::c_int,
