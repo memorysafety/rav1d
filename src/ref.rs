@@ -114,8 +114,8 @@ pub unsafe fn dav1d_ref_wrap(
     (*res).user_data = user_data;
     return res;
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_ref_dec(pref: *mut *mut Dav1dRef) {
+
+pub unsafe fn dav1d_ref_dec(pref: *mut *mut Dav1dRef) {
     if pref.is_null() {
         unreachable!();
     }

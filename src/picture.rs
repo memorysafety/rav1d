@@ -11,7 +11,6 @@ extern "C" {
     fn strerror(_: libc::c_int) -> *mut libc::c_char;
     fn dav1d_mem_pool_push(pool: *mut Dav1dMemPool, buf: *mut Dav1dMemPoolBuffer);
     fn dav1d_mem_pool_pop(pool: *mut Dav1dMemPool, size: size_t) -> *mut Dav1dMemPoolBuffer;
-    fn dav1d_ref_dec(r#ref: *mut *mut Dav1dRef);
     fn dav1d_data_props_copy(dst: *mut Dav1dDataProps, src: *const Dav1dDataProps);
     fn dav1d_data_props_set_defaults(props: *mut Dav1dDataProps);
     fn dav1d_log(c: *mut Dav1dContext, format: *const libc::c_char, _: ...);
@@ -20,6 +19,7 @@ use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
+use crate::src::r#ref::dav1d_ref_dec;
 use crate::src::r#ref::dav1d_ref_wrap;
 use crate::src::r#ref::Dav1dRef;
 #[derive(Copy, Clone)]
