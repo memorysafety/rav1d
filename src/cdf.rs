@@ -6150,11 +6150,8 @@ unsafe extern "C" fn get_qcat_idx(q: libc::c_int) -> libc::c_int {
     }
     return 3 as libc::c_int;
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_cdf_thread_init_static(
-    cdf: *mut CdfThreadContext,
-    qidx: libc::c_int,
-) {
+
+pub unsafe fn dav1d_cdf_thread_init_static(cdf: *mut CdfThreadContext, qidx: libc::c_int) {
     (*cdf).r#ref = 0 as *mut Dav1dRef;
     (*cdf).data.qcat = get_qcat_idx(qidx) as libc::c_uint;
 }

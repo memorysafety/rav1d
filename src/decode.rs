@@ -36,7 +36,6 @@ extern "C" {
     fn pthread_cond_signal(__cond: *mut pthread_cond_t) -> libc::c_int;
     fn pthread_cond_wait(__cond: *mut pthread_cond_t, __mutex: *mut pthread_mutex_t)
         -> libc::c_int;
-    fn dav1d_cdf_thread_init_static(cdf: *mut CdfThreadContext, qidx: libc::c_int);
     fn dav1d_cdf_thread_alloc(
         c: *mut Dav1dContext,
         cdf: *mut CdfThreadContext,
@@ -801,6 +800,7 @@ pub type generate_grain_uv_fn = Option<
 >;
 pub type generate_grain_y_fn =
     Option<unsafe extern "C" fn(*mut [entry; 82], *const Dav1dFilmGrainData) -> ()>;
+use crate::src::cdf::dav1d_cdf_thread_init_static;
 use crate::src::cdf::dav1d_cdf_thread_update;
 use crate::src::cdf::CdfThreadContext;
 
