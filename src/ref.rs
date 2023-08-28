@@ -70,8 +70,8 @@ unsafe extern "C" fn pool_free_callback(data: *const uint8_t, user_data: *mut li
         user_data as *mut Dav1dMemPoolBuffer,
     );
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_ref_create_using_pool(
+
+pub unsafe fn dav1d_ref_create_using_pool(
     pool: *mut Dav1dMemPool,
     mut size: size_t,
 ) -> *mut Dav1dRef {

@@ -6,7 +6,6 @@ use ::libc;
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
-    fn dav1d_ref_create_using_pool(pool: *mut Dav1dMemPool, size: size_t) -> *mut Dav1dRef;
     fn dav1d_ref_dec(r#ref: *mut *mut Dav1dRef);
 }
 
@@ -17,6 +16,7 @@ use crate::include::stdatomic::atomic_uint;
 
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
+use crate::src::r#ref::dav1d_ref_create_using_pool;
 use crate::src::r#ref::Dav1dRef;
 #[derive(Copy, Clone)]
 #[repr(C)]
