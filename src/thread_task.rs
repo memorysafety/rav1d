@@ -8,7 +8,6 @@ extern "C" {
     fn abort() -> !;
     fn pthread_mutex_lock(__mutex: *mut pthread_mutex_t) -> libc::c_int;
     fn pthread_mutex_unlock(__mutex: *mut pthread_mutex_t) -> libc::c_int;
-    fn pthread_cond_signal(__cond: *mut pthread_cond_t) -> libc::c_int;
     fn pthread_cond_wait(__cond: *mut pthread_cond_t, __mutex: *mut pthread_mutex_t)
         -> libc::c_int;
     cfg_if! {
@@ -140,6 +139,7 @@ use crate::src::internal::DAV1D_TASK_TYPE_INIT_CDF;
 use crate::src::internal::DAV1D_TASK_TYPE_SUPER_RESOLUTION;
 use crate::src::internal::DAV1D_TASK_TYPE_TILE_ENTROPY;
 use crate::src::internal::DAV1D_TASK_TYPE_TILE_RECONSTRUCTION;
+use libc::pthread_cond_signal;
 use libc::pthread_mutex_t;
 
 use crate::include::dav1d::headers::Dav1dContentLightLevel;
