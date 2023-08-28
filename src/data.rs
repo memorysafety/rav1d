@@ -11,13 +11,13 @@ extern "C" {
         free_callback: Option<unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> ()>,
         user_data: *mut libc::c_void,
     ) -> *mut Dav1dRef;
-    fn dav1d_ref_create(size: size_t) -> *mut Dav1dRef;
 }
 
 use crate::src::r#ref::Dav1dRef;
 
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
+use crate::src::r#ref::dav1d_ref_create;
 use crate::src::r#ref::dav1d_ref_inc;
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_data_create_internal(

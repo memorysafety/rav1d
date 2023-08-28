@@ -11,7 +11,6 @@ extern "C" {
     fn pthread_mutex_unlock(__mutex: *mut pthread_mutex_t) -> libc::c_int;
     fn pthread_cond_wait(__cond: *mut pthread_cond_t, __mutex: *mut pthread_mutex_t)
         -> libc::c_int;
-    fn dav1d_ref_create(size: size_t) -> *mut Dav1dRef;
     fn dav1d_ref_create_using_pool(pool: *mut Dav1dMemPool, size: size_t) -> *mut Dav1dRef;
     fn dav1d_ref_dec(r#ref: *mut *mut Dav1dRef);
     fn dav1d_cdf_thread_ref(dst: *mut CdfThreadContext, src: *mut CdfThreadContext);
@@ -39,6 +38,7 @@ use crate::src::tables::dav1d_default_wm_params;
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
 use crate::include::stdatomic::atomic_int;
+use crate::src::r#ref::dav1d_ref_create;
 use crate::src::r#ref::Dav1dRef;
 
 use crate::include::stdatomic::atomic_uint;

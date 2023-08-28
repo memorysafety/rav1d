@@ -40,8 +40,8 @@ unsafe extern "C" fn default_free_callback(data: *const uint8_t, user_data: *mut
     }
     dav1d_free_aligned(user_data);
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_ref_create(mut size: size_t) -> *mut Dav1dRef {
+
+pub unsafe fn dav1d_ref_create(mut size: size_t) -> *mut Dav1dRef {
     size = size
         .wrapping_add(::core::mem::size_of::<*mut libc::c_void>())
         .wrapping_sub(1)
