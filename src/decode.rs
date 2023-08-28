@@ -6027,9 +6027,9 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                                                                                             );
                                                                                             if (*(*f).frame_hdr).quant.qm != 0 {
                                                                                                 for i in 0..N_RECT_TX_SIZES as usize {
-                                                                                                    (*f).qm[i][0] = dav1d_qm_tbl[(*(*f).frame_hdr).quant.qm_y as usize][0][i];
-                                                                                                    (*f).qm[i][1] = dav1d_qm_tbl[(*(*f).frame_hdr).quant.qm_u as usize][1][i];
-                                                                                                    (*f).qm[i][2] = dav1d_qm_tbl[(*(*f).frame_hdr).quant.qm_v as usize][1][i];
+                                                                                                    (*f).qm[i][0] = dav1d_qm_tbl[(*(*f).frame_hdr).quant.qm_y as usize][0][i].map_or(std::ptr::null(), |qm| qm.as_ptr());
+                                                                                                    (*f).qm[i][1] = dav1d_qm_tbl[(*(*f).frame_hdr).quant.qm_u as usize][1][i].map_or(std::ptr::null(), |qm| qm.as_ptr());
+                                                                                                    (*f).qm[i][2] = dav1d_qm_tbl[(*(*f).frame_hdr).quant.qm_v as usize][1][i].map_or(std::ptr::null(), |qm| qm.as_ptr());
                                                                                                 }
                                                                                             } else {
                                                                                                 memset(
