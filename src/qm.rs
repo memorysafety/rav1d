@@ -2980,21 +2980,14 @@ static mut qm_tbl_8x32: [[[uint8_t; 256]; 2]; 15] = [[[0; 256]; 2]; 15];
 static mut qm_tbl_16x16: [[[uint8_t; 256]; 2]; 15] = [[[0; 256]; 2]; 15];
 static mut qm_tbl_16x32: [[[uint8_t; 512]; 2]; 15] = [[[0; 512]; 2]; 15];
 static mut qm_tbl_32x32: [[[uint8_t; 1024]; 2]; 15] = [[[0; 1024]; 2]; 15];
-unsafe extern "C" fn subsample(
-    dst: *mut uint8_t,
-    src: *const uint8_t,
-    sz: libc::c_int,
-    step: libc::c_int,
-) {
-    let mut y = 0;
-    while y < sz {
-        let mut x = 0;
-        while x < sz {
-            *dst.offset((y * sz + x) as isize) =
-                *src.offset((y * sz * step * step + x * step) as isize);
-            x += 1;
+
+fn subsample(dst: &mut [u8], src: &[u8], sz: usize, step: usize) {
+    assert_eq!(sz * sz, dst.len());
+    assert_eq!((sz * step) * (sz * step), src.len());
+    for y in 0..sz {
+        for x in 0..sz {
+            dst[y * sz + x] = src[y * sz * step * step + x * step];
         }
-        y += 1;
     }
 }
 
@@ -3051,12 +3044,7 @@ pub unsafe fn dav1d_init_qm_tables() {
             untriangle(&mut qm_tbl_4x4[i][j], &qm_tbl_4x4_t[i][j], 4);
             untriangle(&mut qm_tbl_8x8[i][j], &qm_tbl_8x8_t[i][j], 8);
             untriangle(&mut qm_tbl_32x32[i][j], &qm_tbl_32x32_t[i][j], 32);
-            subsample(
-                qm_tbl_16x16[i][j].as_mut_ptr(),
-                qm_tbl_32x32[i][j].as_mut_ptr(),
-                16,
-                2,
-            );
+            subsample(&mut qm_tbl_16x16[i][j], &qm_tbl_32x32[i][j], 16, 2);
             dav1d_qm_tbl[i][j][TX_64X64 as usize] = dav1d_qm_tbl[i][j][TX_32X32 as usize];
             dav1d_qm_tbl[i][j][RTX_64X32 as usize] = dav1d_qm_tbl[i][j][TX_32X32 as usize];
             dav1d_qm_tbl[i][j][RTX_64X16 as usize] = dav1d_qm_tbl[i][j][RTX_32X16 as usize];
