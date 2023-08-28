@@ -95,8 +95,8 @@ pub unsafe fn dav1d_ref_create_using_pool(
     (*res).user_data = buf as *mut libc::c_void;
     return res;
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_ref_wrap(
+
+pub unsafe fn dav1d_ref_wrap(
     ptr: *const uint8_t,
     mut free_callback: Option<unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> ()>,
     user_data: *mut libc::c_void,
