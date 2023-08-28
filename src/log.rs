@@ -538,7 +538,7 @@ pub type recon_b_intra_fn = Option<
     unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, EdgeFlags, *const Av1Block) -> (),
 >;
 use crate::src::internal::ScalableMotionParams;
-#[no_mangle]
+
 #[cold]
 pub unsafe extern "C" fn dav1d_log_default_callback(
     _cookie: *mut libc::c_void,

@@ -68,11 +68,6 @@ extern "C" {
         -> libc::c_int;
     fn pthread_cond_broadcast(__cond: *mut pthread_cond_t) -> libc::c_int;
     fn pthread_cond_destroy(__cond: *mut pthread_cond_t) -> libc::c_int;
-    fn dav1d_log_default_callback(
-        cookie: *mut libc::c_void,
-        format: *const libc::c_char,
-        ap: ::core::ffi::VaList,
-    );
     fn dav1d_log(c: *mut Dav1dContext, format: *const libc::c_char, _: ...);
     fn dav1d_parse_obus(
         c: *mut Dav1dContext,
@@ -100,6 +95,7 @@ use crate::src::data::dav1d_data_ref;
 use crate::src::data::dav1d_data_unref_internal;
 use crate::src::data::dav1d_data_wrap_internal;
 use crate::src::data::dav1d_data_wrap_user_data_internal;
+use crate::src::log::dav1d_log_default_callback;
 use crate::src::r#ref::dav1d_ref_dec;
 use crate::src::r#ref::Dav1dRef;
 
