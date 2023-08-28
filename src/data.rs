@@ -212,8 +212,8 @@ pub unsafe fn dav1d_data_props_set_defaults(props: *mut Dav1dDataProps) {
     (*props).timestamp = i64::MIN;
     (*props).offset = -1;
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_data_props_unref_internal(props: *mut Dav1dDataProps) {
+
+pub unsafe fn dav1d_data_props_unref_internal(props: *mut Dav1dDataProps) {
     if props.is_null() {
         fprintf(
             stderr,
