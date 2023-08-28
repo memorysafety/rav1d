@@ -96,8 +96,8 @@ pub unsafe fn dav1d_data_wrap_internal(
     (*buf).m.size = sz;
     return 0 as libc::c_int;
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_data_wrap_user_data_internal(
+
+pub unsafe fn dav1d_data_wrap_user_data_internal(
     buf: *mut Dav1dData,
     user_data: *const uint8_t,
     free_callback: Option<unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> ()>,
