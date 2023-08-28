@@ -1039,10 +1039,8 @@ pub unsafe fn dav1d_thread_picture_unref(p: *mut Dav1dThreadPicture) {
     dav1d_picture_unref_internal(&mut (*p).p);
     (*p).progress = 0 as *mut atomic_uint;
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_picture_get_event_flags(
-    p: *const Dav1dThreadPicture,
-) -> Dav1dEventFlags {
+
+pub unsafe fn dav1d_picture_get_event_flags(p: *const Dav1dThreadPicture) -> Dav1dEventFlags {
     if (*p).flags as u64 == 0 {
         return 0 as Dav1dEventFlags;
     }

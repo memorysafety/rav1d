@@ -11,7 +11,6 @@ extern "C" {
     fn pthread_mutex_unlock(__mutex: *mut pthread_mutex_t) -> libc::c_int;
     fn pthread_cond_wait(__cond: *mut pthread_cond_t, __mutex: *mut pthread_mutex_t)
         -> libc::c_int;
-    fn dav1d_picture_get_event_flags(p: *const Dav1dThreadPicture) -> Dav1dEventFlags;
     fn dav1d_init_get_bits(c: *mut GetBits, data: *const uint8_t, sz: size_t);
     fn dav1d_get_bit(c: *mut GetBits) -> libc::c_uint;
     fn dav1d_get_bits(c: *mut GetBits, n: libc::c_int) -> libc::c_uint;
@@ -618,6 +617,7 @@ use crate::src::cdf::CdfThreadContext;
 use crate::src::internal::Dav1dContext_frame_thread;
 use crate::src::internal::Dav1dContext_refs;
 use crate::src::internal::Dav1dTileGroup;
+use crate::src::picture::dav1d_picture_get_event_flags;
 use crate::src::picture::dav1d_thread_picture_ref;
 use crate::src::picture::dav1d_thread_picture_unref;
 use crate::src::picture::Dav1dThreadPicture;

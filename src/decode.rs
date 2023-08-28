@@ -103,7 +103,6 @@ extern "C" {
         w: libc::c_int,
         src: *const Dav1dPicture,
     ) -> libc::c_int;
-    fn dav1d_picture_get_event_flags(p: *const Dav1dThreadPicture) -> Dav1dEventFlags;
     #[cfg(feature = "bitdepth_8")]
     fn dav1d_recon_b_intra_8bpc(
         t: *mut Dav1dTaskContext,
@@ -804,6 +803,7 @@ use crate::src::cdf::CdfThreadContext;
 use crate::src::internal::Dav1dContext_frame_thread;
 use crate::src::internal::Dav1dContext_refs;
 use crate::src::internal::Dav1dTileGroup;
+use crate::src::picture::dav1d_picture_get_event_flags;
 use crate::src::picture::dav1d_picture_ref;
 use crate::src::picture::dav1d_picture_unref_internal;
 use crate::src::picture::dav1d_thread_picture_ref;
