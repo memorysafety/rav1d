@@ -103,7 +103,6 @@ extern "C" {
         w: libc::c_int,
         src: *const Dav1dPicture,
     ) -> libc::c_int;
-    fn dav1d_picture_ref(dst: *mut Dav1dPicture, src: *const Dav1dPicture);
     fn dav1d_thread_picture_ref(dst: *mut Dav1dThreadPicture, src: *const Dav1dThreadPicture);
     fn dav1d_thread_picture_unref(p: *mut Dav1dThreadPicture);
     fn dav1d_picture_unref_internal(p: *mut Dav1dPicture);
@@ -808,6 +807,7 @@ use crate::src::cdf::CdfThreadContext;
 use crate::src::internal::Dav1dContext_frame_thread;
 use crate::src::internal::Dav1dContext_refs;
 use crate::src::internal::Dav1dTileGroup;
+use crate::src::picture::dav1d_picture_ref;
 use crate::src::picture::Dav1dThreadPicture;
 pub type backup_ipred_edge_fn = Option<unsafe extern "C" fn(*mut Dav1dTaskContext) -> ()>;
 pub type filter_sbrow_fn = Option<unsafe extern "C" fn(*mut Dav1dFrameContext, libc::c_int) -> ()>;
