@@ -636,20 +636,11 @@ use crate::include::dav1d::headers::DAV1D_OBU_SEQ_HDR;
 use crate::include::dav1d::headers::DAV1D_OBU_TD;
 use crate::src::levels::ObuMetaType;
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct GetBits {
-    pub state: uint64_t,
-    pub bits_left: libc::c_int,
-    pub error: libc::c_int,
-    pub ptr: *const uint8_t,
-    pub ptr_start: *const uint8_t,
-    pub ptr_end: *const uint8_t,
-}
 use crate::include::common::intops::iclip_u8;
 use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
 use crate::include::common::intops::ulog2;
+use crate::src::getbits::GetBits;
 
 use crate::src::env::get_poc_diff;
 use crate::src::r#ref::dav1d_ref_inc;
