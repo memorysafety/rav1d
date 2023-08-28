@@ -49,7 +49,6 @@ extern "C" {
         __once_control: *mut pthread_once_t,
         __init_routine: Option<unsafe extern "C" fn() -> ()>,
     ) -> libc::c_int;
-    fn pthread_attr_setstacksize(__attr: *mut pthread_attr_t, __stacksize: size_t) -> libc::c_int;
     fn pthread_mutex_init(
         __mutex: *mut pthread_mutex_t,
         __mutexattr: *const pthread_mutexattr_t,
@@ -171,6 +170,7 @@ use crate::src::mem::Dav1dMemPool;
 
 use libc::pthread_attr_destroy;
 use libc::pthread_attr_init;
+use libc::pthread_attr_setstacksize;
 use libc::pthread_mutex_t;
 
 use crate::include::dav1d::dav1d::Dav1dDecodeFrameType;
