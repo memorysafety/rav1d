@@ -6208,11 +6208,8 @@ pub unsafe extern "C" fn dav1d_cdf_thread_alloc(
     }
     return 0 as libc::c_int;
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_cdf_thread_ref(
-    dst: *mut CdfThreadContext,
-    src: *mut CdfThreadContext,
-) {
+
+pub unsafe fn dav1d_cdf_thread_ref(dst: *mut CdfThreadContext, src: *mut CdfThreadContext) {
     *dst = *src;
     if !((*src).r#ref).is_null() {
         dav1d_ref_inc((*src).r#ref);
