@@ -134,8 +134,8 @@ pub unsafe fn dav1d_data_wrap_user_data_internal(
     (*buf).m.user_data.data = user_data;
     return 0 as libc::c_int;
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_data_ref(dst: *mut Dav1dData, src: *const Dav1dData) {
+
+pub unsafe fn dav1d_data_ref(dst: *mut Dav1dData, src: *const Dav1dData) {
     if dst.is_null() {
         fprintf(
             stderr,

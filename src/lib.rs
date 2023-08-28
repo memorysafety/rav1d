@@ -45,7 +45,6 @@ extern "C" {
         w: libc::c_int,
         src: *const Dav1dPicture,
     ) -> libc::c_int;
-    fn dav1d_data_ref(dst: *mut Dav1dData, src: *const Dav1dData);
     fn dav1d_thread_picture_move_ref(dst: *mut Dav1dThreadPicture, src: *mut Dav1dThreadPicture);
     fn pthread_attr_init(__attr: *mut pthread_attr_t) -> libc::c_int;
     fn __sysconf(__name: libc::c_int) -> libc::c_long;
@@ -109,6 +108,7 @@ use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::common::Dav1dUserData;
 use crate::include::stdatomic::atomic_int;
 use crate::src::data::dav1d_data_create_internal;
+use crate::src::data::dav1d_data_ref;
 use crate::src::data::dav1d_data_wrap_internal;
 use crate::src::data::dav1d_data_wrap_user_data_internal;
 use crate::src::r#ref::dav1d_ref_dec;
