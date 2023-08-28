@@ -347,7 +347,7 @@ macro_rules! inv_txfm_fn {
                     $shift,
                     Some([<dav1d_inv_ $type1 $w _1d_c>]),
                     Some([<dav1d_inv_ $type2 $h _1d_c>]),
-                    $has_dconly,
+                    $has_dconly as libc::c_int,
                     BD::from_c(bitdepth_max),
                 );
             }
@@ -357,40 +357,40 @@ macro_rules! inv_txfm_fn {
 
 macro_rules! inv_txfm_fn64 {
     ($w:literal, $h:literal, $shift:literal) => {
-        inv_txfm_fn!(dct, dct, $w, $h, $shift, 1);
+        inv_txfm_fn!(dct, dct, $w, $h, $shift, true);
     };
 }
 
 macro_rules! inv_txfm_fn32 {
     ($w:literal, $h:literal, $shift:literal) => {
         inv_txfm_fn64!($w, $h, $shift);
-        inv_txfm_fn!(identity, identity, $w, $h, $shift, 0);
+        inv_txfm_fn!(identity, identity, $w, $h, $shift, false);
     };
 }
 
 macro_rules! inv_txfm_fn16 {
     ($w:literal, $h:literal, $shift:literal) => {
         inv_txfm_fn32!($w, $h, $shift);
-        inv_txfm_fn!(adst, dct, $w, $h, $shift, 0);
-        inv_txfm_fn!(dct, adst, $w, $h, $shift, 0);
-        inv_txfm_fn!(adst, adst, $w, $h, $shift, 0);
-        inv_txfm_fn!(dct, flipadst, $w, $h, $shift, 0);
-        inv_txfm_fn!(flipadst, dct, $w, $h, $shift, 0);
-        inv_txfm_fn!(adst, flipadst, $w, $h, $shift, 0);
-        inv_txfm_fn!(flipadst, adst, $w, $h, $shift, 0);
-        inv_txfm_fn!(flipadst, flipadst, $w, $h, $shift, 0);
-        inv_txfm_fn!(identity, dct, $w, $h, $shift, 0);
-        inv_txfm_fn!(dct, identity, $w, $h, $shift, 0);
+        inv_txfm_fn!(adst, dct, $w, $h, $shift, false);
+        inv_txfm_fn!(dct, adst, $w, $h, $shift, false);
+        inv_txfm_fn!(adst, adst, $w, $h, $shift, false);
+        inv_txfm_fn!(dct, flipadst, $w, $h, $shift, false);
+        inv_txfm_fn!(flipadst, dct, $w, $h, $shift, false);
+        inv_txfm_fn!(adst, flipadst, $w, $h, $shift, false);
+        inv_txfm_fn!(flipadst, adst, $w, $h, $shift, false);
+        inv_txfm_fn!(flipadst, flipadst, $w, $h, $shift, false);
+        inv_txfm_fn!(identity, dct, $w, $h, $shift, false);
+        inv_txfm_fn!(dct, identity, $w, $h, $shift, false);
     };
 }
 
 macro_rules! inv_txfm_fn84 {
     ($w:literal, $h:literal, $shift:literal) => {
         inv_txfm_fn16!($w, $h, $shift);
-        inv_txfm_fn!(identity, flipadst, $w, $h, $shift, 0);
-        inv_txfm_fn!(flipadst, identity, $w, $h, $shift, 0);
-        inv_txfm_fn!(identity, adst, $w, $h, $shift, 0);
-        inv_txfm_fn!(adst, identity, $w, $h, $shift, 0);
+        inv_txfm_fn!(identity, flipadst, $w, $h, $shift, false);
+        inv_txfm_fn!(flipadst, identity, $w, $h, $shift, false);
+        inv_txfm_fn!(identity, adst, $w, $h, $shift, false);
+        inv_txfm_fn!(adst, identity, $w, $h, $shift, false);
     };
 }
 
