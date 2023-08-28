@@ -44,7 +44,6 @@ extern "C" {
         __arg: *mut libc::c_void,
     ) -> libc::c_int;
     fn dav1d_refmvs_dsp_init(dsp: *mut Dav1dRefmvsDSPContext);
-    fn pthread_join(__th: pthread_t, __thread_return: *mut *mut libc::c_void) -> libc::c_int;
     fn pthread_once(
         __once_control: *mut pthread_once_t,
         __init_routine: Option<unsafe extern "C" fn() -> ()>,
@@ -167,6 +166,7 @@ use libc::pthread_cond_broadcast;
 use libc::pthread_cond_destroy;
 use libc::pthread_cond_init;
 use libc::pthread_cond_wait;
+use libc::pthread_join;
 use libc::pthread_mutex_t;
 
 use crate::include::dav1d::dav1d::Dav1dDecodeFrameType;
