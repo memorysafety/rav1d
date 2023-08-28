@@ -34,8 +34,6 @@ extern "C" {
     ) -> libc::c_int;
     fn pthread_mutex_lock(__mutex: *mut pthread_mutex_t) -> libc::c_int;
     fn pthread_mutex_unlock(__mutex: *mut pthread_mutex_t) -> libc::c_int;
-    fn pthread_cond_wait(__cond: *mut pthread_cond_t, __mutex: *mut pthread_mutex_t)
-        -> libc::c_int;
     fn dav1d_cdf_thread_alloc(
         c: *mut Dav1dContext,
         cdf: *mut CdfThreadContext,
@@ -243,6 +241,7 @@ pub struct Dav1dFrameContext {
 use crate::src::internal::Dav1dFrameContext_task_thread;
 use crate::src::internal::FrameTileThreadData;
 use libc::pthread_cond_signal;
+use libc::pthread_cond_wait;
 use libc::pthread_mutex_t;
 
 use crate::include::dav1d::headers::Dav1dContentLightLevel;
@@ -275,8 +274,6 @@ use crate::include::dav1d::headers::DAV1D_RESTORATION_NONE;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_SGRPROJ;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_SWITCHABLE;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_WIENER;
-
-use libc::pthread_cond_t;
 
 use crate::src::internal::Dav1dFrameContext_lf;
 use crate::src::lf_mask::Av1Filter;

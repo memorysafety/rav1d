@@ -56,8 +56,6 @@ extern "C" {
     fn pthread_mutex_lock(__mutex: *mut pthread_mutex_t) -> libc::c_int;
     fn pthread_mutex_unlock(__mutex: *mut pthread_mutex_t) -> libc::c_int;
     fn pthread_mutex_destroy(__mutex: *mut pthread_mutex_t) -> libc::c_int;
-    fn pthread_cond_wait(__cond: *mut pthread_cond_t, __mutex: *mut pthread_mutex_t)
-        -> libc::c_int;
     fn dav1d_log(c: *mut Dav1dContext, format: *const libc::c_char, _: ...);
     fn dav1d_parse_obus(
         c: *mut Dav1dContext,
@@ -168,6 +166,7 @@ use libc::pthread_attr_setstacksize;
 use libc::pthread_cond_broadcast;
 use libc::pthread_cond_destroy;
 use libc::pthread_cond_init;
+use libc::pthread_cond_wait;
 use libc::pthread_mutex_t;
 
 use crate::include::dav1d::dav1d::Dav1dDecodeFrameType;
@@ -510,7 +509,6 @@ use crate::src::picture::dav1d_thread_picture_move_ref;
 use crate::src::picture::dav1d_thread_picture_ref;
 use crate::src::picture::dav1d_thread_picture_unref;
 use crate::src::picture::Dav1dThreadPicture;
-use libc::pthread_cond_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTaskContext {
