@@ -52,7 +52,7 @@ impl<'a, T> Add<usize> for CursorMut<'a, T> {
 impl<'a, T> AddAssign<usize> for CursorMut<'a, T> {
     fn add_assign(&mut self, rhs: usize) {
         self.index += rhs;
-        assert!(self.index <= self.data.len());
+        debug_assert!(self.index <= self.data.len());
     }
 }
 
@@ -67,7 +67,7 @@ impl<'a, T> Sub<usize> for CursorMut<'a, T> {
 
 impl<'a, T> SubAssign<usize> for CursorMut<'a, T> {
     fn sub_assign(&mut self, rhs: usize) {
-        assert!(rhs <= self.index);
+        debug_assert!(rhs <= self.index);
         self.index -= rhs;
     }
 }
@@ -91,7 +91,7 @@ impl<'a, T> Index<isize> for CursorMut<'a, T> {
 
     fn index(&self, index: isize) -> &Self::Output {
         let index = self.index as isize + index;
-        assert!(index >= 0);
+        debug_assert!(index >= 0);
         &self.data[index as usize]
     }
 }
@@ -99,7 +99,7 @@ impl<'a, T> Index<isize> for CursorMut<'a, T> {
 impl<'a, T> IndexMut<isize> for CursorMut<'a, T> {
     fn index_mut(&mut self, index: isize) -> &mut Self::Output {
         let index = self.index as isize + index;
-        assert!(index >= 0);
+        debug_assert!(index >= 0);
         &mut self.data[index as usize]
     }
 }
