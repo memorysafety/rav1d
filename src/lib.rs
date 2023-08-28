@@ -64,7 +64,6 @@ extern "C" {
     fn pthread_attr_init(__attr: *mut pthread_attr_t) -> libc::c_int;
     fn __sysconf(__name: libc::c_int) -> libc::c_long;
     fn dav1d_data_props_set_defaults(props: *mut Dav1dDataProps);
-    fn dav1d_mem_pool_init(pool: *mut *mut Dav1dMemPool) -> libc::c_int;
     fn dav1d_refmvs_init(rf: *mut refmvs_frame);
     fn pthread_create(
         __newthread: *mut pthread_t,
@@ -696,6 +695,7 @@ use crate::include::common::intops::umin;
 use crate::src::mem::dav1d_alloc_aligned;
 use crate::src::mem::dav1d_free_aligned;
 use crate::src::mem::dav1d_freep_aligned;
+use crate::src::mem::dav1d_mem_pool_init;
 use crate::src::mem::freep;
 #[cold]
 unsafe extern "C" fn init_internal() {

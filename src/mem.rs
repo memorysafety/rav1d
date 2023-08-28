@@ -146,9 +146,9 @@ pub unsafe fn dav1d_mem_pool_pop(pool: *mut Dav1dMemPool, size: size_t) -> *mut 
     }
     return buf;
 }
-#[no_mangle]
+
 #[cold]
-pub unsafe extern "C" fn dav1d_mem_pool_init(ppool: *mut *mut Dav1dMemPool) -> libc::c_int {
+pub unsafe fn dav1d_mem_pool_init(ppool: *mut *mut Dav1dMemPool) -> libc::c_int {
     let pool: *mut Dav1dMemPool =
         malloc(::core::mem::size_of::<Dav1dMemPool>() as libc::c_ulong) as *mut Dav1dMemPool;
     if !pool.is_null() {
