@@ -42,7 +42,6 @@ extern "C" {
         cdf: *mut CdfThreadContext,
         have_frame_mt: libc::c_int,
     ) -> libc::c_int;
-    fn dav1d_data_props_copy(dst: *mut Dav1dDataProps, src: *const Dav1dDataProps);
     fn dav1d_data_unref_internal(buf: *mut Dav1dData);
     fn dav1d_refmvs_init_frame(
         rf: *mut refmvs_frame,
@@ -213,6 +212,7 @@ use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
+use crate::src::data::dav1d_data_props_copy;
 use crate::src::r#ref::Dav1dRef;
 #[derive(Copy, Clone)]
 #[repr(C)]
