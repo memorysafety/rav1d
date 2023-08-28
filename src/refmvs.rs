@@ -1403,8 +1403,8 @@ pub unsafe extern "C" fn save_tmvs_c(
         y += 1;
     }
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_refmvs_init_frame(
+
+pub unsafe fn dav1d_refmvs_init_frame(
     rf: *mut refmvs_frame,
     seq_hdr: *const Dav1dSequenceHeader,
     frm_hdr: *const Dav1dFrameHeader,
