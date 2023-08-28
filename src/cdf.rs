@@ -5402,8 +5402,8 @@ static av1_default_coef_cdf: [CdfCoefContext; 4] = [
         ])),
     },
 ];
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_cdf_thread_update(
+
+pub unsafe fn dav1d_cdf_thread_update(
     hdr: *const Dav1dFrameHeader,
     dst: *mut CdfContext,
     src: *const CdfContext,
@@ -6136,6 +6136,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         k_17 += 1;
     }
 }
+
 #[inline]
 unsafe extern "C" fn get_qcat_idx(q: libc::c_int) -> libc::c_int {
     if q <= 20 {
