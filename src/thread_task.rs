@@ -1501,7 +1501,7 @@ unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThrea
         pthread_cond_signal(&mut (*ttd).delayed_fg.cond);
     }
 }
-#[no_mangle]
+
 pub unsafe extern "C" fn dav1d_worker_task(mut data: *mut libc::c_void) -> *mut libc::c_void {
     let mut flush = 0;
     let mut error_0 = 0;
