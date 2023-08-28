@@ -1580,8 +1580,8 @@ pub unsafe fn dav1d_refmvs_init_frame(
     (*rf).use_ref_frame_mvs = ((*rf).n_mfmvs > 0) as libc::c_int;
     return 0 as libc::c_int;
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_refmvs_init(rf: *mut refmvs_frame) {
+
+pub unsafe fn dav1d_refmvs_init(rf: *mut refmvs_frame) {
     (*rf).r = 0 as *mut refmvs_block;
     (*rf).r_stride = 0 as libc::c_int as ptrdiff_t;
     (*rf).rp_proj = 0 as *mut refmvs_temporal_block;
