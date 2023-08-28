@@ -15,11 +15,8 @@ use crate::src::r#ref::dav1d_ref_create;
 use crate::src::r#ref::dav1d_ref_dec;
 use crate::src::r#ref::dav1d_ref_inc;
 use crate::src::r#ref::dav1d_ref_wrap;
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_data_create_internal(
-    buf: *mut Dav1dData,
-    sz: size_t,
-) -> *mut uint8_t {
+
+pub unsafe fn dav1d_data_create_internal(buf: *mut Dav1dData, sz: size_t) -> *mut uint8_t {
     if buf.is_null() {
         fprintf(
             stderr,

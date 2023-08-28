@@ -33,7 +33,6 @@ extern "C" {
     );
     fn dav1d_data_props_unref_internal(props: *mut Dav1dDataProps);
     fn dav1d_picture_unref_internal(p: *mut Dav1dPicture);
-    fn dav1d_data_create_internal(buf: *mut Dav1dData, sz: size_t) -> *mut uint8_t;
     fn dav1d_data_props_copy(dst: *mut Dav1dDataProps, src: *const Dav1dDataProps);
     fn dav1d_data_wrap_internal(
         buf: *mut Dav1dData,
@@ -122,6 +121,7 @@ extern "C" {
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::common::Dav1dUserData;
 use crate::include::stdatomic::atomic_int;
+use crate::src::data::dav1d_data_create_internal;
 use crate::src::r#ref::dav1d_ref_dec;
 use crate::src::r#ref::Dav1dRef;
 
