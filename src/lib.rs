@@ -76,7 +76,6 @@ extern "C" {
     fn dav1d_refmvs_clear(rf: *mut refmvs_frame);
     fn dav1d_cdf_thread_unref(cdf: *mut CdfThreadContext);
     fn dav1d_thread_picture_unref(p: *mut Dav1dThreadPicture);
-    fn dav1d_mem_pool_end(pool: *mut Dav1dMemPool);
     fn pthread_attr_destroy(__attr: *mut pthread_attr_t) -> libc::c_int;
     fn dav1d_default_picture_alloc(p: *mut Dav1dPicture, cookie: *mut libc::c_void) -> libc::c_int;
     fn dav1d_default_picture_release(p: *mut Dav1dPicture, cookie: *mut libc::c_void);
@@ -695,6 +694,7 @@ use crate::include::common::intops::umin;
 use crate::src::mem::dav1d_alloc_aligned;
 use crate::src::mem::dav1d_free_aligned;
 use crate::src::mem::dav1d_freep_aligned;
+use crate::src::mem::dav1d_mem_pool_end;
 use crate::src::mem::dav1d_mem_pool_init;
 use crate::src::mem::freep;
 #[cold]

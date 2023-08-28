@@ -164,9 +164,9 @@ pub unsafe fn dav1d_mem_pool_init(ppool: *mut *mut Dav1dMemPool) -> libc::c_int 
     *ppool = 0 as *mut Dav1dMemPool;
     return -(12 as libc::c_int);
 }
-#[no_mangle]
+
 #[cold]
-pub unsafe extern "C" fn dav1d_mem_pool_end(pool: *mut Dav1dMemPool) {
+pub unsafe fn dav1d_mem_pool_end(pool: *mut Dav1dMemPool) {
     if !pool.is_null() {
         pthread_mutex_lock(&mut (*pool).lock);
         let mut buf: *mut Dav1dMemPoolBuffer = (*pool).buf;
