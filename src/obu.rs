@@ -7,7 +7,6 @@ extern "C" {
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: size_t) -> *mut libc::c_void;
     fn memcmp(_: *const libc::c_void, _: *const libc::c_void, _: size_t) -> libc::c_int;
     fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int;
-    fn pthread_mutex_lock(__mutex: *mut pthread_mutex_t) -> libc::c_int;
     fn pthread_mutex_unlock(__mutex: *mut pthread_mutex_t) -> libc::c_int;
     fn dav1d_log(c: *mut Dav1dContext, format: *const libc::c_char, _: ...);
 }
@@ -88,6 +87,7 @@ pub struct Dav1dFrameContext {
 use crate::src::internal::Dav1dFrameContext_task_thread;
 use crate::src::internal::FrameTileThreadData;
 use libc::pthread_cond_wait;
+use libc::pthread_mutex_lock;
 use libc::pthread_mutex_t;
 
 use crate::include::dav1d::headers::Dav1dContentLightLevel;
