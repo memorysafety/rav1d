@@ -991,8 +991,8 @@ pub unsafe fn dav1d_thread_picture_move_ref(
         ::core::mem::size_of::<Dav1dThreadPicture>(),
     );
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_picture_unref_internal(p: *mut Dav1dPicture) {
+
+pub unsafe fn dav1d_picture_unref_internal(p: *mut Dav1dPicture) {
     if p.is_null() {
         fprintf(
             stderr,
