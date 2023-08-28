@@ -74,7 +74,6 @@ extern "C" {
     fn dav1d_refmvs_dsp_init(dsp: *mut Dav1dRefmvsDSPContext);
     fn pthread_join(__th: pthread_t, __thread_return: *mut *mut libc::c_void) -> libc::c_int;
     fn dav1d_refmvs_clear(rf: *mut refmvs_frame);
-    fn dav1d_cdf_thread_unref(cdf: *mut CdfThreadContext);
     fn dav1d_thread_picture_unref(p: *mut Dav1dThreadPicture);
     fn pthread_attr_destroy(__attr: *mut pthread_attr_t) -> libc::c_int;
     fn dav1d_default_picture_alloc(p: *mut Dav1dPicture, cookie: *mut libc::c_void) -> libc::c_int;
@@ -521,6 +520,7 @@ pub type generate_grain_uv_fn = Option<
 pub type generate_grain_y_fn =
     Option<unsafe extern "C" fn(*mut [entry; 82], *const Dav1dFilmGrainData) -> ()>;
 use crate::include::stdatomic::atomic_uint;
+use crate::src::cdf::dav1d_cdf_thread_unref;
 use crate::src::cdf::CdfThreadContext;
 
 use crate::src::internal::Dav1dContext_frame_thread;

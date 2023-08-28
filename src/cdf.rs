@@ -6215,8 +6215,8 @@ pub unsafe fn dav1d_cdf_thread_ref(dst: *mut CdfThreadContext, src: *mut CdfThre
         dav1d_ref_inc((*src).r#ref);
     }
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_cdf_thread_unref(cdf: *mut CdfThreadContext) {
+
+pub unsafe fn dav1d_cdf_thread_unref(cdf: *mut CdfThreadContext) {
     memset(
         &mut (*cdf).data as *mut CdfThreadContext_data as *mut libc::c_void,
         0 as libc::c_int,

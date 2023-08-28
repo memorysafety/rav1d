@@ -11,7 +11,6 @@ extern "C" {
     fn pthread_mutex_unlock(__mutex: *mut pthread_mutex_t) -> libc::c_int;
     fn pthread_cond_wait(__cond: *mut pthread_cond_t, __mutex: *mut pthread_mutex_t)
         -> libc::c_int;
-    fn dav1d_cdf_thread_unref(cdf: *mut CdfThreadContext);
     fn dav1d_data_ref(dst: *mut Dav1dData, src: *const Dav1dData);
     fn dav1d_data_props_copy(dst: *mut Dav1dDataProps, src: *const Dav1dDataProps);
     fn dav1d_data_unref_internal(buf: *mut Dav1dData);
@@ -615,6 +614,7 @@ pub type generate_grain_uv_fn = Option<
 pub type generate_grain_y_fn =
     Option<unsafe extern "C" fn(*mut [entry; 82], *const Dav1dFilmGrainData) -> ()>;
 use crate::src::cdf::dav1d_cdf_thread_ref;
+use crate::src::cdf::dav1d_cdf_thread_unref;
 use crate::src::cdf::CdfThreadContext;
 
 use crate::src::internal::Dav1dContext_frame_thread;

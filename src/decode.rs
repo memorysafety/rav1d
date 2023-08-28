@@ -42,7 +42,6 @@ extern "C" {
         cdf: *mut CdfThreadContext,
         have_frame_mt: libc::c_int,
     ) -> libc::c_int;
-    fn dav1d_cdf_thread_unref(cdf: *mut CdfThreadContext);
     fn dav1d_data_props_copy(dst: *mut Dav1dDataProps, src: *const Dav1dDataProps);
     fn dav1d_data_unref_internal(buf: *mut Dav1dData);
     fn dav1d_refmvs_init_frame(
@@ -802,6 +801,7 @@ pub type generate_grain_y_fn =
 use crate::src::cdf::dav1d_cdf_thread_copy;
 use crate::src::cdf::dav1d_cdf_thread_init_static;
 use crate::src::cdf::dav1d_cdf_thread_ref;
+use crate::src::cdf::dav1d_cdf_thread_unref;
 use crate::src::cdf::dav1d_cdf_thread_update;
 use crate::src::cdf::CdfThreadContext;
 
