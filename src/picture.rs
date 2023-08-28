@@ -633,7 +633,7 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     }) as *mut libc::c_void;
     return 0 as libc::c_int;
 }
-#[no_mangle]
+
 pub unsafe extern "C" fn dav1d_default_picture_release(
     p: *mut Dav1dPicture,
     cookie: *mut libc::c_void,

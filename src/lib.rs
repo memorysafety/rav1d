@@ -57,7 +57,6 @@ extern "C" {
     fn dav1d_refmvs_clear(rf: *mut refmvs_frame);
     fn dav1d_thread_picture_unref(p: *mut Dav1dThreadPicture);
     fn pthread_attr_destroy(__attr: *mut pthread_attr_t) -> libc::c_int;
-    fn dav1d_default_picture_release(p: *mut Dav1dPicture, cookie: *mut libc::c_void);
     fn pthread_once(
         __once_control: *mut pthread_once_t,
         __init_routine: Option<unsafe extern "C" fn() -> ()>,
@@ -516,6 +515,7 @@ use crate::src::internal::Dav1dContext_refs;
 use crate::src::internal::Dav1dTileGroup;
 use crate::src::internal::TaskThreadData;
 use crate::src::picture::dav1d_default_picture_alloc;
+use crate::src::picture::dav1d_default_picture_release;
 use crate::src::picture::Dav1dThreadPicture;
 use libc::pthread_cond_t;
 #[derive(Copy, Clone)]
