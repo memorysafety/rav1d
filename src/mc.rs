@@ -2254,3 +2254,44 @@ extern "C" {
     decl_fns!(emu_edge, dav1d_emu_edge);
     decl_fns!(resize, dav1d_resize);
 }
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+extern "C" {
+    decl_fns!(mc, dav1d_put_8tap_regular, neon);
+    decl_fns!(mc, dav1d_put_8tap_regular_smooth, neon);
+    decl_fns!(mc, dav1d_put_8tap_regular_sharp, neon);
+    decl_fns!(mc, dav1d_put_8tap_smooth, neon);
+    decl_fns!(mc, dav1d_put_8tap_smooth_regular, neon);
+    decl_fns!(mc, dav1d_put_8tap_smooth_sharp, neon);
+    decl_fns!(mc, dav1d_put_8tap_sharp, neon);
+    decl_fns!(mc, dav1d_put_8tap_sharp_regular, neon);
+    decl_fns!(mc, dav1d_put_8tap_sharp_smooth, neon);
+    decl_fns!(mc, dav1d_put_bilin, neon);
+
+    decl_fns!(mct, dav1d_prep_8tap_regular, neon);
+    decl_fns!(mct, dav1d_prep_8tap_regular_smooth, neon);
+    decl_fns!(mct, dav1d_prep_8tap_regular_sharp, neon);
+    decl_fns!(mct, dav1d_prep_8tap_smooth, neon);
+    decl_fns!(mct, dav1d_prep_8tap_smooth_regular, neon);
+    decl_fns!(mct, dav1d_prep_8tap_smooth_sharp, neon);
+    decl_fns!(mct, dav1d_prep_8tap_sharp, neon);
+    decl_fns!(mct, dav1d_prep_8tap_sharp_regular, neon);
+    decl_fns!(mct, dav1d_prep_8tap_sharp_smooth, neon);
+    decl_fns!(mct, dav1d_prep_bilin, neon);
+
+    decl_fns!(avg, dav1d_avg, neon);
+    decl_fns!(w_avg, dav1d_w_avg, neon);
+    decl_fns!(mask, dav1d_mask, neon);
+    decl_fns!(blend, dav1d_blend, neon);
+    decl_fns!(blend_dir, dav1d_blend_h, neon);
+    decl_fns!(blend_dir, dav1d_blend_v, neon);
+
+    decl_fns!(w_mask, dav1d_w_mask_444, neon);
+    decl_fns!(w_mask, dav1d_w_mask_422, neon);
+    decl_fns!(w_mask, dav1d_w_mask_420, neon);
+
+    decl_fns!(warp8x8, dav1d_warp_affine_8x8, neon);
+    decl_fns!(warp8x8t, dav1d_warp_affine_8x8t, neon);
+
+    decl_fns!(emu_edge, dav1d_emu_edge, neon);
+}
