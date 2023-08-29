@@ -13,9 +13,8 @@ use crate::src::tables::dav1d_mc_warp_filter;
 use crate::src::tables::dav1d_obmc_masks;
 use crate::src::tables::dav1d_resize_filter;
 
-// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
 #[inline(never)]
-pub unsafe fn put_rust<BD: BitDepth>(
+unsafe fn put_rust<BD: BitDepth>(
     dst: *mut BD::Pixel,
     dst_stride: usize,
     src: *const BD::Pixel,
@@ -32,9 +31,8 @@ pub unsafe fn put_rust<BD: BitDepth>(
     }
 }
 
-// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
 #[inline(never)]
-pub unsafe fn prep_rust<BD: BitDepth>(
+unsafe fn prep_rust<BD: BitDepth>(
     mut tmp: *mut i16,
     mut src: *const BD::Pixel,
     src_stride: usize,
@@ -141,9 +139,8 @@ fn get_filters(
     )
 }
 
-// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
 #[inline(never)]
-pub unsafe fn put_8tap_rust<BD: BitDepth>(
+unsafe fn put_8tap_rust<BD: BitDepth>(
     dst: *mut BD::Pixel,
     dst_stride: usize,
     mut src: *const BD::Pixel,
@@ -222,9 +219,8 @@ pub unsafe fn put_8tap_rust<BD: BitDepth>(
     }
 }
 
-// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
 #[inline(never)]
-pub unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
+unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     dst_stride: usize,
     mut src: *const BD::Pixel,
@@ -288,9 +284,8 @@ pub unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
     }
 }
 
-// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
 #[inline(never)]
-pub unsafe fn prep_8tap_rust<BD: BitDepth>(
+unsafe fn prep_8tap_rust<BD: BitDepth>(
     mut tmp: *mut i16,
     mut src: *const BD::Pixel,
     src_stride: usize,
@@ -362,9 +357,8 @@ pub unsafe fn prep_8tap_rust<BD: BitDepth>(
     };
 }
 
-// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
 #[inline(never)]
-pub unsafe fn prep_8tap_scaled_rust<BD: BitDepth>(
+unsafe fn prep_8tap_scaled_rust<BD: BitDepth>(
     mut tmp: *mut i16,
     mut src: *const BD::Pixel,
     src_stride: usize,
@@ -444,8 +438,7 @@ unsafe fn filter_bilin_clip<BD: BitDepth, T: Into<i32>>(
     bd.iclip_pixel(filter_bilin_rnd(src, x, mxy, stride, sh))
 }
 
-// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
-pub unsafe fn put_bilin_rust<BD: BitDepth>(
+unsafe fn put_bilin_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     dst_stride: usize,
     mut src: *const BD::Pixel,
@@ -510,8 +503,7 @@ pub unsafe fn put_bilin_rust<BD: BitDepth>(
     };
 }
 
-// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
-pub unsafe fn put_bilin_scaled_rust<BD: BitDepth>(
+unsafe fn put_bilin_scaled_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     mut dst_stride: usize,
     mut src: *const BD::Pixel,
@@ -558,8 +550,7 @@ pub unsafe fn put_bilin_scaled_rust<BD: BitDepth>(
     }
 }
 
-// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
-pub unsafe fn prep_bilin_rust<BD: BitDepth>(
+unsafe fn prep_bilin_rust<BD: BitDepth>(
     mut tmp: *mut i16,
     mut src: *const BD::Pixel,
     src_stride: usize,
@@ -624,8 +615,7 @@ pub unsafe fn prep_bilin_rust<BD: BitDepth>(
     };
 }
 
-// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
-pub unsafe fn prep_bilin_scaled_rust<BD: BitDepth>(
+unsafe fn prep_bilin_scaled_rust<BD: BitDepth>(
     mut tmp: *mut i16,
     mut src: *const BD::Pixel,
     src_stride: usize,
@@ -671,8 +661,7 @@ pub unsafe fn prep_bilin_scaled_rust<BD: BitDepth>(
     }
 }
 
-// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
-pub unsafe fn avg_rust<BD: BitDepth>(
+unsafe fn avg_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     dst_stride: usize,
     mut tmp1: *const i16,
@@ -699,8 +688,7 @@ pub unsafe fn avg_rust<BD: BitDepth>(
     }
 }
 
-// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
-pub unsafe fn w_avg_rust<BD: BitDepth>(
+unsafe fn w_avg_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     dst_stride: usize,
     mut tmp1: *const i16,
@@ -730,8 +718,7 @@ pub unsafe fn w_avg_rust<BD: BitDepth>(
     }
 }
 
-// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
-pub unsafe fn mask_rust<BD: BitDepth>(
+unsafe fn mask_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     dst_stride: usize,
     mut tmp1: *const i16,
@@ -767,8 +754,7 @@ fn blend_px<BD: BitDepth>(a: BD::Pixel, b: BD::Pixel, m: u8) -> BD::Pixel {
     ((a.as_::<u32>() * (64 - m) + b.as_::<u32>() * m + 32) >> 6).as_::<BD::Pixel>()
 }
 
-// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
-pub unsafe fn blend_rust<BD: BitDepth>(
+unsafe fn blend_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     dst_stride: usize,
     mut tmp: *const BD::Pixel,
@@ -792,8 +778,7 @@ pub unsafe fn blend_rust<BD: BitDepth>(
     }
 }
 
-// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
-pub unsafe fn blend_v_rust<BD: BitDepth>(
+unsafe fn blend_v_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     dst_stride: usize,
     mut tmp: *const BD::Pixel,
@@ -813,8 +798,7 @@ pub unsafe fn blend_v_rust<BD: BitDepth>(
     }
 }
 
-// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
-pub unsafe fn blend_h_rust<BD: BitDepth>(
+unsafe fn blend_h_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     dst_stride: usize,
     mut tmp: *const BD::Pixel,
@@ -835,8 +819,7 @@ pub unsafe fn blend_h_rust<BD: BitDepth>(
     }
 }
 
-// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
-pub unsafe fn w_mask_rust<BD: BitDepth>(
+unsafe fn w_mask_rust<BD: BitDepth>(
     dst: *mut BD::Pixel,
     dst_stride: usize,
     tmp1: *const i16,
@@ -909,8 +892,7 @@ pub unsafe fn w_mask_rust<BD: BitDepth>(
     }
 }
 
-// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
-pub unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
+unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     dst_stride: libc::ptrdiff_t,
     mut src: *const BD::Pixel,
@@ -995,8 +977,7 @@ pub unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
     }
 }
 
-// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
-pub unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
+unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
     mut tmp: *mut i16,
     tmp_stride: libc::ptrdiff_t,
     mut src: *const BD::Pixel,
@@ -1080,8 +1061,7 @@ pub unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
     }
 }
 
-// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
-pub unsafe fn emu_edge_rust<BD: BitDepth>(
+unsafe fn emu_edge_rust<BD: BitDepth>(
     bw: libc::intptr_t,
     bh: libc::intptr_t,
     iw: libc::intptr_t,
@@ -1175,8 +1155,7 @@ pub unsafe fn emu_edge_rust<BD: BitDepth>(
     }
 }
 
-// TODO(kkysen) temporarily `pub` until `mc` callers are deduplicated
-pub unsafe fn resize_rust<BD: BitDepth>(
+unsafe fn resize_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     dst_stride: libc::ptrdiff_t,
     mut src: *const BD::Pixel,
