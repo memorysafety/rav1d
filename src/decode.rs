@@ -6381,8 +6381,8 @@ pub unsafe extern "C" fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retv
     (*f).task_thread.retval = retval;
 }
 
-pub unsafe fn dav1d_decode_frame(f: *mut Dav1dFrameContext) -> libc::c_int {
-    if !((*(*f).c).n_fc == 1 as libc::c_uint) {
+pub unsafe fn dav1d_decode_frame(f: &mut Dav1dFrameContext) -> libc::c_int {
+    if !((*f.c).n_fc == 1 as libc::c_uint) {
         unreachable!();
     }
     let mut res = dav1d_decode_frame_init(f);
@@ -6390,40 +6390,34 @@ pub unsafe fn dav1d_decode_frame(f: *mut Dav1dFrameContext) -> libc::c_int {
         res = dav1d_decode_frame_init_cdf(f);
     }
     if res == 0 {
-        if (*(*f).c).n_tc > 1 as libc::c_uint {
+        if (*f.c).n_tc > 1 as libc::c_uint {
             res = dav1d_task_create_tile_sbrow(f, 0 as libc::c_int, 1 as libc::c_int);
-            pthread_mutex_lock(&mut (*(*f).task_thread.ttd).lock);
-            pthread_cond_signal(&mut (*(*f).task_thread.ttd).cond);
+            pthread_mutex_lock(&mut (*f.task_thread.ttd).lock);
+            pthread_cond_signal(&mut (*f.task_thread.ttd).cond);
             if res == 0 {
-                while (*f).task_thread.done[0] == 0
+                while f.task_thread.done[0] == 0
                     || ::core::intrinsics::atomic_load_seqcst(
-                        &mut (*f).task_thread.task_counter as *mut atomic_int,
+                        &mut f.task_thread.task_counter as *mut atomic_int,
                     ) > 0
                 {
-                    pthread_cond_wait(
-                        &mut (*f).task_thread.cond,
-                        &mut (*(*f).task_thread.ttd).lock,
-                    );
+                    pthread_cond_wait(&mut f.task_thread.cond, &mut (*f.task_thread.ttd).lock);
                 }
             }
-            pthread_mutex_unlock(&mut (*(*f).task_thread.ttd).lock);
-            res = (*f).task_thread.retval;
+            pthread_mutex_unlock(&mut (*f.task_thread.ttd).lock);
+            res = f.task_thread.retval;
         } else {
             res = dav1d_decode_frame_main(f);
-            if res == 0
-                && (*(*f).frame_hdr).refresh_context != 0
-                && (*f).task_thread.update_set != 0
-            {
+            if res == 0 && (*f.frame_hdr).refresh_context != 0 && f.task_thread.update_set != 0 {
                 dav1d_cdf_thread_update(
-                    (*f).frame_hdr,
-                    (*f).out_cdf.data.cdf,
-                    &mut (*((*f).ts).offset((*(*f).frame_hdr).tiling.update as isize)).cdf,
+                    f.frame_hdr,
+                    f.out_cdf.data.cdf,
+                    &mut (*(f.ts).offset((*f.frame_hdr).tiling.update as isize)).cdf,
                 );
             }
         }
     }
     dav1d_decode_frame_exit(f, res);
-    (*f).n_tile_data = 0 as libc::c_int;
+    f.n_tile_data = 0 as libc::c_int;
     return res;
 }
 
@@ -7331,7 +7325,8 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                                                     i_2 += 1;
                                                                 }
                                                                 if (*c).n_fc == 1 as libc::c_uint {
-                                                                    res = dav1d_decode_frame(f);
+                                                                    res =
+                                                                        dav1d_decode_frame(&mut *f);
                                                                     if res < 0 {
                                                                         dav1d_thread_picture_unref(
                                                                             &mut (*c).out,
