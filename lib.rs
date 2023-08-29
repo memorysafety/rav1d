@@ -51,6 +51,7 @@ pub mod src {
     pub mod cdf;
     pub mod cpu;
     pub mod ctx;
+    pub mod cursor;
     pub mod data;
     pub mod decode;
     pub mod dequant_tables;

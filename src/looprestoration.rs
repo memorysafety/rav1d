@@ -1,13 +1,15 @@
+use std::ops::Add;
+
 #[cfg(all(
     feature = "asm",
     any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
 ))]
 use crate::include::common::bitdepth::bd_fn;
-
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::LeftPixelRow;
+use crate::include::common::bitdepth::ToPrimitive;
 use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::imax;
@@ -20,6 +22,7 @@ use crate::include::stdint::intptr_t;
 use crate::include::stdint::uint16_t;
 use crate::include::stdint::uint32_t;
 use crate::src::align::Align16;
+use crate::src::cursor::CursorMut;
 use crate::src::tables::dav1d_sgr_x_by_x;
 
 pub type LrEdgeFlags = libc::c_uint;
@@ -551,9 +554,9 @@ unsafe fn boxsum5<BD: BitDepth>(
 }
 
 #[inline(never)]
-unsafe extern "C" fn selfguided_filter<BD: BitDepth>(
-    mut dst: *mut BD::Coef,
-    mut src: *const BD::Pixel,
+fn selfguided_filter<BD: BitDepth>(
+    mut dst: &mut [BD::Coef; 24576],
+    mut src: &[BD::Pixel; 27300],
     _src_stride: ptrdiff_t,
     w: libc::c_int,
     h: libc::c_int,
@@ -561,175 +564,125 @@ unsafe extern "C" fn selfguided_filter<BD: BitDepth>(
     s: libc::c_uint,
     bd: BD,
 ) {
-    let sgr_one_by_x: libc::c_uint = (if n == 25 {
-        164 as libc::c_int
-    } else {
-        455 as libc::c_int
-    }) as libc::c_uint;
-    let mut sumsq: [int32_t; 26520] = [0; 26520];
-    let mut A: *mut int32_t = sumsq.as_mut_ptr().offset((2 * 390) as isize).offset(3);
-    let mut sum: [BD::Coef; 26520] = [0.as_(); 26520];
-    let mut B: *mut BD::Coef = sum.as_mut_ptr().offset((2 * 390) as isize).offset(3);
+    let sgr_one_by_x = if n == 25 { 164 } else { 455 };
+
+    // Selfguided filter is applied to a maximum stripe height of 64 + 3 pixels
+    // of padding above and below
+    let mut sumsq = [0; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE];
+    // By inverting A and B after the boxsums, B can be of size coef instead
+    // of int32_t
+    let mut sum = [0.as_::<BD::Coef>(); 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE];
+
     let step = (n == 25) as libc::c_int + 1;
     if n == 25 {
-        boxsum5::<BD>(&mut sumsq, &mut sum, src, w + 6, h + 6);
+        // TODO: Update `boxsum5` to take safe arguments.
+        // SAFETY: All args are safe.
+        unsafe {
+            boxsum5::<BD>(&mut sumsq, &mut sum, src.as_ptr(), w + 6, h + 6);
+        }
     } else {
-        boxsum3::<BD>(&mut sumsq, &mut sum, src, w + 6, h + 6);
+        // TODO: Update `boxsum3` to take safe arguments.
+        // SAFETY: All args are safe.
+        unsafe {
+            boxsum3::<BD>(&mut sumsq, &mut sum, src.as_ptr(), w + 6, h + 6);
+        }
     }
     let bitdepth_min_8 = bd.bitdepth() - 8;
-    let mut AA: *mut int32_t = A.offset(-(390 as libc::c_int as isize));
-    let mut BB: *mut BD::Coef = B.offset(-(390 as libc::c_int as isize));
-    let mut j = -(1 as libc::c_int);
-    while j < h + 1 {
-        let mut i = -(1 as libc::c_int);
-        while i < w + 1 {
-            let a = *AA.offset(i as isize) + ((1 as libc::c_int) << 2 * bitdepth_min_8 >> 1)
-                >> 2 * bitdepth_min_8;
-            let b = (*BB.offset(i as isize)).as_::<libc::c_int>()
-                + ((1 as libc::c_int) << bitdepth_min_8 >> 1)
-                >> bitdepth_min_8;
-            let p: libc::c_uint = imax(a * n - b * b, 0 as libc::c_int) as libc::c_uint;
-            let z: libc::c_uint = p
-                .wrapping_mul(s)
-                .wrapping_add(((1 as libc::c_int) << 19) as libc::c_uint)
-                >> 20;
-            let x: libc::c_uint = dav1d_sgr_x_by_x
-                [umin(z, 255 as libc::c_int as libc::c_uint) as usize]
-                as libc::c_uint;
-            *AA.offset(i as isize) = (x
-                .wrapping_mul((*BB.offset(i as isize)).as_::<libc::c_uint>())
-                .wrapping_mul(sgr_one_by_x)
-                .wrapping_add(((1 as libc::c_int) << 11) as libc::c_uint)
-                >> 12) as int32_t;
-            *BB.offset(i as isize) = x.as_::<BD::Coef>();
-            i += 1;
+
+    let mut A = CursorMut::new(&mut sumsq) + 2 * REST_UNIT_STRIDE + 3;
+    let mut B = CursorMut::new(&mut sum) + 2 * REST_UNIT_STRIDE + 3;
+
+    let mut AA = A.clone() - REST_UNIT_STRIDE;
+    let mut BB = B.clone() - REST_UNIT_STRIDE;
+    for _ in (-1..h + 1).step_by(step as usize) {
+        for i in -1..w + 1 {
+            let a = AA[i] + (1 << 2 * bitdepth_min_8 >> 1) >> 2 * bitdepth_min_8;
+            let b = BB[i].as_::<libc::c_int>() + (1 << bitdepth_min_8 >> 1) >> bitdepth_min_8;
+
+            let p = imax(a * n - b * b, 0) as libc::c_uint;
+            let z = (p * s + (1 << 19)) >> 20;
+            let x = dav1d_sgr_x_by_x[umin(z, 255) as usize] as libc::c_uint;
+
+            // This is where we invert A and B, so that B is of size coef.
+            AA[i] =
+                ((x * BB[i].as_::<libc::c_uint>() * sgr_one_by_x + (1 << 11)) >> 12) as libc::c_int;
+            BB[i] = x.as_::<BD::Coef>();
         }
-        AA = AA.offset((step * 390) as isize);
-        BB = BB.offset((step * 390) as isize);
-        j += step;
+        AA += step as usize * REST_UNIT_STRIDE;
+        BB += step as usize * REST_UNIT_STRIDE;
     }
-    src = src.offset((3 * 390 + 3) as isize);
+
+    fn six_neighbors<P>(p: &CursorMut<P>, i: isize) -> libc::c_int
+    where
+        P: Add<Output = P> + ToPrimitive<libc::c_int> + Copy,
+    {
+        let stride = REST_UNIT_STRIDE as isize;
+        (p[i - stride] + p[i + stride]).as_::<libc::c_int>() * 6
+            + (p[i - 1 - stride] + p[i - 1 + stride] + p[i + 1 - stride] + p[i + 1 + stride])
+                .as_::<libc::c_int>()
+                * 5
+    }
+
+    fn eight_neighbors<P>(p: &CursorMut<P>, i: isize) -> libc::c_int
+    where
+        P: Add<Output = P> + ToPrimitive<libc::c_int> + Copy,
+    {
+        let stride = REST_UNIT_STRIDE as isize;
+        (p[i] + p[i - 1] + p[i + 1] + p[i - stride] + p[i + stride]).as_::<libc::c_int>() * 4
+            + (p[i - 1 - stride] + p[i - 1 + stride] + p[i + 1 - stride] + p[i + 1 + stride])
+                .as_::<libc::c_int>()
+                * 3
+    }
+
+    let mut src = &src[3 * REST_UNIT_STRIDE + 3..];
+    let mut dst = dst.as_mut_slice();
     if n == 25 {
-        let mut j_0 = 0;
-        while j_0 < h - 1 {
-            let mut i_0 = 0;
-            while i_0 < w {
-                let a_0: libc::c_int = (*B.offset((i_0 - 390) as isize)
-                    + (*B.offset((i_0 + 390) as isize)))
-                .as_::<libc::c_int>()
-                    * 6
-                    + (*B.offset((i_0 - 1 - 390) as isize)
-                        + *B.offset((i_0 - 1 + 390) as isize)
-                        + *B.offset((i_0 + 1 - 390) as isize)
-                        + *B.offset((i_0 + 1 + 390) as isize))
-                    .as_::<libc::c_int>()
-                        * 5;
-                let b_0 = (*A.offset((i_0 - 390) as isize) + *A.offset((i_0 + 390) as isize)) * 6
-                    + (*A.offset((i_0 - 1 - 390) as isize)
-                        + *A.offset((i_0 - 1 + 390) as isize)
-                        + *A.offset((i_0 + 1 - 390) as isize)
-                        + *A.offset((i_0 + 1 + 390) as isize))
-                        * 5;
-                *dst.offset(i_0 as isize) = (b_0
-                    - a_0 * (*src.offset(i_0 as isize)).as_::<libc::c_int>()
-                    + ((1 as libc::c_int) << 8)
-                    >> 9)
-                    .as_();
-                i_0 += 1;
+        let mut j = 0;
+        while j < h - 1 {
+            for i in 0..w {
+                let a = six_neighbors(&B, i as isize);
+                let b = six_neighbors(&A, i as isize);
+                dst[i as usize] =
+                    ((b - a * (src[i as usize]).as_::<libc::c_int>() + (1 << 8)) >> 9).as_();
             }
-            dst = dst.offset(384);
-            src = src.offset(390);
-            B = B.offset(390);
-            A = A.offset(390);
-            let mut i_1 = 0;
-            while i_1 < w {
-                let a_1: libc::c_int = (*B.offset(i_1 as isize)).as_::<libc::c_int>() * 6
-                    + (*B.offset((i_1 - 1) as isize) + *B.offset((i_1 + 1) as isize))
-                        .as_::<libc::c_int>()
-                        * 5;
-                let b_1 = *A.offset(i_1 as isize) * 6
-                    + (*A.offset((i_1 - 1) as isize) + *A.offset((i_1 + 1) as isize)) * 5;
-                *dst.offset(i_1 as isize) = (b_1
-                    - a_1 * (*src.offset(i_1 as isize)).as_::<libc::c_int>()
-                    + ((1 as libc::c_int) << 7)
-                    >> 8)
-                    .as_();
-                i_1 += 1;
+            dst = &mut dst[384.. /* Maximum restoration width is 384 (256 * 1.5) */];
+            src = &src[REST_UNIT_STRIDE..];
+            B += REST_UNIT_STRIDE;
+            A += REST_UNIT_STRIDE;
+            for i in 0..w {
+                let a =
+                    B[i].as_::<libc::c_int>() * 6 + (B[i - 1] + B[i + 1]).as_::<libc::c_int>() * 5;
+                let b = A[i] * 6 + (A[i - 1] + A[i + 1]) * 5;
+                dst[i as usize] =
+                    (b - a * (src[i as usize]).as_::<libc::c_int>() + (1 << 7) >> 8).as_();
             }
-            dst = dst.offset(384);
-            src = src.offset(390);
-            B = B.offset(390);
-            A = A.offset(390);
-            j_0 += 2 as libc::c_int;
+            dst = &mut dst[384.. /* Maximum restoration width is 384 (256 * 1.5) */];
+            src = &src[REST_UNIT_STRIDE..];
+            B += REST_UNIT_STRIDE;
+            A += REST_UNIT_STRIDE;
+            j += 2;
         }
-        if j_0 + 1 == h {
-            let mut i_2 = 0;
-            while i_2 < w {
-                let a_2: libc::c_int = (*B.offset((i_2 - 390) as isize)
-                    + *B.offset((i_2 + 390) as isize))
-                .as_::<libc::c_int>()
-                    * 6
-                    + (*B.offset((i_2 - 1 - 390) as isize)
-                        + *B.offset((i_2 - 1 + 390) as isize)
-                        + *B.offset((i_2 + 1 - 390) as isize)
-                        + *B.offset((i_2 + 1 + 390) as isize))
-                    .as_::<libc::c_int>()
-                        * 5;
-                let b_2 = (*A.offset((i_2 - 390) as isize) + *A.offset((i_2 + 390) as isize)) * 6
-                    + (*A.offset((i_2 - 1 - 390) as isize)
-                        + *A.offset((i_2 - 1 + 390) as isize)
-                        + *A.offset((i_2 + 1 - 390) as isize)
-                        + *A.offset((i_2 + 1 + 390) as isize))
-                        * 5;
-                *dst.offset(i_2 as isize) = (b_2
-                    - a_2 * (*src.offset(i_2 as isize)).as_::<libc::c_int>()
-                    + ((1 as libc::c_int) << 8)
-                    >> 9)
-                    .as_();
-                i_2 += 1;
+        // Last row, when number of rows is odd
+        if j + 1 == h {
+            for i in 0..w {
+                let a = six_neighbors(&B, i as isize);
+                let b = six_neighbors(&A, i as isize);
+                dst[i as usize] =
+                    (b - a * (src[i as usize]).as_::<libc::c_int>() + (1 << 8) >> 9).as_();
             }
         }
     } else {
-        let mut j_1 = 0;
-        while j_1 < h {
-            let mut i_3 = 0;
-            while i_3 < w {
-                let a_3: libc::c_int = (*B.offset(i_3 as isize)
-                    + *B.offset((i_3 - 1) as isize)
-                    + *B.offset((i_3 + 1) as isize)
-                    + *B.offset((i_3 - 390) as isize)
-                    + *B.offset((i_3 + 390) as isize))
-                .as_::<libc::c_int>()
-                    * 4
-                    + (*B.offset((i_3 - 1 - 390) as isize)
-                        + *B.offset((i_3 - 1 + 390) as isize)
-                        + *B.offset((i_3 + 1 - 390) as isize)
-                        + *B.offset((i_3 + 1 + 390) as isize))
-                    .as_::<libc::c_int>()
-                        * 3;
-                let b_3 = (*A.offset(i_3 as isize)
-                    + *A.offset((i_3 - 1) as isize)
-                    + *A.offset((i_3 + 1) as isize)
-                    + *A.offset((i_3 - 390) as isize)
-                    + *A.offset((i_3 + 390) as isize))
-                    * 4
-                    + (*A.offset((i_3 - 1 - 390) as isize)
-                        + *A.offset((i_3 - 1 + 390) as isize)
-                        + *A.offset((i_3 + 1 - 390) as isize)
-                        + *A.offset((i_3 + 1 + 390) as isize))
-                        * 3;
-                *dst.offset(i_3 as isize) = (b_3
-                    - a_3 * (*src.offset(i_3 as isize)).as_::<libc::c_int>()
-                    + ((1 as libc::c_int) << 8)
-                    >> 9)
-                    .as_();
-                i_3 += 1;
+        for _ in 0..h {
+            for i in 0..w {
+                let a = eight_neighbors(&B, i as isize);
+                let b = eight_neighbors(&A, i as isize);
+                dst[i as usize] =
+                    (b - a * (src[i as usize]).as_::<libc::c_int>() + (1 << 8) >> 9).as_();
             }
-            dst = dst.offset(384);
-            src = src.offset(390);
-            B = B.offset(390);
-            A = A.offset(390);
-            j_1 += 1;
+            dst = &mut dst[384..];
+            src = &src[REST_UNIT_STRIDE..];
+            B += REST_UNIT_STRIDE;
+            A += REST_UNIT_STRIDE;
         }
     };
 }
@@ -788,8 +741,8 @@ unsafe fn sgr_5x5_rust<BD: BitDepth>(
         edges,
     );
     selfguided_filter(
-        dst.as_mut_ptr(),
-        tmp.as_mut_ptr(),
+        &mut dst,
+        &mut tmp,
         REST_UNIT_STRIDE as ptrdiff_t,
         w,
         h,
@@ -858,8 +811,8 @@ unsafe fn sgr_3x3_rust<BD: BitDepth>(
         edges,
     );
     selfguided_filter(
-        dst.as_mut_ptr(),
-        tmp.as_mut_ptr(),
+        &mut dst,
+        &mut tmp,
         REST_UNIT_STRIDE as ptrdiff_t,
         w,
         h,
@@ -929,8 +882,8 @@ unsafe fn sgr_mix_rust<BD: BitDepth>(
         edges,
     );
     selfguided_filter(
-        dst0.as_mut_ptr(),
-        tmp.as_mut_ptr(),
+        &mut dst0,
+        &mut tmp,
         REST_UNIT_STRIDE as ptrdiff_t,
         w,
         h,
@@ -939,8 +892,8 @@ unsafe fn sgr_mix_rust<BD: BitDepth>(
         bd,
     );
     selfguided_filter(
-        dst1.as_mut_ptr(),
-        tmp.as_mut_ptr(),
+        &mut dst1,
+        &mut tmp,
         REST_UNIT_STRIDE as ptrdiff_t,
         w,
         h,
