@@ -244,6 +244,7 @@ pub struct Dav1dDSPContext {
     pub lr: Dav1dLoopRestorationDSPContext,
 }
 use crate::src::cdef::Dav1dCdefDSPContext;
+use crate::src::itx::Dav1dInvTxfmDSPContext;
 use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
 use crate::src::looprestoration::looprestorationfilter_fn;
 use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
@@ -253,13 +254,6 @@ use crate::src::looprestoration::LR_HAVE_BOTTOM;
 use crate::src::looprestoration::LR_HAVE_LEFT;
 use crate::src::looprestoration::LR_HAVE_RIGHT;
 use crate::src::looprestoration::LR_HAVE_TOP;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dInvTxfmDSPContext {
-    pub itxfm_add: [[itxfm_fn; 17]; 19],
-}
-pub type itxfm_fn =
-    Option<unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int, libc::c_int) -> ()>;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dMCDSPContext {

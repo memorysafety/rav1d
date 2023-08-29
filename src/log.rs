@@ -106,16 +106,9 @@ pub struct Dav1dDSPContext {
     pub lr: Dav1dLoopRestorationDSPContext,
 }
 use crate::src::cdef::Dav1dCdefDSPContext;
+use crate::src::itx::Dav1dInvTxfmDSPContext;
 use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
 use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dInvTxfmDSPContext {
-    pub itxfm_add: [[itxfm_fn; 17]; 19],
-}
-pub type itxfm_fn = Option<
-    unsafe extern "C" fn(*mut libc::c_void, ptrdiff_t, *mut libc::c_void, libc::c_int) -> (),
->;
 pub type coef = ();
 #[derive(Copy, Clone)]
 #[repr(C)]

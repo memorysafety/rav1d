@@ -317,15 +317,9 @@ pub struct Dav1dDSPContext {
     pub lr: Dav1dLoopRestorationDSPContext,
 }
 use crate::src::cdef::Dav1dCdefDSPContext;
+use crate::src::itx::Dav1dInvTxfmDSPContext;
 use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
 use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Dav1dInvTxfmDSPContext {
-    pub itxfm_add: [[itxfm_fn; 17]; 19],
-}
-pub type itxfm_fn =
-    Option<unsafe extern "C" fn(*mut pixel, ptrdiff_t, *mut coef, libc::c_int) -> ()>;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dMCDSPContext {
@@ -2061,7 +2055,11 @@ unsafe extern "C" fn read_coef_tree(
                 }
                 ((*dsp).itx.itxfm_add[ytx as usize][txtp as usize])
                     .expect("non-null function pointer")(
-                    dst, (*f).cur.stride[0], cf, eob
+                    dst.cast(),
+                    (*f).cur.stride[0],
+                    cf.cast(),
+                    eob,
+                    8,
                 );
                 if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
                     hex_dump::<BitDepth8>(
@@ -3059,10 +3057,11 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                             ((*dsp).itx.itxfm_add[(*b).c2rust_unnamed.c2rust_unnamed.tx as usize]
                                 [txtp as usize])
                                 .expect("non-null function pointer")(
-                                dst_0,
+                                dst_0.cast(),
                                 (*f).cur.stride[0],
-                                cf,
+                                cf.cast(),
                                 eob,
+                                8,
                             );
                             if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
                                 hex_dump::<BitDepth8>(
@@ -3485,7 +3484,11 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                                     }
                                     ((*dsp).itx.itxfm_add[(*b).uvtx as usize][txtp_0 as usize])
                                         .expect("non-null function pointer")(
-                                        dst_1, stride, cf_0, eob_0,
+                                        dst_1.cast(),
+                                        stride,
+                                        cf_0.cast(),
+                                        eob_0,
+                                        8,
                                     );
                                     if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
                                         hex_dump::<BitDepth8>(
@@ -4724,10 +4727,11 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                                 }
                                 ((*dsp).itx.itxfm_add[(*b).uvtx as usize][txtp as usize])
                                     .expect("non-null function pointer")(
-                                    &mut *uvdst_1.offset((4 * x_0) as isize),
+                                    uvdst_1.offset((4 * x_0) as isize).cast(),
                                     (*f).cur.stride[1],
-                                    cf,
+                                    cf.cast(),
                                     eob,
+                                    8,
                                 );
                                 if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
                                     hex_dump::<BitDepth8>(
