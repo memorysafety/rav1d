@@ -1979,3 +1979,278 @@ pub(crate) unsafe extern "C" fn resize_c<BD: BitDepth>(
         BD::from_c(bitdepth_max),
     )
 }
+
+// TODO(legare): Generated fns are temporarily pub until init fns are deduplicated.
+#[cfg(feature = "asm")]
+macro_rules! decl_fn {
+    (mc, $name:ident) => {
+        pub(crate) fn $name(
+            dst: *mut DynPixel,
+            dst_stride: ptrdiff_t,
+            src: *const DynPixel,
+            src_stride: ptrdiff_t,
+            w: libc::c_int,
+            h: libc::c_int,
+            mx: libc::c_int,
+            my: libc::c_int,
+            bitdepth_max: libc::c_int,
+        );
+    };
+
+    (mct, $name:ident) => {
+        pub(crate) fn $name(
+            tmp: *mut int16_t,
+            src: *const DynPixel,
+            src_stride: ptrdiff_t,
+            w: libc::c_int,
+            h: libc::c_int,
+            mx: libc::c_int,
+            my: libc::c_int,
+            bitdepth_max: libc::c_int,
+        );
+    };
+
+    (mc_scaled, $name:ident) => {
+        pub(crate) fn $name(
+            dst: *mut DynPixel,
+            dst_stride: ptrdiff_t,
+            src: *const DynPixel,
+            src_stride: ptrdiff_t,
+            w: libc::c_int,
+            h: libc::c_int,
+            mx: libc::c_int,
+            my: libc::c_int,
+            dx: libc::c_int,
+            dy: libc::c_int,
+            bitdepth_max: libc::c_int,
+        );
+    };
+
+    (mct_scaled, $name:ident) => {
+        pub(crate) fn $name(
+            tmp: *mut int16_t,
+            src: *const DynPixel,
+            src_stride: ptrdiff_t,
+            w: libc::c_int,
+            h: libc::c_int,
+            mx: libc::c_int,
+            my: libc::c_int,
+            dx: libc::c_int,
+            dy: libc::c_int,
+            bitdepth_max: libc::c_int,
+        );
+    };
+
+    (avg, $name:ident) => {
+        pub(crate) fn $name(
+            dst: *mut DynPixel,
+            dst_stride: ptrdiff_t,
+            tmp1: *const int16_t,
+            tmp2: *const int16_t,
+            w: libc::c_int,
+            h: libc::c_int,
+            bitdepth_max: libc::c_int,
+        );
+    };
+
+    (w_avg, $name:ident) => {
+        pub(crate) fn $name(
+            dst: *mut DynPixel,
+            dst_stride: ptrdiff_t,
+            tmp1: *const int16_t,
+            tmp2: *const int16_t,
+            w: libc::c_int,
+            h: libc::c_int,
+            weight: libc::c_int,
+            bitdepth_max: libc::c_int,
+        );
+    };
+
+    (mask, $name:ident) => {
+        pub(crate) fn $name(
+            dst: *mut DynPixel,
+            dst_stride: ptrdiff_t,
+            tmp1: *const int16_t,
+            tmp2: *const int16_t,
+            w: libc::c_int,
+            h: libc::c_int,
+            mask: *const uint8_t,
+            bitdepth_max: libc::c_int,
+        );
+    };
+
+    (w_mask, $name:ident) => {
+        pub(crate) fn $name(
+            dst: *mut DynPixel,
+            dst_stride: ptrdiff_t,
+            tmp1: *const int16_t,
+            tmp2: *const int16_t,
+            w: libc::c_int,
+            h: libc::c_int,
+            mask: *mut uint8_t,
+            sign: libc::c_int,
+            bitdepth_max: libc::c_int,
+        );
+    };
+
+    (blend, $name:ident) => {
+        pub(crate) fn $name(
+            dst: *mut DynPixel,
+            dst_stride: ptrdiff_t,
+            tmp: *const DynPixel,
+            w: libc::c_int,
+            h: libc::c_int,
+            mask: *const uint8_t,
+        );
+    };
+
+    (blend_dir, $name:ident) => {
+        pub(crate) fn $name(
+            dst: *mut DynPixel,
+            dst_stride: ptrdiff_t,
+            tmp: *const DynPixel,
+            w: libc::c_int,
+            h: libc::c_int,
+        );
+    };
+
+    (warp8x8, $name:ident) => {
+        pub(crate) fn $name(
+            dst: *mut DynPixel,
+            dst_stride: ptrdiff_t,
+            src: *const DynPixel,
+            src_stride: ptrdiff_t,
+            abcd: *const int16_t,
+            mx: libc::c_int,
+            my: libc::c_int,
+            bitdepth_max: libc::c_int,
+        );
+    };
+
+    (warp8x8t, $name:ident) => {
+        pub(crate) fn $name(
+            tmp: *mut int16_t,
+            tmp_stride: ptrdiff_t,
+            src: *const DynPixel,
+            src_stride: ptrdiff_t,
+            abcd: *const int16_t,
+            mx: libc::c_int,
+            my: libc::c_int,
+            bitdepth_max: libc::c_int,
+        );
+    };
+
+    (emu_edge, $name:ident) => {
+        pub(crate) fn $name(
+            bw: intptr_t,
+            bh: intptr_t,
+            iw: intptr_t,
+            ih: intptr_t,
+            x: intptr_t,
+            y: intptr_t,
+            dst: *mut DynPixel,
+            dst_stride: ptrdiff_t,
+            src: *const DynPixel,
+            src_stride: ptrdiff_t,
+        );
+    };
+
+    (resize, $name:ident) => {
+        pub(crate) fn $name(
+            dst: *mut DynPixel,
+            dst_stride: ptrdiff_t,
+            src: *const DynPixel,
+            src_stride: ptrdiff_t,
+            dst_w: libc::c_int,
+            h: libc::c_int,
+            src_w: libc::c_int,
+            dx: libc::c_int,
+            mx: libc::c_int,
+            bitdepth_max: libc::c_int,
+        );
+    };
+}
+
+#[cfg(feature = "asm")]
+macro_rules! decl_fns {
+    ($ty:ident, $name:ident) => {
+        decl_fns!($ty, $name, sse2);
+        decl_fns!($ty, $name, ssse3);
+        decl_fns!($ty, $name, avx2);
+        decl_fns!($ty, $name, avx512icl);
+    };
+
+    ($ty:ident, $name:ident, $suffix:ident) => {
+        paste::paste! {
+            #[cfg(feature = "bitdepth_8")]
+            decl_fn!($ty, [<$name _8bpc_ $suffix>]);
+            #[cfg(feature = "bitdepth_16")]
+            decl_fn!($ty, [<$name _16bpc_ $suffix>]);
+        }
+    };
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+extern "C" {
+    decl_fns!(mc, dav1d_put_8tap_regular);
+    decl_fns!(mc, dav1d_put_8tap_regular_smooth);
+    decl_fns!(mc, dav1d_put_8tap_regular_sharp);
+    decl_fns!(mc, dav1d_put_8tap_smooth);
+    decl_fns!(mc, dav1d_put_8tap_smooth_regular);
+    decl_fns!(mc, dav1d_put_8tap_smooth_sharp);
+    decl_fns!(mc, dav1d_put_8tap_sharp);
+    decl_fns!(mc, dav1d_put_8tap_sharp_regular);
+    decl_fns!(mc, dav1d_put_8tap_sharp_smooth);
+    decl_fns!(mc, dav1d_put_bilin);
+
+    decl_fns!(mct, dav1d_prep_8tap_regular);
+    decl_fns!(mct, dav1d_prep_8tap_regular_smooth);
+    decl_fns!(mct, dav1d_prep_8tap_regular_sharp);
+    decl_fns!(mct, dav1d_prep_8tap_smooth);
+    decl_fns!(mct, dav1d_prep_8tap_smooth_regular);
+    decl_fns!(mct, dav1d_prep_8tap_smooth_sharp);
+    decl_fns!(mct, dav1d_prep_8tap_sharp);
+    decl_fns!(mct, dav1d_prep_8tap_sharp_regular);
+    decl_fns!(mct, dav1d_prep_8tap_sharp_smooth);
+    decl_fns!(mct, dav1d_prep_bilin);
+
+    decl_fns!(mc_scaled, dav1d_put_8tap_scaled_regular);
+    decl_fns!(mc_scaled, dav1d_put_8tap_scaled_regular_smooth);
+    decl_fns!(mc_scaled, dav1d_put_8tap_scaled_regular_sharp);
+    decl_fns!(mc_scaled, dav1d_put_8tap_scaled_smooth);
+    decl_fns!(mc_scaled, dav1d_put_8tap_scaled_smooth_regular);
+    decl_fns!(mc_scaled, dav1d_put_8tap_scaled_smooth_sharp);
+    decl_fns!(mc_scaled, dav1d_put_8tap_scaled_sharp);
+    decl_fns!(mc_scaled, dav1d_put_8tap_scaled_sharp_regular);
+    decl_fns!(mc_scaled, dav1d_put_8tap_scaled_sharp_smooth);
+    decl_fns!(mc_scaled, dav1d_put_bilin_scaled);
+
+    decl_fns!(mct_scaled, dav1d_prep_8tap_scaled_regular);
+    decl_fns!(mct_scaled, dav1d_prep_8tap_scaled_regular_smooth);
+    decl_fns!(mct_scaled, dav1d_prep_8tap_scaled_regular_sharp);
+    decl_fns!(mct_scaled, dav1d_prep_8tap_scaled_smooth);
+    decl_fns!(mct_scaled, dav1d_prep_8tap_scaled_smooth_regular);
+    decl_fns!(mct_scaled, dav1d_prep_8tap_scaled_smooth_sharp);
+    decl_fns!(mct_scaled, dav1d_prep_8tap_scaled_sharp);
+    decl_fns!(mct_scaled, dav1d_prep_8tap_scaled_sharp_regular);
+    decl_fns!(mct_scaled, dav1d_prep_8tap_scaled_sharp_smooth);
+    decl_fns!(mct_scaled, dav1d_prep_bilin_scaled);
+
+    decl_fns!(avg, dav1d_avg);
+    decl_fns!(w_avg, dav1d_w_avg);
+    decl_fns!(mask, dav1d_mask);
+    decl_fns!(w_mask, dav1d_w_mask_420);
+    decl_fns!(w_mask, dav1d_w_mask_422);
+    decl_fns!(w_mask, dav1d_w_mask_444);
+    decl_fns!(blend, dav1d_blend);
+    decl_fns!(blend_dir, dav1d_blend_v);
+    decl_fns!(blend_dir, dav1d_blend_h);
+
+    decl_fns!(warp8x8, dav1d_warp_affine_8x8);
+    decl_fns!(warp8x8, dav1d_warp_affine_8x8, sse4);
+    decl_fns!(warp8x8t, dav1d_warp_affine_8x8t);
+    decl_fns!(warp8x8t, dav1d_warp_affine_8x8t, sse4);
+
+    decl_fns!(emu_edge, dav1d_emu_edge);
+    decl_fns!(resize, dav1d_resize);
+}
