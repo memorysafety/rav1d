@@ -1,4 +1,5 @@
-use std::ptr;
+use std::ptr::{self, addr_of_mut};
+use std::sync::atomic::{AtomicI32, Ordering};
 
 #[cfg(feature = "bitdepth_16")]
 use crate::include::common::bitdepth::BitDepth16;
@@ -19,19 +20,12 @@ use libc;
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: size_t) -> *mut libc::c_void;
-    fn memcmp(_: *const libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> libc::c_int;
-    fn printf(_: *const libc::c_char, _: ...) -> libc::c_int;
     #[cfg(feature = "bitdepth_8")]
     fn dav1d_cdef_dsp_init_8bpc(c: *mut Dav1dCdefDSPContext);
     #[cfg(feature = "bitdepth_16")]
     fn dav1d_cdef_dsp_init_16bpc(c: *mut Dav1dCdefDSPContext);
     fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
     fn free(_: *mut libc::c_void);
-    fn posix_memalign(
-        __memptr: *mut *mut libc::c_void,
-        __alignment: size_t,
-        __size: size_t,
-    ) -> libc::c_int;
     fn dav1d_cdf_thread_alloc(
         c: *mut Dav1dContext,
         cdf: *mut CdfThreadContext,
@@ -6387,51 +6381,47 @@ pub unsafe extern "C" fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retv
     }
     (*f).task_thread.retval = retval;
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_decode_frame(f: *mut Dav1dFrameContext) -> libc::c_int {
-    if !((*(*f).c).n_fc == 1 as libc::c_uint) {
-        unreachable!();
-    }
+
+pub unsafe fn dav1d_decode_frame(f: &mut Dav1dFrameContext) -> libc::c_int {
+    assert!((*f.c).n_fc == 1);
+    // if n_tc > 1 (but n_fc == 1), we could run init/exit in the task
+    // threads also. Not sure it makes a measurable difference.
     let mut res = dav1d_decode_frame_init(f);
     if res == 0 {
         res = dav1d_decode_frame_init_cdf(f);
     }
+    // wait until all threads have completed
     if res == 0 {
-        if (*(*f).c).n_tc > 1 as libc::c_uint {
-            res = dav1d_task_create_tile_sbrow(f, 0 as libc::c_int, 1 as libc::c_int);
-            pthread_mutex_lock(&mut (*(*f).task_thread.ttd).lock);
-            pthread_cond_signal(&mut (*(*f).task_thread.ttd).cond);
+        if (*f.c).n_tc > 1 {
+            res = dav1d_task_create_tile_sbrow(f, 0, 1);
+            pthread_mutex_lock(&mut (*f.task_thread.ttd).lock);
+            pthread_cond_signal(&mut (*f.task_thread.ttd).cond);
             if res == 0 {
-                while (*f).task_thread.done[0] == 0
-                    || ::core::intrinsics::atomic_load_seqcst(
-                        &mut (*f).task_thread.task_counter as *mut atomic_int,
-                    ) > 0
+                while f.task_thread.done[0] == 0
+                // TODO(kkysen) Make `.task_counter` an `AtomicI32`, but that requires recursively removing `impl Copy`s.
+                    || (*(addr_of_mut!(f.task_thread.task_counter) as *mut AtomicI32))
+                        .load(Ordering::SeqCst)
+                        > 0
                 {
-                    pthread_cond_wait(
-                        &mut (*f).task_thread.cond,
-                        &mut (*(*f).task_thread.ttd).lock,
-                    );
+                    pthread_cond_wait(&mut f.task_thread.cond, &mut (*f.task_thread.ttd).lock);
                 }
             }
-            pthread_mutex_unlock(&mut (*(*f).task_thread.ttd).lock);
-            res = (*f).task_thread.retval;
+            pthread_mutex_unlock(&mut (*f.task_thread.ttd).lock);
+            res = f.task_thread.retval;
         } else {
             res = dav1d_decode_frame_main(f);
-            if res == 0
-                && (*(*f).frame_hdr).refresh_context != 0
-                && (*f).task_thread.update_set != 0
-            {
+            if res == 0 && (*f.frame_hdr).refresh_context != 0 && f.task_thread.update_set != 0 {
                 dav1d_cdf_thread_update(
-                    (*f).frame_hdr,
-                    (*f).out_cdf.data.cdf,
-                    &mut (*((*f).ts).offset((*(*f).frame_hdr).tiling.update as isize)).cdf,
+                    f.frame_hdr,
+                    f.out_cdf.data.cdf,
+                    &mut (*f.ts.offset((*f.frame_hdr).tiling.update as isize)).cdf,
                 );
             }
         }
     }
     dav1d_decode_frame_exit(f, res);
-    (*f).n_tile_data = 0 as libc::c_int;
-    return res;
+    f.n_tile_data = 0;
+    res
 }
 
 fn get_upscale_x0(in_w: libc::c_int, out_w: libc::c_int, step: libc::c_int) -> libc::c_int {
@@ -7338,7 +7328,8 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                                                                     i_2 += 1;
                                                                 }
                                                                 if (*c).n_fc == 1 as libc::c_uint {
-                                                                    res = dav1d_decode_frame(f);
+                                                                    res =
+                                                                        dav1d_decode_frame(&mut *f);
                                                                     if res < 0 {
                                                                         dav1d_thread_picture_unref(
                                                                             &mut (*c).out,
