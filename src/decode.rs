@@ -6382,9 +6382,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retv
 }
 
 pub unsafe fn dav1d_decode_frame(f: &mut Dav1dFrameContext) -> libc::c_int {
-    if !((*f.c).n_fc == 1) {
-        unreachable!();
-    }
+    assert!((*f.c).n_fc == 1);
     let mut res = dav1d_decode_frame_init(f);
     if res == 0 {
         res = dav1d_decode_frame_init_cdf(f);
