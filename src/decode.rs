@@ -6382,7 +6382,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retv
 }
 
 pub unsafe fn dav1d_decode_frame(f: &mut Dav1dFrameContext) -> libc::c_int {
-    if !((*f.c).n_fc == 1 as libc::c_uint) {
+    if !((*f.c).n_fc == 1) {
         unreachable!();
     }
     let mut res = dav1d_decode_frame_init(f);
@@ -6390,8 +6390,8 @@ pub unsafe fn dav1d_decode_frame(f: &mut Dav1dFrameContext) -> libc::c_int {
         res = dav1d_decode_frame_init_cdf(f);
     }
     if res == 0 {
-        if (*f.c).n_tc > 1 as libc::c_uint {
-            res = dav1d_task_create_tile_sbrow(f, 0 as libc::c_int, 1 as libc::c_int);
+        if (*f.c).n_tc > 1 {
+            res = dav1d_task_create_tile_sbrow(f, 0, 1);
             pthread_mutex_lock(&mut (*f.task_thread.ttd).lock);
             pthread_cond_signal(&mut (*f.task_thread.ttd).cond);
             if res == 0 {
@@ -6411,13 +6411,13 @@ pub unsafe fn dav1d_decode_frame(f: &mut Dav1dFrameContext) -> libc::c_int {
                 dav1d_cdf_thread_update(
                     f.frame_hdr,
                     f.out_cdf.data.cdf,
-                    &mut (*(f.ts).offset((*f.frame_hdr).tiling.update as isize)).cdf,
+                    &mut (*f.ts.offset((*f.frame_hdr).tiling.update as isize)).cdf,
                 );
             }
         }
     }
     dav1d_decode_frame_exit(f, res);
-    f.n_tile_data = 0 as libc::c_int;
+    f.n_tile_data = 0;
     return res;
 }
 
