@@ -1,8 +1,13 @@
 use std::iter;
 
+use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::{AsPrimitive, BitDepth};
 use crate::include::common::intops::iclip;
-use crate::include::dav1d::headers::Dav1dFilterMode;
+use crate::include::dav1d::headers::{
+    Dav1dFilterMode, DAV1D_FILTER_8TAP_REGULAR, DAV1D_FILTER_8TAP_SHARP, DAV1D_FILTER_8TAP_SMOOTH,
+};
+use crate::include::stddef::ptrdiff_t;
+use crate::include::stdint::{int16_t, intptr_t, uint8_t};
 use crate::src::tables::dav1d_mc_subpel_filters;
 use crate::src::tables::dav1d_mc_warp_filter;
 use crate::src::tables::dav1d_obmc_masks;
@@ -1229,4 +1234,748 @@ pub unsafe fn resize_rust<BD: BitDepth>(
             break;
         }
     }
+}
+
+pub type mc_fn = Option<
+    unsafe extern "C" fn(
+        *mut DynPixel,
+        ptrdiff_t,
+        *const DynPixel,
+        ptrdiff_t,
+        libc::c_int,
+        libc::c_int,
+        libc::c_int,
+        libc::c_int,
+        libc::c_int,
+    ) -> (),
+>;
+pub type mc_scaled_fn = Option<
+    unsafe extern "C" fn(
+        *mut DynPixel,
+        ptrdiff_t,
+        *const DynPixel,
+        ptrdiff_t,
+        libc::c_int,
+        libc::c_int,
+        libc::c_int,
+        libc::c_int,
+        libc::c_int,
+        libc::c_int,
+        libc::c_int,
+    ) -> (),
+>;
+pub type warp8x8_fn = Option<
+    unsafe extern "C" fn(
+        *mut DynPixel,
+        ptrdiff_t,
+        *const DynPixel,
+        ptrdiff_t,
+        *const int16_t,
+        libc::c_int,
+        libc::c_int,
+        libc::c_int,
+    ) -> (),
+>;
+pub type mct_fn = Option<
+    unsafe extern "C" fn(
+        *mut int16_t,
+        *const DynPixel,
+        ptrdiff_t,
+        libc::c_int,
+        libc::c_int,
+        libc::c_int,
+        libc::c_int,
+        libc::c_int,
+    ) -> (),
+>;
+pub type mct_scaled_fn = Option<
+    unsafe extern "C" fn(
+        *mut int16_t,
+        *const DynPixel,
+        ptrdiff_t,
+        libc::c_int,
+        libc::c_int,
+        libc::c_int,
+        libc::c_int,
+        libc::c_int,
+        libc::c_int,
+        libc::c_int,
+    ) -> (),
+>;
+pub type warp8x8t_fn = Option<
+    unsafe extern "C" fn(
+        *mut int16_t,
+        ptrdiff_t,
+        *const DynPixel,
+        ptrdiff_t,
+        *const int16_t,
+        libc::c_int,
+        libc::c_int,
+        libc::c_int,
+    ) -> (),
+>;
+pub type avg_fn = Option<
+    unsafe extern "C" fn(
+        *mut DynPixel,
+        ptrdiff_t,
+        *const int16_t,
+        *const int16_t,
+        libc::c_int,
+        libc::c_int,
+        libc::c_int,
+    ) -> (),
+>;
+pub type w_avg_fn = Option<
+    unsafe extern "C" fn(
+        *mut DynPixel,
+        ptrdiff_t,
+        *const int16_t,
+        *const int16_t,
+        libc::c_int,
+        libc::c_int,
+        libc::c_int,
+        libc::c_int,
+    ) -> (),
+>;
+pub type mask_fn = Option<
+    unsafe extern "C" fn(
+        *mut DynPixel,
+        ptrdiff_t,
+        *const int16_t,
+        *const int16_t,
+        libc::c_int,
+        libc::c_int,
+        *const uint8_t,
+        libc::c_int,
+    ) -> (),
+>;
+pub type w_mask_fn = Option<
+    unsafe extern "C" fn(
+        *mut DynPixel,
+        ptrdiff_t,
+        *const int16_t,
+        *const int16_t,
+        libc::c_int,
+        libc::c_int,
+        *mut uint8_t,
+        libc::c_int,
+        libc::c_int,
+    ) -> (),
+>;
+pub type blend_fn = Option<
+    unsafe extern "C" fn(
+        *mut DynPixel,
+        ptrdiff_t,
+        *const DynPixel,
+        libc::c_int,
+        libc::c_int,
+        *const uint8_t,
+    ) -> (),
+>;
+pub type blend_dir_fn = Option<
+    unsafe extern "C" fn(*mut DynPixel, ptrdiff_t, *const DynPixel, libc::c_int, libc::c_int) -> (),
+>;
+pub type emu_edge_fn = Option<
+    unsafe extern "C" fn(
+        intptr_t,
+        intptr_t,
+        intptr_t,
+        intptr_t,
+        intptr_t,
+        intptr_t,
+        *mut DynPixel,
+        ptrdiff_t,
+        *const DynPixel,
+        ptrdiff_t,
+    ) -> (),
+>;
+pub type resize_fn = Option<
+    unsafe extern "C" fn(
+        *mut DynPixel,
+        ptrdiff_t,
+        *const DynPixel,
+        ptrdiff_t,
+        libc::c_int,
+        libc::c_int,
+        libc::c_int,
+        libc::c_int,
+        libc::c_int,
+        libc::c_int,
+    ) -> (),
+>;
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Dav1dMCDSPContext {
+    pub mc: [mc_fn; 10],
+    pub mc_scaled: [mc_scaled_fn; 10],
+    pub mct: [mct_fn; 10],
+    pub mct_scaled: [mct_scaled_fn; 10],
+    pub avg: avg_fn,
+    pub w_avg: w_avg_fn,
+    pub mask: mask_fn,
+    pub w_mask: [w_mask_fn; 3],
+    pub blend: blend_fn,
+    pub blend_v: blend_dir_fn,
+    pub blend_h: blend_dir_fn,
+    pub warp8x8: warp8x8_fn,
+    pub warp8x8t: warp8x8t_fn,
+    pub emu_edge: emu_edge_fn,
+    pub resize: resize_fn,
+}
+
+macro_rules! filter_fns {
+    ($ty:ident, $type_h:expr, $type_v:expr) => {
+        paste::paste! {
+            // TODO(legare): Temporarily pub until init fns are deduplicated.
+            pub(crate) unsafe extern "C" fn [<put_8tap_ $ty _c>]<BD: BitDepth>(
+                dst: *mut DynPixel,
+                dst_stride: ptrdiff_t,
+                src: *const DynPixel,
+                src_stride: ptrdiff_t,
+                w: libc::c_int,
+                h: libc::c_int,
+                mx: libc::c_int,
+                my: libc::c_int,
+                bitdepth_max: libc::c_int,
+            ) {
+                put_8tap_rust(
+                    dst.cast(),
+                    dst_stride as usize,
+                    src.cast(),
+                    src_stride as usize,
+                    w as usize,
+                    h as usize,
+                    mx as usize,
+                    my as usize,
+                    $type_h | ($type_v << 2),
+                    BD::from_c(bitdepth_max),
+                );
+            }
+
+            // TODO(legare): Temporarily pub until init fns are deduplicated.
+            pub(crate) unsafe extern "C" fn [<put_8tap_ $ty _scaled_c>]<BD: BitDepth>(
+                dst: *mut DynPixel,
+                dst_stride: ptrdiff_t,
+                src: *const DynPixel,
+                src_stride: ptrdiff_t,
+                w: libc::c_int,
+                h: libc::c_int,
+                mx: libc::c_int,
+                my: libc::c_int,
+                dx: libc::c_int,
+                dy: libc::c_int,
+                bitdepth_max: libc::c_int,
+            ) {
+                put_8tap_scaled_rust(
+                    dst.cast(),
+                    dst_stride as usize,
+                    src.cast(),
+                    src_stride as usize,
+                    w as usize,
+                    h as usize,
+                    mx as usize,
+                    my as usize,
+                    dx as usize,
+                    dy as usize,
+                    $type_h | ($type_v << 2),
+                    BD::from_c(bitdepth_max),
+                );
+            }
+
+            // TODO(legare): Temporarily pub until init fns are deduplicated.
+            pub(crate) unsafe extern "C" fn [<prep_8tap_ $ty _c>]<BD: BitDepth>(
+                tmp: *mut int16_t,
+                src: *const DynPixel,
+                src_stride: ptrdiff_t,
+                w: libc::c_int,
+                h: libc::c_int,
+                mx: libc::c_int,
+                my: libc::c_int,
+                bitdepth_max: libc::c_int,
+            ) {
+                prep_8tap_rust(
+                    tmp,
+                    src.cast(),
+                    src_stride as usize,
+                    w as usize,
+                    h as usize,
+                    mx as usize,
+                    my as usize,
+                    $type_h | ($type_v << 2),
+                    BD::from_c(bitdepth_max),
+                );
+            }
+
+            // TODO(legare): Temporarily pub until init fns are deduplicated.
+            pub(crate) unsafe extern "C" fn [<prep_8tap_ $ty _scaled_c>]<BD: BitDepth>(
+                tmp: *mut int16_t,
+                src: *const DynPixel,
+                src_stride: ptrdiff_t,
+                w: libc::c_int,
+                h: libc::c_int,
+                mx: libc::c_int,
+                my: libc::c_int,
+                dx: libc::c_int,
+                dy: libc::c_int,
+                bitdepth_max: libc::c_int,
+            ) {
+                prep_8tap_scaled_rust(
+                    tmp,
+                    src.cast(),
+                    src_stride as usize,
+                    w as usize,
+                    h as usize,
+                    mx as usize,
+                    my as usize,
+                    dx as usize,
+                    dy as usize,
+                    $type_h | ($type_v << 2),
+                    BD::from_c(bitdepth_max),
+                );
+            }
+        }
+    };
+}
+
+filter_fns!(
+    regular,
+    DAV1D_FILTER_8TAP_REGULAR,
+    DAV1D_FILTER_8TAP_REGULAR
+);
+filter_fns!(
+    regular_sharp,
+    DAV1D_FILTER_8TAP_REGULAR,
+    DAV1D_FILTER_8TAP_SHARP
+);
+filter_fns!(
+    regular_smooth,
+    DAV1D_FILTER_8TAP_REGULAR,
+    DAV1D_FILTER_8TAP_SMOOTH
+);
+filter_fns!(smooth, DAV1D_FILTER_8TAP_SMOOTH, DAV1D_FILTER_8TAP_SMOOTH);
+filter_fns!(
+    smooth_regular,
+    DAV1D_FILTER_8TAP_SMOOTH,
+    DAV1D_FILTER_8TAP_REGULAR
+);
+filter_fns!(
+    smooth_sharp,
+    DAV1D_FILTER_8TAP_SMOOTH,
+    DAV1D_FILTER_8TAP_SHARP
+);
+filter_fns!(sharp, DAV1D_FILTER_8TAP_SHARP, DAV1D_FILTER_8TAP_SHARP);
+filter_fns!(
+    sharp_regular,
+    DAV1D_FILTER_8TAP_SHARP,
+    DAV1D_FILTER_8TAP_REGULAR
+);
+filter_fns!(
+    sharp_smooth,
+    DAV1D_FILTER_8TAP_SHARP,
+    DAV1D_FILTER_8TAP_SMOOTH
+);
+
+// TODO(legare): Temporarily pub until init fns are deduplicated.
+pub(crate) unsafe extern "C" fn put_bilin_c<BD: BitDepth>(
+    mut dst: *mut DynPixel,
+    mut dst_stride: ptrdiff_t,
+    mut src: *const DynPixel,
+    mut src_stride: ptrdiff_t,
+    w: libc::c_int,
+    mut h: libc::c_int,
+    mx: libc::c_int,
+    my: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    put_bilin_rust(
+        dst.cast(),
+        dst_stride as usize,
+        src.cast(),
+        src_stride as usize,
+        w as usize,
+        h as usize,
+        mx as usize,
+        my as usize,
+        BD::from_c(bitdepth_max),
+    )
+}
+
+// TODO(legare): Temporarily pub until init fns are deduplicated.
+pub(crate) unsafe extern "C" fn prep_bilin_c<BD: BitDepth>(
+    mut tmp: *mut int16_t,
+    mut src: *const DynPixel,
+    mut src_stride: ptrdiff_t,
+    w: libc::c_int,
+    mut h: libc::c_int,
+    mx: libc::c_int,
+    my: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    prep_bilin_rust(
+        tmp,
+        src.cast(),
+        src_stride as usize,
+        w as usize,
+        h as usize,
+        mx as usize,
+        my as usize,
+        BD::from_c(bitdepth_max),
+    )
+}
+
+// TODO(legare): Temporarily pub until init fns are deduplicated.
+pub(crate) unsafe extern "C" fn put_bilin_scaled_c<BD: BitDepth>(
+    mut dst: *mut DynPixel,
+    mut dst_stride: ptrdiff_t,
+    mut src: *const DynPixel,
+    mut src_stride: ptrdiff_t,
+    w: libc::c_int,
+    mut h: libc::c_int,
+    mx: libc::c_int,
+    mut my: libc::c_int,
+    dx: libc::c_int,
+    dy: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    put_bilin_scaled_rust(
+        dst.cast(),
+        dst_stride as usize,
+        src.cast(),
+        src_stride as usize,
+        w as usize,
+        h as usize,
+        mx as usize,
+        my as usize,
+        dx as usize,
+        dy as usize,
+        BD::from_c(bitdepth_max),
+    )
+}
+
+// TODO(legare): Temporarily pub until init fns are deduplicated.
+pub(crate) unsafe extern "C" fn prep_bilin_scaled_c<BD: BitDepth>(
+    mut tmp: *mut int16_t,
+    mut src: *const DynPixel,
+    mut src_stride: ptrdiff_t,
+    w: libc::c_int,
+    mut h: libc::c_int,
+    mx: libc::c_int,
+    mut my: libc::c_int,
+    dx: libc::c_int,
+    dy: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    prep_bilin_scaled_rust(
+        tmp,
+        src.cast(),
+        src_stride as usize,
+        w as usize,
+        h as usize,
+        mx as usize,
+        my as usize,
+        dx as usize,
+        dy as usize,
+        BD::from_c(bitdepth_max),
+    )
+}
+
+// TODO(legare): Temporarily pub until init fns are deduplicated.
+pub(crate) unsafe extern "C" fn avg_c<BD: BitDepth>(
+    mut dst: *mut DynPixel,
+    dst_stride: ptrdiff_t,
+    mut tmp1: *const int16_t,
+    mut tmp2: *const int16_t,
+    w: libc::c_int,
+    mut h: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    avg_rust(
+        dst.cast(),
+        dst_stride as usize,
+        tmp1,
+        tmp2,
+        w as usize,
+        h as usize,
+        BD::from_c(bitdepth_max),
+    )
+}
+
+// TODO(legare): Temporarily pub until init fns are deduplicated.
+pub(crate) unsafe extern "C" fn w_avg_c<BD: BitDepth>(
+    dst: *mut DynPixel,
+    dst_stride: ptrdiff_t,
+    tmp1: *const int16_t,
+    tmp2: *const int16_t,
+    w: libc::c_int,
+    h: libc::c_int,
+    weight: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    w_avg_rust(
+        dst.cast(),
+        dst_stride as usize,
+        tmp1,
+        tmp2,
+        w as usize,
+        h as usize,
+        weight,
+        BD::from_c(bitdepth_max),
+    )
+}
+
+// TODO(legare): Temporarily pub until init fns are deduplicated.
+pub(crate) unsafe extern "C" fn mask_c<BD: BitDepth>(
+    dst: *mut DynPixel,
+    dst_stride: ptrdiff_t,
+    tmp1: *const int16_t,
+    tmp2: *const int16_t,
+    w: libc::c_int,
+    h: libc::c_int,
+    mask: *const uint8_t,
+    bitdepth_max: libc::c_int,
+) {
+    mask_rust(
+        dst.cast(),
+        dst_stride as usize,
+        tmp1,
+        tmp2,
+        w as usize,
+        h as usize,
+        mask,
+        BD::from_c(bitdepth_max),
+    )
+}
+
+// TODO(legare): Temporarily pub until init fns are deduplicated.
+pub(crate) unsafe extern "C" fn w_mask_444_c<BD: BitDepth>(
+    dst: *mut DynPixel,
+    dst_stride: ptrdiff_t,
+    tmp1: *const int16_t,
+    tmp2: *const int16_t,
+    w: libc::c_int,
+    h: libc::c_int,
+    mut mask: *mut uint8_t,
+    sign: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    w_mask_rust(
+        dst.cast(),
+        dst_stride as usize,
+        tmp1,
+        tmp2,
+        w as usize,
+        h as usize,
+        mask,
+        sign != 0,
+        false,
+        false,
+        BD::from_c(bitdepth_max),
+    )
+}
+
+// TODO(legare): Temporarily pub until init fns are deduplicated.
+pub(crate) unsafe extern "C" fn w_mask_422_c<BD: BitDepth>(
+    dst: *mut DynPixel,
+    dst_stride: ptrdiff_t,
+    tmp1: *const int16_t,
+    tmp2: *const int16_t,
+    w: libc::c_int,
+    h: libc::c_int,
+    mut mask: *mut uint8_t,
+    sign: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    w_mask_rust(
+        dst.cast(),
+        dst_stride as usize,
+        tmp1,
+        tmp2,
+        w as usize,
+        h as usize,
+        mask,
+        sign != 0,
+        true,
+        false,
+        BD::from_c(bitdepth_max),
+    )
+}
+
+// TODO(legare): Temporarily pub until init fns are deduplicated.
+pub(crate) unsafe extern "C" fn w_mask_420_c<BD: BitDepth>(
+    dst: *mut DynPixel,
+    dst_stride: ptrdiff_t,
+    tmp1: *const int16_t,
+    tmp2: *const int16_t,
+    w: libc::c_int,
+    h: libc::c_int,
+    mut mask: *mut uint8_t,
+    sign: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    w_mask_rust(
+        dst.cast(),
+        dst_stride as usize,
+        tmp1,
+        tmp2,
+        w as usize,
+        h as usize,
+        mask,
+        sign != 0,
+        true,
+        true,
+        BD::from_c(bitdepth_max),
+    );
+}
+
+// TODO(legare): Temporarily pub until init fns are deduplicated.
+pub(crate) unsafe extern "C" fn blend_c<BD: BitDepth>(
+    dst: *mut DynPixel,
+    dst_stride: ptrdiff_t,
+    tmp: *const DynPixel,
+    w: libc::c_int,
+    h: libc::c_int,
+    mask: *const uint8_t,
+) {
+    blend_rust::<BD>(
+        dst.cast(),
+        dst_stride as usize,
+        tmp.cast(),
+        w as usize,
+        h as usize,
+        mask,
+    )
+}
+
+// TODO(legare): Temporarily pub until init fns are deduplicated.
+pub(crate) unsafe extern "C" fn blend_v_c<BD: BitDepth>(
+    dst: *mut DynPixel,
+    dst_stride: ptrdiff_t,
+    tmp: *const DynPixel,
+    w: libc::c_int,
+    h: libc::c_int,
+) {
+    blend_v_rust::<BD>(
+        dst.cast(),
+        dst_stride as usize,
+        tmp.cast(),
+        w as usize,
+        h as usize,
+    )
+}
+
+// TODO(legare): Temporarily pub until init fns are deduplicated.
+pub(crate) unsafe extern "C" fn blend_h_c<BD: BitDepth>(
+    dst: *mut DynPixel,
+    dst_stride: ptrdiff_t,
+    tmp: *const DynPixel,
+    w: libc::c_int,
+    h: libc::c_int,
+) {
+    blend_h_rust::<BD>(
+        dst.cast(),
+        dst_stride as usize,
+        tmp.cast(),
+        w as usize,
+        h as usize,
+    )
+}
+
+// TODO(legare): Temporarily pub until init fns are deduplicated.
+pub(crate) unsafe extern "C" fn warp_affine_8x8_c<BD: BitDepth>(
+    dst: *mut DynPixel,
+    dst_stride: ptrdiff_t,
+    src: *const DynPixel,
+    src_stride: ptrdiff_t,
+    abcd: *const int16_t,
+    mx: libc::c_int,
+    my: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    warp_affine_8x8_rust(
+        dst.cast(),
+        dst_stride,
+        src.cast(),
+        src_stride,
+        abcd,
+        mx,
+        my,
+        BD::from_c(bitdepth_max),
+    )
+}
+
+// TODO(legare): Temporarily pub until init fns are deduplicated.
+pub(crate) unsafe extern "C" fn warp_affine_8x8t_c<BD: BitDepth>(
+    tmp: *mut int16_t,
+    tmp_stride: ptrdiff_t,
+    src: *const DynPixel,
+    src_stride: ptrdiff_t,
+    abcd: *const int16_t,
+    mx: libc::c_int,
+    my: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    warp_affine_8x8t_rust(
+        tmp,
+        tmp_stride,
+        src.cast(),
+        src_stride,
+        abcd,
+        mx,
+        my,
+        BD::from_c(bitdepth_max),
+    )
+}
+
+// TODO(legare): Temporarily pub until init fns are deduplicated.
+pub(crate) unsafe extern "C" fn emu_edge_c<BD: BitDepth>(
+    bw: intptr_t,
+    bh: intptr_t,
+    iw: intptr_t,
+    ih: intptr_t,
+    x: intptr_t,
+    y: intptr_t,
+    dst: *mut DynPixel,
+    dst_stride: ptrdiff_t,
+    r#ref: *const DynPixel,
+    ref_stride: ptrdiff_t,
+) {
+    emu_edge_rust::<BD>(
+        bw,
+        bh,
+        iw,
+        ih,
+        x,
+        y,
+        dst.cast(),
+        dst_stride,
+        r#ref.cast(),
+        ref_stride,
+    )
+}
+
+// TODO(legare): Temporarily pub until init fns are deduplicated.
+pub(crate) unsafe extern "C" fn resize_c<BD: BitDepth>(
+    dst: *mut DynPixel,
+    dst_stride: ptrdiff_t,
+    src: *const DynPixel,
+    src_stride: ptrdiff_t,
+    dst_w: libc::c_int,
+    h: libc::c_int,
+    src_w: libc::c_int,
+    dx: libc::c_int,
+    mx0: libc::c_int,
+    bitdepth_max: libc::c_int,
+) {
+    resize_rust(
+        dst.cast(),
+        dst_stride,
+        src.cast(),
+        src_stride,
+        dst_w,
+        h,
+        src_w,
+        dx,
+        mx0,
+        BD::from_c(bitdepth_max),
+    )
 }
