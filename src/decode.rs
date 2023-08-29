@@ -6416,7 +6416,7 @@ pub unsafe fn dav1d_decode_frame(f: &mut Dav1dFrameContext) -> libc::c_int {
     }
     dav1d_decode_frame_exit(f, res);
     f.n_tile_data = 0;
-    return res;
+    res
 }
 
 fn get_upscale_x0(in_w: libc::c_int, out_w: libc::c_int, step: libc::c_int) -> libc::c_int {
