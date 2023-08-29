@@ -36,7 +36,6 @@ extern "C" {
         w: libc::c_int,
         src: *const Dav1dPicture,
     ) -> libc::c_int;
-    fn pthread_attr_init(__attr: *mut pthread_attr_t) -> libc::c_int;
     fn __sysconf(__name: libc::c_int) -> libc::c_long;
     fn pthread_create(
         __newthread: *mut pthread_t,
@@ -45,28 +44,10 @@ extern "C" {
         __arg: *mut libc::c_void,
     ) -> libc::c_int;
     fn dav1d_refmvs_dsp_init(dsp: *mut Dav1dRefmvsDSPContext);
-    fn pthread_join(__th: pthread_t, __thread_return: *mut *mut libc::c_void) -> libc::c_int;
-    fn pthread_attr_destroy(__attr: *mut pthread_attr_t) -> libc::c_int;
     fn pthread_once(
         __once_control: *mut pthread_once_t,
         __init_routine: Option<unsafe extern "C" fn() -> ()>,
     ) -> libc::c_int;
-    fn pthread_attr_setstacksize(__attr: *mut pthread_attr_t, __stacksize: size_t) -> libc::c_int;
-    fn pthread_mutex_init(
-        __mutex: *mut pthread_mutex_t,
-        __mutexattr: *const pthread_mutexattr_t,
-    ) -> libc::c_int;
-    fn pthread_mutex_lock(__mutex: *mut pthread_mutex_t) -> libc::c_int;
-    fn pthread_mutex_unlock(__mutex: *mut pthread_mutex_t) -> libc::c_int;
-    fn pthread_mutex_destroy(__mutex: *mut pthread_mutex_t) -> libc::c_int;
-    fn pthread_cond_init(
-        __cond: *mut pthread_cond_t,
-        __cond_attr: *const pthread_condattr_t,
-    ) -> libc::c_int;
-    fn pthread_cond_wait(__cond: *mut pthread_cond_t, __mutex: *mut pthread_mutex_t)
-        -> libc::c_int;
-    fn pthread_cond_broadcast(__cond: *mut pthread_cond_t) -> libc::c_int;
-    fn pthread_cond_destroy(__cond: *mut pthread_cond_t) -> libc::c_int;
     fn dav1d_log(c: *mut Dav1dContext, format: *const libc::c_char, _: ...);
     fn dav1d_parse_obus(
         c: *mut Dav1dContext,
@@ -171,7 +152,18 @@ pub struct Dav1dContext {
 }
 use crate::src::mem::Dav1dMemPool;
 
-use libc::pthread_mutex_t;
+use libc::pthread_attr_destroy;
+use libc::pthread_attr_init;
+use libc::pthread_attr_setstacksize;
+use libc::pthread_cond_broadcast;
+use libc::pthread_cond_destroy;
+use libc::pthread_cond_init;
+use libc::pthread_cond_wait;
+use libc::pthread_join;
+use libc::pthread_mutex_destroy;
+use libc::pthread_mutex_init;
+use libc::pthread_mutex_lock;
+use libc::pthread_mutex_unlock;
 
 use crate::include::dav1d::dav1d::Dav1dDecodeFrameType;
 use crate::include::dav1d::dav1d::Dav1dEventFlags;
@@ -513,7 +505,6 @@ use crate::src::picture::dav1d_thread_picture_move_ref;
 use crate::src::picture::dav1d_thread_picture_ref;
 use crate::src::picture::dav1d_thread_picture_unref;
 use crate::src::picture::Dav1dThreadPicture;
-use libc::pthread_cond_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTaskContext {
