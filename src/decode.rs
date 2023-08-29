@@ -6380,8 +6380,8 @@ pub unsafe extern "C" fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retv
     }
     (*f).task_thread.retval = retval;
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_decode_frame(f: *mut Dav1dFrameContext) -> libc::c_int {
+
+pub unsafe fn dav1d_decode_frame(f: *mut Dav1dFrameContext) -> libc::c_int {
     if !((*(*f).c).n_fc == 1 as libc::c_uint) {
         unreachable!();
     }
