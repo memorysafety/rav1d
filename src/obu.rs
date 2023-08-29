@@ -11,15 +11,6 @@ extern "C" {
     fn pthread_mutex_unlock(__mutex: *mut pthread_mutex_t) -> libc::c_int;
     fn pthread_cond_wait(__cond: *mut pthread_cond_t, __mutex: *mut pthread_mutex_t)
         -> libc::c_int;
-    fn dav1d_init_get_bits(c: *mut GetBits, data: *const uint8_t, sz: size_t);
-    fn dav1d_get_bit(c: *mut GetBits) -> libc::c_uint;
-    fn dav1d_get_bits(c: *mut GetBits, n: libc::c_int) -> libc::c_uint;
-    fn dav1d_get_sbits(c: *mut GetBits, n: libc::c_int) -> libc::c_int;
-    fn dav1d_get_uleb128(c: *mut GetBits) -> libc::c_uint;
-    fn dav1d_get_uniform(c: *mut GetBits, max: libc::c_uint) -> libc::c_uint;
-    fn dav1d_get_vlc(c: *mut GetBits) -> libc::c_uint;
-    fn dav1d_get_bits_subexp(c: *mut GetBits, r#ref: libc::c_int, n: libc::c_uint) -> libc::c_int;
-    fn dav1d_bytealign_get_bits(c: *mut GetBits);
     fn dav1d_log(c: *mut Dav1dContext, format: *const libc::c_char, _: ...);
 }
 
@@ -636,20 +627,20 @@ use crate::include::dav1d::headers::DAV1D_OBU_SEQ_HDR;
 use crate::include::dav1d::headers::DAV1D_OBU_TD;
 use crate::src::levels::ObuMetaType;
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct GetBits {
-    pub state: uint64_t,
-    pub bits_left: libc::c_int,
-    pub error: libc::c_int,
-    pub ptr: *const uint8_t,
-    pub ptr_start: *const uint8_t,
-    pub ptr_end: *const uint8_t,
-}
 use crate::include::common::intops::iclip_u8;
 use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
 use crate::include::common::intops::ulog2;
+use crate::src::getbits::dav1d_bytealign_get_bits;
+use crate::src::getbits::dav1d_get_bit;
+use crate::src::getbits::dav1d_get_bits;
+use crate::src::getbits::dav1d_get_bits_subexp;
+use crate::src::getbits::dav1d_get_sbits;
+use crate::src::getbits::dav1d_get_uleb128;
+use crate::src::getbits::dav1d_get_uniform;
+use crate::src::getbits::dav1d_get_vlc;
+use crate::src::getbits::dav1d_init_get_bits;
+use crate::src::getbits::GetBits;
 
 use crate::src::env::get_poc_diff;
 use crate::src::r#ref::dav1d_ref_inc;
