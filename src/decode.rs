@@ -1,4 +1,5 @@
-use std::ptr;
+use std::ptr::{self, addr_of_mut};
+use std::sync::atomic::{AtomicI32, Ordering};
 
 #[cfg(feature = "bitdepth_16")]
 use crate::include::common::bitdepth::BitDepth16;
@@ -6397,9 +6398,10 @@ pub unsafe fn dav1d_decode_frame(f: &mut Dav1dFrameContext) -> libc::c_int {
             pthread_cond_signal(&mut (*f.task_thread.ttd).cond);
             if res == 0 {
                 while f.task_thread.done[0] == 0
-                    || ::core::intrinsics::atomic_load_seqcst(
-                        &mut f.task_thread.task_counter as *mut atomic_int,
-                    ) > 0
+                // TODO(kkysen) Make `.task_counter` an `AtomicI32`, but that requires recursively removing `impl Copy`s.
+                    || (*(addr_of_mut!(f.task_thread.task_counter) as *mut AtomicI32))
+                        .load(Ordering::SeqCst)
+                        > 0
                 {
                     pthread_cond_wait(&mut f.task_thread.cond, &mut (*f.task_thread.ttd).lock);
                 }
