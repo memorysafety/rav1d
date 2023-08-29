@@ -278,3 +278,28 @@ pub struct DynCoef(c_void);
 
 pub type LeftPixelRow<Pixel> = [Pixel; 4];
 pub type LeftPixelRow2px<Pixel> = [Pixel; 2];
+
+// TODO(kkysen) temporary `#[cfg]` until more code uses this
+#[cfg(all(
+    feature = "asm",
+    any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
+))]
+macro_rules! bd_fn {
+    ($decl_fn:ident, $BD:ty, $name:ident, $asm:ident) => {{
+        use paste::paste;
+
+        paste! {
+            match BD::BPC {
+                BPC::BPC8 => $decl_fn!(fn [<dav1d_ $name _8bpc_ $asm>]),
+                BPC::BPC16 => $decl_fn!(fn [<dav1d_ $name _16bpc_ $asm>]),
+            }
+        }
+    }};
+}
+
+// TODO(kkysen) temporary `#[cfg]` until more code uses this
+#[cfg(all(
+    feature = "asm",
+    any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
+))]
+pub(crate) use bd_fn;
