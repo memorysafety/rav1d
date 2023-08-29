@@ -1,6 +1,5 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
-use crate::src::cdf::CdfContext;
 use ::libc;
 use cfg_if::cfg_if;
 extern "C" {
@@ -19,11 +18,6 @@ extern "C" {
             fn pthread_setname_np(name: *const libc::c_char);
         }
     }
-    fn dav1d_cdf_thread_update(
-        hdr: *const Dav1dFrameHeader,
-        dst: *mut CdfContext,
-        src: *const CdfContext,
-    );
     fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> libc::c_int;
     fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) -> libc::c_int;
     fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> libc::c_int;
@@ -604,6 +598,7 @@ pub type generate_grain_uv_fn = Option<
 >;
 pub type generate_grain_y_fn =
     Option<unsafe extern "C" fn(*mut [entry; 82], *const Dav1dFilmGrainData) -> ()>;
+use crate::src::cdf::dav1d_cdf_thread_update;
 use crate::src::cdf::CdfThreadContext;
 
 use crate::src::internal::Dav1dContext_frame_thread;
@@ -1506,7 +1501,7 @@ unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThrea
         pthread_cond_signal(&mut (*ttd).delayed_fg.cond);
     }
 }
-#[no_mangle]
+
 pub unsafe extern "C" fn dav1d_worker_task(mut data: *mut libc::c_void) -> *mut libc::c_void {
     let mut flush = 0;
     let mut error_0 = 0;

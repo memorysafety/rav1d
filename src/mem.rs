@@ -79,11 +79,8 @@ unsafe extern "C" fn mem_pool_destroy(pool: *mut Dav1dMemPool) {
     pthread_mutex_destroy(&mut (*pool).lock);
     free(pool as *mut libc::c_void);
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_mem_pool_push(
-    pool: *mut Dav1dMemPool,
-    buf: *mut Dav1dMemPoolBuffer,
-) {
+
+pub unsafe fn dav1d_mem_pool_push(pool: *mut Dav1dMemPool, buf: *mut Dav1dMemPoolBuffer) {
     pthread_mutex_lock(&mut (*pool).lock);
     (*pool).ref_cnt -= 1;
     let ref_cnt = (*pool).ref_cnt;
@@ -102,11 +99,8 @@ pub unsafe extern "C" fn dav1d_mem_pool_push(
         }
     };
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_mem_pool_pop(
-    pool: *mut Dav1dMemPool,
-    size: size_t,
-) -> *mut Dav1dMemPoolBuffer {
+
+pub unsafe fn dav1d_mem_pool_pop(pool: *mut Dav1dMemPool, size: size_t) -> *mut Dav1dMemPoolBuffer {
     if size & ::core::mem::size_of::<*mut libc::c_void>().wrapping_sub(1) != 0 {
         unreachable!();
     }
@@ -152,9 +146,9 @@ pub unsafe extern "C" fn dav1d_mem_pool_pop(
     }
     return buf;
 }
-#[no_mangle]
+
 #[cold]
-pub unsafe extern "C" fn dav1d_mem_pool_init(ppool: *mut *mut Dav1dMemPool) -> libc::c_int {
+pub unsafe fn dav1d_mem_pool_init(ppool: *mut *mut Dav1dMemPool) -> libc::c_int {
     let pool: *mut Dav1dMemPool =
         malloc(::core::mem::size_of::<Dav1dMemPool>() as libc::c_ulong) as *mut Dav1dMemPool;
     if !pool.is_null() {
@@ -170,9 +164,9 @@ pub unsafe extern "C" fn dav1d_mem_pool_init(ppool: *mut *mut Dav1dMemPool) -> l
     *ppool = 0 as *mut Dav1dMemPool;
     return -(12 as libc::c_int);
 }
-#[no_mangle]
+
 #[cold]
-pub unsafe extern "C" fn dav1d_mem_pool_end(pool: *mut Dav1dMemPool) {
+pub unsafe fn dav1d_mem_pool_end(pool: *mut Dav1dMemPool) {
     if !pool.is_null() {
         pthread_mutex_lock(&mut (*pool).lock);
         let mut buf: *mut Dav1dMemPoolBuffer = (*pool).buf;

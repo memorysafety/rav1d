@@ -5,25 +5,18 @@ use ::libc;
 extern "C" {
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
-    fn dav1d_ref_dec(r#ref: *mut *mut Dav1dRef);
-    fn dav1d_ref_wrap(
-        ptr: *const uint8_t,
-        free_callback: Option<unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> ()>,
-        user_data: *mut libc::c_void,
-    ) -> *mut Dav1dRef;
-    fn dav1d_ref_create(size: size_t) -> *mut Dav1dRef;
 }
 
 use crate::src::r#ref::Dav1dRef;
 
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
+use crate::src::r#ref::dav1d_ref_create;
+use crate::src::r#ref::dav1d_ref_dec;
 use crate::src::r#ref::dav1d_ref_inc;
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_data_create_internal(
-    buf: *mut Dav1dData,
-    sz: size_t,
-) -> *mut uint8_t {
+use crate::src::r#ref::dav1d_ref_wrap;
+
+pub unsafe fn dav1d_data_create_internal(buf: *mut Dav1dData, sz: size_t) -> *mut uint8_t {
     if buf.is_null() {
         fprintf(
             stderr,
@@ -49,8 +42,8 @@ pub unsafe extern "C" fn dav1d_data_create_internal(
     (*buf).m.size = sz;
     return (*(*buf).r#ref).data as *mut uint8_t;
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_data_wrap_internal(
+
+pub unsafe fn dav1d_data_wrap_internal(
     buf: *mut Dav1dData,
     ptr: *const uint8_t,
     sz: size_t,
@@ -103,8 +96,8 @@ pub unsafe extern "C" fn dav1d_data_wrap_internal(
     (*buf).m.size = sz;
     return 0 as libc::c_int;
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_data_wrap_user_data_internal(
+
+pub unsafe fn dav1d_data_wrap_user_data_internal(
     buf: *mut Dav1dData,
     user_data: *const uint8_t,
     free_callback: Option<unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> ()>,
@@ -141,8 +134,8 @@ pub unsafe extern "C" fn dav1d_data_wrap_user_data_internal(
     (*buf).m.user_data.data = user_data;
     return 0 as libc::c_int;
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_data_ref(dst: *mut Dav1dData, src: *const Dav1dData) {
+
+pub unsafe fn dav1d_data_ref(dst: *mut Dav1dData, src: *const Dav1dData) {
     if dst.is_null() {
         fprintf(
             stderr,
@@ -192,11 +185,8 @@ pub unsafe extern "C" fn dav1d_data_ref(dst: *mut Dav1dData, src: *const Dav1dDa
     }
     *dst = *src;
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_data_props_copy(
-    dst: *mut Dav1dDataProps,
-    src: *const Dav1dDataProps,
-) {
+
+pub unsafe fn dav1d_data_props_copy(dst: *mut Dav1dDataProps, src: *const Dav1dDataProps) {
     if dst.is_null() {
         unreachable!();
     }
@@ -209,8 +199,8 @@ pub unsafe extern "C" fn dav1d_data_props_copy(
         dav1d_ref_inc((*dst).user_data.r#ref);
     }
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_data_props_set_defaults(props: *mut Dav1dDataProps) {
+
+pub unsafe fn dav1d_data_props_set_defaults(props: *mut Dav1dDataProps) {
     if props.is_null() {
         unreachable!();
     }
@@ -222,8 +212,8 @@ pub unsafe extern "C" fn dav1d_data_props_set_defaults(props: *mut Dav1dDataProp
     (*props).timestamp = i64::MIN;
     (*props).offset = -1;
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_data_props_unref_internal(props: *mut Dav1dDataProps) {
+
+pub unsafe fn dav1d_data_props_unref_internal(props: *mut Dav1dDataProps) {
     if props.is_null() {
         fprintf(
             stderr,
@@ -240,8 +230,8 @@ pub unsafe extern "C" fn dav1d_data_props_unref_internal(props: *mut Dav1dDataPr
     dav1d_data_props_set_defaults(props);
     dav1d_ref_dec(&mut user_data_ref);
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_data_unref_internal(buf: *mut Dav1dData) {
+
+pub unsafe fn dav1d_data_unref_internal(buf: *mut Dav1dData) {
     if buf.is_null() {
         fprintf(
             stderr,

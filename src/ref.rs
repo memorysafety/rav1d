@@ -9,8 +9,6 @@ extern "C" {
         __alignment: size_t,
         __size: size_t,
     ) -> libc::c_int;
-    fn dav1d_mem_pool_push(pool: *mut Dav1dMemPool, buf: *mut Dav1dMemPoolBuffer);
-    fn dav1d_mem_pool_pop(pool: *mut Dav1dMemPool, size: size_t) -> *mut Dav1dMemPoolBuffer;
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -26,6 +24,8 @@ use crate::include::stdatomic::atomic_int;
 
 use crate::src::mem::dav1d_alloc_aligned;
 use crate::src::mem::dav1d_free_aligned;
+use crate::src::mem::dav1d_mem_pool_pop;
+use crate::src::mem::dav1d_mem_pool_push;
 use crate::src::mem::Dav1dMemPool;
 use crate::src::mem::Dav1dMemPoolBuffer;
 
@@ -40,8 +40,8 @@ unsafe extern "C" fn default_free_callback(data: *const uint8_t, user_data: *mut
     }
     dav1d_free_aligned(user_data);
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_ref_create(mut size: size_t) -> *mut Dav1dRef {
+
+pub unsafe fn dav1d_ref_create(mut size: size_t) -> *mut Dav1dRef {
     size = size
         .wrapping_add(::core::mem::size_of::<*mut libc::c_void>())
         .wrapping_sub(1)
@@ -70,8 +70,8 @@ unsafe extern "C" fn pool_free_callback(data: *const uint8_t, user_data: *mut li
         user_data as *mut Dav1dMemPoolBuffer,
     );
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_ref_create_using_pool(
+
+pub unsafe fn dav1d_ref_create_using_pool(
     pool: *mut Dav1dMemPool,
     mut size: size_t,
 ) -> *mut Dav1dRef {
@@ -95,8 +95,8 @@ pub unsafe extern "C" fn dav1d_ref_create_using_pool(
     (*res).user_data = buf as *mut libc::c_void;
     return res;
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_ref_wrap(
+
+pub unsafe fn dav1d_ref_wrap(
     ptr: *const uint8_t,
     mut free_callback: Option<unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> ()>,
     user_data: *mut libc::c_void,
@@ -114,8 +114,8 @@ pub unsafe extern "C" fn dav1d_ref_wrap(
     (*res).user_data = user_data;
     return res;
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_ref_dec(pref: *mut *mut Dav1dRef) {
+
+pub unsafe fn dav1d_ref_dec(pref: *mut *mut Dav1dRef) {
     if pref.is_null() {
         unreachable!();
     }

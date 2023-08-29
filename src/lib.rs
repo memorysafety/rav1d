@@ -17,7 +17,6 @@ extern "C" {
     ) -> libc::c_int;
     fn abort() -> !;
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
-    fn dav1d_init_cpu();
     fn dav1d_num_logical_processors(c: *mut Dav1dContext) -> libc::c_int;
     #[cfg(feature = "bitdepth_16")]
     fn dav1d_apply_grain_16bpc(
@@ -31,41 +30,14 @@ extern "C" {
         out: *mut Dav1dPicture,
         in_0: *const Dav1dPicture,
     );
-    fn dav1d_data_props_unref_internal(props: *mut Dav1dDataProps);
-    fn dav1d_picture_unref_internal(p: *mut Dav1dPicture);
-    fn dav1d_data_create_internal(buf: *mut Dav1dData, sz: size_t) -> *mut uint8_t;
-    fn dav1d_data_props_copy(dst: *mut Dav1dDataProps, src: *const Dav1dDataProps);
-    fn dav1d_data_wrap_internal(
-        buf: *mut Dav1dData,
-        ptr: *const uint8_t,
-        sz: size_t,
-        free_callback: Option<unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> ()>,
-        user_data: *mut libc::c_void,
-    ) -> libc::c_int;
-    fn dav1d_thread_picture_ref(dst: *mut Dav1dThreadPicture, src: *const Dav1dThreadPicture);
-    fn dav1d_picture_get_event_flags(p: *const Dav1dThreadPicture) -> Dav1dEventFlags;
-    fn dav1d_picture_move_ref(dst: *mut Dav1dPicture, src: *mut Dav1dPicture);
-    fn dav1d_data_wrap_user_data_internal(
-        buf: *mut Dav1dData,
-        user_data: *const uint8_t,
-        free_callback: Option<unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> ()>,
-        cookie: *mut libc::c_void,
-    ) -> libc::c_int;
-    fn dav1d_picture_ref(dst: *mut Dav1dPicture, src: *const Dav1dPicture);
-    fn dav1d_data_unref_internal(buf: *mut Dav1dData);
     fn dav1d_picture_alloc_copy(
         c: *mut Dav1dContext,
         dst: *mut Dav1dPicture,
         w: libc::c_int,
         src: *const Dav1dPicture,
     ) -> libc::c_int;
-    fn dav1d_data_ref(dst: *mut Dav1dData, src: *const Dav1dData);
-    fn dav1d_thread_picture_move_ref(dst: *mut Dav1dThreadPicture, src: *mut Dav1dThreadPicture);
     fn pthread_attr_init(__attr: *mut pthread_attr_t) -> libc::c_int;
     fn __sysconf(__name: libc::c_int) -> libc::c_long;
-    fn dav1d_data_props_set_defaults(props: *mut Dav1dDataProps);
-    fn dav1d_mem_pool_init(pool: *mut *mut Dav1dMemPool) -> libc::c_int;
-    fn dav1d_refmvs_init(rf: *mut refmvs_frame);
     fn pthread_create(
         __newthread: *mut pthread_t,
         __attr: *const pthread_attr_t,
@@ -74,14 +46,7 @@ extern "C" {
     ) -> libc::c_int;
     fn dav1d_refmvs_dsp_init(dsp: *mut Dav1dRefmvsDSPContext);
     fn pthread_join(__th: pthread_t, __thread_return: *mut *mut libc::c_void) -> libc::c_int;
-    fn dav1d_refmvs_clear(rf: *mut refmvs_frame);
-    fn dav1d_cdf_thread_unref(cdf: *mut CdfThreadContext);
-    fn dav1d_thread_picture_unref(p: *mut Dav1dThreadPicture);
-    fn dav1d_ref_dec(r#ref: *mut *mut Dav1dRef);
-    fn dav1d_mem_pool_end(pool: *mut Dav1dMemPool);
     fn pthread_attr_destroy(__attr: *mut pthread_attr_t) -> libc::c_int;
-    fn dav1d_default_picture_alloc(p: *mut Dav1dPicture, cookie: *mut libc::c_void) -> libc::c_int;
-    fn dav1d_default_picture_release(p: *mut Dav1dPicture, cookie: *mut libc::c_void);
     fn pthread_once(
         __once_control: *mut pthread_once_t,
         __init_routine: Option<unsafe extern "C" fn() -> ()>,
@@ -102,11 +67,6 @@ extern "C" {
         -> libc::c_int;
     fn pthread_cond_broadcast(__cond: *mut pthread_cond_t) -> libc::c_int;
     fn pthread_cond_destroy(__cond: *mut pthread_cond_t) -> libc::c_int;
-    fn dav1d_log_default_callback(
-        cookie: *mut libc::c_void,
-        format: *const libc::c_char,
-        ap: ::core::ffi::VaList,
-    );
     fn dav1d_log(c: *mut Dav1dContext, format: *const libc::c_char, _: ...);
     fn dav1d_parse_obus(
         c: *mut Dav1dContext,
@@ -118,7 +78,6 @@ extern "C" {
         out: *mut Dav1dPicture,
         in_0: *const Dav1dPicture,
     );
-    fn dav1d_worker_task(data: *mut libc::c_void) -> *mut libc::c_void;
     fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retval: libc::c_int);
     fn dav1d_init_wedge_masks();
     fn dav1d_init_interintra_masks();
@@ -126,7 +85,19 @@ extern "C" {
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::common::Dav1dUserData;
 use crate::include::stdatomic::atomic_int;
+use crate::src::cpu::dav1d_init_cpu;
+use crate::src::data::dav1d_data_create_internal;
+use crate::src::data::dav1d_data_props_copy;
+use crate::src::data::dav1d_data_props_set_defaults;
+use crate::src::data::dav1d_data_props_unref_internal;
+use crate::src::data::dav1d_data_ref;
+use crate::src::data::dav1d_data_unref_internal;
+use crate::src::data::dav1d_data_wrap_internal;
+use crate::src::data::dav1d_data_wrap_user_data_internal;
+use crate::src::log::dav1d_log_default_callback;
+use crate::src::r#ref::dav1d_ref_dec;
 use crate::src::r#ref::Dav1dRef;
+use crate::src::thread_task::dav1d_worker_task;
 
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 
@@ -216,6 +187,8 @@ use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
 use crate::src::internal::Dav1dContext_intra_edge;
 use crate::src::intra_edge::EdgeFlags;
 
+use crate::src::refmvs::dav1d_refmvs_clear;
+use crate::src::refmvs::dav1d_refmvs_init;
 use crate::src::refmvs::Dav1dRefmvsDSPContext;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -523,12 +496,22 @@ pub type generate_grain_uv_fn = Option<
 pub type generate_grain_y_fn =
     Option<unsafe extern "C" fn(*mut [entry; 82], *const Dav1dFilmGrainData) -> ()>;
 use crate::include::stdatomic::atomic_uint;
+use crate::src::cdf::dav1d_cdf_thread_unref;
 use crate::src::cdf::CdfThreadContext;
 
 use crate::src::internal::Dav1dContext_frame_thread;
 use crate::src::internal::Dav1dContext_refs;
 use crate::src::internal::Dav1dTileGroup;
 use crate::src::internal::TaskThreadData;
+use crate::src::picture::dav1d_default_picture_alloc;
+use crate::src::picture::dav1d_default_picture_release;
+use crate::src::picture::dav1d_picture_get_event_flags;
+use crate::src::picture::dav1d_picture_move_ref;
+use crate::src::picture::dav1d_picture_ref;
+use crate::src::picture::dav1d_picture_unref_internal;
+use crate::src::picture::dav1d_thread_picture_move_ref;
+use crate::src::picture::dav1d_thread_picture_ref;
+use crate::src::picture::dav1d_thread_picture_unref;
 use crate::src::picture::Dav1dThreadPicture;
 use libc::pthread_cond_t;
 #[derive(Copy, Clone)]
@@ -696,6 +679,8 @@ use crate::include::common::intops::umin;
 use crate::src::mem::dav1d_alloc_aligned;
 use crate::src::mem::dav1d_free_aligned;
 use crate::src::mem::dav1d_freep_aligned;
+use crate::src::mem::dav1d_mem_pool_end;
+use crate::src::mem::dav1d_mem_pool_init;
 use crate::src::mem::freep;
 #[cold]
 unsafe extern "C" fn init_internal() {

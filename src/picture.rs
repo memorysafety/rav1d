@@ -9,22 +9,16 @@ extern "C" {
     fn free(_: *mut libc::c_void);
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: size_t) -> *mut libc::c_void;
     fn strerror(_: libc::c_int) -> *mut libc::c_char;
-    fn dav1d_mem_pool_push(pool: *mut Dav1dMemPool, buf: *mut Dav1dMemPoolBuffer);
-    fn dav1d_mem_pool_pop(pool: *mut Dav1dMemPool, size: size_t) -> *mut Dav1dMemPoolBuffer;
-    fn dav1d_ref_wrap(
-        ptr: *const uint8_t,
-        free_callback: Option<unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> ()>,
-        user_data: *mut libc::c_void,
-    ) -> *mut Dav1dRef;
-    fn dav1d_ref_dec(r#ref: *mut *mut Dav1dRef);
-    fn dav1d_data_props_copy(dst: *mut Dav1dDataProps, src: *const Dav1dDataProps);
-    fn dav1d_data_props_set_defaults(props: *mut Dav1dDataProps);
     fn dav1d_log(c: *mut Dav1dContext, format: *const libc::c_char, _: ...);
 }
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
+use crate::src::data::dav1d_data_props_copy;
+use crate::src::data::dav1d_data_props_set_defaults;
+use crate::src::r#ref::dav1d_ref_dec;
+use crate::src::r#ref::dav1d_ref_wrap;
 use crate::src::r#ref::Dav1dRef;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -229,6 +223,8 @@ use crate::include::dav1d::dav1d::Dav1dEventFlags;
 use crate::include::dav1d::dav1d::Dav1dLogger;
 use crate::include::dav1d::dav1d::DAV1D_EVENT_FLAG_NEW_OP_PARAMS_INFO;
 use crate::include::dav1d::dav1d::DAV1D_EVENT_FLAG_NEW_SEQUENCE;
+use crate::src::mem::dav1d_mem_pool_pop;
+use crate::src::mem::dav1d_mem_pool_push;
 use crate::src::mem::Dav1dMemPool;
 use crate::src::mem::Dav1dMemPoolBuffer;
 pub type PictureFlags = libc::c_uint;
@@ -578,7 +574,7 @@ pub struct pic_ctx_context {
     pub extra_ptr: *mut libc::c_void,
 }
 use crate::src::r#ref::dav1d_ref_inc;
-#[no_mangle]
+
 pub unsafe extern "C" fn dav1d_default_picture_alloc(
     p: *mut Dav1dPicture,
     cookie: *mut libc::c_void,
@@ -637,7 +633,7 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     }) as *mut libc::c_void;
     return 0 as libc::c_int;
 }
-#[no_mangle]
+
 pub unsafe extern "C" fn dav1d_default_picture_release(
     p: *mut Dav1dPicture,
     cookie: *mut libc::c_void,
@@ -842,8 +838,8 @@ pub unsafe extern "C" fn dav1d_picture_alloc_copy(
     );
     return res;
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_picture_ref(dst: *mut Dav1dPicture, src: *const Dav1dPicture) {
+
+pub unsafe fn dav1d_picture_ref(dst: *mut Dav1dPicture, src: *const Dav1dPicture) {
     if dst.is_null() {
         fprintf(
             stderr,
@@ -908,8 +904,8 @@ pub unsafe extern "C" fn dav1d_picture_ref(dst: *mut Dav1dPicture, src: *const D
     }
     *dst = *src;
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_picture_move_ref(dst: *mut Dav1dPicture, src: *mut Dav1dPicture) {
+
+pub unsafe fn dav1d_picture_move_ref(dst: *mut Dav1dPicture, src: *mut Dav1dPicture) {
     if dst.is_null() {
         fprintf(
             stderr,
@@ -968,8 +964,8 @@ pub unsafe extern "C" fn dav1d_picture_move_ref(dst: *mut Dav1dPicture, src: *mu
         ::core::mem::size_of::<Dav1dPicture>(),
     );
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_thread_picture_ref(
+
+pub unsafe fn dav1d_thread_picture_ref(
     dst: *mut Dav1dThreadPicture,
     src: *const Dav1dThreadPicture,
 ) {
@@ -979,8 +975,8 @@ pub unsafe extern "C" fn dav1d_thread_picture_ref(
     (*dst).progress = (*src).progress;
     (*dst).flags = (*src).flags;
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_thread_picture_move_ref(
+
+pub unsafe fn dav1d_thread_picture_move_ref(
     dst: *mut Dav1dThreadPicture,
     src: *mut Dav1dThreadPicture,
 ) {
@@ -995,8 +991,8 @@ pub unsafe extern "C" fn dav1d_thread_picture_move_ref(
         ::core::mem::size_of::<Dav1dThreadPicture>(),
     );
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_picture_unref_internal(p: *mut Dav1dPicture) {
+
+pub unsafe fn dav1d_picture_unref_internal(p: *mut Dav1dPicture) {
     if p.is_null() {
         fprintf(
             stderr,
@@ -1038,15 +1034,13 @@ pub unsafe extern "C" fn dav1d_picture_unref_internal(p: *mut Dav1dPicture) {
     );
     dav1d_data_props_set_defaults(&mut (*p).m);
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_thread_picture_unref(p: *mut Dav1dThreadPicture) {
+
+pub unsafe fn dav1d_thread_picture_unref(p: *mut Dav1dThreadPicture) {
     dav1d_picture_unref_internal(&mut (*p).p);
     (*p).progress = 0 as *mut atomic_uint;
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_picture_get_event_flags(
-    p: *const Dav1dThreadPicture,
-) -> Dav1dEventFlags {
+
+pub unsafe fn dav1d_picture_get_event_flags(p: *const Dav1dThreadPicture) -> Dav1dEventFlags {
     if (*p).flags as u64 == 0 {
         return 0 as Dav1dEventFlags;
     }

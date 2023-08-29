@@ -9,7 +9,8 @@ use crate::include::dav1d::headers::{Dav1dTxfmMode, DAV1D_MAX_SEGMENTS};
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use crate::src::align::Align16;
-use crate::src::cdf::{CdfContext, CdfMvComponent, CdfMvContext};
+use crate::src::cdf::CdfMvComponent;
+use crate::src::cdf::CdfMvContext;
 use crate::src::ctx::CaseSet;
 use crate::src::looprestoration::dav1d_loop_restoration_dsp_init;
 
@@ -36,54 +37,11 @@ extern "C" {
     fn pthread_cond_signal(__cond: *mut pthread_cond_t) -> libc::c_int;
     fn pthread_cond_wait(__cond: *mut pthread_cond_t, __mutex: *mut pthread_mutex_t)
         -> libc::c_int;
-    fn dav1d_ref_create_using_pool(pool: *mut Dav1dMemPool, size: size_t) -> *mut Dav1dRef;
-    fn dav1d_ref_dec(r#ref: *mut *mut Dav1dRef);
-    fn dav1d_cdf_thread_init_static(cdf: *mut CdfThreadContext, qidx: libc::c_int);
     fn dav1d_cdf_thread_alloc(
         c: *mut Dav1dContext,
         cdf: *mut CdfThreadContext,
         have_frame_mt: libc::c_int,
     ) -> libc::c_int;
-    fn dav1d_cdf_thread_copy(dst: *mut CdfContext, src: *const CdfThreadContext);
-    fn dav1d_cdf_thread_ref(dst: *mut CdfThreadContext, src: *mut CdfThreadContext);
-    fn dav1d_cdf_thread_unref(cdf: *mut CdfThreadContext);
-    fn dav1d_cdf_thread_update(
-        hdr: *const Dav1dFrameHeader,
-        dst: *mut CdfContext,
-        src: *const CdfContext,
-    );
-    fn dav1d_data_props_copy(dst: *mut Dav1dDataProps, src: *const Dav1dDataProps);
-    fn dav1d_data_unref_internal(buf: *mut Dav1dData);
-    fn dav1d_refmvs_init_frame(
-        rf: *mut refmvs_frame,
-        seq_hdr: *const Dav1dSequenceHeader,
-        frm_hdr: *const Dav1dFrameHeader,
-        ref_poc: *const libc::c_uint,
-        rp: *mut refmvs_temporal_block,
-        ref_ref_poc: *const [libc::c_uint; 7],
-        rp_ref: *const *mut refmvs_temporal_block,
-        n_tile_threads: libc::c_int,
-        n_frame_threads: libc::c_int,
-    ) -> libc::c_int;
-    fn dav1d_refmvs_save_tmvs(
-        dsp: *const Dav1dRefmvsDSPContext,
-        rt: *const refmvs_tile,
-        col_start8: libc::c_int,
-        col_end8: libc::c_int,
-        row_start8: libc::c_int,
-        row_end8: libc::c_int,
-    );
-    fn dav1d_refmvs_tile_sbrow_init(
-        rt: *mut refmvs_tile,
-        rf: *const refmvs_frame,
-        tile_col_start4: libc::c_int,
-        tile_col_end4: libc::c_int,
-        tile_row_start4: libc::c_int,
-        tile_row_end4: libc::c_int,
-        sby: libc::c_int,
-        tile_row_idx: libc::c_int,
-        pass: libc::c_int,
-    );
     #[cfg(feature = "bitdepth_8")]
     fn dav1d_film_grain_dsp_init_8bpc(c: *mut Dav1dFilmGrainDSPContext);
     #[cfg(feature = "bitdepth_16")]
@@ -115,11 +73,6 @@ extern "C" {
         w: libc::c_int,
         src: *const Dav1dPicture,
     ) -> libc::c_int;
-    fn dav1d_picture_ref(dst: *mut Dav1dPicture, src: *const Dav1dPicture);
-    fn dav1d_thread_picture_ref(dst: *mut Dav1dThreadPicture, src: *const Dav1dThreadPicture);
-    fn dav1d_thread_picture_unref(p: *mut Dav1dThreadPicture);
-    fn dav1d_picture_unref_internal(p: *mut Dav1dPicture);
-    fn dav1d_picture_get_event_flags(p: *const Dav1dThreadPicture) -> Dav1dEventFlags;
     #[cfg(feature = "bitdepth_8")]
     fn dav1d_recon_b_intra_8bpc(
         t: *mut Dav1dTaskContext,
@@ -202,6 +155,9 @@ use crate::src::msac::dav1d_msac_decode_symbol_adapt8;
 use crate::src::msac::dav1d_msac_init;
 use crate::src::qm::dav1d_qm_tbl;
 use crate::src::refmvs::dav1d_refmvs_find;
+use crate::src::refmvs::dav1d_refmvs_init_frame;
+use crate::src::refmvs::dav1d_refmvs_save_tmvs;
+use crate::src::refmvs::dav1d_refmvs_tile_sbrow_init;
 use crate::src::tables::dav1d_al_part_ctx;
 use crate::src::tables::dav1d_block_dimensions;
 use crate::src::tables::dav1d_block_sizes;
@@ -223,6 +179,8 @@ use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
+use crate::src::data::dav1d_data_props_copy;
+use crate::src::data::dav1d_data_unref_internal;
 use crate::src::r#ref::Dav1dRef;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -808,11 +766,21 @@ pub type generate_grain_uv_fn = Option<
 >;
 pub type generate_grain_y_fn =
     Option<unsafe extern "C" fn(*mut [entry; 82], *const Dav1dFilmGrainData) -> ()>;
+use crate::src::cdf::dav1d_cdf_thread_copy;
+use crate::src::cdf::dav1d_cdf_thread_init_static;
+use crate::src::cdf::dav1d_cdf_thread_ref;
+use crate::src::cdf::dav1d_cdf_thread_unref;
+use crate::src::cdf::dav1d_cdf_thread_update;
 use crate::src::cdf::CdfThreadContext;
 
 use crate::src::internal::Dav1dContext_frame_thread;
 use crate::src::internal::Dav1dContext_refs;
 use crate::src::internal::Dav1dTileGroup;
+use crate::src::picture::dav1d_picture_get_event_flags;
+use crate::src::picture::dav1d_picture_ref;
+use crate::src::picture::dav1d_picture_unref_internal;
+use crate::src::picture::dav1d_thread_picture_ref;
+use crate::src::picture::dav1d_thread_picture_unref;
 use crate::src::picture::Dav1dThreadPicture;
 pub type backup_ipred_edge_fn = Option<unsafe extern "C" fn(*mut Dav1dTaskContext) -> ()>;
 pub type filter_sbrow_fn = Option<unsafe extern "C" fn(*mut Dav1dFrameContext, libc::c_int) -> ()>;
@@ -901,6 +869,8 @@ use crate::src::mem::dav1d_alloc_aligned;
 use crate::src::mem::dav1d_free_aligned;
 use crate::src::mem::dav1d_freep_aligned;
 use crate::src::mem::freep;
+use crate::src::r#ref::dav1d_ref_create_using_pool;
+use crate::src::r#ref::dav1d_ref_dec;
 use crate::src::r#ref::dav1d_ref_inc;
 
 use crate::src::tables::cfl_allowed_mask;

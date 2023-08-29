@@ -26,7 +26,6 @@ extern "C" {
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
     fn dav1d_version() -> *const libc::c_char;
     fn dav1d_default_settings(s: *mut Dav1dSettings);
-    fn dav1d_set_cpu_flags_mask(mask: libc::c_uint);
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -50,6 +49,7 @@ use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_DEBLOCK;
 use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
 use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_RESTORATION;
 use rav1d::include::dav1d::picture::Dav1dPicAllocator;
+use rav1d::src::cpu::dav1d_set_cpu_flags_mask;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dSettings {

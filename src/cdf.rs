@@ -6,8 +6,6 @@ use ::libc;
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
-    fn dav1d_ref_create_using_pool(pool: *mut Dav1dMemPool, size: size_t) -> *mut Dav1dRef;
-    fn dav1d_ref_dec(r#ref: *mut *mut Dav1dRef);
 }
 
 use crate::src::tables::dav1d_partition_type_count;
@@ -17,6 +15,8 @@ use crate::include::stdatomic::atomic_uint;
 
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
+use crate::src::r#ref::dav1d_ref_create_using_pool;
+use crate::src::r#ref::dav1d_ref_dec;
 use crate::src::r#ref::Dav1dRef;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -5402,8 +5402,8 @@ static av1_default_coef_cdf: [CdfCoefContext; 4] = [
         ])),
     },
 ];
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_cdf_thread_update(
+
+pub unsafe fn dav1d_cdf_thread_update(
     hdr: *const Dav1dFrameHeader,
     dst: *mut CdfContext,
     src: *const CdfContext,
@@ -6136,6 +6136,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_update(
         k_17 += 1;
     }
 }
+
 #[inline]
 unsafe extern "C" fn get_qcat_idx(q: libc::c_int) -> libc::c_int {
     if q <= 20 {
@@ -6149,16 +6150,13 @@ unsafe extern "C" fn get_qcat_idx(q: libc::c_int) -> libc::c_int {
     }
     return 3 as libc::c_int;
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_cdf_thread_init_static(
-    cdf: *mut CdfThreadContext,
-    qidx: libc::c_int,
-) {
+
+pub unsafe fn dav1d_cdf_thread_init_static(cdf: *mut CdfThreadContext, qidx: libc::c_int) {
     (*cdf).r#ref = 0 as *mut Dav1dRef;
     (*cdf).data.qcat = get_qcat_idx(qidx) as libc::c_uint;
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_cdf_thread_copy(dst: *mut CdfContext, src: *const CdfThreadContext) {
+
+pub unsafe fn dav1d_cdf_thread_copy(dst: *mut CdfContext, src: *const CdfThreadContext) {
     if !((*src).r#ref).is_null() {
         memcpy(
             dst as *mut libc::c_void,
@@ -6189,6 +6187,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_copy(dst: *mut CdfContext, src: *const
         (*dst).mv.comp[0] = (*dst).mv.comp[1];
     };
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_cdf_thread_alloc(
     c: *mut Dav1dContext,
@@ -6209,18 +6208,15 @@ pub unsafe extern "C" fn dav1d_cdf_thread_alloc(
     }
     return 0 as libc::c_int;
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_cdf_thread_ref(
-    dst: *mut CdfThreadContext,
-    src: *mut CdfThreadContext,
-) {
+
+pub unsafe fn dav1d_cdf_thread_ref(dst: *mut CdfThreadContext, src: *mut CdfThreadContext) {
     *dst = *src;
     if !((*src).r#ref).is_null() {
         dav1d_ref_inc((*src).r#ref);
     }
 }
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_cdf_thread_unref(cdf: *mut CdfThreadContext) {
+
+pub unsafe fn dav1d_cdf_thread_unref(cdf: *mut CdfThreadContext) {
     memset(
         &mut (*cdf).data as *mut CdfThreadContext_data as *mut libc::c_void,
         0 as libc::c_int,
