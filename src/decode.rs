@@ -6383,10 +6383,13 @@ pub unsafe extern "C" fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retv
 
 pub unsafe fn dav1d_decode_frame(f: &mut Dav1dFrameContext) -> libc::c_int {
     assert!((*f.c).n_fc == 1);
+    // if n_tc > 1 (but n_fc == 1), we could run init/exit in the task
+    // threads also. Not sure it makes a measurable difference.
     let mut res = dav1d_decode_frame_init(f);
     if res == 0 {
         res = dav1d_decode_frame_init_cdf(f);
     }
+    // wait until all threads have completed
     if res == 0 {
         if (*f.c).n_tc > 1 {
             res = dav1d_task_create_tile_sbrow(f, 0, 1);
