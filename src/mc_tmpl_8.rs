@@ -345,80 +345,80 @@ pub unsafe extern "C" fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext) {
     // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::mc::*;
 
-    (*c).mc[FILTER_2D_8TAP_REGULAR as usize] = Some(put_8tap_regular_c::<BitDepth8>);
-    (*c).mc[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = Some(put_8tap_regular_smooth_c::<BitDepth8>);
-    (*c).mc[FILTER_2D_8TAP_REGULAR_SHARP as usize] = Some(put_8tap_regular_sharp_c::<BitDepth8>);
-    (*c).mc[FILTER_2D_8TAP_SHARP_REGULAR as usize] = Some(put_8tap_sharp_regular_c::<BitDepth8>);
-    (*c).mc[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(put_8tap_sharp_smooth_c::<BitDepth8>);
-    (*c).mc[FILTER_2D_8TAP_SHARP as usize] = Some(put_8tap_sharp_c::<BitDepth8>);
-    (*c).mc[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = Some(put_8tap_smooth_regular_c::<BitDepth8>);
-    (*c).mc[FILTER_2D_8TAP_SMOOTH as usize] = Some(put_8tap_smooth_c::<BitDepth8>);
-    (*c).mc[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(put_8tap_smooth_sharp_c::<BitDepth8>);
-    (*c).mc[FILTER_2D_BILINEAR as usize] = Some(put_bilin_c::<BitDepth8>);
+    (*c).mc[FILTER_2D_8TAP_REGULAR as usize] = Some(put_8tap_regular_c_erased::<BitDepth8>);
+    (*c).mc[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = Some(put_8tap_regular_smooth_c_erased::<BitDepth8>);
+    (*c).mc[FILTER_2D_8TAP_REGULAR_SHARP as usize] = Some(put_8tap_regular_sharp_c_erased::<BitDepth8>);
+    (*c).mc[FILTER_2D_8TAP_SHARP_REGULAR as usize] = Some(put_8tap_sharp_regular_c_erased::<BitDepth8>);
+    (*c).mc[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(put_8tap_sharp_smooth_c_erased::<BitDepth8>);
+    (*c).mc[FILTER_2D_8TAP_SHARP as usize] = Some(put_8tap_sharp_c_erased::<BitDepth8>);
+    (*c).mc[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = Some(put_8tap_smooth_regular_c_erased::<BitDepth8>);
+    (*c).mc[FILTER_2D_8TAP_SMOOTH as usize] = Some(put_8tap_smooth_c_erased::<BitDepth8>);
+    (*c).mc[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(put_8tap_smooth_sharp_c_erased::<BitDepth8>);
+    (*c).mc[FILTER_2D_BILINEAR as usize] = Some(put_bilin_c_erased::<BitDepth8>);
 
-    (*c).mct[FILTER_2D_8TAP_REGULAR as usize] = Some(prep_8tap_regular_c::<BitDepth8>);
+    (*c).mct[FILTER_2D_8TAP_REGULAR as usize] = Some(prep_8tap_regular_c_erased::<BitDepth8>);
     (*c).mct[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] =
-        Some(prep_8tap_regular_smooth_c::<BitDepth8>);
-    (*c).mct[FILTER_2D_8TAP_REGULAR_SHARP as usize] = Some(prep_8tap_regular_sharp_c::<BitDepth8>);
-    (*c).mct[FILTER_2D_8TAP_SHARP_REGULAR as usize] = Some(prep_8tap_sharp_regular_c::<BitDepth8>);
-    (*c).mct[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(prep_8tap_sharp_smooth_c::<BitDepth8>);
-    (*c).mct[FILTER_2D_8TAP_SHARP as usize] = Some(prep_8tap_sharp_c::<BitDepth8>);
+        Some(prep_8tap_regular_smooth_c_erased::<BitDepth8>);
+    (*c).mct[FILTER_2D_8TAP_REGULAR_SHARP as usize] = Some(prep_8tap_regular_sharp_c_erased::<BitDepth8>);
+    (*c).mct[FILTER_2D_8TAP_SHARP_REGULAR as usize] = Some(prep_8tap_sharp_regular_c_erased::<BitDepth8>);
+    (*c).mct[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = Some(prep_8tap_sharp_smooth_c_erased::<BitDepth8>);
+    (*c).mct[FILTER_2D_8TAP_SHARP as usize] = Some(prep_8tap_sharp_c_erased::<BitDepth8>);
     (*c).mct[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] =
-        Some(prep_8tap_smooth_regular_c::<BitDepth8>);
-    (*c).mct[FILTER_2D_8TAP_SMOOTH as usize] = Some(prep_8tap_smooth_c::<BitDepth8>);
-    (*c).mct[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(prep_8tap_smooth_sharp_c::<BitDepth8>);
-    (*c).mct[FILTER_2D_BILINEAR as usize] = Some(prep_bilin_c::<BitDepth8>);
+        Some(prep_8tap_smooth_regular_c_erased::<BitDepth8>);
+    (*c).mct[FILTER_2D_8TAP_SMOOTH as usize] = Some(prep_8tap_smooth_c_erased::<BitDepth8>);
+    (*c).mct[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = Some(prep_8tap_smooth_sharp_c_erased::<BitDepth8>);
+    (*c).mct[FILTER_2D_BILINEAR as usize] = Some(prep_bilin_c_erased::<BitDepth8>);
 
-    (*c).mc_scaled[FILTER_2D_8TAP_REGULAR as usize] = Some(put_8tap_regular_scaled_c::<BitDepth8>);
+    (*c).mc_scaled[FILTER_2D_8TAP_REGULAR as usize] = Some(put_8tap_regular_scaled_c_erased::<BitDepth8>);
     (*c).mc_scaled[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] =
-        Some(put_8tap_regular_smooth_scaled_c::<BitDepth8>);
+        Some(put_8tap_regular_smooth_scaled_c_erased::<BitDepth8>);
     (*c).mc_scaled[FILTER_2D_8TAP_REGULAR_SHARP as usize] =
-        Some(put_8tap_regular_sharp_scaled_c::<BitDepth8>);
+        Some(put_8tap_regular_sharp_scaled_c_erased::<BitDepth8>);
     (*c).mc_scaled[FILTER_2D_8TAP_SHARP_REGULAR as usize] =
-        Some(put_8tap_sharp_regular_scaled_c::<BitDepth8>);
+        Some(put_8tap_sharp_regular_scaled_c_erased::<BitDepth8>);
     (*c).mc_scaled[FILTER_2D_8TAP_SHARP_SMOOTH as usize] =
-        Some(put_8tap_sharp_smooth_scaled_c::<BitDepth8>);
-    (*c).mc_scaled[FILTER_2D_8TAP_SHARP as usize] = Some(put_8tap_sharp_scaled_c::<BitDepth8>);
+        Some(put_8tap_sharp_smooth_scaled_c_erased::<BitDepth8>);
+    (*c).mc_scaled[FILTER_2D_8TAP_SHARP as usize] = Some(put_8tap_sharp_scaled_c_erased::<BitDepth8>);
     (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] =
-        Some(put_8tap_smooth_regular_scaled_c::<BitDepth8>);
-    (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH as usize] = Some(put_8tap_smooth_scaled_c::<BitDepth8>);
+        Some(put_8tap_smooth_regular_scaled_c_erased::<BitDepth8>);
+    (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH as usize] = Some(put_8tap_smooth_scaled_c_erased::<BitDepth8>);
     (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH_SHARP as usize] =
-        Some(put_8tap_smooth_sharp_scaled_c::<BitDepth8>);
-    (*c).mc_scaled[FILTER_2D_BILINEAR as usize] = Some(put_bilin_scaled_c::<BitDepth8>);
+        Some(put_8tap_smooth_sharp_scaled_c_erased::<BitDepth8>);
+    (*c).mc_scaled[FILTER_2D_BILINEAR as usize] = Some(put_bilin_scaled_c_erased::<BitDepth8>);
 
     (*c).mct_scaled[FILTER_2D_8TAP_REGULAR as usize] =
-        Some(prep_8tap_regular_scaled_c::<BitDepth8>);
+        Some(prep_8tap_regular_scaled_c_erased::<BitDepth8>);
     (*c).mct_scaled[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] =
-        Some(prep_8tap_regular_smooth_scaled_c::<BitDepth8>);
+        Some(prep_8tap_regular_smooth_scaled_c_erased::<BitDepth8>);
     (*c).mct_scaled[FILTER_2D_8TAP_REGULAR_SHARP as usize] =
-        Some(prep_8tap_regular_sharp_scaled_c::<BitDepth8>);
+        Some(prep_8tap_regular_sharp_scaled_c_erased::<BitDepth8>);
     (*c).mct_scaled[FILTER_2D_8TAP_SHARP_REGULAR as usize] =
-        Some(prep_8tap_sharp_regular_scaled_c::<BitDepth8>);
+        Some(prep_8tap_sharp_regular_scaled_c_erased::<BitDepth8>);
     (*c).mct_scaled[FILTER_2D_8TAP_SHARP_SMOOTH as usize] =
-        Some(prep_8tap_sharp_smooth_scaled_c::<BitDepth8>);
-    (*c).mct_scaled[FILTER_2D_8TAP_SHARP as usize] = Some(prep_8tap_sharp_scaled_c::<BitDepth8>);
+        Some(prep_8tap_sharp_smooth_scaled_c_erased::<BitDepth8>);
+    (*c).mct_scaled[FILTER_2D_8TAP_SHARP as usize] = Some(prep_8tap_sharp_scaled_c_erased::<BitDepth8>);
     (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] =
-        Some(prep_8tap_smooth_regular_scaled_c::<BitDepth8>);
-    (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH as usize] = Some(prep_8tap_smooth_scaled_c::<BitDepth8>);
+        Some(prep_8tap_smooth_regular_scaled_c_erased::<BitDepth8>);
+    (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH as usize] = Some(prep_8tap_smooth_scaled_c_erased::<BitDepth8>);
     (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH_SHARP as usize] =
-        Some(prep_8tap_smooth_sharp_scaled_c::<BitDepth8>);
-    (*c).mct_scaled[FILTER_2D_BILINEAR as usize] = Some(prep_bilin_scaled_c::<BitDepth8>);
+        Some(prep_8tap_smooth_sharp_scaled_c_erased::<BitDepth8>);
+    (*c).mct_scaled[FILTER_2D_BILINEAR as usize] = Some(prep_bilin_scaled_c_erased::<BitDepth8>);
 
-    (*c).avg = Some(avg_c::<BitDepth8>);
-    (*c).w_avg = Some(w_avg_c::<BitDepth8>);
-    (*c).mask = Some(mask_c::<BitDepth8>);
+    (*c).avg = Some(avg_c_erased::<BitDepth8>);
+    (*c).w_avg = Some(w_avg_c_erased::<BitDepth8>);
+    (*c).mask = Some(mask_c_erased::<BitDepth8>);
 
-    (*c).w_mask[0 as usize] = Some(w_mask_444_c::<BitDepth8>);
-    (*c).w_mask[1 as usize] = Some(w_mask_422_c::<BitDepth8>);
-    (*c).w_mask[2 as usize] = Some(w_mask_420_c::<BitDepth8>);
+    (*c).w_mask[0 as usize] = Some(w_mask_444_c_erased::<BitDepth8>);
+    (*c).w_mask[1 as usize] = Some(w_mask_422_c_erased::<BitDepth8>);
+    (*c).w_mask[2 as usize] = Some(w_mask_420_c_erased::<BitDepth8>);
 
-    (*c).blend = Some(blend_c::<BitDepth8>);
-    (*c).blend_v = Some(blend_v_c::<BitDepth8>);
-    (*c).blend_h = Some(blend_h_c::<BitDepth8>);
-    (*c).warp8x8 = Some(warp_affine_8x8_c::<BitDepth8>);
-    (*c).warp8x8t = Some(warp_affine_8x8t_c::<BitDepth8>);
-    (*c).emu_edge = Some(emu_edge_c::<BitDepth8>);
-    (*c).resize = Some(resize_c::<BitDepth8>);
+    (*c).blend = Some(blend_c_erased::<BitDepth8>);
+    (*c).blend_v = Some(blend_v_c_erased::<BitDepth8>);
+    (*c).blend_h = Some(blend_h_c_erased::<BitDepth8>);
+    (*c).warp8x8 = Some(warp_affine_8x8_c_erased::<BitDepth8>);
+    (*c).warp8x8t = Some(warp_affine_8x8t_c_erased::<BitDepth8>);
+    (*c).emu_edge = Some(emu_edge_c_erased::<BitDepth8>);
+    (*c).resize = Some(resize_c_erased::<BitDepth8>);
 
     #[cfg(feature = "asm")]
     cfg_if! {
