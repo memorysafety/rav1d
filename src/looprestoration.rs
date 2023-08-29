@@ -1,5 +1,10 @@
 use std::ops::Add;
 
+#[cfg(all(
+    feature = "asm",
+    any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
+))]
+use crate::include::common::bitdepth::bd_fn;
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynPixel;
@@ -1656,28 +1661,13 @@ fn loop_restoration_dsp_init_x86<BD: BitDepth>(
         return;
     }
 
-    c.wiener[0] = match BD::BPC {
-        BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter7_8bpc_ssse3),
-        BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter7_16bpc_ssse3),
-    };
-    c.wiener[1] = match BD::BPC {
-        BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter5_8bpc_ssse3),
-        BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter5_16bpc_ssse3),
-    };
+    c.wiener[0] = bd_fn!(decl_looprestorationfilter_fn, BD, wiener_filter7, ssse3);
+    c.wiener[1] = bd_fn!(decl_looprestorationfilter_fn, BD, wiener_filter5, ssse3);
 
     if BD::BPC == BPC::BPC8 || bpc == 10 {
-        c.sgr[0] = match BD::BPC {
-            BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_5x5_8bpc_ssse3),
-            BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_5x5_16bpc_ssse3),
-        };
-        c.sgr[1] = match BD::BPC {
-            BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_3x3_8bpc_ssse3),
-            BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_3x3_16bpc_ssse3),
-        };
-        c.sgr[2] = match BD::BPC {
-            BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_mix_8bpc_ssse3),
-            BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_mix_16bpc_ssse3),
-        };
+        c.sgr[0] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_5x5, ssse3);
+        c.sgr[1] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_3x3, ssse3);
+        c.sgr[2] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_mix, ssse3);
     }
 
     #[cfg(target_arch = "x86_64")]
@@ -1686,38 +1676,20 @@ fn loop_restoration_dsp_init_x86<BD: BitDepth>(
             return;
         }
 
-        c.wiener[0] = match BD::BPC {
-            BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter7_8bpc_avx2),
-            BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter7_16bpc_avx2),
-        };
-        c.wiener[1] = match BD::BPC {
-            BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter5_8bpc_avx2),
-            BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter5_16bpc_avx2),
-        };
+        c.wiener[0] = bd_fn!(decl_looprestorationfilter_fn, BD, wiener_filter7, avx2);
+        c.wiener[1] = bd_fn!(decl_looprestorationfilter_fn, BD, wiener_filter5, avx2);
 
         if BD::BPC == BPC::BPC8 || bpc == 10 {
-            c.sgr[0] = match BD::BPC {
-                BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_5x5_8bpc_avx2),
-                BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_5x5_16bpc_avx2),
-            };
-            c.sgr[1] = match BD::BPC {
-                BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_3x3_8bpc_avx2),
-                BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_3x3_16bpc_avx2),
-            };
-            c.sgr[2] = match BD::BPC {
-                BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_mix_8bpc_avx2),
-                BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_mix_16bpc_avx2),
-            };
+            c.sgr[0] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_5x5, avx2);
+            c.sgr[1] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_3x3, avx2);
+            c.sgr[2] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_mix, avx2);
         }
 
         if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
             return;
         }
 
-        c.wiener[0] = match BD::BPC {
-            BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter7_8bpc_avx512icl),
-            BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter7_16bpc_avx512icl),
-        };
+        c.wiener[0] = bd_fn!(decl_looprestorationfilter_fn, BD, wiener_filter7, avx512icl);
         c.wiener[1] = match BD::BPC {
             // With VNNI we don't need a 5-tap version.
             BPC::BPC8 => c.wiener[0],
@@ -1725,24 +1697,9 @@ fn loop_restoration_dsp_init_x86<BD: BitDepth>(
         };
 
         if BD::BPC == BPC::BPC8 || bpc == 10 {
-            c.sgr[0] = match BD::BPC {
-                BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_5x5_8bpc_avx512icl),
-                BPC::BPC16 => {
-                    decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_5x5_16bpc_avx512icl)
-                }
-            };
-            c.sgr[1] = match BD::BPC {
-                BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_3x3_8bpc_avx512icl),
-                BPC::BPC16 => {
-                    decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_3x3_16bpc_avx512icl)
-                }
-            };
-            c.sgr[2] = match BD::BPC {
-                BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_mix_8bpc_avx512icl),
-                BPC::BPC16 => {
-                    decl_looprestorationfilter_fn!(fn dav1d_sgr_filter_mix_16bpc_avx512icl)
-                }
-            };
+            c.sgr[0] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_5x5, avx512icl);
+            c.sgr[1] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_3x3, avx512icl);
+            c.sgr[2] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_mix, avx512icl);
         }
     }
 }
@@ -1766,14 +1723,8 @@ fn loop_restoration_dsp_init_arm<BD: BitDepth>(
 
     cfg_if::cfg_if! {
         if #[cfg(target_arch = "aarch64")] {
-            c.wiener[0] = match BD::BPC {
-                BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter7_8bpc_neon),
-                BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter7_16bpc_neon),
-            };
-            c.wiener[1] = match BD::BPC {
-                BPC::BPC8 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter5_8bpc_neon),
-                BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter5_16bpc_neon),
-            };
+            c.wiener[0] = bd_fn!(decl_looprestorationfilter_fn, BD, wiener_filter7, neon);
+            c.wiener[1] = bd_fn!(decl_looprestorationfilter_fn, BD, wiener_filter5, neon);
         } else {
             c.wiener[0] = wiener_filter_neon_erased::<BD>;
             c.wiener[1] = wiener_filter_neon_erased::<BD>;
