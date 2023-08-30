@@ -31,7 +31,6 @@ pub type cdef_fn = unsafe extern "C" fn(
 ) -> ();
 pub type cdef_dir_fn =
     unsafe extern "C" fn(*const DynPixel, ptrdiff_t, *mut libc::c_uint, libc::c_int) -> libc::c_int;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dCdefDSPContext {
     pub dir: cdef_dir_fn,

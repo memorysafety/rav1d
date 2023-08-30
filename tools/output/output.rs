@@ -21,7 +21,6 @@ extern "C" {
 }
 use rav1d::include::dav1d::picture::Dav1dPicture;
 use rav1d::include::dav1d::picture::Dav1dPictureParameters;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct MuxerContext {
     pub data: *mut MuxerPriv,
@@ -32,7 +31,6 @@ pub struct MuxerContext {
     pub framenum: libc::c_int,
     pub priv_data: [uint64_t; 0],
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Muxer {
     pub priv_data_size: libc::c_int,

@@ -17,7 +17,6 @@ pub const EDGE_I420_TOP_HAS_RIGHT: EdgeFlags = 4;
 pub const EDGE_I422_TOP_HAS_RIGHT: EdgeFlags = 2;
 pub const EDGE_I444_TOP_HAS_RIGHT: EdgeFlags = 1;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct EdgeNode {
     pub o: EdgeFlags,
@@ -25,14 +24,12 @@ pub struct EdgeNode {
     pub v: [EdgeFlags; 2],
 }
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct EdgeTip {
     pub node: EdgeNode,
     pub split: [EdgeFlags; 4],
 }
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct EdgeBranch {
     pub node: EdgeNode,

@@ -35,7 +35,6 @@ use crate::src::levels::V_FLIPADST;
 use crate::src::refmvs::refmvs_candidate;
 use crate::src::tables::TxfmInfo;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct BlockContext {
     pub mode: Align8<[uint8_t; 32]>,

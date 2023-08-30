@@ -24,7 +24,6 @@ use crate::src::thread_data::thread_data;
 use libc::pthread_cond_t;
 use libc::pthread_mutex_t;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTileGroup {
     pub data: Dav1dData,
@@ -47,35 +46,32 @@ pub const DAV1D_TASK_TYPE_TILE_ENTROPY: TaskType = 2;
 pub const DAV1D_TASK_TYPE_INIT_CDF: TaskType = 1;
 pub const DAV1D_TASK_TYPE_INIT: TaskType = 0;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContext_frame_thread {
     pub out_delayed: *mut Dav1dThreadPicture,
     pub next: libc::c_uint,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct TaskThreadData_grain_lut_scaling_8 {
     pub grain_lut_8bpc: Align16<[[[int8_t; 82]; 74]; 3]>,
     pub scaling_8bpc: Align64<[[uint8_t; 256]; 3]>,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct TaskThreadData_grain_lut_scaling_16 {
     pub grain_lut_16bpc: Align16<[[[int16_t; 82]; 74]; 3]>,
     pub scaling_16bpc: Align64<[[uint8_t; 4096]; 3]>,
 }
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub union TaskThreadData_grain_lut_scaling {
     pub c2rust_unnamed: TaskThreadData_grain_lut_scaling_8,
     pub c2rust_unnamed_0: TaskThreadData_grain_lut_scaling_16,
 }
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct TaskThreadData_delayed_fg {
     pub exec: libc::c_int,
@@ -87,7 +83,6 @@ pub struct TaskThreadData_delayed_fg {
     pub c2rust_unnamed: TaskThreadData_grain_lut_scaling,
 }
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct TaskThreadData {
     pub lock: pthread_mutex_t,
@@ -100,7 +95,6 @@ pub struct TaskThreadData {
     pub inited: libc::c_int,
 }
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContext_refs {
     pub p: Dav1dThreadPicture,
@@ -109,7 +103,6 @@ pub struct Dav1dContext_refs {
     pub refpoc: [libc::c_uint; 7],
 }
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContext_intra_edge {
     pub root: [*mut EdgeNode; 2],
@@ -119,7 +112,7 @@ pub struct Dav1dContext_intra_edge {
     pub tip_sb64: [EdgeTip; 64],
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dTask {
     pub frame_idx: libc::c_uint,
@@ -131,21 +124,18 @@ pub struct Dav1dTask {
     pub next: *mut Dav1dTask,
 }
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ScalableMotionParams {
     pub scale: libc::c_int,
     pub step: libc::c_int,
 }
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct CodedBlockInfo {
     pub eob: [int16_t; 3],
     pub txtp: [uint8_t; 3],
 }
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext_frame_thread {
     pub next_tile_row: [libc::c_int; 2],
@@ -165,7 +155,6 @@ pub struct Dav1dFrameContext_frame_thread {
     pub tile_start_off: *mut libc::c_int,
 }
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext_lf {
     pub level: *mut [uint8_t; 4],
@@ -196,7 +185,6 @@ pub struct Dav1dFrameContext_lf {
     pub restore_planes: libc::c_int,
 }
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext_task_thread_pending_tasks {
     pub merge: atomic_int,
@@ -205,7 +193,6 @@ pub struct Dav1dFrameContext_task_thread_pending_tasks {
     pub tail: *mut Dav1dTask,
 }
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext_task_thread {
     pub lock: pthread_mutex_t,
@@ -228,14 +215,12 @@ pub struct Dav1dFrameContext_task_thread {
     pub pending_tasks: Dav1dFrameContext_task_thread_pending_tasks,
 }
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct FrameTileThreadData {
     pub lowest_pixel_mem: *mut [[libc::c_int; 2]; 7],
     pub lowest_pixel_mem_sz: libc::c_int,
 }
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTileState_tiling {
     pub col_start: libc::c_int,
@@ -246,14 +231,12 @@ pub struct Dav1dTileState_tiling {
     pub row: libc::c_int,
 }
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTileState_frame_thread {
     pub pal_idx: *mut uint8_t,
     pub cf: *mut libc::c_void,
 }
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTileState {
     pub cdf: CdfContext,
@@ -271,21 +254,20 @@ pub struct Dav1dTileState {
     pub lr_ref: [*mut Av1RestorationUnit; 3],
 }
 
-#[derive(Copy, Clone)]
 #[repr(C, align(64))]
 pub union Dav1dTaskContext_cf {
     pub cf_8bpc: [int16_t; 1024],
     pub cf_16bpc: [int32_t; 1024],
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Dav1dTaskContext_scratch_compinter_seg_mask {
     pub compinter: [[int16_t; 16384]; 2],
     pub seg_mask: [uint8_t; 16384],
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub union Dav1dTaskContext_scratch_lap {
     pub lap_8bpc: [uint8_t; 4096],
@@ -293,56 +275,56 @@ pub union Dav1dTaskContext_scratch_lap {
     pub c2rust_unnamed: Dav1dTaskContext_scratch_compinter_seg_mask,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub union Dav1dTaskContext_scratch_emu_edge {
     pub emu_edge_8bpc: [uint8_t; 84160],
     pub emu_edge_16bpc: [uint16_t; 84160],
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Dav1dTaskContext_scratch_lap_emu_edge {
     pub c2rust_unnamed: Dav1dTaskContext_scratch_lap,
     pub c2rust_unnamed_0: Dav1dTaskContext_scratch_emu_edge,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Dav1dTaskContext_scratch_pal {
     pub pal_order: [[uint8_t; 8]; 64],
     pub pal_ctx: [uint8_t; 64],
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub union Dav1dTaskContext_scratch_levels_pal {
     pub levels: [uint8_t; 1088],
     pub c2rust_unnamed: Dav1dTaskContext_scratch_pal,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Dav1dTaskContext_scratch_interintra_edge_8 {
     pub interintra_8bpc: [uint8_t; 4096],
     pub edge_8bpc: [uint8_t; 257],
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Dav1dTaskContext_scratch_interintra_edge_16 {
     pub interintra_16bpc: [uint16_t; 4096],
     pub edge_16bpc: [uint16_t; 257],
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy)]
 #[repr(C, align(64))]
 pub union Dav1dTaskContext_scratch_interintra_edge {
     pub c2rust_unnamed: Dav1dTaskContext_scratch_interintra_edge_8,
     pub c2rust_unnamed_0: Dav1dTaskContext_scratch_interintra_edge_16,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Dav1dTaskContext_scratch_levels_pal_ac_interintra_edge {
     pub c2rust_unnamed: Dav1dTaskContext_scratch_levels_pal,
@@ -352,20 +334,17 @@ pub struct Dav1dTaskContext_scratch_levels_pal_ac_interintra_edge {
     pub c2rust_unnamed_0: Dav1dTaskContext_scratch_interintra_edge,
 }
 
-#[derive(Copy, Clone)]
 #[repr(C, align(64))]
 pub union Dav1dTaskContext_scratch {
     pub c2rust_unnamed: Dav1dTaskContext_scratch_lap_emu_edge,
     pub c2rust_unnamed_0: Dav1dTaskContext_scratch_levels_pal_ac_interintra_edge,
 }
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTaskContext_frame_thread {
     pub pass: libc::c_int,
 }
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTaskContext_task_thread {
     pub td: thread_data,

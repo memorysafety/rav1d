@@ -26,7 +26,6 @@ use crate::src::levels::BS_32x16;
 use crate::src::levels::BS_32x32;
 use crate::src::levels::BS_32x8;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct wedge_code_type {
     pub direction: uint8_t,

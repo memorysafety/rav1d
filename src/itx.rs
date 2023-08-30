@@ -143,7 +143,6 @@ pub unsafe extern "C" fn inv_txfm_add_rust<BD: BitDepth>(
 pub type itxfm_fn = Option<
     unsafe extern "C" fn(*mut DynPixel, ptrdiff_t, *mut DynCoef, libc::c_int, libc::c_int) -> (),
 >;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dInvTxfmDSPContext {
     pub itxfm_add: [[itxfm_fn; 17]; 19],

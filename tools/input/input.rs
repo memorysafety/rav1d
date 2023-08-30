@@ -25,14 +25,12 @@ extern "C" {
     static section5_demuxer: Demuxer;
 }
 use rav1d::include::dav1d::data::Dav1dData;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct DemuxerContext {
     pub data: *mut DemuxerPriv,
     pub impl_0: *const Demuxer,
     pub priv_data: [uint64_t; 0],
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Demuxer {
     pub priv_data_size: libc::c_int,

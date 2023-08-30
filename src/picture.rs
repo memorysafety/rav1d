@@ -20,7 +20,6 @@ use crate::src::data::dav1d_data_props_set_defaults;
 use crate::src::r#ref::dav1d_ref_dec;
 use crate::src::r#ref::dav1d_ref_wrap;
 use crate::src::r#ref::Dav1dRef;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext {
     pub seq_hdr_ref: *mut Dav1dRef,
@@ -109,7 +108,6 @@ use crate::src::refmvs::refmvs_frame;
 
 use crate::src::env::BlockContext;
 use crate::src::refmvs::refmvs_temporal_block;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext_bd_fn {
     pub recon_b_intra: recon_b_intra_fn,
@@ -127,7 +125,6 @@ pub type read_coef_blocks_fn =
     Option<unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> ()>;
 use crate::src::levels::BlockSize;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTaskContext {
     pub c: *const Dav1dContext,
@@ -162,7 +159,6 @@ use crate::src::refmvs::refmvs_tile;
 
 use crate::src::internal::Dav1dTileState;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContext {
     pub fc: *mut Dav1dFrameContext,
@@ -240,7 +236,6 @@ use crate::src::internal::Dav1dContext_intra_edge;
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::refmvs::Dav1dRefmvsDSPContext;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dDSPContext {
     pub fg: Dav1dFilmGrainDSPContext,
@@ -255,7 +250,6 @@ use crate::src::cdef::Dav1dCdefDSPContext;
 use crate::src::itx::Dav1dInvTxfmDSPContext;
 use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
 use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dMCDSPContext {
     pub mc: [mc_fn; 10],
@@ -436,7 +430,6 @@ pub type mc_fn = Option<
         libc::c_int,
     ) -> (),
 >;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dIntraPredDSPContext {
     pub intra_pred: [angular_ipred_fn; 14],
@@ -488,7 +481,6 @@ pub type angular_ipred_fn = Option<
         libc::c_int,
     ) -> (),
 >;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFilmGrainDSPContext {
     pub generate_grain_y: generate_grain_y_fn,
@@ -540,7 +532,6 @@ pub type generate_grain_y_fn =
 use crate::src::cdf::CdfThreadContext;
 
 use crate::src::internal::Dav1dContext_refs;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dThreadPicture {
     pub p: Dav1dPicture,
@@ -559,7 +550,6 @@ pub type recon_b_intra_fn = Option<
     unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, EdgeFlags, *const Av1Block) -> (),
 >;
 use crate::src::internal::ScalableMotionParams;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct pic_ctx_context {
     pub allocator: Dav1dPicAllocator,
@@ -699,8 +689,8 @@ unsafe extern "C" fn picture_alloc_with_edges(
         free(pic_ctx as *mut libc::c_void);
         return res;
     }
-    (*pic_ctx).allocator = *p_allocator;
-    (*pic_ctx).pic = *p;
+    (*pic_ctx).allocator = (*p_allocator).clone();
+    (*pic_ctx).pic = (*p).clone();
     (*p).r#ref = dav1d_ref_wrap(
         (*p).data[0] as *const uint8_t,
         Some(free_buffer as unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> ()),
@@ -895,7 +885,7 @@ pub unsafe fn dav1d_picture_ref(dst: *mut Dav1dPicture, src: *const Dav1dPicture
     if !((*src).itut_t35_ref).is_null() {
         dav1d_ref_inc((*src).itut_t35_ref);
     }
-    *dst = *src;
+    *dst = (*src).clone();
 }
 
 pub unsafe fn dav1d_picture_move_ref(dst: *mut Dav1dPicture, src: *mut Dav1dPicture) {
@@ -950,7 +940,7 @@ pub unsafe fn dav1d_picture_move_ref(dst: *mut Dav1dPicture, src: *mut Dav1dPict
             return;
         }
     }
-    *dst = *src;
+    *dst = (*src).clone();
     memset(
         src as *mut libc::c_void,
         0 as libc::c_int,

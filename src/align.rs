@@ -10,7 +10,7 @@ use std::ops::{Index, IndexMut};
 
 macro_rules! def_align {
     ($align:literal, $name:ident) => {
-        #[derive(Copy, Clone)]
+        #[derive(Clone, Copy)]
         #[repr(C, align($align))]
         pub struct $name<T>(pub T);
 

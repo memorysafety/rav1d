@@ -145,7 +145,6 @@ use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::picture::Dav1dPictureParameters;
 
 use crate::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_ALL;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dSettings {
     pub n_threads: libc::c_int,
@@ -162,7 +161,6 @@ pub struct Dav1dSettings {
     pub decode_frame_type: Dav1dDecodeFrameType,
     pub reserved: [uint8_t; 16],
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct CLISettings {
     pub outputfile: *const libc::c_char,

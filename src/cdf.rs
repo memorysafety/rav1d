@@ -18,7 +18,6 @@ use crate::include::dav1d::data::Dav1dData;
 use crate::src::r#ref::dav1d_ref_create_using_pool;
 use crate::src::r#ref::dav1d_ref_dec;
 use crate::src::r#ref::Dav1dRef;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext {
     pub seq_hdr_ref: *mut Dav1dRef,
@@ -107,7 +106,6 @@ use crate::src::refmvs::refmvs_frame;
 
 use crate::src::env::BlockContext;
 use crate::src::refmvs::refmvs_temporal_block;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext_bd_fn {
     pub recon_b_intra: recon_b_intra_fn,
@@ -125,7 +123,6 @@ pub type read_coef_blocks_fn =
     Option<unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> ()>;
 use crate::src::levels::BlockSize;
 use crate::src::levels::N_BS_SIZES;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTaskContext {
     pub c: *const Dav1dContext,
@@ -159,7 +156,6 @@ use crate::src::refmvs::refmvs_tile;
 
 use crate::src::internal::Dav1dTileState;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct CdfContext {
     pub m: CdfModeContext,
@@ -168,13 +164,13 @@ pub struct CdfContext {
     pub mv: CdfMvContext,
     pub dmv: CdfMvContext,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct CdfMvContext {
     pub comp: [CdfMvComponent; 2],
     pub joint: Align8<[uint16_t; 4]>,
 }
-#[derive(Copy, Clone)]
+
+#[derive(Clone)]
 #[repr(C)]
 pub struct CdfMvComponent {
     pub classes: Align32<[uint16_t; 16]>,
@@ -186,7 +182,8 @@ pub struct CdfMvComponent {
     pub classN: Align4<[[uint16_t; 2]; 10]>,
     pub sign: Align4<[uint16_t; 2]>,
 }
-#[derive(Copy, Clone)]
+
+#[derive(Clone)]
 #[repr(C)]
 pub struct CdfCoefContext {
     pub eob_bin_16: Align16<[[[uint16_t; 8]; 2]; 2]>,
@@ -203,7 +200,8 @@ pub struct CdfCoefContext {
     pub skip: Align4<[[[uint16_t; 2]; 13]; 5]>,
     pub dc_sign: Align4<[[[uint16_t; 2]; 3]; 2]>,
 }
-#[derive(Copy, Clone)]
+
+#[derive(Clone)]
 #[repr(C)]
 pub struct CdfModeContext {
     pub y_mode: Align32<[[uint16_t; 16]; 4]>,
@@ -258,7 +256,6 @@ pub struct CdfModeContext {
     pub pal_uv: Align4<[[uint16_t; 2]; 2]>,
     pub intrabc: Align4<[uint16_t; 2]>,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContext {
     pub fc: *mut Dav1dFrameContext,
@@ -330,7 +327,6 @@ use crate::src::internal::Dav1dContext_intra_edge;
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::refmvs::Dav1dRefmvsDSPContext;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dDSPContext {
     pub fg: Dav1dFilmGrainDSPContext,
@@ -345,7 +341,6 @@ use crate::src::cdef::Dav1dCdefDSPContext;
 use crate::src::itx::Dav1dInvTxfmDSPContext;
 use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
 use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dMCDSPContext {
     pub mc: [mc_fn; 10],
@@ -526,7 +521,6 @@ pub type mc_fn = Option<
         libc::c_int,
     ) -> (),
 >;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dIntraPredDSPContext {
     pub intra_pred: [angular_ipred_fn; 14],
@@ -578,7 +572,6 @@ pub type angular_ipred_fn = Option<
         libc::c_int,
     ) -> (),
 >;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFilmGrainDSPContext {
     pub generate_grain_y: generate_grain_y_fn,
@@ -627,19 +620,22 @@ pub type generate_grain_uv_fn = Option<
 >;
 pub type generate_grain_y_fn =
     Option<unsafe extern "C" fn(*mut [entry; 82], *const Dav1dFilmGrainData) -> ()>;
-#[derive(Copy, Clone)]
+
+#[derive(Clone)]
 #[repr(C)]
 pub struct CdfThreadContext {
     pub r#ref: *mut Dav1dRef,
     pub data: CdfThreadContext_data,
     pub progress: *mut atomic_uint,
 }
-#[derive(Copy, Clone)]
+
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub union CdfThreadContext_data {
     pub cdf: *mut CdfContext,
     pub qcat: libc::c_uint,
 }
+
 use crate::src::internal::Dav1dContext_frame_thread;
 use crate::src::internal::Dav1dContext_refs;
 use crate::src::internal::Dav1dTileGroup;
@@ -6157,13 +6153,13 @@ pub unsafe fn dav1d_cdf_thread_copy(dst: *mut CdfContext, src: *const CdfThreadC
             ::core::mem::size_of::<CdfContext>() as libc::c_ulong,
         );
     } else {
-        (*dst).m = av1_default_cdf;
+        (*dst).m = av1_default_cdf.clone();
         memcpy(
             ((*dst).kfym.0).as_mut_ptr() as *mut libc::c_void,
             default_kf_y_mode_cdf.0.as_ptr() as *const libc::c_void,
             ::core::mem::size_of::<[[[uint16_t; 16]; 5]; 5]>() as libc::c_ulong,
         );
-        (*dst).coef = av1_default_coef_cdf[(*src).data.qcat as usize];
+        (*dst).coef = av1_default_coef_cdf[(*src).data.qcat as usize].clone();
         memcpy(
             ((*dst).mv.joint.0).as_mut_ptr() as *mut libc::c_void,
             default_mv_joint_cdf.0.as_ptr() as *const libc::c_void,
@@ -6174,10 +6170,10 @@ pub unsafe fn dav1d_cdf_thread_copy(dst: *mut CdfContext, src: *const CdfThreadC
             default_mv_joint_cdf.0.as_ptr() as *const libc::c_void,
             ::core::mem::size_of::<[uint16_t; 4]>() as libc::c_ulong,
         );
-        (*dst).dmv.comp[1] = default_mv_component_cdf;
-        (*dst).dmv.comp[0] = (*dst).dmv.comp[1];
-        (*dst).mv.comp[1] = (*dst).dmv.comp[0];
-        (*dst).mv.comp[0] = (*dst).mv.comp[1];
+        (*dst).dmv.comp[1] = default_mv_component_cdf.clone();
+        (*dst).dmv.comp[0] = (*dst).dmv.comp[1].clone();
+        (*dst).mv.comp[1] = (*dst).dmv.comp[0].clone();
+        (*dst).mv.comp[0] = (*dst).mv.comp[1].clone();
     };
 }
 
@@ -6203,7 +6199,7 @@ pub unsafe extern "C" fn dav1d_cdf_thread_alloc(
 }
 
 pub unsafe fn dav1d_cdf_thread_ref(dst: *mut CdfThreadContext, src: *mut CdfThreadContext) {
-    *dst = *src;
+    *dst = (*src).clone();
     if !((*src).r#ref).is_null() {
         dav1d_ref_inc((*src).r#ref);
     }

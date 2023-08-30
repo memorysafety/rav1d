@@ -25,12 +25,10 @@ use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 
 use rav1d::include::dav1d::picture::Dav1dPicture;
 use rav1d::include::dav1d::picture::Dav1dPictureParameters;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct MuxerPriv {
     pub f: *mut libc::FILE,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Muxer {
     pub priv_data_size: libc::c_int,
