@@ -6331,9 +6331,9 @@ pub unsafe extern "C" fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retv
     }
     for i in 0..7 {
         if !f.refp[i as usize].p.frame_hdr.is_null() {
-            dav1d_thread_picture_unref(&mut *f.refp.as_mut_ptr().offset(i as isize));
+            dav1d_thread_picture_unref(&mut f.refp[i as usize]);
         }
-        dav1d_ref_dec(&mut *f.ref_mvs_ref.as_mut_ptr().offset(i as isize));
+        dav1d_ref_dec(&mut f.ref_mvs_ref[i as usize]);
     }
     dav1d_picture_unref_internal(&mut f.cur);
     dav1d_thread_picture_unref(&mut f.sr_cur);
