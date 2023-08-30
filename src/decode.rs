@@ -6320,7 +6320,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retv
     let f = &mut *f; // TODO(kkysen) propagate to arg once we deduplicate the fn decl
     let c = &*f.c;
     if !f.sr_cur.p.data[0].is_null() {
-        *&mut f.task_thread.error = 0;
+        f.task_thread.error = 0;
     }
     if c.n_fc > 1 && retval != 0 && !f.frame_thread.cf.is_null() {
         slice::from_raw_parts_mut(
