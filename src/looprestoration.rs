@@ -31,7 +31,7 @@ pub const LR_HAVE_TOP: LrEdgeFlags = 4;
 pub const LR_HAVE_RIGHT: LrEdgeFlags = 2;
 pub const LR_HAVE_LEFT: LrEdgeFlags = 1;
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct LooprestorationParams_sgr {
     pub s0: uint32_t,
@@ -40,7 +40,6 @@ pub struct LooprestorationParams_sgr {
     pub w1: int16_t,
 }
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub union LooprestorationParams {
     pub filter: Align16<[[int16_t; 8]; 2]>,
@@ -59,7 +58,6 @@ pub type looprestorationfilter_fn = unsafe extern "C" fn(
     libc::c_int,
 ) -> ();
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dLoopRestorationDSPContext {
     pub wiener: [looprestorationfilter_fn; 2],

@@ -15,7 +15,6 @@ pub type loopfilter_sb_fn = unsafe extern "C" fn(
     libc::c_int,
 ) -> ();
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dLoopFilterDSPContext {
     pub loop_filter_sb: [[loopfilter_sb_fn; 2]; 2],

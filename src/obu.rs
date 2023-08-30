@@ -24,7 +24,6 @@ use crate::src::r#ref::dav1d_ref_dec;
 use crate::src::r#ref::Dav1dRef;
 
 use crate::include::stdatomic::atomic_uint;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext {
     pub seq_hdr_ref: *mut Dav1dRef,
@@ -164,7 +163,6 @@ use crate::src::refmvs::refmvs_frame;
 
 use crate::src::env::BlockContext;
 use crate::src::refmvs::refmvs_temporal_block;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext_bd_fn {
     pub recon_b_intra: recon_b_intra_fn,
@@ -182,7 +180,6 @@ pub type read_coef_blocks_fn =
     Option<unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> ()>;
 use crate::src::levels::BlockSize;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTaskContext {
     pub c: *const Dav1dContext,
@@ -216,7 +213,6 @@ use crate::src::refmvs::refmvs_tile;
 
 use crate::src::internal::Dav1dTileState;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContext {
     pub fc: *mut Dav1dFrameContext,
@@ -294,7 +290,6 @@ use crate::src::internal::Dav1dContext_intra_edge;
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::refmvs::Dav1dRefmvsDSPContext;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dDSPContext {
     pub fg: Dav1dFilmGrainDSPContext,
@@ -309,7 +304,6 @@ use crate::src::cdef::Dav1dCdefDSPContext;
 use crate::src::itx::Dav1dInvTxfmDSPContext;
 use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
 use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dMCDSPContext {
     pub mc: [mc_fn; 10],
@@ -490,7 +484,6 @@ pub type mc_fn = Option<
         libc::c_int,
     ) -> (),
 >;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dIntraPredDSPContext {
     pub intra_pred: [angular_ipred_fn; 14],
@@ -542,7 +535,6 @@ pub type angular_ipred_fn = Option<
         libc::c_int,
     ) -> (),
 >;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFilmGrainDSPContext {
     pub generate_grain_y: generate_grain_y_fn,
@@ -1722,7 +1714,8 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
                                     (*hdr).segmentation.seg_data =
                                         (*(*c).refs[pri_ref as usize].p.p.frame_hdr)
                                             .segmentation
-                                            .seg_data;
+                                            .seg_data
+                                            .clone();
                                     current_block = 8075351136037156718;
                                 }
                             }
@@ -1807,7 +1800,8 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
                                     (*hdr).loopfilter.sharpness = 0 as libc::c_int;
                                     (*hdr).loopfilter.mode_ref_delta_enabled = 1 as libc::c_int;
                                     (*hdr).loopfilter.mode_ref_delta_update = 1 as libc::c_int;
-                                    (*hdr).loopfilter.mode_ref_deltas = default_mode_ref_deltas;
+                                    (*hdr).loopfilter.mode_ref_deltas =
+                                        default_mode_ref_deltas.clone();
                                     current_block = 1424623445371442388;
                                 } else {
                                     (*hdr).loopfilter.level_y[0] =
@@ -1826,7 +1820,8 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
                                     (*hdr).loopfilter.sharpness =
                                         dav1d_get_bits(gb, 3 as libc::c_int) as libc::c_int;
                                     if (*hdr).primary_ref_frame == 7 {
-                                        (*hdr).loopfilter.mode_ref_deltas = default_mode_ref_deltas;
+                                        (*hdr).loopfilter.mode_ref_deltas =
+                                            default_mode_ref_deltas.clone();
                                         current_block = 13291976673896753943;
                                     } else {
                                         let ref_1 =
@@ -1837,7 +1832,8 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
                                             (*hdr).loopfilter.mode_ref_deltas =
                                                 (*(*c).refs[ref_1 as usize].p.p.frame_hdr)
                                                     .loopfilter
-                                                    .mode_ref_deltas;
+                                                    .mode_ref_deltas
+                                                    .clone();
                                             current_block = 13291976673896753943;
                                         }
                                     }
@@ -2179,7 +2175,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
                                                 let mut i_18 = 0;
                                                 while i_18 < 7 {
                                                     (*hdr).gmv[i_18 as usize] =
-                                                        dav1d_default_wm_params;
+                                                        dav1d_default_wm_params.clone();
                                                     i_18 += 1;
                                                 }
                                                 if (*hdr).frame_type as libc::c_uint
@@ -2393,7 +2389,8 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
                                                                             .p
                                                                             .frame_hdr)
                                                                             .film_grain
-                                                                            .data;
+                                                                            .data
+                                                                            .clone();
                                                                     (*hdr).film_grain.data.seed =
                                                                         seed;
                                                                     current_block =

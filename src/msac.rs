@@ -62,7 +62,6 @@ extern "C" {
 
 pub type ec_win = size_t;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct MsacContext {
     buf_pos: *const uint8_t,

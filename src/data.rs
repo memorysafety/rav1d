@@ -183,7 +183,7 @@ pub unsafe fn dav1d_data_ref(dst: *mut Dav1dData, src: *const Dav1dData) {
     if !((*src).m.user_data.r#ref).is_null() {
         dav1d_ref_inc((*src).m.user_data.r#ref);
     }
-    *dst = *src;
+    *dst = (*src).clone();
 }
 
 pub unsafe fn dav1d_data_props_copy(dst: *mut Dav1dDataProps, src: *const Dav1dDataProps) {
@@ -194,7 +194,7 @@ pub unsafe fn dav1d_data_props_copy(dst: *mut Dav1dDataProps, src: *const Dav1dD
         unreachable!();
     }
     dav1d_ref_dec(&mut (*dst).user_data.r#ref);
-    *dst = *src;
+    *dst = (*src).clone();
     if !((*dst).user_data.r#ref).is_null() {
         dav1d_ref_inc((*dst).user_data.r#ref);
     }

@@ -20,14 +20,12 @@ use rav1d::include::dav1d::headers::Dav1dObuType;
 use rav1d::include::dav1d::headers::DAV1D_OBU_TD;
 
 use rav1d::include::dav1d::data::Dav1dData;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct DemuxerPriv {
     pub f: *mut libc::FILE,
     pub temporal_unit_size: size_t,
     pub frame_unit_size: size_t,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Demuxer {
     pub priv_data_size: libc::c_int,

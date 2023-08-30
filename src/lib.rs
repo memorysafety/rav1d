@@ -93,7 +93,6 @@ use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::data::Dav1dData;
 use crate::include::dav1d::picture::Dav1dPicAllocator;
 use crate::include::dav1d::picture::Dav1dPicture;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContext {
     pub fc: *mut Dav1dFrameContext,
@@ -182,7 +181,6 @@ use crate::src::intra_edge::EdgeFlags;
 use crate::src::refmvs::dav1d_refmvs_clear;
 use crate::src::refmvs::dav1d_refmvs_init;
 use crate::src::refmvs::Dav1dRefmvsDSPContext;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dDSPContext {
     pub fg: Dav1dFilmGrainDSPContext,
@@ -198,7 +196,6 @@ use crate::src::itx::Dav1dInvTxfmDSPContext;
 use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
 use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
 pub type coef = ();
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dMCDSPContext {
     pub mc: [mc_fn; 10],
@@ -379,7 +376,6 @@ pub type mc_fn = Option<
         libc::c_int,
     ) -> (),
 >;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dIntraPredDSPContext {
     pub intra_pred: [angular_ipred_fn; 14],
@@ -431,7 +427,6 @@ pub type angular_ipred_fn = Option<
         libc::c_int,
     ) -> (),
 >;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFilmGrainDSPContext {
     pub generate_grain_y: generate_grain_y_fn,
@@ -498,7 +493,6 @@ use crate::src::picture::dav1d_thread_picture_move_ref;
 use crate::src::picture::dav1d_thread_picture_ref;
 use crate::src::picture::dav1d_thread_picture_unref;
 use crate::src::picture::Dav1dThreadPicture;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTaskContext {
     pub c: *const Dav1dContext,
@@ -539,7 +533,6 @@ use crate::src::internal::Dav1dTileState;
 use crate::src::refmvs::refmvs_frame;
 use crate::src::refmvs::refmvs_temporal_block;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext {
     pub seq_hdr_ref: *mut Dav1dRef,
@@ -607,7 +600,6 @@ use crate::src::internal::Dav1dFrameContext_lf;
 use crate::src::internal::CodedBlockInfo;
 use crate::src::internal::Dav1dFrameContext_frame_thread;
 use crate::src::levels::Av1Block;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext_bd_fn {
     pub recon_b_intra: recon_b_intra_fn,
@@ -633,7 +625,6 @@ pub type recon_b_intra_fn = Option<
     unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, EdgeFlags, *const Av1Block) -> (),
 >;
 use crate::src::internal::ScalableMotionParams;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dSettings {
     pub n_threads: libc::c_int,
@@ -958,8 +949,8 @@ pub unsafe extern "C" fn dav1d_open(
             0,
             ::core::mem::size_of::<Dav1dContext>(),
         );
-        (*c).allocator = (*s).allocator;
-        (*c).logger = (*s).logger;
+        (*c).allocator = (*s).allocator.clone();
+        (*c).logger = (*s).logger.clone();
         (*c).apply_grain = (*s).apply_grain;
         (*c).operating_point = (*s).operating_point;
         (*c).all_layers = (*s).all_layers;
@@ -2076,7 +2067,7 @@ pub unsafe extern "C" fn dav1d_get_decode_error_data_props(
         return -(22 as libc::c_int);
     }
     dav1d_data_props_unref_internal(out);
-    *out = (*c).cached_error_props;
+    *out = (*c).cached_error_props.clone();
     dav1d_data_props_set_defaults(&mut (*c).cached_error_props);
     return 0 as libc::c_int;
 }

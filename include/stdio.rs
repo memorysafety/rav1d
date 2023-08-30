@@ -8,7 +8,6 @@ extern "C" {
     pub type _IO_marker;
 }
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct _IO_FILE {
     pub _flags: libc::c_int,

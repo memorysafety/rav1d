@@ -90,7 +90,6 @@ use crate::src::levels::mv;
 
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 
-#[derive(Copy, Clone)]
 #[repr(C, packed)]
 pub struct refmvs_temporal_block {
     pub mv: mv,
@@ -116,7 +115,7 @@ pub struct refmvs_mvpair {
 }
 
 /// For why this unaligned, see the aligned [`refmvs_block`] below.
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C, packed)]
 pub struct refmvs_block_unaligned {
     pub mv: refmvs_mvpair,
@@ -133,11 +132,10 @@ pub struct refmvs_block_unaligned {
 /// into an inner packed [`refmvs_block_unaligned`]
 /// and an outer aligned [`refmvs_block`]
 /// that is just a wrapper over the real [`refmvs_block_unaligned`].
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C, align(4))]
 pub struct refmvs_block(pub refmvs_block_unaligned);
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct refmvs_frame {
     pub frm_hdr: *const Dav1dFrameHeader,
@@ -164,13 +162,11 @@ pub struct refmvs_frame {
     pub n_tile_threads: libc::c_int,
     pub n_frame_threads: libc::c_int,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct refmvs_tile_range {
     pub start: libc::c_int,
     pub end: libc::c_int,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct refmvs_tile {
     pub rf: *const refmvs_frame,
@@ -212,7 +208,6 @@ pub type splat_mv_fn = Option<
     unsafe extern "C" fn(*mut *mut refmvs_block, usize, &refmvs_block, usize, usize, usize) -> (),
 >;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dRefmvsDSPContext {
     pub load_tmvs: load_tmvs_fn,
@@ -1649,7 +1644,7 @@ unsafe extern "C" fn splat_mv_rust(
     let rr = unsafe { std::slice::from_raw_parts_mut(rr, rr_len) };
 
     for r in &mut rr[..bh4] {
-        std::slice::from_raw_parts_mut(*r, bx4 + bw4)[bx4..].fill(*rmv);
+        std::slice::from_raw_parts_mut(*r, bx4 + bw4)[bx4..].fill_with(|| rmv.clone())
     }
 }
 

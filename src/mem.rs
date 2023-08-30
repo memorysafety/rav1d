@@ -17,7 +17,6 @@ use libc::pthread_mutex_lock;
 use libc::pthread_mutex_t;
 use libc::pthread_mutex_unlock;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dMemPool {
     pub lock: pthread_mutex_t,
@@ -25,7 +24,6 @@ pub struct Dav1dMemPool {
     pub ref_cnt: libc::c_int,
     pub end: libc::c_int,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dMemPoolBuffer {
     pub data: *mut libc::c_void,

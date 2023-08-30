@@ -10,7 +10,6 @@ extern "C" {
         __size: size_t,
     ) -> libc::c_int;
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dRef {
     pub data: *mut libc::c_void,

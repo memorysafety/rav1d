@@ -27,7 +27,6 @@ extern "C" {
     fn dav1d_version() -> *const libc::c_char;
     fn dav1d_default_settings(s: *mut Dav1dSettings);
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct option {
     pub name: *const libc::c_char,
@@ -50,7 +49,6 @@ use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
 use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_RESTORATION;
 use rav1d::include::dav1d::picture::Dav1dPicAllocator;
 use rav1d::src::cpu::dav1d_set_cpu_flags_mask;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dSettings {
     pub n_threads: libc::c_int,
@@ -67,7 +65,6 @@ pub struct Dav1dSettings {
     pub decode_frame_type: Dav1dDecodeFrameType,
     pub reserved: [uint8_t; 16],
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct CLISettings {
     pub outputfile: *const libc::c_char,
@@ -89,7 +86,6 @@ pub const REALTIME_CUSTOM: CLISettings_realtime = 2;
 pub const REALTIME_INPUT: CLISettings_realtime = 1;
 pub const REALTIME_DISABLE: CLISettings_realtime = 0;
 pub const ARG_DECODE_FRAME_TYPE: arg = 273;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct EnumParseTable {
     pub str_0: *const libc::c_char,

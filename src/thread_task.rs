@@ -58,7 +58,6 @@ use crate::include::stdatomic::atomic_uint;
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
 use crate::src::r#ref::Dav1dRef;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext {
     pub seq_hdr_ref: *mut Dav1dRef,
@@ -166,7 +165,6 @@ use crate::src::refmvs::refmvs_frame;
 
 use crate::src::env::BlockContext;
 use crate::src::refmvs::refmvs_temporal_block;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext_bd_fn {
     pub recon_b_intra: recon_b_intra_fn,
@@ -184,7 +182,6 @@ pub type read_coef_blocks_fn =
     Option<unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> ()>;
 use crate::src::levels::BlockSize;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTaskContext {
     pub c: *const Dav1dContext,
@@ -218,7 +215,6 @@ use crate::src::refmvs::refmvs_tile;
 
 use crate::src::internal::Dav1dTileState;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContext {
     pub fc: *mut Dav1dFrameContext,
@@ -290,7 +286,6 @@ use crate::src::internal::Dav1dContext_intra_edge;
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::refmvs::Dav1dRefmvsDSPContext;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dDSPContext {
     pub fg: Dav1dFilmGrainDSPContext,
@@ -305,7 +300,6 @@ use crate::src::cdef::Dav1dCdefDSPContext;
 use crate::src::itx::Dav1dInvTxfmDSPContext;
 use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
 use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dMCDSPContext {
     pub mc: [mc_fn; 10],
@@ -486,7 +480,6 @@ pub type mc_fn = Option<
         libc::c_int,
     ) -> (),
 >;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dIntraPredDSPContext {
     pub intra_pred: [angular_ipred_fn; 14],
@@ -538,7 +531,6 @@ pub type angular_ipred_fn = Option<
         libc::c_int,
     ) -> (),
 >;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFilmGrainDSPContext {
     pub generate_grain_y: generate_grain_y_fn,
@@ -1674,7 +1666,7 @@ pub unsafe extern "C" fn dav1d_worker_task(mut data: *mut libc::c_void) -> *mut 
                                                                 let mut next_t: *mut Dav1dTask =
                                                                     &mut *t.offset(1)
                                                                         as *mut Dav1dTask;
-                                                                *next_t = *t;
+                                                                *next_t = (*t).clone();
                                                                 (*next_t).sby += 1;
                                                                 let ntr =
                                                                     (*f).frame_thread.next_tile_row

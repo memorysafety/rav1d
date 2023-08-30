@@ -7,7 +7,6 @@ cfg_if::cfg_if! {
             0
         }
     } else if #[cfg(target_os = "macos")] {
-        #[derive(Copy, Clone)]
         #[repr(C)]
         pub struct _opaque_pthread_once_t {
             pub __sig: libc::c_long,

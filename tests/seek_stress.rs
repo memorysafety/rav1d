@@ -109,7 +109,6 @@ cfg_if::cfg_if! {
         }
     }
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct CLISettings {
     pub outputfile: *const libc::c_char,

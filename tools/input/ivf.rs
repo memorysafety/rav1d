@@ -23,7 +23,6 @@ extern "C" {
 }
 
 use rav1d::include::dav1d::data::Dav1dData;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct DemuxerPriv {
     pub f: *mut libc::FILE,
@@ -32,7 +31,6 @@ pub struct DemuxerPriv {
     pub last_ts: uint64_t,
     pub step: uint64_t,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Demuxer {
     pub priv_data_size: libc::c_int,

@@ -171,7 +171,6 @@ use crate::include::stdatomic::atomic_uint;
 use crate::src::data::dav1d_data_props_copy;
 use crate::src::data::dav1d_data_unref_internal;
 use crate::src::r#ref::Dav1dRef;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext {
     pub seq_hdr_ref: *mut Dav1dRef,
@@ -288,7 +287,6 @@ use crate::src::refmvs::refmvs_frame;
 use crate::src::refmvs::refmvs_mvpair;
 use crate::src::refmvs::refmvs_refpair;
 use crate::src::refmvs::refmvs_temporal_block;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext_bd_fn {
     pub recon_b_intra: recon_b_intra_fn,
@@ -340,7 +338,6 @@ use crate::src::levels::BlockSize;
 use crate::src::levels::BS_128x128;
 use crate::src::levels::BS_4x4;
 use crate::src::levels::BS_64x64;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTaskContext {
     pub c: *const Dav1dContext,
@@ -376,7 +373,6 @@ use crate::src::refmvs::refmvs_tile;
 
 use crate::src::internal::Dav1dTileState;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContext {
     pub fc: *mut Dav1dFrameContext,
@@ -452,7 +448,6 @@ use crate::src::intra_edge::EdgeNode;
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 use crate::src::refmvs::Dav1dRefmvsDSPContext;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dDSPContext {
     pub fg: Dav1dFilmGrainDSPContext,
@@ -467,7 +462,6 @@ use crate::src::cdef::Dav1dCdefDSPContext;
 use crate::src::itx::Dav1dInvTxfmDSPContext;
 use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
 use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dMCDSPContext {
     pub mc: [mc_fn; 10],
@@ -648,7 +642,6 @@ pub type mc_fn = Option<
         libc::c_int,
     ) -> (),
 >;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dIntraPredDSPContext {
     pub intra_pred: [angular_ipred_fn; 14],
@@ -700,7 +693,6 @@ pub type angular_ipred_fn = Option<
         libc::c_int,
     ) -> (),
 >;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFilmGrainDSPContext {
     pub generate_grain_y: generate_grain_y_fn,
