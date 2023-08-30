@@ -349,13 +349,13 @@ unsafe fn wiener_rust<BD: BitDepth>(
     let round_bits_v = 11 - (bitdepth == 12) as libc::c_int * 2;
     let rounding_off_v = 1 << round_bits_v - 1;
     let round_offset = 1 << bitdepth + (round_bits_v - 1);
-    for j in 0..h {
-        for i in 0..w {
+    for j in 0..h as usize {
+        for i in 0..w as usize {
             let mut sum = -round_offset;
+            let z = &hor[j * REST_UNIT_STRIDE + i..(j + 7) * REST_UNIT_STRIDE];
 
             for k in 0..7 {
-                sum += hor[((j + k) * REST_UNIT_STRIDE as libc::c_int + i) as usize] as libc::c_int
-                    * filter[1][k as usize] as libc::c_int;
+                sum += z[k * REST_UNIT_STRIDE] as libc::c_int * filter[1][k] as libc::c_int;
             }
 
             *p.offset(j as isize * BD::pxstride(stride as usize) as isize + i as isize) =
