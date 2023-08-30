@@ -152,7 +152,6 @@ pub struct Dav1dInvTxfmDSPContext {
 macro_rules! decl_itx_fn {
     ($name:ident) => {
         // TODO(legare): Temporarily pub until init fns are deduplicated.
-        #[allow(dead_code)] // TODO(kkysen) Way more asm fns than exist are declared.
         pub(crate) fn $name(
             dst: *mut DynPixel,
             dst_stride: ptrdiff_t,
@@ -220,35 +219,27 @@ macro_rules! decl_itx16_fns {
 }
 
 #[cfg(feature = "asm")]
-macro_rules! decl_itx17_fns {
-    ($w:literal x $h:literal, $bpc:literal bpc, $asm:ident) => {
-        decl_itx16_fns!($w x $h, $bpc bpc, $asm);
-        decl_itx_fn!(wht, wht, $w x $h, $bpc bpc, $asm);
-    };
-}
-
-#[cfg(feature = "asm")]
 macro_rules! decl_itx_fns {
     ($bpc:literal bpc, $asm:ident) => {
-        decl_itx17_fns!( 4 x  4, $bpc bpc, $asm);
+        decl_itx16_fns!( 4 x  4, $bpc bpc, $asm);
         decl_itx16_fns!( 4 x  8, $bpc bpc, $asm);
         decl_itx16_fns!( 4 x 16, $bpc bpc, $asm);
         decl_itx16_fns!( 8 x  4, $bpc bpc, $asm);
         decl_itx16_fns!( 8 x  8, $bpc bpc, $asm);
         decl_itx16_fns!( 8 x 16, $bpc bpc, $asm);
-        decl_itx2_fns! ( 8 x 32, $bpc bpc, $asm);
         decl_itx16_fns!(16 x  4, $bpc bpc, $asm);
         decl_itx16_fns!(16 x  8, $bpc bpc, $asm);
         decl_itx12_fns!(16 x 16, $bpc bpc, $asm);
+        decl_itx2_fns! ( 8 x 32, $bpc bpc, $asm);
         decl_itx2_fns! (16 x 32, $bpc bpc, $asm);
         decl_itx2_fns! (32 x  8, $bpc bpc, $asm);
         decl_itx2_fns! (32 x 16, $bpc bpc, $asm);
         decl_itx2_fns! (32 x 32, $bpc bpc, $asm);
-        decl_itx_fn!(dct, dct, 16 x 64, $bpc bpc, $asm);
-        decl_itx_fn!(dct, dct, 32 x 64, $bpc bpc, $asm);
-        decl_itx_fn!(dct, dct, 64 x 16, $bpc bpc, $asm);
-        decl_itx_fn!(dct, dct, 64 x 32, $bpc bpc, $asm);
-        decl_itx_fn!(dct, dct, 64 x 64, $bpc bpc, $asm);
+        decl_itx1_fns! (16 x 64, $bpc bpc, $asm);
+        decl_itx1_fns! (32 x 64, $bpc bpc, $asm);
+        decl_itx1_fns! (64 x 16, $bpc bpc, $asm);
+        decl_itx1_fns! (64 x 32, $bpc bpc, $asm);
+        decl_itx1_fns! (64 x 64, $bpc bpc, $asm);
     };
 
     ($asm:ident) => {
@@ -261,22 +252,73 @@ macro_rules! decl_itx_fns {
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 extern "C" {
-    decl_itx_fns!(sse4);
-    decl_itx_fns!(ssse3);
     decl_itx_fn!(wht, wht, 4 x 4, sse2);
 }
 
-#[cfg(all(feature = "asm", target_arch = "x86_64"))]
+#[cfg(all(
+    feature = "asm",
+    feature = "bitdepth_8",
+    any(target_arch = "x86", target_arch = "x86_64"),
+))]
 extern "C" {
-    decl_itx_fns!(avx512icl);
-    decl_itx_fns!(10 bpc, avx512icl);
-    decl_itx_fns!(avx2);
+    decl_itx_fns!(8 bpc, ssse3);
+}
+
+#[cfg(all(
+    feature = "asm",
+    feature = "bitdepth_16",
+    any(target_arch = "x86", target_arch = "x86_64"),
+))]
+extern "C" {
+    decl_itx_fns!(16 bpc, sse4);
+}
+
+#[cfg(all(feature = "asm", feature = "bitdepth_8", target_arch = "x86_64"))]
+extern "C" {
+    decl_itx_fns!(8 bpc, avx2);
+    decl_itx_fns!(8 bpc, avx512icl);
+}
+
+#[cfg(all(feature = "asm", target_arch = "x86_64",))]
+extern "C" {
+    decl_itx_fn!(wht, wht, 4 x 4, avx2);
+
     decl_itx_fns!(10 bpc, avx2);
-    decl_itx_fns!(12 bpc, avx2);
+
+    decl_itx16_fns!( 4 x  4, 12 bpc, avx2);
+    decl_itx16_fns!( 4 x  8, 12 bpc, avx2);
+    decl_itx16_fns!( 4 x 16, 12 bpc, avx2);
+    decl_itx16_fns!( 8 x  4, 12 bpc, avx2);
+    decl_itx16_fns!( 8 x  8, 12 bpc, avx2);
+    decl_itx16_fns!( 8 x 16, 12 bpc, avx2);
+    decl_itx16_fns!(16 x  4, 12 bpc, avx2);
+    decl_itx16_fns!(16 x  8, 12 bpc, avx2);
+    decl_itx12_fns!(16 x 16, 12 bpc, avx2);
+    decl_itx2_fns! ( 8 x 32, 12 bpc, avx2);
+    decl_itx2_fns! (32 x  8, 12 bpc, avx2);
+    decl_itx_fn!(identity, identity, 16 x 32, 12 bpc, avx2);
+    decl_itx_fn!(identity, identity, 32 x 16, 12 bpc, avx2);
+    decl_itx_fn!(identity, identity, 32 x 32, 12 bpc, avx2);
+
+    decl_itx16_fns!( 8 x  8, 10 bpc, avx512icl);
+    decl_itx16_fns!( 8 x 16, 10 bpc, avx512icl);
+    decl_itx16_fns!(16 x  8, 10 bpc, avx512icl);
+    decl_itx12_fns!(16 x 16, 10 bpc, avx512icl);
+    decl_itx2_fns! ( 8 x 32, 10 bpc, avx512icl);
+    decl_itx2_fns! (16 x 32, 10 bpc, avx512icl);
+    decl_itx2_fns! (32 x  8, 10 bpc, avx512icl);
+    decl_itx2_fns! (32 x 16, 10 bpc, avx512icl);
+    decl_itx2_fns! (32 x 32, 10 bpc, avx512icl);
+    decl_itx1_fns! (16 x 64, 10 bpc, avx512icl);
+    decl_itx1_fns! (32 x 64, 10 bpc, avx512icl);
+    decl_itx1_fns! (64 x 16, 10 bpc, avx512icl);
+    decl_itx1_fns! (64 x 32, 10 bpc, avx512icl);
+    decl_itx1_fns! (64 x 64, 10 bpc, avx512icl);
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 extern "C" {
+    decl_itx_fn!(wht, wht, 4 x 4, neon);
     decl_itx_fns!(neon);
 }
 

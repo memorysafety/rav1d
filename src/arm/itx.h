@@ -125,15 +125,15 @@ static ALWAYS_INLINE void itx_dsp_init_arm(Dav1dInvTxfmDSPContext *const c, int 
     assign_itx16_fn(R,  8,  4, neon);
     assign_itx16_fn( ,  8,  8, neon);
     assign_itx16_fn(R,  8, 16, neon);
-    assign_itx2_fn (R,  8, 32, neon);
     assign_itx16_fn(R, 16,  4, neon);
     assign_itx16_fn(R, 16,  8, neon);
     assign_itx12_fn( , 16, 16, neon);
+    assign_itx2_fn (R,  8, 32, neon);
     assign_itx2_fn (R, 16, 32, neon);
-    assign_itx1_fn (R, 16, 64, neon);
     assign_itx2_fn (R, 32,  8, neon);
     assign_itx2_fn (R, 32, 16, neon);
     assign_itx2_fn ( , 32, 32, neon);
+    assign_itx1_fn (R, 16, 64, neon);
     assign_itx1_fn (R, 32, 64, neon);
     assign_itx1_fn (R, 64, 16, neon);
     assign_itx1_fn (R, 64, 32, neon);
