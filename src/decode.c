@@ -2945,7 +2945,7 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
         f->lf.start_of_tile_row = malloc(f->sbh * sizeof(uint8_t));
         if (!f->lf.start_of_tile_row) {
             f->lf.start_of_tile_row_sz = 0;
-            goto error;
+            return retval;
         }
         f->lf.start_of_tile_row_sz = f->sbh;
     }
@@ -2964,12 +2964,12 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
                 malloc(sizeof(*f->frame_thread.tile_start_off) * n_ts);
             if (!f->frame_thread.tile_start_off) {
                 f->n_ts = 0;
-                goto error;
+                return retval;
             }
         }
         dav1d_free_aligned(f->ts);
         f->ts = dav1d_alloc_aligned(sizeof(*f->ts) * n_ts, 32);
-        if (!f->ts) goto error;
+        if (!f->ts) return retval;
         f->n_ts = n_ts;
     }
 
@@ -2979,7 +2979,7 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
         f->a = malloc(sizeof(*f->a) * a_sz);
         if (!f->a) {
             f->a_sz = 0;
-            goto error;
+            return retval;
         }
         f->a_sz = a_sz;
     }
@@ -3007,7 +3007,7 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
                 malloc(lowest_pixel_mem_sz * sizeof(*f->tile_thread.lowest_pixel_mem));
             if (!f->tile_thread.lowest_pixel_mem) {
                 f->tile_thread.lowest_pixel_mem_sz = 0;
-                goto error;
+                return retval;
             }
             f->tile_thread.lowest_pixel_mem_sz = lowest_pixel_mem_sz;
         }
@@ -3030,7 +3030,7 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
                 dav1d_alloc_aligned((size_t)cf_sz * 128 * 128 / 2, 64);
             if (!f->frame_thread.cf) {
                 f->frame_thread.cf_sz = 0;
-                goto error;
+                return retval;
             }
             memset(f->frame_thread.cf, 0, (size_t)cf_sz * 128 * 128 / 2);
             f->frame_thread.cf_sz = cf_sz;
@@ -3044,7 +3044,7 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
                                         num_sb128 * 16 * 16, 64);
                 if (!f->frame_thread.pal) {
                     f->frame_thread.pal_sz = 0;
-                    goto error;
+                    return retval;
                 }
                 f->frame_thread.pal_sz = num_sb128;
             }
@@ -3057,7 +3057,7 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
                                         pal_idx_sz * 128 * 128 / 4, 64);
                 if (!f->frame_thread.pal_idx) {
                     f->frame_thread.pal_idx_sz = 0;
-                    goto error;
+                    return retval;
                 }
                 f->frame_thread.pal_idx_sz = pal_idx_sz;
             }
@@ -3084,7 +3084,7 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
         uint8_t *ptr = f->lf.cdef_line_buf = dav1d_alloc_aligned(alloc_sz, 32);
         if (!ptr) {
             f->lf.cdef_buf_plane_sz[0] = f->lf.cdef_buf_plane_sz[1] = 0;
-            goto error;
+            return retval;
         }
 
         ptr += 32;
@@ -3144,7 +3144,7 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
         uint8_t *ptr = f->lf.lr_line_buf = dav1d_alloc_aligned(alloc_sz, 64);
         if (!ptr) {
             f->lf.lr_buf_plane_sz[0] = f->lf.lr_buf_plane_sz[1] = 0;
-            goto error;
+            return retval;
         }
 
         ptr += 64;
@@ -3175,7 +3175,7 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
         f->lf.level = malloc(sizeof(*f->lf.level) * num_sb128 * 32 * 32 + 3);
         if (!f->lf.mask || !f->lf.level) {
             f->lf.mask_sz = 0;
-            goto error;
+            return retval;
         }
         if (c->n_fc > 1) {
             freep(&f->frame_thread.b);
@@ -3186,7 +3186,7 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
                                          num_sb128 * 32 * 32);
             if (!f->frame_thread.b || !f->frame_thread.cbi) {
                 f->lf.mask_sz = 0;
-                goto error;
+                return retval;
             }
         }
         f->lf.mask_sz = num_sb128;
@@ -3199,7 +3199,7 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
         f->lf.lr_mask = malloc(sizeof(*f->lf.lr_mask) * lr_mask_sz);
         if (!f->lf.lr_mask) {
             f->lf.lr_mask_sz = 0;
-            goto error;
+            return retval;
         }
         f->lf.lr_mask_sz = lr_mask_sz;
     }
@@ -3221,7 +3221,7 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
             dav1d_alloc_aligned(ipred_edge_sz * 128 * 3, 64);
         if (!ptr) {
             f->ipred_edge_sz = 0;
-            goto error;
+            return retval;
         }
         f->ipred_edge[1] = ptr + ipred_edge_sz * 128 * 1;
         f->ipred_edge[2] = ptr + ipred_edge_sz * 128 * 2;
@@ -3234,7 +3234,7 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
         f->lf.tx_lpf_right_edge[0] = malloc(re_sz * 32 * 2);
         if (!f->lf.tx_lpf_right_edge[0]) {
             f->lf.re_sz = 0;
-            goto error;
+            return retval;
         }
         f->lf.tx_lpf_right_edge[1] = f->lf.tx_lpf_right_edge[0] + re_sz * 32;
         f->lf.re_sz = re_sz;
@@ -3246,7 +3246,7 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
             dav1d_refmvs_init_frame(&f->rf, f->seq_hdr, f->frame_hdr,
                                     f->refpoc, f->mvs, f->refrefpoc, f->ref_mvs,
                                     f->c->n_tc, f->c->n_fc);
-        if (ret < 0) goto error;
+        if (ret < 0) return retval;
     }
 
     // setup dequant tables
@@ -3312,7 +3312,6 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
     f->lf.sr_p[2] = f->sr_cur.p.data[has_chroma ? 2 : 0];
 
     retval = 0;
-error:
     return retval;
 }
 
