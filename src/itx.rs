@@ -162,14 +162,14 @@ macro_rules! decl_itx_fn {
         );
     };
 
-    ($prefix:ident, $opt:ident) => {
-        decl_itx_fn!($prefix, _8bpc, $opt);
-        decl_itx_fn!($prefix, _16bpc, $opt);
+    ($name:ident, $asm:ident) => {
+        decl_itx_fn!($name, _8bpc, $asm);
+        decl_itx_fn!($name, _16bpc, $asm);
     };
 
-    ($prefix:ident, $bpc:ident, $opt:ident) => {
+    ($name:ident, $bpc:ident, $asm:ident) => {
         paste::paste! {
-            decl_itx_fn!([<$prefix $bpc $opt>]);
+            decl_itx_fn!([<dav1d_inv_txfm_add_ $name $bpc $asm>]);
         }
     };
 }
@@ -178,15 +178,15 @@ macro_rules! decl_itx_fn {
 macro_rules! decl_itx2_fns {
     ($wxh:ident, $opt:ident) => {
         paste::paste! {
-            decl_itx_fn!([<dav1d_inv_txfm_add_dct_dct $wxh>], $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_identity_identity $wxh>], $opt);
+            decl_itx_fn!([<dct_dct $wxh>], $opt);
+            decl_itx_fn!([<identity_identity $wxh>], $opt);
         }
     };
 
     ($wxh:ident, $bpc:ident, $opt:ident) => {
         paste::paste! {
-            decl_itx_fn!([<dav1d_inv_txfm_add_dct_dct $wxh>], $bpc, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_identity_identity $wxh>], $bpc, $opt);
+            decl_itx_fn!([<dct_dct $wxh>], $bpc, $opt);
+            decl_itx_fn!([<identity_identity $wxh>], $bpc, $opt);
         }
     };
 }
@@ -196,32 +196,32 @@ macro_rules! decl_itx12_fns {
     ($wxh:ident, $opt:ident) => {
         paste::paste! {
             decl_itx2_fns!($wxh, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_dct_adst $wxh>], $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_dct_flipadst $wxh>], $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_dct_identity $wxh>], $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_adst_dct $wxh>], $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_adst_adst $wxh>], $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_adst_flipadst $wxh>], $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_flipadst_dct $wxh>], $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_flipadst_adst $wxh>], $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_flipadst_flipadst $wxh>], $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_identity_dct $wxh>], $opt);
+            decl_itx_fn!([<dct_adst $wxh>], $opt);
+            decl_itx_fn!([<dct_flipadst $wxh>], $opt);
+            decl_itx_fn!([<dct_identity $wxh>], $opt);
+            decl_itx_fn!([<adst_dct $wxh>], $opt);
+            decl_itx_fn!([<adst_adst $wxh>], $opt);
+            decl_itx_fn!([<adst_flipadst $wxh>], $opt);
+            decl_itx_fn!([<flipadst_dct $wxh>], $opt);
+            decl_itx_fn!([<flipadst_adst $wxh>], $opt);
+            decl_itx_fn!([<flipadst_flipadst $wxh>], $opt);
+            decl_itx_fn!([<identity_dct $wxh>], $opt);
         }
     };
 
     ($wxh:ident, $bpc:ident, $opt:ident) => {
         paste::paste! {
             decl_itx2_fns!($wxh, $bpc, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_dct_adst $wxh>], $bpc, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_dct_flipadst $wxh>], $bpc, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_dct_identity $wxh>], $bpc, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_adst_dct $wxh>], $bpc, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_adst_adst $wxh>], $bpc, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_adst_flipadst $wxh>], $bpc, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_flipadst_dct $wxh>], $bpc, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_flipadst_adst $wxh>], $bpc, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_flipadst_flipadst $wxh>], $bpc, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_identity_dct $wxh>], $bpc, $opt);
+            decl_itx_fn!([<dct_adst $wxh>], $bpc, $opt);
+            decl_itx_fn!([<dct_flipadst $wxh>], $bpc, $opt);
+            decl_itx_fn!([<dct_identity $wxh>], $bpc, $opt);
+            decl_itx_fn!([<adst_dct $wxh>], $bpc, $opt);
+            decl_itx_fn!([<adst_adst $wxh>], $bpc, $opt);
+            decl_itx_fn!([<adst_flipadst $wxh>], $bpc, $opt);
+            decl_itx_fn!([<flipadst_dct $wxh>], $bpc, $opt);
+            decl_itx_fn!([<flipadst_adst $wxh>], $bpc, $opt);
+            decl_itx_fn!([<flipadst_flipadst $wxh>], $bpc, $opt);
+            decl_itx_fn!([<identity_dct $wxh>], $bpc, $opt);
         }
     };
 }
@@ -231,20 +231,20 @@ macro_rules! decl_itx16_fns {
     ($wxh:ident, $opt:ident) => {
         paste::paste! {
             decl_itx12_fns!($wxh, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_adst_identity $wxh>], $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_flipadst_identity $wxh>], $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_identity_adst $wxh>], $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_identity_flipadst $wxh>], $opt);
+            decl_itx_fn!([<adst_identity $wxh>], $opt);
+            decl_itx_fn!([<flipadst_identity $wxh>], $opt);
+            decl_itx_fn!([<identity_adst $wxh>], $opt);
+            decl_itx_fn!([<identity_flipadst $wxh>], $opt);
         }
     };
 
     ($wxh:ident, $bpc:ident, $opt:ident) => {
         paste::paste! {
             decl_itx12_fns!($wxh, $bpc, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_adst_identity $wxh>], $bpc, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_flipadst_identity $wxh>], $bpc, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_identity_adst $wxh>], $bpc, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_identity_flipadst $wxh>], $bpc, $opt);
+            decl_itx_fn!([<adst_identity $wxh>], $bpc, $opt);
+            decl_itx_fn!([<flipadst_identity $wxh>], $bpc, $opt);
+            decl_itx_fn!([<identity_adst $wxh>], $bpc, $opt);
+            decl_itx_fn!([<identity_flipadst $wxh>], $bpc, $opt);
         }
     };
 }
@@ -254,7 +254,7 @@ macro_rules! decl_itx17_fns {
     ($wxh:ident, $opt:ident) => {
         paste::paste! {
             decl_itx16_fns!($wxh, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_wht_wht $wxh>], $opt);
+            decl_itx_fn!([<wht_wht $wxh>], $opt);
         }
     };
 }
@@ -276,11 +276,11 @@ macro_rules! decl_itx_fns {
         decl_itx2_fns!(_32x8, $ext);
         decl_itx2_fns!(_32x16, $ext);
         decl_itx2_fns!(_32x32, $ext);
-        decl_itx_fn!(dav1d_inv_txfm_add_dct_dct_16x64, $ext);
-        decl_itx_fn!(dav1d_inv_txfm_add_dct_dct_32x64, $ext);
-        decl_itx_fn!(dav1d_inv_txfm_add_dct_dct_64x16, $ext);
-        decl_itx_fn!(dav1d_inv_txfm_add_dct_dct_64x32, $ext);
-        decl_itx_fn!(dav1d_inv_txfm_add_dct_dct_64x64, $ext);
+        decl_itx_fn!(dct_dct_16x64, $ext);
+        decl_itx_fn!(dct_dct_32x64, $ext);
+        decl_itx_fn!(dct_dct_64x16, $ext);
+        decl_itx_fn!(dct_dct_64x32, $ext);
+        decl_itx_fn!(dct_dct_64x64, $ext);
     };
 
     ($bpc:ident, $ext:ident) => {
@@ -298,11 +298,11 @@ macro_rules! decl_itx_fns {
         decl_itx2_fns!(_32x8, $bpc, $ext);
         decl_itx2_fns!(_32x16, $bpc, $ext);
         decl_itx2_fns!(_32x32, $bpc, $ext);
-        decl_itx_fn!(dav1d_inv_txfm_add_dct_dct_16x64, $bpc, $ext);
-        decl_itx_fn!(dav1d_inv_txfm_add_dct_dct_32x64, $bpc, $ext);
-        decl_itx_fn!(dav1d_inv_txfm_add_dct_dct_64x16, $bpc, $ext);
-        decl_itx_fn!(dav1d_inv_txfm_add_dct_dct_64x32, $bpc, $ext);
-        decl_itx_fn!(dav1d_inv_txfm_add_dct_dct_64x64, $bpc, $ext);
+        decl_itx_fn!(dct_dct_16x64, $bpc, $ext);
+        decl_itx_fn!(dct_dct_32x64, $bpc, $ext);
+        decl_itx_fn!(dct_dct_64x16, $bpc, $ext);
+        decl_itx_fn!(dct_dct_64x32, $bpc, $ext);
+        decl_itx_fn!(dct_dct_64x64, $bpc, $ext);
     };
 }
 
@@ -310,7 +310,7 @@ macro_rules! decl_itx_fns {
 extern "C" {
     decl_itx_fns!(_sse4);
     decl_itx_fns!(_ssse3);
-    decl_itx_fn!(dav1d_inv_txfm_add_wht_wht_4x4, _sse2);
+    decl_itx_fn!(wht_wht_4x4, _sse2);
 }
 
 #[cfg(all(feature = "asm", target_arch = "x86_64"))]
