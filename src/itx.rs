@@ -163,10 +163,8 @@ macro_rules! decl_itx_fn {
     };
 
     ($prefix:ident, $opt:ident) => {
-        paste::paste! {
-            decl_itx_fn!($prefix, _8bpc, $opt);
-            decl_itx_fn!($prefix, _16bpc, $opt);
-        }
+        decl_itx_fn!($prefix, _8bpc, $opt);
+        decl_itx_fn!($prefix, _16bpc, $opt);
     };
 
     ($prefix:ident, $bpc:ident, $opt:ident) => {
