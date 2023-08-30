@@ -2498,7 +2498,8 @@ unsafe extern "C" fn obmc(
                             * (PXSTRIDE as unsafe extern "C" fn(ptrdiff_t) -> ptrdiff_t)(
                                 dst_stride,
                             )) as isize,
-                    ).cast(),
+                    )
+                    .cast(),
                     dst_stride,
                     lap.cast(),
                     h_mul * ow4_0,

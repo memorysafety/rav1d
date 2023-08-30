@@ -2479,7 +2479,8 @@ unsafe extern "C" fn obmc(
                     return res;
                 }
                 ((*(*f).dsp).mc.blend_v).expect("non-null function pointer")(
-                    dst.offset(((y * v_mul) as isize * dst_stride) as isize).cast(),
+                    dst.offset(((y * v_mul) as isize * dst_stride) as isize)
+                        .cast(),
                     dst_stride,
                     lap.cast(),
                     h_mul * ow4_0,
