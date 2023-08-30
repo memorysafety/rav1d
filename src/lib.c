@@ -366,12 +366,11 @@ static int output_image(Dav1dContext *const c, Dav1dPicture *const out)
     if (!c->apply_grain || !has_grain(&in->p)) {
         dav1d_picture_move_ref(out, &in->p);
         dav1d_thread_picture_unref(in);
-        goto end;
+    } else {
+        res = dav1d_apply_grain(c, out, &in->p);
+        dav1d_thread_picture_unref(in);
     }
 
-    res = dav1d_apply_grain(c, out, &in->p);
-    dav1d_thread_picture_unref(in);
-end:
     if (!c->all_layers && c->max_spatial_id && c->out.p.data[0]) {
         dav1d_thread_picture_move_ref(in, &c->out);
     }
