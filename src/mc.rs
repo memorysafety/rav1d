@@ -1406,10 +1406,10 @@ pub struct Dav1dMCDSPContext {
 }
 
 macro_rules! filter_fns {
-    ($ty:ident, $type_h:expr, $type_v:expr) => {
+    ($mc_kind:ident, $type_h:expr, $type_v:expr) => {
         paste::paste! {
             // TODO(legare): Temporarily pub until init fns are deduplicated.
-            pub(crate) unsafe extern "C" fn [<put_8tap_ $ty _c_erased>]<BD: BitDepth>(
+            pub(crate) unsafe extern "C" fn [<put_8tap_ $mc_kind _c_erased>]<BD: BitDepth>(
                 dst: *mut DynPixel,
                 dst_stride: ptrdiff_t,
                 src: *const DynPixel,
@@ -1435,7 +1435,7 @@ macro_rules! filter_fns {
             }
 
             // TODO(legare): Temporarily pub until init fns are deduplicated.
-            pub(crate) unsafe extern "C" fn [<put_8tap_ $ty _scaled_c_erased>]<BD: BitDepth>(
+            pub(crate) unsafe extern "C" fn [<put_8tap_ $mc_kind _scaled_c_erased>]<BD: BitDepth>(
                 dst: *mut DynPixel,
                 dst_stride: ptrdiff_t,
                 src: *const DynPixel,
@@ -1465,7 +1465,7 @@ macro_rules! filter_fns {
             }
 
             // TODO(legare): Temporarily pub until init fns are deduplicated.
-            pub(crate) unsafe extern "C" fn [<prep_8tap_ $ty _c_erased>]<BD: BitDepth>(
+            pub(crate) unsafe extern "C" fn [<prep_8tap_ $mc_kind _c_erased>]<BD: BitDepth>(
                 tmp: *mut int16_t,
                 src: *const DynPixel,
                 src_stride: ptrdiff_t,
@@ -1489,7 +1489,7 @@ macro_rules! filter_fns {
             }
 
             // TODO(legare): Temporarily pub until init fns are deduplicated.
-            pub(crate) unsafe extern "C" fn [<prep_8tap_ $ty _scaled_c_erased>]<BD: BitDepth>(
+            pub(crate) unsafe extern "C" fn [<prep_8tap_ $mc_kind _scaled_c_erased>]<BD: BitDepth>(
                 tmp: *mut int16_t,
                 src: *const DynPixel,
                 src_stride: ptrdiff_t,
@@ -1740,6 +1740,7 @@ pub(crate) unsafe extern "C" fn w_mask_444_c_erased<BD: BitDepth>(
     sign: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
+    debug_assert!(sign == 1 || sign == 0);
     w_mask_rust(
         dst.cast(),
         dst_stride as usize,
@@ -1767,6 +1768,7 @@ pub(crate) unsafe extern "C" fn w_mask_422_c_erased<BD: BitDepth>(
     sign: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
+    debug_assert!(sign == 1 || sign == 0);
     w_mask_rust(
         dst.cast(),
         dst_stride as usize,
@@ -1794,6 +1796,7 @@ pub(crate) unsafe extern "C" fn w_mask_420_c_erased<BD: BitDepth>(
     sign: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
+    debug_assert!(sign == 1 || sign == 0);
     w_mask_rust(
         dst.cast(),
         dst_stride as usize,
@@ -2155,24 +2158,33 @@ macro_rules! decl_fn {
 
 #[cfg(feature = "asm")]
 macro_rules! decl_fns {
-    ($ty:ident, $name:ident) => {
-        decl_fns!($ty, $name, sse2);
-        decl_fns!($ty, $name, ssse3);
-        decl_fns!($ty, $name, avx2);
-        decl_fns!($ty, $name, avx512icl);
+    ($mc_kind:ident, $name:ident) => {
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+        decl_fns!($mc_kind, $name, sse2);
+
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+        decl_fns!($mc_kind, $name, ssse3);
+
+        #[cfg(target_arch = "x86_64")]
+        decl_fns!($mc_kind, $name, avx2);
+
+        #[cfg(target_arch = "x86_64")]
+        decl_fns!($mc_kind, $name, avx512icl);
+
+        #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+        decl_fns!($mc_kind, $name, neon);
     };
 
-    ($ty:ident, $name:ident, $suffix:ident) => {
+    ($mc_kind:ident, $name:ident, $suffix:ident) => {
         paste::paste! {
             #[cfg(feature = "bitdepth_8")]
-            decl_fn!($ty, [<$name _8bpc_ $suffix>]);
+            decl_fn!($mc_kind, [<$name _8bpc_ $suffix>]);
             #[cfg(feature = "bitdepth_16")]
-            decl_fn!($ty, [<$name _16bpc_ $suffix>]);
+            decl_fn!($mc_kind, [<$name _16bpc_ $suffix>]);
         }
     };
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 extern "C" {
     decl_fns!(mc, dav1d_put_8tap_regular);
     decl_fns!(mc, dav1d_put_8tap_regular_smooth);
@@ -2235,45 +2247,4 @@ extern "C" {
 
     decl_fns!(emu_edge, dav1d_emu_edge);
     decl_fns!(resize, dav1d_resize);
-}
-
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-extern "C" {
-    decl_fns!(mc, dav1d_put_8tap_regular, neon);
-    decl_fns!(mc, dav1d_put_8tap_regular_smooth, neon);
-    decl_fns!(mc, dav1d_put_8tap_regular_sharp, neon);
-    decl_fns!(mc, dav1d_put_8tap_smooth, neon);
-    decl_fns!(mc, dav1d_put_8tap_smooth_regular, neon);
-    decl_fns!(mc, dav1d_put_8tap_smooth_sharp, neon);
-    decl_fns!(mc, dav1d_put_8tap_sharp, neon);
-    decl_fns!(mc, dav1d_put_8tap_sharp_regular, neon);
-    decl_fns!(mc, dav1d_put_8tap_sharp_smooth, neon);
-    decl_fns!(mc, dav1d_put_bilin, neon);
-
-    decl_fns!(mct, dav1d_prep_8tap_regular, neon);
-    decl_fns!(mct, dav1d_prep_8tap_regular_smooth, neon);
-    decl_fns!(mct, dav1d_prep_8tap_regular_sharp, neon);
-    decl_fns!(mct, dav1d_prep_8tap_smooth, neon);
-    decl_fns!(mct, dav1d_prep_8tap_smooth_regular, neon);
-    decl_fns!(mct, dav1d_prep_8tap_smooth_sharp, neon);
-    decl_fns!(mct, dav1d_prep_8tap_sharp, neon);
-    decl_fns!(mct, dav1d_prep_8tap_sharp_regular, neon);
-    decl_fns!(mct, dav1d_prep_8tap_sharp_smooth, neon);
-    decl_fns!(mct, dav1d_prep_bilin, neon);
-
-    decl_fns!(avg, dav1d_avg, neon);
-    decl_fns!(w_avg, dav1d_w_avg, neon);
-    decl_fns!(mask, dav1d_mask, neon);
-    decl_fns!(blend, dav1d_blend, neon);
-    decl_fns!(blend_dir, dav1d_blend_h, neon);
-    decl_fns!(blend_dir, dav1d_blend_v, neon);
-
-    decl_fns!(w_mask, dav1d_w_mask_444, neon);
-    decl_fns!(w_mask, dav1d_w_mask_422, neon);
-    decl_fns!(w_mask, dav1d_w_mask_420, neon);
-
-    decl_fns!(warp8x8, dav1d_warp_affine_8x8, neon);
-    decl_fns!(warp8x8t, dav1d_warp_affine_8x8t, neon);
-
-    decl_fns!(emu_edge, dav1d_emu_edge, neon);
 }
