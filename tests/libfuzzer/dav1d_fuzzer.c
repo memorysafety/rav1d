@@ -101,7 +101,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 
     dav1d_version();
 
-    if (size < 32) goto end;
+    if (size < 32) return 0;
 #ifdef DAV1D_ALLOC_FAIL
     unsigned h = djb_xor(ptr, 32);
     unsigned seed = h;
@@ -129,7 +129,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 #endif
 
     err = dav1d_open(&ctx, &settings);
-    if (err < 0) goto end;
+    if (err < 0) return 0;
 
     while (ptr <= data + size - 12) {
         Dav1dData buf;
@@ -194,6 +194,5 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 
 cleanup:
     dav1d_close(&ctx);
-end:
     return 0;
 }
