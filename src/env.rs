@@ -375,8 +375,8 @@ pub fn av1_get_ref_ctx(
     l: &BlockContext,
     yb4: libc::c_int,
     xb4: libc::c_int,
-    mut have_top: bool,
-    mut have_left: bool,
+    have_top: bool,
+    have_left: bool,
 ) -> u8 {
     let mut cnt = [0; 2];
 

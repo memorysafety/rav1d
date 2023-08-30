@@ -8,7 +8,6 @@ use rav1d::include::stdint::uint32_t;
 use rav1d::include::stdint::uint64_t;
 use rav1d::include::stdint::uint8_t;
 extern "C" {
-    pub type Dav1dRef;
     fn llround(_: libc::c_double) -> libc::c_longlong;
     fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
     fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut libc::FILE;
@@ -84,9 +83,9 @@ unsafe extern "C" fn rl64(p: *const uint8_t) -> int64_t {
 unsafe extern "C" fn ivf_open(
     c: *mut IvfInputContext,
     file: *const libc::c_char,
-    mut fps: *mut libc::c_uint,
+    fps: *mut libc::c_uint,
     num_frames: *mut libc::c_uint,
-    mut timebase: *mut libc::c_uint,
+    timebase: *mut libc::c_uint,
 ) -> libc::c_int {
     let mut hdr: [uint8_t; 32] = [0; 32];
     (*c).f = fopen(file, b"rb\0" as *const u8 as *const libc::c_char);
@@ -162,7 +161,7 @@ unsafe extern "C" fn ivf_open(
     while !(fread(data.as_mut_ptr() as *mut libc::c_void, 4, 1, (*c).f)
         != 1 as libc::c_int as libc::c_ulong)
     {
-        let mut sz: size_t = rl32(data.as_mut_ptr()) as size_t;
+        let sz: size_t = rl32(data.as_mut_ptr()) as size_t;
         if fread(data.as_mut_ptr() as *mut libc::c_void, 8, 1, (*c).f)
             != 1 as libc::c_int as libc::c_ulong
         {
@@ -183,7 +182,7 @@ unsafe extern "C" fn ivf_open(
     if fps_num != 0 && fps_den != 0 {
         let mut gcd: uint64_t = fps_num;
         let mut a: uint64_t = fps_den;
-        let mut b: uint64_t = 0;
+        let mut b: uint64_t;
         loop {
             b = a.wrapping_rem(gcd);
             if !(b != 0) {
@@ -251,7 +250,7 @@ unsafe extern "C" fn ivf_read_header(
     return 0 as libc::c_int;
 }
 unsafe extern "C" fn ivf_read(c: *mut IvfInputContext, buf: *mut Dav1dData) -> libc::c_int {
-    let mut ptr: *mut uint8_t = 0 as *mut uint8_t;
+    let ptr: *mut uint8_t;
     let mut sz: ptrdiff_t = 0;
     let mut off: libc::off_t = 0;
     let mut ts: uint64_t = 0;
@@ -334,7 +333,7 @@ unsafe extern "C" fn ivf_close(c: *mut IvfInputContext) {
 }
 #[no_mangle]
 pub static mut ivf_demuxer: Demuxer = {
-    let mut init = Demuxer {
+    let init = Demuxer {
         priv_data_size: ::core::mem::size_of::<IvfInputContext>() as libc::c_ulong as libc::c_int,
         name: b"ivf\0" as *const u8 as *const libc::c_char,
         probe_sz: ::core::mem::size_of::<[uint8_t; 12]>() as libc::c_ulong as libc::c_int,

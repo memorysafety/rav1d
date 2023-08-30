@@ -29,7 +29,7 @@ unsafe extern "C" fn padding(
     tmp_stride: ptrdiff_t,
     mut src: *const pixel,
     src_stride: ptrdiff_t,
-    mut left: *const [pixel; 2],
+    left: *const [pixel; 2],
     mut top: *const pixel,
     mut bottom: *const pixel,
     w: libc::c_int,
@@ -128,7 +128,7 @@ unsafe extern "C" fn padding(
 unsafe extern "C" fn cdef_filter_block_c(
     mut dst: *mut pixel,
     dst_stride: ptrdiff_t,
-    mut left: *const [pixel; 2],
+    left: *const [pixel; 2],
     top: *const pixel,
     bottom: *const pixel,
     pri_strength: libc::c_int,
@@ -288,7 +288,7 @@ unsafe extern "C" fn cdef_filter_block_c(
 unsafe extern "C" fn cdef_filter_block_4x4_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
-    mut left: *const LeftPixelRow2px<DynPixel>,
+    left: *const LeftPixelRow2px<DynPixel>,
     top: *const DynPixel,
     bottom: *const DynPixel,
     pri_strength: libc::c_int,
@@ -370,7 +370,7 @@ unsafe extern "C" fn cdef_filter_block_8x8_c_erased(
     );
 }
 unsafe extern "C" fn cdef_find_dir_c_erased(
-    mut img: *const DynPixel,
+    img: *const DynPixel,
     stride: ptrdiff_t,
     var: *mut libc::c_uint,
     _bitdepth_max: libc::c_int,
@@ -595,7 +595,7 @@ unsafe extern "C" fn cdef_filter_4x4_neon_erased(
     use crate::src::cdef::*;
 
     let mut tmp_buf = Align16([0; 104]);
-    let mut tmp = tmp_buf.0.as_mut_ptr().offset(2 * 8).offset(8);
+    let tmp = tmp_buf.0.as_mut_ptr().offset(2 * 8).offset(8);
     dav1d_cdef_padding4_8bpc_neon(tmp, dst, stride, left, top, bottom, 4, edges);
     dav1d_cdef_filter4_8bpc_neon(
         dst,
@@ -629,7 +629,7 @@ unsafe extern "C" fn cdef_filter_4x8_neon_erased(
     use crate::src::cdef::*;
 
     let mut tmp_buf = Align16([0; 104]);
-    let mut tmp = tmp_buf.0.as_mut_ptr().offset(2 * 8).offset(8);
+    let tmp = tmp_buf.0.as_mut_ptr().offset(2 * 8).offset(8);
     dav1d_cdef_padding4_8bpc_neon(tmp, dst, stride, left, top, bottom, 8, edges);
     dav1d_cdef_filter4_8bpc_neon(
         dst,
@@ -663,7 +663,7 @@ unsafe extern "C" fn cdef_filter_8x8_neon_erased(
     use crate::src::cdef::*;
 
     let mut tmp_buf = Align16([0; 200]);
-    let mut tmp = tmp_buf.0.as_mut_ptr().offset(2 * 16).offset(8);
+    let tmp = tmp_buf.0.as_mut_ptr().offset(2 * 16).offset(8);
     dav1d_cdef_padding8_8bpc_neon(tmp, dst, stride, left, top, bottom, 8, edges);
     dav1d_cdef_filter8_8bpc_neon(
         dst,

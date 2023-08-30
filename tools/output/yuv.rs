@@ -3,7 +3,6 @@ use crate::{stderr, stdout};
 use ::libc;
 use rav1d::include::stdint::uint8_t;
 extern "C" {
-    pub type Dav1dRef;
     fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
     fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut libc::FILE;
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
@@ -72,7 +71,7 @@ unsafe extern "C" fn yuv_open(
 }
 unsafe extern "C" fn yuv_write(c: *mut YuvOutputContext, p: *mut Dav1dPicture) -> libc::c_int {
     let mut current_block: u64;
-    let mut ptr: *mut uint8_t = 0 as *mut uint8_t;
+    let mut ptr: *mut uint8_t;
     let hbd = ((*p).p.bpc > 8) as libc::c_int;
     ptr = (*p).data[0] as *mut uint8_t;
     let mut y = 0;
@@ -159,7 +158,7 @@ unsafe extern "C" fn yuv_close(c: *mut YuvOutputContext) {
 }
 #[no_mangle]
 pub static mut yuv_muxer: Muxer = {
-    let mut init = Muxer {
+    let init = Muxer {
         priv_data_size: ::core::mem::size_of::<YuvOutputContext>() as libc::c_ulong as libc::c_int,
         name: b"yuv\0" as *const u8 as *const libc::c_char,
         extension: b"yuv\0" as *const u8 as *const libc::c_char,

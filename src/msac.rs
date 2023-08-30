@@ -175,6 +175,10 @@ fn ctx_norm(s: &mut MsacContext, dif: ec_win, rng: libc::c_uint) {
     }
 }
 
+#[cfg_attr(
+    all(feature = "asm", any(target_arch = "x86_64", target_arch = "aarch64")),
+    allow(dead_code)
+)]
 fn dav1d_msac_decode_bool_equi_rust(s: &mut MsacContext) -> bool {
     let r = s.rng;
     let mut dif = s.dif;
@@ -188,6 +192,10 @@ fn dav1d_msac_decode_bool_equi_rust(s: &mut MsacContext) -> bool {
     !ret
 }
 
+#[cfg_attr(
+    all(feature = "asm", any(target_arch = "x86_64", target_arch = "aarch64")),
+    allow(dead_code)
+)]
 fn dav1d_msac_decode_bool_rust(s: &mut MsacContext, f: libc::c_uint) -> bool {
     let r = s.rng;
     let mut dif = s.dif;
@@ -230,7 +238,7 @@ fn dav1d_msac_decode_symbol_adapt_rust(
 ) -> libc::c_uint {
     let c = (s.dif >> (EC_WIN_SIZE - 16)) as libc::c_uint;
     let r = s.rng >> 8;
-    let mut u = 0;
+    let mut u;
     let mut v = s.rng;
     let mut val = 0;
     assert!(n_symbols <= 15);
@@ -266,6 +274,7 @@ fn dav1d_msac_decode_symbol_adapt_rust(
     val
 }
 
+#[cfg_attr(not(all(feature = "asm", target_arch = "x86_64")), allow(dead_code))]
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn dav1d_msac_decode_symbol_adapt_c(
     s: &mut MsacContext,
@@ -282,6 +291,10 @@ unsafe extern "C" fn dav1d_msac_decode_symbol_adapt_c(
     dav1d_msac_decode_symbol_adapt_rust(s, cdf, n_symbols)
 }
 
+#[cfg_attr(
+    all(feature = "asm", any(target_arch = "x86_64", target_arch = "aarch64")),
+    allow(dead_code)
+)]
 fn dav1d_msac_decode_bool_adapt_rust(s: &mut MsacContext, cdf: &mut [u16; 2]) -> bool {
     let bit = dav1d_msac_decode_bool(s, cdf[0] as libc::c_uint);
     if s.allow_update_cdf() {
@@ -297,6 +310,10 @@ fn dav1d_msac_decode_bool_adapt_rust(s: &mut MsacContext, cdf: &mut [u16; 2]) ->
     bit
 }
 
+#[cfg_attr(
+    all(feature = "asm", any(target_arch = "x86_64", target_arch = "aarch64")),
+    allow(dead_code)
+)]
 fn dav1d_msac_decode_hi_tok_rust(s: &mut MsacContext, cdf: &mut [u16; 4]) -> libc::c_uint {
     let mut tok_br = dav1d_msac_decode_symbol_adapt4(s, cdf, 3);
     let mut tok = 3 + tok_br;

@@ -2,38 +2,8 @@ use ::libc;
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
 
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 extern "C" {
-    fn dav1d_fguv_32x32xn_i422_8bpc_avx512icl(
-        dst_row: *mut pixel,
-        src_row: *const pixel,
-        stride: ptrdiff_t,
-        data: *const Dav1dFilmGrainData,
-        pw: size_t,
-        scaling: *const uint8_t,
-        grain_lut: *const [entry; 82],
-        bh: libc::c_int,
-        row_num: libc::c_int,
-        luma_row: *const pixel,
-        luma_stride: ptrdiff_t,
-        uv_pl: libc::c_int,
-        is_id: libc::c_int,
-    );
-    fn dav1d_fguv_32x32xn_i444_8bpc_avx512icl(
-        dst_row: *mut pixel,
-        src_row: *const pixel,
-        stride: ptrdiff_t,
-        data: *const Dav1dFilmGrainData,
-        pw: size_t,
-        scaling: *const uint8_t,
-        grain_lut: *const [entry; 82],
-        bh: libc::c_int,
-        row_num: libc::c_int,
-        luma_row: *const pixel,
-        luma_stride: ptrdiff_t,
-        uv_pl: libc::c_int,
-        is_id: libc::c_int,
-    );
     fn dav1d_generate_grain_y_8bpc_ssse3(buf: *mut [entry; 82], data: *const Dav1dFilmGrainData);
     fn dav1d_generate_grain_uv_420_8bpc_ssse3(
         buf: *mut [entry; 82],
@@ -80,6 +50,55 @@ extern "C" {
         uv: intptr_t,
     );
     fn dav1d_fguv_32x32xn_i444_8bpc_ssse3(
+        dst_row: *mut pixel,
+        src_row: *const pixel,
+        stride: ptrdiff_t,
+        data: *const Dav1dFilmGrainData,
+        pw: size_t,
+        scaling: *const uint8_t,
+        grain_lut: *const [entry; 82],
+        bh: libc::c_int,
+        row_num: libc::c_int,
+        luma_row: *const pixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: libc::c_int,
+        is_id: libc::c_int,
+    );
+    fn dav1d_fguv_32x32xn_i422_8bpc_ssse3(
+        dst_row: *mut pixel,
+        src_row: *const pixel,
+        stride: ptrdiff_t,
+        data: *const Dav1dFilmGrainData,
+        pw: size_t,
+        scaling: *const uint8_t,
+        grain_lut: *const [entry; 82],
+        bh: libc::c_int,
+        row_num: libc::c_int,
+        luma_row: *const pixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: libc::c_int,
+        is_id: libc::c_int,
+    );
+}
+
+#[cfg(all(feature = "asm", target_arch = "x86_64"))]
+extern "C" {
+    fn dav1d_fguv_32x32xn_i422_8bpc_avx512icl(
+        dst_row: *mut pixel,
+        src_row: *const pixel,
+        stride: ptrdiff_t,
+        data: *const Dav1dFilmGrainData,
+        pw: size_t,
+        scaling: *const uint8_t,
+        grain_lut: *const [entry; 82],
+        bh: libc::c_int,
+        row_num: libc::c_int,
+        luma_row: *const pixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: libc::c_int,
+        is_id: libc::c_int,
+    );
+    fn dav1d_fguv_32x32xn_i444_8bpc_avx512icl(
         dst_row: *mut pixel,
         src_row: *const pixel,
         stride: ptrdiff_t,
@@ -170,21 +189,6 @@ extern "C" {
         is_id: libc::c_int,
     );
     fn dav1d_fguv_32x32xn_i420_8bpc_avx512icl(
-        dst_row: *mut pixel,
-        src_row: *const pixel,
-        stride: ptrdiff_t,
-        data: *const Dav1dFilmGrainData,
-        pw: size_t,
-        scaling: *const uint8_t,
-        grain_lut: *const [entry; 82],
-        bh: libc::c_int,
-        row_num: libc::c_int,
-        luma_row: *const pixel,
-        luma_stride: ptrdiff_t,
-        uv_pl: libc::c_int,
-        is_id: libc::c_int,
-    );
-    fn dav1d_fguv_32x32xn_i422_8bpc_ssse3(
         dst_row: *mut pixel,
         src_row: *const pixel,
         stride: ptrdiff_t,
@@ -360,10 +364,7 @@ use crate::include::common::intops::iclip_u8;
 use crate::include::common::intops::imin;
 use crate::src::filmgrain::get_random_number;
 use crate::src::filmgrain::round2;
-unsafe extern "C" fn generate_grain_y_c(
-    mut buf: *mut [entry; 82],
-    data: *const Dav1dFilmGrainData,
-) {
+unsafe extern "C" fn generate_grain_y_c(buf: *mut [entry; 82], data: *const Dav1dFilmGrainData) {
     let bitdepth_min_8 = 8 - 8;
     let mut seed: libc::c_uint = (*data).seed;
     let shift = 4 - bitdepth_min_8 + (*data).grain_scale_shift;
@@ -416,8 +417,8 @@ unsafe extern "C" fn generate_grain_y_c(
 }
 #[inline(never)]
 unsafe extern "C" fn generate_grain_uv_c(
-    mut buf: *mut [entry; 82],
-    mut buf_y: *const [entry; 82],
+    buf: *mut [entry; 82],
+    buf_y: *const [entry; 82],
     data: *const Dav1dFilmGrainData,
     uv: intptr_t,
     subx: libc::c_int,
@@ -509,24 +510,24 @@ unsafe extern "C" fn generate_grain_uv_c(
     }
 }
 unsafe extern "C" fn generate_grain_uv_420_c(
-    mut buf: *mut [entry; 82],
-    mut buf_y: *const [entry; 82],
+    buf: *mut [entry; 82],
+    buf_y: *const [entry; 82],
     data: *const Dav1dFilmGrainData,
     uv: intptr_t,
 ) {
     generate_grain_uv_c(buf, buf_y, data, uv, 1 as libc::c_int, 1 as libc::c_int);
 }
 unsafe extern "C" fn generate_grain_uv_422_c(
-    mut buf: *mut [entry; 82],
-    mut buf_y: *const [entry; 82],
+    buf: *mut [entry; 82],
+    buf_y: *const [entry; 82],
     data: *const Dav1dFilmGrainData,
     uv: intptr_t,
 ) {
     generate_grain_uv_c(buf, buf_y, data, uv, 1 as libc::c_int, 0 as libc::c_int);
 }
 unsafe extern "C" fn generate_grain_uv_444_c(
-    mut buf: *mut [entry; 82],
-    mut buf_y: *const [entry; 82],
+    buf: *mut [entry; 82],
+    buf_y: *const [entry; 82],
     data: *const Dav1dFilmGrainData,
     uv: intptr_t,
 ) {
@@ -534,8 +535,8 @@ unsafe extern "C" fn generate_grain_uv_444_c(
 }
 #[inline]
 unsafe extern "C" fn sample_lut(
-    mut grain_lut: *const [entry; 82],
-    mut offsets: *const [libc::c_int; 2],
+    grain_lut: *const [entry; 82],
+    offsets: *const [libc::c_int; 2],
     subx: libc::c_int,
     suby: libc::c_int,
     bx: libc::c_int,
@@ -555,8 +556,8 @@ unsafe extern "C" fn fgy_32x32xn_c(
     stride: ptrdiff_t,
     data: *const Dav1dFilmGrainData,
     pw: size_t,
-    mut scaling: *const uint8_t,
-    mut grain_lut: *const [entry; 82],
+    scaling: *const uint8_t,
+    grain_lut: *const [entry; 82],
     bh: libc::c_int,
     row_num: libc::c_int,
 ) {
@@ -565,8 +566,8 @@ unsafe extern "C" fn fgy_32x32xn_c(
     let grain_ctr = (128 as libc::c_int) << bitdepth_min_8;
     let grain_min = -grain_ctr;
     let grain_max = grain_ctr - 1;
-    let mut min_value = 0;
-    let mut max_value = 0;
+    let min_value;
+    let max_value;
     if (*data).clip_to_restricted_range != 0 {
         min_value = (16 as libc::c_int) << bitdepth_min_8;
         max_value = (235 as libc::c_int) << bitdepth_min_8;
@@ -629,7 +630,7 @@ unsafe extern "C" fn fgy_32x32xn_c(
         while y < bh {
             let mut x = xstart;
             while x < bw {
-                let mut grain = sample_lut(
+                let grain = sample_lut(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [libc::c_int; 2],
                     0 as libc::c_int,
@@ -666,7 +667,7 @@ unsafe extern "C" fn fgy_32x32xn_c(
                     x_0,
                     y,
                 ) as libc::c_int;
-                let mut old = sample_lut(
+                let old = sample_lut(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [libc::c_int; 2],
                     0 as libc::c_int,
@@ -712,7 +713,7 @@ unsafe extern "C" fn fgy_32x32xn_c(
                     x_1,
                     y_0,
                 ) as libc::c_int;
-                let mut old_0 = sample_lut(
+                let old_0 = sample_lut(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [libc::c_int; 2],
                     0 as libc::c_int,
@@ -826,8 +827,8 @@ unsafe extern "C" fn fguv_32x32xn_c(
     stride: ptrdiff_t,
     data: *const Dav1dFilmGrainData,
     pw: size_t,
-    mut scaling: *const uint8_t,
-    mut grain_lut: *const [entry; 82],
+    scaling: *const uint8_t,
+    grain_lut: *const [entry; 82],
     bh: libc::c_int,
     row_num: libc::c_int,
     luma_row: *const pixel,
@@ -842,8 +843,8 @@ unsafe extern "C" fn fguv_32x32xn_c(
     let grain_ctr = (128 as libc::c_int) << bitdepth_min_8;
     let grain_min = -grain_ctr;
     let grain_max = grain_ctr - 1;
-    let mut min_value = 0;
-    let mut max_value = 0;
+    let min_value;
+    let max_value;
     if (*data).clip_to_restricted_range != 0 {
         min_value = (16 as libc::c_int) << bitdepth_min_8;
         max_value = (if is_id != 0 {
@@ -910,7 +911,7 @@ unsafe extern "C" fn fguv_32x32xn_c(
         while y < bh {
             let mut x = xstart;
             while x < bw {
-                let mut grain = sample_lut(
+                let grain = sample_lut(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [libc::c_int; 2],
                     sx,
@@ -964,7 +965,7 @@ unsafe extern "C" fn fguv_32x32xn_c(
                     x_0,
                     y,
                 ) as libc::c_int;
-                let mut old = sample_lut(
+                let old = sample_lut(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [libc::c_int; 2],
                     sx,
@@ -1029,7 +1030,7 @@ unsafe extern "C" fn fguv_32x32xn_c(
                     x_1,
                     y_0,
                 ) as libc::c_int;
-                let mut old_0 = sample_lut(
+                let old_0 = sample_lut(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [libc::c_int; 2],
                     sx,
@@ -1176,19 +1177,19 @@ unsafe extern "C" fn fguv_32x32xn_c(
     }
 }
 unsafe extern "C" fn fguv_32x32xn_420_c(
-    mut dst_row: *mut pixel,
-    mut src_row: *const pixel,
-    mut stride: ptrdiff_t,
-    mut data: *const Dav1dFilmGrainData,
-    mut pw: size_t,
-    mut scaling: *const uint8_t,
-    mut grain_lut: *const [entry; 82],
-    mut bh: libc::c_int,
-    mut row_num: libc::c_int,
-    mut luma_row: *const pixel,
-    mut luma_stride: ptrdiff_t,
-    mut uv_pl: libc::c_int,
-    mut is_id: libc::c_int,
+    dst_row: *mut pixel,
+    src_row: *const pixel,
+    stride: ptrdiff_t,
+    data: *const Dav1dFilmGrainData,
+    pw: size_t,
+    scaling: *const uint8_t,
+    grain_lut: *const [entry; 82],
+    bh: libc::c_int,
+    row_num: libc::c_int,
+    luma_row: *const pixel,
+    luma_stride: ptrdiff_t,
+    uv_pl: libc::c_int,
+    is_id: libc::c_int,
 ) {
     fguv_32x32xn_c(
         dst_row,
@@ -1209,19 +1210,19 @@ unsafe extern "C" fn fguv_32x32xn_420_c(
     );
 }
 unsafe extern "C" fn fguv_32x32xn_422_c(
-    mut dst_row: *mut pixel,
-    mut src_row: *const pixel,
-    mut stride: ptrdiff_t,
-    mut data: *const Dav1dFilmGrainData,
-    mut pw: size_t,
-    mut scaling: *const uint8_t,
-    mut grain_lut: *const [entry; 82],
-    mut bh: libc::c_int,
-    mut row_num: libc::c_int,
-    mut luma_row: *const pixel,
-    mut luma_stride: ptrdiff_t,
-    mut uv_pl: libc::c_int,
-    mut is_id: libc::c_int,
+    dst_row: *mut pixel,
+    src_row: *const pixel,
+    stride: ptrdiff_t,
+    data: *const Dav1dFilmGrainData,
+    pw: size_t,
+    scaling: *const uint8_t,
+    grain_lut: *const [entry; 82],
+    bh: libc::c_int,
+    row_num: libc::c_int,
+    luma_row: *const pixel,
+    luma_stride: ptrdiff_t,
+    uv_pl: libc::c_int,
+    is_id: libc::c_int,
 ) {
     fguv_32x32xn_c(
         dst_row,
@@ -1242,19 +1243,19 @@ unsafe extern "C" fn fguv_32x32xn_422_c(
     );
 }
 unsafe extern "C" fn fguv_32x32xn_444_c(
-    mut dst_row: *mut pixel,
-    mut src_row: *const pixel,
-    mut stride: ptrdiff_t,
-    mut data: *const Dav1dFilmGrainData,
-    mut pw: size_t,
-    mut scaling: *const uint8_t,
-    mut grain_lut: *const [entry; 82],
-    mut bh: libc::c_int,
-    mut row_num: libc::c_int,
-    mut luma_row: *const pixel,
-    mut luma_stride: ptrdiff_t,
-    mut uv_pl: libc::c_int,
-    mut is_id: libc::c_int,
+    dst_row: *mut pixel,
+    src_row: *const pixel,
+    stride: ptrdiff_t,
+    data: *const Dav1dFilmGrainData,
+    pw: size_t,
+    scaling: *const uint8_t,
+    grain_lut: *const [entry; 82],
+    bh: libc::c_int,
+    row_num: libc::c_int,
+    luma_row: *const pixel,
+    luma_stride: ptrdiff_t,
+    uv_pl: libc::c_int,
+    is_id: libc::c_int,
 ) {
     fguv_32x32xn_c(
         dst_row,
@@ -1372,8 +1373,8 @@ unsafe extern "C" fn fgy_32x32xn_neon(
     stride: ptrdiff_t,
     data: *const Dav1dFilmGrainData,
     pw: size_t,
-    mut scaling: *const uint8_t,
-    mut grain_lut: *const [entry; 82],
+    scaling: *const uint8_t,
+    grain_lut: *const [entry; 82],
     bh: libc::c_int,
     row_num: libc::c_int,
 ) {
@@ -1434,8 +1435,8 @@ unsafe extern "C" fn fguv_32x32xn_420_neon(
     stride: ptrdiff_t,
     data: *const Dav1dFilmGrainData,
     pw: size_t,
-    mut scaling: *const uint8_t,
-    mut grain_lut: *const [entry; 82],
+    scaling: *const uint8_t,
+    grain_lut: *const [entry; 82],
     bh: libc::c_int,
     row_num: libc::c_int,
     luma_row: *const pixel,
@@ -1506,8 +1507,8 @@ unsafe extern "C" fn fguv_32x32xn_422_neon(
     stride: ptrdiff_t,
     data: *const Dav1dFilmGrainData,
     pw: size_t,
-    mut scaling: *const uint8_t,
-    mut grain_lut: *const [entry; 82],
+    scaling: *const uint8_t,
+    grain_lut: *const [entry; 82],
     bh: libc::c_int,
     row_num: libc::c_int,
     luma_row: *const pixel,
@@ -1578,8 +1579,8 @@ unsafe extern "C" fn fguv_32x32xn_444_neon(
     stride: ptrdiff_t,
     data: *const Dav1dFilmGrainData,
     pw: size_t,
-    mut scaling: *const uint8_t,
-    mut grain_lut: *const [entry; 82],
+    scaling: *const uint8_t,
+    grain_lut: *const [entry; 82],
     bh: libc::c_int,
     row_num: libc::c_int,
     luma_row: *const pixel,

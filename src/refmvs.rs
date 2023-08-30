@@ -2,31 +2,9 @@ use crate::include::stddef::*;
 use crate::include::stdint::*;
 use cfg_if::cfg_if;
 use libc;
-extern "C" {
-    fn free(_: *mut libc::c_void);
-    fn posix_memalign(
-        __memptr: *mut *mut libc::c_void,
-        __alignment: size_t,
-        __size: size_t,
-    ) -> libc::c_int;
-}
 
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 extern "C" {
-    fn dav1d_splat_mv_avx512icl(
-        rr: *mut *mut refmvs_block,
-        rmv: *const refmvs_block,
-        bx4: libc::c_int,
-        bw4: libc::c_int,
-        bh4: libc::c_int,
-    );
-    fn dav1d_splat_mv_avx2(
-        rr: *mut *mut refmvs_block,
-        rmv: *const refmvs_block,
-        bx4: libc::c_int,
-        bw4: libc::c_int,
-        bh4: libc::c_int,
-    );
     fn dav1d_splat_mv_sse2(
         rr: *mut *mut refmvs_block,
         rmv: *const refmvs_block,
@@ -43,6 +21,24 @@ extern "C" {
         row_end8: libc::c_int,
         col_start8: libc::c_int,
         row_start8: libc::c_int,
+    );
+}
+
+#[cfg(all(feature = "asm", target_arch = "x86_64"))]
+extern "C" {
+    fn dav1d_splat_mv_avx512icl(
+        rr: *mut *mut refmvs_block,
+        rmv: *const refmvs_block,
+        bx4: libc::c_int,
+        bw4: libc::c_int,
+        bh4: libc::c_int,
+    );
+    fn dav1d_splat_mv_avx2(
+        rr: *mut *mut refmvs_block,
+        rmv: *const refmvs_block,
+        bx4: libc::c_int,
+        bw4: libc::c_int,
+        bh4: libc::c_int,
     );
     fn dav1d_save_tmvs_avx2(
         rp: *mut refmvs_temporal_block,
@@ -1025,7 +1021,7 @@ pub unsafe fn dav1d_refmvs_find(
                         continue;
                     }
                 }
-                for mut cand in &mut same[m..2] {
+                for cand in &mut same[m..2] {
                     cand.mv.mv[n] = tgmv[n];
                 }
             }
@@ -1094,7 +1090,7 @@ pub unsafe fn dav1d_refmvs_find(
     assert!(*cnt <= 8);
 
     // clamping
-    let mut n_refmvs = *cnt;
+    let n_refmvs = *cnt;
     if n_refmvs != 0 {
         let left = -(bx4 + bw4 + 4) * 4 * 8;
         let right = (rf.iw4 - bx4 + 4) * 4 * 8;
@@ -1138,7 +1134,7 @@ pub unsafe fn dav1d_refmvs_save_tmvs(
     col_end8 = imin(col_end8, (*rf).iw8);
     let stride: ptrdiff_t = (*rf).rp_stride;
     let ref_sign: *const uint8_t = ((*rf).mfmv_sign).as_ptr();
-    let mut rp: *mut refmvs_temporal_block = (*rf).rp.offset(row_start8 as isize * stride);
+    let rp: *mut refmvs_temporal_block = (*rf).rp.offset(row_start8 as isize * stride);
 
     (*dsp).save_tmvs.expect("non-null function pointer")(
         rp,
@@ -1355,7 +1351,7 @@ pub unsafe extern "C" fn save_tmvs_c(
                 let mut n = 0;
                 while n < bw8 {
                     *rp.offset(x as isize) = {
-                        let mut init = refmvs_temporal_block {
+                        let init = refmvs_temporal_block {
                             mv: (*cand_b).0.mv.mv[1],
                             r#ref: (*cand_b).0.r#ref.r#ref[1],
                         };
@@ -1373,7 +1369,7 @@ pub unsafe extern "C" fn save_tmvs_c(
                 let mut n_0 = 0;
                 while n_0 < bw8 {
                     *rp.offset(x as isize) = {
-                        let mut init = refmvs_temporal_block {
+                        let init = refmvs_temporal_block {
                             mv: (*cand_b).0.mv.mv[0],
                             r#ref: (*cand_b).0.r#ref.r#ref[0],
                         };
@@ -1403,10 +1399,10 @@ pub unsafe fn dav1d_refmvs_init_frame(
     rf: *mut refmvs_frame,
     seq_hdr: *const Dav1dSequenceHeader,
     frm_hdr: *const Dav1dFrameHeader,
-    mut ref_poc: *const libc::c_uint,
+    ref_poc: *const libc::c_uint,
     rp: *mut refmvs_temporal_block,
-    mut ref_ref_poc: *const [libc::c_uint; 7],
-    mut rp_ref: *const *mut refmvs_temporal_block,
+    ref_ref_poc: *const [libc::c_uint; 7],
+    rp_ref: *const *mut refmvs_temporal_block,
     n_tile_threads: libc::c_int,
     n_frame_threads: libc::c_int,
 ) -> libc::c_int {
@@ -1622,10 +1618,10 @@ mod ffi {
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     wrap_splat_mv!(dav1d_splat_mv_sse2);
 
-    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    #[cfg(target_arch = "x86_64")]
     wrap_splat_mv!(dav1d_splat_mv_avx2);
 
-    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    #[cfg(target_arch = "x86_64")]
     wrap_splat_mv!(dav1d_splat_mv_avx512icl);
 
     #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]

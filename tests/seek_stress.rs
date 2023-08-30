@@ -1,12 +1,5 @@
-#![allow(
-    dead_code,
-    mutable_transmutes,
-    non_camel_case_types,
-    non_snake_case,
-    non_upper_case_globals,
-    unused_assignments,
-    unused_mut
-)]
+#![allow(non_camel_case_types)]
+#![allow(non_upper_case_globals)]
 #![feature(extern_types)]
 #![feature(c_variadic)]
 extern crate rav1d;
@@ -140,7 +133,7 @@ unsafe extern "C" fn get_seed() -> libc::c_uint {
         .wrapping_add(ts.tv_nsec as libc::c_ulonglong) as libc::c_uint;
 }
 static mut xs_state: [uint32_t; 4] = [0; 4];
-unsafe fn xor128_srand(mut seed: libc::c_uint) {
+unsafe fn xor128_srand(seed: libc::c_uint) {
     xs_state[0] = seed;
     xs_state[1] = seed & 0xffff0000 | !seed & 0xffff;
     xs_state[2] = !seed & 0xffff0000 | seed & 0xffff;
@@ -163,7 +156,7 @@ unsafe extern "C" fn decode_frame(
     c: *mut Dav1dContext,
     data: *mut Dav1dData,
 ) -> libc::c_int {
-    let mut res: libc::c_int = 0;
+    let mut res: libc::c_int;
     libc::memset(
         p as *mut libc::c_void,
         0,
@@ -256,7 +249,7 @@ unsafe extern "C" fn decode_all(
     c: *mut Dav1dContext,
     data: *mut Dav1dData,
 ) -> libc::c_int {
-    let mut res: libc::c_int = 0 as libc::c_int;
+    let mut res: libc::c_int;
     let mut p: Dav1dPicture = Dav1dPicture {
         seq_hdr: 0 as *mut Dav1dSequenceHeader,
         frame_hdr: 0 as *mut Dav1dFrameHeader,
@@ -308,7 +301,7 @@ unsafe extern "C" fn seek(
     pts: uint64_t,
     data: *mut Dav1dData,
 ) -> libc::c_int {
-    let mut res: libc::c_int = 0;
+    let mut res: libc::c_int;
     res = input_seek(in_0, pts);
     if res != 0 {
         return res;
@@ -393,9 +386,9 @@ unsafe extern "C" fn seek(
     return res;
 }
 unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_int {
-    let mut shift: libc::c_uint = 0;
+    let mut shift: libc::c_uint;
     let mut current_block: u64;
-    let mut version: *const libc::c_char = dav1d_version();
+    let version: *const libc::c_char = dav1d_version();
     if libc::strcmp(version, b"966d63c1\0" as *const u8 as *const libc::c_char) != 0 {
         libc::fprintf(
             stderr,
@@ -463,10 +456,10 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
     let mut total: libc::c_uint = 0;
     let mut i_fps: [libc::c_uint; 2] = [0; 2];
     let mut i_timebase: [libc::c_uint; 2] = [0; 2];
-    let mut timebase: libc::c_double = 0.;
-    let mut spf: libc::c_double = 0.;
-    let mut fps: libc::c_double = 0.;
-    let mut pts: uint64_t = 0;
+    let timebase: libc::c_double;
+    let spf: libc::c_double;
+    let fps: libc::c_double;
+    let mut pts: uint64_t;
     xor128_srand(get_seed());
     parse(argc, argv, &mut cli_settings, &mut lib_settings);
     if input_open(

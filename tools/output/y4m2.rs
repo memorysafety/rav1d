@@ -4,7 +4,6 @@ use ::libc;
 use rav1d::include::stdint::uint64_t;
 use rav1d::include::stdint::uint8_t;
 extern "C" {
-    pub type Dav1dRef;
     fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
     fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut libc::FILE;
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
@@ -57,7 +56,7 @@ unsafe extern "C" fn y4m2_open(
     c: *mut Y4m2OutputContext,
     file: *const libc::c_char,
     mut _p: *const Dav1dPictureParameters,
-    mut fps: *const libc::c_uint,
+    fps: *const libc::c_uint,
 ) -> libc::c_int {
     if strcmp(file, b"-\0" as *const u8 as *const libc::c_char) == 0 {
         (*c).f = stdout;
@@ -129,7 +128,7 @@ unsafe extern "C" fn write_header(
         (fw as uint64_t).wrapping_mul((*(*p).frame_hdr).render_height as uint64_t);
     let mut gcd: uint64_t = ah;
     let mut a: uint64_t = aw;
-    let mut b: uint64_t = 0;
+    let mut b: uint64_t;
     loop {
         b = a.wrapping_rem(gcd);
         if !(b != 0) {
@@ -163,7 +162,7 @@ unsafe extern "C" fn y4m2_write(c: *mut Y4m2OutputContext, p: *mut Dav1dPicture)
         }
     }
     fprintf((*c).f, b"FRAME\n\0" as *const u8 as *const libc::c_char);
-    let mut ptr: *mut uint8_t = 0 as *mut uint8_t;
+    let mut ptr: *mut uint8_t;
     let hbd = ((*p).p.bpc > 8) as libc::c_int;
     ptr = (*p).data[0] as *mut uint8_t;
     let mut y = 0;
@@ -250,7 +249,7 @@ unsafe extern "C" fn y4m2_close(c: *mut Y4m2OutputContext) {
 }
 #[no_mangle]
 pub static mut y4m2_muxer: Muxer = {
-    let mut init = Muxer {
+    let init = Muxer {
         priv_data_size: ::core::mem::size_of::<Y4m2OutputContext>() as libc::c_ulong as libc::c_int,
         name: b"yuv4mpeg2\0" as *const u8 as *const libc::c_char,
         extension: b"y4m\0" as *const u8 as *const libc::c_char,

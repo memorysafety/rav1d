@@ -559,9 +559,9 @@ unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     return x >> 1;
 }
 unsafe extern "C" fn backup2lines(
-    mut dst: *const *mut pixel,
-    mut src: *const *mut pixel,
-    mut stride: *const ptrdiff_t,
+    dst: *const *mut pixel,
+    src: *const *mut pixel,
+    stride: *const ptrdiff_t,
     layout: Dav1dPixelLayout,
 ) {
     let y_stride: ptrdiff_t = PXSTRIDE(*stride.offset(0));
@@ -625,9 +625,9 @@ unsafe extern "C" fn backup2lines(
     }
 }
 unsafe extern "C" fn backup2x8(
-    mut dst: *mut [[pixel; 2]; 8],
-    mut src: *const *mut pixel,
-    mut src_stride: *const ptrdiff_t,
+    dst: *mut [[pixel; 2]; 8],
+    src: *const *mut pixel,
+    src_stride: *const ptrdiff_t,
     mut x_off: libc::c_int,
     layout: Dav1dPixelLayout,
     flag: Backup2x8Flags,
@@ -689,7 +689,7 @@ unsafe extern "C" fn adjust_strength(strength: libc::c_int, var: libc::c_uint) -
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_cdef_brow_16bpc(
     tc: *mut Dav1dTaskContext,
-    mut p: *const *mut pixel,
+    p: *const *mut pixel,
     lflvl: *const Av1Filter,
     by_start: libc::c_int,
     by_end: libc::c_int,
@@ -742,7 +742,7 @@ pub unsafe extern "C" fn dav1d_cdef_brow_16bpc(
             6 as libc::c_int as uint8_t,
         ],
     ];
-    let mut uv_dir: *const uint8_t = (uv_dirs[(layout as libc::c_uint
+    let uv_dir: *const uint8_t = (uv_dirs[(layout as libc::c_uint
         == DAV1D_PIXEL_LAYOUT_I422 as libc::c_int as libc::c_uint)
         as libc::c_int as usize])
         .as_ptr();
@@ -791,16 +791,16 @@ pub unsafe extern "C" fn dav1d_cdef_brow_16bpc(
         let mut sbx = 0;
         let mut last_skip = 1;
         while sbx < sb64w {
-            let mut noskip_row: *const [uint16_t; 2] = 0 as *const [uint16_t; 2];
-            let mut noskip_mask: libc::c_uint = 0;
-            let mut y_lvl = 0;
-            let mut uv_lvl = 0;
-            let mut flag: Backup2x8Flags = 0 as Backup2x8Flags;
-            let mut y_pri_lvl = 0;
-            let mut y_sec_lvl = 0;
-            let mut uv_pri_lvl = 0;
-            let mut uv_sec_lvl = 0;
-            let mut bptrs: [*mut pixel; 3] = [0 as *mut pixel; 3];
+            let noskip_row: *const [uint16_t; 2];
+            let noskip_mask: libc::c_uint;
+            let y_lvl;
+            let uv_lvl;
+            let flag: Backup2x8Flags;
+            let y_pri_lvl;
+            let mut y_sec_lvl;
+            let uv_pri_lvl;
+            let mut uv_sec_lvl;
+            let mut bptrs: [*mut pixel; 3];
             let sb128x = sbx >> 1;
             let sb64_idx = ((by & sbsz) >> 3) + (sbx & 1);
             let cdef_idx =
@@ -831,14 +831,14 @@ pub unsafe extern "C" fn dav1d_cdef_brow_16bpc(
                 bptrs = [iptrs[0], iptrs[1], iptrs[2]];
                 let mut bx = sbx * sbsz;
                 while bx < imin((sbx + 1) * sbsz, (*f).bw) {
-                    let mut uvdir = 0;
-                    let mut do_left = 0;
-                    let mut dir = 0;
-                    let mut variance: libc::c_uint = 0;
-                    let mut top: *const pixel = 0 as *const pixel;
-                    let mut bot: *const pixel = 0 as *const pixel;
-                    let mut offset: ptrdiff_t = 0;
-                    let mut current_block_84: u64;
+                    let uvdir;
+                    let do_left;
+                    let mut dir;
+                    let mut variance: libc::c_uint;
+                    let mut top: *const pixel;
+                    let mut bot: *const pixel;
+                    let mut offset: ptrdiff_t;
+                    let current_block_84: u64;
                     if bx + 2 >= (*f).bw {
                         edges = ::core::mem::transmute::<libc::c_uint, CdefEdgeFlags>(
                             edges as libc::c_uint
@@ -893,7 +893,6 @@ pub unsafe extern "C" fn dav1d_cdef_brow_16bpc(
                         }
                         top = 0 as *const pixel;
                         bot = 0 as *const pixel;
-                        offset = 0;
                         if have_tt == 0 {
                             current_block_84 = 17728966195399430138;
                         } else if sbrow_start != 0 && by == by_start {
@@ -996,7 +995,7 @@ pub unsafe extern "C" fn dav1d_cdef_brow_16bpc(
                             };
                             let mut pl = 1;
                             while pl <= 2 {
-                                let mut current_block_77: u64;
+                                let current_block_77: u64;
                                 if have_tt == 0 {
                                     current_block_77 = 5687667889785024198;
                                 } else if sbrow_start != 0 && by == by_start {

@@ -3,6 +3,7 @@ use ::libc;
 extern "C" {
     fn memcmp(_: *const libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> libc::c_int;
     fn dav1d_cpu_cpuid(regs: *mut CpuidRegisters, leaf: libc::c_uint, subleaf: libc::c_uint);
+    #[cfg(target_arch = "x86_64")]
     fn dav1d_cpu_xgetbv(xcr: libc::c_uint) -> uint64_t;
 }
 

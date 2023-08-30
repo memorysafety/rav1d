@@ -78,9 +78,9 @@ unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
 }
 unsafe extern "C" fn generate_scaling(
     bitdepth: libc::c_int,
-    mut points: *const [uint8_t; 2],
+    points: *const [uint8_t; 2],
     num: libc::c_int,
-    mut scaling: *mut uint8_t,
+    scaling: *mut uint8_t,
 ) {
     if !(bitdepth > 8) {
         unreachable!();
@@ -157,8 +157,8 @@ pub unsafe extern "C" fn dav1d_prep_grain_16bpc(
     dsp: *const Dav1dFilmGrainDSPContext,
     out: *mut Dav1dPicture,
     in_0: *const Dav1dPicture,
-    mut scaling: *mut [uint8_t; 4096],
-    mut grain_lut: *mut [[entry; 82]; 74],
+    scaling: *mut [uint8_t; 4096],
+    grain_lut: *mut [[entry; 82]; 74],
 ) {
     let data: *const Dav1dFilmGrainData = &mut (*(*out).frame_hdr).film_grain.data;
     let bitdepth_max = ((1 as libc::c_int) << (*out).p.bpc) - 1;
@@ -284,8 +284,8 @@ pub unsafe extern "C" fn dav1d_apply_grain_row_16bpc(
     dsp: *const Dav1dFilmGrainDSPContext,
     out: *mut Dav1dPicture,
     in_0: *const Dav1dPicture,
-    mut scaling: *const [uint8_t; 4096],
-    mut grain_lut: *const [[entry; 82]; 74],
+    scaling: *const [uint8_t; 4096],
+    grain_lut: *const [[entry; 82]; 74],
     row: libc::c_int,
 ) {
     let data: *const Dav1dFilmGrainData = &mut (*(*out).frame_hdr).film_grain.data;

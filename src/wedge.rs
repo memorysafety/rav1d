@@ -49,7 +49,7 @@ use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
 static mut wedge_codebook_16_hgtw: [wedge_code_type; 16] = [
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE27 as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -57,7 +57,7 @@ static mut wedge_codebook_16_hgtw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE63 as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -65,7 +65,7 @@ static mut wedge_codebook_16_hgtw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE117 as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -73,7 +73,7 @@ static mut wedge_codebook_16_hgtw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE153 as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -81,7 +81,7 @@ static mut wedge_codebook_16_hgtw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_HORIZONTAL as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 2 as libc::c_int as uint8_t,
@@ -89,7 +89,7 @@ static mut wedge_codebook_16_hgtw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_HORIZONTAL as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -97,7 +97,7 @@ static mut wedge_codebook_16_hgtw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_HORIZONTAL as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 6 as libc::c_int as uint8_t,
@@ -105,7 +105,7 @@ static mut wedge_codebook_16_hgtw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_VERTICAL as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -113,7 +113,7 @@ static mut wedge_codebook_16_hgtw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE27 as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 2 as libc::c_int as uint8_t,
@@ -121,7 +121,7 @@ static mut wedge_codebook_16_hgtw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE27 as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 6 as libc::c_int as uint8_t,
@@ -129,7 +129,7 @@ static mut wedge_codebook_16_hgtw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE153 as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 2 as libc::c_int as uint8_t,
@@ -137,7 +137,7 @@ static mut wedge_codebook_16_hgtw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE153 as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 6 as libc::c_int as uint8_t,
@@ -145,7 +145,7 @@ static mut wedge_codebook_16_hgtw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE63 as libc::c_int as uint8_t,
             x_offset: 2 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -153,7 +153,7 @@ static mut wedge_codebook_16_hgtw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE63 as libc::c_int as uint8_t,
             x_offset: 6 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -161,7 +161,7 @@ static mut wedge_codebook_16_hgtw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE117 as libc::c_int as uint8_t,
             x_offset: 2 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -169,7 +169,7 @@ static mut wedge_codebook_16_hgtw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE117 as libc::c_int as uint8_t,
             x_offset: 6 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -179,7 +179,7 @@ static mut wedge_codebook_16_hgtw: [wedge_code_type; 16] = [
 ];
 static mut wedge_codebook_16_hltw: [wedge_code_type; 16] = [
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE27 as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -187,7 +187,7 @@ static mut wedge_codebook_16_hltw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE63 as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -195,7 +195,7 @@ static mut wedge_codebook_16_hltw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE117 as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -203,7 +203,7 @@ static mut wedge_codebook_16_hltw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE153 as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -211,7 +211,7 @@ static mut wedge_codebook_16_hltw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_VERTICAL as libc::c_int as uint8_t,
             x_offset: 2 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -219,7 +219,7 @@ static mut wedge_codebook_16_hltw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_VERTICAL as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -227,7 +227,7 @@ static mut wedge_codebook_16_hltw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_VERTICAL as libc::c_int as uint8_t,
             x_offset: 6 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -235,7 +235,7 @@ static mut wedge_codebook_16_hltw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_HORIZONTAL as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -243,7 +243,7 @@ static mut wedge_codebook_16_hltw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE27 as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 2 as libc::c_int as uint8_t,
@@ -251,7 +251,7 @@ static mut wedge_codebook_16_hltw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE27 as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 6 as libc::c_int as uint8_t,
@@ -259,7 +259,7 @@ static mut wedge_codebook_16_hltw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE153 as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 2 as libc::c_int as uint8_t,
@@ -267,7 +267,7 @@ static mut wedge_codebook_16_hltw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE153 as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 6 as libc::c_int as uint8_t,
@@ -275,7 +275,7 @@ static mut wedge_codebook_16_hltw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE63 as libc::c_int as uint8_t,
             x_offset: 2 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -283,7 +283,7 @@ static mut wedge_codebook_16_hltw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE63 as libc::c_int as uint8_t,
             x_offset: 6 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -291,7 +291,7 @@ static mut wedge_codebook_16_hltw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE117 as libc::c_int as uint8_t,
             x_offset: 2 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -299,7 +299,7 @@ static mut wedge_codebook_16_hltw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE117 as libc::c_int as uint8_t,
             x_offset: 6 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -309,7 +309,7 @@ static mut wedge_codebook_16_hltw: [wedge_code_type; 16] = [
 ];
 static mut wedge_codebook_16_heqw: [wedge_code_type; 16] = [
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE27 as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -317,7 +317,7 @@ static mut wedge_codebook_16_heqw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE63 as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -325,7 +325,7 @@ static mut wedge_codebook_16_heqw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE117 as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -333,7 +333,7 @@ static mut wedge_codebook_16_heqw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE153 as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -341,7 +341,7 @@ static mut wedge_codebook_16_heqw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_HORIZONTAL as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 2 as libc::c_int as uint8_t,
@@ -349,7 +349,7 @@ static mut wedge_codebook_16_heqw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_HORIZONTAL as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 6 as libc::c_int as uint8_t,
@@ -357,7 +357,7 @@ static mut wedge_codebook_16_heqw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_VERTICAL as libc::c_int as uint8_t,
             x_offset: 2 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -365,7 +365,7 @@ static mut wedge_codebook_16_heqw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_VERTICAL as libc::c_int as uint8_t,
             x_offset: 6 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -373,7 +373,7 @@ static mut wedge_codebook_16_heqw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE27 as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 2 as libc::c_int as uint8_t,
@@ -381,7 +381,7 @@ static mut wedge_codebook_16_heqw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE27 as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 6 as libc::c_int as uint8_t,
@@ -389,7 +389,7 @@ static mut wedge_codebook_16_heqw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE153 as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 2 as libc::c_int as uint8_t,
@@ -397,7 +397,7 @@ static mut wedge_codebook_16_heqw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE153 as libc::c_int as uint8_t,
             x_offset: 4 as libc::c_int as uint8_t,
             y_offset: 6 as libc::c_int as uint8_t,
@@ -405,7 +405,7 @@ static mut wedge_codebook_16_heqw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE63 as libc::c_int as uint8_t,
             x_offset: 2 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -413,7 +413,7 @@ static mut wedge_codebook_16_heqw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE63 as libc::c_int as uint8_t,
             x_offset: 6 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -421,7 +421,7 @@ static mut wedge_codebook_16_heqw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE117 as libc::c_int as uint8_t,
             x_offset: 2 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -429,7 +429,7 @@ static mut wedge_codebook_16_heqw: [wedge_code_type; 16] = [
         init
     },
     {
-        let mut init = wedge_code_type {
+        let init = wedge_code_type {
             direction: WEDGE_OBLIQUE117 as libc::c_int as uint8_t,
             x_offset: 6 as libc::c_int as uint8_t,
             y_offset: 4 as libc::c_int as uint8_t,
@@ -588,7 +588,7 @@ unsafe extern "C" fn init_chroma(
 }
 #[cold]
 unsafe extern "C" fn fill2d_16x2(
-    mut dst: *mut uint8_t,
+    dst: *mut uint8_t,
     w: libc::c_int,
     h: libc::c_int,
     bs: BlockSize,

@@ -152,6 +152,7 @@ pub struct Dav1dInvTxfmDSPContext {
 macro_rules! decl_itx_fn {
     ($name:ident) => {
         // TODO(legare): Temporarily pub until init fns are deduplicated.
+        #[allow(dead_code)] // TODO(kkysen) Way more asm fns than exist are declared.
         pub(crate) fn $name(
             dst: *mut DynPixel,
             dst_stride: ptrdiff_t,
@@ -309,14 +310,18 @@ macro_rules! decl_itx_fns {
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 extern "C" {
+    decl_itx_fns!(_sse4);
+    decl_itx_fns!(_ssse3);
+    decl_itx_fn!(dav1d_inv_txfm_add_wht_wht_4x4, _sse2);
+}
+
+#[cfg(all(feature = "asm", target_arch = "x86_64"))]
+extern "C" {
     decl_itx_fns!(_avx512icl);
     decl_itx_fns!(_10bpc, _avx512icl);
     decl_itx_fns!(_avx2);
     decl_itx_fns!(_10bpc, _avx2);
     decl_itx_fns!(_12bpc, _avx2);
-    decl_itx_fns!(_sse4);
-    decl_itx_fns!(_ssse3);
-    decl_itx_fn!(dav1d_inv_txfm_add_wht_wht_4x4, _sse2);
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
@@ -329,7 +334,7 @@ macro_rules! inv_txfm_fn {
         paste::paste! {
             // TODO(legare): Temporarily pub until init fns are deduplicated.
             pub(crate) unsafe extern "C" fn [<inv_txfm_add_ $type1 _ $type2 _ $w x $h _c_erased>] <BD: BitDepth> (
-                mut dst: *mut DynPixel,
+                dst: *mut DynPixel,
                 stride: ptrdiff_t,
                 coeff: *mut DynCoef,
                 eob: libc::c_int,
