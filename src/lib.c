@@ -543,7 +543,10 @@ int dav1d_apply_grain(Dav1dContext *const c, Dav1dPicture *const out,
     }
 
     int res = dav1d_picture_alloc_copy(c, out, in->p.w, in);
-    if (res < 0) goto error;
+    if (res < 0) {
+        dav1d_picture_unref_internal(out);
+        return res;
+    }
 
     if (c->n_tc > 1) {
         dav1d_task_delayed_fg(c, out, in);
@@ -565,10 +568,6 @@ int dav1d_apply_grain(Dav1dContext *const c, Dav1dPicture *const out,
     }
 
     return 0;
-
-error:
-    dav1d_picture_unref_internal(out);
-    return res;
 }
 
 void dav1d_flush(Dav1dContext *const c) {
