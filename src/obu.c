@@ -1187,6 +1187,27 @@ static int dav1d_parse_obus_error(Dav1dContext *const c, Dav1dData *const in) {
     return DAV1D_ERR(EINVAL);
 }
 
+static int dav1d_parse_obus_skip(Dav1dContext *const c, const unsigned len, const unsigned init_byte_pos) {
+    // update refs with only the headers in case we skip the frame
+    for (int i = 0; i < 8; i++) {
+        if (c->frame_hdr->refresh_frame_flags & (1 << i)) {
+            dav1d_thread_picture_unref(&c->refs[i].p);
+            c->refs[i].p.p.frame_hdr = c->frame_hdr;
+            c->refs[i].p.p.seq_hdr = c->seq_hdr;
+            c->refs[i].p.p.frame_hdr_ref = c->frame_hdr_ref;
+            c->refs[i].p.p.seq_hdr_ref = c->seq_hdr_ref;
+            dav1d_ref_inc(c->frame_hdr_ref);
+            dav1d_ref_inc(c->seq_hdr_ref);
+        }
+    }
+
+    dav1d_ref_dec(&c->frame_hdr_ref);
+    c->frame_hdr = NULL;
+    c->n_tiles = 0;
+
+    return len + init_byte_pos;
+}
+
 int dav1d_parse_obus(Dav1dContext *const c, Dav1dData *const in, const int global) {
     GetBits gb;
     int res;
@@ -1554,11 +1575,11 @@ int dav1d_parse_obus(Dav1dContext *const c, Dav1dData *const in, const int globa
             case DAV1D_FRAME_TYPE_INTER:
             case DAV1D_FRAME_TYPE_SWITCH:
                 if (c->decode_frame_type > DAV1D_DECODEFRAMETYPE_REFERENCE)
-                    goto skip;
+                    return dav1d_parse_obus_skip(c, len, init_byte_pos);
                 break;
             case DAV1D_FRAME_TYPE_INTRA:
                 if (c->decode_frame_type > DAV1D_DECODEFRAMETYPE_INTRA)
-                    goto skip;
+                    return dav1d_parse_obus_skip(c, len, init_byte_pos);
                 // fall-through
             default:
                 break;
@@ -1649,13 +1670,13 @@ int dav1d_parse_obus(Dav1dContext *const c, Dav1dData *const in, const int globa
                 if (c->decode_frame_type > DAV1D_DECODEFRAMETYPE_REFERENCE ||
                     (c->decode_frame_type == DAV1D_DECODEFRAMETYPE_REFERENCE &&
                      !c->frame_hdr->refresh_frame_flags))
-                    goto skip;
+                    return dav1d_parse_obus_skip(c, len, init_byte_pos);
                 break;
             case DAV1D_FRAME_TYPE_INTRA:
                 if (c->decode_frame_type > DAV1D_DECODEFRAMETYPE_INTRA ||
                     (c->decode_frame_type == DAV1D_DECODEFRAMETYPE_REFERENCE &&
                      !c->frame_hdr->refresh_frame_flags))
-                    goto skip;
+                    return dav1d_parse_obus_skip(c, len, init_byte_pos);
                 // fall-through
             default:
                 break;
@@ -1669,26 +1690,6 @@ int dav1d_parse_obus(Dav1dContext *const c, Dav1dData *const in, const int globa
             c->n_tiles = 0;
         }
     }
-
-    return len + init_byte_pos;
-
-skip:
-    // update refs with only the headers in case we skip the frame
-    for (int i = 0; i < 8; i++) {
-        if (c->frame_hdr->refresh_frame_flags & (1 << i)) {
-            dav1d_thread_picture_unref(&c->refs[i].p);
-            c->refs[i].p.p.frame_hdr = c->frame_hdr;
-            c->refs[i].p.p.seq_hdr = c->seq_hdr;
-            c->refs[i].p.p.frame_hdr_ref = c->frame_hdr_ref;
-            c->refs[i].p.p.seq_hdr_ref = c->seq_hdr_ref;
-            dav1d_ref_inc(c->frame_hdr_ref);
-            dav1d_ref_inc(c->seq_hdr_ref);
-        }
-    }
-
-    dav1d_ref_dec(&c->frame_hdr_ref);
-    c->frame_hdr = NULL;
-    c->n_tiles = 0;
 
     return len + init_byte_pos;
 }
