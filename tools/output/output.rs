@@ -3,7 +3,6 @@ use ::libc;
 use libc::size_t;
 use rav1d::include::stdint::uint64_t;
 extern "C" {
-    pub type Dav1dRef;
     pub type MuxerPriv;
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
     fn snprintf(_: *mut libc::c_char, _: size_t, _: *const libc::c_char, _: ...) -> libc::c_int;

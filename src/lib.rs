@@ -10,11 +10,6 @@ extern "C" {
     fn dlsym(__handle: *mut libc::c_void, __name: *const libc::c_char) -> *mut libc::c_void;
     fn calloc(_: size_t, _: size_t) -> *mut libc::c_void;
     fn free(_: *mut libc::c_void);
-    fn posix_memalign(
-        __memptr: *mut *mut libc::c_void,
-        __alignment: size_t,
-        __size: size_t,
-    ) -> libc::c_int;
     fn abort() -> !;
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
     fn dav1d_num_logical_processors(c: *mut Dav1dContext) -> libc::c_int;

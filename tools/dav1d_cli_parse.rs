@@ -3,7 +3,6 @@ use ::libc;
 use rav1d::include::stdint::uint64_t;
 use rav1d::include::stdint::uint8_t;
 extern "C" {
-    pub type Dav1dRef;
     static mut optarg: *mut libc::c_char;
     static mut optind: libc::c_int;
     fn getopt_long(
@@ -82,9 +81,6 @@ pub struct CLISettings {
     pub neg_stride: libc::c_int,
 }
 pub type CLISettings_realtime = libc::c_uint;
-pub const REALTIME_CUSTOM: CLISettings_realtime = 2;
-pub const REALTIME_INPUT: CLISettings_realtime = 1;
-pub const REALTIME_DISABLE: CLISettings_realtime = 0;
 pub const ARG_DECODE_FRAME_TYPE: arg = 273;
 #[repr(C)]
 pub struct EnumParseTable {

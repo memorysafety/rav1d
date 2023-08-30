@@ -1,6 +1,5 @@
 use ::libc;
 extern "C" {
-    pub type Dav1dRef;
     pub type MuxerPriv;
     fn dav1d_picture_unref(p: *mut Dav1dPicture);
 }

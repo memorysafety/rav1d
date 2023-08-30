@@ -152,6 +152,7 @@ pub struct Dav1dInvTxfmDSPContext {
 macro_rules! decl_itx_fn {
     ($name:ident) => {
         // TODO(legare): Temporarily pub until init fns are deduplicated.
+        #[allow(dead_code)] // TODO(kkysen) Way more asm fns than exist are declared.
         pub(crate) fn $name(
             dst: *mut DynPixel,
             dst_stride: ptrdiff_t,

@@ -4,12 +4,8 @@ use ::libc;
 extern "C" {
     fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
     fn free(_: *mut libc::c_void);
-    fn posix_memalign(
-        __memptr: *mut *mut libc::c_void,
-        __alignment: size_t,
-        __size: size_t,
-    ) -> libc::c_int;
 }
+
 #[repr(C)]
 pub struct Dav1dRef {
     pub data: *mut libc::c_void,

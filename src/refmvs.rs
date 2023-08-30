@@ -2,14 +2,6 @@ use crate::include::stddef::*;
 use crate::include::stdint::*;
 use cfg_if::cfg_if;
 use libc;
-extern "C" {
-    fn free(_: *mut libc::c_void);
-    fn posix_memalign(
-        __memptr: *mut *mut libc::c_void,
-        __alignment: size_t,
-        __size: size_t,
-    ) -> libc::c_int;
-}
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
 extern "C" {

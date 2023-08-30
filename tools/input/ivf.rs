@@ -8,7 +8,6 @@ use rav1d::include::stdint::uint32_t;
 use rav1d::include::stdint::uint64_t;
 use rav1d::include::stdint::uint8_t;
 extern "C" {
-    pub type Dav1dRef;
     fn llround(_: libc::c_double) -> libc::c_longlong;
     fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
     fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut libc::FILE;
