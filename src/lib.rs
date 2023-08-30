@@ -1310,7 +1310,7 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
         };
         init
     };
-    let mut res = 0;
+    let mut res;
     if out.is_null() {
         fprintf(
             stderr,
@@ -1559,7 +1559,7 @@ unsafe extern "C" fn drain_picture(c: *mut Dav1dContext, out: *mut Dav1dPicture)
     return -(11 as libc::c_int);
 }
 unsafe extern "C" fn gen_picture(c: *mut Dav1dContext) -> libc::c_int {
-    let mut res = 0;
+    let mut res;
     let in_0: *mut Dav1dData = &mut (*c).in_0;
     if output_picture_ready(c, 0 as libc::c_int) != 0 {
         return 0 as libc::c_int;

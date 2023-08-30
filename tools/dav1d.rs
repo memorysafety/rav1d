@@ -4,7 +4,6 @@
     non_camel_case_types,
     non_snake_case,
     non_upper_case_globals,
-    unused_assignments,
 )]
 #![feature(extern_types)]
 #![feature(c_variadic)]
@@ -355,7 +354,7 @@ unsafe extern "C" fn picture_release(p: *mut Dav1dPicture, _: *mut libc::c_void)
 }
 unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_int {
     let istty = isatty(fileno(stderr));
-    let mut res = 0;
+    let mut res;
     let mut cli_settings: CLISettings = CLISettings {
         outputfile: 0 as *const libc::c_char,
         inputfile: 0 as *const libc::c_char,
@@ -449,10 +448,10 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
     let mut total: libc::c_uint = 0;
     let mut fps: [libc::c_uint; 2] = [0; 2];
     let mut timebase: [libc::c_uint; 2] = [0; 2];
-    let mut nspf: uint64_t = 0;
-    let mut tfirst: uint64_t = 0;
+    let nspf: uint64_t;
+    let tfirst: uint64_t;
     let mut elapsed: uint64_t = 0;
-    let mut i_fps: libc::c_double = 0.;
+    let i_fps: libc::c_double;
     let mut frametimes: *mut libc::FILE = 0 as *mut libc::FILE;
     let version: *const libc::c_char = dav1d_version();
     if strcmp(version, b"966d63c1\0" as *const u8 as *const libc::c_char) != 0 {

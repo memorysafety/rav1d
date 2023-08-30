@@ -50,7 +50,7 @@ use rav1d::include::common::intops::imin;
 unsafe extern "C" fn leb128(f: *mut libc::FILE, len: *mut size_t) -> libc::c_int {
     let mut val: uint64_t = 0 as libc::c_int as uint64_t;
     let mut i: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    let mut more: libc::c_uint = 0;
+    let mut more: libc::c_uint;
     loop {
         let mut v: uint8_t = 0;
         if fread(&mut v as *mut uint8_t as *mut libc::c_void, 1, 1, f) < 1 {
@@ -77,7 +77,7 @@ unsafe extern "C" fn leb(
 ) -> libc::c_int {
     let mut val: uint64_t = 0 as libc::c_int as uint64_t;
     let mut i: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    let mut more: libc::c_uint = 0;
+    let mut more: libc::c_uint;
     loop {
         let fresh0 = sz;
         sz = sz - 1;
@@ -109,9 +109,9 @@ unsafe extern "C" fn parse_obu_header(
     type_0: *mut Dav1dObuType,
     allow_implicit_size: libc::c_int,
 ) -> libc::c_int {
-    let mut ret = 0;
-    let mut extension_flag = 0;
-    let mut has_size_flag = 0;
+    let ret;
+    let extension_flag;
+    let has_size_flag;
     if buf_size == 0 {
         return -(1 as libc::c_int);
     }
@@ -142,7 +142,7 @@ unsafe extern "C" fn parse_obu_header(
     return buf_size + 1 + extension_flag;
 }
 unsafe extern "C" fn annexb_probe(data: *const uint8_t) -> libc::c_int {
-    let mut ret = 0;
+    let mut ret;
     let mut cnt = 0;
     let mut temporal_unit_size: size_t = 0;
     ret = leb(
@@ -232,7 +232,7 @@ unsafe extern "C" fn annexb_open(
     num_frames: *mut libc::c_uint,
     timebase: *mut libc::c_uint,
 ) -> libc::c_int {
-    let mut res = 0;
+    let mut res;
     let mut len: size_t = 0;
     (*c).f = fopen(file, b"rb\0" as *const u8 as *const libc::c_char);
     if ((*c).f).is_null() {
@@ -262,7 +262,7 @@ unsafe extern "C" fn annexb_open(
 }
 unsafe extern "C" fn annexb_read(c: *mut AnnexbInputContext, data: *mut Dav1dData) -> libc::c_int {
     let mut len: size_t = 0;
-    let mut res = 0;
+    let mut res;
     if (*c).temporal_unit_size == 0 {
         res = leb128((*c).f, &mut (*c).temporal_unit_size);
         if res < 0 {

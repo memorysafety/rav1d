@@ -129,7 +129,7 @@ unsafe extern "C" fn write_header(
         (fw as uint64_t).wrapping_mul((*(*p).frame_hdr).render_height as uint64_t);
     let mut gcd: uint64_t = ah;
     let mut a: uint64_t = aw;
-    let mut b: uint64_t = 0;
+    let mut b: uint64_t;
     loop {
         b = a.wrapping_rem(gcd);
         if !(b != 0) {
@@ -163,7 +163,7 @@ unsafe extern "C" fn y4m2_write(c: *mut Y4m2OutputContext, p: *mut Dav1dPicture)
         }
     }
     fprintf((*c).f, b"FRAME\n\0" as *const u8 as *const libc::c_char);
-    let mut ptr: *mut uint8_t = 0 as *mut uint8_t;
+    let mut ptr: *mut uint8_t;
     let hbd = ((*p).p.bpc > 8) as libc::c_int;
     ptr = (*p).data[0] as *mut uint8_t;
     let mut y = 0;

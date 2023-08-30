@@ -69,9 +69,9 @@ pub unsafe extern "C" fn input_open(
     timebase: *mut libc::c_uint,
 ) -> libc::c_int {
     let mut impl_0: *const Demuxer = 0 as *const Demuxer;
-    let mut c: *mut DemuxerContext = 0 as *mut DemuxerContext;
-    let mut res = 0;
-    let mut i = 0;
+    let c: *mut DemuxerContext;
+    let mut res;
+    let mut i;
     if !name.is_null() {
         i = 0 as libc::c_int;
         while !(demuxers[i as usize]).is_null() {

@@ -32,10 +32,7 @@ pub struct Dav1dMemPoolBuffer {
 use libc::pthread_mutexattr_t;
 
 #[inline]
-pub unsafe extern "C" fn dav1d_alloc_aligned(
-    sz: size_t,
-    align: size_t,
-) -> *mut libc::c_void {
+pub unsafe extern "C" fn dav1d_alloc_aligned(sz: size_t, align: size_t) -> *mut libc::c_void {
     if align & align.wrapping_sub(1) != 0 {
         unreachable!();
     }
@@ -102,7 +99,7 @@ pub unsafe fn dav1d_mem_pool_pop(pool: *mut Dav1dMemPool, size: size_t) -> *mut 
     pthread_mutex_lock(&mut (*pool).lock);
     let mut buf: *mut Dav1dMemPoolBuffer = (*pool).buf;
     (*pool).ref_cnt += 1;
-    let mut data: *mut uint8_t = 0 as *mut uint8_t;
+    let mut data: *mut uint8_t;
     let current_block_20: u64;
     if !buf.is_null() {
         (*pool).buf = (*buf).next;

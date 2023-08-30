@@ -791,16 +791,16 @@ pub unsafe extern "C" fn dav1d_cdef_brow_16bpc(
         let mut sbx = 0;
         let mut last_skip = 1;
         while sbx < sb64w {
-            let mut noskip_row: *const [uint16_t; 2] = 0 as *const [uint16_t; 2];
-            let mut noskip_mask: libc::c_uint = 0;
-            let mut y_lvl = 0;
-            let mut uv_lvl = 0;
-            let mut flag: Backup2x8Flags = 0 as Backup2x8Flags;
-            let mut y_pri_lvl = 0;
-            let mut y_sec_lvl = 0;
-            let mut uv_pri_lvl = 0;
-            let mut uv_sec_lvl = 0;
-            let mut bptrs: [*mut pixel; 3] = [0 as *mut pixel; 3];
+            let noskip_row: *const [uint16_t; 2];
+            let noskip_mask: libc::c_uint;
+            let y_lvl;
+            let uv_lvl;
+            let flag: Backup2x8Flags;
+            let y_pri_lvl;
+            let mut y_sec_lvl;
+            let uv_pri_lvl;
+            let mut uv_sec_lvl;
+            let mut bptrs: [*mut pixel; 3];
             let sb128x = sbx >> 1;
             let sb64_idx = ((by & sbsz) >> 3) + (sbx & 1);
             let cdef_idx =
@@ -831,13 +831,13 @@ pub unsafe extern "C" fn dav1d_cdef_brow_16bpc(
                 bptrs = [iptrs[0], iptrs[1], iptrs[2]];
                 let mut bx = sbx * sbsz;
                 while bx < imin((sbx + 1) * sbsz, (*f).bw) {
-                    let mut uvdir = 0;
-                    let mut do_left = 0;
-                    let mut dir = 0;
-                    let mut variance: libc::c_uint = 0;
-                    let mut top: *const pixel = 0 as *const pixel;
-                    let mut bot: *const pixel = 0 as *const pixel;
-                    let mut offset: ptrdiff_t = 0;
+                    let uvdir;
+                    let do_left;
+                    let mut dir;
+                    let mut variance: libc::c_uint;
+                    let mut top: *const pixel;
+                    let mut bot: *const pixel;
+                    let mut offset: ptrdiff_t;
                     let current_block_84: u64;
                     if bx + 2 >= (*f).bw {
                         edges = ::core::mem::transmute::<libc::c_uint, CdefEdgeFlags>(
@@ -893,7 +893,6 @@ pub unsafe extern "C" fn dav1d_cdef_brow_16bpc(
                         }
                         top = 0 as *const pixel;
                         bot = 0 as *const pixel;
-                        offset = 0;
                         if have_tt == 0 {
                             current_block_84 = 17728966195399430138;
                         } else if sbrow_start != 0 && by == by_start {

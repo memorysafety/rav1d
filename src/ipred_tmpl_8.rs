@@ -1444,7 +1444,7 @@ unsafe extern "C" fn upsample_edge(
         9 as libc::c_int as int8_t,
         -(1 as libc::c_int) as int8_t,
     ];
-    let mut i = 0;
+    let mut i;
     i = 0 as libc::c_int;
     while i < hsz - 1 {
         *out.offset((i * 2) as isize) = *in_0.offset(iclip(i, from, to - 1) as isize);
@@ -1478,8 +1478,8 @@ unsafe extern "C" fn ipred_z1_c(
     }
     let mut dx = dav1d_dr_intra_derivative[(angle >> 1) as usize] as libc::c_int;
     let mut top_out: [pixel; 128] = [0; 128];
-    let mut top: *const pixel = 0 as *const pixel;
-    let mut max_base_x = 0;
+    let top: *const pixel;
+    let max_base_x;
     let upsample_above = if enable_intra_edge_filter != 0 {
         get_upsample(width + height, 90 - angle, is_sm)
     } else {
@@ -1651,7 +1651,7 @@ unsafe extern "C" fn ipred_z2_c(
         let mut x = 0;
         let mut ypos = (y << 6 + upsample_left) - dy;
         while x < width {
-            let mut v = 0;
+            let v;
             if base_x >= 0 {
                 v = *topleft.offset(base_x as isize) as libc::c_int * (64 - frac_x)
                     + *topleft.offset((base_x + 1) as isize) as libc::c_int * frac_x;
@@ -1692,8 +1692,8 @@ unsafe extern "C" fn ipred_z3_c(
     }
     let mut dy = dav1d_dr_intra_derivative[(270 - angle >> 1) as usize] as libc::c_int;
     let mut left_out: [pixel; 128] = [0; 128];
-    let mut left: *const pixel = 0 as *const pixel;
-    let mut max_base_y = 0;
+    let left: *const pixel;
+    let max_base_y;
     let upsample_left = if enable_intra_edge_filter != 0 {
         get_upsample(width + height, angle - 180, is_sm)
     } else {
@@ -1835,8 +1835,8 @@ unsafe extern "C" fn cfl_ac_c(
     ss_hor: libc::c_int,
     ss_ver: libc::c_int,
 ) {
-    let mut y = 0;
-    let mut x = 0;
+    let mut y;
+    let mut x;
     let ac_orig: *mut int16_t = ac;
     if !(w_pad >= 0 && (w_pad * 4) < width) {
         unreachable!();
@@ -2146,7 +2146,7 @@ unsafe extern "C" fn ipred_z3_neon(
     let mut dy = dav1d_dr_intra_derivative[(270 - angle >> 1) as usize] as libc::c_int;
     let mut flipped: [pixel; 144] = [0; 144];
     let mut left_out: [pixel; 286] = [0; 286];
-    let mut max_base_y = 0;
+    let max_base_y;
     let upsample_left = if enable_intra_edge_filter != 0 {
         get_upsample(width + height, angle - 180, is_sm)
     } else {
@@ -2421,7 +2421,7 @@ unsafe extern "C" fn ipred_z1_neon(
     let mut dx = dav1d_dr_intra_derivative[(angle >> 1) as usize] as libc::c_int;
     const top_out_size: usize = 64 + 64 * (64 + 15) * 2 + 16;
     let mut top_out: [pixel; top_out_size] = [0; top_out_size];
-    let mut max_base_x = 0;
+    let max_base_x;
     let upsample_above = if enable_intra_edge_filter != 0 {
         get_upsample(width + height, 90 - angle, is_sm)
     } else {

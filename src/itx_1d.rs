@@ -15,10 +15,10 @@ unsafe extern "C" fn inv_dct4_1d_internal_c(
     }
     let in0 = *c.offset((0 * stride) as isize);
     let in1 = *c.offset((1 * stride) as isize);
-    let mut t0 = 0;
-    let mut t1 = 0;
-    let mut t2 = 0;
-    let mut t3 = 0;
+    let t0;
+    let t1;
+    let t2;
+    let t3;
     if tx64 != 0 {
         t1 = in0 * 181 + 128 >> 8;
         t0 = t1;
@@ -60,10 +60,10 @@ unsafe extern "C" fn inv_dct8_1d_internal_c(
     inv_dct4_1d_internal_c(c, stride << 1, min, max, tx64);
     let in1 = *c.offset((1 * stride) as isize);
     let in3 = *c.offset((3 * stride) as isize);
-    let mut t4a = 0;
-    let mut t5a = 0;
-    let mut t6a = 0;
-    let mut t7a = 0;
+    let t4a;
+    let mut t5a;
+    let mut t6a;
+    let t7a;
     if tx64 != 0 {
         t4a = in1 * 799 + 2048 >> 12;
         t5a = in3 * -(2276 as libc::c_int) + 2048 >> 12;
@@ -121,14 +121,14 @@ unsafe extern "C" fn inv_dct16_1d_internal_c(
     let in3 = *c.offset((3 * stride) as isize);
     let in5 = *c.offset((5 * stride) as isize);
     let in7 = *c.offset((7 * stride) as isize);
-    let mut t8a = 0;
-    let mut t9a = 0;
-    let mut t10a = 0;
-    let mut t11a = 0;
-    let mut t12a = 0;
-    let mut t13a = 0;
-    let mut t14a = 0;
-    let mut t15a = 0;
+    let mut t8a;
+    let mut t9a;
+    let mut t10a;
+    let mut t11a;
+    let mut t12a;
+    let mut t13a;
+    let mut t14a;
+    let mut t15a;
     if tx64 != 0 {
         t8a = in1 * 401 + 2048 >> 12;
         t9a = in7 * -(2598 as libc::c_int) + 2048 >> 12;
@@ -230,22 +230,22 @@ unsafe extern "C" fn inv_dct32_1d_internal_c(
     let in11 = *c.offset((11 * stride) as isize);
     let in13 = *c.offset((13 * stride) as isize);
     let in15 = *c.offset((15 * stride) as isize);
-    let mut t16a = 0;
-    let mut t17a = 0;
-    let mut t18a = 0;
-    let mut t19a = 0;
-    let mut t20a = 0;
-    let mut t21a = 0;
-    let mut t22a = 0;
-    let mut t23a = 0;
-    let mut t24a = 0;
-    let mut t25a = 0;
-    let mut t26a = 0;
-    let mut t27a = 0;
-    let mut t28a = 0;
-    let mut t29a = 0;
-    let mut t30a = 0;
-    let mut t31a = 0;
+    let mut t16a;
+    let mut t17a;
+    let mut t18a;
+    let mut t19a;
+    let mut t20a;
+    let mut t21a;
+    let mut t22a;
+    let mut t23a;
+    let mut t24a;
+    let mut t25a;
+    let mut t26a;
+    let mut t27a;
+    let mut t28a;
+    let mut t29a;
+    let mut t30a;
+    let mut t31a;
     if tx64 != 0 {
         t16a = in1 * 201 + 2048 >> 12;
         t17a = in15 * -(2751 as libc::c_int) + 2048 >> 12;

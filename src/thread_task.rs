@@ -616,8 +616,8 @@ unsafe extern "C" fn reset_task_cur(
     ttd: *mut TaskThreadData,
     mut frame_idx: libc::c_uint,
 ) -> libc::c_int {
-    let mut min_frame_idx: libc::c_uint = 0;
-    let mut cur_frame_idx: libc::c_uint = 0;
+    let min_frame_idx: libc::c_uint;
+    let cur_frame_idx: libc::c_uint;
     let current_block: u64;
     let first: libc::c_uint = ::core::intrinsics::atomic_load_seqcst(&mut (*ttd).first);
     let mut reset_frame_idx: libc::c_uint = ::core::intrinsics::atomic_xchg_seqcst(
@@ -783,7 +783,7 @@ unsafe extern "C" fn insert_tasks(
     last: *mut Dav1dTask,
     cond_signal: libc::c_int,
 ) {
-    let mut t_ptr: *mut Dav1dTask = 0 as *mut Dav1dTask;
+    let mut t_ptr: *mut Dav1dTask;
     let mut prev_t: *mut Dav1dTask = 0 as *mut Dav1dTask;
     let mut current_block_34: u64;
     t_ptr = (*f).task_thread.task_head;
@@ -1252,7 +1252,7 @@ unsafe extern "C" fn get_frame_progress(
         return (*f).sbh - 1;
     }
     let mut idx = (frame_prog >> (*f).sb_shift + 7) as libc::c_int;
-    let mut prog = 0;
+    let mut prog;
     loop {
         let state: *mut atomic_uint =
             &mut *((*f).frame_thread.frame_progress).offset(idx as isize) as *mut atomic_uint;
@@ -1318,9 +1318,9 @@ unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThrea
     if (*out).p.bpc != 8 as libc::c_int {
         off = ((*out).p.bpc >> 1) - 4;
     }
-    let mut row = 0;
-    let mut progmax = 0;
-    let mut done = 0;
+    let mut row;
+    let mut progmax;
+    let mut done;
     match (*ttd).delayed_fg.type_0 as libc::c_uint {
         11 => {
             (*ttd).delayed_fg.exec = 0 as libc::c_int;
@@ -1460,10 +1460,14 @@ unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThrea
             &mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(0) as *mut atomic_int,
             1 as libc::c_int,
         );
-        done = ::core::intrinsics::atomic_xadd_seqcst(
-            &mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(1) as *mut atomic_int,
-            1 as libc::c_int,
-        ) + 1;
+        #[allow(unused_assignments)]
+        // TODO(kkysen) non-trivial due to the atomics, so leaving for later
+        {
+            done = ::core::intrinsics::atomic_xadd_seqcst(
+                &mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(1) as *mut atomic_int,
+                1 as libc::c_int,
+            ) + 1;
+        }
         if row < progmax {
             continue;
         }
@@ -1484,12 +1488,12 @@ unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThrea
 }
 
 pub unsafe extern "C" fn dav1d_worker_task(data: *mut libc::c_void) -> *mut libc::c_void {
-    let mut flush = 0;
-    let mut error_0 = 0;
-    let mut sby = 0;
-    let mut f: *mut Dav1dFrameContext = 0 as *mut Dav1dFrameContext;
-    let mut t: *mut Dav1dTask = 0 as *mut Dav1dTask;
-    let mut prev_t: *mut Dav1dTask = 0 as *mut Dav1dTask;
+    let mut flush;
+    let mut error_0;
+    let mut sby;
+    let mut f: *mut Dav1dFrameContext;
+    let mut t: *mut Dav1dTask;
+    let mut prev_t: *mut Dav1dTask;
     let mut current_block: u64;
     let tc: *mut Dav1dTaskContext = data as *mut Dav1dTaskContext;
     let c: *const Dav1dContext = (*tc).c;
@@ -1663,9 +1667,9 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut libc::c_void) -> *mut libc
                                                         5395695591151878490 => {}
                                                         _ => {
                                                             if ((*t).sby + 1) < (*f).sbh {
-                                                                let next_t: *mut Dav1dTask =
-                                                                    &mut *t.offset(1)
-                                                                        as *mut Dav1dTask;
+                                                                let next_t: *mut Dav1dTask = &mut *t
+                                                                    .offset(1)
+                                                                    as *mut Dav1dTask;
                                                                 *next_t = (*t).clone();
                                                                 (*next_t).sby += 1;
                                                                 let ntr =

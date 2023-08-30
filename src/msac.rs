@@ -230,7 +230,7 @@ fn dav1d_msac_decode_symbol_adapt_rust(
 ) -> libc::c_uint {
     let c = (s.dif >> (EC_WIN_SIZE - 16)) as libc::c_uint;
     let r = s.rng >> 8;
-    let mut u = 0;
+    let mut u;
     let mut v = s.rng;
     let mut val = 0;
     assert!(n_symbols <= 15);

@@ -91,8 +91,8 @@ pub unsafe extern "C" fn output_open(
     fps: *const libc::c_uint,
 ) -> libc::c_int {
     let mut impl_0: *const Muxer = 0 as *const Muxer;
-    let mut c: *mut MuxerContext = 0 as *mut MuxerContext;
-    let mut i: libc::c_uint = 0;
+    let c: *mut MuxerContext;
+    let mut i: libc::c_uint;
     let mut res = 0;
     let mut name_offset = 0;
     if !name.is_null() {
@@ -280,7 +280,7 @@ unsafe extern "C" fn assemble_filename(
         unreachable!();
     }
     let mut ptr: *const libc::c_char = (*ctx).filename;
-    let mut iptr: *const libc::c_char = 0 as *const libc::c_char;
+    let mut iptr: *const libc::c_char;
     loop {
         iptr = strchr(ptr, '%' as i32);
         if iptr.is_null() {
@@ -342,7 +342,7 @@ unsafe extern "C" fn assemble_filename(
 }
 #[no_mangle]
 pub unsafe extern "C" fn output_write(ctx: *mut MuxerContext, p: *mut Dav1dPicture) -> libc::c_int {
-    let mut res = 0;
+    let mut res;
     if (*ctx).one_file_per_frame != 0 && ((*(*ctx).impl_0).write_header).is_some() {
         let mut filename: [libc::c_char; 1024] = [0; 1024];
         assemble_filename(

@@ -183,7 +183,7 @@ unsafe extern "C" fn ivf_open(
     if fps_num != 0 && fps_den != 0 {
         let mut gcd: uint64_t = fps_num;
         let mut a: uint64_t = fps_den;
-        let mut b: uint64_t = 0;
+        let mut b: uint64_t;
         loop {
             b = a.wrapping_rem(gcd);
             if !(b != 0) {
@@ -251,7 +251,7 @@ unsafe extern "C" fn ivf_read_header(
     return 0 as libc::c_int;
 }
 unsafe extern "C" fn ivf_read(c: *mut IvfInputContext, buf: *mut Dav1dData) -> libc::c_int {
-    let mut ptr: *mut uint8_t = 0 as *mut uint8_t;
+    let ptr: *mut uint8_t;
     let mut sz: ptrdiff_t = 0;
     let mut off: libc::off_t = 0;
     let mut ts: uint64_t = 0;

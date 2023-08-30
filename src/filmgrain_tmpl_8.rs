@@ -360,10 +360,7 @@ use crate::include::common::intops::iclip_u8;
 use crate::include::common::intops::imin;
 use crate::src::filmgrain::get_random_number;
 use crate::src::filmgrain::round2;
-unsafe extern "C" fn generate_grain_y_c(
-    buf: *mut [entry; 82],
-    data: *const Dav1dFilmGrainData,
-) {
+unsafe extern "C" fn generate_grain_y_c(buf: *mut [entry; 82], data: *const Dav1dFilmGrainData) {
     let bitdepth_min_8 = 8 - 8;
     let mut seed: libc::c_uint = (*data).seed;
     let shift = 4 - bitdepth_min_8 + (*data).grain_scale_shift;
@@ -565,8 +562,8 @@ unsafe extern "C" fn fgy_32x32xn_c(
     let grain_ctr = (128 as libc::c_int) << bitdepth_min_8;
     let grain_min = -grain_ctr;
     let grain_max = grain_ctr - 1;
-    let mut min_value = 0;
-    let mut max_value = 0;
+    let min_value;
+    let max_value;
     if (*data).clip_to_restricted_range != 0 {
         min_value = (16 as libc::c_int) << bitdepth_min_8;
         max_value = (235 as libc::c_int) << bitdepth_min_8;
@@ -842,8 +839,8 @@ unsafe extern "C" fn fguv_32x32xn_c(
     let grain_ctr = (128 as libc::c_int) << bitdepth_min_8;
     let grain_min = -grain_ctr;
     let grain_max = grain_ctr - 1;
-    let mut min_value = 0;
-    let mut max_value = 0;
+    let min_value;
+    let max_value;
     if (*data).clip_to_restricted_range != 0 {
         min_value = (16 as libc::c_int) << bitdepth_min_8;
         max_value = (if is_id != 0 {

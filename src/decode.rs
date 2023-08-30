@@ -1066,11 +1066,7 @@ unsafe fn read_tx_tree(
     };
 }
 
-fn neg_deinterleave(
-    diff: libc::c_int,
-    r#ref: libc::c_int,
-    max: libc::c_int,
-) -> libc::c_int {
+fn neg_deinterleave(diff: libc::c_int, r#ref: libc::c_int, max: libc::c_int) -> libc::c_int {
     if r#ref == 0 {
         diff
     } else if r#ref >= max - 1 {
@@ -3067,7 +3063,7 @@ unsafe fn decode_b(
         }
     } else {
         // inter-specific mode/mv coding
-        let mut has_subpel_filter = false;
+        let mut has_subpel_filter;
 
         let is_comp = if b.skip_mode != 0 {
             true
@@ -5037,22 +5033,22 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> li
 }
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> libc::c_int {
-    let mut sby = 0;
-    let mut n_ts = 0;
-    let mut a_sz = 0;
-    let mut num_sb128 = 0;
-    let mut size_mul: *const uint8_t = 0 as *const uint8_t;
-    let mut hbd = 0;
-    let mut y_stride: ptrdiff_t = 0;
-    let mut uv_stride: ptrdiff_t = 0;
-    let mut has_resize = 0;
-    let mut need_cdef_lpf_copy = 0;
-    let mut sb128 = 0;
-    let mut num_lines = 0;
-    let mut lr_mask_sz = 0;
-    let mut ipred_edge_sz = 0;
-    let mut re_sz = 0;
-    let mut has_chroma = 0;
+    let mut sby;
+    let n_ts;
+    let a_sz;
+    let num_sb128;
+    let size_mul: *const uint8_t;
+    let hbd;
+    let mut y_stride: ptrdiff_t;
+    let mut uv_stride: ptrdiff_t;
+    let has_resize;
+    let need_cdef_lpf_copy;
+    let sb128;
+    let num_lines;
+    let lr_mask_sz;
+    let ipred_edge_sz;
+    let re_sz;
+    let has_chroma;
     let mut current_block: u64;
     let c: *const Dav1dContext = (*f).c;
     let mut retval = -(12 as libc::c_int);
@@ -5863,8 +5859,9 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                                                                                 64 as libc::c_int
                                                                                     as size_t,
                                                                             );
-                                                                        let ptr_1: *mut uint8_t = (*f)
-                                                                            .ipred_edge[0] as *mut uint8_t;
+                                                                        let ptr_1: *mut uint8_t =
+                                                                            (*f).ipred_edge[0]
+                                                                                as *mut uint8_t;
                                                                         if ptr_1.is_null() {
                                                                             (*f).ipred_edge_sz =
                                                                                 0 as libc::c_int;
@@ -6026,7 +6023,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                                                                                                             [12 as libc::c_int as uint8_t, 4 as libc::c_int as uint8_t],
                                                                                                             [13 as libc::c_int as uint8_t, 3 as libc::c_int as uint8_t],
                                                                                                         ];
-                                                                                                        let mut k = 0;
+                                                                                                        let mut k;
                                                                                                         k = 0 as libc::c_int;
                                                                                                         while k < 3 {
                                                                                                             let c0 = quant_dist_weight[k
@@ -6154,7 +6151,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
         let mut size: size_t = (*((*f).tile).offset(i as isize)).data.sz;
         let mut j = (*((*f).tile).offset(i as isize)).start;
         while j <= (*((*f).tile).offset(i as isize)).end {
-            let mut tile_sz: size_t = 0;
+            let mut tile_sz: size_t;
             if j == (*((*f).tile).offset(i as isize)).end {
                 tile_sz = size;
             } else {
@@ -6417,13 +6414,13 @@ fn get_upscale_x0(in_w: libc::c_int, out_w: libc::c_int, step: libc::c_int) -> l
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int {
-    let mut ref_coded_width: [libc::c_int; 7] = [0; 7];
-    let mut uses_2pass = 0;
-    let mut cols = 0;
-    let mut rows = 0;
-    let mut refresh_frame_flags: libc::c_uint = 0;
+    let mut ref_coded_width: [libc::c_int; 7];
+    let uses_2pass;
+    let cols;
+    let rows;
+    let refresh_frame_flags: libc::c_uint;
     let mut current_block: u64;
-    let mut f: *mut Dav1dFrameContext = 0 as *mut Dav1dFrameContext;
+    let f: *mut Dav1dFrameContext;
     let mut res = -(1 as libc::c_int);
     let mut out_delayed: *mut Dav1dThreadPicture = 0 as *mut Dav1dThreadPicture;
     if (*c).n_fc > 1 as libc::c_uint {

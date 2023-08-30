@@ -638,8 +638,8 @@ unsafe extern "C" fn fgy_32x32xn_c(
     let grain_ctr = (128 as libc::c_int) << bitdepth_min_8;
     let grain_min = -grain_ctr;
     let grain_max = grain_ctr - 1;
-    let mut min_value = 0;
-    let mut max_value = 0;
+    let min_value;
+    let max_value;
     if (*data).clip_to_restricted_range != 0 {
         min_value = (16 as libc::c_int) << bitdepth_min_8;
         max_value = (235 as libc::c_int) << bitdepth_min_8;
@@ -916,8 +916,8 @@ unsafe extern "C" fn fguv_32x32xn_c(
     let grain_ctr = (128 as libc::c_int) << bitdepth_min_8;
     let grain_min = -grain_ctr;
     let grain_max = grain_ctr - 1;
-    let mut min_value = 0;
-    let mut max_value = 0;
+    let min_value;
+    let max_value;
     if (*data).clip_to_restricted_range != 0 {
         min_value = (16 as libc::c_int) << bitdepth_min_8;
         max_value = (if is_id != 0 {

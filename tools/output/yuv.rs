@@ -72,7 +72,7 @@ unsafe extern "C" fn yuv_open(
 }
 unsafe extern "C" fn yuv_write(c: *mut YuvOutputContext, p: *mut Dav1dPicture) -> libc::c_int {
     let mut current_block: u64;
-    let mut ptr: *mut uint8_t = 0 as *mut uint8_t;
+    let mut ptr: *mut uint8_t;
     let hbd = ((*p).p.bpc > 8) as libc::c_int;
     ptr = (*p).data[0] as *mut uint8_t;
     let mut y = 0;

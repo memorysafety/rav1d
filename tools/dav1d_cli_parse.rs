@@ -370,7 +370,7 @@ unsafe extern "C" fn error(
     shouldbe: *const libc::c_char,
 ) {
     let mut optname: [libc::c_char; 256] = [0; 256];
-    let mut n = 0;
+    let mut n;
     n = 0 as libc::c_int;
     while !(long_opts[n as usize].name).is_null() {
         if long_opts[n as usize].val == option {
@@ -620,7 +620,7 @@ unsafe extern "C" fn parse_enum(
         n += 1;
     }
     let mut end: *mut libc::c_char = 0 as *mut libc::c_char;
-    let mut res: libc::c_uint = 0;
+    let res: libc::c_uint;
     if strncmp(
         optarg_0,
         b"0x\0" as *const u8 as *const libc::c_char,
@@ -648,7 +648,7 @@ pub unsafe extern "C" fn parse(
     cli_settings: *mut CLISettings,
     lib_settings: *mut Dav1dSettings,
 ) {
-    let mut o = 0;
+    let mut o;
     memset(
         cli_settings as *mut libc::c_void,
         0 as libc::c_int,

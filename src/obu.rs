@@ -637,8 +637,8 @@ unsafe extern "C" fn parse_seq_hdr(
     gb: *mut GetBits,
     hdr: *mut Dav1dSequenceHeader,
 ) -> libc::c_int {
-    let mut op_idx = 0;
-    let mut spatial_mask: libc::c_uint = 0;
+    let op_idx;
+    let spatial_mask: libc::c_uint;
     let mut current_block: u64;
     memset(
         hdr as *mut libc::c_void,
@@ -1058,7 +1058,7 @@ unsafe extern "C" fn read_frame_size(
 }
 #[inline]
 unsafe extern "C" fn tile_log2(sz: libc::c_int, tgt: libc::c_int) -> libc::c_int {
-    let mut k = 0;
+    let mut k;
     k = 0 as libc::c_int;
     while sz << k < tgt {
         k += 1;
@@ -1082,14 +1082,14 @@ static mut default_mode_ref_deltas: Dav1dLoopfilterModeRefDeltas = {
     init
 };
 unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> libc::c_int {
-    let mut sbsz_min1 = 0;
-    let mut sbsz_log2 = 0;
-    let mut sbw = 0;
-    let mut sbh = 0;
-    let mut max_tile_width_sb = 0;
-    let mut max_tile_area_sb = 0;
-    let mut min_log2_tiles = 0;
-    let mut delta_lossless = 0;
+    let sbsz_min1;
+    let sbsz_log2;
+    let sbw;
+    let sbh;
+    let max_tile_width_sb;
+    let max_tile_area_sb;
+    let min_log2_tiles;
+    let delta_lossless;
     let mut current_block: u64;
     let seqhdr: *const Dav1dSequenceHeader = (*c).seq_hdr;
     let hdr: *mut Dav1dFrameHeader = (*c).frame_hdr;
@@ -2207,8 +2207,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
                                                             == DAV1D_WM_TYPE_IDENTITY as libc::c_int
                                                                 as libc::c_uint)
                                                         {
-                                                            let mut ref_gmv: *const Dav1dWarpedMotionParams = 0
-                                                                as *const Dav1dWarpedMotionParams;
+                                                            let  ref_gmv: *const Dav1dWarpedMotionParams ;
                                                             if (*hdr).primary_ref_frame == 7 {
                                                                 ref_gmv = &dav1d_default_wm_params;
                                                             } else {
@@ -2241,8 +2240,8 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
                                                                     .as_mut_ptr();
                                                             let ref_mat: *const int32_t =
                                                                 ((*ref_gmv).matrix).as_ptr();
-                                                            let mut bits = 0;
-                                                            let mut shift = 0;
+                                                            let bits;
+                                                            let shift;
                                                             if (*hdr).gmv[i_19 as usize].type_0
                                                                 as libc::c_uint
                                                                 >= DAV1D_WM_TYPE_ROT_ZOOM
@@ -2362,7 +2361,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
                                                                     3 as libc::c_int,
                                                                 )
                                                                     as libc::c_int;
-                                                                let mut i_20 = 0;
+                                                                let mut i_20;
                                                                 i_20 = 0 as libc::c_int;
                                                                 while i_20 < 7 {
                                                                     if (*hdr).refidx[i_20 as usize]
@@ -2695,8 +2694,8 @@ pub unsafe extern "C" fn dav1d_parse_obus(
     in_0: *mut Dav1dData,
     global: libc::c_int,
 ) -> libc::c_int {
-    let mut init_bit_pos: libc::c_uint = 0;
-    let mut init_byte_pos: libc::c_uint = 0;
+    let init_bit_pos: libc::c_uint;
+    let init_byte_pos: libc::c_uint;
     let mut current_block: u64;
     let mut gb: GetBits = GetBits {
         state: 0,
@@ -2706,7 +2705,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
         ptr_start: 0 as *const uint8_t,
         ptr_end: 0 as *const uint8_t,
     };
-    let mut res = 0;
+    let mut res;
     dav1d_init_get_bits(&mut gb, (*in_0).data, (*in_0).sz);
     dav1d_get_bit(&mut gb);
     let type_0: Dav1dObuType = dav1d_get_bits(&mut gb, 4 as libc::c_int) as Dav1dObuType;

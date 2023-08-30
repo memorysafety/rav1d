@@ -51,7 +51,7 @@ unsafe extern "C" fn leb(
 ) -> libc::c_int {
     let mut val: uint64_t = 0 as libc::c_int as uint64_t;
     let mut i: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    let mut more: libc::c_uint = 0;
+    let mut more: libc::c_uint;
     loop {
         let fresh0 = sz;
         sz = sz - 1;
@@ -83,9 +83,9 @@ unsafe extern "C" fn parse_obu_header(
     type_0: *mut Dav1dObuType,
     allow_implicit_size: libc::c_int,
 ) -> libc::c_int {
-    let mut ret = 0;
-    let mut extension_flag = 0;
-    let mut has_size_flag = 0;
+    let ret;
+    let extension_flag;
+    let has_size_flag;
     if buf_size == 0 {
         return -(1 as libc::c_int);
     }
@@ -118,7 +118,7 @@ unsafe extern "C" fn parse_obu_header(
 unsafe extern "C" fn leb128(f: *mut libc::FILE, len: *mut size_t) -> libc::c_int {
     let mut val: uint64_t = 0 as libc::c_int as uint64_t;
     let mut i: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    let mut more: libc::c_uint = 0;
+    let mut more: libc::c_uint;
     loop {
         let mut v: uint8_t = 0;
         if fread(&mut v as *mut uint8_t as *mut libc::c_void, 1, 1, f) < 1 {
@@ -139,7 +139,7 @@ unsafe extern "C" fn leb128(f: *mut libc::FILE, len: *mut size_t) -> libc::c_int
     return i as libc::c_int;
 }
 unsafe extern "C" fn section5_probe(data: *const uint8_t) -> libc::c_int {
-    let mut ret = 0;
+    let mut ret;
     let mut cnt = 0;
     let mut obu_size: size_t = 0;
     let mut type_0: Dav1dObuType = 0 as Dav1dObuType;
