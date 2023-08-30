@@ -6323,11 +6323,11 @@ pub unsafe extern "C" fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retv
         *&mut f.task_thread.error = 0;
     }
     if c.n_fc > 1 && retval != 0 && !f.frame_thread.cf.is_null() {
-        memset(
-            f.frame_thread.cf,
-            0,
-            (f.frame_thread.cf_sz as size_t) * 128 * 128 / 2,
-        );
+        slice::from_raw_parts_mut(
+            f.frame_thread.cf.cast::<u8>(),
+            usize::try_from(f.frame_thread.cf_sz).unwrap() * 128 * 128 / 2,
+        )
+        .fill(0);
     }
     // TODO(kkysen) use array::zip when stable
     for i in 0..7 {
