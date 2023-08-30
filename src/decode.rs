@@ -6326,10 +6326,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retv
         memset(
             f.frame_thread.cf,
             0,
-            (f.frame_thread.cf_sz as size_t)
-                .wrapping_mul(128)
-                .wrapping_mul(128)
-                .wrapping_div(2),
+            (f.frame_thread.cf_sz as size_t) * 128 * 128 / 2,
         );
     }
     // TODO(kkysen) use array::zip when stable
