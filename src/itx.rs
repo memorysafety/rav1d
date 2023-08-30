@@ -181,12 +181,6 @@ macro_rules! decl_itx1_fns {
     ($w:literal x $h:literal, $bpc:literal bpc, $asm:ident) => {
         decl_itx_fn!(dct, dct, $w x $h, $bpc bpc, $asm);
     };
-    ($w:literal x $h:literal, $asm:ident) => {
-        #[cfg(feature = "bitdepth_8")]
-        decl_itx1_fns!($w x $h,  8 bpc, $asm);
-        #[cfg(feature = "bitdepth_16")]
-        decl_itx1_fns!($w x $h, 16 bpc, $asm);
-    };
 }
 
 #[cfg(feature = "asm")]
@@ -194,12 +188,6 @@ macro_rules! decl_itx2_fns {
     ($w:literal x $h:literal, $bpc:literal bpc, $asm:ident) => {
         decl_itx1_fns!($w x $h, $bpc bpc, $asm);
         decl_itx_fn!(identity, identity, $w x $h, $bpc bpc, $asm);
-    };
-    ($w:literal x $h:literal, $asm:ident) => {
-        #[cfg(feature = "bitdepth_8")]
-        decl_itx2_fns!($w x $h,  8 bpc, $asm);
-        #[cfg(feature = "bitdepth_16")]
-        decl_itx2_fns!($w x $h, 16 bpc, $asm);
     };
 }
 
@@ -218,12 +206,6 @@ macro_rules! decl_itx12_fns {
         decl_itx_fn!(flipadst, flipadst, $w x $h, $bpc bpc, $asm);
         decl_itx_fn!(identity, dct, $w x $h, $bpc bpc, $asm);
     };
-    ($w:literal x $h:literal, $asm:ident) => {
-        #[cfg(feature = "bitdepth_8")]
-        decl_itx12_fns!($w x $h,  8 bpc, $asm);
-        #[cfg(feature = "bitdepth_16")]
-        decl_itx12_fns!($w x $h, 16 bpc, $asm);
-    };
 }
 
 #[cfg(feature = "asm")]
@@ -235,12 +217,6 @@ macro_rules! decl_itx16_fns {
         decl_itx_fn!(identity, adst, $w x $h, $bpc bpc, $asm);
         decl_itx_fn!(identity, flipadst, $w x $h, $bpc bpc, $asm);
     };
-    ($w:literal x $h:literal, $asm:ident) => {
-        #[cfg(feature = "bitdepth_8")]
-        decl_itx16_fns!($w x $h,  8 bpc, $asm);
-        #[cfg(feature = "bitdepth_16")]
-        decl_itx16_fns!($w x $h, 16 bpc, $asm);
-    };
 }
 
 #[cfg(feature = "asm")]
@@ -248,12 +224,6 @@ macro_rules! decl_itx17_fns {
     ($w:literal x $h:literal, $bpc:literal bpc, $asm:ident) => {
         decl_itx16_fns!($w x $h, $bpc bpc, $asm);
         decl_itx_fn!(wht, wht, $w x $h, $bpc bpc, $asm);
-    };
-    ($w:literal x $h:literal, $asm:ident) => {
-        #[cfg(feature = "bitdepth_8")]
-        decl_itx17_fns!($w x $h,  8 bpc, $asm);
-        #[cfg(feature = "bitdepth_16")]
-        decl_itx17_fns!($w x $h, 16 bpc, $asm);
     };
 }
 
