@@ -6315,11 +6315,11 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retval: libc::c_int) {
     let f = &mut *f; // TODO(kkysen) propagate to arg once we deduplicate the fn decl
-    let c: *const Dav1dContext = f.c;
+    let c = &*f.c;
     if !f.sr_cur.p.data[0].is_null() {
         *&mut f.task_thread.error = 0;
     }
-    if (*c).n_fc > 1 && retval != 0 && !f.frame_thread.cf.is_null() {
+    if c.n_fc > 1 && retval != 0 && !f.frame_thread.cf.is_null() {
         memset(
             f.frame_thread.cf,
             0,
