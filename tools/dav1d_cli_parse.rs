@@ -119,7 +119,7 @@ static mut short_opts: [libc::c_char; 11] =
     unsafe { *::core::mem::transmute::<&[u8; 11], &[libc::c_char; 11]>(b"i:o:vql:s:\0") };
 static mut long_opts: [option; 25] = [
     {
-        let mut init = option {
+        let init = option {
             name: b"input\0" as *const u8 as *const libc::c_char,
             has_arg: 1 as libc::c_int,
             flag: 0 as *const libc::c_int as *mut libc::c_int,
@@ -128,7 +128,7 @@ static mut long_opts: [option; 25] = [
         init
     },
     {
-        let mut init = option {
+        let init = option {
             name: b"output\0" as *const u8 as *const libc::c_char,
             has_arg: 1 as libc::c_int,
             flag: 0 as *const libc::c_int as *mut libc::c_int,
@@ -137,7 +137,7 @@ static mut long_opts: [option; 25] = [
         init
     },
     {
-        let mut init = option {
+        let init = option {
             name: b"quiet\0" as *const u8 as *const libc::c_char,
             has_arg: 0 as libc::c_int,
             flag: 0 as *const libc::c_int as *mut libc::c_int,
@@ -146,7 +146,7 @@ static mut long_opts: [option; 25] = [
         init
     },
     {
-        let mut init = option {
+        let init = option {
             name: b"demuxer\0" as *const u8 as *const libc::c_char,
             has_arg: 1 as libc::c_int,
             flag: 0 as *const libc::c_int as *mut libc::c_int,
@@ -155,7 +155,7 @@ static mut long_opts: [option; 25] = [
         init
     },
     {
-        let mut init = option {
+        let init = option {
             name: b"muxer\0" as *const u8 as *const libc::c_char,
             has_arg: 1 as libc::c_int,
             flag: 0 as *const libc::c_int as *mut libc::c_int,
@@ -164,7 +164,7 @@ static mut long_opts: [option; 25] = [
         init
     },
     {
-        let mut init = option {
+        let init = option {
             name: b"version\0" as *const u8 as *const libc::c_char,
             has_arg: 0 as libc::c_int,
             flag: 0 as *const libc::c_int as *mut libc::c_int,
@@ -173,7 +173,7 @@ static mut long_opts: [option; 25] = [
         init
     },
     {
-        let mut init = option {
+        let init = option {
             name: b"frametimes\0" as *const u8 as *const libc::c_char,
             has_arg: 1 as libc::c_int,
             flag: 0 as *const libc::c_int as *mut libc::c_int,
@@ -182,7 +182,7 @@ static mut long_opts: [option; 25] = [
         init
     },
     {
-        let mut init = option {
+        let init = option {
             name: b"limit\0" as *const u8 as *const libc::c_char,
             has_arg: 1 as libc::c_int,
             flag: 0 as *const libc::c_int as *mut libc::c_int,
@@ -191,7 +191,7 @@ static mut long_opts: [option; 25] = [
         init
     },
     {
-        let mut init = option {
+        let init = option {
             name: b"skip\0" as *const u8 as *const libc::c_char,
             has_arg: 1 as libc::c_int,
             flag: 0 as *const libc::c_int as *mut libc::c_int,
@@ -200,7 +200,7 @@ static mut long_opts: [option; 25] = [
         init
     },
     {
-        let mut init = option {
+        let init = option {
             name: b"realtime\0" as *const u8 as *const libc::c_char,
             has_arg: 2 as libc::c_int,
             flag: 0 as *const libc::c_int as *mut libc::c_int,
@@ -209,7 +209,7 @@ static mut long_opts: [option; 25] = [
         init
     },
     {
-        let mut init = option {
+        let init = option {
             name: b"realtimecache\0" as *const u8 as *const libc::c_char,
             has_arg: 1 as libc::c_int,
             flag: 0 as *const libc::c_int as *mut libc::c_int,
@@ -218,7 +218,7 @@ static mut long_opts: [option; 25] = [
         init
     },
     {
-        let mut init = option {
+        let init = option {
             name: b"threads\0" as *const u8 as *const libc::c_char,
             has_arg: 1 as libc::c_int,
             flag: 0 as *const libc::c_int as *mut libc::c_int,
@@ -227,7 +227,7 @@ static mut long_opts: [option; 25] = [
         init
     },
     {
-        let mut init = option {
+        let init = option {
             name: b"framedelay\0" as *const u8 as *const libc::c_char,
             has_arg: 1 as libc::c_int,
             flag: 0 as *const libc::c_int as *mut libc::c_int,
@@ -236,7 +236,7 @@ static mut long_opts: [option; 25] = [
         init
     },
     {
-        let mut init = option {
+        let init = option {
             name: b"verify\0" as *const u8 as *const libc::c_char,
             has_arg: 1 as libc::c_int,
             flag: 0 as *const libc::c_int as *mut libc::c_int,
@@ -245,7 +245,7 @@ static mut long_opts: [option; 25] = [
         init
     },
     {
-        let mut init = option {
+        let init = option {
             name: b"filmgrain\0" as *const u8 as *const libc::c_char,
             has_arg: 1 as libc::c_int,
             flag: 0 as *const libc::c_int as *mut libc::c_int,
@@ -254,7 +254,7 @@ static mut long_opts: [option; 25] = [
         init
     },
     {
-        let mut init = option {
+        let init = option {
             name: b"oppoint\0" as *const u8 as *const libc::c_char,
             has_arg: 1 as libc::c_int,
             flag: 0 as *const libc::c_int as *mut libc::c_int,
@@ -263,7 +263,7 @@ static mut long_opts: [option; 25] = [
         init
     },
     {
-        let mut init = option {
+        let init = option {
             name: b"alllayers\0" as *const u8 as *const libc::c_char,
             has_arg: 1 as libc::c_int,
             flag: 0 as *const libc::c_int as *mut libc::c_int,
@@ -272,7 +272,7 @@ static mut long_opts: [option; 25] = [
         init
     },
     {
-        let mut init = option {
+        let init = option {
             name: b"sizelimit\0" as *const u8 as *const libc::c_char,
             has_arg: 1 as libc::c_int,
             flag: 0 as *const libc::c_int as *mut libc::c_int,
@@ -281,7 +281,7 @@ static mut long_opts: [option; 25] = [
         init
     },
     {
-        let mut init = option {
+        let init = option {
             name: b"strict\0" as *const u8 as *const libc::c_char,
             has_arg: 1 as libc::c_int,
             flag: 0 as *const libc::c_int as *mut libc::c_int,
@@ -290,7 +290,7 @@ static mut long_opts: [option; 25] = [
         init
     },
     {
-        let mut init = option {
+        let init = option {
             name: b"cpumask\0" as *const u8 as *const libc::c_char,
             has_arg: 1 as libc::c_int,
             flag: 0 as *const libc::c_int as *mut libc::c_int,
@@ -299,7 +299,7 @@ static mut long_opts: [option; 25] = [
         init
     },
     {
-        let mut init = option {
+        let init = option {
             name: b"negstride\0" as *const u8 as *const libc::c_char,
             has_arg: 0 as libc::c_int,
             flag: 0 as *const libc::c_int as *mut libc::c_int,
@@ -308,7 +308,7 @@ static mut long_opts: [option; 25] = [
         init
     },
     {
-        let mut init = option {
+        let init = option {
             name: b"outputinvisible\0" as *const u8 as *const libc::c_char,
             has_arg: 1 as libc::c_int,
             flag: 0 as *const libc::c_int as *mut libc::c_int,
@@ -317,7 +317,7 @@ static mut long_opts: [option; 25] = [
         init
     },
     {
-        let mut init = option {
+        let init = option {
             name: b"inloopfilters\0" as *const u8 as *const libc::c_char,
             has_arg: 1 as libc::c_int,
             flag: 0 as *const libc::c_int as *mut libc::c_int,
@@ -326,7 +326,7 @@ static mut long_opts: [option; 25] = [
         init
     },
     {
-        let mut init = option {
+        let init = option {
             name: b"decodeframetype\0" as *const u8 as *const libc::c_char,
             has_arg: 1 as libc::c_int,
             flag: 0 as *const libc::c_int as *mut libc::c_int,
@@ -335,7 +335,7 @@ static mut long_opts: [option; 25] = [
         init
     },
     {
-        let mut init = option {
+        let init = option {
             name: 0 as *const libc::c_char,
             has_arg: 0 as libc::c_int,
             flag: 0 as *const libc::c_int as *mut libc::c_int,
@@ -344,7 +344,7 @@ static mut long_opts: [option; 25] = [
         init
     },
 ];
-unsafe extern "C" fn usage(app: *const libc::c_char, reason: *const libc::c_char, mut args: ...) {
+unsafe extern "C" fn usage(app: *const libc::c_char, reason: *const libc::c_char, args: ...) {
     if !reason.is_null() {
         let mut args_0: ::core::ffi::VaListImpl;
         args_0 = args.clone();
@@ -425,7 +425,7 @@ unsafe extern "C" fn parse_optional_fraction(
     optarg_0: *const libc::c_char,
     option: libc::c_int,
     app: *const libc::c_char,
-    mut value: *mut libc::c_double,
+    value: *mut libc::c_double,
 ) -> libc::c_int {
     if optarg_0.is_null() {
         return 0 as libc::c_int;
@@ -433,7 +433,7 @@ unsafe extern "C" fn parse_optional_fraction(
     let mut end: *mut libc::c_char = 0 as *mut libc::c_char;
     *value = strtod(optarg_0, &mut end);
     if *end as libc::c_int == '/' as i32 && end != optarg_0 as *mut libc::c_char {
-        let mut optarg2: *const libc::c_char = end.offset(1);
+        let optarg2: *const libc::c_char = end.offset(1);
         *value /= strtod(optarg2, &mut end);
         if *end as libc::c_int != 0 || end == optarg2 as *mut libc::c_char {
             error(
@@ -455,42 +455,42 @@ unsafe extern "C" fn parse_optional_fraction(
 }
 static mut cpu_mask_tbl: [EnumParseTable; 6] = [
     {
-        let mut init = EnumParseTable {
+        let init = EnumParseTable {
             str_0: b"sse2\0" as *const u8 as *const libc::c_char,
             val: X86_CPU_MASK_SSE2 as libc::c_int,
         };
         init
     },
     {
-        let mut init = EnumParseTable {
+        let init = EnumParseTable {
             str_0: b"ssse3\0" as *const u8 as *const libc::c_char,
             val: X86_CPU_MASK_SSSE3 as libc::c_int,
         };
         init
     },
     {
-        let mut init = EnumParseTable {
+        let init = EnumParseTable {
             str_0: b"sse41\0" as *const u8 as *const libc::c_char,
             val: X86_CPU_MASK_SSE41 as libc::c_int,
         };
         init
     },
     {
-        let mut init = EnumParseTable {
+        let init = EnumParseTable {
             str_0: b"avx2\0" as *const u8 as *const libc::c_char,
             val: X86_CPU_MASK_AVX2 as libc::c_int,
         };
         init
     },
     {
-        let mut init = EnumParseTable {
+        let init = EnumParseTable {
             str_0: b"avx512icl\0" as *const u8 as *const libc::c_char,
             val: X86_CPU_MASK_AVX512ICL as libc::c_int,
         };
         init
     },
     {
-        let mut init = EnumParseTable {
+        let init = EnumParseTable {
             str_0: b"none\0" as *const u8 as *const libc::c_char,
             val: 0 as libc::c_int,
         };
@@ -499,49 +499,49 @@ static mut cpu_mask_tbl: [EnumParseTable; 6] = [
 ];
 static mut inloop_filters_tbl: [EnumParseTable; 8] = [
     {
-        let mut init = EnumParseTable {
+        let init = EnumParseTable {
             str_0: b"none\0" as *const u8 as *const libc::c_char,
             val: DAV1D_INLOOPFILTER_NONE as libc::c_int,
         };
         init
     },
     {
-        let mut init = EnumParseTable {
+        let init = EnumParseTable {
             str_0: b"deblock\0" as *const u8 as *const libc::c_char,
             val: DAV1D_INLOOPFILTER_DEBLOCK as libc::c_int,
         };
         init
     },
     {
-        let mut init = EnumParseTable {
+        let init = EnumParseTable {
             str_0: b"nodeblock\0" as *const u8 as *const libc::c_char,
             val: DAV1D_INLOOPFILTER_ALL as libc::c_int - DAV1D_INLOOPFILTER_DEBLOCK as libc::c_int,
         };
         init
     },
     {
-        let mut init = EnumParseTable {
+        let init = EnumParseTable {
             str_0: b"cdef\0" as *const u8 as *const libc::c_char,
             val: DAV1D_INLOOPFILTER_CDEF as libc::c_int,
         };
         init
     },
     {
-        let mut init = EnumParseTable {
+        let init = EnumParseTable {
             str_0: b"nocdef\0" as *const u8 as *const libc::c_char,
             val: DAV1D_INLOOPFILTER_ALL as libc::c_int - DAV1D_INLOOPFILTER_CDEF as libc::c_int,
         };
         init
     },
     {
-        let mut init = EnumParseTable {
+        let init = EnumParseTable {
             str_0: b"restoration\0" as *const u8 as *const libc::c_char,
             val: DAV1D_INLOOPFILTER_RESTORATION as libc::c_int,
         };
         init
     },
     {
-        let mut init = EnumParseTable {
+        let init = EnumParseTable {
             str_0: b"norestoration\0" as *const u8 as *const libc::c_char,
             val: DAV1D_INLOOPFILTER_ALL as libc::c_int
                 - DAV1D_INLOOPFILTER_RESTORATION as libc::c_int,
@@ -549,7 +549,7 @@ static mut inloop_filters_tbl: [EnumParseTable; 8] = [
         init
     },
     {
-        let mut init = EnumParseTable {
+        let init = EnumParseTable {
             str_0: b"all\0" as *const u8 as *const libc::c_char,
             val: DAV1D_INLOOPFILTER_ALL as libc::c_int,
         };
@@ -558,28 +558,28 @@ static mut inloop_filters_tbl: [EnumParseTable; 8] = [
 ];
 static mut decode_frame_type_tbl: [EnumParseTable; 4] = [
     {
-        let mut init = EnumParseTable {
+        let init = EnumParseTable {
             str_0: b"all\0" as *const u8 as *const libc::c_char,
             val: DAV1D_DECODEFRAMETYPE_ALL as libc::c_int,
         };
         init
     },
     {
-        let mut init = EnumParseTable {
+        let init = EnumParseTable {
             str_0: b"reference\0" as *const u8 as *const libc::c_char,
             val: DAV1D_DECODEFRAMETYPE_REFERENCE as libc::c_int,
         };
         init
     },
     {
-        let mut init = EnumParseTable {
+        let init = EnumParseTable {
             str_0: b"intra\0" as *const u8 as *const libc::c_char,
             val: DAV1D_DECODEFRAMETYPE_INTRA as libc::c_int,
         };
         init
     },
     {
-        let mut init = EnumParseTable {
+        let init = EnumParseTable {
             str_0: b"key\0" as *const u8 as *const libc::c_char,
             val: DAV1D_DECODEFRAMETYPE_KEY as libc::c_int,
         };
@@ -587,11 +587,11 @@ static mut decode_frame_type_tbl: [EnumParseTable; 4] = [
     },
 ];
 unsafe extern "C" fn parse_enum(
-    mut optarg_0: *mut libc::c_char,
+    optarg_0: *mut libc::c_char,
     tbl: *const EnumParseTable,
     tbl_sz: libc::c_int,
     option: libc::c_int,
-    mut app: *const libc::c_char,
+    app: *const libc::c_char,
 ) -> libc::c_uint {
     let mut str: [libc::c_char; 1024] = [0; 1024];
     strcpy(

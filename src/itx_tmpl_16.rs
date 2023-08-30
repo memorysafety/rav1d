@@ -716,7 +716,7 @@ use crate::src::cpu::dav1d_get_cpu_flags;
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 #[inline(always)]
-unsafe extern "C" fn itx_dsp_init_arm(c: *mut Dav1dInvTxfmDSPContext, mut bpc: libc::c_int) {
+unsafe extern "C" fn itx_dsp_init_arm(c: *mut Dav1dInvTxfmDSPContext, bpc: libc::c_int) {
     use crate::src::arm::cpu::DAV1D_ARM_CPU_FLAG_NEON;
     // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::itx::*;

@@ -329,7 +329,7 @@ macro_rules! inv_txfm_fn {
         paste::paste! {
             // TODO(legare): Temporarily pub until init fns are deduplicated.
             pub(crate) unsafe extern "C" fn [<inv_txfm_add_ $type1 _ $type2 _ $w x $h _c_erased>] <BD: BitDepth> (
-                mut dst: *mut DynPixel,
+                dst: *mut DynPixel,
                 stride: ptrdiff_t,
                 coeff: *mut DynCoef,
                 eob: libc::c_int,

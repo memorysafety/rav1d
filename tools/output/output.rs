@@ -88,7 +88,7 @@ pub unsafe extern "C" fn output_open(
     name: *const libc::c_char,
     filename: *const libc::c_char,
     p: *const Dav1dPictureParameters,
-    mut fps: *const libc::c_uint,
+    fps: *const libc::c_uint,
 ) -> libc::c_int {
     let mut impl_0: *const Muxer = 0 as *const Muxer;
     let mut c: *mut MuxerContext = 0 as *mut MuxerContext;

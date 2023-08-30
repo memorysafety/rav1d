@@ -627,7 +627,7 @@ pub unsafe extern "C" fn dav1d_default_picture_release(
     );
 }
 unsafe extern "C" fn free_buffer(_data: *const uint8_t, user_data: *mut libc::c_void) {
-    let mut pic_ctx: *mut pic_ctx_context = user_data as *mut pic_ctx_context;
+    let pic_ctx: *mut pic_ctx_context = user_data as *mut pic_ctx_context;
     ((*pic_ctx).allocator.release_picture_callback).expect("non-null function pointer")(
         &mut (*pic_ctx).pic,
         (*pic_ctx).allocator.cookie,
@@ -665,7 +665,7 @@ unsafe extern "C" fn picture_alloc_with_edges(
     if !(bpc > 0 && bpc <= 16) {
         unreachable!();
     }
-    let mut pic_ctx: *mut pic_ctx_context =
+    let pic_ctx: *mut pic_ctx_context =
         malloc(extra.wrapping_add(::core::mem::size_of::<pic_ctx_context>()))
             as *mut pic_ctx_context;
     if pic_ctx.is_null() {

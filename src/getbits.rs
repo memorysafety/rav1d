@@ -193,7 +193,7 @@ pub unsafe fn dav1d_get_bits_subexp(
         - ((1 as libc::c_int) << n);
 }
 
-pub unsafe fn dav1d_bytealign_get_bits(mut c: *mut GetBits) {
+pub unsafe fn dav1d_bytealign_get_bits(c: *mut GetBits) {
     if !((*c).bits_left <= 7) {
         unreachable!();
     }

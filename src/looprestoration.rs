@@ -236,8 +236,8 @@ unsafe fn padding<BD: BitDepth>(
     if !have_right {
         // Pad 3x(STRIPE_H+6) with last column
         for j in 0..stripe_h + 6 {
-            let mut row_last = dst_l[(unit_w - 1) + j * REST_UNIT_STRIDE];
-            let mut pad = &mut dst_l[unit_w + j * REST_UNIT_STRIDE..];
+            let row_last = dst_l[(unit_w - 1) + j * REST_UNIT_STRIDE];
+            let pad = &mut dst_l[unit_w + j * REST_UNIT_STRIDE..];
             BD::pixel_set(pad, row_last, 3);
         }
     }
@@ -389,14 +389,14 @@ unsafe fn wiener_rust<BD: BitDepth>(
 /// * c: Pixel summed not stored
 /// * x: Pixel not summed not stored
 fn boxsum3<BD: BitDepth>(
-    mut sumsq: &mut [int32_t; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
-    mut sum: &mut [BD::Coef; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
-    mut src: &[BD::Pixel; 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE],
+    sumsq: &mut [int32_t; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
+    sum: &mut [BD::Coef; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
+    src: &[BD::Pixel; 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE],
     w: libc::c_int,
     h: libc::c_int,
 ) {
     // We skip the first row, as it is never used
-    let mut src = &src[REST_UNIT_STRIDE..];
+    let src = &src[REST_UNIT_STRIDE..];
 
     // We skip the first and last columns, as they are never used
     for x in 1..w - 1 {
@@ -479,8 +479,8 @@ fn boxsum3<BD: BitDepth>(
 /// * c: Pixel summed not stored
 /// * x: Pixel not summed not stored
 fn boxsum5<BD: BitDepth>(
-    mut sumsq: &mut [int32_t; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
-    mut sum: &mut [BD::Coef; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
+    sumsq: &mut [int32_t; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
+    sum: &mut [BD::Coef; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
     src: &[BD::Pixel; 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE],
     w: libc::c_int,
     h: libc::c_int,
@@ -488,7 +488,7 @@ fn boxsum5<BD: BitDepth>(
     for x in 0..w as usize {
         let mut sum_v = &mut sum[x..];
         let mut sumsq_v = &mut sumsq[x..];
-        let mut s = &src[x..];
+        let s = &src[x..];
         let mut a: libc::c_int = (s[0]).as_();
         let mut a2 = a * a;
         let mut b: libc::c_int = (s[1 * REST_UNIT_STRIDE]).as_();
@@ -555,8 +555,8 @@ fn boxsum5<BD: BitDepth>(
 
 #[inline(never)]
 fn selfguided_filter<BD: BitDepth>(
-    mut dst: &mut [BD::Coef; 24576],
-    mut src: &[BD::Pixel; 27300],
+    dst: &mut [BD::Coef; 24576],
+    src: &[BD::Pixel; 27300],
     _src_stride: ptrdiff_t,
     w: libc::c_int,
     h: libc::c_int,
@@ -1038,7 +1038,7 @@ unsafe fn wiener_filter_neon<BD: BitDepth>(
 ) {
     let filter: *const [int16_t; 8] = (*params).filter.0.as_ptr();
     let mut mid: Align16<[int16_t; 68 * 384]> = Align16([0; 68 * 384]);
-    let mut mid_stride: libc::c_int = w + 7 & !7;
+    let mid_stride: libc::c_int = w + 7 & !7;
     dav1d_wiener_filter_h_neon(
         &mut mid.0[2 * mid_stride as usize..],
         left,
@@ -1703,7 +1703,7 @@ use crate::src::cpu::dav1d_get_cpu_flags;
 #[inline(always)]
 fn loop_restoration_dsp_init_arm<BD: BitDepth>(
     c: &mut Dav1dLoopRestorationDSPContext,
-    mut bpc: libc::c_int,
+    bpc: libc::c_int,
 ) {
     use crate::src::arm::cpu::DAV1D_ARM_CPU_FLAG_NEON;
 

@@ -57,7 +57,7 @@ pub fn dav1d_get_shear_params(wm: &mut Dav1dWarpedMotionParams) -> bool {
     let alpha = iclip_wmp(mat[2] - 0x10000) as i16;
     let beta = iclip_wmp(mat[3]) as i16;
 
-    let (mut shift, y) = resolve_divisor_32((mat[2]).abs() as u32);
+    let (shift, y) = resolve_divisor_32((mat[2]).abs() as u32);
     let y = apply_sign(y, mat[2]);
     let v1 = mat[4] as i64 * 0x10000 * y as i64;
     let rnd = 1 << shift >> 1;

@@ -84,9 +84,9 @@ unsafe extern "C" fn rl64(p: *const uint8_t) -> int64_t {
 unsafe extern "C" fn ivf_open(
     c: *mut IvfInputContext,
     file: *const libc::c_char,
-    mut fps: *mut libc::c_uint,
+    fps: *mut libc::c_uint,
     num_frames: *mut libc::c_uint,
-    mut timebase: *mut libc::c_uint,
+    timebase: *mut libc::c_uint,
 ) -> libc::c_int {
     let mut hdr: [uint8_t; 32] = [0; 32];
     (*c).f = fopen(file, b"rb\0" as *const u8 as *const libc::c_char);
@@ -162,7 +162,7 @@ unsafe extern "C" fn ivf_open(
     while !(fread(data.as_mut_ptr() as *mut libc::c_void, 4, 1, (*c).f)
         != 1 as libc::c_int as libc::c_ulong)
     {
-        let mut sz: size_t = rl32(data.as_mut_ptr()) as size_t;
+        let sz: size_t = rl32(data.as_mut_ptr()) as size_t;
         if fread(data.as_mut_ptr() as *mut libc::c_void, 8, 1, (*c).f)
             != 1 as libc::c_int as libc::c_ulong
         {
@@ -334,7 +334,7 @@ unsafe extern "C" fn ivf_close(c: *mut IvfInputContext) {
 }
 #[no_mangle]
 pub static mut ivf_demuxer: Demuxer = {
-    let mut init = Demuxer {
+    let init = Demuxer {
         priv_data_size: ::core::mem::size_of::<IvfInputContext>() as libc::c_ulong as libc::c_int,
         name: b"ivf\0" as *const u8 as *const libc::c_char,
         probe_sz: ::core::mem::size_of::<[uint8_t; 12]>() as libc::c_ulong as libc::c_int,

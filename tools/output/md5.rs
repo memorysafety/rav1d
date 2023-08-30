@@ -706,7 +706,7 @@ unsafe extern "C" fn md5_verify(
 }
 #[no_mangle]
 pub static mut md5_muxer: Muxer = {
-    let mut init = Muxer {
+    let init = Muxer {
         priv_data_size: ::core::mem::size_of::<MD5Context>() as libc::c_ulong as libc::c_int,
         name: b"md5\0" as *const u8 as *const libc::c_char,
         extension: b"md5\0" as *const u8 as *const libc::c_char,

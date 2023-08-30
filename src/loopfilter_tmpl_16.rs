@@ -41,10 +41,10 @@ unsafe extern "C" fn loop_filter(
         let mut p4 = 0;
         let mut p3 = 0;
         let mut p2 = 0;
-        let mut p1 = *dst.offset(strideb * -(2 as libc::c_int) as isize) as libc::c_int;
-        let mut p0 = *dst.offset(strideb * -(1 as libc::c_int) as isize) as libc::c_int;
-        let mut q0 = *dst.offset((strideb * 0) as isize) as libc::c_int;
-        let mut q1 = *dst.offset((strideb * 1) as isize) as libc::c_int;
+        let p1 = *dst.offset(strideb * -(2 as libc::c_int) as isize) as libc::c_int;
+        let p0 = *dst.offset(strideb * -(1 as libc::c_int) as isize) as libc::c_int;
+        let q0 = *dst.offset((strideb * 0) as isize) as libc::c_int;
+        let q1 = *dst.offset((strideb * 1) as isize) as libc::c_int;
         let mut q2 = 0;
         let mut q3 = 0;
         let mut q4 = 0;
@@ -222,8 +222,8 @@ unsafe extern "C" fn loop_filter_h_sb128y_rust(
     stride: ptrdiff_t,
     vmask: *const uint32_t,
     mut l: *const [uint8_t; 4],
-    mut b4_stride: ptrdiff_t,
-    mut lut: *const Av1FilterLUT,
+    b4_stride: ptrdiff_t,
+    lut: *const Av1FilterLUT,
     _h: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
@@ -288,8 +288,8 @@ unsafe extern "C" fn loop_filter_v_sb128y_rust(
     stride: ptrdiff_t,
     vmask: *const uint32_t,
     mut l: *const [uint8_t; 4],
-    mut b4_stride: ptrdiff_t,
-    mut lut: *const Av1FilterLUT,
+    b4_stride: ptrdiff_t,
+    lut: *const Av1FilterLUT,
     _w: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
@@ -354,8 +354,8 @@ unsafe extern "C" fn loop_filter_h_sb128uv_rust(
     stride: ptrdiff_t,
     vmask: *const uint32_t,
     mut l: *const [uint8_t; 4],
-    mut b4_stride: ptrdiff_t,
-    mut lut: *const Av1FilterLUT,
+    b4_stride: ptrdiff_t,
+    lut: *const Av1FilterLUT,
     _h: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
@@ -416,8 +416,8 @@ unsafe extern "C" fn loop_filter_v_sb128uv_rust(
     stride: ptrdiff_t,
     vmask: *const uint32_t,
     mut l: *const [uint8_t; 4],
-    mut b4_stride: ptrdiff_t,
-    mut lut: *const Av1FilterLUT,
+    b4_stride: ptrdiff_t,
+    lut: *const Av1FilterLUT,
     _w: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {

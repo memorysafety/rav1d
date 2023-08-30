@@ -537,7 +537,7 @@ pub unsafe extern "C" fn dav1d_log_default_callback(
 pub unsafe extern "C" fn dav1d_log(
     c: *mut Dav1dContext,
     format: *const libc::c_char,
-    mut args: ...
+    args: ...
 ) {
     if c.is_null() {
         fprintf(

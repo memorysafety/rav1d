@@ -32,7 +32,7 @@ unsafe extern "C" fn null_write(_c: *mut NullOutputContext, p: *mut Dav1dPicture
 }
 #[no_mangle]
 pub static mut null_muxer: Muxer = {
-    let mut init = Muxer {
+    let init = Muxer {
         priv_data_size: 0 as libc::c_int,
         name: b"null\0" as *const u8 as *const libc::c_char,
         extension: b"null\0" as *const u8 as *const libc::c_char,

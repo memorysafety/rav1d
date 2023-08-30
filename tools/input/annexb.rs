@@ -141,7 +141,7 @@ unsafe extern "C" fn parse_obu_header(
     *obu_size = buf_size as size_t;
     return buf_size + 1 + extension_flag;
 }
-unsafe extern "C" fn annexb_probe(mut data: *const uint8_t) -> libc::c_int {
+unsafe extern "C" fn annexb_probe(data: *const uint8_t) -> libc::c_int {
     let mut ret = 0;
     let mut cnt = 0;
     let mut temporal_unit_size: size_t = 0;
@@ -228,9 +228,9 @@ unsafe extern "C" fn annexb_probe(mut data: *const uint8_t) -> libc::c_int {
 unsafe extern "C" fn annexb_open(
     c: *mut AnnexbInputContext,
     file: *const libc::c_char,
-    mut fps: *mut libc::c_uint,
+    fps: *mut libc::c_uint,
     num_frames: *mut libc::c_uint,
-    mut timebase: *mut libc::c_uint,
+    timebase: *mut libc::c_uint,
 ) -> libc::c_int {
     let mut res = 0;
     let mut len: size_t = 0;
@@ -282,7 +282,7 @@ unsafe extern "C" fn annexb_read(c: *mut AnnexbInputContext, data: *mut Dav1dDat
     if res < 0 || len.wrapping_add(res as size_t) > (*c).frame_unit_size {
         return -(1 as libc::c_int);
     }
-    let mut ptr: *mut uint8_t = dav1d_data_create(data, len);
+    let ptr: *mut uint8_t = dav1d_data_create(data, len);
     if ptr.is_null() {
         return -(1 as libc::c_int);
     }
@@ -306,7 +306,7 @@ unsafe extern "C" fn annexb_close(c: *mut AnnexbInputContext) {
 }
 #[no_mangle]
 pub static mut annexb_demuxer: Demuxer = {
-    let mut init = Demuxer {
+    let init = Demuxer {
         priv_data_size: ::core::mem::size_of::<AnnexbInputContext>() as libc::c_ulong
             as libc::c_int,
         name: b"annexb\0" as *const u8 as *const libc::c_char,

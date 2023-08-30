@@ -57,7 +57,7 @@ unsafe extern "C" fn y4m2_open(
     c: *mut Y4m2OutputContext,
     file: *const libc::c_char,
     mut _p: *const Dav1dPictureParameters,
-    mut fps: *const libc::c_uint,
+    fps: *const libc::c_uint,
 ) -> libc::c_int {
     if strcmp(file, b"-\0" as *const u8 as *const libc::c_char) == 0 {
         (*c).f = stdout;
@@ -250,7 +250,7 @@ unsafe extern "C" fn y4m2_close(c: *mut Y4m2OutputContext) {
 }
 #[no_mangle]
 pub static mut y4m2_muxer: Muxer = {
-    let mut init = Muxer {
+    let init = Muxer {
         priv_data_size: ::core::mem::size_of::<Y4m2OutputContext>() as libc::c_ulong as libc::c_int,
         name: b"yuv4mpeg2\0" as *const u8 as *const libc::c_char,
         extension: b"y4m\0" as *const u8 as *const libc::c_char,

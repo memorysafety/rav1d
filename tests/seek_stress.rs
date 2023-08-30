@@ -5,7 +5,6 @@
     non_snake_case,
     non_upper_case_globals,
     unused_assignments,
-    unused_mut
 )]
 #![feature(extern_types)]
 #![feature(c_variadic)]
@@ -140,7 +139,7 @@ unsafe extern "C" fn get_seed() -> libc::c_uint {
         .wrapping_add(ts.tv_nsec as libc::c_ulonglong) as libc::c_uint;
 }
 static mut xs_state: [uint32_t; 4] = [0; 4];
-unsafe fn xor128_srand(mut seed: libc::c_uint) {
+unsafe fn xor128_srand(seed: libc::c_uint) {
     xs_state[0] = seed;
     xs_state[1] = seed & 0xffff0000 | !seed & 0xffff;
     xs_state[2] = !seed & 0xffff0000 | seed & 0xffff;
@@ -395,7 +394,7 @@ unsafe extern "C" fn seek(
 unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_int {
     let mut shift: libc::c_uint = 0;
     let mut current_block: u64;
-    let mut version: *const libc::c_char = dav1d_version();
+    let version: *const libc::c_char = dav1d_version();
     if libc::strcmp(version, b"966d63c1\0" as *const u8 as *const libc::c_char) != 0 {
         libc::fprintf(
             stderr,

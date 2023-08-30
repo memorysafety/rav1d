@@ -64,9 +64,9 @@ pub unsafe extern "C" fn input_open(
     c_out: *mut *mut DemuxerContext,
     name: *const libc::c_char,
     filename: *const libc::c_char,
-    mut fps: *mut libc::c_uint,
+    fps: *mut libc::c_uint,
     num_frames: *mut libc::c_uint,
-    mut timebase: *mut libc::c_uint,
+    timebase: *mut libc::c_uint,
 ) -> libc::c_int {
     let mut impl_0: *const Demuxer = 0 as *const Demuxer;
     let mut c: *mut DemuxerContext = 0 as *mut DemuxerContext;
@@ -105,7 +105,7 @@ pub unsafe extern "C" fn input_open(
             );
             return -(12 as libc::c_int);
         }
-        let mut f: *mut libc::FILE = fopen(filename, b"rb\0" as *const u8 as *const libc::c_char);
+        let f: *mut libc::FILE = fopen(filename, b"rb\0" as *const u8 as *const libc::c_char);
         if f.is_null() {
             fprintf(
                 stderr,

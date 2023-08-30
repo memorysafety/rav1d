@@ -627,7 +627,7 @@ use crate::src::getbits::GetBits;
 use crate::src::env::get_poc_diff;
 use crate::src::r#ref::dav1d_ref_inc;
 #[inline]
-unsafe extern "C" fn dav1d_get_bits_pos(mut c: *const GetBits) -> libc::c_uint {
+unsafe extern "C" fn dav1d_get_bits_pos(c: *const GetBits) -> libc::c_uint {
     return (((*c).ptr).offset_from((*c).ptr_start) as libc::c_long as libc::c_uint)
         .wrapping_mul(8 as libc::c_int as libc::c_uint)
         .wrapping_sub((*c).bits_left as libc::c_uint);
@@ -1066,7 +1066,7 @@ unsafe extern "C" fn tile_log2(sz: libc::c_int, tgt: libc::c_int) -> libc::c_int
     return k;
 }
 static mut default_mode_ref_deltas: Dav1dLoopfilterModeRefDeltas = {
-    let mut init = Dav1dLoopfilterModeRefDeltas {
+    let init = Dav1dLoopfilterModeRefDeltas {
         mode_delta: [0 as libc::c_int, 0 as libc::c_int],
         ref_delta: [
             1 as libc::c_int,
@@ -1201,8 +1201,8 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
                         &mut *((*hdr).operating_points).as_mut_ptr().offset(i as isize)
                             as *mut Dav1dFrameHeaderOperatingPoint;
                     if (*seqop).decoder_model_param_present != 0 {
-                        let mut in_temporal_layer = (*seqop).idc >> (*hdr).temporal_id & 1;
-                        let mut in_spatial_layer = (*seqop).idc >> (*hdr).spatial_id + 8 & 1;
+                        let in_temporal_layer = (*seqop).idc >> (*hdr).temporal_id & 1;
+                        let in_spatial_layer = (*seqop).idc >> (*hdr).spatial_id + 8 & 1;
                         if (*seqop).idc == 0 || in_temporal_layer != 0 && in_spatial_layer != 0 {
                             (*op).buffer_removal_time =
                                 dav1d_get_bits(gb, (*seqhdr).buffer_removal_delay_length)
@@ -2759,7 +2759,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                     if r#ref.is_null() {
                         return -(12 as libc::c_int);
                     }
-                    let mut seq_hdr: *mut Dav1dSequenceHeader =
+                    let seq_hdr: *mut Dav1dSequenceHeader =
                         (*r#ref).data as *mut Dav1dSequenceHeader;
                     res = parse_seq_hdr(c, &mut gb, seq_hdr);
                     if res < 0 {
@@ -2943,7 +2943,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                             as *const libc::c_char,
                                     );
                                 } else {
-                                    let mut ref_3: *mut Dav1dRef = dav1d_ref_create(
+                                    let ref_3: *mut Dav1dRef = dav1d_ref_create(
                                         (::core::mem::size_of::<Dav1dITUTT35>()).wrapping_add(
                                             (payload_size as size_t)
                                                 .wrapping_mul(::core::mem::size_of::<uint8_t>()),
@@ -3120,7 +3120,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                             {
                                                 current_block = 2084488458830559219;
                                             } else {
-                                                let mut tile: *mut Dav1dTileGroup = realloc(
+                                                let tile: *mut Dav1dTileGroup = realloc(
                                                     (*c).tile as *mut libc::c_void,
                                                     (((*c).n_tile_data + 1) as size_t)
                                                         .wrapping_mul(::core::mem::size_of::<

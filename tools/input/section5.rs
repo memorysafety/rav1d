@@ -138,7 +138,7 @@ unsafe extern "C" fn leb128(f: *mut libc::FILE, len: *mut size_t) -> libc::c_int
     *len = val as usize;
     return i as libc::c_int;
 }
-unsafe extern "C" fn section5_probe(mut data: *const uint8_t) -> libc::c_int {
+unsafe extern "C" fn section5_probe(data: *const uint8_t) -> libc::c_int {
     let mut ret = 0;
     let mut cnt = 0;
     let mut obu_size: size_t = 0;
@@ -184,9 +184,9 @@ unsafe extern "C" fn section5_probe(mut data: *const uint8_t) -> libc::c_int {
 unsafe extern "C" fn section5_open(
     c: *mut Section5InputContext,
     file: *const libc::c_char,
-    mut fps: *mut libc::c_uint,
+    fps: *mut libc::c_uint,
     num_frames: *mut libc::c_uint,
-    mut timebase: *mut libc::c_uint,
+    timebase: *mut libc::c_uint,
 ) -> libc::c_int {
     (*c).f = fopen(file, b"rb\0" as *const u8 as *const libc::c_char);
     if ((*c).f).is_null() {
@@ -301,7 +301,7 @@ unsafe extern "C" fn section5_read(
         }
     }
     fseeko((*c).f, -(total_bytes as libc::off_t), 1 as libc::c_int);
-    let mut ptr: *mut uint8_t = dav1d_data_create(data, total_bytes);
+    let ptr: *mut uint8_t = dav1d_data_create(data, total_bytes);
     if ptr.is_null() {
         return -(1 as libc::c_int);
     }
@@ -321,7 +321,7 @@ unsafe extern "C" fn section5_close(c: *mut Section5InputContext) {
 }
 #[no_mangle]
 pub static mut section5_demuxer: Demuxer = {
-    let mut init = Demuxer {
+    let init = Demuxer {
         priv_data_size: ::core::mem::size_of::<Section5InputContext>() as libc::c_ulong
             as libc::c_int,
         name: b"section5\0" as *const u8 as *const libc::c_char,

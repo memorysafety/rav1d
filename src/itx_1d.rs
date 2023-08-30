@@ -111,7 +111,7 @@ unsafe extern "C" fn inv_dct16_1d_internal_c(
     stride: ptrdiff_t,
     min: libc::c_int,
     max: libc::c_int,
-    mut tx64: libc::c_int,
+    tx64: libc::c_int,
 ) {
     if !(stride > 0) {
         unreachable!();
@@ -152,14 +152,14 @@ unsafe extern "C" fn inv_dct16_1d_internal_c(
         t14a = in9 * 1299 + in7 * 1583 + 1024 >> 11;
         t15a = (in1 * (4076 - 4096) + in15 * 401 + 2048 >> 12) + in1;
     }
-    let mut t8 = iclip(t8a + t9a, min, max);
+    let t8 = iclip(t8a + t9a, min, max);
     let mut t9 = iclip(t8a - t9a, min, max);
     let mut t10 = iclip(t11a - t10a, min, max);
     let mut t11 = iclip(t11a + t10a, min, max);
     let mut t12 = iclip(t12a + t13a, min, max);
     let mut t13 = iclip(t12a - t13a, min, max);
     let mut t14 = iclip(t15a - t14a, min, max);
-    let mut t15 = iclip(t15a + t14a, min, max);
+    let t15 = iclip(t15a + t14a, min, max);
     t9a = (t14 * 1567 - t9 * (3784 - 4096) + 2048 >> 12) - t9;
     t14a = (t14 * (3784 - 4096) + t9 * 1567 + 2048 >> 12) + t14;
     t10a = (-(t13 * (3784 - 4096) + t10 * 1567) + 2048 >> 12) - t13;
@@ -897,8 +897,8 @@ unsafe extern "C" fn inv_adst16_1d_internal_c(
     let mut t13 = (in3 * (3857 - 4096) - in12 * 1380 + 2048 >> 12) + in3;
     let mut t14 = (in1 * 601 + in14 * (4052 - 4096) + 2048 >> 12) + in14;
     let mut t15 = (in1 * (4052 - 4096) - in14 * 601 + 2048 >> 12) + in1;
-    let mut t0a = iclip(t0 + t8, min, max);
-    let mut t1a = iclip(t1 + t9, min, max);
+    let t0a = iclip(t0 + t8, min, max);
+    let t1a = iclip(t1 + t9, min, max);
     let mut t2a = iclip(t2 + t10, min, max);
     let mut t3a = iclip(t3 + t11, min, max);
     let mut t4a = iclip(t4 + t12, min, max);

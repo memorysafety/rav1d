@@ -682,7 +682,7 @@ unsafe extern "C" fn backup_lpf(
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_copy_lpf_16bpc(
     f: *mut Dav1dFrameContext,
-    mut src: *const *mut pixel,
+    src: *const *mut pixel,
     sby: libc::c_int,
 ) {
     let have_tt = ((*(*f).c).n_tc > 1 as libc::c_uint) as libc::c_int;
@@ -842,10 +842,10 @@ pub unsafe extern "C" fn dav1d_copy_lpf_16bpc(
 unsafe extern "C" fn filter_plane_cols_y(
     f: *const Dav1dFrameContext,
     have_left: libc::c_int,
-    mut lvl: *const [uint8_t; 4],
+    lvl: *const [uint8_t; 4],
     b4_stride: ptrdiff_t,
     mask: *const [[uint16_t; 2]; 3],
-    mut dst: *mut pixel,
+    dst: *mut pixel,
     ls: ptrdiff_t,
     w: libc::c_int,
     starty4: libc::c_int,
@@ -932,7 +932,7 @@ unsafe extern "C" fn filter_plane_rows_y(
 unsafe extern "C" fn filter_plane_cols_uv(
     f: *const Dav1dFrameContext,
     have_left: libc::c_int,
-    mut lvl: *const [uint8_t; 4],
+    lvl: *const [uint8_t; 4],
     b4_stride: ptrdiff_t,
     mask: *const [[uint16_t; 2]; 2],
     u: *mut pixel,
@@ -1044,9 +1044,9 @@ unsafe extern "C" fn filter_plane_rows_uv(
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_16bpc(
     f: *const Dav1dFrameContext,
-    mut p: *const *mut pixel,
+    p: *const *mut pixel,
     lflvl: *mut Av1Filter,
-    mut sby: libc::c_int,
+    sby: libc::c_int,
     start_of_tile_row: libc::c_int,
 ) {
     let mut x = 0;
@@ -1256,9 +1256,9 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_16bpc(
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_loopfilter_sbrow_rows_16bpc(
     f: *const Dav1dFrameContext,
-    mut p: *const *mut pixel,
+    p: *const *mut pixel,
     lflvl: *mut Av1Filter,
-    mut sby: libc::c_int,
+    sby: libc::c_int,
 ) {
     let mut x = 0;
     let have_top = (sby > 0) as libc::c_int;

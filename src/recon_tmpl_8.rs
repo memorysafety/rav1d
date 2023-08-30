@@ -661,14 +661,14 @@ unsafe fn decode_coefs(
     b: *const Av1Block,
     intra: libc::c_int,
     plane: libc::c_int,
-    mut cf: *mut coef,
+    cf: *mut coef,
     txtp: *mut TxfmType,
-    mut res_ctx: *mut uint8_t,
+    res_ctx: *mut uint8_t,
 ) -> libc::c_int {
     let mut dc_sign_ctx = 0;
     let mut dc_sign = 0;
     let mut dc_dq = 0;
-    let mut current_block: u64;
+    let current_block: u64;
     let ts: *mut Dav1dTileState = (*t).ts;
     let chroma = (plane != 0) as libc::c_int;
     let f: *const Dav1dFrameContext = (*t).f;
@@ -913,7 +913,7 @@ unsafe fn decode_coefs(
             + (eob > sw * sh * 2) as libc::c_int
             + (eob > sw * sh * 4) as libc::c_int)
             as libc::c_uint;
-        let mut eob_tok = dav1d_msac_decode_symbol_adapt4(
+        let eob_tok = dav1d_msac_decode_symbol_adapt4(
             &mut (*ts).msac,
             &mut *eob_cdf.offset(ctx as isize),
             2 as libc::c_int as size_t,
@@ -1622,7 +1622,7 @@ unsafe fn decode_coefs(
             }
         }
     } else {
-        let mut tok_br = dav1d_msac_decode_symbol_adapt4(
+        let tok_br = dav1d_msac_decode_symbol_adapt4(
             &mut (*ts).msac,
             &mut *eob_cdf.offset(0),
             2 as libc::c_int as size_t,
@@ -2017,7 +2017,7 @@ unsafe extern "C" fn read_coef_tree(
                     case.set(&mut dir.lcoef.0, cf_ctx);
                 },
             );
-            let mut txtp_map = &mut (*t).txtp_map[(by4 * 32 + bx4) as usize..];
+            let txtp_map = &mut (*t).txtp_map[(by4 * 32 + bx4) as usize..];
             CaseSet::<16, false>::one((), txw as usize, 0, |case, ()| {
                 for txtp_map in txtp_map.chunks_mut(32).take(txh as usize) {
                     case.set(txtp_map, txtp);
@@ -2528,7 +2528,7 @@ unsafe extern "C" fn obmc(
         unreachable!();
     }
     let f: *const Dav1dFrameContext = (*t).f;
-    let mut r: *mut *mut refmvs_block = &mut *((*t).rt.r)
+    let r: *mut *mut refmvs_block = &mut *((*t).rt.r)
         .as_mut_ptr()
         .offset((((*t).by & 31) + 5) as isize)
         as *mut *mut refmvs_block;
@@ -2825,7 +2825,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
         let mut init_x = 0;
         while init_x < w4 {
             if (*b).c2rust_unnamed.c2rust_unnamed.pal_sz[0] != 0 {
-                let mut dst: *mut pixel = ((*f).cur.data[0] as *mut pixel).offset(
+                let dst: *mut pixel = ((*f).cur.data[0] as *mut pixel).offset(
                     (4 * ((*t).by as isize * (*f).cur.stride[0] + (*t).bx as isize)) as isize,
                 );
                 let mut pal_idx: *const uint8_t = 0 as *const uint8_t;
@@ -3093,7 +3093,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                         unreachable!();
                     }
                     let ac = &mut (*t).scratch.c2rust_unnamed_0.ac;
-                    let mut y_src: *mut pixel = ((*f).cur.data[0] as *mut pixel)
+                    let y_src: *mut pixel = ((*f).cur.data[0] as *mut pixel)
                         .offset((4 * ((*t).bx & !ss_hor)) as isize)
                         .offset(((4 * ((*t).by & !ss_ver)) as isize * (*f).cur.stride[0]) as isize);
                     let uv_off: ptrdiff_t =
@@ -4232,7 +4232,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
         (*t).tl_4x4_filter = filter_2d;
     } else {
         let filter_2d_0: Filter2d = (*b).c2rust_unnamed.c2rust_unnamed_0.filter2d as Filter2d;
-        let mut tmp_1: *mut [int16_t; 16384] = ((*t)
+        let tmp_1: *mut [int16_t; 16384] = ((*t)
             .scratch
             .c2rust_unnamed
             .c2rust_unnamed
@@ -4775,7 +4775,7 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_deblock_cols_8bpc(
         ((*f).lf.p[1] as *mut pixel).offset((y as isize * (*f).cur.stride[1] >> ss_ver) as isize),
         ((*f).lf.p[2] as *mut pixel).offset((y as isize * (*f).cur.stride[1] >> ss_ver) as isize),
     ];
-    let mut mask: *mut Av1Filter = ((*f).lf.mask)
+    let mask: *mut Av1Filter = ((*f).lf.mask)
         .offset(((sby >> ((*(*f).seq_hdr).sb128 == 0) as libc::c_int) * (*f).sb128w) as isize);
     dav1d_loopfilter_sbrow_cols_8bpc(
         f,
@@ -4798,7 +4798,7 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_deblock_rows_8bpc(
         ((*f).lf.p[1] as *mut pixel).offset((y as isize * (*f).cur.stride[1] >> ss_ver) as isize),
         ((*f).lf.p[2] as *mut pixel).offset((y as isize * (*f).cur.stride[1] >> ss_ver) as isize),
     ];
-    let mut mask: *mut Av1Filter = ((*f).lf.mask)
+    let mask: *mut Av1Filter = ((*f).lf.mask)
         .offset(((sby >> ((*(*f).seq_hdr).sb128 == 0) as libc::c_int) * (*f).sb128w) as isize);
     if (*(*f).c).inloop_filters as libc::c_uint
         & DAV1D_INLOOPFILTER_DEBLOCK as libc::c_int as libc::c_uint
@@ -4830,9 +4830,9 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_cdef_8bpc(tc: *mut Dav1dTaskContext,
         ((*f).lf.p[1] as *mut pixel).offset((y as isize * (*f).cur.stride[1] >> ss_ver) as isize),
         ((*f).lf.p[2] as *mut pixel).offset((y as isize * (*f).cur.stride[1] >> ss_ver) as isize),
     ];
-    let mut prev_mask: *mut Av1Filter = ((*f).lf.mask)
+    let prev_mask: *mut Av1Filter = ((*f).lf.mask)
         .offset(((sby - 1 >> ((*(*f).seq_hdr).sb128 == 0) as libc::c_int) * (*f).sb128w) as isize);
-    let mut mask: *mut Av1Filter = ((*f).lf.mask)
+    let mask: *mut Av1Filter = ((*f).lf.mask)
         .offset(((sby >> ((*(*f).seq_hdr).sb128 == 0) as libc::c_int) * (*f).sb128w) as isize);
     let start = sby * sbsz;
     if sby != 0 {
@@ -4893,10 +4893,10 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_resize_8bpc(
             as libc::c_int;
         let h_start = 8 * (sby != 0) as libc::c_int >> ss_ver_0;
         let dst_stride: ptrdiff_t = (*f).sr_cur.p.stride[(pl != 0) as libc::c_int as usize];
-        let mut dst: *mut pixel =
+        let dst: *mut pixel =
             (sr_p[pl as usize]).offset(-((h_start as isize * dst_stride) as isize));
         let src_stride: ptrdiff_t = (*f).cur.stride[(pl != 0) as libc::c_int as usize];
-        let mut src: *const pixel =
+        let src: *const pixel =
             (p[pl as usize]).offset(-((h_start as isize * src_stride) as isize));
         let h_end =
             4 as libc::c_int * (sbsz - 2 * ((sby + 1) < (*f).sbh) as libc::c_int) >> ss_ver_0;

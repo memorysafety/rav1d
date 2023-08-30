@@ -624,7 +624,7 @@ fn calc_lf_value_chroma(
 pub fn dav1d_calc_lf_values(
     lflvl_values: &mut [[[[u8; 2]; 8]; 4]; 8],
     hdr: &Dav1dFrameHeader,
-    mut lf_delta: &[i8; 4],
+    lf_delta: &[i8; 4],
 ) {
     let n_seg = if hdr.segmentation.enabled != 0 { 8 } else { 1 };
 

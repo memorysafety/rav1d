@@ -159,7 +159,7 @@ unsafe extern "C" fn yuv_close(c: *mut YuvOutputContext) {
 }
 #[no_mangle]
 pub static mut yuv_muxer: Muxer = {
-    let mut init = Muxer {
+    let init = Muxer {
         priv_data_size: ::core::mem::size_of::<YuvOutputContext>() as libc::c_ulong as libc::c_int,
         name: b"yuv\0" as *const u8 as *const libc::c_char,
         extension: b"yuv\0" as *const u8 as *const libc::c_char,

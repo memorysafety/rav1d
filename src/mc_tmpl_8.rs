@@ -2875,12 +2875,12 @@ unsafe extern "C" fn put_8tap_sharp_smooth_scaled_c(
 }
 use crate::src::mc::put_bilin_rust;
 unsafe extern "C" fn put_bilin_c(
-    mut dst: *mut pixel,
-    mut dst_stride: ptrdiff_t,
-    mut src: *const pixel,
-    mut src_stride: ptrdiff_t,
+    dst: *mut pixel,
+    dst_stride: ptrdiff_t,
+    src: *const pixel,
+    src_stride: ptrdiff_t,
     w: libc::c_int,
-    mut h: libc::c_int,
+    h: libc::c_int,
     mx: libc::c_int,
     my: libc::c_int,
 ) {
@@ -2898,14 +2898,14 @@ unsafe extern "C" fn put_bilin_c(
 }
 use crate::src::mc::put_bilin_scaled_rust;
 unsafe extern "C" fn put_bilin_scaled_c(
-    mut dst: *mut pixel,
-    mut dst_stride: ptrdiff_t,
-    mut src: *const pixel,
-    mut src_stride: ptrdiff_t,
+    dst: *mut pixel,
+    dst_stride: ptrdiff_t,
+    src: *const pixel,
+    src_stride: ptrdiff_t,
     w: libc::c_int,
-    mut h: libc::c_int,
+    h: libc::c_int,
     mx: libc::c_int,
-    mut my: libc::c_int,
+    my: libc::c_int,
     dx: libc::c_int,
     dy: libc::c_int,
 ) {
@@ -2925,11 +2925,11 @@ unsafe extern "C" fn put_bilin_scaled_c(
 }
 use crate::src::mc::prep_bilin_rust;
 unsafe extern "C" fn prep_bilin_c(
-    mut tmp: *mut int16_t,
-    mut src: *const pixel,
-    mut src_stride: ptrdiff_t,
+    tmp: *mut int16_t,
+    src: *const pixel,
+    src_stride: ptrdiff_t,
     w: libc::c_int,
-    mut h: libc::c_int,
+    h: libc::c_int,
     mx: libc::c_int,
     my: libc::c_int,
 ) {
@@ -2946,13 +2946,13 @@ unsafe extern "C" fn prep_bilin_c(
 }
 use crate::src::mc::prep_bilin_scaled_rust;
 unsafe extern "C" fn prep_bilin_scaled_c(
-    mut tmp: *mut int16_t,
-    mut src: *const pixel,
-    mut src_stride: ptrdiff_t,
+    tmp: *mut int16_t,
+    src: *const pixel,
+    src_stride: ptrdiff_t,
     w: libc::c_int,
-    mut h: libc::c_int,
+    h: libc::c_int,
     mx: libc::c_int,
-    mut my: libc::c_int,
+    my: libc::c_int,
     dx: libc::c_int,
     dy: libc::c_int,
 ) {
@@ -2971,12 +2971,12 @@ unsafe extern "C" fn prep_bilin_scaled_c(
 }
 use crate::src::mc::avg_rust;
 unsafe extern "C" fn avg_c(
-    mut dst: *mut pixel,
+    dst: *mut pixel,
     dst_stride: ptrdiff_t,
-    mut tmp1: *const int16_t,
-    mut tmp2: *const int16_t,
+    tmp1: *const int16_t,
+    tmp2: *const int16_t,
     w: libc::c_int,
-    mut h: libc::c_int,
+    h: libc::c_int,
 ) {
     avg_rust(
         dst,
@@ -3096,7 +3096,7 @@ unsafe extern "C" fn w_mask_444_c(
     tmp2: *const int16_t,
     w: libc::c_int,
     h: libc::c_int,
-    mut mask: *mut uint8_t,
+    mask: *mut uint8_t,
     sign: libc::c_int,
 ) {
     w_mask_c(dst, dst_stride, tmp1, tmp2, w, h, mask, sign, false, false)
@@ -3108,7 +3108,7 @@ unsafe extern "C" fn w_mask_422_c(
     tmp2: *const int16_t,
     w: libc::c_int,
     h: libc::c_int,
-    mut mask: *mut uint8_t,
+    mask: *mut uint8_t,
     sign: libc::c_int,
 ) {
     w_mask_c(dst, dst_stride, tmp1, tmp2, w, h, mask, sign, true, false)
@@ -3120,7 +3120,7 @@ unsafe extern "C" fn w_mask_420_c(
     tmp2: *const int16_t,
     w: libc::c_int,
     h: libc::c_int,
-    mut mask: *mut uint8_t,
+    mask: *mut uint8_t,
     sign: libc::c_int,
 ) {
     w_mask_c(dst, dst_stride, tmp1, tmp2, w, h, mask, sign, true, true)

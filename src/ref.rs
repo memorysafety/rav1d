@@ -97,10 +97,10 @@ pub unsafe fn dav1d_ref_create_using_pool(
 
 pub unsafe fn dav1d_ref_wrap(
     ptr: *const uint8_t,
-    mut free_callback: Option<unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> ()>,
+    free_callback: Option<unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> ()>,
     user_data: *mut libc::c_void,
 ) -> *mut Dav1dRef {
-    let mut res: *mut Dav1dRef =
+    let res: *mut Dav1dRef =
         malloc(::core::mem::size_of::<Dav1dRef>() as libc::c_ulong) as *mut Dav1dRef;
     if res.is_null() {
         return 0 as *mut Dav1dRef;

@@ -546,7 +546,7 @@ unsafe extern "C" fn lr_stripe(
     f: *const Dav1dFrameContext,
     mut p: *mut pixel,
     mut left: *const [pixel; 4],
-    mut x: libc::c_int,
+    x: libc::c_int,
     mut y: libc::c_int,
     plane: libc::c_int,
     unit_w: libc::c_int,
@@ -574,7 +574,7 @@ unsafe extern "C" fn lr_stripe(
         )
         .offset(x as isize);
     let mut stripe_h = imin(64 - 8 * (y == 0) as libc::c_int >> ss_ver, row_h - y);
-    let mut lr_fn: looprestorationfilter_fn;
+    let lr_fn: looprestorationfilter_fn;
     let mut params: LooprestorationParams = LooprestorationParams {
         filter: [[0; 8]; 2].into(),
     };
@@ -786,7 +786,7 @@ unsafe extern "C" fn lr_sbrow(
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_lr_sbrow_8bpc(
     f: *mut Dav1dFrameContext,
-    mut dst: *const *mut pixel,
+    dst: *const *mut pixel,
     sby: libc::c_int,
 ) {
     let offset_y = 8 * (sby != 0) as libc::c_int;

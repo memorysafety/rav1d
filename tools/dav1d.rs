@@ -5,7 +5,6 @@
     non_snake_case,
     non_upper_case_globals,
     unused_assignments,
-    unused_mut
 )]
 #![feature(extern_types)]
 #![feature(c_variadic)]
@@ -191,10 +190,10 @@ unsafe extern "C" fn get_time_nanos() -> uint64_t {
         .wrapping_mul(ts.tv_sec as libc::c_ulonglong)
         .wrapping_add(ts.tv_nsec as libc::c_ulonglong) as uint64_t;
 }
-unsafe extern "C" fn sleep_nanos(mut d: uint64_t) {
+unsafe extern "C" fn sleep_nanos(d: uint64_t) {
     // TODO: C version has Windows specific code path
     let ts: libc::timespec = {
-        let mut init = libc::timespec {
+        let init = libc::timespec {
             tv_sec: d as libc::time_t / 1000000000,
             tv_nsec: d as libc::time_t % 1000000000,
         };
@@ -455,7 +454,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
     let mut elapsed: uint64_t = 0;
     let mut i_fps: libc::c_double = 0.;
     let mut frametimes: *mut libc::FILE = 0 as *mut libc::FILE;
-    let mut version: *const libc::c_char = dav1d_version();
+    let version: *const libc::c_char = dav1d_version();
     if strcmp(version, b"966d63c1\0" as *const u8 as *const libc::c_char) != 0 {
         fprintf(
             stderr,
