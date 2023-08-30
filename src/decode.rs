@@ -6353,10 +6353,10 @@ pub unsafe extern "C" fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retv
     dav1d_ref_dec(&mut (*f).mvs_ref);
     dav1d_ref_dec(&mut (*f).seq_hdr_ref);
     dav1d_ref_dec(&mut (*f).frame_hdr_ref);
-    let mut i_0 = 0;
-    while i_0 < (*f).n_tile_data {
-        dav1d_data_unref_internal(&mut (*((*f).tile).offset(i_0 as isize)).data);
-        i_0 += 1;
+    let mut i = 0;
+    while i < (*f).n_tile_data {
+        dav1d_data_unref_internal(&mut (*((*f).tile).offset(i as isize)).data);
+        i += 1;
     }
     (*f).task_thread.retval = retval;
 }
