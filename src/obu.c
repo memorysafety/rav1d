@@ -44,6 +44,11 @@
 #include "src/ref.h"
 #include "src/thread_task.h"
 
+static int parse_seq_hdr_error(Dav1dContext *const c) {
+    dav1d_log(c, "Error parsing sequence header\n");
+    return DAV1D_ERR(EINVAL);
+}
+
 static int parse_seq_hdr(Dav1dContext *const c, GetBits *const gb,
                          Dav1dSequenceHeader *const hdr)
 {
@@ -55,7 +60,7 @@ static int parse_seq_hdr(Dav1dContext *const c, GetBits *const gb,
 
     memset(hdr, 0, sizeof(*hdr));
     hdr->profile = dav1d_get_bits(gb, 3);
-    if (hdr->profile > 2) goto error;
+    if (hdr->profile > 2) return parse_seq_hdr_error(c);
 #if DEBUG_SEQ_HDR
     printf("SEQHDR: post-profile: off=%u\n",
            dav1d_get_bits_pos(gb) - init_bit_pos);
@@ -63,7 +68,7 @@ static int parse_seq_hdr(Dav1dContext *const c, GetBits *const gb,
 
     hdr->still_picture = dav1d_get_bit(gb);
     hdr->reduced_still_picture_header = dav1d_get_bit(gb);
-    if (hdr->reduced_still_picture_header && !hdr->still_picture) goto error;
+    if (hdr->reduced_still_picture_header && !hdr->still_picture) return parse_seq_hdr_error(c);
 #if DEBUG_SEQ_HDR
     printf("SEQHDR: post-stillpicture_flags: off=%u\n",
            dav1d_get_bits_pos(gb) - init_bit_pos);
@@ -80,12 +85,12 @@ static int parse_seq_hdr(Dav1dContext *const c, GetBits *const gb,
             hdr->num_units_in_tick = dav1d_get_bits(gb, 32);
             hdr->time_scale = dav1d_get_bits(gb, 32);
             if (c->strict_std_compliance && (!hdr->num_units_in_tick || !hdr->time_scale))
-                goto error;
+                return parse_seq_hdr_error(c);
             hdr->equal_picture_interval = dav1d_get_bit(gb);
             if (hdr->equal_picture_interval) {
                 const unsigned num_ticks_per_picture = dav1d_get_vlc(gb);
                 if (num_ticks_per_picture == 0xFFFFFFFFU)
-                    goto error;
+                    return parse_seq_hdr_error(c);
                 hdr->num_ticks_per_picture = num_ticks_per_picture + 1;
             }
 
@@ -94,7 +99,7 @@ static int parse_seq_hdr(Dav1dContext *const c, GetBits *const gb,
                 hdr->encoder_decoder_buffer_delay_length = dav1d_get_bits(gb, 5) + 1;
                 hdr->num_units_in_decoding_tick = dav1d_get_bits(gb, 32);
                 if (c->strict_std_compliance && !hdr->num_units_in_decoding_tick)
-                    goto error;
+                    return parse_seq_hdr_error(c);
                 hdr->buffer_removal_delay_length = dav1d_get_bits(gb, 5) + 1;
                 hdr->frame_presentation_delay_length = dav1d_get_bits(gb, 5) + 1;
             }
@@ -111,7 +116,7 @@ static int parse_seq_hdr(Dav1dContext *const c, GetBits *const gb,
                 &hdr->operating_points[i];
             op->idc = dav1d_get_bits(gb, 12);
             if (op->idc && (!(op->idc & 0xff) || !(op->idc & 0xf00)))
-                goto error;
+                return parse_seq_hdr_error(c);
             op->major_level = 2 + dav1d_get_bits(gb, 3);
             op->minor_level = dav1d_get_bits(gb, 2);
             if (op->major_level > 3)
@@ -226,7 +231,7 @@ static int parse_seq_hdr(Dav1dContext *const c, GetBits *const gb,
         hdr->layout = DAV1D_PIXEL_LAYOUT_I444;
         hdr->color_range = 1;
         if (hdr->profile != 1 && !(hdr->profile == 2 && hdr->hbd == 2))
-            goto error;
+            return parse_seq_hdr_error(c);
     } else {
         hdr->color_range = dav1d_get_bit(gb);
         switch (hdr->profile) {
@@ -254,7 +259,7 @@ static int parse_seq_hdr(Dav1dContext *const c, GetBits *const gb,
     if (c->strict_std_compliance &&
         hdr->mtrx == DAV1D_MC_IDENTITY && hdr->layout != DAV1D_PIXEL_LAYOUT_I444)
     {
-        goto error;
+        return parse_seq_hdr_error(c);
     }
     if (!hdr->monochrome)
         hdr->separate_uv_delta_q = dav1d_get_bit(gb);
@@ -276,10 +281,6 @@ static int parse_seq_hdr(Dav1dContext *const c, GetBits *const gb,
     // point in setting its position properly.
 
     return 0;
-
-error:
-    dav1d_log(c, "Error parsing sequence header\n");
-    return DAV1D_ERR(EINVAL);
 }
 
 static int read_frame_size(Dav1dContext *const c, GetBits *const gb,
