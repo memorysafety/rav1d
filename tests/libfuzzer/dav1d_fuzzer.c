@@ -156,7 +156,10 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 
         // copy frame data to a new buffer to catch reads past the end of input
         p = dav1d_data_create(&buf, frame_size);
-        if (!p) goto cleanup;
+        if (!p) {
+            dav1d_close(&ctx);
+            return 0;
+        }
         memcpy(p, ptr, frame_size);
         ptr += frame_size;
 
@@ -192,7 +195,6 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
         return 0;
     }
 
-cleanup:
     dav1d_close(&ctx);
     return 0;
 }
