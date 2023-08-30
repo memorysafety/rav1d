@@ -4,7 +4,6 @@ use ::libc;
 use rav1d::include::stdint::uint64_t;
 use rav1d::include::stdint::uint8_t;
 extern "C" {
-    pub type Dav1dRef;
     pub type DemuxerPriv;
     fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
     fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut libc::FILE;
@@ -25,14 +24,12 @@ extern "C" {
     static section5_demuxer: Demuxer;
 }
 use rav1d::include::dav1d::data::Dav1dData;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct DemuxerContext {
     pub data: *mut DemuxerPriv,
     pub impl_0: *const Demuxer,
     pub priv_data: [uint64_t; 0],
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Demuxer {
     pub priv_data_size: libc::c_int,
@@ -66,14 +63,14 @@ pub unsafe extern "C" fn input_open(
     c_out: *mut *mut DemuxerContext,
     name: *const libc::c_char,
     filename: *const libc::c_char,
-    mut fps: *mut libc::c_uint,
+    fps: *mut libc::c_uint,
     num_frames: *mut libc::c_uint,
-    mut timebase: *mut libc::c_uint,
+    timebase: *mut libc::c_uint,
 ) -> libc::c_int {
     let mut impl_0: *const Demuxer = 0 as *const Demuxer;
-    let mut c: *mut DemuxerContext = 0 as *mut DemuxerContext;
-    let mut res = 0;
-    let mut i = 0;
+    let c: *mut DemuxerContext;
+    let mut res;
+    let mut i;
     if !name.is_null() {
         i = 0 as libc::c_int;
         while !(demuxers[i as usize]).is_null() {
@@ -107,7 +104,7 @@ pub unsafe extern "C" fn input_open(
             );
             return -(12 as libc::c_int);
         }
-        let mut f: *mut libc::FILE = fopen(filename, b"rb\0" as *const u8 as *const libc::c_char);
+        let f: *mut libc::FILE = fopen(filename, b"rb\0" as *const u8 as *const libc::c_char);
         if f.is_null() {
             fprintf(
                 stderr,

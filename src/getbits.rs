@@ -2,7 +2,6 @@ use crate::include::stddef::*;
 use crate::include::stdint::*;
 use ::libc;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct GetBits {
     pub state: uint64_t,
@@ -98,7 +97,7 @@ pub unsafe fn dav1d_get_sbits(c: *mut GetBits, n: libc::c_int) -> libc::c_int {
 pub unsafe fn dav1d_get_uleb128(c: *mut GetBits) -> libc::c_uint {
     let mut val: uint64_t = 0 as libc::c_int as uint64_t;
     let mut i: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    let mut more: libc::c_uint = 0;
+    let mut more: libc::c_uint;
     loop {
         let v = dav1d_get_bits(c, 8 as libc::c_int) as libc::c_int;
         more = (v & 0x80 as libc::c_int) as libc::c_uint;
@@ -194,7 +193,7 @@ pub unsafe fn dav1d_get_bits_subexp(
         - ((1 as libc::c_int) << n);
 }
 
-pub unsafe fn dav1d_bytealign_get_bits(mut c: *mut GetBits) {
+pub unsafe fn dav1d_bytealign_get_bits(c: *mut GetBits) {
     if !((*c).bits_left <= 7) {
         unreachable!();
     }

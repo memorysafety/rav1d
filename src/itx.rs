@@ -143,7 +143,6 @@ pub unsafe extern "C" fn inv_txfm_add_rust<BD: BitDepth>(
 pub type itxfm_fn = Option<
     unsafe extern "C" fn(*mut DynPixel, ptrdiff_t, *mut DynCoef, libc::c_int, libc::c_int) -> (),
 >;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dInvTxfmDSPContext {
     pub itxfm_add: [[itxfm_fn; 17]; 19],
@@ -162,167 +161,165 @@ macro_rules! decl_itx_fn {
         );
     };
 
-    ($prefix:ident, $opt:ident) => {
+    ($type1:ident, $type2:ident, $w:literal x $h:literal, $bpc:literal bpc, $asm:ident) => {
         paste::paste! {
-            decl_itx_fn!($prefix, _8bpc, $opt);
-            decl_itx_fn!($prefix, _16bpc, $opt);
+            decl_itx_fn!([<dav1d_inv_txfm_add_ $type1 _ $type2 _ $w x $h _ $bpc bpc_ $asm>]);
         }
     };
 
-    ($prefix:ident, $bpc:ident, $opt:ident) => {
-        paste::paste! {
-            decl_itx_fn!([<$prefix $bpc $opt>]);
-        }
+    ($type1:ident, $type2:ident, $w:literal x $h:literal, $asm:ident) => {
+        #[cfg(feature = "bitdepth_8")]
+        decl_itx_fn!($type1, $type2, $w x $h,  8 bpc, $asm);
+        #[cfg(feature = "bitdepth_16")]
+        decl_itx_fn!($type1, $type2, $w x $h, 16 bpc, $asm);
+    };
+}
+
+#[cfg(feature = "asm")]
+macro_rules! decl_itx1_fns {
+    ($w:literal x $h:literal, $bpc:literal bpc, $asm:ident) => {
+        decl_itx_fn!(dct, dct, $w x $h, $bpc bpc, $asm);
     };
 }
 
 #[cfg(feature = "asm")]
 macro_rules! decl_itx2_fns {
-    ($wxh:ident, $opt:ident) => {
-        paste::paste! {
-            decl_itx_fn!([<dav1d_inv_txfm_add_dct_dct $wxh>], $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_identity_identity $wxh>], $opt);
-        }
-    };
-
-    ($wxh:ident, $bpc:ident, $opt:ident) => {
-        paste::paste! {
-            decl_itx_fn!([<dav1d_inv_txfm_add_dct_dct $wxh>], $bpc, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_identity_identity $wxh>], $bpc, $opt);
-        }
+    ($w:literal x $h:literal, $bpc:literal bpc, $asm:ident) => {
+        decl_itx1_fns!($w x $h, $bpc bpc, $asm);
+        decl_itx_fn!(identity, identity, $w x $h, $bpc bpc, $asm);
     };
 }
 
 #[cfg(feature = "asm")]
 macro_rules! decl_itx12_fns {
-    ($wxh:ident, $opt:ident) => {
-        paste::paste! {
-            decl_itx2_fns!($wxh, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_dct_adst $wxh>], $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_dct_flipadst $wxh>], $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_dct_identity $wxh>], $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_adst_dct $wxh>], $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_adst_adst $wxh>], $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_adst_flipadst $wxh>], $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_flipadst_dct $wxh>], $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_flipadst_adst $wxh>], $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_flipadst_flipadst $wxh>], $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_identity_dct $wxh>], $opt);
-        }
-    };
-
-    ($wxh:ident, $bpc:ident, $opt:ident) => {
-        paste::paste! {
-            decl_itx2_fns!($wxh, $bpc, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_dct_adst $wxh>], $bpc, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_dct_flipadst $wxh>], $bpc, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_dct_identity $wxh>], $bpc, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_adst_dct $wxh>], $bpc, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_adst_adst $wxh>], $bpc, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_adst_flipadst $wxh>], $bpc, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_flipadst_dct $wxh>], $bpc, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_flipadst_adst $wxh>], $bpc, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_flipadst_flipadst $wxh>], $bpc, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_identity_dct $wxh>], $bpc, $opt);
-        }
+    ($w:literal x $h:literal, $bpc:literal bpc, $asm:ident) => {
+        decl_itx2_fns!($w x $h, $bpc bpc, $asm);
+        decl_itx_fn!(dct, adst, $w x $h, $bpc bpc, $asm);
+        decl_itx_fn!(dct, flipadst, $w x $h, $bpc bpc, $asm);
+        decl_itx_fn!(dct, identity, $w x $h, $bpc bpc, $asm);
+        decl_itx_fn!(adst, dct, $w x $h, $bpc bpc, $asm);
+        decl_itx_fn!(adst, adst, $w x $h, $bpc bpc, $asm);
+        decl_itx_fn!(adst, flipadst, $w x $h, $bpc bpc, $asm);
+        decl_itx_fn!(flipadst, dct, $w x $h, $bpc bpc, $asm);
+        decl_itx_fn!(flipadst, adst, $w x $h, $bpc bpc, $asm);
+        decl_itx_fn!(flipadst, flipadst, $w x $h, $bpc bpc, $asm);
+        decl_itx_fn!(identity, dct, $w x $h, $bpc bpc, $asm);
     };
 }
 
 #[cfg(feature = "asm")]
 macro_rules! decl_itx16_fns {
-    ($wxh:ident, $opt:ident) => {
-        paste::paste! {
-            decl_itx12_fns!($wxh, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_adst_identity $wxh>], $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_flipadst_identity $wxh>], $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_identity_adst $wxh>], $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_identity_flipadst $wxh>], $opt);
-        }
-    };
-
-    ($wxh:ident, $bpc:ident, $opt:ident) => {
-        paste::paste! {
-            decl_itx12_fns!($wxh, $bpc, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_adst_identity $wxh>], $bpc, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_flipadst_identity $wxh>], $bpc, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_identity_adst $wxh>], $bpc, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_identity_flipadst $wxh>], $bpc, $opt);
-        }
-    };
-}
-
-#[cfg(feature = "asm")]
-macro_rules! decl_itx17_fns {
-    ($wxh:ident, $opt:ident) => {
-        paste::paste! {
-            decl_itx16_fns!($wxh, $opt);
-            decl_itx_fn!([<dav1d_inv_txfm_add_wht_wht $wxh>], $opt);
-        }
+    ($w:literal x $h:literal, $bpc:literal bpc, $asm:ident) => {
+        decl_itx12_fns!($w x $h, $bpc bpc, $asm);
+        decl_itx_fn!(adst, identity, $w x $h, $bpc bpc, $asm);
+        decl_itx_fn!(flipadst, identity, $w x $h, $bpc bpc, $asm);
+        decl_itx_fn!(identity, adst, $w x $h, $bpc bpc, $asm);
+        decl_itx_fn!(identity, flipadst, $w x $h, $bpc bpc, $asm);
     };
 }
 
 #[cfg(feature = "asm")]
 macro_rules! decl_itx_fns {
-    ($ext:ident) => {
-        decl_itx17_fns!(_4x4, $ext);
-        decl_itx16_fns!(_4x8, $ext);
-        decl_itx16_fns!(_4x16, $ext);
-        decl_itx16_fns!(_8x4, $ext);
-        decl_itx16_fns!(_8x8, $ext);
-        decl_itx16_fns!(_8x16, $ext);
-        decl_itx2_fns!(_8x32, $ext);
-        decl_itx16_fns!(_16x4, $ext);
-        decl_itx16_fns!(_16x8, $ext);
-        decl_itx12_fns!(_16x16, $ext);
-        decl_itx2_fns!(_16x32, $ext);
-        decl_itx2_fns!(_32x8, $ext);
-        decl_itx2_fns!(_32x16, $ext);
-        decl_itx2_fns!(_32x32, $ext);
-        decl_itx_fn!(dav1d_inv_txfm_add_dct_dct_16x64, $ext);
-        decl_itx_fn!(dav1d_inv_txfm_add_dct_dct_32x64, $ext);
-        decl_itx_fn!(dav1d_inv_txfm_add_dct_dct_64x16, $ext);
-        decl_itx_fn!(dav1d_inv_txfm_add_dct_dct_64x32, $ext);
-        decl_itx_fn!(dav1d_inv_txfm_add_dct_dct_64x64, $ext);
+    ($bpc:literal bpc, $asm:ident) => {
+        decl_itx16_fns!( 4 x  4, $bpc bpc, $asm);
+        decl_itx16_fns!( 4 x  8, $bpc bpc, $asm);
+        decl_itx16_fns!( 4 x 16, $bpc bpc, $asm);
+        decl_itx16_fns!( 8 x  4, $bpc bpc, $asm);
+        decl_itx16_fns!( 8 x  8, $bpc bpc, $asm);
+        decl_itx16_fns!( 8 x 16, $bpc bpc, $asm);
+        decl_itx16_fns!(16 x  4, $bpc bpc, $asm);
+        decl_itx16_fns!(16 x  8, $bpc bpc, $asm);
+        decl_itx12_fns!(16 x 16, $bpc bpc, $asm);
+        decl_itx2_fns! ( 8 x 32, $bpc bpc, $asm);
+        decl_itx2_fns! (16 x 32, $bpc bpc, $asm);
+        decl_itx2_fns! (32 x  8, $bpc bpc, $asm);
+        decl_itx2_fns! (32 x 16, $bpc bpc, $asm);
+        decl_itx2_fns! (32 x 32, $bpc bpc, $asm);
+        decl_itx1_fns! (16 x 64, $bpc bpc, $asm);
+        decl_itx1_fns! (32 x 64, $bpc bpc, $asm);
+        decl_itx1_fns! (64 x 16, $bpc bpc, $asm);
+        decl_itx1_fns! (64 x 32, $bpc bpc, $asm);
+        decl_itx1_fns! (64 x 64, $bpc bpc, $asm);
     };
 
-    ($bpc:ident, $ext:ident) => {
-        decl_itx16_fns!(_4x4, $bpc, $ext);
-        decl_itx16_fns!(_4x8, $bpc, $ext);
-        decl_itx16_fns!(_4x16, $bpc, $ext);
-        decl_itx16_fns!(_8x4, $bpc, $ext);
-        decl_itx16_fns!(_8x8, $bpc, $ext);
-        decl_itx16_fns!(_8x16, $bpc, $ext);
-        decl_itx2_fns!(_8x32, $bpc, $ext);
-        decl_itx16_fns!(_16x4, $bpc, $ext);
-        decl_itx16_fns!(_16x8, $bpc, $ext);
-        decl_itx12_fns!(_16x16, $bpc, $ext);
-        decl_itx2_fns!(_16x32, $bpc, $ext);
-        decl_itx2_fns!(_32x8, $bpc, $ext);
-        decl_itx2_fns!(_32x16, $bpc, $ext);
-        decl_itx2_fns!(_32x32, $bpc, $ext);
-        decl_itx_fn!(dav1d_inv_txfm_add_dct_dct_16x64, $bpc, $ext);
-        decl_itx_fn!(dav1d_inv_txfm_add_dct_dct_32x64, $bpc, $ext);
-        decl_itx_fn!(dav1d_inv_txfm_add_dct_dct_64x16, $bpc, $ext);
-        decl_itx_fn!(dav1d_inv_txfm_add_dct_dct_64x32, $bpc, $ext);
-        decl_itx_fn!(dav1d_inv_txfm_add_dct_dct_64x64, $bpc, $ext);
+    ($asm:ident) => {
+        #[cfg(feature = "bitdepth_8")]
+        decl_itx_fns!( 8 bpc, $asm);
+        #[cfg(feature = "bitdepth_16")]
+        decl_itx_fns!(16 bpc, $asm);
     };
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 extern "C" {
-    decl_itx_fns!(_avx512icl);
-    decl_itx_fns!(_10bpc, _avx512icl);
-    decl_itx_fns!(_avx2);
-    decl_itx_fns!(_10bpc, _avx2);
-    decl_itx_fns!(_12bpc, _avx2);
-    decl_itx_fns!(_sse4);
-    decl_itx_fns!(_ssse3);
-    decl_itx_fn!(dav1d_inv_txfm_add_wht_wht_4x4, _sse2);
+    decl_itx_fn!(wht, wht, 4 x 4, sse2);
+}
+
+#[cfg(all(
+    feature = "asm",
+    feature = "bitdepth_8",
+    any(target_arch = "x86", target_arch = "x86_64"),
+))]
+extern "C" {
+    decl_itx_fns!(8 bpc, ssse3);
+}
+
+#[cfg(all(
+    feature = "asm",
+    feature = "bitdepth_16",
+    any(target_arch = "x86", target_arch = "x86_64"),
+))]
+extern "C" {
+    decl_itx_fns!(16 bpc, sse4);
+}
+
+#[cfg(all(feature = "asm", feature = "bitdepth_8", target_arch = "x86_64"))]
+extern "C" {
+    decl_itx_fns!(8 bpc, avx2);
+    decl_itx_fns!(8 bpc, avx512icl);
+}
+
+#[cfg(all(feature = "asm", target_arch = "x86_64",))]
+extern "C" {
+    decl_itx_fn!(wht, wht, 4 x 4, avx2);
+
+    decl_itx_fns!(10 bpc, avx2);
+
+    decl_itx16_fns!( 4 x  4, 12 bpc, avx2);
+    decl_itx16_fns!( 4 x  8, 12 bpc, avx2);
+    decl_itx16_fns!( 4 x 16, 12 bpc, avx2);
+    decl_itx16_fns!( 8 x  4, 12 bpc, avx2);
+    decl_itx16_fns!( 8 x  8, 12 bpc, avx2);
+    decl_itx16_fns!( 8 x 16, 12 bpc, avx2);
+    decl_itx16_fns!(16 x  4, 12 bpc, avx2);
+    decl_itx16_fns!(16 x  8, 12 bpc, avx2);
+    decl_itx12_fns!(16 x 16, 12 bpc, avx2);
+    decl_itx2_fns! ( 8 x 32, 12 bpc, avx2);
+    decl_itx2_fns! (32 x  8, 12 bpc, avx2);
+    decl_itx_fn!(identity, identity, 16 x 32, 12 bpc, avx2);
+    decl_itx_fn!(identity, identity, 32 x 16, 12 bpc, avx2);
+    decl_itx_fn!(identity, identity, 32 x 32, 12 bpc, avx2);
+
+    decl_itx16_fns!( 8 x  8, 10 bpc, avx512icl);
+    decl_itx16_fns!( 8 x 16, 10 bpc, avx512icl);
+    decl_itx16_fns!(16 x  8, 10 bpc, avx512icl);
+    decl_itx12_fns!(16 x 16, 10 bpc, avx512icl);
+    decl_itx2_fns! ( 8 x 32, 10 bpc, avx512icl);
+    decl_itx2_fns! (16 x 32, 10 bpc, avx512icl);
+    decl_itx2_fns! (32 x  8, 10 bpc, avx512icl);
+    decl_itx2_fns! (32 x 16, 10 bpc, avx512icl);
+    decl_itx2_fns! (32 x 32, 10 bpc, avx512icl);
+    decl_itx1_fns! (16 x 64, 10 bpc, avx512icl);
+    decl_itx1_fns! (32 x 64, 10 bpc, avx512icl);
+    decl_itx1_fns! (64 x 16, 10 bpc, avx512icl);
+    decl_itx1_fns! (64 x 32, 10 bpc, avx512icl);
+    decl_itx1_fns! (64 x 64, 10 bpc, avx512icl);
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 extern "C" {
-    decl_itx_fns!(_neon);
+    decl_itx_fn!(wht, wht, 4 x 4, neon);
+    decl_itx_fns!(neon);
 }
 
 macro_rules! inv_txfm_fn {
@@ -330,7 +327,7 @@ macro_rules! inv_txfm_fn {
         paste::paste! {
             // TODO(legare): Temporarily pub until init fns are deduplicated.
             pub(crate) unsafe extern "C" fn [<inv_txfm_add_ $type1 _ $type2 _ $w x $h _c_erased>] <BD: BitDepth> (
-                mut dst: *mut DynPixel,
+                dst: *mut DynPixel,
                 stride: ptrdiff_t,
                 coeff: *mut DynCoef,
                 eob: libc::c_int,

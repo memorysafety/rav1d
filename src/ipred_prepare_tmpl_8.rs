@@ -92,7 +92,7 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
     edge_flags: EdgeFlags,
     dst: *const pixel,
     stride: ptrdiff_t,
-    mut prefilter_toplevel_sb_edge: *const pixel,
+    prefilter_toplevel_sb_edge: *const pixel,
     mut mode: IntraPredMode,
     angle: *mut libc::c_int,
     tw: libc::c_int,

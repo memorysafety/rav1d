@@ -200,8 +200,8 @@ pub fn get_skip_ctx(
 // `TxfmSize` and `RectTxfmSize` should be part of the same `enum`.
 #[inline]
 pub fn get_dc_sign_ctx(tx: RectTxfmSize, a: &[u8], l: &[u8]) -> libc::c_uint {
-    let mut mask = 0xc0c0c0c0c0c0c0c0 as u64;
-    let mut mul = 0x101010101010101 as u64;
+    let mask = 0xc0c0c0c0c0c0c0c0 as u64;
+    let mul = 0x101010101010101 as u64;
 
     let s = match tx {
         TX_4X4 => {

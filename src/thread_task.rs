@@ -58,7 +58,6 @@ use crate::include::stdatomic::atomic_uint;
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
 use crate::src::r#ref::Dav1dRef;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext {
     pub seq_hdr_ref: *mut Dav1dRef,
@@ -166,7 +165,6 @@ use crate::src::refmvs::refmvs_frame;
 
 use crate::src::env::BlockContext;
 use crate::src::refmvs::refmvs_temporal_block;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext_bd_fn {
     pub recon_b_intra: recon_b_intra_fn,
@@ -184,7 +182,6 @@ pub type read_coef_blocks_fn =
     Option<unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> ()>;
 use crate::src::levels::BlockSize;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTaskContext {
     pub c: *const Dav1dContext,
@@ -218,7 +215,6 @@ use crate::src::refmvs::refmvs_tile;
 
 use crate::src::internal::Dav1dTileState;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContext {
     pub fc: *mut Dav1dFrameContext,
@@ -290,7 +286,6 @@ use crate::src::internal::Dav1dContext_intra_edge;
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::refmvs::Dav1dRefmvsDSPContext;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dDSPContext {
     pub fg: Dav1dFilmGrainDSPContext,
@@ -306,7 +301,6 @@ use crate::src::itx::Dav1dInvTxfmDSPContext;
 use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
 use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
 use crate::src::mc::Dav1dMCDSPContext;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dIntraPredDSPContext {
     pub intra_pred: [angular_ipred_fn; 14],
@@ -358,7 +352,6 @@ pub type angular_ipred_fn = Option<
         libc::c_int,
     ) -> (),
 >;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFilmGrainDSPContext {
     pub generate_grain_y: generate_grain_y_fn,
@@ -444,9 +437,9 @@ unsafe extern "C" fn reset_task_cur(
     ttd: *mut TaskThreadData,
     mut frame_idx: libc::c_uint,
 ) -> libc::c_int {
-    let mut min_frame_idx: libc::c_uint = 0;
-    let mut cur_frame_idx: libc::c_uint = 0;
-    let mut current_block: u64;
+    let min_frame_idx: libc::c_uint;
+    let cur_frame_idx: libc::c_uint;
+    let current_block: u64;
     let first: libc::c_uint = ::core::intrinsics::atomic_load_seqcst(&mut (*ttd).first);
     let mut reset_frame_idx: libc::c_uint = ::core::intrinsics::atomic_xchg_seqcst(
         &mut (*ttd).reset_task_cur,
@@ -542,7 +535,7 @@ unsafe extern "C" fn reset_task_cur(
 unsafe extern "C" fn reset_task_cur_async(
     ttd: *mut TaskThreadData,
     mut frame_idx: libc::c_uint,
-    mut n_frames: libc::c_uint,
+    n_frames: libc::c_uint,
 ) {
     let first: libc::c_uint = ::core::intrinsics::atomic_load_seqcst(&mut (*ttd).first);
     if frame_idx < first {
@@ -611,7 +604,7 @@ unsafe extern "C" fn insert_tasks(
     last: *mut Dav1dTask,
     cond_signal: libc::c_int,
 ) {
-    let mut t_ptr: *mut Dav1dTask = 0 as *mut Dav1dTask;
+    let mut t_ptr: *mut Dav1dTask;
     let mut prev_t: *mut Dav1dTask = 0 as *mut Dav1dTask;
     let mut current_block_34: u64;
     t_ptr = (*f).task_thread.task_head;
@@ -752,7 +745,7 @@ unsafe extern "C" fn merge_pending(c: *const Dav1dContext) -> libc::c_int {
 unsafe extern "C" fn create_filter_sbrow(
     f: *mut Dav1dFrameContext,
     pass: libc::c_int,
-    mut res_t: *mut *mut Dav1dTask,
+    res_t: *mut *mut Dav1dTask,
 ) -> libc::c_int {
     let has_deblock = ((*(*f).frame_hdr).loopfilter.level_y[0] != 0
         || (*(*f).frame_hdr).loopfilter.level_y[1] != 0) as libc::c_int;
@@ -761,7 +754,7 @@ unsafe extern "C" fn create_filter_sbrow(
     let has_lr = (*f).lf.restore_planes;
     let mut tasks: *mut Dav1dTask = (*f).task_thread.tasks;
     let uses_2pass = ((*(*f).c).n_fc > 1 as libc::c_uint) as libc::c_int;
-    let mut num_tasks = (*f).sbh * (1 + uses_2pass);
+    let num_tasks = (*f).sbh * (1 + uses_2pass);
     if num_tasks > (*f).task_thread.num_tasks {
         let size: size_t = (::core::mem::size_of::<Dav1dTask>()).wrapping_mul(num_tasks as size_t);
         tasks = realloc((*f).task_thread.tasks as *mut libc::c_void, size) as *mut Dav1dTask;
@@ -805,7 +798,7 @@ unsafe extern "C" fn create_filter_sbrow(
         );
     }
     (*f).frame_thread.next_tile_row[(pass & 1) as usize] = 0 as libc::c_int;
-    let mut t: *mut Dav1dTask = &mut *tasks.offset(0) as *mut Dav1dTask;
+    let t: *mut Dav1dTask = &mut *tasks.offset(0) as *mut Dav1dTask;
     (*t).sby = 0 as libc::c_int;
     (*t).recon_progress = 1 as libc::c_int;
     (*t).deblock_progress = 0 as libc::c_int;
@@ -834,7 +827,7 @@ pub unsafe extern "C" fn dav1d_task_create_tile_sbrow(
     let uses_2pass = ((*(*f).c).n_fc > 1 as libc::c_uint) as libc::c_int;
     let num_tasks = (*(*f).frame_hdr).tiling.cols * (*(*f).frame_hdr).tiling.rows;
     if pass < 2 {
-        let mut alloc_num_tasks = num_tasks * (1 + uses_2pass);
+        let alloc_num_tasks = num_tasks * (1 + uses_2pass);
         if alloc_num_tasks > (*f).task_thread.num_tile_tasks {
             let size: size_t =
                 (::core::mem::size_of::<Dav1dTask>()).wrapping_mul(alloc_num_tasks as size_t);
@@ -859,7 +852,7 @@ pub unsafe extern "C" fn dav1d_task_create_tile_sbrow(
     while tile_idx < num_tasks {
         let ts: *mut Dav1dTileState =
             &mut *((*f).ts).offset(tile_idx as isize) as *mut Dav1dTileState;
-        let mut t: *mut Dav1dTask = &mut *tasks.offset(tile_idx as isize) as *mut Dav1dTask;
+        let t: *mut Dav1dTask = &mut *tasks.offset(tile_idx as isize) as *mut Dav1dTask;
         (*t).sby = (*ts).tiling.row_start >> (*f).sb_shift;
         if !pf_t.is_null() && (*t).sby != 0 {
             (*prev_t).next = pf_t;
@@ -951,7 +944,7 @@ unsafe extern "C" fn ensure_progress(
     state: *mut atomic_int,
     target: *mut libc::c_int,
 ) -> libc::c_int {
-    let mut p1 = ::core::intrinsics::atomic_load_seqcst(state);
+    let p1 = ::core::intrinsics::atomic_load_seqcst(state);
     if p1 < (*t).sby {
         (*t).type_0 = type_0;
         (*t).deblock_progress = 0 as libc::c_int;
@@ -996,7 +989,7 @@ unsafe extern "C" fn check_tile(
         && frame_mt != 0
         && (*(*f).frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint != 0
     {
-        let mut p: *const Dav1dThreadPicture = &mut (*f).sr_cur;
+        let p: *const Dav1dThreadPicture = &mut (*f).sr_cur;
         let ss_ver = ((*p).p.p.layout as libc::c_uint
             == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint)
             as libc::c_int;
@@ -1064,7 +1057,7 @@ unsafe extern "C" fn get_frame_progress(
     c: *const Dav1dContext,
     f: *const Dav1dFrameContext,
 ) -> libc::c_int {
-    let mut frame_prog: libc::c_uint = if (*c).n_fc > 1 as libc::c_uint {
+    let frame_prog: libc::c_uint = if (*c).n_fc > 1 as libc::c_uint {
         ::core::intrinsics::atomic_load_seqcst(
             &mut *((*f).sr_cur.progress).offset(1) as *mut atomic_uint
         )
@@ -1080,9 +1073,9 @@ unsafe extern "C" fn get_frame_progress(
         return (*f).sbh - 1;
     }
     let mut idx = (frame_prog >> (*f).sb_shift + 7) as libc::c_int;
-    let mut prog = 0;
+    let mut prog;
     loop {
-        let mut state: *mut atomic_uint =
+        let state: *mut atomic_uint =
             &mut *((*f).frame_thread.frame_progress).offset(idx as isize) as *mut atomic_uint;
         let val: libc::c_uint = !::core::intrinsics::atomic_load_seqcst(state);
         prog = if val != 0 {
@@ -1146,9 +1139,9 @@ unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThrea
     if (*out).p.bpc != 8 as libc::c_int {
         off = ((*out).p.bpc >> 1) - 4;
     }
-    let mut row = 0;
-    let mut progmax = 0;
-    let mut done = 0;
+    let mut row;
+    let mut progmax;
+    let mut done;
     match (*ttd).delayed_fg.type_0 as libc::c_uint {
         11 => {
             (*ttd).delayed_fg.exec = 0 as libc::c_int;
@@ -1288,10 +1281,14 @@ unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThrea
             &mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(0) as *mut atomic_int,
             1 as libc::c_int,
         );
-        done = ::core::intrinsics::atomic_xadd_seqcst(
-            &mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(1) as *mut atomic_int,
-            1 as libc::c_int,
-        ) + 1;
+        #[allow(unused_assignments)]
+        // TODO(kkysen) non-trivial due to the atomics, so leaving for later
+        {
+            done = ::core::intrinsics::atomic_xadd_seqcst(
+                &mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(1) as *mut atomic_int,
+                1 as libc::c_int,
+            ) + 1;
+        }
         if row < progmax {
             continue;
         }
@@ -1311,13 +1308,13 @@ unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThrea
     }
 }
 
-pub unsafe extern "C" fn dav1d_worker_task(mut data: *mut libc::c_void) -> *mut libc::c_void {
-    let mut flush = 0;
-    let mut error_0 = 0;
-    let mut sby = 0;
-    let mut f: *mut Dav1dFrameContext = 0 as *mut Dav1dFrameContext;
-    let mut t: *mut Dav1dTask = 0 as *mut Dav1dTask;
-    let mut prev_t: *mut Dav1dTask = 0 as *mut Dav1dTask;
+pub unsafe extern "C" fn dav1d_worker_task(data: *mut libc::c_void) -> *mut libc::c_void {
+    let mut flush;
+    let mut error_0;
+    let mut sby;
+    let mut f: *mut Dav1dFrameContext;
+    let mut t: *mut Dav1dTask;
+    let mut prev_t: *mut Dav1dTask;
     let mut current_block: u64;
     let tc: *mut Dav1dTaskContext = data as *mut Dav1dTaskContext;
     let c: *const Dav1dContext = (*tc).c;
@@ -1425,7 +1422,7 @@ pub unsafe extern "C" fn dav1d_worker_task(mut data: *mut libc::c_void) -> *mut 
                                                 == DAV1D_TASK_TYPE_ENTROPY_PROGRESS as libc::c_int
                                                     as libc::c_uint)
                                                 as libc::c_int;
-                                            let mut error = ::core::intrinsics::atomic_load_seqcst(
+                                            let error = ::core::intrinsics::atomic_load_seqcst(
                                                 &mut (*f).task_thread.error,
                                             );
                                             if !(::core::intrinsics::atomic_load_seqcst(
@@ -1491,10 +1488,10 @@ pub unsafe extern "C" fn dav1d_worker_task(mut data: *mut libc::c_void) -> *mut 
                                                         5395695591151878490 => {}
                                                         _ => {
                                                             if ((*t).sby + 1) < (*f).sbh {
-                                                                let mut next_t: *mut Dav1dTask =
-                                                                    &mut *t.offset(1)
-                                                                        as *mut Dav1dTask;
-                                                                *next_t = *t;
+                                                                let next_t: *mut Dav1dTask = &mut *t
+                                                                    .offset(1)
+                                                                    as *mut Dav1dTask;
+                                                                *next_t = (*t).clone();
                                                                 (*next_t).sby += 1;
                                                                 let ntr =
                                                                     (*f).frame_thread.next_tile_row
@@ -1527,7 +1524,7 @@ pub unsafe extern "C" fn dav1d_worker_task(mut data: *mut libc::c_void) -> *mut 
                                         } else if (*t).type_0 as libc::c_uint
                                             == DAV1D_TASK_TYPE_CDEF as libc::c_int as libc::c_uint
                                         {
-                                            let mut prog_0: *mut atomic_uint =
+                                            let prog_0: *mut atomic_uint =
                                                 (*f).frame_thread.copy_lpf_progress;
                                             let p1_1 = ::core::intrinsics::atomic_load_seqcst(
                                                 &mut *prog_0.offset(((*t).sby - 1 >> 5) as isize)
@@ -1626,8 +1623,8 @@ pub unsafe extern "C" fn dav1d_worker_task(mut data: *mut libc::c_void) -> *mut 
                                     if !((*c).n_fc > 1 as libc::c_uint) {
                                         unreachable!();
                                     }
-                                    let mut res = dav1d_decode_frame_init(f);
-                                    let mut p1_3 = (if !((*f).in_cdf.progress).is_null() {
+                                    let res = dav1d_decode_frame_init(f);
+                                    let p1_3 = (if !((*f).in_cdf.progress).is_null() {
                                         ::core::intrinsics::atomic_load_seqcst((*f).in_cdf.progress)
                                     } else {
                                         1 as libc::c_int as libc::c_uint
@@ -2004,7 +2001,7 @@ pub unsafe extern "C" fn dav1d_worker_task(mut data: *mut libc::c_void) -> *mut 
                                         (1 as libc::c_uint) << (sby & 31),
                                     );
                                     if sby != 0 {
-                                        let mut prog_1 = ::core::intrinsics::atomic_load_seqcst(
+                                        let prog_1 = ::core::intrinsics::atomic_load_seqcst(
                                             &mut *((*f).frame_thread.copy_lpf_progress)
                                                 .offset((sby - 1 >> 5) as isize)
                                                 as *mut atomic_uint,

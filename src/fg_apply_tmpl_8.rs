@@ -60,7 +60,6 @@ pub type fguv_32x32xn_fn = Option<
         libc::c_int,
     ) -> (),
 >;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFilmGrainDSPContext {
     pub generate_grain_y: generate_grain_y_fn,
@@ -71,9 +70,9 @@ pub struct Dav1dFilmGrainDSPContext {
 use crate::include::common::intops::imin;
 unsafe extern "C" fn generate_scaling(
     _bitdepth: libc::c_int,
-    mut points: *const [uint8_t; 2],
+    points: *const [uint8_t; 2],
     num: libc::c_int,
-    mut scaling: *mut uint8_t,
+    scaling: *mut uint8_t,
 ) {
     let shift_x = 0;
     let scaling_size = 256;
@@ -123,8 +122,8 @@ pub unsafe extern "C" fn dav1d_prep_grain_8bpc(
     dsp: *const Dav1dFilmGrainDSPContext,
     out: *mut Dav1dPicture,
     in_0: *const Dav1dPicture,
-    mut scaling: *mut [uint8_t; 256],
-    mut grain_lut: *mut [[entry; 82]; 74],
+    scaling: *mut [uint8_t; 256],
+    grain_lut: *mut [[entry; 82]; 74],
 ) {
     let data: *const Dav1dFilmGrainData = &mut (*(*out).frame_hdr).film_grain.data;
     ((*dsp).generate_grain_y).expect("non-null function pointer")(
@@ -246,8 +245,8 @@ pub unsafe extern "C" fn dav1d_apply_grain_row_8bpc(
     dsp: *const Dav1dFilmGrainDSPContext,
     out: *mut Dav1dPicture,
     in_0: *const Dav1dPicture,
-    mut scaling: *const [uint8_t; 256],
-    mut grain_lut: *const [[entry; 82]; 74],
+    scaling: *const [uint8_t; 256],
+    grain_lut: *const [[entry; 82]; 74],
     row: libc::c_int,
 ) {
     let data: *const Dav1dFilmGrainData = &mut (*(*out).frame_hdr).film_grain.data;

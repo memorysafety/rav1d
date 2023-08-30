@@ -242,7 +242,7 @@ pub struct Av1Block_intra {
     pub cfl_alpha: [int8_t; 2],
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Av1Block_inter_1d {
     pub mv: [mv; 2],
@@ -251,21 +251,21 @@ pub struct Av1Block_inter_1d {
     pub interintra_mode: uint8_t,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Av1Block_inter_2d {
     pub mv2d: mv,
     pub matrix: [int16_t; 4],
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub union Av1Block_inter_nd {
     pub c2rust_unnamed: Av1Block_inter_1d,
     pub c2rust_unnamed_0: Av1Block_inter_2d,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Av1Block_inter {
     pub c2rust_unnamed: Av1Block_inter_nd,
@@ -281,7 +281,6 @@ pub struct Av1Block_inter {
     pub tx_split1: uint16_t,
 }
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub union Av1Block_intra_inter {
     pub c2rust_unnamed: Av1Block_intra,
@@ -296,7 +295,7 @@ impl Default for Av1Block_intra_inter {
     }
 }
 
-#[derive(Copy, Clone, Default)]
+#[derive(Default)]
 #[repr(C)]
 pub struct Av1Block {
     pub bl: uint8_t,

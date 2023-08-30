@@ -14,7 +14,6 @@ use crate::src::levels::TX_4X4;
 use crate::src::tables::dav1d_block_dimensions;
 use crate::src::tables::dav1d_txfm_dimensions;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Av1FilterLUT {
     pub e: [u8; 64],
@@ -22,7 +21,6 @@ pub struct Av1FilterLUT {
     pub sharp: [u64; 2],
 }
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Av1RestorationUnit {
     pub r#type: Dav1dRestorationType,
@@ -32,7 +30,6 @@ pub struct Av1RestorationUnit {
     pub sgr_weights: [i8; 2],
 }
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Av1Filter {
     pub filter_y: [[[[u16; 2]; 3]; 32]; 2],
@@ -41,7 +38,6 @@ pub struct Av1Filter {
     pub noskip_mask: [[u16; 2]; 16],
 }
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Av1Restoration {
     pub lr: [[Av1RestorationUnit; 4]; 3],
@@ -628,7 +624,7 @@ fn calc_lf_value_chroma(
 pub fn dav1d_calc_lf_values(
     lflvl_values: &mut [[[[u8; 2]; 8]; 4]; 8],
     hdr: &Dav1dFrameHeader,
-    mut lf_delta: &[i8; 4],
+    lf_delta: &[i8; 4],
 ) {
     let n_seg = if hdr.segmentation.enabled != 0 { 8 } else { 1 };
 

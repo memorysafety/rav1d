@@ -91,7 +91,6 @@ use crate::src::levels::V_ADST;
 use crate::src::levels::V_DCT;
 use crate::src::levels::V_FLIPADST;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct TxfmInfo {
     pub w: u8,

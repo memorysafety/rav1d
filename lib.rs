@@ -1,10 +1,6 @@
-#![allow(dead_code)]
-#![allow(mutable_transmutes)]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
-#![allow(unused_assignments)]
-#![allow(unused_mut)]
 #![feature(c_variadic)]
 #![feature(core_intrinsics)]
 #![feature(extern_types)]
@@ -149,8 +145,6 @@ cfg_if::cfg_if! {
         }
     } else if #[cfg(target_os = "macos")] {
         extern "C" {
-            #[link_name = "__stdoutp"]
-            static mut stdout: *mut libc::FILE;
             #[link_name = "__stderrp"]
             static mut stderr: *mut libc::FILE;
         }

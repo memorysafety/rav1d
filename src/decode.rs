@@ -1,5 +1,8 @@
-use std::ptr::{self, addr_of_mut};
-use std::sync::atomic::{AtomicI32, Ordering};
+use std::ptr;
+use std::ptr::addr_of_mut;
+use std::slice;
+use std::sync::atomic::AtomicI32;
+use std::sync::atomic::Ordering;
 
 #[cfg(feature = "bitdepth_16")]
 use crate::include::common::bitdepth::BitDepth16;
@@ -171,7 +174,6 @@ use crate::include::stdatomic::atomic_uint;
 use crate::src::data::dav1d_data_props_copy;
 use crate::src::data::dav1d_data_unref_internal;
 use crate::src::r#ref::Dav1dRef;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext {
     pub seq_hdr_ref: *mut Dav1dRef,
@@ -288,7 +290,6 @@ use crate::src::refmvs::refmvs_frame;
 use crate::src::refmvs::refmvs_mvpair;
 use crate::src::refmvs::refmvs_refpair;
 use crate::src::refmvs::refmvs_temporal_block;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext_bd_fn {
     pub recon_b_intra: recon_b_intra_fn,
@@ -340,7 +341,6 @@ use crate::src::levels::BlockSize;
 use crate::src::levels::BS_128x128;
 use crate::src::levels::BS_4x4;
 use crate::src::levels::BS_64x64;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTaskContext {
     pub c: *const Dav1dContext,
@@ -376,7 +376,6 @@ use crate::src::refmvs::refmvs_tile;
 
 use crate::src::internal::Dav1dTileState;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContext {
     pub fc: *mut Dav1dFrameContext,
@@ -452,7 +451,6 @@ use crate::src::intra_edge::EdgeNode;
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 use crate::src::refmvs::Dav1dRefmvsDSPContext;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dDSPContext {
     pub fg: Dav1dFilmGrainDSPContext,
@@ -468,7 +466,6 @@ use crate::src::itx::Dav1dInvTxfmDSPContext;
 use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
 use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
 use crate::src::mc::Dav1dMCDSPContext;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dIntraPredDSPContext {
     pub intra_pred: [angular_ipred_fn; 14],
@@ -520,7 +517,6 @@ pub type angular_ipred_fn = Option<
         libc::c_int,
     ) -> (),
 >;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFilmGrainDSPContext {
     pub generate_grain_y: generate_grain_y_fn,
@@ -716,7 +712,7 @@ fn init_quant_tables(
     seq_hdr: &Dav1dSequenceHeader,
     frame_hdr: &Dav1dFrameHeader,
     qidx: libc::c_int,
-    mut dq: &mut [[[uint16_t; 2]; 3]],
+    dq: &mut [[[uint16_t; 2]; 3]],
 ) {
     let tbl = &dav1d_dq_tbl;
 
@@ -753,8 +749,8 @@ unsafe fn read_mv_component_diff(
     let sign = dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut mv_comp.sign.0);
     let cl = dav1d_msac_decode_symbol_adapt16(&mut ts.msac, &mut mv_comp.classes.0, 10);
     let mut up;
-    let mut fp;
-    let mut hp;
+    let fp;
+    let hp;
 
     if cl == 0 {
         up = dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut mv_comp.class0.0) as libc::c_uint;
@@ -843,7 +839,7 @@ unsafe fn read_tx_tree(
     let t_dim = &dav1d_txfm_dimensions[from as usize];
     let txw = t_dim.lw as i8;
     let txh = t_dim.lh as i8;
-    let mut is_split;
+    let is_split;
 
     if depth < 2 && from > TX_4X4 {
         let cat = 2 * (TX_64X64 as libc::c_int - t_dim.max as libc::c_int) - depth;
@@ -894,11 +890,7 @@ unsafe fn read_tx_tree(
     };
 }
 
-fn neg_deinterleave(
-    mut diff: libc::c_int,
-    mut r#ref: libc::c_int,
-    mut max: libc::c_int,
-) -> libc::c_int {
+fn neg_deinterleave(diff: libc::c_int, r#ref: libc::c_int, max: libc::c_int) -> libc::c_int {
     if r#ref == 0 {
         diff
     } else if r#ref >= max - 1 {
@@ -1392,7 +1384,7 @@ unsafe fn read_pal_uv(
 }
 
 fn order_palette(
-    mut pal_idx: &[u8],
+    pal_idx: &[u8],
     stride: usize,
     i: usize,
     first: usize,
@@ -1985,7 +1977,7 @@ unsafe fn decode_b(
                     block.0.r#ref.r#ref[0] = 0;
                     block.0.bs = bs as u8;
                 }
-                let mut rr = &t.rt.r[((t.by & 31) + 5) as usize..];
+                let rr = &t.rt.r[((t.by & 31) + 5) as usize..];
                 for y in 0..bh4 - 1 {
                     let block = &mut *rr[y as usize].offset((t.bx + bw4 - 1) as isize);
                     block.0.r#ref.r#ref[0] = 0;
@@ -2062,7 +2054,7 @@ unsafe fn decode_b(
                     r.0.mv.mv[0] = b.mv()[0];
                     r.0.bs = bs as u8;
                 }
-                let mut rr = &t.rt.r[((t.by & 31) + 5) as usize..];
+                let rr = &t.rt.r[((t.by & 31) + 5) as usize..];
                 for y in 0..bh4 as usize - 1 {
                     let r = &mut *rr[y].offset((t.bx + bw4 - 1) as isize);
                     r.0.r#ref.r#ref[0] = b.r#ref()[0] + 1;
@@ -2100,7 +2092,7 @@ unsafe fn decode_b(
     if frame_hdr.segmentation.enabled != 0 {
         if frame_hdr.segmentation.update_map == 0 {
             if !(f.prev_segmap).is_null() {
-                let mut seg_id =
+                let seg_id =
                     get_prev_frame_segid(f, t.by, t.bx, w4, h4, f.prev_segmap, f.b4_stride);
                 if seg_id >= DAV1D_MAX_SEGMENTS.into() {
                     return -1;
@@ -2121,7 +2113,7 @@ unsafe fn decode_b(
             } {
                 // temporal predicted seg_id
                 if !(f.prev_segmap).is_null() {
-                    let mut seg_id =
+                    let seg_id =
                         get_prev_frame_segid(f, t.by, t.bx, w4, h4, f.prev_segmap, f.b4_stride);
                     if seg_id >= DAV1D_MAX_SEGMENTS.into() {
                         return -1;
@@ -2207,7 +2199,7 @@ unsafe fn decode_b(
         } {
             // temporal predicted seg_id
             if !(f.prev_segmap).is_null() {
-                let mut seg_id =
+                let seg_id =
                     get_prev_frame_segid(f, t.by, t.bx, w4, h4, f.prev_segmap, f.b4_stride);
                 if seg_id >= DAV1D_MAX_SEGMENTS.into() {
                     return -1;
@@ -2555,7 +2547,7 @@ unsafe fn decode_b(
         }
 
         if b.pal_sz()[0] != 0 {
-            let mut pal_idx;
+            let pal_idx;
             if t.frame_thread.pass != 0 {
                 let p = t.frame_thread.pass & 1;
                 let frame_thread = &mut ts.frame_thread[p as usize];
@@ -2583,7 +2575,7 @@ unsafe fn decode_b(
         }
 
         if has_chroma && b.pal_sz()[1] != 0 {
-            let mut pal_idx;
+            let pal_idx;
             if t.frame_thread.pass != 0 {
                 let p = t.frame_thread.pass & 1;
                 let frame_thread = &mut ts.frame_thread[p as usize];
@@ -2621,7 +2613,7 @@ unsafe fn decode_b(
             if frame_hdr.txfm_mode == DAV1D_TX_SWITCHABLE && t_dim.max > TX_4X4 as u8 {
                 let tctx = get_tx_ctx(&*t.a, &t.l, &*t_dim, by4, bx4);
                 let tx_cdf = &mut ts.cdf.m.txsz[(t_dim.max - 1) as usize][tctx as usize];
-                let mut depth = dav1d_msac_decode_symbol_adapt4(
+                let depth = dav1d_msac_decode_symbol_adapt4(
                     &mut ts.msac,
                     tx_cdf,
                     std::cmp::min(t_dim.max, 2) as size_t,
@@ -2895,7 +2887,7 @@ unsafe fn decode_b(
         }
     } else {
         // inter-specific mode/mv coding
-        let mut has_subpel_filter = false;
+        let mut has_subpel_filter;
 
         let is_comp = if b.skip_mode != 0 {
             true
@@ -3962,14 +3954,14 @@ unsafe fn decode_sb(
         return decode_sb(t, bl + 1, (*(node as *const EdgeBranch)).split[0]);
     }
 
-    let mut bp;
+    let bp;
     let mut ctx = 0;
     let mut bx8 = 0;
     let mut by8 = 0;
     let pc = if t.frame_thread.pass == 2 {
         None
     } else {
-        if bl == BL_64X64 {
+        if false && bl == BL_64X64 {
             println!(
                 "poc={},y={},x={},bl={},r={}",
                 (*f.frame_hdr).frame_offset,
@@ -4210,7 +4202,7 @@ unsafe fn decode_sb(
             _ => unreachable!(),
         }
     } else if have_h_split {
-        let mut is_split;
+        let is_split;
         if let Some(pc) = pc {
             is_split = dav1d_msac_decode_bool(&mut ts.msac, gather_top_partition_prob(pc, bl));
             if DEBUG_BLOCK_INFO(f, t) {
@@ -4261,7 +4253,7 @@ unsafe fn decode_sb(
         }
     } else {
         assert!(have_v_split);
-        let mut is_split;
+        let is_split;
         if let Some(pc) = pc {
             is_split = dav1d_msac_decode_bool(&mut ts.msac, gather_left_partition_prob(pc, bl));
             if f.cur.p.layout == DAV1D_PIXEL_LAYOUT_I422 && !is_split {
@@ -4865,22 +4857,22 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> li
 }
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> libc::c_int {
-    let mut sby = 0;
-    let mut n_ts = 0;
-    let mut a_sz = 0;
-    let mut num_sb128 = 0;
-    let mut size_mul: *const uint8_t = 0 as *const uint8_t;
-    let mut hbd = 0;
-    let mut y_stride: ptrdiff_t = 0;
-    let mut uv_stride: ptrdiff_t = 0;
-    let mut has_resize = 0;
-    let mut need_cdef_lpf_copy = 0;
-    let mut sb128 = 0;
-    let mut num_lines = 0;
-    let mut lr_mask_sz = 0;
-    let mut ipred_edge_sz = 0;
-    let mut re_sz = 0;
-    let mut has_chroma = 0;
+    let mut sby;
+    let n_ts;
+    let a_sz;
+    let num_sb128;
+    let size_mul: *const uint8_t;
+    let hbd;
+    let mut y_stride: ptrdiff_t;
+    let mut uv_stride: ptrdiff_t;
+    let has_resize;
+    let need_cdef_lpf_copy;
+    let sb128;
+    let num_lines;
+    let lr_mask_sz;
+    let ipred_edge_sz;
+    let re_sz;
+    let has_chroma;
     let mut current_block: u64;
     let c: *const Dav1dContext = (*f).c;
     let mut retval = -(12 as libc::c_int);
@@ -4991,14 +4983,14 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                                 let mut tile_idx = 0;
                                 let mut tile_row_0 = 0;
                                 while tile_row_0 < (*(*f).frame_hdr).tiling.rows {
-                                    let mut row_off = (*(*f).frame_hdr).tiling.row_start_sb
+                                    let row_off = (*(*f).frame_hdr).tiling.row_start_sb
                                         [tile_row_0 as usize]
                                         as libc::c_int
                                         * (*f).sb_step
                                         * 4
                                         * (*f).sb128w
                                         * 128;
-                                    let mut b_diff = ((*(*f).frame_hdr).tiling.row_start_sb
+                                    let b_diff = ((*(*f).frame_hdr).tiling.row_start_sb
                                         [(tile_row_0 + 1) as usize]
                                         as libc::c_int
                                         - (*(*f).frame_hdr).tiling.row_start_sb[tile_row_0 as usize]
@@ -5691,8 +5683,9 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                                                                                 64 as libc::c_int
                                                                                     as size_t,
                                                                             );
-                                                                        let mut ptr_1: *mut uint8_t = (*f)
-                                                                            .ipred_edge[0] as *mut uint8_t;
+                                                                        let ptr_1: *mut uint8_t =
+                                                                            (*f).ipred_edge[0]
+                                                                                as *mut uint8_t;
                                                                         if ptr_1.is_null() {
                                                                             (*f).ipred_edge_sz =
                                                                                 0 as libc::c_int;
@@ -5854,7 +5847,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                                                                                                             [12 as libc::c_int as uint8_t, 4 as libc::c_int as uint8_t],
                                                                                                             [13 as libc::c_int as uint8_t, 3 as libc::c_int as uint8_t],
                                                                                                         ];
-                                                                                                        let mut k = 0;
+                                                                                                        let mut k;
                                                                                                         k = 0 as libc::c_int;
                                                                                                         while k < 3 {
                                                                                                             let c0 = quant_dist_weight[k
@@ -5963,7 +5956,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
 }
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) -> libc::c_int {
-    let mut current_block: u64;
+    let current_block: u64;
     let c: *const Dav1dContext = (*f).c;
     let mut retval = -(22 as libc::c_int);
     if (*(*f).frame_hdr).refresh_context != 0 {
@@ -5982,7 +5975,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
         let mut size: size_t = (*((*f).tile).offset(i as isize)).data.sz;
         let mut j = (*((*f).tile).offset(i as isize)).start;
         while j <= (*((*f).tile).offset(i as isize)).end {
-            let mut tile_sz: size_t = 0;
+            let mut tile_sz: size_t;
             if j == (*((*f).tile).offset(i as isize)).end {
                 tile_sz = size;
             } else {
@@ -6062,7 +6055,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
 }
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> libc::c_int {
-    let mut current_block: u64;
+    let current_block: u64;
     let c: *const Dav1dContext = (*f).c;
     let mut retval = -(22 as libc::c_int);
     if !((*(*f).c).n_tc == 1 as libc::c_uint) {
@@ -6142,57 +6135,49 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
     }
     return retval;
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retval: libc::c_int) {
-    let c: *const Dav1dContext = (*f).c;
-    if !((*f).sr_cur.p.data[0]).is_null() {
-        *&mut (*f).task_thread.error = 0 as libc::c_int;
+    let f = &mut *f; // TODO(kkysen) propagate to arg once we deduplicate the fn decl
+    let c = &*f.c;
+    if !f.sr_cur.p.data[0].is_null() {
+        f.task_thread.error = 0;
     }
-    if (*c).n_fc > 1 as libc::c_uint && retval != 0 && !((*f).frame_thread.cf).is_null() {
-        memset(
-            (*f).frame_thread.cf,
-            0 as libc::c_int,
-            ((*f).frame_thread.cf_sz as size_t)
-                .wrapping_mul(128)
-                .wrapping_mul(128)
-                .wrapping_div(2),
-        );
+    if c.n_fc > 1 && retval != 0 && !f.frame_thread.cf.is_null() {
+        slice::from_raw_parts_mut(
+            f.frame_thread.cf.cast::<u8>(),
+            usize::try_from(f.frame_thread.cf_sz).unwrap() * 128 * 128 / 2,
+        )
+        .fill(0);
     }
-    let mut i = 0;
-    while i < 7 {
-        if !((*f).refp[i as usize].p.frame_hdr).is_null() {
-            dav1d_thread_picture_unref(&mut *((*f).refp).as_mut_ptr().offset(i as isize));
+    // TODO(kkysen) use array::zip when stable
+    for i in 0..7 {
+        if !f.refp[i].p.frame_hdr.is_null() {
+            dav1d_thread_picture_unref(&mut f.refp[i]);
         }
-        dav1d_ref_dec(&mut *((*f).ref_mvs_ref).as_mut_ptr().offset(i as isize));
-        i += 1;
+        dav1d_ref_dec(&mut f.ref_mvs_ref[i]);
     }
-    dav1d_picture_unref_internal(&mut (*f).cur);
-    dav1d_thread_picture_unref(&mut (*f).sr_cur);
-    dav1d_cdf_thread_unref(&mut (*f).in_cdf);
-    if !((*f).frame_hdr).is_null() && (*(*f).frame_hdr).refresh_context != 0 {
-        if !((*f).out_cdf.progress).is_null() {
+    dav1d_picture_unref_internal(&mut f.cur);
+    dav1d_thread_picture_unref(&mut f.sr_cur);
+    dav1d_cdf_thread_unref(&mut f.in_cdf);
+    if !f.frame_hdr.is_null() && (*f.frame_hdr).refresh_context != 0 {
+        if !f.out_cdf.progress.is_null() {
             ::core::intrinsics::atomic_store_seqcst(
-                (*f).out_cdf.progress,
-                (if retval == 0 {
-                    1 as libc::c_int
-                } else {
-                    2147483647 - 1
-                }) as libc::c_uint,
+                f.out_cdf.progress,
+                if retval == 0 { 1 } else { 2147483647 - 1 },
             );
         }
-        dav1d_cdf_thread_unref(&mut (*f).out_cdf);
+        dav1d_cdf_thread_unref(&mut f.out_cdf);
     }
-    dav1d_ref_dec(&mut (*f).cur_segmap_ref);
-    dav1d_ref_dec(&mut (*f).prev_segmap_ref);
-    dav1d_ref_dec(&mut (*f).mvs_ref);
-    dav1d_ref_dec(&mut (*f).seq_hdr_ref);
-    dav1d_ref_dec(&mut (*f).frame_hdr_ref);
-    let mut i_0 = 0;
-    while i_0 < (*f).n_tile_data {
-        dav1d_data_unref_internal(&mut (*((*f).tile).offset(i_0 as isize)).data);
-        i_0 += 1;
+    dav1d_ref_dec(&mut f.cur_segmap_ref);
+    dav1d_ref_dec(&mut f.prev_segmap_ref);
+    dav1d_ref_dec(&mut f.mvs_ref);
+    dav1d_ref_dec(&mut f.seq_hdr_ref);
+    dav1d_ref_dec(&mut f.frame_hdr_ref);
+    for tile in slice::from_raw_parts_mut(f.tile, f.n_tile_data.try_into().unwrap()) {
+        dav1d_data_unref_internal(&mut tile.data);
     }
-    (*f).task_thread.retval = retval;
+    f.task_thread.retval = retval;
 }
 
 pub unsafe fn dav1d_decode_frame(f: &mut Dav1dFrameContext) -> libc::c_int {
@@ -6245,13 +6230,13 @@ fn get_upscale_x0(in_w: libc::c_int, out_w: libc::c_int, step: libc::c_int) -> l
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int {
-    let mut ref_coded_width: [libc::c_int; 7] = [0; 7];
-    let mut uses_2pass = 0;
-    let mut cols = 0;
-    let mut rows = 0;
-    let mut refresh_frame_flags: libc::c_uint = 0;
+    let mut ref_coded_width: [libc::c_int; 7];
+    let uses_2pass;
+    let cols;
+    let rows;
+    let refresh_frame_flags: libc::c_uint;
     let mut current_block: u64;
-    let mut f: *mut Dav1dFrameContext = 0 as *mut Dav1dFrameContext;
+    let f: *mut Dav1dFrameContext;
     let mut res = -(1 as libc::c_int);
     let mut out_delayed: *mut Dav1dThreadPicture = 0 as *mut Dav1dThreadPicture;
     if (*c).n_fc > 1 as libc::c_uint {

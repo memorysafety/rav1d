@@ -9,39 +9,9 @@ extern "C" {
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 extern "C" {
-    fn dav1d_ipred_dc_8bpc_avx2(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        topleft: *const pixel,
-        width: libc::c_int,
-        height: libc::c_int,
-        angle: libc::c_int,
-        max_width: libc::c_int,
-        max_height: libc::c_int,
-    );
     fn dav1d_ipred_dc_8bpc_ssse3(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        topleft: *const pixel,
-        width: libc::c_int,
-        height: libc::c_int,
-        angle: libc::c_int,
-        max_width: libc::c_int,
-        max_height: libc::c_int,
-    );
-    fn dav1d_ipred_dc_8bpc_avx512icl(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        topleft: *const pixel,
-        width: libc::c_int,
-        height: libc::c_int,
-        angle: libc::c_int,
-        max_width: libc::c_int,
-        max_height: libc::c_int,
-    );
-    fn dav1d_ipred_dc_128_8bpc_avx2(
         dst: *mut pixel,
         stride: ptrdiff_t,
         topleft: *const pixel,
@@ -61,47 +31,7 @@ extern "C" {
         max_width: libc::c_int,
         max_height: libc::c_int,
     );
-    fn dav1d_ipred_dc_128_8bpc_avx512icl(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        topleft: *const pixel,
-        width: libc::c_int,
-        height: libc::c_int,
-        angle: libc::c_int,
-        max_width: libc::c_int,
-        max_height: libc::c_int,
-    );
     fn dav1d_ipred_dc_top_8bpc_ssse3(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        topleft: *const pixel,
-        width: libc::c_int,
-        height: libc::c_int,
-        angle: libc::c_int,
-        max_width: libc::c_int,
-        max_height: libc::c_int,
-    );
-    fn dav1d_ipred_dc_top_8bpc_avx512icl(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        topleft: *const pixel,
-        width: libc::c_int,
-        height: libc::c_int,
-        angle: libc::c_int,
-        max_width: libc::c_int,
-        max_height: libc::c_int,
-    );
-    fn dav1d_ipred_dc_top_8bpc_avx2(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        topleft: *const pixel,
-        width: libc::c_int,
-        height: libc::c_int,
-        angle: libc::c_int,
-        max_width: libc::c_int,
-        max_height: libc::c_int,
-    );
-    fn dav1d_ipred_dc_left_8bpc_avx2(
         dst: *mut pixel,
         stride: ptrdiff_t,
         topleft: *const pixel,
@@ -121,47 +51,7 @@ extern "C" {
         max_width: libc::c_int,
         max_height: libc::c_int,
     );
-    fn dav1d_ipred_dc_left_8bpc_avx512icl(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        topleft: *const pixel,
-        width: libc::c_int,
-        height: libc::c_int,
-        angle: libc::c_int,
-        max_width: libc::c_int,
-        max_height: libc::c_int,
-    );
     fn dav1d_ipred_h_8bpc_ssse3(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        topleft: *const pixel,
-        width: libc::c_int,
-        height: libc::c_int,
-        angle: libc::c_int,
-        max_width: libc::c_int,
-        max_height: libc::c_int,
-    );
-    fn dav1d_ipred_h_8bpc_avx2(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        topleft: *const pixel,
-        width: libc::c_int,
-        height: libc::c_int,
-        angle: libc::c_int,
-        max_width: libc::c_int,
-        max_height: libc::c_int,
-    );
-    fn dav1d_ipred_h_8bpc_avx512icl(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        topleft: *const pixel,
-        width: libc::c_int,
-        height: libc::c_int,
-        angle: libc::c_int,
-        max_width: libc::c_int,
-        max_height: libc::c_int,
-    );
-    fn dav1d_ipred_v_8bpc_avx2(
         dst: *mut pixel,
         stride: ptrdiff_t,
         topleft: *const pixel,
@@ -181,37 +71,7 @@ extern "C" {
         max_width: libc::c_int,
         max_height: libc::c_int,
     );
-    fn dav1d_ipred_v_8bpc_avx512icl(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        topleft: *const pixel,
-        width: libc::c_int,
-        height: libc::c_int,
-        angle: libc::c_int,
-        max_width: libc::c_int,
-        max_height: libc::c_int,
-    );
-    fn dav1d_ipred_paeth_8bpc_avx2(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        topleft: *const pixel,
-        width: libc::c_int,
-        height: libc::c_int,
-        angle: libc::c_int,
-        max_width: libc::c_int,
-        max_height: libc::c_int,
-    );
     fn dav1d_ipred_paeth_8bpc_ssse3(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        topleft: *const pixel,
-        width: libc::c_int,
-        height: libc::c_int,
-        angle: libc::c_int,
-        max_width: libc::c_int,
-        max_height: libc::c_int,
-    );
-    fn dav1d_ipred_paeth_8bpc_avx512icl(
         dst: *mut pixel,
         stride: ptrdiff_t,
         topleft: *const pixel,
@@ -231,67 +91,7 @@ extern "C" {
         max_width: libc::c_int,
         max_height: libc::c_int,
     );
-    fn dav1d_ipred_smooth_8bpc_avx2(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        topleft: *const pixel,
-        width: libc::c_int,
-        height: libc::c_int,
-        angle: libc::c_int,
-        max_width: libc::c_int,
-        max_height: libc::c_int,
-    );
-    fn dav1d_ipred_smooth_8bpc_avx512icl(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        topleft: *const pixel,
-        width: libc::c_int,
-        height: libc::c_int,
-        angle: libc::c_int,
-        max_width: libc::c_int,
-        max_height: libc::c_int,
-    );
     fn dav1d_ipred_smooth_h_8bpc_ssse3(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        topleft: *const pixel,
-        width: libc::c_int,
-        height: libc::c_int,
-        angle: libc::c_int,
-        max_width: libc::c_int,
-        max_height: libc::c_int,
-    );
-    fn dav1d_ipred_smooth_h_8bpc_avx2(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        topleft: *const pixel,
-        width: libc::c_int,
-        height: libc::c_int,
-        angle: libc::c_int,
-        max_width: libc::c_int,
-        max_height: libc::c_int,
-    );
-    fn dav1d_ipred_smooth_h_8bpc_avx512icl(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        topleft: *const pixel,
-        width: libc::c_int,
-        height: libc::c_int,
-        angle: libc::c_int,
-        max_width: libc::c_int,
-        max_height: libc::c_int,
-    );
-    fn dav1d_ipred_smooth_v_8bpc_avx512icl(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        topleft: *const pixel,
-        width: libc::c_int,
-        height: libc::c_int,
-        angle: libc::c_int,
-        max_width: libc::c_int,
-        max_height: libc::c_int,
-    );
-    fn dav1d_ipred_filter_8bpc_avx512icl(
         dst: *mut pixel,
         stride: ptrdiff_t,
         topleft: *const pixel,
@@ -421,6 +221,210 @@ extern "C" {
         idx: *const uint8_t,
         w: libc::c_int,
         h: libc::c_int,
+    );
+}
+
+#[cfg(all(feature = "asm", target_arch = "x86_64"))]
+extern "C" {
+    fn dav1d_ipred_dc_8bpc_avx2(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        topleft: *const pixel,
+        width: libc::c_int,
+        height: libc::c_int,
+        angle: libc::c_int,
+        max_width: libc::c_int,
+        max_height: libc::c_int,
+    );
+    fn dav1d_ipred_dc_8bpc_avx512icl(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        topleft: *const pixel,
+        width: libc::c_int,
+        height: libc::c_int,
+        angle: libc::c_int,
+        max_width: libc::c_int,
+        max_height: libc::c_int,
+    );
+    fn dav1d_ipred_dc_128_8bpc_avx2(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        topleft: *const pixel,
+        width: libc::c_int,
+        height: libc::c_int,
+        angle: libc::c_int,
+        max_width: libc::c_int,
+        max_height: libc::c_int,
+    );
+    fn dav1d_ipred_dc_128_8bpc_avx512icl(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        topleft: *const pixel,
+        width: libc::c_int,
+        height: libc::c_int,
+        angle: libc::c_int,
+        max_width: libc::c_int,
+        max_height: libc::c_int,
+    );
+    fn dav1d_ipred_dc_top_8bpc_avx512icl(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        topleft: *const pixel,
+        width: libc::c_int,
+        height: libc::c_int,
+        angle: libc::c_int,
+        max_width: libc::c_int,
+        max_height: libc::c_int,
+    );
+    fn dav1d_ipred_dc_top_8bpc_avx2(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        topleft: *const pixel,
+        width: libc::c_int,
+        height: libc::c_int,
+        angle: libc::c_int,
+        max_width: libc::c_int,
+        max_height: libc::c_int,
+    );
+    fn dav1d_ipred_dc_left_8bpc_avx2(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        topleft: *const pixel,
+        width: libc::c_int,
+        height: libc::c_int,
+        angle: libc::c_int,
+        max_width: libc::c_int,
+        max_height: libc::c_int,
+    );
+    fn dav1d_ipred_dc_left_8bpc_avx512icl(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        topleft: *const pixel,
+        width: libc::c_int,
+        height: libc::c_int,
+        angle: libc::c_int,
+        max_width: libc::c_int,
+        max_height: libc::c_int,
+    );
+    fn dav1d_ipred_h_8bpc_avx2(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        topleft: *const pixel,
+        width: libc::c_int,
+        height: libc::c_int,
+        angle: libc::c_int,
+        max_width: libc::c_int,
+        max_height: libc::c_int,
+    );
+    fn dav1d_ipred_h_8bpc_avx512icl(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        topleft: *const pixel,
+        width: libc::c_int,
+        height: libc::c_int,
+        angle: libc::c_int,
+        max_width: libc::c_int,
+        max_height: libc::c_int,
+    );
+    fn dav1d_ipred_v_8bpc_avx2(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        topleft: *const pixel,
+        width: libc::c_int,
+        height: libc::c_int,
+        angle: libc::c_int,
+        max_width: libc::c_int,
+        max_height: libc::c_int,
+    );
+    fn dav1d_ipred_v_8bpc_avx512icl(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        topleft: *const pixel,
+        width: libc::c_int,
+        height: libc::c_int,
+        angle: libc::c_int,
+        max_width: libc::c_int,
+        max_height: libc::c_int,
+    );
+    fn dav1d_ipred_paeth_8bpc_avx2(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        topleft: *const pixel,
+        width: libc::c_int,
+        height: libc::c_int,
+        angle: libc::c_int,
+        max_width: libc::c_int,
+        max_height: libc::c_int,
+    );
+    fn dav1d_ipred_paeth_8bpc_avx512icl(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        topleft: *const pixel,
+        width: libc::c_int,
+        height: libc::c_int,
+        angle: libc::c_int,
+        max_width: libc::c_int,
+        max_height: libc::c_int,
+    );
+    fn dav1d_ipred_smooth_8bpc_avx2(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        topleft: *const pixel,
+        width: libc::c_int,
+        height: libc::c_int,
+        angle: libc::c_int,
+        max_width: libc::c_int,
+        max_height: libc::c_int,
+    );
+    fn dav1d_ipred_smooth_8bpc_avx512icl(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        topleft: *const pixel,
+        width: libc::c_int,
+        height: libc::c_int,
+        angle: libc::c_int,
+        max_width: libc::c_int,
+        max_height: libc::c_int,
+    );
+    fn dav1d_ipred_smooth_h_8bpc_avx2(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        topleft: *const pixel,
+        width: libc::c_int,
+        height: libc::c_int,
+        angle: libc::c_int,
+        max_width: libc::c_int,
+        max_height: libc::c_int,
+    );
+    fn dav1d_ipred_smooth_h_8bpc_avx512icl(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        topleft: *const pixel,
+        width: libc::c_int,
+        height: libc::c_int,
+        angle: libc::c_int,
+        max_width: libc::c_int,
+        max_height: libc::c_int,
+    );
+    fn dav1d_ipred_smooth_v_8bpc_avx512icl(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        topleft: *const pixel,
+        width: libc::c_int,
+        height: libc::c_int,
+        angle: libc::c_int,
+        max_width: libc::c_int,
+        max_height: libc::c_int,
+    );
+    fn dav1d_ipred_filter_8bpc_avx512icl(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        topleft: *const pixel,
+        width: libc::c_int,
+        height: libc::c_int,
+        angle: libc::c_int,
+        max_width: libc::c_int,
+        max_height: libc::c_int,
     );
     fn dav1d_ipred_smooth_v_8bpc_avx2(
         dst: *mut pixel,
@@ -553,7 +557,7 @@ extern "C" {
     );
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 extern "C" {
     fn dav1d_ipred_dc_8bpc_neon(
         dst: *mut pixel,
@@ -728,6 +732,18 @@ extern "C" {
         cw: libc::c_int,
         ch: libc::c_int,
     );
+    fn dav1d_pal_pred_8bpc_neon(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        pal: *const uint16_t,
+        idx: *const uint8_t,
+        w: libc::c_int,
+        h: libc::c_int,
+    );
+}
+
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+extern "C" {
     fn dav1d_ipred_z1_fill2_8bpc_neon(
         dst: *mut pixel,
         stride: ptrdiff_t,
@@ -813,14 +829,6 @@ extern "C" {
         dy: libc::c_int,
         max_base_y: libc::c_int,
     );
-    fn dav1d_pal_pred_8bpc_neon(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        pal: *const uint16_t,
-        idx: *const uint8_t,
-        w: libc::c_int,
-        h: libc::c_int,
-    );
     fn dav1d_ipred_pixel_set_8bpc_neon(out: *mut pixel, px: pixel, n: libc::c_int);
 }
 
@@ -900,7 +908,6 @@ pub type pal_pred_fn = Option<
         libc::c_int,
     ) -> (),
 >;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dIntraPredDSPContext {
     pub intra_pred: [angular_ipred_fn; 14],
@@ -991,7 +998,7 @@ unsafe extern "C" fn dc_gen_top(topleft: *const pixel, width: libc::c_int) -> li
     return dc >> ctz(width as libc::c_uint);
 }
 unsafe extern "C" fn ipred_dc_top_c(
-    mut dst: *mut pixel,
+    dst: *mut pixel,
     stride: ptrdiff_t,
     topleft: *const pixel,
     width: libc::c_int,
@@ -1009,12 +1016,12 @@ unsafe extern "C" fn ipred_dc_top_c(
     );
 }
 unsafe extern "C" fn ipred_cfl_top_c(
-    mut dst: *mut pixel,
+    dst: *mut pixel,
     stride: ptrdiff_t,
     topleft: *const pixel,
     width: libc::c_int,
     height: libc::c_int,
-    mut ac: *const int16_t,
+    ac: *const int16_t,
     alpha: libc::c_int,
 ) {
     cfl_pred(
@@ -1037,7 +1044,7 @@ unsafe extern "C" fn dc_gen_left(topleft: *const pixel, height: libc::c_int) -> 
     return dc >> ctz(height as libc::c_uint);
 }
 unsafe extern "C" fn ipred_dc_left_c(
-    mut dst: *mut pixel,
+    dst: *mut pixel,
     stride: ptrdiff_t,
     topleft: *const pixel,
     width: libc::c_int,
@@ -1055,12 +1062,12 @@ unsafe extern "C" fn ipred_dc_left_c(
     );
 }
 unsafe extern "C" fn ipred_cfl_left_c(
-    mut dst: *mut pixel,
+    dst: *mut pixel,
     stride: ptrdiff_t,
     topleft: *const pixel,
     width: libc::c_int,
     height: libc::c_int,
-    mut ac: *const int16_t,
+    ac: *const int16_t,
     alpha: libc::c_int,
 ) {
     let dc: libc::c_uint = dc_gen_left(topleft, height);
@@ -1096,7 +1103,7 @@ unsafe extern "C" fn dc_gen(
     return dc;
 }
 unsafe extern "C" fn ipred_dc_c(
-    mut dst: *mut pixel,
+    dst: *mut pixel,
     stride: ptrdiff_t,
     topleft: *const pixel,
     width: libc::c_int,
@@ -1114,19 +1121,19 @@ unsafe extern "C" fn ipred_dc_c(
     );
 }
 unsafe extern "C" fn ipred_cfl_c(
-    mut dst: *mut pixel,
+    dst: *mut pixel,
     stride: ptrdiff_t,
     topleft: *const pixel,
     width: libc::c_int,
     height: libc::c_int,
-    mut ac: *const int16_t,
+    ac: *const int16_t,
     alpha: libc::c_int,
 ) {
-    let mut dc: libc::c_uint = dc_gen(topleft, width, height);
+    let dc: libc::c_uint = dc_gen(topleft, width, height);
     cfl_pred(dst, stride, width, height, dc as libc::c_int, ac, alpha);
 }
 unsafe extern "C" fn ipred_dc_128_c(
-    mut dst: *mut pixel,
+    dst: *mut pixel,
     stride: ptrdiff_t,
     _topleft: *const pixel,
     width: libc::c_int,
@@ -1139,12 +1146,12 @@ unsafe extern "C" fn ipred_dc_128_c(
     splat_dc(dst, stride, width, height, dc);
 }
 unsafe extern "C" fn ipred_cfl_128_c(
-    mut dst: *mut pixel,
+    dst: *mut pixel,
     stride: ptrdiff_t,
     _topleft: *const pixel,
     width: libc::c_int,
     height: libc::c_int,
-    mut ac: *const int16_t,
+    ac: *const int16_t,
     alpha: libc::c_int,
 ) {
     let dc = 128;
@@ -1445,7 +1452,7 @@ unsafe extern "C" fn upsample_edge(
         9 as libc::c_int as int8_t,
         -(1 as libc::c_int) as int8_t,
     ];
-    let mut i = 0;
+    let mut i;
     i = 0 as libc::c_int;
     while i < hsz - 1 {
         *out.offset((i * 2) as isize) = *in_0.offset(iclip(i, from, to - 1) as isize);
@@ -1479,8 +1486,8 @@ unsafe extern "C" fn ipred_z1_c(
     }
     let mut dx = dav1d_dr_intra_derivative[(angle >> 1) as usize] as libc::c_int;
     let mut top_out: [pixel; 128] = [0; 128];
-    let mut top: *const pixel = 0 as *const pixel;
-    let mut max_base_x = 0;
+    let top: *const pixel;
+    let max_base_x;
     let upsample_above = if enable_intra_edge_filter != 0 {
         get_upsample(width + height, 90 - angle, is_sm)
     } else {
@@ -1652,7 +1659,7 @@ unsafe extern "C" fn ipred_z2_c(
         let mut x = 0;
         let mut ypos = (y << 6 + upsample_left) - dy;
         while x < width {
-            let mut v = 0;
+            let v;
             if base_x >= 0 {
                 v = *topleft.offset(base_x as isize) as libc::c_int * (64 - frac_x)
                     + *topleft.offset((base_x + 1) as isize) as libc::c_int * frac_x;
@@ -1676,7 +1683,7 @@ unsafe extern "C" fn ipred_z2_c(
     }
 }
 unsafe extern "C" fn ipred_z3_c(
-    mut dst: *mut pixel,
+    dst: *mut pixel,
     stride: ptrdiff_t,
     topleft_in: *const pixel,
     width: libc::c_int,
@@ -1693,8 +1700,8 @@ unsafe extern "C" fn ipred_z3_c(
     }
     let mut dy = dav1d_dr_intra_derivative[(270 - angle >> 1) as usize] as libc::c_int;
     let mut left_out: [pixel; 128] = [0; 128];
-    let mut left: *const pixel = 0 as *const pixel;
-    let mut max_base_y = 0;
+    let left: *const pixel;
+    let max_base_y;
     let upsample_left = if enable_intra_edge_filter != 0 {
         get_upsample(width + height, angle - 180, is_sm)
     } else {
@@ -1836,8 +1843,8 @@ unsafe extern "C" fn cfl_ac_c(
     ss_hor: libc::c_int,
     ss_ver: libc::c_int,
 ) {
-    let mut y = 0;
-    let mut x = 0;
+    let mut y;
+    let mut x;
     let ac_orig: *mut int16_t = ac;
     if !(w_pad >= 0 && (w_pad * 4) < width) {
         unreachable!();
@@ -2127,9 +2134,9 @@ unsafe extern "C" fn intra_pred_dsp_init_arm(c: *mut Dav1dIntraPredDSPContext) {
     (*c).pal_pred = Some(dav1d_pal_pred_8bpc_neon);
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
 unsafe extern "C" fn ipred_z3_neon(
-    mut dst: *mut pixel,
+    dst: *mut pixel,
     stride: ptrdiff_t,
     topleft_in: *const pixel,
     width: libc::c_int,
@@ -2147,7 +2154,7 @@ unsafe extern "C" fn ipred_z3_neon(
     let mut dy = dav1d_dr_intra_derivative[(270 - angle >> 1) as usize] as libc::c_int;
     let mut flipped: [pixel; 144] = [0; 144];
     let mut left_out: [pixel; 286] = [0; 286];
-    let mut max_base_y = 0;
+    let max_base_y;
     let upsample_left = if enable_intra_edge_filter != 0 {
         get_upsample(width + height, angle - 180, is_sm)
     } else {
@@ -2199,7 +2206,7 @@ unsafe extern "C" fn ipred_z3_neon(
         }
     }
     let base_inc = 1 + upsample_left;
-    let mut pad_pixels = imax(64 - max_base_y - 1, height + 15);
+    let pad_pixels = imax(64 - max_base_y - 1, height + 15);
     dav1d_ipred_pixel_set_8bpc_neon(
         &mut *left_out.as_mut_ptr().offset((max_base_y + 1) as isize) as *mut pixel,
         left_out[max_base_y as usize],
@@ -2228,9 +2235,9 @@ unsafe extern "C" fn ipred_z3_neon(
     };
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
 unsafe extern "C" fn ipred_z2_neon(
-    mut dst: *mut pixel,
+    dst: *mut pixel,
     stride: ptrdiff_t,
     topleft_in: *const pixel,
     width: libc::c_int,
@@ -2253,9 +2260,9 @@ unsafe extern "C" fn ipred_z2_neon(
     let mut buf: [pixel; 3 * (64 + 1)] = [0; 3 * (64 + 1)]; // NOTE: C code doesn't initialize
                                                             // The asm can underread below the start of top[] and left[]; to avoid
                                                             // surprising behaviour, make sure this is within the allocated stack space.
-    let mut left_offset: isize = 2 * (64 + 1);
-    let mut top_offset: isize = 1 * (64 + 1);
-    let mut flipped_offset: isize = 0 * (64 + 1);
+    let left_offset: isize = 2 * (64 + 1);
+    let top_offset: isize = 1 * (64 + 1);
+    let flipped_offset: isize = 0 * (64 + 1);
 
     let upsample_left = if enable_intra_edge_filter != 0 {
         get_upsample(width + height, 180 - angle, is_sm)
@@ -2405,9 +2412,9 @@ unsafe extern "C" fn ipred_z2_neon(
     };
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
 unsafe extern "C" fn ipred_z1_neon(
-    mut dst: *mut pixel,
+    dst: *mut pixel,
     stride: ptrdiff_t,
     topleft_in: *const pixel,
     width: libc::c_int,
@@ -2422,7 +2429,7 @@ unsafe extern "C" fn ipred_z1_neon(
     let mut dx = dav1d_dr_intra_derivative[(angle >> 1) as usize] as libc::c_int;
     const top_out_size: usize = 64 + 64 * (64 + 15) * 2 + 16;
     let mut top_out: [pixel; top_out_size] = [0; top_out_size];
-    let mut max_base_x = 0;
+    let max_base_x;
     let upsample_above = if enable_intra_edge_filter != 0 {
         get_upsample(width + height, 90 - angle, is_sm)
     } else {
@@ -2463,7 +2470,7 @@ unsafe extern "C" fn ipred_z1_neon(
         }
     }
     let base_inc = 1 + upsample_above;
-    let mut pad_pixels = width + 15;
+    let pad_pixels = width + 15;
     dav1d_ipred_pixel_set_8bpc_neon(
         &mut *top_out.as_mut_ptr().offset((max_base_x + 1) as isize) as *mut pixel,
         top_out[max_base_x as usize],

@@ -1,4 +1,4 @@
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dLogger {
     pub cookie: *mut libc::c_void,

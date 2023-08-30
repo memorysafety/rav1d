@@ -42,7 +42,7 @@ pub const DAV1D_WM_TYPE_ROT_ZOOM: Dav1dWarpedMotionType = 2;
 pub const DAV1D_WM_TYPE_TRANSLATION: Dav1dWarpedMotionType = 1;
 pub const DAV1D_WM_TYPE_IDENTITY: Dav1dWarpedMotionType = 0;
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dWarpedMotionParams {
     pub type_0: Dav1dWarpedMotionType,
@@ -135,13 +135,11 @@ pub const DAV1D_CHR_UNKNOWN: Dav1dChromaSamplePosition = 0;
 // Constants from Section 3. "Symbols and abbreviated terms"
 pub const DAV1D_MAX_SEGMENTS: u8 = 8;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContentLightLevel {
     pub max_content_light_level: libc::c_int,
     pub max_frame_average_light_level: libc::c_int,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dMasteringDisplay {
     pub primaries: [[uint16_t; 2]; 3],
@@ -149,7 +147,6 @@ pub struct Dav1dMasteringDisplay {
     pub max_luminance: uint32_t,
     pub min_luminance: uint32_t,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dITUTT35 {
     pub country_code: uint8_t,
@@ -157,7 +154,8 @@ pub struct Dav1dITUTT35 {
     pub payload_size: size_t,
     pub payload: *mut uint8_t,
 }
-#[derive(Copy, Clone)]
+
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Dav1dSequenceHeaderOperatingPoint {
     pub major_level: libc::c_int,
@@ -168,14 +166,15 @@ pub struct Dav1dSequenceHeaderOperatingPoint {
     pub decoder_model_param_present: libc::c_int,
     pub display_model_param_present: libc::c_int,
 }
-#[derive(Copy, Clone)]
+
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Dav1dSequenceHeaderOperatingParameterInfo {
     pub decoder_buffer_delay: libc::c_int,
     pub encoder_buffer_delay: libc::c_int,
     pub low_delay_mode: libc::c_int,
 }
-#[derive(Copy, Clone)]
+
 #[repr(C)]
 pub struct Dav1dSequenceHeader {
     pub profile: libc::c_int,
@@ -232,7 +231,8 @@ pub struct Dav1dSequenceHeader {
     pub film_grain_present: libc::c_int,
     pub operating_parameter_info: [Dav1dSequenceHeaderOperatingParameterInfo; 32],
 }
-#[derive(Copy, Clone)]
+
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dSegmentationData {
     pub delta_q: libc::c_int,
@@ -244,20 +244,23 @@ pub struct Dav1dSegmentationData {
     pub skip: libc::c_int,
     pub globalmv: libc::c_int,
 }
-#[derive(Copy, Clone)]
+
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dSegmentationDataSet {
     pub d: [Dav1dSegmentationData; 8],
     pub preskip: libc::c_int,
     pub last_active_segid: libc::c_int,
 }
-#[derive(Copy, Clone)]
+
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dLoopfilterModeRefDeltas {
     pub mode_delta: [libc::c_int; 2],
     pub ref_delta: [libc::c_int; 8],
 }
-#[derive(Copy, Clone)]
+
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFilmGrainData {
     pub seed: libc::c_uint,
@@ -278,25 +281,21 @@ pub struct Dav1dFilmGrainData {
     pub overlap_flag: libc::c_int,
     pub clip_to_restricted_range: libc::c_int,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_film_grain {
     pub data: Dav1dFilmGrainData,
     pub present: libc::c_int,
     pub update: libc::c_int,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeaderOperatingPoint {
     pub buffer_removal_time: libc::c_int,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_super_res {
     pub width_scale_denominator: libc::c_int,
     pub enabled: libc::c_int,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_tiling {
     pub uniform: libc::c_int,
@@ -313,7 +312,6 @@ pub struct Dav1dFrameHeader_tiling {
     pub row_start_sb: [uint16_t; 65],
     pub update: libc::c_int,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_quant {
     pub yac: libc::c_int,
@@ -327,7 +325,6 @@ pub struct Dav1dFrameHeader_quant {
     pub qm_u: libc::c_int,
     pub qm_v: libc::c_int,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_segmentation {
     pub enabled: libc::c_int,
@@ -338,26 +335,22 @@ pub struct Dav1dFrameHeader_segmentation {
     pub lossless: [libc::c_int; 8],
     pub qidx: [libc::c_int; 8],
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_delta_q {
     pub present: libc::c_int,
     pub res_log2: libc::c_int,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_delta_lf {
     pub present: libc::c_int,
     pub res_log2: libc::c_int,
     pub multi: libc::c_int,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_delta {
     pub q: Dav1dFrameHeader_delta_q,
     pub lf: Dav1dFrameHeader_delta_lf,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_loopfilter {
     pub level_y: [libc::c_int; 2],
@@ -368,7 +361,6 @@ pub struct Dav1dFrameHeader_loopfilter {
     pub mode_ref_deltas: Dav1dLoopfilterModeRefDeltas,
     pub sharpness: libc::c_int,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_cdef {
     pub damping: libc::c_int,
@@ -376,13 +368,11 @@ pub struct Dav1dFrameHeader_cdef {
     pub y_strength: [libc::c_int; 8],
     pub uv_strength: [libc::c_int; 8],
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_restoration {
     pub type_0: [Dav1dRestorationType; 3],
     pub unit_size: [libc::c_int; 2],
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader {
     pub film_grain: Dav1dFrameHeader_film_grain,

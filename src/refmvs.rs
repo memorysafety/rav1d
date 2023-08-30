@@ -2,31 +2,9 @@ use crate::include::stddef::*;
 use crate::include::stdint::*;
 use cfg_if::cfg_if;
 use libc;
-extern "C" {
-    fn free(_: *mut libc::c_void);
-    fn posix_memalign(
-        __memptr: *mut *mut libc::c_void,
-        __alignment: size_t,
-        __size: size_t,
-    ) -> libc::c_int;
-}
 
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 extern "C" {
-    fn dav1d_splat_mv_avx512icl(
-        rr: *mut *mut refmvs_block,
-        rmv: *const refmvs_block,
-        bx4: libc::c_int,
-        bw4: libc::c_int,
-        bh4: libc::c_int,
-    );
-    fn dav1d_splat_mv_avx2(
-        rr: *mut *mut refmvs_block,
-        rmv: *const refmvs_block,
-        bx4: libc::c_int,
-        bw4: libc::c_int,
-        bh4: libc::c_int,
-    );
     fn dav1d_splat_mv_sse2(
         rr: *mut *mut refmvs_block,
         rmv: *const refmvs_block,
@@ -43,6 +21,24 @@ extern "C" {
         row_end8: libc::c_int,
         col_start8: libc::c_int,
         row_start8: libc::c_int,
+    );
+}
+
+#[cfg(all(feature = "asm", target_arch = "x86_64"))]
+extern "C" {
+    fn dav1d_splat_mv_avx512icl(
+        rr: *mut *mut refmvs_block,
+        rmv: *const refmvs_block,
+        bx4: libc::c_int,
+        bw4: libc::c_int,
+        bh4: libc::c_int,
+    );
+    fn dav1d_splat_mv_avx2(
+        rr: *mut *mut refmvs_block,
+        rmv: *const refmvs_block,
+        bx4: libc::c_int,
+        bw4: libc::c_int,
+        bh4: libc::c_int,
     );
     fn dav1d_save_tmvs_avx2(
         rp: *mut refmvs_temporal_block,
@@ -90,7 +86,6 @@ use crate::src::levels::mv;
 
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 
-#[derive(Copy, Clone)]
 #[repr(C, packed)]
 pub struct refmvs_temporal_block {
     pub mv: mv,
@@ -116,7 +111,7 @@ pub struct refmvs_mvpair {
 }
 
 /// For why this unaligned, see the aligned [`refmvs_block`] below.
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C, packed)]
 pub struct refmvs_block_unaligned {
     pub mv: refmvs_mvpair,
@@ -133,11 +128,10 @@ pub struct refmvs_block_unaligned {
 /// into an inner packed [`refmvs_block_unaligned`]
 /// and an outer aligned [`refmvs_block`]
 /// that is just a wrapper over the real [`refmvs_block_unaligned`].
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C, align(4))]
 pub struct refmvs_block(pub refmvs_block_unaligned);
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct refmvs_frame {
     pub frm_hdr: *const Dav1dFrameHeader,
@@ -164,13 +158,11 @@ pub struct refmvs_frame {
     pub n_tile_threads: libc::c_int,
     pub n_frame_threads: libc::c_int,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct refmvs_tile_range {
     pub start: libc::c_int,
     pub end: libc::c_int,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct refmvs_tile {
     pub rf: *const refmvs_frame,
@@ -212,7 +204,6 @@ pub type splat_mv_fn = Option<
     unsafe extern "C" fn(*mut *mut refmvs_block, usize, &refmvs_block, usize, usize, usize) -> (),
 >;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dRefmvsDSPContext {
     pub load_tmvs: load_tmvs_fn,
@@ -1030,7 +1021,7 @@ pub unsafe fn dav1d_refmvs_find(
                         continue;
                     }
                 }
-                for mut cand in &mut same[m..2] {
+                for cand in &mut same[m..2] {
                     cand.mv.mv[n] = tgmv[n];
                 }
             }
@@ -1099,7 +1090,7 @@ pub unsafe fn dav1d_refmvs_find(
     assert!(*cnt <= 8);
 
     // clamping
-    let mut n_refmvs = *cnt;
+    let n_refmvs = *cnt;
     if n_refmvs != 0 {
         let left = -(bx4 + bw4 + 4) * 4 * 8;
         let right = (rf.iw4 - bx4 + 4) * 4 * 8;
@@ -1143,7 +1134,7 @@ pub unsafe fn dav1d_refmvs_save_tmvs(
     col_end8 = imin(col_end8, (*rf).iw8);
     let stride: ptrdiff_t = (*rf).rp_stride;
     let ref_sign: *const uint8_t = ((*rf).mfmv_sign).as_ptr();
-    let mut rp: *mut refmvs_temporal_block = (*rf).rp.offset(row_start8 as isize * stride);
+    let rp: *mut refmvs_temporal_block = (*rf).rp.offset(row_start8 as isize * stride);
 
     (*dsp).save_tmvs.expect("non-null function pointer")(
         rp,
@@ -1360,7 +1351,7 @@ pub unsafe extern "C" fn save_tmvs_c(
                 let mut n = 0;
                 while n < bw8 {
                     *rp.offset(x as isize) = {
-                        let mut init = refmvs_temporal_block {
+                        let init = refmvs_temporal_block {
                             mv: (*cand_b).0.mv.mv[1],
                             r#ref: (*cand_b).0.r#ref.r#ref[1],
                         };
@@ -1378,7 +1369,7 @@ pub unsafe extern "C" fn save_tmvs_c(
                 let mut n_0 = 0;
                 while n_0 < bw8 {
                     *rp.offset(x as isize) = {
-                        let mut init = refmvs_temporal_block {
+                        let init = refmvs_temporal_block {
                             mv: (*cand_b).0.mv.mv[0],
                             r#ref: (*cand_b).0.r#ref.r#ref[0],
                         };
@@ -1408,10 +1399,10 @@ pub unsafe fn dav1d_refmvs_init_frame(
     rf: *mut refmvs_frame,
     seq_hdr: *const Dav1dSequenceHeader,
     frm_hdr: *const Dav1dFrameHeader,
-    mut ref_poc: *const libc::c_uint,
+    ref_poc: *const libc::c_uint,
     rp: *mut refmvs_temporal_block,
-    mut ref_ref_poc: *const [libc::c_uint; 7],
-    mut rp_ref: *const *mut refmvs_temporal_block,
+    ref_ref_poc: *const [libc::c_uint; 7],
+    rp_ref: *const *mut refmvs_temporal_block,
     n_tile_threads: libc::c_int,
     n_frame_threads: libc::c_int,
 ) -> libc::c_int {
@@ -1627,10 +1618,10 @@ mod ffi {
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     wrap_splat_mv!(dav1d_splat_mv_sse2);
 
-    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    #[cfg(target_arch = "x86_64")]
     wrap_splat_mv!(dav1d_splat_mv_avx2);
 
-    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    #[cfg(target_arch = "x86_64")]
     wrap_splat_mv!(dav1d_splat_mv_avx512icl);
 
     #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
@@ -1649,7 +1640,7 @@ unsafe extern "C" fn splat_mv_rust(
     let rr = unsafe { std::slice::from_raw_parts_mut(rr, rr_len) };
 
     for r in &mut rr[..bh4] {
-        std::slice::from_raw_parts_mut(*r, bx4 + bw4)[bx4..].fill(*rmv);
+        std::slice::from_raw_parts_mut(*r, bx4 + bw4)[bx4..].fill_with(|| rmv.clone())
     }
 }
 

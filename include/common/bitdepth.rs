@@ -154,6 +154,7 @@ pub trait BitDepth: Clone + Copy {
 
 #[derive(Clone, Copy)]
 pub struct BitDepth8 {
+    #[allow(dead_code)] // For parity with [`BitDepth16`], where it is used.
     bitdepth_max: <Self as BitDepth>::BitDepthMax,
 }
 

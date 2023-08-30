@@ -17,7 +17,6 @@ use libc::pthread_mutex_lock;
 use libc::pthread_mutex_t;
 use libc::pthread_mutex_unlock;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dMemPool {
     pub lock: pthread_mutex_t,
@@ -25,7 +24,6 @@ pub struct Dav1dMemPool {
     pub ref_cnt: libc::c_int,
     pub end: libc::c_int,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dMemPoolBuffer {
     pub data: *mut libc::c_void,
@@ -34,10 +32,7 @@ pub struct Dav1dMemPoolBuffer {
 use libc::pthread_mutexattr_t;
 
 #[inline]
-pub unsafe extern "C" fn dav1d_alloc_aligned(
-    mut sz: size_t,
-    mut align: size_t,
-) -> *mut libc::c_void {
+pub unsafe extern "C" fn dav1d_alloc_aligned(sz: size_t, align: size_t) -> *mut libc::c_void {
     if align & align.wrapping_sub(1) != 0 {
         unreachable!();
     }
@@ -49,13 +44,13 @@ pub unsafe extern "C" fn dav1d_alloc_aligned(
 }
 
 #[inline]
-pub unsafe extern "C" fn dav1d_free_aligned(mut ptr: *mut libc::c_void) {
+pub unsafe extern "C" fn dav1d_free_aligned(ptr: *mut libc::c_void) {
     free(ptr);
 }
 
 #[inline]
-pub unsafe extern "C" fn dav1d_freep_aligned(mut ptr: *mut libc::c_void) {
-    let mut mem: *mut *mut libc::c_void = ptr as *mut *mut libc::c_void;
+pub unsafe extern "C" fn dav1d_freep_aligned(ptr: *mut libc::c_void) {
+    let mem: *mut *mut libc::c_void = ptr as *mut *mut libc::c_void;
     if !(*mem).is_null() {
         dav1d_free_aligned(*mem);
         *mem = 0 as *mut libc::c_void;
@@ -63,8 +58,8 @@ pub unsafe extern "C" fn dav1d_freep_aligned(mut ptr: *mut libc::c_void) {
 }
 
 #[inline]
-pub unsafe extern "C" fn freep(mut ptr: *mut libc::c_void) {
-    let mut mem: *mut *mut libc::c_void = ptr as *mut *mut libc::c_void;
+pub unsafe extern "C" fn freep(ptr: *mut libc::c_void) {
+    let mem: *mut *mut libc::c_void = ptr as *mut *mut libc::c_void;
     if !(*mem).is_null() {
         free(*mem);
         *mem = 0 as *mut libc::c_void;
@@ -104,8 +99,8 @@ pub unsafe fn dav1d_mem_pool_pop(pool: *mut Dav1dMemPool, size: size_t) -> *mut 
     pthread_mutex_lock(&mut (*pool).lock);
     let mut buf: *mut Dav1dMemPoolBuffer = (*pool).buf;
     (*pool).ref_cnt += 1;
-    let mut data: *mut uint8_t = 0 as *mut uint8_t;
-    let mut current_block_20: u64;
+    let mut data: *mut uint8_t;
+    let current_block_20: u64;
     if !buf.is_null() {
         (*pool).buf = (*buf).next;
         pthread_mutex_unlock(&mut (*pool).lock);

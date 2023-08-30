@@ -3,6 +3,7 @@ use ::libc;
 extern "C" {
     fn memcmp(_: *const libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> libc::c_int;
     fn dav1d_cpu_cpuid(regs: *mut CpuidRegisters, leaf: libc::c_uint, subleaf: libc::c_uint);
+    #[cfg(target_arch = "x86_64")]
     fn dav1d_cpu_xgetbv(xcr: libc::c_uint) -> uint64_t;
 }
 
@@ -14,7 +15,7 @@ pub const DAV1D_X86_CPU_FLAG_SSE41: CpuFlags = 4;
 pub const DAV1D_X86_CPU_FLAG_SSSE3: CpuFlags = 2;
 pub const DAV1D_X86_CPU_FLAG_SSE2: CpuFlags = 1;
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct CpuidRegisters {
     pub eax: uint32_t,
@@ -22,13 +23,12 @@ pub struct CpuidRegisters {
     pub edx: uint32_t,
     pub ecx: uint32_t,
 }
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct C2RustUnnamed {
     pub max_leaf: uint32_t,
     pub vendor: [libc::c_char; 12],
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub union C2RustUnnamed_0 {
     pub r: CpuidRegisters,

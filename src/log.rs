@@ -24,7 +24,6 @@ use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::data::Dav1dData;
 use crate::include::dav1d::picture::Dav1dPicAllocator;
 use crate::include::dav1d::picture::Dav1dPicture;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContext {
     pub fc: *mut Dav1dFrameContext,
@@ -94,7 +93,6 @@ use crate::src::internal::Dav1dContext_intra_edge;
 
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::refmvs::Dav1dRefmvsDSPContext;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dDSPContext {
     pub fg: Dav1dFilmGrainDSPContext,
@@ -111,7 +109,6 @@ use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
 use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
 pub type coef = ();
 use crate::src::mc::Dav1dMCDSPContext;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dIntraPredDSPContext {
     pub intra_pred: [angular_ipred_fn; 14],
@@ -163,7 +160,6 @@ pub type angular_ipred_fn = Option<
         libc::c_int,
     ) -> (),
 >;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFilmGrainDSPContext {
     pub generate_grain_y: generate_grain_y_fn,
@@ -220,7 +216,6 @@ use crate::src::internal::Dav1dContext_refs;
 use crate::src::internal::Dav1dTileGroup;
 use crate::src::internal::TaskThreadData;
 use crate::src::picture::Dav1dThreadPicture;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTaskContext {
     pub c: *const Dav1dContext,
@@ -259,7 +254,6 @@ use crate::src::internal::Dav1dTileState;
 use crate::src::refmvs::refmvs_frame;
 use crate::src::refmvs::refmvs_temporal_block;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext {
     pub seq_hdr_ref: *mut Dav1dRef,
@@ -325,7 +319,6 @@ use crate::src::internal::Dav1dFrameContext_lf;
 use crate::src::internal::Dav1dFrameContext_frame_thread;
 
 use crate::src::levels::Av1Block;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext_bd_fn {
     pub recon_b_intra: recon_b_intra_fn,
@@ -362,11 +355,7 @@ pub unsafe extern "C" fn dav1d_log_default_callback(
 }
 #[no_mangle]
 #[cold]
-pub unsafe extern "C" fn dav1d_log(
-    c: *mut Dav1dContext,
-    format: *const libc::c_char,
-    mut args: ...
-) {
+pub unsafe extern "C" fn dav1d_log(c: *mut Dav1dContext, format: *const libc::c_char, args: ...) {
     if c.is_null() {
         fprintf(
             stderr,

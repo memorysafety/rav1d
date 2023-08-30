@@ -9,7 +9,7 @@ use crate::include::stddef::ptrdiff_t;
 use crate::include::stdint::uintptr_t;
 use crate::src::r#ref::Dav1dRef;
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dPictureParameters {
     pub w: libc::c_int,
@@ -18,7 +18,7 @@ pub struct Dav1dPictureParameters {
     pub bpc: libc::c_int,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dPicture {
     pub seq_hdr: *mut Dav1dSequenceHeader,
@@ -41,7 +41,7 @@ pub struct Dav1dPicture {
     pub allocator_data: *mut libc::c_void,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dPicAllocator {
     pub cookie: *mut libc::c_void,

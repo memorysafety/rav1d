@@ -41,16 +41,16 @@ unsafe extern "C" fn loop_filter(
         let mut p4 = 0;
         let mut p3 = 0;
         let mut p2 = 0;
-        let mut p1 = *dst.offset(strideb * -(2 as libc::c_int) as isize) as libc::c_int;
-        let mut p0 = *dst.offset(strideb * -(1 as libc::c_int) as isize) as libc::c_int;
-        let mut q0 = *dst.offset((strideb * 0) as isize) as libc::c_int;
-        let mut q1 = *dst.offset((strideb * 1) as isize) as libc::c_int;
+        let p1 = *dst.offset(strideb * -(2 as libc::c_int) as isize) as libc::c_int;
+        let p0 = *dst.offset(strideb * -(1 as libc::c_int) as isize) as libc::c_int;
+        let q0 = *dst.offset((strideb * 0) as isize) as libc::c_int;
+        let q1 = *dst.offset((strideb * 1) as isize) as libc::c_int;
         let mut q2 = 0;
         let mut q3 = 0;
         let mut q4 = 0;
         let mut q5 = 0;
         let mut q6 = 0;
-        let mut fm = 0;
+        let mut fm;
         let mut flat8out = 0;
         let mut flat8in = 0;
         fm = ((p1 - p0).abs() <= I
@@ -157,8 +157,8 @@ unsafe extern "C" fn loop_filter(
                         -(128 as libc::c_int) * ((1 as libc::c_int) << bitdepth_min_8),
                         128 * ((1 as libc::c_int) << bitdepth_min_8) - 1,
                     );
-                    let mut f1 = 0;
-                    let mut f2 = 0;
+                    let f1;
+                    let f2;
                     f = iclip(
                         3 * (q0 - p0) + f,
                         -(128 as libc::c_int) * ((1 as libc::c_int) << bitdepth_min_8),
@@ -176,8 +176,8 @@ unsafe extern "C" fn loop_filter(
                         -(128 as libc::c_int) * ((1 as libc::c_int) << bitdepth_min_8),
                         128 * ((1 as libc::c_int) << bitdepth_min_8) - 1,
                     );
-                    let mut f1_0 = 0;
-                    let mut f2_0 = 0;
+                    let f1_0;
+                    let f2_0;
                     f1_0 = imin(f_0 + 4, ((128 as libc::c_int) << bitdepth_min_8) - 1) >> 3;
                     f2_0 = imin(f_0 + 3, ((128 as libc::c_int) << bitdepth_min_8) - 1) >> 3;
                     *dst.offset(strideb * -(1 as libc::c_int) as isize) =
@@ -222,8 +222,8 @@ unsafe extern "C" fn loop_filter_h_sb128y_rust(
     stride: ptrdiff_t,
     vmask: *const uint32_t,
     mut l: *const [uint8_t; 4],
-    mut b4_stride: ptrdiff_t,
-    mut lut: *const Av1FilterLUT,
+    b4_stride: ptrdiff_t,
+    lut: *const Av1FilterLUT,
     _h: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
@@ -288,8 +288,8 @@ unsafe extern "C" fn loop_filter_v_sb128y_rust(
     stride: ptrdiff_t,
     vmask: *const uint32_t,
     mut l: *const [uint8_t; 4],
-    mut b4_stride: ptrdiff_t,
-    mut lut: *const Av1FilterLUT,
+    b4_stride: ptrdiff_t,
+    lut: *const Av1FilterLUT,
     _w: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
@@ -354,8 +354,8 @@ unsafe extern "C" fn loop_filter_h_sb128uv_rust(
     stride: ptrdiff_t,
     vmask: *const uint32_t,
     mut l: *const [uint8_t; 4],
-    mut b4_stride: ptrdiff_t,
-    mut lut: *const Av1FilterLUT,
+    b4_stride: ptrdiff_t,
+    lut: *const Av1FilterLUT,
     _h: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
@@ -416,8 +416,8 @@ unsafe extern "C" fn loop_filter_v_sb128uv_rust(
     stride: ptrdiff_t,
     vmask: *const uint32_t,
     mut l: *const [uint8_t; 4],
-    mut b4_stride: ptrdiff_t,
-    mut lut: *const Av1FilterLUT,
+    b4_stride: ptrdiff_t,
+    lut: *const Av1FilterLUT,
     _w: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {

@@ -3,7 +3,7 @@ use crate::include::stddef::size_t;
 use crate::include::stdint::uint8_t;
 use crate::src::r#ref::Dav1dRef;
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dData {
     pub data: *const uint8_t,

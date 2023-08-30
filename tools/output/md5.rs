@@ -5,7 +5,6 @@ use rav1d::include::stdint::uint32_t;
 use rav1d::include::stdint::uint64_t;
 use rav1d::include::stdint::uint8_t;
 extern "C" {
-    pub type Dav1dRef;
     fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
     fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut libc::FILE;
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
@@ -25,7 +24,6 @@ use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 
 use rav1d::include::dav1d::picture::Dav1dPicture;
 use rav1d::include::dav1d::picture::Dav1dPictureParameters;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct MuxerPriv {
     pub abcd: [uint32_t; 4],
@@ -33,13 +31,11 @@ pub struct MuxerPriv {
     pub len: uint64_t,
     pub f: *mut libc::FILE,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub union C2RustUnnamed {
     pub data: [uint8_t; 64],
     pub data32: [uint32_t; 16],
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Muxer {
     pub priv_data_size: libc::c_int,
@@ -709,7 +705,7 @@ unsafe extern "C" fn md5_verify(
 }
 #[no_mangle]
 pub static mut md5_muxer: Muxer = {
-    let mut init = Muxer {
+    let init = Muxer {
         priv_data_size: ::core::mem::size_of::<MD5Context>() as libc::c_ulong as libc::c_int,
         name: b"md5\0" as *const u8 as *const libc::c_char,
         extension: b"md5\0" as *const u8 as *const libc::c_char,

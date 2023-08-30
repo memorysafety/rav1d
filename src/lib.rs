@@ -7,14 +7,10 @@ use cfg_if::cfg_if;
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: size_t) -> *mut libc::c_void;
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: size_t) -> *mut libc::c_void;
+    #[cfg(target_os = "linux")]
     fn dlsym(__handle: *mut libc::c_void, __name: *const libc::c_char) -> *mut libc::c_void;
     fn calloc(_: size_t, _: size_t) -> *mut libc::c_void;
     fn free(_: *mut libc::c_void);
-    fn posix_memalign(
-        __memptr: *mut *mut libc::c_void,
-        __alignment: size_t,
-        __size: size_t,
-    ) -> libc::c_int;
     fn abort() -> !;
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
     fn dav1d_num_logical_processors(c: *mut Dav1dContext) -> libc::c_int;
@@ -93,7 +89,6 @@ use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::data::Dav1dData;
 use crate::include::dav1d::picture::Dav1dPicAllocator;
 use crate::include::dav1d::picture::Dav1dPicture;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContext {
     pub fc: *mut Dav1dFrameContext,
@@ -182,7 +177,6 @@ use crate::src::intra_edge::EdgeFlags;
 use crate::src::refmvs::dav1d_refmvs_clear;
 use crate::src::refmvs::dav1d_refmvs_init;
 use crate::src::refmvs::Dav1dRefmvsDSPContext;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dDSPContext {
     pub fg: Dav1dFilmGrainDSPContext,
@@ -199,7 +193,6 @@ use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
 use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
 pub type coef = ();
 use crate::src::mc::Dav1dMCDSPContext;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dIntraPredDSPContext {
     pub intra_pred: [angular_ipred_fn; 14],
@@ -251,7 +244,6 @@ pub type angular_ipred_fn = Option<
         libc::c_int,
     ) -> (),
 >;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFilmGrainDSPContext {
     pub generate_grain_y: generate_grain_y_fn,
@@ -318,7 +310,6 @@ use crate::src::picture::dav1d_thread_picture_move_ref;
 use crate::src::picture::dav1d_thread_picture_ref;
 use crate::src::picture::dav1d_thread_picture_unref;
 use crate::src::picture::Dav1dThreadPicture;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTaskContext {
     pub c: *const Dav1dContext,
@@ -359,7 +350,6 @@ use crate::src::internal::Dav1dTileState;
 use crate::src::refmvs::refmvs_frame;
 use crate::src::refmvs::refmvs_temporal_block;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext {
     pub seq_hdr_ref: *mut Dav1dRef,
@@ -427,7 +417,6 @@ use crate::src::internal::Dav1dFrameContext_lf;
 use crate::src::internal::CodedBlockInfo;
 use crate::src::internal::Dav1dFrameContext_frame_thread;
 use crate::src::levels::Av1Block;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext_bd_fn {
     pub recon_b_intra: recon_b_intra_fn,
@@ -453,7 +442,6 @@ pub type recon_b_intra_fn = Option<
     unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, EdgeFlags, *const Av1Block) -> (),
 >;
 use crate::src::internal::ScalableMotionParams;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dSettings {
     pub n_threads: libc::c_int,
@@ -557,8 +545,8 @@ unsafe extern "C" fn get_stack_size_internal(_thread_attr: *const pthread_attr_t
 unsafe extern "C" fn get_num_threads(
     c: *mut Dav1dContext,
     s: *const Dav1dSettings,
-    mut n_tc: *mut libc::c_uint,
-    mut n_fc: *mut libc::c_uint,
+    n_tc: *mut libc::c_uint,
+    n_fc: *mut libc::c_uint,
 ) {
     static mut fc_lut: [uint8_t; 49] = [
         1 as libc::c_int as uint8_t,
@@ -768,7 +756,7 @@ pub unsafe extern "C" fn dav1d_open(
     if pthread_attr_init(&mut thread_attr) != 0 {
         return -(12 as libc::c_int);
     }
-    let mut stack_size: size_t = 1024 * 1024 * get_stack_size_internal(&mut thread_attr);
+    let stack_size: size_t = 1024 * 1024 * get_stack_size_internal(&mut thread_attr);
     pthread_attr_setstacksize(&mut thread_attr, stack_size);
     *c_out = dav1d_alloc_aligned(::core::mem::size_of::<Dav1dContext>(), 64) as *mut Dav1dContext;
     let c: *mut Dav1dContext = *c_out;
@@ -778,8 +766,8 @@ pub unsafe extern "C" fn dav1d_open(
             0,
             ::core::mem::size_of::<Dav1dContext>(),
         );
-        (*c).allocator = (*s).allocator;
-        (*c).logger = (*s).logger;
+        (*c).allocator = (*s).allocator.clone();
+        (*c).logger = (*s).logger.clone();
         (*c).apply_grain = (*s).apply_grain;
         (*c).operating_point = (*s).operating_point;
         (*c).all_layers = (*s).all_layers;
@@ -1122,7 +1110,7 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
 ) -> libc::c_int {
     let mut current_block: u64;
     let mut buf: Dav1dData = {
-        let mut init = Dav1dData {
+        let init = Dav1dData {
             data: 0 as *const uint8_t,
             sz: 0,
             r#ref: 0 as *mut Dav1dRef,
@@ -1139,7 +1127,7 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
         };
         init
     };
-    let mut res = 0;
+    let mut res;
     if out.is_null() {
         fprintf(
             stderr,
@@ -1237,7 +1225,7 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
     return res;
 }
 unsafe extern "C" fn has_grain(pic: *const Dav1dPicture) -> libc::c_int {
-    let mut fgdata: *const Dav1dFilmGrainData = &mut (*(*pic).frame_hdr).film_grain.data;
+    let fgdata: *const Dav1dFilmGrainData = &mut (*(*pic).frame_hdr).film_grain.data;
     return ((*fgdata).num_y_points != 0
         || (*fgdata).num_uv_points[0] != 0
         || (*fgdata).num_uv_points[1] != 0
@@ -1388,7 +1376,7 @@ unsafe extern "C" fn drain_picture(c: *mut Dav1dContext, out: *mut Dav1dPicture)
     return -(11 as libc::c_int);
 }
 unsafe extern "C" fn gen_picture(c: *mut Dav1dContext) -> libc::c_int {
-    let mut res = 0;
+    let mut res;
     let in_0: *mut Dav1dData = &mut (*c).in_0;
     if output_picture_ready(c, 0 as libc::c_int) != 0 {
         return 0 as libc::c_int;
@@ -1459,7 +1447,7 @@ pub unsafe extern "C" fn dav1d_send_data(
         return -(11 as libc::c_int);
     }
     dav1d_data_ref(&mut (*c).in_0, in_0);
-    let mut res = gen_picture(c);
+    let res = gen_picture(c);
     if res == 0 {
         dav1d_data_unref_internal(in_0);
     }
@@ -1492,7 +1480,7 @@ pub unsafe extern "C" fn dav1d_get_picture(
     }
     let drain = (*c).drain;
     (*c).drain = 1 as libc::c_int;
-    let mut res = gen_picture(c);
+    let res = gen_picture(c);
     if res < 0 {
         return res;
     }
@@ -1549,7 +1537,7 @@ pub unsafe extern "C" fn dav1d_apply_grain(
         dav1d_picture_ref(out, in_0);
         return 0 as libc::c_int;
     }
-    let mut res = dav1d_picture_alloc_copy(c, out, (*in_0).p.w, in_0);
+    let res = dav1d_picture_alloc_copy(c, out, (*in_0).p.w, in_0);
     if res < 0 {
         dav1d_picture_unref_internal(out);
         return res;
@@ -1677,7 +1665,7 @@ pub unsafe extern "C" fn dav1d_flush(c: *mut Dav1dContext) {
             dav1d_decode_frame_exit(f, -(1 as libc::c_int));
             (*f).n_tile_data = 0 as libc::c_int;
             (*f).task_thread.retval = 0 as libc::c_int;
-            let mut out_delayed: *mut Dav1dThreadPicture = &mut *((*c).frame_thread.out_delayed)
+            let out_delayed: *mut Dav1dThreadPicture = &mut *((*c).frame_thread.out_delayed)
                 .offset(next as isize)
                 as *mut Dav1dThreadPicture;
             if !((*out_delayed).p.frame_hdr).is_null() {
@@ -1705,7 +1693,7 @@ pub unsafe extern "C" fn dav1d_close(c_out: *mut *mut Dav1dContext) {
     close_internal(c_out, 1 as libc::c_int);
 }
 #[cold]
-unsafe extern "C" fn close_internal(c_out: *mut *mut Dav1dContext, mut flush: libc::c_int) {
+unsafe extern "C" fn close_internal(c_out: *mut *mut Dav1dContext, flush: libc::c_int) {
     let c: *mut Dav1dContext = *c_out;
     if c.is_null() {
         return;
@@ -1714,7 +1702,7 @@ unsafe extern "C" fn close_internal(c_out: *mut *mut Dav1dContext, mut flush: li
         dav1d_flush(c);
     }
     if !((*c).tc).is_null() {
-        let mut ttd: *mut TaskThreadData = &mut (*c).task_thread;
+        let ttd: *mut TaskThreadData = &mut (*c).task_thread;
         if (*ttd).inited != 0 {
             pthread_mutex_lock(&mut (*ttd).lock);
             let mut n: libc::c_uint = 0 as libc::c_int as libc::c_uint;
@@ -1896,7 +1884,7 @@ pub unsafe extern "C" fn dav1d_get_decode_error_data_props(
         return -(22 as libc::c_int);
     }
     dav1d_data_props_unref_internal(out);
-    *out = (*c).cached_error_props;
+    *out = (*c).cached_error_props.clone();
     dav1d_data_props_set_defaults(&mut (*c).cached_error_props);
     return 0 as libc::c_int;
 }

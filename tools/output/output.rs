@@ -3,7 +3,6 @@ use ::libc;
 use libc::size_t;
 use rav1d::include::stdint::uint64_t;
 extern "C" {
-    pub type Dav1dRef;
     pub type MuxerPriv;
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
     fn snprintf(_: *mut libc::c_char, _: size_t, _: *const libc::c_char, _: ...) -> libc::c_int;
@@ -21,7 +20,6 @@ extern "C" {
 }
 use rav1d::include::dav1d::picture::Dav1dPicture;
 use rav1d::include::dav1d::picture::Dav1dPictureParameters;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct MuxerContext {
     pub data: *mut MuxerPriv,
@@ -32,7 +30,6 @@ pub struct MuxerContext {
     pub framenum: libc::c_int,
     pub priv_data: [uint64_t; 0],
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Muxer {
     pub priv_data_size: libc::c_int,
@@ -90,11 +87,11 @@ pub unsafe extern "C" fn output_open(
     name: *const libc::c_char,
     filename: *const libc::c_char,
     p: *const Dav1dPictureParameters,
-    mut fps: *const libc::c_uint,
+    fps: *const libc::c_uint,
 ) -> libc::c_int {
     let mut impl_0: *const Muxer = 0 as *const Muxer;
-    let mut c: *mut MuxerContext = 0 as *mut MuxerContext;
-    let mut i: libc::c_uint = 0;
+    let c: *mut MuxerContext;
+    let mut i: libc::c_uint;
     let mut res = 0;
     let mut name_offset = 0;
     if !name.is_null() {
@@ -282,7 +279,7 @@ unsafe extern "C" fn assemble_filename(
         unreachable!();
     }
     let mut ptr: *const libc::c_char = (*ctx).filename;
-    let mut iptr: *const libc::c_char = 0 as *const libc::c_char;
+    let mut iptr: *const libc::c_char;
     loop {
         iptr = strchr(ptr, '%' as i32);
         if iptr.is_null() {
@@ -344,7 +341,7 @@ unsafe extern "C" fn assemble_filename(
 }
 #[no_mangle]
 pub unsafe extern "C" fn output_write(ctx: *mut MuxerContext, p: *mut Dav1dPicture) -> libc::c_int {
-    let mut res = 0;
+    let mut res;
     if (*ctx).one_file_per_frame != 0 && ((*(*ctx).impl_0).write_header).is_some() {
         let mut filename: [libc::c_char; 1024] = [0; 1024];
         assemble_filename(

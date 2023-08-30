@@ -13,7 +13,6 @@ use crate::include::stdatomic::atomic_int;
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
 use crate::src::r#ref::Dav1dRef;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext {
     pub seq_hdr_ref: *mut Dav1dRef,
@@ -100,7 +99,6 @@ use crate::src::refmvs::refmvs_frame;
 
 use crate::src::env::BlockContext;
 use crate::src::refmvs::refmvs_temporal_block;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFrameContext_bd_fn {
     pub recon_b_intra: recon_b_intra_fn,
@@ -118,7 +116,6 @@ pub type read_coef_blocks_fn =
     Option<unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> ()>;
 use crate::src::levels::BlockSize;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dTaskContext {
     pub c: *const Dav1dContext,
@@ -152,7 +149,6 @@ use crate::src::refmvs::refmvs_tile;
 
 use crate::src::internal::Dav1dTileState;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dContext {
     pub fc: *mut Dav1dFrameContext,
@@ -224,7 +220,6 @@ use crate::src::internal::Dav1dContext_intra_edge;
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::refmvs::Dav1dRefmvsDSPContext;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dDSPContext {
     pub fg: Dav1dFilmGrainDSPContext,
@@ -240,7 +235,6 @@ use crate::src::itx::Dav1dInvTxfmDSPContext;
 use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
 use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
 use crate::src::mc::Dav1dMCDSPContext;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dIntraPredDSPContext {
     pub intra_pred: [angular_ipred_fn; 14],
@@ -292,7 +286,6 @@ pub type angular_ipred_fn = Option<
         libc::c_int,
     ) -> (),
 >;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dFilmGrainDSPContext {
     pub generate_grain_y: generate_grain_y_fn,
@@ -470,7 +463,7 @@ unsafe extern "C" fn backup_lpf(
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_copy_lpf_8bpc(
     f: *mut Dav1dFrameContext,
-    mut src: *const *mut pixel,
+    src: *const *mut pixel,
     sby: libc::c_int,
 ) {
     let have_tt = ((*(*f).c).n_tc > 1 as libc::c_uint) as libc::c_int;
@@ -628,10 +621,10 @@ pub unsafe extern "C" fn dav1d_copy_lpf_8bpc(
 unsafe extern "C" fn filter_plane_cols_y(
     f: *const Dav1dFrameContext,
     have_left: libc::c_int,
-    mut lvl: *const [uint8_t; 4],
+    lvl: *const [uint8_t; 4],
     b4_stride: ptrdiff_t,
     mask: *const [[uint16_t; 2]; 3],
-    mut dst: *mut pixel,
+    dst: *mut pixel,
     ls: ptrdiff_t,
     w: libc::c_int,
     starty4: libc::c_int,
@@ -718,7 +711,7 @@ unsafe extern "C" fn filter_plane_rows_y(
 unsafe extern "C" fn filter_plane_cols_uv(
     f: *const Dav1dFrameContext,
     have_left: libc::c_int,
-    mut lvl: *const [uint8_t; 4],
+    lvl: *const [uint8_t; 4],
     b4_stride: ptrdiff_t,
     mask: *const [[uint16_t; 2]; 2],
     u: *mut pixel,
@@ -830,13 +823,13 @@ unsafe extern "C" fn filter_plane_rows_uv(
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_8bpc(
     f: *const Dav1dFrameContext,
-    mut p: *const *mut pixel,
+    p: *const *mut pixel,
     lflvl: *mut Av1Filter,
-    mut sby: libc::c_int,
+    sby: libc::c_int,
     start_of_tile_row: libc::c_int,
 ) {
-    let mut x = 0;
-    let mut have_left = 0;
+    let mut x;
+    let mut have_left;
     let is_sb64 = ((*(*f).seq_hdr).sb128 == 0) as libc::c_int;
     let starty4 = (sby & is_sb64) << 4;
     let sbsz = 32 >> is_sb64;
@@ -925,7 +918,7 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_8bpc(
         tile_col += 1;
     }
     if start_of_tile_row != 0 {
-        let mut a: *const BlockContext = 0 as *const BlockContext;
+        let mut a: *const BlockContext;
         x = 0 as libc::c_int;
         a = &mut *((*f).a).offset(((*f).sb128w * (start_of_tile_row - 1)) as isize)
             as *mut BlockContext;
@@ -986,7 +979,7 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_8bpc(
             a = a.offset(1);
         }
     }
-    let mut ptr: *mut pixel = 0 as *mut pixel;
+    let mut ptr: *mut pixel;
     let mut level_ptr: *mut [uint8_t; 4] =
         ((*f).lf.level).offset(((*f).b4_stride * sby as isize * sbsz as isize) as isize);
     ptr = *p.offset(0);
@@ -1013,7 +1006,7 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_8bpc(
     if (*(*f).frame_hdr).loopfilter.level_u == 0 && (*(*f).frame_hdr).loopfilter.level_v == 0 {
         return;
     }
-    let mut uv_off: ptrdiff_t = 0;
+    let mut uv_off: ptrdiff_t;
     level_ptr = ((*f).lf.level).offset(((*f).b4_stride * (sby * sbsz >> ss_ver) as isize) as isize);
     uv_off = 0 as libc::c_int as ptrdiff_t;
     have_left = 0 as libc::c_int;
@@ -1042,11 +1035,11 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_8bpc(
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_loopfilter_sbrow_rows_8bpc(
     f: *const Dav1dFrameContext,
-    mut p: *const *mut pixel,
+    p: *const *mut pixel,
     lflvl: *mut Av1Filter,
-    mut sby: libc::c_int,
+    sby: libc::c_int,
 ) {
-    let mut x = 0;
+    let mut x;
     let have_top = (sby > 0) as libc::c_int;
     let is_sb64 = ((*(*f).seq_hdr).sb128 == 0) as libc::c_int;
     let starty4 = (sby & is_sb64) << 4;
@@ -1057,7 +1050,7 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_rows_8bpc(
         != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint) as libc::c_int;
     let endy4: libc::c_uint = (starty4 + imin((*f).h4 - sby * sbsz, sbsz)) as libc::c_uint;
     let uv_endy4: libc::c_uint = endy4.wrapping_add(ss_ver as libc::c_uint) >> ss_ver;
-    let mut ptr: *mut pixel = 0 as *mut pixel;
+    let mut ptr: *mut pixel;
     let mut level_ptr: *mut [uint8_t; 4] =
         ((*f).lf.level).offset(((*f).b4_stride * sby as isize * sbsz as isize) as isize);
     ptr = *p.offset(0);
@@ -1082,7 +1075,7 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_rows_8bpc(
     if (*(*f).frame_hdr).loopfilter.level_u == 0 && (*(*f).frame_hdr).loopfilter.level_v == 0 {
         return;
     }
-    let mut uv_off: ptrdiff_t = 0;
+    let mut uv_off: ptrdiff_t;
     level_ptr = ((*f).lf.level).offset(((*f).b4_stride * (sby * sbsz >> ss_ver) as isize) as isize);
     uv_off = 0 as libc::c_int as ptrdiff_t;
     x = 0 as libc::c_int;
