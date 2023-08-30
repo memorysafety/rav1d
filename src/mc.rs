@@ -1558,12 +1558,12 @@ filter_fns!(
 
 // TODO(legare): Temporarily pub until init fns are deduplicated.
 pub(crate) unsafe extern "C" fn put_bilin_c_erased<BD: BitDepth>(
-    mut dst: *mut DynPixel,
-    mut dst_stride: ptrdiff_t,
-    mut src: *const DynPixel,
-    mut src_stride: ptrdiff_t,
+    dst: *mut DynPixel,
+    dst_stride: ptrdiff_t,
+    src: *const DynPixel,
+    src_stride: ptrdiff_t,
     w: libc::c_int,
-    mut h: libc::c_int,
+    h: libc::c_int,
     mx: libc::c_int,
     my: libc::c_int,
     bitdepth_max: libc::c_int,
@@ -1583,11 +1583,11 @@ pub(crate) unsafe extern "C" fn put_bilin_c_erased<BD: BitDepth>(
 
 // TODO(legare): Temporarily pub until init fns are deduplicated.
 pub(crate) unsafe extern "C" fn prep_bilin_c_erased<BD: BitDepth>(
-    mut tmp: *mut int16_t,
-    mut src: *const DynPixel,
-    mut src_stride: ptrdiff_t,
+    tmp: *mut int16_t,
+    src: *const DynPixel,
+    src_stride: ptrdiff_t,
     w: libc::c_int,
-    mut h: libc::c_int,
+    h: libc::c_int,
     mx: libc::c_int,
     my: libc::c_int,
     bitdepth_max: libc::c_int,
@@ -1606,14 +1606,14 @@ pub(crate) unsafe extern "C" fn prep_bilin_c_erased<BD: BitDepth>(
 
 // TODO(legare): Temporarily pub until init fns are deduplicated.
 pub(crate) unsafe extern "C" fn put_bilin_scaled_c_erased<BD: BitDepth>(
-    mut dst: *mut DynPixel,
-    mut dst_stride: ptrdiff_t,
-    mut src: *const DynPixel,
-    mut src_stride: ptrdiff_t,
+    dst: *mut DynPixel,
+    dst_stride: ptrdiff_t,
+    src: *const DynPixel,
+    src_stride: ptrdiff_t,
     w: libc::c_int,
-    mut h: libc::c_int,
+    h: libc::c_int,
     mx: libc::c_int,
-    mut my: libc::c_int,
+    my: libc::c_int,
     dx: libc::c_int,
     dy: libc::c_int,
     bitdepth_max: libc::c_int,
@@ -1635,13 +1635,13 @@ pub(crate) unsafe extern "C" fn put_bilin_scaled_c_erased<BD: BitDepth>(
 
 // TODO(legare): Temporarily pub until init fns are deduplicated.
 pub(crate) unsafe extern "C" fn prep_bilin_scaled_c_erased<BD: BitDepth>(
-    mut tmp: *mut int16_t,
-    mut src: *const DynPixel,
-    mut src_stride: ptrdiff_t,
+    tmp: *mut int16_t,
+    src: *const DynPixel,
+    src_stride: ptrdiff_t,
     w: libc::c_int,
-    mut h: libc::c_int,
+    h: libc::c_int,
     mx: libc::c_int,
-    mut my: libc::c_int,
+    my: libc::c_int,
     dx: libc::c_int,
     dy: libc::c_int,
     bitdepth_max: libc::c_int,
@@ -1662,12 +1662,12 @@ pub(crate) unsafe extern "C" fn prep_bilin_scaled_c_erased<BD: BitDepth>(
 
 // TODO(legare): Temporarily pub until init fns are deduplicated.
 pub(crate) unsafe extern "C" fn avg_c_erased<BD: BitDepth>(
-    mut dst: *mut DynPixel,
+    dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
-    mut tmp1: *const int16_t,
-    mut tmp2: *const int16_t,
+    tmp1: *const int16_t,
+    tmp2: *const int16_t,
     w: libc::c_int,
-    mut h: libc::c_int,
+    h: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
     avg_rust(
@@ -1735,7 +1735,7 @@ pub(crate) unsafe extern "C" fn w_mask_444_c_erased<BD: BitDepth>(
     tmp2: *const int16_t,
     w: libc::c_int,
     h: libc::c_int,
-    mut mask: *mut uint8_t,
+    mask: *mut uint8_t,
     sign: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
@@ -1763,7 +1763,7 @@ pub(crate) unsafe extern "C" fn w_mask_422_c_erased<BD: BitDepth>(
     tmp2: *const int16_t,
     w: libc::c_int,
     h: libc::c_int,
-    mut mask: *mut uint8_t,
+    mask: *mut uint8_t,
     sign: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
@@ -1791,7 +1791,7 @@ pub(crate) unsafe extern "C" fn w_mask_420_c_erased<BD: BitDepth>(
     tmp2: *const int16_t,
     w: libc::c_int,
     h: libc::c_int,
-    mut mask: *mut uint8_t,
+    mask: *mut uint8_t,
     sign: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
@@ -2158,10 +2158,7 @@ macro_rules! decl_fn {
 #[cfg(feature = "asm")]
 macro_rules! decl_fns {
     ($mc_kind:ident, $name:ident) => {
-        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         decl_fns!($mc_kind, $name, sse2);
-
-        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         decl_fns!($mc_kind, $name, ssse3);
 
         #[cfg(target_arch = "x86_64")]
@@ -2169,9 +2166,6 @@ macro_rules! decl_fns {
 
         #[cfg(target_arch = "x86_64")]
         decl_fns!($mc_kind, $name, avx512icl);
-
-        #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
-        decl_fns!($mc_kind, $name, neon);
     };
 
     ($mc_kind:ident, $name:ident, $suffix:ident) => {
@@ -2184,6 +2178,8 @@ macro_rules! decl_fns {
     };
 }
 
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+#[allow(dead_code)] // Macro invocations generate more fn declarations than are actually used.
 extern "C" {
     decl_fns!(mc, dav1d_put_8tap_regular);
     decl_fns!(mc, dav1d_put_8tap_regular_smooth);
@@ -2246,4 +2242,44 @@ extern "C" {
 
     decl_fns!(emu_edge, dav1d_emu_edge);
     decl_fns!(resize, dav1d_resize);
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+extern "C" {
+    decl_fns!(mc, dav1d_put_8tap_regular, neon);
+    decl_fns!(mc, dav1d_put_8tap_regular_smooth, neon);
+    decl_fns!(mc, dav1d_put_8tap_regular_sharp, neon);
+    decl_fns!(mc, dav1d_put_8tap_smooth, neon);
+    decl_fns!(mc, dav1d_put_8tap_smooth_regular, neon);
+    decl_fns!(mc, dav1d_put_8tap_smooth_sharp, neon);
+    decl_fns!(mc, dav1d_put_8tap_sharp, neon);
+    decl_fns!(mc, dav1d_put_8tap_sharp_regular, neon);
+    decl_fns!(mc, dav1d_put_8tap_sharp_smooth, neon);
+    decl_fns!(mc, dav1d_put_bilin, neon);
+
+    decl_fns!(mct, dav1d_prep_8tap_regular, neon);
+    decl_fns!(mct, dav1d_prep_8tap_regular_smooth, neon);
+    decl_fns!(mct, dav1d_prep_8tap_regular_sharp, neon);
+    decl_fns!(mct, dav1d_prep_8tap_smooth, neon);
+    decl_fns!(mct, dav1d_prep_8tap_smooth_regular, neon);
+    decl_fns!(mct, dav1d_prep_8tap_smooth_sharp, neon);
+    decl_fns!(mct, dav1d_prep_8tap_sharp, neon);
+    decl_fns!(mct, dav1d_prep_8tap_sharp_regular, neon);
+    decl_fns!(mct, dav1d_prep_8tap_sharp_smooth, neon);
+    decl_fns!(mct, dav1d_prep_bilin, neon);
+
+    decl_fns!(avg, dav1d_avg, neon);
+    decl_fns!(w_avg, dav1d_w_avg, neon);
+    decl_fns!(mask, dav1d_mask, neon);
+    decl_fns!(w_mask, dav1d_w_mask_420, neon);
+    decl_fns!(w_mask, dav1d_w_mask_422, neon);
+    decl_fns!(w_mask, dav1d_w_mask_444, neon);
+    decl_fns!(blend, dav1d_blend, neon);
+    decl_fns!(blend_dir, dav1d_blend_v, neon);
+    decl_fns!(blend_dir, dav1d_blend_h, neon);
+
+    decl_fns!(warp8x8, dav1d_warp_affine_8x8, neon);
+    decl_fns!(warp8x8t, dav1d_warp_affine_8x8t, neon);
+
+    decl_fns!(emu_edge, dav1d_emu_edge, neon);
 }
