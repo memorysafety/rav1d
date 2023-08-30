@@ -3334,13 +3334,13 @@ int dav1d_decode_frame_init_cdf(Dav1dFrameContext *const f) {
             if (j == f->tile[i].end) {
                 tile_sz = size;
             } else {
-                if (f->frame_hdr->tiling.n_bytes > size) goto error;
+                if (f->frame_hdr->tiling.n_bytes > size) return retval;
                 tile_sz = 0;
                 for (unsigned k = 0; k < f->frame_hdr->tiling.n_bytes; k++)
                     tile_sz |= (unsigned)*data++ << (k * 8);
                 tile_sz++;
                 size -= f->frame_hdr->tiling.n_bytes;
-                if (tile_sz > size) goto error;
+                if (tile_sz > size) return retval;
             }
 
             setup_tile(&f->ts[j], f, data, tile_sz, tile_row, tile_col++,
@@ -3365,7 +3365,6 @@ int dav1d_decode_frame_init_cdf(Dav1dFrameContext *const f) {
     }
 
     retval = 0;
-error:
     return retval;
 }
 
