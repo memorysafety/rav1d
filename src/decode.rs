@@ -6329,13 +6329,11 @@ pub unsafe extern "C" fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retv
                 .wrapping_div(2),
         );
     }
-    let mut i = 0;
-    while i < 7 {
+    for i in 0..7 {
         if !f.refp[i as usize].p.frame_hdr.is_null() {
             dav1d_thread_picture_unref(&mut *f.refp.as_mut_ptr().offset(i as isize));
         }
         dav1d_ref_dec(&mut *f.ref_mvs_ref.as_mut_ptr().offset(i as isize));
-        i += 1;
     }
     dav1d_picture_unref_internal(&mut f.cur);
     dav1d_thread_picture_unref(&mut f.sr_cur);
@@ -6354,10 +6352,8 @@ pub unsafe extern "C" fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retv
     dav1d_ref_dec(&mut f.mvs_ref);
     dav1d_ref_dec(&mut f.seq_hdr_ref);
     dav1d_ref_dec(&mut f.frame_hdr_ref);
-    let mut i = 0;
-    while i < f.n_tile_data {
+    for i in 0..f.n_tile_data {
         dav1d_data_unref_internal(&mut (*f.tile.offset(i as isize)).data);
-        i += 1;
     }
     f.task_thread.retval = retval;
 }
