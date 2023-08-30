@@ -6314,15 +6314,16 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retval: libc::c_int) {
-    let c: *const Dav1dContext = (*f).c;
-    if !((*f).sr_cur.p.data[0]).is_null() {
-        *&mut (*f).task_thread.error = 0;
+    let f = &mut *f; // TODO(kkysen) propagate to arg once we deduplicate the fn decl
+    let c: *const Dav1dContext = f.c;
+    if !f.sr_cur.p.data[0].is_null() {
+        *&mut f.task_thread.error = 0;
     }
-    if (*c).n_fc > 1 && retval != 0 && !((*f).frame_thread.cf).is_null() {
+    if (*c).n_fc > 1 && retval != 0 && !f.frame_thread.cf.is_null() {
         memset(
-            (*f).frame_thread.cf,
+            f.frame_thread.cf,
             0,
-            ((*f).frame_thread.cf_sz as size_t)
+            (f.frame_thread.cf_sz as size_t)
                 .wrapping_mul(128)
                 .wrapping_mul(128)
                 .wrapping_div(2),
@@ -6330,35 +6331,35 @@ pub unsafe extern "C" fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retv
     }
     let mut i = 0;
     while i < 7 {
-        if !((*f).refp[i as usize].p.frame_hdr).is_null() {
-            dav1d_thread_picture_unref(&mut *((*f).refp).as_mut_ptr().offset(i as isize));
+        if !f.refp[i as usize].p.frame_hdr.is_null() {
+            dav1d_thread_picture_unref(&mut *f.refp.as_mut_ptr().offset(i as isize));
         }
-        dav1d_ref_dec(&mut *((*f).ref_mvs_ref).as_mut_ptr().offset(i as isize));
+        dav1d_ref_dec(&mut *f.ref_mvs_ref.as_mut_ptr().offset(i as isize));
         i += 1;
     }
-    dav1d_picture_unref_internal(&mut (*f).cur);
-    dav1d_thread_picture_unref(&mut (*f).sr_cur);
-    dav1d_cdf_thread_unref(&mut (*f).in_cdf);
-    if !((*f).frame_hdr).is_null() && (*(*f).frame_hdr).refresh_context != 0 {
-        if !((*f).out_cdf.progress).is_null() {
+    dav1d_picture_unref_internal(&mut f.cur);
+    dav1d_thread_picture_unref(&mut f.sr_cur);
+    dav1d_cdf_thread_unref(&mut f.in_cdf);
+    if !f.frame_hdr.is_null() && (*f.frame_hdr).refresh_context != 0 {
+        if !f.out_cdf.progress.is_null() {
             ::core::intrinsics::atomic_store_seqcst(
-                (*f).out_cdf.progress,
+                f.out_cdf.progress,
                 if retval == 0 { 1 } else { 2147483647 - 1 },
             );
         }
-        dav1d_cdf_thread_unref(&mut (*f).out_cdf);
+        dav1d_cdf_thread_unref(&mut f.out_cdf);
     }
-    dav1d_ref_dec(&mut (*f).cur_segmap_ref);
-    dav1d_ref_dec(&mut (*f).prev_segmap_ref);
-    dav1d_ref_dec(&mut (*f).mvs_ref);
-    dav1d_ref_dec(&mut (*f).seq_hdr_ref);
-    dav1d_ref_dec(&mut (*f).frame_hdr_ref);
+    dav1d_ref_dec(&mut f.cur_segmap_ref);
+    dav1d_ref_dec(&mut f.prev_segmap_ref);
+    dav1d_ref_dec(&mut f.mvs_ref);
+    dav1d_ref_dec(&mut f.seq_hdr_ref);
+    dav1d_ref_dec(&mut f.frame_hdr_ref);
     let mut i = 0;
-    while i < (*f).n_tile_data {
-        dav1d_data_unref_internal(&mut (*((*f).tile).offset(i as isize)).data);
+    while i < f.n_tile_data {
+        dav1d_data_unref_internal(&mut (*f.tile.offset(i as isize)).data);
         i += 1;
     }
-    (*f).task_thread.retval = retval;
+    f.task_thread.retval = retval;
 }
 
 pub unsafe fn dav1d_decode_frame(f: &mut Dav1dFrameContext) -> libc::c_int {
