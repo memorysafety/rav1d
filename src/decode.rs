@@ -6311,16 +6311,17 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
     }
     return retval;
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retval: libc::c_int) {
     let c: *const Dav1dContext = (*f).c;
     if !((*f).sr_cur.p.data[0]).is_null() {
-        *&mut (*f).task_thread.error = 0 as libc::c_int;
+        *&mut (*f).task_thread.error = 0;
     }
-    if (*c).n_fc > 1 as libc::c_uint && retval != 0 && !((*f).frame_thread.cf).is_null() {
+    if (*c).n_fc > 1 && retval != 0 && !((*f).frame_thread.cf).is_null() {
         memset(
             (*f).frame_thread.cf,
-            0 as libc::c_int,
+            0,
             ((*f).frame_thread.cf_sz as size_t)
                 .wrapping_mul(128)
                 .wrapping_mul(128)
@@ -6342,11 +6343,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retv
         if !((*f).out_cdf.progress).is_null() {
             ::core::intrinsics::atomic_store_seqcst(
                 (*f).out_cdf.progress,
-                (if retval == 0 {
-                    1 as libc::c_int
-                } else {
-                    2147483647 - 1
-                }) as libc::c_uint,
+                if retval == 0 { 1 } else { 2147483647 - 1 },
             );
         }
         dav1d_cdf_thread_unref(&mut (*f).out_cdf);
