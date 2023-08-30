@@ -41,6 +41,9 @@ pub fn dav1d_get_cpu_flags() -> libc::c_uint {
         if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
             use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
             flags |= DAV1D_X86_CPU_FLAG_SSE2;
+        } else {
+            // For `unused_mut`.
+            flags |= 0;
         }
     }
     flags
