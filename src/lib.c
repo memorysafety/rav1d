@@ -129,6 +129,12 @@ COLD int dav1d_get_frame_delay(const Dav1dSettings *const s) {
     return n_fc;
 }
 
+static int dav1d_open_error(Dav1dContext *const c, Dav1dContext **const c_out, pthread_attr_t *const thread_attr) {
+    if (c) close_internal(c_out, 0);
+    pthread_attr_destroy(thread_attr);
+    return DAV1D_ERR(ENOMEM);
+}
+
 COLD int dav1d_open(Dav1dContext **const c_out, const Dav1dSettings *const s) {
     static pthread_once_t initted = PTHREAD_ONCE_INIT;
     pthread_once(&initted, init_internal);
@@ -155,7 +161,7 @@ COLD int dav1d_open(Dav1dContext **const c_out, const Dav1dSettings *const s) {
     pthread_attr_setstacksize(&thread_attr, stack_size);
 
     Dav1dContext *const c = *c_out = dav1d_alloc_aligned(sizeof(*c), 64);
-    if (!c) goto error;
+    if (!c) return dav1d_open_error(c, c_out, &thread_attr);
     memset(c, 0, sizeof(*c));
 
     c->allocator = s->allocator;
@@ -177,19 +183,19 @@ COLD int dav1d_open(Dav1dContext **const c_out, const Dav1dSettings *const s) {
         dav1d_mem_pool_init(&c->refmvs_pool) ||
         dav1d_mem_pool_init(&c->cdf_pool))
     {
-        goto error;
+        return dav1d_open_error(c, c_out, &thread_attr);
     }
 
     if (c->allocator.alloc_picture_callback   == dav1d_default_picture_alloc &&
         c->allocator.release_picture_callback == dav1d_default_picture_release)
     {
-        if (c->allocator.cookie) goto error;
-        if (dav1d_mem_pool_init(&c->picture_pool)) goto error;
+        if (c->allocator.cookie) return dav1d_open_error(c, c_out, &thread_attr);
+        if (dav1d_mem_pool_init(&c->picture_pool)) return dav1d_open_error(c, c_out, &thread_attr);
         c->allocator.cookie = c->picture_pool;
     } else if (c->allocator.alloc_picture_callback   == dav1d_default_picture_alloc ||
                c->allocator.release_picture_callback == dav1d_default_picture_release)
     {
-        goto error;
+        return dav1d_open_error(c, c_out, &thread_attr);
     }
 
     /* On 32-bit systems extremely large frame sizes can cause overflows in
@@ -209,22 +215,22 @@ COLD int dav1d_open(Dav1dContext **const c_out, const Dav1dSettings *const s) {
     get_num_threads(c, s, &c->n_tc, &c->n_fc);
 
     c->fc = dav1d_alloc_aligned(sizeof(*c->fc) * c->n_fc, 32);
-    if (!c->fc) goto error;
+    if (!c->fc) return dav1d_open_error(c, c_out, &thread_attr);
     memset(c->fc, 0, sizeof(*c->fc) * c->n_fc);
 
     c->tc = dav1d_alloc_aligned(sizeof(*c->tc) * c->n_tc, 64);
-    if (!c->tc) goto error;
+    if (!c->tc) return dav1d_open_error(c, c_out, &thread_attr);
     memset(c->tc, 0, sizeof(*c->tc) * c->n_tc);
     if (c->n_tc > 1) {
-        if (pthread_mutex_init(&c->task_thread.lock, NULL)) goto error;
+        if (pthread_mutex_init(&c->task_thread.lock, NULL)) return dav1d_open_error(c, c_out, &thread_attr);
         if (pthread_cond_init(&c->task_thread.cond, NULL)) {
             pthread_mutex_destroy(&c->task_thread.lock);
-            goto error;
+            return dav1d_open_error(c, c_out, &thread_attr);
         }
         if (pthread_cond_init(&c->task_thread.delayed_fg.cond, NULL)) {
             pthread_cond_destroy(&c->task_thread.cond);
             pthread_mutex_destroy(&c->task_thread.lock);
-            goto error;
+            return dav1d_open_error(c, c_out, &thread_attr);
         }
         c->task_thread.cur = c->n_fc;
         atomic_init(&c->task_thread.reset_task_cur, UINT_MAX);
@@ -235,20 +241,20 @@ COLD int dav1d_open(Dav1dContext **const c_out, const Dav1dSettings *const s) {
     if (c->n_fc > 1) {
         c->frame_thread.out_delayed =
             calloc(c->n_fc, sizeof(*c->frame_thread.out_delayed));
-        if (!c->frame_thread.out_delayed) goto error;
+        if (!c->frame_thread.out_delayed) return dav1d_open_error(c, c_out, &thread_attr);
     }
     for (unsigned n = 0; n < c->n_fc; n++) {
         Dav1dFrameContext *const f = &c->fc[n];
         if (c->n_tc > 1) {
-            if (pthread_mutex_init(&f->task_thread.lock, NULL)) goto error;
+            if (pthread_mutex_init(&f->task_thread.lock, NULL)) return dav1d_open_error(c, c_out, &thread_attr);
             if (pthread_cond_init(&f->task_thread.cond, NULL)) {
                 pthread_mutex_destroy(&f->task_thread.lock);
-                goto error;
+                return dav1d_open_error(c, c_out, &thread_attr);
             }
             if (pthread_mutex_init(&f->task_thread.pending_tasks.lock, NULL)) {
                 pthread_cond_destroy(&f->task_thread.cond);
                 pthread_mutex_destroy(&f->task_thread.lock);
-                goto error;
+                return dav1d_open_error(c, c_out, &thread_attr);
             }
         }
         f->c = c;
@@ -264,15 +270,15 @@ COLD int dav1d_open(Dav1dContext **const c_out, const Dav1dSettings *const s) {
         t->c = c;
         memset(t->cf_16bpc, 0, sizeof(t->cf_16bpc));
         if (c->n_tc > 1) {
-            if (pthread_mutex_init(&t->task_thread.td.lock, NULL)) goto error;
+            if (pthread_mutex_init(&t->task_thread.td.lock, NULL)) return dav1d_open_error(c, c_out, &thread_attr);
             if (pthread_cond_init(&t->task_thread.td.cond, NULL)) {
                 pthread_mutex_destroy(&t->task_thread.td.lock);
-                goto error;
+                return dav1d_open_error(c, c_out, &thread_attr);
             }
             if (pthread_create(&t->task_thread.td.thread, &thread_attr, dav1d_worker_task, t)) {
                 pthread_cond_destroy(&t->task_thread.td.cond);
                 pthread_mutex_destroy(&t->task_thread.td.lock);
-                goto error;
+                return dav1d_open_error(c, c_out, &thread_attr);
             }
             t->task_thread.td.inited = 1;
         }
@@ -288,11 +294,6 @@ COLD int dav1d_open(Dav1dContext **const c_out, const Dav1dSettings *const s) {
     pthread_attr_destroy(&thread_attr);
 
     return 0;
-
-error:
-    if (c) close_internal(c_out, 0);
-    pthread_attr_destroy(&thread_attr);
-    return DAV1D_ERR(ENOMEM);
 }
 
 static void dummy_free(const uint8_t *const data, void *const user_data) {
