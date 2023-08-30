@@ -1,5 +1,8 @@
-use std::ptr::{self, addr_of_mut};
-use std::sync::atomic::{AtomicI32, Ordering};
+use std::ptr;
+use std::ptr::addr_of_mut;
+use std::slice;
+use std::sync::atomic::AtomicI32;
+use std::sync::atomic::Ordering;
 
 #[cfg(feature = "bitdepth_16")]
 use crate::include::common::bitdepth::BitDepth16;
@@ -6353,8 +6356,8 @@ pub unsafe extern "C" fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retv
     dav1d_ref_dec(&mut f.mvs_ref);
     dav1d_ref_dec(&mut f.seq_hdr_ref);
     dav1d_ref_dec(&mut f.frame_hdr_ref);
-    for i in 0..f.n_tile_data {
-        dav1d_data_unref_internal(&mut (*f.tile.offset(i as isize)).data);
+    for tile in slice::from_raw_parts_mut(f.tile, f.n_tile_data.try_into().unwrap()) {
+        dav1d_data_unref_internal(&mut tile.data);
     }
     f.task_thread.retval = retval;
 }
