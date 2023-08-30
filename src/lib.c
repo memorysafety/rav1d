@@ -300,6 +300,13 @@ static void dummy_free(const uint8_t *const data, void *const user_data) {
     assert(data && !user_data);
 }
 
+static int dav1d_parse_sequence_header_error(const int res, Dav1dContext *c, Dav1dData *const buf) {
+    dav1d_data_unref_internal(buf);
+    dav1d_close(&c);
+
+    return res;
+}
+
 int dav1d_parse_sequence_header(Dav1dSequenceHeader *const out,
                                 const uint8_t *const ptr, const size_t sz)
 {
@@ -319,12 +326,12 @@ int dav1d_parse_sequence_header(Dav1dSequenceHeader *const out,
 
     if (ptr) {
         res = dav1d_data_wrap_internal(&buf, ptr, sz, dummy_free, NULL);
-        if (res < 0) goto error;
+        if (res < 0) return dav1d_parse_sequence_header_error(res, c, &buf);
     }
 
     while (buf.sz > 0) {
         res = dav1d_parse_obus(c, &buf, 1);
-        if (res < 0) goto error;
+        if (res < 0) return dav1d_parse_sequence_header_error(res, c, &buf);
 
         assert((size_t)res <= buf.sz);
         buf.sz -= res;
@@ -333,17 +340,13 @@ int dav1d_parse_sequence_header(Dav1dSequenceHeader *const out,
 
     if (!c->seq_hdr) {
         res = DAV1D_ERR(ENOENT);
-        goto error;
+        return dav1d_parse_sequence_header_error(res, c, &buf);
     }
 
     memcpy(out, c->seq_hdr, sizeof(*out));
 
     res = 0;
-error:
-    dav1d_data_unref_internal(&buf);
-    dav1d_close(&c);
-
-    return res;
+    return dav1d_parse_sequence_header_error(res, c, &buf);
 }
 
 static int has_grain(const Dav1dPicture *const pic)
