@@ -1181,6 +1181,12 @@ static int check_for_overrun(Dav1dContext *const c, GetBits *const gb,
     return 0;
 }
 
+static int dav1d_parse_obus_error(Dav1dContext *const c, Dav1dData *const in) {
+    dav1d_data_props_copy(&c->cached_error_props, &in->m);
+    dav1d_log(c, "Error parsing OBU data\n");
+    return DAV1D_ERR(EINVAL);
+}
+
 int dav1d_parse_obus(Dav1dContext *const c, Dav1dData *const in, const int global) {
     GetBits gb;
     int res;
@@ -1204,7 +1210,7 @@ int dav1d_parse_obus(Dav1dContext *const c, Dav1dData *const in, const int globa
     // obu length field
     const unsigned len = has_length_field ?
         dav1d_get_uleb128(&gb) : (unsigned) in->sz - 1 - has_extension;
-    if (gb.error) goto error;
+    if (gb.error) return dav1d_parse_obus_error(c, in);
 
     const unsigned init_bit_pos = dav1d_get_bits_pos(&gb);
     const unsigned init_byte_pos = init_bit_pos >> 3;
@@ -1221,7 +1227,7 @@ int dav1d_parse_obus(Dav1dContext *const c, Dav1dData *const in, const int globa
 
     // Make sure that there are enough bits left in the buffer for the
     // rest of the OBU.
-    if (len > in->sz - init_byte_pos) goto error;
+    if (len > in->sz - init_byte_pos) return dav1d_parse_obus_error(c, in);
 
     // skip obu not belonging to the selected temporal/spatial layer
     if (type != DAV1D_OBU_SEQ_HDR && type != DAV1D_OBU_TD &&
@@ -1241,11 +1247,11 @@ int dav1d_parse_obus(Dav1dContext *const c, Dav1dData *const in, const int globa
         Dav1dSequenceHeader *seq_hdr = ref->data;
         if ((res = parse_seq_hdr(c, &gb, seq_hdr)) < 0) {
             dav1d_ref_dec(&ref);
-            goto error;
+            return dav1d_parse_obus_error(c, in);
         }
         if (check_for_overrun(c, &gb, init_bit_pos, len)) {
             dav1d_ref_dec(&ref);
-            goto error;
+            return dav1d_parse_obus_error(c, in);
         }
         // If we have read a sequence header which is different from
         // the old one, this is a new video sequence and can't use any
@@ -1287,7 +1293,7 @@ int dav1d_parse_obus(Dav1dContext *const c, Dav1dData *const in, const int globa
     case DAV1D_OBU_FRAME:
     case DAV1D_OBU_FRAME_HDR:
         if (global) break;
-        if (!c->seq_hdr) goto error;
+        if (!c->seq_hdr) return dav1d_parse_obus_error(c, in);
         if (!c->frame_hdr_ref) {
             c->frame_hdr_ref = dav1d_ref_create_using_pool(c->frame_hdr_pool,
                                                            sizeof(Dav1dFrameHeader));
@@ -1303,7 +1309,7 @@ int dav1d_parse_obus(Dav1dContext *const c, Dav1dData *const in, const int globa
         c->frame_hdr->spatial_id = spatial_id;
         if ((res = parse_frame_hdr(c, &gb)) < 0) {
             c->frame_hdr = NULL;
-            goto error;
+            return dav1d_parse_obus_error(c, in);
         }
         for (int n = 0; n < c->n_tile_data; n++)
             dav1d_data_unref_internal(&c->tile[n].data);
@@ -1315,7 +1321,7 @@ int dav1d_parse_obus(Dav1dContext *const c, Dav1dData *const in, const int globa
             dav1d_get_bit(&gb);
             if (check_for_overrun(c, &gb, init_bit_pos, len)) {
                 c->frame_hdr = NULL;
-                goto error;
+                return dav1d_parse_obus_error(c, in);
             }
         }
 
@@ -1333,7 +1339,7 @@ int dav1d_parse_obus(Dav1dContext *const c, Dav1dData *const in, const int globa
         // OBU_FRAMEs shouldn't be signaled with show_existing_frame
         if (c->frame_hdr->show_existing_frame) {
             c->frame_hdr = NULL;
-            goto error;
+            return dav1d_parse_obus_error(c, in);
         }
 
         // This is the frame header at the start of a frame OBU.
@@ -1343,11 +1349,11 @@ int dav1d_parse_obus(Dav1dContext *const c, Dav1dData *const in, const int globa
         // fall-through
     case DAV1D_OBU_TILE_GRP: {
         if (global) break;
-        if (!c->frame_hdr) goto error;
+        if (!c->frame_hdr) return dav1d_parse_obus_error(c, in);
         if (c->n_tile_data_alloc < c->n_tile_data + 1) {
-            if ((c->n_tile_data + 1) > INT_MAX / (int)sizeof(*c->tile)) goto error;
+            if ((c->n_tile_data + 1) > INT_MAX / (int)sizeof(*c->tile)) return dav1d_parse_obus_error(c, in);
             struct Dav1dTileGroup *tile = realloc(c->tile, (c->n_tile_data + 1) * sizeof(*c->tile));
-            if (!tile) goto error;
+            if (!tile) return dav1d_parse_obus_error(c, in);
             c->tile = tile;
             memset(c->tile + c->n_tile_data, 0, sizeof(*c->tile));
             c->n_tile_data_alloc = c->n_tile_data + 1;
@@ -1356,7 +1362,7 @@ int dav1d_parse_obus(Dav1dContext *const c, Dav1dData *const in, const int globa
         // Align to the next byte boundary and check for overrun.
         dav1d_bytealign_get_bits(&gb);
         if (check_for_overrun(c, &gb, init_bit_pos, len))
-            goto error;
+            return dav1d_parse_obus_error(c, in);
         // The current bit position is a multiple of 8 (because we
         // just aligned it) and less than 8*pkt_bytelen because
         // otherwise the overrun check would have fired.
@@ -1375,7 +1381,7 @@ int dav1d_parse_obus(Dav1dContext *const c, Dav1dData *const in, const int globa
                 dav1d_data_unref_internal(&c->tile[i].data);
             c->n_tile_data = 0;
             c->n_tiles = 0;
-            goto error;
+            return dav1d_parse_obus_error(c, in);
         }
         c->n_tiles += 1 + c->tile[c->n_tile_data].end -
                           c->tile[c->n_tile_data].start;
@@ -1390,7 +1396,7 @@ int dav1d_parse_obus(Dav1dContext *const c, Dav1dData *const in, const int globa
         // obu metadta type field
         const enum ObuMetaType meta_type = dav1d_get_uleb128(&gb);
         const int meta_type_len = (dav1d_get_bits_pos(&gb) - init_bit_pos) >> 3;
-        if (gb.error) goto error;
+        if (gb.error) return dav1d_parse_obus_error(c, in);
 
         switch (meta_type) {
         case OBU_META_HDR_CLL: {
@@ -1416,7 +1422,7 @@ int dav1d_parse_obus(Dav1dContext *const c, Dav1dData *const in, const int globa
             dav1d_bytealign_get_bits(&gb);
             if (check_for_overrun(c, &gb, init_bit_pos, len)) {
                 dav1d_ref_dec(&ref);
-                goto error;
+                return dav1d_parse_obus_error(c, in);
             }
 
             dav1d_ref_dec(&c->content_light_ref);
@@ -1468,7 +1474,7 @@ int dav1d_parse_obus(Dav1dContext *const c, Dav1dData *const in, const int globa
             dav1d_bytealign_get_bits(&gb);
             if (check_for_overrun(c, &gb, init_bit_pos, len)) {
                 dav1d_ref_dec(&ref);
-                goto error;
+                return dav1d_parse_obus_error(c, in);
             }
 
             dav1d_ref_dec(&c->mastering_display_ref);
@@ -1543,7 +1549,7 @@ int dav1d_parse_obus(Dav1dContext *const c, Dav1dData *const in, const int globa
 
     if (c->seq_hdr && c->frame_hdr) {
         if (c->frame_hdr->show_existing_frame) {
-            if (!c->refs[c->frame_hdr->existing_frame_idx].p.p.frame_hdr) goto error;
+            if (!c->refs[c->frame_hdr->existing_frame_idx].p.p.frame_hdr) return dav1d_parse_obus_error(c, in);
             switch (c->refs[c->frame_hdr->existing_frame_idx].p.p.frame_hdr->frame_type) {
             case DAV1D_FRAME_TYPE_INTER:
             case DAV1D_FRAME_TYPE_SWITCH:
@@ -1557,11 +1563,11 @@ int dav1d_parse_obus(Dav1dContext *const c, Dav1dData *const in, const int globa
             default:
                 break;
             }
-            if (!c->refs[c->frame_hdr->existing_frame_idx].p.p.data[0]) goto error;
+            if (!c->refs[c->frame_hdr->existing_frame_idx].p.p.data[0]) return dav1d_parse_obus_error(c, in);
             if (c->strict_std_compliance &&
                 !c->refs[c->frame_hdr->existing_frame_idx].p.showable)
             {
-                goto error;
+                return dav1d_parse_obus_error(c, in);
             }
             if (c->n_fc == 1) {
                 dav1d_thread_picture_ref(&c->out,
@@ -1655,7 +1661,7 @@ int dav1d_parse_obus(Dav1dContext *const c, Dav1dData *const in, const int globa
                 break;
             }
             if (!c->n_tile_data)
-                goto error;
+                return dav1d_parse_obus_error(c, in);
             if ((res = dav1d_submit_frame(c)) < 0)
                 return res;
             assert(!c->n_tile_data);
@@ -1685,9 +1691,4 @@ skip:
     c->n_tiles = 0;
 
     return len + init_byte_pos;
-
-error:
-    dav1d_data_props_copy(&c->cached_error_props, &in->m);
-    dav1d_log(c, "Error parsing OBU data\n");
-    return DAV1D_ERR(EINVAL);
 }
