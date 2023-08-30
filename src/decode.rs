@@ -4141,7 +4141,7 @@ unsafe fn decode_sb(
     let pc = if t.frame_thread.pass == 2 {
         None
     } else {
-        if bl == BL_64X64 {
+        if false && bl == BL_64X64 {
             println!(
                 "poc={},y={},x={},bl={},r={}",
                 (*f.frame_hdr).frame_offset,
