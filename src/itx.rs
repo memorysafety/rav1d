@@ -310,14 +310,18 @@ macro_rules! decl_itx_fns {
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 extern "C" {
+    decl_itx_fns!(_sse4);
+    decl_itx_fns!(_ssse3);
+    decl_itx_fn!(dav1d_inv_txfm_add_wht_wht_4x4, _sse2);
+}
+
+#[cfg(all(feature = "asm", target_arch = "x86_64"))]
+extern "C" {
     decl_itx_fns!(_avx512icl);
     decl_itx_fns!(_10bpc, _avx512icl);
     decl_itx_fns!(_avx2);
     decl_itx_fns!(_10bpc, _avx2);
     decl_itx_fns!(_12bpc, _avx2);
-    decl_itx_fns!(_sse4);
-    decl_itx_fns!(_ssse3);
-    decl_itx_fn!(dav1d_inv_txfm_add_wht_wht_4x4, _sse2);
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]

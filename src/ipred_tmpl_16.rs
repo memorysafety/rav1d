@@ -7,20 +7,9 @@ extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 extern "C" {
     fn dav1d_ipred_dc_16bpc_ssse3(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        topleft: *const pixel,
-        width: libc::c_int,
-        height: libc::c_int,
-        angle: libc::c_int,
-        max_width: libc::c_int,
-        max_height: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_ipred_smooth_h_16bpc_avx512icl(
         dst: *mut pixel,
         stride: ptrdiff_t,
         topleft: *const pixel,
@@ -248,6 +237,21 @@ extern "C" {
         idx: *const uint8_t,
         w: libc::c_int,
         h: libc::c_int,
+    );
+}
+
+#[cfg(all(feature = "asm", target_arch = "x86_64"))]
+extern "C" {
+    fn dav1d_ipred_smooth_h_16bpc_avx512icl(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        topleft: *const pixel,
+        width: libc::c_int,
+        height: libc::c_int,
+        angle: libc::c_int,
+        max_width: libc::c_int,
+        max_height: libc::c_int,
+        bitdepth_max: libc::c_int,
     );
     fn dav1d_ipred_dc_16bpc_avx2(
         dst: *mut pixel,
@@ -532,7 +536,7 @@ extern "C" {
     );
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 extern "C" {
     fn dav1d_ipred_filter_16bpc_neon(
         dst: *mut pixel,
@@ -722,6 +726,18 @@ extern "C" {
         cw: libc::c_int,
         ch: libc::c_int,
     );
+    fn dav1d_pal_pred_16bpc_neon(
+        dst: *mut pixel,
+        stride: ptrdiff_t,
+        pal: *const uint16_t,
+        idx: *const uint8_t,
+        w: libc::c_int,
+        h: libc::c_int,
+    );
+}
+
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+extern "C" {
     fn dav1d_ipred_z1_fill2_16bpc_neon(
         dst: *mut pixel,
         stride: ptrdiff_t,
@@ -808,14 +824,6 @@ extern "C" {
         height: libc::c_int,
         dy: libc::c_int,
         max_base_y: libc::c_int,
-    );
-    fn dav1d_pal_pred_16bpc_neon(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        pal: *const uint16_t,
-        idx: *const uint8_t,
-        w: libc::c_int,
-        h: libc::c_int,
     );
     fn dav1d_ipred_pixel_set_16bpc_neon(out: *mut pixel, px: pixel, n: libc::c_int);
 }
@@ -2181,7 +2189,7 @@ unsafe extern "C" fn intra_pred_dsp_init_arm(c: *mut Dav1dIntraPredDSPContext) {
     (*c).pal_pred = Some(dav1d_pal_pred_16bpc_neon);
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
 unsafe extern "C" fn ipred_z3_neon(
     dst: *mut pixel,
     stride: ptrdiff_t,
@@ -2284,7 +2292,7 @@ unsafe extern "C" fn ipred_z3_neon(
     };
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
 unsafe extern "C" fn ipred_z2_neon(
     dst: *mut pixel,
     stride: ptrdiff_t,
@@ -2465,7 +2473,7 @@ unsafe extern "C" fn ipred_z2_neon(
     };
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
 unsafe extern "C" fn ipred_z1_neon(
     dst: *mut pixel,
     stride: ptrdiff_t,

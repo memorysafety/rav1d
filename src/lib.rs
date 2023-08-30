@@ -7,6 +7,7 @@ use cfg_if::cfg_if;
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: size_t) -> *mut libc::c_void;
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: size_t) -> *mut libc::c_void;
+    #[cfg(target_os = "linux")]
     fn dlsym(__handle: *mut libc::c_void, __name: *const libc::c_char) -> *mut libc::c_void;
     fn calloc(_: size_t, _: size_t) -> *mut libc::c_void;
     fn free(_: *mut libc::c_void);

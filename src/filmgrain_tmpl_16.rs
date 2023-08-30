@@ -6,22 +6,6 @@ use cfg_if::cfg_if;
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 extern "C" {
-    fn dav1d_fguv_32x32xn_i422_16bpc_avx512icl(
-        dst_row: *mut pixel,
-        src_row: *const pixel,
-        stride: ptrdiff_t,
-        data: *const Dav1dFilmGrainData,
-        pw: size_t,
-        scaling: *const uint8_t,
-        grain_lut: *const [entry; 82],
-        bh: libc::c_int,
-        row_num: libc::c_int,
-        luma_row: *const pixel,
-        luma_stride: ptrdiff_t,
-        uv_pl: libc::c_int,
-        is_id: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
     fn dav1d_fguv_32x32xn_i422_16bpc_ssse3(
         dst_row: *mut pixel,
         src_row: *const pixel,
@@ -90,6 +74,42 @@ extern "C" {
     fn dav1d_generate_grain_y_16bpc_ssse3(
         buf: *mut [entry; 82],
         data: *const Dav1dFilmGrainData,
+        bitdepth_max: libc::c_int,
+    );
+    fn dav1d_fguv_32x32xn_i444_16bpc_ssse3(
+        dst_row: *mut pixel,
+        src_row: *const pixel,
+        stride: ptrdiff_t,
+        data: *const Dav1dFilmGrainData,
+        pw: size_t,
+        scaling: *const uint8_t,
+        grain_lut: *const [entry; 82],
+        bh: libc::c_int,
+        row_num: libc::c_int,
+        luma_row: *const pixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: libc::c_int,
+        is_id: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+}
+
+#[cfg(all(feature = "asm", target_arch = "x86_64"))]
+extern "C" {
+    fn dav1d_fguv_32x32xn_i422_16bpc_avx512icl(
+        dst_row: *mut pixel,
+        src_row: *const pixel,
+        stride: ptrdiff_t,
+        data: *const Dav1dFilmGrainData,
+        pw: size_t,
+        scaling: *const uint8_t,
+        grain_lut: *const [entry; 82],
+        bh: libc::c_int,
+        row_num: libc::c_int,
+        luma_row: *const pixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: libc::c_int,
+        is_id: libc::c_int,
         bitdepth_max: libc::c_int,
     );
     fn dav1d_generate_grain_uv_444_16bpc_avx2(
@@ -172,22 +192,6 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     fn dav1d_fguv_32x32xn_i420_16bpc_avx512icl(
-        dst_row: *mut pixel,
-        src_row: *const pixel,
-        stride: ptrdiff_t,
-        data: *const Dav1dFilmGrainData,
-        pw: size_t,
-        scaling: *const uint8_t,
-        grain_lut: *const [entry; 82],
-        bh: libc::c_int,
-        row_num: libc::c_int,
-        luma_row: *const pixel,
-        luma_stride: ptrdiff_t,
-        uv_pl: libc::c_int,
-        is_id: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    fn dav1d_fguv_32x32xn_i444_16bpc_ssse3(
         dst_row: *mut pixel,
         src_row: *const pixel,
         stride: ptrdiff_t,

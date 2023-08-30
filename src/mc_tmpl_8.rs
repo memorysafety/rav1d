@@ -6,6 +6,7 @@ use ::libc;
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
 
+#[cfg_attr(target_arch = "x86", allow(dead_code))] // TODO(kkysen) Will be easier to fix after #416.
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 extern "C" {
     fn dav1d_put_8tap_regular_8bpc_ssse3(

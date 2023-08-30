@@ -3,22 +3,8 @@ use crate::include::stdint::*;
 use cfg_if::cfg_if;
 use libc;
 
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 extern "C" {
-    fn dav1d_splat_mv_avx512icl(
-        rr: *mut *mut refmvs_block,
-        rmv: *const refmvs_block,
-        bx4: libc::c_int,
-        bw4: libc::c_int,
-        bh4: libc::c_int,
-    );
-    fn dav1d_splat_mv_avx2(
-        rr: *mut *mut refmvs_block,
-        rmv: *const refmvs_block,
-        bx4: libc::c_int,
-        bw4: libc::c_int,
-        bh4: libc::c_int,
-    );
     fn dav1d_splat_mv_sse2(
         rr: *mut *mut refmvs_block,
         rmv: *const refmvs_block,
@@ -35,6 +21,24 @@ extern "C" {
         row_end8: libc::c_int,
         col_start8: libc::c_int,
         row_start8: libc::c_int,
+    );
+}
+
+#[cfg(all(feature = "asm", target_arch = "x86_64"))]
+extern "C" {
+    fn dav1d_splat_mv_avx512icl(
+        rr: *mut *mut refmvs_block,
+        rmv: *const refmvs_block,
+        bx4: libc::c_int,
+        bw4: libc::c_int,
+        bh4: libc::c_int,
+    );
+    fn dav1d_splat_mv_avx2(
+        rr: *mut *mut refmvs_block,
+        rmv: *const refmvs_block,
+        bx4: libc::c_int,
+        bw4: libc::c_int,
+        bh4: libc::c_int,
     );
     fn dav1d_save_tmvs_avx2(
         rp: *mut refmvs_temporal_block,
@@ -1614,10 +1618,10 @@ mod ffi {
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     wrap_splat_mv!(dav1d_splat_mv_sse2);
 
-    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    #[cfg(target_arch = "x86_64")]
     wrap_splat_mv!(dav1d_splat_mv_avx2);
 
-    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    #[cfg(target_arch = "x86_64")]
     wrap_splat_mv!(dav1d_splat_mv_avx512icl);
 
     #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]

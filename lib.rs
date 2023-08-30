@@ -146,8 +146,6 @@ cfg_if::cfg_if! {
         }
     } else if #[cfg(target_os = "macos")] {
         extern "C" {
-            #[link_name = "__stdoutp"]
-            static mut stdout: *mut libc::FILE;
             #[link_name = "__stderrp"]
             static mut stderr: *mut libc::FILE;
         }

@@ -27,6 +27,51 @@ pub struct Dav1dLoopFilterDSPContext {
     any(target_arch = "x86", target_arch = "x86_64"),
 ))]
 extern "C" {
+    pub(crate) fn dav1d_lpf_v_sb_uv_8bpc_ssse3(
+        dst: *mut DynPixel,
+        stride: ptrdiff_t,
+        mask: *const uint32_t,
+        lvl: *const [uint8_t; 4],
+        lvl_stride: ptrdiff_t,
+        lut: *const Av1FilterLUT,
+        w: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_lpf_h_sb_uv_8bpc_ssse3(
+        dst: *mut DynPixel,
+        stride: ptrdiff_t,
+        mask: *const uint32_t,
+        lvl: *const [uint8_t; 4],
+        lvl_stride: ptrdiff_t,
+        lut: *const Av1FilterLUT,
+        w: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_lpf_v_sb_y_8bpc_ssse3(
+        dst: *mut DynPixel,
+        stride: ptrdiff_t,
+        mask: *const uint32_t,
+        lvl: *const [uint8_t; 4],
+        lvl_stride: ptrdiff_t,
+        lut: *const Av1FilterLUT,
+        w: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_lpf_h_sb_y_8bpc_ssse3(
+        dst: *mut DynPixel,
+        stride: ptrdiff_t,
+        mask: *const uint32_t,
+        lvl: *const [uint8_t; 4],
+        lvl_stride: ptrdiff_t,
+        lut: *const Av1FilterLUT,
+        w: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+}
+
+// TODO(legare): Temporarily pub until init fns have been deduplicated.
+#[cfg(all(feature = "asm", feature = "bitdepth_8", target_arch = "x86_64",))]
+extern "C" {
     pub(crate) fn dav1d_lpf_v_sb_uv_8bpc_avx512icl(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
@@ -107,46 +152,6 @@ extern "C" {
         w: libc::c_int,
         bitdepth_max: libc::c_int,
     );
-    pub(crate) fn dav1d_lpf_v_sb_uv_8bpc_ssse3(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const uint32_t,
-        lvl: *const [uint8_t; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    pub(crate) fn dav1d_lpf_h_sb_uv_8bpc_ssse3(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const uint32_t,
-        lvl: *const [uint8_t; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    pub(crate) fn dav1d_lpf_v_sb_y_8bpc_ssse3(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const uint32_t,
-        lvl: *const [uint8_t; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    pub(crate) fn dav1d_lpf_h_sb_y_8bpc_ssse3(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const uint32_t,
-        lvl: *const [uint8_t; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
 }
 
 // TODO(legare): Temporarily pub until init fns have been deduplicated.
@@ -204,6 +209,51 @@ extern "C" {
     feature = "bitdepth_16",
     any(target_arch = "x86", target_arch = "x86_64"),
 ))]
+extern "C" {
+    pub(crate) fn dav1d_lpf_v_sb_uv_16bpc_ssse3(
+        dst: *mut DynPixel,
+        stride: ptrdiff_t,
+        mask: *const uint32_t,
+        lvl: *const [uint8_t; 4],
+        lvl_stride: ptrdiff_t,
+        lut: *const Av1FilterLUT,
+        w: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_lpf_h_sb_uv_16bpc_ssse3(
+        dst: *mut DynPixel,
+        stride: ptrdiff_t,
+        mask: *const uint32_t,
+        lvl: *const [uint8_t; 4],
+        lvl_stride: ptrdiff_t,
+        lut: *const Av1FilterLUT,
+        w: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_lpf_v_sb_y_16bpc_ssse3(
+        dst: *mut DynPixel,
+        stride: ptrdiff_t,
+        mask: *const uint32_t,
+        lvl: *const [uint8_t; 4],
+        lvl_stride: ptrdiff_t,
+        lut: *const Av1FilterLUT,
+        w: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+    pub(crate) fn dav1d_lpf_h_sb_y_16bpc_ssse3(
+        dst: *mut DynPixel,
+        stride: ptrdiff_t,
+        mask: *const uint32_t,
+        lvl: *const [uint8_t; 4],
+        lvl_stride: ptrdiff_t,
+        lut: *const Av1FilterLUT,
+        w: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+}
+
+// TODO(legare): Temporarily pub until init fns are deduplicated.
+#[cfg(all(feature = "asm", feature = "bitdepth_16", target_arch = "x86_64",))]
 extern "C" {
     pub(crate) fn dav1d_lpf_v_sb_uv_16bpc_avx512icl(
         dst: *mut DynPixel,
@@ -276,46 +326,6 @@ extern "C" {
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_lpf_h_sb_y_16bpc_avx2(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const uint32_t,
-        lvl: *const [uint8_t; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    pub(crate) fn dav1d_lpf_v_sb_uv_16bpc_ssse3(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const uint32_t,
-        lvl: *const [uint8_t; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    pub(crate) fn dav1d_lpf_h_sb_uv_16bpc_ssse3(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const uint32_t,
-        lvl: *const [uint8_t; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    pub(crate) fn dav1d_lpf_v_sb_y_16bpc_ssse3(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const uint32_t,
-        lvl: *const [uint8_t; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-    pub(crate) fn dav1d_lpf_h_sb_y_16bpc_ssse3(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const uint32_t,
