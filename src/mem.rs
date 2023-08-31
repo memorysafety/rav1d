@@ -100,42 +100,33 @@ pub unsafe fn dav1d_mem_pool_pop(pool: *mut Dav1dMemPool, size: size_t) -> *mut 
     let mut buf: *mut Dav1dMemPoolBuffer = (*pool).buf;
     (*pool).ref_cnt += 1;
     let mut data: *mut uint8_t;
-    let current_block_20: u64;
     if !buf.is_null() {
         (*pool).buf = (*buf).next;
         pthread_mutex_unlock(&mut (*pool).lock);
         data = (*buf).data as *mut uint8_t;
-        if (buf as uintptr_t).wrapping_sub(data as uintptr_t) != size {
-            dav1d_free_aligned(data as *mut libc::c_void);
-            current_block_20 = 5350950662582111547;
-        } else {
-            current_block_20 = 2370887241019905314;
+        if (buf as uintptr_t).wrapping_sub(data as uintptr_t) == size {
+            return buf;
         }
+        dav1d_free_aligned(data as *mut libc::c_void);
     } else {
         pthread_mutex_unlock(&mut (*pool).lock);
-        current_block_20 = 5350950662582111547;
     }
-    match current_block_20 {
-        5350950662582111547 => {
-            data = dav1d_alloc_aligned(
-                size.wrapping_add(::core::mem::size_of::<Dav1dMemPoolBuffer>()),
-                64,
-            ) as *mut uint8_t;
-            if data.is_null() {
-                pthread_mutex_lock(&mut (*pool).lock);
-                (*pool).ref_cnt -= 1;
-                let ref_cnt = (*pool).ref_cnt;
-                pthread_mutex_unlock(&mut (*pool).lock);
-                if ref_cnt == 0 {
-                    mem_pool_destroy(pool);
-                }
-                return 0 as *mut Dav1dMemPoolBuffer;
-            }
-            buf = data.offset(size as isize) as *mut Dav1dMemPoolBuffer;
-            (*buf).data = data as *mut libc::c_void;
+    data = dav1d_alloc_aligned(
+        size.wrapping_add(::core::mem::size_of::<Dav1dMemPoolBuffer>()),
+        64,
+    ) as *mut uint8_t;
+    if data.is_null() {
+        pthread_mutex_lock(&mut (*pool).lock);
+        (*pool).ref_cnt -= 1;
+        let ref_cnt = (*pool).ref_cnt;
+        pthread_mutex_unlock(&mut (*pool).lock);
+        if ref_cnt == 0 {
+            mem_pool_destroy(pool);
         }
-        _ => {}
+        return 0 as *mut Dav1dMemPoolBuffer;
     }
+    buf = data.offset(size as isize) as *mut Dav1dMemPoolBuffer;
+    (*buf).data = data as *mut libc::c_void;
     return buf;
 }
 
