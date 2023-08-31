@@ -24,7 +24,7 @@ use crate::src::thread_data::thread_data;
 use libc::pthread_cond_t;
 use libc::pthread_mutex_t;
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub struct Dav1dTileGroup {
     pub data: Dav1dData,
