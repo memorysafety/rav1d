@@ -529,7 +529,7 @@ unsafe extern "C" fn invert(
         let mut x = 0;
         while x < w {
             *dst.offset((y_off + x) as isize) =
-                (64 as libc::c_int - *src.offset((y_off + x) as isize) as libc::c_int) as uint8_t;
+                (64 - *src.offset((y_off + x) as isize) as libc::c_int) as uint8_t;
             x += 1;
         }
         y += 1;
@@ -607,8 +607,8 @@ unsafe extern "C" fn fill2d_16x2(
             (*master.offset((*cb.offset(n as isize)).direction as isize)).as_ptr(),
             w,
             h,
-            32 as libc::c_int - (w * (*cb.offset(n as isize)).x_offset as libc::c_int >> 3),
-            32 as libc::c_int - (h * (*cb.offset(n as isize)).y_offset as libc::c_int >> 3),
+            32 - (w * (*cb.offset(n as isize)).x_offset as libc::c_int >> 3),
+            32 - (h * (*cb.offset(n as isize)).y_offset as libc::c_int >> 3),
         );
         ptr = ptr.offset((w * h) as isize);
         n += 1;

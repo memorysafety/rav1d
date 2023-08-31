@@ -1009,7 +1009,7 @@ pub unsafe extern "C" fn dav1d_open(
                         && ((*s).frame_size_limit).wrapping_sub(1 as libc::c_int as libc::c_uint)
                             >= (8192 * 8192) as libc::c_uint
                     {
-                        (*c).frame_size_limit = (8192 as libc::c_int * 8192) as libc::c_uint;
+                        (*c).frame_size_limit = (8192 * 8192) as libc::c_uint;
                         if (*s).frame_size_limit != 0 {
                             dav1d_log(
                                 c,
@@ -1461,7 +1461,7 @@ unsafe extern "C" fn output_picture_ready(c: *mut Dav1dContext, drain: libc::c_i
 }
 unsafe extern "C" fn drain_picture(c: *mut Dav1dContext, out: *mut Dav1dPicture) -> libc::c_int {
     let mut drain_count: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    let mut drained: libc::c_int = 0 as libc::c_int;
+    let mut drained = 0;
     loop {
         let next: libc::c_uint = (*c).frame_thread.next;
         let f: *mut Dav1dFrameContext =
@@ -1475,7 +1475,7 @@ unsafe extern "C" fn drain_picture(c: *mut Dav1dContext, out: *mut Dav1dPicture)
         }
         let out_delayed: *mut Dav1dThreadPicture =
             &mut *((*c).frame_thread.out_delayed).offset(next as isize) as *mut Dav1dThreadPicture;
-        if !((*out_delayed).p.data[0 as libc::c_int as usize]).is_null()
+        if !((*out_delayed).p.data[0]).is_null()
             || ::core::intrinsics::atomic_load_seqcst(
                 &mut (*f).task_thread.error as *mut atomic_int,
             ) != 0

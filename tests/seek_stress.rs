@@ -194,7 +194,7 @@ unsafe extern "C" fn decode_rand(
     data: *mut Dav1dData,
     fps: libc::c_double,
 ) -> libc::c_int {
-    let mut res: libc::c_int = 0;
+    let mut res = 0;
     let mut p: Dav1dPicture = Dav1dPicture {
         seq_hdr: 0 as *mut Dav1dSequenceHeader,
         frame_hdr: 0 as *mut Dav1dFrameHeader,
@@ -229,9 +229,8 @@ unsafe extern "C" fn decode_rand(
         r#ref: 0 as *mut Dav1dRef,
         allocator_data: 0 as *mut libc::c_void,
     };
-    let num_frames: libc::c_int =
-        xor128_rand() % (fps * 5 as libc::c_int as libc::c_double) as libc::c_int;
-    let mut i: libc::c_int = 0 as libc::c_int;
+    let num_frames: libc::c_int = xor128_rand() % (fps * 5 as libc::c_double) as libc::c_int;
+    let mut i = 0;
     while i < num_frames {
         res = decode_frame(&mut p, c, data);
         if res != 0 {
@@ -469,7 +468,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
         i_fps.as_mut_ptr(),
         &mut total,
         i_timebase.as_mut_ptr(),
-    ) < 0 as libc::c_int
+    ) < 0
         || i_timebase[0] == 0
         || i_timebase[1] == 0
         || i_fps[0] == 0
@@ -484,9 +483,9 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
     spf = i_fps[1] as libc::c_double / i_fps[0] as libc::c_double;
     fps = i_fps[0] as libc::c_double / i_fps[1] as libc::c_double;
     if !(fps < 1 as libc::c_double) {
-        let mut i: libc::c_int = 0;
+        let mut i = 0;
         loop {
-            if !(i < 3 as libc::c_int) {
+            if !(i < 3) {
                 current_block = 5948590327928692120;
                 break;
             }
@@ -508,16 +507,14 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
             _ => {
                 pts = llround(data.m.timestamp as libc::c_double * timebase * 1000000000.0f64)
                     as uint64_t;
-                let mut i_0: libc::c_int = 0 as libc::c_int;
-                let mut tries: libc::c_int = 0 as libc::c_int;
+                let mut i_0 = 0;
+                let mut tries = 0;
                 loop {
-                    if !(i_0 - tries < 4 as libc::c_int
-                        && tries < 4 as libc::c_int / 2 as libc::c_int)
-                    {
+                    if !(i_0 - tries < 4 && tries < 4 / 2) {
                         current_block = 8693738493027456495;
                         break;
                     }
-                    let sign: libc::c_int = if xor128_rand() & 1 as libc::c_int != 0 {
+                    let sign: libc::c_int = if xor128_rand() & 1 != 0 {
                         -(1 as libc::c_int)
                     } else {
                         1 as libc::c_int
@@ -596,8 +593,8 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
                             }
                         }
                         // simulate seeking after the end of the file
-                        let mut i_1: libc::c_int = 0;
-                        while i_1 < 2 as libc::c_int {
+                        let mut i_1 = 0;
+                        while i_1 < 2 {
                             if seek(
                                 in_0,
                                 c,
@@ -614,7 +611,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
                             if decode_all(in_0, c, &mut data) != 0 {
                                 break;
                             }
-                            let mut num_flush: libc::c_int = 1 + 64 + xor128_rand() % 64;
+                            let mut num_flush = 1 + 64 + xor128_rand() % 64;
                             loop {
                                 num_flush -= 1;
                                 if num_flush == 0 {
