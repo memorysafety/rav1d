@@ -35,9 +35,7 @@ pub unsafe extern "C" fn dav1d_set_cpu_flags_mask(mask: libc::c_uint) {
 }
 #[no_mangle]
 #[cold]
-pub unsafe extern "C" fn dav1d_num_logical_processors(
-    c: *mut Dav1dContext,
-) -> libc::c_int {
+pub unsafe extern "C" fn dav1d_num_logical_processors(c: *mut Dav1dContext) -> libc::c_int {
     let mut affinity: cpu_set_t = cpu_set_t { __bits: [0; 16] };
     if pthread_getaffinity_np(
         pthread_self(),
@@ -53,8 +51,8 @@ pub unsafe extern "C" fn dav1d_num_logical_processors(
     if !c.is_null() {
         dav1d_log(
             c,
-            b"Unable to detect thread count, defaulting to single-threaded mode\n\0"
-                as *const u8 as *const libc::c_char,
+            b"Unable to detect thread count, defaulting to single-threaded mode\n\0" as *const u8
+                as *const libc::c_char,
         );
     }
     return 1 as libc::c_int;

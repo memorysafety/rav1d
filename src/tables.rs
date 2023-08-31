@@ -316,10 +316,22 @@ pub static mut dav1d_block_sizes: [[[uint8_t; 2]; 10]; 5] = [
         [BS_128x64 as libc::c_int as uint8_t, 0],
         [BS_64x128 as libc::c_int as uint8_t, 0],
         [0; 2],
-        [BS_64x64 as libc::c_int as uint8_t, BS_128x64 as libc::c_int as uint8_t],
-        [BS_128x64 as libc::c_int as uint8_t, BS_64x64 as libc::c_int as uint8_t],
-        [BS_64x64 as libc::c_int as uint8_t, BS_64x128 as libc::c_int as uint8_t],
-        [BS_64x128 as libc::c_int as uint8_t, BS_64x64 as libc::c_int as uint8_t],
+        [
+            BS_64x64 as libc::c_int as uint8_t,
+            BS_128x64 as libc::c_int as uint8_t,
+        ],
+        [
+            BS_128x64 as libc::c_int as uint8_t,
+            BS_64x64 as libc::c_int as uint8_t,
+        ],
+        [
+            BS_64x64 as libc::c_int as uint8_t,
+            BS_64x128 as libc::c_int as uint8_t,
+        ],
+        [
+            BS_64x128 as libc::c_int as uint8_t,
+            BS_64x64 as libc::c_int as uint8_t,
+        ],
         [0; 2],
         [0; 2],
     ],
@@ -328,10 +340,22 @@ pub static mut dav1d_block_sizes: [[[uint8_t; 2]; 10]; 5] = [
         [BS_64x32 as libc::c_int as uint8_t, 0],
         [BS_32x64 as libc::c_int as uint8_t, 0],
         [0; 2],
-        [BS_32x32 as libc::c_int as uint8_t, BS_64x32 as libc::c_int as uint8_t],
-        [BS_64x32 as libc::c_int as uint8_t, BS_32x32 as libc::c_int as uint8_t],
-        [BS_32x32 as libc::c_int as uint8_t, BS_32x64 as libc::c_int as uint8_t],
-        [BS_32x64 as libc::c_int as uint8_t, BS_32x32 as libc::c_int as uint8_t],
+        [
+            BS_32x32 as libc::c_int as uint8_t,
+            BS_64x32 as libc::c_int as uint8_t,
+        ],
+        [
+            BS_64x32 as libc::c_int as uint8_t,
+            BS_32x32 as libc::c_int as uint8_t,
+        ],
+        [
+            BS_32x32 as libc::c_int as uint8_t,
+            BS_32x64 as libc::c_int as uint8_t,
+        ],
+        [
+            BS_32x64 as libc::c_int as uint8_t,
+            BS_32x32 as libc::c_int as uint8_t,
+        ],
         [BS_64x16 as libc::c_int as uint8_t, 0],
         [BS_16x64 as libc::c_int as uint8_t, 0],
     ],
@@ -340,10 +364,22 @@ pub static mut dav1d_block_sizes: [[[uint8_t; 2]; 10]; 5] = [
         [BS_32x16 as libc::c_int as uint8_t, 0],
         [BS_16x32 as libc::c_int as uint8_t, 0],
         [0; 2],
-        [BS_16x16 as libc::c_int as uint8_t, BS_32x16 as libc::c_int as uint8_t],
-        [BS_32x16 as libc::c_int as uint8_t, BS_16x16 as libc::c_int as uint8_t],
-        [BS_16x16 as libc::c_int as uint8_t, BS_16x32 as libc::c_int as uint8_t],
-        [BS_16x32 as libc::c_int as uint8_t, BS_16x16 as libc::c_int as uint8_t],
+        [
+            BS_16x16 as libc::c_int as uint8_t,
+            BS_32x16 as libc::c_int as uint8_t,
+        ],
+        [
+            BS_32x16 as libc::c_int as uint8_t,
+            BS_16x16 as libc::c_int as uint8_t,
+        ],
+        [
+            BS_16x16 as libc::c_int as uint8_t,
+            BS_16x32 as libc::c_int as uint8_t,
+        ],
+        [
+            BS_16x32 as libc::c_int as uint8_t,
+            BS_16x16 as libc::c_int as uint8_t,
+        ],
         [BS_32x8 as libc::c_int as uint8_t, 0],
         [BS_8x32 as libc::c_int as uint8_t, 0],
     ],
@@ -352,10 +388,22 @@ pub static mut dav1d_block_sizes: [[[uint8_t; 2]; 10]; 5] = [
         [BS_16x8 as libc::c_int as uint8_t, 0],
         [BS_8x16 as libc::c_int as uint8_t, 0],
         [0; 2],
-        [BS_8x8 as libc::c_int as uint8_t, BS_16x8 as libc::c_int as uint8_t],
-        [BS_16x8 as libc::c_int as uint8_t, BS_8x8 as libc::c_int as uint8_t],
-        [BS_8x8 as libc::c_int as uint8_t, BS_8x16 as libc::c_int as uint8_t],
-        [BS_8x16 as libc::c_int as uint8_t, BS_8x8 as libc::c_int as uint8_t],
+        [
+            BS_8x8 as libc::c_int as uint8_t,
+            BS_16x8 as libc::c_int as uint8_t,
+        ],
+        [
+            BS_16x8 as libc::c_int as uint8_t,
+            BS_8x8 as libc::c_int as uint8_t,
+        ],
+        [
+            BS_8x8 as libc::c_int as uint8_t,
+            BS_8x16 as libc::c_int as uint8_t,
+        ],
+        [
+            BS_8x16 as libc::c_int as uint8_t,
+            BS_8x8 as libc::c_int as uint8_t,
+        ],
         [BS_16x4 as libc::c_int as uint8_t, 0],
         [BS_4x16 as libc::c_int as uint8_t, 0],
     ],
@@ -911,14 +959,38 @@ pub static mut dav1d_txtp_from_uvmode: [uint8_t; 14] = [
 ];
 #[no_mangle]
 pub static mut dav1d_comp_inter_pred_modes: [[uint8_t; 2]; 8] = [
-    [NEARESTMV as libc::c_int as uint8_t, NEARESTMV as libc::c_int as uint8_t],
-    [NEARMV as libc::c_int as uint8_t, NEARMV as libc::c_int as uint8_t],
-    [NEARESTMV as libc::c_int as uint8_t, NEWMV as libc::c_int as uint8_t],
-    [NEWMV as libc::c_int as uint8_t, NEARESTMV as libc::c_int as uint8_t],
-    [NEARMV as libc::c_int as uint8_t, NEWMV as libc::c_int as uint8_t],
-    [NEWMV as libc::c_int as uint8_t, NEARMV as libc::c_int as uint8_t],
-    [GLOBALMV as libc::c_int as uint8_t, GLOBALMV as libc::c_int as uint8_t],
-    [NEWMV as libc::c_int as uint8_t, NEWMV as libc::c_int as uint8_t],
+    [
+        NEARESTMV as libc::c_int as uint8_t,
+        NEARESTMV as libc::c_int as uint8_t,
+    ],
+    [
+        NEARMV as libc::c_int as uint8_t,
+        NEARMV as libc::c_int as uint8_t,
+    ],
+    [
+        NEARESTMV as libc::c_int as uint8_t,
+        NEWMV as libc::c_int as uint8_t,
+    ],
+    [
+        NEWMV as libc::c_int as uint8_t,
+        NEARESTMV as libc::c_int as uint8_t,
+    ],
+    [
+        NEARMV as libc::c_int as uint8_t,
+        NEWMV as libc::c_int as uint8_t,
+    ],
+    [
+        NEWMV as libc::c_int as uint8_t,
+        NEARMV as libc::c_int as uint8_t,
+    ],
+    [
+        GLOBALMV as libc::c_int as uint8_t,
+        GLOBALMV as libc::c_int as uint8_t,
+    ],
+    [
+        NEWMV as libc::c_int as uint8_t,
+        NEWMV as libc::c_int as uint8_t,
+    ],
 ];
 #[no_mangle]
 pub static mut dav1d_partition_type_count: [uint8_t; 5] = [
@@ -1361,19 +1433,58 @@ pub static mut dav1d_cdef_directions: [[int8_t; 2]; 12] = [
 ];
 #[no_mangle]
 pub static mut dav1d_sgr_params: [[uint16_t; 2]; 16] = [
-    [140 as libc::c_int as uint16_t, 3236 as libc::c_int as uint16_t],
-    [112 as libc::c_int as uint16_t, 2158 as libc::c_int as uint16_t],
-    [93 as libc::c_int as uint16_t, 1618 as libc::c_int as uint16_t],
-    [80 as libc::c_int as uint16_t, 1438 as libc::c_int as uint16_t],
-    [70 as libc::c_int as uint16_t, 1295 as libc::c_int as uint16_t],
-    [58 as libc::c_int as uint16_t, 1177 as libc::c_int as uint16_t],
-    [47 as libc::c_int as uint16_t, 1079 as libc::c_int as uint16_t],
-    [37 as libc::c_int as uint16_t, 996 as libc::c_int as uint16_t],
-    [30 as libc::c_int as uint16_t, 925 as libc::c_int as uint16_t],
-    [25 as libc::c_int as uint16_t, 863 as libc::c_int as uint16_t],
-    [0 as libc::c_int as uint16_t, 2589 as libc::c_int as uint16_t],
-    [0 as libc::c_int as uint16_t, 1618 as libc::c_int as uint16_t],
-    [0 as libc::c_int as uint16_t, 1177 as libc::c_int as uint16_t],
+    [
+        140 as libc::c_int as uint16_t,
+        3236 as libc::c_int as uint16_t,
+    ],
+    [
+        112 as libc::c_int as uint16_t,
+        2158 as libc::c_int as uint16_t,
+    ],
+    [
+        93 as libc::c_int as uint16_t,
+        1618 as libc::c_int as uint16_t,
+    ],
+    [
+        80 as libc::c_int as uint16_t,
+        1438 as libc::c_int as uint16_t,
+    ],
+    [
+        70 as libc::c_int as uint16_t,
+        1295 as libc::c_int as uint16_t,
+    ],
+    [
+        58 as libc::c_int as uint16_t,
+        1177 as libc::c_int as uint16_t,
+    ],
+    [
+        47 as libc::c_int as uint16_t,
+        1079 as libc::c_int as uint16_t,
+    ],
+    [
+        37 as libc::c_int as uint16_t,
+        996 as libc::c_int as uint16_t,
+    ],
+    [
+        30 as libc::c_int as uint16_t,
+        925 as libc::c_int as uint16_t,
+    ],
+    [
+        25 as libc::c_int as uint16_t,
+        863 as libc::c_int as uint16_t,
+    ],
+    [
+        0 as libc::c_int as uint16_t,
+        2589 as libc::c_int as uint16_t,
+    ],
+    [
+        0 as libc::c_int as uint16_t,
+        1618 as libc::c_int as uint16_t,
+    ],
+    [
+        0 as libc::c_int as uint16_t,
+        1177 as libc::c_int as uint16_t,
+    ],
     [0 as libc::c_int as uint16_t, 925 as libc::c_int as uint16_t],
     [56 as libc::c_int as uint16_t, 0 as libc::c_int as uint16_t],
     [22 as libc::c_int as uint16_t, 0 as libc::c_int as uint16_t],

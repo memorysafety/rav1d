@@ -3,20 +3,9 @@ extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
     pub type _IO_marker;
-    fn memcpy(
-        _: *mut libc::c_void,
-        _: *const libc::c_void,
-        _: libc::c_ulong,
-    ) -> *mut libc::c_void;
-    fn memset(
-        _: *mut libc::c_void,
-        _: libc::c_int,
-        _: libc::c_ulong,
-    ) -> *mut libc::c_void;
-    fn dlsym(
-        __handle: *mut libc::c_void,
-        __name: *const libc::c_char,
-    ) -> *mut libc::c_void;
+    fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
+    fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
+    fn dlsym(__handle: *mut libc::c_void, __name: *const libc::c_char) -> *mut libc::c_void;
     fn calloc(_: libc::c_ulong, _: libc::c_ulong) -> *mut libc::c_void;
     fn free(_: *mut libc::c_void);
     fn posix_memalign(
@@ -40,10 +29,7 @@ extern "C" {
         in_0: *const Dav1dPicture,
     );
     fn dav1d_data_props_copy(dst: *mut Dav1dDataProps, src: *const Dav1dDataProps);
-    fn dav1d_thread_picture_ref(
-        dst: *mut Dav1dThreadPicture,
-        src: *const Dav1dThreadPicture,
-    );
+    fn dav1d_thread_picture_ref(dst: *mut Dav1dThreadPicture, src: *const Dav1dThreadPicture);
     fn dav1d_picture_get_event_flags(p: *const Dav1dThreadPicture) -> Dav1dEventFlags;
     fn dav1d_picture_move_ref(dst: *mut Dav1dPicture, src: *mut Dav1dPicture);
     fn dav1d_data_props_unref_internal(props: *mut Dav1dDataProps);
@@ -53,18 +39,14 @@ extern "C" {
         buf: *mut Dav1dData,
         ptr: *const uint8_t,
         sz: size_t,
-        free_callback: Option::<
-            unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> (),
-        >,
+        free_callback: Option<unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> ()>,
         user_data: *mut libc::c_void,
     ) -> libc::c_int;
     fn dav1d_picture_ref(dst: *mut Dav1dPicture, src: *const Dav1dPicture);
     fn dav1d_data_wrap_user_data_internal(
         buf: *mut Dav1dData,
         user_data: *const uint8_t,
-        free_callback: Option::<
-            unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> (),
-        >,
+        free_callback: Option<unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> ()>,
         cookie: *mut libc::c_void,
     ) -> libc::c_int;
     fn dav1d_picture_alloc_copy(
@@ -75,15 +57,9 @@ extern "C" {
     ) -> libc::c_int;
     fn dav1d_data_unref_internal(buf: *mut Dav1dData);
     fn dav1d_data_ref(dst: *mut Dav1dData, src: *const Dav1dData);
-    fn dav1d_thread_picture_move_ref(
-        dst: *mut Dav1dThreadPicture,
-        src: *mut Dav1dThreadPicture,
-    );
+    fn dav1d_thread_picture_move_ref(dst: *mut Dav1dThreadPicture, src: *mut Dav1dThreadPicture);
     fn pthread_attr_init(__attr: *mut pthread_attr_t) -> libc::c_int;
-    fn pthread_attr_setstacksize(
-        __attr: *mut pthread_attr_t,
-        __stacksize: size_t,
-    ) -> libc::c_int;
+    fn pthread_attr_setstacksize(__attr: *mut pthread_attr_t, __stacksize: size_t) -> libc::c_int;
     fn __sysconf(__name: libc::c_int) -> libc::c_long;
     fn dav1d_data_props_set_defaults(props: *mut Dav1dDataProps);
     fn dav1d_mem_pool_init(pool: *mut *mut Dav1dMemPool) -> libc::c_int;
@@ -91,35 +67,23 @@ extern "C" {
     fn pthread_create(
         __newthread: *mut pthread_t,
         __attr: *const pthread_attr_t,
-        __start_routine: Option::<
-            unsafe extern "C" fn(*mut libc::c_void) -> *mut libc::c_void,
-        >,
+        __start_routine: Option<unsafe extern "C" fn(*mut libc::c_void) -> *mut libc::c_void>,
         __arg: *mut libc::c_void,
     ) -> libc::c_int;
     fn dav1d_refmvs_dsp_init(dsp: *mut Dav1dRefmvsDSPContext);
-    fn dav1d_init_mode_tree(
-        root: *mut EdgeNode,
-        nt: *mut EdgeTip,
-        allow_sb128: libc::c_int,
-    );
-    fn pthread_join(
-        __th: pthread_t,
-        __thread_return: *mut *mut libc::c_void,
-    ) -> libc::c_int;
+    fn dav1d_init_mode_tree(root: *mut EdgeNode, nt: *mut EdgeTip, allow_sb128: libc::c_int);
+    fn pthread_join(__th: pthread_t, __thread_return: *mut *mut libc::c_void) -> libc::c_int;
     fn dav1d_refmvs_clear(rf: *mut refmvs_frame);
     fn dav1d_cdf_thread_unref(cdf: *mut CdfThreadContext);
     fn dav1d_thread_picture_unref(p: *mut Dav1dThreadPicture);
     fn dav1d_ref_dec(ref_0: *mut *mut Dav1dRef);
     fn dav1d_mem_pool_end(pool: *mut Dav1dMemPool);
     fn pthread_attr_destroy(__attr: *mut pthread_attr_t) -> libc::c_int;
-    fn dav1d_default_picture_alloc(
-        p: *mut Dav1dPicture,
-        cookie: *mut libc::c_void,
-    ) -> libc::c_int;
+    fn dav1d_default_picture_alloc(p: *mut Dav1dPicture, cookie: *mut libc::c_void) -> libc::c_int;
     fn dav1d_default_picture_release(p: *mut Dav1dPicture, cookie: *mut libc::c_void);
     fn pthread_once(
         __once_control: *mut pthread_once_t,
-        __init_routine: Option::<unsafe extern "C" fn() -> ()>,
+        __init_routine: Option<unsafe extern "C" fn() -> ()>,
     ) -> libc::c_int;
     fn pthread_mutex_init(
         __mutex: *mut pthread_mutex_t,
@@ -132,10 +96,8 @@ extern "C" {
         __cond: *mut pthread_cond_t,
         __cond_attr: *const pthread_condattr_t,
     ) -> libc::c_int;
-    fn pthread_cond_wait(
-        __cond: *mut pthread_cond_t,
-        __mutex: *mut pthread_mutex_t,
-    ) -> libc::c_int;
+    fn pthread_cond_wait(__cond: *mut pthread_cond_t, __mutex: *mut pthread_mutex_t)
+        -> libc::c_int;
     fn pthread_cond_broadcast(__cond: *mut pthread_cond_t) -> libc::c_int;
     fn pthread_cond_destroy(__cond: *mut pthread_cond_t) -> libc::c_int;
     fn dav1d_log_default_callback(
@@ -203,9 +165,7 @@ pub struct Dav1dRef {
     pub const_data: *const libc::c_void,
     pub ref_cnt: atomic_int,
     pub free_ref: libc::c_int,
-    pub free_callback: Option::<
-        unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> (),
-    >,
+    pub free_callback: Option<unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> ()>,
     pub user_data: *mut libc::c_void,
 }
 pub type atomic_int = libc::c_int;
@@ -664,12 +624,10 @@ pub struct Dav1dPicture {
 #[repr(C)]
 pub struct Dav1dPicAllocator {
     pub cookie: *mut libc::c_void,
-    pub alloc_picture_callback: Option::<
-        unsafe extern "C" fn(*mut Dav1dPicture, *mut libc::c_void) -> libc::c_int,
-    >,
-    pub release_picture_callback: Option::<
-        unsafe extern "C" fn(*mut Dav1dPicture, *mut libc::c_void) -> (),
-    >,
+    pub alloc_picture_callback:
+        Option<unsafe extern "C" fn(*mut Dav1dPicture, *mut libc::c_void) -> libc::c_int>,
+    pub release_picture_callback:
+        Option<unsafe extern "C" fn(*mut Dav1dPicture, *mut libc::c_void) -> ()>,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -780,12 +738,8 @@ pub struct __pthread_internal_list {
 #[repr(C)]
 pub struct Dav1dLogger {
     pub cookie: *mut libc::c_void,
-    pub callback: Option::<
-        unsafe extern "C" fn(
-            *mut libc::c_void,
-            *const libc::c_char,
-            ::core::ffi::VaList,
-        ) -> (),
+    pub callback: Option<
+        unsafe extern "C" fn(*mut libc::c_void, *const libc::c_char, ::core::ffi::VaList) -> (),
     >,
 }
 pub type Dav1dEventFlags = libc::c_uint;
@@ -852,7 +806,7 @@ pub struct EdgeBranch {
 pub struct Dav1dRefmvsDSPContext {
     pub splat_mv: splat_mv_fn,
 }
-pub type splat_mv_fn = Option::<
+pub type splat_mv_fn = Option<
     unsafe extern "C" fn(
         *mut *mut refmvs_block,
         *const refmvs_block,
@@ -910,7 +864,7 @@ pub struct Dav1dLoopRestorationDSPContext {
     pub wiener: [looprestorationfilter_fn; 2],
     pub sgr: [looprestorationfilter_fn; 3],
 }
-pub type looprestorationfilter_fn = Option::<
+pub type looprestorationfilter_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -949,7 +903,7 @@ pub struct Dav1dCdefDSPContext {
     pub dir: cdef_dir_fn,
     pub fb: [cdef_fn; 3],
 }
-pub type cdef_fn = Option::<
+pub type cdef_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -969,19 +923,14 @@ pub const CDEF_HAVE_TOP: CdefEdgeFlags = 4;
 pub const CDEF_HAVE_RIGHT: CdefEdgeFlags = 2;
 pub const CDEF_HAVE_LEFT: CdefEdgeFlags = 1;
 pub type const_left_pixel_row_2px = *const libc::c_void;
-pub type cdef_dir_fn = Option::<
-    unsafe extern "C" fn(
-        *const libc::c_void,
-        ptrdiff_t,
-        *mut libc::c_uint,
-    ) -> libc::c_int,
->;
+pub type cdef_dir_fn =
+    Option<unsafe extern "C" fn(*const libc::c_void, ptrdiff_t, *mut libc::c_uint) -> libc::c_int>;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Dav1dLoopFilterDSPContext {
     pub loop_filter_sb: [[loopfilter_sb_fn; 2]; 2],
 }
-pub type loopfilter_sb_fn = Option::<
+pub type loopfilter_sb_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -1004,13 +953,8 @@ pub struct Av1FilterLUT {
 pub struct Dav1dInvTxfmDSPContext {
     pub itxfm_add: [[itxfm_fn; 17]; 19],
 }
-pub type itxfm_fn = Option::<
-    unsafe extern "C" fn(
-        *mut libc::c_void,
-        ptrdiff_t,
-        *mut libc::c_void,
-        libc::c_int,
-    ) -> (),
+pub type itxfm_fn = Option<
+    unsafe extern "C" fn(*mut libc::c_void, ptrdiff_t, *mut libc::c_void, libc::c_int) -> (),
 >;
 pub type coef = ();
 #[derive(Copy, Clone)]
@@ -1032,7 +976,7 @@ pub struct Dav1dMCDSPContext {
     pub emu_edge: emu_edge_fn,
     pub resize: resize_fn,
 }
-pub type resize_fn = Option::<
+pub type resize_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -1045,7 +989,7 @@ pub type resize_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type emu_edge_fn = Option::<
+pub type emu_edge_fn = Option<
     unsafe extern "C" fn(
         intptr_t,
         intptr_t,
@@ -1059,7 +1003,7 @@ pub type emu_edge_fn = Option::<
         ptrdiff_t,
     ) -> (),
 >;
-pub type warp8x8t_fn = Option::<
+pub type warp8x8t_fn = Option<
     unsafe extern "C" fn(
         *mut int16_t,
         ptrdiff_t,
@@ -1070,7 +1014,7 @@ pub type warp8x8t_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type warp8x8_fn = Option::<
+pub type warp8x8_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -1081,7 +1025,7 @@ pub type warp8x8_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type blend_dir_fn = Option::<
+pub type blend_dir_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -1090,7 +1034,7 @@ pub type blend_dir_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type blend_fn = Option::<
+pub type blend_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -1100,7 +1044,7 @@ pub type blend_fn = Option::<
         *const uint8_t,
     ) -> (),
 >;
-pub type w_mask_fn = Option::<
+pub type w_mask_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -1112,7 +1056,7 @@ pub type w_mask_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type mask_fn = Option::<
+pub type mask_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -1123,7 +1067,7 @@ pub type mask_fn = Option::<
         *const uint8_t,
     ) -> (),
 >;
-pub type w_avg_fn = Option::<
+pub type w_avg_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -1134,7 +1078,7 @@ pub type w_avg_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type avg_fn = Option::<
+pub type avg_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -1144,7 +1088,7 @@ pub type avg_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type mct_scaled_fn = Option::<
+pub type mct_scaled_fn = Option<
     unsafe extern "C" fn(
         *mut int16_t,
         *const libc::c_void,
@@ -1157,7 +1101,7 @@ pub type mct_scaled_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type mct_fn = Option::<
+pub type mct_fn = Option<
     unsafe extern "C" fn(
         *mut int16_t,
         *const libc::c_void,
@@ -1168,7 +1112,7 @@ pub type mct_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type mc_scaled_fn = Option::<
+pub type mc_scaled_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -1182,7 +1126,7 @@ pub type mc_scaled_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type mc_fn = Option::<
+pub type mc_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -1202,7 +1146,7 @@ pub struct Dav1dIntraPredDSPContext {
     pub cfl_pred: [cfl_pred_fn; 6],
     pub pal_pred: pal_pred_fn,
 }
-pub type pal_pred_fn = Option::<
+pub type pal_pred_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -1212,7 +1156,7 @@ pub type pal_pred_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type cfl_pred_fn = Option::<
+pub type cfl_pred_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -1223,7 +1167,7 @@ pub type cfl_pred_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type cfl_ac_fn = Option::<
+pub type cfl_ac_fn = Option<
     unsafe extern "C" fn(
         *mut int16_t,
         *const libc::c_void,
@@ -1234,7 +1178,7 @@ pub type cfl_ac_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type angular_ipred_fn = Option::<
+pub type angular_ipred_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         ptrdiff_t,
@@ -1254,7 +1198,7 @@ pub struct Dav1dFilmGrainDSPContext {
     pub fgy_32x32xn: fgy_32x32xn_fn,
     pub fguv_32x32xn: [fguv_32x32xn_fn; 3],
 }
-pub type fguv_32x32xn_fn = Option::<
+pub type fguv_32x32xn_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         *const libc::c_void,
@@ -1272,7 +1216,7 @@ pub type fguv_32x32xn_fn = Option::<
     ) -> (),
 >;
 pub type entry = int8_t;
-pub type fgy_32x32xn_fn = Option::<
+pub type fgy_32x32xn_fn = Option<
     unsafe extern "C" fn(
         *mut libc::c_void,
         *const libc::c_void,
@@ -1285,7 +1229,7 @@ pub type fgy_32x32xn_fn = Option::<
         libc::c_int,
     ) -> (),
 >;
-pub type generate_grain_uv_fn = Option::<
+pub type generate_grain_uv_fn = Option<
     unsafe extern "C" fn(
         *mut [entry; 82],
         *const [entry; 82],
@@ -1293,9 +1237,8 @@ pub type generate_grain_uv_fn = Option::<
         intptr_t,
     ) -> (),
 >;
-pub type generate_grain_y_fn = Option::<
-    unsafe extern "C" fn(*mut [entry; 82], *const Dav1dFilmGrainData) -> (),
->;
+pub type generate_grain_y_fn =
+    Option<unsafe extern "C" fn(*mut [entry; 82], *const Dav1dFilmGrainData) -> ()>;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct CdfThreadContext {
@@ -1793,9 +1736,8 @@ pub struct MsacContext {
     pub rng: libc::c_uint,
     pub cnt: libc::c_int,
     pub allow_update_cdf: libc::c_int,
-    pub symbol_adapt16: Option::<
-        unsafe extern "C" fn(*mut MsacContext, *mut uint16_t, size_t) -> libc::c_uint,
-    >,
+    pub symbol_adapt16:
+        Option<unsafe extern "C" fn(*mut MsacContext, *mut uint16_t, size_t) -> libc::c_uint>,
 }
 pub type ec_win = size_t;
 #[derive(Copy, Clone)]
@@ -2031,17 +1973,14 @@ pub struct C2RustUnnamed_50 {
     pub filter_sbrow: filter_sbrow_fn,
     pub filter_sbrow_deblock_cols: filter_sbrow_fn,
     pub filter_sbrow_deblock_rows: filter_sbrow_fn,
-    pub filter_sbrow_cdef: Option::<
-        unsafe extern "C" fn(*mut Dav1dTaskContext, libc::c_int) -> (),
-    >,
+    pub filter_sbrow_cdef: Option<unsafe extern "C" fn(*mut Dav1dTaskContext, libc::c_int) -> ()>,
     pub filter_sbrow_resize: filter_sbrow_fn,
     pub filter_sbrow_lr: filter_sbrow_fn,
     pub backup_ipred_edge: backup_ipred_edge_fn,
     pub read_coef_blocks: read_coef_blocks_fn,
 }
-pub type read_coef_blocks_fn = Option::<
-    unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> (),
->;
+pub type read_coef_blocks_fn =
+    Option<unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> ()>;
 pub type BlockSize = libc::c_uint;
 pub const N_BS_SIZES: BlockSize = 22;
 pub const BS_4x4: BlockSize = 21;
@@ -2066,26 +2005,12 @@ pub const BS_64x64: BlockSize = 3;
 pub const BS_64x128: BlockSize = 2;
 pub const BS_128x64: BlockSize = 1;
 pub const BS_128x128: BlockSize = 0;
-pub type backup_ipred_edge_fn = Option::<
-    unsafe extern "C" fn(*mut Dav1dTaskContext) -> (),
->;
-pub type filter_sbrow_fn = Option::<
-    unsafe extern "C" fn(*mut Dav1dFrameContext, libc::c_int) -> (),
->;
-pub type recon_b_inter_fn = Option::<
-    unsafe extern "C" fn(
-        *mut Dav1dTaskContext,
-        BlockSize,
-        *const Av1Block,
-    ) -> libc::c_int,
->;
-pub type recon_b_intra_fn = Option::<
-    unsafe extern "C" fn(
-        *mut Dav1dTaskContext,
-        BlockSize,
-        EdgeFlags,
-        *const Av1Block,
-    ) -> (),
+pub type backup_ipred_edge_fn = Option<unsafe extern "C" fn(*mut Dav1dTaskContext) -> ()>;
+pub type filter_sbrow_fn = Option<unsafe extern "C" fn(*mut Dav1dFrameContext, libc::c_int) -> ()>;
+pub type recon_b_inter_fn =
+    Option<unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> libc::c_int>;
+pub type recon_b_intra_fn = Option<
+    unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, EdgeFlags, *const Av1Block) -> (),
 >;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -2183,18 +2108,17 @@ unsafe extern "C" fn umin(a: libc::c_uint, b: libc::c_uint) -> libc::c_uint {
     return if a < b { a } else { b };
 }
 #[inline]
-unsafe extern "C" fn iclip(
-    v: libc::c_int,
-    min: libc::c_int,
-    max: libc::c_int,
-) -> libc::c_int {
-    return if v < min { min } else if v > max { max } else { v };
+unsafe extern "C" fn iclip(v: libc::c_int, min: libc::c_int, max: libc::c_int) -> libc::c_int {
+    return if v < min {
+        min
+    } else if v > max {
+        max
+    } else {
+        v
+    };
 }
 #[inline]
-unsafe extern "C" fn dav1d_alloc_aligned(
-    mut sz: size_t,
-    mut align: size_t,
-) -> *mut libc::c_void {
+unsafe extern "C" fn dav1d_alloc_aligned(mut sz: size_t, mut align: size_t) -> *mut libc::c_void {
     if align & align.wrapping_sub(1 as libc::c_int as libc::c_ulong) != 0 {
         unreachable!();
     }
@@ -2243,22 +2167,16 @@ pub unsafe extern "C" fn dav1d_default_settings(s: *mut Dav1dSettings) {
     (*s).max_frame_delay = 0 as libc::c_int;
     (*s).apply_grain = 1 as libc::c_int;
     (*s).allocator.cookie = 0 as *mut libc::c_void;
-    (*s)
-        .allocator
-        .alloc_picture_callback = Some(
+    (*s).allocator.alloc_picture_callback = Some(
         dav1d_default_picture_alloc
             as unsafe extern "C" fn(*mut Dav1dPicture, *mut libc::c_void) -> libc::c_int,
     );
-    (*s)
-        .allocator
-        .release_picture_callback = Some(
+    (*s).allocator.release_picture_callback = Some(
         dav1d_default_picture_release
             as unsafe extern "C" fn(*mut Dav1dPicture, *mut libc::c_void) -> (),
     );
     (*s).logger.cookie = 0 as *mut libc::c_void;
-    (*s)
-        .logger
-        .callback = Some(
+    (*s).logger.callback = Some(
         dav1d_log_default_callback
             as unsafe extern "C" fn(
                 *mut libc::c_void,
@@ -2275,18 +2193,15 @@ pub unsafe extern "C" fn dav1d_default_settings(s: *mut Dav1dSettings) {
     (*s).decode_frame_type = DAV1D_DECODEFRAMETYPE_ALL;
 }
 #[cold]
-unsafe extern "C" fn get_stack_size_internal(
-    thread_attr: *const pthread_attr_t,
-) -> size_t {
-    let get_minstack: Option::<unsafe extern "C" fn(*const pthread_attr_t) -> size_t> = ::core::mem::transmute::<
-        *mut libc::c_void,
-        Option::<unsafe extern "C" fn(*const pthread_attr_t) -> size_t>,
-    >(
-        dlsym(
+unsafe extern "C" fn get_stack_size_internal(thread_attr: *const pthread_attr_t) -> size_t {
+    let get_minstack: Option<unsafe extern "C" fn(*const pthread_attr_t) -> size_t> =
+        ::core::mem::transmute::<
+            *mut libc::c_void,
+            Option<unsafe extern "C" fn(*const pthread_attr_t) -> size_t>,
+        >(dlsym(
             0 as *mut libc::c_void,
             b"__pthread_get_minstack\0" as *const u8 as *const libc::c_char,
-        ),
-    );
+        ));
     if get_minstack.is_some() {
         return (get_minstack.expect("non-null function pointer")(thread_attr))
             .wrapping_sub(__sysconf(75 as libc::c_int) as libc::c_ulong);
@@ -2354,14 +2269,17 @@ unsafe extern "C" fn get_num_threads(
     *n_tc = (if (*s).n_threads != 0 {
         (*s).n_threads
     } else {
-        iclip(dav1d_num_logical_processors(c), 1 as libc::c_int, 256 as libc::c_int)
+        iclip(
+            dav1d_num_logical_processors(c),
+            1 as libc::c_int,
+            256 as libc::c_int,
+        )
     }) as libc::c_uint;
     *n_fc = if (*s).max_frame_delay != 0 {
         umin((*s).max_frame_delay as libc::c_uint, *n_tc)
     } else {
         (if *n_tc < 50 as libc::c_int as libc::c_uint {
-            fc_lut[(*n_tc).wrapping_sub(1 as libc::c_int as libc::c_uint) as usize]
-                as libc::c_int
+            fc_lut[(*n_tc).wrapping_sub(1 as libc::c_int as libc::c_uint) as usize] as libc::c_int
         } else {
             8 as libc::c_int
         }) as libc::c_uint
@@ -2375,13 +2293,9 @@ pub unsafe extern "C" fn dav1d_get_frame_delay(s: *const Dav1dSettings) -> libc:
     if s.is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8
-                as *const libc::c_char,
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
             b"s != NULL\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<
-                &[u8; 22],
-                &[libc::c_char; 22],
-            >(b"dav1d_get_frame_delay\0"))
+            (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(b"dav1d_get_frame_delay\0"))
                 .as_ptr(),
         );
         return -(22 as libc::c_int);
@@ -2389,31 +2303,21 @@ pub unsafe extern "C" fn dav1d_get_frame_delay(s: *const Dav1dSettings) -> libc:
     if !((*s).n_threads >= 0 as libc::c_int && (*s).n_threads <= 256 as libc::c_int) {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8
-                as *const libc::c_char,
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
             b"s->n_threads >= 0 && s->n_threads <= DAV1D_MAX_THREADS\0" as *const u8
                 as *const libc::c_char,
-            (*::core::mem::transmute::<
-                &[u8; 22],
-                &[libc::c_char; 22],
-            >(b"dav1d_get_frame_delay\0"))
+            (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(b"dav1d_get_frame_delay\0"))
                 .as_ptr(),
         );
         return -(22 as libc::c_int);
     }
-    if !((*s).max_frame_delay >= 0 as libc::c_int
-        && (*s).max_frame_delay <= 256 as libc::c_int)
-    {
+    if !((*s).max_frame_delay >= 0 as libc::c_int && (*s).max_frame_delay <= 256 as libc::c_int) {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
+            b"s->max_frame_delay >= 0 && s->max_frame_delay <= DAV1D_MAX_FRAME_DELAY\0" as *const u8
                 as *const libc::c_char,
-            b"s->max_frame_delay >= 0 && s->max_frame_delay <= DAV1D_MAX_FRAME_DELAY\0"
-                as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<
-                &[u8; 22],
-                &[libc::c_char; 22],
-            >(b"dav1d_get_frame_delay\0"))
+            (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(b"dav1d_get_frame_delay\0"))
                 .as_ptr(),
         );
         return -(22 as libc::c_int);
@@ -2429,90 +2333,73 @@ pub unsafe extern "C" fn dav1d_open(
 ) -> libc::c_int {
     let mut current_block: u64;
     static mut initted: pthread_once_t = 0 as libc::c_int;
-    pthread_once(&mut initted, Some(init_internal as unsafe extern "C" fn() -> ()));
+    pthread_once(
+        &mut initted,
+        Some(init_internal as unsafe extern "C" fn() -> ()),
+    );
     if c_out.is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8
-                as *const libc::c_char,
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
             b"c_out != NULL\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<&[u8; 11], &[libc::c_char; 11]>(b"dav1d_open\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 11], &[libc::c_char; 11]>(b"dav1d_open\0")).as_ptr(),
         );
         return -(22 as libc::c_int);
     }
     if s.is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8
-                as *const libc::c_char,
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
             b"s != NULL\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<&[u8; 11], &[libc::c_char; 11]>(b"dav1d_open\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 11], &[libc::c_char; 11]>(b"dav1d_open\0")).as_ptr(),
         );
         return -(22 as libc::c_int);
     }
     if !((*s).n_threads >= 0 as libc::c_int && (*s).n_threads <= 256 as libc::c_int) {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8
-                as *const libc::c_char,
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
             b"s->n_threads >= 0 && s->n_threads <= DAV1D_MAX_THREADS\0" as *const u8
                 as *const libc::c_char,
-            (*::core::mem::transmute::<&[u8; 11], &[libc::c_char; 11]>(b"dav1d_open\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 11], &[libc::c_char; 11]>(b"dav1d_open\0")).as_ptr(),
         );
         return -(22 as libc::c_int);
     }
-    if !((*s).max_frame_delay >= 0 as libc::c_int
-        && (*s).max_frame_delay <= 256 as libc::c_int)
-    {
+    if !((*s).max_frame_delay >= 0 as libc::c_int && (*s).max_frame_delay <= 256 as libc::c_int) {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
+            b"s->max_frame_delay >= 0 && s->max_frame_delay <= DAV1D_MAX_FRAME_DELAY\0" as *const u8
                 as *const libc::c_char,
-            b"s->max_frame_delay >= 0 && s->max_frame_delay <= DAV1D_MAX_FRAME_DELAY\0"
-                as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<&[u8; 11], &[libc::c_char; 11]>(b"dav1d_open\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 11], &[libc::c_char; 11]>(b"dav1d_open\0")).as_ptr(),
         );
         return -(22 as libc::c_int);
     }
     if ((*s).allocator.alloc_picture_callback).is_none() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8
-                as *const libc::c_char,
-            b"s->allocator.alloc_picture_callback != NULL\0" as *const u8
-                as *const libc::c_char,
-            (*::core::mem::transmute::<&[u8; 11], &[libc::c_char; 11]>(b"dav1d_open\0"))
-                .as_ptr(),
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
+            b"s->allocator.alloc_picture_callback != NULL\0" as *const u8 as *const libc::c_char,
+            (*::core::mem::transmute::<&[u8; 11], &[libc::c_char; 11]>(b"dav1d_open\0")).as_ptr(),
         );
         return -(22 as libc::c_int);
     }
     if ((*s).allocator.release_picture_callback).is_none() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8
-                as *const libc::c_char,
-            b"s->allocator.release_picture_callback != NULL\0" as *const u8
-                as *const libc::c_char,
-            (*::core::mem::transmute::<&[u8; 11], &[libc::c_char; 11]>(b"dav1d_open\0"))
-                .as_ptr(),
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
+            b"s->allocator.release_picture_callback != NULL\0" as *const u8 as *const libc::c_char,
+            (*::core::mem::transmute::<&[u8; 11], &[libc::c_char; 11]>(b"dav1d_open\0")).as_ptr(),
         );
         return -(22 as libc::c_int);
     }
-    if !((*s).operating_point >= 0 as libc::c_int
-        && (*s).operating_point <= 31 as libc::c_int)
-    {
+    if !((*s).operating_point >= 0 as libc::c_int && (*s).operating_point <= 31 as libc::c_int) {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8
-                as *const libc::c_char,
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
             b"s->operating_point >= 0 && s->operating_point <= 31\0" as *const u8
                 as *const libc::c_char,
-            (*::core::mem::transmute::<&[u8; 11], &[libc::c_char; 11]>(b"dav1d_open\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 11], &[libc::c_char; 11]>(b"dav1d_open\0")).as_ptr(),
         );
         return -(22 as libc::c_int);
     }
@@ -2536,8 +2423,7 @@ pub unsafe extern "C" fn dav1d_open(
     if pthread_attr_init(&mut thread_attr) != 0 {
         return -(12 as libc::c_int);
     }
-    let mut stack_size: size_t = ((1024 as libc::c_int * 1024 as libc::c_int)
-        as libc::c_ulong)
+    let mut stack_size: size_t = ((1024 as libc::c_int * 1024 as libc::c_int) as libc::c_ulong)
         .wrapping_add(get_stack_size_internal(&mut thread_attr));
     pthread_attr_setstacksize(&mut thread_attr, stack_size);
     *c_out = dav1d_alloc_aligned(
@@ -2579,10 +2465,7 @@ pub unsafe extern "C" fn dav1d_open(
                 && (*c).allocator.release_picture_callback
                     == Some(
                         dav1d_default_picture_release
-                            as unsafe extern "C" fn(
-                                *mut Dav1dPicture,
-                                *mut libc::c_void,
-                            ) -> (),
+                            as unsafe extern "C" fn(*mut Dav1dPicture, *mut libc::c_void) -> (),
                     )
             {
                 if !((*c).allocator.cookie).is_null() {
@@ -2604,10 +2487,7 @@ pub unsafe extern "C" fn dav1d_open(
                 || (*c).allocator.release_picture_callback
                     == Some(
                         dav1d_default_picture_release
-                            as unsafe extern "C" fn(
-                                *mut Dav1dPicture,
-                                *mut libc::c_void,
-                            ) -> (),
+                            as unsafe extern "C" fn(*mut Dav1dPicture, *mut libc::c_void) -> (),
                     )
             {
                 current_block = 7507372500559521712;
@@ -2619,14 +2499,11 @@ pub unsafe extern "C" fn dav1d_open(
                 _ => {
                     if (::core::mem::size_of::<size_t>() as libc::c_ulong)
                         < 8 as libc::c_int as libc::c_ulong
-                        && ((*s).frame_size_limit)
-                            .wrapping_sub(1 as libc::c_int as libc::c_uint)
-                            >= (8192 as libc::c_int * 8192 as libc::c_int)
-                                as libc::c_uint
+                        && ((*s).frame_size_limit).wrapping_sub(1 as libc::c_int as libc::c_uint)
+                            >= (8192 as libc::c_int * 8192 as libc::c_int) as libc::c_uint
                     {
-                        (*c)
-                            .frame_size_limit = (8192 as libc::c_int
-                            * 8192 as libc::c_int) as libc::c_uint;
+                        (*c).frame_size_limit =
+                            (8192 as libc::c_int * 8192 as libc::c_int) as libc::c_uint;
                         if (*s).frame_size_limit != 0 {
                             dav1d_log(
                                 c,
@@ -2640,8 +2517,7 @@ pub unsafe extern "C" fn dav1d_open(
                     (*c).flush = &mut (*c).flush_mem;
                     *(*c).flush = 0 as libc::c_int;
                     get_num_threads(c, s, &mut (*c).n_tc, &mut (*c).n_fc);
-                    (*c)
-                        .fc = dav1d_alloc_aligned(
+                    (*c).fc = dav1d_alloc_aligned(
                         (::core::mem::size_of::<Dav1dFrameContext>() as libc::c_ulong)
                             .wrapping_mul((*c).n_fc as libc::c_ulong),
                         32 as libc::c_int as size_t,
@@ -2650,12 +2526,10 @@ pub unsafe extern "C" fn dav1d_open(
                         memset(
                             (*c).fc as *mut libc::c_void,
                             0 as libc::c_int,
-                            (::core::mem::size_of::<Dav1dFrameContext>()
-                                as libc::c_ulong)
+                            (::core::mem::size_of::<Dav1dFrameContext>() as libc::c_ulong)
                                 .wrapping_mul((*c).n_fc as libc::c_ulong),
                         );
-                        (*c)
-                            .tc = dav1d_alloc_aligned(
+                        (*c).tc = dav1d_alloc_aligned(
                             (::core::mem::size_of::<Dav1dTaskContext>() as libc::c_ulong)
                                 .wrapping_mul((*c).n_tc as libc::c_ulong),
                             64 as libc::c_int as size_t,
@@ -2664,8 +2538,7 @@ pub unsafe extern "C" fn dav1d_open(
                             memset(
                                 (*c).tc as *mut libc::c_void,
                                 0 as libc::c_int,
-                                (::core::mem::size_of::<Dav1dTaskContext>()
-                                    as libc::c_ulong)
+                                (::core::mem::size_of::<Dav1dTaskContext>() as libc::c_ulong)
                                     .wrapping_mul((*c).n_tc as libc::c_ulong),
                             );
                             if (*c).n_tc > 1 as libc::c_int as libc::c_uint {
@@ -2692,12 +2565,10 @@ pub unsafe extern "C" fn dav1d_open(
                                     current_block = 7507372500559521712;
                                 } else {
                                     (*c).task_thread.cur = (*c).n_fc;
-                                    *&mut (*c)
-                                        .task_thread
-                                        .reset_task_cur = (2147483647 as libc::c_int
-                                        as libc::c_uint)
-                                        .wrapping_mul(2 as libc::c_uint)
-                                        .wrapping_add(1 as libc::c_uint);
+                                    *&mut (*c).task_thread.reset_task_cur =
+                                        (2147483647 as libc::c_int as libc::c_uint)
+                                            .wrapping_mul(2 as libc::c_uint)
+                                            .wrapping_add(1 as libc::c_uint);
                                     *&mut (*c).task_thread.cond_signaled = 0 as libc::c_int;
                                     (*c).task_thread.inited = 1 as libc::c_int;
                                     current_block = 1868291631715963762;
@@ -2709,13 +2580,12 @@ pub unsafe extern "C" fn dav1d_open(
                                 7507372500559521712 => {}
                                 _ => {
                                     if (*c).n_fc > 1 as libc::c_int as libc::c_uint {
-                                        (*c)
-                                            .frame_thread
-                                            .out_delayed = calloc(
+                                        (*c).frame_thread.out_delayed = calloc(
                                             (*c).n_fc as libc::c_ulong,
                                             ::core::mem::size_of::<Dav1dThreadPicture>()
                                                 as libc::c_ulong,
-                                        ) as *mut Dav1dThreadPicture;
+                                        )
+                                            as *mut Dav1dThreadPicture;
                                         if ((*c).frame_thread.out_delayed).is_null() {
                                             current_block = 7507372500559521712;
                                         } else {
@@ -2727,14 +2597,16 @@ pub unsafe extern "C" fn dav1d_open(
                                     match current_block {
                                         7507372500559521712 => {}
                                         _ => {
-                                            let mut n: libc::c_uint = 0 as libc::c_int as libc::c_uint;
+                                            let mut n: libc::c_uint =
+                                                0 as libc::c_int as libc::c_uint;
                                             loop {
                                                 if !(n < (*c).n_fc) {
                                                     current_block = 12027283704867122503;
                                                     break;
                                                 }
                                                 let f: *mut Dav1dFrameContext = &mut *((*c).fc)
-                                                    .offset(n as isize) as *mut Dav1dFrameContext;
+                                                    .offset(n as isize)
+                                                    as *mut Dav1dFrameContext;
                                                 if (*c).n_tc > 1 as libc::c_int as libc::c_uint {
                                                     if pthread_mutex_init(
                                                         &mut (*f).task_thread.lock,
@@ -2749,7 +2621,9 @@ pub unsafe extern "C" fn dav1d_open(
                                                         0 as *const pthread_condattr_t,
                                                     ) != 0
                                                     {
-                                                        pthread_mutex_destroy(&mut (*f).task_thread.lock);
+                                                        pthread_mutex_destroy(
+                                                            &mut (*f).task_thread.lock,
+                                                        );
                                                         current_block = 7507372500559521712;
                                                         break;
                                                     } else if pthread_mutex_init(
@@ -2757,8 +2631,12 @@ pub unsafe extern "C" fn dav1d_open(
                                                         0 as *const pthread_mutexattr_t,
                                                     ) != 0
                                                     {
-                                                        pthread_cond_destroy(&mut (*f).task_thread.cond);
-                                                        pthread_mutex_destroy(&mut (*f).task_thread.lock);
+                                                        pthread_cond_destroy(
+                                                            &mut (*f).task_thread.cond,
+                                                        );
+                                                        pthread_mutex_destroy(
+                                                            &mut (*f).task_thread.lock,
+                                                        );
                                                         current_block = 7507372500559521712;
                                                         break;
                                                     }
@@ -2772,26 +2650,34 @@ pub unsafe extern "C" fn dav1d_open(
                                             match current_block {
                                                 7507372500559521712 => {}
                                                 _ => {
-                                                    let mut m: libc::c_uint = 0 as libc::c_int as libc::c_uint;
+                                                    let mut m: libc::c_uint =
+                                                        0 as libc::c_int as libc::c_uint;
                                                     loop {
                                                         if !(m < (*c).n_tc) {
                                                             current_block = 15734707049249739970;
                                                             break;
                                                         }
-                                                        let t: *mut Dav1dTaskContext = &mut *((*c).tc)
-                                                            .offset(m as isize) as *mut Dav1dTaskContext;
-                                                        (*t)
-                                                            .f = &mut *((*c).fc).offset(0 as libc::c_int as isize)
+                                                        let t: *mut Dav1dTaskContext =
+                                                            &mut *((*c).tc).offset(m as isize)
+                                                                as *mut Dav1dTaskContext;
+                                                        (*t).f = &mut *((*c).fc)
+                                                            .offset(0 as libc::c_int as isize)
                                                             as *mut Dav1dFrameContext;
-                                                        (*t).task_thread.ttd = &mut (*c).task_thread;
+                                                        (*t).task_thread.ttd =
+                                                            &mut (*c).task_thread;
                                                         (*t).c = c;
                                                         memset(
-                                                            ((*t).c2rust_unnamed.cf_16bpc).as_mut_ptr()
+                                                            ((*t).c2rust_unnamed.cf_16bpc)
+                                                                .as_mut_ptr()
                                                                 as *mut libc::c_void,
                                                             0 as libc::c_int,
-                                                            ::core::mem::size_of::<[int32_t; 1024]>() as libc::c_ulong,
+                                                            ::core::mem::size_of::<[int32_t; 1024]>(
+                                                            )
+                                                                as libc::c_ulong,
                                                         );
-                                                        if (*c).n_tc > 1 as libc::c_int as libc::c_uint {
+                                                        if (*c).n_tc
+                                                            > 1 as libc::c_int as libc::c_uint
+                                                        {
                                                             if pthread_mutex_init(
                                                                 &mut (*t).task_thread.td.lock,
                                                                 0 as *const pthread_mutexattr_t,
@@ -2833,29 +2719,39 @@ pub unsafe extern "C" fn dav1d_open(
                                                     match current_block {
                                                         7507372500559521712 => {}
                                                         _ => {
-                                                            dav1d_refmvs_dsp_init(&mut (*c).refmvs_dsp);
-                                                            (*c)
+                                                            dav1d_refmvs_dsp_init(
+                                                                &mut (*c).refmvs_dsp,
+                                                            );
+                                                            (*c).intra_edge.root[BL_128X128
+                                                                as libc::c_int
+                                                                as usize] = &mut (*((*c)
                                                                 .intra_edge
-                                                                .root[BL_128X128 as libc::c_int
-                                                                as usize] = &mut (*((*c).intra_edge.branch_sb128)
+                                                                .branch_sb128)
                                                                 .as_mut_ptr()
                                                                 .offset(0 as libc::c_int as isize))
-                                                                .node;
+                                                            .node;
                                                             dav1d_init_mode_tree(
-                                                                (*c).intra_edge.root[BL_128X128 as libc::c_int as usize],
-                                                                ((*c).intra_edge.tip_sb128).as_mut_ptr(),
+                                                                (*c).intra_edge.root[BL_128X128
+                                                                    as libc::c_int
+                                                                    as usize],
+                                                                ((*c).intra_edge.tip_sb128)
+                                                                    .as_mut_ptr(),
                                                                 1 as libc::c_int,
                                                             );
-                                                            (*c)
+                                                            (*c).intra_edge.root[BL_64X64
+                                                                as libc::c_int
+                                                                as usize] = &mut (*((*c)
                                                                 .intra_edge
-                                                                .root[BL_64X64 as libc::c_int
-                                                                as usize] = &mut (*((*c).intra_edge.branch_sb64)
+                                                                .branch_sb64)
                                                                 .as_mut_ptr()
                                                                 .offset(0 as libc::c_int as isize))
-                                                                .node;
+                                                            .node;
                                                             dav1d_init_mode_tree(
-                                                                (*c).intra_edge.root[BL_64X64 as libc::c_int as usize],
-                                                                ((*c).intra_edge.tip_sb64).as_mut_ptr(),
+                                                                (*c).intra_edge.root[BL_64X64
+                                                                    as libc::c_int
+                                                                    as usize],
+                                                                ((*c).intra_edge.tip_sb64)
+                                                                    .as_mut_ptr(),
                                                                 0 as libc::c_int,
                                                             );
                                                             pthread_attr_destroy(&mut thread_attr);
@@ -2914,14 +2810,12 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
     if out.is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8
-                as *const libc::c_char,
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
             b"out != NULL\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<
-                &[u8; 28],
-                &[libc::c_char; 28],
-            >(b"dav1d_parse_sequence_header\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 28], &[libc::c_char; 28]>(
+                b"dav1d_parse_sequence_header\0",
+            ))
+            .as_ptr(),
         );
         return -(22 as libc::c_int);
     }
@@ -2960,10 +2854,7 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
             &mut buf,
             ptr,
             sz,
-            Some(
-                dummy_free
-                    as unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> (),
-            ),
+            Some(dummy_free as unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> ()),
             0 as *mut libc::c_void,
         );
         if res < 0 as libc::c_int {
@@ -2990,9 +2881,8 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
                     if !(res as size_t <= buf.sz) {
                         unreachable!();
                     }
-                    buf
-                        .sz = (buf.sz as libc::c_ulong)
-                        .wrapping_sub(res as libc::c_ulong) as size_t as size_t;
+                    buf.sz = (buf.sz as libc::c_ulong).wrapping_sub(res as libc::c_ulong) as size_t
+                        as size_t;
                     buf.data = (buf.data).offset(res as isize);
                     current_block = 5399440093318478209;
                 } else if ((*c).seq_hdr).is_null() {
@@ -3018,17 +2908,12 @@ unsafe extern "C" fn has_grain(pic: *const Dav1dPicture) -> libc::c_int {
     return ((*fgdata).num_y_points != 0
         || (*fgdata).num_uv_points[0 as libc::c_int as usize] != 0
         || (*fgdata).num_uv_points[1 as libc::c_int as usize] != 0
-        || (*fgdata).clip_to_restricted_range != 0
-            && (*fgdata).chroma_scaling_from_luma != 0) as libc::c_int;
+        || (*fgdata).clip_to_restricted_range != 0 && (*fgdata).chroma_scaling_from_luma != 0)
+        as libc::c_int;
 }
-unsafe extern "C" fn output_image(
-    c: *mut Dav1dContext,
-    out: *mut Dav1dPicture,
-) -> libc::c_int {
+unsafe extern "C" fn output_image(c: *mut Dav1dContext, out: *mut Dav1dPicture) -> libc::c_int {
     let mut res: libc::c_int = 0 as libc::c_int;
-    let in_0: *mut Dav1dThreadPicture = if (*c).all_layers != 0
-        || (*c).max_spatial_id == 0
-    {
+    let in_0: *mut Dav1dThreadPicture = if (*c).all_layers != 0 || (*c).max_spatial_id == 0 {
         &mut (*c).out
     } else {
         &mut (*c).cache
@@ -3040,17 +2925,15 @@ unsafe extern "C" fn output_image(
         res = dav1d_apply_grain(c, out, &mut (*in_0).p);
         dav1d_thread_picture_unref(in_0);
     }
-    if (*c).all_layers == 0 && (*c).max_spatial_id != 0
+    if (*c).all_layers == 0
+        && (*c).max_spatial_id != 0
         && !((*c).out.p.data[0 as libc::c_int as usize]).is_null()
     {
         dav1d_thread_picture_move_ref(in_0, &mut (*c).out);
     }
     return res;
 }
-unsafe extern "C" fn output_picture_ready(
-    c: *mut Dav1dContext,
-    drain: libc::c_int,
-) -> libc::c_int {
+unsafe extern "C" fn output_picture_ready(c: *mut Dav1dContext, drain: libc::c_int) -> libc::c_int {
     if (*c).cached_error != 0 {
         return 1 as libc::c_int;
     }
@@ -3060,7 +2943,8 @@ unsafe extern "C" fn output_picture_ready(
         {
             if (*c).max_spatial_id == (*(*c).cache.p.frame_hdr).spatial_id
                 || (*c).out.flags as libc::c_uint
-                    & PICTURE_FLAG_NEW_TEMPORAL_UNIT as libc::c_int as libc::c_uint != 0
+                    & PICTURE_FLAG_NEW_TEMPORAL_UNIT as libc::c_int as libc::c_uint
+                    != 0
             {
                 return 1 as libc::c_int;
             }
@@ -3069,7 +2953,7 @@ unsafe extern "C" fn output_picture_ready(
             return 0 as libc::c_int;
         } else {
             if !((*c).cache.p.data[0 as libc::c_int as usize]).is_null() && drain != 0 {
-                return 1 as libc::c_int
+                return 1 as libc::c_int;
             } else {
                 if !((*c).out.p.data[0 as libc::c_int as usize]).is_null() {
                     dav1d_thread_picture_move_ref(&mut (*c).cache, &mut (*c).out);
@@ -3080,15 +2964,12 @@ unsafe extern "C" fn output_picture_ready(
     }
     return !((*c).out.p.data[0 as libc::c_int as usize]).is_null() as libc::c_int;
 }
-unsafe extern "C" fn drain_picture(
-    c: *mut Dav1dContext,
-    out: *mut Dav1dPicture,
-) -> libc::c_int {
+unsafe extern "C" fn drain_picture(c: *mut Dav1dContext, out: *mut Dav1dPicture) -> libc::c_int {
     let mut drain_count: libc::c_uint = 0 as libc::c_int as libc::c_uint;
     loop {
         let next: libc::c_uint = (*c).frame_thread.next;
-        let f: *mut Dav1dFrameContext = &mut *((*c).fc).offset(next as isize)
-            as *mut Dav1dFrameContext;
+        let f: *mut Dav1dFrameContext =
+            &mut *((*c).fc).offset(next as isize) as *mut Dav1dFrameContext;
         pthread_mutex_lock(&mut (*c).task_thread.lock);
         while (*f).n_tile_data > 0 as libc::c_int {
             pthread_cond_wait(
@@ -3096,15 +2977,14 @@ unsafe extern "C" fn drain_picture(
                 &mut (*(*f).task_thread.ttd).lock,
             );
         }
-        let out_delayed: *mut Dav1dThreadPicture = &mut *((*c).frame_thread.out_delayed)
-            .offset(next as isize) as *mut Dav1dThreadPicture;
+        let out_delayed: *mut Dav1dThreadPicture =
+            &mut *((*c).frame_thread.out_delayed).offset(next as isize) as *mut Dav1dThreadPicture;
         (*c).frame_thread.next = ((*c).frame_thread.next).wrapping_add(1);
         if (*c).frame_thread.next == (*c).n_fc {
             (*c).frame_thread.next = 0 as libc::c_int as libc::c_uint;
         }
-        let mut first: libc::c_uint = ::core::intrinsics::atomic_load_seqcst(
-            &mut (*c).task_thread.first,
-        );
+        let mut first: libc::c_uint =
+            ::core::intrinsics::atomic_load_seqcst(&mut (*c).task_thread.first);
         if first.wrapping_add(1 as libc::c_uint) < (*c).n_fc {
             let fresh0 = &mut (*c).task_thread.first;
             let fresh1 = 1 as libc::c_uint;
@@ -3148,11 +3028,7 @@ unsafe extern "C" fn drain_picture(
                         .wrapping_sub(1 as libc::c_int as libc::c_uint)
             {
                 dav1d_thread_picture_ref(&mut (*c).out, out_delayed);
-                (*c)
-                    .event_flags = ::core::mem::transmute::<
-                    libc::c_uint,
-                    Dav1dEventFlags,
-                >(
+                (*c).event_flags = ::core::mem::transmute::<libc::c_uint, Dav1dEventFlags>(
                     (*c).event_flags as libc::c_uint
                         | dav1d_picture_get_event_flags(out_delayed) as libc::c_uint,
                 );
@@ -3186,9 +3062,8 @@ unsafe extern "C" fn gen_picture(c: *mut Dav1dContext) -> libc::c_int {
             if !(res as size_t <= (*in_0).sz) {
                 unreachable!();
             }
-            (*in_0)
-                .sz = ((*in_0).sz as libc::c_ulong).wrapping_sub(res as libc::c_ulong)
-                as size_t as size_t;
+            (*in_0).sz = ((*in_0).sz as libc::c_ulong).wrapping_sub(res as libc::c_ulong) as size_t
+                as size_t;
             (*in_0).data = ((*in_0).data).offset(res as isize);
             if (*in_0).sz == 0 {
                 dav1d_data_unref_internal(in_0);
@@ -3211,13 +3086,9 @@ pub unsafe extern "C" fn dav1d_send_data(
     if c.is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8
-                as *const libc::c_char,
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
             b"c != NULL\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<
-                &[u8; 16],
-                &[libc::c_char; 16],
-            >(b"dav1d_send_data\0"))
+            (*::core::mem::transmute::<&[u8; 16], &[libc::c_char; 16]>(b"dav1d_send_data\0"))
                 .as_ptr(),
         );
         return -(22 as libc::c_int);
@@ -3225,13 +3096,9 @@ pub unsafe extern "C" fn dav1d_send_data(
     if in_0.is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8
-                as *const libc::c_char,
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
             b"in != NULL\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<
-                &[u8; 16],
-                &[libc::c_char; 16],
-            >(b"dav1d_send_data\0"))
+            (*::core::mem::transmute::<&[u8; 16], &[libc::c_char; 16]>(b"dav1d_send_data\0"))
                 .as_ptr(),
         );
         return -(22 as libc::c_int);
@@ -3239,13 +3106,9 @@ pub unsafe extern "C" fn dav1d_send_data(
     if !(((*in_0).data).is_null() || (*in_0).sz != 0) {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8
-                as *const libc::c_char,
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
             b"in->data == NULL || in->sz\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<
-                &[u8; 16],
-                &[libc::c_char; 16],
-            >(b"dav1d_send_data\0"))
+            (*::core::mem::transmute::<&[u8; 16], &[libc::c_char; 16]>(b"dav1d_send_data\0"))
                 .as_ptr(),
         );
         return -(22 as libc::c_int);
@@ -3271,13 +3134,9 @@ pub unsafe extern "C" fn dav1d_get_picture(
     if c.is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8
-                as *const libc::c_char,
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
             b"c != NULL\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<
-                &[u8; 18],
-                &[libc::c_char; 18],
-            >(b"dav1d_get_picture\0"))
+            (*::core::mem::transmute::<&[u8; 18], &[libc::c_char; 18]>(b"dav1d_get_picture\0"))
                 .as_ptr(),
         );
         return -(22 as libc::c_int);
@@ -3285,13 +3144,9 @@ pub unsafe extern "C" fn dav1d_get_picture(
     if out.is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8
-                as *const libc::c_char,
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
             b"out != NULL\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<
-                &[u8; 18],
-                &[libc::c_char; 18],
-            >(b"dav1d_get_picture\0"))
+            (*::core::mem::transmute::<&[u8; 18], &[libc::c_char; 18]>(b"dav1d_get_picture\0"))
                 .as_ptr(),
         );
         return -(22 as libc::c_int);
@@ -3328,13 +3183,9 @@ pub unsafe extern "C" fn dav1d_apply_grain(
     if c.is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8
-                as *const libc::c_char,
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
             b"c != NULL\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<
-                &[u8; 18],
-                &[libc::c_char; 18],
-            >(b"dav1d_apply_grain\0"))
+            (*::core::mem::transmute::<&[u8; 18], &[libc::c_char; 18]>(b"dav1d_apply_grain\0"))
                 .as_ptr(),
         );
         return -(22 as libc::c_int);
@@ -3342,13 +3193,9 @@ pub unsafe extern "C" fn dav1d_apply_grain(
     if out.is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8
-                as *const libc::c_char,
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
             b"out != NULL\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<
-                &[u8; 18],
-                &[libc::c_char; 18],
-            >(b"dav1d_apply_grain\0"))
+            (*::core::mem::transmute::<&[u8; 18], &[libc::c_char; 18]>(b"dav1d_apply_grain\0"))
                 .as_ptr(),
         );
         return -(22 as libc::c_int);
@@ -3356,13 +3203,9 @@ pub unsafe extern "C" fn dav1d_apply_grain(
     if in_0.is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8
-                as *const libc::c_char,
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
             b"in != NULL\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<
-                &[u8; 18],
-                &[libc::c_char; 18],
-            >(b"dav1d_apply_grain\0"))
+            (*::core::mem::transmute::<&[u8; 18], &[libc::c_char; 18]>(b"dav1d_apply_grain\0"))
                 .as_ptr(),
         );
         return -(22 as libc::c_int);
@@ -3382,21 +3225,17 @@ pub unsafe extern "C" fn dav1d_apply_grain(
             match (*out).p.bpc {
                 8 => {
                     dav1d_apply_grain_8bpc(
-                        &mut (*((*c).dsp).as_mut_ptr().offset(0 as libc::c_int as isize))
-                            .fg,
+                        &mut (*((*c).dsp).as_mut_ptr().offset(0 as libc::c_int as isize)).fg,
                         out,
                         in_0,
                     );
                 }
                 10 | 12 => {
                     dav1d_apply_grain_16bpc(
-                        &mut (*((*c).dsp)
-                            .as_mut_ptr()
-                            .offset(
-                                (((*out).p.bpc >> 1 as libc::c_int) - 4 as libc::c_int)
-                                    as isize,
-                            ))
-                            .fg,
+                        &mut (*((*c).dsp).as_mut_ptr().offset(
+                            (((*out).p.bpc >> 1 as libc::c_int) - 4 as libc::c_int) as isize,
+                        ))
+                        .fg,
                         out,
                         in_0,
                     );
@@ -3423,9 +3262,7 @@ pub unsafe extern "C" fn dav1d_flush(c: *mut Dav1dContext) {
     let mut i: libc::c_int = 0 as libc::c_int;
     while i < 8 as libc::c_int {
         if !((*c).refs[i as usize].p.p.frame_hdr).is_null() {
-            dav1d_thread_picture_unref(
-                &mut (*((*c).refs).as_mut_ptr().offset(i as isize)).p,
-            );
+            dav1d_thread_picture_unref(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).p);
         }
         dav1d_ref_dec(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).segmap);
         dav1d_ref_dec(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).refmvs);
@@ -3452,13 +3289,10 @@ pub unsafe extern "C" fn dav1d_flush(c: *mut Dav1dContext) {
         pthread_mutex_lock(&mut (*c).task_thread.lock);
         let mut i_0: libc::c_uint = 0 as libc::c_int as libc::c_uint;
         while i_0 < (*c).n_tc {
-            let tc: *mut Dav1dTaskContext = &mut *((*c).tc).offset(i_0 as isize)
-                as *mut Dav1dTaskContext;
+            let tc: *mut Dav1dTaskContext =
+                &mut *((*c).tc).offset(i_0 as isize) as *mut Dav1dTaskContext;
             while (*tc).task_thread.flushed == 0 {
-                pthread_cond_wait(
-                    &mut (*tc).task_thread.td.cond,
-                    &mut (*c).task_thread.lock,
-                );
+                pthread_cond_wait(&mut (*tc).task_thread.td.cond, &mut (*c).task_thread.lock);
             }
             i_0 = i_0.wrapping_add(1);
         }
@@ -3468,9 +3302,7 @@ pub unsafe extern "C" fn dav1d_flush(c: *mut Dav1dContext) {
             *fresh3 = 0 as *mut Dav1dTask;
             let ref mut fresh4 = (*((*c).fc).offset(i_1 as isize)).task_thread.task_tail;
             *fresh4 = 0 as *mut Dav1dTask;
-            let ref mut fresh5 = (*((*c).fc).offset(i_1 as isize))
-                .task_thread
-                .task_cur_prev;
+            let ref mut fresh5 = (*((*c).fc).offset(i_1 as isize)).task_thread.task_cur_prev;
             *fresh5 = 0 as *mut Dav1dTask;
             let ref mut fresh6 = (*((*c).fc).offset(i_1 as isize))
                 .task_thread
@@ -3509,15 +3341,14 @@ pub unsafe extern "C" fn dav1d_flush(c: *mut Dav1dContext) {
             if next == (*c).n_fc {
                 next = 0 as libc::c_int as libc::c_uint;
             }
-            let f: *mut Dav1dFrameContext = &mut *((*c).fc).offset(next as isize)
-                as *mut Dav1dFrameContext;
+            let f: *mut Dav1dFrameContext =
+                &mut *((*c).fc).offset(next as isize) as *mut Dav1dFrameContext;
             dav1d_decode_frame_exit(f, -(1 as libc::c_int));
             (*f).n_tile_data = 0 as libc::c_int;
             (*f).task_thread.retval = 0 as libc::c_int;
-            let mut out_delayed: *mut Dav1dThreadPicture = &mut *((*c)
-                .frame_thread
-                .out_delayed)
-                .offset(next as isize) as *mut Dav1dThreadPicture;
+            let mut out_delayed: *mut Dav1dThreadPicture = &mut *((*c).frame_thread.out_delayed)
+                .offset(next as isize)
+                as *mut Dav1dThreadPicture;
             if !((*out_delayed).p.frame_hdr).is_null() {
                 dav1d_thread_picture_unref(out_delayed);
             }
@@ -3534,21 +3365,16 @@ pub unsafe extern "C" fn dav1d_close(c_out: *mut *mut Dav1dContext) {
     if c_out.is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8
-                as *const libc::c_char,
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
             b"c_out != ((void*)0)\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<&[u8; 12], &[libc::c_char; 12]>(b"dav1d_close\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 12], &[libc::c_char; 12]>(b"dav1d_close\0")).as_ptr(),
         );
         return;
     }
     close_internal(c_out, 1 as libc::c_int);
 }
 #[cold]
-unsafe extern "C" fn close_internal(
-    c_out: *mut *mut Dav1dContext,
-    mut flush: libc::c_int,
-) {
+unsafe extern "C" fn close_internal(c_out: *mut *mut Dav1dContext, mut flush: libc::c_int) {
     let c: *mut Dav1dContext = *c_out;
     if c.is_null() {
         return;
@@ -3561,9 +3387,7 @@ unsafe extern "C" fn close_internal(
         if (*ttd).inited != 0 {
             pthread_mutex_lock(&mut (*ttd).lock);
             let mut n: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-            while n < (*c).n_tc
-                && (*((*c).tc).offset(n as isize)).task_thread.td.inited != 0
-            {
+            while n < (*c).n_tc && (*((*c).tc).offset(n as isize)).task_thread.td.inited != 0 {
                 (*((*c).tc).offset(n as isize)).task_thread.die = 1 as libc::c_int;
                 n = n.wrapping_add(1);
             }
@@ -3571,8 +3395,8 @@ unsafe extern "C" fn close_internal(
             pthread_mutex_unlock(&mut (*ttd).lock);
             let mut n_0: libc::c_uint = 0 as libc::c_int as libc::c_uint;
             while n_0 < (*c).n_tc {
-                let pf: *mut Dav1dTaskContext = &mut *((*c).tc).offset(n_0 as isize)
-                    as *mut Dav1dTaskContext;
+                let pf: *mut Dav1dTaskContext =
+                    &mut *((*c).tc).offset(n_0 as isize) as *mut Dav1dTaskContext;
                 if (*pf).task_thread.td.inited == 0 {
                     break;
                 }
@@ -3589,8 +3413,8 @@ unsafe extern "C" fn close_internal(
     }
     let mut n_1: libc::c_uint = 0 as libc::c_int as libc::c_uint;
     while !((*c).fc).is_null() && n_1 < (*c).n_fc {
-        let f: *mut Dav1dFrameContext = &mut *((*c).fc).offset(n_1 as isize)
-            as *mut Dav1dFrameContext;
+        let f: *mut Dav1dFrameContext =
+            &mut *((*c).fc).offset(n_1 as isize) as *mut Dav1dFrameContext;
         if (*c).n_fc > 1 as libc::c_int as libc::c_uint {
             freep(
                 &mut (*f).tile_thread.lowest_pixel_mem as *mut *mut [[libc::c_int; 2]; 7]
@@ -3604,27 +3428,19 @@ unsafe extern "C" fn close_internal(
                 &mut (*f).frame_thread.cf as *mut *mut libc::c_void as *mut libc::c_void,
             );
             freep(
-                &mut (*f).frame_thread.tile_start_off as *mut *mut libc::c_int
-                    as *mut libc::c_void,
+                &mut (*f).frame_thread.tile_start_off as *mut *mut libc::c_int as *mut libc::c_void,
             );
             dav1d_freep_aligned(
-                &mut (*f).frame_thread.pal as *mut *mut [[uint16_t; 8]; 3]
-                    as *mut libc::c_void,
+                &mut (*f).frame_thread.pal as *mut *mut [[uint16_t; 8]; 3] as *mut libc::c_void,
             );
-            freep(
-                &mut (*f).frame_thread.cbi as *mut *mut CodedBlockInfo
-                    as *mut libc::c_void,
-            );
+            freep(&mut (*f).frame_thread.cbi as *mut *mut CodedBlockInfo as *mut libc::c_void);
         }
         if (*c).n_tc > 1 as libc::c_int as libc::c_uint {
             pthread_mutex_destroy(&mut (*f).task_thread.pending_tasks.lock);
             pthread_cond_destroy(&mut (*f).task_thread.cond);
             pthread_mutex_destroy(&mut (*f).task_thread.lock);
         }
-        freep(
-            &mut (*f).frame_thread.frame_progress as *mut *mut atomic_uint
-                as *mut libc::c_void,
-        );
+        freep(&mut (*f).frame_thread.frame_progress as *mut *mut atomic_uint as *mut libc::c_void);
         freep(&mut (*f).task_thread.tasks as *mut *mut Dav1dTask as *mut libc::c_void);
         freep(
             &mut *((*f).task_thread.tile_tasks)
@@ -3647,12 +3463,12 @@ unsafe extern "C" fn close_internal(
         n_1 = n_1.wrapping_add(1);
     }
     dav1d_free_aligned((*c).fc as *mut libc::c_void);
-    if (*c).n_fc > 1 as libc::c_int as libc::c_uint
-        && !((*c).frame_thread.out_delayed).is_null()
-    {
+    if (*c).n_fc > 1 as libc::c_int as libc::c_uint && !((*c).frame_thread.out_delayed).is_null() {
         let mut n_2: libc::c_uint = 0 as libc::c_int as libc::c_uint;
         while n_2 < (*c).n_fc {
-            if !((*((*c).frame_thread.out_delayed).offset(n_2 as isize)).p.frame_hdr)
+            if !((*((*c).frame_thread.out_delayed).offset(n_2 as isize))
+                .p
+                .frame_hdr)
                 .is_null()
             {
                 dav1d_thread_picture_unref(
@@ -3673,9 +3489,7 @@ unsafe extern "C" fn close_internal(
     while n_4 < 8 as libc::c_int {
         dav1d_cdf_thread_unref(&mut *((*c).cdf).as_mut_ptr().offset(n_4 as isize));
         if !((*c).refs[n_4 as usize].p.p.frame_hdr).is_null() {
-            dav1d_thread_picture_unref(
-                &mut (*((*c).refs).as_mut_ptr().offset(n_4 as isize)).p,
-            );
+            dav1d_thread_picture_unref(&mut (*((*c).refs).as_mut_ptr().offset(n_4 as isize)).p);
         }
         dav1d_ref_dec(&mut (*((*c).refs).as_mut_ptr().offset(n_4 as isize)).refmvs);
         dav1d_ref_dec(&mut (*((*c).refs).as_mut_ptr().offset(n_4 as isize)).segmap);
@@ -3702,13 +3516,9 @@ pub unsafe extern "C" fn dav1d_get_event_flags(
     if c.is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8
-                as *const libc::c_char,
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
             b"c != NULL\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<
-                &[u8; 22],
-                &[libc::c_char; 22],
-            >(b"dav1d_get_event_flags\0"))
+            (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(b"dav1d_get_event_flags\0"))
                 .as_ptr(),
         );
         return -(22 as libc::c_int);
@@ -3716,13 +3526,9 @@ pub unsafe extern "C" fn dav1d_get_event_flags(
     if flags.is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8
-                as *const libc::c_char,
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
             b"flags != NULL\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<
-                &[u8; 22],
-                &[libc::c_char; 22],
-            >(b"dav1d_get_event_flags\0"))
+            (*::core::mem::transmute::<&[u8; 22], &[libc::c_char; 22]>(b"dav1d_get_event_flags\0"))
                 .as_ptr(),
         );
         return -(22 as libc::c_int);
@@ -3739,28 +3545,24 @@ pub unsafe extern "C" fn dav1d_get_decode_error_data_props(
     if c.is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8
-                as *const libc::c_char,
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
             b"c != NULL\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<
-                &[u8; 34],
-                &[libc::c_char; 34],
-            >(b"dav1d_get_decode_error_data_props\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 34], &[libc::c_char; 34]>(
+                b"dav1d_get_decode_error_data_props\0",
+            ))
+            .as_ptr(),
         );
         return -(22 as libc::c_int);
     }
     if out.is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8
-                as *const libc::c_char,
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
             b"out != NULL\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<
-                &[u8; 34],
-                &[libc::c_char; 34],
-            >(b"dav1d_get_decode_error_data_props\0"))
-                .as_ptr(),
+            (*::core::mem::transmute::<&[u8; 34], &[libc::c_char; 34]>(
+                b"dav1d_get_decode_error_data_props\0",
+            ))
+            .as_ptr(),
         );
         return -(22 as libc::c_int);
     }
@@ -3774,10 +3576,7 @@ pub unsafe extern "C" fn dav1d_picture_unref(p: *mut Dav1dPicture) {
     dav1d_picture_unref_internal(p);
 }
 #[no_mangle]
-pub unsafe extern "C" fn dav1d_data_create(
-    buf: *mut Dav1dData,
-    sz: size_t,
-) -> *mut uint8_t {
+pub unsafe extern "C" fn dav1d_data_create(buf: *mut Dav1dData, sz: size_t) -> *mut uint8_t {
     return dav1d_data_create_internal(buf, sz);
 }
 #[no_mangle]
@@ -3785,9 +3584,7 @@ pub unsafe extern "C" fn dav1d_data_wrap(
     buf: *mut Dav1dData,
     ptr: *const uint8_t,
     sz: size_t,
-    free_callback: Option::<
-        unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> (),
-    >,
+    free_callback: Option<unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> ()>,
     user_data: *mut libc::c_void,
 ) -> libc::c_int {
     return dav1d_data_wrap_internal(buf, ptr, sz, free_callback, user_data);
@@ -3796,9 +3593,7 @@ pub unsafe extern "C" fn dav1d_data_wrap(
 pub unsafe extern "C" fn dav1d_data_wrap_user_data(
     buf: *mut Dav1dData,
     user_data: *const uint8_t,
-    free_callback: Option::<
-        unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> (),
-    >,
+    free_callback: Option<unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> ()>,
     cookie: *mut libc::c_void,
 ) -> libc::c_int {
     return dav1d_data_wrap_user_data_internal(buf, user_data, free_callback, cookie);

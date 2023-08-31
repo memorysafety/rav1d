@@ -1,10 +1,6 @@
 use ::libc;
 extern "C" {
-    fn memcpy(
-        _: *mut libc::c_void,
-        _: *const libc::c_void,
-        _: libc::c_ulong,
-    ) -> *mut libc::c_void;
+    fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
 }
 pub type __uint8_t = libc::c_uchar;
 pub type uint8_t = __uint8_t;
@@ -47748,8 +47744,7 @@ static mut qm_tbl_32x32_t: [[[uint8_t; 528]; 2]; 15] = [
     ],
 ];
 #[no_mangle]
-pub static mut dav1d_qm_tbl: [[[*const uint8_t; 19]; 2]; 16] = [[[0
-    as *const uint8_t; 19]; 2]; 16];
+pub static mut dav1d_qm_tbl: [[[*const uint8_t; 19]; 2]; 16] = [[[0 as *const uint8_t; 19]; 2]; 16];
 static mut qm_tbl_4x4: [[[uint8_t; 16]; 2]; 15] = [[[0; 16]; 2]; 15];
 static mut qm_tbl_4x8: [[[uint8_t; 32]; 2]; 15] = [[[0; 32]; 2]; 15];
 static mut qm_tbl_4x16: [[[uint8_t; 64]; 2]; 15] = [[[0; 64]; 2]; 15];
@@ -47769,10 +47764,8 @@ unsafe extern "C" fn subsample(
     while y < sz {
         let mut x: libc::c_int = 0 as libc::c_int;
         while x < sz {
-            *dst
-                .offset(
-                    (y * sz + x) as isize,
-                ) = *src.offset((y * sz * step * step + x * step) as isize);
+            *dst.offset((y * sz + x) as isize) =
+                *src.offset((y * sz * step * step + x * step) as isize);
             x += 1;
         }
         y += 1;
@@ -47798,11 +47791,7 @@ unsafe extern "C" fn transpose(
         y_off += w;
     }
 }
-unsafe extern "C" fn untriangle(
-    mut dst: *mut uint8_t,
-    mut src: *const uint8_t,
-    sz: libc::c_int,
-) {
+unsafe extern "C" fn untriangle(mut dst: *mut uint8_t, mut src: *const uint8_t, sz: libc::c_int) {
     let mut y: libc::c_int = 0 as libc::c_int;
     while y < sz {
         memcpy(
@@ -47829,92 +47818,64 @@ pub unsafe extern "C" fn dav1d_init_qm_tables() {
     while i < 15 as libc::c_int {
         let mut j: libc::c_int = 0 as libc::c_int;
         while j < 2 as libc::c_int {
-            dav1d_qm_tbl[i
-                as usize][j
-                as usize][RTX_4X8 as libc::c_int
-                as usize] = (qm_tbl_8x4[i as usize][j as usize]).as_ptr();
-            dav1d_qm_tbl[i
-                as usize][j
-                as usize][RTX_8X4 as libc::c_int
-                as usize] = (qm_tbl_4x8[i as usize][j as usize]).as_mut_ptr();
+            dav1d_qm_tbl[i as usize][j as usize][RTX_4X8 as libc::c_int as usize] =
+                (qm_tbl_8x4[i as usize][j as usize]).as_ptr();
+            dav1d_qm_tbl[i as usize][j as usize][RTX_8X4 as libc::c_int as usize] =
+                (qm_tbl_4x8[i as usize][j as usize]).as_mut_ptr();
             transpose(
                 (qm_tbl_4x8[i as usize][j as usize]).as_mut_ptr(),
                 (qm_tbl_8x4[i as usize][j as usize]).as_ptr(),
                 8 as libc::c_int,
                 4 as libc::c_int,
             );
-            dav1d_qm_tbl[i
-                as usize][j
-                as usize][RTX_4X16 as libc::c_int
-                as usize] = (qm_tbl_16x4[i as usize][j as usize]).as_ptr();
-            dav1d_qm_tbl[i
-                as usize][j
-                as usize][RTX_16X4 as libc::c_int
-                as usize] = (qm_tbl_4x16[i as usize][j as usize]).as_mut_ptr();
+            dav1d_qm_tbl[i as usize][j as usize][RTX_4X16 as libc::c_int as usize] =
+                (qm_tbl_16x4[i as usize][j as usize]).as_ptr();
+            dav1d_qm_tbl[i as usize][j as usize][RTX_16X4 as libc::c_int as usize] =
+                (qm_tbl_4x16[i as usize][j as usize]).as_mut_ptr();
             transpose(
                 (qm_tbl_4x16[i as usize][j as usize]).as_mut_ptr(),
                 (qm_tbl_16x4[i as usize][j as usize]).as_ptr(),
                 16 as libc::c_int,
                 4 as libc::c_int,
             );
-            dav1d_qm_tbl[i
-                as usize][j
-                as usize][RTX_8X16 as libc::c_int
-                as usize] = (qm_tbl_16x8[i as usize][j as usize]).as_ptr();
-            dav1d_qm_tbl[i
-                as usize][j
-                as usize][RTX_16X8 as libc::c_int
-                as usize] = (qm_tbl_8x16[i as usize][j as usize]).as_mut_ptr();
+            dav1d_qm_tbl[i as usize][j as usize][RTX_8X16 as libc::c_int as usize] =
+                (qm_tbl_16x8[i as usize][j as usize]).as_ptr();
+            dav1d_qm_tbl[i as usize][j as usize][RTX_16X8 as libc::c_int as usize] =
+                (qm_tbl_8x16[i as usize][j as usize]).as_mut_ptr();
             transpose(
                 (qm_tbl_8x16[i as usize][j as usize]).as_mut_ptr(),
                 (qm_tbl_16x8[i as usize][j as usize]).as_ptr(),
                 16 as libc::c_int,
                 8 as libc::c_int,
             );
-            dav1d_qm_tbl[i
-                as usize][j
-                as usize][RTX_8X32 as libc::c_int
-                as usize] = (qm_tbl_32x8[i as usize][j as usize]).as_ptr();
-            dav1d_qm_tbl[i
-                as usize][j
-                as usize][RTX_32X8 as libc::c_int
-                as usize] = (qm_tbl_8x32[i as usize][j as usize]).as_mut_ptr();
+            dav1d_qm_tbl[i as usize][j as usize][RTX_8X32 as libc::c_int as usize] =
+                (qm_tbl_32x8[i as usize][j as usize]).as_ptr();
+            dav1d_qm_tbl[i as usize][j as usize][RTX_32X8 as libc::c_int as usize] =
+                (qm_tbl_8x32[i as usize][j as usize]).as_mut_ptr();
             transpose(
                 (qm_tbl_8x32[i as usize][j as usize]).as_mut_ptr(),
                 (qm_tbl_32x8[i as usize][j as usize]).as_ptr(),
                 32 as libc::c_int,
                 8 as libc::c_int,
             );
-            dav1d_qm_tbl[i
-                as usize][j
-                as usize][RTX_16X32 as libc::c_int
-                as usize] = (qm_tbl_32x16[i as usize][j as usize]).as_ptr();
-            dav1d_qm_tbl[i
-                as usize][j
-                as usize][RTX_32X16 as libc::c_int
-                as usize] = (qm_tbl_16x32[i as usize][j as usize]).as_mut_ptr();
+            dav1d_qm_tbl[i as usize][j as usize][RTX_16X32 as libc::c_int as usize] =
+                (qm_tbl_32x16[i as usize][j as usize]).as_ptr();
+            dav1d_qm_tbl[i as usize][j as usize][RTX_32X16 as libc::c_int as usize] =
+                (qm_tbl_16x32[i as usize][j as usize]).as_mut_ptr();
             transpose(
                 (qm_tbl_16x32[i as usize][j as usize]).as_mut_ptr(),
                 (qm_tbl_32x16[i as usize][j as usize]).as_ptr(),
                 32 as libc::c_int,
                 16 as libc::c_int,
             );
-            dav1d_qm_tbl[i
-                as usize][j
-                as usize][TX_4X4 as libc::c_int
-                as usize] = (qm_tbl_4x4[i as usize][j as usize]).as_mut_ptr();
-            dav1d_qm_tbl[i
-                as usize][j
-                as usize][TX_8X8 as libc::c_int
-                as usize] = (qm_tbl_8x8[i as usize][j as usize]).as_mut_ptr();
-            dav1d_qm_tbl[i
-                as usize][j
-                as usize][TX_16X16 as libc::c_int
-                as usize] = (qm_tbl_16x16[i as usize][j as usize]).as_mut_ptr();
-            dav1d_qm_tbl[i
-                as usize][j
-                as usize][TX_32X32 as libc::c_int
-                as usize] = (qm_tbl_32x32[i as usize][j as usize]).as_mut_ptr();
+            dav1d_qm_tbl[i as usize][j as usize][TX_4X4 as libc::c_int as usize] =
+                (qm_tbl_4x4[i as usize][j as usize]).as_mut_ptr();
+            dav1d_qm_tbl[i as usize][j as usize][TX_8X8 as libc::c_int as usize] =
+                (qm_tbl_8x8[i as usize][j as usize]).as_mut_ptr();
+            dav1d_qm_tbl[i as usize][j as usize][TX_16X16 as libc::c_int as usize] =
+                (qm_tbl_16x16[i as usize][j as usize]).as_mut_ptr();
+            dav1d_qm_tbl[i as usize][j as usize][TX_32X32 as libc::c_int as usize] =
+                (qm_tbl_32x32[i as usize][j as usize]).as_mut_ptr();
             untriangle(
                 (qm_tbl_4x4[i as usize][j as usize]).as_mut_ptr(),
                 (qm_tbl_4x4_t[i as usize][j as usize]).as_ptr(),
@@ -47936,31 +47897,16 @@ pub unsafe extern "C" fn dav1d_init_qm_tables() {
                 16 as libc::c_int,
                 2 as libc::c_int,
             );
-            dav1d_qm_tbl[i
-                as usize][j
-                as usize][TX_64X64 as libc::c_int
-                as usize] = dav1d_qm_tbl[i
-                as usize][j as usize][TX_32X32 as libc::c_int as usize];
-            dav1d_qm_tbl[i
-                as usize][j
-                as usize][RTX_64X32 as libc::c_int
-                as usize] = dav1d_qm_tbl[i
-                as usize][j as usize][TX_32X32 as libc::c_int as usize];
-            dav1d_qm_tbl[i
-                as usize][j
-                as usize][RTX_64X16 as libc::c_int
-                as usize] = dav1d_qm_tbl[i
-                as usize][j as usize][RTX_32X16 as libc::c_int as usize];
-            dav1d_qm_tbl[i
-                as usize][j
-                as usize][RTX_32X64 as libc::c_int
-                as usize] = dav1d_qm_tbl[i
-                as usize][j as usize][TX_32X32 as libc::c_int as usize];
-            dav1d_qm_tbl[i
-                as usize][j
-                as usize][RTX_16X64 as libc::c_int
-                as usize] = dav1d_qm_tbl[i
-                as usize][j as usize][RTX_16X32 as libc::c_int as usize];
+            dav1d_qm_tbl[i as usize][j as usize][TX_64X64 as libc::c_int as usize] =
+                dav1d_qm_tbl[i as usize][j as usize][TX_32X32 as libc::c_int as usize];
+            dav1d_qm_tbl[i as usize][j as usize][RTX_64X32 as libc::c_int as usize] =
+                dav1d_qm_tbl[i as usize][j as usize][TX_32X32 as libc::c_int as usize];
+            dav1d_qm_tbl[i as usize][j as usize][RTX_64X16 as libc::c_int as usize] =
+                dav1d_qm_tbl[i as usize][j as usize][RTX_32X16 as libc::c_int as usize];
+            dav1d_qm_tbl[i as usize][j as usize][RTX_32X64 as libc::c_int as usize] =
+                dav1d_qm_tbl[i as usize][j as usize][TX_32X32 as libc::c_int as usize];
+            dav1d_qm_tbl[i as usize][j as usize][RTX_16X64 as libc::c_int as usize] =
+                dav1d_qm_tbl[i as usize][j as usize][RTX_16X32 as libc::c_int as usize];
             j += 1;
         }
         i += 1;
