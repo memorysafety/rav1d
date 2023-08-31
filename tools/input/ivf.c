@@ -168,23 +168,25 @@ static int ivf_read(IvfInputContext *const c, Dav1dData *const buf) {
     return 0;
 }
 
+static int ivf_seek_error(void) {
+    fprintf(stderr, "Failed to seek: %s\n", strerror(errno));
+    return -1;
+}
+
 static int ivf_seek(IvfInputContext *const c, const uint64_t pts) {
     uint64_t cur;
     const uint64_t ts = llround((pts * c->timebase) / 1000000000.0);
     if (ts <= c->last_ts)
-        if (fseeko(c->f, 32, SEEK_SET)) goto error;
+        if (fseeko(c->f, 32, SEEK_SET)) return ivf_seek_error();
     while (1) {
         ptrdiff_t sz;
-        if (ivf_read_header(c, &sz, NULL, &cur)) goto error;
+        if (ivf_read_header(c, &sz, NULL, &cur)) return ivf_seek_error();
         if (cur >= ts) break;
-        if (fseeko(c->f, sz, SEEK_CUR)) goto error;
+        if (fseeko(c->f, sz, SEEK_CUR)) return ivf_seek_error();
         c->last_ts = cur;
     }
-    if (fseeko(c->f, -12, SEEK_CUR)) goto error;
+    if (fseeko(c->f, -12, SEEK_CUR)) return ivf_seek_error();
     return 0;
-error:
-    fprintf(stderr, "Failed to seek: %s\n", strerror(errno));
-    return -1;
 }
 
 static void ivf_close(IvfInputContext *const c) {

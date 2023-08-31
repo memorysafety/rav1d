@@ -61,25 +61,24 @@ Dav1dMemPoolBuffer *dav1d_mem_pool_pop(Dav1dMemPool *const pool, const size_t si
         pool->buf = buf->next;
         pthread_mutex_unlock(&pool->lock);
         data = buf->data;
-        if ((uintptr_t)buf - (uintptr_t)data != size) {
-            /* Reallocate if the size has changed */
-            dav1d_free_aligned(data);
-            goto alloc;
+        if ((uintptr_t)buf - (uintptr_t)data == size) {
+            return buf;
         }
+        /* Reallocate if the size has changed */
+        dav1d_free_aligned(data);
     } else {
         pthread_mutex_unlock(&pool->lock);
-alloc:
-        data = dav1d_alloc_aligned(size + sizeof(Dav1dMemPoolBuffer), 64);
-        if (!data) {
-            pthread_mutex_lock(&pool->lock);
-            const int ref_cnt = --pool->ref_cnt;
-            pthread_mutex_unlock(&pool->lock);
-            if (!ref_cnt) mem_pool_destroy(pool);
-            return NULL;
-        }
-        buf = (Dav1dMemPoolBuffer*)(data + size);
-        buf->data = data;
     }
+    data = dav1d_alloc_aligned(size + sizeof(Dav1dMemPoolBuffer), 64);
+    if (!data) {
+        pthread_mutex_lock(&pool->lock);
+        const int ref_cnt = --pool->ref_cnt;
+        pthread_mutex_unlock(&pool->lock);
+        if (!ref_cnt) mem_pool_destroy(pool);
+        return NULL;
+    }
+    buf = (Dav1dMemPoolBuffer*)(data + size);
+    buf->data = data;
 
     return buf;
 }

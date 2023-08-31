@@ -152,6 +152,12 @@ static int seek(DemuxerContext *const in, Dav1dContext *const c,
     return res;
 }
 
+static int main_end(Dav1dContext *c, DemuxerContext *const in) {
+    input_close(in);
+    dav1d_close(&c);
+    return EXIT_SUCCESS;
+}
+
 int main(const int argc, char *const *const argv) {
     const char *version = dav1d_version();
     if (strcmp(version, DAV1D_VERSION)) {
@@ -184,7 +190,7 @@ int main(const int argc, char *const *const argv) {
     timebase = (double)i_timebase[1] / i_timebase[0];
     spf = (double)i_fps[1] / i_fps[0];
     fps = (double)i_fps[0] / i_fps[1];
-    if (fps < 1) goto end;
+    if (fps < 1) return main_end(c, in);
 
 #define FRAME_OFFSET_TO_PTS(foff) \
     (uint64_t)llround(((foff) * spf) * 1000000000.0)
@@ -195,7 +201,7 @@ int main(const int argc, char *const *const argv) {
     for (int i = 0; i < NUM_RAND_SEEK; i++) {
         pts = FRAME_OFFSET_TO_PTS(xor128_rand() % total);
         if (seek(in, c, pts, &data)) continue;
-        if (decode_rand(in, c, &data, fps)) goto end;
+        if (decode_rand(in, c, &data, fps)) return main_end(c, in);
     }
     pts = TS_TO_PTS(data.m.timestamp);
 
@@ -216,8 +222,8 @@ int main(const int argc, char *const *const argv) {
             continue;
         }
         if (seek(in, c, new_pts, &data))
-            if (seek(in, c, 0, &data)) goto end;
-        if (decode_rand(in, c, &data, fps)) goto end;
+            if (seek(in, c, 0, &data)) return main_end(c, in);
+        if (decode_rand(in, c, &data, fps)) return main_end(c, in);
         pts = TS_TO_PTS(data.m.timestamp);
     }
 
@@ -230,14 +236,9 @@ int main(const int argc, char *const *const argv) {
 
     // simulate seeking after the end of the file
     for (int i = 0; i < NUM_END_SEEK; i++) {
-        if (seek(in, c, FRAME_OFFSET_TO_PTS(total - shift), &data)) goto end;
-        if (decode_all(in, c, &data)) goto end;
+        if (seek(in, c, FRAME_OFFSET_TO_PTS(total - shift), &data)) return main_end(c, in);
+        if (decode_all(in, c, &data)) return main_end(c, in);
         int num_flush = 1 + 64 + xor128_rand() % 64;
         while (num_flush--) dav1d_flush(c);
     }
-
-end:
-    input_close(in);
-    dav1d_close(&c);
-    return EXIT_SUCCESS;
 }

@@ -2945,7 +2945,7 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
         f->lf.start_of_tile_row = malloc(f->sbh * sizeof(uint8_t));
         if (!f->lf.start_of_tile_row) {
             f->lf.start_of_tile_row_sz = 0;
-            goto error;
+            return retval;
         }
         f->lf.start_of_tile_row_sz = f->sbh;
     }
@@ -2964,12 +2964,12 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
                 malloc(sizeof(*f->frame_thread.tile_start_off) * n_ts);
             if (!f->frame_thread.tile_start_off) {
                 f->n_ts = 0;
-                goto error;
+                return retval;
             }
         }
         dav1d_free_aligned(f->ts);
         f->ts = dav1d_alloc_aligned(sizeof(*f->ts) * n_ts, 32);
-        if (!f->ts) goto error;
+        if (!f->ts) return retval;
         f->n_ts = n_ts;
     }
 
@@ -2979,7 +2979,7 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
         f->a = malloc(sizeof(*f->a) * a_sz);
         if (!f->a) {
             f->a_sz = 0;
-            goto error;
+            return retval;
         }
         f->a_sz = a_sz;
     }
@@ -3007,7 +3007,7 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
                 malloc(lowest_pixel_mem_sz * sizeof(*f->tile_thread.lowest_pixel_mem));
             if (!f->tile_thread.lowest_pixel_mem) {
                 f->tile_thread.lowest_pixel_mem_sz = 0;
-                goto error;
+                return retval;
             }
             f->tile_thread.lowest_pixel_mem_sz = lowest_pixel_mem_sz;
         }
@@ -3030,7 +3030,7 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
                 dav1d_alloc_aligned((size_t)cf_sz * 128 * 128 / 2, 64);
             if (!f->frame_thread.cf) {
                 f->frame_thread.cf_sz = 0;
-                goto error;
+                return retval;
             }
             memset(f->frame_thread.cf, 0, (size_t)cf_sz * 128 * 128 / 2);
             f->frame_thread.cf_sz = cf_sz;
@@ -3044,7 +3044,7 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
                                         num_sb128 * 16 * 16, 64);
                 if (!f->frame_thread.pal) {
                     f->frame_thread.pal_sz = 0;
-                    goto error;
+                    return retval;
                 }
                 f->frame_thread.pal_sz = num_sb128;
             }
@@ -3057,7 +3057,7 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
                                         pal_idx_sz * 128 * 128 / 4, 64);
                 if (!f->frame_thread.pal_idx) {
                     f->frame_thread.pal_idx_sz = 0;
-                    goto error;
+                    return retval;
                 }
                 f->frame_thread.pal_idx_sz = pal_idx_sz;
             }
@@ -3084,7 +3084,7 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
         uint8_t *ptr = f->lf.cdef_line_buf = dav1d_alloc_aligned(alloc_sz, 32);
         if (!ptr) {
             f->lf.cdef_buf_plane_sz[0] = f->lf.cdef_buf_plane_sz[1] = 0;
-            goto error;
+            return retval;
         }
 
         ptr += 32;
@@ -3144,7 +3144,7 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
         uint8_t *ptr = f->lf.lr_line_buf = dav1d_alloc_aligned(alloc_sz, 64);
         if (!ptr) {
             f->lf.lr_buf_plane_sz[0] = f->lf.lr_buf_plane_sz[1] = 0;
-            goto error;
+            return retval;
         }
 
         ptr += 64;
@@ -3175,7 +3175,7 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
         f->lf.level = malloc(sizeof(*f->lf.level) * num_sb128 * 32 * 32 + 3);
         if (!f->lf.mask || !f->lf.level) {
             f->lf.mask_sz = 0;
-            goto error;
+            return retval;
         }
         if (c->n_fc > 1) {
             freep(&f->frame_thread.b);
@@ -3186,7 +3186,7 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
                                          num_sb128 * 32 * 32);
             if (!f->frame_thread.b || !f->frame_thread.cbi) {
                 f->lf.mask_sz = 0;
-                goto error;
+                return retval;
             }
         }
         f->lf.mask_sz = num_sb128;
@@ -3199,7 +3199,7 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
         f->lf.lr_mask = malloc(sizeof(*f->lf.lr_mask) * lr_mask_sz);
         if (!f->lf.lr_mask) {
             f->lf.lr_mask_sz = 0;
-            goto error;
+            return retval;
         }
         f->lf.lr_mask_sz = lr_mask_sz;
     }
@@ -3221,7 +3221,7 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
             dav1d_alloc_aligned(ipred_edge_sz * 128 * 3, 64);
         if (!ptr) {
             f->ipred_edge_sz = 0;
-            goto error;
+            return retval;
         }
         f->ipred_edge[1] = ptr + ipred_edge_sz * 128 * 1;
         f->ipred_edge[2] = ptr + ipred_edge_sz * 128 * 2;
@@ -3234,7 +3234,7 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
         f->lf.tx_lpf_right_edge[0] = malloc(re_sz * 32 * 2);
         if (!f->lf.tx_lpf_right_edge[0]) {
             f->lf.re_sz = 0;
-            goto error;
+            return retval;
         }
         f->lf.tx_lpf_right_edge[1] = f->lf.tx_lpf_right_edge[0] + re_sz * 32;
         f->lf.re_sz = re_sz;
@@ -3246,7 +3246,7 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
             dav1d_refmvs_init_frame(&f->rf, f->seq_hdr, f->frame_hdr,
                                     f->refpoc, f->mvs, f->refrefpoc, f->ref_mvs,
                                     f->c->n_tc, f->c->n_fc);
-        if (ret < 0) goto error;
+        if (ret < 0) return retval;
     }
 
     // setup dequant tables
@@ -3312,7 +3312,6 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
     f->lf.sr_p[2] = f->sr_cur.p.data[has_chroma ? 2 : 0];
 
     retval = 0;
-error:
     return retval;
 }
 
@@ -3335,13 +3334,13 @@ int dav1d_decode_frame_init_cdf(Dav1dFrameContext *const f) {
             if (j == f->tile[i].end) {
                 tile_sz = size;
             } else {
-                if (f->frame_hdr->tiling.n_bytes > size) goto error;
+                if (f->frame_hdr->tiling.n_bytes > size) return retval;
                 tile_sz = 0;
                 for (unsigned k = 0; k < f->frame_hdr->tiling.n_bytes; k++)
                     tile_sz |= (unsigned)*data++ << (k * 8);
                 tile_sz++;
                 size -= f->frame_hdr->tiling.n_bytes;
-                if (tile_sz > size) goto error;
+                if (tile_sz > size) return retval;
             }
 
             setup_tile(&f->ts[j], f, data, tile_sz, tile_row, tile_col++,
@@ -3366,7 +3365,6 @@ int dav1d_decode_frame_init_cdf(Dav1dFrameContext *const f) {
     }
 
     retval = 0;
-error:
     return retval;
 }
 
@@ -3399,7 +3397,7 @@ int dav1d_decode_frame_main(Dav1dFrameContext *const f) {
             }
             for (int tile_col = 0; tile_col < f->frame_hdr->tiling.cols; tile_col++) {
                 t->ts = &f->ts[tile_row * f->frame_hdr->tiling.cols + tile_col];
-                if (dav1d_decode_tile_sbrow(t)) goto error;
+                if (dav1d_decode_tile_sbrow(t)) return retval;
             }
             if (IS_INTER_OR_SWITCH(f->frame_hdr)) {
                 dav1d_refmvs_save_tmvs(&f->c->refmvs_dsp, &t->rt,
@@ -3412,7 +3410,6 @@ int dav1d_decode_frame_main(Dav1dFrameContext *const f) {
     }
 
     retval = 0;
-error:
     return retval;
 }
 
@@ -3490,6 +3487,38 @@ static int get_upscale_x0(const int in_w, const int out_w, const int step) {
     const int err = out_w * step - (in_w << 14);
     const int x0 = (-((out_w - in_w) << 13) + (out_w >> 1)) / out_w + 128 - (err / 2);
     return x0 & 0x3fff;
+}
+
+static int dav1d_submit_frame_error(const int res, Dav1dFrameContext *const f,
+        Dav1dContext *const c, Dav1dThreadPicture *const out_delayed) {
+    atomic_init(&f->task_thread.error, 1);
+    dav1d_cdf_thread_unref(&f->in_cdf);
+    if (f->frame_hdr->refresh_context)
+        dav1d_cdf_thread_unref(&f->out_cdf);
+    for (int i = 0; i < 7; i++) {
+        if (f->refp[i].p.frame_hdr)
+            dav1d_thread_picture_unref(&f->refp[i]);
+        dav1d_ref_dec(&f->ref_mvs_ref[i]);
+    }
+    if (c->n_fc == 1)
+        dav1d_thread_picture_unref(&c->out);
+    else
+        dav1d_thread_picture_unref(out_delayed);
+    dav1d_picture_unref_internal(&f->cur);
+    dav1d_thread_picture_unref(&f->sr_cur);
+    dav1d_ref_dec(&f->mvs_ref);
+    dav1d_ref_dec(&f->seq_hdr_ref);
+    dav1d_ref_dec(&f->frame_hdr_ref);
+    dav1d_data_props_copy(&c->cached_error_props, &c->in.m);
+
+    for (int i = 0; i < f->n_tile_data; i++)
+        dav1d_data_unref_internal(&f->tile[i].data);
+    f->n_tile_data = 0;
+
+    if (c->n_fc > 1)
+        pthread_mutex_unlock(&c->task_thread.lock);
+
+    return res;
 }
 
 int dav1d_submit_frame(Dav1dContext *const c) {
@@ -3579,7 +3608,7 @@ int dav1d_submit_frame(Dav1dContext *const c) {
             dav1d_log(c, "Compiled without support for %d-bit decoding\n",
                     8 + 2 * f->seq_hdr->hbd);
             res = DAV1D_ERR(ENOPROTOOPT);
-            goto error;
+            return dav1d_submit_frame_error(res, f, c, out_delayed);
         }
     }
 
@@ -3611,7 +3640,7 @@ int dav1d_submit_frame(Dav1dContext *const c) {
             const int pri_ref = f->frame_hdr->refidx[f->frame_hdr->primary_ref_frame];
             if (!c->refs[pri_ref].p.p.data[0]) {
                 res = DAV1D_ERR(EINVAL);
-                goto error;
+                return dav1d_submit_frame_error(res, f, c, out_delayed);
             }
         }
         for (int i = 0; i < 7; i++) {
@@ -3627,7 +3656,7 @@ int dav1d_submit_frame(Dav1dContext *const c) {
                 for (int j = 0; j < i; j++)
                     dav1d_thread_picture_unref(&f->refp[j]);
                 res = DAV1D_ERR(EINVAL);
-                goto error;
+                return dav1d_submit_frame_error(res, f, c, out_delayed);
             }
             dav1d_thread_picture_ref(&f->refp[i], &c->refs[refidx].p);
             ref_coded_width[i] = c->refs[refidx].p.p.frame_hdr->width[0];
@@ -3661,7 +3690,7 @@ int dav1d_submit_frame(Dav1dContext *const c) {
     }
     if (f->frame_hdr->refresh_context) {
         res = dav1d_cdf_thread_alloc(c, &f->out_cdf, c->n_fc > 1);
-        if (res < 0) goto error;
+        if (res < 0) return dav1d_submit_frame_error(res, f, c, out_delayed);
     }
 
     // FIXME qsort so tiles are in order (for frame threading)
@@ -3672,7 +3701,7 @@ int dav1d_submit_frame(Dav1dContext *const c) {
         if (!f->tile) {
             f->n_tile_data_alloc = f->n_tile_data = 0;
             res = DAV1D_ERR(ENOMEM);
-            goto error;
+            return dav1d_submit_frame_error(res, f, c, out_delayed);
         }
         f->n_tile_data_alloc = c->n_tile_data;
     }
@@ -3683,11 +3712,11 @@ int dav1d_submit_frame(Dav1dContext *const c) {
 
     // allocate frame
     res = dav1d_thread_picture_alloc(c, f, bpc);
-    if (res < 0) goto error;
+    if (res < 0) return dav1d_submit_frame_error(res, f, c, out_delayed);
 
     if (f->frame_hdr->width[0] != f->frame_hdr->width[1]) {
         res = dav1d_picture_alloc_copy(c, &f->cur, f->frame_hdr->width[0], &f->sr_cur.p);
-        if (res < 0) goto error;
+        if (res < 0) return dav1d_submit_frame_error(res, f, c, out_delayed);
     } else {
         dav1d_picture_ref(&f->cur, &f->sr_cur.p);
     }
@@ -3737,7 +3766,7 @@ int dav1d_submit_frame(Dav1dContext *const c) {
             sizeof(*f->mvs) * f->sb128h * 16 * (f->b4_stride >> 1));
         if (!f->mvs_ref) {
             res = DAV1D_ERR(ENOMEM);
-            goto error;
+            return dav1d_submit_frame_error(res, f, c, out_delayed);
         }
         f->mvs = f->mvs_ref->data;
         if (!f->frame_hdr->allow_intrabc) {
@@ -3803,7 +3832,7 @@ int dav1d_submit_frame(Dav1dContext *const c) {
             if (!f->cur_segmap_ref) {
                 dav1d_ref_dec(&f->prev_segmap_ref);
                 res = DAV1D_ERR(ENOMEM);
-                goto error;
+                return dav1d_submit_frame_error(res, f, c, out_delayed);
             }
             f->cur_segmap = f->cur_segmap_ref->data;
         } else if (f->prev_segmap_ref) {
@@ -3818,7 +3847,7 @@ int dav1d_submit_frame(Dav1dContext *const c) {
             f->cur_segmap_ref = dav1d_ref_create_using_pool(c->segmap_pool, segmap_size);
             if (!f->cur_segmap_ref) {
                 res = DAV1D_ERR(ENOMEM);
-                goto error;
+                return dav1d_submit_frame_error(res, f, c, out_delayed);
             }
             f->cur_segmap = f->cur_segmap_ref->data;
             memset(f->cur_segmap, 0, segmap_size);
@@ -3870,7 +3899,7 @@ int dav1d_submit_frame(Dav1dContext *const c) {
                     dav1d_ref_dec(&c->refs[i].refmvs);
                 }
             }
-            goto error;
+            return dav1d_submit_frame_error(res, f, c, out_delayed);
         }
     } else {
         dav1d_task_frame_init(f);
@@ -3878,33 +3907,4 @@ int dav1d_submit_frame(Dav1dContext *const c) {
     }
 
     return 0;
-error:
-    atomic_init(&f->task_thread.error, 1);
-    dav1d_cdf_thread_unref(&f->in_cdf);
-    if (f->frame_hdr->refresh_context)
-        dav1d_cdf_thread_unref(&f->out_cdf);
-    for (int i = 0; i < 7; i++) {
-        if (f->refp[i].p.frame_hdr)
-            dav1d_thread_picture_unref(&f->refp[i]);
-        dav1d_ref_dec(&f->ref_mvs_ref[i]);
-    }
-    if (c->n_fc == 1)
-        dav1d_thread_picture_unref(&c->out);
-    else
-        dav1d_thread_picture_unref(out_delayed);
-    dav1d_picture_unref_internal(&f->cur);
-    dav1d_thread_picture_unref(&f->sr_cur);
-    dav1d_ref_dec(&f->mvs_ref);
-    dav1d_ref_dec(&f->seq_hdr_ref);
-    dav1d_ref_dec(&f->frame_hdr_ref);
-    dav1d_data_props_copy(&c->cached_error_props, &c->in.m);
-
-    for (int i = 0; i < f->n_tile_data; i++)
-        dav1d_data_unref_internal(&f->tile[i].data);
-    f->n_tile_data = 0;
-
-    if (c->n_fc > 1)
-        pthread_mutex_unlock(&c->task_thread.lock);
-
-    return res;
 }
