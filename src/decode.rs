@@ -6086,7 +6086,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             }
         }
         for i in 0..7 {
-            let refidx: libc::c_int = (*f.frame_hdr).refidx[i as usize];
+            let refidx: libc::c_int = (*f.frame_hdr).refidx[i];
             if (c.refs[refidx as usize].p.p.data[0]).is_null()
                 || ((*f.frame_hdr).width[0] * 2) < c.refs[refidx as usize].p.p.p.w
                 || ((*f.frame_hdr).height * 2) < c.refs[refidx as usize].p.p.p.h
@@ -6096,33 +6096,32 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 || bpc != c.refs[refidx as usize].p.p.p.bpc
             {
                 for j in 0..i {
-                    dav1d_thread_picture_unref(&mut f.refp[j as usize]);
+                    dav1d_thread_picture_unref(&mut f.refp[j]);
                 }
                 res = -22;
                 return dav1d_submit_frame_error(res, f, c, out_delayed);
             }
-            dav1d_thread_picture_ref(&mut f.refp[i as usize], &mut (c.refs[refidx as usize]).p);
-            ref_coded_width[i as usize] = (*c.refs[refidx as usize].p.p.frame_hdr).width[0];
+            dav1d_thread_picture_ref(&mut f.refp[i], &mut (c.refs[refidx as usize]).p);
+            ref_coded_width[i] = (*c.refs[refidx as usize].p.p.frame_hdr).width[0];
             if (*f.frame_hdr).width[0] != c.refs[refidx as usize].p.p.p.w
                 || (*f.frame_hdr).height != c.refs[refidx as usize].p.p.p.h
             {
-                f.svc[i as usize][0].scale = ((c.refs[refidx as usize].p.p.p.w << 14)
+                f.svc[i][0].scale = ((c.refs[refidx as usize].p.p.p.w << 14)
                     + ((*f.frame_hdr).width[0] >> 1))
                     / (*f.frame_hdr).width[0];
-                f.svc[i as usize][1].scale = ((c.refs[refidx as usize].p.p.p.h << 14)
+                f.svc[i][1].scale = ((c.refs[refidx as usize].p.p.p.h << 14)
                     + ((*f.frame_hdr).height >> 1))
                     / (*f.frame_hdr).height;
-                f.svc[i as usize][0].step = f.svc[i as usize][0].scale + 8 >> 4;
-                f.svc[i as usize][1].step = f.svc[i as usize][1].scale + 8 >> 4;
+                f.svc[i][0].step = f.svc[i][0].scale + 8 >> 4;
+                f.svc[i][1].step = f.svc[i][1].scale + 8 >> 4;
             } else {
-                f.svc[i as usize][1].scale = 0;
-                f.svc[i as usize][0].scale = f.svc[i as usize][1].scale;
+                f.svc[i][1].scale = 0;
+                f.svc[i][0].scale = f.svc[i][1].scale;
             }
-            f.gmv_warp_allowed[i as usize] =
-                ((*f.frame_hdr).gmv[i as usize].type_0 > DAV1D_WM_TYPE_TRANSLATION
-                    && (*f.frame_hdr).force_integer_mv == 0
-                    && !dav1d_get_shear_params(&mut (*f.frame_hdr).gmv[i as usize])
-                    && f.svc[i as usize][0].scale == 0) as uint8_t;
+            f.gmv_warp_allowed[i] = ((*f.frame_hdr).gmv[i].type_0 > DAV1D_WM_TYPE_TRANSLATION
+                && (*f.frame_hdr).force_integer_mv == 0
+                && !dav1d_get_shear_params(&mut (*f.frame_hdr).gmv[i])
+                && f.svc[i][0].scale == 0) as uint8_t;
         }
     }
     if (*f.frame_hdr).primary_ref_frame == 7 {
@@ -6226,27 +6225,26 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         f.mvs = (*f.mvs_ref).data as *mut refmvs_temporal_block;
         if (*f.frame_hdr).allow_intrabc == 0 {
             for i in 0..7 {
-                f.refpoc[i as usize] =
-                    (*f.refp[i as usize].p.frame_hdr).frame_offset as libc::c_uint;
+                f.refpoc[i] = (*f.refp[i].p.frame_hdr).frame_offset as libc::c_uint;
             }
         } else {
             f.refpoc.fill(0);
         }
         if (*f.frame_hdr).use_ref_frame_mvs != 0 {
             for i in 0..7 {
-                let refidx: libc::c_int = (*f.frame_hdr).refidx[i as usize];
-                let ref_w: libc::c_int = (ref_coded_width[i as usize] + 7 >> 3) << 1;
-                let ref_h: libc::c_int = (f.refp[i as usize].p.p.h + 7 >> 3) << 1;
+                let refidx: libc::c_int = (*f.frame_hdr).refidx[i];
+                let ref_w: libc::c_int = (ref_coded_width[i] + 7 >> 3) << 1;
+                let ref_h: libc::c_int = (f.refp[i].p.p.h + 7 >> 3) << 1;
                 if !(c.refs[refidx as usize].refmvs).is_null() && ref_w == f.bw && ref_h == f.bh {
-                    f.ref_mvs_ref[i as usize] = c.refs[refidx as usize].refmvs;
-                    dav1d_ref_inc(f.ref_mvs_ref[i as usize]);
-                    f.ref_mvs[i as usize] =
+                    f.ref_mvs_ref[i] = c.refs[refidx as usize].refmvs;
+                    dav1d_ref_inc(f.ref_mvs_ref[i]);
+                    f.ref_mvs[i] =
                         (*c.refs[refidx as usize].refmvs).data as *mut refmvs_temporal_block;
                 } else {
-                    f.ref_mvs[i as usize] = 0 as *mut refmvs_temporal_block;
-                    f.ref_mvs_ref[i as usize] = 0 as *mut Dav1dRef;
+                    f.ref_mvs[i] = 0 as *mut refmvs_temporal_block;
+                    f.ref_mvs_ref[i] = 0 as *mut Dav1dRef;
                 }
-                f.refrefpoc[i as usize] = c.refs[refidx as usize].refpoc;
+                f.refrefpoc[i] = c.refs[refidx as usize].refpoc;
             }
         } else {
             f.ref_mvs_ref.fill_with(ptr::null_mut);
@@ -6313,29 +6311,29 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
     let refresh_frame_flags: libc::c_uint = (*f.frame_hdr).refresh_frame_flags as libc::c_uint;
     for i in 0..8 {
         if refresh_frame_flags & (1 << i) != 0 {
-            if !(c.refs[i as usize].p.p.frame_hdr).is_null() {
-                dav1d_thread_picture_unref(&mut (c.refs[i as usize]).p);
+            if !(c.refs[i].p.p.frame_hdr).is_null() {
+                dav1d_thread_picture_unref(&mut (c.refs[i]).p);
             }
-            dav1d_thread_picture_ref(&mut (c.refs[i as usize]).p, &mut f.sr_cur);
-            dav1d_cdf_thread_unref(&mut c.cdf[i as usize]);
+            dav1d_thread_picture_ref(&mut (c.refs[i]).p, &mut f.sr_cur);
+            dav1d_cdf_thread_unref(&mut c.cdf[i]);
             if (*f.frame_hdr).refresh_context != 0 {
-                dav1d_cdf_thread_ref(&mut c.cdf[i as usize], &mut f.out_cdf);
+                dav1d_cdf_thread_ref(&mut c.cdf[i], &mut f.out_cdf);
             } else {
-                dav1d_cdf_thread_ref(&mut c.cdf[i as usize], &mut f.in_cdf);
+                dav1d_cdf_thread_ref(&mut c.cdf[i], &mut f.in_cdf);
             }
-            dav1d_ref_dec(&mut (c.refs[i as usize]).segmap);
-            c.refs[i as usize].segmap = f.cur_segmap_ref;
+            dav1d_ref_dec(&mut (c.refs[i]).segmap);
+            c.refs[i].segmap = f.cur_segmap_ref;
             if !(f.cur_segmap_ref).is_null() {
                 dav1d_ref_inc(f.cur_segmap_ref);
             }
-            dav1d_ref_dec(&mut (c.refs[i as usize]).refmvs);
+            dav1d_ref_dec(&mut (c.refs[i]).refmvs);
             if (*f.frame_hdr).allow_intrabc == 0 {
-                c.refs[i as usize].refmvs = f.mvs_ref;
+                c.refs[i].refmvs = f.mvs_ref;
                 if !(f.mvs_ref).is_null() {
                     dav1d_ref_inc(f.mvs_ref);
                 }
             }
-            c.refs[i as usize].refpoc = f.refpoc;
+            c.refs[i].refpoc = f.refpoc;
         }
     }
     if c.n_fc == 1 {
@@ -6344,12 +6342,12 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             dav1d_thread_picture_unref(&mut c.out);
             for i in 0..8 {
                 if refresh_frame_flags & (1 << i) != 0 {
-                    if !(c.refs[i as usize].p.p.frame_hdr).is_null() {
-                        dav1d_thread_picture_unref(&mut (c.refs[i as usize]).p);
+                    if !(c.refs[i].p.p.frame_hdr).is_null() {
+                        dav1d_thread_picture_unref(&mut (c.refs[i]).p);
                     }
-                    dav1d_cdf_thread_unref(&mut c.cdf[i as usize]);
-                    dav1d_ref_dec(&mut (c.refs[i as usize]).segmap);
-                    dav1d_ref_dec(&mut (c.refs[i as usize]).refmvs);
+                    dav1d_cdf_thread_unref(&mut c.cdf[i]);
+                    dav1d_ref_dec(&mut (c.refs[i]).segmap);
+                    dav1d_ref_dec(&mut (c.refs[i]).refmvs);
                 }
             }
             return dav1d_submit_frame_error(res, f, c, out_delayed);
