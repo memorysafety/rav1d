@@ -5711,7 +5711,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
     if (*c).n_tc > 1 as libc::c_uint {
         let uses_2pass: libc::c_int = ((*c).n_fc > 1 as libc::c_uint) as libc::c_int;
         let mut n = 0;
-        while n < (*f).sb128w * (*(*f).frame_hdr).tiling.rows * (1 as libc::c_int + uses_2pass) {
+        while n < (*f).sb128w * (*(*f).frame_hdr).tiling.rows * (1 + uses_2pass) {
             reset_context(
                 &mut *((*f).a).offset(n as isize),
                 (*(*f).frame_hdr).frame_type & 1 == 0,
@@ -6021,7 +6021,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
     (*c).frame_hdr_ref = 0 as *mut Dav1dRef;
     (*f).dsp =
         &mut *((*c).dsp).as_mut_ptr().offset((*(*f).seq_hdr).hbd as isize) as *mut Dav1dDSPContext;
-    let bpc: libc::c_int = 8 as libc::c_int + 2 * (*(*f).seq_hdr).hbd;
+    let bpc: libc::c_int = 8 + 2 * (*(*f).seq_hdr).hbd;
     if ((*(*f).dsp).ipred.intra_pred[DC_PRED as libc::c_int as usize]).is_none() {
         let dsp: *mut Dav1dDSPContext =
             &mut *((*c).dsp).as_mut_ptr().offset((*(*f).seq_hdr).hbd as isize)
@@ -6052,7 +6052,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                     c,
                     b"Compiled without support for %d-bit decoding\n\0" as *const u8
                         as *const libc::c_char,
-                    8 as libc::c_int + 2 * (*(*f).seq_hdr).hbd,
+                    8 + 2 * (*(*f).seq_hdr).hbd,
                 );
                 res = -(92 as libc::c_int);
                 return dav1d_submit_frame_error(res, f, c, out_delayed);
@@ -6331,7 +6331,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
     (*f).bh = ((*(*f).frame_hdr).height + 7 >> 3) << 1;
     (*f).sb128w = (*f).bw + 31 >> 5;
     (*f).sb128h = (*f).bh + 31 >> 5;
-    (*f).sb_shift = 4 as libc::c_int + (*(*f).seq_hdr).sb128;
+    (*f).sb_shift = 4 + (*(*f).seq_hdr).sb128;
     (*f).sb_step = (16 as libc::c_int) << (*(*f).seq_hdr).sb128;
     (*f).sbh = (*f).bh + (*f).sb_step - 1 >> (*f).sb_shift;
     (*f).b4_stride = ((*f).bw + 31 & !(31 as libc::c_int)) as ptrdiff_t;

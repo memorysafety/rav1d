@@ -1009,7 +1009,7 @@ pub unsafe extern "C" fn dav1d_open(
                         && ((*s).frame_size_limit).wrapping_sub(1 as libc::c_int as libc::c_uint)
                             >= (8192 * 8192) as libc::c_uint
                     {
-                        (*c).frame_size_limit = (8192 as libc::c_int * 8192) as libc::c_uint;
+                        (*c).frame_size_limit = (8192 * 8192) as libc::c_uint;
                         if (*s).frame_size_limit != 0 {
                             dav1d_log(
                                 c,

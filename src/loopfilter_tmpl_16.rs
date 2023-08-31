@@ -29,7 +29,7 @@ unsafe extern "C" fn loop_filter(
     wd: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    let bitdepth_min_8 = 32 as libc::c_int - clz(bitdepth_max as libc::c_uint) - 8;
+    let bitdepth_min_8 = 32 - clz(bitdepth_max as libc::c_uint) - 8;
     let F = (1 as libc::c_int) << bitdepth_min_8;
     E <<= bitdepth_min_8;
     I <<= bitdepth_min_8;

@@ -924,7 +924,7 @@ pub unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
         let mut tmx = mx;
         while x < 8 {
             let filter: *const i8 =
-                (dav1d_mc_warp_filter[(64 as libc::c_int + (tmx + 512 >> 10)) as usize]).as_ptr();
+                (dav1d_mc_warp_filter[(64 + (tmx + 512 >> 10)) as usize]).as_ptr();
             *mid_ptr.offset(x as isize) = (*filter.offset(0) as libc::c_int
                 * (*src.offset((x - 3 * 1) as isize)).as_::<libc::c_int>()
                 + *filter.offset(1) as libc::c_int
@@ -958,7 +958,7 @@ pub unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
         let mut tmy = my;
         while x_0 < 8 {
             let filter_0: *const i8 =
-                (dav1d_mc_warp_filter[(64 as libc::c_int + (tmy + 512 >> 10)) as usize]).as_ptr();
+                (dav1d_mc_warp_filter[(64 + (tmy + 512 >> 10)) as usize]).as_ptr();
             *dst.offset(x_0 as isize) = bd.iclip_pixel(
                 *filter_0.offset(0) as libc::c_int
                     * *mid_ptr.offset((x_0 - 3 * 8) as isize) as libc::c_int
@@ -1010,7 +1010,7 @@ pub unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
         let mut tmx = mx;
         while x < 8 {
             let filter: *const i8 =
-                (dav1d_mc_warp_filter[(64 as libc::c_int + (tmx + 512 >> 10)) as usize]).as_ptr();
+                (dav1d_mc_warp_filter[(64 + (tmx + 512 >> 10)) as usize]).as_ptr();
             *mid_ptr.offset(x as isize) = (*filter.offset(0) as libc::c_int
                 * (*src.offset((x - 3 * 1) as isize)).as_::<libc::c_int>()
                 + *filter.offset(1) as libc::c_int
@@ -1044,7 +1044,7 @@ pub unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
         let mut tmy = my;
         while x_0 < 8 {
             let filter_0: *const i8 =
-                (dav1d_mc_warp_filter[(64 as libc::c_int + (tmy + 512 >> 10)) as usize]).as_ptr();
+                (dav1d_mc_warp_filter[(64 + (tmy + 512 >> 10)) as usize]).as_ptr();
             *tmp.offset(x_0 as isize) = ((*filter_0.offset(0) as libc::c_int
                 * *mid_ptr.offset((x_0 - 3 * 8) as isize) as libc::c_int
                 + *filter_0.offset(1) as libc::c_int

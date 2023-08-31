@@ -4897,8 +4897,7 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_resize_8bpc(
         let src_stride: ptrdiff_t = (*f).cur.stride[(pl != 0) as libc::c_int as usize];
         let src: *const pixel =
             (p[pl as usize]).offset(-((h_start as isize * src_stride) as isize));
-        let h_end =
-            4 as libc::c_int * (sbsz - 2 * ((sby + 1) < (*f).sbh) as libc::c_int) >> ss_ver_0;
+        let h_end = 4 * (sbsz - 2 * ((sby + 1) < (*f).sbh) as libc::c_int) >> ss_ver_0;
         let ss_hor = (pl != 0
             && (*f).cur.p.layout as libc::c_uint
                 != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint)

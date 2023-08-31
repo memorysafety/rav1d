@@ -854,7 +854,7 @@ unsafe extern "C" fn parse_seq_hdr(
     {
         (*hdr).layout = DAV1D_PIXEL_LAYOUT_I444;
         (*hdr).color_range = 1 as libc::c_int;
-        if (*hdr).profile != 1 as libc::c_int && !((*hdr).profile == 2 && (*hdr).hbd == 2) {
+        if (*hdr).profile != 1 && !((*hdr).profile == 2 && (*hdr).hbd == 2) {
             return parse_seq_hdr_error(c);
         }
     } else {
@@ -1353,11 +1353,11 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
         && dav1d_get_bit(gb) == 0) as libc::c_int;
     (*hdr).tiling.uniform = dav1d_get_bit(gb) as libc::c_int;
     let sbsz_min1: libc::c_int = ((64 as libc::c_int) << (*seqhdr).sb128) - 1;
-    let sbsz_log2: libc::c_int = 6 as libc::c_int + (*seqhdr).sb128;
+    let sbsz_log2: libc::c_int = 6 + (*seqhdr).sb128;
     let sbw: libc::c_int = (*hdr).width[0] + sbsz_min1 >> sbsz_log2;
     let sbh: libc::c_int = (*hdr).height + sbsz_min1 >> sbsz_log2;
-    let max_tile_width_sb: libc::c_int = 4096 as libc::c_int >> sbsz_log2;
-    let max_tile_area_sb: libc::c_int = 4096 as libc::c_int * 2304 >> 2 * sbsz_log2;
+    let max_tile_width_sb: libc::c_int = 4096 >> sbsz_log2;
+    let max_tile_area_sb: libc::c_int = 4096 * 2304 >> 2 * sbsz_log2;
     (*hdr).tiling.min_log2_cols = tile_log2(max_tile_width_sb, sbw);
     (*hdr).tiling.max_log2_cols = tile_log2(1 as libc::c_int, imin(sbw, 64 as libc::c_int));
     (*hdr).tiling.max_log2_rows = tile_log2(1 as libc::c_int, imin(sbh, 64 as libc::c_int));
@@ -1370,7 +1370,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
         while (*hdr).tiling.log2_cols < (*hdr).tiling.max_log2_cols && dav1d_get_bit(gb) != 0 {
             (*hdr).tiling.log2_cols += 1;
         }
-        let tile_w: libc::c_int = 1 as libc::c_int + (sbw - 1 >> (*hdr).tiling.log2_cols);
+        let tile_w: libc::c_int = 1 + (sbw - 1 >> (*hdr).tiling.log2_cols);
         (*hdr).tiling.cols = 0 as libc::c_int;
         let mut sbx = 0;
         while sbx < sbw {
@@ -1384,7 +1384,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
         while (*hdr).tiling.log2_rows < (*hdr).tiling.max_log2_rows && dav1d_get_bit(gb) != 0 {
             (*hdr).tiling.log2_rows += 1;
         }
-        let tile_h: libc::c_int = 1 as libc::c_int + (sbh - 1 >> (*hdr).tiling.log2_rows);
+        let tile_h: libc::c_int = 1 + (sbh - 1 >> (*hdr).tiling.log2_rows);
         (*hdr).tiling.rows = 0 as libc::c_int;
         let mut sby = 0;
         while sby < sbh {
@@ -1725,7 +1725,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
             || (*hdr).restoration.type_0[1] as libc::c_uint != 0
             || (*hdr).restoration.type_0[2] as libc::c_uint != 0
         {
-            (*hdr).restoration.unit_size[0] = 6 as libc::c_int + (*seqhdr).sb128;
+            (*hdr).restoration.unit_size[0] = 6 + (*seqhdr).sb128;
             if dav1d_get_bit(gb) != 0 {
                 (*hdr).restoration.unit_size[0] += 1;
                 if (*seqhdr).sb128 == 0 {
@@ -1936,8 +1936,8 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
                     bits = 12 as libc::c_int;
                     shift = 10 as libc::c_int;
                 } else {
-                    bits = 9 as libc::c_int - ((*hdr).hp == 0) as libc::c_int;
-                    shift = 13 as libc::c_int + ((*hdr).hp == 0) as libc::c_int;
+                    bits = 9 - ((*hdr).hp == 0) as libc::c_int;
+                    shift = 13 + ((*hdr).hp == 0) as libc::c_int;
                 }
                 if (*hdr).gmv[i_19 as usize].type_0 as libc::c_uint
                     == DAV1D_WM_TYPE_AFFINE as libc::c_int as libc::c_uint
@@ -2057,8 +2057,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
                 .wrapping_add(8 as libc::c_int as libc::c_uint)
                 as libc::c_int;
             (*fgd).ar_coeff_lag = dav1d_get_bits(gb, 2 as libc::c_int) as libc::c_int;
-            let num_y_pos: libc::c_int =
-                2 as libc::c_int * (*fgd).ar_coeff_lag * ((*fgd).ar_coeff_lag + 1);
+            let num_y_pos: libc::c_int = 2 * (*fgd).ar_coeff_lag * ((*fgd).ar_coeff_lag + 1);
             if (*fgd).num_y_points != 0 {
                 let mut i_23 = 0;
                 while i_23 < num_y_pos {
