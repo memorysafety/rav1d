@@ -1925,20 +1925,18 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
                 if (*hdr).gmv[i_19 as usize].type_0 as libc::c_uint
                     >= DAV1D_WM_TYPE_ROT_ZOOM as libc::c_int as libc::c_uint
                 {
-                    *mat.offset(2 as libc::c_int as isize) = ((1 as libc::c_int)
-                        << 16 as libc::c_int)
+                    *mat.offset(2) = ((1 as libc::c_int) << 16 as libc::c_int)
                         + 2 as libc::c_int
                             * dav1d_get_bits_subexp(
                                 gb,
-                                *ref_mat.offset(2 as libc::c_int as isize)
-                                    - ((1 as libc::c_int) << 16 as libc::c_int)
+                                *ref_mat.offset(2) - ((1 as libc::c_int) << 16 as libc::c_int)
                                     >> 1 as libc::c_int,
                                 12 as libc::c_int as libc::c_uint,
                             );
-                    *mat.offset(3 as libc::c_int as isize) = 2 as libc::c_int
+                    *mat.offset(3) = 2 as libc::c_int
                         * dav1d_get_bits_subexp(
                             gb,
-                            *ref_mat.offset(3 as libc::c_int as isize) >> 1 as libc::c_int,
+                            *ref_mat.offset(3) >> 1 as libc::c_int,
                             12 as libc::c_int as libc::c_uint,
                         );
                     bits = 12 as libc::c_int;
@@ -1950,37 +1948,30 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
                 if (*hdr).gmv[i_19 as usize].type_0 as libc::c_uint
                     == DAV1D_WM_TYPE_AFFINE as libc::c_int as libc::c_uint
                 {
-                    *mat.offset(4 as libc::c_int as isize) = 2 as libc::c_int
+                    *mat.offset(4) = 2 as libc::c_int
                         * dav1d_get_bits_subexp(
                             gb,
-                            *ref_mat.offset(4 as libc::c_int as isize) >> 1 as libc::c_int,
+                            *ref_mat.offset(4) >> 1 as libc::c_int,
                             12 as libc::c_int as libc::c_uint,
                         );
-                    *mat.offset(5 as libc::c_int as isize) = ((1 as libc::c_int)
-                        << 16 as libc::c_int)
+                    *mat.offset(5) = ((1 as libc::c_int) << 16 as libc::c_int)
                         + 2 as libc::c_int
                             * dav1d_get_bits_subexp(
                                 gb,
-                                *ref_mat.offset(5 as libc::c_int as isize)
-                                    - ((1 as libc::c_int) << 16 as libc::c_int)
+                                *ref_mat.offset(5) - ((1 as libc::c_int) << 16 as libc::c_int)
                                     >> 1 as libc::c_int,
                                 12 as libc::c_int as libc::c_uint,
                             );
                 } else {
-                    *mat.offset(4 as libc::c_int as isize) =
-                        -*mat.offset(3 as libc::c_int as isize);
-                    *mat.offset(5 as libc::c_int as isize) = *mat.offset(2 as libc::c_int as isize);
+                    *mat.offset(4) = -*mat.offset(3);
+                    *mat.offset(5) = *mat.offset(2);
                 }
-                *mat.offset(0 as libc::c_int as isize) = dav1d_get_bits_subexp(
-                    gb,
-                    *ref_mat.offset(0 as libc::c_int as isize) >> shift,
-                    bits as libc::c_uint,
-                ) * ((1 as libc::c_int) << shift);
-                *mat.offset(1 as libc::c_int as isize) = dav1d_get_bits_subexp(
-                    gb,
-                    *ref_mat.offset(1 as libc::c_int as isize) >> shift,
-                    bits as libc::c_uint,
-                ) * ((1 as libc::c_int) << shift);
+                *mat.offset(0) =
+                    dav1d_get_bits_subexp(gb, *ref_mat.offset(0) >> shift, bits as libc::c_uint)
+                        * ((1 as libc::c_int) << shift);
+                *mat.offset(1) =
+                    dav1d_get_bits_subexp(gb, *ref_mat.offset(1) >> shift, bits as libc::c_uint)
+                        * ((1 as libc::c_int) << shift);
             }
             i_19 += 1;
         }
@@ -2473,8 +2464,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                         let itut_t35_metadata: *mut Dav1dITUTT35 =
                             (*ref_3).data as *mut Dav1dITUTT35;
                         (*itut_t35_metadata).payload =
-                            &mut *itut_t35_metadata.offset(1 as libc::c_int as isize)
-                                as *mut Dav1dITUTT35 as *mut uint8_t;
+                            &mut *itut_t35_metadata.offset(1) as *mut Dav1dITUTT35 as *mut uint8_t;
                         (*itut_t35_metadata).country_code = country_code as uint8_t;
                         (*itut_t35_metadata).country_code_extension_byte =
                             country_code_extension_byte as uint8_t;
@@ -2791,8 +2781,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                     dav1d_thread_picture_unref(out_delayed);
                 } else if !((*out_delayed).p.data[0]).is_null() {
                     let progress: libc::c_uint = ::core::intrinsics::atomic_load_relaxed(
-                        &mut *((*out_delayed).progress).offset(1 as libc::c_int as isize)
-                            as *mut atomic_uint,
+                        &mut *((*out_delayed).progress).offset(1) as *mut atomic_uint,
                     );
                     if ((*out_delayed).visible != 0 || (*c).output_invisible_frames != 0)
                         && progress

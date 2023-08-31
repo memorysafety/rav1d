@@ -5173,8 +5173,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
             tile_row_1 += 1;
             tile_row_base += (*(*f).frame_hdr).tiling.cols;
         }
-        let cf_sz: libc::c_int =
-            (num_sb128 * *size_mul.offset(0 as libc::c_int as isize) as libc::c_int) << hbd;
+        let cf_sz: libc::c_int = (num_sb128 * *size_mul.offset(0) as libc::c_int) << hbd;
         if cf_sz != (*f).frame_thread.cf_sz {
             dav1d_freep_aligned(
                 &mut (*f).frame_thread.cf as *mut *mut libc::c_void as *mut libc::c_void,
@@ -5218,8 +5217,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                 }
                 (*f).frame_thread.pal_sz = num_sb128;
             }
-            let pal_idx_sz: libc::c_int =
-                num_sb128 * *size_mul.offset(1 as libc::c_int as isize) as libc::c_int;
+            let pal_idx_sz: libc::c_int = num_sb128 * *size_mul.offset(1) as libc::c_int;
             if pal_idx_sz != (*f).frame_thread.pal_idx_sz {
                 dav1d_freep_aligned(
                     &mut (*f).frame_thread.pal_idx as *mut *mut uint8_t as *mut libc::c_void,
@@ -5284,7 +5282,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
             (*f).lf.cdef_buf_plane_sz[0] = (*f).lf.cdef_buf_plane_sz[1];
             return retval;
         }
-        ptr = ptr.offset(32 as libc::c_int as isize);
+        ptr = ptr.offset(32);
         if y_stride < 0 {
             (*f).lf.cdef_line[0][0] = ptr.offset(
                 -((y_stride * ((*f).sbh * 4 as libc::c_int - 1 as libc::c_int) as isize) as isize),
@@ -5388,7 +5386,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
             (*f).lf.lr_buf_plane_sz[0] = (*f).lf.lr_buf_plane_sz[1];
             return retval;
         }
-        ptr_0 = ptr_0.offset(64 as libc::c_int as isize);
+        ptr_0 = ptr_0.offset(64);
         if y_stride < 0 {
             (*f).lf.lr_lpf_line[0] = ptr_0
                 .offset(-((y_stride * (num_lines - 1 as libc::c_int) as isize) as isize))
@@ -5496,9 +5494,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
     let ipred_edge_sz: libc::c_int = (*f).sbh * (*f).sb128w << hbd;
     if ipred_edge_sz != (*f).ipred_edge_sz {
         dav1d_freep_aligned(
-            &mut *((*f).ipred_edge)
-                .as_mut_ptr()
-                .offset(0 as libc::c_int as isize) as *mut *mut libc::c_void
+            &mut *((*f).ipred_edge).as_mut_ptr().offset(0) as *mut *mut libc::c_void
                 as *mut libc::c_void,
         );
         (*f).ipred_edge[0] = dav1d_alloc_aligned(
@@ -5521,9 +5517,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
     let re_sz: libc::c_int = (*f).sb128h * (*(*f).frame_hdr).tiling.cols;
     if re_sz != (*f).lf.re_sz {
         freep(
-            &mut *((*f).lf.tx_lpf_right_edge)
-                .as_mut_ptr()
-                .offset(0 as libc::c_int as isize) as *mut *mut uint8_t
+            &mut *((*f).lf.tx_lpf_right_edge).as_mut_ptr().offset(0) as *mut *mut uint8_t
                 as *mut libc::c_void,
         );
         (*f).lf.tx_lpf_right_edge[0] =
@@ -6020,8 +6014,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             dav1d_thread_picture_unref(out_delayed);
         } else if !((*out_delayed).p.data[0]).is_null() {
             let progress: libc::c_uint = ::core::intrinsics::atomic_load_relaxed(
-                &mut *((*out_delayed).progress).offset(1 as libc::c_int as isize)
-                    as *mut atomic_uint,
+                &mut *((*out_delayed).progress).offset(1) as *mut atomic_uint,
             );
             if ((*out_delayed).visible != 0 || (*c).output_invisible_frames != 0)
                 && progress
