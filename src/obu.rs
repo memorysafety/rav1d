@@ -1014,16 +1014,16 @@ static mut default_mode_ref_deltas: Dav1dLoopfilterModeRefDeltas = {
     };
     init
 };
+
+unsafe extern "C" fn parse_frame_hdr_error(c: *mut Dav1dContext) -> libc::c_int {
+    dav1d_log(
+        c,
+        b"Error parsing frame header\n\0" as *const u8 as *const libc::c_char,
+    );
+    return -(22 as libc::c_int);
+}
+
 unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> libc::c_int {
-    let sbsz_min1;
-    let sbsz_log2;
-    let sbw;
-    let sbh;
-    let max_tile_width_sb;
-    let max_tile_area_sb;
-    let min_log2_tiles;
-    let delta_lossless;
-    let mut current_block: u64;
     let seqhdr: *const Dav1dSequenceHeader = (*c).seq_hdr;
     let hdr: *mut Dav1dFrameHeader = (*c).frame_hdr;
     (*hdr).show_existing_frame =
@@ -1039,1544 +1039,1126 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
             let ref_frame_hdr: *mut Dav1dFrameHeader =
                 (*c).refs[(*hdr).existing_frame_idx as usize].p.p.frame_hdr;
             if ref_frame_hdr.is_null() || (*ref_frame_hdr).frame_id != (*hdr).frame_id {
-                current_block = 17922947093064792850;
-            } else {
-                current_block = 7351195479953500246;
+                return parse_frame_hdr_error(c);
             }
-        } else {
-            current_block = 7351195479953500246;
         }
-        match current_block {
-            17922947093064792850 => {}
-            _ => return 0 as libc::c_int,
-        }
+        return 0 as libc::c_int;
+    }
+    (*hdr).frame_type = (if (*seqhdr).reduced_still_picture_header != 0 {
+        DAV1D_FRAME_TYPE_KEY as libc::c_int as libc::c_uint
     } else {
-        (*hdr).frame_type = (if (*seqhdr).reduced_still_picture_header != 0 {
-            DAV1D_FRAME_TYPE_KEY as libc::c_int as libc::c_uint
-        } else {
-            dav1d_get_bits(gb, 2 as libc::c_int)
-        }) as Dav1dFrameType;
-        (*hdr).show_frame =
-            ((*seqhdr).reduced_still_picture_header != 0 || dav1d_get_bit(gb) != 0) as libc::c_int;
-        if (*hdr).show_frame != 0 {
-            if (*seqhdr).decoder_model_info_present != 0 && (*seqhdr).equal_picture_interval == 0 {
-                (*hdr).frame_presentation_delay =
-                    dav1d_get_bits(gb, (*seqhdr).frame_presentation_delay_length) as libc::c_int;
-            }
-            (*hdr).showable_frame = ((*hdr).frame_type as libc::c_uint
-                != DAV1D_FRAME_TYPE_KEY as libc::c_int as libc::c_uint)
-                as libc::c_int;
-        } else {
-            (*hdr).showable_frame = dav1d_get_bit(gb) as libc::c_int;
+        dav1d_get_bits(gb, 2 as libc::c_int)
+    }) as Dav1dFrameType;
+    (*hdr).show_frame =
+        ((*seqhdr).reduced_still_picture_header != 0 || dav1d_get_bit(gb) != 0) as libc::c_int;
+    if (*hdr).show_frame != 0 {
+        if (*seqhdr).decoder_model_info_present != 0 && (*seqhdr).equal_picture_interval == 0 {
+            (*hdr).frame_presentation_delay =
+                dav1d_get_bits(gb, (*seqhdr).frame_presentation_delay_length) as libc::c_int;
         }
-        (*hdr).error_resilient_mode = ((*hdr).frame_type as libc::c_uint
-            == DAV1D_FRAME_TYPE_KEY as libc::c_int as libc::c_uint
-            && (*hdr).show_frame != 0
-            || (*hdr).frame_type as libc::c_uint
-                == DAV1D_FRAME_TYPE_SWITCH as libc::c_int as libc::c_uint
-            || (*seqhdr).reduced_still_picture_header != 0
-            || dav1d_get_bit(gb) != 0) as libc::c_int;
-        (*hdr).disable_cdf_update = dav1d_get_bit(gb) as libc::c_int;
-        (*hdr).allow_screen_content_tools = (if (*seqhdr).screen_content_tools as libc::c_uint
+        (*hdr).showable_frame = ((*hdr).frame_type as libc::c_uint
+            != DAV1D_FRAME_TYPE_KEY as libc::c_int as libc::c_uint)
+            as libc::c_int;
+    } else {
+        (*hdr).showable_frame = dav1d_get_bit(gb) as libc::c_int;
+    }
+    (*hdr).error_resilient_mode = ((*hdr).frame_type as libc::c_uint
+        == DAV1D_FRAME_TYPE_KEY as libc::c_int as libc::c_uint
+        && (*hdr).show_frame != 0
+        || (*hdr).frame_type as libc::c_uint
+            == DAV1D_FRAME_TYPE_SWITCH as libc::c_int as libc::c_uint
+        || (*seqhdr).reduced_still_picture_header != 0
+        || dav1d_get_bit(gb) != 0) as libc::c_int;
+    (*hdr).disable_cdf_update = dav1d_get_bit(gb) as libc::c_int;
+    (*hdr).allow_screen_content_tools = (if (*seqhdr).screen_content_tools as libc::c_uint
+        == DAV1D_ADAPTIVE as libc::c_int as libc::c_uint
+    {
+        dav1d_get_bit(gb)
+    } else {
+        (*seqhdr).screen_content_tools as libc::c_uint
+    }) as libc::c_int;
+    if (*hdr).allow_screen_content_tools != 0 {
+        (*hdr).force_integer_mv = (if (*seqhdr).force_integer_mv as libc::c_uint
             == DAV1D_ADAPTIVE as libc::c_int as libc::c_uint
         {
             dav1d_get_bit(gb)
         } else {
-            (*seqhdr).screen_content_tools as libc::c_uint
+            (*seqhdr).force_integer_mv as libc::c_uint
         }) as libc::c_int;
-        if (*hdr).allow_screen_content_tools != 0 {
-            (*hdr).force_integer_mv = (if (*seqhdr).force_integer_mv as libc::c_uint
-                == DAV1D_ADAPTIVE as libc::c_int as libc::c_uint
-            {
-                dav1d_get_bit(gb)
-            } else {
-                (*seqhdr).force_integer_mv as libc::c_uint
-            }) as libc::c_int;
+    } else {
+        (*hdr).force_integer_mv = 0 as libc::c_int;
+    }
+    if (*hdr).frame_type as libc::c_uint & 1 as libc::c_uint == 0 {
+        (*hdr).force_integer_mv = 1 as libc::c_int;
+    }
+    if (*seqhdr).frame_id_numbers_present != 0 {
+        (*hdr).frame_id = dav1d_get_bits(gb, (*seqhdr).frame_id_n_bits) as libc::c_int;
+    }
+    (*hdr).frame_size_override = (if (*seqhdr).reduced_still_picture_header != 0 {
+        0 as libc::c_int as libc::c_uint
+    } else if (*hdr).frame_type as libc::c_uint
+        == DAV1D_FRAME_TYPE_SWITCH as libc::c_int as libc::c_uint
+    {
+        1 as libc::c_int as libc::c_uint
+    } else {
+        dav1d_get_bit(gb)
+    }) as libc::c_int;
+    (*hdr).frame_offset = (if (*seqhdr).order_hint != 0 {
+        dav1d_get_bits(gb, (*seqhdr).order_hint_n_bits)
+    } else {
+        0 as libc::c_int as libc::c_uint
+    }) as libc::c_int;
+    (*hdr).primary_ref_frame = (if (*hdr).error_resilient_mode == 0
+        && (*hdr).frame_type as libc::c_uint & 1 as libc::c_uint != 0
+    {
+        dav1d_get_bits(gb, 3 as libc::c_int)
+    } else {
+        7 as libc::c_int as libc::c_uint
+    }) as libc::c_int;
+    if (*seqhdr).decoder_model_info_present != 0 {
+        (*hdr).buffer_removal_time_present = dav1d_get_bit(gb) as libc::c_int;
+        if (*hdr).buffer_removal_time_present != 0 {
+            let mut i = 0;
+            while i < (*(*c).seq_hdr).num_operating_points {
+                let seqop: *const Dav1dSequenceHeaderOperatingPoint =
+                    &*((*seqhdr).operating_points).as_ptr().offset(i as isize)
+                        as *const Dav1dSequenceHeaderOperatingPoint;
+                let op: *mut Dav1dFrameHeaderOperatingPoint =
+                    &mut *((*hdr).operating_points).as_mut_ptr().offset(i as isize)
+                        as *mut Dav1dFrameHeaderOperatingPoint;
+                if (*seqop).decoder_model_param_present != 0 {
+                    let in_temporal_layer = (*seqop).idc >> (*hdr).temporal_id & 1;
+                    let in_spatial_layer = (*seqop).idc >> (*hdr).spatial_id + 8 & 1;
+                    if (*seqop).idc == 0 || in_temporal_layer != 0 && in_spatial_layer != 0 {
+                        (*op).buffer_removal_time =
+                            dav1d_get_bits(gb, (*seqhdr).buffer_removal_delay_length)
+                                as libc::c_int;
+                    }
+                }
+                i += 1;
+            }
+        }
+    }
+    if (*hdr).frame_type as libc::c_uint & 1 as libc::c_uint == 0 {
+        (*hdr).refresh_frame_flags = (if (*hdr).frame_type as libc::c_uint
+            == DAV1D_FRAME_TYPE_KEY as libc::c_int as libc::c_uint
+            && (*hdr).show_frame != 0
+        {
+            0xff as libc::c_int as libc::c_uint
         } else {
-            (*hdr).force_integer_mv = 0 as libc::c_int;
+            dav1d_get_bits(gb, 8 as libc::c_int)
+        }) as libc::c_int;
+        if (*hdr).refresh_frame_flags != 0xff as libc::c_int
+            && (*hdr).error_resilient_mode != 0
+            && (*seqhdr).order_hint != 0
+        {
+            let mut i_0 = 0;
+            while i_0 < 8 {
+                dav1d_get_bits(gb, (*seqhdr).order_hint_n_bits);
+                i_0 += 1;
+            }
         }
-        if (*hdr).frame_type as libc::c_uint & 1 as libc::c_uint == 0 {
-            (*hdr).force_integer_mv = 1 as libc::c_int;
+        if (*c).strict_std_compliance != 0
+            && (*hdr).frame_type as libc::c_uint
+                == DAV1D_FRAME_TYPE_INTRA as libc::c_int as libc::c_uint
+            && (*hdr).refresh_frame_flags == 0xff as libc::c_int
+        {
+            return parse_frame_hdr_error(c);
         }
-        if (*seqhdr).frame_id_numbers_present != 0 {
-            (*hdr).frame_id = dav1d_get_bits(gb, (*seqhdr).frame_id_n_bits) as libc::c_int;
+        if read_frame_size(c, gb, 0 as libc::c_int) < 0 {
+            return parse_frame_hdr_error(c);
         }
-        (*hdr).frame_size_override = (if (*seqhdr).reduced_still_picture_header != 0 {
-            0 as libc::c_int as libc::c_uint
-        } else if (*hdr).frame_type as libc::c_uint
+        (*hdr).allow_intrabc = ((*hdr).allow_screen_content_tools != 0
+            && (*hdr).super_res.enabled == 0
+            && dav1d_get_bit(gb) != 0) as libc::c_int;
+        (*hdr).use_ref_frame_mvs = 0 as libc::c_int;
+    } else {
+        (*hdr).allow_intrabc = 0 as libc::c_int;
+        (*hdr).refresh_frame_flags = (if (*hdr).frame_type as libc::c_uint
             == DAV1D_FRAME_TYPE_SWITCH as libc::c_int as libc::c_uint
         {
-            1 as libc::c_int as libc::c_uint
+            0xff as libc::c_int as libc::c_uint
         } else {
-            dav1d_get_bit(gb)
+            dav1d_get_bits(gb, 8 as libc::c_int)
         }) as libc::c_int;
-        (*hdr).frame_offset = (if (*seqhdr).order_hint != 0 {
-            dav1d_get_bits(gb, (*seqhdr).order_hint_n_bits)
+        if (*hdr).error_resilient_mode != 0 && (*seqhdr).order_hint != 0 {
+            let mut i_1 = 0;
+            while i_1 < 8 {
+                dav1d_get_bits(gb, (*seqhdr).order_hint_n_bits);
+                i_1 += 1;
+            }
+        }
+        (*hdr).frame_ref_short_signaling =
+            ((*seqhdr).order_hint != 0 && dav1d_get_bit(gb) != 0) as libc::c_int;
+        if (*hdr).frame_ref_short_signaling != 0 {
+            (*hdr).refidx[0] = dav1d_get_bits(gb, 3 as libc::c_int) as libc::c_int;
+            (*hdr).refidx[2] = -(1 as libc::c_int);
+            (*hdr).refidx[1] = (*hdr).refidx[2];
+            (*hdr).refidx[3] = dav1d_get_bits(gb, 3 as libc::c_int) as libc::c_int;
+            (*hdr).refidx[6] = -(1 as libc::c_int);
+            (*hdr).refidx[5] = (*hdr).refidx[6];
+            (*hdr).refidx[4] = (*hdr).refidx[5];
+            let mut shifted_frame_offset: [libc::c_int; 8] = [0; 8];
+            let current_frame_offset: libc::c_int =
+                (1 as libc::c_int) << (*seqhdr).order_hint_n_bits - 1 as libc::c_int;
+            let mut i_2 = 0;
+            while i_2 < 8 {
+                if ((*c).refs[i_2 as usize].p.p.frame_hdr).is_null() {
+                    return parse_frame_hdr_error(c);
+                }
+                shifted_frame_offset[i_2 as usize] = current_frame_offset
+                    + get_poc_diff(
+                        (*seqhdr).order_hint_n_bits,
+                        (*(*c).refs[i_2 as usize].p.p.frame_hdr).frame_offset,
+                        (*hdr).frame_offset,
+                    );
+                i_2 += 1;
+            }
+            let mut used_frame: [libc::c_int; 8] = [0 as libc::c_int, 0, 0, 0, 0, 0, 0, 0];
+            used_frame[(*hdr).refidx[0 as libc::c_int as usize] as usize] = 1 as libc::c_int;
+            used_frame[(*hdr).refidx[3 as libc::c_int as usize] as usize] = 1 as libc::c_int;
+            let mut latest_frame_offset: libc::c_int = -(1 as libc::c_int);
+            let mut i_3: libc::c_int = 0 as libc::c_int;
+            while i_3 < 8 as libc::c_int {
+                let hint: libc::c_int = shifted_frame_offset[i_3 as usize];
+                if used_frame[i_3 as usize] == 0
+                    && hint >= current_frame_offset
+                    && hint >= latest_frame_offset
+                {
+                    (*hdr).refidx[6 as libc::c_int as usize] = i_3;
+                    latest_frame_offset = hint;
+                }
+                i_3 += 1;
+            }
+            if latest_frame_offset != -(1 as libc::c_int) {
+                used_frame[(*hdr).refidx[6 as libc::c_int as usize] as usize] = 1 as libc::c_int;
+            }
+            let mut earliest_frame_offset: libc::c_int = 2147483647 as libc::c_int;
+            let mut i_4: libc::c_int = 0 as libc::c_int;
+            while i_4 < 8 as libc::c_int {
+                let hint_0: libc::c_int = shifted_frame_offset[i_4 as usize];
+                if used_frame[i_4 as usize] == 0
+                    && hint_0 >= current_frame_offset
+                    && hint_0 < earliest_frame_offset
+                {
+                    (*hdr).refidx[4 as libc::c_int as usize] = i_4;
+                    earliest_frame_offset = hint_0;
+                }
+                i_4 += 1;
+            }
+            if earliest_frame_offset != 2147483647 as libc::c_int {
+                used_frame[(*hdr).refidx[4 as libc::c_int as usize] as usize] = 1 as libc::c_int;
+            }
+            earliest_frame_offset = 2147483647 as libc::c_int;
+            let mut i_5: libc::c_int = 0 as libc::c_int;
+            while i_5 < 8 as libc::c_int {
+                let hint_1: libc::c_int = shifted_frame_offset[i_5 as usize];
+                if used_frame[i_5 as usize] == 0
+                    && hint_1 >= current_frame_offset
+                    && hint_1 < earliest_frame_offset
+                {
+                    (*hdr).refidx[5 as libc::c_int as usize] = i_5;
+                    earliest_frame_offset = hint_1;
+                }
+                i_5 += 1;
+            }
+            if earliest_frame_offset != 2147483647 as libc::c_int {
+                used_frame[(*hdr).refidx[5 as libc::c_int as usize] as usize] = 1 as libc::c_int;
+            }
+            let mut i_6: libc::c_int = 1 as libc::c_int;
+            while i_6 < 7 as libc::c_int {
+                if (*hdr).refidx[i_6 as usize] < 0 as libc::c_int {
+                    latest_frame_offset = -(1 as libc::c_int);
+                    let mut j: libc::c_int = 0 as libc::c_int;
+                    while j < 8 as libc::c_int {
+                        let hint_2: libc::c_int = shifted_frame_offset[j as usize];
+                        if used_frame[j as usize] == 0
+                            && hint_2 < current_frame_offset
+                            && hint_2 >= latest_frame_offset
+                        {
+                            (*hdr).refidx[i_6 as usize] = j;
+                            latest_frame_offset = hint_2;
+                        }
+                        j += 1;
+                    }
+                    if latest_frame_offset != -(1 as libc::c_int) {
+                        used_frame[(*hdr).refidx[i_6 as usize] as usize] = 1 as libc::c_int;
+                    }
+                }
+                i_6 += 1;
+            }
+            earliest_frame_offset = 2147483647 as libc::c_int;
+            let mut ref_0: libc::c_int = -(1 as libc::c_int);
+            let mut i_7: libc::c_int = 0 as libc::c_int;
+            while i_7 < 8 as libc::c_int {
+                let hint_3: libc::c_int = shifted_frame_offset[i_7 as usize];
+                if hint_3 < earliest_frame_offset {
+                    ref_0 = i_7;
+                    earliest_frame_offset = hint_3;
+                }
+                i_7 += 1;
+            }
+            let mut i_8: libc::c_int = 0 as libc::c_int;
+            while i_8 < 7 as libc::c_int {
+                if (*hdr).refidx[i_8 as usize] < 0 as libc::c_int {
+                    (*hdr).refidx[i_8 as usize] = ref_0;
+                }
+                i_8 += 1;
+            }
+        }
+        let mut i_9: libc::c_int = 0 as libc::c_int;
+        while i_9 < 7 as libc::c_int {
+            if (*hdr).frame_ref_short_signaling == 0 {
+                (*hdr).refidx[i_9 as usize] = dav1d_get_bits(gb, 3 as libc::c_int) as libc::c_int;
+            }
+            if (*seqhdr).frame_id_numbers_present != 0 {
+                let delta_ref_frame_id_minus_1: libc::c_int =
+                    dav1d_get_bits(gb, (*seqhdr).delta_frame_id_n_bits) as libc::c_int;
+                let ref_frame_id: libc::c_int = (*hdr).frame_id
+                    + ((1 as libc::c_int) << (*seqhdr).frame_id_n_bits)
+                    - delta_ref_frame_id_minus_1
+                    - 1 as libc::c_int
+                    & ((1 as libc::c_int) << (*seqhdr).frame_id_n_bits) - 1 as libc::c_int;
+                let ref_frame_hdr_0: *mut Dav1dFrameHeader = (*c).refs
+                    [(*hdr).refidx[i_9 as usize] as usize]
+                    .p
+                    .p
+                    .frame_hdr;
+                if ref_frame_hdr_0.is_null() || (*ref_frame_hdr_0).frame_id != ref_frame_id {
+                    return parse_frame_hdr_error(c);
+                }
+            }
+            i_9 += 1;
+        }
+        let use_ref: libc::c_int =
+            ((*hdr).error_resilient_mode == 0 && (*hdr).frame_size_override != 0) as libc::c_int;
+        if read_frame_size(c, gb, use_ref) < 0 as libc::c_int {
+            return parse_frame_hdr_error(c);
+        }
+        (*hdr).hp = ((*hdr).force_integer_mv == 0 && dav1d_get_bit(gb) != 0) as libc::c_int;
+        (*hdr).subpel_filter_mode = (if dav1d_get_bit(gb) != 0 {
+            DAV1D_FILTER_SWITCHABLE as libc::c_int as libc::c_uint
+        } else {
+            dav1d_get_bits(gb, 2 as libc::c_int)
+        }) as Dav1dFilterMode;
+        (*hdr).switchable_motion_mode = dav1d_get_bit(gb) as libc::c_int;
+        (*hdr).use_ref_frame_mvs = ((*hdr).error_resilient_mode == 0
+            && (*seqhdr).ref_frame_mvs != 0
+            && (*seqhdr).order_hint != 0
+            && (*hdr).frame_type as libc::c_uint & 1 as libc::c_int as libc::c_uint != 0
+            && dav1d_get_bit(gb) != 0) as libc::c_int;
+    }
+    (*hdr).refresh_context = ((*seqhdr).reduced_still_picture_header == 0
+        && (*hdr).disable_cdf_update == 0
+        && dav1d_get_bit(gb) == 0) as libc::c_int;
+    (*hdr).tiling.uniform = dav1d_get_bit(gb) as libc::c_int;
+    let sbsz_min1: libc::c_int = ((64 as libc::c_int) << (*seqhdr).sb128) - 1 as libc::c_int;
+    let sbsz_log2: libc::c_int = 6 as libc::c_int + (*seqhdr).sb128;
+    let sbw: libc::c_int = (*hdr).width[0 as libc::c_int as usize] + sbsz_min1 >> sbsz_log2;
+    let sbh: libc::c_int = (*hdr).height + sbsz_min1 >> sbsz_log2;
+    let max_tile_width_sb: libc::c_int = 4096 as libc::c_int >> sbsz_log2;
+    let max_tile_area_sb: libc::c_int =
+        4096 as libc::c_int * 2304 as libc::c_int >> 2 as libc::c_int * sbsz_log2;
+    (*hdr).tiling.min_log2_cols = tile_log2(max_tile_width_sb, sbw);
+    (*hdr).tiling.max_log2_cols = tile_log2(1 as libc::c_int, imin(sbw, 64 as libc::c_int));
+    (*hdr).tiling.max_log2_rows = tile_log2(1 as libc::c_int, imin(sbh, 64 as libc::c_int));
+    let min_log2_tiles: libc::c_int = imax(
+        tile_log2(max_tile_area_sb, sbw * sbh),
+        (*hdr).tiling.min_log2_cols,
+    );
+    if (*hdr).tiling.uniform != 0 {
+        (*hdr).tiling.log2_cols = (*hdr).tiling.min_log2_cols;
+        while (*hdr).tiling.log2_cols < (*hdr).tiling.max_log2_cols && dav1d_get_bit(gb) != 0 {
+            (*hdr).tiling.log2_cols += 1;
+        }
+        let tile_w: libc::c_int =
+            1 as libc::c_int + (sbw - 1 as libc::c_int >> (*hdr).tiling.log2_cols);
+        (*hdr).tiling.cols = 0 as libc::c_int;
+        let mut sbx: libc::c_int = 0 as libc::c_int;
+        while sbx < sbw {
+            (*hdr).tiling.col_start_sb[(*hdr).tiling.cols as usize] = sbx as uint16_t;
+            sbx += tile_w;
+            (*hdr).tiling.cols += 1;
+        }
+        (*hdr).tiling.min_log2_rows =
+            imax(min_log2_tiles - (*hdr).tiling.log2_cols, 0 as libc::c_int);
+        (*hdr).tiling.log2_rows = (*hdr).tiling.min_log2_rows;
+        while (*hdr).tiling.log2_rows < (*hdr).tiling.max_log2_rows && dav1d_get_bit(gb) != 0 {
+            (*hdr).tiling.log2_rows += 1;
+        }
+        let tile_h: libc::c_int =
+            1 as libc::c_int + (sbh - 1 as libc::c_int >> (*hdr).tiling.log2_rows);
+        (*hdr).tiling.rows = 0 as libc::c_int;
+        let mut sby: libc::c_int = 0 as libc::c_int;
+        while sby < sbh {
+            (*hdr).tiling.row_start_sb[(*hdr).tiling.rows as usize] = sby as uint16_t;
+            sby += tile_h;
+            (*hdr).tiling.rows += 1;
+        }
+    } else {
+        (*hdr).tiling.cols = 0 as libc::c_int;
+        let mut widest_tile: libc::c_int = 0 as libc::c_int;
+        let mut max_tile_area_sb_0: libc::c_int = sbw * sbh;
+        let mut sbx_0: libc::c_int = 0 as libc::c_int;
+        while sbx_0 < sbw && (*hdr).tiling.cols < 64 as libc::c_int {
+            let tile_width_sb: libc::c_int = imin(sbw - sbx_0, max_tile_width_sb);
+            let tile_w_0: libc::c_int = (if tile_width_sb > 1 as libc::c_int {
+                (1 as libc::c_int as libc::c_uint)
+                    .wrapping_add(dav1d_get_uniform(gb, tile_width_sb as libc::c_uint))
+            } else {
+                1 as libc::c_int as libc::c_uint
+            }) as libc::c_int;
+            (*hdr).tiling.col_start_sb[(*hdr).tiling.cols as usize] = sbx_0 as uint16_t;
+            sbx_0 += tile_w_0;
+            widest_tile = imax(widest_tile, tile_w_0);
+            (*hdr).tiling.cols += 1;
+        }
+        (*hdr).tiling.log2_cols = tile_log2(1 as libc::c_int, (*hdr).tiling.cols);
+        if min_log2_tiles != 0 {
+            max_tile_area_sb_0 >>= min_log2_tiles + 1 as libc::c_int;
+        }
+        let max_tile_height_sb: libc::c_int =
+            imax(max_tile_area_sb_0 / widest_tile, 1 as libc::c_int);
+        (*hdr).tiling.rows = 0 as libc::c_int;
+        let mut sby_0: libc::c_int = 0 as libc::c_int;
+        while sby_0 < sbh && (*hdr).tiling.rows < 64 as libc::c_int {
+            let tile_height_sb: libc::c_int = imin(sbh - sby_0, max_tile_height_sb);
+            let tile_h_0: libc::c_int = (if tile_height_sb > 1 as libc::c_int {
+                (1 as libc::c_int as libc::c_uint)
+                    .wrapping_add(dav1d_get_uniform(gb, tile_height_sb as libc::c_uint))
+            } else {
+                1 as libc::c_int as libc::c_uint
+            }) as libc::c_int;
+            (*hdr).tiling.row_start_sb[(*hdr).tiling.rows as usize] = sby_0 as uint16_t;
+            sby_0 += tile_h_0;
+            (*hdr).tiling.rows += 1;
+        }
+        (*hdr).tiling.log2_rows = tile_log2(1 as libc::c_int, (*hdr).tiling.rows);
+    }
+    (*hdr).tiling.col_start_sb[(*hdr).tiling.cols as usize] = sbw as uint16_t;
+    (*hdr).tiling.row_start_sb[(*hdr).tiling.rows as usize] = sbh as uint16_t;
+    if (*hdr).tiling.log2_cols != 0 || (*hdr).tiling.log2_rows != 0 {
+        (*hdr).tiling.update =
+            dav1d_get_bits(gb, (*hdr).tiling.log2_cols + (*hdr).tiling.log2_rows) as libc::c_int;
+        if (*hdr).tiling.update >= (*hdr).tiling.cols * (*hdr).tiling.rows {
+            return parse_frame_hdr_error(c);
+        }
+        (*hdr).tiling.n_bytes =
+            (dav1d_get_bits(gb, 2 as libc::c_int)).wrapping_add(1 as libc::c_int as libc::c_uint);
+    } else {
+        (*hdr).tiling.update = 0 as libc::c_int;
+        (*hdr).tiling.n_bytes = (*hdr).tiling.update as libc::c_uint;
+    }
+    (*hdr).quant.yac = dav1d_get_bits(gb, 8 as libc::c_int) as libc::c_int;
+    (*hdr).quant.ydc_delta = if dav1d_get_bit(gb) != 0 {
+        dav1d_get_sbits(gb, 7 as libc::c_int)
+    } else {
+        0 as libc::c_int
+    };
+    if (*seqhdr).monochrome == 0 {
+        let diff_uv_delta: libc::c_int = (if (*seqhdr).separate_uv_delta_q != 0 {
+            dav1d_get_bit(gb)
         } else {
             0 as libc::c_int as libc::c_uint
         }) as libc::c_int;
-        (*hdr).primary_ref_frame = (if (*hdr).error_resilient_mode == 0
-            && (*hdr).frame_type as libc::c_uint & 1 as libc::c_uint != 0
+        (*hdr).quant.udc_delta = if dav1d_get_bit(gb) != 0 {
+            dav1d_get_sbits(gb, 7 as libc::c_int)
+        } else {
+            0 as libc::c_int
+        };
+        (*hdr).quant.uac_delta = if dav1d_get_bit(gb) != 0 {
+            dav1d_get_sbits(gb, 7 as libc::c_int)
+        } else {
+            0 as libc::c_int
+        };
+        if diff_uv_delta != 0 {
+            (*hdr).quant.vdc_delta = if dav1d_get_bit(gb) != 0 {
+                dav1d_get_sbits(gb, 7 as libc::c_int)
+            } else {
+                0 as libc::c_int
+            };
+            (*hdr).quant.vac_delta = if dav1d_get_bit(gb) != 0 {
+                dav1d_get_sbits(gb, 7 as libc::c_int)
+            } else {
+                0 as libc::c_int
+            };
+        } else {
+            (*hdr).quant.vdc_delta = (*hdr).quant.udc_delta;
+            (*hdr).quant.vac_delta = (*hdr).quant.uac_delta;
+        }
+    }
+    (*hdr).quant.qm = dav1d_get_bit(gb) as libc::c_int;
+    if (*hdr).quant.qm != 0 {
+        (*hdr).quant.qm_y = dav1d_get_bits(gb, 4 as libc::c_int) as libc::c_int;
+        (*hdr).quant.qm_u = dav1d_get_bits(gb, 4 as libc::c_int) as libc::c_int;
+        (*hdr).quant.qm_v = if (*seqhdr).separate_uv_delta_q != 0 {
+            dav1d_get_bits(gb, 4 as libc::c_int) as libc::c_int
+        } else {
+            (*hdr).quant.qm_u
+        };
+    }
+    (*hdr).segmentation.enabled = dav1d_get_bit(gb) as libc::c_int;
+    if (*hdr).segmentation.enabled != 0 {
+        if (*hdr).primary_ref_frame == 7 as libc::c_int {
+            (*hdr).segmentation.update_map = 1 as libc::c_int;
+            (*hdr).segmentation.temporal = 0 as libc::c_int;
+            (*hdr).segmentation.update_data = 1 as libc::c_int;
+        } else {
+            (*hdr).segmentation.update_map = dav1d_get_bit(gb) as libc::c_int;
+            (*hdr).segmentation.temporal = (if (*hdr).segmentation.update_map != 0 {
+                dav1d_get_bit(gb)
+            } else {
+                0 as libc::c_int as libc::c_uint
+            }) as libc::c_int;
+            (*hdr).segmentation.update_data = dav1d_get_bit(gb) as libc::c_int;
+        }
+        if (*hdr).segmentation.update_data != 0 {
+            (*hdr).segmentation.seg_data.preskip = 0 as libc::c_int;
+            (*hdr).segmentation.seg_data.last_active_segid = -(1 as libc::c_int);
+            let mut i_10: libc::c_int = 0 as libc::c_int;
+            while i_10 < 8 as libc::c_int {
+                let seg: *mut Dav1dSegmentationData = &mut *((*hdr).segmentation.seg_data.d)
+                    .as_mut_ptr()
+                    .offset(i_10 as isize)
+                    as *mut Dav1dSegmentationData;
+                if dav1d_get_bit(gb) != 0 {
+                    (*seg).delta_q = dav1d_get_sbits(gb, 9 as libc::c_int);
+                    (*hdr).segmentation.seg_data.last_active_segid = i_10;
+                } else {
+                    (*seg).delta_q = 0 as libc::c_int;
+                }
+                if dav1d_get_bit(gb) != 0 {
+                    (*seg).delta_lf_y_v = dav1d_get_sbits(gb, 7 as libc::c_int);
+                    (*hdr).segmentation.seg_data.last_active_segid = i_10;
+                } else {
+                    (*seg).delta_lf_y_v = 0 as libc::c_int;
+                }
+                if dav1d_get_bit(gb) != 0 {
+                    (*seg).delta_lf_y_h = dav1d_get_sbits(gb, 7 as libc::c_int);
+                    (*hdr).segmentation.seg_data.last_active_segid = i_10;
+                } else {
+                    (*seg).delta_lf_y_h = 0 as libc::c_int;
+                }
+                if dav1d_get_bit(gb) != 0 {
+                    (*seg).delta_lf_u = dav1d_get_sbits(gb, 7 as libc::c_int);
+                    (*hdr).segmentation.seg_data.last_active_segid = i_10;
+                } else {
+                    (*seg).delta_lf_u = 0 as libc::c_int;
+                }
+                if dav1d_get_bit(gb) != 0 {
+                    (*seg).delta_lf_v = dav1d_get_sbits(gb, 7 as libc::c_int);
+                    (*hdr).segmentation.seg_data.last_active_segid = i_10;
+                } else {
+                    (*seg).delta_lf_v = 0 as libc::c_int;
+                }
+                if dav1d_get_bit(gb) != 0 {
+                    (*seg).r#ref = dav1d_get_bits(gb, 3 as libc::c_int) as libc::c_int;
+                    (*hdr).segmentation.seg_data.last_active_segid = i_10;
+                    (*hdr).segmentation.seg_data.preskip = 1 as libc::c_int;
+                } else {
+                    (*seg).r#ref = -(1 as libc::c_int);
+                }
+                (*seg).skip = dav1d_get_bit(gb) as libc::c_int;
+                if (*seg).skip != 0 {
+                    (*hdr).segmentation.seg_data.last_active_segid = i_10;
+                    (*hdr).segmentation.seg_data.preskip = 1 as libc::c_int;
+                }
+                (*seg).globalmv = dav1d_get_bit(gb) as libc::c_int;
+                if (*seg).globalmv != 0 {
+                    (*hdr).segmentation.seg_data.last_active_segid = i_10;
+                    (*hdr).segmentation.seg_data.preskip = 1 as libc::c_int;
+                }
+                i_10 += 1;
+            }
+        } else {
+            if !((*hdr).primary_ref_frame != 7 as libc::c_int) {
+                unreachable!();
+            }
+            let pri_ref: libc::c_int = (*hdr).refidx[(*hdr).primary_ref_frame as usize];
+            if ((*c).refs[pri_ref as usize].p.p.frame_hdr).is_null() {
+                return parse_frame_hdr_error(c);
+            }
+            (*hdr).segmentation.seg_data = (*(*c).refs[pri_ref as usize].p.p.frame_hdr)
+                .segmentation
+                .seg_data
+                .clone();
+        }
+    } else {
+        memset(
+            &mut (*hdr).segmentation.seg_data as *mut Dav1dSegmentationDataSet as *mut libc::c_void,
+            0 as libc::c_int,
+            ::core::mem::size_of::<Dav1dSegmentationDataSet>(),
+        );
+        let mut i_11: libc::c_int = 0 as libc::c_int;
+        while i_11 < 8 as libc::c_int {
+            (*hdr).segmentation.seg_data.d[i_11 as usize].r#ref = -(1 as libc::c_int);
+            i_11 += 1;
+        }
+    }
+    (*hdr).delta.q.present = (if (*hdr).quant.yac != 0 {
+        dav1d_get_bit(gb)
+    } else {
+        0 as libc::c_int as libc::c_uint
+    }) as libc::c_int;
+    (*hdr).delta.q.res_log2 = (if (*hdr).delta.q.present != 0 {
+        dav1d_get_bits(gb, 2 as libc::c_int)
+    } else {
+        0 as libc::c_int as libc::c_uint
+    }) as libc::c_int;
+    (*hdr).delta.lf.present = ((*hdr).delta.q.present != 0
+        && (*hdr).allow_intrabc == 0
+        && dav1d_get_bit(gb) != 0) as libc::c_int;
+    (*hdr).delta.lf.res_log2 = (if (*hdr).delta.lf.present != 0 {
+        dav1d_get_bits(gb, 2 as libc::c_int)
+    } else {
+        0 as libc::c_int as libc::c_uint
+    }) as libc::c_int;
+    (*hdr).delta.lf.multi = (if (*hdr).delta.lf.present != 0 {
+        dav1d_get_bit(gb)
+    } else {
+        0 as libc::c_int as libc::c_uint
+    }) as libc::c_int;
+    let delta_lossless: libc::c_int = ((*hdr).quant.ydc_delta == 0
+        && (*hdr).quant.udc_delta == 0
+        && (*hdr).quant.uac_delta == 0
+        && (*hdr).quant.vdc_delta == 0
+        && (*hdr).quant.vac_delta == 0) as libc::c_int;
+    (*hdr).all_lossless = 1 as libc::c_int;
+    let mut i_12: libc::c_int = 0 as libc::c_int;
+    while i_12 < 8 as libc::c_int {
+        (*hdr).segmentation.qidx[i_12 as usize] = if (*hdr).segmentation.enabled != 0 {
+            iclip_u8((*hdr).quant.yac + (*hdr).segmentation.seg_data.d[i_12 as usize].delta_q)
+        } else {
+            (*hdr).quant.yac
+        };
+        (*hdr).segmentation.lossless[i_12 as usize] =
+            ((*hdr).segmentation.qidx[i_12 as usize] == 0 && delta_lossless != 0) as libc::c_int;
+        (*hdr).all_lossless &= (*hdr).segmentation.lossless[i_12 as usize];
+        i_12 += 1;
+    }
+    if (*hdr).all_lossless != 0 || (*hdr).allow_intrabc != 0 {
+        (*hdr).loopfilter.level_y[1 as libc::c_int as usize] = 0 as libc::c_int;
+        (*hdr).loopfilter.level_y[0 as libc::c_int as usize] =
+            (*hdr).loopfilter.level_y[1 as libc::c_int as usize];
+        (*hdr).loopfilter.level_v = 0 as libc::c_int;
+        (*hdr).loopfilter.level_u = (*hdr).loopfilter.level_v;
+        (*hdr).loopfilter.sharpness = 0 as libc::c_int;
+        (*hdr).loopfilter.mode_ref_delta_enabled = 1 as libc::c_int;
+        (*hdr).loopfilter.mode_ref_delta_update = 1 as libc::c_int;
+        (*hdr).loopfilter.mode_ref_deltas = default_mode_ref_deltas.clone();
+    } else {
+        (*hdr).loopfilter.level_y[0 as libc::c_int as usize] =
+            dav1d_get_bits(gb, 6 as libc::c_int) as libc::c_int;
+        (*hdr).loopfilter.level_y[1 as libc::c_int as usize] =
+            dav1d_get_bits(gb, 6 as libc::c_int) as libc::c_int;
+        if (*seqhdr).monochrome == 0
+            && ((*hdr).loopfilter.level_y[0 as libc::c_int as usize] != 0
+                || (*hdr).loopfilter.level_y[1 as libc::c_int as usize] != 0)
         {
-            dav1d_get_bits(gb, 3 as libc::c_int)
-        } else {
-            7 as libc::c_int as libc::c_uint
-        }) as libc::c_int;
-        if (*seqhdr).decoder_model_info_present != 0 {
-            (*hdr).buffer_removal_time_present = dav1d_get_bit(gb) as libc::c_int;
-            if (*hdr).buffer_removal_time_present != 0 {
-                let mut i = 0;
-                while i < (*(*c).seq_hdr).num_operating_points {
-                    let seqop: *const Dav1dSequenceHeaderOperatingPoint =
-                        &*((*seqhdr).operating_points).as_ptr().offset(i as isize)
-                            as *const Dav1dSequenceHeaderOperatingPoint;
-                    let op: *mut Dav1dFrameHeaderOperatingPoint =
-                        &mut *((*hdr).operating_points).as_mut_ptr().offset(i as isize)
-                            as *mut Dav1dFrameHeaderOperatingPoint;
-                    if (*seqop).decoder_model_param_present != 0 {
-                        let in_temporal_layer = (*seqop).idc >> (*hdr).temporal_id & 1;
-                        let in_spatial_layer = (*seqop).idc >> (*hdr).spatial_id + 8 & 1;
-                        if (*seqop).idc == 0 || in_temporal_layer != 0 && in_spatial_layer != 0 {
-                            (*op).buffer_removal_time =
-                                dav1d_get_bits(gb, (*seqhdr).buffer_removal_delay_length)
-                                    as libc::c_int;
-                        }
-                    }
-                    i += 1;
-                }
-            }
+            (*hdr).loopfilter.level_u = dav1d_get_bits(gb, 6 as libc::c_int) as libc::c_int;
+            (*hdr).loopfilter.level_v = dav1d_get_bits(gb, 6 as libc::c_int) as libc::c_int;
         }
-        if (*hdr).frame_type as libc::c_uint & 1 as libc::c_uint == 0 {
-            (*hdr).refresh_frame_flags = (if (*hdr).frame_type as libc::c_uint
-                == DAV1D_FRAME_TYPE_KEY as libc::c_int as libc::c_uint
-                && (*hdr).show_frame != 0
-            {
-                0xff as libc::c_int as libc::c_uint
-            } else {
-                dav1d_get_bits(gb, 8 as libc::c_int)
-            }) as libc::c_int;
-            if (*hdr).refresh_frame_flags != 0xff as libc::c_int
-                && (*hdr).error_resilient_mode != 0
-                && (*seqhdr).order_hint != 0
-            {
-                let mut i_0 = 0;
-                while i_0 < 8 {
-                    dav1d_get_bits(gb, (*seqhdr).order_hint_n_bits);
-                    i_0 += 1;
-                }
-            }
-            if (*c).strict_std_compliance != 0
-                && (*hdr).frame_type as libc::c_uint
-                    == DAV1D_FRAME_TYPE_INTRA as libc::c_int as libc::c_uint
-                && (*hdr).refresh_frame_flags == 0xff as libc::c_int
-            {
-                current_block = 17922947093064792850;
-            } else if read_frame_size(c, gb, 0 as libc::c_int) < 0 {
-                current_block = 17922947093064792850;
-            } else {
-                (*hdr).allow_intrabc = ((*hdr).allow_screen_content_tools != 0
-                    && (*hdr).super_res.enabled == 0
-                    && dav1d_get_bit(gb) != 0)
-                    as libc::c_int;
-                (*hdr).use_ref_frame_mvs = 0 as libc::c_int;
-                current_block = 16314074004867283505;
-            }
+        (*hdr).loopfilter.sharpness = dav1d_get_bits(gb, 3 as libc::c_int) as libc::c_int;
+        if (*hdr).primary_ref_frame == 7 as libc::c_int {
+            (*hdr).loopfilter.mode_ref_deltas = default_mode_ref_deltas.clone();
         } else {
-            (*hdr).allow_intrabc = 0 as libc::c_int;
-            (*hdr).refresh_frame_flags = (if (*hdr).frame_type as libc::c_uint
-                == DAV1D_FRAME_TYPE_SWITCH as libc::c_int as libc::c_uint
-            {
-                0xff as libc::c_int as libc::c_uint
-            } else {
-                dav1d_get_bits(gb, 8 as libc::c_int)
-            }) as libc::c_int;
-            if (*hdr).error_resilient_mode != 0 && (*seqhdr).order_hint != 0 {
-                let mut i_1 = 0;
-                while i_1 < 8 {
-                    dav1d_get_bits(gb, (*seqhdr).order_hint_n_bits);
-                    i_1 += 1;
-                }
+            let ref_1: libc::c_int = (*hdr).refidx[(*hdr).primary_ref_frame as usize];
+            if ((*c).refs[ref_1 as usize].p.p.frame_hdr).is_null() {
+                return parse_frame_hdr_error(c);
             }
-            (*hdr).frame_ref_short_signaling =
-                ((*seqhdr).order_hint != 0 && dav1d_get_bit(gb) != 0) as libc::c_int;
-            if (*hdr).frame_ref_short_signaling != 0 {
-                (*hdr).refidx[0] = dav1d_get_bits(gb, 3 as libc::c_int) as libc::c_int;
-                (*hdr).refidx[2] = -(1 as libc::c_int);
-                (*hdr).refidx[1] = (*hdr).refidx[2];
-                (*hdr).refidx[3] = dav1d_get_bits(gb, 3 as libc::c_int) as libc::c_int;
-                (*hdr).refidx[6] = -(1 as libc::c_int);
-                (*hdr).refidx[5] = (*hdr).refidx[6];
-                (*hdr).refidx[4] = (*hdr).refidx[5];
-                let mut shifted_frame_offset: [libc::c_int; 8] = [0; 8];
-                let current_frame_offset = (1 as libc::c_int) << (*seqhdr).order_hint_n_bits - 1;
-                let mut i_2 = 0;
-                loop {
-                    if !(i_2 < 8) {
-                        current_block = 5159818223158340697;
-                        break;
-                    }
-                    if ((*c).refs[i_2 as usize].p.p.frame_hdr).is_null() {
-                        current_block = 17922947093064792850;
-                        break;
-                    }
-                    shifted_frame_offset[i_2 as usize] = current_frame_offset
-                        + get_poc_diff(
-                            (*seqhdr).order_hint_n_bits,
-                            (*(*c).refs[i_2 as usize].p.p.frame_hdr).frame_offset,
-                            (*hdr).frame_offset,
-                        );
-                    i_2 += 1;
-                }
-                match current_block {
-                    17922947093064792850 => {}
-                    _ => {
-                        let mut used_frame: [libc::c_int; 8] =
-                            [0 as libc::c_int, 0, 0, 0, 0, 0, 0, 0];
-                        used_frame[(*hdr).refidx[0] as usize] = 1 as libc::c_int;
-                        used_frame[(*hdr).refidx[3] as usize] = 1 as libc::c_int;
-                        let mut latest_frame_offset = -(1 as libc::c_int);
-                        let mut i_3 = 0;
-                        while i_3 < 8 {
-                            let hint = shifted_frame_offset[i_3 as usize];
-                            if used_frame[i_3 as usize] == 0
-                                && hint >= current_frame_offset
-                                && hint >= latest_frame_offset
-                            {
-                                (*hdr).refidx[6] = i_3;
-                                latest_frame_offset = hint;
-                            }
-                            i_3 += 1;
-                        }
-                        if latest_frame_offset != -(1 as libc::c_int) {
-                            used_frame[(*hdr).refidx[6] as usize] = 1 as libc::c_int;
-                        }
-                        let mut earliest_frame_offset = 2147483647 as libc::c_int;
-                        let mut i_4 = 0;
-                        while i_4 < 8 {
-                            let hint_0 = shifted_frame_offset[i_4 as usize];
-                            if used_frame[i_4 as usize] == 0
-                                && hint_0 >= current_frame_offset
-                                && hint_0 < earliest_frame_offset
-                            {
-                                (*hdr).refidx[4] = i_4;
-                                earliest_frame_offset = hint_0;
-                            }
-                            i_4 += 1;
-                        }
-                        if earliest_frame_offset != 2147483647 as libc::c_int {
-                            used_frame[(*hdr).refidx[4] as usize] = 1 as libc::c_int;
-                        }
-                        earliest_frame_offset = 2147483647 as libc::c_int;
-                        let mut i_5 = 0;
-                        while i_5 < 8 {
-                            let hint_1 = shifted_frame_offset[i_5 as usize];
-                            if used_frame[i_5 as usize] == 0
-                                && hint_1 >= current_frame_offset
-                                && hint_1 < earliest_frame_offset
-                            {
-                                (*hdr).refidx[5] = i_5;
-                                earliest_frame_offset = hint_1;
-                            }
-                            i_5 += 1;
-                        }
-                        if earliest_frame_offset != 2147483647 as libc::c_int {
-                            used_frame[(*hdr).refidx[5] as usize] = 1 as libc::c_int;
-                        }
-                        let mut i_6 = 1;
-                        while i_6 < 7 {
-                            if (*hdr).refidx[i_6 as usize] < 0 {
-                                latest_frame_offset = -(1 as libc::c_int);
-                                let mut j = 0;
-                                while j < 8 {
-                                    let hint_2 = shifted_frame_offset[j as usize];
-                                    if used_frame[j as usize] == 0
-                                        && hint_2 < current_frame_offset
-                                        && hint_2 >= latest_frame_offset
-                                    {
-                                        (*hdr).refidx[i_6 as usize] = j;
-                                        latest_frame_offset = hint_2;
-                                    }
-                                    j += 1;
-                                }
-                                if latest_frame_offset != -(1 as libc::c_int) {
-                                    used_frame[(*hdr).refidx[i_6 as usize] as usize] =
-                                        1 as libc::c_int;
-                                }
-                            }
-                            i_6 += 1;
-                        }
-                        earliest_frame_offset = 2147483647 as libc::c_int;
-                        let mut r#ref = -(1 as libc::c_int);
-                        let mut i_7 = 0;
-                        while i_7 < 8 {
-                            let hint_3 = shifted_frame_offset[i_7 as usize];
-                            if hint_3 < earliest_frame_offset {
-                                r#ref = i_7;
-                                earliest_frame_offset = hint_3;
-                            }
-                            i_7 += 1;
-                        }
-                        let mut i_8 = 0;
-                        while i_8 < 7 {
-                            if (*hdr).refidx[i_8 as usize] < 0 {
-                                (*hdr).refidx[i_8 as usize] = r#ref;
-                            }
-                            i_8 += 1;
-                        }
-                        current_block = 16590946904645350046;
-                    }
-                }
-            } else {
-                current_block = 16590946904645350046;
-            }
-            match current_block {
-                17922947093064792850 => {}
-                _ => {
-                    let mut i_9 = 0;
-                    loop {
-                        if !(i_9 < 7) {
-                            current_block = 5248622017361056354;
-                            break;
-                        }
-                        if (*hdr).frame_ref_short_signaling == 0 {
-                            (*hdr).refidx[i_9 as usize] =
-                                dav1d_get_bits(gb, 3 as libc::c_int) as libc::c_int;
-                        }
-                        if (*seqhdr).frame_id_numbers_present != 0 {
-                            let delta_ref_frame_id_minus_1 =
-                                dav1d_get_bits(gb, (*seqhdr).delta_frame_id_n_bits) as libc::c_int;
-                            let ref_frame_id = (*hdr).frame_id
-                                + ((1 as libc::c_int) << (*seqhdr).frame_id_n_bits)
-                                - delta_ref_frame_id_minus_1
-                                - 1
-                                & ((1 as libc::c_int) << (*seqhdr).frame_id_n_bits) - 1;
-                            let ref_frame_hdr_0: *mut Dav1dFrameHeader = (*c).refs
-                                [(*hdr).refidx[i_9 as usize] as usize]
-                                .p
-                                .p
-                                .frame_hdr;
-                            if ref_frame_hdr_0.is_null()
-                                || (*ref_frame_hdr_0).frame_id != ref_frame_id
-                            {
-                                current_block = 17922947093064792850;
-                                break;
-                            }
-                        }
-                        i_9 += 1;
-                    }
-                    match current_block {
-                        17922947093064792850 => {}
-                        _ => {
-                            let use_ref = ((*hdr).error_resilient_mode == 0
-                                && (*hdr).frame_size_override != 0)
-                                as libc::c_int;
-                            if read_frame_size(c, gb, use_ref) < 0 {
-                                current_block = 17922947093064792850;
-                            } else {
-                                (*hdr).hp = ((*hdr).force_integer_mv == 0 && dav1d_get_bit(gb) != 0)
-                                    as libc::c_int;
-                                (*hdr).subpel_filter_mode = (if dav1d_get_bit(gb) != 0 {
-                                    DAV1D_FILTER_SWITCHABLE as libc::c_int as libc::c_uint
-                                } else {
-                                    dav1d_get_bits(gb, 2 as libc::c_int)
-                                })
-                                    as Dav1dFilterMode;
-                                (*hdr).switchable_motion_mode = dav1d_get_bit(gb) as libc::c_int;
-                                (*hdr).use_ref_frame_mvs = ((*hdr).error_resilient_mode == 0
-                                    && (*seqhdr).ref_frame_mvs != 0
-                                    && (*seqhdr).order_hint != 0
-                                    && (*hdr).frame_type as libc::c_uint & 1 as libc::c_uint != 0
-                                    && dav1d_get_bit(gb) != 0)
-                                    as libc::c_int;
-                                current_block = 16314074004867283505;
-                            }
-                        }
-                    }
-                }
-            }
+            (*hdr).loopfilter.mode_ref_deltas = (*(*c).refs[ref_1 as usize].p.p.frame_hdr)
+                .loopfilter
+                .mode_ref_deltas
+                .clone();
         }
-        match current_block {
-            17922947093064792850 => {}
-            _ => {
-                (*hdr).refresh_context = ((*seqhdr).reduced_still_picture_header == 0
-                    && (*hdr).disable_cdf_update == 0
-                    && dav1d_get_bit(gb) == 0)
-                    as libc::c_int;
-                (*hdr).tiling.uniform = dav1d_get_bit(gb) as libc::c_int;
-                sbsz_min1 = ((64 as libc::c_int) << (*seqhdr).sb128) - 1;
-                sbsz_log2 = 6 + (*seqhdr).sb128;
-                sbw = (*hdr).width[0] + sbsz_min1 >> sbsz_log2;
-                sbh = (*hdr).height + sbsz_min1 >> sbsz_log2;
-                max_tile_width_sb = 4096 >> sbsz_log2;
-                max_tile_area_sb = 4096 * 2304 >> 2 * sbsz_log2;
-                (*hdr).tiling.min_log2_cols = tile_log2(max_tile_width_sb, sbw);
-                (*hdr).tiling.max_log2_cols =
-                    tile_log2(1 as libc::c_int, imin(sbw, 64 as libc::c_int));
-                (*hdr).tiling.max_log2_rows =
-                    tile_log2(1 as libc::c_int, imin(sbh, 64 as libc::c_int));
-                min_log2_tiles = imax(
-                    tile_log2(max_tile_area_sb, sbw * sbh),
-                    (*hdr).tiling.min_log2_cols,
-                );
-                if (*hdr).tiling.uniform != 0 {
-                    (*hdr).tiling.log2_cols = (*hdr).tiling.min_log2_cols;
-                    while (*hdr).tiling.log2_cols < (*hdr).tiling.max_log2_cols
-                        && dav1d_get_bit(gb) != 0
-                    {
-                        (*hdr).tiling.log2_cols += 1;
+        (*hdr).loopfilter.mode_ref_delta_enabled = dav1d_get_bit(gb) as libc::c_int;
+        if (*hdr).loopfilter.mode_ref_delta_enabled != 0 {
+            (*hdr).loopfilter.mode_ref_delta_update = dav1d_get_bit(gb) as libc::c_int;
+            if (*hdr).loopfilter.mode_ref_delta_update != 0 {
+                let mut i_13: libc::c_int = 0 as libc::c_int;
+                while i_13 < 8 as libc::c_int {
+                    if dav1d_get_bit(gb) != 0 {
+                        (*hdr).loopfilter.mode_ref_deltas.ref_delta[i_13 as usize] =
+                            dav1d_get_sbits(gb, 7 as libc::c_int);
                     }
-                    let tile_w = 1 as libc::c_int + (sbw - 1 >> (*hdr).tiling.log2_cols);
-                    (*hdr).tiling.cols = 0 as libc::c_int;
-                    let mut sbx = 0;
-                    while sbx < sbw {
-                        (*hdr).tiling.col_start_sb[(*hdr).tiling.cols as usize] = sbx as uint16_t;
-                        sbx += tile_w;
-                        (*hdr).tiling.cols += 1;
-                    }
-                    (*hdr).tiling.min_log2_rows =
-                        imax(min_log2_tiles - (*hdr).tiling.log2_cols, 0 as libc::c_int);
-                    (*hdr).tiling.log2_rows = (*hdr).tiling.min_log2_rows;
-                    while (*hdr).tiling.log2_rows < (*hdr).tiling.max_log2_rows
-                        && dav1d_get_bit(gb) != 0
-                    {
-                        (*hdr).tiling.log2_rows += 1;
-                    }
-                    let tile_h = 1 as libc::c_int + (sbh - 1 >> (*hdr).tiling.log2_rows);
-                    (*hdr).tiling.rows = 0 as libc::c_int;
-                    let mut sby = 0;
-                    while sby < sbh {
-                        (*hdr).tiling.row_start_sb[(*hdr).tiling.rows as usize] = sby as uint16_t;
-                        sby += tile_h;
-                        (*hdr).tiling.rows += 1;
-                    }
-                } else {
-                    (*hdr).tiling.cols = 0 as libc::c_int;
-                    let mut widest_tile = 0;
-                    let mut max_tile_area_sb_0 = sbw * sbh;
-                    let mut sbx_0 = 0;
-                    while sbx_0 < sbw && (*hdr).tiling.cols < 64 {
-                        let tile_width_sb = imin(sbw - sbx_0, max_tile_width_sb);
-                        let tile_w_0 = (if tile_width_sb > 1 {
-                            (1 as libc::c_int as libc::c_uint)
-                                .wrapping_add(dav1d_get_uniform(gb, tile_width_sb as libc::c_uint))
-                        } else {
-                            1 as libc::c_int as libc::c_uint
-                        }) as libc::c_int;
-                        (*hdr).tiling.col_start_sb[(*hdr).tiling.cols as usize] = sbx_0 as uint16_t;
-                        sbx_0 += tile_w_0;
-                        widest_tile = imax(widest_tile, tile_w_0);
-                        (*hdr).tiling.cols += 1;
-                    }
-                    (*hdr).tiling.log2_cols = tile_log2(1 as libc::c_int, (*hdr).tiling.cols);
-                    if min_log2_tiles != 0 {
-                        max_tile_area_sb_0 >>= min_log2_tiles + 1;
-                    }
-                    let max_tile_height_sb =
-                        imax(max_tile_area_sb_0 / widest_tile, 1 as libc::c_int);
-                    (*hdr).tiling.rows = 0 as libc::c_int;
-                    let mut sby_0 = 0;
-                    while sby_0 < sbh && (*hdr).tiling.rows < 64 {
-                        let tile_height_sb = imin(sbh - sby_0, max_tile_height_sb);
-                        let tile_h_0 = (if tile_height_sb > 1 {
-                            (1 as libc::c_int as libc::c_uint)
-                                .wrapping_add(dav1d_get_uniform(gb, tile_height_sb as libc::c_uint))
-                        } else {
-                            1 as libc::c_int as libc::c_uint
-                        }) as libc::c_int;
-                        (*hdr).tiling.row_start_sb[(*hdr).tiling.rows as usize] = sby_0 as uint16_t;
-                        sby_0 += tile_h_0;
-                        (*hdr).tiling.rows += 1;
-                    }
-                    (*hdr).tiling.log2_rows = tile_log2(1 as libc::c_int, (*hdr).tiling.rows);
+                    i_13 += 1;
                 }
-                (*hdr).tiling.col_start_sb[(*hdr).tiling.cols as usize] = sbw as uint16_t;
-                (*hdr).tiling.row_start_sb[(*hdr).tiling.rows as usize] = sbh as uint16_t;
-                if (*hdr).tiling.log2_cols != 0 || (*hdr).tiling.log2_rows != 0 {
-                    (*hdr).tiling.update =
-                        dav1d_get_bits(gb, (*hdr).tiling.log2_cols + (*hdr).tiling.log2_rows)
-                            as libc::c_int;
-                    if (*hdr).tiling.update >= (*hdr).tiling.cols * (*hdr).tiling.rows {
-                        current_block = 17922947093064792850;
-                    } else {
-                        (*hdr).tiling.n_bytes = (dav1d_get_bits(gb, 2 as libc::c_int))
-                            .wrapping_add(1 as libc::c_int as libc::c_uint);
-                        current_block = 1918110639124887667;
+                let mut i_14: libc::c_int = 0 as libc::c_int;
+                while i_14 < 2 as libc::c_int {
+                    if dav1d_get_bit(gb) != 0 {
+                        (*hdr).loopfilter.mode_ref_deltas.mode_delta[i_14 as usize] =
+                            dav1d_get_sbits(gb, 7 as libc::c_int);
                     }
-                } else {
-                    (*hdr).tiling.update = 0 as libc::c_int;
-                    (*hdr).tiling.n_bytes = (*hdr).tiling.update as libc::c_uint;
-                    current_block = 1918110639124887667;
-                }
-                match current_block {
-                    17922947093064792850 => {}
-                    _ => {
-                        (*hdr).quant.yac = dav1d_get_bits(gb, 8 as libc::c_int) as libc::c_int;
-                        (*hdr).quant.ydc_delta = if dav1d_get_bit(gb) != 0 {
-                            dav1d_get_sbits(gb, 7 as libc::c_int)
-                        } else {
-                            0 as libc::c_int
-                        };
-                        if (*seqhdr).monochrome == 0 {
-                            let diff_uv_delta = (if (*seqhdr).separate_uv_delta_q != 0 {
-                                dav1d_get_bit(gb)
-                            } else {
-                                0 as libc::c_int as libc::c_uint
-                            }) as libc::c_int;
-                            (*hdr).quant.udc_delta = if dav1d_get_bit(gb) != 0 {
-                                dav1d_get_sbits(gb, 7 as libc::c_int)
-                            } else {
-                                0 as libc::c_int
-                            };
-                            (*hdr).quant.uac_delta = if dav1d_get_bit(gb) != 0 {
-                                dav1d_get_sbits(gb, 7 as libc::c_int)
-                            } else {
-                                0 as libc::c_int
-                            };
-                            if diff_uv_delta != 0 {
-                                (*hdr).quant.vdc_delta = if dav1d_get_bit(gb) != 0 {
-                                    dav1d_get_sbits(gb, 7 as libc::c_int)
-                                } else {
-                                    0 as libc::c_int
-                                };
-                                (*hdr).quant.vac_delta = if dav1d_get_bit(gb) != 0 {
-                                    dav1d_get_sbits(gb, 7 as libc::c_int)
-                                } else {
-                                    0 as libc::c_int
-                                };
-                            } else {
-                                (*hdr).quant.vdc_delta = (*hdr).quant.udc_delta;
-                                (*hdr).quant.vac_delta = (*hdr).quant.uac_delta;
-                            }
-                        }
-                        (*hdr).quant.qm = dav1d_get_bit(gb) as libc::c_int;
-                        if (*hdr).quant.qm != 0 {
-                            (*hdr).quant.qm_y = dav1d_get_bits(gb, 4 as libc::c_int) as libc::c_int;
-                            (*hdr).quant.qm_u = dav1d_get_bits(gb, 4 as libc::c_int) as libc::c_int;
-                            (*hdr).quant.qm_v = if (*seqhdr).separate_uv_delta_q != 0 {
-                                dav1d_get_bits(gb, 4 as libc::c_int) as libc::c_int
-                            } else {
-                                (*hdr).quant.qm_u
-                            };
-                        }
-                        (*hdr).segmentation.enabled = dav1d_get_bit(gb) as libc::c_int;
-                        if (*hdr).segmentation.enabled != 0 {
-                            if (*hdr).primary_ref_frame == 7 {
-                                (*hdr).segmentation.update_map = 1 as libc::c_int;
-                                (*hdr).segmentation.temporal = 0 as libc::c_int;
-                                (*hdr).segmentation.update_data = 1 as libc::c_int;
-                            } else {
-                                (*hdr).segmentation.update_map = dav1d_get_bit(gb) as libc::c_int;
-                                (*hdr).segmentation.temporal =
-                                    (if (*hdr).segmentation.update_map != 0 {
-                                        dav1d_get_bit(gb)
-                                    } else {
-                                        0 as libc::c_int as libc::c_uint
-                                    }) as libc::c_int;
-                                (*hdr).segmentation.update_data = dav1d_get_bit(gb) as libc::c_int;
-                            }
-                            if (*hdr).segmentation.update_data != 0 {
-                                (*hdr).segmentation.seg_data.preskip = 0 as libc::c_int;
-                                (*hdr).segmentation.seg_data.last_active_segid =
-                                    -(1 as libc::c_int);
-                                let mut i_10 = 0;
-                                while i_10 < 8 {
-                                    let seg: *mut Dav1dSegmentationData =
-                                        &mut *((*hdr).segmentation.seg_data.d)
-                                            .as_mut_ptr()
-                                            .offset(i_10 as isize)
-                                            as *mut Dav1dSegmentationData;
-                                    if dav1d_get_bit(gb) != 0 {
-                                        (*seg).delta_q = dav1d_get_sbits(gb, 9 as libc::c_int);
-                                        (*hdr).segmentation.seg_data.last_active_segid = i_10;
-                                    } else {
-                                        (*seg).delta_q = 0 as libc::c_int;
-                                    }
-                                    if dav1d_get_bit(gb) != 0 {
-                                        (*seg).delta_lf_y_v = dav1d_get_sbits(gb, 7 as libc::c_int);
-                                        (*hdr).segmentation.seg_data.last_active_segid = i_10;
-                                    } else {
-                                        (*seg).delta_lf_y_v = 0 as libc::c_int;
-                                    }
-                                    if dav1d_get_bit(gb) != 0 {
-                                        (*seg).delta_lf_y_h = dav1d_get_sbits(gb, 7 as libc::c_int);
-                                        (*hdr).segmentation.seg_data.last_active_segid = i_10;
-                                    } else {
-                                        (*seg).delta_lf_y_h = 0 as libc::c_int;
-                                    }
-                                    if dav1d_get_bit(gb) != 0 {
-                                        (*seg).delta_lf_u = dav1d_get_sbits(gb, 7 as libc::c_int);
-                                        (*hdr).segmentation.seg_data.last_active_segid = i_10;
-                                    } else {
-                                        (*seg).delta_lf_u = 0 as libc::c_int;
-                                    }
-                                    if dav1d_get_bit(gb) != 0 {
-                                        (*seg).delta_lf_v = dav1d_get_sbits(gb, 7 as libc::c_int);
-                                        (*hdr).segmentation.seg_data.last_active_segid = i_10;
-                                    } else {
-                                        (*seg).delta_lf_v = 0 as libc::c_int;
-                                    }
-                                    if dav1d_get_bit(gb) != 0 {
-                                        (*seg).r#ref =
-                                            dav1d_get_bits(gb, 3 as libc::c_int) as libc::c_int;
-                                        (*hdr).segmentation.seg_data.last_active_segid = i_10;
-                                        (*hdr).segmentation.seg_data.preskip = 1 as libc::c_int;
-                                    } else {
-                                        (*seg).r#ref = -(1 as libc::c_int);
-                                    }
-                                    (*seg).skip = dav1d_get_bit(gb) as libc::c_int;
-                                    if (*seg).skip != 0 {
-                                        (*hdr).segmentation.seg_data.last_active_segid = i_10;
-                                        (*hdr).segmentation.seg_data.preskip = 1 as libc::c_int;
-                                    }
-                                    (*seg).globalmv = dav1d_get_bit(gb) as libc::c_int;
-                                    if (*seg).globalmv != 0 {
-                                        (*hdr).segmentation.seg_data.last_active_segid = i_10;
-                                        (*hdr).segmentation.seg_data.preskip = 1 as libc::c_int;
-                                    }
-                                    i_10 += 1;
-                                }
-                                current_block = 8075351136037156718;
-                            } else {
-                                if !((*hdr).primary_ref_frame != 7 as libc::c_int) {
-                                    unreachable!();
-                                }
-                                let pri_ref = (*hdr).refidx[(*hdr).primary_ref_frame as usize];
-                                if ((*c).refs[pri_ref as usize].p.p.frame_hdr).is_null() {
-                                    current_block = 17922947093064792850;
-                                } else {
-                                    (*hdr).segmentation.seg_data =
-                                        (*(*c).refs[pri_ref as usize].p.p.frame_hdr)
-                                            .segmentation
-                                            .seg_data
-                                            .clone();
-                                    current_block = 8075351136037156718;
-                                }
-                            }
-                        } else {
-                            memset(
-                                &mut (*hdr).segmentation.seg_data as *mut Dav1dSegmentationDataSet
-                                    as *mut libc::c_void,
-                                0 as libc::c_int,
-                                ::core::mem::size_of::<Dav1dSegmentationDataSet>(),
-                            );
-                            let mut i_11 = 0;
-                            while i_11 < 8 {
-                                (*hdr).segmentation.seg_data.d[i_11 as usize].r#ref =
-                                    -(1 as libc::c_int);
-                                i_11 += 1;
-                            }
-                            current_block = 8075351136037156718;
-                        }
-                        match current_block {
-                            17922947093064792850 => {}
-                            _ => {
-                                (*hdr).delta.q.present = (if (*hdr).quant.yac != 0 {
-                                    dav1d_get_bit(gb)
-                                } else {
-                                    0 as libc::c_int as libc::c_uint
-                                })
-                                    as libc::c_int;
-                                (*hdr).delta.q.res_log2 = (if (*hdr).delta.q.present != 0 {
-                                    dav1d_get_bits(gb, 2 as libc::c_int)
-                                } else {
-                                    0 as libc::c_int as libc::c_uint
-                                })
-                                    as libc::c_int;
-                                (*hdr).delta.lf.present = ((*hdr).delta.q.present != 0
-                                    && (*hdr).allow_intrabc == 0
-                                    && dav1d_get_bit(gb) != 0)
-                                    as libc::c_int;
-                                (*hdr).delta.lf.res_log2 = (if (*hdr).delta.lf.present != 0 {
-                                    dav1d_get_bits(gb, 2 as libc::c_int)
-                                } else {
-                                    0 as libc::c_int as libc::c_uint
-                                })
-                                    as libc::c_int;
-                                (*hdr).delta.lf.multi = (if (*hdr).delta.lf.present != 0 {
-                                    dav1d_get_bit(gb)
-                                } else {
-                                    0 as libc::c_int as libc::c_uint
-                                })
-                                    as libc::c_int;
-                                delta_lossless = ((*hdr).quant.ydc_delta == 0
-                                    && (*hdr).quant.udc_delta == 0
-                                    && (*hdr).quant.uac_delta == 0
-                                    && (*hdr).quant.vdc_delta == 0
-                                    && (*hdr).quant.vac_delta == 0)
-                                    as libc::c_int;
-                                (*hdr).all_lossless = 1 as libc::c_int;
-                                let mut i_12 = 0;
-                                while i_12 < 8 {
-                                    (*hdr).segmentation.qidx[i_12 as usize] =
-                                        if (*hdr).segmentation.enabled != 0 {
-                                            iclip_u8(
-                                                (*hdr).quant.yac
-                                                    + (*hdr).segmentation.seg_data.d[i_12 as usize]
-                                                        .delta_q,
-                                            )
-                                        } else {
-                                            (*hdr).quant.yac
-                                        };
-                                    (*hdr).segmentation.lossless[i_12 as usize] =
-                                        ((*hdr).segmentation.qidx[i_12 as usize] == 0
-                                            && delta_lossless != 0)
-                                            as libc::c_int;
-                                    (*hdr).all_lossless &=
-                                        (*hdr).segmentation.lossless[i_12 as usize];
-                                    i_12 += 1;
-                                }
-                                if (*hdr).all_lossless != 0 || (*hdr).allow_intrabc != 0 {
-                                    (*hdr).loopfilter.level_y[1] = 0 as libc::c_int;
-                                    (*hdr).loopfilter.level_y[0] = (*hdr).loopfilter.level_y[1];
-                                    (*hdr).loopfilter.level_v = 0 as libc::c_int;
-                                    (*hdr).loopfilter.level_u = (*hdr).loopfilter.level_v;
-                                    (*hdr).loopfilter.sharpness = 0 as libc::c_int;
-                                    (*hdr).loopfilter.mode_ref_delta_enabled = 1 as libc::c_int;
-                                    (*hdr).loopfilter.mode_ref_delta_update = 1 as libc::c_int;
-                                    (*hdr).loopfilter.mode_ref_deltas =
-                                        default_mode_ref_deltas.clone();
-                                    current_block = 1424623445371442388;
-                                } else {
-                                    (*hdr).loopfilter.level_y[0] =
-                                        dav1d_get_bits(gb, 6 as libc::c_int) as libc::c_int;
-                                    (*hdr).loopfilter.level_y[1] =
-                                        dav1d_get_bits(gb, 6 as libc::c_int) as libc::c_int;
-                                    if (*seqhdr).monochrome == 0
-                                        && ((*hdr).loopfilter.level_y[0] != 0
-                                            || (*hdr).loopfilter.level_y[1] != 0)
-                                    {
-                                        (*hdr).loopfilter.level_u =
-                                            dav1d_get_bits(gb, 6 as libc::c_int) as libc::c_int;
-                                        (*hdr).loopfilter.level_v =
-                                            dav1d_get_bits(gb, 6 as libc::c_int) as libc::c_int;
-                                    }
-                                    (*hdr).loopfilter.sharpness =
-                                        dav1d_get_bits(gb, 3 as libc::c_int) as libc::c_int;
-                                    if (*hdr).primary_ref_frame == 7 {
-                                        (*hdr).loopfilter.mode_ref_deltas =
-                                            default_mode_ref_deltas.clone();
-                                        current_block = 13291976673896753943;
-                                    } else {
-                                        let ref_1 =
-                                            (*hdr).refidx[(*hdr).primary_ref_frame as usize];
-                                        if ((*c).refs[ref_1 as usize].p.p.frame_hdr).is_null() {
-                                            current_block = 17922947093064792850;
-                                        } else {
-                                            (*hdr).loopfilter.mode_ref_deltas =
-                                                (*(*c).refs[ref_1 as usize].p.p.frame_hdr)
-                                                    .loopfilter
-                                                    .mode_ref_deltas
-                                                    .clone();
-                                            current_block = 13291976673896753943;
-                                        }
-                                    }
-                                    match current_block {
-                                        17922947093064792850 => {}
-                                        _ => {
-                                            (*hdr).loopfilter.mode_ref_delta_enabled =
-                                                dav1d_get_bit(gb) as libc::c_int;
-                                            if (*hdr).loopfilter.mode_ref_delta_enabled != 0 {
-                                                (*hdr).loopfilter.mode_ref_delta_update =
-                                                    dav1d_get_bit(gb) as libc::c_int;
-                                                if (*hdr).loopfilter.mode_ref_delta_update != 0 {
-                                                    let mut i_13 = 0;
-                                                    while i_13 < 8 {
-                                                        if dav1d_get_bit(gb) != 0 {
-                                                            (*hdr)
-                                                                .loopfilter
-                                                                .mode_ref_deltas
-                                                                .ref_delta
-                                                                [i_13 as usize] = dav1d_get_sbits(
-                                                                gb,
-                                                                7 as libc::c_int,
-                                                            );
-                                                        }
-                                                        i_13 += 1;
-                                                    }
-                                                    let mut i_14 = 0;
-                                                    while i_14 < 2 {
-                                                        if dav1d_get_bit(gb) != 0 {
-                                                            (*hdr)
-                                                                .loopfilter
-                                                                .mode_ref_deltas
-                                                                .mode_delta
-                                                                [i_14 as usize] = dav1d_get_sbits(
-                                                                gb,
-                                                                7 as libc::c_int,
-                                                            );
-                                                        }
-                                                        i_14 += 1;
-                                                    }
-                                                }
-                                            }
-                                            current_block = 1424623445371442388;
-                                        }
-                                    }
-                                }
-                                match current_block {
-                                    17922947093064792850 => {}
-                                    _ => {
-                                        if (*hdr).all_lossless == 0
-                                            && (*seqhdr).cdef != 0
-                                            && (*hdr).allow_intrabc == 0
-                                        {
-                                            (*hdr).cdef.damping =
-                                                (dav1d_get_bits(gb, 2 as libc::c_int))
-                                                    .wrapping_add(3 as libc::c_int as libc::c_uint)
-                                                    as libc::c_int;
-                                            (*hdr).cdef.n_bits =
-                                                dav1d_get_bits(gb, 2 as libc::c_int) as libc::c_int;
-                                            let mut i_15 = 0;
-                                            while i_15 < (1 as libc::c_int) << (*hdr).cdef.n_bits {
-                                                (*hdr).cdef.y_strength[i_15 as usize] =
-                                                    dav1d_get_bits(gb, 6 as libc::c_int)
-                                                        as libc::c_int;
-                                                if (*seqhdr).monochrome == 0 {
-                                                    (*hdr).cdef.uv_strength[i_15 as usize] =
-                                                        dav1d_get_bits(gb, 6 as libc::c_int)
-                                                            as libc::c_int;
-                                                }
-                                                i_15 += 1;
-                                            }
-                                        } else {
-                                            (*hdr).cdef.n_bits = 0 as libc::c_int;
-                                            (*hdr).cdef.y_strength[0] = 0 as libc::c_int;
-                                            (*hdr).cdef.uv_strength[0] = 0 as libc::c_int;
-                                        }
-                                        if ((*hdr).all_lossless == 0
-                                            || (*hdr).super_res.enabled != 0)
-                                            && (*seqhdr).restoration != 0
-                                            && (*hdr).allow_intrabc == 0
-                                        {
-                                            (*hdr).restoration.type_0[0] =
-                                                dav1d_get_bits(gb, 2 as libc::c_int)
-                                                    as Dav1dRestorationType;
-                                            if (*seqhdr).monochrome == 0 {
-                                                (*hdr).restoration.type_0[1] =
-                                                    dav1d_get_bits(gb, 2 as libc::c_int)
-                                                        as Dav1dRestorationType;
-                                                (*hdr).restoration.type_0[2] =
-                                                    dav1d_get_bits(gb, 2 as libc::c_int)
-                                                        as Dav1dRestorationType;
-                                            } else {
-                                                (*hdr).restoration.type_0[2] =
-                                                    DAV1D_RESTORATION_NONE;
-                                                (*hdr).restoration.type_0[1] =
-                                                    (*hdr).restoration.type_0[2];
-                                            }
-                                            if (*hdr).restoration.type_0[0] as libc::c_uint != 0
-                                                || (*hdr).restoration.type_0[1] as libc::c_uint != 0
-                                                || (*hdr).restoration.type_0[2] as libc::c_uint != 0
-                                            {
-                                                (*hdr).restoration.unit_size[0] =
-                                                    6 + (*seqhdr).sb128;
-                                                if dav1d_get_bit(gb) != 0 {
-                                                    (*hdr).restoration.unit_size[0] += 1;
-                                                    if (*seqhdr).sb128 == 0 {
-                                                        (*hdr).restoration.unit_size[0] =
-                                                            ((*hdr).restoration.unit_size[0]
-                                                                as libc::c_uint)
-                                                                .wrapping_add(dav1d_get_bit(gb))
-                                                                as libc::c_int
-                                                                as libc::c_int;
-                                                    }
-                                                }
-                                                (*hdr).restoration.unit_size[1] =
-                                                    (*hdr).restoration.unit_size[0];
-                                                if ((*hdr).restoration.type_0[1] as libc::c_uint
-                                                    != 0
-                                                    || (*hdr).restoration.type_0[2] as libc::c_uint
-                                                        != 0)
-                                                    && (*seqhdr).ss_hor == 1
-                                                    && (*seqhdr).ss_ver == 1
-                                                {
-                                                    (*hdr).restoration.unit_size[1] =
-                                                        ((*hdr).restoration.unit_size[1]
-                                                            as libc::c_uint)
-                                                            .wrapping_sub(dav1d_get_bit(gb))
-                                                            as libc::c_int
-                                                            as libc::c_int;
-                                                }
-                                            } else {
-                                                (*hdr).restoration.unit_size[0] = 8 as libc::c_int;
-                                            }
-                                        } else {
-                                            (*hdr).restoration.type_0[0] = DAV1D_RESTORATION_NONE;
-                                            (*hdr).restoration.type_0[1] = DAV1D_RESTORATION_NONE;
-                                            (*hdr).restoration.type_0[2] = DAV1D_RESTORATION_NONE;
-                                        }
-                                        (*hdr).txfm_mode = (if (*hdr).all_lossless != 0 {
-                                            DAV1D_TX_4X4_ONLY as libc::c_int
-                                        } else if dav1d_get_bit(gb) != 0 {
-                                            DAV1D_TX_SWITCHABLE as libc::c_int
-                                        } else {
-                                            DAV1D_TX_LARGEST as libc::c_int
-                                        })
-                                            as Dav1dTxfmMode;
-                                        (*hdr).switchable_comp_refs = (if (*hdr).frame_type
-                                            as libc::c_uint
-                                            & 1 as libc::c_uint
-                                            != 0
-                                        {
-                                            dav1d_get_bit(gb)
-                                        } else {
-                                            0 as libc::c_int as libc::c_uint
-                                        })
-                                            as libc::c_int;
-                                        (*hdr).skip_mode_allowed = 0 as libc::c_int;
-                                        if (*hdr).switchable_comp_refs != 0
-                                            && (*hdr).frame_type as libc::c_uint & 1 as libc::c_uint
-                                                != 0
-                                            && (*seqhdr).order_hint != 0
-                                        {
-                                            let poc: libc::c_uint =
-                                                (*hdr).frame_offset as libc::c_uint;
-                                            let mut off_before: libc::c_uint =
-                                                0xffffffff as libc::c_uint;
-                                            let mut off_after = -(1 as libc::c_int);
-                                            let mut off_before_idx = 0;
-                                            let mut off_after_idx = 0;
-                                            let mut i_16 = 0;
-                                            loop {
-                                                if !(i_16 < 7) {
-                                                    current_block = 10953711258009896266;
-                                                    break;
-                                                }
-                                                if ((*c).refs
-                                                    [(*hdr).refidx[i_16 as usize] as usize]
-                                                    .p
-                                                    .p
-                                                    .frame_hdr)
-                                                    .is_null()
-                                                {
-                                                    current_block = 17922947093064792850;
-                                                    break;
-                                                }
-                                                let refpoc: libc::c_uint = (*(*c).refs
-                                                    [(*hdr).refidx[i_16 as usize] as usize]
-                                                    .p
-                                                    .p
-                                                    .frame_hdr)
-                                                    .frame_offset
-                                                    as libc::c_uint;
-                                                let diff = get_poc_diff(
-                                                    (*seqhdr).order_hint_n_bits,
-                                                    refpoc as libc::c_int,
-                                                    poc as libc::c_int,
-                                                );
-                                                if diff > 0 {
-                                                    if off_after == -(1 as libc::c_int)
-                                                        || get_poc_diff(
-                                                            (*seqhdr).order_hint_n_bits,
-                                                            off_after,
-                                                            refpoc as libc::c_int,
-                                                        ) > 0
-                                                    {
-                                                        off_after = refpoc as libc::c_int;
-                                                        off_after_idx = i_16;
-                                                    }
-                                                } else if diff < 0
-                                                    && (off_before == 0xffffffff as libc::c_uint
-                                                        || get_poc_diff(
-                                                            (*seqhdr).order_hint_n_bits,
-                                                            refpoc as libc::c_int,
-                                                            off_before as libc::c_int,
-                                                        ) > 0)
-                                                {
-                                                    off_before = refpoc;
-                                                    off_before_idx = i_16;
-                                                }
-                                                i_16 += 1;
-                                            }
-                                            match current_block {
-                                                17922947093064792850 => {}
-                                                _ => {
-                                                    if off_before != 0xffffffff as libc::c_uint
-                                                        && off_after != -(1 as libc::c_int)
-                                                    {
-                                                        (*hdr).skip_mode_refs[0] =
-                                                            imin(off_before_idx, off_after_idx);
-                                                        (*hdr).skip_mode_refs[1] =
-                                                            imax(off_before_idx, off_after_idx);
-                                                        (*hdr).skip_mode_allowed = 1 as libc::c_int;
-                                                        current_block = 2126221883176060805;
-                                                    } else if off_before
-                                                        != 0xffffffff as libc::c_uint
-                                                    {
-                                                        let mut off_before2: libc::c_uint =
-                                                            0xffffffff as libc::c_uint;
-                                                        let mut off_before2_idx = 0;
-                                                        let mut i_17 = 0;
-                                                        loop {
-                                                            if !(i_17 < 7) {
-                                                                current_block = 6762054512782224738;
-                                                                break;
-                                                            }
-                                                            if ((*c).refs[(*hdr).refidx
-                                                                [i_17 as usize]
-                                                                as usize]
-                                                                .p
-                                                                .p
-                                                                .frame_hdr)
-                                                                .is_null()
-                                                            {
-                                                                current_block =
-                                                                    17922947093064792850;
-                                                                break;
-                                                            }
-                                                            let refpoc_0: libc::c_uint = (*(*c)
-                                                                .refs
-                                                                [(*hdr).refidx[i_17 as usize]
-                                                                    as usize]
-                                                                .p
-                                                                .p
-                                                                .frame_hdr)
-                                                                .frame_offset
-                                                                as libc::c_uint;
-                                                            if get_poc_diff(
-                                                                (*seqhdr).order_hint_n_bits,
-                                                                refpoc_0 as libc::c_int,
-                                                                off_before as libc::c_int,
-                                                            ) < 0
-                                                            {
-                                                                if off_before2
-                                                                    == 0xffffffff as libc::c_uint
-                                                                    || get_poc_diff(
-                                                                        (*seqhdr).order_hint_n_bits,
-                                                                        refpoc_0 as libc::c_int,
-                                                                        off_before2 as libc::c_int,
-                                                                    ) > 0
-                                                                {
-                                                                    off_before2 = refpoc_0;
-                                                                    off_before2_idx = i_17;
-                                                                }
-                                                            }
-                                                            i_17 += 1;
-                                                        }
-                                                        match current_block {
-                                                            17922947093064792850 => {}
-                                                            _ => {
-                                                                if off_before2
-                                                                    != 0xffffffff as libc::c_uint
-                                                                {
-                                                                    (*hdr).skip_mode_refs[0
-                                                                        as libc::c_int
-                                                                        as usize] = imin(
-                                                                        off_before_idx,
-                                                                        off_before2_idx,
-                                                                    );
-                                                                    (*hdr).skip_mode_refs[1
-                                                                        as libc::c_int
-                                                                        as usize] = imax(
-                                                                        off_before_idx,
-                                                                        off_before2_idx,
-                                                                    );
-                                                                    (*hdr).skip_mode_allowed =
-                                                                        1 as libc::c_int;
-                                                                }
-                                                                current_block = 2126221883176060805;
-                                                            }
-                                                        }
-                                                    } else {
-                                                        current_block = 2126221883176060805;
-                                                    }
-                                                }
-                                            }
-                                        } else {
-                                            current_block = 2126221883176060805;
-                                        }
-                                        match current_block {
-                                            17922947093064792850 => {}
-                                            _ => {
-                                                (*hdr).skip_mode_enabled =
-                                                    (if (*hdr).skip_mode_allowed != 0 {
-                                                        dav1d_get_bit(gb)
-                                                    } else {
-                                                        0 as libc::c_int as libc::c_uint
-                                                    })
-                                                        as libc::c_int;
-                                                (*hdr).warp_motion = ((*hdr).error_resilient_mode
-                                                    == 0
-                                                    && (*hdr).frame_type as libc::c_uint
-                                                        & 1 as libc::c_uint
-                                                        != 0
-                                                    && (*seqhdr).warped_motion != 0
-                                                    && dav1d_get_bit(gb) != 0)
-                                                    as libc::c_int;
-                                                (*hdr).reduced_txtp_set =
-                                                    dav1d_get_bit(gb) as libc::c_int;
-                                                let mut i_18 = 0;
-                                                while i_18 < 7 {
-                                                    (*hdr).gmv[i_18 as usize] =
-                                                        dav1d_default_wm_params.clone();
-                                                    i_18 += 1;
-                                                }
-                                                if (*hdr).frame_type as libc::c_uint
-                                                    & 1 as libc::c_uint
-                                                    != 0
-                                                {
-                                                    let mut i_19 = 0;
-                                                    loop {
-                                                        if !(i_19 < 7) {
-                                                            current_block = 6933758620287070692;
-                                                            break;
-                                                        }
-                                                        (*hdr).gmv[i_19 as usize].type_0 =
-                                                            (if dav1d_get_bit(gb) == 0 {
-                                                                DAV1D_WM_TYPE_IDENTITY
-                                                                    as libc::c_int
-                                                            } else if dav1d_get_bit(gb) != 0 {
-                                                                DAV1D_WM_TYPE_ROT_ZOOM
-                                                                    as libc::c_int
-                                                            } else if dav1d_get_bit(gb) != 0 {
-                                                                DAV1D_WM_TYPE_TRANSLATION
-                                                                    as libc::c_int
-                                                            } else {
-                                                                DAV1D_WM_TYPE_AFFINE as libc::c_int
-                                                            })
-                                                                as Dav1dWarpedMotionType;
-                                                        if !((*hdr).gmv[i_19 as usize].type_0
-                                                            as libc::c_uint
-                                                            == DAV1D_WM_TYPE_IDENTITY as libc::c_int
-                                                                as libc::c_uint)
-                                                        {
-                                                            let  ref_gmv: *const Dav1dWarpedMotionParams ;
-                                                            if (*hdr).primary_ref_frame == 7 {
-                                                                ref_gmv = &dav1d_default_wm_params;
-                                                            } else {
-                                                                let pri_ref_0 = (*hdr).refidx[(*hdr)
-                                                                    .primary_ref_frame
-                                                                    as usize];
-                                                                if ((*c).refs[pri_ref_0 as usize]
-                                                                    .p
-                                                                    .p
-                                                                    .frame_hdr)
-                                                                    .is_null()
-                                                                {
-                                                                    current_block =
-                                                                        17922947093064792850;
-                                                                    break;
-                                                                }
-                                                                ref_gmv = &mut *((*(*((*c).refs)
-                                                                    .as_mut_ptr()
-                                                                    .offset(pri_ref_0 as isize))
-                                                                .p
-                                                                .p
-                                                                .frame_hdr)
-                                                                    .gmv)
-                                                                    .as_mut_ptr()
-                                                                    .offset(i_19 as isize)
-                                                                    as *mut Dav1dWarpedMotionParams;
-                                                            }
-                                                            let mat: *mut int32_t =
-                                                                ((*hdr).gmv[i_19 as usize].matrix)
-                                                                    .as_mut_ptr();
-                                                            let ref_mat: *const int32_t =
-                                                                ((*ref_gmv).matrix).as_ptr();
-                                                            let bits;
-                                                            let shift;
-                                                            if (*hdr).gmv[i_19 as usize].type_0
-                                                                as libc::c_uint
-                                                                >= DAV1D_WM_TYPE_ROT_ZOOM
-                                                                    as libc::c_int
-                                                                    as libc::c_uint
-                                                            {
-                                                                *mat.offset(
-                                                                    2 as libc::c_int as isize,
-                                                                ) = ((1 as libc::c_int) << 16)
-                                                                    + 2 * dav1d_get_bits_subexp(
-                                                                        gb,
-                                                                        *ref_mat.offset(2)
-                                                                            - ((1 as libc::c_int)
-                                                                                << 16)
-                                                                            >> 1,
-                                                                        12 as libc::c_int
-                                                                            as libc::c_uint,
-                                                                    );
-                                                                *mat.offset(
-                                                                    3 as libc::c_int as isize,
-                                                                ) = 2 as libc::c_int
-                                                                    * dav1d_get_bits_subexp(
-                                                                        gb,
-                                                                        *ref_mat.offset(3) >> 1,
-                                                                        12 as libc::c_int
-                                                                            as libc::c_uint,
-                                                                    );
-                                                                bits = 12 as libc::c_int;
-                                                                shift = 10 as libc::c_int;
-                                                            } else {
-                                                                bits = 9
-                                                                    - ((*hdr).hp == 0)
-                                                                        as libc::c_int;
-                                                                shift = 13
-                                                                    + ((*hdr).hp == 0)
-                                                                        as libc::c_int;
-                                                            }
-                                                            if (*hdr).gmv[i_19 as usize].type_0
-                                                                as libc::c_uint
-                                                                == DAV1D_WM_TYPE_AFFINE
-                                                                    as libc::c_int
-                                                                    as libc::c_uint
-                                                            {
-                                                                *mat.offset(
-                                                                    4 as libc::c_int as isize,
-                                                                ) = 2 as libc::c_int
-                                                                    * dav1d_get_bits_subexp(
-                                                                        gb,
-                                                                        *ref_mat.offset(4) >> 1,
-                                                                        12 as libc::c_int
-                                                                            as libc::c_uint,
-                                                                    );
-                                                                *mat.offset(
-                                                                    5 as libc::c_int as isize,
-                                                                ) = ((1 as libc::c_int) << 16)
-                                                                    + 2 * dav1d_get_bits_subexp(
-                                                                        gb,
-                                                                        *ref_mat.offset(5)
-                                                                            - ((1 as libc::c_int)
-                                                                                << 16)
-                                                                            >> 1,
-                                                                        12 as libc::c_int
-                                                                            as libc::c_uint,
-                                                                    );
-                                                            } else {
-                                                                *mat.offset(
-                                                                    4 as libc::c_int as isize,
-                                                                ) = -*mat.offset(3);
-                                                                *mat.offset(
-                                                                    5 as libc::c_int as isize,
-                                                                ) = *mat.offset(2);
-                                                            }
-                                                            *mat.offset(
-                                                                0 as libc::c_int as isize,
-                                                            ) = dav1d_get_bits_subexp(
-                                                                gb,
-                                                                *ref_mat.offset(0) >> shift,
-                                                                bits as libc::c_uint,
-                                                            ) * ((1 as libc::c_int) << shift);
-                                                            *mat.offset(
-                                                                1 as libc::c_int as isize,
-                                                            ) = dav1d_get_bits_subexp(
-                                                                gb,
-                                                                *ref_mat.offset(1) >> shift,
-                                                                bits as libc::c_uint,
-                                                            ) * ((1 as libc::c_int) << shift);
-                                                        }
-                                                        i_19 += 1;
-                                                    }
-                                                } else {
-                                                    current_block = 6933758620287070692;
-                                                }
-                                                match current_block {
-                                                    17922947093064792850 => {}
-                                                    _ => {
-                                                        (*hdr).film_grain.present =
-                                                            ((*seqhdr).film_grain_present != 0
-                                                                && ((*hdr).show_frame != 0
-                                                                    || (*hdr).showable_frame != 0)
-                                                                && dav1d_get_bit(gb) != 0)
-                                                                as libc::c_int;
-                                                        if (*hdr).film_grain.present != 0 {
-                                                            let seed: libc::c_uint = dav1d_get_bits(
-                                                                gb,
-                                                                16 as libc::c_int,
-                                                            );
-                                                            (*hdr).film_grain.update =
-                                                                ((*hdr).frame_type as libc::c_uint
-                                                                    != DAV1D_FRAME_TYPE_INTER
-                                                                        as libc::c_int
-                                                                        as libc::c_uint
-                                                                    || dav1d_get_bit(gb) != 0)
-                                                                    as libc::c_int;
-                                                            if (*hdr).film_grain.update == 0 {
-                                                                let refidx = dav1d_get_bits(
-                                                                    gb,
-                                                                    3 as libc::c_int,
-                                                                )
-                                                                    as libc::c_int;
-                                                                let mut i_20;
-                                                                i_20 = 0 as libc::c_int;
-                                                                while i_20 < 7 {
-                                                                    if (*hdr).refidx[i_20 as usize]
-                                                                        == refidx
-                                                                    {
-                                                                        break;
-                                                                    }
-                                                                    i_20 += 1;
-                                                                }
-                                                                if i_20 == 7
-                                                                    || ((*c).refs[refidx as usize]
-                                                                        .p
-                                                                        .p
-                                                                        .frame_hdr)
-                                                                        .is_null()
-                                                                {
-                                                                    current_block =
-                                                                        17922947093064792850;
-                                                                } else {
-                                                                    (*hdr).film_grain.data =
-                                                                        (*(*c).refs
-                                                                            [refidx as usize]
-                                                                            .p
-                                                                            .p
-                                                                            .frame_hdr)
-                                                                            .film_grain
-                                                                            .data
-                                                                            .clone();
-                                                                    (*hdr).film_grain.data.seed =
-                                                                        seed;
-                                                                    current_block =
-                                                                        17095195114763350366;
-                                                                }
-                                                            } else {
-                                                                let fgd: *mut Dav1dFilmGrainData =
-                                                                    &mut (*hdr).film_grain.data;
-                                                                (*fgd).seed = seed;
-                                                                (*fgd).num_y_points = dav1d_get_bits(
-                                                                    gb,
-                                                                    4 as libc::c_int,
-                                                                )
-                                                                    as libc::c_int;
-                                                                if (*fgd).num_y_points > 14 {
-                                                                    current_block =
-                                                                        17922947093064792850;
-                                                                } else {
-                                                                    let mut i_21 = 0;
-                                                                    loop {
-                                                                        if !(i_21
-                                                                            < (*fgd).num_y_points)
-                                                                        {
-                                                                            current_block = 12030841198858789628;
-                                                                            break;
-                                                                        }
-                                                                        (*fgd).y_points
-                                                                            [i_21 as usize]
-                                                                            [0 as libc::c_int
-                                                                                as usize] =
-                                                                            dav1d_get_bits(
-                                                                                gb,
-                                                                                8 as libc::c_int,
-                                                                            )
-                                                                                as uint8_t;
-                                                                        if i_21 != 0
-                                                                            && (*fgd).y_points[(i_21
-                                                                                - 1)
-                                                                                as usize][0]
-                                                                                as libc::c_int
-                                                                                >= (*fgd).y_points
-                                                                                    [i_21 as usize]
-                                                                                    [0]
-                                                                                    as libc::c_int
-                                                                        {
-                                                                            current_block = 17922947093064792850;
-                                                                            break;
-                                                                        }
-                                                                        (*fgd).y_points
-                                                                            [i_21 as usize]
-                                                                            [1 as libc::c_int
-                                                                                as usize] =
-                                                                            dav1d_get_bits(
-                                                                                gb,
-                                                                                8 as libc::c_int,
-                                                                            )
-                                                                                as uint8_t;
-                                                                        i_21 += 1;
-                                                                    }
-                                                                    match current_block {
-                                                                        17922947093064792850 => {}
-                                                                        _ => {
-                                                                            (*fgd)
-                                                                                .chroma_scaling_from_luma = ((*seqhdr).monochrome == 0
-                                                                                && dav1d_get_bit(gb) != 0) as libc::c_int;
-                                                                            if (*seqhdr).monochrome != 0
-                                                                                || (*fgd).chroma_scaling_from_luma != 0
-                                                                                || (*seqhdr).ss_ver == 1
-                                                                                    && (*seqhdr).ss_hor == 1
-                                                                                    && (*fgd).num_y_points == 0
-                                                                            {
-                                                                                (*fgd)
-                                                                                    .num_uv_points[1 as libc::c_int
-                                                                                    as usize] = 0 as libc::c_int;
-                                                                                (*fgd)
-                                                                                    .num_uv_points[0 as libc::c_int
-                                                                                    as usize] = (*fgd).num_uv_points[1];
-                                                                                current_block = 8773475593684033964;
-                                                                            } else {
-                                                                                let mut pl = 0;
-                                                                                's_1955: loop {
-                                                                                    if !(pl < 2) {
-                                                                                        current_block = 8773475593684033964;
-                                                                                        break;
-                                                                                    }
-                                                                                    (*fgd)
-                                                                                        .num_uv_points[pl
-                                                                                        as usize] = dav1d_get_bits(gb, 4 as libc::c_int)
-                                                                                        as libc::c_int;
-                                                                                    if (*fgd).num_uv_points[pl as usize] > 10 {
-                                                                                        current_block = 17922947093064792850;
-                                                                                        break;
-                                                                                    }
-                                                                                    let mut i_22 = 0;
-                                                                                    while i_22 < (*fgd).num_uv_points[pl as usize] {
-                                                                                        (*fgd)
-                                                                                            .uv_points[pl
-                                                                                            as usize][i_22
-                                                                                            as usize][0 as libc::c_int
-                                                                                            as usize] = dav1d_get_bits(gb, 8 as libc::c_int) as uint8_t;
-                                                                                        if i_22 != 0
-                                                                                            && (*fgd)
-                                                                                                .uv_points[pl
-                                                                                                as usize][(i_22 - 1)
-                                                                                                as usize][0] as libc::c_int
-                                                                                                >= (*fgd)
-                                                                                                    .uv_points[pl
-                                                                                                    as usize][i_22 as usize][0]
-                                                                                                    as libc::c_int
-                                                                                        {
-                                                                                            current_block = 17922947093064792850;
-                                                                                            break 's_1955;
-                                                                                        }
-                                                                                        (*fgd)
-                                                                                            .uv_points[pl
-                                                                                            as usize][i_22
-                                                                                            as usize][1 as libc::c_int
-                                                                                            as usize] = dav1d_get_bits(gb, 8 as libc::c_int) as uint8_t;
-                                                                                        i_22 += 1;
-                                                                                    }
-                                                                                    pl += 1;
-                                                                                }
-                                                                            }
-                                                                            match current_block {
-                                                                                17922947093064792850 => {}
-                                                                                _ => {
-                                                                                    if (*seqhdr).ss_hor == 1
-                                                                                        && (*seqhdr).ss_ver == 1
-                                                                                        && ((*fgd).num_uv_points[0] != 0)
-                                                                                            as libc::c_int
-                                                                                            != ((*fgd).num_uv_points[1] != 0)
-                                                                                                as libc::c_int
-                                                                                    {
-                                                                                        current_block = 17922947093064792850;
-                                                                                    } else {
-                                                                                        (*fgd)
-                                                                                            .scaling_shift = (dav1d_get_bits(gb, 2 as libc::c_int))
-                                                                                            .wrapping_add(8 as libc::c_int as libc::c_uint)
-                                                                                            as libc::c_int;
-                                                                                        (*fgd)
-                                                                                            .ar_coeff_lag = dav1d_get_bits(gb, 2 as libc::c_int)
-                                                                                            as libc::c_int;
-                                                                                        let num_y_pos = 2 as libc::c_int
-                                                                                            * (*fgd).ar_coeff_lag
-                                                                                            * ((*fgd).ar_coeff_lag + 1);
-                                                                                        if (*fgd).num_y_points != 0 {
-                                                                                            let mut i_23 = 0;
-                                                                                            while i_23 < num_y_pos {
-                                                                                                (*fgd)
-                                                                                                    .ar_coeffs_y[i_23
-                                                                                                    as usize] = (dav1d_get_bits(gb, 8 as libc::c_int))
-                                                                                                    .wrapping_sub(128 as libc::c_int as libc::c_uint) as int8_t;
-                                                                                                i_23 += 1;
-                                                                                            }
-                                                                                        }
-                                                                                        let mut pl_0 = 0;
-                                                                                        while pl_0 < 2 {
-                                                                                            if (*fgd).num_uv_points[pl_0 as usize] != 0
-                                                                                                || (*fgd).chroma_scaling_from_luma != 0
-                                                                                            {
-                                                                                                let num_uv_pos = num_y_pos
-                                                                                                    + ((*fgd).num_y_points != 0) as libc::c_int;
-                                                                                                let mut i_24 = 0;
-                                                                                                while i_24 < num_uv_pos {
-                                                                                                    (*fgd)
-                                                                                                        .ar_coeffs_uv[pl_0
-                                                                                                        as usize][i_24
-                                                                                                        as usize] = (dav1d_get_bits(gb, 8 as libc::c_int))
-                                                                                                        .wrapping_sub(128 as libc::c_int as libc::c_uint) as int8_t;
-                                                                                                    i_24 += 1;
-                                                                                                }
-                                                                                                if (*fgd).num_y_points == 0 {
-                                                                                                    (*fgd)
-                                                                                                        .ar_coeffs_uv[pl_0
-                                                                                                        as usize][num_uv_pos as usize] = 0 as libc::c_int as int8_t;
-                                                                                                }
-                                                                                            }
-                                                                                            pl_0 += 1;
-                                                                                        }
-                                                                                        (*fgd)
-                                                                                            .ar_coeff_shift = (dav1d_get_bits(gb, 2 as libc::c_int))
-                                                                                            .wrapping_add(6 as libc::c_int as libc::c_uint) as uint64_t;
-                                                                                        (*fgd)
-                                                                                            .grain_scale_shift = dav1d_get_bits(gb, 2 as libc::c_int)
-                                                                                            as libc::c_int;
-                                                                                        let mut pl_1 = 0;
-                                                                                        while pl_1 < 2 {
-                                                                                            if (*fgd).num_uv_points[pl_1 as usize] != 0 {
-                                                                                                (*fgd)
-                                                                                                    .uv_mult[pl_1
-                                                                                                    as usize] = (dav1d_get_bits(gb, 8 as libc::c_int))
-                                                                                                    .wrapping_sub(128 as libc::c_int as libc::c_uint)
-                                                                                                    as libc::c_int;
-                                                                                                (*fgd)
-                                                                                                    .uv_luma_mult[pl_1
-                                                                                                    as usize] = (dav1d_get_bits(gb, 8 as libc::c_int))
-                                                                                                    .wrapping_sub(128 as libc::c_int as libc::c_uint)
-                                                                                                    as libc::c_int;
-                                                                                                (*fgd)
-                                                                                                    .uv_offset[pl_1
-                                                                                                    as usize] = (dav1d_get_bits(gb, 9 as libc::c_int))
-                                                                                                    .wrapping_sub(256 as libc::c_int as libc::c_uint)
-                                                                                                    as libc::c_int;
-                                                                                            }
-                                                                                            pl_1 += 1;
-                                                                                        }
-                                                                                        (*fgd).overlap_flag = dav1d_get_bit(gb) as libc::c_int;
-                                                                                        (*fgd)
-                                                                                            .clip_to_restricted_range = dav1d_get_bit(gb)
-                                                                                            as libc::c_int;
-                                                                                        current_block = 17095195114763350366;
-                                                                                    }
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                }
-                                                            }
-                                                        } else {
-                                                            memset(
-                                                                &mut (*hdr).film_grain.data
-                                                                    as *mut Dav1dFilmGrainData
-                                                                    as *mut libc::c_void,
-                                                                0 as libc::c_int,
-                                                                ::core::mem::size_of::<
-                                                                    Dav1dFilmGrainData,
-                                                                >(
-                                                                ),
-                                                            );
-                                                            current_block = 17095195114763350366;
-                                                        }
-                                                        match current_block {
-                                                            17922947093064792850 => {}
-                                                            _ => return 0 as libc::c_int,
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    i_14 += 1;
                 }
             }
         }
     }
-    dav1d_log(
-        c,
-        b"Error parsing frame header\n\0" as *const u8 as *const libc::c_char,
-    );
-    return -(22 as libc::c_int);
+    if (*hdr).all_lossless == 0 && (*seqhdr).cdef != 0 && (*hdr).allow_intrabc == 0 {
+        (*hdr).cdef.damping = (dav1d_get_bits(gb, 2 as libc::c_int))
+            .wrapping_add(3 as libc::c_int as libc::c_uint)
+            as libc::c_int;
+        (*hdr).cdef.n_bits = dav1d_get_bits(gb, 2 as libc::c_int) as libc::c_int;
+        let mut i_15: libc::c_int = 0 as libc::c_int;
+        while i_15 < (1 as libc::c_int) << (*hdr).cdef.n_bits {
+            (*hdr).cdef.y_strength[i_15 as usize] =
+                dav1d_get_bits(gb, 6 as libc::c_int) as libc::c_int;
+            if (*seqhdr).monochrome == 0 {
+                (*hdr).cdef.uv_strength[i_15 as usize] =
+                    dav1d_get_bits(gb, 6 as libc::c_int) as libc::c_int;
+            }
+            i_15 += 1;
+        }
+    } else {
+        (*hdr).cdef.n_bits = 0 as libc::c_int;
+        (*hdr).cdef.y_strength[0 as libc::c_int as usize] = 0 as libc::c_int;
+        (*hdr).cdef.uv_strength[0 as libc::c_int as usize] = 0 as libc::c_int;
+    }
+    if ((*hdr).all_lossless == 0 || (*hdr).super_res.enabled != 0)
+        && (*seqhdr).restoration != 0
+        && (*hdr).allow_intrabc == 0
+    {
+        (*hdr).restoration.type_0[0 as libc::c_int as usize] =
+            dav1d_get_bits(gb, 2 as libc::c_int) as Dav1dRestorationType;
+        if (*seqhdr).monochrome == 0 {
+            (*hdr).restoration.type_0[1 as libc::c_int as usize] =
+                dav1d_get_bits(gb, 2 as libc::c_int) as Dav1dRestorationType;
+            (*hdr).restoration.type_0[2 as libc::c_int as usize] =
+                dav1d_get_bits(gb, 2 as libc::c_int) as Dav1dRestorationType;
+        } else {
+            (*hdr).restoration.type_0[2 as libc::c_int as usize] = DAV1D_RESTORATION_NONE;
+            (*hdr).restoration.type_0[1 as libc::c_int as usize] =
+                (*hdr).restoration.type_0[2 as libc::c_int as usize];
+        }
+        if (*hdr).restoration.type_0[0 as libc::c_int as usize] as libc::c_uint != 0
+            || (*hdr).restoration.type_0[1 as libc::c_int as usize] as libc::c_uint != 0
+            || (*hdr).restoration.type_0[2 as libc::c_int as usize] as libc::c_uint != 0
+        {
+            (*hdr).restoration.unit_size[0 as libc::c_int as usize] =
+                6 as libc::c_int + (*seqhdr).sb128;
+            if dav1d_get_bit(gb) != 0 {
+                (*hdr).restoration.unit_size[0 as libc::c_int as usize] += 1;
+                if (*seqhdr).sb128 == 0 {
+                    (*hdr).restoration.unit_size[0 as libc::c_int as usize] =
+                        ((*hdr).restoration.unit_size[0 as libc::c_int as usize] as libc::c_uint)
+                            .wrapping_add(dav1d_get_bit(gb)) as libc::c_int
+                            as libc::c_int;
+                }
+            }
+            (*hdr).restoration.unit_size[1 as libc::c_int as usize] =
+                (*hdr).restoration.unit_size[0 as libc::c_int as usize];
+            if ((*hdr).restoration.type_0[1 as libc::c_int as usize] as libc::c_uint != 0
+                || (*hdr).restoration.type_0[2 as libc::c_int as usize] as libc::c_uint != 0)
+                && (*seqhdr).ss_hor == 1 as libc::c_int
+                && (*seqhdr).ss_ver == 1 as libc::c_int
+            {
+                (*hdr).restoration.unit_size[1 as libc::c_int as usize] =
+                    ((*hdr).restoration.unit_size[1 as libc::c_int as usize] as libc::c_uint)
+                        .wrapping_sub(dav1d_get_bit(gb)) as libc::c_int
+                        as libc::c_int;
+            }
+        } else {
+            (*hdr).restoration.unit_size[0 as libc::c_int as usize] = 8 as libc::c_int;
+        }
+    } else {
+        (*hdr).restoration.type_0[0 as libc::c_int as usize] = DAV1D_RESTORATION_NONE;
+        (*hdr).restoration.type_0[1 as libc::c_int as usize] = DAV1D_RESTORATION_NONE;
+        (*hdr).restoration.type_0[2 as libc::c_int as usize] = DAV1D_RESTORATION_NONE;
+    }
+    (*hdr).txfm_mode = (if (*hdr).all_lossless != 0 {
+        DAV1D_TX_4X4_ONLY as libc::c_int
+    } else if dav1d_get_bit(gb) != 0 {
+        DAV1D_TX_SWITCHABLE as libc::c_int
+    } else {
+        DAV1D_TX_LARGEST as libc::c_int
+    }) as Dav1dTxfmMode;
+    (*hdr).switchable_comp_refs =
+        (if (*hdr).frame_type as libc::c_uint & 1 as libc::c_int as libc::c_uint != 0 {
+            dav1d_get_bit(gb)
+        } else {
+            0 as libc::c_int as libc::c_uint
+        }) as libc::c_int;
+    (*hdr).skip_mode_allowed = 0 as libc::c_int;
+    if (*hdr).switchable_comp_refs != 0
+        && (*hdr).frame_type as libc::c_uint & 1 as libc::c_int as libc::c_uint != 0
+        && (*seqhdr).order_hint != 0
+    {
+        let poc: libc::c_uint = (*hdr).frame_offset as libc::c_uint;
+        let mut off_before: libc::c_uint = 0xffffffff as libc::c_uint;
+        let mut off_after: libc::c_int = -(1 as libc::c_int);
+        let mut off_before_idx: libc::c_int = 0;
+        let mut off_after_idx: libc::c_int = 0;
+        let mut i_16: libc::c_int = 0 as libc::c_int;
+        while i_16 < 7 as libc::c_int {
+            if ((*c).refs[(*hdr).refidx[i_16 as usize] as usize]
+                .p
+                .p
+                .frame_hdr)
+                .is_null()
+            {
+                return parse_frame_hdr_error(c);
+            }
+            let refpoc: libc::c_uint = (*(*c).refs[(*hdr).refidx[i_16 as usize] as usize]
+                .p
+                .p
+                .frame_hdr)
+                .frame_offset as libc::c_uint;
+            let diff: libc::c_int = get_poc_diff(
+                (*seqhdr).order_hint_n_bits,
+                refpoc as libc::c_int,
+                poc as libc::c_int,
+            );
+            if diff > 0 as libc::c_int {
+                if off_after == -(1 as libc::c_int)
+                    || get_poc_diff(
+                        (*seqhdr).order_hint_n_bits,
+                        off_after,
+                        refpoc as libc::c_int,
+                    ) > 0 as libc::c_int
+                {
+                    off_after = refpoc as libc::c_int;
+                    off_after_idx = i_16;
+                }
+            } else if diff < 0 as libc::c_int
+                && (off_before == 0xffffffff as libc::c_uint
+                    || get_poc_diff(
+                        (*seqhdr).order_hint_n_bits,
+                        refpoc as libc::c_int,
+                        off_before as libc::c_int,
+                    ) > 0 as libc::c_int)
+            {
+                off_before = refpoc;
+                off_before_idx = i_16;
+            }
+            i_16 += 1;
+        }
+        if off_before != 0xffffffff as libc::c_uint && off_after != -(1 as libc::c_int) {
+            (*hdr).skip_mode_refs[0 as libc::c_int as usize] = imin(off_before_idx, off_after_idx);
+            (*hdr).skip_mode_refs[1 as libc::c_int as usize] = imax(off_before_idx, off_after_idx);
+            (*hdr).skip_mode_allowed = 1 as libc::c_int;
+        } else if off_before != 0xffffffff as libc::c_uint {
+            let mut off_before2: libc::c_uint = 0xffffffff as libc::c_uint;
+            let mut off_before2_idx: libc::c_int = 0;
+            let mut i_17: libc::c_int = 0 as libc::c_int;
+            while i_17 < 7 as libc::c_int {
+                if ((*c).refs[(*hdr).refidx[i_17 as usize] as usize]
+                    .p
+                    .p
+                    .frame_hdr)
+                    .is_null()
+                {
+                    return parse_frame_hdr_error(c);
+                }
+                let refpoc_0: libc::c_uint = (*(*c).refs[(*hdr).refidx[i_17 as usize] as usize]
+                    .p
+                    .p
+                    .frame_hdr)
+                    .frame_offset as libc::c_uint;
+                if get_poc_diff(
+                    (*seqhdr).order_hint_n_bits,
+                    refpoc_0 as libc::c_int,
+                    off_before as libc::c_int,
+                ) < 0 as libc::c_int
+                {
+                    if off_before2 == 0xffffffff as libc::c_uint
+                        || get_poc_diff(
+                            (*seqhdr).order_hint_n_bits,
+                            refpoc_0 as libc::c_int,
+                            off_before2 as libc::c_int,
+                        ) > 0 as libc::c_int
+                    {
+                        off_before2 = refpoc_0;
+                        off_before2_idx = i_17;
+                    }
+                }
+                i_17 += 1;
+            }
+            if off_before2 != 0xffffffff as libc::c_uint {
+                (*hdr).skip_mode_refs[0 as libc::c_int as usize] =
+                    imin(off_before_idx, off_before2_idx);
+                (*hdr).skip_mode_refs[1 as libc::c_int as usize] =
+                    imax(off_before_idx, off_before2_idx);
+                (*hdr).skip_mode_allowed = 1 as libc::c_int;
+            }
+        }
+    }
+    (*hdr).skip_mode_enabled = (if (*hdr).skip_mode_allowed != 0 {
+        dav1d_get_bit(gb)
+    } else {
+        0 as libc::c_int as libc::c_uint
+    }) as libc::c_int;
+    (*hdr).warp_motion = ((*hdr).error_resilient_mode == 0
+        && (*hdr).frame_type as libc::c_uint & 1 as libc::c_int as libc::c_uint != 0
+        && (*seqhdr).warped_motion != 0
+        && dav1d_get_bit(gb) != 0) as libc::c_int;
+    (*hdr).reduced_txtp_set = dav1d_get_bit(gb) as libc::c_int;
+    let mut i_18: libc::c_int = 0 as libc::c_int;
+    while i_18 < 7 as libc::c_int {
+        (*hdr).gmv[i_18 as usize] = dav1d_default_wm_params.clone();
+        i_18 += 1;
+    }
+    if (*hdr).frame_type as libc::c_uint & 1 as libc::c_int as libc::c_uint != 0 {
+        let mut i_19: libc::c_int = 0 as libc::c_int;
+        while i_19 < 7 as libc::c_int {
+            (*hdr).gmv[i_19 as usize].type_0 = (if dav1d_get_bit(gb) == 0 {
+                DAV1D_WM_TYPE_IDENTITY as libc::c_int
+            } else if dav1d_get_bit(gb) != 0 {
+                DAV1D_WM_TYPE_ROT_ZOOM as libc::c_int
+            } else if dav1d_get_bit(gb) != 0 {
+                DAV1D_WM_TYPE_TRANSLATION as libc::c_int
+            } else {
+                DAV1D_WM_TYPE_AFFINE as libc::c_int
+            }) as Dav1dWarpedMotionType;
+            if !((*hdr).gmv[i_19 as usize].type_0 as libc::c_uint
+                == DAV1D_WM_TYPE_IDENTITY as libc::c_int as libc::c_uint)
+            {
+                let ref_gmv: *const Dav1dWarpedMotionParams;
+                if (*hdr).primary_ref_frame == 7 as libc::c_int {
+                    ref_gmv = &dav1d_default_wm_params;
+                } else {
+                    let pri_ref_0: libc::c_int = (*hdr).refidx[(*hdr).primary_ref_frame as usize];
+                    if ((*c).refs[pri_ref_0 as usize].p.p.frame_hdr).is_null() {
+                        return parse_frame_hdr_error(c);
+                    }
+                    ref_gmv = &mut *((*(*((*c).refs).as_mut_ptr().offset(pri_ref_0 as isize))
+                        .p
+                        .p
+                        .frame_hdr)
+                        .gmv)
+                        .as_mut_ptr()
+                        .offset(i_19 as isize)
+                        as *mut Dav1dWarpedMotionParams;
+                }
+                let mat: *mut int32_t = ((*hdr).gmv[i_19 as usize].matrix).as_mut_ptr();
+                let ref_mat: *const int32_t = ((*ref_gmv).matrix).as_ptr();
+                let bits: libc::c_int;
+                let shift: libc::c_int;
+                if (*hdr).gmv[i_19 as usize].type_0 as libc::c_uint
+                    >= DAV1D_WM_TYPE_ROT_ZOOM as libc::c_int as libc::c_uint
+                {
+                    *mat.offset(2 as libc::c_int as isize) = ((1 as libc::c_int)
+                        << 16 as libc::c_int)
+                        + 2 as libc::c_int
+                            * dav1d_get_bits_subexp(
+                                gb,
+                                *ref_mat.offset(2 as libc::c_int as isize)
+                                    - ((1 as libc::c_int) << 16 as libc::c_int)
+                                    >> 1 as libc::c_int,
+                                12 as libc::c_int as libc::c_uint,
+                            );
+                    *mat.offset(3 as libc::c_int as isize) = 2 as libc::c_int
+                        * dav1d_get_bits_subexp(
+                            gb,
+                            *ref_mat.offset(3 as libc::c_int as isize) >> 1 as libc::c_int,
+                            12 as libc::c_int as libc::c_uint,
+                        );
+                    bits = 12 as libc::c_int;
+                    shift = 10 as libc::c_int;
+                } else {
+                    bits = 9 as libc::c_int - ((*hdr).hp == 0) as libc::c_int;
+                    shift = 13 as libc::c_int + ((*hdr).hp == 0) as libc::c_int;
+                }
+                if (*hdr).gmv[i_19 as usize].type_0 as libc::c_uint
+                    == DAV1D_WM_TYPE_AFFINE as libc::c_int as libc::c_uint
+                {
+                    *mat.offset(4 as libc::c_int as isize) = 2 as libc::c_int
+                        * dav1d_get_bits_subexp(
+                            gb,
+                            *ref_mat.offset(4 as libc::c_int as isize) >> 1 as libc::c_int,
+                            12 as libc::c_int as libc::c_uint,
+                        );
+                    *mat.offset(5 as libc::c_int as isize) = ((1 as libc::c_int)
+                        << 16 as libc::c_int)
+                        + 2 as libc::c_int
+                            * dav1d_get_bits_subexp(
+                                gb,
+                                *ref_mat.offset(5 as libc::c_int as isize)
+                                    - ((1 as libc::c_int) << 16 as libc::c_int)
+                                    >> 1 as libc::c_int,
+                                12 as libc::c_int as libc::c_uint,
+                            );
+                } else {
+                    *mat.offset(4 as libc::c_int as isize) =
+                        -*mat.offset(3 as libc::c_int as isize);
+                    *mat.offset(5 as libc::c_int as isize) = *mat.offset(2 as libc::c_int as isize);
+                }
+                *mat.offset(0 as libc::c_int as isize) = dav1d_get_bits_subexp(
+                    gb,
+                    *ref_mat.offset(0 as libc::c_int as isize) >> shift,
+                    bits as libc::c_uint,
+                ) * ((1 as libc::c_int) << shift);
+                *mat.offset(1 as libc::c_int as isize) = dav1d_get_bits_subexp(
+                    gb,
+                    *ref_mat.offset(1 as libc::c_int as isize) >> shift,
+                    bits as libc::c_uint,
+                ) * ((1 as libc::c_int) << shift);
+            }
+            i_19 += 1;
+        }
+    }
+    (*hdr).film_grain.present = ((*seqhdr).film_grain_present != 0
+        && ((*hdr).show_frame != 0 || (*hdr).showable_frame != 0)
+        && dav1d_get_bit(gb) != 0) as libc::c_int;
+    if (*hdr).film_grain.present != 0 {
+        let seed: libc::c_uint = dav1d_get_bits(gb, 16 as libc::c_int);
+        (*hdr).film_grain.update = ((*hdr).frame_type as libc::c_uint
+            != DAV1D_FRAME_TYPE_INTER as libc::c_int as libc::c_uint
+            || dav1d_get_bit(gb) != 0) as libc::c_int;
+        if (*hdr).film_grain.update == 0 {
+            let refidx: libc::c_int = dav1d_get_bits(gb, 3 as libc::c_int) as libc::c_int;
+            let mut i_20: libc::c_int;
+            i_20 = 0 as libc::c_int;
+            while i_20 < 7 as libc::c_int {
+                if (*hdr).refidx[i_20 as usize] == refidx {
+                    break;
+                }
+                i_20 += 1;
+            }
+            if i_20 == 7 as libc::c_int || ((*c).refs[refidx as usize].p.p.frame_hdr).is_null() {
+                return parse_frame_hdr_error(c);
+            }
+            (*hdr).film_grain.data = (*(*c).refs[refidx as usize].p.p.frame_hdr)
+                .film_grain
+                .data
+                .clone();
+            (*hdr).film_grain.data.seed = seed;
+        } else {
+            let fgd: *mut Dav1dFilmGrainData = &mut (*hdr).film_grain.data;
+            (*fgd).seed = seed;
+            (*fgd).num_y_points = dav1d_get_bits(gb, 4 as libc::c_int) as libc::c_int;
+            if (*fgd).num_y_points > 14 as libc::c_int {
+                return parse_frame_hdr_error(c);
+            }
+            let mut i_21: libc::c_int = 0 as libc::c_int;
+            while i_21 < (*fgd).num_y_points {
+                (*fgd).y_points[i_21 as usize][0 as libc::c_int as usize] =
+                    dav1d_get_bits(gb, 8 as libc::c_int) as uint8_t;
+                if i_21 != 0
+                    && (*fgd).y_points[(i_21 - 1 as libc::c_int) as usize]
+                        [0 as libc::c_int as usize] as libc::c_int
+                        >= (*fgd).y_points[i_21 as usize][0 as libc::c_int as usize] as libc::c_int
+                {
+                    return parse_frame_hdr_error(c);
+                }
+                (*fgd).y_points[i_21 as usize][1 as libc::c_int as usize] =
+                    dav1d_get_bits(gb, 8 as libc::c_int) as uint8_t;
+                i_21 += 1;
+            }
+            (*fgd).chroma_scaling_from_luma =
+                ((*seqhdr).monochrome == 0 && dav1d_get_bit(gb) != 0) as libc::c_int;
+            if (*seqhdr).monochrome != 0
+                || (*fgd).chroma_scaling_from_luma != 0
+                || (*seqhdr).ss_ver == 1 as libc::c_int
+                    && (*seqhdr).ss_hor == 1 as libc::c_int
+                    && (*fgd).num_y_points == 0
+            {
+                (*fgd).num_uv_points[1 as libc::c_int as usize] = 0 as libc::c_int;
+                (*fgd).num_uv_points[0 as libc::c_int as usize] =
+                    (*fgd).num_uv_points[1 as libc::c_int as usize];
+            } else {
+                let mut pl: libc::c_int = 0 as libc::c_int;
+                while pl < 2 as libc::c_int {
+                    (*fgd).num_uv_points[pl as usize] =
+                        dav1d_get_bits(gb, 4 as libc::c_int) as libc::c_int;
+                    if (*fgd).num_uv_points[pl as usize] > 10 as libc::c_int {
+                        return parse_frame_hdr_error(c);
+                    }
+                    let mut i_22: libc::c_int = 0 as libc::c_int;
+                    while i_22 < (*fgd).num_uv_points[pl as usize] {
+                        (*fgd).uv_points[pl as usize][i_22 as usize][0 as libc::c_int as usize] =
+                            dav1d_get_bits(gb, 8 as libc::c_int) as uint8_t;
+                        if i_22 != 0
+                            && (*fgd).uv_points[pl as usize][(i_22 - 1 as libc::c_int) as usize]
+                                [0 as libc::c_int as usize]
+                                as libc::c_int
+                                >= (*fgd).uv_points[pl as usize][i_22 as usize]
+                                    [0 as libc::c_int as usize]
+                                    as libc::c_int
+                        {
+                            return parse_frame_hdr_error(c);
+                        }
+                        (*fgd).uv_points[pl as usize][i_22 as usize][1 as libc::c_int as usize] =
+                            dav1d_get_bits(gb, 8 as libc::c_int) as uint8_t;
+                        i_22 += 1;
+                    }
+                    pl += 1;
+                }
+            }
+            if (*seqhdr).ss_hor == 1 as libc::c_int
+                && (*seqhdr).ss_ver == 1 as libc::c_int
+                && ((*fgd).num_uv_points[0 as libc::c_int as usize] != 0) as libc::c_int
+                    != ((*fgd).num_uv_points[1 as libc::c_int as usize] != 0) as libc::c_int
+            {
+                return parse_frame_hdr_error(c);
+            }
+            (*fgd).scaling_shift = (dav1d_get_bits(gb, 2 as libc::c_int))
+                .wrapping_add(8 as libc::c_int as libc::c_uint)
+                as libc::c_int;
+            (*fgd).ar_coeff_lag = dav1d_get_bits(gb, 2 as libc::c_int) as libc::c_int;
+            let num_y_pos: libc::c_int =
+                2 as libc::c_int * (*fgd).ar_coeff_lag * ((*fgd).ar_coeff_lag + 1 as libc::c_int);
+            if (*fgd).num_y_points != 0 {
+                let mut i_23: libc::c_int = 0 as libc::c_int;
+                while i_23 < num_y_pos {
+                    (*fgd).ar_coeffs_y[i_23 as usize] = (dav1d_get_bits(gb, 8 as libc::c_int))
+                        .wrapping_sub(128 as libc::c_int as libc::c_uint)
+                        as int8_t;
+                    i_23 += 1;
+                }
+            }
+            let mut pl_0: libc::c_int = 0 as libc::c_int;
+            while pl_0 < 2 as libc::c_int {
+                if (*fgd).num_uv_points[pl_0 as usize] != 0 || (*fgd).chroma_scaling_from_luma != 0
+                {
+                    let num_uv_pos: libc::c_int =
+                        num_y_pos + ((*fgd).num_y_points != 0) as libc::c_int;
+                    let mut i_24: libc::c_int = 0 as libc::c_int;
+                    while i_24 < num_uv_pos {
+                        (*fgd).ar_coeffs_uv[pl_0 as usize][i_24 as usize] =
+                            (dav1d_get_bits(gb, 8 as libc::c_int))
+                                .wrapping_sub(128 as libc::c_int as libc::c_uint)
+                                as int8_t;
+                        i_24 += 1;
+                    }
+                    if (*fgd).num_y_points == 0 {
+                        (*fgd).ar_coeffs_uv[pl_0 as usize][num_uv_pos as usize] =
+                            0 as libc::c_int as int8_t;
+                    }
+                }
+                pl_0 += 1;
+            }
+            (*fgd).ar_coeff_shift = (dav1d_get_bits(gb, 2 as libc::c_int))
+                .wrapping_add(6 as libc::c_int as libc::c_uint)
+                as uint64_t;
+            (*fgd).grain_scale_shift = dav1d_get_bits(gb, 2 as libc::c_int) as libc::c_int;
+            let mut pl_1: libc::c_int = 0 as libc::c_int;
+            while pl_1 < 2 as libc::c_int {
+                if (*fgd).num_uv_points[pl_1 as usize] != 0 {
+                    (*fgd).uv_mult[pl_1 as usize] = (dav1d_get_bits(gb, 8 as libc::c_int))
+                        .wrapping_sub(128 as libc::c_int as libc::c_uint)
+                        as libc::c_int;
+                    (*fgd).uv_luma_mult[pl_1 as usize] = (dav1d_get_bits(gb, 8 as libc::c_int))
+                        .wrapping_sub(128 as libc::c_int as libc::c_uint)
+                        as libc::c_int;
+                    (*fgd).uv_offset[pl_1 as usize] = (dav1d_get_bits(gb, 9 as libc::c_int))
+                        .wrapping_sub(256 as libc::c_int as libc::c_uint)
+                        as libc::c_int;
+                }
+                pl_1 += 1;
+            }
+            (*fgd).overlap_flag = dav1d_get_bit(gb) as libc::c_int;
+            (*fgd).clip_to_restricted_range = dav1d_get_bit(gb) as libc::c_int;
+        }
+    } else {
+        memset(
+            &mut (*hdr).film_grain.data as *mut Dav1dFilmGrainData as *mut libc::c_void,
+            0 as libc::c_int,
+            ::core::mem::size_of::<Dav1dFilmGrainData>(),
+        );
+    }
+    return 0 as libc::c_int;
 }
+
 unsafe extern "C" fn parse_tile_hdr(c: *mut Dav1dContext, gb: *mut GetBits) {
     let n_tiles = (*(*c).frame_hdr).tiling.cols * (*(*c).frame_hdr).tiling.rows;
     let have_tile_pos = (if n_tiles > 1 {
