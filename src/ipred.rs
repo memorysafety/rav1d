@@ -13,55 +13,49 @@ pub unsafe extern "C" fn get_upsample(
     return (angle < 40 && wh <= 16 >> is_sm) as libc::c_int;
 }
 
-pub type angular_ipred_fn = Option<
-    unsafe extern "C" fn(
-        *mut DynPixel,
-        ptrdiff_t,
-        *const DynPixel,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
-pub type cfl_ac_fn = Option<
-    unsafe extern "C" fn(
-        *mut int16_t,
-        *const DynPixel,
-        ptrdiff_t,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
-pub type cfl_pred_fn = Option<
-    unsafe extern "C" fn(
-        *mut DynPixel,
-        ptrdiff_t,
-        *const DynPixel,
-        libc::c_int,
-        libc::c_int,
-        *const int16_t,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
-pub type pal_pred_fn = Option<
-    unsafe extern "C" fn(
-        *mut DynPixel,
-        ptrdiff_t,
-        *const uint16_t,
-        *const uint8_t,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
+pub type angular_ipred_fn = unsafe extern "C" fn(
+    *mut DynPixel,
+    ptrdiff_t,
+    *const DynPixel,
+    libc::c_int,
+    libc::c_int,
+    libc::c_int,
+    libc::c_int,
+    libc::c_int,
+    libc::c_int,
+) -> ();
+pub type cfl_ac_fn = unsafe extern "C" fn(
+    *mut int16_t,
+    *const DynPixel,
+    ptrdiff_t,
+    libc::c_int,
+    libc::c_int,
+    libc::c_int,
+    libc::c_int,
+) -> ();
+pub type cfl_pred_fn = unsafe extern "C" fn(
+    *mut DynPixel,
+    ptrdiff_t,
+    *const DynPixel,
+    libc::c_int,
+    libc::c_int,
+    *const int16_t,
+    libc::c_int,
+    libc::c_int,
+) -> ();
+pub type pal_pred_fn = unsafe extern "C" fn(
+    *mut DynPixel,
+    ptrdiff_t,
+    *const uint16_t,
+    *const uint8_t,
+    libc::c_int,
+    libc::c_int,
+) -> ();
 #[repr(C)]
 pub struct Dav1dIntraPredDSPContext {
-    pub intra_pred: [angular_ipred_fn; 14],
+    // TODO(legare): Remove `Option` once `dav1d_submit_frame` is no longer checking
+    // this field with `is_none`.
+    pub intra_pred: [Option<angular_ipred_fn>; 14],
     pub cfl_ac: [cfl_ac_fn; 3],
     pub cfl_pred: [cfl_pred_fn; 6],
     pub pal_pred: pal_pred_fn,
