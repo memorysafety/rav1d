@@ -1475,7 +1475,7 @@ unsafe extern "C" fn drain_picture(c: *mut Dav1dContext, out: *mut Dav1dPicture)
         }
         let out_delayed: *mut Dav1dThreadPicture =
             &mut *((*c).frame_thread.out_delayed).offset(next as isize) as *mut Dav1dThreadPicture;
-        if !((*out_delayed).p.data[0 as libc::c_int as usize]).is_null()
+        if !((*out_delayed).p.data[0]).is_null()
             || ::core::intrinsics::atomic_load_seqcst(
                 &mut (*f).task_thread.error as *mut atomic_int,
             ) != 0

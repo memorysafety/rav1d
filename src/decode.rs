@@ -5249,17 +5249,16 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
             (*f).frame_thread.pal_sz = (*f).frame_thread.pal_idx_sz;
         }
     }
-    let mut y_stride: ptrdiff_t = (*f).cur.stride[0 as libc::c_int as usize];
-    let mut uv_stride: ptrdiff_t = (*f).cur.stride[1 as libc::c_int as usize];
-    let has_resize: libc::c_int = ((*(*f).frame_hdr).width[0 as libc::c_int as usize]
-        != (*(*f).frame_hdr).width[1 as libc::c_int as usize])
-        as libc::c_int;
+    let mut y_stride: ptrdiff_t = (*f).cur.stride[0];
+    let mut uv_stride: ptrdiff_t = (*f).cur.stride[1];
+    let has_resize: libc::c_int =
+        ((*(*f).frame_hdr).width[0] != (*(*f).frame_hdr).width[1]) as libc::c_int;
     let need_cdef_lpf_copy: libc::c_int =
         ((*c).n_tc > 1 as libc::c_int as libc::c_uint && has_resize != 0) as libc::c_int;
     if y_stride * (*f).sbh as isize * 4 as libc::c_int as isize
-        != (*f).lf.cdef_buf_plane_sz[0 as libc::c_int as usize] as isize
+        != (*f).lf.cdef_buf_plane_sz[0] as isize
         || uv_stride * (*f).sbh as isize * 8 as libc::c_int as isize
-            != (*f).lf.cdef_buf_plane_sz[1 as libc::c_int as usize] as isize
+            != (*f).lf.cdef_buf_plane_sz[1] as isize
         || need_cdef_lpf_copy != (*f).lf.need_cdef_lpf_copy
         || (*f).sbh != (*f).lf.cdef_buf_sbh
     {
@@ -5281,26 +5280,21 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
             dav1d_alloc_aligned(alloc_sz, 32 as libc::c_int as size_t) as *mut uint8_t;
         let mut ptr: *mut uint8_t = (*f).lf.cdef_line_buf;
         if ptr.is_null() {
-            (*f).lf.cdef_buf_plane_sz[1 as libc::c_int as usize] = 0 as libc::c_int;
-            (*f).lf.cdef_buf_plane_sz[0 as libc::c_int as usize] =
-                (*f).lf.cdef_buf_plane_sz[1 as libc::c_int as usize];
+            (*f).lf.cdef_buf_plane_sz[1] = 0 as libc::c_int;
+            (*f).lf.cdef_buf_plane_sz[0] = (*f).lf.cdef_buf_plane_sz[1];
             return retval;
         }
         ptr = ptr.offset(32 as libc::c_int as isize);
         if y_stride < 0 {
-            (*f).lf.cdef_line[0 as libc::c_int as usize][0 as libc::c_int as usize] = ptr.offset(
+            (*f).lf.cdef_line[0][0] = ptr.offset(
                 -((y_stride * ((*f).sbh * 4 as libc::c_int - 1 as libc::c_int) as isize) as isize),
-            )
-                as *mut libc::c_void;
-            (*f).lf.cdef_line[1 as libc::c_int as usize][0 as libc::c_int as usize] = ptr.offset(
+            ) as *mut libc::c_void;
+            (*f).lf.cdef_line[1][0] = ptr.offset(
                 -((y_stride * ((*f).sbh * 4 as libc::c_int - 3 as libc::c_int) as isize) as isize),
-            )
-                as *mut libc::c_void;
+            ) as *mut libc::c_void;
         } else {
-            (*f).lf.cdef_line[0 as libc::c_int as usize][0 as libc::c_int as usize] =
-                ptr.offset((y_stride * 0) as isize) as *mut libc::c_void;
-            (*f).lf.cdef_line[1 as libc::c_int as usize][0 as libc::c_int as usize] =
-                ptr.offset((y_stride * 2) as isize) as *mut libc::c_void;
+            (*f).lf.cdef_line[0][0] = ptr.offset((y_stride * 0) as isize) as *mut libc::c_void;
+            (*f).lf.cdef_line[1][0] = ptr.offset((y_stride * 2) as isize) as *mut libc::c_void;
         }
         ptr = ptr.offset(
             ((y_stride as libc::c_longlong).abs()
@@ -5308,31 +5302,23 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                 * 4 as libc::c_int as libc::c_longlong) as isize,
         );
         if uv_stride < 0 {
-            (*f).lf.cdef_line[0 as libc::c_int as usize][1 as libc::c_int as usize] = ptr.offset(
+            (*f).lf.cdef_line[0][1] = ptr.offset(
                 -((uv_stride * ((*f).sbh * 8 as libc::c_int - 1 as libc::c_int) as isize) as isize),
-            )
-                as *mut libc::c_void;
-            (*f).lf.cdef_line[0 as libc::c_int as usize][2 as libc::c_int as usize] = ptr.offset(
+            ) as *mut libc::c_void;
+            (*f).lf.cdef_line[0][2] = ptr.offset(
                 -((uv_stride * ((*f).sbh * 8 as libc::c_int - 3 as libc::c_int) as isize) as isize),
-            )
-                as *mut libc::c_void;
-            (*f).lf.cdef_line[1 as libc::c_int as usize][1 as libc::c_int as usize] = ptr.offset(
+            ) as *mut libc::c_void;
+            (*f).lf.cdef_line[1][1] = ptr.offset(
                 -((uv_stride * ((*f).sbh * 8 as libc::c_int - 5 as libc::c_int) as isize) as isize),
-            )
-                as *mut libc::c_void;
-            (*f).lf.cdef_line[1 as libc::c_int as usize][2 as libc::c_int as usize] = ptr.offset(
+            ) as *mut libc::c_void;
+            (*f).lf.cdef_line[1][2] = ptr.offset(
                 -((uv_stride * ((*f).sbh * 8 as libc::c_int - 7 as libc::c_int) as isize) as isize),
-            )
-                as *mut libc::c_void;
+            ) as *mut libc::c_void;
         } else {
-            (*f).lf.cdef_line[0 as libc::c_int as usize][1 as libc::c_int as usize] =
-                ptr.offset((uv_stride * 0) as isize) as *mut libc::c_void;
-            (*f).lf.cdef_line[0 as libc::c_int as usize][2 as libc::c_int as usize] =
-                ptr.offset((uv_stride * 2) as isize) as *mut libc::c_void;
-            (*f).lf.cdef_line[1 as libc::c_int as usize][1 as libc::c_int as usize] =
-                ptr.offset((uv_stride * 4) as isize) as *mut libc::c_void;
-            (*f).lf.cdef_line[1 as libc::c_int as usize][2 as libc::c_int as usize] =
-                ptr.offset((uv_stride * 6) as isize) as *mut libc::c_void;
+            (*f).lf.cdef_line[0][1] = ptr.offset((uv_stride * 0) as isize) as *mut libc::c_void;
+            (*f).lf.cdef_line[0][2] = ptr.offset((uv_stride * 2) as isize) as *mut libc::c_void;
+            (*f).lf.cdef_line[1][1] = ptr.offset((uv_stride * 4) as isize) as *mut libc::c_void;
+            (*f).lf.cdef_line[1][2] = ptr.offset((uv_stride * 6) as isize) as *mut libc::c_void;
         }
         if need_cdef_lpf_copy != 0 {
             ptr = ptr.offset(
@@ -5341,13 +5327,12 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                     * 8 as libc::c_int as libc::c_longlong) as isize,
             );
             if y_stride < 0 {
-                (*f).lf.cdef_lpf_line[0 as libc::c_int as usize] = ptr.offset(
+                (*f).lf.cdef_lpf_line[0] = ptr.offset(
                     -((y_stride * ((*f).sbh * 4 as libc::c_int - 1 as libc::c_int) as isize)
                         as isize),
-                )
-                    as *mut libc::c_void;
+                ) as *mut libc::c_void;
             } else {
-                (*f).lf.cdef_lpf_line[0 as libc::c_int as usize] = ptr as *mut libc::c_void;
+                (*f).lf.cdef_lpf_line[0] = ptr as *mut libc::c_void;
             }
             ptr = ptr.offset(
                 ((y_stride as libc::c_longlong).abs()
@@ -5355,26 +5340,22 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                     * 4 as libc::c_int as libc::c_longlong) as isize,
             );
             if uv_stride < 0 {
-                (*f).lf.cdef_lpf_line[1 as libc::c_int as usize] = ptr.offset(
+                (*f).lf.cdef_lpf_line[1] = ptr.offset(
                     -((uv_stride * ((*f).sbh * 4 as libc::c_int - 1 as libc::c_int) as isize)
                         as isize),
-                )
-                    as *mut libc::c_void;
-                (*f).lf.cdef_lpf_line[2 as libc::c_int as usize] = ptr.offset(
+                ) as *mut libc::c_void;
+                (*f).lf.cdef_lpf_line[2] = ptr.offset(
                     -((uv_stride * ((*f).sbh * 8 as libc::c_int - 1 as libc::c_int) as isize)
                         as isize),
-                )
-                    as *mut libc::c_void;
+                ) as *mut libc::c_void;
             } else {
-                (*f).lf.cdef_lpf_line[1 as libc::c_int as usize] = ptr as *mut libc::c_void;
-                (*f).lf.cdef_lpf_line[2 as libc::c_int as usize] =
+                (*f).lf.cdef_lpf_line[1] = ptr as *mut libc::c_void;
+                (*f).lf.cdef_lpf_line[2] =
                     ptr.offset((uv_stride * (*f).sbh as isize * 4) as isize) as *mut libc::c_void;
             }
         }
-        (*f).lf.cdef_buf_plane_sz[0 as libc::c_int as usize] =
-            y_stride as libc::c_int * (*f).sbh * 4 as libc::c_int;
-        (*f).lf.cdef_buf_plane_sz[1 as libc::c_int as usize] =
-            uv_stride as libc::c_int * (*f).sbh * 8 as libc::c_int;
+        (*f).lf.cdef_buf_plane_sz[0] = y_stride as libc::c_int * (*f).sbh * 4 as libc::c_int;
+        (*f).lf.cdef_buf_plane_sz[1] = uv_stride as libc::c_int * (*f).sbh * 8 as libc::c_int;
         (*f).lf.need_cdef_lpf_copy = need_cdef_lpf_copy;
         (*f).lf.cdef_buf_sbh = (*f).sbh;
     }
@@ -5384,11 +5365,10 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
     } else {
         12 as libc::c_int
     };
-    y_stride = (*f).sr_cur.p.stride[0 as libc::c_int as usize];
-    uv_stride = (*f).sr_cur.p.stride[1 as libc::c_int as usize];
-    if y_stride * num_lines as isize != (*f).lf.lr_buf_plane_sz[0 as libc::c_int as usize] as isize
-        || uv_stride * num_lines as isize * 2
-            != (*f).lf.lr_buf_plane_sz[1 as libc::c_int as usize] as isize
+    y_stride = (*f).sr_cur.p.stride[0];
+    uv_stride = (*f).sr_cur.p.stride[1];
+    if y_stride * num_lines as isize != (*f).lf.lr_buf_plane_sz[0] as isize
+        || uv_stride * num_lines as isize * 2 != (*f).lf.lr_buf_plane_sz[1] as isize
     {
         dav1d_free_aligned((*f).lf.lr_line_buf as *mut libc::c_void);
         let mut alloc_sz_0: size_t = 128 as libc::c_int as size_t;
@@ -5404,39 +5384,37 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
             dav1d_alloc_aligned(alloc_sz_0, 64 as libc::c_int as size_t) as *mut uint8_t;
         let mut ptr_0: *mut uint8_t = (*f).lf.lr_line_buf;
         if ptr_0.is_null() {
-            (*f).lf.lr_buf_plane_sz[1 as libc::c_int as usize] = 0 as libc::c_int;
-            (*f).lf.lr_buf_plane_sz[0 as libc::c_int as usize] =
-                (*f).lf.lr_buf_plane_sz[1 as libc::c_int as usize];
+            (*f).lf.lr_buf_plane_sz[1] = 0 as libc::c_int;
+            (*f).lf.lr_buf_plane_sz[0] = (*f).lf.lr_buf_plane_sz[1];
             return retval;
         }
         ptr_0 = ptr_0.offset(64 as libc::c_int as isize);
         if y_stride < 0 {
-            (*f).lf.lr_lpf_line[0 as libc::c_int as usize] = ptr_0
+            (*f).lf.lr_lpf_line[0] = ptr_0
                 .offset(-((y_stride * (num_lines - 1 as libc::c_int) as isize) as isize))
                 as *mut libc::c_void;
         } else {
-            (*f).lf.lr_lpf_line[0 as libc::c_int as usize] = ptr_0 as *mut libc::c_void;
+            (*f).lf.lr_lpf_line[0] = ptr_0 as *mut libc::c_void;
         }
         ptr_0 = ptr_0.offset(
             ((y_stride as libc::c_longlong).abs() * num_lines as libc::c_longlong) as isize,
         );
         if uv_stride < 0 {
-            (*f).lf.lr_lpf_line[1 as libc::c_int as usize] = ptr_0.offset(
+            (*f).lf.lr_lpf_line[1] = ptr_0.offset(
                 -((uv_stride * (num_lines * 1 as libc::c_int - 1 as libc::c_int) as isize)
                     as isize),
             ) as *mut libc::c_void;
-            (*f).lf.lr_lpf_line[2 as libc::c_int as usize] = ptr_0.offset(
+            (*f).lf.lr_lpf_line[2] = ptr_0.offset(
                 -((uv_stride * (num_lines * 2 as libc::c_int - 1 as libc::c_int) as isize)
                     as isize),
             ) as *mut libc::c_void;
         } else {
-            (*f).lf.lr_lpf_line[1 as libc::c_int as usize] = ptr_0 as *mut libc::c_void;
-            (*f).lf.lr_lpf_line[2 as libc::c_int as usize] =
+            (*f).lf.lr_lpf_line[1] = ptr_0 as *mut libc::c_void;
+            (*f).lf.lr_lpf_line[2] =
                 ptr_0.offset((uv_stride * num_lines as isize) as isize) as *mut libc::c_void;
         }
-        (*f).lf.lr_buf_plane_sz[0 as libc::c_int as usize] = y_stride as libc::c_int * num_lines;
-        (*f).lf.lr_buf_plane_sz[1 as libc::c_int as usize] =
-            uv_stride as libc::c_int * num_lines * 2 as libc::c_int;
+        (*f).lf.lr_buf_plane_sz[0] = y_stride as libc::c_int * num_lines;
+        (*f).lf.lr_buf_plane_sz[1] = uv_stride as libc::c_int * num_lines * 2 as libc::c_int;
     }
     if num_sb128 != (*f).lf.mask_sz {
         freep(&mut (*f).lf.mask as *mut *mut Av1Filter as *mut libc::c_void);
@@ -5492,15 +5470,14 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
         }
         (*f).lf.lr_mask_sz = lr_mask_sz;
     }
-    (*f).lf.restore_planes = ((((*(*f).frame_hdr).restoration.type_0[0 as libc::c_int as usize]
-        as libc::c_uint
+    (*f).lf.restore_planes = ((((*(*f).frame_hdr).restoration.type_0[0] as libc::c_uint
         != DAV1D_RESTORATION_NONE as libc::c_int as libc::c_uint)
         as libc::c_int)
         << 0 as libc::c_int)
-        + ((((*(*f).frame_hdr).restoration.type_0[1 as libc::c_int as usize] as libc::c_uint
+        + ((((*(*f).frame_hdr).restoration.type_0[1] as libc::c_uint
             != DAV1D_RESTORATION_NONE as libc::c_int as libc::c_uint) as libc::c_int)
             << 1 as libc::c_int)
-        + ((((*(*f).frame_hdr).restoration.type_0[2 as libc::c_int as usize] as libc::c_uint
+        + ((((*(*f).frame_hdr).restoration.type_0[2] as libc::c_uint
             != DAV1D_RESTORATION_NONE as libc::c_int as libc::c_uint) as libc::c_int)
             << 2 as libc::c_int);
     if (*(*f).frame_hdr).loopfilter.sharpness != (*f).lf.last_sharpness {
@@ -5524,19 +5501,19 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                 .offset(0 as libc::c_int as isize) as *mut *mut libc::c_void
                 as *mut libc::c_void,
         );
-        (*f).ipred_edge[0 as libc::c_int as usize] = dav1d_alloc_aligned(
+        (*f).ipred_edge[0] = dav1d_alloc_aligned(
             (ipred_edge_sz * 128 as libc::c_int * 3 as libc::c_int) as size_t,
             64 as libc::c_int as size_t,
         );
-        let ptr_1: *mut uint8_t = (*f).ipred_edge[0 as libc::c_int as usize] as *mut uint8_t;
+        let ptr_1: *mut uint8_t = (*f).ipred_edge[0] as *mut uint8_t;
         if ptr_1.is_null() {
             (*f).ipred_edge_sz = 0 as libc::c_int;
             return retval;
         }
-        (*f).ipred_edge[1 as libc::c_int as usize] = ptr_1
+        (*f).ipred_edge[1] = ptr_1
             .offset((ipred_edge_sz * 128 as libc::c_int * 1 as libc::c_int) as isize)
             as *mut libc::c_void;
-        (*f).ipred_edge[2 as libc::c_int as usize] = ptr_1
+        (*f).ipred_edge[2] = ptr_1
             .offset((ipred_edge_sz * 128 as libc::c_int * 2 as libc::c_int) as isize)
             as *mut libc::c_void;
         (*f).ipred_edge_sz = ipred_edge_sz;
@@ -5549,15 +5526,14 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                 .offset(0 as libc::c_int as isize) as *mut *mut uint8_t
                 as *mut libc::c_void,
         );
-        (*f).lf.tx_lpf_right_edge[0 as libc::c_int as usize] =
+        (*f).lf.tx_lpf_right_edge[0] =
             malloc((re_sz * 32 as libc::c_int * 2 as libc::c_int) as libc::c_ulong) as *mut uint8_t;
-        if ((*f).lf.tx_lpf_right_edge[0 as libc::c_int as usize]).is_null() {
+        if ((*f).lf.tx_lpf_right_edge[0]).is_null() {
             (*f).lf.re_sz = 0 as libc::c_int;
             return retval;
         }
-        (*f).lf.tx_lpf_right_edge[1 as libc::c_int as usize] = ((*f).lf.tx_lpf_right_edge
-            [0 as libc::c_int as usize])
-            .offset((re_sz * 32 as libc::c_int) as isize);
+        (*f).lf.tx_lpf_right_edge[1] =
+            ((*f).lf.tx_lpf_right_edge[0]).offset((re_sz * 32 as libc::c_int) as isize);
         (*f).lf.re_sz = re_sz;
     }
     if (*(*f).frame_hdr).frame_type as libc::c_uint & 1 as libc::c_int as libc::c_uint != 0
@@ -5665,24 +5641,24 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
         != DAV1D_PIXEL_LAYOUT_I400 as libc::c_int as libc::c_uint)
         as libc::c_int;
     (*f).lf.mask_ptr = (*f).lf.mask;
-    (*f).lf.p[0 as libc::c_int as usize] = (*f).cur.data[0 as libc::c_int as usize];
-    (*f).lf.p[1 as libc::c_int as usize] = (*f).cur.data[(if has_chroma != 0 {
+    (*f).lf.p[0] = (*f).cur.data[0];
+    (*f).lf.p[1] = (*f).cur.data[(if has_chroma != 0 {
         1 as libc::c_int
     } else {
         0 as libc::c_int
     }) as usize];
-    (*f).lf.p[2 as libc::c_int as usize] = (*f).cur.data[(if has_chroma != 0 {
+    (*f).lf.p[2] = (*f).cur.data[(if has_chroma != 0 {
         2 as libc::c_int
     } else {
         0 as libc::c_int
     }) as usize];
-    (*f).lf.sr_p[0 as libc::c_int as usize] = (*f).sr_cur.p.data[0 as libc::c_int as usize];
-    (*f).lf.sr_p[1 as libc::c_int as usize] = (*f).sr_cur.p.data[(if has_chroma != 0 {
+    (*f).lf.sr_p[0] = (*f).sr_cur.p.data[0];
+    (*f).lf.sr_p[1] = (*f).sr_cur.p.data[(if has_chroma != 0 {
         1 as libc::c_int
     } else {
         0 as libc::c_int
     }) as usize];
-    (*f).lf.sr_p[2 as libc::c_int as usize] = (*f).sr_cur.p.data[(if has_chroma != 0 {
+    (*f).lf.sr_p[2] = (*f).sr_cur.p.data[(if has_chroma != 0 {
         2 as libc::c_int
     } else {
         0 as libc::c_int
@@ -6005,7 +5981,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         }
         out_delayed =
             &mut *((*c).frame_thread.out_delayed).offset(next as isize) as *mut Dav1dThreadPicture;
-        if !((*out_delayed).p.data[0 as libc::c_int as usize]).is_null()
+        if !((*out_delayed).p.data[0]).is_null()
             || ::core::intrinsics::atomic_load_seqcst(
                 &mut (*f).task_thread.error as *mut atomic_int,
             ) != 0
@@ -6042,7 +6018,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             (*c).cached_error = error;
             dav1d_data_props_copy(&mut (*c).cached_error_props, &mut (*out_delayed).p.m);
             dav1d_thread_picture_unref(out_delayed);
-        } else if !((*out_delayed).p.data[0 as libc::c_int as usize]).is_null() {
+        } else if !((*out_delayed).p.data[0]).is_null() {
             let progress: libc::c_uint = ::core::intrinsics::atomic_load_relaxed(
                 &mut *((*out_delayed).progress).offset(1 as libc::c_int as isize)
                     as *mut atomic_uint,
@@ -6230,7 +6206,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         if (*(*f).frame_hdr).primary_ref_frame != 7 as libc::c_int {
             let pri_ref: libc::c_int =
                 (*(*f).frame_hdr).refidx[(*(*f).frame_hdr).primary_ref_frame as usize];
-            if ((*c).refs[pri_ref as usize].p.p.data[0 as libc::c_int as usize]).is_null() {
+            if ((*c).refs[pri_ref as usize].p.p.data[0]).is_null() {
                 res = -(22 as libc::c_int);
                 return dav1d_submit_frame_error(res, f, c, out_delayed);
             }
@@ -6238,12 +6214,12 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         let mut i: libc::c_int = 0 as libc::c_int;
         while i < 7 as libc::c_int {
             let refidx: libc::c_int = (*(*f).frame_hdr).refidx[i as usize];
-            if ((*c).refs[refidx as usize].p.p.data[0 as libc::c_int as usize]).is_null()
-                || ((*(*f).frame_hdr).width[0 as libc::c_int as usize] * 2 as libc::c_int)
+            if ((*c).refs[refidx as usize].p.p.data[0]).is_null()
+                || ((*(*f).frame_hdr).width[0] * 2 as libc::c_int)
                     < (*c).refs[refidx as usize].p.p.p.w
                 || ((*(*f).frame_hdr).height * 2 as libc::c_int)
                     < (*c).refs[refidx as usize].p.p.p.h
-                || (*(*f).frame_hdr).width[0 as libc::c_int as usize]
+                || (*(*f).frame_hdr).width[0]
                     > (*c).refs[refidx as usize].p.p.p.w * 16 as libc::c_int
                 || (*(*f).frame_hdr).height > (*c).refs[refidx as usize].p.p.p.h * 16 as libc::c_int
                 || (*(*f).seq_hdr).layout as libc::c_uint
@@ -6262,30 +6238,25 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 &mut *((*f).refp).as_mut_ptr().offset(i as isize),
                 &mut (*((*c).refs).as_mut_ptr().offset(refidx as isize)).p,
             );
-            ref_coded_width[i as usize] =
-                (*(*c).refs[refidx as usize].p.p.frame_hdr).width[0 as libc::c_int as usize];
-            if (*(*f).frame_hdr).width[0 as libc::c_int as usize]
-                != (*c).refs[refidx as usize].p.p.p.w
+            ref_coded_width[i as usize] = (*(*c).refs[refidx as usize].p.p.frame_hdr).width[0];
+            if (*(*f).frame_hdr).width[0] != (*c).refs[refidx as usize].p.p.p.w
                 || (*(*f).frame_hdr).height != (*c).refs[refidx as usize].p.p.p.h
             {
-                (*f).svc[i as usize][0 as libc::c_int as usize].scale =
-                    (((*c).refs[refidx as usize].p.p.p.w << 14 as libc::c_int)
-                        + ((*(*f).frame_hdr).width[0 as libc::c_int as usize] >> 1 as libc::c_int))
-                        / (*(*f).frame_hdr).width[0 as libc::c_int as usize];
-                (*f).svc[i as usize][1 as libc::c_int as usize].scale =
-                    (((*c).refs[refidx as usize].p.p.p.h << 14 as libc::c_int)
-                        + ((*(*f).frame_hdr).height >> 1 as libc::c_int))
-                        / (*(*f).frame_hdr).height;
-                (*f).svc[i as usize][0 as libc::c_int as usize].step =
-                    (*f).svc[i as usize][0 as libc::c_int as usize].scale + 8 as libc::c_int
-                        >> 4 as libc::c_int;
-                (*f).svc[i as usize][1 as libc::c_int as usize].step =
-                    (*f).svc[i as usize][1 as libc::c_int as usize].scale + 8 as libc::c_int
-                        >> 4 as libc::c_int;
+                (*f).svc[i as usize][0].scale = (((*c).refs[refidx as usize].p.p.p.w
+                    << 14 as libc::c_int)
+                    + ((*(*f).frame_hdr).width[0] >> 1 as libc::c_int))
+                    / (*(*f).frame_hdr).width[0];
+                (*f).svc[i as usize][1].scale = (((*c).refs[refidx as usize].p.p.p.h
+                    << 14 as libc::c_int)
+                    + ((*(*f).frame_hdr).height >> 1 as libc::c_int))
+                    / (*(*f).frame_hdr).height;
+                (*f).svc[i as usize][0].step =
+                    (*f).svc[i as usize][0].scale + 8 as libc::c_int >> 4 as libc::c_int;
+                (*f).svc[i as usize][1].step =
+                    (*f).svc[i as usize][1].scale + 8 as libc::c_int >> 4 as libc::c_int;
             } else {
-                (*f).svc[i as usize][1 as libc::c_int as usize].scale = 0 as libc::c_int;
-                (*f).svc[i as usize][0 as libc::c_int as usize].scale =
-                    (*f).svc[i as usize][1 as libc::c_int as usize].scale;
+                (*f).svc[i as usize][1].scale = 0 as libc::c_int;
+                (*f).svc[i as usize][0].scale = (*f).svc[i as usize][1].scale;
             }
             (*f).gmv_warp_allowed[i as usize] = ((*(*f).frame_hdr).gmv[i as usize].type_0
                 as libc::c_uint
@@ -6294,7 +6265,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 && !dav1d_get_shear_params(
                     &mut *((*(*f).frame_hdr).gmv).as_mut_ptr().offset(i as isize),
                 )
-                && (*f).svc[i as usize][0 as libc::c_int as usize].scale == 0)
+                && (*f).svc[i as usize][0].scale == 0)
                 as libc::c_int as uint8_t;
             i += 1;
         }
@@ -6356,13 +6327,11 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
     if res < 0 as libc::c_int {
         return dav1d_submit_frame_error(res, f, c, out_delayed);
     }
-    if (*(*f).frame_hdr).width[0 as libc::c_int as usize]
-        != (*(*f).frame_hdr).width[1 as libc::c_int as usize]
-    {
+    if (*(*f).frame_hdr).width[0] != (*(*f).frame_hdr).width[1] {
         res = dav1d_picture_alloc_copy(
             c,
             &mut (*f).cur,
-            (*(*f).frame_hdr).width[0 as libc::c_int as usize],
+            (*(*f).frame_hdr).width[0],
             &mut (*f).sr_cur.p,
         );
         if res < 0 as libc::c_int {
@@ -6371,10 +6340,8 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
     } else {
         dav1d_picture_ref(&mut (*f).cur, &mut (*f).sr_cur.p);
     }
-    if (*(*f).frame_hdr).width[0 as libc::c_int as usize]
-        != (*(*f).frame_hdr).width[1 as libc::c_int as usize]
-    {
-        (*f).resize_step[0 as libc::c_int as usize] = (((*f).cur.p.w << 14 as libc::c_int)
+    if (*(*f).frame_hdr).width[0] != (*(*f).frame_hdr).width[1] {
+        (*f).resize_step[0] = (((*f).cur.p.w << 14 as libc::c_int)
             + ((*f).sr_cur.p.p.w >> 1 as libc::c_int))
             / (*f).sr_cur.p.p.w;
         let ss_hor: libc::c_int = ((*f).cur.p.layout as libc::c_uint
@@ -6382,15 +6349,10 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             as libc::c_int;
         let in_cw: libc::c_int = (*f).cur.p.w + ss_hor >> ss_hor;
         let out_cw: libc::c_int = (*f).sr_cur.p.p.w + ss_hor >> ss_hor;
-        (*f).resize_step[1 as libc::c_int as usize] =
+        (*f).resize_step[1] =
             ((in_cw << 14 as libc::c_int) + (out_cw >> 1 as libc::c_int)) / out_cw;
-        (*f).resize_start[0 as libc::c_int as usize] = get_upscale_x0(
-            (*f).cur.p.w,
-            (*f).sr_cur.p.p.w,
-            (*f).resize_step[0 as libc::c_int as usize],
-        );
-        (*f).resize_start[1 as libc::c_int as usize] =
-            get_upscale_x0(in_cw, out_cw, (*f).resize_step[1 as libc::c_int as usize]);
+        (*f).resize_start[0] = get_upscale_x0((*f).cur.p.w, (*f).sr_cur.p.p.w, (*f).resize_step[0]);
+        (*f).resize_start[1] = get_upscale_x0(in_cw, out_cw, (*f).resize_step[1]);
     }
     if (*c).n_fc == 1 as libc::c_int as libc::c_uint {
         if (*(*f).frame_hdr).show_frame != 0 || (*c).output_invisible_frames != 0 {
@@ -6403,12 +6365,10 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
     } else {
         dav1d_thread_picture_ref(out_delayed, &mut (*f).sr_cur);
     }
-    (*f).w4 =
-        (*(*f).frame_hdr).width[0 as libc::c_int as usize] + 3 as libc::c_int >> 2 as libc::c_int;
+    (*f).w4 = (*(*f).frame_hdr).width[0] + 3 as libc::c_int >> 2 as libc::c_int;
     (*f).h4 = (*(*f).frame_hdr).height + 3 as libc::c_int >> 2 as libc::c_int;
-    (*f).bw = ((*(*f).frame_hdr).width[0 as libc::c_int as usize] + 7 as libc::c_int
-        >> 3 as libc::c_int)
-        << 1 as libc::c_int;
+    (*f).bw =
+        ((*(*f).frame_hdr).width[0] + 7 as libc::c_int >> 3 as libc::c_int) << 1 as libc::c_int;
     (*f).bh = ((*(*f).frame_hdr).height + 7 as libc::c_int >> 3 as libc::c_int) << 1 as libc::c_int;
     (*f).sb128w = (*f).bw + 31 as libc::c_int >> 5 as libc::c_int;
     (*f).sb128h = (*f).bh + 31 as libc::c_int >> 5 as libc::c_int;
