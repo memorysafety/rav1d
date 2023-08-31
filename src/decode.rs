@@ -5781,17 +5781,17 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> libc::c_int {
-    let current_block: u64;
     let c: *const Dav1dContext = (*f).c;
-    let mut retval = -(22 as libc::c_int);
-    if !((*(*f).c).n_tc == 1 as libc::c_uint) {
+    let mut retval: libc::c_int = -(22 as libc::c_int);
+    if !((*(*f).c).n_tc == 1 as libc::c_int as libc::c_uint) {
         unreachable!();
     }
-    let t: *mut Dav1dTaskContext =
-        &mut *((*c).tc).offset(f.offset_from((*c).fc) as isize) as *mut Dav1dTaskContext;
+    let t: *mut Dav1dTaskContext = &mut *((*c).tc)
+        .offset(f.offset_from((*c).fc) as libc::c_long as isize)
+        as *mut Dav1dTaskContext;
     (*t).f = f;
     (*t).frame_thread.pass = 0 as libc::c_int;
-    let mut n = 0;
+    let mut n: libc::c_int = 0 as libc::c_int;
     while n < (*f).sb128w * (*(*f).frame_hdr).tiling.rows {
         reset_context(
             &mut *((*f).a).offset(n as isize),
@@ -5800,51 +5800,46 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
         );
         n += 1;
     }
-    let mut tile_row = 0;
-    's_44: loop {
-        if !(tile_row < (*(*f).frame_hdr).tiling.rows) {
-            current_block = 10652014663920648156;
-            break;
-        }
-        let sbh_end = imin(
-            (*(*f).frame_hdr).tiling.row_start_sb[(tile_row + 1) as usize] as libc::c_int,
+    let mut tile_row: libc::c_int = 0 as libc::c_int;
+    while tile_row < (*(*f).frame_hdr).tiling.rows {
+        let sbh_end: libc::c_int = imin(
+            (*(*f).frame_hdr).tiling.row_start_sb[(tile_row + 1 as libc::c_int) as usize]
+                as libc::c_int,
             (*f).sbh,
         );
-        let mut sby = (*(*f).frame_hdr).tiling.row_start_sb[tile_row as usize] as libc::c_int;
+        let mut sby: libc::c_int =
+            (*(*f).frame_hdr).tiling.row_start_sb[tile_row as usize] as libc::c_int;
         while sby < sbh_end {
-            (*t).by = sby << 4 + (*(*f).seq_hdr).sb128;
-            let by_end = (*t).by + (*f).sb_step >> 1;
+            (*t).by = sby << 4 as libc::c_int + (*(*f).seq_hdr).sb128;
+            let by_end: libc::c_int = (*t).by + (*f).sb_step >> 1 as libc::c_int;
             if (*(*f).frame_hdr).use_ref_frame_mvs != 0 {
-                (*(*f).c)
-                    .refmvs_dsp
-                    .load_tmvs
-                    .expect("non-null function pointer")(
+                ((*(*f).c).refmvs_dsp.load_tmvs).expect("non-null function pointer")(
                     &mut (*f).rf,
                     tile_row,
                     0 as libc::c_int,
-                    (*f).bw >> 1,
-                    (*t).by >> 1,
+                    (*f).bw >> 1 as libc::c_int,
+                    (*t).by >> 1 as libc::c_int,
                     by_end,
                 );
             }
-            let mut tile_col = 0;
+            let mut tile_col: libc::c_int = 0 as libc::c_int;
             while tile_col < (*(*f).frame_hdr).tiling.cols {
                 (*t).ts = &mut *((*f).ts)
                     .offset((tile_row * (*(*f).frame_hdr).tiling.cols + tile_col) as isize)
                     as *mut Dav1dTileState;
                 if dav1d_decode_tile_sbrow(t) != 0 {
-                    current_block = 3839639024989683879;
-                    break 's_44;
+                    return retval;
                 }
                 tile_col += 1;
             }
-            if (*(*f).frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint != 0 {
+            if (*(*f).frame_hdr).frame_type as libc::c_uint & 1 as libc::c_int as libc::c_uint != 0
+            {
                 dav1d_refmvs_save_tmvs(
                     &(*(*f).c).refmvs_dsp,
                     &mut (*t).rt,
                     0 as libc::c_int,
-                    (*f).bw >> 1,
-                    (*t).by >> 1,
+                    (*f).bw >> 1 as libc::c_int,
+                    (*t).by >> 1 as libc::c_int,
                     by_end,
                 );
             }
@@ -5853,12 +5848,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
         }
         tile_row += 1;
     }
-    match current_block {
-        10652014663920648156 => {
-            retval = 0 as libc::c_int;
-        }
-        _ => {}
-    }
+    retval = 0 as libc::c_int;
     return retval;
 }
 
