@@ -1016,8 +1016,8 @@ unsafe fn read_tx_tree(
     let bx4 = t.bx & 31;
     let by4 = t.by & 31;
     let t_dim = &dav1d_txfm_dimensions[from as usize];
-    let txw = t_dim.lw as i8;
-    let txh = t_dim.lh as i8;
+    let txw = t_dim.lw;
+    let txh = t_dim.lh;
     let is_split;
 
     if depth < 2 && from > TX_4X4 {
@@ -1037,7 +1037,7 @@ unsafe fn read_tx_tree(
     }
     if is_split && t_dim.max as TxfmSize > TX_8X8 {
         let sub = t_dim.sub as RectTxfmSize;
-        let sub_t_dim = &dav1d_txfm_dimensions[sub as usize];
+        let sub_t_dim = &dav1d_txfm_dimensions[usize::from(sub)]; // `from` used instead of `into` for rust-analyzer type inference
         let txsw = sub_t_dim.w as libc::c_int;
         let txsh = sub_t_dim.h as libc::c_int;
 
@@ -1733,7 +1733,7 @@ unsafe fn read_vartx_tree(
                 [bh4 as usize, bw4 as usize],
                 [by4 as usize, bx4 as usize],
                 |case, (dir, dir_index)| {
-                    case.set(&mut dir.tx.0, b_dim[2 + dir_index] as i8);
+                    case.set(&mut dir.tx.0, b_dim[2 + dir_index]);
                 },
             );
         }
@@ -2854,8 +2854,7 @@ unsafe fn decode_b(
             [bh4 as usize, bw4 as usize],
             [by4 as usize, bx4 as usize],
             |case, (dir, lw_lh, dir_index)| {
-                let lw_lh = lw_lh as i8;
-                case.set(&mut dir.tx_intra.0, lw_lh);
+                case.set(&mut dir.tx_intra.0, lw_lh as i8);
                 case.set(&mut dir.tx.0, lw_lh);
                 case.set(&mut dir.mode.0, y_mode_nofilt);
                 case.set(&mut dir.pal_sz.0, b.pal_sz()[0]);
