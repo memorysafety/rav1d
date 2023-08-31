@@ -1016,14 +1016,14 @@ unsafe fn read_tx_tree(
     let bx4 = t.bx & 31;
     let by4 = t.by & 31;
     let t_dim = &dav1d_txfm_dimensions[from as usize];
-    let txw = t_dim.lw as i8;
-    let txh = t_dim.lh as i8;
+    let txw = t_dim.lw;
+    let txh = t_dim.lh;
     let is_split;
 
     if depth < 2 && from > TX_4X4 {
         let cat = 2 * (TX_64X64 as libc::c_int - t_dim.max as libc::c_int) - depth;
-        let a = ((*t.a).tx.0[bx4 as usize] < txw) as libc::c_int;
-        let l = (t.l.tx.0[by4 as usize] < txh) as libc::c_int;
+        let a = ((*t.a).tx.0[bx4 as usize] < txw as i8) as libc::c_int;
+        let l = (t.l.tx.0[by4 as usize] < txh as i8) as libc::c_int;
 
         is_split = dav1d_msac_decode_bool_adapt(
             &mut (*t.ts).msac,
@@ -1037,7 +1037,7 @@ unsafe fn read_tx_tree(
     }
     if is_split && t_dim.max as TxfmSize > TX_8X8 {
         let sub = t_dim.sub as RectTxfmSize;
-        let sub_t_dim = &dav1d_txfm_dimensions[sub as usize];
+        let sub_t_dim = &dav1d_txfm_dimensions[usize::from(sub)]; // `from` used instead of `into` for rust-analyzer type inference
         let txsw = sub_t_dim.w as libc::c_int;
         let txsh = sub_t_dim.h as libc::c_int;
 
@@ -1063,7 +1063,7 @@ unsafe fn read_tx_tree(
             [t_dim.h as usize, t_dim.w as usize],
             [by4 as usize, bx4 as usize],
             |case, (dir, val)| {
-                case.set(&mut dir.tx.0, if is_split { TX_4X4 } else { val });
+                case.set(&mut dir.tx.0, (if is_split { TX_4X4 } else { val }) as i8);
             },
         );
     };
@@ -1722,7 +1722,7 @@ unsafe fn read_vartx_tree(
                 [bh4 as usize, bw4 as usize],
                 [by4 as usize, bx4 as usize],
                 |case, dir| {
-                    case.set(&mut dir.tx.0, TX_4X4);
+                    case.set(&mut dir.tx.0, TX_4X4 as i8);
                 },
             );
         }
@@ -4520,7 +4520,7 @@ fn reset_context(ctx: &mut BlockContext, keyframe: bool, pass: libc::c_int) {
     ctx.tx_lpf_y.0.fill(2);
     ctx.tx_lpf_uv.0.fill(1);
     ctx.tx_intra.0.fill(-1);
-    ctx.tx.0.fill(TX_64X64);
+    ctx.tx.0.fill(TX_64X64 as i8);
     if !keyframe {
         for r#ref in &mut ctx.r#ref.0 {
             r#ref.fill(-1);
