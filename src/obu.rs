@@ -632,350 +632,283 @@ unsafe extern "C" fn dav1d_get_bits_pos(c: *const GetBits) -> libc::c_uint {
         .wrapping_mul(8 as libc::c_int as libc::c_uint)
         .wrapping_sub((*c).bits_left as libc::c_uint);
 }
-unsafe extern "C" fn parse_seq_hdr(
-    c: *mut Dav1dContext,
-    gb: *mut GetBits,
-    hdr: *mut Dav1dSequenceHeader,
-) -> libc::c_int {
-    let op_idx;
-    let spatial_mask: libc::c_uint;
-    let mut current_block: u64;
-    memset(
-        hdr as *mut libc::c_void,
-        0 as libc::c_int,
-        ::core::mem::size_of::<Dav1dSequenceHeader>(),
-    );
-    (*hdr).profile = dav1d_get_bits(gb, 3 as libc::c_int) as libc::c_int;
-    if !((*hdr).profile > 2) {
-        (*hdr).still_picture = dav1d_get_bit(gb) as libc::c_int;
-        (*hdr).reduced_still_picture_header = dav1d_get_bit(gb) as libc::c_int;
-        if !((*hdr).reduced_still_picture_header != 0 && (*hdr).still_picture == 0) {
-            if (*hdr).reduced_still_picture_header != 0 {
-                (*hdr).num_operating_points = 1 as libc::c_int;
-                (*hdr).operating_points[0].major_level =
-                    dav1d_get_bits(gb, 3 as libc::c_int) as libc::c_int;
-                (*hdr).operating_points[0].minor_level =
-                    dav1d_get_bits(gb, 2 as libc::c_int) as libc::c_int;
-                (*hdr).operating_points[0].initial_display_delay = 10 as libc::c_int;
-                current_block = 4090602189656566074;
-            } else {
-                (*hdr).timing_info_present = dav1d_get_bit(gb) as libc::c_int;
-                if (*hdr).timing_info_present != 0 {
-                    (*hdr).num_units_in_tick = dav1d_get_bits(gb, 32 as libc::c_int) as libc::c_int;
-                    (*hdr).time_scale = dav1d_get_bits(gb, 32 as libc::c_int) as libc::c_int;
-                    if (*c).strict_std_compliance != 0
-                        && ((*hdr).num_units_in_tick == 0 || (*hdr).time_scale == 0)
-                    {
-                        current_block = 181392771181400725;
-                    } else {
-                        (*hdr).equal_picture_interval = dav1d_get_bit(gb) as libc::c_int;
-                        if (*hdr).equal_picture_interval != 0 {
-                            let num_ticks_per_picture: libc::c_uint = dav1d_get_vlc(gb);
-                            if num_ticks_per_picture == 0xffffffff as libc::c_uint {
-                                current_block = 181392771181400725;
-                            } else {
-                                (*hdr).num_ticks_per_picture = num_ticks_per_picture
-                                    .wrapping_add(1 as libc::c_int as libc::c_uint);
-                                current_block = 10048703153582371463;
-                            }
-                        } else {
-                            current_block = 10048703153582371463;
-                        }
-                    }
-                    match current_block {
-                        181392771181400725 => {}
-                        _ => {
-                            (*hdr).decoder_model_info_present = dav1d_get_bit(gb) as libc::c_int;
-                            if (*hdr).decoder_model_info_present != 0 {
-                                (*hdr).encoder_decoder_buffer_delay_length =
-                                    (dav1d_get_bits(gb, 5 as libc::c_int))
-                                        .wrapping_add(1 as libc::c_int as libc::c_uint)
-                                        as libc::c_int;
-                                (*hdr).num_units_in_decoding_tick =
-                                    dav1d_get_bits(gb, 32 as libc::c_int) as libc::c_int;
-                                if (*c).strict_std_compliance != 0
-                                    && (*hdr).num_units_in_decoding_tick == 0
-                                {
-                                    current_block = 181392771181400725;
-                                } else {
-                                    (*hdr).buffer_removal_delay_length =
-                                        (dav1d_get_bits(gb, 5 as libc::c_int))
-                                            .wrapping_add(1 as libc::c_int as libc::c_uint)
-                                            as libc::c_int;
-                                    (*hdr).frame_presentation_delay_length =
-                                        (dav1d_get_bits(gb, 5 as libc::c_int))
-                                            .wrapping_add(1 as libc::c_int as libc::c_uint)
-                                            as libc::c_int;
-                                    current_block = 4808432441040389987;
-                                }
-                            } else {
-                                current_block = 4808432441040389987;
-                            }
-                        }
-                    }
-                } else {
-                    current_block = 4808432441040389987;
-                }
-                match current_block {
-                    181392771181400725 => {}
-                    _ => {
-                        (*hdr).display_model_info_present = dav1d_get_bit(gb) as libc::c_int;
-                        (*hdr).num_operating_points = (dav1d_get_bits(gb, 5 as libc::c_int))
-                            .wrapping_add(1 as libc::c_int as libc::c_uint)
-                            as libc::c_int;
-                        let mut i = 0;
-                        loop {
-                            if !(i < (*hdr).num_operating_points) {
-                                current_block = 4090602189656566074;
-                                break;
-                            }
-                            let op: *mut Dav1dSequenceHeaderOperatingPoint =
-                                &mut *((*hdr).operating_points).as_mut_ptr().offset(i as isize)
-                                    as *mut Dav1dSequenceHeaderOperatingPoint;
-                            (*op).idc = dav1d_get_bits(gb, 12 as libc::c_int) as libc::c_int;
-                            if (*op).idc != 0
-                                && ((*op).idc & 0xff as libc::c_int == 0 || (*op).idc & 0xf00 == 0)
-                            {
-                                current_block = 181392771181400725;
-                                break;
-                            }
-                            (*op).major_level = (2 as libc::c_int as libc::c_uint)
-                                .wrapping_add(dav1d_get_bits(gb, 3 as libc::c_int))
-                                as libc::c_int;
-                            (*op).minor_level = dav1d_get_bits(gb, 2 as libc::c_int) as libc::c_int;
-                            if (*op).major_level > 3 {
-                                (*op).tier = dav1d_get_bit(gb) as libc::c_int;
-                            }
-                            if (*hdr).decoder_model_info_present != 0 {
-                                (*op).decoder_model_param_present =
-                                    dav1d_get_bit(gb) as libc::c_int;
-                                if (*op).decoder_model_param_present != 0 {
-                                    let opi: *mut Dav1dSequenceHeaderOperatingParameterInfo =
-                                        &mut *((*hdr).operating_parameter_info)
-                                            .as_mut_ptr()
-                                            .offset(i as isize)
-                                            as *mut Dav1dSequenceHeaderOperatingParameterInfo;
-                                    (*opi).decoder_buffer_delay = dav1d_get_bits(
-                                        gb,
-                                        (*hdr).encoder_decoder_buffer_delay_length,
-                                    )
-                                        as libc::c_int;
-                                    (*opi).encoder_buffer_delay = dav1d_get_bits(
-                                        gb,
-                                        (*hdr).encoder_decoder_buffer_delay_length,
-                                    )
-                                        as libc::c_int;
-                                    (*opi).low_delay_mode = dav1d_get_bit(gb) as libc::c_int;
-                                }
-                            }
-                            if (*hdr).display_model_info_present != 0 {
-                                (*op).display_model_param_present =
-                                    dav1d_get_bit(gb) as libc::c_int;
-                            }
-                            (*op).initial_display_delay =
-                                (if (*op).display_model_param_present != 0 {
-                                    (dav1d_get_bits(gb, 4 as libc::c_int))
-                                        .wrapping_add(1 as libc::c_int as libc::c_uint)
-                                } else {
-                                    10 as libc::c_int as libc::c_uint
-                                }) as libc::c_int;
-                            i += 1;
-                        }
-                    }
-                }
-            }
-            match current_block {
-                181392771181400725 => {}
-                _ => {
-                    op_idx = if (*c).operating_point < (*hdr).num_operating_points {
-                        (*c).operating_point
-                    } else {
-                        0 as libc::c_int
-                    };
-                    (*c).operating_point_idc =
-                        (*hdr).operating_points[op_idx as usize].idc as libc::c_uint;
-                    spatial_mask = (*c).operating_point_idc >> 8;
-                    (*c).max_spatial_id = if spatial_mask != 0 {
-                        ulog2(spatial_mask)
-                    } else {
-                        0 as libc::c_int
-                    };
-                    (*hdr).width_n_bits = (dav1d_get_bits(gb, 4 as libc::c_int))
-                        .wrapping_add(1 as libc::c_int as libc::c_uint)
-                        as libc::c_int;
-                    (*hdr).height_n_bits = (dav1d_get_bits(gb, 4 as libc::c_int))
-                        .wrapping_add(1 as libc::c_int as libc::c_uint)
-                        as libc::c_int;
-                    (*hdr).max_width = (dav1d_get_bits(gb, (*hdr).width_n_bits))
-                        .wrapping_add(1 as libc::c_int as libc::c_uint)
-                        as libc::c_int;
-                    (*hdr).max_height = (dav1d_get_bits(gb, (*hdr).height_n_bits))
-                        .wrapping_add(1 as libc::c_int as libc::c_uint)
-                        as libc::c_int;
-                    if (*hdr).reduced_still_picture_header == 0 {
-                        (*hdr).frame_id_numbers_present = dav1d_get_bit(gb) as libc::c_int;
-                        if (*hdr).frame_id_numbers_present != 0 {
-                            (*hdr).delta_frame_id_n_bits = (dav1d_get_bits(gb, 4 as libc::c_int))
-                                .wrapping_add(2 as libc::c_int as libc::c_uint)
-                                as libc::c_int;
-                            (*hdr).frame_id_n_bits = (dav1d_get_bits(gb, 3 as libc::c_int))
-                                .wrapping_add((*hdr).delta_frame_id_n_bits as libc::c_uint)
-                                .wrapping_add(1 as libc::c_int as libc::c_uint)
-                                as libc::c_int;
-                        }
-                    }
-                    (*hdr).sb128 = dav1d_get_bit(gb) as libc::c_int;
-                    (*hdr).filter_intra = dav1d_get_bit(gb) as libc::c_int;
-                    (*hdr).intra_edge_filter = dav1d_get_bit(gb) as libc::c_int;
-                    if (*hdr).reduced_still_picture_header != 0 {
-                        (*hdr).screen_content_tools = DAV1D_ADAPTIVE;
-                        (*hdr).force_integer_mv = DAV1D_ADAPTIVE;
-                    } else {
-                        (*hdr).inter_intra = dav1d_get_bit(gb) as libc::c_int;
-                        (*hdr).masked_compound = dav1d_get_bit(gb) as libc::c_int;
-                        (*hdr).warped_motion = dav1d_get_bit(gb) as libc::c_int;
-                        (*hdr).dual_filter = dav1d_get_bit(gb) as libc::c_int;
-                        (*hdr).order_hint = dav1d_get_bit(gb) as libc::c_int;
-                        if (*hdr).order_hint != 0 {
-                            (*hdr).jnt_comp = dav1d_get_bit(gb) as libc::c_int;
-                            (*hdr).ref_frame_mvs = dav1d_get_bit(gb) as libc::c_int;
-                        }
-                        (*hdr).screen_content_tools = (if dav1d_get_bit(gb) != 0 {
-                            DAV1D_ADAPTIVE as libc::c_int as libc::c_uint
-                        } else {
-                            dav1d_get_bit(gb)
-                        })
-                            as Dav1dAdaptiveBoolean;
-                        (*hdr).force_integer_mv =
-                            (if (*hdr).screen_content_tools as libc::c_uint != 0 {
-                                if dav1d_get_bit(gb) != 0 {
-                                    DAV1D_ADAPTIVE as libc::c_int as libc::c_uint
-                                } else {
-                                    dav1d_get_bit(gb)
-                                }
-                            } else {
-                                2 as libc::c_int as libc::c_uint
-                            }) as Dav1dAdaptiveBoolean;
-                        if (*hdr).order_hint != 0 {
-                            (*hdr).order_hint_n_bits = (dav1d_get_bits(gb, 3 as libc::c_int))
-                                .wrapping_add(1 as libc::c_int as libc::c_uint)
-                                as libc::c_int;
-                        }
-                    }
-                    (*hdr).super_res = dav1d_get_bit(gb) as libc::c_int;
-                    (*hdr).cdef = dav1d_get_bit(gb) as libc::c_int;
-                    (*hdr).restoration = dav1d_get_bit(gb) as libc::c_int;
-                    (*hdr).hbd = dav1d_get_bit(gb) as libc::c_int;
-                    if (*hdr).profile == 2 && (*hdr).hbd != 0 {
-                        (*hdr).hbd = ((*hdr).hbd as libc::c_uint).wrapping_add(dav1d_get_bit(gb))
-                            as libc::c_int as libc::c_int;
-                    }
-                    if (*hdr).profile != 1 as libc::c_int {
-                        (*hdr).monochrome = dav1d_get_bit(gb) as libc::c_int;
-                    }
-                    (*hdr).color_description_present = dav1d_get_bit(gb) as libc::c_int;
-                    if (*hdr).color_description_present != 0 {
-                        (*hdr).pri = dav1d_get_bits(gb, 8 as libc::c_int) as Dav1dColorPrimaries;
-                        (*hdr).trc =
-                            dav1d_get_bits(gb, 8 as libc::c_int) as Dav1dTransferCharacteristics;
-                        (*hdr).mtrx =
-                            dav1d_get_bits(gb, 8 as libc::c_int) as Dav1dMatrixCoefficients;
-                    } else {
-                        (*hdr).pri = DAV1D_COLOR_PRI_UNKNOWN;
-                        (*hdr).trc = DAV1D_TRC_UNKNOWN;
-                        (*hdr).mtrx = DAV1D_MC_UNKNOWN;
-                    }
-                    if (*hdr).monochrome != 0 {
-                        (*hdr).color_range = dav1d_get_bit(gb) as libc::c_int;
-                        (*hdr).layout = DAV1D_PIXEL_LAYOUT_I400;
-                        (*hdr).ss_ver = 1 as libc::c_int;
-                        (*hdr).ss_hor = (*hdr).ss_ver;
-                        (*hdr).chr = DAV1D_CHR_UNKNOWN;
-                        current_block = 14141370668937312244;
-                    } else if (*hdr).pri as libc::c_uint
-                        == DAV1D_COLOR_PRI_BT709 as libc::c_int as libc::c_uint
-                        && (*hdr).trc as libc::c_uint
-                            == DAV1D_TRC_SRGB as libc::c_int as libc::c_uint
-                        && (*hdr).mtrx as libc::c_uint
-                            == DAV1D_MC_IDENTITY as libc::c_int as libc::c_uint
-                    {
-                        (*hdr).layout = DAV1D_PIXEL_LAYOUT_I444;
-                        (*hdr).color_range = 1 as libc::c_int;
-                        if (*hdr).profile != 1 as libc::c_int
-                            && !((*hdr).profile == 2 && (*hdr).hbd == 2)
-                        {
-                            current_block = 181392771181400725;
-                        } else {
-                            current_block = 14141370668937312244;
-                        }
-                    } else {
-                        (*hdr).color_range = dav1d_get_bit(gb) as libc::c_int;
-                        match (*hdr).profile {
-                            0 => {
-                                (*hdr).layout = DAV1D_PIXEL_LAYOUT_I420;
-                                (*hdr).ss_ver = 1 as libc::c_int;
-                                (*hdr).ss_hor = (*hdr).ss_ver;
-                            }
-                            1 => {
-                                (*hdr).layout = DAV1D_PIXEL_LAYOUT_I444;
-                            }
-                            2 => {
-                                if (*hdr).hbd == 2 {
-                                    (*hdr).ss_hor = dav1d_get_bit(gb) as libc::c_int;
-                                    if (*hdr).ss_hor != 0 {
-                                        (*hdr).ss_ver = dav1d_get_bit(gb) as libc::c_int;
-                                    }
-                                } else {
-                                    (*hdr).ss_hor = 1 as libc::c_int;
-                                }
-                                (*hdr).layout = (if (*hdr).ss_hor != 0 {
-                                    if (*hdr).ss_ver != 0 {
-                                        DAV1D_PIXEL_LAYOUT_I420 as libc::c_int
-                                    } else {
-                                        DAV1D_PIXEL_LAYOUT_I422 as libc::c_int
-                                    }
-                                } else {
-                                    DAV1D_PIXEL_LAYOUT_I444 as libc::c_int
-                                })
-                                    as Dav1dPixelLayout;
-                            }
-                            _ => {}
-                        }
-                        (*hdr).chr = (if (*hdr).ss_hor & (*hdr).ss_ver != 0 {
-                            dav1d_get_bits(gb, 2 as libc::c_int)
-                        } else {
-                            DAV1D_CHR_UNKNOWN as libc::c_int as libc::c_uint
-                        }) as Dav1dChromaSamplePosition;
-                        current_block = 14141370668937312244;
-                    }
-                    match current_block {
-                        181392771181400725 => {}
-                        _ => {
-                            if !((*c).strict_std_compliance != 0
-                                && (*hdr).mtrx as libc::c_uint
-                                    == DAV1D_MC_IDENTITY as libc::c_int as libc::c_uint
-                                && (*hdr).layout as libc::c_uint
-                                    != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint)
-                            {
-                                if (*hdr).monochrome == 0 {
-                                    (*hdr).separate_uv_delta_q = dav1d_get_bit(gb) as libc::c_int;
-                                }
-                                (*hdr).film_grain_present = dav1d_get_bit(gb) as libc::c_int;
-                                dav1d_get_bit(gb);
-                                return 0 as libc::c_int;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+
+unsafe extern "C" fn parse_seq_hdr_error(c: *mut Dav1dContext) -> libc::c_int {
     dav1d_log(
         c,
         b"Error parsing sequence header\n\0" as *const u8 as *const libc::c_char,
     );
     return -(22 as libc::c_int);
 }
+
+unsafe extern "C" fn parse_seq_hdr(
+    c: *mut Dav1dContext,
+    gb: *mut GetBits,
+    hdr: *mut Dav1dSequenceHeader,
+) -> libc::c_int {
+    memset(
+        hdr as *mut libc::c_void,
+        0 as libc::c_int,
+        ::core::mem::size_of::<Dav1dSequenceHeader>(),
+    );
+    (*hdr).profile = dav1d_get_bits(gb, 3 as libc::c_int) as libc::c_int;
+    if (*hdr).profile > 2 {
+        return parse_seq_hdr_error(c);
+    }
+    (*hdr).still_picture = dav1d_get_bit(gb) as libc::c_int;
+    (*hdr).reduced_still_picture_header = dav1d_get_bit(gb) as libc::c_int;
+    if (*hdr).reduced_still_picture_header != 0 && (*hdr).still_picture == 0 {
+        return parse_seq_hdr_error(c);
+    }
+    if (*hdr).reduced_still_picture_header != 0 {
+        (*hdr).num_operating_points = 1 as libc::c_int;
+        (*hdr).operating_points[0].major_level =
+            dav1d_get_bits(gb, 3 as libc::c_int) as libc::c_int;
+        (*hdr).operating_points[0].minor_level =
+            dav1d_get_bits(gb, 2 as libc::c_int) as libc::c_int;
+        (*hdr).operating_points[0].initial_display_delay = 10 as libc::c_int;
+    } else {
+        (*hdr).timing_info_present = dav1d_get_bit(gb) as libc::c_int;
+        if (*hdr).timing_info_present != 0 {
+            (*hdr).num_units_in_tick = dav1d_get_bits(gb, 32 as libc::c_int) as libc::c_int;
+            (*hdr).time_scale = dav1d_get_bits(gb, 32 as libc::c_int) as libc::c_int;
+            if (*c).strict_std_compliance != 0
+                && ((*hdr).num_units_in_tick == 0 || (*hdr).time_scale == 0)
+            {
+                return parse_seq_hdr_error(c);
+            }
+            (*hdr).equal_picture_interval = dav1d_get_bit(gb) as libc::c_int;
+            if (*hdr).equal_picture_interval != 0 {
+                let num_ticks_per_picture: libc::c_uint = dav1d_get_vlc(gb);
+                if num_ticks_per_picture == 0xffffffff as libc::c_uint {
+                    return parse_seq_hdr_error(c);
+                }
+                (*hdr).num_ticks_per_picture =
+                    num_ticks_per_picture.wrapping_add(1 as libc::c_int as libc::c_uint);
+            }
+            (*hdr).decoder_model_info_present = dav1d_get_bit(gb) as libc::c_int;
+            if (*hdr).decoder_model_info_present != 0 {
+                (*hdr).encoder_decoder_buffer_delay_length = (dav1d_get_bits(gb, 5 as libc::c_int))
+                    .wrapping_add(1 as libc::c_int as libc::c_uint)
+                    as libc::c_int;
+                (*hdr).num_units_in_decoding_tick =
+                    dav1d_get_bits(gb, 32 as libc::c_int) as libc::c_int;
+                if (*c).strict_std_compliance != 0 && (*hdr).num_units_in_decoding_tick == 0 {
+                    return parse_seq_hdr_error(c);
+                }
+                (*hdr).buffer_removal_delay_length = (dav1d_get_bits(gb, 5 as libc::c_int))
+                    .wrapping_add(1 as libc::c_int as libc::c_uint)
+                    as libc::c_int;
+                (*hdr).frame_presentation_delay_length = (dav1d_get_bits(gb, 5 as libc::c_int))
+                    .wrapping_add(1 as libc::c_int as libc::c_uint)
+                    as libc::c_int;
+            }
+        }
+        (*hdr).display_model_info_present = dav1d_get_bit(gb) as libc::c_int;
+        (*hdr).num_operating_points = (dav1d_get_bits(gb, 5 as libc::c_int))
+            .wrapping_add(1 as libc::c_int as libc::c_uint)
+            as libc::c_int;
+        let mut i = 0;
+        while i < (*hdr).num_operating_points {
+            let op: *mut Dav1dSequenceHeaderOperatingPoint =
+                &mut *((*hdr).operating_points).as_mut_ptr().offset(i as isize)
+                    as *mut Dav1dSequenceHeaderOperatingPoint;
+            (*op).idc = dav1d_get_bits(gb, 12 as libc::c_int) as libc::c_int;
+            if (*op).idc != 0 && ((*op).idc & 0xff as libc::c_int == 0 || (*op).idc & 0xf00 == 0) {
+                return parse_seq_hdr_error(c);
+            }
+            (*op).major_level = (2 as libc::c_int as libc::c_uint)
+                .wrapping_add(dav1d_get_bits(gb, 3 as libc::c_int))
+                as libc::c_int;
+            (*op).minor_level = dav1d_get_bits(gb, 2 as libc::c_int) as libc::c_int;
+            if (*op).major_level > 3 {
+                (*op).tier = dav1d_get_bit(gb) as libc::c_int;
+            }
+            if (*hdr).decoder_model_info_present != 0 {
+                (*op).decoder_model_param_present = dav1d_get_bit(gb) as libc::c_int;
+                if (*op).decoder_model_param_present != 0 {
+                    let opi: *mut Dav1dSequenceHeaderOperatingParameterInfo = &mut *((*hdr)
+                        .operating_parameter_info)
+                        .as_mut_ptr()
+                        .offset(i as isize)
+                        as *mut Dav1dSequenceHeaderOperatingParameterInfo;
+                    (*opi).decoder_buffer_delay =
+                        dav1d_get_bits(gb, (*hdr).encoder_decoder_buffer_delay_length)
+                            as libc::c_int;
+                    (*opi).encoder_buffer_delay =
+                        dav1d_get_bits(gb, (*hdr).encoder_decoder_buffer_delay_length)
+                            as libc::c_int;
+                    (*opi).low_delay_mode = dav1d_get_bit(gb) as libc::c_int;
+                }
+            }
+            if (*hdr).display_model_info_present != 0 {
+                (*op).display_model_param_present = dav1d_get_bit(gb) as libc::c_int;
+            }
+            (*op).initial_display_delay = (if (*op).display_model_param_present != 0 {
+                (dav1d_get_bits(gb, 4 as libc::c_int))
+                    .wrapping_add(1 as libc::c_int as libc::c_uint)
+            } else {
+                10 as libc::c_int as libc::c_uint
+            }) as libc::c_int;
+            i += 1;
+        }
+    }
+    let op_idx: libc::c_int = if (*c).operating_point < (*hdr).num_operating_points {
+        (*c).operating_point
+    } else {
+        0 as libc::c_int
+    };
+    (*c).operating_point_idc = (*hdr).operating_points[op_idx as usize].idc as libc::c_uint;
+    let spatial_mask = (*c).operating_point_idc >> 8;
+    (*c).max_spatial_id = if spatial_mask != 0 {
+        ulog2(spatial_mask)
+    } else {
+        0 as libc::c_int
+    };
+    (*hdr).width_n_bits = (dav1d_get_bits(gb, 4 as libc::c_int))
+        .wrapping_add(1 as libc::c_int as libc::c_uint) as libc::c_int;
+    (*hdr).height_n_bits = (dav1d_get_bits(gb, 4 as libc::c_int))
+        .wrapping_add(1 as libc::c_int as libc::c_uint) as libc::c_int;
+    (*hdr).max_width = (dav1d_get_bits(gb, (*hdr).width_n_bits))
+        .wrapping_add(1 as libc::c_int as libc::c_uint) as libc::c_int;
+    (*hdr).max_height = (dav1d_get_bits(gb, (*hdr).height_n_bits))
+        .wrapping_add(1 as libc::c_int as libc::c_uint) as libc::c_int;
+    if (*hdr).reduced_still_picture_header == 0 {
+        (*hdr).frame_id_numbers_present = dav1d_get_bit(gb) as libc::c_int;
+        if (*hdr).frame_id_numbers_present != 0 {
+            (*hdr).delta_frame_id_n_bits = (dav1d_get_bits(gb, 4 as libc::c_int))
+                .wrapping_add(2 as libc::c_int as libc::c_uint)
+                as libc::c_int;
+            (*hdr).frame_id_n_bits = (dav1d_get_bits(gb, 3 as libc::c_int))
+                .wrapping_add((*hdr).delta_frame_id_n_bits as libc::c_uint)
+                .wrapping_add(1 as libc::c_int as libc::c_uint)
+                as libc::c_int;
+        }
+    }
+    (*hdr).sb128 = dav1d_get_bit(gb) as libc::c_int;
+    (*hdr).filter_intra = dav1d_get_bit(gb) as libc::c_int;
+    (*hdr).intra_edge_filter = dav1d_get_bit(gb) as libc::c_int;
+    if (*hdr).reduced_still_picture_header != 0 {
+        (*hdr).screen_content_tools = DAV1D_ADAPTIVE;
+        (*hdr).force_integer_mv = DAV1D_ADAPTIVE;
+    } else {
+        (*hdr).inter_intra = dav1d_get_bit(gb) as libc::c_int;
+        (*hdr).masked_compound = dav1d_get_bit(gb) as libc::c_int;
+        (*hdr).warped_motion = dav1d_get_bit(gb) as libc::c_int;
+        (*hdr).dual_filter = dav1d_get_bit(gb) as libc::c_int;
+        (*hdr).order_hint = dav1d_get_bit(gb) as libc::c_int;
+        if (*hdr).order_hint != 0 {
+            (*hdr).jnt_comp = dav1d_get_bit(gb) as libc::c_int;
+            (*hdr).ref_frame_mvs = dav1d_get_bit(gb) as libc::c_int;
+        }
+        (*hdr).screen_content_tools = (if dav1d_get_bit(gb) != 0 {
+            DAV1D_ADAPTIVE as libc::c_int as libc::c_uint
+        } else {
+            dav1d_get_bit(gb)
+        }) as Dav1dAdaptiveBoolean;
+        (*hdr).force_integer_mv = (if (*hdr).screen_content_tools as libc::c_uint != 0 {
+            if dav1d_get_bit(gb) != 0 {
+                DAV1D_ADAPTIVE as libc::c_int as libc::c_uint
+            } else {
+                dav1d_get_bit(gb)
+            }
+        } else {
+            2 as libc::c_int as libc::c_uint
+        }) as Dav1dAdaptiveBoolean;
+        if (*hdr).order_hint != 0 {
+            (*hdr).order_hint_n_bits = (dav1d_get_bits(gb, 3 as libc::c_int))
+                .wrapping_add(1 as libc::c_int as libc::c_uint)
+                as libc::c_int;
+        }
+    }
+    (*hdr).super_res = dav1d_get_bit(gb) as libc::c_int;
+    (*hdr).cdef = dav1d_get_bit(gb) as libc::c_int;
+    (*hdr).restoration = dav1d_get_bit(gb) as libc::c_int;
+    (*hdr).hbd = dav1d_get_bit(gb) as libc::c_int;
+    if (*hdr).profile == 2 && (*hdr).hbd != 0 {
+        (*hdr).hbd = ((*hdr).hbd as libc::c_uint).wrapping_add(dav1d_get_bit(gb)) as libc::c_int
+            as libc::c_int;
+    }
+    if (*hdr).profile != 1 as libc::c_int {
+        (*hdr).monochrome = dav1d_get_bit(gb) as libc::c_int;
+    }
+    (*hdr).color_description_present = dav1d_get_bit(gb) as libc::c_int;
+    if (*hdr).color_description_present != 0 {
+        (*hdr).pri = dav1d_get_bits(gb, 8 as libc::c_int) as Dav1dColorPrimaries;
+        (*hdr).trc = dav1d_get_bits(gb, 8 as libc::c_int) as Dav1dTransferCharacteristics;
+        (*hdr).mtrx = dav1d_get_bits(gb, 8 as libc::c_int) as Dav1dMatrixCoefficients;
+    } else {
+        (*hdr).pri = DAV1D_COLOR_PRI_UNKNOWN;
+        (*hdr).trc = DAV1D_TRC_UNKNOWN;
+        (*hdr).mtrx = DAV1D_MC_UNKNOWN;
+    }
+    if (*hdr).monochrome != 0 {
+        (*hdr).color_range = dav1d_get_bit(gb) as libc::c_int;
+        (*hdr).layout = DAV1D_PIXEL_LAYOUT_I400;
+        (*hdr).ss_ver = 1 as libc::c_int;
+        (*hdr).ss_hor = (*hdr).ss_ver;
+        (*hdr).chr = DAV1D_CHR_UNKNOWN;
+    } else if (*hdr).pri as libc::c_uint == DAV1D_COLOR_PRI_BT709 as libc::c_int as libc::c_uint
+        && (*hdr).trc as libc::c_uint == DAV1D_TRC_SRGB as libc::c_int as libc::c_uint
+        && (*hdr).mtrx as libc::c_uint == DAV1D_MC_IDENTITY as libc::c_int as libc::c_uint
+    {
+        (*hdr).layout = DAV1D_PIXEL_LAYOUT_I444;
+        (*hdr).color_range = 1 as libc::c_int;
+        if (*hdr).profile != 1 as libc::c_int && !((*hdr).profile == 2 && (*hdr).hbd == 2) {
+            return parse_seq_hdr_error(c);
+        }
+    } else {
+        (*hdr).color_range = dav1d_get_bit(gb) as libc::c_int;
+        match (*hdr).profile {
+            0 => {
+                (*hdr).layout = DAV1D_PIXEL_LAYOUT_I420;
+                (*hdr).ss_ver = 1 as libc::c_int;
+                (*hdr).ss_hor = (*hdr).ss_ver;
+            }
+            1 => {
+                (*hdr).layout = DAV1D_PIXEL_LAYOUT_I444;
+            }
+            2 => {
+                if (*hdr).hbd == 2 {
+                    (*hdr).ss_hor = dav1d_get_bit(gb) as libc::c_int;
+                    if (*hdr).ss_hor != 0 {
+                        (*hdr).ss_ver = dav1d_get_bit(gb) as libc::c_int;
+                    }
+                } else {
+                    (*hdr).ss_hor = 1 as libc::c_int;
+                }
+                (*hdr).layout = (if (*hdr).ss_hor != 0 {
+                    if (*hdr).ss_ver != 0 {
+                        DAV1D_PIXEL_LAYOUT_I420 as libc::c_int
+                    } else {
+                        DAV1D_PIXEL_LAYOUT_I422 as libc::c_int
+                    }
+                } else {
+                    DAV1D_PIXEL_LAYOUT_I444 as libc::c_int
+                }) as Dav1dPixelLayout;
+            }
+            _ => {}
+        }
+        (*hdr).chr = (if (*hdr).ss_hor & (*hdr).ss_ver != 0 {
+            dav1d_get_bits(gb, 2 as libc::c_int)
+        } else {
+            DAV1D_CHR_UNKNOWN as libc::c_int as libc::c_uint
+        }) as Dav1dChromaSamplePosition;
+    }
+    if (*c).strict_std_compliance != 0
+        && (*hdr).mtrx as libc::c_uint == DAV1D_MC_IDENTITY as libc::c_int as libc::c_uint
+        && (*hdr).layout as libc::c_uint != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint
+    {
+        return parse_seq_hdr_error(c);
+    }
+    if (*hdr).monochrome == 0 {
+        (*hdr).separate_uv_delta_q = dav1d_get_bit(gb) as libc::c_int;
+    }
+    (*hdr).film_grain_present = dav1d_get_bit(gb) as libc::c_int;
+    dav1d_get_bit(gb);
+    return 0 as libc::c_int;
+}
+
 unsafe extern "C" fn read_frame_size(
     c: *mut Dav1dContext,
     gb: *mut GetBits,
