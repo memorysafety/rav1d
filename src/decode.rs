@@ -6016,23 +6016,23 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         match bpc {
             #[cfg(feature = "bitdepth_8")]
             8 => {
-                dav1d_cdef_dsp_init_8bpc(&mut (*dsp).cdef);
-                dav1d_intra_pred_dsp_init_8bpc(&mut (*dsp).ipred);
-                dav1d_itx_dsp_init_8bpc(&mut (*dsp).itx, bpc);
-                dav1d_loop_filter_dsp_init_8bpc(&mut (*dsp).lf);
-                dav1d_loop_restoration_dsp_init::<BitDepth8>(&mut (*dsp).lr, bpc);
-                dav1d_mc_dsp_init_8bpc(&mut (*dsp).mc);
-                dav1d_film_grain_dsp_init_8bpc(&mut (*dsp).fg);
+                dav1d_cdef_dsp_init_8bpc(&mut dsp.cdef);
+                dav1d_intra_pred_dsp_init_8bpc(&mut dsp.ipred);
+                dav1d_itx_dsp_init_8bpc(&mut dsp.itx, bpc);
+                dav1d_loop_filter_dsp_init_8bpc(&mut dsp.lf);
+                dav1d_loop_restoration_dsp_init::<BitDepth8>(&mut dsp.lr, bpc);
+                dav1d_mc_dsp_init_8bpc(&mut dsp.mc);
+                dav1d_film_grain_dsp_init_8bpc(&mut dsp.fg);
             }
             #[cfg(feature = "bitdepth_16")]
             10 | 12 => {
-                dav1d_cdef_dsp_init_16bpc(&mut (*dsp).cdef);
-                dav1d_intra_pred_dsp_init_16bpc(&mut (*dsp).ipred);
-                dav1d_itx_dsp_init_16bpc(&mut (*dsp).itx, bpc);
-                dav1d_loop_filter_dsp_init_16bpc(&mut (*dsp).lf);
-                dav1d_loop_restoration_dsp_init::<BitDepth16>(&mut (*dsp).lr, bpc);
-                dav1d_mc_dsp_init_16bpc(&mut (*dsp).mc);
-                dav1d_film_grain_dsp_init_16bpc(&mut (*dsp).fg);
+                dav1d_cdef_dsp_init_16bpc(&mut dsp.cdef);
+                dav1d_intra_pred_dsp_init_16bpc(&mut dsp.ipred);
+                dav1d_itx_dsp_init_16bpc(&mut dsp.itx, bpc);
+                dav1d_loop_filter_dsp_init_16bpc(&mut dsp.lf);
+                dav1d_loop_restoration_dsp_init::<BitDepth16>(&mut dsp.lr, bpc);
+                dav1d_mc_dsp_init_16bpc(&mut dsp.mc);
+                dav1d_film_grain_dsp_init_16bpc(&mut dsp.fg);
             }
             _ => {
                 dav1d_log(
