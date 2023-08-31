@@ -6326,7 +6326,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 return dav1d_submit_frame_error(res, f, c, out_delayed);
             }
             (*f).cur_segmap = (*(*f).cur_segmap_ref).data as *mut uint8_t;
-            memset((*f).cur_segmap as *mut libc::c_void, 0, segmap_size);
+            slice::from_raw_parts_mut((*f).cur_segmap, segmap_size).fill(0);
         }
     } else {
         (*f).cur_segmap = 0 as *mut uint8_t;
