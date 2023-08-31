@@ -231,7 +231,7 @@ unsafe extern "C" fn decode_rand(
     };
     let num_frames: libc::c_int =
         xor128_rand() % (fps * 5 as libc::c_int as libc::c_double) as libc::c_int;
-    let mut i: libc::c_int = 0 as libc::c_int;
+    let mut i = 0;
     while i < num_frames {
         res = decode_frame(&mut p, c, data);
         if res != 0 {
@@ -508,8 +508,8 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
             _ => {
                 pts = llround(data.m.timestamp as libc::c_double * timebase * 1000000000.0f64)
                     as uint64_t;
-                let mut i_0: libc::c_int = 0 as libc::c_int;
-                let mut tries: libc::c_int = 0 as libc::c_int;
+                let mut i_0 = 0;
+                let mut tries = 0;
                 loop {
                     if !(i_0 - tries < 4 as libc::c_int
                         && tries < 4 as libc::c_int / 2 as libc::c_int)

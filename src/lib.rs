@@ -1461,7 +1461,7 @@ unsafe extern "C" fn output_picture_ready(c: *mut Dav1dContext, drain: libc::c_i
 }
 unsafe extern "C" fn drain_picture(c: *mut Dav1dContext, out: *mut Dav1dPicture) -> libc::c_int {
     let mut drain_count: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    let mut drained: libc::c_int = 0 as libc::c_int;
+    let mut drained = 0;
     loop {
         let next: libc::c_uint = (*c).frame_thread.next;
         let f: *mut Dav1dFrameContext =
