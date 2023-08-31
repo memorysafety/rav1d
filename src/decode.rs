@@ -6246,11 +6246,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 i += 1;
             }
         } else {
-            memset(
-                ((*f).refpoc).as_mut_ptr() as *mut libc::c_void,
-                0,
-                ::core::mem::size_of::<[libc::c_uint; 7]>(),
-            );
+            (*f).refpoc.fill(0);
         }
         if (*(*f).frame_hdr).use_ref_frame_mvs != 0 {
             let mut i = 0;
@@ -6274,19 +6270,11 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 i += 1;
             }
         } else {
-            memset(
-                ((*f).ref_mvs_ref).as_mut_ptr() as *mut libc::c_void,
-                0,
-                ::core::mem::size_of::<[*mut Dav1dRef; 7]>(),
-            );
+            (*f).ref_mvs_ref.fill_with(ptr::null_mut);
         }
     } else {
         (*f).mvs_ref = 0 as *mut Dav1dRef;
-        memset(
-            ((*f).ref_mvs_ref).as_mut_ptr() as *mut libc::c_void,
-            0,
-            ::core::mem::size_of::<[*mut Dav1dRef; 7]>(),
-        );
+        (*f).ref_mvs_ref.fill_with(ptr::null_mut);
     }
     if (*(*f).frame_hdr).segmentation.enabled != 0 {
         (*f).prev_segmap_ref = 0 as *mut Dav1dRef;
