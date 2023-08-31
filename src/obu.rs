@@ -2203,15 +2203,49 @@ unsafe extern "C" fn check_for_overrun(
     }
     return 0 as libc::c_int;
 }
+
+unsafe extern "C" fn dav1d_parse_obus_error(
+    c: *mut Dav1dContext,
+    in_0: *mut Dav1dData,
+) -> libc::c_int {
+    dav1d_data_props_copy(&mut (*c).cached_error_props, &mut (*in_0).m);
+    dav1d_log(
+        c,
+        b"Error parsing OBU data\n\0" as *const u8 as *const libc::c_char,
+    );
+    return -(22 as libc::c_int);
+}
+
+unsafe extern "C" fn dav1d_parse_obus_skip(
+    c: *mut Dav1dContext,
+    len: libc::c_uint,
+    init_byte_pos: libc::c_uint,
+) -> libc::c_int {
+    let mut i: libc::c_int = 0 as libc::c_int;
+    while i < 8 as libc::c_int {
+        if (*(*c).frame_hdr).refresh_frame_flags & (1 as libc::c_int) << i != 0 {
+            dav1d_thread_picture_unref(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).p);
+            (*c).refs[i as usize].p.p.frame_hdr = (*c).frame_hdr;
+            (*c).refs[i as usize].p.p.seq_hdr = (*c).seq_hdr;
+            (*c).refs[i as usize].p.p.frame_hdr_ref = (*c).frame_hdr_ref;
+            (*c).refs[i as usize].p.p.seq_hdr_ref = (*c).seq_hdr_ref;
+            dav1d_ref_inc((*c).frame_hdr_ref);
+            dav1d_ref_inc((*c).seq_hdr_ref);
+        }
+        i += 1;
+    }
+    dav1d_ref_dec(&mut (*c).frame_hdr_ref);
+    (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
+    (*c).n_tiles = 0 as libc::c_int;
+    return len.wrapping_add(init_byte_pos) as libc::c_int;
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_parse_obus(
     c: *mut Dav1dContext,
     in_0: *mut Dav1dData,
     global: libc::c_int,
 ) -> libc::c_int {
-    let init_bit_pos: libc::c_uint;
-    let init_byte_pos: libc::c_uint;
-    let mut current_block: u64;
     let mut gb: GetBits = GetBits {
         state: 0,
         bits_left: 0,
@@ -2220,15 +2254,15 @@ pub unsafe extern "C" fn dav1d_parse_obus(
         ptr_start: 0 as *const uint8_t,
         ptr_end: 0 as *const uint8_t,
     };
-    let mut res;
+    let mut res: libc::c_int;
     dav1d_init_get_bits(&mut gb, (*in_0).data, (*in_0).sz);
     dav1d_get_bit(&mut gb);
     let type_0: Dav1dObuType = dav1d_get_bits(&mut gb, 4 as libc::c_int) as Dav1dObuType;
-    let has_extension = dav1d_get_bit(&mut gb) as libc::c_int;
-    let has_length_field = dav1d_get_bit(&mut gb) as libc::c_int;
+    let has_extension: libc::c_int = dav1d_get_bit(&mut gb) as libc::c_int;
+    let has_length_field: libc::c_int = dav1d_get_bit(&mut gb) as libc::c_int;
     dav1d_get_bit(&mut gb);
-    let mut temporal_id = 0;
-    let mut spatial_id = 0;
+    let mut temporal_id: libc::c_int = 0 as libc::c_int;
+    let mut spatial_id: libc::c_int = 0 as libc::c_int;
     if has_extension != 0 {
         temporal_id = dav1d_get_bits(&mut gb, 3 as libc::c_int) as libc::c_int;
         spatial_id = dav1d_get_bits(&mut gb, 2 as libc::c_int) as libc::c_int;
@@ -2241,960 +2275,644 @@ pub unsafe extern "C" fn dav1d_parse_obus(
             .wrapping_sub(1 as libc::c_int as libc::c_uint)
             .wrapping_sub(has_extension as libc::c_uint)
     };
-    if !(gb.error != 0) {
-        init_bit_pos = dav1d_get_bits_pos(&mut gb);
-        init_byte_pos = init_bit_pos >> 3;
-        if !(init_bit_pos & 7 as libc::c_uint == 0 as libc::c_uint) {
-            unreachable!();
+    if gb.error != 0 {
+        return dav1d_parse_obus_error(c, in_0);
+    }
+    let init_bit_pos: libc::c_uint = dav1d_get_bits_pos(&mut gb);
+    let init_byte_pos: libc::c_uint = init_bit_pos >> 3 as libc::c_int;
+    if !(init_bit_pos & 7 as libc::c_int as libc::c_uint == 0 as libc::c_int as libc::c_uint) {
+        unreachable!();
+    }
+    if !((*in_0).sz >= init_byte_pos as size_t) {
+        unreachable!();
+    }
+    if len as size_t > ((*in_0).sz).wrapping_sub(init_byte_pos as size_t) {
+        return dav1d_parse_obus_error(c, in_0);
+    }
+    if type_0 as libc::c_uint != DAV1D_OBU_SEQ_HDR as libc::c_int as libc::c_uint
+        && type_0 as libc::c_uint != DAV1D_OBU_TD as libc::c_int as libc::c_uint
+        && has_extension != 0
+        && (*c).operating_point_idc != 0 as libc::c_int as libc::c_uint
+    {
+        let in_temporal_layer: libc::c_int = ((*c).operating_point_idc >> temporal_id
+            & 1 as libc::c_int as libc::c_uint)
+            as libc::c_int;
+        let in_spatial_layer: libc::c_int =
+            ((*c).operating_point_idc >> spatial_id + 8 as libc::c_int
+                & 1 as libc::c_int as libc::c_uint) as libc::c_int;
+        if in_temporal_layer == 0 || in_spatial_layer == 0 {
+            return len.wrapping_add(init_byte_pos) as libc::c_int;
         }
-        if !((*in_0).sz >= init_byte_pos as size_t) {
-            unreachable!();
-        }
-        if !(len as size_t > ((*in_0).sz).wrapping_sub(init_byte_pos as size_t)) {
-            if type_0 as libc::c_uint != DAV1D_OBU_SEQ_HDR as libc::c_int as libc::c_uint
-                && type_0 as libc::c_uint != DAV1D_OBU_TD as libc::c_int as libc::c_uint
-                && has_extension != 0
-                && (*c).operating_point_idc != 0 as libc::c_int as libc::c_uint
-            {
-                let in_temporal_layer =
-                    ((*c).operating_point_idc >> temporal_id & 1 as libc::c_uint) as libc::c_int;
-                let in_spatial_layer =
-                    ((*c).operating_point_idc >> spatial_id + 8 & 1 as libc::c_uint) as libc::c_int;
-                if in_temporal_layer == 0 || in_spatial_layer == 0 {
-                    return len.wrapping_add(init_byte_pos) as libc::c_int;
-                }
+    }
+    let mut current_block_188: u64;
+    match type_0 as libc::c_uint {
+        1 => {
+            let mut ref_0: *mut Dav1dRef = dav1d_ref_create_using_pool(
+                (*c).seq_hdr_pool,
+                ::core::mem::size_of::<Dav1dSequenceHeader>(),
+            );
+            if ref_0.is_null() {
+                return -(12 as libc::c_int);
             }
-            match type_0 as libc::c_uint {
+            let seq_hdr: *mut Dav1dSequenceHeader = (*ref_0).data as *mut Dav1dSequenceHeader;
+            res = parse_seq_hdr(c, &mut gb, seq_hdr);
+            if res < 0 as libc::c_int {
+                dav1d_ref_dec(&mut ref_0);
+                return dav1d_parse_obus_error(c, in_0);
+            }
+            if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
+                dav1d_ref_dec(&mut ref_0);
+                return dav1d_parse_obus_error(c, in_0);
+            }
+            if ((*c).seq_hdr).is_null() {
+                (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
+                (*c).frame_flags = ::core::mem::transmute::<libc::c_uint, PictureFlags>(
+                    (*c).frame_flags as libc::c_uint
+                        | PICTURE_FLAG_NEW_SEQUENCE as libc::c_int as libc::c_uint,
+                );
+            } else if memcmp(
+                seq_hdr as *const libc::c_void,
+                (*c).seq_hdr as *const libc::c_void,
+                1100,
+            ) != 0
+            {
+                (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
+                (*c).mastering_display = 0 as *mut Dav1dMasteringDisplay;
+                (*c).content_light = 0 as *mut Dav1dContentLightLevel;
+                dav1d_ref_dec(&mut (*c).mastering_display_ref);
+                dav1d_ref_dec(&mut (*c).content_light_ref);
+                let mut i: libc::c_int = 0 as libc::c_int;
+                while i < 8 as libc::c_int {
+                    if !((*c).refs[i as usize].p.p.frame_hdr).is_null() {
+                        dav1d_thread_picture_unref(
+                            &mut (*((*c).refs).as_mut_ptr().offset(i as isize)).p,
+                        );
+                    }
+                    dav1d_ref_dec(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).segmap);
+                    dav1d_ref_dec(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).refmvs);
+                    dav1d_cdf_thread_unref(&mut *((*c).cdf).as_mut_ptr().offset(i as isize));
+                    i += 1;
+                }
+                (*c).frame_flags = ::core::mem::transmute::<libc::c_uint, PictureFlags>(
+                    (*c).frame_flags as libc::c_uint
+                        | PICTURE_FLAG_NEW_SEQUENCE as libc::c_int as libc::c_uint,
+                );
+            } else if memcmp(
+                ((*seq_hdr).operating_parameter_info).as_mut_ptr() as *const libc::c_void,
+                ((*(*c).seq_hdr).operating_parameter_info).as_mut_ptr() as *const libc::c_void,
+                ::core::mem::size_of::<[Dav1dSequenceHeaderOperatingParameterInfo; 32]>(),
+            ) != 0
+            {
+                (*c).frame_flags = ::core::mem::transmute::<libc::c_uint, PictureFlags>(
+                    (*c).frame_flags as libc::c_uint
+                        | PICTURE_FLAG_NEW_OP_PARAMS_INFO as libc::c_int as libc::c_uint,
+                );
+            }
+            dav1d_ref_dec(&mut (*c).seq_hdr_ref);
+            (*c).seq_hdr_ref = ref_0;
+            (*c).seq_hdr = seq_hdr;
+            current_block_188 = 8953117030348968745;
+        }
+        7 => {
+            if !((*c).frame_hdr).is_null() {
+                current_block_188 = 8953117030348968745;
+            } else {
+                current_block_188 = 14065157188459580465;
+            }
+        }
+        6 | 3 => {
+            current_block_188 = 14065157188459580465;
+        }
+        4 => {
+            current_block_188 = 17787701279558130514;
+        }
+        5 => {
+            let meta_type: ObuMetaType = dav1d_get_uleb128(&mut gb) as ObuMetaType;
+            let meta_type_len: libc::c_int = ((dav1d_get_bits_pos(&mut gb))
+                .wrapping_sub(init_bit_pos)
+                >> 3 as libc::c_int) as libc::c_int;
+            if gb.error != 0 {
+                return dav1d_parse_obus_error(c, in_0);
+            }
+            match meta_type as libc::c_uint {
                 1 => {
-                    let mut r#ref: *mut Dav1dRef = dav1d_ref_create_using_pool(
-                        (*c).seq_hdr_pool,
-                        ::core::mem::size_of::<Dav1dSequenceHeader>(),
-                    );
-                    if r#ref.is_null() {
+                    let mut ref_1: *mut Dav1dRef =
+                        dav1d_ref_create(::core::mem::size_of::<Dav1dContentLightLevel>());
+                    if ref_1.is_null() {
                         return -(12 as libc::c_int);
                     }
-                    let seq_hdr: *mut Dav1dSequenceHeader =
-                        (*r#ref).data as *mut Dav1dSequenceHeader;
-                    res = parse_seq_hdr(c, &mut gb, seq_hdr);
-                    if res < 0 {
-                        dav1d_ref_dec(&mut r#ref);
-                        current_block = 2084488458830559219;
-                    } else if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
-                        dav1d_ref_dec(&mut r#ref);
-                        current_block = 2084488458830559219;
-                    } else {
-                        if ((*c).seq_hdr).is_null() {
-                            (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
-                            (*c).frame_flags = ::core::mem::transmute::<libc::c_uint, PictureFlags>(
-                                (*c).frame_flags as libc::c_uint
-                                    | PICTURE_FLAG_NEW_SEQUENCE as libc::c_int as libc::c_uint,
-                            );
-                        } else if memcmp(
-                            seq_hdr as *const libc::c_void,
-                            (*c).seq_hdr as *const libc::c_void,
-                            1100,
-                        ) != 0
-                        {
-                            (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
-                            (*c).mastering_display = 0 as *mut Dav1dMasteringDisplay;
-                            (*c).content_light = 0 as *mut Dav1dContentLightLevel;
-                            dav1d_ref_dec(&mut (*c).mastering_display_ref);
-                            dav1d_ref_dec(&mut (*c).content_light_ref);
-                            let mut i = 0;
-                            while i < 8 {
-                                if !((*c).refs[i as usize].p.p.frame_hdr).is_null() {
-                                    dav1d_thread_picture_unref(
-                                        &mut (*((*c).refs).as_mut_ptr().offset(i as isize)).p,
-                                    );
-                                }
-                                dav1d_ref_dec(
-                                    &mut (*((*c).refs).as_mut_ptr().offset(i as isize)).segmap,
-                                );
-                                dav1d_ref_dec(
-                                    &mut (*((*c).refs).as_mut_ptr().offset(i as isize)).refmvs,
-                                );
-                                dav1d_cdf_thread_unref(
-                                    &mut *((*c).cdf).as_mut_ptr().offset(i as isize),
-                                );
-                                i += 1;
-                            }
-                            (*c).frame_flags = ::core::mem::transmute::<libc::c_uint, PictureFlags>(
-                                (*c).frame_flags as libc::c_uint
-                                    | PICTURE_FLAG_NEW_SEQUENCE as libc::c_int as libc::c_uint,
-                            );
-                        } else if memcmp(
-                            ((*seq_hdr).operating_parameter_info).as_mut_ptr()
-                                as *const libc::c_void,
-                            ((*(*c).seq_hdr).operating_parameter_info).as_mut_ptr()
-                                as *const libc::c_void,
-                            ::core::mem::size_of::<[Dav1dSequenceHeaderOperatingParameterInfo; 32]>(
-                            ),
-                        ) != 0
-                        {
-                            (*c).frame_flags = ::core::mem::transmute::<libc::c_uint, PictureFlags>(
-                                (*c).frame_flags as libc::c_uint
-                                    | PICTURE_FLAG_NEW_OP_PARAMS_INFO as libc::c_int
-                                        as libc::c_uint,
-                            );
-                        }
-                        dav1d_ref_dec(&mut (*c).seq_hdr_ref);
-                        (*c).seq_hdr_ref = r#ref;
-                        (*c).seq_hdr = seq_hdr;
-                        current_block = 2704538829018177290;
+                    let content_light: *mut Dav1dContentLightLevel =
+                        (*ref_1).data as *mut Dav1dContentLightLevel;
+                    (*content_light).max_content_light_level =
+                        dav1d_get_bits(&mut gb, 16 as libc::c_int) as libc::c_int;
+                    (*content_light).max_frame_average_light_level =
+                        dav1d_get_bits(&mut gb, 16 as libc::c_int) as libc::c_int;
+                    dav1d_get_bit(&mut gb);
+                    dav1d_bytealign_get_bits(&mut gb);
+                    if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
+                        dav1d_ref_dec(&mut ref_1);
+                        return dav1d_parse_obus_error(c, in_0);
                     }
-                }
-                7 => {
-                    if !((*c).frame_hdr).is_null() {
-                        current_block = 2704538829018177290;
-                    } else {
-                        current_block = 15432521118199951273;
-                    }
-                }
-                6 | 3 => {
-                    current_block = 15432521118199951273;
-                }
-                4 => {
-                    current_block = 919954187481050311;
-                }
-                5 => {
-                    let meta_type: ObuMetaType = dav1d_get_uleb128(&mut gb) as ObuMetaType;
-                    let meta_type_len = ((dav1d_get_bits_pos(&mut gb)).wrapping_sub(init_bit_pos)
-                        >> 3) as libc::c_int;
-                    if gb.error != 0 {
-                        current_block = 2084488458830559219;
-                    } else {
-                        match meta_type as libc::c_uint {
-                            1 => {
-                                let mut ref_1: *mut Dav1dRef = dav1d_ref_create(
-                                    ::core::mem::size_of::<Dav1dContentLightLevel>(),
-                                );
-                                if ref_1.is_null() {
-                                    return -(12 as libc::c_int);
-                                }
-                                let content_light: *mut Dav1dContentLightLevel =
-                                    (*ref_1).data as *mut Dav1dContentLightLevel;
-                                (*content_light).max_content_light_level =
-                                    dav1d_get_bits(&mut gb, 16 as libc::c_int) as libc::c_int;
-                                (*content_light).max_frame_average_light_level =
-                                    dav1d_get_bits(&mut gb, 16 as libc::c_int) as libc::c_int;
-                                dav1d_get_bit(&mut gb);
-                                dav1d_bytealign_get_bits(&mut gb);
-                                if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
-                                    dav1d_ref_dec(&mut ref_1);
-                                    current_block = 2084488458830559219;
-                                } else {
-                                    dav1d_ref_dec(&mut (*c).content_light_ref);
-                                    (*c).content_light = content_light;
-                                    (*c).content_light_ref = ref_1;
-                                    current_block = 2704538829018177290;
-                                }
-                            }
-                            2 => {
-                                let mut ref_2: *mut Dav1dRef = dav1d_ref_create(
-                                    ::core::mem::size_of::<Dav1dMasteringDisplay>(),
-                                );
-                                if ref_2.is_null() {
-                                    return -(12 as libc::c_int);
-                                }
-                                let mastering_display: *mut Dav1dMasteringDisplay =
-                                    (*ref_2).data as *mut Dav1dMasteringDisplay;
-                                let mut i_1 = 0;
-                                while i_1 < 3 {
-                                    (*mastering_display).primaries[i_1 as usize][0] =
-                                        dav1d_get_bits(&mut gb, 16 as libc::c_int) as uint16_t;
-                                    (*mastering_display).primaries[i_1 as usize][1] =
-                                        dav1d_get_bits(&mut gb, 16 as libc::c_int) as uint16_t;
-                                    i_1 += 1;
-                                }
-                                (*mastering_display).white_point[0] =
-                                    dav1d_get_bits(&mut gb, 16 as libc::c_int) as uint16_t;
-                                (*mastering_display).white_point[1] =
-                                    dav1d_get_bits(&mut gb, 16 as libc::c_int) as uint16_t;
-                                (*mastering_display).max_luminance =
-                                    dav1d_get_bits(&mut gb, 32 as libc::c_int);
-                                (*mastering_display).min_luminance =
-                                    dav1d_get_bits(&mut gb, 32 as libc::c_int);
-                                dav1d_get_bit(&mut gb);
-                                dav1d_bytealign_get_bits(&mut gb);
-                                if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
-                                    dav1d_ref_dec(&mut ref_2);
-                                    current_block = 2084488458830559219;
-                                } else {
-                                    dav1d_ref_dec(&mut (*c).mastering_display_ref);
-                                    (*c).mastering_display = mastering_display;
-                                    (*c).mastering_display_ref = ref_2;
-                                    current_block = 2704538829018177290;
-                                }
-                            }
-                            4 => {
-                                let mut payload_size = len as libc::c_int;
-                                while payload_size > 0
-                                    && *((*in_0).data).offset(
-                                        init_byte_pos
-                                            .wrapping_add(payload_size as libc::c_uint)
-                                            .wrapping_sub(1 as libc::c_int as libc::c_uint)
-                                            as isize,
-                                    ) == 0
-                                {
-                                    payload_size -= 1;
-                                }
-                                payload_size -= 1;
-                                payload_size -= meta_type_len;
-                                let mut country_code_extension_byte = 0 as libc::c_int;
-                                let country_code =
-                                    dav1d_get_bits(&mut gb, 8 as libc::c_int) as libc::c_int;
-                                payload_size -= 1;
-                                if country_code == 0xff as libc::c_int {
-                                    country_code_extension_byte =
-                                        dav1d_get_bits(&mut gb, 8 as libc::c_int) as libc::c_int;
-                                    payload_size -= 1;
-                                }
-                                if payload_size <= 0 {
-                                    dav1d_log(
-                                        c,
-                                        b"Malformed ITU-T T.35 metadata message format\n\0"
-                                            as *const u8
-                                            as *const libc::c_char,
-                                    );
-                                } else {
-                                    let ref_3: *mut Dav1dRef = dav1d_ref_create(
-                                        (::core::mem::size_of::<Dav1dITUTT35>()).wrapping_add(
-                                            (payload_size as size_t)
-                                                .wrapping_mul(::core::mem::size_of::<uint8_t>()),
-                                        ),
-                                    );
-                                    if ref_3.is_null() {
-                                        return -(12 as libc::c_int);
-                                    }
-                                    let itut_t35_metadata: *mut Dav1dITUTT35 =
-                                        (*ref_3).data as *mut Dav1dITUTT35;
-                                    (*itut_t35_metadata).payload = &mut *itut_t35_metadata.offset(1)
-                                        as *mut Dav1dITUTT35
-                                        as *mut uint8_t;
-                                    (*itut_t35_metadata).country_code = country_code as uint8_t;
-                                    (*itut_t35_metadata).country_code_extension_byte =
-                                        country_code_extension_byte as uint8_t;
-                                    let mut i_2 = 0;
-                                    while i_2 < payload_size {
-                                        *((*itut_t35_metadata).payload).offset(i_2 as isize) =
-                                            dav1d_get_bits(&mut gb, 8 as libc::c_int) as uint8_t;
-                                        i_2 += 1;
-                                    }
-                                    (*itut_t35_metadata).payload_size = payload_size as size_t;
-                                    dav1d_ref_dec(&mut (*c).itut_t35_ref);
-                                    (*c).itut_t35 = itut_t35_metadata;
-                                    (*c).itut_t35_ref = ref_3;
-                                }
-                                current_block = 2704538829018177290;
-                            }
-                            3 | 5 => {
-                                current_block = 2704538829018177290;
-                            }
-                            _ => {
-                                dav1d_log(
-                                    c,
-                                    b"Unknown Metadata OBU type %d\n\0" as *const u8
-                                        as *const libc::c_char,
-                                    meta_type as libc::c_uint,
-                                );
-                                current_block = 2704538829018177290;
-                            }
-                        }
-                    }
+                    dav1d_ref_dec(&mut (*c).content_light_ref);
+                    (*c).content_light = content_light;
+                    (*c).content_light_ref = ref_1;
                 }
                 2 => {
-                    (*c).frame_flags = ::core::mem::transmute::<libc::c_uint, PictureFlags>(
-                        (*c).frame_flags as libc::c_uint
-                            | PICTURE_FLAG_NEW_TEMPORAL_UNIT as libc::c_int as libc::c_uint,
-                    );
-                    current_block = 2704538829018177290;
+                    let mut ref_2: *mut Dav1dRef =
+                        dav1d_ref_create(::core::mem::size_of::<Dav1dMasteringDisplay>());
+                    if ref_2.is_null() {
+                        return -(12 as libc::c_int);
+                    }
+                    let mastering_display: *mut Dav1dMasteringDisplay =
+                        (*ref_2).data as *mut Dav1dMasteringDisplay;
+                    let mut i_1: libc::c_int = 0 as libc::c_int;
+                    while i_1 < 3 as libc::c_int {
+                        (*mastering_display).primaries[i_1 as usize][0 as libc::c_int as usize] =
+                            dav1d_get_bits(&mut gb, 16 as libc::c_int) as uint16_t;
+                        (*mastering_display).primaries[i_1 as usize][1 as libc::c_int as usize] =
+                            dav1d_get_bits(&mut gb, 16 as libc::c_int) as uint16_t;
+                        i_1 += 1;
+                    }
+                    (*mastering_display).white_point[0 as libc::c_int as usize] =
+                        dav1d_get_bits(&mut gb, 16 as libc::c_int) as uint16_t;
+                    (*mastering_display).white_point[1 as libc::c_int as usize] =
+                        dav1d_get_bits(&mut gb, 16 as libc::c_int) as uint16_t;
+                    (*mastering_display).max_luminance = dav1d_get_bits(&mut gb, 32 as libc::c_int);
+                    (*mastering_display).min_luminance = dav1d_get_bits(&mut gb, 32 as libc::c_int);
+                    dav1d_get_bit(&mut gb);
+                    dav1d_bytealign_get_bits(&mut gb);
+                    if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
+                        dav1d_ref_dec(&mut ref_2);
+                        return dav1d_parse_obus_error(c, in_0);
+                    }
+                    dav1d_ref_dec(&mut (*c).mastering_display_ref);
+                    (*c).mastering_display = mastering_display;
+                    (*c).mastering_display_ref = ref_2;
                 }
-                15 => {
-                    current_block = 2704538829018177290;
+                4 => {
+                    let mut payload_size: libc::c_int = len as libc::c_int;
+                    while payload_size > 0 as libc::c_int
+                        && *((*in_0).data).offset(
+                            init_byte_pos
+                                .wrapping_add(payload_size as libc::c_uint)
+                                .wrapping_sub(1 as libc::c_int as libc::c_uint)
+                                as isize,
+                        ) == 0
+                    {
+                        payload_size -= 1;
+                    }
+                    payload_size -= 1;
+                    payload_size -= meta_type_len;
+                    let mut country_code_extension_byte: libc::c_int = 0 as libc::c_int;
+                    let country_code: libc::c_int =
+                        dav1d_get_bits(&mut gb, 8 as libc::c_int) as libc::c_int;
+                    payload_size -= 1;
+                    if country_code == 0xff as libc::c_int {
+                        country_code_extension_byte =
+                            dav1d_get_bits(&mut gb, 8 as libc::c_int) as libc::c_int;
+                        payload_size -= 1;
+                    }
+                    if payload_size <= 0 as libc::c_int {
+                        dav1d_log(
+                            c,
+                            b"Malformed ITU-T T.35 metadata message format\n\0" as *const u8
+                                as *const libc::c_char,
+                        );
+                    } else {
+                        let ref_3: *mut Dav1dRef = dav1d_ref_create(
+                            (::core::mem::size_of::<Dav1dITUTT35>()).wrapping_add(
+                                (payload_size as size_t)
+                                    .wrapping_mul(::core::mem::size_of::<uint8_t>()),
+                            ),
+                        );
+                        if ref_3.is_null() {
+                            return -(12 as libc::c_int);
+                        }
+                        let itut_t35_metadata: *mut Dav1dITUTT35 =
+                            (*ref_3).data as *mut Dav1dITUTT35;
+                        (*itut_t35_metadata).payload =
+                            &mut *itut_t35_metadata.offset(1 as libc::c_int as isize)
+                                as *mut Dav1dITUTT35 as *mut uint8_t;
+                        (*itut_t35_metadata).country_code = country_code as uint8_t;
+                        (*itut_t35_metadata).country_code_extension_byte =
+                            country_code_extension_byte as uint8_t;
+                        let mut i_2: libc::c_int = 0 as libc::c_int;
+                        while i_2 < payload_size {
+                            *((*itut_t35_metadata).payload).offset(i_2 as isize) =
+                                dav1d_get_bits(&mut gb, 8 as libc::c_int) as uint8_t;
+                            i_2 += 1;
+                        }
+                        (*itut_t35_metadata).payload_size = payload_size as size_t;
+                        dav1d_ref_dec(&mut (*c).itut_t35_ref);
+                        (*c).itut_t35 = itut_t35_metadata;
+                        (*c).itut_t35_ref = ref_3;
+                    }
                 }
+                3 | 5 => {}
                 _ => {
                     dav1d_log(
                         c,
-                        b"Unknown OBU type %d of size %u\n\0" as *const u8 as *const libc::c_char,
-                        type_0 as libc::c_uint,
-                        len,
+                        b"Unknown Metadata OBU type %d\n\0" as *const u8 as *const libc::c_char,
+                        meta_type as libc::c_uint,
                     );
-                    current_block = 2704538829018177290;
                 }
             }
-            match current_block {
-                2084488458830559219 => {}
-                _ => {
-                    match current_block {
-                        15432521118199951273 => {
-                            if global != 0 {
-                                current_block = 2704538829018177290;
-                            } else if ((*c).seq_hdr).is_null() {
-                                current_block = 2084488458830559219;
-                            } else {
-                                if ((*c).frame_hdr_ref).is_null() {
-                                    (*c).frame_hdr_ref = dav1d_ref_create_using_pool(
-                                        (*c).frame_hdr_pool,
-                                        ::core::mem::size_of::<Dav1dFrameHeader>(),
-                                    );
-                                    if ((*c).frame_hdr_ref).is_null() {
-                                        return -(12 as libc::c_int);
-                                    }
-                                }
-                                (*c).frame_hdr =
-                                    (*(*c).frame_hdr_ref).data as *mut Dav1dFrameHeader;
-                                memset(
-                                    (*c).frame_hdr as *mut libc::c_void,
-                                    0 as libc::c_int,
-                                    ::core::mem::size_of::<Dav1dFrameHeader>(),
-                                );
-                                (*(*c).frame_hdr).temporal_id = temporal_id;
-                                (*(*c).frame_hdr).spatial_id = spatial_id;
-                                res = parse_frame_hdr(c, &mut gb);
-                                if res < 0 {
-                                    (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
-                                    current_block = 2084488458830559219;
-                                } else {
-                                    let mut n = 0;
-                                    while n < (*c).n_tile_data {
-                                        dav1d_data_unref_internal(
-                                            &mut (*((*c).tile).offset(n as isize)).data,
-                                        );
-                                        n += 1;
-                                    }
-                                    (*c).n_tile_data = 0 as libc::c_int;
-                                    (*c).n_tiles = 0 as libc::c_int;
-                                    if type_0 as libc::c_uint
-                                        != DAV1D_OBU_FRAME as libc::c_int as libc::c_uint
-                                    {
-                                        dav1d_get_bit(&mut gb);
-                                        if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
-                                            (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
-                                            current_block = 2084488458830559219;
-                                        } else {
-                                            current_block = 4216521074440650966;
-                                        }
-                                    } else {
-                                        current_block = 4216521074440650966;
-                                    }
-                                    match current_block {
-                                        2084488458830559219 => {}
-                                        _ => {
-                                            if (*c).frame_size_limit != 0
-                                                && (*(*c).frame_hdr).width[1] as int64_t
-                                                    * (*(*c).frame_hdr).height as int64_t
-                                                    > (*c).frame_size_limit as int64_t
-                                            {
-                                                dav1d_log(
-                                                    c,
-                                                    b"Frame size %dx%d exceeds limit %u\n\0"
-                                                        as *const u8
-                                                        as *const libc::c_char,
-                                                    (*(*c).frame_hdr).width[1],
-                                                    (*(*c).frame_hdr).height,
-                                                    (*c).frame_size_limit,
-                                                );
-                                                (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
-                                                return -(34 as libc::c_int);
-                                            }
-                                            if type_0 as libc::c_uint
-                                                != DAV1D_OBU_FRAME as libc::c_int as libc::c_uint
-                                            {
-                                                current_block = 2704538829018177290;
-                                            } else if (*(*c).frame_hdr).show_existing_frame != 0 {
-                                                (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
-                                                current_block = 2084488458830559219;
-                                            } else {
-                                                dav1d_bytealign_get_bits(&mut gb);
-                                                current_block = 919954187481050311;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        _ => {}
+            current_block_188 = 8953117030348968745;
+        }
+        2 => {
+            (*c).frame_flags = ::core::mem::transmute::<libc::c_uint, PictureFlags>(
+                (*c).frame_flags as libc::c_uint
+                    | PICTURE_FLAG_NEW_TEMPORAL_UNIT as libc::c_int as libc::c_uint,
+            );
+            current_block_188 = 8953117030348968745;
+        }
+        15 => {
+            current_block_188 = 8953117030348968745;
+        }
+        _ => {
+            dav1d_log(
+                c,
+                b"Unknown OBU type %d of size %u\n\0" as *const u8 as *const libc::c_char,
+                type_0 as libc::c_uint,
+                len,
+            );
+            current_block_188 = 8953117030348968745;
+        }
+    }
+    match current_block_188 {
+        14065157188459580465 => {
+            if global != 0 {
+                current_block_188 = 8953117030348968745;
+            } else {
+                if ((*c).seq_hdr).is_null() {
+                    return dav1d_parse_obus_error(c, in_0);
+                }
+                if ((*c).frame_hdr_ref).is_null() {
+                    (*c).frame_hdr_ref = dav1d_ref_create_using_pool(
+                        (*c).frame_hdr_pool,
+                        ::core::mem::size_of::<Dav1dFrameHeader>(),
+                    );
+                    if ((*c).frame_hdr_ref).is_null() {
+                        return -(12 as libc::c_int);
                     }
-                    match current_block {
-                        2084488458830559219 => {}
-                        _ => {
-                            match current_block {
-                                919954187481050311 => {
-                                    if global != 0 {
-                                        current_block = 2704538829018177290;
-                                    } else if ((*c).frame_hdr).is_null() {
-                                        current_block = 2084488458830559219;
-                                    } else {
-                                        if (*c).n_tile_data_alloc < (*c).n_tile_data + 1 {
-                                            if (*c).n_tile_data + 1
-                                                > 2147483647
-                                                    / ::core::mem::size_of::<Dav1dTileGroup>()
-                                                        as libc::c_ulong
-                                                        as libc::c_int
-                                            {
-                                                current_block = 2084488458830559219;
-                                            } else {
-                                                let tile: *mut Dav1dTileGroup = realloc(
-                                                    (*c).tile as *mut libc::c_void,
-                                                    (((*c).n_tile_data + 1) as size_t)
-                                                        .wrapping_mul(::core::mem::size_of::<
-                                                            Dav1dTileGroup,
-                                                        >(
-                                                        )),
-                                                )
-                                                    as *mut Dav1dTileGroup;
-                                                if tile.is_null() {
-                                                    current_block = 2084488458830559219;
-                                                } else {
-                                                    (*c).tile = tile;
-                                                    memset(
-                                                        ((*c).tile)
-                                                            .offset((*c).n_tile_data as isize)
-                                                            as *mut libc::c_void,
-                                                        0 as libc::c_int,
-                                                        ::core::mem::size_of::<Dav1dTileGroup>(),
-                                                    );
-                                                    (*c).n_tile_data_alloc = (*c).n_tile_data + 1;
-                                                    current_block = 17711149709958600598;
-                                                }
-                                            }
-                                        } else {
-                                            current_block = 17711149709958600598;
-                                        }
-                                        match current_block {
-                                            2084488458830559219 => {}
-                                            _ => {
-                                                parse_tile_hdr(c, &mut gb);
-                                                dav1d_bytealign_get_bits(&mut gb);
-                                                if check_for_overrun(c, &mut gb, init_bit_pos, len)
-                                                    != 0
-                                                {
-                                                    current_block = 2084488458830559219;
-                                                } else {
-                                                    let pkt_bytelen: libc::c_uint =
-                                                        init_byte_pos.wrapping_add(len);
-                                                    let bit_pos: libc::c_uint =
-                                                        dav1d_get_bits_pos(&mut gb);
-                                                    if !(bit_pos & 7 as libc::c_uint
-                                                        == 0 as libc::c_uint)
-                                                    {
-                                                        unreachable!();
-                                                    }
-                                                    if !(pkt_bytelen >= bit_pos >> 3) {
-                                                        unreachable!();
-                                                    }
-                                                    dav1d_data_ref(
-                                                        &mut (*((*c).tile)
-                                                            .offset((*c).n_tile_data as isize))
-                                                        .data,
-                                                        in_0,
-                                                    );
-                                                    let ref mut fresh0 = (*((*c).tile)
-                                                        .offset((*c).n_tile_data as isize))
-                                                    .data
-                                                    .data;
-                                                    *fresh0 =
-                                                        (*fresh0).offset((bit_pos >> 3) as isize);
-                                                    (*((*c).tile)
-                                                        .offset((*c).n_tile_data as isize))
-                                                    .data
-                                                    .sz = pkt_bytelen.wrapping_sub(bit_pos >> 3)
-                                                        as size_t;
-                                                    if (*((*c).tile)
-                                                        .offset((*c).n_tile_data as isize))
-                                                    .start
-                                                        > (*((*c).tile)
-                                                            .offset((*c).n_tile_data as isize))
-                                                        .end
-                                                        || (*((*c).tile)
-                                                            .offset((*c).n_tile_data as isize))
-                                                        .start
-                                                            != (*c).n_tiles
-                                                    {
-                                                        let mut i_0 = 0;
-                                                        while i_0 <= (*c).n_tile_data {
-                                                            dav1d_data_unref_internal(
-                                                                &mut (*((*c).tile)
-                                                                    .offset(i_0 as isize))
-                                                                .data,
-                                                            );
-                                                            i_0 += 1;
-                                                        }
-                                                        (*c).n_tile_data = 0 as libc::c_int;
-                                                        (*c).n_tiles = 0 as libc::c_int;
-                                                        current_block = 2084488458830559219;
-                                                    } else {
-                                                        (*c).n_tiles += 1 as libc::c_int
-                                                            + (*((*c).tile)
-                                                                .offset((*c).n_tile_data as isize))
-                                                            .end
-                                                            - (*((*c).tile)
-                                                                .offset((*c).n_tile_data as isize))
-                                                            .start;
-                                                        (*c).n_tile_data += 1;
-                                                        current_block = 2704538829018177290;
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                _ => {}
-                            }
-                            match current_block {
-                                2084488458830559219 => {}
-                                _ => {
-                                    if !((*c).seq_hdr).is_null() && !((*c).frame_hdr).is_null() {
-                                        if (*(*c).frame_hdr).show_existing_frame != 0 {
-                                            if ((*c).refs
-                                                [(*(*c).frame_hdr).existing_frame_idx as usize]
-                                                .p
-                                                .p
-                                                .frame_hdr)
-                                                .is_null()
-                                            {
-                                                current_block = 2084488458830559219;
-                                            } else {
-                                                match (*(*c).refs
-                                                    [(*(*c).frame_hdr).existing_frame_idx as usize]
-                                                    .p
-                                                    .p
-                                                    .frame_hdr)
-                                                    .frame_type
-                                                    as libc::c_uint
-                                                {
-                                                    1 | 3 => {
-                                                        if (*c).decode_frame_type as libc::c_uint
-                                                            > DAV1D_DECODEFRAMETYPE_REFERENCE
-                                                                as libc::c_int
-                                                                as libc::c_uint
-                                                        {
-                                                            current_block = 16317588828440302375;
-                                                        } else {
-                                                            current_block = 12969817083969514432;
-                                                        }
-                                                    }
-                                                    2 => {
-                                                        if (*c).decode_frame_type as libc::c_uint
-                                                            > DAV1D_DECODEFRAMETYPE_INTRA
-                                                                as libc::c_int
-                                                                as libc::c_uint
-                                                        {
-                                                            current_block = 16317588828440302375;
-                                                        } else {
-                                                            current_block = 12969817083969514432;
-                                                        }
-                                                    }
-                                                    _ => {
-                                                        current_block = 12969817083969514432;
-                                                    }
-                                                }
-                                                match current_block {
-                                                    16317588828440302375 => {}
-                                                    _ => {
-                                                        if ((*c).refs[(*(*c).frame_hdr)
-                                                            .existing_frame_idx
-                                                            as usize]
-                                                            .p
-                                                            .p
-                                                            .data[0])
-                                                            .is_null()
-                                                        {
-                                                            current_block = 2084488458830559219;
-                                                        } else if (*c).strict_std_compliance != 0
-                                                            && (*c).refs[(*(*c).frame_hdr)
-                                                                .existing_frame_idx
-                                                                as usize]
-                                                                .p
-                                                                .showable
-                                                                == 0
-                                                        {
-                                                            current_block = 2084488458830559219;
-                                                        } else {
-                                                            if (*c).n_fc == 1 as libc::c_uint {
-                                                                dav1d_thread_picture_ref(
-                                                                    &mut (*c).out,
-                                                                    &mut (*((*c).refs)
-                                                                        .as_mut_ptr()
-                                                                        .offset(
-                                                                            (*(*c).frame_hdr)
-                                                                                .existing_frame_idx
-                                                                                as isize,
-                                                                        ))
-                                                                    .p,
-                                                                );
-                                                                dav1d_data_props_copy(
-                                                                    &mut (*c).out.p.m,
-                                                                    &mut (*in_0).m,
-                                                                );
-                                                                (*c)
-                                                                    .event_flags = ::core::mem::transmute::<
-                                                                    libc::c_uint,
-                                                                    Dav1dEventFlags,
-                                                                >(
-                                                                    (*c).event_flags as libc::c_uint
-                                                                        | dav1d_picture_get_event_flags(
-                                                                            &mut (*((*c).refs)
-                                                                                .as_mut_ptr()
-                                                                                .offset((*(*c).frame_hdr).existing_frame_idx as isize))
-                                                                                .p,
-                                                                        ) as libc::c_uint,
-                                                                );
-                                                            } else {
-                                                                pthread_mutex_lock(
-                                                                    &mut (*c).task_thread.lock,
-                                                                );
-                                                                let fresh1 = (*c).frame_thread.next;
-                                                                (*c).frame_thread.next =
-                                                                    ((*c).frame_thread.next)
-                                                                        .wrapping_add(1);
-                                                                let next: libc::c_uint = fresh1;
-                                                                if (*c).frame_thread.next
-                                                                    == (*c).n_fc
-                                                                {
-                                                                    (*c).frame_thread.next = 0
-                                                                        as libc::c_int
-                                                                        as libc::c_uint;
-                                                                }
-                                                                let f: *mut Dav1dFrameContext =
-                                                                    &mut *((*c).fc)
-                                                                        .offset(next as isize)
-                                                                        as *mut Dav1dFrameContext;
-                                                                while (*f).n_tile_data > 0 {
-                                                                    pthread_cond_wait(
-                                                                        &mut (*f).task_thread.cond,
-                                                                        &mut (*(*f)
-                                                                            .task_thread
-                                                                            .ttd)
-                                                                            .lock,
-                                                                    );
-                                                                }
-                                                                let out_delayed: *mut Dav1dThreadPicture = &mut *((*c)
-                                                                    .frame_thread
-                                                                    .out_delayed)
-                                                                    .offset(next as isize) as *mut Dav1dThreadPicture;
-                                                                if !((*out_delayed).p.data[0])
-                                                                    .is_null()
-                                                                    || ::core::intrinsics::atomic_load_seqcst(
-                                                                        &mut (*f).task_thread.error as *mut atomic_int,
-                                                                    ) != 0
-                                                                {
-                                                                    let mut first: libc::c_uint = ::core::intrinsics::atomic_load_seqcst(
-                                                                        &mut (*c).task_thread.first,
-                                                                    );
-                                                                    if first.wrapping_add(1 as libc::c_uint) < (*c).n_fc {
-                                                                        ::core::intrinsics::atomic_xadd_seqcst(
-                                                                            &mut (*c).task_thread.first,
-                                                                            1 as libc::c_uint,
-                                                                        );
-                                                                    } else {
-                                                                        ::core::intrinsics::atomic_store_seqcst(
-                                                                            &mut (*c).task_thread.first,
-                                                                            0 as libc::c_int as libc::c_uint,
-                                                                        );
-                                                                    }
-                                                                    let fresh2 = ::core::intrinsics::atomic_cxchg_seqcst_seqcst(
-                                                                        &mut (*c).task_thread.reset_task_cur,
-                                                                        *&mut first,
-                                                                        (2147483647 as libc::c_int as libc::c_uint)
-                                                                            .wrapping_mul(2 as libc::c_uint)
-                                                                            .wrapping_add(1 as libc::c_uint),
-                                                                    );
-                                                                    *&mut first = fresh2.0;
-                                                                    fresh2.1;
-                                                                    if (*c).task_thread.cur != 0
-                                                                        && (*c).task_thread.cur < (*c).n_fc
-                                                                    {
-                                                                        (*c)
-                                                                            .task_thread
-                                                                            .cur = ((*c).task_thread.cur).wrapping_sub(1);
-                                                                    }
-                                                                }
-                                                                let error = (*f).task_thread.retval;
-                                                                if error != 0 {
-                                                                    (*c).cached_error = error;
-                                                                    (*f).task_thread.retval =
-                                                                        0 as libc::c_int;
-                                                                    dav1d_data_props_copy(
-                                                                        &mut (*c)
-                                                                            .cached_error_props,
-                                                                        &mut (*out_delayed).p.m,
-                                                                    );
-                                                                    dav1d_thread_picture_unref(
-                                                                        out_delayed,
-                                                                    );
-                                                                } else if !((*out_delayed).p.data
-                                                                    [0])
-                                                                .is_null()
-                                                                {
-                                                                    let progress: libc::c_uint = ::core::intrinsics::atomic_load_relaxed(
-                                                                        &mut *((*out_delayed).progress)
-                                                                            .offset(1) as *mut atomic_uint,
-                                                                    );
-                                                                    if ((*out_delayed).visible != 0
-                                                                        || (*c).output_invisible_frames != 0)
-                                                                        && progress
-                                                                            != (2147483647 as libc::c_int as libc::c_uint)
-                                                                                .wrapping_mul(2 as libc::c_uint)
-                                                                                .wrapping_add(1 as libc::c_uint)
-                                                                                .wrapping_sub(1 as libc::c_int as libc::c_uint)
-                                                                    {
-                                                                        dav1d_thread_picture_ref(&mut (*c).out, out_delayed);
-                                                                        (*c)
-                                                                            .event_flags = ::core::mem::transmute::<
-                                                                            libc::c_uint,
-                                                                            Dav1dEventFlags,
-                                                                        >(
-                                                                            (*c).event_flags as libc::c_uint
-                                                                                | dav1d_picture_get_event_flags(out_delayed) as libc::c_uint,
-                                                                        );
-                                                                    }
-                                                                    dav1d_thread_picture_unref(
-                                                                        out_delayed,
-                                                                    );
-                                                                }
-                                                                dav1d_thread_picture_ref(
-                                                                    out_delayed,
-                                                                    &mut (*((*c).refs)
-                                                                        .as_mut_ptr()
-                                                                        .offset(
-                                                                            (*(*c).frame_hdr)
-                                                                                .existing_frame_idx
-                                                                                as isize,
-                                                                        ))
-                                                                    .p,
-                                                                );
-                                                                (*out_delayed).visible =
-                                                                    1 as libc::c_int;
-                                                                dav1d_data_props_copy(
-                                                                    &mut (*out_delayed).p.m,
-                                                                    &mut (*in_0).m,
-                                                                );
-                                                                pthread_mutex_unlock(
-                                                                    &mut (*c).task_thread.lock,
-                                                                );
-                                                            }
-                                                            if (*(*c).refs[(*(*c).frame_hdr)
-                                                                .existing_frame_idx
-                                                                as usize]
-                                                                .p
-                                                                .p
-                                                                .frame_hdr)
-                                                                .frame_type
-                                                                as libc::c_uint
-                                                                == DAV1D_FRAME_TYPE_KEY
-                                                                    as libc::c_int
-                                                                    as libc::c_uint
-                                                            {
-                                                                let r = (*(*c).frame_hdr)
-                                                                    .existing_frame_idx;
-                                                                (*c).refs[r as usize].p.showable =
-                                                                    0 as libc::c_int;
-                                                                let mut i_3 = 0;
-                                                                while i_3 < 8 {
-                                                                    if !(i_3 == r) {
-                                                                        if !((*c).refs
-                                                                            [i_3 as usize]
-                                                                            .p
-                                                                            .p
-                                                                            .frame_hdr)
-                                                                            .is_null()
-                                                                        {
-                                                                            dav1d_thread_picture_unref(
-                                                                                &mut (*((*c).refs).as_mut_ptr().offset(i_3 as isize)).p,
-                                                                            );
-                                                                        }
-                                                                        dav1d_thread_picture_ref(
-                                                                            &mut (*((*c).refs)
-                                                                                .as_mut_ptr()
-                                                                                .offset(
-                                                                                    i_3 as isize,
-                                                                                ))
-                                                                            .p,
-                                                                            &mut (*((*c).refs)
-                                                                                .as_mut_ptr()
-                                                                                .offset(
-                                                                                    r as isize,
-                                                                                ))
-                                                                            .p,
-                                                                        );
-                                                                        dav1d_cdf_thread_unref(
-                                                                            &mut *((*c).cdf)
-                                                                                .as_mut_ptr()
-                                                                                .offset(
-                                                                                    i_3 as isize,
-                                                                                ),
-                                                                        );
-                                                                        dav1d_cdf_thread_ref(
-                                                                            &mut *((*c).cdf)
-                                                                                .as_mut_ptr()
-                                                                                .offset(
-                                                                                    i_3 as isize,
-                                                                                ),
-                                                                            &mut *((*c).cdf)
-                                                                                .as_mut_ptr()
-                                                                                .offset(r as isize),
-                                                                        );
-                                                                        dav1d_ref_dec(
-                                                                            &mut (*((*c).refs)
-                                                                                .as_mut_ptr()
-                                                                                .offset(
-                                                                                    i_3 as isize,
-                                                                                ))
-                                                                            .segmap,
-                                                                        );
-                                                                        (*c).refs[i_3 as usize]
-                                                                            .segmap = (*c).refs
-                                                                            [r as usize]
-                                                                            .segmap;
-                                                                        if !((*c).refs[r as usize]
-                                                                            .segmap)
-                                                                            .is_null()
-                                                                        {
-                                                                            dav1d_ref_inc(
-                                                                                (*c).refs
-                                                                                    [r as usize]
-                                                                                    .segmap,
-                                                                            );
-                                                                        }
-                                                                        dav1d_ref_dec(
-                                                                            &mut (*((*c).refs)
-                                                                                .as_mut_ptr()
-                                                                                .offset(
-                                                                                    i_3 as isize,
-                                                                                ))
-                                                                            .refmvs,
-                                                                        );
-                                                                    }
-                                                                    i_3 += 1;
-                                                                }
-                                                            }
-                                                            (*c).frame_hdr =
-                                                                0 as *mut Dav1dFrameHeader;
-                                                            current_block = 16221891950104054966;
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        } else if (*c).n_tiles
-                                            == (*(*c).frame_hdr).tiling.cols
-                                                * (*(*c).frame_hdr).tiling.rows
-                                        {
-                                            match (*(*c).frame_hdr).frame_type as libc::c_uint {
-                                                1 | 3 => {
-                                                    if (*c).decode_frame_type as libc::c_uint
-                                                        > DAV1D_DECODEFRAMETYPE_REFERENCE
-                                                            as libc::c_int
-                                                            as libc::c_uint
-                                                        || (*c).decode_frame_type as libc::c_uint
-                                                            == DAV1D_DECODEFRAMETYPE_REFERENCE
-                                                                as libc::c_int
-                                                                as libc::c_uint
-                                                            && (*(*c).frame_hdr).refresh_frame_flags
-                                                                == 0
-                                                    {
-                                                        current_block = 16317588828440302375;
-                                                    } else {
-                                                        current_block = 1622976744501948573;
-                                                    }
-                                                }
-                                                2 => {
-                                                    if (*c).decode_frame_type as libc::c_uint
-                                                        > DAV1D_DECODEFRAMETYPE_INTRA as libc::c_int
-                                                            as libc::c_uint
-                                                        || (*c).decode_frame_type as libc::c_uint
-                                                            == DAV1D_DECODEFRAMETYPE_REFERENCE
-                                                                as libc::c_int
-                                                                as libc::c_uint
-                                                            && (*(*c).frame_hdr).refresh_frame_flags
-                                                                == 0
-                                                    {
-                                                        current_block = 16317588828440302375;
-                                                    } else {
-                                                        current_block = 1622976744501948573;
-                                                    }
-                                                }
-                                                _ => {
-                                                    current_block = 1622976744501948573;
-                                                }
-                                            }
-                                            match current_block {
-                                                16317588828440302375 => {}
-                                                _ => {
-                                                    if (*c).n_tile_data == 0 {
-                                                        current_block = 2084488458830559219;
-                                                    } else {
-                                                        res = dav1d_submit_frame(c);
-                                                        if res < 0 {
-                                                            return res;
-                                                        }
-                                                        if (*c).n_tile_data != 0 {
-                                                            unreachable!();
-                                                        }
-                                                        (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
-                                                        (*c).n_tiles = 0 as libc::c_int;
-                                                        current_block = 16221891950104054966;
-                                                    }
-                                                }
-                                            }
-                                        } else {
-                                            current_block = 16221891950104054966;
-                                        }
-                                        match current_block {
-                                            16221891950104054966 => {}
-                                            2084488458830559219 => {}
-                                            _ => {
-                                                let mut i_4 = 0;
-                                                while i_4 < 8 {
-                                                    if (*(*c).frame_hdr).refresh_frame_flags
-                                                        & (1 as libc::c_int) << i_4
-                                                        != 0
-                                                    {
-                                                        dav1d_thread_picture_unref(
-                                                            &mut (*((*c).refs)
-                                                                .as_mut_ptr()
-                                                                .offset(i_4 as isize))
-                                                            .p,
-                                                        );
-                                                        (*c).refs[i_4 as usize].p.p.frame_hdr =
-                                                            (*c).frame_hdr;
-                                                        (*c).refs[i_4 as usize].p.p.seq_hdr =
-                                                            (*c).seq_hdr;
-                                                        (*c).refs[i_4 as usize].p.p.frame_hdr_ref =
-                                                            (*c).frame_hdr_ref;
-                                                        (*c).refs[i_4 as usize].p.p.seq_hdr_ref =
-                                                            (*c).seq_hdr_ref;
-                                                        dav1d_ref_inc((*c).frame_hdr_ref);
-                                                        dav1d_ref_inc((*c).seq_hdr_ref);
-                                                    }
-                                                    i_4 += 1;
-                                                }
-                                                dav1d_ref_dec(&mut (*c).frame_hdr_ref);
-                                                (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
-                                                (*c).n_tiles = 0 as libc::c_int;
-                                                return len.wrapping_add(init_byte_pos)
-                                                    as libc::c_int;
-                                            }
-                                        }
-                                    } else {
-                                        current_block = 16221891950104054966;
-                                    }
-                                    match current_block {
-                                        2084488458830559219 => {}
-                                        _ => return len.wrapping_add(init_byte_pos) as libc::c_int,
-                                    }
-                                }
-                            }
-                        }
+                }
+                (*c).frame_hdr = (*(*c).frame_hdr_ref).data as *mut Dav1dFrameHeader;
+                memset(
+                    (*c).frame_hdr as *mut libc::c_void,
+                    0 as libc::c_int,
+                    ::core::mem::size_of::<Dav1dFrameHeader>(),
+                );
+                (*(*c).frame_hdr).temporal_id = temporal_id;
+                (*(*c).frame_hdr).spatial_id = spatial_id;
+                res = parse_frame_hdr(c, &mut gb);
+                if res < 0 as libc::c_int {
+                    (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
+                    return dav1d_parse_obus_error(c, in_0);
+                }
+                let mut n: libc::c_int = 0 as libc::c_int;
+                while n < (*c).n_tile_data {
+                    dav1d_data_unref_internal(&mut (*((*c).tile).offset(n as isize)).data);
+                    n += 1;
+                }
+                (*c).n_tile_data = 0 as libc::c_int;
+                (*c).n_tiles = 0 as libc::c_int;
+                if type_0 as libc::c_uint != DAV1D_OBU_FRAME as libc::c_int as libc::c_uint {
+                    dav1d_get_bit(&mut gb);
+                    if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
+                        (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
+                        return dav1d_parse_obus_error(c, in_0);
                     }
+                }
+                if (*c).frame_size_limit != 0
+                    && (*(*c).frame_hdr).width[1 as libc::c_int as usize] as int64_t
+                        * (*(*c).frame_hdr).height as int64_t
+                        > (*c).frame_size_limit as int64_t
+                {
+                    dav1d_log(
+                        c,
+                        b"Frame size %dx%d exceeds limit %u\n\0" as *const u8
+                            as *const libc::c_char,
+                        (*(*c).frame_hdr).width[1 as libc::c_int as usize],
+                        (*(*c).frame_hdr).height,
+                        (*c).frame_size_limit,
+                    );
+                    (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
+                    return -(34 as libc::c_int);
+                }
+                if type_0 as libc::c_uint != DAV1D_OBU_FRAME as libc::c_int as libc::c_uint {
+                    current_block_188 = 8953117030348968745;
+                } else {
+                    if (*(*c).frame_hdr).show_existing_frame != 0 {
+                        (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
+                        return dav1d_parse_obus_error(c, in_0);
+                    }
+                    dav1d_bytealign_get_bits(&mut gb);
+                    current_block_188 = 17787701279558130514;
                 }
             }
         }
+        _ => {}
     }
-    dav1d_data_props_copy(&mut (*c).cached_error_props, &mut (*in_0).m);
-    dav1d_log(
-        c,
-        b"Error parsing OBU data\n\0" as *const u8 as *const libc::c_char,
-    );
-    return -(22 as libc::c_int);
+    match current_block_188 {
+        17787701279558130514 => {
+            if !(global != 0) {
+                if ((*c).frame_hdr).is_null() {
+                    return dav1d_parse_obus_error(c, in_0);
+                }
+                if (*c).n_tile_data_alloc < (*c).n_tile_data + 1 as libc::c_int {
+                    if (*c).n_tile_data + 1 as libc::c_int
+                        > 2147483647 as libc::c_int
+                            / ::core::mem::size_of::<Dav1dTileGroup>() as libc::c_ulong
+                                as libc::c_int
+                    {
+                        return dav1d_parse_obus_error(c, in_0);
+                    }
+                    let tile: *mut Dav1dTileGroup = realloc(
+                        (*c).tile as *mut libc::c_void,
+                        (((*c).n_tile_data + 1) as size_t)
+                            .wrapping_mul(::core::mem::size_of::<Dav1dTileGroup>()),
+                    ) as *mut Dav1dTileGroup;
+                    if tile.is_null() {
+                        return dav1d_parse_obus_error(c, in_0);
+                    }
+                    (*c).tile = tile;
+                    memset(
+                        ((*c).tile).offset((*c).n_tile_data as isize) as *mut libc::c_void,
+                        0 as libc::c_int,
+                        ::core::mem::size_of::<Dav1dTileGroup>(),
+                    );
+                    (*c).n_tile_data_alloc = (*c).n_tile_data + 1 as libc::c_int;
+                }
+                parse_tile_hdr(c, &mut gb);
+                dav1d_bytealign_get_bits(&mut gb);
+                if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
+                    return dav1d_parse_obus_error(c, in_0);
+                }
+                let pkt_bytelen: libc::c_uint = init_byte_pos.wrapping_add(len);
+                let bit_pos: libc::c_uint = dav1d_get_bits_pos(&mut gb);
+                if !(bit_pos & 7 as libc::c_int as libc::c_uint == 0 as libc::c_int as libc::c_uint)
+                {
+                    unreachable!();
+                }
+                if !(pkt_bytelen >= bit_pos >> 3 as libc::c_int) {
+                    unreachable!();
+                }
+                dav1d_data_ref(
+                    &mut (*((*c).tile).offset((*c).n_tile_data as isize)).data,
+                    in_0,
+                );
+                let ref mut fresh0 = (*((*c).tile).offset((*c).n_tile_data as isize)).data.data;
+                *fresh0 = (*fresh0).offset((bit_pos >> 3 as libc::c_int) as isize);
+                (*((*c).tile).offset((*c).n_tile_data as isize)).data.sz =
+                    pkt_bytelen.wrapping_sub(bit_pos >> 3 as libc::c_int) as size_t;
+                if (*((*c).tile).offset((*c).n_tile_data as isize)).start
+                    > (*((*c).tile).offset((*c).n_tile_data as isize)).end
+                    || (*((*c).tile).offset((*c).n_tile_data as isize)).start != (*c).n_tiles
+                {
+                    let mut i_0: libc::c_int = 0 as libc::c_int;
+                    while i_0 <= (*c).n_tile_data {
+                        dav1d_data_unref_internal(&mut (*((*c).tile).offset(i_0 as isize)).data);
+                        i_0 += 1;
+                    }
+                    (*c).n_tile_data = 0 as libc::c_int;
+                    (*c).n_tiles = 0 as libc::c_int;
+                    return dav1d_parse_obus_error(c, in_0);
+                }
+                (*c).n_tiles += 1 as libc::c_int
+                    + (*((*c).tile).offset((*c).n_tile_data as isize)).end
+                    - (*((*c).tile).offset((*c).n_tile_data as isize)).start;
+                (*c).n_tile_data += 1;
+            }
+        }
+        _ => {}
+    }
+    if !((*c).seq_hdr).is_null() && !((*c).frame_hdr).is_null() {
+        if (*(*c).frame_hdr).show_existing_frame != 0 {
+            if ((*c).refs[(*(*c).frame_hdr).existing_frame_idx as usize]
+                .p
+                .p
+                .frame_hdr)
+                .is_null()
+            {
+                return dav1d_parse_obus_error(c, in_0);
+            }
+            match (*(*c).refs[(*(*c).frame_hdr).existing_frame_idx as usize]
+                .p
+                .p
+                .frame_hdr)
+                .frame_type as libc::c_uint
+            {
+                1 | 3 => {
+                    if (*c).decode_frame_type as libc::c_uint
+                        > DAV1D_DECODEFRAMETYPE_REFERENCE as libc::c_int as libc::c_uint
+                    {
+                        return dav1d_parse_obus_skip(c, len, init_byte_pos);
+                    }
+                }
+                2 => {
+                    if (*c).decode_frame_type as libc::c_uint
+                        > DAV1D_DECODEFRAMETYPE_INTRA as libc::c_int as libc::c_uint
+                    {
+                        return dav1d_parse_obus_skip(c, len, init_byte_pos);
+                    }
+                }
+                _ => {}
+            }
+            if ((*c).refs[(*(*c).frame_hdr).existing_frame_idx as usize]
+                .p
+                .p
+                .data[0 as libc::c_int as usize])
+                .is_null()
+            {
+                return dav1d_parse_obus_error(c, in_0);
+            }
+            if (*c).strict_std_compliance != 0
+                && (*c).refs[(*(*c).frame_hdr).existing_frame_idx as usize]
+                    .p
+                    .showable
+                    == 0
+            {
+                return dav1d_parse_obus_error(c, in_0);
+            }
+            if (*c).n_fc == 1 as libc::c_int as libc::c_uint {
+                dav1d_thread_picture_ref(
+                    &mut (*c).out,
+                    &mut (*((*c).refs)
+                        .as_mut_ptr()
+                        .offset((*(*c).frame_hdr).existing_frame_idx as isize))
+                    .p,
+                );
+                dav1d_data_props_copy(&mut (*c).out.p.m, &mut (*in_0).m);
+                (*c).event_flags = ::core::mem::transmute::<libc::c_uint, Dav1dEventFlags>(
+                    (*c).event_flags as libc::c_uint
+                        | dav1d_picture_get_event_flags(
+                            &mut (*((*c).refs)
+                                .as_mut_ptr()
+                                .offset((*(*c).frame_hdr).existing_frame_idx as isize))
+                            .p,
+                        ) as libc::c_uint,
+                );
+            } else {
+                pthread_mutex_lock(&mut (*c).task_thread.lock);
+                let fresh1 = (*c).frame_thread.next;
+                (*c).frame_thread.next = ((*c).frame_thread.next).wrapping_add(1);
+                let next: libc::c_uint = fresh1;
+                if (*c).frame_thread.next == (*c).n_fc {
+                    (*c).frame_thread.next = 0 as libc::c_int as libc::c_uint;
+                }
+                let f: *mut Dav1dFrameContext =
+                    &mut *((*c).fc).offset(next as isize) as *mut Dav1dFrameContext;
+                while (*f).n_tile_data > 0 as libc::c_int {
+                    pthread_cond_wait(
+                        &mut (*f).task_thread.cond,
+                        &mut (*(*f).task_thread.ttd).lock,
+                    );
+                }
+                let out_delayed: *mut Dav1dThreadPicture = &mut *((*c).frame_thread.out_delayed)
+                    .offset(next as isize)
+                    as *mut Dav1dThreadPicture;
+                if !((*out_delayed).p.data[0 as libc::c_int as usize]).is_null()
+                    || ::core::intrinsics::atomic_load_seqcst(
+                        &mut (*f).task_thread.error as *mut atomic_int,
+                    ) != 0
+                {
+                    let mut first: libc::c_uint =
+                        ::core::intrinsics::atomic_load_seqcst(&mut (*c).task_thread.first);
+                    if first.wrapping_add(1 as libc::c_uint) < (*c).n_fc {
+                        ::core::intrinsics::atomic_xadd_seqcst(
+                            &mut (*c).task_thread.first,
+                            1 as libc::c_uint,
+                        );
+                    } else {
+                        ::core::intrinsics::atomic_store_seqcst(
+                            &mut (*c).task_thread.first,
+                            0 as libc::c_int as libc::c_uint,
+                        );
+                    }
+                    let fresh2 = ::core::intrinsics::atomic_cxchg_seqcst_seqcst(
+                        &mut (*c).task_thread.reset_task_cur,
+                        *&mut first,
+                        (2147483647 as libc::c_int as libc::c_uint)
+                            .wrapping_mul(2 as libc::c_uint)
+                            .wrapping_add(1 as libc::c_uint),
+                    );
+                    *&mut first = fresh2.0;
+                    fresh2.1;
+                    if (*c).task_thread.cur != 0 && (*c).task_thread.cur < (*c).n_fc {
+                        (*c).task_thread.cur = ((*c).task_thread.cur).wrapping_sub(1);
+                    }
+                }
+                let error: libc::c_int = (*f).task_thread.retval;
+                if error != 0 {
+                    (*c).cached_error = error;
+                    (*f).task_thread.retval = 0 as libc::c_int;
+                    dav1d_data_props_copy(&mut (*c).cached_error_props, &mut (*out_delayed).p.m);
+                    dav1d_thread_picture_unref(out_delayed);
+                } else if !((*out_delayed).p.data[0 as libc::c_int as usize]).is_null() {
+                    let progress: libc::c_uint = ::core::intrinsics::atomic_load_relaxed(
+                        &mut *((*out_delayed).progress).offset(1 as libc::c_int as isize)
+                            as *mut atomic_uint,
+                    );
+                    if ((*out_delayed).visible != 0 || (*c).output_invisible_frames != 0)
+                        && progress
+                            != (2147483647 as libc::c_int as libc::c_uint)
+                                .wrapping_mul(2 as libc::c_uint)
+                                .wrapping_add(1 as libc::c_uint)
+                                .wrapping_sub(1 as libc::c_int as libc::c_uint)
+                    {
+                        dav1d_thread_picture_ref(&mut (*c).out, out_delayed);
+                        (*c).event_flags = ::core::mem::transmute::<libc::c_uint, Dav1dEventFlags>(
+                            (*c).event_flags as libc::c_uint
+                                | dav1d_picture_get_event_flags(out_delayed) as libc::c_uint,
+                        );
+                    }
+                    dav1d_thread_picture_unref(out_delayed);
+                }
+                dav1d_thread_picture_ref(
+                    out_delayed,
+                    &mut (*((*c).refs)
+                        .as_mut_ptr()
+                        .offset((*(*c).frame_hdr).existing_frame_idx as isize))
+                    .p,
+                );
+                (*out_delayed).visible = 1 as libc::c_int;
+                dav1d_data_props_copy(&mut (*out_delayed).p.m, &mut (*in_0).m);
+                pthread_mutex_unlock(&mut (*c).task_thread.lock);
+            }
+            if (*(*c).refs[(*(*c).frame_hdr).existing_frame_idx as usize]
+                .p
+                .p
+                .frame_hdr)
+                .frame_type as libc::c_uint
+                == DAV1D_FRAME_TYPE_KEY as libc::c_int as libc::c_uint
+            {
+                let r: libc::c_int = (*(*c).frame_hdr).existing_frame_idx;
+                (*c).refs[r as usize].p.showable = 0 as libc::c_int;
+                let mut i_3: libc::c_int = 0 as libc::c_int;
+                while i_3 < 8 as libc::c_int {
+                    if !(i_3 == r) {
+                        if !((*c).refs[i_3 as usize].p.p.frame_hdr).is_null() {
+                            dav1d_thread_picture_unref(
+                                &mut (*((*c).refs).as_mut_ptr().offset(i_3 as isize)).p,
+                            );
+                        }
+                        dav1d_thread_picture_ref(
+                            &mut (*((*c).refs).as_mut_ptr().offset(i_3 as isize)).p,
+                            &mut (*((*c).refs).as_mut_ptr().offset(r as isize)).p,
+                        );
+                        dav1d_cdf_thread_unref(&mut *((*c).cdf).as_mut_ptr().offset(i_3 as isize));
+                        dav1d_cdf_thread_ref(
+                            &mut *((*c).cdf).as_mut_ptr().offset(i_3 as isize),
+                            &mut *((*c).cdf).as_mut_ptr().offset(r as isize),
+                        );
+                        dav1d_ref_dec(&mut (*((*c).refs).as_mut_ptr().offset(i_3 as isize)).segmap);
+                        (*c).refs[i_3 as usize].segmap = (*c).refs[r as usize].segmap;
+                        if !((*c).refs[r as usize].segmap).is_null() {
+                            dav1d_ref_inc((*c).refs[r as usize].segmap);
+                        }
+                        dav1d_ref_dec(&mut (*((*c).refs).as_mut_ptr().offset(i_3 as isize)).refmvs);
+                    }
+                    i_3 += 1;
+                }
+            }
+            (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
+        } else if (*c).n_tiles == (*(*c).frame_hdr).tiling.cols * (*(*c).frame_hdr).tiling.rows {
+            match (*(*c).frame_hdr).frame_type as libc::c_uint {
+                1 | 3 => {
+                    if (*c).decode_frame_type as libc::c_uint
+                        > DAV1D_DECODEFRAMETYPE_REFERENCE as libc::c_int as libc::c_uint
+                        || (*c).decode_frame_type as libc::c_uint
+                            == DAV1D_DECODEFRAMETYPE_REFERENCE as libc::c_int as libc::c_uint
+                            && (*(*c).frame_hdr).refresh_frame_flags == 0
+                    {
+                        return dav1d_parse_obus_skip(c, len, init_byte_pos);
+                    }
+                }
+                2 => {
+                    if (*c).decode_frame_type as libc::c_uint
+                        > DAV1D_DECODEFRAMETYPE_INTRA as libc::c_int as libc::c_uint
+                        || (*c).decode_frame_type as libc::c_uint
+                            == DAV1D_DECODEFRAMETYPE_REFERENCE as libc::c_int as libc::c_uint
+                            && (*(*c).frame_hdr).refresh_frame_flags == 0
+                    {
+                        return dav1d_parse_obus_skip(c, len, init_byte_pos);
+                    }
+                }
+                _ => {}
+            }
+            if (*c).n_tile_data == 0 {
+                return dav1d_parse_obus_error(c, in_0);
+            }
+            res = dav1d_submit_frame(c);
+            if res < 0 as libc::c_int {
+                return res;
+            }
+            if (*c).n_tile_data != 0 {
+                unreachable!();
+            }
+            (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
+            (*c).n_tiles = 0 as libc::c_int;
+        }
+    }
+    return len.wrapping_add(init_byte_pos) as libc::c_int;
 }
