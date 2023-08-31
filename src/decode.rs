@@ -6136,9 +6136,9 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
     }
     if f.n_tile_data_alloc < c.n_tile_data {
         freep(&mut f.tile as *mut *mut Dav1dTileGroup as *mut libc::c_void);
-        if !(c.n_tile_data < 2147483647 / ::core::mem::size_of::<Dav1dTileGroup>() as libc::c_int) {
-            unreachable!();
-        }
+        assert!(
+            c.n_tile_data < 2147483647 / ::core::mem::size_of::<Dav1dTileGroup>() as libc::c_int
+        );
         f.tile = malloc(
             (c.n_tile_data as libc::c_ulong)
                 .wrapping_mul(::core::mem::size_of::<Dav1dTileGroup>() as libc::c_ulong),
@@ -6256,9 +6256,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         if (*f.frame_hdr).segmentation.temporal != 0 || (*f.frame_hdr).segmentation.update_map == 0
         {
             let pri_ref = (*f.frame_hdr).primary_ref_frame as usize;
-            if !(pri_ref != 7) {
-                unreachable!();
-            }
+            assert!(pri_ref != 7);
             let ref_w: libc::c_int = (ref_coded_width[pri_ref] + 7 >> 3) << 1;
             let ref_h: libc::c_int = (f.refp[pri_ref].p.p.h + 7 >> 3) << 1;
             if ref_w == f.bw && ref_h == f.bh {
