@@ -6163,12 +6163,10 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         }
         (*f).n_tile_data_alloc = (*c).n_tile_data;
     }
-    memcpy(
-        (*f).tile as *mut libc::c_void,
-        (*c).tile as *const libc::c_void,
-        ((*c).n_tile_data as libc::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<Dav1dTileGroup>() as libc::c_ulong),
-    );
+    let num_tiles = (*c).n_tile_data.try_into().unwrap();
+    let f_tiles = slice::from_raw_parts_mut((*f).tile, num_tiles);
+    let c_tiles = slice::from_raw_parts((*c).tile, num_tiles);
+    f_tiles.clone_from_slice(c_tiles);
     memset(
         (*c).tile as *mut libc::c_void,
         0,
