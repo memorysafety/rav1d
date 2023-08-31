@@ -6086,14 +6086,14 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             }
         }
         for i in 0..7 {
-            let refidx: libc::c_int = (*f.frame_hdr).refidx[i];
-            if (c.refs[refidx as usize].p.p.data[0]).is_null()
-                || ((*f.frame_hdr).width[0] * 2) < c.refs[refidx as usize].p.p.p.w
-                || ((*f.frame_hdr).height * 2) < c.refs[refidx as usize].p.p.p.h
-                || (*f.frame_hdr).width[0] > c.refs[refidx as usize].p.p.p.w * 16
-                || (*f.frame_hdr).height > c.refs[refidx as usize].p.p.p.h * 16
-                || (*f.seq_hdr).layout != c.refs[refidx as usize].p.p.p.layout
-                || bpc != c.refs[refidx as usize].p.p.p.bpc
+            let refidx = (*f.frame_hdr).refidx[i] as usize;
+            if (c.refs[refidx].p.p.data[0]).is_null()
+                || ((*f.frame_hdr).width[0] * 2) < c.refs[refidx].p.p.p.w
+                || ((*f.frame_hdr).height * 2) < c.refs[refidx].p.p.p.h
+                || (*f.frame_hdr).width[0] > c.refs[refidx].p.p.p.w * 16
+                || (*f.frame_hdr).height > c.refs[refidx].p.p.p.h * 16
+                || (*f.seq_hdr).layout != c.refs[refidx].p.p.p.layout
+                || bpc != c.refs[refidx].p.p.p.bpc
             {
                 for j in 0..i {
                     dav1d_thread_picture_unref(&mut f.refp[j]);
@@ -6101,16 +6101,15 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 res = -22;
                 return dav1d_submit_frame_error(res, f, c, out_delayed);
             }
-            dav1d_thread_picture_ref(&mut f.refp[i], &mut (c.refs[refidx as usize]).p);
-            ref_coded_width[i] = (*c.refs[refidx as usize].p.p.frame_hdr).width[0];
-            if (*f.frame_hdr).width[0] != c.refs[refidx as usize].p.p.p.w
-                || (*f.frame_hdr).height != c.refs[refidx as usize].p.p.p.h
+            dav1d_thread_picture_ref(&mut f.refp[i], &mut (c.refs[refidx]).p);
+            ref_coded_width[i] = (*c.refs[refidx].p.p.frame_hdr).width[0];
+            if (*f.frame_hdr).width[0] != c.refs[refidx].p.p.p.w
+                || (*f.frame_hdr).height != c.refs[refidx].p.p.p.h
             {
-                f.svc[i][0].scale = ((c.refs[refidx as usize].p.p.p.w << 14)
+                f.svc[i][0].scale = ((c.refs[refidx].p.p.p.w << 14)
                     + ((*f.frame_hdr).width[0] >> 1))
                     / (*f.frame_hdr).width[0];
-                f.svc[i][1].scale = ((c.refs[refidx as usize].p.p.p.h << 14)
-                    + ((*f.frame_hdr).height >> 1))
+                f.svc[i][1].scale = ((c.refs[refidx].p.p.p.h << 14) + ((*f.frame_hdr).height >> 1))
                     / (*f.frame_hdr).height;
                 f.svc[i][0].step = f.svc[i][0].scale + 8 >> 4;
                 f.svc[i][1].step = f.svc[i][1].scale + 8 >> 4;
@@ -6232,19 +6231,18 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         }
         if (*f.frame_hdr).use_ref_frame_mvs != 0 {
             for i in 0..7 {
-                let refidx: libc::c_int = (*f.frame_hdr).refidx[i];
+                let refidx = (*f.frame_hdr).refidx[i] as usize;
                 let ref_w: libc::c_int = (ref_coded_width[i] + 7 >> 3) << 1;
                 let ref_h: libc::c_int = (f.refp[i].p.p.h + 7 >> 3) << 1;
-                if !(c.refs[refidx as usize].refmvs).is_null() && ref_w == f.bw && ref_h == f.bh {
-                    f.ref_mvs_ref[i] = c.refs[refidx as usize].refmvs;
+                if !(c.refs[refidx].refmvs).is_null() && ref_w == f.bw && ref_h == f.bh {
+                    f.ref_mvs_ref[i] = c.refs[refidx].refmvs;
                     dav1d_ref_inc(f.ref_mvs_ref[i]);
-                    f.ref_mvs[i] =
-                        (*c.refs[refidx as usize].refmvs).data as *mut refmvs_temporal_block;
+                    f.ref_mvs[i] = (*c.refs[refidx].refmvs).data as *mut refmvs_temporal_block;
                 } else {
                     f.ref_mvs[i] = 0 as *mut refmvs_temporal_block;
                     f.ref_mvs_ref[i] = 0 as *mut Dav1dRef;
                 }
-                f.refrefpoc[i] = c.refs[refidx as usize].refpoc;
+                f.refrefpoc[i] = c.refs[refidx].refpoc;
             }
         } else {
             f.ref_mvs_ref.fill_with(ptr::null_mut);
