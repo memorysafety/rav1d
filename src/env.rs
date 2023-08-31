@@ -48,7 +48,7 @@ pub struct BlockContext {
     pub r#ref: Align8<[[int8_t; 32]; 2]>,
     pub filter: Align8<[[uint8_t; 32]; 2]>,
     pub tx_intra: Align8<[int8_t; 32]>,
-    pub tx: Align8<[int8_t; 32]>,
+    pub tx: Align8<[uint8_t; 32]>,
     pub tx_lpf_y: Align8<[uint8_t; 32]>,
     pub tx_lpf_uv: Align8<[uint8_t; 32]>,
     pub partition: Align8<[uint8_t; 16]>,

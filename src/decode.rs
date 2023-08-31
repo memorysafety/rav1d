@@ -1022,8 +1022,8 @@ unsafe fn read_tx_tree(
 
     if depth < 2 && from > TX_4X4 {
         let cat = 2 * (TX_64X64 as libc::c_int - t_dim.max as libc::c_int) - depth;
-        let a = ((*t.a).tx.0[bx4 as usize] < txw as i8) as libc::c_int;
-        let l = (t.l.tx.0[by4 as usize] < txh as i8) as libc::c_int;
+        let a = ((*t.a).tx.0[bx4 as usize] < txw) as libc::c_int;
+        let l = (t.l.tx.0[by4 as usize] < txh) as libc::c_int;
 
         is_split = dav1d_msac_decode_bool_adapt(
             &mut (*t.ts).msac,
@@ -1063,7 +1063,7 @@ unsafe fn read_tx_tree(
             [t_dim.h as usize, t_dim.w as usize],
             [by4 as usize, bx4 as usize],
             |case, (dir, val)| {
-                case.set(&mut dir.tx.0, (if is_split { TX_4X4 } else { val }) as i8);
+                case.set(&mut dir.tx.0, if is_split { TX_4X4 } else { val });
             },
         );
     };
@@ -1722,7 +1722,7 @@ unsafe fn read_vartx_tree(
                 [bh4 as usize, bw4 as usize],
                 [by4 as usize, bx4 as usize],
                 |case, dir| {
-                    case.set(&mut dir.tx.0, TX_4X4 as i8);
+                    case.set(&mut dir.tx.0, TX_4X4);
                 },
             );
         }
@@ -1733,7 +1733,7 @@ unsafe fn read_vartx_tree(
                 [bh4 as usize, bw4 as usize],
                 [by4 as usize, bx4 as usize],
                 |case, (dir, dir_index)| {
-                    case.set(&mut dir.tx.0, b_dim[2 + dir_index] as i8);
+                    case.set(&mut dir.tx.0, b_dim[2 + dir_index]);
                 },
             );
         }
@@ -2854,8 +2854,7 @@ unsafe fn decode_b(
             [bh4 as usize, bw4 as usize],
             [by4 as usize, bx4 as usize],
             |case, (dir, lw_lh, dir_index)| {
-                let lw_lh = lw_lh as i8;
-                case.set(&mut dir.tx_intra.0, lw_lh);
+                case.set(&mut dir.tx_intra.0, lw_lh as i8);
                 case.set(&mut dir.tx.0, lw_lh);
                 case.set(&mut dir.mode.0, y_mode_nofilt);
                 case.set(&mut dir.pal_sz.0, b.pal_sz()[0]);
@@ -4520,7 +4519,7 @@ fn reset_context(ctx: &mut BlockContext, keyframe: bool, pass: libc::c_int) {
     ctx.tx_lpf_y.0.fill(2);
     ctx.tx_lpf_uv.0.fill(1);
     ctx.tx_intra.0.fill(-1);
-    ctx.tx.0.fill(TX_64X64 as i8);
+    ctx.tx.0.fill(TX_64X64);
     if !keyframe {
         for r#ref in &mut ctx.r#ref.0 {
             r#ref.fill(-1);
