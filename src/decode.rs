@@ -6078,9 +6078,8 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
     let mut ref_coded_width: [libc::c_int; 7] = [0; 7];
     if (*f.frame_hdr).frame_type & 1 != 0 {
         if (*f.frame_hdr).primary_ref_frame != 7 {
-            let pri_ref: libc::c_int =
-                (*f.frame_hdr).refidx[(*f.frame_hdr).primary_ref_frame as usize];
-            if (c.refs[pri_ref as usize].p.p.data[0]).is_null() {
+            let pri_ref = (*f.frame_hdr).refidx[(*f.frame_hdr).primary_ref_frame as usize] as usize;
+            if (c.refs[pri_ref].p.p.data[0]).is_null() {
                 res = -22;
                 return dav1d_submit_frame_error(res, f, c, out_delayed);
             }
@@ -6126,8 +6125,8 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
     if (*f.frame_hdr).primary_ref_frame == 7 {
         dav1d_cdf_thread_init_static(&mut f.in_cdf, (*f.frame_hdr).quant.yac);
     } else {
-        let pri_ref: libc::c_int = (*f.frame_hdr).refidx[(*f.frame_hdr).primary_ref_frame as usize];
-        dav1d_cdf_thread_ref(&mut f.in_cdf, &mut c.cdf[pri_ref as usize]);
+        let pri_ref = (*f.frame_hdr).refidx[(*f.frame_hdr).primary_ref_frame as usize] as usize;
+        dav1d_cdf_thread_ref(&mut f.in_cdf, &mut c.cdf[pri_ref]);
     }
     if (*f.frame_hdr).refresh_context != 0 {
         res = dav1d_cdf_thread_alloc(c, &mut f.out_cdf, (c.n_fc > 1) as libc::c_int);
@@ -6256,14 +6255,14 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         f.prev_segmap = 0 as *const uint8_t;
         if (*f.frame_hdr).segmentation.temporal != 0 || (*f.frame_hdr).segmentation.update_map == 0
         {
-            let pri_ref: libc::c_int = (*f.frame_hdr).primary_ref_frame;
+            let pri_ref = (*f.frame_hdr).primary_ref_frame as usize;
             if !(pri_ref != 7) {
                 unreachable!();
             }
-            let ref_w: libc::c_int = (ref_coded_width[pri_ref as usize] + 7 >> 3) << 1;
-            let ref_h: libc::c_int = (f.refp[pri_ref as usize].p.p.h + 7 >> 3) << 1;
+            let ref_w: libc::c_int = (ref_coded_width[pri_ref] + 7 >> 3) << 1;
+            let ref_h: libc::c_int = (f.refp[pri_ref].p.p.h + 7 >> 3) << 1;
             if ref_w == f.bw && ref_h == f.bh {
-                f.prev_segmap_ref = c.refs[(*f.frame_hdr).refidx[pri_ref as usize] as usize].segmap;
+                f.prev_segmap_ref = c.refs[(*f.frame_hdr).refidx[pri_ref] as usize].segmap;
                 if !(f.prev_segmap_ref).is_null() {
                     dav1d_ref_inc(f.prev_segmap_ref);
                     f.prev_segmap = (*f.prev_segmap_ref).data as *const uint8_t;
