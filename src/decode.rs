@@ -6270,11 +6270,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                     (*f).ref_mvs[i as usize] = 0 as *mut refmvs_temporal_block;
                     (*f).ref_mvs_ref[i as usize] = 0 as *mut Dav1dRef;
                 }
-                memcpy(
-                    ((*f).refrefpoc[i as usize]).as_mut_ptr() as *mut libc::c_void,
-                    ((*c).refs[refidx as usize].refpoc).as_mut_ptr() as *const libc::c_void,
-                    ::core::mem::size_of::<[libc::c_uint; 7]>() as libc::c_ulong,
-                );
+                (*f).refrefpoc[i as usize] = (*c).refs[refidx as usize].refpoc;
                 i += 1;
             }
         } else {
@@ -6375,11 +6371,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                     dav1d_ref_inc((*f).mvs_ref);
                 }
             }
-            memcpy(
-                ((*c).refs[i as usize].refpoc).as_mut_ptr() as *mut libc::c_void,
-                ((*f).refpoc).as_mut_ptr() as *const libc::c_void,
-                ::core::mem::size_of::<[libc::c_uint; 7]>() as libc::c_ulong,
-            );
+            (*c).refs[i as usize].refpoc = (*f).refpoc;
         }
         i += 1;
     }
