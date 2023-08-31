@@ -6021,7 +6021,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
     (*c).frame_hdr_ref = 0 as *mut Dav1dRef;
     (*f).dsp =
         &mut *((*c).dsp).as_mut_ptr().offset((*(*f).seq_hdr).hbd as isize) as *mut Dav1dDSPContext;
-    let bpc: libc::c_int = 8 + 2 * (*(*f).seq_hdr).hbd;
+    let bpc = 8 + 2 * (*(*f).seq_hdr).hbd;
     if ((*(*f).dsp).ipred.intra_pred[DC_PRED as libc::c_int as usize]).is_none() {
         let dsp: *mut Dav1dDSPContext =
             &mut *((*c).dsp).as_mut_ptr().offset((*(*f).seq_hdr).hbd as isize)
