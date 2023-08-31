@@ -521,57 +521,7 @@ pub type mc_fn = Option<
         libc::c_int,
     ) -> (),
 >;
-#[repr(C)]
-pub struct Dav1dIntraPredDSPContext {
-    pub intra_pred: [angular_ipred_fn; 14],
-    pub cfl_ac: [cfl_ac_fn; 3],
-    pub cfl_pred: [cfl_pred_fn; 6],
-    pub pal_pred: pal_pred_fn,
-}
-pub type pal_pred_fn = Option<
-    unsafe extern "C" fn(
-        *mut libc::c_void,
-        ptrdiff_t,
-        *const uint16_t,
-        *const uint8_t,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
-pub type cfl_pred_fn = Option<
-    unsafe extern "C" fn(
-        *mut libc::c_void,
-        ptrdiff_t,
-        *const libc::c_void,
-        libc::c_int,
-        libc::c_int,
-        *const int16_t,
-        libc::c_int,
-    ) -> (),
->;
-pub type cfl_ac_fn = Option<
-    unsafe extern "C" fn(
-        *mut int16_t,
-        *const libc::c_void,
-        ptrdiff_t,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
-pub type angular_ipred_fn = Option<
-    unsafe extern "C" fn(
-        *mut libc::c_void,
-        ptrdiff_t,
-        *const libc::c_void,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
+use crate::src::ipred::Dav1dIntraPredDSPContext;
 #[repr(C)]
 pub struct Dav1dFilmGrainDSPContext {
     pub generate_grain_y: generate_grain_y_fn,
