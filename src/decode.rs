@@ -6351,5 +6351,5 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         dav1d_task_frame_init(f);
         pthread_mutex_unlock(&mut c.task_thread.lock);
     }
-    return 0;
+    0
 }
