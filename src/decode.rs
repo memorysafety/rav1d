@@ -5941,7 +5941,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
     let (f, out_delayed) = if c.n_fc > 1 {
         pthread_mutex_lock(&mut c.task_thread.lock);
         let next = c.frame_thread.next;
-        c.frame_thread.next = c.frame_thread.next.wrapping_add(1);
+        c.frame_thread.next += 1;
         if c.frame_thread.next == c.n_fc {
             c.frame_thread.next = 0;
         }
@@ -5956,7 +5956,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         {
             let first: libc::c_uint =
                 ::core::intrinsics::atomic_load_seqcst(&mut c.task_thread.first);
-            if first.wrapping_add(1) < c.n_fc {
+            if first + 1 < c.n_fc {
                 ::core::intrinsics::atomic_xadd_seqcst(&mut c.task_thread.first, 1);
             } else {
                 ::core::intrinsics::atomic_store_seqcst(&mut c.task_thread.first, 0);
@@ -5964,10 +5964,10 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             ::core::intrinsics::atomic_cxchg_seqcst_seqcst(
                 &mut c.task_thread.reset_task_cur,
                 first,
-                (2147483647 as libc::c_uint).wrapping_mul(2).wrapping_add(1),
+                2147483647 * 2 + 1,
             );
             if c.task_thread.cur != 0 && c.task_thread.cur < c.n_fc {
-                c.task_thread.cur = (c.task_thread.cur).wrapping_sub(1);
+                c.task_thread.cur -= 1;
             }
         }
         let error: libc::c_int = f.task_thread.retval;
@@ -5981,11 +5981,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 &mut *(out_delayed.progress).offset(1) as *mut atomic_uint,
             );
             if (out_delayed.visible != 0 || c.output_invisible_frames != 0)
-                && progress
-                    != (2147483647 as libc::c_uint)
-                        .wrapping_mul(2)
-                        .wrapping_add(1)
-                        .wrapping_sub(1)
+                && progress != 2147483647 * 2 + 1 - 1
             {
                 dav1d_thread_picture_ref(&mut c.out, out_delayed);
                 c.event_flags |= dav1d_picture_get_event_flags(out_delayed);
@@ -6134,8 +6130,8 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             c.n_tile_data < 2147483647 / ::core::mem::size_of::<Dav1dTileGroup>() as libc::c_int
         );
         f.tile = malloc(
-            (c.n_tile_data as libc::c_ulong)
-                .wrapping_mul(::core::mem::size_of::<Dav1dTileGroup>() as libc::c_ulong),
+            c.n_tile_data as libc::c_ulong
+                * ::core::mem::size_of::<Dav1dTileGroup>() as libc::c_ulong,
         ) as *mut Dav1dTileGroup;
         if f.tile.is_null() {
             f.n_tile_data = 0;
@@ -6203,10 +6199,10 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
     if (*f.frame_hdr).frame_type & 1 != 0 || (*f.frame_hdr).allow_intrabc != 0 {
         f.mvs_ref = dav1d_ref_create_using_pool(
             c.refmvs_pool,
-            (::core::mem::size_of::<refmvs_temporal_block>())
-                .wrapping_mul(f.sb128h as size_t)
-                .wrapping_mul(16)
-                .wrapping_mul((f.b4_stride >> 1) as size_t),
+            ::core::mem::size_of::<refmvs_temporal_block>()
+                * f.sb128h as size_t
+                * 16
+                * (f.b4_stride >> 1) as size_t,
         );
         if f.mvs_ref.is_null() {
             res = -12;
@@ -6262,10 +6258,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         if (*f.frame_hdr).segmentation.update_map != 0 {
             f.cur_segmap_ref = dav1d_ref_create_using_pool(
                 c.segmap_pool,
-                (::core::mem::size_of::<uint8_t>())
-                    .wrapping_mul(f.b4_stride as size_t)
-                    .wrapping_mul(32)
-                    .wrapping_mul(f.sb128h as size_t),
+                ::core::mem::size_of::<uint8_t>() * f.b4_stride as size_t * 32 * f.sb128h as size_t,
             );
             if f.cur_segmap_ref.is_null() {
                 dav1d_ref_dec(&mut f.prev_segmap_ref);
@@ -6278,10 +6271,8 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             dav1d_ref_inc(f.cur_segmap_ref);
             f.cur_segmap = (*f.prev_segmap_ref).data as *mut uint8_t;
         } else {
-            let segmap_size: size_t = (::core::mem::size_of::<uint8_t>())
-                .wrapping_mul(f.b4_stride as size_t)
-                .wrapping_mul(32)
-                .wrapping_mul(f.sb128h as size_t);
+            let segmap_size: size_t =
+                ::core::mem::size_of::<uint8_t>() * f.b4_stride as size_t * 32 * f.sb128h as size_t;
             f.cur_segmap_ref = dav1d_ref_create_using_pool(c.segmap_pool, segmap_size);
             if f.cur_segmap_ref.is_null() {
                 res = -12;
