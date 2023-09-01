@@ -5891,7 +5891,7 @@ fn get_upscale_x0(in_w: libc::c_int, out_w: libc::c_int, step: libc::c_int) -> l
     x0 & 0x3fff
 }
 
-unsafe extern "C" fn dav1d_submit_frame_error(
+unsafe fn dav1d_submit_frame_error(
     res: libc::c_int,
     f: &mut Dav1dFrameContext,
     c: &mut Dav1dContext,
