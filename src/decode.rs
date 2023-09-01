@@ -5939,8 +5939,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
 
     let f;
     let mut res: libc::c_int;
-    let mut out_delayed: *mut Dav1dThreadPicture = 0 as *mut Dav1dThreadPicture;
-    if c.n_fc > 1 {
+    let out_delayed = if c.n_fc > 1 {
         pthread_mutex_lock(&mut c.task_thread.lock);
         let fresh39 = c.frame_thread.next;
         c.frame_thread.next = c.frame_thread.next.wrapping_add(1);
@@ -5952,8 +5951,8 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         while f.n_tile_data > 0 {
             pthread_cond_wait(&mut f.task_thread.cond, &mut c.task_thread.lock);
         }
-        out_delayed = &mut *c.frame_thread.out_delayed.offset(next as isize);
-        if !(*out_delayed).p.data[0].is_null()
+        let out_delayed = &mut *c.frame_thread.out_delayed.offset(next as isize);
+        if !out_delayed.p.data[0].is_null()
             || ::core::intrinsics::atomic_load_seqcst(&mut f.task_thread.error as *mut atomic_int)
                 != 0
         {
@@ -5977,13 +5976,13 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         if error != 0 {
             f.task_thread.retval = 0;
             c.cached_error = error;
-            dav1d_data_props_copy(&mut c.cached_error_props, &mut (*out_delayed).p.m);
+            dav1d_data_props_copy(&mut c.cached_error_props, &mut out_delayed.p.m);
             dav1d_thread_picture_unref(out_delayed);
-        } else if !(*out_delayed).p.data[0].is_null() {
+        } else if !out_delayed.p.data[0].is_null() {
             let progress: libc::c_uint = ::core::intrinsics::atomic_load_relaxed(
-                &mut *((*out_delayed).progress).offset(1) as *mut atomic_uint,
+                &mut *(out_delayed.progress).offset(1) as *mut atomic_uint,
             );
-            if ((*out_delayed).visible != 0 || c.output_invisible_frames != 0)
+            if (out_delayed.visible != 0 || c.output_invisible_frames != 0)
                 && progress
                     != (2147483647 as libc::c_uint)
                         .wrapping_mul(2)
@@ -5995,9 +5994,11 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             }
             dav1d_thread_picture_unref(out_delayed);
         }
+        out_delayed
     } else {
         f = &mut *c.fc;
-    }
+        ptr::null_mut()
+    };
     f.seq_hdr = c.seq_hdr;
     f.seq_hdr_ref = c.seq_hdr_ref;
     dav1d_ref_inc(f.seq_hdr_ref);
