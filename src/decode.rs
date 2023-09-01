@@ -6207,7 +6207,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             res = -12;
             return dav1d_submit_frame_error(res, f, c, out_delayed);
         }
-        f.mvs = (*f.mvs_ref).data as *mut refmvs_temporal_block;
+        f.mvs = (*f.mvs_ref).data.cast::<refmvs_temporal_block>();
         if (*f.frame_hdr).allow_intrabc == 0 {
             for i in 0..7 {
                 f.refpoc[i] = (*f.refp[i].p.frame_hdr).frame_offset as libc::c_uint;
@@ -6223,7 +6223,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 if !c.refs[refidx].refmvs.is_null() && ref_w == f.bw && ref_h == f.bh {
                     f.ref_mvs_ref[i] = c.refs[refidx].refmvs;
                     dav1d_ref_inc(f.ref_mvs_ref[i]);
-                    f.ref_mvs[i] = (*c.refs[refidx].refmvs).data as *mut refmvs_temporal_block;
+                    f.ref_mvs[i] = (*c.refs[refidx].refmvs).data.cast::<refmvs_temporal_block>();
                 } else {
                     f.ref_mvs[i] = ptr::null_mut();
                     f.ref_mvs_ref[i] = ptr::null_mut();
@@ -6250,7 +6250,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 f.prev_segmap_ref = c.refs[(*f.frame_hdr).refidx[pri_ref] as usize].segmap;
                 if !f.prev_segmap_ref.is_null() {
                     dav1d_ref_inc(f.prev_segmap_ref);
-                    f.prev_segmap = (*f.prev_segmap_ref).data as *const uint8_t;
+                    f.prev_segmap = (*f.prev_segmap_ref).data.cast::<uint8_t>();
                 }
             }
         }
@@ -6264,11 +6264,11 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 res = -12;
                 return dav1d_submit_frame_error(res, f, c, out_delayed);
             }
-            f.cur_segmap = (*f.cur_segmap_ref).data as *mut uint8_t;
+            f.cur_segmap = (*f.cur_segmap_ref).data.cast::<uint8_t>();
         } else if !f.prev_segmap_ref.is_null() {
             f.cur_segmap_ref = f.prev_segmap_ref;
             dav1d_ref_inc(f.cur_segmap_ref);
-            f.cur_segmap = (*f.prev_segmap_ref).data as *mut uint8_t;
+            f.cur_segmap = (*f.prev_segmap_ref).data.cast::<uint8_t>();
         } else {
             let segmap_size =
                 ::core::mem::size_of::<uint8_t>() * f.b4_stride as size_t * 32 * f.sb128h as size_t;
@@ -6277,7 +6277,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 res = -12;
                 return dav1d_submit_frame_error(res, f, c, out_delayed);
             }
-            f.cur_segmap = (*f.cur_segmap_ref).data as *mut uint8_t;
+            f.cur_segmap = (*f.cur_segmap_ref).data.cast::<uint8_t>();
             slice::from_raw_parts_mut(f.cur_segmap, segmap_size).fill(0);
         }
     } else {
