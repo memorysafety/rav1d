@@ -5897,13 +5897,13 @@ unsafe extern "C" fn dav1d_submit_frame_error(
     c: &mut Dav1dContext,
     out_delayed: *mut Dav1dThreadPicture,
 ) -> libc::c_int {
-    *&mut f.task_thread.error = 1;
+    f.task_thread.error = 1;
     dav1d_cdf_thread_unref(&mut f.in_cdf);
     if (*f.frame_hdr).refresh_context != 0 {
         dav1d_cdf_thread_unref(&mut f.out_cdf);
     }
     for i in 0..7 {
-        if !(f.refp[i].p.frame_hdr).is_null() {
+        if !f.refp[i].p.frame_hdr.is_null() {
             dav1d_thread_picture_unref(&mut f.refp[i]);
         }
         dav1d_ref_dec(&mut f.ref_mvs_ref[i]);
