@@ -5921,10 +5921,10 @@ unsafe extern "C" fn dav1d_submit_frame_error(
     dav1d_ref_dec(&mut (*f).seq_hdr_ref);
     dav1d_ref_dec(&mut (*f).frame_hdr_ref);
     dav1d_data_props_copy(&mut (*c).cached_error_props, &mut (*c).in_0.m);
-    let mut i_0 = 0;
-    while i_0 < (*f).n_tile_data {
-        dav1d_data_unref_internal(&mut (*((*f).tile).offset(i_0 as isize)).data);
-        i_0 += 1;
+    let mut i = 0;
+    while i < (*f).n_tile_data {
+        dav1d_data_unref_internal(&mut (*((*f).tile).offset(i as isize)).data);
+        i += 1;
     }
     (*f).n_tile_data = 0;
     if (*c).n_fc > 1 {
