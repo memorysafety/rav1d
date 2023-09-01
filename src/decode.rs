@@ -5894,7 +5894,7 @@ fn get_upscale_x0(in_w: libc::c_int, out_w: libc::c_int, step: libc::c_int) -> l
 unsafe extern "C" fn dav1d_submit_frame_error(
     res: libc::c_int,
     f: &mut Dav1dFrameContext,
-    c: *mut Dav1dContext,
+    c: &mut Dav1dContext,
     out_delayed: *mut Dav1dThreadPicture,
 ) -> libc::c_int {
     *&mut f.task_thread.error = 1;
@@ -5910,8 +5910,8 @@ unsafe extern "C" fn dav1d_submit_frame_error(
         dav1d_ref_dec(&mut *(f.ref_mvs_ref).as_mut_ptr().offset(i as isize));
         i += 1;
     }
-    if (*c).n_fc == 1 {
-        dav1d_thread_picture_unref(&mut (*c).out);
+    if c.n_fc == 1 {
+        dav1d_thread_picture_unref(&mut c.out);
     } else {
         dav1d_thread_picture_unref(out_delayed);
     }
@@ -5920,15 +5920,15 @@ unsafe extern "C" fn dav1d_submit_frame_error(
     dav1d_ref_dec(&mut f.mvs_ref);
     dav1d_ref_dec(&mut f.seq_hdr_ref);
     dav1d_ref_dec(&mut f.frame_hdr_ref);
-    dav1d_data_props_copy(&mut (*c).cached_error_props, &mut (*c).in_0.m);
+    dav1d_data_props_copy(&mut c.cached_error_props, &mut c.in_0.m);
     let mut i = 0;
     while i < f.n_tile_data {
         dav1d_data_unref_internal(&mut (*(f.tile).offset(i as isize)).data);
         i += 1;
     }
     f.n_tile_data = 0;
-    if (*c).n_fc > 1 {
-        pthread_mutex_unlock(&mut (*c).task_thread.lock);
+    if c.n_fc > 1 {
+        pthread_mutex_unlock(&mut c.task_thread.lock);
     }
     return res;
 }
