@@ -6064,7 +6064,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             f.bd_fn.read_coef_blocks = Some(dav1d_read_coef_blocks_16bpc);
         }
     }
-    let mut ref_coded_width: [libc::c_int; 7] = [0; 7];
+    let mut ref_coded_width = <[i32; 7]>::default();
     if (*f.frame_hdr).frame_type & 1 != 0 {
         if (*f.frame_hdr).primary_ref_frame != 7 {
             let pri_ref = (*f.frame_hdr).refidx[(*f.frame_hdr).primary_ref_frame as usize] as usize;
