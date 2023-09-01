@@ -5904,9 +5904,9 @@ unsafe extern "C" fn dav1d_submit_frame_error(
     }
     for i in 0..7 {
         if !(f.refp[i as usize].p.frame_hdr).is_null() {
-            dav1d_thread_picture_unref(&mut *(f.refp).as_mut_ptr().offset(i as isize));
+            dav1d_thread_picture_unref(&mut f.refp[i as usize]);
         }
-        dav1d_ref_dec(&mut *(f.ref_mvs_ref).as_mut_ptr().offset(i as isize));
+        dav1d_ref_dec(&mut f.ref_mvs_ref[i as usize]);
     }
     if c.n_fc == 1 {
         dav1d_thread_picture_unref(&mut c.out);
