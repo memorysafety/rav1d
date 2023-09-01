@@ -5897,7 +5897,7 @@ unsafe extern "C" fn dav1d_submit_frame_error(
     c: *mut Dav1dContext,
     out_delayed: *mut Dav1dThreadPicture,
 ) -> libc::c_int {
-    *&mut (*f).task_thread.error = 1 as libc::c_int;
+    *&mut (*f).task_thread.error = 1;
     dav1d_cdf_thread_unref(&mut (*f).in_cdf);
     if (*(*f).frame_hdr).refresh_context != 0 {
         dav1d_cdf_thread_unref(&mut (*f).out_cdf);
@@ -5910,7 +5910,7 @@ unsafe extern "C" fn dav1d_submit_frame_error(
         dav1d_ref_dec(&mut *((*f).ref_mvs_ref).as_mut_ptr().offset(i as isize));
         i += 1;
     }
-    if (*c).n_fc == 1 as libc::c_uint {
+    if (*c).n_fc == 1 {
         dav1d_thread_picture_unref(&mut (*c).out);
     } else {
         dav1d_thread_picture_unref(out_delayed);
@@ -5926,8 +5926,8 @@ unsafe extern "C" fn dav1d_submit_frame_error(
         dav1d_data_unref_internal(&mut (*((*f).tile).offset(i_0 as isize)).data);
         i_0 += 1;
     }
-    (*f).n_tile_data = 0 as libc::c_int;
-    if (*c).n_fc > 1 as libc::c_uint {
+    (*f).n_tile_data = 0;
+    if (*c).n_fc > 1 {
         pthread_mutex_unlock(&mut (*c).task_thread.lock);
     }
     return res;
@@ -6223,7 +6223,9 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 if !c.refs[refidx].refmvs.is_null() && ref_w == f.bw && ref_h == f.bh {
                     f.ref_mvs_ref[i] = c.refs[refidx].refmvs;
                     dav1d_ref_inc(f.ref_mvs_ref[i]);
-                    f.ref_mvs[i] = (*c.refs[refidx].refmvs).data.cast::<refmvs_temporal_block>();
+                    f.ref_mvs[i] = (*c.refs[refidx].refmvs)
+                        .data
+                        .cast::<refmvs_temporal_block>();
                 } else {
                     f.ref_mvs[i] = ptr::null_mut();
                     f.ref_mvs_ref[i] = ptr::null_mut();
