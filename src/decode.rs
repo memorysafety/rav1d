@@ -6108,7 +6108,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             f.gmv_warp_allowed[i] = ((*f.frame_hdr).gmv[i].type_0 > DAV1D_WM_TYPE_TRANSLATION
                 && (*f.frame_hdr).force_integer_mv == 0
                 && !dav1d_get_shear_params(&mut (*f.frame_hdr).gmv[i])
-                && f.svc[i][0].scale == 0) as uint8_t;
+                && f.svc[i][0].scale == 0) as u8;
         }
     }
     if (*f.frame_hdr).primary_ref_frame == 7 {
@@ -6250,34 +6250,34 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 f.prev_segmap_ref = c.refs[(*f.frame_hdr).refidx[pri_ref] as usize].segmap;
                 if !f.prev_segmap_ref.is_null() {
                     dav1d_ref_inc(f.prev_segmap_ref);
-                    f.prev_segmap = (*f.prev_segmap_ref).data.cast::<uint8_t>();
+                    f.prev_segmap = (*f.prev_segmap_ref).data.cast::<u8>();
                 }
             }
         }
         if (*f.frame_hdr).segmentation.update_map != 0 {
             f.cur_segmap_ref = dav1d_ref_create_using_pool(
                 c.segmap_pool,
-                ::core::mem::size_of::<uint8_t>() * f.b4_stride as size_t * 32 * f.sb128h as size_t,
+                ::core::mem::size_of::<u8>() * f.b4_stride as size_t * 32 * f.sb128h as size_t,
             );
             if f.cur_segmap_ref.is_null() {
                 dav1d_ref_dec(&mut f.prev_segmap_ref);
                 res = -12;
                 return dav1d_submit_frame_error(res, f, c, out_delayed);
             }
-            f.cur_segmap = (*f.cur_segmap_ref).data.cast::<uint8_t>();
+            f.cur_segmap = (*f.cur_segmap_ref).data.cast::<u8>();
         } else if !f.prev_segmap_ref.is_null() {
             f.cur_segmap_ref = f.prev_segmap_ref;
             dav1d_ref_inc(f.cur_segmap_ref);
             f.cur_segmap = (*f.prev_segmap_ref).data.cast::<uint8_t>();
         } else {
             let segmap_size =
-                ::core::mem::size_of::<uint8_t>() * f.b4_stride as size_t * 32 * f.sb128h as size_t;
+                ::core::mem::size_of::<u8>() * f.b4_stride as size_t * 32 * f.sb128h as size_t;
             f.cur_segmap_ref = dav1d_ref_create_using_pool(c.segmap_pool, segmap_size);
             if f.cur_segmap_ref.is_null() {
                 res = -12;
                 return dav1d_submit_frame_error(res, f, c, out_delayed);
             }
-            f.cur_segmap = (*f.cur_segmap_ref).data.cast::<uint8_t>();
+            f.cur_segmap = (*f.cur_segmap_ref).data.cast::<u8>();
             slice::from_raw_parts_mut(f.cur_segmap, segmap_size).fill(0);
         }
     } else {
