@@ -5996,8 +5996,8 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
     dav1d_ref_inc(f.seq_hdr_ref);
     f.frame_hdr = c.frame_hdr;
     f.frame_hdr_ref = c.frame_hdr_ref;
-    c.frame_hdr = 0 as *mut Dav1dFrameHeader;
-    c.frame_hdr_ref = 0 as *mut Dav1dRef;
+    c.frame_hdr = ptr::null_mut();
+    c.frame_hdr_ref = ptr::null_mut();
     f.dsp = &mut c.dsp[(*f.seq_hdr).hbd as usize];
     let bpc = 8 + 2 * (*f.seq_hdr).hbd;
     if (*f.dsp).ipred.intra_pred[DC_PRED as usize].is_none() {
@@ -6225,8 +6225,8 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                     dav1d_ref_inc(f.ref_mvs_ref[i]);
                     f.ref_mvs[i] = (*c.refs[refidx].refmvs).data as *mut refmvs_temporal_block;
                 } else {
-                    f.ref_mvs[i] = 0 as *mut refmvs_temporal_block;
-                    f.ref_mvs_ref[i] = 0 as *mut Dav1dRef;
+                    f.ref_mvs[i] = ptr::null_mut();
+                    f.ref_mvs_ref[i] = ptr::null_mut();
                 }
                 f.refrefpoc[i] = c.refs[refidx].refpoc;
             }
@@ -6234,12 +6234,12 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             f.ref_mvs_ref.fill_with(ptr::null_mut);
         }
     } else {
-        f.mvs_ref = 0 as *mut Dav1dRef;
+        f.mvs_ref = ptr::null_mut();
         f.ref_mvs_ref.fill_with(ptr::null_mut);
     }
     if (*f.frame_hdr).segmentation.enabled != 0 {
-        f.prev_segmap_ref = 0 as *mut Dav1dRef;
-        f.prev_segmap = 0 as *const uint8_t;
+        f.prev_segmap_ref = ptr::null_mut();
+        f.prev_segmap = ptr::null();
         if (*f.frame_hdr).segmentation.temporal != 0 || (*f.frame_hdr).segmentation.update_map == 0
         {
             let pri_ref = (*f.frame_hdr).primary_ref_frame as usize;
@@ -6281,9 +6281,9 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             slice::from_raw_parts_mut(f.cur_segmap, segmap_size).fill(0);
         }
     } else {
-        f.cur_segmap = 0 as *mut uint8_t;
-        f.cur_segmap_ref = 0 as *mut Dav1dRef;
-        f.prev_segmap_ref = 0 as *mut Dav1dRef;
+        f.cur_segmap = ptr::null_mut();
+        f.cur_segmap_ref = ptr::null_mut();
+        f.prev_segmap_ref = ptr::null_mut();
     }
     let refresh_frame_flags = (*f.frame_hdr).refresh_frame_flags as libc::c_uint;
     for i in 0..8 {
