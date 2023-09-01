@@ -5937,7 +5937,7 @@ unsafe extern "C" fn dav1d_submit_frame_error(
 pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int {
     let c = &mut *c; // TODO(kkysen) propagate to arg once we deduplicate the fn decl
 
-    let mut res: libc::c_int;
+    let mut res;
     let (f, out_delayed) = if c.n_fc > 1 {
         pthread_mutex_lock(&mut c.task_thread.lock);
         let next = c.frame_thread.next;
@@ -5954,8 +5954,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             || ::core::intrinsics::atomic_load_seqcst(&mut f.task_thread.error as *mut atomic_int)
                 != 0
         {
-            let first: libc::c_uint =
-                ::core::intrinsics::atomic_load_seqcst(&mut c.task_thread.first);
+            let first = ::core::intrinsics::atomic_load_seqcst(&mut c.task_thread.first);
             if first + 1 < c.n_fc {
                 ::core::intrinsics::atomic_xadd_seqcst(&mut c.task_thread.first, 1);
             } else {
@@ -5970,14 +5969,14 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 c.task_thread.cur -= 1;
             }
         }
-        let error: libc::c_int = f.task_thread.retval;
+        let error = f.task_thread.retval;
         if error != 0 {
             f.task_thread.retval = 0;
             c.cached_error = error;
             dav1d_data_props_copy(&mut c.cached_error_props, &mut out_delayed.p.m);
             dav1d_thread_picture_unref(out_delayed);
         } else if !out_delayed.p.data[0].is_null() {
-            let progress: libc::c_uint = ::core::intrinsics::atomic_load_relaxed(
+            let progress = ::core::intrinsics::atomic_load_relaxed(
                 &mut *(out_delayed.progress).offset(1) as *mut atomic_uint,
             );
             if (out_delayed.visible != 0 || c.output_invisible_frames != 0)
@@ -6162,9 +6161,9 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
     }
     if (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1] {
         f.resize_step[0] = ((f.cur.p.w << 14) + (f.sr_cur.p.p.w >> 1)) / f.sr_cur.p.p.w;
-        let ss_hor: libc::c_int = (f.cur.p.layout != DAV1D_PIXEL_LAYOUT_I444) as libc::c_int;
-        let in_cw: libc::c_int = f.cur.p.w + ss_hor >> ss_hor;
-        let out_cw: libc::c_int = f.sr_cur.p.p.w + ss_hor >> ss_hor;
+        let ss_hor = (f.cur.p.layout != DAV1D_PIXEL_LAYOUT_I444) as libc::c_int;
+        let in_cw = f.cur.p.w + ss_hor >> ss_hor;
+        let out_cw = f.sr_cur.p.p.w + ss_hor >> ss_hor;
         f.resize_step[1] = ((in_cw << 14) + (out_cw >> 1)) / out_cw;
         f.resize_start[0] = get_upscale_x0(f.cur.p.w, f.sr_cur.p.p.w, f.resize_step[0]);
         f.resize_start[1] = get_upscale_x0(in_cw, out_cw, f.resize_step[1]);
@@ -6189,9 +6188,9 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
     f.b4_stride = (f.bw + 31 & !31) as ptrdiff_t;
     f.bitdepth_max = (1 << f.cur.p.bpc) - 1;
     *&mut f.task_thread.error = 0;
-    let uses_2pass: libc::c_int = (c.n_fc > 1) as libc::c_int;
-    let cols: libc::c_int = (*f.frame_hdr).tiling.cols;
-    let rows: libc::c_int = (*f.frame_hdr).tiling.rows;
+    let uses_2pass = (c.n_fc > 1) as libc::c_int;
+    let cols = (*f.frame_hdr).tiling.cols;
+    let rows = (*f.frame_hdr).tiling.rows;
     ::core::intrinsics::atomic_store_seqcst(
         &mut f.task_thread.task_counter,
         cols * rows + f.sbh << uses_2pass,
@@ -6219,8 +6218,8 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         if (*f.frame_hdr).use_ref_frame_mvs != 0 {
             for i in 0..7 {
                 let refidx = (*f.frame_hdr).refidx[i] as usize;
-                let ref_w: libc::c_int = (ref_coded_width[i] + 7 >> 3) << 1;
-                let ref_h: libc::c_int = (f.refp[i].p.p.h + 7 >> 3) << 1;
+                let ref_w = (ref_coded_width[i] + 7 >> 3) << 1;
+                let ref_h = (f.refp[i].p.p.h + 7 >> 3) << 1;
                 if !c.refs[refidx].refmvs.is_null() && ref_w == f.bw && ref_h == f.bh {
                     f.ref_mvs_ref[i] = c.refs[refidx].refmvs;
                     dav1d_ref_inc(f.ref_mvs_ref[i]);
@@ -6245,8 +6244,8 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         {
             let pri_ref = (*f.frame_hdr).primary_ref_frame as usize;
             assert!(pri_ref != 7);
-            let ref_w: libc::c_int = (ref_coded_width[pri_ref] + 7 >> 3) << 1;
-            let ref_h: libc::c_int = (f.refp[pri_ref].p.p.h + 7 >> 3) << 1;
+            let ref_w = (ref_coded_width[pri_ref] + 7 >> 3) << 1;
+            let ref_h = (f.refp[pri_ref].p.p.h + 7 >> 3) << 1;
             if ref_w == f.bw && ref_h == f.bh {
                 f.prev_segmap_ref = c.refs[(*f.frame_hdr).refidx[pri_ref] as usize].segmap;
                 if !f.prev_segmap_ref.is_null() {
@@ -6271,7 +6270,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             dav1d_ref_inc(f.cur_segmap_ref);
             f.cur_segmap = (*f.prev_segmap_ref).data as *mut uint8_t;
         } else {
-            let segmap_size: size_t =
+            let segmap_size =
                 ::core::mem::size_of::<uint8_t>() * f.b4_stride as size_t * 32 * f.sb128h as size_t;
             f.cur_segmap_ref = dav1d_ref_create_using_pool(c.segmap_pool, segmap_size);
             if f.cur_segmap_ref.is_null() {
@@ -6286,7 +6285,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         f.cur_segmap_ref = 0 as *mut Dav1dRef;
         f.prev_segmap_ref = 0 as *mut Dav1dRef;
     }
-    let refresh_frame_flags: libc::c_uint = (*f.frame_hdr).refresh_frame_flags as libc::c_uint;
+    let refresh_frame_flags = (*f.frame_hdr).refresh_frame_flags as libc::c_uint;
     for i in 0..8 {
         if refresh_frame_flags & (1 << i) != 0 {
             if !c.refs[i].p.p.frame_hdr.is_null() {
