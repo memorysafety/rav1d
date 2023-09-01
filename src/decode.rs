@@ -5893,21 +5893,21 @@ fn get_upscale_x0(in_w: libc::c_int, out_w: libc::c_int, step: libc::c_int) -> l
 
 unsafe extern "C" fn dav1d_submit_frame_error(
     res: libc::c_int,
-    f: *mut Dav1dFrameContext,
+    f: &mut Dav1dFrameContext,
     c: *mut Dav1dContext,
     out_delayed: *mut Dav1dThreadPicture,
 ) -> libc::c_int {
-    *&mut (*f).task_thread.error = 1;
-    dav1d_cdf_thread_unref(&mut (*f).in_cdf);
-    if (*(*f).frame_hdr).refresh_context != 0 {
-        dav1d_cdf_thread_unref(&mut (*f).out_cdf);
+    *&mut f.task_thread.error = 1;
+    dav1d_cdf_thread_unref(&mut f.in_cdf);
+    if (*f.frame_hdr).refresh_context != 0 {
+        dav1d_cdf_thread_unref(&mut f.out_cdf);
     }
     let mut i = 0;
     while i < 7 {
-        if !((*f).refp[i as usize].p.frame_hdr).is_null() {
-            dav1d_thread_picture_unref(&mut *((*f).refp).as_mut_ptr().offset(i as isize));
+        if !(f.refp[i as usize].p.frame_hdr).is_null() {
+            dav1d_thread_picture_unref(&mut *(f.refp).as_mut_ptr().offset(i as isize));
         }
-        dav1d_ref_dec(&mut *((*f).ref_mvs_ref).as_mut_ptr().offset(i as isize));
+        dav1d_ref_dec(&mut *(f.ref_mvs_ref).as_mut_ptr().offset(i as isize));
         i += 1;
     }
     if (*c).n_fc == 1 {
@@ -5915,18 +5915,18 @@ unsafe extern "C" fn dav1d_submit_frame_error(
     } else {
         dav1d_thread_picture_unref(out_delayed);
     }
-    dav1d_picture_unref_internal(&mut (*f).cur);
-    dav1d_thread_picture_unref(&mut (*f).sr_cur);
-    dav1d_ref_dec(&mut (*f).mvs_ref);
-    dav1d_ref_dec(&mut (*f).seq_hdr_ref);
-    dav1d_ref_dec(&mut (*f).frame_hdr_ref);
+    dav1d_picture_unref_internal(&mut f.cur);
+    dav1d_thread_picture_unref(&mut f.sr_cur);
+    dav1d_ref_dec(&mut f.mvs_ref);
+    dav1d_ref_dec(&mut f.seq_hdr_ref);
+    dav1d_ref_dec(&mut f.frame_hdr_ref);
     dav1d_data_props_copy(&mut (*c).cached_error_props, &mut (*c).in_0.m);
     let mut i = 0;
-    while i < (*f).n_tile_data {
-        dav1d_data_unref_internal(&mut (*((*f).tile).offset(i as isize)).data);
+    while i < f.n_tile_data {
+        dav1d_data_unref_internal(&mut (*(f.tile).offset(i as isize)).data);
         i += 1;
     }
-    (*f).n_tile_data = 0;
+    f.n_tile_data = 0;
     if (*c).n_fc > 1 {
         pthread_mutex_unlock(&mut (*c).task_thread.lock);
     }
