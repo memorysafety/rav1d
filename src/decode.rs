@@ -5991,9 +5991,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                         .wrapping_sub(1)
             {
                 dav1d_thread_picture_ref(&mut c.out, out_delayed);
-                c.event_flags = ::core::mem::transmute::<libc::c_uint, Dav1dEventFlags>(
-                    c.event_flags | dav1d_picture_get_event_flags(out_delayed),
-                );
+                c.event_flags |= dav1d_picture_get_event_flags(out_delayed);
             }
             dav1d_thread_picture_unref(out_delayed);
         }
@@ -6180,9 +6178,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
     if c.n_fc == 1 {
         if (*f.frame_hdr).show_frame != 0 || c.output_invisible_frames != 0 {
             dav1d_thread_picture_ref(&mut c.out, &mut f.sr_cur);
-            c.event_flags = ::core::mem::transmute::<libc::c_uint, Dav1dEventFlags>(
-                c.event_flags | dav1d_picture_get_event_flags(&mut f.sr_cur),
-            );
+            c.event_flags |= dav1d_picture_get_event_flags(&mut f.sr_cur);
         }
     } else {
         dav1d_thread_picture_ref(out_delayed, &mut f.sr_cur);
