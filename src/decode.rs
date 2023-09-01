@@ -5937,9 +5937,8 @@ unsafe extern "C" fn dav1d_submit_frame_error(
 pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int {
     let c = &mut *c; // TODO(kkysen) propagate to arg once we deduplicate the fn decl
 
-    let f;
     let mut res: libc::c_int;
-    let out_delayed = if c.n_fc > 1 {
+    let (f, out_delayed) = if c.n_fc > 1 {
         pthread_mutex_lock(&mut c.task_thread.lock);
         let fresh39 = c.frame_thread.next;
         c.frame_thread.next = c.frame_thread.next.wrapping_add(1);
@@ -5947,7 +5946,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         if c.frame_thread.next == c.n_fc {
             c.frame_thread.next = 0;
         }
-        f = &mut *c.fc.offset(next as isize);
+        let f = &mut *c.fc.offset(next as isize);
         while f.n_tile_data > 0 {
             pthread_cond_wait(&mut f.task_thread.cond, &mut c.task_thread.lock);
         }
@@ -5994,10 +5993,9 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             }
             dav1d_thread_picture_unref(out_delayed);
         }
-        out_delayed
+        (f, out_delayed as *mut _)
     } else {
-        f = &mut *c.fc;
-        ptr::null_mut()
+        (&mut *c.fc, ptr::null_mut())
     };
     f.seq_hdr = c.seq_hdr;
     f.seq_hdr_ref = c.seq_hdr_ref;
