@@ -5940,9 +5940,8 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
     let mut res: libc::c_int;
     let (f, out_delayed) = if c.n_fc > 1 {
         pthread_mutex_lock(&mut c.task_thread.lock);
-        let fresh39 = c.frame_thread.next;
+        let next = c.frame_thread.next;
         c.frame_thread.next = c.frame_thread.next.wrapping_add(1);
-        let next: libc::c_uint = fresh39;
         if c.frame_thread.next == c.n_fc {
             c.frame_thread.next = 0;
         }
