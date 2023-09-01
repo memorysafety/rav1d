@@ -5926,7 +5926,7 @@ unsafe extern "C" fn dav1d_submit_frame_error(
     if c.n_fc > 1 {
         pthread_mutex_unlock(&mut c.task_thread.lock);
     }
-    return res;
+    res
 }
 
 #[no_mangle]
