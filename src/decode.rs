@@ -5895,7 +5895,6 @@ fn get_upscale_x0(in_w: libc::c_int, out_w: libc::c_int, step: libc::c_int) -> l
 pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int {
     let c = &mut *c; // TODO(kkysen) propagate to arg once we deduplicate the fn decl
 
-    let mut res;
     let (f, out_delayed) = if c.n_fc > 1 {
         pthread_mutex_lock(&mut c.task_thread.lock);
         let next = c.frame_thread.next;
@@ -5959,12 +5958,11 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
     f.dsp = &mut c.dsp[(*f.seq_hdr).hbd as usize];
     let bpc = 8 + 2 * (*f.seq_hdr).hbd;
 
-    unsafe fn error(
-        res: libc::c_int,
+    unsafe fn on_error(
         f: &mut Dav1dFrameContext,
         c: &mut Dav1dContext,
         out_delayed: *mut Dav1dThreadPicture,
-    ) -> libc::c_int {
+    ) {
         f.task_thread.error = 1;
         dav1d_cdf_thread_unref(&mut f.in_cdf);
         if (*f.frame_hdr).refresh_context != 0 {
@@ -5994,7 +5992,6 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         if c.n_fc > 1 {
             pthread_mutex_unlock(&mut c.task_thread.lock);
         }
-        res
     }
 
     if (*f.dsp).ipred.intra_pred[DC_PRED as usize].is_none() {
@@ -6027,8 +6024,8 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                         as *const libc::c_char,
                     8 + 2 * (*f.seq_hdr).hbd,
                 );
-                res = -92;
-                return error(res, f, c, out_delayed);
+                on_error(f, c, out_delayed);
+                return -92;
             }
         }
     }
@@ -6066,8 +6063,8 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         if (*f.frame_hdr).primary_ref_frame != 7 {
             let pri_ref = (*f.frame_hdr).refidx[(*f.frame_hdr).primary_ref_frame as usize] as usize;
             if c.refs[pri_ref].p.p.data[0].is_null() {
-                res = -22;
-                return error(res, f, c, out_delayed);
+                on_error(f, c, out_delayed);
+                return -22;
             }
         }
         for i in 0..7 {
@@ -6083,8 +6080,8 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 for j in 0..i {
                     dav1d_thread_picture_unref(&mut f.refp[j]);
                 }
-                res = -22;
-                return error(res, f, c, out_delayed);
+                on_error(f, c, out_delayed);
+                return -22;
             }
             dav1d_thread_picture_ref(&mut f.refp[i], &mut c.refs[refidx].p);
             ref_coded_width[i] = (*c.refs[refidx].p.p.frame_hdr).width[0];
@@ -6115,9 +6112,10 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         dav1d_cdf_thread_ref(&mut f.in_cdf, &mut c.cdf[pri_ref]);
     }
     if (*f.frame_hdr).refresh_context != 0 {
-        res = dav1d_cdf_thread_alloc(c, &mut f.out_cdf, (c.n_fc > 1) as libc::c_int);
+        let res = dav1d_cdf_thread_alloc(c, &mut f.out_cdf, (c.n_fc > 1) as libc::c_int);
         if res < 0 {
-            return error(res, f, c, out_delayed);
+            on_error(f, c, out_delayed);
+            return res;
         }
     }
     if f.n_tile_data_alloc < c.n_tile_data {
@@ -6132,8 +6130,8 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         if f.tile.is_null() {
             f.n_tile_data = 0;
             f.n_tile_data_alloc = f.n_tile_data;
-            res = -12;
-            return error(res, f, c, out_delayed);
+            on_error(f, c, out_delayed);
+            return -12;
         }
         f.n_tile_data_alloc = c.n_tile_data;
     }
@@ -6144,14 +6142,16 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
     c_tiles.fill_with(Default::default);
     f.n_tile_data = c.n_tile_data;
     c.n_tile_data = 0;
-    res = dav1d_thread_picture_alloc(c, f, bpc);
+    let res = dav1d_thread_picture_alloc(c, f, bpc);
     if res < 0 {
-        return error(res, f, c, out_delayed);
+        on_error(f, c, out_delayed);
+        return res;
     }
     if (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1] {
-        res = dav1d_picture_alloc_copy(c, &mut f.cur, (*f.frame_hdr).width[0], &mut f.sr_cur.p);
+        let res = dav1d_picture_alloc_copy(c, &mut f.cur, (*f.frame_hdr).width[0], &mut f.sr_cur.p);
         if res < 0 {
-            return error(res, f, c, out_delayed);
+            on_error(f, c, out_delayed);
+            return res;
         }
     } else {
         dav1d_picture_ref(&mut f.cur, &mut f.sr_cur.p);
@@ -6201,8 +6201,8 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 * (f.b4_stride >> 1) as size_t,
         );
         if f.mvs_ref.is_null() {
-            res = -12;
-            return error(res, f, c, out_delayed);
+            on_error(f, c, out_delayed);
+            return -12;
         }
         f.mvs = (*f.mvs_ref).data.cast::<refmvs_temporal_block>();
         if (*f.frame_hdr).allow_intrabc == 0 {
@@ -6260,8 +6260,8 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             );
             if f.cur_segmap_ref.is_null() {
                 dav1d_ref_dec(&mut f.prev_segmap_ref);
-                res = -12;
-                return error(res, f, c, out_delayed);
+                on_error(f, c, out_delayed);
+                return -12;
             }
             f.cur_segmap = (*f.cur_segmap_ref).data.cast::<u8>();
         } else if !f.prev_segmap_ref.is_null() {
@@ -6273,8 +6273,8 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 ::core::mem::size_of::<u8>() * f.b4_stride as size_t * 32 * f.sb128h as size_t;
             f.cur_segmap_ref = dav1d_ref_create_using_pool(c.segmap_pool, segmap_size);
             if f.cur_segmap_ref.is_null() {
-                res = -12;
-                return error(res, f, c, out_delayed);
+                on_error(f, c, out_delayed);
+                return -12;
             }
             f.cur_segmap = (*f.cur_segmap_ref).data.cast::<u8>();
             slice::from_raw_parts_mut(f.cur_segmap, segmap_size).fill(0);
@@ -6313,7 +6313,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         }
     }
     if c.n_fc == 1 {
-        res = dav1d_decode_frame(f);
+        let res = dav1d_decode_frame(f);
         if res < 0 {
             dav1d_thread_picture_unref(&mut c.out);
             for i in 0..8 {
@@ -6326,7 +6326,8 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                     dav1d_ref_dec(&mut c.refs[i].refmvs);
                 }
             }
-            return error(res, f, c, out_delayed);
+            on_error(f, c, out_delayed);
+            return res;
         }
     } else {
         dav1d_task_frame_init(f);
