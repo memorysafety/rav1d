@@ -6067,7 +6067,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
     }
 
     let mut ref_coded_width = <[i32; 7]>::default();
-    if (*f.frame_hdr).frame_type & 1 != 0 {
+    if is_inter_or_switch(&*f.frame_hdr) {
         if (*f.frame_hdr).primary_ref_frame != 7 {
             let pri_ref = (*f.frame_hdr).refidx[(*f.frame_hdr).primary_ref_frame as usize] as usize;
             if c.refs[pri_ref].p.p.data[0].is_null() {
@@ -6212,7 +6212,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
     );
 
     // ref_mvs
-    if (*f.frame_hdr).frame_type & 1 != 0 || (*f.frame_hdr).allow_intrabc != 0 {
+    if is_inter_or_switch(&*f.frame_hdr) || (*f.frame_hdr).allow_intrabc != 0 {
         f.mvs_ref = dav1d_ref_create_using_pool(
             c.refmvs_pool,
             ::core::mem::size_of::<refmvs_temporal_block>()
