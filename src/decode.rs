@@ -5895,6 +5895,7 @@ fn get_upscale_x0(in_w: libc::c_int, out_w: libc::c_int, step: libc::c_int) -> l
 pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int {
     let c = &mut *c; // TODO(kkysen) propagate to arg once we deduplicate the fn decl
 
+    // wait for c->out_delayed[next] and move into c->out if visible
     let (f, out_delayed) = if c.n_fc > 1 {
         pthread_mutex_lock(&mut c.task_thread.lock);
         let next = c.frame_thread.next;
@@ -5902,6 +5903,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         if c.frame_thread.next == c.n_fc {
             c.frame_thread.next = 0;
         }
+
         let f = &mut *c.fc.offset(next as isize);
         while f.n_tile_data > 0 {
             pthread_cond_wait(&mut f.task_thread.cond, &mut c.task_thread.lock);
@@ -5948,6 +5950,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
     } else {
         (&mut *c.fc, ptr::null_mut())
     };
+
     f.seq_hdr = c.seq_hdr;
     f.seq_hdr_ref = c.seq_hdr_ref;
     dav1d_ref_inc(f.seq_hdr_ref);
@@ -5956,6 +5959,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
     c.frame_hdr = ptr::null_mut();
     c.frame_hdr_ref = ptr::null_mut();
     f.dsp = &mut c.dsp[(*f.seq_hdr).hbd as usize];
+
     let bpc = 8 + 2 * (*f.seq_hdr).hbd;
 
     unsafe fn on_error(
@@ -5985,10 +5989,12 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         dav1d_ref_dec(&mut f.seq_hdr_ref);
         dav1d_ref_dec(&mut f.frame_hdr_ref);
         dav1d_data_props_copy(&mut c.cached_error_props, &mut c.in_0.m);
+
         for tile in slice::from_raw_parts_mut(f.tile, f.n_tile_data.try_into().unwrap()) {
             dav1d_data_unref_internal(&mut tile.data);
         }
         f.n_tile_data = 0;
+
         if c.n_fc > 1 {
             pthread_mutex_unlock(&mut c.task_thread.lock);
         }
@@ -5996,6 +6002,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
 
     if (*f.dsp).ipred.intra_pred[DC_PRED as usize].is_none() {
         let dsp = &mut c.dsp[(*f.seq_hdr).hbd as usize];
+
         match bpc {
             #[cfg(feature = "bitdepth_8")]
             8 => {
@@ -6058,6 +6065,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             f.bd_fn.read_coef_blocks = Some(dav1d_read_coef_blocks_16bpc);
         }
     }
+
     let mut ref_coded_width = <[i32; 7]>::default();
     if (*f.frame_hdr).frame_type & 1 != 0 {
         if (*f.frame_hdr).primary_ref_frame != 7 {
@@ -6105,6 +6113,8 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 && f.svc[i][0].scale == 0) as u8;
         }
     }
+
+    // setup entropy
     if (*f.frame_hdr).primary_ref_frame == 7 {
         dav1d_cdf_thread_init_static(&mut f.in_cdf, (*f.frame_hdr).quant.yac);
     } else {
@@ -6118,6 +6128,8 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             return res;
         }
     }
+
+    // FIXME qsort so tiles are in order (for frame threading)
     if f.n_tile_data_alloc < c.n_tile_data {
         freep(&mut f.tile as *mut *mut Dav1dTileGroup as *mut libc::c_void);
         assert!(
@@ -6142,11 +6154,14 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
     c_tiles.fill_with(Default::default);
     f.n_tile_data = c.n_tile_data;
     c.n_tile_data = 0;
+
+    // allocate frame
     let res = dav1d_thread_picture_alloc(c, f, bpc);
     if res < 0 {
         on_error(f, c, out_delayed);
         return res;
     }
+
     if (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1] {
         let res = dav1d_picture_alloc_copy(c, &mut f.cur, (*f.frame_hdr).width[0], &mut f.sr_cur.p);
         if res < 0 {
@@ -6165,6 +6180,8 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         f.resize_start[0] = get_upscale_x0(f.cur.p.w, f.sr_cur.p.p.w, f.resize_step[0]);
         f.resize_start[1] = get_upscale_x0(in_cw, out_cw, f.resize_step[1]);
     }
+
+    // move f->cur into output queue
     if c.n_fc == 1 {
         if (*f.frame_hdr).show_frame != 0 || c.output_invisible_frames != 0 {
             dav1d_thread_picture_ref(&mut c.out, &mut f.sr_cur);
@@ -6173,6 +6190,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
     } else {
         dav1d_thread_picture_ref(out_delayed, &mut f.sr_cur);
     }
+
     f.w4 = (*f.frame_hdr).width[0] + 3 >> 2;
     f.h4 = (*f.frame_hdr).height + 3 >> 2;
     f.bw = ((*f.frame_hdr).width[0] + 7 >> 3) << 1;
@@ -6192,6 +6210,8 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         &mut f.task_thread.task_counter,
         cols * rows + f.sbh << uses_2pass,
     );
+
+    // ref_mvs
     if (*f.frame_hdr).frame_type & 1 != 0 || (*f.frame_hdr).allow_intrabc != 0 {
         f.mvs_ref = dav1d_ref_create_using_pool(
             c.refmvs_pool,
@@ -6236,9 +6256,15 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         f.mvs_ref = ptr::null_mut();
         f.ref_mvs_ref.fill_with(ptr::null_mut);
     }
+
+    // segmap
     if (*f.frame_hdr).segmentation.enabled != 0 {
+        // By default, the previous segmentation map is not initialised.
         f.prev_segmap_ref = ptr::null_mut();
         f.prev_segmap = ptr::null();
+
+        // We might need a previous frame's segmentation map.
+        // This happens if there is either no update or a temporal update.
         if (*f.frame_hdr).segmentation.temporal != 0 || (*f.frame_hdr).segmentation.update_map == 0
         {
             let pri_ref = (*f.frame_hdr).primary_ref_frame as usize;
@@ -6253,7 +6279,11 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 }
             }
         }
+
         if (*f.frame_hdr).segmentation.update_map != 0 {
+            // We're updating an existing map,
+            // but need somewhere to put the new values.
+            // Allocate them here (the data actually gets set elsewhere).
             f.cur_segmap_ref = dav1d_ref_create_using_pool(
                 c.segmap_pool,
                 ::core::mem::size_of::<u8>() * f.b4_stride as size_t * 32 * f.sb128h as size_t,
@@ -6265,10 +6295,13 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             }
             f.cur_segmap = (*f.cur_segmap_ref).data.cast::<u8>();
         } else if !f.prev_segmap_ref.is_null() {
+            // We're not updating an existing map,
+            // and we have a valid reference. Use that.
             f.cur_segmap_ref = f.prev_segmap_ref;
             dav1d_ref_inc(f.cur_segmap_ref);
             f.cur_segmap = (*f.prev_segmap_ref).data.cast::<uint8_t>();
         } else {
+            // We need to make a new map. Allocate one here and zero it out.
             let segmap_size =
                 ::core::mem::size_of::<u8>() * f.b4_stride as size_t * 32 * f.sb128h as size_t;
             f.cur_segmap_ref = dav1d_ref_create_using_pool(c.segmap_pool, segmap_size);
@@ -6284,6 +6317,8 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         f.cur_segmap_ref = ptr::null_mut();
         f.prev_segmap_ref = ptr::null_mut();
     }
+
+    // update references etc.
     let refresh_frame_flags = (*f.frame_hdr).refresh_frame_flags as libc::c_uint;
     for i in 0..8 {
         if refresh_frame_flags & (1 << i) != 0 {
@@ -6291,12 +6326,14 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 dav1d_thread_picture_unref(&mut c.refs[i].p);
             }
             dav1d_thread_picture_ref(&mut c.refs[i].p, &mut f.sr_cur);
+
             dav1d_cdf_thread_unref(&mut c.cdf[i]);
             if (*f.frame_hdr).refresh_context != 0 {
                 dav1d_cdf_thread_ref(&mut c.cdf[i], &mut f.out_cdf);
             } else {
                 dav1d_cdf_thread_ref(&mut c.cdf[i], &mut f.in_cdf);
             }
+
             dav1d_ref_dec(&mut c.refs[i].segmap);
             c.refs[i].segmap = f.cur_segmap_ref;
             if !f.cur_segmap_ref.is_null() {
@@ -6312,6 +6349,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             c.refs[i].refpoc = f.refpoc;
         }
     }
+
     if c.n_fc == 1 {
         let res = dav1d_decode_frame(f);
         if res < 0 {
@@ -6333,5 +6371,6 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         dav1d_task_frame_init(f);
         pthread_mutex_unlock(&mut c.task_thread.lock);
     }
+
     0
 }
