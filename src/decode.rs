@@ -6133,9 +6133,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
     // FIXME qsort so tiles are in order (for frame threading)
     if f.n_tile_data_alloc < c.n_tile_data {
         freep(&mut f.tile as *mut *mut Dav1dTileGroup as *mut libc::c_void);
-        assert!(
-            c.n_tile_data < 2147483647 / ::core::mem::size_of::<Dav1dTileGroup>() as libc::c_int
-        );
+        assert!(c.n_tile_data < i32::MAX / ::core::mem::size_of::<Dav1dTileGroup>() as libc::c_int);
         f.tile = malloc(
             c.n_tile_data as libc::c_ulong
                 * ::core::mem::size_of::<Dav1dTileGroup>() as libc::c_ulong,
