@@ -6066,6 +6066,10 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         }
     }
 
+    fn scale_fac(ref_sz: i32, this_sz: i32) -> i32 {
+        ((ref_sz << 14) + (this_sz >> 1)) / this_sz
+    }
+
     let mut ref_coded_width = <[i32; 7]>::default();
     if is_inter_or_switch(&*f.frame_hdr) {
         if (*f.frame_hdr).primary_ref_frame != 7 {
@@ -6096,11 +6100,8 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             if (*f.frame_hdr).width[0] != c.refs[refidx].p.p.p.w
                 || (*f.frame_hdr).height != c.refs[refidx].p.p.p.h
             {
-                f.svc[i][0].scale = ((c.refs[refidx].p.p.p.w << 14)
-                    + ((*f.frame_hdr).width[0] >> 1))
-                    / (*f.frame_hdr).width[0];
-                f.svc[i][1].scale = ((c.refs[refidx].p.p.p.h << 14) + ((*f.frame_hdr).height >> 1))
-                    / (*f.frame_hdr).height;
+                f.svc[i][0].scale = scale_fac(c.refs[refidx].p.p.p.w, (*f.frame_hdr).width[0]);
+                f.svc[i][1].scale = scale_fac(c.refs[refidx].p.p.p.h, (*f.frame_hdr).height);
                 f.svc[i][0].step = f.svc[i][0].scale + 8 >> 4;
                 f.svc[i][1].step = f.svc[i][1].scale + 8 >> 4;
             } else {
@@ -6172,11 +6173,11 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         dav1d_picture_ref(&mut f.cur, &mut f.sr_cur.p);
     }
     if (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1] {
-        f.resize_step[0] = ((f.cur.p.w << 14) + (f.sr_cur.p.p.w >> 1)) / f.sr_cur.p.p.w;
+        f.resize_step[0] = scale_fac(f.cur.p.w, f.sr_cur.p.p.w);
         let ss_hor = (f.cur.p.layout != DAV1D_PIXEL_LAYOUT_I444) as libc::c_int;
         let in_cw = f.cur.p.w + ss_hor >> ss_hor;
         let out_cw = f.sr_cur.p.p.w + ss_hor >> ss_hor;
-        f.resize_step[1] = ((in_cw << 14) + (out_cw >> 1)) / out_cw;
+        f.resize_step[1] = scale_fac(in_cw, out_cw);
         f.resize_start[0] = get_upscale_x0(f.cur.p.w, f.sr_cur.p.p.w, f.resize_step[0]);
         f.resize_start[1] = get_upscale_x0(in_cw, out_cw, f.resize_step[1]);
     }
