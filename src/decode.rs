@@ -5671,27 +5671,26 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
     let mut tile_col = 0;
     f.task_thread.update_set = false;
     for tile in slice::from_raw_parts(f.tile, n_tile_data) {
+        let start = tile.start.try_into().unwrap();
+        let end: usize = tile.end.try_into().unwrap();
+
         let mut data: *const uint8_t = tile.data.data;
         let mut size: size_t = tile.data.sz;
 
         for (j, (ts, tile_start_off)) in iter::zip(
-            slice::from_raw_parts_mut(f.ts, (tile.end + 1).try_into().unwrap()),
+            slice::from_raw_parts_mut(f.ts, end + 1),
             slice::from_raw_parts(
                 f.frame_thread.tile_start_off,
-                if uses_2pass {
-                    (tile.end + 1).try_into().unwrap()
-                } else {
-                    0
-                },
+                if uses_2pass { end + 1 } else { 0 },
             )
             .into_iter()
             .map(|&it| it as usize)
             .chain(iter::repeat(0)),
         )
         .enumerate()
-        .skip(tile.start as usize)
+        .skip(start)
         {
-            let tile_sz = if j == tile.end as usize {
+            let tile_sz = if j == end {
                 size
             } else {
                 if n_bytes > size {
