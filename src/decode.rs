@@ -5659,7 +5659,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
     // parse individual tiles per tile group
     let mut tile_row = 0;
     let mut tile_col = 0;
-    f.task_thread.update_set = 0;
+    f.task_thread.update_set = false;
     let mut i = 0;
     while i < f.n_tile_data {
         let mut data: *const uint8_t = (*(f.tile).offset(i as isize)).data.data;
@@ -5710,7 +5710,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
                 tile_row += 1;
             }
             if j == (*f.frame_hdr).tiling.update && (*f.frame_hdr).refresh_context != 0 {
-                f.task_thread.update_set = 1;
+                f.task_thread.update_set = true;
             }
             data = data.offset(tile_sz as isize);
             size = size.wrapping_sub(tile_sz);
@@ -5880,7 +5880,7 @@ pub unsafe fn dav1d_decode_frame(f: &mut Dav1dFrameContext) -> libc::c_int {
             res = f.task_thread.retval;
         } else {
             res = dav1d_decode_frame_main(f);
-            if res == 0 && (*f.frame_hdr).refresh_context != 0 && f.task_thread.update_set != 0 {
+            if res == 0 && (*f.frame_hdr).refresh_context != 0 && f.task_thread.update_set {
                 dav1d_cdf_thread_update(
                     f.frame_hdr,
                     f.out_cdf.data.cdf,

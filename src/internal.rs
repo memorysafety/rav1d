@@ -207,7 +207,7 @@ pub struct Dav1dFrameContext_task_thread {
     pub init_done: atomic_int,
     pub done: [atomic_int; 2],
     pub retval: libc::c_int,
-    pub update_set: libc::c_int,
+    pub update_set: bool,
     pub error: atomic_int,
     pub task_counter: atomic_int,
     pub task_head: *mut Dav1dTask,

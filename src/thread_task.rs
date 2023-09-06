@@ -1797,7 +1797,7 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut libc::c_void) -> *mut libc
                                         res_0 = dav1d_decode_frame_init_cdf(f);
                                     }
                                     if (*(*f).frame_hdr).refresh_context != 0
-                                        && (*f).task_thread.update_set == 0
+                                        && !(*f).task_thread.update_set
                                     {
                                         ::core::intrinsics::atomic_store_seqcst(
                                             (*f).out_cdf.progress,
@@ -1963,7 +1963,7 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut libc::c_void) -> *mut libc
                                         );
                                         if (*(*f).frame_hdr).refresh_context != 0
                                             && (*tc).frame_thread.pass <= 1
-                                            && (*f).task_thread.update_set != 0
+                                            && (*f).task_thread.update_set
                                             && (*(*f).frame_hdr).tiling.update == tile_idx
                                         {
                                             if error_0 == 0 {
