@@ -5757,12 +5757,16 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
     // and post-filtering, so that the full process runs in-line
     let Dav1dFrameHeader_tiling { rows, cols, .. } = (*f.frame_hdr).tiling;
     let [rows, cols] = [rows, cols].map(|it| it as usize);
-    for tile_row in 0..rows {
-        let sbh_end = std::cmp::min(
-            (*f.frame_hdr).tiling.row_start_sb[tile_row + 1].into(),
-            f.sbh,
-        );
-        for sby in (*f.frame_hdr).tiling.row_start_sb[tile_row].into()..sbh_end {
+    for (tile_row, sbh_start_end) in (*f.frame_hdr).tiling.row_start_sb[..rows + 1]
+        .windows(2)
+        .enumerate()
+    {
+        // Needed until #[feature(array_windows)] stabilizes; it should hopefully optimize out.
+        let [sbh_start, sbh_end] = <[u16; 2]>::try_from(sbh_start_end).unwrap();
+
+        let sbh_end = std::cmp::min(sbh_end.into(), f.sbh);
+
+        for sby in sbh_start.into()..sbh_end {
             t.by = sby << 4 + (*f.seq_hdr).sb128;
             let by_end = t.by + f.sb_step >> 1;
             if (*f.frame_hdr).use_ref_frame_mvs != 0 {
