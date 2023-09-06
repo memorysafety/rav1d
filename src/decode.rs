@@ -5734,8 +5734,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
     return retval;
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> libc::c_int {
+unsafe fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> libc::c_int {
     let f = &mut *f; // TODO(kkysen) propagate to arg once we deduplicate the fn decl
 
     let c = &*f.c;
