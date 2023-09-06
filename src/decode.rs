@@ -5660,13 +5660,11 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
     let mut tile_row = 0;
     let mut tile_col = 0;
     f.task_thread.update_set = false;
-    let mut i = 0;
-    while i < f.n_tile_data {
+    for i in 0..f.n_tile_data {
         let mut data: *const uint8_t = (*(f.tile).offset(i as isize)).data.data;
         let mut size: size_t = (*(f.tile).offset(i as isize)).data.sz;
 
-        let mut j: libc::c_int = (*(f.tile).offset(i as isize)).start;
-        while j <= (*(f.tile).offset(i as isize)).end {
+        for j in (*(f.tile).offset(i as isize)).start..=(*(f.tile).offset(i as isize)).end {
             let mut tile_sz: size_t;
             if j == (*(f.tile).offset(i as isize)).end {
                 tile_sz = size;
@@ -5675,12 +5673,10 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
                     return -22;
                 }
                 tile_sz = 0;
-                let mut k: libc::c_uint = 0;
-                while k < (*f.frame_hdr).tiling.n_bytes {
+                for k in 0..(*f.frame_hdr).tiling.n_bytes {
                     let fresh37 = data;
                     data = data.offset(1);
                     tile_sz |= ((*fresh37 as libc::c_uint) << k.wrapping_mul(8)) as size_t;
-                    k = k.wrapping_add(1);
                 }
                 tile_sz = tile_sz.wrapping_add(1);
                 size = size.wrapping_sub((*f.frame_hdr).tiling.n_bytes as usize);
@@ -5714,15 +5710,12 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
             }
             data = data.offset(tile_sz as isize);
             size = size.wrapping_sub(tile_sz);
-            j += 1;
         }
-        i += 1;
     }
 
     if c.n_tc > 1 {
         let uses_2pass = c.n_fc > 1;
-        let mut n = 0;
-        while n < f.sb128w * (*f.frame_hdr).tiling.rows * (1 + uses_2pass as libc::c_int) {
+        for n in 0..f.sb128w * (*f.frame_hdr).tiling.rows * (1 + uses_2pass as libc::c_int) {
             reset_context(
                 &mut *(f.a).offset(n as isize),
                 is_key_or_intra(&*f.frame_hdr),
@@ -5732,7 +5725,6 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
                     0
                 },
             );
-            n += 1;
         }
     }
 
