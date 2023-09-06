@@ -5650,7 +5650,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
 pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) -> libc::c_int {
     let f = &mut *f; // TODO(kkysen) propagate to arg once we deduplicate the fn decl
 
-    let c: *const Dav1dContext = f.c;
+    let c = &*f.c;
     let mut retval: libc::c_int = -22;
     if (*f.frame_hdr).refresh_context != 0 {
         dav1d_cdf_thread_copy(f.out_cdf.data.cdf, &mut f.in_cdf);
@@ -5694,7 +5694,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
                 tile_sz,
                 tile_row as usize,
                 fresh38 as usize,
-                if (*c).n_fc > 1 {
+                if c.n_fc > 1 {
                     *(f.frame_thread.tile_start_off).offset(j as isize) as usize
                 } else {
                     0
@@ -5713,8 +5713,8 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
         }
         i += 1;
     }
-    if (*c).n_tc > 1 {
-        let uses_2pass: libc::c_int = ((*c).n_fc > 1) as libc::c_int;
+    if c.n_tc > 1 {
+        let uses_2pass: libc::c_int = (c.n_fc > 1) as libc::c_int;
         let mut n = 0;
         while n < f.sb128w * (*f.frame_hdr).tiling.rows * (1 + uses_2pass) {
             reset_context(
