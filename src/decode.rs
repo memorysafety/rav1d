@@ -17,6 +17,7 @@ use crate::src::cdf::CdfMvComponent;
 use crate::src::cdf::CdfMvContext;
 use crate::src::ctx::CaseSet;
 use crate::src::looprestoration::dav1d_loop_restoration_dsp_init;
+use crate::src::thread_task::FRAME_ERROR;
 
 use libc;
 
@@ -5943,7 +5944,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 &mut *(out_delayed.progress).offset(1) as *mut atomic_uint,
             );
             if (out_delayed.visible != 0 || c.output_invisible_frames != 0)
-                && progress != u32::MAX - 1
+                && progress != FRAME_ERROR
             {
                 dav1d_thread_picture_ref(&mut c.out, out_delayed);
                 c.event_flags |= dav1d_picture_get_event_flags(out_delayed);

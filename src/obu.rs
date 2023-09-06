@@ -613,6 +613,7 @@ use crate::include::common::intops::iclip_u8;
 use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
 use crate::include::common::intops::ulog2;
+use crate::src::env::get_poc_diff;
 use crate::src::getbits::dav1d_bytealign_get_bits;
 use crate::src::getbits::dav1d_get_bit;
 use crate::src::getbits::dav1d_get_bits;
@@ -623,9 +624,9 @@ use crate::src::getbits::dav1d_get_uniform;
 use crate::src::getbits::dav1d_get_vlc;
 use crate::src::getbits::dav1d_init_get_bits;
 use crate::src::getbits::GetBits;
-
-use crate::src::env::get_poc_diff;
 use crate::src::r#ref::dav1d_ref_inc;
+use crate::src::thread_task::FRAME_ERROR;
+
 #[inline]
 unsafe extern "C" fn dav1d_get_bits_pos(c: *const GetBits) -> libc::c_uint {
     return (((*c).ptr).offset_from((*c).ptr_start) as libc::c_long as libc::c_uint)
@@ -2766,7 +2767,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                         &mut *((*out_delayed).progress).offset(1) as *mut atomic_uint,
                     );
                     if ((*out_delayed).visible != 0 || (*c).output_invisible_frames != 0)
-                        && progress != u32::MAX - 1
+                        && progress != FRAME_ERROR
                     {
                         dav1d_thread_picture_ref(&mut (*c).out, out_delayed);
                         (*c).event_flags = ::core::mem::transmute::<libc::c_uint, Dav1dEventFlags>(
