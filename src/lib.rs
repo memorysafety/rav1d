@@ -1874,7 +1874,7 @@ unsafe extern "C" fn close_internal(c_out: *mut *mut Dav1dContext, flush: libc::
             pthread_mutex_lock(&mut (*ttd).lock);
             let mut n: libc::c_uint = 0 as libc::c_int as libc::c_uint;
             while n < (*c).n_tc && (*((*c).tc).offset(n as isize)).task_thread.td.inited != 0 {
-                (*((*c).tc).offset(n as isize)).task_thread.die = 1 as libc::c_int;
+                (*((*c).tc).offset(n as isize)).task_thread.die = true;
                 n = n.wrapping_add(1);
             }
             pthread_cond_broadcast(&mut (*ttd).cond);

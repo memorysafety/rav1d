@@ -352,5 +352,5 @@ pub struct Dav1dTaskContext_task_thread {
     pub ttd: *mut TaskThreadData,
     pub fttd: *mut FrameTileThreadData,
     pub flushed: bool,
-    pub die: libc::c_int,
+    pub die: bool,
 }

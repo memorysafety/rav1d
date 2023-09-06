@@ -1465,7 +1465,7 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut libc::c_void) -> *mut libc
     let ttd: *mut TaskThreadData = (*tc).task_thread.ttd;
     dav1d_set_thread_name(b"dav1d-worker\0" as *const u8 as *const libc::c_char);
     pthread_mutex_lock(&mut (*ttd).lock);
-    's_18: while !((*tc).task_thread.die != 0) {
+    's_18: while !(*tc).task_thread.die {
         if !(::core::intrinsics::atomic_load_seqcst((*c).flush) != 0) {
             merge_pending(c);
             if (*ttd).delayed_fg.exec != 0 {
