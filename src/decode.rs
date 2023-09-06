@@ -5717,12 +5717,20 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
 
     if c.n_tc > 1 {
         let uses_2pass = c.n_fc > 1;
-        for n in 0..f.sb128w * tiling.rows * (1 + uses_2pass as libc::c_int) {
+        for (n, ctx) in slice::from_raw_parts_mut(
+            f.a,
+            (f.sb128w * tiling.rows * (1 + uses_2pass as libc::c_int))
+                .try_into()
+                .unwrap(),
+        )
+        .iter_mut()
+        .enumerate()
+        {
             reset_context(
-                &mut *(f.a).offset(n as isize),
+                ctx,
                 is_key_or_intra(&*f.frame_hdr),
                 if uses_2pass {
-                    1 + (n >= f.sb128w * tiling.rows) as libc::c_int
+                    1 + (n >= (f.sb128w * tiling.rows) as usize) as libc::c_int
                 } else {
                     0
                 },
