@@ -5656,6 +5656,8 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
         dav1d_cdf_thread_copy(f.out_cdf.data.cdf, &mut f.in_cdf);
     }
 
+    let uses_2pass = c.n_fc > 1;
+
     let tiling = &(*f.frame_hdr).tiling;
 
     let n_tile_data = f.n_tile_data.try_into().unwrap();
@@ -5676,7 +5678,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
             slice::from_raw_parts_mut(f.ts, (tile.end + 1).try_into().unwrap()),
             slice::from_raw_parts(
                 f.frame_thread.tile_start_off,
-                if c.n_fc > 1 {
+                if uses_2pass {
                     (tile.end + 1).try_into().unwrap()
                 } else {
                     0
@@ -5725,7 +5727,6 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
     }
 
     if c.n_tc > 1 {
-        let uses_2pass = c.n_fc > 1;
         for (n, ctx) in slice::from_raw_parts_mut(f.a, sb128w * rows * (1 + uses_2pass as usize))
             .iter_mut()
             .enumerate()
