@@ -5714,13 +5714,13 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
         i += 1;
     }
     if c.n_tc > 1 {
-        let uses_2pass: libc::c_int = (c.n_fc > 1) as libc::c_int;
+        let uses_2pass = c.n_fc > 1;
         let mut n = 0;
-        while n < f.sb128w * (*f.frame_hdr).tiling.rows * (1 + uses_2pass) {
+        while n < f.sb128w * (*f.frame_hdr).tiling.rows * (1 + uses_2pass as libc::c_int) {
             reset_context(
                 &mut *(f.a).offset(n as isize),
                 (*f.frame_hdr).frame_type & 1 == 0,
-                if uses_2pass != 0 {
+                if uses_2pass {
                     1 + (n >= f.sb128w * (*f.frame_hdr).tiling.rows) as libc::c_int
                 } else {
                     0
