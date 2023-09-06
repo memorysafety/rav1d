@@ -2766,7 +2766,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                     let progress: libc::c_uint = ::core::intrinsics::atomic_load_relaxed(
                         &mut *((*out_delayed).progress).offset(1) as *mut atomic_uint,
                     );
-                    if ((*out_delayed).visible != 0 || (*c).output_invisible_frames != 0)
+                    if ((*out_delayed).visible || (*c).output_invisible_frames != 0)
                         && progress != FRAME_ERROR
                     {
                         dav1d_thread_picture_ref(&mut (*c).out, out_delayed);
@@ -2784,7 +2784,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                         .offset((*(*c).frame_hdr).existing_frame_idx as isize))
                     .p,
                 );
-                (*out_delayed).visible = 1 as libc::c_int;
+                (*out_delayed).visible = true;
                 dav1d_data_props_copy(&mut (*out_delayed).p.m, &mut (*in_0).m);
                 pthread_mutex_unlock(&mut (*c).task_thread.lock);
             }

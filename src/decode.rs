@@ -5940,9 +5940,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             let progress = ::core::intrinsics::atomic_load_relaxed(
                 &mut *(out_delayed.progress).offset(1) as *mut atomic_uint,
             );
-            if (out_delayed.visible != 0 || c.output_invisible_frames != 0)
-                && progress != FRAME_ERROR
-            {
+            if (out_delayed.visible || c.output_invisible_frames != 0) && progress != FRAME_ERROR {
                 dav1d_thread_picture_ref(&mut c.out, out_delayed);
                 c.event_flags |= dav1d_picture_get_event_flags(out_delayed);
             }
