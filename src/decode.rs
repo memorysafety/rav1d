@@ -5665,14 +5665,13 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
         let mut size: size_t = tile.data.sz;
 
         for j in tile.start..=tile.end {
-            let tile_sz: size_t;
-            if j == tile.end {
-                tile_sz = size;
+            let tile_sz = if j == tile.end {
+                size
             } else {
                 if (*f.frame_hdr).tiling.n_bytes as size_t > size {
                     return -22;
                 }
-                tile_sz =
+                let tile_sz =
                     slice::from_raw_parts(data, (*f.frame_hdr).tiling.n_bytes.try_into().unwrap())
                         .iter()
                         .enumerate()
@@ -5684,7 +5683,8 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
                 if tile_sz > size {
                     return -22;
                 }
-            }
+                tile_sz
+            };
 
             setup_tile(
                 &mut *(f.ts).offset(j as isize),
