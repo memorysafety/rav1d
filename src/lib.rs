@@ -1782,7 +1782,7 @@ pub unsafe extern "C" fn dav1d_flush(c: *mut Dav1dContext) {
         while i_0 < (*c).n_tc {
             let tc: *mut Dav1dTaskContext =
                 &mut *((*c).tc).offset(i_0 as isize) as *mut Dav1dTaskContext;
-            while (*tc).task_thread.flushed == 0 {
+            while !(*tc).task_thread.flushed {
                 pthread_cond_wait(&mut (*tc).task_thread.td.cond, &mut (*c).task_thread.lock);
             }
             i_0 = i_0.wrapping_add(1);

@@ -2348,11 +2348,11 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut libc::c_void) -> *mut libc
                 }
             }
         }
-        (*tc).task_thread.flushed = 1 as libc::c_int;
+        (*tc).task_thread.flushed = true;
         pthread_cond_signal(&mut (*tc).task_thread.td.cond);
         ::core::intrinsics::atomic_store_seqcst(&mut (*ttd).cond_signaled, 0 as libc::c_int);
         pthread_cond_wait(&mut (*ttd).cond, &mut (*ttd).lock);
-        (*tc).task_thread.flushed = 0 as libc::c_int;
+        (*tc).task_thread.flushed = false;
         reset_task_cur(c, ttd, u32::MAX);
     }
     pthread_mutex_unlock(&mut (*ttd).lock);
