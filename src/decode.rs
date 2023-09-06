@@ -5676,10 +5676,10 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
                 for k in 0..(*f.frame_hdr).tiling.n_bytes {
                     let fresh37 = data;
                     data = data.offset(1);
-                    tile_sz |= ((*fresh37 as libc::c_uint) << k.wrapping_mul(8)) as size_t;
+                    tile_sz |= ((*fresh37 as libc::c_uint) << (k * 8)) as size_t;
                 }
-                tile_sz = tile_sz.wrapping_add(1);
-                size = size.wrapping_sub((*f.frame_hdr).tiling.n_bytes as usize);
+                tile_sz += 1;
+                size -= (*f.frame_hdr).tiling.n_bytes as usize;
                 if tile_sz > size {
                     return -22;
                 }
@@ -5709,7 +5709,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
                 f.task_thread.update_set = true;
             }
             data = data.offset(tile_sz as isize);
-            size = size.wrapping_sub(tile_sz);
+            size -= tile_sz;
         }
     }
 
