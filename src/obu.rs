@@ -2683,10 +2683,9 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                 return dav1d_parse_obus_error(c, in_0);
             }
             if (*c).strict_std_compliance != 0
-                && (*c).refs[(*(*c).frame_hdr).existing_frame_idx as usize]
+                && !(*c).refs[(*(*c).frame_hdr).existing_frame_idx as usize]
                     .p
                     .showable
-                    == 0
             {
                 return dav1d_parse_obus_error(c, in_0);
             }
@@ -2796,7 +2795,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                 == DAV1D_FRAME_TYPE_KEY as libc::c_int as libc::c_uint
             {
                 let r: libc::c_int = (*(*c).frame_hdr).existing_frame_idx;
-                (*c).refs[r as usize].p.showable = 0 as libc::c_int;
+                (*c).refs[r as usize].p.showable = false;
                 let mut i_3 = 0;
                 while i_3 < 8 {
                     if !(i_3 == r) {
