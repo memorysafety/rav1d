@@ -1,3 +1,4 @@
+use std::iter;
 use std::ptr;
 use std::ptr::addr_of_mut;
 use std::slice;
@@ -5756,10 +5757,12 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
     // no threading - we explicitly interleave tile/sbrow decoding
     // and post-filtering, so that the full process runs in-line
     let Dav1dFrameHeader_tiling { rows, cols, .. } = (*f.frame_hdr).tiling;
-    let [rows, cols] = [rows, cols].map(|it| it as usize);
-    for (tile_row, sbh_start_end) in (*f.frame_hdr).tiling.row_start_sb[..rows + 1]
-        .windows(2)
-        .enumerate()
+    let [rows, cols] = [rows, cols].map(|it| it.try_into().unwrap());
+    for (tile_row, (sbh_start_end, ts)) in iter::zip(
+        (*f.frame_hdr).tiling.row_start_sb[..rows + 1].windows(2),
+        slice::from_raw_parts_mut(f.ts, rows * cols).chunks_exact_mut(cols),
+    )
+    .enumerate()
     {
         // Needed until #[feature(array_windows)] stabilizes; it should hopefully optimize out.
         let [sbh_start, sbh_end] = <[u16; 2]>::try_from(sbh_start_end).unwrap();
@@ -5779,8 +5782,8 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
                     by_end,
                 );
             }
-            for tile_col in 0..cols {
-                t.ts = f.ts.offset((tile_row * cols + tile_col) as isize);
+            for tile in &mut ts[..] {
+                t.ts = tile;
                 if dav1d_decode_tile_sbrow(t) != 0 {
                     return retval;
                 }
