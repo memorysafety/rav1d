@@ -5737,9 +5737,9 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
 
     assert!((*(*f).c).n_tc == 1);
 
-    let t: *mut Dav1dTaskContext = c.tc.offset(f.offset_from(c.fc));
-    (*t).f = f;
-    (*t).frame_thread.pass = 0;
+    let t = &mut *c.tc.offset(f.offset_from(c.fc));
+    t.f = f;
+    t.frame_thread.pass = 0;
 
     let mut n = 0;
     while n < (*f).sb128w * (*(*f).frame_hdr).tiling.rows {
@@ -5762,21 +5762,21 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
         let mut sby: libc::c_int =
             (*(*f).frame_hdr).tiling.row_start_sb[tile_row as usize] as libc::c_int;
         while sby < sbh_end {
-            (*t).by = sby << 4 + (*(*f).seq_hdr).sb128;
-            let by_end: libc::c_int = (*t).by + (*f).sb_step >> 1;
+            t.by = sby << 4 + (*(*f).seq_hdr).sb128;
+            let by_end: libc::c_int = t.by + (*f).sb_step >> 1;
             if (*(*f).frame_hdr).use_ref_frame_mvs != 0 {
                 ((*(*f).c).refmvs_dsp.load_tmvs).expect("non-null function pointer")(
                     &mut (*f).rf,
                     tile_row,
                     0,
                     (*f).bw >> 1,
-                    (*t).by >> 1,
+                    t.by >> 1,
                     by_end,
                 );
             }
             let mut tile_col = 0;
             while tile_col < (*(*f).frame_hdr).tiling.cols {
-                (*t).ts = (*f)
+                t.ts = (*f)
                     .ts
                     .offset((tile_row * (*(*f).frame_hdr).tiling.cols + tile_col) as isize);
                 if dav1d_decode_tile_sbrow(t) != 0 {
@@ -5787,10 +5787,10 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
             if is_inter_or_switch(&*(*f).frame_hdr) {
                 dav1d_refmvs_save_tmvs(
                     &(*(*f).c).refmvs_dsp,
-                    &mut (*t).rt,
+                    &mut t.rt,
                     0,
                     (*f).bw >> 1,
-                    (*t).by >> 1,
+                    t.by >> 1,
                     by_end,
                 );
             }
