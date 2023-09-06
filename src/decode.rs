@@ -5788,7 +5788,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
                 }
                 tile_col += 1;
             }
-            if (*(*f).frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint != 0 {
+            if is_inter_or_switch(&*(*f).frame_hdr) {
                 dav1d_refmvs_save_tmvs(
                     &(*(*f).c).refmvs_dsp,
                     &mut (*t).rt,
