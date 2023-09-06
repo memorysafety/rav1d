@@ -2175,7 +2175,7 @@ unsafe fn decode_b(
                 );
             }
         } else {
-            if is_inter_or_switch(frame_hdr)
+            if is_inter_or_switch(frame_hdr) /* not intrabc */
                 && b.comp_type() == COMP_INTER_NONE
                 && b.motion_mode() as MotionMode == MM_WARP
             {
