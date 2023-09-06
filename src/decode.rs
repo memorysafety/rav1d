@@ -18,6 +18,7 @@ use crate::src::cdf::CdfMvContext;
 use crate::src::ctx::CaseSet;
 use crate::src::looprestoration::dav1d_loop_restoration_dsp_init;
 use crate::src::thread_task::FRAME_ERROR;
+use crate::src::thread_task::TILE_ERROR;
 
 use libc;
 
@@ -5828,11 +5829,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retv
         if !f.out_cdf.progress.is_null() {
             ::core::intrinsics::atomic_store_seqcst(
                 f.out_cdf.progress,
-                if retval == 0 {
-                    1
-                } else {
-                    i32::MAX as libc::c_uint - 1
-                },
+                if retval == 0 { 1 } else { TILE_ERROR as u32 },
             );
         }
         dav1d_cdf_thread_unref(&mut f.out_cdf);
