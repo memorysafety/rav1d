@@ -5749,7 +5749,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
     while n < (*f).sb128w * (*(*f).frame_hdr).tiling.rows {
         reset_context(
             &mut *((*f).a).offset(n as isize),
-            (*(*f).frame_hdr).frame_type & 1 == 0,
+            is_key_or_intra(&*(*f).frame_hdr),
             0 as libc::c_int,
         );
         n += 1;
