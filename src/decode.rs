@@ -5657,6 +5657,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
     }
 
     let tiling = &(*f.frame_hdr).tiling;
+    let n_bytes = tiling.n_bytes.try_into().unwrap();
 
     // parse individual tiles per tile group
     let mut tile_row = 0;
@@ -5670,17 +5671,17 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
             let tile_sz = if j == tile.end {
                 size
             } else {
-                if tiling.n_bytes as size_t > size {
+                if n_bytes > size {
                     return -22;
                 }
-                let tile_sz = slice::from_raw_parts(data, tiling.n_bytes.try_into().unwrap())
+                let tile_sz = slice::from_raw_parts(data, n_bytes)
                     .iter()
                     .enumerate()
                     .map(|(k, &data)| (data as usize) << (k * 8))
                     .fold(0, |tile_sz, data_k| tile_sz | data_k)
                     + 1;
-                data = data.offset(tiling.n_bytes as isize);
-                size -= tiling.n_bytes as usize;
+                data = data.offset(n_bytes as isize);
+                size -= n_bytes;
                 if tile_sz > size {
                     return -22;
                 }
