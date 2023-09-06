@@ -5656,6 +5656,8 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
         dav1d_cdf_thread_copy(f.out_cdf.data.cdf, &mut f.in_cdf);
     }
 
+    let tiling = &(*f.frame_hdr).tiling;
+
     // parse individual tiles per tile group
     let mut tile_row = 0;
     let mut tile_col = 0;
@@ -5668,18 +5670,17 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
             let tile_sz = if j == tile.end {
                 size
             } else {
-                if (*f.frame_hdr).tiling.n_bytes as size_t > size {
+                if tiling.n_bytes as size_t > size {
                     return -22;
                 }
-                let tile_sz =
-                    slice::from_raw_parts(data, (*f.frame_hdr).tiling.n_bytes.try_into().unwrap())
-                        .iter()
-                        .enumerate()
-                        .map(|(k, &data)| (data as usize) << (k * 8))
-                        .fold(0, |tile_sz, data_k| tile_sz | data_k)
-                        + 1;
-                data = data.offset((*f.frame_hdr).tiling.n_bytes as isize);
-                size -= (*f.frame_hdr).tiling.n_bytes as usize;
+                let tile_sz = slice::from_raw_parts(data, tiling.n_bytes.try_into().unwrap())
+                    .iter()
+                    .enumerate()
+                    .map(|(k, &data)| (data as usize) << (k * 8))
+                    .fold(0, |tile_sz, data_k| tile_sz | data_k)
+                    + 1;
+                data = data.offset(tiling.n_bytes as isize);
+                size -= tiling.n_bytes as usize;
                 if tile_sz > size {
                     return -22;
                 }
@@ -5701,11 +5702,11 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
             );
             tile_col += 1;
 
-            if tile_col == (*f.frame_hdr).tiling.cols as usize {
+            if tile_col == tiling.cols as usize {
                 tile_col = 0;
                 tile_row += 1;
             }
-            if j == (*f.frame_hdr).tiling.update && (*f.frame_hdr).refresh_context != 0 {
+            if j == tiling.update && (*f.frame_hdr).refresh_context != 0 {
                 f.task_thread.update_set = true;
             }
             data = data.offset(tile_sz as isize);
@@ -5715,12 +5716,12 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
 
     if c.n_tc > 1 {
         let uses_2pass = c.n_fc > 1;
-        for n in 0..f.sb128w * (*f.frame_hdr).tiling.rows * (1 + uses_2pass as libc::c_int) {
+        for n in 0..f.sb128w * tiling.rows * (1 + uses_2pass as libc::c_int) {
             reset_context(
                 &mut *(f.a).offset(n as isize),
                 is_key_or_intra(&*f.frame_hdr),
                 if uses_2pass {
-                    1 + (n >= f.sb128w * (*f.frame_hdr).tiling.rows) as libc::c_int
+                    1 + (n >= f.sb128w * tiling.rows) as libc::c_int
                 } else {
                     0
                 },
