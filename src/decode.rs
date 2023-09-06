@@ -5652,9 +5652,12 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
 
     let c = &*f.c;
     let mut retval: libc::c_int = -22;
+
     if (*f.frame_hdr).refresh_context != 0 {
         dav1d_cdf_thread_copy(f.out_cdf.data.cdf, &mut f.in_cdf);
     }
+
+    // parse individual tiles per tile group
     let mut tile_row = 0;
     let mut tile_col = 0;
     f.task_thread.update_set = 0;
@@ -5662,6 +5665,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
     while i < f.n_tile_data {
         let mut data: *const uint8_t = (*(f.tile).offset(i as isize)).data.data;
         let mut size: size_t = (*(f.tile).offset(i as isize)).data.sz;
+
         let mut j: libc::c_int = (*(f.tile).offset(i as isize)).start;
         while j <= (*(f.tile).offset(i as isize)).end {
             let mut tile_sz: size_t;
@@ -5687,6 +5691,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
             }
             let fresh38 = tile_col;
             tile_col = tile_col + 1;
+
             setup_tile(
                 &mut *(f.ts).offset(j as isize),
                 f,
@@ -5700,6 +5705,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
                     0
                 },
             );
+
             if tile_col == (*f.frame_hdr).tiling.cols {
                 tile_col = 0;
                 tile_row += 1;
@@ -5713,13 +5719,14 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
         }
         i += 1;
     }
+
     if c.n_tc > 1 {
         let uses_2pass = c.n_fc > 1;
         let mut n = 0;
         while n < f.sb128w * (*f.frame_hdr).tiling.rows * (1 + uses_2pass as libc::c_int) {
             reset_context(
                 &mut *(f.a).offset(n as isize),
-                (*f.frame_hdr).frame_type & 1 == 0,
+                is_key_or_intra(&*f.frame_hdr),
                 if uses_2pass {
                     1 + (n >= f.sb128w * (*f.frame_hdr).tiling.rows) as libc::c_int
                 } else {
@@ -5729,6 +5736,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
             n += 1;
         }
     }
+
     retval = 0;
     return retval;
 }
