@@ -4557,8 +4557,7 @@ static ss_size_mul: [[u8; 2]; 4] = {
 unsafe fn setup_tile(
     ts: &mut Dav1dTileState,
     f: &Dav1dFrameContext,
-    data: *const uint8_t,
-    sz: size_t,
+    data: &[u8],
     tile_row: usize,
     tile_col: usize,
     tile_start_off: usize,
@@ -4599,8 +4598,8 @@ unsafe fn setup_tile(
 
     dav1d_msac_init(
         &mut ts.msac,
-        data,
-        sz,
+        data.as_ptr(),
+        data.len(),
         (*f.frame_hdr).disable_cdf_update != 0,
     );
 
@@ -5711,15 +5710,8 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
                 tile_sz
             };
 
-            setup_tile(
-                ts,
-                f,
-                data.as_ptr(),
-                tile_sz,
-                tile_row,
-                tile_col,
-                tile_start_off,
-            );
+            let (cur_data, rest_data) = data.split_at(tile_sz);
+            setup_tile(ts, f, cur_data, tile_row, tile_col, tile_start_off);
             tile_col += 1;
 
             if tile_col == cols {
@@ -5729,7 +5721,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
             if j == tiling.update as usize && (*f.frame_hdr).refresh_context != 0 {
                 f.task_thread.update_set = true;
             }
-            data = &data[tile_sz..];
+            data = rest_data;
             size -= tile_sz;
         }
     }
