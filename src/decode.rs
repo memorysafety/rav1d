@@ -5665,19 +5665,21 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
         let mut size: size_t = tile.data.sz;
 
         for j in tile.start..=tile.end {
-            let mut tile_sz: size_t;
+            let tile_sz: size_t;
             if j == tile.end {
                 tile_sz = size;
             } else {
                 if (*f.frame_hdr).tiling.n_bytes as size_t > size {
                     return -22;
                 }
-                tile_sz = 0;
-                for k in 0..(*f.frame_hdr).tiling.n_bytes {
-                    tile_sz |= (*data as usize) << (k * 8);
-                    data = data.offset(1);
-                }
-                tile_sz += 1;
+                tile_sz =
+                    slice::from_raw_parts(data, (*f.frame_hdr).tiling.n_bytes.try_into().unwrap())
+                        .iter()
+                        .enumerate()
+                        .map(|(k, &data)| (data as usize) << (k * 8))
+                        .fold(0, |tile_sz, data_k| tile_sz | data_k)
+                        + 1;
+                data = data.offset((*f.frame_hdr).tiling.n_bytes as isize);
                 size -= (*f.frame_hdr).tiling.n_bytes as usize;
                 if tile_sz > size {
                     return -22;
