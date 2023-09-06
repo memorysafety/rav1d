@@ -5737,7 +5737,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
     let c = &*f.c;
     let mut retval = -22;
 
-    assert!((*f.c).n_tc == 1);
+    assert!(c.n_tc == 1);
 
     let t = &mut *c.tc.offset((f as *mut Dav1dFrameContext).offset_from(c.fc));
     t.f = f;
