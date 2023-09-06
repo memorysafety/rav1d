@@ -5674,8 +5674,8 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
         let start = tile.start.try_into().unwrap();
         let end: usize = tile.end.try_into().unwrap();
 
-        let mut data: *const uint8_t = tile.data.data;
-        let mut size: size_t = tile.data.sz;
+        let mut data = slice::from_raw_parts(tile.data.data, tile.data.sz);
+        let mut size = data.len();
 
         for (j, (ts, tile_start_off)) in iter::zip(
             slice::from_raw_parts_mut(f.ts, end + 1),
@@ -5696,13 +5696,14 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
                 if n_bytes > size {
                     return -22;
                 }
-                let tile_sz = slice::from_raw_parts(data, n_bytes)
+                let (cur_data, rest_data) = data.split_at(n_bytes);
+                let tile_sz = cur_data
                     .iter()
                     .enumerate()
                     .map(|(k, &data)| (data as usize) << (k * 8))
                     .fold(0, |tile_sz, data_k| tile_sz | data_k)
                     + 1;
-                data = data.offset(n_bytes as isize);
+                data = rest_data;
                 size -= n_bytes;
                 if tile_sz > size {
                     return -22;
@@ -5710,7 +5711,15 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
                 tile_sz
             };
 
-            setup_tile(ts, f, data, tile_sz, tile_row, tile_col, tile_start_off);
+            setup_tile(
+                ts,
+                f,
+                data.as_ptr(),
+                tile_sz,
+                tile_row,
+                tile_col,
+                tile_start_off,
+            );
             tile_col += 1;
 
             if tile_col == cols {
@@ -5720,7 +5729,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
             if j == tiling.update as usize && (*f.frame_hdr).refresh_context != 0 {
                 f.task_thread.update_set = true;
             }
-            data = data.offset(tile_sz as isize);
+            data = &data[tile_sz..];
             size -= tile_sz;
         }
     }
