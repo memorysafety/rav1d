@@ -5739,7 +5739,6 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
     let f = &mut *f; // TODO(kkysen) propagate to arg once we deduplicate the fn decl
 
     let c = &*f.c;
-    let mut retval = -22;
 
     assert!(c.n_tc == 1);
 
@@ -5785,7 +5784,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
             for tile in &mut ts[..] {
                 t.ts = tile;
                 if dav1d_decode_tile_sbrow(t) != 0 {
-                    return retval;
+                    return -22;
                 }
             }
             if is_inter_or_switch(&*f.frame_hdr) {
@@ -5804,8 +5803,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
         }
     }
 
-    retval = 0;
-    return retval;
+    0
 }
 
 #[no_mangle]
