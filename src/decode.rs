@@ -5732,16 +5732,15 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> libc::c_int {
-    let c: *const Dav1dContext = (*f).c;
+    let c = &*(*f).c;
     let mut retval: libc::c_int = -(22 as libc::c_int);
 
     if !((*(*f).c).n_tc == 1 as libc::c_uint) {
         unreachable!();
     }
 
-    let t: *mut Dav1dTaskContext = &mut *((*c).tc)
-        .offset(f.offset_from((*c).fc) as libc::c_long as isize)
-        as *mut Dav1dTaskContext;
+    let t: *mut Dav1dTaskContext =
+        &mut *(c.tc).offset(f.offset_from(c.fc) as libc::c_long as isize) as *mut Dav1dTaskContext;
     (*t).f = f;
     (*t).frame_thread.pass = 0 as libc::c_int;
 
