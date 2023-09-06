@@ -5674,7 +5674,6 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
         let end: usize = tile.end.try_into().unwrap();
 
         let mut data = slice::from_raw_parts(tile.data.data, tile.data.sz);
-        let mut size = data.len();
 
         for (j, (ts, tile_start_off)) in iter::zip(
             slice::from_raw_parts_mut(f.ts, end + 1),
@@ -5690,9 +5689,9 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
         .skip(start)
         {
             let tile_sz = if j == end {
-                size
+                data.len()
             } else {
-                if n_bytes > size {
+                if n_bytes > data.len() {
                     return -22;
                 }
                 let (cur_data, rest_data) = data.split_at(n_bytes);
@@ -5703,8 +5702,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
                     .fold(0, |tile_sz, data_k| tile_sz | data_k)
                     + 1;
                 data = rest_data;
-                size -= n_bytes;
-                if tile_sz > size {
+                if tile_sz > data.len() {
                     return -22;
                 }
                 tile_sz
@@ -5722,7 +5720,6 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
                 f.task_thread.update_set = true;
             }
             data = rest_data;
-            size -= tile_sz;
         }
     }
 
