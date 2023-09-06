@@ -5672,8 +5672,24 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
         let mut data: *const uint8_t = tile.data.data;
         let mut size: size_t = tile.data.sz;
 
-        for j in tile.start..=tile.end {
-            let tile_sz = if j == tile.end {
+        for (j, (ts, tile_start_off)) in iter::zip(
+            slice::from_raw_parts_mut(f.ts, (tile.end + 1).try_into().unwrap()),
+            slice::from_raw_parts(
+                f.frame_thread.tile_start_off,
+                if c.n_fc > 1 {
+                    (tile.end + 1).try_into().unwrap()
+                } else {
+                    0
+                },
+            )
+            .into_iter()
+            .map(|&it| it as usize)
+            .chain(iter::repeat(0)),
+        )
+        .enumerate()
+        .skip(tile.start as usize)
+        {
+            let tile_sz = if j == tile.end as usize {
                 size
             } else {
                 if n_bytes > size {
@@ -5693,26 +5709,14 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
                 tile_sz
             };
 
-            setup_tile(
-                &mut *(f.ts).offset(j as isize),
-                f,
-                data,
-                tile_sz,
-                tile_row,
-                tile_col,
-                if c.n_fc > 1 {
-                    *(f.frame_thread.tile_start_off).offset(j as isize) as usize
-                } else {
-                    0
-                },
-            );
+            setup_tile(ts, f, data, tile_sz, tile_row, tile_col, tile_start_off);
             tile_col += 1;
 
             if tile_col == cols {
                 tile_col = 0;
                 tile_row += 1;
             }
-            if j == tiling.update && (*f.frame_hdr).refresh_context != 0 {
+            if j == tiling.update as usize && (*f.frame_hdr).refresh_context != 0 {
                 f.task_thread.update_set = true;
             }
             data = data.offset(tile_sz as isize);
