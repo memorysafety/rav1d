@@ -5757,15 +5757,14 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
     // and post-filtering, so that the full process runs in-line
     let mut tile_row = 0;
     while tile_row < (*f.frame_hdr).tiling.rows {
-        let sbh_end: libc::c_int = imin(
+        let sbh_end = imin(
             (*f.frame_hdr).tiling.row_start_sb[(tile_row + 1) as usize] as libc::c_int,
             f.sbh,
         );
-        let mut sby: libc::c_int =
-            (*f.frame_hdr).tiling.row_start_sb[tile_row as usize] as libc::c_int;
+        let mut sby = (*f.frame_hdr).tiling.row_start_sb[tile_row as usize] as libc::c_int;
         while sby < sbh_end {
             t.by = sby << 4 + (*f.seq_hdr).sb128;
-            let by_end: libc::c_int = t.by + f.sb_step >> 1;
+            let by_end = t.by + f.sb_step >> 1;
             if (*f.frame_hdr).use_ref_frame_mvs != 0 {
                 ((*f.c).refmvs_dsp.load_tmvs).expect("non-null function pointer")(
                     &mut f.rf,
