@@ -5827,7 +5827,11 @@ pub unsafe extern "C" fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retv
         if !f.out_cdf.progress.is_null() {
             ::core::intrinsics::atomic_store_seqcst(
                 f.out_cdf.progress,
-                if retval == 0 { 1 } else { 2147483647 - 1 },
+                if retval == 0 {
+                    1
+                } else {
+                    i32::MAX as libc::c_uint - 1
+                },
             );
         }
         dav1d_cdf_thread_unref(&mut f.out_cdf);

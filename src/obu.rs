@@ -1233,7 +1233,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
             if latest_frame_offset != -(1 as libc::c_int) {
                 used_frame[(*hdr).refidx[6] as usize] = 1 as libc::c_int;
             }
-            let mut earliest_frame_offset = 2147483647;
+            let mut earliest_frame_offset = i32::MAX;
             let mut i_4 = 0;
             while i_4 < 8 {
                 let hint_0: libc::c_int = shifted_frame_offset[i_4 as usize];
@@ -1246,10 +1246,10 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
                 }
                 i_4 += 1;
             }
-            if earliest_frame_offset != 2147483647 as libc::c_int {
+            if earliest_frame_offset != i32::MAX {
                 used_frame[(*hdr).refidx[4] as usize] = 1 as libc::c_int;
             }
-            earliest_frame_offset = 2147483647 as libc::c_int;
+            earliest_frame_offset = i32::MAX;
             let mut i_5 = 0;
             while i_5 < 8 {
                 let hint_1: libc::c_int = shifted_frame_offset[i_5 as usize];
@@ -1262,7 +1262,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
                 }
                 i_5 += 1;
             }
-            if earliest_frame_offset != 2147483647 as libc::c_int {
+            if earliest_frame_offset != i32::MAX {
                 used_frame[(*hdr).refidx[5] as usize] = 1 as libc::c_int;
             }
             let mut i_6 = 1;
@@ -1287,7 +1287,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
                 }
                 i_6 += 1;
             }
-            earliest_frame_offset = 2147483647 as libc::c_int;
+            earliest_frame_offset = i32::MAX;
             let mut ref_0: libc::c_int = -(1 as libc::c_int);
             let mut i_7 = 0;
             while i_7 < 8 {
@@ -2577,7 +2577,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                 }
                 if (*c).n_tile_data_alloc < (*c).n_tile_data + 1 {
                     if (*c).n_tile_data + 1
-                        > 2147483647
+                        > i32::MAX
                             / ::core::mem::size_of::<Dav1dTileGroup>() as libc::c_ulong
                                 as libc::c_int
                     {
