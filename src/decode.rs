@@ -8,8 +8,11 @@ use std::sync::atomic::Ordering;
 use crate::include::common::bitdepth::BitDepth16;
 #[cfg(feature = "bitdepth_8")]
 use crate::include::common::bitdepth::BitDepth8;
-use crate::include::common::frame::{is_inter_or_switch, is_key_or_intra};
-use crate::include::dav1d::headers::{Dav1dTxfmMode, DAV1D_MAX_SEGMENTS};
+use crate::include::common::frame::is_inter_or_switch;
+use crate::include::common::frame::is_key_or_intra;
+use crate::include::dav1d::headers::Dav1dFrameHeader_tiling;
+use crate::include::dav1d::headers::Dav1dTxfmMode;
+use crate::include::dav1d::headers::DAV1D_MAX_SEGMENTS;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use crate::src::align::Align16;
@@ -5752,7 +5755,9 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
 
     // no threading - we explicitly interleave tile/sbrow decoding
     // and post-filtering, so that the full process runs in-line
-    for tile_row in 0..(*f.frame_hdr).tiling.rows as usize {
+    let Dav1dFrameHeader_tiling { rows, cols, .. } = (*f.frame_hdr).tiling;
+    let [rows, cols] = [rows, cols].map(|it| it as usize);
+    for tile_row in 0..rows {
         let sbh_end = std::cmp::min(
             (*f.frame_hdr).tiling.row_start_sb[tile_row + 1].into(),
             f.sbh,
@@ -5770,10 +5775,8 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
                     by_end,
                 );
             }
-            for tile_col in 0..(*f.frame_hdr).tiling.cols as usize {
-                t.ts = f
-                    .ts
-                    .offset((tile_row * (*f.frame_hdr).tiling.cols as usize + tile_col) as isize);
+            for tile_col in 0..cols {
+                t.ts = f.ts.offset((tile_row * cols + tile_col) as isize);
                 if dav1d_decode_tile_sbrow(t) != 0 {
                     return retval;
                 }
