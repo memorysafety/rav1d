@@ -5732,20 +5732,22 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> libc::c_int {
-    let c = &*(*f).c;
+    let f = &mut *f; // TODO(kkysen) propagate to arg once we deduplicate the fn decl
+
+    let c = &*f.c;
     let mut retval = -22;
 
-    assert!((*(*f).c).n_tc == 1);
+    assert!((*f.c).n_tc == 1);
 
-    let t = &mut *c.tc.offset(f.offset_from(c.fc));
+    let t = &mut *c.tc.offset((f as *mut Dav1dFrameContext).offset_from(c.fc));
     t.f = f;
     t.frame_thread.pass = 0;
 
     let mut n = 0;
-    while n < (*f).sb128w * (*(*f).frame_hdr).tiling.rows {
+    while n < f.sb128w * (*f.frame_hdr).tiling.rows {
         reset_context(
-            &mut *((*f).a).offset(n as isize),
-            is_key_or_intra(&*(*f).frame_hdr),
+            &mut *(f.a).offset(n as isize),
+            is_key_or_intra(&*f.frame_hdr),
             0,
         );
         n += 1;
@@ -5754,49 +5756,48 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
     // no threading - we explicitly interleave tile/sbrow decoding
     // and post-filtering, so that the full process runs in-line
     let mut tile_row = 0;
-    while tile_row < (*(*f).frame_hdr).tiling.rows {
+    while tile_row < (*f.frame_hdr).tiling.rows {
         let sbh_end: libc::c_int = imin(
-            (*(*f).frame_hdr).tiling.row_start_sb[(tile_row + 1) as usize] as libc::c_int,
-            (*f).sbh,
+            (*f.frame_hdr).tiling.row_start_sb[(tile_row + 1) as usize] as libc::c_int,
+            f.sbh,
         );
         let mut sby: libc::c_int =
-            (*(*f).frame_hdr).tiling.row_start_sb[tile_row as usize] as libc::c_int;
+            (*f.frame_hdr).tiling.row_start_sb[tile_row as usize] as libc::c_int;
         while sby < sbh_end {
-            t.by = sby << 4 + (*(*f).seq_hdr).sb128;
-            let by_end: libc::c_int = t.by + (*f).sb_step >> 1;
-            if (*(*f).frame_hdr).use_ref_frame_mvs != 0 {
-                ((*(*f).c).refmvs_dsp.load_tmvs).expect("non-null function pointer")(
-                    &mut (*f).rf,
+            t.by = sby << 4 + (*f.seq_hdr).sb128;
+            let by_end: libc::c_int = t.by + f.sb_step >> 1;
+            if (*f.frame_hdr).use_ref_frame_mvs != 0 {
+                ((*f.c).refmvs_dsp.load_tmvs).expect("non-null function pointer")(
+                    &mut f.rf,
                     tile_row,
                     0,
-                    (*f).bw >> 1,
+                    f.bw >> 1,
                     t.by >> 1,
                     by_end,
                 );
             }
             let mut tile_col = 0;
-            while tile_col < (*(*f).frame_hdr).tiling.cols {
-                t.ts = (*f)
-                    .ts
-                    .offset((tile_row * (*(*f).frame_hdr).tiling.cols + tile_col) as isize);
+            while tile_col < (*f.frame_hdr).tiling.cols {
+                t.ts =
+                    f.ts.offset((tile_row * (*f.frame_hdr).tiling.cols + tile_col) as isize);
                 if dav1d_decode_tile_sbrow(t) != 0 {
                     return retval;
                 }
                 tile_col += 1;
             }
-            if is_inter_or_switch(&*(*f).frame_hdr) {
+            if is_inter_or_switch(&*f.frame_hdr) {
                 dav1d_refmvs_save_tmvs(
-                    &(*(*f).c).refmvs_dsp,
+                    &(*f.c).refmvs_dsp,
                     &mut t.rt,
                     0,
-                    (*f).bw >> 1,
+                    f.bw >> 1,
                     t.by >> 1,
                     by_end,
                 );
             }
 
             // loopfilter + cdef + restoration
-            ((*f).bd_fn.filter_sbrow).expect("non-null function pointer")(f, sby);
+            (f.bd_fn.filter_sbrow).expect("non-null function pointer")(f, sby);
             sby += 1;
         }
         tile_row += 1;
