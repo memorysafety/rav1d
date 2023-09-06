@@ -553,7 +553,7 @@ pub unsafe extern "C" fn fill(
     while y < h {
         let mut x = 0;
         while x < w {
-            *tmp.offset(x as isize) = (-(32767 as libc::c_int) - 1) as int16_t;
+            *tmp.offset(x as isize) = i16::MIN;
             x += 1;
         }
         tmp = tmp.offset(stride as isize);
