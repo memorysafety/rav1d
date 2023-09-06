@@ -5660,6 +5660,9 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
 
     let n_tile_data = f.n_tile_data.try_into().unwrap();
     let n_bytes = tiling.n_bytes.try_into().unwrap();
+    let rows: usize = tiling.rows.try_into().unwrap();
+    let cols = tiling.cols.try_into().unwrap();
+    let sb128w: usize = f.sb128w.try_into().unwrap();
 
     // parse individual tiles per tile group
     let mut tile_row = 0;
@@ -5705,7 +5708,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
             );
             tile_col += 1;
 
-            if tile_col == tiling.cols as usize {
+            if tile_col == cols {
                 tile_col = 0;
                 tile_row += 1;
             }
@@ -5719,20 +5722,15 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
 
     if c.n_tc > 1 {
         let uses_2pass = c.n_fc > 1;
-        for (n, ctx) in slice::from_raw_parts_mut(
-            f.a,
-            (f.sb128w * tiling.rows * (1 + uses_2pass as libc::c_int))
-                .try_into()
-                .unwrap(),
-        )
-        .iter_mut()
-        .enumerate()
+        for (n, ctx) in slice::from_raw_parts_mut(f.a, sb128w * rows * (1 + uses_2pass as usize))
+            .iter_mut()
+            .enumerate()
         {
             reset_context(
                 ctx,
                 is_key_or_intra(&*f.frame_hdr),
                 if uses_2pass {
-                    1 + (n >= (f.sb128w * tiling.rows) as usize) as libc::c_int
+                    1 + (n >= sb128w * rows) as libc::c_int
                 } else {
                     0
                 },
