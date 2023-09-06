@@ -5660,13 +5660,13 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
     let mut tile_row = 0;
     let mut tile_col = 0;
     f.task_thread.update_set = false;
-    for i in 0..f.n_tile_data {
-        let mut data: *const uint8_t = (*(f.tile).offset(i as isize)).data.data;
-        let mut size: size_t = (*(f.tile).offset(i as isize)).data.sz;
+    for tile in slice::from_raw_parts(f.tile, f.n_tile_data.try_into().unwrap()) {
+        let mut data: *const uint8_t = tile.data.data;
+        let mut size: size_t = tile.data.sz;
 
-        for j in (*(f.tile).offset(i as isize)).start..=(*(f.tile).offset(i as isize)).end {
+        for j in tile.start..=tile.end {
             let mut tile_sz: size_t;
-            if j == (*(f.tile).offset(i as isize)).end {
+            if j == tile.end {
                 tile_sz = size;
             } else {
                 if (*f.frame_hdr).tiling.n_bytes as size_t > size {
