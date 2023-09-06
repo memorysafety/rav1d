@@ -5743,12 +5743,11 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
     t.f = f;
     t.frame_thread.pass = 0;
 
-    for n in 0..f.sb128w * (*f.frame_hdr).tiling.rows {
-        reset_context(
-            &mut *(f.a).offset(n as isize),
-            is_key_or_intra(&*f.frame_hdr),
-            0,
-        );
+    for ctx in slice::from_raw_parts_mut(
+        f.a,
+        (f.sb128w * (*f.frame_hdr).tiling.rows).try_into().unwrap(),
+    ) {
+        reset_context(ctx, is_key_or_intra(&*f.frame_hdr), 0);
     }
 
     // no threading - we explicitly interleave tile/sbrow decoding
