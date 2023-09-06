@@ -4831,7 +4831,7 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> li
         while n < 7 {
             let mut m = 0;
             while m < 2 {
-                (*lowest_px.offset(n as isize))[m as usize] = -(2147483647 as libc::c_int) - 1;
+                (*lowest_px.offset(n as isize))[m as usize] = i32::MIN;
                 m += 1;
             }
             n += 1;

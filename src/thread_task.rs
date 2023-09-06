@@ -1161,18 +1161,18 @@ unsafe extern "C" fn check_tile(
                 lowest = p_b;
                 current_block_14 = 2370887241019905314;
             } else {
-                let y = if (*lowest_px.offset(n as isize))[0] == -(2147483647 as libc::c_int) - 1 {
-                    -(2147483647 as libc::c_int) - 1
+                let y = if (*lowest_px.offset(n as isize))[0] == i32::MIN {
+                    i32::MIN
                 } else {
                     (*lowest_px.offset(n as isize))[0] + 8
                 };
-                let uv = if (*lowest_px.offset(n as isize))[1] == -(2147483647 as libc::c_int) - 1 {
-                    -(2147483647 as libc::c_int) - 1
+                let uv = if (*lowest_px.offset(n as isize))[1] == i32::MIN {
+                    i32::MIN
                 } else {
                     (*lowest_px.offset(n as isize))[1] * ((1 as libc::c_int) << ss_ver) + 8
                 };
                 let max = imax(y, uv);
-                if max == -(2147483647 as libc::c_int) - 1 {
+                if max == i32::MIN {
                     current_block_14 = 7651349459974463963;
                 } else {
                     lowest =
