@@ -5648,37 +5648,39 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) -> libc::c_int {
-    let c: *const Dav1dContext = (*f).c;
+    let f = &mut *f; // TODO(kkysen) propagate to arg once we deduplicate the fn decl
+
+    let c: *const Dav1dContext = f.c;
     let mut retval: libc::c_int = -22;
-    if (*(*f).frame_hdr).refresh_context != 0 {
-        dav1d_cdf_thread_copy((*f).out_cdf.data.cdf, &mut (*f).in_cdf);
+    if (*f.frame_hdr).refresh_context != 0 {
+        dav1d_cdf_thread_copy(f.out_cdf.data.cdf, &mut f.in_cdf);
     }
     let mut tile_row = 0;
     let mut tile_col = 0;
-    (*f).task_thread.update_set = 0;
+    f.task_thread.update_set = 0;
     let mut i = 0;
-    while i < (*f).n_tile_data {
-        let mut data: *const uint8_t = (*((*f).tile).offset(i as isize)).data.data;
-        let mut size: size_t = (*((*f).tile).offset(i as isize)).data.sz;
-        let mut j: libc::c_int = (*((*f).tile).offset(i as isize)).start;
-        while j <= (*((*f).tile).offset(i as isize)).end {
+    while i < f.n_tile_data {
+        let mut data: *const uint8_t = (*(f.tile).offset(i as isize)).data.data;
+        let mut size: size_t = (*(f.tile).offset(i as isize)).data.sz;
+        let mut j: libc::c_int = (*(f.tile).offset(i as isize)).start;
+        while j <= (*(f.tile).offset(i as isize)).end {
             let mut tile_sz: size_t;
-            if j == (*((*f).tile).offset(i as isize)).end {
+            if j == (*(f.tile).offset(i as isize)).end {
                 tile_sz = size;
             } else {
-                if (*(*f).frame_hdr).tiling.n_bytes as size_t > size {
+                if (*f.frame_hdr).tiling.n_bytes as size_t > size {
                     return retval;
                 }
                 tile_sz = 0;
                 let mut k: libc::c_uint = 0;
-                while k < (*(*f).frame_hdr).tiling.n_bytes {
+                while k < (*f.frame_hdr).tiling.n_bytes {
                     let fresh37 = data;
                     data = data.offset(1);
                     tile_sz |= ((*fresh37 as libc::c_uint) << k.wrapping_mul(8)) as size_t;
                     k = k.wrapping_add(1);
                 }
                 tile_sz = tile_sz.wrapping_add(1);
-                size = size.wrapping_sub((*(*f).frame_hdr).tiling.n_bytes as usize);
+                size = size.wrapping_sub((*f.frame_hdr).tiling.n_bytes as usize);
                 if tile_sz > size {
                     return retval;
                 }
@@ -5686,24 +5688,24 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
             let fresh38 = tile_col;
             tile_col = tile_col + 1;
             setup_tile(
-                &mut *((*f).ts).offset(j as isize),
-                &*f,
+                &mut *(f.ts).offset(j as isize),
+                f,
                 data,
                 tile_sz,
                 tile_row as usize,
                 fresh38 as usize,
                 if (*c).n_fc > 1 {
-                    *((*f).frame_thread.tile_start_off).offset(j as isize) as usize
+                    *(f.frame_thread.tile_start_off).offset(j as isize) as usize
                 } else {
                     0
                 },
             );
-            if tile_col == (*(*f).frame_hdr).tiling.cols {
+            if tile_col == (*f.frame_hdr).tiling.cols {
                 tile_col = 0;
                 tile_row += 1;
             }
-            if j == (*(*f).frame_hdr).tiling.update && (*(*f).frame_hdr).refresh_context != 0 {
-                (*f).task_thread.update_set = 1;
+            if j == (*f.frame_hdr).tiling.update && (*f.frame_hdr).refresh_context != 0 {
+                f.task_thread.update_set = 1;
             }
             data = data.offset(tile_sz as isize);
             size = size.wrapping_sub(tile_sz);
@@ -5714,12 +5716,12 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
     if (*c).n_tc > 1 {
         let uses_2pass: libc::c_int = ((*c).n_fc > 1) as libc::c_int;
         let mut n = 0;
-        while n < (*f).sb128w * (*(*f).frame_hdr).tiling.rows * (1 + uses_2pass) {
+        while n < f.sb128w * (*f.frame_hdr).tiling.rows * (1 + uses_2pass) {
             reset_context(
-                &mut *((*f).a).offset(n as isize),
-                (*(*f).frame_hdr).frame_type & 1 == 0,
+                &mut *(f.a).offset(n as isize),
+                (*f.frame_hdr).frame_type & 1 == 0,
                 if uses_2pass != 0 {
-                    1 + (n >= (*f).sb128w * (*(*f).frame_hdr).tiling.rows) as libc::c_int
+                    1 + (n >= f.sb128w * (*f.frame_hdr).tiling.rows) as libc::c_int
                 } else {
                     0
                 },
