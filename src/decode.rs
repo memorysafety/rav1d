@@ -5733,23 +5733,22 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> libc::c_int {
     let c = &*(*f).c;
-    let mut retval: libc::c_int = -(22 as libc::c_int);
+    let mut retval = -22;
 
-    if !((*(*f).c).n_tc == 1 as libc::c_uint) {
+    if !((*(*f).c).n_tc == 1) {
         unreachable!();
     }
 
-    let t: *mut Dav1dTaskContext =
-        &mut *(c.tc).offset(f.offset_from(c.fc) as libc::c_long as isize) as *mut Dav1dTaskContext;
+    let t: *mut Dav1dTaskContext = c.tc.offset(f.offset_from(c.fc));
     (*t).f = f;
-    (*t).frame_thread.pass = 0 as libc::c_int;
+    (*t).frame_thread.pass = 0;
 
     let mut n = 0;
     while n < (*f).sb128w * (*(*f).frame_hdr).tiling.rows {
         reset_context(
             &mut *((*f).a).offset(n as isize),
             is_key_or_intra(&*(*f).frame_hdr),
-            0 as libc::c_int,
+            0,
         );
         n += 1;
     }
@@ -5771,7 +5770,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
                 ((*(*f).c).refmvs_dsp.load_tmvs).expect("non-null function pointer")(
                     &mut (*f).rf,
                     tile_row,
-                    0 as libc::c_int,
+                    0,
                     (*f).bw >> 1,
                     (*t).by >> 1,
                     by_end,
@@ -5779,9 +5778,9 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
             }
             let mut tile_col = 0;
             while tile_col < (*(*f).frame_hdr).tiling.cols {
-                (*t).ts = &mut *((*f).ts)
-                    .offset((tile_row * (*(*f).frame_hdr).tiling.cols + tile_col) as isize)
-                    as *mut Dav1dTileState;
+                (*t).ts = (*f)
+                    .ts
+                    .offset((tile_row * (*(*f).frame_hdr).tiling.cols + tile_col) as isize);
                 if dav1d_decode_tile_sbrow(t) != 0 {
                     return retval;
                 }
@@ -5791,7 +5790,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
                 dav1d_refmvs_save_tmvs(
                     &(*(*f).c).refmvs_dsp,
                     &mut (*t).rt,
-                    0 as libc::c_int,
+                    0,
                     (*f).bw >> 1,
                     (*t).by >> 1,
                     by_end,
@@ -5805,7 +5804,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
         tile_row += 1;
     }
 
-    retval = 0 as libc::c_int;
+    retval = 0;
     return retval;
 }
 
