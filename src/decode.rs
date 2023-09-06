@@ -5657,13 +5657,15 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
     }
 
     let tiling = &(*f.frame_hdr).tiling;
+
+    let n_tile_data = f.n_tile_data.try_into().unwrap();
     let n_bytes = tiling.n_bytes.try_into().unwrap();
 
     // parse individual tiles per tile group
     let mut tile_row = 0;
     let mut tile_col = 0;
     f.task_thread.update_set = false;
-    for tile in slice::from_raw_parts(f.tile, f.n_tile_data.try_into().unwrap()) {
+    for tile in slice::from_raw_parts(f.tile, n_tile_data) {
         let mut data: *const uint8_t = tile.data.data;
         let mut size: size_t = tile.data.sz;
 
