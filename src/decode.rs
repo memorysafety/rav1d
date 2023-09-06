@@ -5674,9 +5674,8 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
                 }
                 tile_sz = 0;
                 for k in 0..(*f.frame_hdr).tiling.n_bytes {
-                    let fresh37 = data;
+                    tile_sz |= (*data as usize) << (k * 8);
                     data = data.offset(1);
-                    tile_sz |= ((*fresh37 as libc::c_uint) << (k * 8)) as size_t;
                 }
                 tile_sz += 1;
                 size -= (*f.frame_hdr).tiling.n_bytes as usize;
@@ -5684,8 +5683,6 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
                     return -22;
                 }
             }
-            let fresh38 = tile_col;
-            tile_col = tile_col + 1;
 
             setup_tile(
                 &mut *(f.ts).offset(j as isize),
@@ -5693,13 +5690,14 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
                 data,
                 tile_sz,
                 tile_row as usize,
-                fresh38 as usize,
+                tile_col as usize,
                 if c.n_fc > 1 {
                     *(f.frame_thread.tile_start_off).offset(j as isize) as usize
                 } else {
                     0
                 },
             );
+            tile_col += 1;
 
             if tile_col == (*f.frame_hdr).tiling.cols {
                 tile_col = 0;
