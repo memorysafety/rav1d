@@ -5691,8 +5691,8 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
                 f,
                 data,
                 tile_sz,
-                tile_row as usize,
-                tile_col as usize,
+                tile_row,
+                tile_col,
                 if c.n_fc > 1 {
                     *(f.frame_thread.tile_start_off).offset(j as isize) as usize
                 } else {
@@ -5701,7 +5701,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
             );
             tile_col += 1;
 
-            if tile_col == (*f.frame_hdr).tiling.cols {
+            if tile_col == (*f.frame_hdr).tiling.cols as usize {
                 tile_col = 0;
                 tile_row += 1;
             }
