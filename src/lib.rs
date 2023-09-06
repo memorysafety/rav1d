@@ -1071,10 +1071,7 @@ pub unsafe extern "C" fn dav1d_open(
                                     current_block = 16409883578687858768;
                                 } else {
                                     (*c).task_thread.cur = (*c).n_fc;
-                                    *&mut (*c).task_thread.reset_task_cur =
-                                        (2147483647 as libc::c_int as libc::c_uint)
-                                            .wrapping_mul(2 as libc::c_uint)
-                                            .wrapping_add(1 as libc::c_uint);
+                                    *&mut (*c).task_thread.reset_task_cur = u32::MAX;
                                     *&mut (*c).task_thread.cond_signaled = 0 as libc::c_int;
                                     (*c).task_thread.inited = 1 as libc::c_int;
                                     current_block = 1868291631715963762;
@@ -1496,9 +1493,7 @@ unsafe extern "C" fn drain_picture(c: *mut Dav1dContext, out: *mut Dav1dPicture)
             let fresh0 = ::core::intrinsics::atomic_cxchg_seqcst_seqcst(
                 &mut (*c).task_thread.reset_task_cur,
                 *&mut first,
-                (2147483647 as libc::c_int as libc::c_uint)
-                    .wrapping_mul(2 as libc::c_uint)
-                    .wrapping_add(1 as libc::c_uint),
+                u32::MAX,
             );
             *&mut first = fresh0.0;
             fresh0.1;
@@ -1527,11 +1522,7 @@ unsafe extern "C" fn drain_picture(c: *mut Dav1dContext, out: *mut Dav1dPicture)
                 &mut *((*out_delayed).progress).offset(1) as *mut atomic_uint,
             );
             if ((*out_delayed).visible != 0 || (*c).output_invisible_frames != 0)
-                && progress
-                    != (2147483647 as libc::c_int as libc::c_uint)
-                        .wrapping_mul(2 as libc::c_uint)
-                        .wrapping_add(1 as libc::c_uint)
-                        .wrapping_sub(1 as libc::c_int as libc::c_uint)
+                && progress != u32::MAX - 1
             {
                 dav1d_thread_picture_ref(&mut (*c).out, out_delayed);
                 (*c).event_flags = ::core::mem::transmute::<libc::c_uint, Dav1dEventFlags>(
@@ -1820,12 +1811,7 @@ pub unsafe extern "C" fn dav1d_flush(c: *mut Dav1dContext) {
         }
         *&mut (*c).task_thread.first = 0 as libc::c_int as libc::c_uint;
         (*c).task_thread.cur = (*c).n_fc;
-        ::core::intrinsics::atomic_store_seqcst(
-            &mut (*c).task_thread.reset_task_cur,
-            (2147483647 as libc::c_int as libc::c_uint)
-                .wrapping_mul(2 as libc::c_uint)
-                .wrapping_add(1 as libc::c_uint),
-        );
+        ::core::intrinsics::atomic_store_seqcst(&mut (*c).task_thread.reset_task_cur, u32::MAX);
         ::core::intrinsics::atomic_store_seqcst(
             &mut (*c).task_thread.cond_signaled,
             0 as libc::c_int,

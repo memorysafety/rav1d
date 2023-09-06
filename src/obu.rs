@@ -2747,9 +2747,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                     let fresh2 = ::core::intrinsics::atomic_cxchg_seqcst_seqcst(
                         &mut (*c).task_thread.reset_task_cur,
                         *&mut first,
-                        (2147483647 as libc::c_int as libc::c_uint)
-                            .wrapping_mul(2 as libc::c_uint)
-                            .wrapping_add(1 as libc::c_uint),
+                        u32::MAX,
                     );
                     *&mut first = fresh2.0;
                     fresh2.1;
@@ -2768,11 +2766,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                         &mut *((*out_delayed).progress).offset(1) as *mut atomic_uint,
                     );
                     if ((*out_delayed).visible != 0 || (*c).output_invisible_frames != 0)
-                        && progress
-                            != (2147483647 as libc::c_int as libc::c_uint)
-                                .wrapping_mul(2 as libc::c_uint)
-                                .wrapping_add(1 as libc::c_uint)
-                                .wrapping_sub(1 as libc::c_int as libc::c_uint)
+                        && progress != u32::MAX - 1
                     {
                         dav1d_thread_picture_ref(&mut (*c).out, out_delayed);
                         (*c).event_flags = ::core::mem::transmute::<libc::c_uint, Dav1dEventFlags>(
