@@ -5754,10 +5754,10 @@ pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> l
     // and post-filtering, so that the full process runs in-line
     for tile_row in 0..(*f.frame_hdr).tiling.rows {
         let sbh_end = std::cmp::min(
-            (*f.frame_hdr).tiling.row_start_sb[(tile_row + 1) as usize] as libc::c_int,
+            (*f.frame_hdr).tiling.row_start_sb[(tile_row + 1) as usize].into(),
             f.sbh,
         );
-        for sby in (*f.frame_hdr).tiling.row_start_sb[tile_row as usize] as libc::c_int..sbh_end {
+        for sby in (*f.frame_hdr).tiling.row_start_sb[tile_row as usize].into()..sbh_end {
             t.by = sby << 4 + (*f.seq_hdr).sb128;
             let by_end = t.by + f.sb_step >> 1;
             if (*f.frame_hdr).use_ref_frame_mvs != 0 {
