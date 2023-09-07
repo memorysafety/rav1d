@@ -5059,13 +5059,11 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
     let mut sby = 0;
     let mut tile_row = 0;
     while tile_row < (*f.frame_hdr).tiling.rows {
-        let fresh33 = sby;
-        sby = sby + 1;
-        *f.lf.start_of_tile_row.offset(fresh33 as isize) = tile_row as uint8_t;
+        *f.lf.start_of_tile_row.offset(sby as isize) = tile_row as uint8_t;
+        sby += 1;
         while sby < (*f.frame_hdr).tiling.row_start_sb[(tile_row + 1) as usize] as libc::c_int {
-            let fresh34 = sby;
-            sby = sby + 1;
-            *f.lf.start_of_tile_row.offset(fresh34 as isize) = 0;
+            *f.lf.start_of_tile_row.offset(sby as isize) = 0;
+            sby += 1;
         }
         tile_row += 1;
     }
@@ -5123,13 +5121,13 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                 * 4;
             let mut tile_col = 0;
             while tile_col < (*f.frame_hdr).tiling.cols {
-                let fresh35 = tile_idx;
-                tile_idx = tile_idx + 1;
-                *f.frame_thread.tile_start_off.offset(fresh35 as isize) = row_off
+                *f.frame_thread.tile_start_off.offset(tile_idx as isize) = row_off
                     + b_diff
                         * (*f.frame_hdr).tiling.col_start_sb[tile_col as usize] as libc::c_int
                         * f.sb_step
                         * 4;
+
+                tile_idx += 1;
                 tile_col += 1;
             }
             tile_row += 1;
@@ -5156,9 +5154,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                 - (*f.frame_hdr).tiling.row_start_sb[tile_row as usize] as libc::c_int;
             let mut tile_col = 0;
             while tile_col < (*f.frame_hdr).tiling.cols {
-                let ref mut fresh36 =
-                    (*(f.ts).offset((tile_row_base + tile_col) as isize)).lowest_pixel;
-                *fresh36 = lowest_pixel_ptr;
+                (*f.ts.offset((tile_row_base + tile_col) as isize)).lowest_pixel = lowest_pixel_ptr;
                 lowest_pixel_ptr = lowest_pixel_ptr.offset(tile_row_sb_h as isize);
                 tile_col += 1;
             }
