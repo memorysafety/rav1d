@@ -5462,7 +5462,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
             let mut j = i + 1;
             while j < 7 {
                 let ref1poc = (*f.refp[j as usize].p.frame_hdr).frame_offset as libc::c_uint;
-                let d1 = imin(
+                let d1 = std::cmp::min(
                     (get_poc_diff(
                         (*f.seq_hdr).order_hint_n_bits,
                         ref0poc as libc::c_int,
@@ -5471,7 +5471,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                     .abs(),
                     31,
                 ) as libc::c_uint;
-                let d0 = imin(
+                let d0 = std::cmp::min(
                     (get_poc_diff(
                         (*f.seq_hdr).order_hint_n_bits,
                         ref1poc as libc::c_int,
