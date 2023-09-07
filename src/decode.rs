@@ -5457,11 +5457,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                 .map_or(std::ptr::null(), |qm| qm.as_ptr());
         }
     } else {
-        memset(
-            f.qm.as_mut_ptr() as *mut libc::c_void,
-            0,
-            ::core::mem::size_of::<[[*const uint8_t; 3]; 19]>(),
-        );
+        f.qm = [[ptr::null(); 3]; 19]; // TODO(kkysen) can be Default::default once the type is Option
     }
     if (*f.frame_hdr).switchable_comp_refs != 0 {
         let mut i = 0;
