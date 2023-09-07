@@ -5175,7 +5175,11 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                 f.frame_thread.cf_sz = 0;
                 return retval;
             }
-            memset(f.frame_thread.cf, 0, cf_sz as size_t * 128 * 128 / 2);
+            slice::from_raw_parts_mut(
+                f.frame_thread.cf.cast::<u8>(),
+                usize::try_from(cf_sz).unwrap() * 128 * 128 / 2,
+            )
+            .fill(0);
             f.frame_thread.cf_sz = cf_sz;
         }
         if (*f.frame_hdr).allow_screen_content_tools != 0 {
