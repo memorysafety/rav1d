@@ -5051,7 +5051,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
             (f.sbh as libc::c_ulong)
                 .wrapping_mul(::core::mem::size_of::<uint8_t>() as libc::c_ulong),
         ) as *mut uint8_t;
-        if (f.lf.start_of_tile_row).is_null() {
+        if f.lf.start_of_tile_row.is_null() {
             f.lf.start_of_tile_row_sz = 0;
             return retval;
         }
@@ -5062,11 +5062,11 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
     while tile_row < (*f.frame_hdr).tiling.rows {
         let fresh33 = sby;
         sby = sby + 1;
-        *(f.lf.start_of_tile_row).offset(fresh33 as isize) = tile_row as uint8_t;
+        *f.lf.start_of_tile_row.offset(fresh33 as isize) = tile_row as uint8_t;
         while sby < (*f.frame_hdr).tiling.row_start_sb[(tile_row + 1) as usize] as libc::c_int {
             let fresh34 = sby;
             sby = sby + 1;
-            *(f.lf.start_of_tile_row).offset(fresh34 as isize) = 0;
+            *f.lf.start_of_tile_row.offset(fresh34 as isize) = 0;
         }
         tile_row += 1;
     }
@@ -5078,7 +5078,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                 (::core::mem::size_of::<libc::c_int>() as libc::c_ulong)
                     .wrapping_mul(n_ts as libc::c_ulong),
             ) as *mut libc::c_int;
-            if (f.frame_thread.tile_start_off).is_null() {
+            if f.frame_thread.tile_start_off.is_null() {
                 f.n_ts = 0;
                 return retval;
             }
@@ -5088,7 +5088,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
             (::core::mem::size_of::<Dav1dTileState>()).wrapping_mul(n_ts as size_t),
             32,
         ) as *mut Dav1dTileState;
-        if (f.ts).is_null() {
+        if f.ts.is_null() {
             return retval;
         }
         f.n_ts = n_ts;
@@ -5101,14 +5101,14 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
             (::core::mem::size_of::<BlockContext>() as libc::c_ulong)
                 .wrapping_mul(a_sz as libc::c_ulong),
         ) as *mut BlockContext;
-        if (f.a).is_null() {
+        if f.a.is_null() {
             f.a_sz = 0;
             return retval;
         }
         f.a_sz = a_sz;
     }
     let num_sb128 = f.sb128w * f.sb128h;
-    let size_mul = (ss_size_mul[f.cur.p.layout as usize]).as_ptr();
+    let size_mul = ss_size_mul[f.cur.p.layout as usize].as_ptr();
     let hbd = ((*f.seq_hdr).hbd != 0) as libc::c_int;
     if c.n_fc > 1 {
         let mut tile_idx = 0;
@@ -5128,7 +5128,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
             while tile_col < (*f.frame_hdr).tiling.cols {
                 let fresh35 = tile_idx;
                 tile_idx = tile_idx + 1;
-                *(f.frame_thread.tile_start_off).offset(fresh35 as isize) = row_off
+                *f.frame_thread.tile_start_off.offset(fresh35 as isize) = row_off
                     + b_diff
                         * (*f.frame_hdr).tiling.col_start_sb[tile_col as usize] as libc::c_int
                         * f.sb_step
@@ -5144,7 +5144,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                 (lowest_pixel_mem_sz as libc::c_ulong)
                     .wrapping_mul(::core::mem::size_of::<[[libc::c_int; 2]; 7]>() as libc::c_ulong),
             ) as *mut [[libc::c_int; 2]; 7];
-            if (f.tile_thread.lowest_pixel_mem).is_null() {
+            if f.tile_thread.lowest_pixel_mem.is_null() {
                 f.tile_thread.lowest_pixel_mem_sz = 0;
                 return retval;
             }
@@ -5180,7 +5180,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                     .wrapping_div(2),
                 64,
             );
-            if (f.frame_thread.cf).is_null() {
+            if f.frame_thread.cf.is_null() {
                 f.frame_thread.cf_sz = 0;
                 return retval;
             }
@@ -5206,7 +5206,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                         .wrapping_mul(16),
                     64,
                 ) as *mut [[uint16_t; 8]; 3];
-                if (f.frame_thread.pal).is_null() {
+                if f.frame_thread.pal.is_null() {
                     f.frame_thread.pal_sz = 0;
                     return retval;
                 }
@@ -5225,13 +5225,13 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                         .wrapping_div(4),
                     64,
                 ) as *mut uint8_t;
-                if (f.frame_thread.pal_idx).is_null() {
+                if f.frame_thread.pal_idx.is_null() {
                     f.frame_thread.pal_idx_sz = 0;
                     return retval;
                 }
                 f.frame_thread.pal_idx_sz = pal_idx_sz;
             }
-        } else if !(f.frame_thread.pal).is_null() {
+        } else if !f.frame_thread.pal.is_null() {
             dav1d_freep_aligned(
                 &mut f.frame_thread.pal as *mut *mut [[uint16_t; 8]; 3] as *mut libc::c_void,
             );
@@ -5380,7 +5380,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                 .wrapping_mul(32)
                 .wrapping_add(3),
         ) as *mut [uint8_t; 4];
-        if (f.lf.mask).is_null() || (f.lf.level).is_null() {
+        if f.lf.mask.is_null() || f.lf.level.is_null() {
             f.lf.mask_sz = 0;
             return retval;
         }
@@ -5399,7 +5399,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                     .wrapping_mul(32)
                     .wrapping_mul(32),
             ) as *mut CodedBlockInfo;
-            if (f.frame_thread.b).is_null() || (f.frame_thread.cbi).is_null() {
+            if f.frame_thread.b.is_null() || f.frame_thread.cbi.is_null() {
                 f.lf.mask_sz = 0;
                 return retval;
             }
@@ -5414,7 +5414,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
             (::core::mem::size_of::<Av1Restoration>() as libc::c_ulong)
                 .wrapping_mul(lr_mask_sz as libc::c_ulong),
         ) as *mut Av1Restoration;
-        if (f.lf.lr_mask).is_null() {
+        if f.lf.lr_mask.is_null() {
             f.lf.lr_mask_sz = 0;
             return retval;
         }
@@ -5438,7 +5438,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
     let ipred_edge_sz = f.sbh * f.sb128w << hbd;
     if ipred_edge_sz != f.ipred_edge_sz {
         dav1d_freep_aligned(
-            &mut *(f.ipred_edge).as_mut_ptr().offset(0) as *mut *mut libc::c_void
+            &mut *f.ipred_edge.as_mut_ptr().offset(0) as *mut *mut libc::c_void
                 as *mut libc::c_void,
         );
         f.ipred_edge[0] = dav1d_alloc_aligned(ipred_edge_sz as size_t * 128 * 3, 64);
@@ -5454,15 +5454,15 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
     let re_sz = f.sb128h * (*f.frame_hdr).tiling.cols;
     if re_sz != f.lf.re_sz {
         freep(
-            &mut *(f.lf.tx_lpf_right_edge).as_mut_ptr().offset(0) as *mut *mut uint8_t
+            &mut *f.lf.tx_lpf_right_edge.as_mut_ptr().offset(0) as *mut *mut uint8_t
                 as *mut libc::c_void,
         );
         f.lf.tx_lpf_right_edge[0] = malloc(re_sz as libc::c_ulong * 32 * 2) as *mut uint8_t;
-        if (f.lf.tx_lpf_right_edge[0]).is_null() {
+        if f.lf.tx_lpf_right_edge[0].is_null() {
             f.lf.re_sz = 0;
             return retval;
         }
-        f.lf.tx_lpf_right_edge[1] = (f.lf.tx_lpf_right_edge[0]).offset((re_sz * 32) as isize);
+        f.lf.tx_lpf_right_edge[1] = f.lf.tx_lpf_right_edge[0].offset((re_sz * 32) as isize);
         f.lf.re_sz = re_sz;
     }
     if (*f.frame_hdr).frame_type & 1 != 0 || (*f.frame_hdr).allow_intrabc != 0 {
@@ -5470,10 +5470,10 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
             &mut f.rf,
             f.seq_hdr,
             f.frame_hdr,
-            (f.refpoc).as_mut_ptr() as *const libc::c_uint,
+            f.refpoc.as_mut_ptr() as *const libc::c_uint,
             f.mvs,
-            (f.refrefpoc).as_mut_ptr() as *const [libc::c_uint; 7],
-            (f.ref_mvs).as_mut_ptr() as *const *mut refmvs_temporal_block,
+            f.refrefpoc.as_mut_ptr() as *const [libc::c_uint; 7],
+            f.ref_mvs.as_mut_ptr() as *const *mut refmvs_temporal_block,
             (*f.c).n_tc as libc::c_int,
             (*f.c).n_fc as libc::c_int,
         );
@@ -5498,7 +5498,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
         }
     } else {
         memset(
-            (f.qm).as_mut_ptr() as *mut libc::c_void,
+            f.qm.as_mut_ptr() as *mut libc::c_void,
             0,
             ::core::mem::size_of::<[[*const uint8_t; 3]; 19]>(),
         );
