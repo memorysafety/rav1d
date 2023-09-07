@@ -5394,11 +5394,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
         f.lf.last_sharpness = (*f.frame_hdr).loopfilter.sharpness;
     }
     dav1d_calc_lf_values(&mut f.lf.lvl, &*f.frame_hdr, &[0, 0, 0, 0]);
-    memset(
-        f.lf.mask as *mut libc::c_void,
-        0,
-        ::core::mem::size_of::<Av1Filter>() * num_sb128 as size_t,
-    );
+    slice::from_raw_parts_mut(f.lf.mask, num_sb128.try_into().unwrap()).fill_with(Default::default);
     let ipred_edge_sz = f.sbh * f.sb128w << hbd;
     if ipred_edge_sz != f.ipred_edge_sz {
         dav1d_freep_aligned(
