@@ -5103,7 +5103,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
         f.a_sz = a_sz;
     }
     let num_sb128 = f.sb128w * f.sb128h;
-    let size_mul = ss_size_mul[f.cur.p.layout as usize].as_ptr();
+    let size_mul = &ss_size_mul[f.cur.p.layout as usize];
     let hbd = ((*f.seq_hdr).hbd != 0) as libc::c_int;
     if c.n_fc > 1 {
         let mut tile_idx = 0;
@@ -5161,7 +5161,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
             tile_row += 1;
             tile_row_base += (*f.frame_hdr).tiling.cols;
         }
-        let cf_sz = (num_sb128 * *size_mul.offset(0) as libc::c_int) << hbd;
+        let cf_sz = (num_sb128 * size_mul[0] as libc::c_int) << hbd;
         if cf_sz != f.frame_thread.cf_sz {
             dav1d_freep_aligned(
                 &mut f.frame_thread.cf as *mut *mut libc::c_void as *mut libc::c_void,
@@ -5193,7 +5193,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                 }
                 f.frame_thread.pal_sz = num_sb128;
             }
-            let pal_idx_sz = num_sb128 * *size_mul.offset(1) as libc::c_int;
+            let pal_idx_sz = num_sb128 * size_mul[1] as libc::c_int;
             if pal_idx_sz != f.frame_thread.pal_idx_sz {
                 dav1d_freep_aligned(
                     &mut f.frame_thread.pal_idx as *mut *mut uint8_t as *mut libc::c_void,
