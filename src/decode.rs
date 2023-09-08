@@ -5459,15 +5459,14 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                 let order = d[0] <= d[1];
                 static quant_dist_weight: [[u8; 2]; 3] = [[2, 3], [2, 5], [2, 7]];
                 static quant_dist_lookup_table: [[u8; 2]; 4] = [[9, 7], [11, 5], [12, 4], [13, 3]];
-                let mut k = 0;
-                while k < 3 {
-                    let c = [order, !order].map(|order| quant_dist_weight[k][order as usize]);
-                    let dc: [_; 2] = array::from_fn(|i| d[i] * c[i]);
-                    if !order && dc[0] < dc[1] || order && dc[0] > dc[1] {
-                        break;
-                    }
-                    k += 1;
-                }
+                let k = quant_dist_weight
+                    .into_iter()
+                    .position(|weight| {
+                        let c = [order, !order].map(|order| weight[order as usize]);
+                        let dc: [_; 2] = array::from_fn(|i| d[i] * c[i]);
+                        !order && dc[0] < dc[1] || order && dc[0] > dc[1]
+                    })
+                    .unwrap_or(quant_dist_weight.len());
                 f.jnt_weights[i][j] = quant_dist_lookup_table[k][order as usize];
             }
         }
