@@ -5048,8 +5048,8 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
     if f.sbh > f.lf.start_of_tile_row_sz {
         free(f.lf.start_of_tile_row as *mut libc::c_void);
         f.lf.start_of_tile_row =
-            malloc(f.sbh as libc::c_ulong * ::core::mem::size_of::<uint8_t>() as libc::c_ulong)
-                as *mut uint8_t;
+            malloc(f.sbh as libc::c_ulong * ::core::mem::size_of::<u8>() as libc::c_ulong)
+                as *mut u8;
         if f.lf.start_of_tile_row.is_null() {
             f.lf.start_of_tile_row_sz = 0;
             return retval;
@@ -5058,7 +5058,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
     }
     let mut sby = 0;
     for tile_row in 0..(*f.frame_hdr).tiling.rows {
-        *f.lf.start_of_tile_row.offset(sby as isize) = tile_row as uint8_t;
+        *f.lf.start_of_tile_row.offset(sby as isize) = tile_row as u8;
         sby += 1;
         while sby < (*f.frame_hdr).tiling.row_start_sb[(tile_row + 1) as usize] as libc::c_int {
             *f.lf.start_of_tile_row.offset(sby as isize) = 0;
@@ -5078,10 +5078,8 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
             }
         }
         dav1d_free_aligned(f.ts as *mut libc::c_void);
-        f.ts = dav1d_alloc_aligned(
-            ::core::mem::size_of::<Dav1dTileState>() * n_ts as size_t,
-            32,
-        ) as *mut Dav1dTileState;
+        f.ts = dav1d_alloc_aligned(::core::mem::size_of::<Dav1dTileState>() * n_ts as usize, 32)
+            as *mut Dav1dTileState;
         if f.ts.is_null() {
             return retval;
         }
@@ -5155,7 +5153,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
             dav1d_freep_aligned(
                 &mut f.frame_thread.cf as *mut *mut libc::c_void as *mut libc::c_void,
             );
-            f.frame_thread.cf = dav1d_alloc_aligned(cf_sz as size_t * 128 * 128 / 2, 64);
+            f.frame_thread.cf = dav1d_alloc_aligned(cf_sz as usize * 128 * 128 / 2, 64);
             if f.frame_thread.cf.is_null() {
                 f.frame_thread.cf_sz = 0;
                 return retval;
@@ -5170,12 +5168,12 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
         if (*f.frame_hdr).allow_screen_content_tools != 0 {
             if num_sb128 != f.frame_thread.pal_sz {
                 dav1d_freep_aligned(
-                    &mut f.frame_thread.pal as *mut *mut [[uint16_t; 8]; 3] as *mut libc::c_void,
+                    &mut f.frame_thread.pal as *mut *mut [[u16; 8]; 3] as *mut libc::c_void,
                 );
                 f.frame_thread.pal = dav1d_alloc_aligned(
-                    ::core::mem::size_of::<[[uint16_t; 8]; 3]>() * num_sb128 as size_t * 16 * 16,
+                    ::core::mem::size_of::<[[u16; 8]; 3]>() * num_sb128 as usize * 16 * 16,
                     64,
-                ) as *mut [[uint16_t; 8]; 3];
+                ) as *mut [[u16; 8]; 3];
                 if f.frame_thread.pal.is_null() {
                     f.frame_thread.pal_sz = 0;
                     return retval;
@@ -5185,12 +5183,12 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
             let pal_idx_sz = num_sb128 * size_mul[1] as libc::c_int;
             if pal_idx_sz != f.frame_thread.pal_idx_sz {
                 dav1d_freep_aligned(
-                    &mut f.frame_thread.pal_idx as *mut *mut uint8_t as *mut libc::c_void,
+                    &mut f.frame_thread.pal_idx as *mut *mut u8 as *mut libc::c_void,
                 );
                 f.frame_thread.pal_idx = dav1d_alloc_aligned(
-                    ::core::mem::size_of::<uint8_t>() * pal_idx_sz as size_t * 128 * 128 / 4,
+                    ::core::mem::size_of::<u8>() * pal_idx_sz as usize * 128 * 128 / 4,
                     64,
-                ) as *mut uint8_t;
+                ) as *mut u8;
                 if f.frame_thread.pal_idx.is_null() {
                     f.frame_thread.pal_idx_sz = 0;
                     return retval;
@@ -5199,11 +5197,9 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
             }
         } else if !f.frame_thread.pal.is_null() {
             dav1d_freep_aligned(
-                &mut f.frame_thread.pal as *mut *mut [[uint16_t; 8]; 3] as *mut libc::c_void,
+                &mut f.frame_thread.pal as *mut *mut [[u16; 8]; 3] as *mut libc::c_void,
             );
-            dav1d_freep_aligned(
-                &mut f.frame_thread.pal_idx as *mut *mut uint8_t as *mut libc::c_void,
-            );
+            dav1d_freep_aligned(&mut f.frame_thread.pal_idx as *mut *mut u8 as *mut libc::c_void);
             f.frame_thread.pal_idx_sz = 0;
             f.frame_thread.pal_sz = f.frame_thread.pal_idx_sz;
         }
@@ -5218,9 +5214,9 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
         || f.sbh != f.lf.cdef_buf_sbh
     {
         dav1d_free_aligned(f.lf.cdef_line_buf as *mut libc::c_void);
-        let mut alloc_sz: size_t = 64;
-        alloc_sz += (y_stride.unsigned_abs() * 4 * f.sbh as size_t) << need_cdef_lpf_copy;
-        alloc_sz += (uv_stride.unsigned_abs() * 8 * f.sbh as size_t) << need_cdef_lpf_copy;
+        let mut alloc_sz: usize = 64;
+        alloc_sz += (y_stride.unsigned_abs() * 4 * f.sbh as usize) << need_cdef_lpf_copy;
+        alloc_sz += (uv_stride.unsigned_abs() * 8 * f.sbh as usize) << need_cdef_lpf_copy;
         f.lf.cdef_line_buf = dav1d_alloc_aligned(alloc_sz, 32) as *mut uint8_t;
         let mut ptr = f.lf.cdef_line_buf;
         if ptr.is_null() {
@@ -5287,9 +5283,9 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
         || uv_stride * num_lines as isize * 2 != f.lf.lr_buf_plane_sz[1] as isize
     {
         dav1d_free_aligned(f.lf.lr_line_buf as *mut libc::c_void);
-        let mut alloc_sz: size_t = 128;
-        alloc_sz += y_stride.unsigned_abs() * num_lines as size_t;
-        alloc_sz += uv_stride.unsigned_abs() * num_lines as size_t * 2;
+        let mut alloc_sz: usize = 128;
+        alloc_sz += y_stride.unsigned_abs() * num_lines as usize;
+        alloc_sz += uv_stride.unsigned_abs() * num_lines as usize * 2;
         f.lf.lr_line_buf = dav1d_alloc_aligned(alloc_sz, 64) as *mut uint8_t;
         let mut ptr = f.lf.lr_line_buf;
         if ptr.is_null() {
@@ -5319,17 +5315,17 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
     }
     if num_sb128 != f.lf.mask_sz {
         freep(&mut f.lf.mask as *mut *mut Av1Filter as *mut libc::c_void);
-        freep(&mut f.lf.level as *mut *mut [uint8_t; 4] as *mut libc::c_void);
+        freep(&mut f.lf.level as *mut *mut [u8; 4] as *mut libc::c_void);
         f.lf.mask = malloc(
             ::core::mem::size_of::<Av1Filter>() as libc::c_ulong * num_sb128 as libc::c_ulong,
         ) as *mut Av1Filter;
         f.lf.level = malloc(
-            ::core::mem::size_of::<[uint8_t; 4]>() as libc::c_ulong
+            ::core::mem::size_of::<[u8; 4]>() as libc::c_ulong
                 * num_sb128 as libc::c_ulong
                 * 32
                 * 32
                 + 3,
-        ) as *mut [uint8_t; 4];
+        ) as *mut [u8; 4];
         if f.lf.mask.is_null() || f.lf.level.is_null() {
             f.lf.mask_sz = 0;
             return retval;
@@ -5386,8 +5382,8 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
             &mut *f.ipred_edge.as_mut_ptr().offset(0) as *mut *mut libc::c_void
                 as *mut libc::c_void,
         );
-        f.ipred_edge[0] = dav1d_alloc_aligned(ipred_edge_sz as size_t * 128 * 3, 64);
-        let ptr = f.ipred_edge[0] as *mut uint8_t;
+        f.ipred_edge[0] = dav1d_alloc_aligned(ipred_edge_sz as usize * 128 * 3, 64);
+        let ptr = f.ipred_edge[0] as *mut u8;
         if ptr.is_null() {
             f.ipred_edge_sz = 0;
             return retval;
@@ -5399,10 +5395,10 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
     let re_sz = f.sb128h * (*f.frame_hdr).tiling.cols;
     if re_sz != f.lf.re_sz {
         freep(
-            &mut *f.lf.tx_lpf_right_edge.as_mut_ptr().offset(0) as *mut *mut uint8_t
+            &mut *f.lf.tx_lpf_right_edge.as_mut_ptr().offset(0) as *mut *mut u8
                 as *mut libc::c_void,
         );
-        f.lf.tx_lpf_right_edge[0] = malloc(re_sz as libc::c_ulong * 32 * 2) as *mut uint8_t;
+        f.lf.tx_lpf_right_edge[0] = malloc(re_sz as libc::c_ulong * 32 * 2) as *mut u8;
         if f.lf.tx_lpf_right_edge[0].is_null() {
             f.lf.re_sz = 0;
             return retval;
@@ -5468,9 +5464,8 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                     31,
                 );
                 let order = d0 <= d1;
-                static quant_dist_weight: [[uint8_t; 2]; 3] = [[2, 3], [2, 5], [2, 7]];
-                static quant_dist_lookup_table: [[uint8_t; 2]; 4] =
-                    [[9, 7], [11, 5], [12, 4], [13, 3]];
+                static quant_dist_weight: [[u8; 2]; 3] = [[2, 3], [2, 5], [2, 7]];
+                static quant_dist_lookup_table: [[u8; 2]; 4] = [[9, 7], [11, 5], [12, 4], [13, 3]];
                 let mut k = 0;
                 while k < 3 {
                     let c0 = quant_dist_weight[k][order as usize] as libc::c_int;
