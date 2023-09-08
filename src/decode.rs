@@ -5442,15 +5442,14 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
         f.qm = [[ptr::null(); 3]; 19]; // TODO(kkysen) can be Default::default once the type is Option
     }
     if (*f.frame_hdr).switchable_comp_refs != 0 {
-        for i in 0..7 {
-            let ref0poc = (*f.refp[i].p.frame_hdr).frame_offset;
-            for j in i + 1..7 {
-                let ref1poc = (*f.refp[j].p.frame_hdr).frame_offset;
-                let d = [ref1poc, ref0poc].map(|refpoc| {
+        let ref_pocs: [_; 7] = array::from_fn(|i| (*f.refp[i].p.frame_hdr).frame_offset);
+        for i in 0..ref_pocs.len() {
+            for j in i + 1..ref_pocs.len() {
+                let d = [j, i].map(|ij| {
                     std::cmp::min(
                         (get_poc_diff(
                             (*f.seq_hdr).order_hint_n_bits,
-                            refpoc,
+                            ref_pocs[ij],
                             (*f.cur.frame_hdr).frame_offset,
                         ))
                         .unsigned_abs(),
