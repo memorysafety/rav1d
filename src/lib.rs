@@ -75,6 +75,7 @@ use crate::src::log::dav1d_log_default_callback;
 use crate::src::r#ref::dav1d_ref_dec;
 use crate::src::r#ref::Dav1dRef;
 use crate::src::thread_task::dav1d_worker_task;
+use crate::src::thread_task::FRAME_ERROR;
 
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 
@@ -653,6 +654,7 @@ use crate::src::mem::dav1d_freep_aligned;
 use crate::src::mem::dav1d_mem_pool_end;
 use crate::src::mem::dav1d_mem_pool_init;
 use crate::src::mem::freep;
+
 #[cold]
 unsafe extern "C" fn init_internal() {
     dav1d_init_cpu();
@@ -1522,7 +1524,7 @@ unsafe extern "C" fn drain_picture(c: *mut Dav1dContext, out: *mut Dav1dPicture)
                 &mut *((*out_delayed).progress).offset(1) as *mut atomic_uint,
             );
             if ((*out_delayed).visible != 0 || (*c).output_invisible_frames != 0)
-                && progress != u32::MAX - 1
+                && progress != FRAME_ERROR
             {
                 dav1d_thread_picture_ref(&mut (*c).out, out_delayed);
                 (*c).event_flags = ::core::mem::transmute::<libc::c_uint, Dav1dEventFlags>(
