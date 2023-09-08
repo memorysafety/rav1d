@@ -5510,10 +5510,10 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
     // to avoid having additional in-loop branches in various places.
     // We never dereference those pointers, so it doesn't really matter
     // what they point at, as long as the pointers are valid.
-    let has_chroma = f.cur.p.layout != DAV1D_PIXEL_LAYOUT_I400;
+    let has_chroma = (f.cur.p.layout != DAV1D_PIXEL_LAYOUT_I400) as usize;
     f.lf.mask_ptr = f.lf.mask;
-    f.lf.p = array::from_fn(|i| f.cur.data[if has_chroma { i } else { 0 }]);
-    f.lf.sr_p = array::from_fn(|i| f.sr_cur.p.data[if has_chroma { i } else { 0 }]);
+    f.lf.p = array::from_fn(|i| f.cur.data[has_chroma * i]);
+    f.lf.sr_p = array::from_fn(|i| f.sr_cur.p.data[has_chroma * i]);
 
     retval = 0;
     return retval;
