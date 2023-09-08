@@ -1,3 +1,4 @@
+use std::array;
 use std::iter;
 use std::ptr;
 use std::ptr::addr_of_mut;
@@ -5445,34 +5446,25 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
             let ref0poc = (*f.refp[i].p.frame_hdr).frame_offset;
             for j in i + 1..7 {
                 let ref1poc = (*f.refp[j].p.frame_hdr).frame_offset;
-                let d1 = std::cmp::min(
-                    (get_poc_diff(
-                        (*f.seq_hdr).order_hint_n_bits,
-                        ref0poc,
-                        (*f.cur.frame_hdr).frame_offset,
-                    ))
-                    .unsigned_abs(),
-                    31,
-                ) as u8;
-                let d0 = std::cmp::min(
-                    (get_poc_diff(
-                        (*f.seq_hdr).order_hint_n_bits,
-                        ref1poc,
-                        (*f.cur.frame_hdr).frame_offset,
-                    ))
-                    .unsigned_abs(),
-                    31,
-                ) as u8;
-                let order = d0 <= d1;
+                let d = [ref1poc, ref0poc].map(|refpoc| {
+                    std::cmp::min(
+                        (get_poc_diff(
+                            (*f.seq_hdr).order_hint_n_bits,
+                            refpoc,
+                            (*f.cur.frame_hdr).frame_offset,
+                        ))
+                        .unsigned_abs(),
+                        31,
+                    ) as u8
+                });
+                let order = d[0] <= d[1];
                 static quant_dist_weight: [[u8; 2]; 3] = [[2, 3], [2, 5], [2, 7]];
                 static quant_dist_lookup_table: [[u8; 2]; 4] = [[9, 7], [11, 5], [12, 4], [13, 3]];
                 let mut k = 0;
                 while k < 3 {
-                    let c0 = quant_dist_weight[k][order as usize];
-                    let c1 = quant_dist_weight[k][!order as usize];
-                    let d0_c0 = d0 * c0;
-                    let d1_c1 = d1 * c1;
-                    if d0 > d1 && d0_c0 < d1_c1 || d0 <= d1 && d0_c0 > d1_c1 {
+                    let c = [order, !order].map(|order| quant_dist_weight[k][order as usize]);
+                    let dc: [_; 2] = array::from_fn(|i| d[i] * c[i]);
+                    if !order && dc[0] < dc[1] || order && dc[0] > dc[1] {
                         break;
                     }
                     k += 1;
