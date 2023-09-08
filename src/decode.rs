@@ -5446,13 +5446,13 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
     }
     if (*f.frame_hdr).switchable_comp_refs != 0 {
         for i in 0..7 {
-            let ref0poc = (*f.refp[i].p.frame_hdr).frame_offset as libc::c_uint;
+            let ref0poc = (*f.refp[i].p.frame_hdr).frame_offset;
             for j in i + 1..7 {
-                let ref1poc = (*f.refp[j].p.frame_hdr).frame_offset as libc::c_uint;
+                let ref1poc = (*f.refp[j].p.frame_hdr).frame_offset;
                 let d1 = std::cmp::min(
                     (get_poc_diff(
                         (*f.seq_hdr).order_hint_n_bits,
-                        ref0poc as libc::c_int,
+                        ref0poc,
                         (*f.cur.frame_hdr).frame_offset,
                     ))
                     .unsigned_abs(),
@@ -5461,7 +5461,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                 let d0 = std::cmp::min(
                     (get_poc_diff(
                         (*f.seq_hdr).order_hint_n_bits,
-                        ref1poc as libc::c_int,
+                        ref1poc,
                         (*f.cur.frame_hdr).frame_offset,
                     ))
                     .unsigned_abs(),
