@@ -1,3 +1,4 @@
+use std::iter;
 use std::ptr;
 use std::ptr::addr_of_mut;
 use std::slice;
@@ -8,8 +9,11 @@ use std::sync::atomic::Ordering;
 use crate::include::common::bitdepth::BitDepth16;
 #[cfg(feature = "bitdepth_8")]
 use crate::include::common::bitdepth::BitDepth8;
-use crate::include::common::frame::{is_inter_or_switch, is_key_or_intra};
-use crate::include::dav1d::headers::{Dav1dTxfmMode, DAV1D_MAX_SEGMENTS};
+use crate::include::common::frame::is_inter_or_switch;
+use crate::include::common::frame::is_key_or_intra;
+use crate::include::dav1d::headers::Dav1dFrameHeader_tiling;
+use crate::include::dav1d::headers::Dav1dTxfmMode;
+use crate::include::dav1d::headers::DAV1D_MAX_SEGMENTS;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use crate::src::align::Align16;
@@ -5730,75 +5734,73 @@ pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) 
     return retval;
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_decode_frame_main(f: *mut Dav1dFrameContext) -> libc::c_int {
-    let c: *const Dav1dContext = (*f).c;
-    let mut retval: libc::c_int = -(22 as libc::c_int);
-    if !((*(*f).c).n_tc == 1 as libc::c_uint) {
-        unreachable!();
+unsafe fn dav1d_decode_frame_main(f: &mut Dav1dFrameContext) -> libc::c_int {
+    let c = &*f.c;
+
+    assert!(c.n_tc == 1);
+
+    let t = &mut *c.tc.offset((f as *mut Dav1dFrameContext).offset_from(c.fc));
+    t.f = f;
+    t.frame_thread.pass = 0;
+
+    for ctx in slice::from_raw_parts_mut(
+        f.a,
+        (f.sb128w * (*f.frame_hdr).tiling.rows).try_into().unwrap(),
+    ) {
+        reset_context(ctx, is_key_or_intra(&*f.frame_hdr), 0);
     }
-    let t: *mut Dav1dTaskContext = &mut *((*c).tc)
-        .offset(f.offset_from((*c).fc) as libc::c_long as isize)
-        as *mut Dav1dTaskContext;
-    (*t).f = f;
-    (*t).frame_thread.pass = 0 as libc::c_int;
-    let mut n = 0;
-    while n < (*f).sb128w * (*(*f).frame_hdr).tiling.rows {
-        reset_context(
-            &mut *((*f).a).offset(n as isize),
-            (*(*f).frame_hdr).frame_type & 1 == 0,
-            0 as libc::c_int,
-        );
-        n += 1;
-    }
-    let mut tile_row = 0;
-    while tile_row < (*(*f).frame_hdr).tiling.rows {
-        let sbh_end: libc::c_int = imin(
-            (*(*f).frame_hdr).tiling.row_start_sb[(tile_row + 1) as usize] as libc::c_int,
-            (*f).sbh,
-        );
-        let mut sby: libc::c_int =
-            (*(*f).frame_hdr).tiling.row_start_sb[tile_row as usize] as libc::c_int;
-        while sby < sbh_end {
-            (*t).by = sby << 4 + (*(*f).seq_hdr).sb128;
-            let by_end: libc::c_int = (*t).by + (*f).sb_step >> 1;
-            if (*(*f).frame_hdr).use_ref_frame_mvs != 0 {
-                ((*(*f).c).refmvs_dsp.load_tmvs).expect("non-null function pointer")(
-                    &mut (*f).rf,
-                    tile_row,
-                    0 as libc::c_int,
-                    (*f).bw >> 1,
-                    (*t).by >> 1,
+
+    // no threading - we explicitly interleave tile/sbrow decoding
+    // and post-filtering, so that the full process runs in-line
+    let Dav1dFrameHeader_tiling { rows, cols, .. } = (*f.frame_hdr).tiling;
+    let [rows, cols] = [rows, cols].map(|it| it.try_into().unwrap());
+    for (tile_row, (sbh_start_end, ts)) in iter::zip(
+        (*f.frame_hdr).tiling.row_start_sb[..rows + 1].windows(2),
+        slice::from_raw_parts_mut(f.ts, rows * cols).chunks_exact_mut(cols),
+    )
+    .enumerate()
+    {
+        // Needed until #[feature(array_windows)] stabilizes; it should hopefully optimize out.
+        let [sbh_start, sbh_end] = <[u16; 2]>::try_from(sbh_start_end).unwrap();
+
+        let sbh_end = std::cmp::min(sbh_end.into(), f.sbh);
+
+        for sby in sbh_start.into()..sbh_end {
+            t.by = sby << 4 + (*f.seq_hdr).sb128;
+            let by_end = t.by + f.sb_step >> 1;
+            if (*f.frame_hdr).use_ref_frame_mvs != 0 {
+                ((*f.c).refmvs_dsp.load_tmvs).expect("non-null function pointer")(
+                    &mut f.rf,
+                    tile_row as libc::c_int,
+                    0,
+                    f.bw >> 1,
+                    t.by >> 1,
                     by_end,
                 );
             }
-            let mut tile_col = 0;
-            while tile_col < (*(*f).frame_hdr).tiling.cols {
-                (*t).ts = &mut *((*f).ts)
-                    .offset((tile_row * (*(*f).frame_hdr).tiling.cols + tile_col) as isize)
-                    as *mut Dav1dTileState;
+            for tile in &mut ts[..] {
+                t.ts = tile;
                 if dav1d_decode_tile_sbrow(t) != 0 {
-                    return retval;
+                    return -22;
                 }
-                tile_col += 1;
             }
-            if (*(*f).frame_hdr).frame_type as libc::c_uint & 1 as libc::c_uint != 0 {
+            if is_inter_or_switch(&*f.frame_hdr) {
                 dav1d_refmvs_save_tmvs(
-                    &(*(*f).c).refmvs_dsp,
-                    &mut (*t).rt,
-                    0 as libc::c_int,
-                    (*f).bw >> 1,
-                    (*t).by >> 1,
+                    &(*f.c).refmvs_dsp,
+                    &mut t.rt,
+                    0,
+                    f.bw >> 1,
+                    t.by >> 1,
                     by_end,
                 );
             }
-            ((*f).bd_fn.filter_sbrow).expect("non-null function pointer")(f, sby);
-            sby += 1;
+
+            // loopfilter + cdef + restoration
+            (f.bd_fn.filter_sbrow).expect("non-null function pointer")(f, sby);
         }
-        tile_row += 1;
     }
-    retval = 0 as libc::c_int;
-    return retval;
+
+    0
 }
 
 #[no_mangle]
