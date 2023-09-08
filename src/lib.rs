@@ -1782,7 +1782,7 @@ pub unsafe extern "C" fn dav1d_flush(c: *mut Dav1dContext) {
         while i_0 < (*c).n_tc {
             let tc: *mut Dav1dTaskContext =
                 &mut *((*c).tc).offset(i_0 as isize) as *mut Dav1dTaskContext;
-            while (*tc).task_thread.flushed == 0 {
+            while !(*tc).task_thread.flushed {
                 pthread_cond_wait(&mut (*tc).task_thread.td.cond, &mut (*c).task_thread.lock);
             }
             i_0 = i_0.wrapping_add(1);
@@ -1874,7 +1874,7 @@ unsafe extern "C" fn close_internal(c_out: *mut *mut Dav1dContext, flush: libc::
             pthread_mutex_lock(&mut (*ttd).lock);
             let mut n: libc::c_uint = 0 as libc::c_int as libc::c_uint;
             while n < (*c).n_tc && (*((*c).tc).offset(n as isize)).task_thread.td.inited != 0 {
-                (*((*c).tc).offset(n as isize)).task_thread.die = 1 as libc::c_int;
+                (*((*c).tc).offset(n as isize)).task_thread.die = true;
                 n = n.wrapping_add(1);
             }
             pthread_cond_broadcast(&mut (*ttd).cond);

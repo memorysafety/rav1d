@@ -1465,7 +1465,7 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut libc::c_void) -> *mut libc
     let ttd: *mut TaskThreadData = (*tc).task_thread.ttd;
     dav1d_set_thread_name(b"dav1d-worker\0" as *const u8 as *const libc::c_char);
     pthread_mutex_lock(&mut (*ttd).lock);
-    's_18: while !((*tc).task_thread.die != 0) {
+    's_18: while !(*tc).task_thread.die {
         if !(::core::intrinsics::atomic_load_seqcst((*c).flush) != 0) {
             merge_pending(c);
             if (*ttd).delayed_fg.exec != 0 {
@@ -2348,11 +2348,11 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut libc::c_void) -> *mut libc
                 }
             }
         }
-        (*tc).task_thread.flushed = 1 as libc::c_int;
+        (*tc).task_thread.flushed = true;
         pthread_cond_signal(&mut (*tc).task_thread.td.cond);
         ::core::intrinsics::atomic_store_seqcst(&mut (*ttd).cond_signaled, 0 as libc::c_int);
         pthread_cond_wait(&mut (*ttd).cond, &mut (*ttd).lock);
-        (*tc).task_thread.flushed = 0 as libc::c_int;
+        (*tc).task_thread.flushed = false;
         reset_task_cur(c, ttd, u32::MAX);
     }
     pthread_mutex_unlock(&mut (*ttd).lock);
