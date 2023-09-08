@@ -5412,10 +5412,10 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
             &mut f.rf,
             f.seq_hdr,
             f.frame_hdr,
-            f.refpoc.as_mut_ptr() as *const libc::c_uint,
+            f.refpoc.as_ptr(),
             f.mvs,
-            f.refrefpoc.as_mut_ptr() as *const [libc::c_uint; 7],
-            f.ref_mvs.as_mut_ptr() as *const *mut refmvs_temporal_block,
+            f.refrefpoc.as_ptr(),
+            f.ref_mvs.as_ptr(),
             (*f.c).n_tc as libc::c_int,
             (*f.c).n_fc as libc::c_int,
         );
