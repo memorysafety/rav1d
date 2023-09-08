@@ -5486,14 +5486,14 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
             }
         }
     }
-    let has_chroma = (f.cur.p.layout != DAV1D_PIXEL_LAYOUT_I400) as libc::c_int;
+    let has_chroma = f.cur.p.layout != DAV1D_PIXEL_LAYOUT_I400;
     f.lf.mask_ptr = f.lf.mask;
     f.lf.p[0] = f.cur.data[0];
-    f.lf.p[1] = f.cur.data[if has_chroma != 0 { 1 } else { 0 }];
-    f.lf.p[2] = f.cur.data[if has_chroma != 0 { 2 } else { 0 }];
+    f.lf.p[1] = f.cur.data[if has_chroma { 1 } else { 0 }];
+    f.lf.p[2] = f.cur.data[if has_chroma { 2 } else { 0 }];
     f.lf.sr_p[0] = f.sr_cur.p.data[0];
-    f.lf.sr_p[1] = f.sr_cur.p.data[if has_chroma != 0 { 1 } else { 0 }];
-    f.lf.sr_p[2] = f.sr_cur.p.data[if has_chroma != 0 { 2 } else { 0 }];
+    f.lf.sr_p[1] = f.sr_cur.p.data[if has_chroma { 1 } else { 0 }];
+    f.lf.sr_p[2] = f.sr_cur.p.data[if has_chroma { 2 } else { 0 }];
     retval = 0;
     return retval;
 }
