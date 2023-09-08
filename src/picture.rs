@@ -535,8 +535,8 @@ use crate::src::internal::Dav1dContext_refs;
 #[repr(C)]
 pub struct Dav1dThreadPicture {
     pub p: Dav1dPicture,
-    pub visible: libc::c_int,
-    pub showable: libc::c_int,
+    pub visible: bool,
+    pub showable: bool,
     pub flags: PictureFlags,
     pub progress: *mut atomic_uint,
 }
@@ -782,8 +782,8 @@ pub unsafe extern "C" fn dav1d_thread_picture_alloc(
     (*c).frame_flags = ::core::mem::transmute::<libc::c_uint, PictureFlags>(
         (*c).frame_flags as libc::c_uint & flags_mask as libc::c_uint,
     );
-    (*p).visible = (*(*f).frame_hdr).show_frame;
-    (*p).showable = (*(*f).frame_hdr).showable_frame;
+    (*p).visible = (*(*f).frame_hdr).show_frame != 0;
+    (*p).showable = (*(*f).frame_hdr).showable_frame != 0;
     if have_frame_mt != 0 {
         *(&mut *((*p).progress).offset(0) as *mut atomic_uint) = 0 as libc::c_int as libc::c_uint;
         *(&mut *((*p).progress).offset(1) as *mut atomic_uint) = 0 as libc::c_int as libc::c_uint;

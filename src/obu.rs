@@ -2683,10 +2683,9 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                 return dav1d_parse_obus_error(c, in_0);
             }
             if (*c).strict_std_compliance != 0
-                && (*c).refs[(*(*c).frame_hdr).existing_frame_idx as usize]
+                && !(*c).refs[(*(*c).frame_hdr).existing_frame_idx as usize]
                     .p
                     .showable
-                    == 0
             {
                 return dav1d_parse_obus_error(c, in_0);
             }
@@ -2766,7 +2765,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                     let progress: libc::c_uint = ::core::intrinsics::atomic_load_relaxed(
                         &mut *((*out_delayed).progress).offset(1) as *mut atomic_uint,
                     );
-                    if ((*out_delayed).visible != 0 || (*c).output_invisible_frames != 0)
+                    if ((*out_delayed).visible || (*c).output_invisible_frames != 0)
                         && progress != FRAME_ERROR
                     {
                         dav1d_thread_picture_ref(&mut (*c).out, out_delayed);
@@ -2784,7 +2783,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                         .offset((*(*c).frame_hdr).existing_frame_idx as isize))
                     .p,
                 );
-                (*out_delayed).visible = 1 as libc::c_int;
+                (*out_delayed).visible = true;
                 dav1d_data_props_copy(&mut (*out_delayed).p.m, &mut (*in_0).m);
                 pthread_mutex_unlock(&mut (*c).task_thread.lock);
             }
@@ -2796,7 +2795,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                 == DAV1D_FRAME_TYPE_KEY as libc::c_int as libc::c_uint
             {
                 let r: libc::c_int = (*(*c).frame_hdr).existing_frame_idx;
-                (*c).refs[r as usize].p.showable = 0 as libc::c_int;
+                (*c).refs[r as usize].p.showable = false;
                 let mut i_3 = 0;
                 while i_3 < 8 {
                     if !(i_3 == r) {

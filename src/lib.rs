@@ -1523,7 +1523,7 @@ unsafe extern "C" fn drain_picture(c: *mut Dav1dContext, out: *mut Dav1dPicture)
             let progress: libc::c_uint = ::core::intrinsics::atomic_load_relaxed(
                 &mut *((*out_delayed).progress).offset(1) as *mut atomic_uint,
             );
-            if ((*out_delayed).visible != 0 || (*c).output_invisible_frames != 0)
+            if ((*out_delayed).visible || (*c).output_invisible_frames != 0)
                 && progress != FRAME_ERROR
             {
                 dav1d_thread_picture_ref(&mut (*c).out, out_delayed);
