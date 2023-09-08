@@ -5446,9 +5446,9 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
     }
     if (*f.frame_hdr).switchable_comp_refs != 0 {
         for i in 0..7 {
-            let ref0poc = (*f.refp[i as usize].p.frame_hdr).frame_offset as libc::c_uint;
+            let ref0poc = (*f.refp[i].p.frame_hdr).frame_offset as libc::c_uint;
             for j in i + 1..7 {
-                let ref1poc = (*f.refp[j as usize].p.frame_hdr).frame_offset as libc::c_uint;
+                let ref1poc = (*f.refp[j].p.frame_hdr).frame_offset as libc::c_uint;
                 let d1 = std::cmp::min(
                     (get_poc_diff(
                         (*f.seq_hdr).order_hint_n_bits,
@@ -5473,8 +5473,8 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                     [[9, 7], [11, 5], [12, 4], [13, 3]];
                 let mut k = 0;
                 while k < 3 {
-                    let c0 = quant_dist_weight[k as usize][order as usize] as libc::c_int;
-                    let c1 = quant_dist_weight[k as usize][(order == 0) as usize] as libc::c_int;
+                    let c0 = quant_dist_weight[k][order as usize] as libc::c_int;
+                    let c1 = quant_dist_weight[k][(order == 0) as usize] as libc::c_int;
                     let d0_c0 = (d0 * c0 as libc::c_uint) as libc::c_int;
                     let d1_c1 = (d1 * c1 as libc::c_uint) as libc::c_int;
                     if d0 > d1 && d0_c0 < d1_c1 || d0 <= d1 && d0_c0 > d1_c1 {
@@ -5482,8 +5482,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                     }
                     k += 1;
                 }
-                f.jnt_weights[i as usize][j as usize] =
-                    quant_dist_lookup_table[k as usize][order as usize];
+                f.jnt_weights[i][j] = quant_dist_lookup_table[k][order as usize];
             }
         }
     }
