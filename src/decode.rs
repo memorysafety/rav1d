@@ -5435,7 +5435,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
     }
 
     // init ref mvs
-    if (*f.frame_hdr).frame_type & 1 != 0 || (*f.frame_hdr).allow_intrabc != 0 {
+    if is_inter_or_switch(&*f.frame_hdr) || (*f.frame_hdr).allow_intrabc != 0 {
         let ret = dav1d_refmvs_init_frame(
             &mut f.rf,
             f.seq_hdr,
