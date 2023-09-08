@@ -5045,7 +5045,6 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
     let f = &mut *f; // TODO(kkysen) propagate to arg once we deduplicate the fn decl
 
     let c = &*f.c;
-    let mut retval = -12;
 
     if f.sbh > f.lf.start_of_tile_row_sz {
         free(f.lf.start_of_tile_row as *mut libc::c_void);
@@ -5054,7 +5053,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                 as *mut u8;
         if f.lf.start_of_tile_row.is_null() {
             f.lf.start_of_tile_row_sz = 0;
-            return retval;
+            return -12;
         }
         f.lf.start_of_tile_row_sz = f.sbh;
     }
@@ -5077,14 +5076,14 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
             ) as *mut libc::c_int;
             if f.frame_thread.tile_start_off.is_null() {
                 f.n_ts = 0;
-                return retval;
+                return -12;
             }
         }
         dav1d_free_aligned(f.ts as *mut libc::c_void);
         f.ts = dav1d_alloc_aligned(::core::mem::size_of::<Dav1dTileState>() * n_ts as usize, 32)
             as *mut Dav1dTileState;
         if f.ts.is_null() {
-            return retval;
+            return -12;
         }
         f.n_ts = n_ts;
     }
@@ -5098,7 +5097,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                 as *mut BlockContext;
         if f.a.is_null() {
             f.a_sz = 0;
-            return retval;
+            return -12;
         }
         f.a_sz = a_sz;
     }
@@ -5139,7 +5138,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
             ) as *mut [[libc::c_int; 2]; 7];
             if f.tile_thread.lowest_pixel_mem.is_null() {
                 f.tile_thread.lowest_pixel_mem_sz = 0;
-                return retval;
+                return -12;
             }
             f.tile_thread.lowest_pixel_mem_sz = lowest_pixel_mem_sz;
         }
@@ -5163,7 +5162,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
             f.frame_thread.cf = dav1d_alloc_aligned(cf_sz as usize * 128 * 128 / 2, 64);
             if f.frame_thread.cf.is_null() {
                 f.frame_thread.cf_sz = 0;
-                return retval;
+                return -12;
             }
             slice::from_raw_parts_mut(
                 f.frame_thread.cf.cast::<u8>(),
@@ -5184,7 +5183,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                 ) as *mut [[u16; 8]; 3];
                 if f.frame_thread.pal.is_null() {
                     f.frame_thread.pal_sz = 0;
-                    return retval;
+                    return -12;
                 }
                 f.frame_thread.pal_sz = num_sb128;
             }
@@ -5200,7 +5199,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                 ) as *mut u8;
                 if f.frame_thread.pal_idx.is_null() {
                     f.frame_thread.pal_idx_sz = 0;
-                    return retval;
+                    return -12;
                 }
                 f.frame_thread.pal_idx_sz = pal_idx_sz;
             }
@@ -5233,7 +5232,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
         if ptr.is_null() {
             f.lf.cdef_buf_plane_sz[1] = 0;
             f.lf.cdef_buf_plane_sz[0] = f.lf.cdef_buf_plane_sz[1];
-            return retval;
+            return -12;
         }
 
         ptr = ptr.offset(32);
@@ -5307,7 +5306,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
         if ptr.is_null() {
             f.lf.lr_buf_plane_sz[1] = 0;
             f.lf.lr_buf_plane_sz[0] = f.lf.lr_buf_plane_sz[1];
-            return retval;
+            return -12;
         }
 
         ptr = ptr.offset(64);
@@ -5350,7 +5349,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
         ) as *mut [u8; 4];
         if f.lf.mask.is_null() || f.lf.level.is_null() {
             f.lf.mask_sz = 0;
-            return retval;
+            return -12;
         }
         if c.n_fc > 1 {
             freep(&mut f.frame_thread.b as *mut *mut Av1Block as *mut libc::c_void);
@@ -5369,7 +5368,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
             ) as *mut CodedBlockInfo;
             if f.frame_thread.b.is_null() || f.frame_thread.cbi.is_null() {
                 f.lf.mask_sz = 0;
-                return retval;
+                return -12;
             }
         }
         f.lf.mask_sz = num_sb128;
@@ -5384,7 +5383,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
         ) as *mut Av1Restoration;
         if f.lf.lr_mask.is_null() {
             f.lf.lr_mask_sz = 0;
-            return retval;
+            return -12;
         }
         f.lf.lr_mask_sz = lr_mask_sz;
     }
@@ -5413,7 +5412,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
         let ptr = f.ipred_edge[0] as *mut u8;
         if ptr.is_null() {
             f.ipred_edge_sz = 0;
-            return retval;
+            return -12;
         }
         f.ipred_edge[1] = ptr.offset(ipred_edge_sz as isize * 128 * 1) as *mut libc::c_void;
         f.ipred_edge[2] = ptr.offset(ipred_edge_sz as isize * 128 * 2) as *mut libc::c_void;
@@ -5429,7 +5428,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
         f.lf.tx_lpf_right_edge[0] = malloc(re_sz as libc::c_ulong * 32 * 2) as *mut u8;
         if f.lf.tx_lpf_right_edge[0].is_null() {
             f.lf.re_sz = 0;
-            return retval;
+            return -12;
         }
         f.lf.tx_lpf_right_edge[1] = f.lf.tx_lpf_right_edge[0].offset((re_sz * 32) as isize);
         f.lf.re_sz = re_sz;
@@ -5449,7 +5448,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
             (*f.c).n_fc as libc::c_int,
         );
         if ret < 0 {
-            return retval;
+            return -12;
         }
     }
 
@@ -5518,8 +5517,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
     f.lf.p = array::from_fn(|i| f.cur.data[has_chroma * i]);
     f.lf.sr_p = array::from_fn(|i| f.sr_cur.p.data[has_chroma * i]);
 
-    retval = 0;
-    return retval;
+    0
 }
 
 #[no_mangle]
