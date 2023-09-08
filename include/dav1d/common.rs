@@ -1,3 +1,5 @@
+use std::ptr;
+
 use crate::include::stddef::size_t;
 use crate::include::stdint::int64_t;
 use crate::include::stdint::uint8_t;
@@ -10,7 +12,16 @@ pub struct Dav1dUserData {
     pub r#ref: *mut Dav1dRef,
 }
 
-#[derive(Clone)]
+impl Default for Dav1dUserData {
+    fn default() -> Self {
+        Self {
+            data: ptr::null(),
+            r#ref: ptr::null_mut(),
+        }
+    }
+}
+
+#[derive(Clone, Default)]
 #[repr(C)]
 pub struct Dav1dDataProps {
     pub timestamp: int64_t,
