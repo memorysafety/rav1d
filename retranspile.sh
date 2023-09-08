@@ -16,7 +16,7 @@ transpile() {
             --depth 1 \
             https://github.com/immunant/c2rust.git "${c2rust_dir}"
         (cd "${c2rust_dir}"
-            cargo build --release
+            cargo +stable build --release --package c2rust
         )
     fi
 
