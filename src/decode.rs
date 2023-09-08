@@ -5453,7 +5453,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                     ))
                     .unsigned_abs(),
                     31,
-                );
+                ) as u8;
                 let d0 = std::cmp::min(
                     (get_poc_diff(
                         (*f.seq_hdr).order_hint_n_bits,
@@ -5462,16 +5462,16 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                     ))
                     .unsigned_abs(),
                     31,
-                );
+                ) as u8;
                 let order = d0 <= d1;
                 static quant_dist_weight: [[u8; 2]; 3] = [[2, 3], [2, 5], [2, 7]];
                 static quant_dist_lookup_table: [[u8; 2]; 4] = [[9, 7], [11, 5], [12, 4], [13, 3]];
                 let mut k = 0;
                 while k < 3 {
-                    let c0 = quant_dist_weight[k][order as usize] as libc::c_int;
-                    let c1 = quant_dist_weight[k][!order as usize] as libc::c_int;
-                    let d0_c0 = (d0 * c0 as libc::c_uint) as libc::c_int;
-                    let d1_c1 = (d1 * c1 as libc::c_uint) as libc::c_int;
+                    let c0 = quant_dist_weight[k][order as usize];
+                    let c1 = quant_dist_weight[k][!order as usize];
+                    let d0_c0 = d0 * c0;
+                    let d1_c1 = d1 * c1;
                     if d0 > d1 && d0_c0 < d1_c1 || d0 <= d1 && d0_c0 > d1_c1 {
                         break;
                     }
