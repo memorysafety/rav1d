@@ -5230,8 +5230,8 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
     {
         dav1d_free_aligned(f.lf.cdef_line_buf as *mut libc::c_void);
         let mut alloc_sz: size_t = 64;
-        alloc_sz += (y_stride.abs() as size_t * 4 * f.sbh as size_t) << need_cdef_lpf_copy;
-        alloc_sz += (uv_stride.abs() as size_t * 8 * f.sbh as size_t) << need_cdef_lpf_copy;
+        alloc_sz += (y_stride.unsigned_abs() * 4 * f.sbh as size_t) << need_cdef_lpf_copy;
+        alloc_sz += (uv_stride.unsigned_abs() * 8 * f.sbh as size_t) << need_cdef_lpf_copy;
         f.lf.cdef_line_buf = dav1d_alloc_aligned(alloc_sz, 32) as *mut uint8_t;
         let mut ptr = f.lf.cdef_line_buf;
         if ptr.is_null() {
@@ -5299,8 +5299,8 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
     {
         dav1d_free_aligned(f.lf.lr_line_buf as *mut libc::c_void);
         let mut alloc_sz: size_t = 128;
-        alloc_sz += y_stride.abs() as size_t * num_lines as size_t;
-        alloc_sz += uv_stride.abs() as size_t * num_lines as size_t * 2;
+        alloc_sz += y_stride.unsigned_abs() * num_lines as size_t;
+        alloc_sz += uv_stride.unsigned_abs() * num_lines as size_t * 2;
         f.lf.lr_line_buf = dav1d_alloc_aligned(alloc_sz, 64) as *mut uint8_t;
         let mut ptr = f.lf.lr_line_buf;
         if ptr.is_null() {
@@ -5468,18 +5468,18 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                         ref0poc as libc::c_int,
                         (*f.cur.frame_hdr).frame_offset,
                     ))
-                    .abs(),
+                    .unsigned_abs(),
                     31,
-                ) as libc::c_uint;
+                );
                 let d0 = std::cmp::min(
                     (get_poc_diff(
                         (*f.seq_hdr).order_hint_n_bits,
                         ref1poc as libc::c_int,
                         (*f.cur.frame_hdr).frame_offset,
                     ))
-                    .abs(),
+                    .unsigned_abs(),
                     31,
-                ) as libc::c_uint;
+                );
                 let order = (d0 <= d1) as libc::c_int;
                 static mut quant_dist_weight: [[uint8_t; 2]; 3] = [[2, 3], [2, 5], [2, 7]];
                 static mut quant_dist_lookup_table: [[uint8_t; 2]; 4] =
