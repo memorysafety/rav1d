@@ -5468,8 +5468,8 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
                     31,
                 );
                 let order = d0 <= d1;
-                static mut quant_dist_weight: [[uint8_t; 2]; 3] = [[2, 3], [2, 5], [2, 7]];
-                static mut quant_dist_lookup_table: [[uint8_t; 2]; 4] =
+                static quant_dist_weight: [[uint8_t; 2]; 3] = [[2, 3], [2, 5], [2, 7]];
+                static quant_dist_lookup_table: [[uint8_t; 2]; 4] =
                     [[9, 7], [11, 5], [12, 4], [13, 3]];
                 let mut k = 0;
                 while k < 3 {
