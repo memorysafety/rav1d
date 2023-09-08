@@ -66,8 +66,8 @@ pub unsafe extern "C" fn inv_txfm_add_rust<BD: BitDepth>(
     let row_clip_min;
     let col_clip_min;
     if BD::BITDEPTH == 8 {
-        row_clip_min = std::i16::MIN as i32;
-        col_clip_min = std::i16::MIN as i32;
+        row_clip_min = i16::MIN as i32;
+        col_clip_min = i16::MIN as i32;
     } else {
         row_clip_min = ((!bitdepth_max) << 7) as libc::c_int;
         col_clip_min = ((!bitdepth_max) << 5) as libc::c_int;

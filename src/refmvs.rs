@@ -1245,7 +1245,7 @@ pub unsafe extern "C" fn load_tmvs_c(
     let mut n = 0;
     while n < (*rf).n_mfmvs {
         let ref2cur = (*rf).mfmv_ref2cur[n as usize];
-        if !(ref2cur == -(2147483647 as libc::c_int) - 1) {
+        if !(ref2cur == i32::MIN) {
             let r#ref = (*rf).mfmv_ref[n as usize] as libc::c_int;
             let ref_sign = r#ref - 4;
             let mut r: *const refmvs_temporal_block = &mut *(*((*rf).rp_ref).offset(r#ref as isize))
@@ -1539,7 +1539,7 @@ pub unsafe fn dav1d_refmvs_init_frame(
                 (*frm_hdr).frame_offset,
             );
             if diff1.abs() > 31 {
-                (*rf).mfmv_ref2cur[n as usize] = -(2147483647 as libc::c_int) - 1;
+                (*rf).mfmv_ref2cur[n as usize] = i32::MIN;
             } else {
                 (*rf).mfmv_ref2cur[n as usize] = if ((*rf).mfmv_ref[n as usize] as libc::c_int) < 4
                 {

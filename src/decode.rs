@@ -4831,7 +4831,7 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> li
         while n < 7 {
             let mut m = 0;
             while m < 2 {
-                (*lowest_px.offset(n as isize))[m as usize] = -(2147483647 as libc::c_int) - 1;
+                (*lowest_px.offset(n as isize))[m as usize] = i32::MIN;
                 m += 1;
             }
             n += 1;
@@ -5827,7 +5827,11 @@ pub unsafe extern "C" fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retv
         if !f.out_cdf.progress.is_null() {
             ::core::intrinsics::atomic_store_seqcst(
                 f.out_cdf.progress,
-                if retval == 0 { 1 } else { 2147483647 - 1 },
+                if retval == 0 {
+                    1
+                } else {
+                    i32::MAX as libc::c_uint - 1
+                },
             );
         }
         dav1d_cdf_thread_unref(&mut f.out_cdf);
@@ -5922,7 +5926,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             ::core::intrinsics::atomic_cxchg_seqcst_seqcst(
                 &mut c.task_thread.reset_task_cur,
                 first,
-                2147483647 * 2 + 1,
+                u32::MAX,
             );
             if c.task_thread.cur != 0 && c.task_thread.cur < c.n_fc {
                 c.task_thread.cur -= 1;
@@ -5939,7 +5943,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 &mut *(out_delayed.progress).offset(1) as *mut atomic_uint,
             );
             if (out_delayed.visible != 0 || c.output_invisible_frames != 0)
-                && progress != 2147483647 * 2 + 1 - 1
+                && progress != u32::MAX - 1
             {
                 dav1d_thread_picture_ref(&mut c.out, out_delayed);
                 c.event_flags |= dav1d_picture_get_event_flags(out_delayed);
