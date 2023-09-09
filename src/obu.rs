@@ -158,6 +158,11 @@ use crate::src::lf_mask::Av1Filter;
 use crate::src::internal::Dav1dFrameContext_frame_thread;
 
 use crate::src::levels::Av1Block;
+use crate::src::levels::OBU_META_HDR_CLL;
+use crate::src::levels::OBU_META_HDR_MDCV;
+use crate::src::levels::OBU_META_ITUT_T35;
+use crate::src::levels::OBU_META_SCALABILITY;
+use crate::src::levels::OBU_META_TIMECODE;
 use crate::src::refmvs::refmvs_frame;
 
 use crate::src::env::BlockContext;
@@ -2122,7 +2127,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                 return dav1d_parse_obus_error(c, in_0);
             }
             match meta_type as libc::c_uint {
-                1 => {
+                OBU_META_HDR_CLL => {
                     let mut ref_1: *mut Dav1dRef =
                         dav1d_ref_create(::core::mem::size_of::<Dav1dContentLightLevel>());
                     if ref_1.is_null() {
@@ -2144,7 +2149,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                     (*c).content_light = content_light;
                     (*c).content_light_ref = ref_1;
                 }
-                2 => {
+                OBU_META_HDR_MDCV => {
                     let mut ref_2: *mut Dav1dRef =
                         dav1d_ref_create(::core::mem::size_of::<Dav1dMasteringDisplay>());
                     if ref_2.is_null() {
@@ -2176,7 +2181,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                     (*c).mastering_display = mastering_display;
                     (*c).mastering_display_ref = ref_2;
                 }
-                4 => {
+                OBU_META_ITUT_T35 => {
                     let mut payload_size: libc::c_int = len as libc::c_int;
                     while payload_size > 0
                         && *((*in_0).data).offset(
@@ -2234,7 +2239,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                         (*c).itut_t35_ref = ref_3;
                     }
                 }
-                3 | 5 => {}
+                OBU_META_SCALABILITY | OBU_META_TIMECODE => {}
                 _ => {
                     dav1d_log(
                         c,
