@@ -28,7 +28,6 @@ pub mod include {
     pub mod stdatomic;
     pub mod stddef;
     pub mod stdint;
-    mod stdio;
 } // mod include
 pub mod src {
     mod align;
