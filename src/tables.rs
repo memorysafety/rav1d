@@ -80,6 +80,7 @@ use crate::src::levels::N_COMP_INTER_PRED_MODES;
 use crate::src::levels::N_PARTITIONS;
 use crate::src::levels::N_RECT_TX_SIZES;
 use crate::src::levels::N_SUB8X8_PARTITIONS;
+use crate::src::levels::N_TX_TYPES_PLUS_LL;
 use crate::src::levels::N_UV_INTRA_PRED_MODES;
 use crate::src::levels::PAETH_PRED;
 use crate::src::levels::RTX_16X32;
@@ -607,7 +608,7 @@ pub static dav1d_skip_ctx: [[u8; 5]; 5] = [
     [3, 5, 5, 5, 6],
 ];
 
-pub static dav1d_tx_type_class: [u8; 17] = [
+pub static dav1d_tx_type_class: [u8; N_TX_TYPES_PLUS_LL] = [
     TX_CLASS_2D as u8,
     TX_CLASS_2D as u8,
     TX_CLASS_2D as u8,
