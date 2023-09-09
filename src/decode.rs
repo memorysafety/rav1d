@@ -4557,8 +4557,7 @@ static ss_size_mul: [[u8; 2]; 4] = {
 unsafe fn setup_tile(
     ts: &mut Dav1dTileState,
     f: &Dav1dFrameContext,
-    data: *const uint8_t,
-    sz: size_t,
+    data: &[u8],
     tile_row: usize,
     tile_col: usize,
     tile_start_off: usize,
@@ -4599,8 +4598,8 @@ unsafe fn setup_tile(
 
     dav1d_msac_init(
         &mut ts.msac,
-        data,
-        sz,
+        data.as_ptr(),
+        data.len(),
         (*f.frame_hdr).disable_cdf_update != 0,
     );
 
@@ -5648,90 +5647,100 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) -> libc::c_int {
-    let c: *const Dav1dContext = (*f).c;
-    let mut retval: libc::c_int = -(22 as libc::c_int);
-    if (*(*f).frame_hdr).refresh_context != 0 {
-        dav1d_cdf_thread_copy((*f).out_cdf.data.cdf, &mut (*f).in_cdf);
+    let f = &mut *f; // TODO(kkysen) propagate to arg once we deduplicate the fn decl
+
+    let c = &*f.c;
+
+    if (*f.frame_hdr).refresh_context != 0 {
+        dav1d_cdf_thread_copy(f.out_cdf.data.cdf, &mut f.in_cdf);
     }
+
+    let uses_2pass = c.n_fc > 1;
+
+    let tiling = &(*f.frame_hdr).tiling;
+
+    let n_tile_data = f.n_tile_data.try_into().unwrap();
+    let n_bytes = tiling.n_bytes.try_into().unwrap();
+    let rows: usize = tiling.rows.try_into().unwrap();
+    let cols = tiling.cols.try_into().unwrap();
+    let sb128w: usize = f.sb128w.try_into().unwrap();
+
+    // parse individual tiles per tile group
     let mut tile_row = 0;
     let mut tile_col = 0;
-    (*f).task_thread.update_set = 0 as libc::c_int;
-    let mut i = 0;
-    while i < (*f).n_tile_data {
-        let mut data: *const uint8_t = (*((*f).tile).offset(i as isize)).data.data;
-        let mut size: size_t = (*((*f).tile).offset(i as isize)).data.sz;
-        let mut j: libc::c_int = (*((*f).tile).offset(i as isize)).start;
-        while j <= (*((*f).tile).offset(i as isize)).end {
-            let mut tile_sz: size_t;
-            if j == (*((*f).tile).offset(i as isize)).end {
-                tile_sz = size;
+    f.task_thread.update_set = false;
+    for tile in slice::from_raw_parts(f.tile, n_tile_data) {
+        let start = tile.start.try_into().unwrap();
+        let end: usize = tile.end.try_into().unwrap();
+
+        let mut data = slice::from_raw_parts(tile.data.data, tile.data.sz);
+
+        for (j, (ts, tile_start_off)) in iter::zip(
+            slice::from_raw_parts_mut(f.ts, end + 1),
+            slice::from_raw_parts(
+                f.frame_thread.tile_start_off,
+                if uses_2pass { end + 1 } else { 0 },
+            )
+            .into_iter()
+            .map(|&it| it as usize)
+            .chain(iter::repeat(0)),
+        )
+        .enumerate()
+        .skip(start)
+        {
+            let tile_sz = if j == end {
+                data.len()
             } else {
-                if (*(*f).frame_hdr).tiling.n_bytes as size_t > size {
-                    return retval;
+                if n_bytes > data.len() {
+                    return -22;
                 }
-                tile_sz = 0 as libc::c_int as size_t;
-                let mut k: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-                while k < (*(*f).frame_hdr).tiling.n_bytes {
-                    let fresh37 = data;
-                    data = data.offset(1);
-                    tile_sz |= ((*fresh37 as libc::c_uint) << k.wrapping_mul(8)) as size_t;
-                    k = k.wrapping_add(1);
+                let (cur_data, rest_data) = data.split_at(n_bytes);
+                let tile_sz = cur_data
+                    .iter()
+                    .enumerate()
+                    .map(|(k, &data)| (data as usize) << (k * 8))
+                    .fold(0, |tile_sz, data_k| tile_sz | data_k)
+                    + 1;
+                data = rest_data;
+                if tile_sz > data.len() {
+                    return -22;
                 }
-                tile_sz = tile_sz.wrapping_add(1);
-                size = (size as libc::c_ulong)
-                    .wrapping_sub((*(*f).frame_hdr).tiling.n_bytes as libc::c_ulong)
-                    as size_t as size_t;
-                if tile_sz > size {
-                    return retval;
-                }
+                tile_sz
+            };
+
+            let (cur_data, rest_data) = data.split_at(tile_sz);
+            setup_tile(ts, f, cur_data, tile_row, tile_col, tile_start_off);
+            tile_col += 1;
+
+            if tile_col == cols {
+                tile_col = 0;
+                tile_row += 1;
             }
-            let fresh38 = tile_col;
-            tile_col = tile_col + 1;
-            setup_tile(
-                &mut *((*f).ts).offset(j as isize),
-                &*f,
-                data,
-                tile_sz,
-                tile_row as usize,
-                fresh38 as usize,
-                if (*c).n_fc > 1 as libc::c_uint {
-                    *((*f).frame_thread.tile_start_off).offset(j as isize) as usize
+            if j == tiling.update as usize && (*f.frame_hdr).refresh_context != 0 {
+                f.task_thread.update_set = true;
+            }
+            data = rest_data;
+        }
+    }
+
+    if c.n_tc > 1 {
+        for (n, ctx) in slice::from_raw_parts_mut(f.a, sb128w * rows * (1 + uses_2pass as usize))
+            .iter_mut()
+            .enumerate()
+        {
+            reset_context(
+                ctx,
+                is_key_or_intra(&*f.frame_hdr),
+                if uses_2pass {
+                    1 + (n >= sb128w * rows) as libc::c_int
                 } else {
                     0
                 },
             );
-            if tile_col == (*(*f).frame_hdr).tiling.cols {
-                tile_col = 0 as libc::c_int;
-                tile_row += 1;
-            }
-            if j == (*(*f).frame_hdr).tiling.update && (*(*f).frame_hdr).refresh_context != 0 {
-                (*f).task_thread.update_set = 1 as libc::c_int;
-            }
-            data = data.offset(tile_sz as isize);
-            size = (size as size_t).wrapping_sub(tile_sz) as size_t as size_t;
-            j += 1;
-        }
-        i += 1;
-    }
-    if (*c).n_tc > 1 as libc::c_uint {
-        let uses_2pass: libc::c_int = ((*c).n_fc > 1 as libc::c_uint) as libc::c_int;
-        let mut n = 0;
-        while n < (*f).sb128w * (*(*f).frame_hdr).tiling.rows * (1 + uses_2pass) {
-            reset_context(
-                &mut *((*f).a).offset(n as isize),
-                (*(*f).frame_hdr).frame_type & 1 == 0,
-                if uses_2pass != 0 {
-                    1 as libc::c_int
-                        + (n >= (*f).sb128w * (*(*f).frame_hdr).tiling.rows) as libc::c_int
-                } else {
-                    0 as libc::c_int
-                },
-            );
-            n += 1;
         }
     }
-    retval = 0 as libc::c_int;
-    return retval;
+
+    0
 }
 
 unsafe fn dav1d_decode_frame_main(f: &mut Dav1dFrameContext) -> libc::c_int {
@@ -5875,7 +5884,7 @@ pub unsafe fn dav1d_decode_frame(f: &mut Dav1dFrameContext) -> libc::c_int {
             res = f.task_thread.retval;
         } else {
             res = dav1d_decode_frame_main(f);
-            if res == 0 && (*f.frame_hdr).refresh_context != 0 && f.task_thread.update_set != 0 {
+            if res == 0 && (*f.frame_hdr).refresh_context != 0 && f.task_thread.update_set {
                 dav1d_cdf_thread_update(
                     f.frame_hdr,
                     f.out_cdf.data.cdf,
