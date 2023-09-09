@@ -133,7 +133,6 @@ pub mod src {
 cfg_if::cfg_if! {
     if #[cfg(target_os = "linux")] {
         extern "C" {
-            static mut stdout: *mut libc::FILE;
             static mut stderr: *mut libc::FILE;
         }
 
