@@ -44,9 +44,9 @@ pub const WEDGE_MASTER_LINE_ODD: WedgeMasterLineType = 0;
 pub const WEDGE_MASTER_LINE_EVEN: WedgeMasterLineType = 1;
 pub const WEDGE_MASTER_LINE_VERT: WedgeMasterLineType = 2;
 pub type WedgeMasterLineType = libc::c_uint;
-pub const N_WEDGE_MASTER_LINES: WedgeMasterLineType = 3;
+pub const N_WEDGE_MASTER_LINES: usize = 3;
 pub type WedgeDirectionType = libc::c_uint;
-pub const N_WEDGE_DIRECTIONS: WedgeDirectionType = 6;
+pub const N_WEDGE_DIRECTIONS: usize = 6;
 static mut wedge_codebook_16_hgtw: [wedge_code_type; 16] = [
     {
         let init = wedge_code_type {
