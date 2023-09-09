@@ -123,7 +123,7 @@ pub struct TxfmInfo {
     pub ctx: u8,
 }
 
-pub static dav1d_al_part_ctx: [[[u8; 10]; N_BL_LEVELS]; 2] = [
+pub static dav1d_al_part_ctx: [[[u8; N_PARTITIONS]; N_BL_LEVELS]; 2] = [
     [
         [0x00, 0x00, 0x10, 0xff, 0x00, 0x10, 0x10, 0x10, 0xff, 0xff],
         [0x10, 0x10, 0x18, 0xff, 0x10, 0x18, 0x18, 0x18, 0x10, 0x1c],
@@ -140,7 +140,7 @@ pub static dav1d_al_part_ctx: [[[u8; 10]; N_BL_LEVELS]; 2] = [
     ],
 ];
 
-pub static dav1d_block_sizes: [[[BlockSize; 2]; 10]; N_BL_LEVELS] = [
+pub static dav1d_block_sizes: [[[BlockSize; 2]; N_PARTITIONS]; N_BL_LEVELS] = [
     [
         [BS_128x128 as u8, 0],
         [BS_128x64 as u8, 0],

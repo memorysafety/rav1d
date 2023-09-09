@@ -206,7 +206,7 @@ pub struct CdfModeContext {
     pub y_mode: Align32<[[uint16_t; 16]; 4]>,
     pub uv_mode: Align32<[[[uint16_t; 16]; 13]; 2]>,
     pub wedge_idx: Align32<[[uint16_t; 16]; 9]>,
-    pub partition: Align32<[[[uint16_t; 16]; 4]; N_BL_LEVELS]>,
+    pub partition: Align32<[[[uint16_t; N_PARTITIONS + 6]; 4]; N_BL_LEVELS]>,
     pub cfl_alpha: Align32<[[uint16_t; 16]; 6]>,
     pub txtp_inter1: Align32<[[uint16_t; 16]; 2]>,
     pub txtp_inter2: Align32<[uint16_t; 16]>,
@@ -420,14 +420,14 @@ pub type recon_b_intra_fn = Option<
 use crate::src::internal::ScalableMotionParams;
 
 use crate::src::levels::N_BL_LEVELS;
-use crate::src::levels::N_TX_SIZES;
-use crate::src::levels::N_UV_INTRA_PRED_MODES;
-
+use crate::src::levels::N_COMP_INTER_PRED_MODES;
 use crate::src::levels::N_INTRA_PRED_MODES;
 use crate::src::levels::N_MV_JOINTS;
-
-use crate::src::levels::N_COMP_INTER_PRED_MODES;
+use crate::src::levels::N_PARTITIONS;
+use crate::src::levels::N_TX_SIZES;
+use crate::src::levels::N_UV_INTRA_PRED_MODES;
 use crate::src::r#ref::dav1d_ref_inc;
+
 const fn cdf0d<const P: usize, const N: usize>(probs: [u16; P]) -> [u16; N] {
     assert!(P < N);
     let mut cdf0d = [0; N];
