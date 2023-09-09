@@ -76,6 +76,7 @@ use crate::src::levels::NEWMV_NEARMV;
 use crate::src::levels::NEWMV_NEWMV;
 use crate::src::levels::N_BL_LEVELS;
 use crate::src::levels::N_BS_SIZES;
+use crate::src::levels::N_COMP_INTER_PRED_MODES;
 use crate::src::levels::N_PARTITIONS;
 use crate::src::levels::N_RECT_TX_SIZES;
 use crate::src::levels::N_SUB8X8_PARTITIONS;
@@ -506,7 +507,7 @@ pub static dav1d_txtp_from_uvmode: [TxfmType; N_UV_INTRA_PRED_MODES] = {
     tbl
 };
 
-pub static dav1d_comp_inter_pred_modes: [[InterPredMode; 2]; 8] = {
+pub static dav1d_comp_inter_pred_modes: [[InterPredMode; 2]; N_COMP_INTER_PRED_MODES] = {
     let mut tbl = [[0; 2]; 8];
     tbl[NEARESTMV_NEARESTMV as usize] = [NEARESTMV, NEARESTMV];
     tbl[NEARMV_NEARMV as usize] = [NEARMV, NEARMV];

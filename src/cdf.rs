@@ -215,7 +215,7 @@ pub struct CdfModeContext {
     pub cfl_sign: Align16<[uint16_t; 8]>,
     pub angle_delta: Align16<[[uint16_t; 8]; 8]>,
     pub filter_intra: Align16<[uint16_t; 8]>,
-    pub comp_inter_mode: Align16<[[uint16_t; 8]; 8]>,
+    pub comp_inter_mode: Align16<[[uint16_t; N_COMP_INTER_PRED_MODES]; 8]>,
     pub seg_id: Align16<[[uint16_t; 8]; 3]>,
     pub pal_sz: Align16<[[[uint16_t; 8]; 7]; 2]>,
     pub color_map: Align16<[[[[uint16_t; 8]; 5]; 7]; 2]>,
