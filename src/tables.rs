@@ -79,6 +79,7 @@ use crate::src::levels::N_2D_FILTERS;
 use crate::src::levels::N_BL_LEVELS;
 use crate::src::levels::N_BS_SIZES;
 use crate::src::levels::N_COMP_INTER_PRED_MODES;
+use crate::src::levels::N_INTRA_PRED_MODES;
 use crate::src::levels::N_PARTITIONS;
 use crate::src::levels::N_RECT_TX_SIZES;
 use crate::src::levels::N_SUB8X8_PARTITIONS;
@@ -697,7 +698,8 @@ pub static dav1d_filter_mode_to_y_mode: [u8; 5] = [
     DC_PRED as u8,
 ];
 
-pub static dav1d_intra_mode_context: [u8; 13] = [0, 1, 2, 3, 4, 4, 4, 4, 3, 0, 1, 2, 0];
+pub static dav1d_intra_mode_context: [u8; N_INTRA_PRED_MODES] =
+    [0, 1, 2, 3, 4, 4, 4, 4, 3, 0, 1, 2, 0];
 
 pub static dav1d_wedge_ctx_lut: [u8; N_BS_SIZES] = [
     0, 0, 0, 0, 0, 0, 0, 6, 5, 8, 0, 4, 3, 2, 0, 7, 1, 0, 0, 0, 0, 0,

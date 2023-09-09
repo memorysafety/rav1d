@@ -25,7 +25,9 @@ use crate::src::intra_edge::EDGE_I444_LEFT_HAS_BOTTOM;
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 use crate::src::levels::DC_PRED;
 use crate::src::levels::HOR_PRED;
+use crate::src::levels::N_INTRA_PRED_MODES;
 use crate::src::levels::VERT_PRED;
+
 #[derive(Copy, Clone, BitfieldStruct)]
 #[repr(C)]
 pub struct av1_intra_prediction_edge {
@@ -36,7 +38,7 @@ pub struct av1_intra_prediction_edge {
     #[bitfield(name = "needs_bottomleft", ty = "uint8_t", bits = "4..=4")]
     pub needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [u8; 1],
 }
-static mut av1_mode_conv: [[[uint8_t; 2]; 2]; 13] = [
+static mut av1_mode_conv: [[[uint8_t; 2]; 2]; N_INTRA_PRED_MODES] = [
     [
         [
             DC_128_PRED as libc::c_int as uint8_t,
