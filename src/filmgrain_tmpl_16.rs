@@ -1,3 +1,5 @@
+use std::cmp;
+
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use ::libc;
@@ -668,7 +670,7 @@ unsafe extern "C" fn fgy_32x32xn_c(
     let mut offsets: [[libc::c_int; 2]; 2] = [[0; 2]; 2];
     let mut bx: libc::c_uint = 0 as libc::c_int as libc::c_uint;
     while (bx as size_t) < pw {
-        let bw = std::cmp::min(
+        let bw = cmp::min(
             32 as libc::c_int,
             (pw as libc::c_int as libc::c_uint).wrapping_sub(bx) as libc::c_int,
         );
@@ -688,12 +690,12 @@ unsafe extern "C" fn fgy_32x32xn_c(
             i_1 += 1;
         }
         let ystart = if (*data).overlap_flag != 0 && row_num != 0 {
-            std::cmp::min(2 as libc::c_int, bh)
+            cmp::min(2 as libc::c_int, bh)
         } else {
             0 as libc::c_int
         };
         let xstart = if (*data).overlap_flag != 0 && bx != 0 {
-            std::cmp::min(2 as libc::c_int, bw)
+            cmp::min(2 as libc::c_int, bw)
         } else {
             0 as libc::c_int
         };
@@ -950,7 +952,7 @@ unsafe extern "C" fn fguv_32x32xn_c(
     let mut offsets: [[libc::c_int; 2]; 2] = [[0; 2]; 2];
     let mut bx: libc::c_uint = 0 as libc::c_int as libc::c_uint;
     while (bx as size_t) < pw {
-        let bw = std::cmp::min(32 >> sx, pw.wrapping_sub(bx as size_t) as libc::c_int);
+        let bw = cmp::min(32 >> sx, pw.wrapping_sub(bx as size_t) as libc::c_int);
         if (*data).overlap_flag != 0 && bx != 0 {
             let mut i_0 = 0;
             while i_0 < rows {
@@ -967,12 +969,12 @@ unsafe extern "C" fn fguv_32x32xn_c(
             i_1 += 1;
         }
         let ystart = if (*data).overlap_flag != 0 && row_num != 0 {
-            std::cmp::min(2 >> sy, bh)
+            cmp::min(2 >> sy, bh)
         } else {
             0 as libc::c_int
         };
         let xstart = if (*data).overlap_flag != 0 && bx != 0 {
-            std::cmp::min(2 >> sx, bw)
+            cmp::min(2 >> sx, bw)
         } else {
             0 as libc::c_int
         };

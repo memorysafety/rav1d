@@ -1,3 +1,5 @@
+use std::cmp;
+
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use crate::src::intra_edge::dav1d_init_mode_tree;
@@ -559,7 +561,7 @@ unsafe extern "C" fn get_num_threads(
         )
     }) as libc::c_uint;
     *n_fc = if (*s).max_frame_delay != 0 {
-        std::cmp::min((*s).max_frame_delay as libc::c_uint, *n_tc)
+        cmp::min((*s).max_frame_delay as libc::c_uint, *n_tc)
     } else {
         (if *n_tc < 50 as libc::c_uint {
             fc_lut[(*n_tc).wrapping_sub(1 as libc::c_int as libc::c_uint) as usize] as libc::c_int

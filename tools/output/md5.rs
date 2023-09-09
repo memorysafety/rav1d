@@ -1,3 +1,5 @@
+use std::cmp;
+
 use crate::errno_location;
 use crate::{stderr, stdout};
 use ::libc;
@@ -555,7 +557,7 @@ unsafe extern "C" fn md5_update(
         return;
     }
     if ((*md5).len & 63) != 0 {
-        let tmp: libc::c_uint = std::cmp::min(len, 64 - ((*md5).len & 63) as libc::c_uint);
+        let tmp: libc::c_uint = cmp::min(len, 64 - ((*md5).len & 63) as libc::c_uint);
         memcpy(
             &mut *((*md5).c2rust_unnamed.data)
                 .as_mut_ptr()

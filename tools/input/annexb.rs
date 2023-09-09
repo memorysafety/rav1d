@@ -1,3 +1,5 @@
+use std::cmp;
+
 use crate::errno_location;
 use crate::stderr;
 use ::libc;
@@ -173,7 +175,7 @@ unsafe extern "C" fn annexb_probe(data: *const uint8_t) -> libc::c_int {
     let mut type_0: Dav1dObuType = 0 as Dav1dObuType;
     ret = parse_obu_header(
         data.offset(cnt as isize),
-        std::cmp::min(2048 - cnt, obu_unit_size as libc::c_int),
+        cmp::min(2048 - cnt, obu_unit_size as libc::c_int),
         &mut obu_size,
         &mut type_0,
         1 as libc::c_int,
@@ -198,7 +200,7 @@ unsafe extern "C" fn annexb_probe(data: *const uint8_t) -> libc::c_int {
             as size_t as size_t;
         ret = parse_obu_header(
             data.offset(cnt as isize),
-            std::cmp::min(2048 - cnt, obu_unit_size as libc::c_int),
+            cmp::min(2048 - cnt, obu_unit_size as libc::c_int),
             &mut obu_size,
             &mut type_0,
             1 as libc::c_int,

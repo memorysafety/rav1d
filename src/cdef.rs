@@ -1,3 +1,5 @@
+use std::cmp;
+
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::LeftPixelRow2px;
 use crate::include::common::intops::apply_sign;
@@ -535,9 +537,9 @@ pub unsafe extern "C" fn constrain(
 ) -> libc::c_int {
     let adiff = diff.abs();
     return apply_sign(
-        std::cmp::min(
+        cmp::min(
             adiff,
-            std::cmp::max(0 as libc::c_int, threshold - (adiff >> shift)),
+            cmp::max(0 as libc::c_int, threshold - (adiff >> shift)),
         ),
         diff,
     );

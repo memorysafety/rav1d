@@ -1,3 +1,5 @@
+use std::cmp;
+
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::LeftPixelRow2px;
 use crate::include::stddef::*;
@@ -152,7 +154,7 @@ unsafe extern "C" fn cdef_filter_block_c(
     if pri_strength != 0 {
         let bitdepth_min_8 = 8 - 8;
         let pri_tap = 4 - (pri_strength >> bitdepth_min_8 & 1);
-        let pri_shift = std::cmp::max(
+        let pri_shift = cmp::max(
             0 as libc::c_int,
             damping - ulog2(pri_strength as libc::c_uint),
         );
@@ -175,10 +177,10 @@ unsafe extern "C" fn cdef_filter_block_c(
                         sum += pri_tap_k * constrain(p0 - px, pri_strength, pri_shift);
                         sum += pri_tap_k * constrain(p1 - px, pri_strength, pri_shift);
                         pri_tap_k = pri_tap_k & 3 | 2;
-                        min = std::cmp::min(p0 as libc::c_uint, min as libc::c_uint) as libc::c_int;
-                        max = std::cmp::max(p0, max);
-                        min = std::cmp::min(p1 as libc::c_uint, min as libc::c_uint) as libc::c_int;
-                        max = std::cmp::max(p1, max);
+                        min = cmp::min(p0 as libc::c_uint, min as libc::c_uint) as libc::c_int;
+                        max = cmp::max(p0, max);
+                        min = cmp::min(p1 as libc::c_uint, min as libc::c_uint) as libc::c_int;
+                        max = cmp::max(p1, max);
                         let off2 =
                             dav1d_cdef_directions[(dir + 4) as usize][k as usize] as libc::c_int;
                         let off3 =
@@ -192,14 +194,14 @@ unsafe extern "C" fn cdef_filter_block_c(
                         sum += sec_tap * constrain(s1 - px, sec_strength, sec_shift);
                         sum += sec_tap * constrain(s2 - px, sec_strength, sec_shift);
                         sum += sec_tap * constrain(s3 - px, sec_strength, sec_shift);
-                        min = std::cmp::min(s0 as libc::c_uint, min as libc::c_uint) as libc::c_int;
-                        max = std::cmp::max(s0, max);
-                        min = std::cmp::min(s1 as libc::c_uint, min as libc::c_uint) as libc::c_int;
-                        max = std::cmp::max(s1, max);
-                        min = std::cmp::min(s2 as libc::c_uint, min as libc::c_uint) as libc::c_int;
-                        max = std::cmp::max(s2, max);
-                        min = std::cmp::min(s3 as libc::c_uint, min as libc::c_uint) as libc::c_int;
-                        max = std::cmp::max(s3, max);
+                        min = cmp::min(s0 as libc::c_uint, min as libc::c_uint) as libc::c_int;
+                        max = cmp::max(s0, max);
+                        min = cmp::min(s1 as libc::c_uint, min as libc::c_uint) as libc::c_int;
+                        max = cmp::max(s1, max);
+                        min = cmp::min(s2 as libc::c_uint, min as libc::c_uint) as libc::c_int;
+                        max = cmp::max(s2, max);
+                        min = cmp::min(s3 as libc::c_uint, min as libc::c_uint) as libc::c_int;
+                        max = cmp::max(s3, max);
                         k += 1;
                     }
                     *dst.offset(x as isize) =

@@ -1,3 +1,5 @@
+use std::cmp;
+
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use crate::src::align::{Align1, Align16};
@@ -299,7 +301,7 @@ pub unsafe extern "C" fn dav1d_apply_grain_row_16bpc(
         .offset(((row * 32) as isize * PXSTRIDE((*in_0).stride[0])) as isize);
     let bitdepth_max = ((1 as libc::c_int) << (*out).p.bpc) - 1;
     if (*data).num_y_points != 0 {
-        let bh = std::cmp::min((*out).p.h - row * 32, 32 as libc::c_int);
+        let bh = cmp::min((*out).p.h - row * 32, 32 as libc::c_int);
         ((*dsp).fgy_32x32xn).expect("non-null function pointer")(
             ((*out).data[0] as *mut pixel)
                 .offset(((row * 32) as isize * PXSTRIDE((*out).stride[0])) as isize),
@@ -320,7 +322,7 @@ pub unsafe extern "C" fn dav1d_apply_grain_row_16bpc(
     {
         return;
     }
-    let bh_0 = std::cmp::min((*out).p.h - row * 32, 32 as libc::c_int) + ss_y >> ss_y;
+    let bh_0 = cmp::min((*out).p.h - row * 32, 32 as libc::c_int) + ss_y >> ss_y;
     if (*out).p.w & ss_x != 0 {
         let mut ptr: *mut pixel = luma_src;
         let mut y = 0;

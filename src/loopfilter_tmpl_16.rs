@@ -1,3 +1,5 @@
+use std::cmp;
+
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
@@ -163,8 +165,8 @@ unsafe extern "C" fn loop_filter(
                         -(128 as libc::c_int) * ((1 as libc::c_int) << bitdepth_min_8),
                         128 * ((1 as libc::c_int) << bitdepth_min_8) - 1,
                     );
-                    f1 = std::cmp::min(f + 4, ((128 as libc::c_int) << bitdepth_min_8) - 1) >> 3;
-                    f2 = std::cmp::min(f + 3, ((128 as libc::c_int) << bitdepth_min_8) - 1) >> 3;
+                    f1 = cmp::min(f + 4, ((128 as libc::c_int) << bitdepth_min_8) - 1) >> 3;
+                    f2 = cmp::min(f + 3, ((128 as libc::c_int) << bitdepth_min_8) - 1) >> 3;
                     *dst.offset(strideb * -(1 as libc::c_int) as isize) =
                         iclip(p0 + f2, 0 as libc::c_int, bitdepth_max) as pixel;
                     *dst.offset((strideb * 0) as isize) =
@@ -177,10 +179,8 @@ unsafe extern "C" fn loop_filter(
                     );
                     let f1_0;
                     let f2_0;
-                    f1_0 =
-                        std::cmp::min(f_0 + 4, ((128 as libc::c_int) << bitdepth_min_8) - 1) >> 3;
-                    f2_0 =
-                        std::cmp::min(f_0 + 3, ((128 as libc::c_int) << bitdepth_min_8) - 1) >> 3;
+                    f1_0 = cmp::min(f_0 + 4, ((128 as libc::c_int) << bitdepth_min_8) - 1) >> 3;
+                    f2_0 = cmp::min(f_0 + 3, ((128 as libc::c_int) << bitdepth_min_8) - 1) >> 3;
                     *dst.offset(strideb * -(1 as libc::c_int) as isize) =
                         iclip(p0 + f2_0, 0 as libc::c_int, bitdepth_max) as pixel;
                     *dst.offset((strideb * 0) as isize) =

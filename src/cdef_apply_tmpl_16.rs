@@ -1,3 +1,5 @@
+use std::cmp;
+
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 
@@ -443,7 +445,7 @@ unsafe extern "C" fn adjust_strength(strength: libc::c_int, var: libc::c_uint) -
         return 0 as libc::c_int;
     }
     let i = if var >> 6 != 0 {
-        std::cmp::min(ulog2(var >> 6), 12 as libc::c_int)
+        cmp::min(ulog2(var >> 6), 12 as libc::c_int)
     } else {
         0 as libc::c_int
     };
@@ -593,7 +595,7 @@ pub unsafe extern "C" fn dav1d_cdef_brow_16bpc(
                 uv_sec_lvl <<= bitdepth_min_8;
                 bptrs = [iptrs[0], iptrs[1], iptrs[2]];
                 let mut bx = sbx * sbsz;
-                while bx < std::cmp::min((sbx + 1) * sbsz, (*f).bw) {
+                while bx < cmp::min((sbx + 1) * sbsz, (*f).bw) {
                     let uvdir;
                     let do_left;
                     let mut dir;

@@ -1,3 +1,5 @@
+use std::cmp;
+
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use cfg_if::cfg_if;
@@ -339,7 +341,7 @@ unsafe fn scan_row(
     let first_cand_bs = cand_b.0.bs as BlockSize;
     let first_cand_b_dim = &dav1d_block_dimensions[first_cand_bs as usize];
     let mut cand_bw4 = first_cand_b_dim[0] as libc::c_int;
-    let mut len = std::cmp::max(step, std::cmp::min(bw4, cand_bw4));
+    let mut len = cmp::max(step, cmp::min(bw4, cand_bw4));
 
     if bw4 <= cand_bw4 {
         // FIXME weight can be higher for odd blocks (bx4 & 1), but then the
@@ -349,9 +351,9 @@ unsafe fn scan_row(
         let weight = if bw4 == 1 {
             2
         } else {
-            std::cmp::max(
+            cmp::max(
                 2,
-                std::cmp::min(2 * max_rows, first_cand_b_dim[1] as libc::c_int),
+                cmp::min(2 * max_rows, first_cand_b_dim[1] as libc::c_int),
             )
         };
         add_spatial_candidate(
@@ -389,7 +391,7 @@ unsafe fn scan_row(
         cand_b = &*b.offset(x as isize);
         cand_bw4 = dav1d_block_dimensions[cand_b.0.bs as usize][0] as libc::c_int;
         assert!(cand_bw4 < bw4);
-        len = std::cmp::max(step, cand_bw4);
+        len = cmp::max(step, cand_bw4);
     }
 }
 
@@ -411,7 +413,7 @@ unsafe fn scan_col(
     let first_cand_bs = cand_b.0.bs as BlockSize;
     let first_cand_b_dim = &dav1d_block_dimensions[first_cand_bs as usize];
     let mut cand_bh4 = first_cand_b_dim[1] as libc::c_int;
-    let mut len = std::cmp::max(step, std::cmp::min(bh4, cand_bh4));
+    let mut len = cmp::max(step, cmp::min(bh4, cand_bh4));
 
     if bh4 <= cand_bh4 {
         // FIXME weight can be higher for odd blocks (by4 & 1), but then the
@@ -421,9 +423,9 @@ unsafe fn scan_col(
         let weight = if bh4 == 1 {
             2
         } else {
-            std::cmp::max(
+            cmp::max(
                 2,
-                std::cmp::min(2 * max_cols, first_cand_b_dim[0] as libc::c_int),
+                cmp::min(2 * max_cols, first_cand_b_dim[0] as libc::c_int),
             )
         };
         add_spatial_candidate(
@@ -461,7 +463,7 @@ unsafe fn scan_col(
         cand_b = &*(*b.offset(y as isize)).offset(bx4 as isize);
         cand_bh4 = dav1d_block_dimensions[cand_b.0.bs as usize][1] as libc::c_int;
         assert!(cand_bh4 < bh4);
-        len = std::cmp::max(step, cand_bh4);
+        len = cmp::max(step, cand_bh4);
     }
 }
 
@@ -689,9 +691,9 @@ pub unsafe fn dav1d_refmvs_find(
     let rf = &*rt.rf;
     let b_dim = &dav1d_block_dimensions[bs as usize];
     let bw4 = b_dim[0] as libc::c_int;
-    let w4 = std::cmp::min(std::cmp::min(bw4, 16), rt.tile_col.end - bx4);
+    let w4 = cmp::min(cmp::min(bw4, 16), rt.tile_col.end - bx4);
     let bh4 = b_dim[1] as libc::c_int;
-    let h4 = std::cmp::min(std::cmp::min(bh4, 16), rt.tile_row.end - by4);
+    let h4 = cmp::min(cmp::min(bh4, 16), rt.tile_row.end - by4);
     let mut gmv = [mv::default(); 2];
     let mut tgmv = [mv::default(); 2];
 
@@ -743,7 +745,7 @@ pub unsafe fn dav1d_refmvs_find(
     let mut n_rows = !0;
     let mut b_top = std::ptr::null();
     if by4 > rt.tile_row.start {
-        max_rows = std::cmp::min(
+        max_rows = cmp::min(
             by4 - rt.tile_row.start + 1 >> 1,
             2 + (bh4 > 1) as libc::c_int,
         ) as libc::c_uint;
@@ -768,7 +770,7 @@ pub unsafe fn dav1d_refmvs_find(
     let mut n_cols = !0;
     let mut b_left = std::ptr::null();
     if bx4 > rt.tile_col.start {
-        max_cols = std::cmp::min(
+        max_cols = cmp::min(
             bx4 - rt.tile_col.start + 1 >> 1,
             2 + (bw4 > 1) as libc::c_int,
         ) as libc::c_uint;
@@ -792,7 +794,7 @@ pub unsafe fn dav1d_refmvs_find(
     // top/right
     if n_rows != !0
         && edge_flags & EDGE_I444_TOP_HAS_RIGHT != 0
-        && std::cmp::max(bw4, bh4) <= 16
+        && cmp::max(bw4, bh4) <= 16
         && bw4 + bx4 < rt.tile_col.end
     {
         add_spatial_candidate(
@@ -825,8 +827,8 @@ pub unsafe fn dav1d_refmvs_find(
         let mut rb = rbi;
         let step_h = if bw4 >= 16 { 2 } else { 1 };
         let step_v = if bh4 >= 16 { 2 } else { 1 };
-        let w8 = std::cmp::min(w4 + 1 >> 1, 8);
-        let h8 = std::cmp::min(h4 + 1 >> 1, 8);
+        let w8 = cmp::min(w4 + 1 >> 1, 8);
+        let h8 = cmp::min(h4 + 1 >> 1, 8);
         for y in (0..h8).step_by(step_v) {
             for x in (0..w8).step_by(step_h) {
                 add_temporal_candidate(
@@ -844,16 +846,16 @@ pub unsafe fn dav1d_refmvs_find(
             }
             rb = rb.offset(stride * step_v as isize);
         }
-        if std::cmp::min(bw4, bh4) >= 2 && std::cmp::max(bw4, bh4) < 16 {
+        if cmp::min(bw4, bh4) >= 2 && cmp::max(bw4, bh4) < 16 {
             let bh8 = bh4 >> 1;
             let bw8 = bw4 >> 1;
             rb = &*rbi.offset(bh8 as isize * stride) as *const refmvs_temporal_block;
             let has_bottom =
-                (by8 + bh8 < std::cmp::min(rt.tile_row.end >> 1, (by8 & !7) + 8)) as libc::c_int;
-            if has_bottom != 0 && bx8 - 1 >= std::cmp::max(rt.tile_col.start >> 1, bx8 & !7) {
+                (by8 + bh8 < cmp::min(rt.tile_row.end >> 1, (by8 & !7) + 8)) as libc::c_int;
+            if has_bottom != 0 && bx8 - 1 >= cmp::max(rt.tile_col.start >> 1, bx8 & !7) {
                 add_temporal_candidate(rf, mvstack, cnt, &*rb.offset(-1), r#ref, None);
             }
-            if bx8 + bw8 < std::cmp::min(rt.tile_col.end >> 1, (bx8 & !7) + 8) {
+            if bx8 + bw8 < cmp::min(rt.tile_col.end >> 1, (bx8 & !7) + 8) {
                 if has_bottom != 0 {
                     add_temporal_candidate(
                         rf,
@@ -864,7 +866,7 @@ pub unsafe fn dav1d_refmvs_find(
                         None,
                     );
                 }
-                if (by8 + bh8 - 1) < std::cmp::min(rt.tile_row.end >> 1, (by8 & !7) + 8) {
+                if (by8 + bh8 - 1) < cmp::min(rt.tile_row.end >> 1, (by8 & !7) + 8) {
                     add_temporal_candidate(
                         rf,
                         mvstack,
@@ -940,10 +942,10 @@ pub unsafe fn dav1d_refmvs_find(
     // context build-up
     let (refmv_ctx, newmv_ctx) = match nearest_match {
         0 => (
-            std::cmp::min(2, ref_match_count),
+            cmp::min(2, ref_match_count),
             (ref_match_count > 0) as libc::c_int,
         ),
-        1 => (std::cmp::min(ref_match_count * 3, 4), 3 - have_newmv),
+        1 => (cmp::min(ref_match_count * 3, 4), 3 - have_newmv),
         2 => (5, 5 - have_newmv),
         _ => (0, 0),
     };
@@ -958,7 +960,7 @@ pub unsafe fn dav1d_refmvs_find(
         if *cnt < 2 {
             let sign0 = rf.sign_bias[r#ref.r#ref[0] as usize - 1];
             let sign1 = rf.sign_bias[r#ref.r#ref[1] as usize - 1];
-            let sz4 = std::cmp::min(w4, h4);
+            let sz4 = cmp::min(w4, h4);
             let cur_cnt = *cnt;
             let same = &mut mvstack[cur_cnt..];
             let mut same_count = [0; 4];
@@ -1060,8 +1062,8 @@ pub unsafe fn dav1d_refmvs_find(
         }
 
         *ctx = match refmv_ctx >> 1 {
-            0 => std::cmp::min(newmv_ctx, 1),
-            1 => 1 + std::cmp::min(newmv_ctx, 3),
+            0 => cmp::min(newmv_ctx, 1),
+            1 => 1 + cmp::min(newmv_ctx, 3),
             2 => iclip(3 + newmv_ctx, 4, 7),
             _ => *ctx,
         };
@@ -1069,7 +1071,7 @@ pub unsafe fn dav1d_refmvs_find(
         return;
     } else if *cnt < 2 && r#ref.r#ref[0] > 0 {
         let sign = rf.sign_bias[r#ref.r#ref[0] as usize - 1];
-        let sz4 = std::cmp::min(w4, h4);
+        let sz4 = cmp::min(w4, h4);
 
         // non-self references in top
         if n_rows != !0 {
@@ -1110,7 +1112,7 @@ pub unsafe fn dav1d_refmvs_find(
 
     // Need to use `min` so we don't get a backwards range,
     // which will fail on slicing.
-    for cand in &mut mvstack[std::cmp::min(*cnt, 2)..2] {
+    for cand in &mut mvstack[cmp::min(*cnt, 2)..2] {
         cand.mv.mv[0] = tgmv[0];
     }
 
@@ -1134,8 +1136,8 @@ pub unsafe fn dav1d_refmvs_save_tmvs(
     if !((row_end8 - row_start8) as libc::c_uint <= 16 as libc::c_uint) {
         unreachable!();
     }
-    row_end8 = std::cmp::min(row_end8, (*rf).ih8);
-    col_end8 = std::cmp::min(col_end8, (*rf).iw8);
+    row_end8 = cmp::min(row_end8, (*rf).ih8);
+    col_end8 = cmp::min(col_end8, (*rf).iw8);
     let stride: ptrdiff_t = (*rf).rp_stride;
     let ref_sign: *const uint8_t = ((*rf).mfmv_sign).as_ptr();
     let rp: *mut refmvs_temporal_block = (*rf).rp.offset(row_start8 as isize * stride);
@@ -1205,9 +1207,9 @@ pub unsafe fn dav1d_refmvs_tile_sbrow_init(
     }
     (*rt).rf = rf;
     (*rt).tile_row.start = tile_row_start4;
-    (*rt).tile_row.end = std::cmp::min(tile_row_end4, (*rf).ih4);
+    (*rt).tile_row.end = cmp::min(tile_row_end4, (*rf).ih4);
     (*rt).tile_col.start = tile_col_start4;
-    (*rt).tile_col.end = std::cmp::min(tile_col_end4, (*rf).iw4);
+    (*rt).tile_col.end = cmp::min(tile_col_end4, (*rf).iw4);
 }
 #[no_mangle]
 pub unsafe extern "C" fn load_tmvs_c(
@@ -1227,9 +1229,9 @@ pub unsafe extern "C" fn load_tmvs_c(
     if !((row_end8 - row_start8) as libc::c_uint <= 16 as libc::c_uint) {
         unreachable!();
     }
-    row_end8 = std::cmp::min(row_end8, (*rf).ih8);
-    let col_start8i = std::cmp::max(col_start8 - 8, 0 as libc::c_int);
-    let col_end8i = std::cmp::min(col_end8 + 8, (*rf).iw8);
+    row_end8 = cmp::min(row_end8, (*rf).ih8);
+    let col_start8i = cmp::max(col_start8 - 8, 0 as libc::c_int);
+    let col_end8i = cmp::min(col_end8 + 8, (*rf).iw8);
     let stride: ptrdiff_t = (*rf).rp_stride;
     let mut rp_proj: *mut refmvs_temporal_block = &mut *((*rf).rp_proj)
         .offset(16 * stride * tile_row_idx as isize + (row_start8 & 15) as isize * stride)
@@ -1258,8 +1260,8 @@ pub unsafe extern "C" fn load_tmvs_c(
             let mut y_0 = row_start8;
             while y_0 < row_end8 {
                 let y_sb_align = y_0 & !(7 as libc::c_int);
-                let y_proj_start = std::cmp::max(y_sb_align, row_start8);
-                let y_proj_end = std::cmp::min(y_sb_align + 8, row_end8);
+                let y_proj_start = cmp::max(y_sb_align, row_start8);
+                let y_proj_end = cmp::min(y_sb_align + 8, row_end8);
                 let mut x_0 = col_start8i;
                 while x_0 < col_end8i {
                     let mut rb: *const refmvs_temporal_block =
@@ -1284,8 +1286,8 @@ pub unsafe extern "C" fn load_tmvs_c(
                                 let pos: ptrdiff_t = (pos_y & 15) as isize * stride;
                                 loop {
                                     let x_sb_align = x_0 & !(7 as libc::c_int);
-                                    if pos_x >= std::cmp::max(x_sb_align - 8, col_start8)
-                                        && pos_x < std::cmp::min(x_sb_align + 16, col_end8)
+                                    if pos_x >= cmp::max(x_sb_align - 8, col_start8)
+                                        && pos_x < cmp::min(x_sb_align + 16, col_end8)
                                     {
                                         (*rp_proj.offset(pos + pos_x as isize)).mv = (*rb).mv;
                                         (*rp_proj.offset(pos + pos_x as isize)).r#ref =

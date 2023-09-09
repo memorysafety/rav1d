@@ -1,4 +1,6 @@
-use std::cmp::Ordering;
+use std::cmp;
+
+use cmp::Ordering;
 
 use crate::include::common::intops::apply_sign;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
@@ -357,7 +359,7 @@ pub fn get_mask_comp_ctx(
         }
     });
 
-    std::cmp::min(a_ctx + l_ctx, 5)
+    cmp::min(a_ctx + l_ctx, 5)
 }
 
 fn cmp_counts(c1: u8, c2: u8) -> u8 {

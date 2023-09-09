@@ -1,3 +1,5 @@
+use std::cmp;
+
 use crate::stderr;
 use ::libc;
 use libc::size_t;
@@ -209,7 +211,7 @@ unsafe extern "C" fn safe_strncat(
     if !(dst_fill < dst_len) {
         unreachable!();
     }
-    let to_copy = std::cmp::min(src_len, dst_len - dst_fill - 1);
+    let to_copy = cmp::min(src_len, dst_len - dst_fill - 1);
     if to_copy == 0 {
         return;
     }

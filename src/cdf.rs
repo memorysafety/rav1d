@@ -1,3 +1,5 @@
+use std::cmp;
+
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use crate::src::align::*;
@@ -5215,7 +5217,7 @@ pub unsafe fn dav1d_cdf_thread_update(
                 ::core::mem::size_of::<[uint16_t; 4]>() as libc::c_ulong,
             );
             (*dst).m.txsz[k_0 as usize][j_1 as usize]
-                [std::cmp::min(k_0 + 1, 2 as libc::c_int) as usize] = 0 as libc::c_int as uint16_t;
+                [cmp::min(k_0 + 1, 2 as libc::c_int) as usize] = 0 as libc::c_int as uint16_t;
             j_1 += 1;
         }
         k_0 += 1;

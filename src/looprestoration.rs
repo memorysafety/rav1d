@@ -1,3 +1,4 @@
+use std::cmp;
 use std::ops::Add;
 
 #[cfg(all(
@@ -589,9 +590,9 @@ fn selfguided_filter<BD: BitDepth>(
             let a = AA[i] + (1 << 2 * bitdepth_min_8 >> 1) >> 2 * bitdepth_min_8;
             let b = BB[i].as_::<libc::c_int>() + (1 << bitdepth_min_8 >> 1) >> bitdepth_min_8;
 
-            let p = std::cmp::max(a * n - b * b, 0) as libc::c_uint;
+            let p = cmp::max(a * n - b * b, 0) as libc::c_uint;
             let z = (p * s + (1 << 19)) >> 20;
-            let x = dav1d_sgr_x_by_x[std::cmp::min(z, 255) as usize] as libc::c_uint;
+            let x = dav1d_sgr_x_by_x[cmp::min(z, 255) as usize] as libc::c_uint;
 
             // This is where we invert A and B, so that B is of size coef.
             AA[i] =
