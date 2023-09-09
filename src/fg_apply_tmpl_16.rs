@@ -5,7 +5,6 @@ use crate::include::stdint::*;
 use crate::src::align::{Align1, Align16};
 use ::libc;
 extern "C" {
-    pub type Dav1dRef;
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
 }
