@@ -3,6 +3,7 @@ use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SHARP;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SMOOTH;
 use crate::include::dav1d::headers::DAV1D_FILTER_BILINEAR;
+use crate::include::dav1d::headers::DAV1D_N_FILTERS;
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_IDENTITY;
 use crate::src::align::Align16;
 use crate::src::align::Align4;
@@ -628,7 +629,7 @@ pub static dav1d_tx_type_class: [u8; N_TX_TYPES_PLUS_LL] = [
     TX_CLASS_2D as u8,
 ];
 
-pub static dav1d_filter_2d: [[u8; 4]; 4] = [
+pub static dav1d_filter_2d: [[u8; DAV1D_N_FILTERS]; DAV1D_N_FILTERS] = [
     [
         FILTER_2D_8TAP_REGULAR as u8,
         FILTER_2D_8TAP_REGULAR_SMOOTH as u8,
