@@ -76,6 +76,7 @@ use crate::src::levels::NEWMV_NEARMV;
 use crate::src::levels::NEWMV_NEWMV;
 use crate::src::levels::N_PARTITIONS;
 use crate::src::levels::N_SUB8X8_PARTITIONS;
+use crate::src::levels::N_UV_INTRA_PRED_MODES;
 use crate::src::levels::PAETH_PRED;
 use crate::src::levels::RTX_16X32;
 use crate::src::levels::RTX_16X4;
@@ -484,8 +485,8 @@ pub static dav1d_max_txfm_size_for_bs: [[u8; 4]; 22] = [
     [TX_4X4 as u8, TX_4X4 as u8, TX_4X4 as u8, TX_4X4 as u8],
 ];
 
-pub static dav1d_txtp_from_uvmode: [TxfmType; 14] = {
-    let mut tbl = [0; 14];
+pub static dav1d_txtp_from_uvmode: [TxfmType; N_UV_INTRA_PRED_MODES] = {
+    let mut tbl = [0; N_UV_INTRA_PRED_MODES];
     tbl[DC_PRED as usize] = DCT_DCT;
     tbl[VERT_PRED as usize] = ADST_DCT;
     tbl[HOR_PRED as usize] = DCT_ADST;
