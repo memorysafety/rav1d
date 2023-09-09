@@ -881,7 +881,7 @@ pub unsafe extern "C" fn dav1d_open(
         );
         return -(22 as libc::c_int);
     }
-    if !((*s).n_threads >= 0 as libc::c_int && (*s).n_threads <= 256 as libc::c_int) {
+    if !((*s).n_threads >= 0 && (*s).n_threads <= 256) {
         fprintf(
             stderr,
             b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
@@ -891,7 +891,7 @@ pub unsafe extern "C" fn dav1d_open(
         );
         return -(22 as libc::c_int);
     }
-    if !((*s).max_frame_delay >= 0 as libc::c_int && (*s).max_frame_delay <= 256 as libc::c_int) {
+    if !((*s).max_frame_delay >= 0 && (*s).max_frame_delay <= 256) {
         fprintf(
             stderr,
             b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
@@ -919,7 +919,7 @@ pub unsafe extern "C" fn dav1d_open(
         );
         return -(22 as libc::c_int);
     }
-    if !((*s).operating_point >= 0 as libc::c_int && (*s).operating_point <= 31 as libc::c_int) {
+    if !((*s).operating_point >= 0 && (*s).operating_point <= 31) {
         fprintf(
             stderr,
             b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
@@ -1011,11 +1011,11 @@ pub unsafe extern "C" fn dav1d_open(
     {
         return dav1d_open_error(c, c_out, &mut thread_attr);
     }
-    if (::core::mem::size_of::<size_t>() as libc::c_ulong) < 8 as libc::c_int as libc::c_ulong
+    if (::core::mem::size_of::<size_t>() as libc::c_ulong) < 8 as libc::c_ulong
         && ((*s).frame_size_limit).wrapping_sub(1 as libc::c_int as libc::c_uint)
-            >= (8192 as libc::c_int * 8192 as libc::c_int) as libc::c_uint
+            >= (8192 * 8192) as libc::c_uint
     {
-        (*c).frame_size_limit = (8192 as libc::c_int * 8192 as libc::c_int) as libc::c_uint;
+        (*c).frame_size_limit = (8192 * 8192) as libc::c_uint;
         if (*s).frame_size_limit != 0 {
             dav1d_log(
                 c,
@@ -1052,7 +1052,7 @@ pub unsafe extern "C" fn dav1d_open(
         0 as libc::c_int,
         ::core::mem::size_of::<Dav1dTaskContext>().wrapping_mul((*c).n_tc as size_t),
     );
-    if (*c).n_tc > 1 as libc::c_int as libc::c_uint {
+    if (*c).n_tc > 1 as libc::c_uint {
         if pthread_mutex_init(&mut (*c).task_thread.lock, 0 as *const pthread_mutexattr_t) != 0 {
             return dav1d_open_error(c, c_out, &mut thread_attr);
         }
@@ -1074,7 +1074,7 @@ pub unsafe extern "C" fn dav1d_open(
         *&mut (*c).task_thread.cond_signaled = 0 as libc::c_int;
         (*c).task_thread.inited = 1 as libc::c_int;
     }
-    if (*c).n_fc > 1 as libc::c_int as libc::c_uint {
+    if (*c).n_fc > 1 as libc::c_uint {
         (*c).frame_thread.out_delayed = calloc(
             (*c).n_fc as size_t,
             ::core::mem::size_of::<Dav1dThreadPicture>(),
@@ -1087,7 +1087,7 @@ pub unsafe extern "C" fn dav1d_open(
     while n < (*c).n_fc {
         let f: *mut Dav1dFrameContext =
             &mut *((*c).fc).offset(n as isize) as *mut Dav1dFrameContext;
-        if (*c).n_tc > 1 as libc::c_int as libc::c_uint {
+        if (*c).n_tc > 1 as libc::c_uint {
             if pthread_mutex_init(&mut (*f).task_thread.lock, 0 as *const pthread_mutexattr_t) != 0
             {
                 return dav1d_open_error(c, c_out, &mut thread_attr);
@@ -1115,7 +1115,7 @@ pub unsafe extern "C" fn dav1d_open(
     let mut m: libc::c_uint = 0 as libc::c_int as libc::c_uint;
     while m < (*c).n_tc {
         let t: *mut Dav1dTaskContext = &mut *((*c).tc).offset(m as isize) as *mut Dav1dTaskContext;
-        (*t).f = &mut *((*c).fc).offset(0 as libc::c_int as isize) as *mut Dav1dFrameContext;
+        (*t).f = &mut *((*c).fc).offset(0) as *mut Dav1dFrameContext;
         (*t).task_thread.ttd = &mut (*c).task_thread;
         (*t).c = c;
         memset(
@@ -1123,7 +1123,7 @@ pub unsafe extern "C" fn dav1d_open(
             0 as libc::c_int,
             ::core::mem::size_of::<[int32_t; 1024]>(),
         );
-        if (*c).n_tc > 1 as libc::c_int as libc::c_uint {
+        if (*c).n_tc > 1 as libc::c_uint {
             if pthread_mutex_init(
                 &mut (*t).task_thread.td.lock,
                 0 as *const pthread_mutexattr_t,
@@ -1159,19 +1159,14 @@ pub unsafe extern "C" fn dav1d_open(
     }
     dav1d_refmvs_dsp_init(&mut (*c).refmvs_dsp);
     (*c).intra_edge.root[BL_128X128 as libc::c_int as usize] =
-        &mut (*((*c).intra_edge.branch_sb128)
-            .as_mut_ptr()
-            .offset(0 as libc::c_int as isize))
-        .node;
+        &mut (*((*c).intra_edge.branch_sb128).as_mut_ptr().offset(0)).node;
     dav1d_init_mode_tree(
         (*c).intra_edge.root[BL_128X128 as libc::c_int as usize],
         &mut (*c).intra_edge.tip_sb128,
         true,
     );
-    (*c).intra_edge.root[BL_64X64 as libc::c_int as usize] = &mut (*((*c).intra_edge.branch_sb64)
-        .as_mut_ptr()
-        .offset(0 as libc::c_int as isize))
-    .node;
+    (*c).intra_edge.root[BL_64X64 as libc::c_int as usize] =
+        &mut (*((*c).intra_edge.branch_sb64).as_mut_ptr().offset(0)).node;
     dav1d_init_mode_tree(
         (*c).intra_edge.root[BL_64X64 as libc::c_int as usize],
         &mut (*c).intra_edge.tip_sb64,
