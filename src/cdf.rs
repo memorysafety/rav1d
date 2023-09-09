@@ -206,7 +206,7 @@ pub struct CdfModeContext {
     pub y_mode: Align32<[[uint16_t; 16]; 4]>,
     pub uv_mode: Align32<[[[uint16_t; 16]; 13]; 2]>,
     pub wedge_idx: Align32<[[uint16_t; 16]; 9]>,
-    pub partition: Align32<[[[uint16_t; 16]; 4]; 5]>,
+    pub partition: Align32<[[[uint16_t; 16]; 4]; N_BL_LEVELS]>,
     pub cfl_alpha: Align32<[[uint16_t; 16]; 6]>,
     pub txtp_inter1: Align32<[[uint16_t; 16]; 2]>,
     pub txtp_inter2: Align32<[uint16_t; 16]>,

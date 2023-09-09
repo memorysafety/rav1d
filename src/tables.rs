@@ -74,6 +74,7 @@ use crate::src::levels::NEWMV;
 use crate::src::levels::NEWMV_NEARESTMV;
 use crate::src::levels::NEWMV_NEARMV;
 use crate::src::levels::NEWMV_NEWMV;
+use crate::src::levels::N_BL_LEVELS;
 use crate::src::levels::N_PARTITIONS;
 use crate::src::levels::N_SUB8X8_PARTITIONS;
 use crate::src::levels::N_UV_INTRA_PRED_MODES;
@@ -122,7 +123,7 @@ pub struct TxfmInfo {
     pub ctx: u8,
 }
 
-pub static dav1d_al_part_ctx: [[[u8; 10]; 5]; 2] = [
+pub static dav1d_al_part_ctx: [[[u8; 10]; N_BL_LEVELS]; 2] = [
     [
         [0x00, 0x00, 0x10, 0xff, 0x00, 0x10, 0x10, 0x10, 0xff, 0xff],
         [0x10, 0x10, 0x18, 0xff, 0x10, 0x18, 0x18, 0x18, 0x10, 0x1c],
@@ -139,7 +140,7 @@ pub static dav1d_al_part_ctx: [[[u8; 10]; 5]; 2] = [
     ],
 ];
 
-pub static dav1d_block_sizes: [[[BlockSize; 2]; 10]; 5] = [
+pub static dav1d_block_sizes: [[[BlockSize; 2]; 10]; N_BL_LEVELS] = [
     [
         [BS_128x128 as u8, 0],
         [BS_128x64 as u8, 0],
@@ -516,7 +517,7 @@ pub static dav1d_comp_inter_pred_modes: [[InterPredMode; 2]; 8] = {
     tbl
 };
 
-pub static dav1d_partition_type_count: [u8; 5] = [
+pub static dav1d_partition_type_count: [u8; N_BL_LEVELS] = [
     N_PARTITIONS as u8 - 3,
     N_PARTITIONS as u8 - 1,
     N_PARTITIONS as u8 - 1,
