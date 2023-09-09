@@ -2435,14 +2435,14 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                 .frame_hdr)
                 .frame_type as libc::c_uint
             {
-                1 | 3 => {
+                DAV1D_FRAME_TYPE_INTER | DAV1D_FRAME_TYPE_SWITCH => {
                     if (*c).decode_frame_type as libc::c_uint
                         > DAV1D_DECODEFRAMETYPE_REFERENCE as libc::c_int as libc::c_uint
                     {
                         return dav1d_parse_obus_skip(c, len, init_byte_pos);
                     }
                 }
-                2 => {
+                DAV1D_FRAME_TYPE_INTRA => {
                     if (*c).decode_frame_type as libc::c_uint
                         > DAV1D_DECODEFRAMETYPE_INTRA as libc::c_int as libc::c_uint
                     {
@@ -2603,7 +2603,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
             (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
         } else if (*c).n_tiles == (*(*c).frame_hdr).tiling.cols * (*(*c).frame_hdr).tiling.rows {
             match (*(*c).frame_hdr).frame_type as libc::c_uint {
-                1 | 3 => {
+                DAV1D_FRAME_TYPE_INTER | DAV1D_FRAME_TYPE_SWITCH => {
                     if (*c).decode_frame_type as libc::c_uint
                         > DAV1D_DECODEFRAMETYPE_REFERENCE as libc::c_int as libc::c_uint
                         || (*c).decode_frame_type as libc::c_uint
@@ -2613,7 +2613,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                         return dav1d_parse_obus_skip(c, len, init_byte_pos);
                     }
                 }
-                2 => {
+                DAV1D_FRAME_TYPE_INTRA => {
                     if (*c).decode_frame_type as libc::c_uint
                         > DAV1D_DECODEFRAMETYPE_INTRA as libc::c_int as libc::c_uint
                         || (*c).decode_frame_type as libc::c_uint
