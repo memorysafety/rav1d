@@ -11,7 +11,6 @@ extern "C" {
 use crate::src::tables::dav1d_sgr_params;
 
 pub type pixel = uint16_t;
-pub type coef = int32_t;
 use crate::include::stdatomic::atomic_int;
 
 use crate::include::dav1d::common::Dav1dDataProps;

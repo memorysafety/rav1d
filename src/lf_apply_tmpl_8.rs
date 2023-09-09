@@ -9,7 +9,6 @@ extern "C" {
 }
 
 pub type pixel = uint8_t;
-pub type coef = int16_t;
 use crate::include::stdatomic::atomic_int;
 
 use crate::include::dav1d::common::Dav1dDataProps;
