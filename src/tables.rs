@@ -32,6 +32,7 @@ use crate::src::levels::BS_8x4;
 use crate::src::levels::BS_8x8;
 use crate::src::levels::BlockSize;
 use crate::src::levels::InterPredMode;
+use crate::src::levels::TxfmType;
 use crate::src::levels::ADST_ADST;
 use crate::src::levels::ADST_DCT;
 use crate::src::levels::ADST_FLIPADST;
@@ -39,6 +40,8 @@ use crate::src::levels::DCT_ADST;
 use crate::src::levels::DCT_DCT;
 use crate::src::levels::DCT_FLIPADST;
 use crate::src::levels::DC_PRED;
+use crate::src::levels::DIAG_DOWN_LEFT_PRED;
+use crate::src::levels::DIAG_DOWN_RIGHT_PRED;
 use crate::src::levels::FILTER_2D_8TAP_REGULAR;
 use crate::src::levels::FILTER_2D_8TAP_REGULAR_SHARP;
 use crate::src::levels::FILTER_2D_8TAP_REGULAR_SMOOTH;
@@ -56,6 +59,7 @@ use crate::src::levels::GLOBALMV;
 use crate::src::levels::GLOBALMV_GLOBALMV;
 use crate::src::levels::HOR_DOWN_PRED;
 use crate::src::levels::HOR_PRED;
+use crate::src::levels::HOR_UP_PRED;
 use crate::src::levels::H_ADST;
 use crate::src::levels::H_DCT;
 use crate::src::levels::H_FLIPADST;
@@ -72,6 +76,7 @@ use crate::src::levels::NEWMV_NEARMV;
 use crate::src::levels::NEWMV_NEWMV;
 use crate::src::levels::N_PARTITIONS;
 use crate::src::levels::N_SUB8X8_PARTITIONS;
+use crate::src::levels::PAETH_PRED;
 use crate::src::levels::RTX_16X32;
 use crate::src::levels::RTX_16X4;
 use crate::src::levels::RTX_16X64;
@@ -86,6 +91,9 @@ use crate::src::levels::RTX_64X32;
 use crate::src::levels::RTX_8X16;
 use crate::src::levels::RTX_8X32;
 use crate::src::levels::RTX_8X4;
+use crate::src::levels::SMOOTH_H_PRED;
+use crate::src::levels::SMOOTH_PRED;
+use crate::src::levels::SMOOTH_V_PRED;
 use crate::src::levels::TX_16X16;
 use crate::src::levels::TX_32X32;
 use crate::src::levels::TX_4X4;
@@ -94,7 +102,9 @@ use crate::src::levels::TX_8X8;
 use crate::src::levels::TX_CLASS_2D;
 use crate::src::levels::TX_CLASS_H;
 use crate::src::levels::TX_CLASS_V;
+use crate::src::levels::VERT_LEFT_PRED;
 use crate::src::levels::VERT_PRED;
+use crate::src::levels::VERT_RIGHT_PRED;
 use crate::src::levels::V_ADST;
 use crate::src::levels::V_DCT;
 use crate::src::levels::V_FLIPADST;
@@ -474,22 +484,23 @@ pub static dav1d_max_txfm_size_for_bs: [[u8; 4]; 22] = [
     [TX_4X4 as u8, TX_4X4 as u8, TX_4X4 as u8, TX_4X4 as u8],
 ];
 
-pub static dav1d_txtp_from_uvmode: [u8; 14] = [
-    DCT_DCT as u8,
-    ADST_DCT as u8,
-    DCT_ADST as u8,
-    DCT_DCT as u8,
-    ADST_ADST as u8,
-    ADST_DCT as u8,
-    DCT_ADST as u8,
-    DCT_ADST as u8,
-    ADST_DCT as u8,
-    ADST_ADST as u8,
-    ADST_DCT as u8,
-    DCT_ADST as u8,
-    ADST_ADST as u8,
-    0,
-];
+pub static dav1d_txtp_from_uvmode: [TxfmType; 14] = {
+    let mut tbl = [0; 14];
+    tbl[DC_PRED as usize] = DCT_DCT;
+    tbl[VERT_PRED as usize] = ADST_DCT;
+    tbl[HOR_PRED as usize] = DCT_ADST;
+    tbl[DIAG_DOWN_LEFT_PRED as usize] = DCT_DCT;
+    tbl[DIAG_DOWN_RIGHT_PRED as usize] = ADST_ADST;
+    tbl[VERT_RIGHT_PRED as usize] = ADST_DCT;
+    tbl[HOR_DOWN_PRED as usize] = DCT_ADST;
+    tbl[HOR_UP_PRED as usize] = DCT_ADST;
+    tbl[VERT_LEFT_PRED as usize] = ADST_DCT;
+    tbl[SMOOTH_PRED as usize] = ADST_ADST;
+    tbl[SMOOTH_V_PRED as usize] = ADST_DCT;
+    tbl[SMOOTH_H_PRED as usize] = DCT_ADST;
+    tbl[PAETH_PRED as usize] = ADST_ADST;
+    tbl
+};
 
 pub static dav1d_comp_inter_pred_modes: [[InterPredMode; 2]; 8] = {
     let mut tbl = [[0; 2]; 8];
