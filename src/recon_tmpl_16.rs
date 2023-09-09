@@ -428,7 +428,6 @@ use crate::include::common::dump::coef_dump;
 use crate::include::common::dump::hex_dump;
 use crate::include::common::intops::apply_sign64;
 use crate::include::common::intops::iclip;
-use crate::include::common::intops::umin;
 use crate::src::env::get_uv_inter_txtp;
 use crate::src::ipred_prepare::sm_flag;
 use crate::src::ipred_prepare::sm_uv_flag;
@@ -1502,7 +1501,8 @@ unsafe fn decode_coefs(
             }
             cul_level = dc_tok;
             dc_dq >>= dq_shift;
-            dc_dq = umin(dc_dq as libc::c_uint, (cf_max + dc_sign) as libc::c_uint) as libc::c_int;
+            dc_dq = std::cmp::min(dc_dq as libc::c_uint, (cf_max + dc_sign) as libc::c_uint)
+                as libc::c_int;
             *cf.offset(0) = if dc_sign != 0 { -dc_dq } else { dc_dq };
             if rc != 0 {
                 current_block = 1669574575799829731;
@@ -1525,8 +1525,8 @@ unsafe fn decode_coefs(
                 dc_dq = (((dc_dq as libc::c_uint).wrapping_mul(dc_tok)
                     & 0xffffff as libc::c_int as libc::c_uint)
                     >> dq_shift) as libc::c_int;
-                dc_dq =
-                    umin(dc_dq as libc::c_uint, (cf_max + dc_sign) as libc::c_uint) as libc::c_int;
+                dc_dq = std::cmp::min(dc_dq as libc::c_uint, (cf_max + dc_sign) as libc::c_uint)
+                    as libc::c_int;
             } else {
                 dc_dq = ((dc_dq as libc::c_uint).wrapping_mul(dc_tok) >> dq_shift) as libc::c_int;
                 if !(dc_dq <= cf_max) {
@@ -1586,7 +1586,7 @@ unsafe fn decode_coefs(
                 }
                 cul_level = cul_level.wrapping_add(tok_0);
                 dq >>= dq_shift;
-                dq_sat = umin(dq, (cf_max + sign) as libc::c_uint) as libc::c_int;
+                dq_sat = std::cmp::min(dq, (cf_max + sign) as libc::c_uint) as libc::c_int;
                 *cf.offset(rc as isize) = if sign != 0 { -dq_sat } else { dq_sat };
                 rc = rc_tok & 0x3ff as libc::c_int as libc::c_uint;
                 if !(rc != 0) {
@@ -1625,7 +1625,7 @@ unsafe fn decode_coefs(
                     tok_1 &= 0xfffff as libc::c_int as libc::c_uint;
                     dq_0 = ((ac_dq_0.wrapping_mul(tok_1) & 0xffffff as libc::c_int as libc::c_uint)
                         >> dq_shift) as libc::c_int;
-                    dq_0 = umin(dq_0 as libc::c_uint, (cf_max + sign_0) as libc::c_uint)
+                    dq_0 = std::cmp::min(dq_0 as libc::c_uint, (cf_max + sign_0) as libc::c_uint)
                         as libc::c_int;
                 } else {
                     tok_1 = rc_tok_0 >> 11;
@@ -1644,7 +1644,8 @@ unsafe fn decode_coefs(
         }
         _ => {}
     }
-    *res_ctx = (umin(cul_level, 63 as libc::c_int as libc::c_uint) | dc_sign_level) as uint8_t;
+    *res_ctx =
+        (std::cmp::min(cul_level, 63 as libc::c_int as libc::c_uint) | dc_sign_level) as uint8_t;
     return eob;
 }
 unsafe extern "C" fn read_coef_tree(

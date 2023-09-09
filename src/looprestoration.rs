@@ -12,7 +12,6 @@ use crate::include::common::bitdepth::LeftPixelRow;
 use crate::include::common::bitdepth::ToPrimitive;
 use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::iclip;
-use crate::include::common::intops::umin;
 use crate::include::stddef::ptrdiff_t;
 use crate::include::stdint::int16_t;
 use crate::include::stdint::int32_t;
@@ -592,7 +591,7 @@ fn selfguided_filter<BD: BitDepth>(
 
             let p = std::cmp::max(a * n - b * b, 0) as libc::c_uint;
             let z = (p * s + (1 << 19)) >> 20;
-            let x = dav1d_sgr_x_by_x[umin(z, 255) as usize] as libc::c_uint;
+            let x = dav1d_sgr_x_by_x[std::cmp::min(z, 255) as usize] as libc::c_uint;
 
             // This is where we invert A and B, so that B is of size coef.
             AA[i] =

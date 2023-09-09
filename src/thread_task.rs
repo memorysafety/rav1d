@@ -383,7 +383,6 @@ unsafe extern "C" fn dav1d_set_thread_name(name: *const libc::c_char) {
     }
 }
 use crate::include::common::intops::iclip;
-use crate::include::common::intops::umin;
 #[inline]
 unsafe extern "C" fn reset_task_cur(
     c: *const Dav1dContext,
@@ -431,7 +430,7 @@ unsafe extern "C" fn reset_task_cur(
             if frame_idx < first {
                 frame_idx = frame_idx.wrapping_add((*c).n_fc);
             }
-            min_frame_idx = umin(reset_frame_idx, frame_idx);
+            min_frame_idx = std::cmp::min(reset_frame_idx, frame_idx);
             cur_frame_idx = first.wrapping_add((*ttd).cur);
             if (*ttd).cur < (*c).n_fc && cur_frame_idx < min_frame_idx {
                 return 0 as libc::c_int;

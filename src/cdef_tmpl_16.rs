@@ -18,7 +18,6 @@ use crate::src::cdef::CDEF_HAVE_RIGHT;
 use crate::src::cdef::CDEF_HAVE_TOP;
 
 use crate::include::common::intops::iclip;
-use crate::include::common::intops::umin;
 
 use crate::include::common::intops::ulog2;
 #[inline]
@@ -183,9 +182,9 @@ unsafe extern "C" fn cdef_filter_block_c(
                         sum += pri_tap_k * constrain(p0 - px, pri_strength, pri_shift);
                         sum += pri_tap_k * constrain(p1 - px, pri_strength, pri_shift);
                         pri_tap_k = pri_tap_k & 3 | 2;
-                        min = umin(p0 as libc::c_uint, min as libc::c_uint) as libc::c_int;
+                        min = std::cmp::min(p0 as libc::c_uint, min as libc::c_uint) as libc::c_int;
                         max = std::cmp::max(p0, max);
-                        min = umin(p1 as libc::c_uint, min as libc::c_uint) as libc::c_int;
+                        min = std::cmp::min(p1 as libc::c_uint, min as libc::c_uint) as libc::c_int;
                         max = std::cmp::max(p1, max);
                         let off2 =
                             dav1d_cdef_directions[(dir + 4) as usize][k as usize] as libc::c_int;
@@ -200,13 +199,13 @@ unsafe extern "C" fn cdef_filter_block_c(
                         sum += sec_tap * constrain(s1 - px, sec_strength, sec_shift);
                         sum += sec_tap * constrain(s2 - px, sec_strength, sec_shift);
                         sum += sec_tap * constrain(s3 - px, sec_strength, sec_shift);
-                        min = umin(s0 as libc::c_uint, min as libc::c_uint) as libc::c_int;
+                        min = std::cmp::min(s0 as libc::c_uint, min as libc::c_uint) as libc::c_int;
                         max = std::cmp::max(s0, max);
-                        min = umin(s1 as libc::c_uint, min as libc::c_uint) as libc::c_int;
+                        min = std::cmp::min(s1 as libc::c_uint, min as libc::c_uint) as libc::c_int;
                         max = std::cmp::max(s1, max);
-                        min = umin(s2 as libc::c_uint, min as libc::c_uint) as libc::c_int;
+                        min = std::cmp::min(s2 as libc::c_uint, min as libc::c_uint) as libc::c_int;
                         max = std::cmp::max(s2, max);
-                        min = umin(s3 as libc::c_uint, min as libc::c_uint) as libc::c_int;
+                        min = std::cmp::min(s3 as libc::c_uint, min as libc::c_uint) as libc::c_int;
                         max = std::cmp::max(s3, max);
                         k += 1;
                     }
