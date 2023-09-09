@@ -682,7 +682,7 @@ unsafe extern "C" fn fill2d_16x2(
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_init_wedge_masks() {
-    static mut wedge_master_border: [[uint8_t; 8]; 3] = [
+    static mut wedge_master_border: [[uint8_t; 8]; N_WEDGE_MASTER_LINES] = [
         [
             1 as libc::c_int as uint8_t,
             2 as libc::c_int as uint8_t,
