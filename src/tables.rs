@@ -75,6 +75,7 @@ use crate::src::levels::NEWMV;
 use crate::src::levels::NEWMV_NEARESTMV;
 use crate::src::levels::NEWMV_NEARMV;
 use crate::src::levels::NEWMV_NEWMV;
+use crate::src::levels::N_2D_FILTERS;
 use crate::src::levels::N_BL_LEVELS;
 use crate::src::levels::N_BS_SIZES;
 use crate::src::levels::N_COMP_INTER_PRED_MODES;
@@ -651,7 +652,7 @@ pub static dav1d_filter_2d: [[u8; DAV1D_N_FILTERS]; DAV1D_N_FILTERS] = [
     [0, 0, 0, FILTER_2D_BILINEAR as u8],
 ];
 
-pub static dav1d_filter_dir: [[u8; 2]; 10] = [
+pub static dav1d_filter_dir: [[u8; 2]; N_2D_FILTERS] = [
     [
         DAV1D_FILTER_8TAP_REGULAR as u8,
         DAV1D_FILTER_8TAP_REGULAR as u8,
