@@ -25,6 +25,7 @@ use crate::src::intra_edge::EDGE_I444_LEFT_HAS_BOTTOM;
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 use crate::src::levels::DC_PRED;
 use crate::src::levels::HOR_PRED;
+use crate::src::levels::N_IMPL_INTRA_PRED_MODES;
 use crate::src::levels::N_INTRA_PRED_MODES;
 use crate::src::levels::VERT_PRED;
 
@@ -84,7 +85,7 @@ static mut av1_mode_to_angle_map: [uint8_t; 8] = [
 static mut av1_intra_prediction_edges: [av1_intra_prediction_edge; 14] =
     [av1_intra_prediction_edge {
         needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-    }; 14];
+    }; N_IMPL_INTRA_PRED_MODES];
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
     x: libc::c_int,
