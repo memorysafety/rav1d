@@ -378,10 +378,14 @@ pub type recon_b_intra_fn = Option<
 >;
 use crate::include::dav1d::headers::Dav1dObuType;
 use crate::include::dav1d::headers::DAV1D_OBU_FRAME;
-use crate::src::internal::ScalableMotionParams;
-
+use crate::include::dav1d::headers::DAV1D_OBU_FRAME_HDR;
+use crate::include::dav1d::headers::DAV1D_OBU_METADATA;
+use crate::include::dav1d::headers::DAV1D_OBU_PADDING;
+use crate::include::dav1d::headers::DAV1D_OBU_REDUNDANT_FRAME_HDR;
 use crate::include::dav1d::headers::DAV1D_OBU_SEQ_HDR;
 use crate::include::dav1d::headers::DAV1D_OBU_TD;
+use crate::include::dav1d::headers::DAV1D_OBU_TILE_GRP;
+use crate::src::internal::ScalableMotionParams;
 use crate::src::levels::ObuMetaType;
 
 use crate::include::common::intops::iclip_u8;
@@ -2039,7 +2043,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
     }
     let mut current_block_188: u64;
     match type_0 as libc::c_uint {
-        1 => {
+        DAV1D_OBU_SEQ_HDR => {
             let mut ref_0: *mut Dav1dRef = dav1d_ref_create_using_pool(
                 (*c).seq_hdr_pool,
                 ::core::mem::size_of::<Dav1dSequenceHeader>(),
@@ -2106,20 +2110,20 @@ pub unsafe extern "C" fn dav1d_parse_obus(
             (*c).seq_hdr = seq_hdr;
             current_block_188 = 8953117030348968745;
         }
-        7 => {
+        DAV1D_OBU_REDUNDANT_FRAME_HDR => {
             if !((*c).frame_hdr).is_null() {
                 current_block_188 = 8953117030348968745;
             } else {
                 current_block_188 = 14065157188459580465;
             }
         }
-        6 | 3 => {
+        DAV1D_OBU_FRAME | DAV1D_OBU_FRAME_HDR => {
             current_block_188 = 14065157188459580465;
         }
-        4 => {
+        DAV1D_OBU_TILE_GRP => {
             current_block_188 = 17787701279558130514;
         }
-        5 => {
+        DAV1D_OBU_METADATA => {
             let meta_type: ObuMetaType = dav1d_get_uleb128(&mut gb) as ObuMetaType;
             let meta_type_len: libc::c_int =
                 ((dav1d_get_bits_pos(&mut gb)).wrapping_sub(init_bit_pos) >> 3) as libc::c_int;
@@ -2250,14 +2254,14 @@ pub unsafe extern "C" fn dav1d_parse_obus(
             }
             current_block_188 = 8953117030348968745;
         }
-        2 => {
+        DAV1D_OBU_TD => {
             (*c).frame_flags = ::core::mem::transmute::<libc::c_uint, PictureFlags>(
                 (*c).frame_flags as libc::c_uint
                     | PICTURE_FLAG_NEW_TEMPORAL_UNIT as libc::c_int as libc::c_uint,
             );
             current_block_188 = 8953117030348968745;
         }
-        15 => {
+        DAV1D_OBU_PADDING => {
             current_block_188 = 8953117030348968745;
         }
         _ => {
