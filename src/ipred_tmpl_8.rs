@@ -106,14 +106,6 @@ use crate::src::tables::dav1d_dr_intra_derivative;
 use crate::src::tables::dav1d_filter_intra_taps;
 use crate::src::tables::dav1d_sm_weights;
 
-pub const DAV1D_X86_CPU_FLAG_AVX512ICL: CpuFlags = 16;
-pub const DAV1D_X86_CPU_FLAG_SSE2: CpuFlags = 1;
-pub const DAV1D_X86_CPU_FLAG_AVX2: CpuFlags = 8;
-pub const DAV1D_X86_CPU_FLAG_SSSE3: CpuFlags = 2;
-pub type CpuFlags = libc::c_uint;
-pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
-pub const DAV1D_X86_CPU_FLAG_SSE41: CpuFlags = 4;
-
 pub type pixel = uint8_t;
 
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
@@ -1475,8 +1467,10 @@ unsafe fn pal_pred_rust(
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
 #[inline(always)]
 unsafe extern "C" fn intra_pred_dsp_init_x86(c: *mut Dav1dIntraPredDSPContext) {
-    // TODO(legare): Temporary import until init fns are deduplicated.
-    use crate::src::ipred::*;
+    use crate::src::ipred::*; // TODO(legare): Temporary import until init fns are deduplicated.
+    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
+    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX512ICL;
+    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSSE3;
 
     let flags = dav1d_get_cpu_flags();
 
