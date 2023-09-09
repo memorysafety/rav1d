@@ -75,6 +75,7 @@ use crate::src::levels::NEWMV_NEARESTMV;
 use crate::src::levels::NEWMV_NEARMV;
 use crate::src::levels::NEWMV_NEWMV;
 use crate::src::levels::N_BL_LEVELS;
+use crate::src::levels::N_BS_SIZES;
 use crate::src::levels::N_PARTITIONS;
 use crate::src::levels::N_SUB8X8_PARTITIONS;
 use crate::src::levels::N_UV_INTRA_PRED_MODES;
@@ -203,7 +204,7 @@ pub static dav1d_block_sizes: [[[BlockSize; 2]; N_PARTITIONS]; N_BL_LEVELS] = [
     ],
 ];
 
-pub static dav1d_block_dimensions: [[u8; 4]; 22] = [
+pub static dav1d_block_dimensions: [[u8; 4]; N_BS_SIZES] = [
     [32, 32, 5, 5],
     [32, 16, 5, 4],
     [16, 32, 4, 5],
@@ -421,7 +422,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; 19] = [
     },
 ];
 
-pub static dav1d_max_txfm_size_for_bs: [[u8; 4]; 22] = [
+pub static dav1d_max_txfm_size_for_bs: [[u8; 4]; N_BS_SIZES] = [
     [
         TX_64X64 as u8,
         TX_32X32 as u8,
@@ -568,7 +569,7 @@ pub static dav1d_tx_types_per_set: [u8; 40] = [
     FLIPADST_ADST as u8,
 ];
 
-pub static dav1d_ymode_size_context: [u8; 22] = [
+pub static dav1d_ymode_size_context: [u8; N_BS_SIZES] = [
     3, 3, 3, 3, 3, 2, 3, 3, 2, 1, 2, 2, 2, 1, 0, 1, 1, 1, 0, 0, 0, 0,
 ];
 
@@ -693,7 +694,7 @@ pub static dav1d_filter_mode_to_y_mode: [u8; 5] = [
 
 pub static dav1d_intra_mode_context: [u8; 13] = [0, 1, 2, 3, 4, 4, 4, 4, 3, 0, 1, 2, 0];
 
-pub static dav1d_wedge_ctx_lut: [u8; 22] = [
+pub static dav1d_wedge_ctx_lut: [u8; N_BS_SIZES] = [
     0, 0, 0, 0, 0, 0, 0, 6, 5, 8, 0, 4, 3, 2, 0, 7, 1, 0, 0, 0, 0, 0,
 ];
 

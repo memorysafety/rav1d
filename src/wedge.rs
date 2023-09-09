@@ -14,19 +14,17 @@ use crate::src::levels::II_HOR_PRED;
 use crate::src::levels::II_SMOOTH_PRED;
 use crate::src::levels::II_VERT_PRED;
 
-use crate::src::levels::BlockSize;
-
-use crate::src::levels::BS_8x16;
-use crate::src::levels::BS_8x32;
-use crate::src::levels::BS_8x8;
-
 use crate::src::levels::BS_16x16;
 use crate::src::levels::BS_16x32;
 use crate::src::levels::BS_16x8;
-
 use crate::src::levels::BS_32x16;
 use crate::src::levels::BS_32x32;
 use crate::src::levels::BS_32x8;
+use crate::src::levels::BS_8x16;
+use crate::src::levels::BS_8x32;
+use crate::src::levels::BS_8x8;
+use crate::src::levels::BlockSize;
+use crate::src::levels::N_BS_SIZES;
 
 #[repr(C)]
 pub struct wedge_code_type {
@@ -465,7 +463,7 @@ static mut wedge_masks_420_4x16: Align64<[uint8_t; 2048]> = Align64([0; 2048]);
 static mut wedge_masks_420_4x8: Align64<[uint8_t; 1024]> = Align64([0; 1024]);
 static mut wedge_masks_420_4x4: Align64<[uint8_t; 512]> = Align64([0; 512]);
 #[no_mangle]
-pub static mut dav1d_wedge_masks: [[[[*const uint8_t; 16]; 2]; 3]; 22] =
+pub static mut dav1d_wedge_masks: [[[[*const uint8_t; 16]; 2]; 3]; N_BS_SIZES] =
     [[[[0 as *const uint8_t; 16]; 2]; 3]; 22];
 unsafe extern "C" fn insert_border(dst: *mut uint8_t, src: *const uint8_t, ctr: libc::c_int) {
     if ctr > 4 {
@@ -894,7 +892,8 @@ static mut ii_nondc_mask_4x16: Align64<[[uint8_t; 64]; 3]> = Align64([[0; 64]; 3
 static mut ii_nondc_mask_4x8: Align32<[[uint8_t; 32]; 3]> = Align32([[0; 32]; 3]);
 static mut ii_nondc_mask_4x4: Align16<[[uint8_t; 16]; 3]> = Align16([[0; 16]; 3]);
 #[no_mangle]
-pub static mut dav1d_ii_masks: [[[*const uint8_t; 4]; 3]; 22] = [[[0 as *const uint8_t; 4]; 3]; 22];
+pub static mut dav1d_ii_masks: [[[*const uint8_t; 4]; 3]; N_BS_SIZES] =
+    [[[0 as *const uint8_t; 4]; 3]; 22];
 #[cold]
 unsafe extern "C" fn build_nondc_ii_masks(
     mask_v: *mut uint8_t,
