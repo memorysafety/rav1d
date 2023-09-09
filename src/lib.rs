@@ -840,24 +840,24 @@ pub unsafe extern "C" fn dav1d_get_frame_delay(s: *const Dav1dSettings) -> libc:
     return n_fc as libc::c_int;
 }
 
-unsafe extern "C" fn dav1d_open_error(
-    c: *mut Dav1dContext,
-    c_out: *mut *mut Dav1dContext,
-    thread_attr: *mut pthread_attr_t,
-) -> libc::c_int {
-    if !c.is_null() {
-        close_internal(c_out, 0 as libc::c_int);
-    }
-    pthread_attr_destroy(thread_attr);
-    return -(12 as libc::c_int);
-}
-
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_open(
     c_out: *mut *mut Dav1dContext,
     s: *const Dav1dSettings,
 ) -> libc::c_int {
+    unsafe extern "C" fn error(
+        c: *mut Dav1dContext,
+        c_out: *mut *mut Dav1dContext,
+        thread_attr: *mut pthread_attr_t,
+    ) -> libc::c_int {
+        if !c.is_null() {
+            close_internal(c_out, 0 as libc::c_int);
+        }
+        pthread_attr_destroy(thread_attr);
+        return -(12 as libc::c_int);
+    }
+
     static mut initted: pthread_once_t = pthread_once_init();
     pthread_once(
         &mut initted,
@@ -954,7 +954,7 @@ pub unsafe extern "C" fn dav1d_open(
     *c_out = dav1d_alloc_aligned(::core::mem::size_of::<Dav1dContext>(), 64) as *mut Dav1dContext;
     let c: *mut Dav1dContext = *c_out;
     if c.is_null() {
-        return dav1d_open_error(c, c_out, &mut thread_attr);
+        return error(c, c_out, &mut thread_attr);
     }
     memset(
         c as *mut libc::c_void,
@@ -978,7 +978,7 @@ pub unsafe extern "C" fn dav1d_open(
         || dav1d_mem_pool_init(&mut (*c).refmvs_pool) != 0
         || dav1d_mem_pool_init(&mut (*c).cdf_pool) != 0
     {
-        return dav1d_open_error(c, c_out, &mut thread_attr);
+        return error(c, c_out, &mut thread_attr);
     }
     if (*c).allocator.alloc_picture_callback
         == Some(
@@ -992,10 +992,10 @@ pub unsafe extern "C" fn dav1d_open(
             )
     {
         if !((*c).allocator.cookie).is_null() {
-            return dav1d_open_error(c, c_out, &mut thread_attr);
+            return error(c, c_out, &mut thread_attr);
         }
         if dav1d_mem_pool_init(&mut (*c).picture_pool) != 0 {
-            return dav1d_open_error(c, c_out, &mut thread_attr);
+            return error(c, c_out, &mut thread_attr);
         }
         (*c).allocator.cookie = (*c).picture_pool as *mut libc::c_void;
     } else if (*c).allocator.alloc_picture_callback
@@ -1009,7 +1009,7 @@ pub unsafe extern "C" fn dav1d_open(
                     as unsafe extern "C" fn(*mut Dav1dPicture, *mut libc::c_void) -> (),
             )
     {
-        return dav1d_open_error(c, c_out, &mut thread_attr);
+        return error(c, c_out, &mut thread_attr);
     }
     if (::core::mem::size_of::<size_t>() as libc::c_ulong) < 8 as libc::c_ulong
         && ((*s).frame_size_limit).wrapping_sub(1 as libc::c_int as libc::c_uint)
@@ -1033,7 +1033,7 @@ pub unsafe extern "C" fn dav1d_open(
         32 as libc::c_int as size_t,
     ) as *mut Dav1dFrameContext;
     if ((*c).fc).is_null() {
-        return dav1d_open_error(c, c_out, &mut thread_attr);
+        return error(c, c_out, &mut thread_attr);
     }
     memset(
         (*c).fc as *mut libc::c_void,
@@ -1045,7 +1045,7 @@ pub unsafe extern "C" fn dav1d_open(
         64 as libc::c_int as size_t,
     ) as *mut Dav1dTaskContext;
     if ((*c).tc).is_null() {
-        return dav1d_open_error(c, c_out, &mut thread_attr);
+        return error(c, c_out, &mut thread_attr);
     }
     memset(
         (*c).tc as *mut libc::c_void,
@@ -1054,11 +1054,11 @@ pub unsafe extern "C" fn dav1d_open(
     );
     if (*c).n_tc > 1 as libc::c_uint {
         if pthread_mutex_init(&mut (*c).task_thread.lock, 0 as *const pthread_mutexattr_t) != 0 {
-            return dav1d_open_error(c, c_out, &mut thread_attr);
+            return error(c, c_out, &mut thread_attr);
         }
         if pthread_cond_init(&mut (*c).task_thread.cond, 0 as *const pthread_condattr_t) != 0 {
             pthread_mutex_destroy(&mut (*c).task_thread.lock);
-            return dav1d_open_error(c, c_out, &mut thread_attr);
+            return error(c, c_out, &mut thread_attr);
         }
         if pthread_cond_init(
             &mut (*c).task_thread.delayed_fg.cond,
@@ -1067,7 +1067,7 @@ pub unsafe extern "C" fn dav1d_open(
         {
             pthread_cond_destroy(&mut (*c).task_thread.cond);
             pthread_mutex_destroy(&mut (*c).task_thread.lock);
-            return dav1d_open_error(c, c_out, &mut thread_attr);
+            return error(c, c_out, &mut thread_attr);
         }
         (*c).task_thread.cur = (*c).n_fc;
         *&mut (*c).task_thread.reset_task_cur = u32::MAX;
@@ -1080,7 +1080,7 @@ pub unsafe extern "C" fn dav1d_open(
             ::core::mem::size_of::<Dav1dThreadPicture>(),
         ) as *mut Dav1dThreadPicture;
         if ((*c).frame_thread.out_delayed).is_null() {
-            return dav1d_open_error(c, c_out, &mut thread_attr);
+            return error(c, c_out, &mut thread_attr);
         }
     }
     let mut n: libc::c_uint = 0 as libc::c_int as libc::c_uint;
@@ -1090,11 +1090,11 @@ pub unsafe extern "C" fn dav1d_open(
         if (*c).n_tc > 1 as libc::c_uint {
             if pthread_mutex_init(&mut (*f).task_thread.lock, 0 as *const pthread_mutexattr_t) != 0
             {
-                return dav1d_open_error(c, c_out, &mut thread_attr);
+                return error(c, c_out, &mut thread_attr);
             }
             if pthread_cond_init(&mut (*f).task_thread.cond, 0 as *const pthread_condattr_t) != 0 {
                 pthread_mutex_destroy(&mut (*f).task_thread.lock);
-                return dav1d_open_error(c, c_out, &mut thread_attr);
+                return error(c, c_out, &mut thread_attr);
             }
             if pthread_mutex_init(
                 &mut (*f).task_thread.pending_tasks.lock,
@@ -1103,7 +1103,7 @@ pub unsafe extern "C" fn dav1d_open(
             {
                 pthread_cond_destroy(&mut (*f).task_thread.cond);
                 pthread_mutex_destroy(&mut (*f).task_thread.lock);
-                return dav1d_open_error(c, c_out, &mut thread_attr);
+                return error(c, c_out, &mut thread_attr);
             }
         }
         (*f).c = c;
@@ -1129,7 +1129,7 @@ pub unsafe extern "C" fn dav1d_open(
                 0 as *const pthread_mutexattr_t,
             ) != 0
             {
-                return dav1d_open_error(c, c_out, &mut thread_attr);
+                return error(c, c_out, &mut thread_attr);
             }
             if pthread_cond_init(
                 &mut (*t).task_thread.td.cond,
@@ -1137,7 +1137,7 @@ pub unsafe extern "C" fn dav1d_open(
             ) != 0
             {
                 pthread_mutex_destroy(&mut (*t).task_thread.td.lock);
-                return dav1d_open_error(c, c_out, &mut thread_attr);
+                return error(c, c_out, &mut thread_attr);
             }
             if pthread_create(
                 &mut (*t).task_thread.td.thread,
@@ -1151,7 +1151,7 @@ pub unsafe extern "C" fn dav1d_open(
             {
                 pthread_cond_destroy(&mut (*t).task_thread.td.cond);
                 pthread_mutex_destroy(&mut (*t).task_thread.td.lock);
-                return dav1d_open_error(c, c_out, &mut thread_attr);
+                return error(c, c_out, &mut thread_attr);
             }
             (*t).task_thread.td.inited = 1 as libc::c_int;
         }
