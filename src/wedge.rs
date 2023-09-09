@@ -25,6 +25,7 @@ use crate::src::levels::BS_8x32;
 use crate::src::levels::BS_8x8;
 use crate::src::levels::BlockSize;
 use crate::src::levels::N_BS_SIZES;
+use crate::src::levels::N_INTER_INTRA_PRED_MODES;
 
 #[repr(C)]
 pub struct wedge_code_type {
@@ -892,7 +893,7 @@ static mut ii_nondc_mask_4x16: Align64<[[uint8_t; 64]; 3]> = Align64([[0; 64]; 3
 static mut ii_nondc_mask_4x8: Align32<[[uint8_t; 32]; 3]> = Align32([[0; 32]; 3]);
 static mut ii_nondc_mask_4x4: Align16<[[uint8_t; 16]; 3]> = Align16([[0; 16]; 3]);
 #[no_mangle]
-pub static mut dav1d_ii_masks: [[[*const uint8_t; 4]; 3]; N_BS_SIZES] =
+pub static mut dav1d_ii_masks: [[[*const uint8_t; N_INTER_INTRA_PRED_MODES]; 3]; N_BS_SIZES] =
     [[[0 as *const uint8_t; 4]; 3]; 22];
 #[cold]
 unsafe extern "C" fn build_nondc_ii_masks(
