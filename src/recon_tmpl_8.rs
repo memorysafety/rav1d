@@ -417,7 +417,6 @@ use crate::include::common::dump::coef_dump;
 use crate::include::common::dump::hex_dump;
 use crate::include::common::intops::apply_sign64;
 use crate::include::common::intops::iclip;
-use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
 use crate::include::common::intops::umin;
 use crate::src::env::get_uv_inter_txtp;
@@ -1435,7 +1434,7 @@ unsafe fn decode_coefs(
     } else {
         0 as *const uint8_t
     };
-    let dq_shift = imax(0 as libc::c_int, (*t_dim).ctx as libc::c_int - 2);
+    let dq_shift = std::cmp::max(0 as libc::c_int, (*t_dim).ctx as libc::c_int - 2);
     let cf_max = !(!(127 as libc::c_uint)
         << (if 8 == 8 {
             8 as libc::c_int

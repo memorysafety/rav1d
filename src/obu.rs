@@ -381,7 +381,6 @@ use crate::include::dav1d::headers::DAV1D_OBU_TD;
 use crate::src::levels::ObuMetaType;
 
 use crate::include::common::intops::iclip_u8;
-use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
 use crate::include::common::intops::ulog2;
 use crate::src::env::get_poc_diff;
@@ -710,7 +709,7 @@ unsafe extern "C" fn read_frame_size(
                         .wrapping_add(dav1d_get_bits(gb, 3 as libc::c_int))
                         as libc::c_int;
                     let d = (*hdr).super_res.width_scale_denominator;
-                    (*hdr).width[0] = imax(
+                    (*hdr).width[0] = std::cmp::max(
                         ((*hdr).width[1] * 8 + (d >> 1)) / d,
                         imin(16 as libc::c_int, (*hdr).width[1]),
                     );
@@ -739,7 +738,7 @@ unsafe extern "C" fn read_frame_size(
             .wrapping_add(dav1d_get_bits(gb, 3 as libc::c_int))
             as libc::c_int;
         let d_0 = (*hdr).super_res.width_scale_denominator;
-        (*hdr).width[0] = imax(
+        (*hdr).width[0] = std::cmp::max(
             ((*hdr).width[1] * 8 + (d_0 >> 1)) / d_0,
             imin(16 as libc::c_int, (*hdr).width[1]),
         );
@@ -1133,7 +1132,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
     (*hdr).tiling.min_log2_cols = tile_log2(max_tile_width_sb, sbw);
     (*hdr).tiling.max_log2_cols = tile_log2(1 as libc::c_int, imin(sbw, 64 as libc::c_int));
     (*hdr).tiling.max_log2_rows = tile_log2(1 as libc::c_int, imin(sbh, 64 as libc::c_int));
-    let min_log2_tiles: libc::c_int = imax(
+    let min_log2_tiles: libc::c_int = std::cmp::max(
         tile_log2(max_tile_area_sb, sbw * sbh),
         (*hdr).tiling.min_log2_cols,
     );
@@ -1151,7 +1150,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
             (*hdr).tiling.cols += 1;
         }
         (*hdr).tiling.min_log2_rows =
-            imax(min_log2_tiles - (*hdr).tiling.log2_cols, 0 as libc::c_int);
+            std::cmp::max(min_log2_tiles - (*hdr).tiling.log2_cols, 0 as libc::c_int);
         (*hdr).tiling.log2_rows = (*hdr).tiling.min_log2_rows;
         while (*hdr).tiling.log2_rows < (*hdr).tiling.max_log2_rows && dav1d_get_bit(gb) != 0 {
             (*hdr).tiling.log2_rows += 1;
@@ -1179,7 +1178,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
             }) as libc::c_int;
             (*hdr).tiling.col_start_sb[(*hdr).tiling.cols as usize] = sbx_0 as uint16_t;
             sbx_0 += tile_w_0;
-            widest_tile = imax(widest_tile, tile_w_0);
+            widest_tile = std::cmp::max(widest_tile, tile_w_0);
             (*hdr).tiling.cols += 1;
         }
         (*hdr).tiling.log2_cols = tile_log2(1 as libc::c_int, (*hdr).tiling.cols);
@@ -1187,7 +1186,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
             max_tile_area_sb_0 >>= min_log2_tiles + 1;
         }
         let max_tile_height_sb: libc::c_int =
-            imax(max_tile_area_sb_0 / widest_tile, 1 as libc::c_int);
+            std::cmp::max(max_tile_area_sb_0 / widest_tile, 1 as libc::c_int);
         (*hdr).tiling.rows = 0 as libc::c_int;
         let mut sby_0 = 0;
         while sby_0 < sbh && (*hdr).tiling.rows < 64 {
@@ -1593,7 +1592,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
         }
         if off_before != 0xffffffff as libc::c_uint && off_after != -(1 as libc::c_int) {
             (*hdr).skip_mode_refs[0] = imin(off_before_idx, off_after_idx);
-            (*hdr).skip_mode_refs[1] = imax(off_before_idx, off_after_idx);
+            (*hdr).skip_mode_refs[1] = std::cmp::max(off_before_idx, off_after_idx);
             (*hdr).skip_mode_allowed = 1 as libc::c_int;
         } else if off_before != 0xffffffff as libc::c_uint {
             let mut off_before2: libc::c_uint = 0xffffffff as libc::c_uint;
@@ -1634,7 +1633,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
             }
             if off_before2 != 0xffffffff as libc::c_uint {
                 (*hdr).skip_mode_refs[0] = imin(off_before_idx, off_before2_idx);
-                (*hdr).skip_mode_refs[1] = imax(off_before_idx, off_before2_idx);
+                (*hdr).skip_mode_refs[1] = std::cmp::max(off_before_idx, off_before2_idx);
                 (*hdr).skip_mode_allowed = 1 as libc::c_int;
             }
         }

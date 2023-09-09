@@ -383,7 +383,6 @@ unsafe extern "C" fn dav1d_set_thread_name(name: *const libc::c_char) {
     }
 }
 use crate::include::common::intops::iclip;
-use crate::include::common::intops::imax;
 use crate::include::common::intops::umin;
 #[inline]
 unsafe extern "C" fn reset_task_cur(
@@ -946,7 +945,7 @@ unsafe extern "C" fn check_tile(
                 } else {
                     (*lowest_px.offset(n as isize))[1] * ((1 as libc::c_int) << ss_ver) + 8
                 };
-                let max = imax(y, uv);
+                let max = std::cmp::max(y, uv);
                 if max == i32::MIN {
                     current_block_14 = 7651349459974463963;
                 } else {

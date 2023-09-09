@@ -233,7 +233,6 @@ impl Dav1dRefmvsDSPContext {
 
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
-use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
 use crate::src::env::fix_mv_precision;
 use crate::src::env::get_poc_diff;
@@ -341,7 +340,7 @@ unsafe fn scan_row(
     let first_cand_bs = cand_b.0.bs as BlockSize;
     let first_cand_b_dim = &dav1d_block_dimensions[first_cand_bs as usize];
     let mut cand_bw4 = first_cand_b_dim[0] as libc::c_int;
-    let mut len = imax(step, imin(bw4, cand_bw4));
+    let mut len = std::cmp::max(step, imin(bw4, cand_bw4));
 
     if bw4 <= cand_bw4 {
         // FIXME weight can be higher for odd blocks (bx4 & 1), but then the
@@ -351,7 +350,7 @@ unsafe fn scan_row(
         let weight = if bw4 == 1 {
             2
         } else {
-            imax(2, imin(2 * max_rows, first_cand_b_dim[1] as libc::c_int))
+            std::cmp::max(2, imin(2 * max_rows, first_cand_b_dim[1] as libc::c_int))
         };
         add_spatial_candidate(
             mvstack,
@@ -388,7 +387,7 @@ unsafe fn scan_row(
         cand_b = &*b.offset(x as isize);
         cand_bw4 = dav1d_block_dimensions[cand_b.0.bs as usize][0] as libc::c_int;
         assert!(cand_bw4 < bw4);
-        len = imax(step, cand_bw4);
+        len = std::cmp::max(step, cand_bw4);
     }
 }
 
@@ -410,7 +409,7 @@ unsafe fn scan_col(
     let first_cand_bs = cand_b.0.bs as BlockSize;
     let first_cand_b_dim = &dav1d_block_dimensions[first_cand_bs as usize];
     let mut cand_bh4 = first_cand_b_dim[1] as libc::c_int;
-    let mut len = imax(step, imin(bh4, cand_bh4));
+    let mut len = std::cmp::max(step, imin(bh4, cand_bh4));
 
     if bh4 <= cand_bh4 {
         // FIXME weight can be higher for odd blocks (by4 & 1), but then the
@@ -420,7 +419,7 @@ unsafe fn scan_col(
         let weight = if bh4 == 1 {
             2
         } else {
-            imax(2, imin(2 * max_cols, first_cand_b_dim[0] as libc::c_int))
+            std::cmp::max(2, imin(2 * max_cols, first_cand_b_dim[0] as libc::c_int))
         };
         add_spatial_candidate(
             mvstack,
@@ -457,7 +456,7 @@ unsafe fn scan_col(
         cand_b = &*(*b.offset(y as isize)).offset(bx4 as isize);
         cand_bh4 = dav1d_block_dimensions[cand_b.0.bs as usize][1] as libc::c_int;
         assert!(cand_bh4 < bh4);
-        len = imax(step, cand_bh4);
+        len = std::cmp::max(step, cand_bh4);
     }
 }
 
@@ -788,7 +787,7 @@ pub unsafe fn dav1d_refmvs_find(
     // top/right
     if n_rows != !0
         && edge_flags & EDGE_I444_TOP_HAS_RIGHT != 0
-        && imax(bw4, bh4) <= 16
+        && std::cmp::max(bw4, bh4) <= 16
         && bw4 + bx4 < rt.tile_col.end
     {
         add_spatial_candidate(
@@ -840,13 +839,13 @@ pub unsafe fn dav1d_refmvs_find(
             }
             rb = rb.offset(stride * step_v as isize);
         }
-        if imin(bw4, bh4) >= 2 && imax(bw4, bh4) < 16 {
+        if imin(bw4, bh4) >= 2 && std::cmp::max(bw4, bh4) < 16 {
             let bh8 = bh4 >> 1;
             let bw8 = bw4 >> 1;
             rb = &*rbi.offset(bh8 as isize * stride) as *const refmvs_temporal_block;
             let has_bottom =
                 (by8 + bh8 < imin(rt.tile_row.end >> 1, (by8 & !7) + 8)) as libc::c_int;
-            if has_bottom != 0 && bx8 - 1 >= imax(rt.tile_col.start >> 1, bx8 & !7) {
+            if has_bottom != 0 && bx8 - 1 >= std::cmp::max(rt.tile_col.start >> 1, bx8 & !7) {
                 add_temporal_candidate(rf, mvstack, cnt, &*rb.offset(-1), r#ref, None);
             }
             if bx8 + bw8 < imin(rt.tile_col.end >> 1, (bx8 & !7) + 8) {
@@ -1224,7 +1223,7 @@ pub unsafe extern "C" fn load_tmvs_c(
         unreachable!();
     }
     row_end8 = imin(row_end8, (*rf).ih8);
-    let col_start8i = imax(col_start8 - 8, 0 as libc::c_int);
+    let col_start8i = std::cmp::max(col_start8 - 8, 0 as libc::c_int);
     let col_end8i = imin(col_end8 + 8, (*rf).iw8);
     let stride: ptrdiff_t = (*rf).rp_stride;
     let mut rp_proj: *mut refmvs_temporal_block = &mut *((*rf).rp_proj)
@@ -1254,7 +1253,7 @@ pub unsafe extern "C" fn load_tmvs_c(
             let mut y_0 = row_start8;
             while y_0 < row_end8 {
                 let y_sb_align = y_0 & !(7 as libc::c_int);
-                let y_proj_start = imax(y_sb_align, row_start8);
+                let y_proj_start = std::cmp::max(y_sb_align, row_start8);
                 let y_proj_end = imin(y_sb_align + 8, row_end8);
                 let mut x_0 = col_start8i;
                 while x_0 < col_end8i {
@@ -1280,7 +1279,7 @@ pub unsafe extern "C" fn load_tmvs_c(
                                 let pos: ptrdiff_t = (pos_y & 15) as isize * stride;
                                 loop {
                                     let x_sb_align = x_0 & !(7 as libc::c_int);
-                                    if pos_x >= imax(x_sb_align - 8, col_start8)
+                                    if pos_x >= std::cmp::max(x_sb_align - 8, col_start8)
                                         && pos_x < imin(x_sb_align + 16, col_end8)
                                     {
                                         (*rp_proj.offset(pos + pos_x as isize)).mv = (*rb).mv;

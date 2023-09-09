@@ -49,7 +49,6 @@ pub struct Demuxer {
     pub seek: Option<unsafe extern "C" fn(*mut DemuxerPriv, uint64_t) -> libc::c_int>,
     pub close: Option<unsafe extern "C" fn(*mut DemuxerPriv) -> ()>,
 }
-use rav1d::include::common::intops::imax;
 static mut demuxers: [*const Demuxer; 4] = unsafe {
     [
         &ivf_demuxer as *const Demuxer,
@@ -93,7 +92,7 @@ pub unsafe extern "C" fn input_open(
         let mut probe_sz = 0;
         i = 0 as libc::c_int;
         while !(demuxers[i as usize]).is_null() {
-            probe_sz = imax(probe_sz, (*demuxers[i as usize]).probe_sz);
+            probe_sz = std::cmp::max(probe_sz, (*demuxers[i as usize]).probe_sz);
             i += 1;
         }
         let probe_data: *mut uint8_t = malloc(probe_sz as libc::c_ulong) as *mut uint8_t;

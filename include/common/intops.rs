@@ -4,15 +4,6 @@ use crate::include::common::attributes::clz;
 use crate::include::common::attributes::clzll;
 
 #[inline]
-pub fn imax(a: c_int, b: c_int) -> c_int {
-    if a > b {
-        a
-    } else {
-        b
-    }
-}
-
-#[inline]
 pub fn imin(a: c_int, b: c_int) -> c_int {
     if a < b {
         a

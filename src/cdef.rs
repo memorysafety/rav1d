@@ -1,7 +1,6 @@
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::LeftPixelRow2px;
 use crate::include::common::intops::apply_sign;
-use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
 use crate::include::stddef::ptrdiff_t;
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
@@ -537,7 +536,10 @@ pub unsafe extern "C" fn constrain(
 ) -> libc::c_int {
     let adiff = diff.abs();
     return apply_sign(
-        imin(adiff, imax(0 as libc::c_int, threshold - (adiff >> shift))),
+        imin(
+            adiff,
+            std::cmp::max(0 as libc::c_int, threshold - (adiff >> shift)),
+        ),
         diff,
     );
 }

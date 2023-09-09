@@ -616,7 +616,6 @@ use crate::src::levels::MM_WARP;
 
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
-use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
 
 use crate::include::common::intops::apply_sign64;
@@ -890,7 +889,7 @@ unsafe fn find_matching_ref(
     let r = &t.rt.r[((t.by & 31) + 5 - 1) as usize..];
     let mut count = 0;
     let mut have_topleft = have_top && have_left;
-    let mut have_topright = imax(bw4, bh4) < 32
+    let mut have_topright = std::cmp::max(bw4, bh4) < 32
         && have_top
         && t.bx + bw4 < (*t.ts).tiling.col_end
         && intra_edge_flags & EDGE_I444_TOP_HAS_RIGHT != 0;
@@ -1051,7 +1050,7 @@ unsafe fn derive_warpmv(
     // select according to motion vector difference against a threshold
     let mut mvd = [0; 8];
     let mut ret = 0;
-    let thresh = 4 * iclip(imax(bw4, bh4), 4, 28);
+    let thresh = 4 * iclip(std::cmp::max(bw4, bh4), 4, 28);
     for (mvd, pts) in std::iter::zip(&mut mvd[..np], &pts[..np]) {
         *mvd = (pts[1][0] - pts[0][0] - mv.x as i32).abs()
             + (pts[1][1] - pts[0][1] - mv.y as i32).abs();
@@ -1723,7 +1722,7 @@ fn mc_lowest_px(
     if smp.scale == 0 {
         let my = mvy >> 3 + ss_ver;
         let dy = mvy & 15 >> (ss_ver == 0) as libc::c_int;
-        *dst = imax(
+        *dst = std::cmp::max(
             *dst,
             (by4 + bh4) * v_mul + my + 4 * (dy != 0) as libc::c_int,
         );
@@ -1732,7 +1731,7 @@ fn mc_lowest_px(
         let tmp = y as int64_t * smp.scale as int64_t + ((smp.scale - 0x4000) * 8) as int64_t;
         y = apply_sign64((tmp.abs() + 128 >> 8) as libc::c_int, tmp) + 32;
         let bottom = (y + (bh4 * v_mul - 1) * smp.step >> 10) + 1 + 4;
-        *dst = imax(*dst, bottom);
+        *dst = std::cmp::max(*dst, bottom);
     };
 }
 
@@ -1757,8 +1756,8 @@ fn affine_lowest_px(
         let src_x = t.bx * 4 + ((x + 4) << ss_hor);
         let mvy = mat[4] as int64_t * src_x as int64_t + mat5_y >> ss_ver;
         let dy = (mvy >> 16) as libc::c_int - 4;
-        *dst = imax(*dst, dy + 4 + 8);
-        x += imax(8, b_dim[0] as libc::c_int * h_mul - 8);
+        *dst = std::cmp::max(*dst, dy + 4 + 8);
+        x += std::cmp::max(8, b_dim[0] as libc::c_int * h_mul - 8);
     }
 }
 
@@ -1832,7 +1831,7 @@ unsafe fn obmc_lowest_px(
                 );
                 i += 1;
             }
-            x += imax(a_b_dim[0] as libc::c_int, 2);
+            x += std::cmp::max(a_b_dim[0] as libc::c_int, 2);
         }
     }
     if t.bx > (*t.ts).tiling.col_start {
@@ -1853,7 +1852,7 @@ unsafe fn obmc_lowest_px(
                 );
                 i += 1;
             }
-            y += imax(l_b_dim[1] as libc::c_int, 2);
+            y += std::cmp::max(l_b_dim[1] as libc::c_int, 2);
         }
     }
 }
@@ -4715,7 +4714,8 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> li
                             (*(*f).frame_hdr).restoration.type_0[p as usize];
                         if (*(*f).frame_hdr).width[0] != (*(*f).frame_hdr).width[1] {
                             let w = (*f).sr_cur.p.p.w + ss_hor >> ss_hor;
-                            let n_units = imax(1 as libc::c_int, w + half_unit >> unit_size_log2);
+                            let n_units =
+                                std::cmp::max(1 as libc::c_int, w + half_unit >> unit_size_log2);
                             let d = (*(*f).frame_hdr).super_res.width_scale_denominator;
                             let rnd = unit_size * 8 - 1;
                             let shift = unit_size_log2 + 3;

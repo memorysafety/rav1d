@@ -137,7 +137,6 @@ pub const DAV1D_X86_CPU_FLAG_SSE41: CpuFlags = 4;
 use crate::include::common::attributes::ctz;
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
-use crate::include::common::intops::imax;
 use crate::include::common::intops::imin;
 
 #[inline]
@@ -1200,7 +1199,7 @@ unsafe fn ipred_z3_rust(
             left_out.as_mut_ptr(),
             width + height,
             &*topleft_in.offset(-(width + height) as isize),
-            imax(width - height, 0 as libc::c_int),
+            std::cmp::max(width - height, 0 as libc::c_int),
             width + height + 1,
             bitdepth_max,
         );
@@ -1222,7 +1221,7 @@ unsafe fn ipred_z3_rust(
                 0 as libc::c_int,
                 width + height,
                 &*topleft_in.offset(-(width + height) as isize),
-                imax(width - height, 0 as libc::c_int),
+                std::cmp::max(width - height, 0 as libc::c_int),
                 width + height + 1,
                 filter_strength,
             );
@@ -1717,7 +1716,7 @@ unsafe fn ipred_z3_neon(
         dav1d_ipred_reverse_16bpc_neon(
             &mut *flipped.as_mut_ptr().offset(1),
             &*topleft_in.offset(0),
-            height + imax(width, height),
+            height + std::cmp::max(width, height),
         );
         dav1d_ipred_z1_upsample_edge_16bpc_neon(
             left_out.as_mut_ptr(),
@@ -1739,7 +1738,7 @@ unsafe fn ipred_z3_neon(
             dav1d_ipred_reverse_16bpc_neon(
                 &mut *flipped.as_mut_ptr().offset(1),
                 &*topleft_in.offset(0),
-                height + imax(width, height),
+                height + std::cmp::max(width, height),
             );
             dav1d_ipred_z1_filter_edge_16bpc_neon(
                 left_out.as_mut_ptr(),
@@ -1759,7 +1758,7 @@ unsafe fn ipred_z3_neon(
         }
     }
     let base_inc = 1 + upsample_left;
-    let pad_pixels = imax(64 - max_base_y - 1, height + 15);
+    let pad_pixels = std::cmp::max(64 - max_base_y - 1, height + 15);
     dav1d_ipred_pixel_set_16bpc_neon(
         &mut *left_out.as_mut_ptr().offset((max_base_y + 1) as isize) as *mut pixel,
         left_out[max_base_y as usize],
