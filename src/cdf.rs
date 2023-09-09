@@ -427,7 +427,6 @@ use crate::src::levels::N_UV_INTRA_PRED_MODES;
 use crate::src::levels::N_INTRA_PRED_MODES;
 use crate::src::levels::N_MV_JOINTS;
 
-use crate::include::common::intops::imin;
 use crate::src::levels::N_COMP_INTER_PRED_MODES;
 use crate::src::r#ref::dav1d_ref_inc;
 const fn cdf0d<const P: usize, const N: usize>(probs: [u16; P]) -> [u16; N] {
@@ -5215,8 +5214,8 @@ pub unsafe fn dav1d_cdf_thread_update(
                 ((*src).m.txsz[k_0 as usize][j_1 as usize]).as_ptr() as *const libc::c_void,
                 ::core::mem::size_of::<[uint16_t; 4]>() as libc::c_ulong,
             );
-            (*dst).m.txsz[k_0 as usize][j_1 as usize][imin(k_0 + 1, 2 as libc::c_int) as usize] =
-                0 as libc::c_int as uint16_t;
+            (*dst).m.txsz[k_0 as usize][j_1 as usize]
+                [std::cmp::min(k_0 + 1, 2 as libc::c_int) as usize] = 0 as libc::c_int as uint16_t;
             j_1 += 1;
         }
         k_0 += 1;

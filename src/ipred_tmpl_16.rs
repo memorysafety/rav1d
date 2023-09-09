@@ -137,7 +137,6 @@ pub const DAV1D_X86_CPU_FLAG_SSE41: CpuFlags = 4;
 use crate::include::common::attributes::ctz;
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
-use crate::include::common::intops::imin;
 
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
@@ -821,11 +820,11 @@ unsafe extern "C" fn filter_edge(
         unreachable!();
     }
     let mut i = 0;
-    while i < imin(sz, lim_from) {
+    while i < std::cmp::min(sz, lim_from) {
         *out.offset(i as isize) = *in_0.offset(iclip(i, from, to - 1) as isize);
         i += 1;
     }
-    while i < imin(lim_to, sz) {
+    while i < std::cmp::min(lim_to, sz) {
         let mut s = 0;
         let mut j = 0;
         while j < 5 {
@@ -929,7 +928,7 @@ unsafe fn ipred_z1_rust(
             width + height,
             &*topleft_in.offset(1),
             -(1 as libc::c_int),
-            width + imin(width, height),
+            width + std::cmp::min(width, height),
             bitdepth_max,
         );
         top = top_out.as_mut_ptr();
@@ -949,14 +948,14 @@ unsafe fn ipred_z1_rust(
                 width + height,
                 &*topleft_in.offset(1),
                 -(1 as libc::c_int),
-                width + imin(width, height),
+                width + std::cmp::min(width, height),
                 filter_strength,
             );
             top = top_out.as_mut_ptr();
             max_base_x = width + height - 1;
         } else {
             top = &*topleft_in.offset(1) as *const pixel;
-            max_base_x = width + imin(width, height) - 1;
+            max_base_x = width + std::cmp::min(width, height) - 1;
         }
     }
     let base_inc = 1 + upsample_above;
@@ -1229,7 +1228,7 @@ unsafe fn ipred_z3_rust(
             max_base_y = width + height - 1;
         } else {
             left = &*topleft_in.offset(-(1 as libc::c_int) as isize) as *const pixel;
-            max_base_y = height + imin(width, height) - 1;
+            max_base_y = height + std::cmp::min(width, height) - 1;
         }
     }
     let base_inc = 1 + upsample_left;
@@ -1722,7 +1721,7 @@ unsafe fn ipred_z3_neon(
             left_out.as_mut_ptr(),
             width + height,
             flipped.as_mut_ptr(),
-            height + imin(width, height),
+            height + std::cmp::min(width, height),
             bitdepth_max,
         );
         max_base_y = 2 * (width + height) - 2;
@@ -1744,7 +1743,7 @@ unsafe fn ipred_z3_neon(
                 left_out.as_mut_ptr(),
                 width + height,
                 flipped.as_mut_ptr(),
-                height + imin(width, height),
+                height + std::cmp::min(width, height),
                 filter_strength,
             );
             max_base_y = width + height - 1;
@@ -1752,9 +1751,9 @@ unsafe fn ipred_z3_neon(
             dav1d_ipred_reverse_16bpc_neon(
                 left_out.as_mut_ptr(),
                 &*topleft_in.offset(0),
-                height + imin(width, height),
+                height + std::cmp::min(width, height),
             );
-            max_base_y = height + imin(width, height) - 1;
+            max_base_y = height + std::cmp::min(width, height) - 1;
         }
     }
     let base_inc = 1 + upsample_left;
@@ -1872,7 +1871,7 @@ unsafe fn ipred_z2_neon(
         if filter_strength != 0 {
             dav1d_ipred_z1_filter_edge_16bpc_neon(
                 buf.as_mut_ptr().offset(1 + top_offset),
-                imin(max_width, width),
+                std::cmp::min(max_width, width),
                 topleft_in,
                 width,
                 filter_strength,
@@ -1925,7 +1924,7 @@ unsafe fn ipred_z2_neon(
             );
             dav1d_ipred_z1_filter_edge_16bpc_neon(
                 buf.as_mut_ptr().offset(1 + left_offset),
-                imin(max_height, height),
+                std::cmp::min(max_height, height),
                 buf.as_ptr().offset(flipped_offset),
                 height,
                 filter_strength,
@@ -2047,7 +2046,7 @@ unsafe fn ipred_z1_neon(
             top_out.as_mut_ptr(),
             width + height,
             topleft_in,
-            width + imin(width, height),
+            width + std::cmp::min(width, height),
             bitdepth_max,
         );
         max_base_x = 2 * (width + height) - 2;
@@ -2063,12 +2062,12 @@ unsafe fn ipred_z1_neon(
                 top_out.as_mut_ptr(),
                 width + height,
                 topleft_in,
-                width + imin(width, height),
+                width + std::cmp::min(width, height),
                 filter_strength,
             );
             max_base_x = width + height - 1;
         } else {
-            max_base_x = width + imin(width, height) - 1;
+            max_base_x = width + std::cmp::min(width, height) - 1;
             memcpy(
                 top_out.as_mut_ptr() as *mut libc::c_void,
                 &*topleft_in.offset(1) as *const pixel as *const libc::c_void,

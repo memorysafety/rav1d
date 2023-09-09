@@ -616,7 +616,6 @@ use crate::src::levels::MM_WARP;
 
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
-use crate::include::common::intops::imin;
 
 use crate::include::common::intops::apply_sign64;
 use crate::include::common::intops::ulog2;
@@ -1816,11 +1815,11 @@ unsafe fn obmc_lowest_px(
     {
         let mut i = 0;
         let mut x = 0;
-        while x < w4 && i < imin(b_dim[2] as libc::c_int, 4) {
+        while x < w4 && i < std::cmp::min(b_dim[2] as libc::c_int, 4) {
             let a_r = &*r[0].offset((t.bx + x + 1) as isize);
             let a_b_dim = &dav1d_block_dimensions[a_r.0.bs as usize];
             if a_r.0.r#ref.r#ref[0] as libc::c_int > 0 {
-                let oh4 = imin(b_dim[1] as libc::c_int, 16) >> 1;
+                let oh4 = std::cmp::min(b_dim[1] as libc::c_int, 16) >> 1;
                 mc_lowest_px(
                     &mut dst[a_r.0.r#ref.r#ref[0] as usize - 1][is_chroma as usize],
                     t.by,
@@ -1837,7 +1836,7 @@ unsafe fn obmc_lowest_px(
     if t.bx > (*t.ts).tiling.col_start {
         let mut i = 0;
         let mut y = 0;
-        while y < h4 && i < imin(b_dim[3] as libc::c_int, 4) {
+        while y < h4 && i < std::cmp::min(b_dim[3] as libc::c_int, 4) {
             let l_r = &*r[y as usize + 1 + 1].offset((t.bx - 1) as isize);
             let l_b_dim = &dav1d_block_dimensions[l_r.0.bs as usize];
             if l_r.0.r#ref.r#ref[0] as libc::c_int > 0 {
@@ -4722,7 +4721,7 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> li
                             let x0 = (4 * (*t).bx * d >> ss_hor) + rnd >> shift;
                             let x1 = (4 * ((*t).bx + sb_step) * d >> ss_hor) + rnd >> shift;
                             let mut x = x0;
-                            while x < imin(x1, n_units) {
+                            while x < std::cmp::min(x1, n_units) {
                                 let px_x = x << unit_size_log2 + ss_hor;
                                 let sb_idx = ((*t).by >> 5) * (*f).sr_sb128w + (px_x >> 7);
                                 let unit_idx = (((*t).by & 16) >> 3) + ((px_x & 64) >> 6);

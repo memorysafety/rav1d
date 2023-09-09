@@ -313,7 +313,6 @@ pub type Backup2x8Flags = libc::c_uint;
 pub const BACKUP_2X8_UV: Backup2x8Flags = 2;
 pub const BACKUP_2X8_Y: Backup2x8Flags = 1;
 
-use crate::include::common::intops::imin;
 use crate::include::common::intops::ulog2;
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
@@ -444,7 +443,7 @@ unsafe extern "C" fn adjust_strength(strength: libc::c_int, var: libc::c_uint) -
         return 0 as libc::c_int;
     }
     let i = if var >> 6 != 0 {
-        imin(ulog2(var >> 6), 12 as libc::c_int)
+        std::cmp::min(ulog2(var >> 6), 12 as libc::c_int)
     } else {
         0 as libc::c_int
     };
@@ -594,7 +593,7 @@ pub unsafe extern "C" fn dav1d_cdef_brow_16bpc(
                 uv_sec_lvl <<= bitdepth_min_8;
                 bptrs = [iptrs[0], iptrs[1], iptrs[2]];
                 let mut bx = sbx * sbsz;
-                while bx < imin((sbx + 1) * sbsz, (*f).bw) {
+                while bx < std::cmp::min((sbx + 1) * sbsz, (*f).bw) {
                     let uvdir;
                     let do_left;
                     let mut dir;

@@ -48,7 +48,6 @@ pub struct Muxer {
     pub write_trailer: Option<unsafe extern "C" fn(*mut MuxerPriv) -> ()>,
     pub verify: Option<unsafe extern "C" fn(*mut MuxerPriv, *const libc::c_char) -> libc::c_int>,
 }
-use rav1d::include::common::intops::imin;
 static mut muxers: [*const Muxer; 5] = unsafe {
     [
         &null_muxer as *const Muxer,
@@ -210,7 +209,7 @@ unsafe extern "C" fn safe_strncat(
     if !(dst_fill < dst_len) {
         unreachable!();
     }
-    let to_copy = imin(src_len, dst_len - dst_fill - 1);
+    let to_copy = std::cmp::min(src_len, dst_len - dst_fill - 1);
     if to_copy == 0 {
         return;
     }

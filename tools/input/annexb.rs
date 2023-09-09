@@ -45,7 +45,6 @@ pub struct Demuxer {
     pub close: Option<unsafe extern "C" fn(*mut DemuxerPriv) -> ()>,
 }
 pub type AnnexbInputContext = DemuxerPriv;
-use rav1d::include::common::intops::imin;
 unsafe extern "C" fn leb128(f: *mut libc::FILE, len: *mut size_t) -> libc::c_int {
     let mut val: uint64_t = 0 as libc::c_int as uint64_t;
     let mut i: libc::c_uint = 0 as libc::c_int as libc::c_uint;
@@ -174,7 +173,7 @@ unsafe extern "C" fn annexb_probe(data: *const uint8_t) -> libc::c_int {
     let mut type_0: Dav1dObuType = 0 as Dav1dObuType;
     ret = parse_obu_header(
         data.offset(cnt as isize),
-        imin(2048 - cnt, obu_unit_size as libc::c_int),
+        std::cmp::min(2048 - cnt, obu_unit_size as libc::c_int),
         &mut obu_size,
         &mut type_0,
         1 as libc::c_int,
@@ -199,7 +198,7 @@ unsafe extern "C" fn annexb_probe(data: *const uint8_t) -> libc::c_int {
             as size_t as size_t;
         ret = parse_obu_header(
             data.offset(cnt as isize),
-            imin(2048 - cnt, obu_unit_size as libc::c_int),
+            std::cmp::min(2048 - cnt, obu_unit_size as libc::c_int),
             &mut obu_size,
             &mut type_0,
             1 as libc::c_int,

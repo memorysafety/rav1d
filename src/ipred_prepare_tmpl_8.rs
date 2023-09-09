@@ -33,7 +33,6 @@ pub struct av1_intra_prediction_edge {
     #[bitfield(name = "needs_bottomleft", ty = "uint8_t", bits = "4..=4")]
     pub needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [u8; 1],
 }
-use crate::include::common::intops::imin;
 static mut av1_mode_conv: [[[uint8_t; 2]; 2]; 13] = [
     [
         [
@@ -149,7 +148,7 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
         let sz = th << 2;
         let left: *mut pixel = &mut *topleft_out.offset(-sz as isize) as *mut pixel;
         if have_left != 0 {
-            let px_have = imin(sz, h - y << 2);
+            let px_have = std::cmp::min(sz, h - y << 2);
             let mut i = 0;
             while i < px_have {
                 *left.offset((sz - 1 - i) as isize) =
@@ -182,7 +181,7 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
                     & EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int as libc::c_uint
             }) as libc::c_int;
             if have_bottomleft != 0 {
-                let px_have_0 = imin(sz, h - y - th << 2);
+                let px_have_0 = std::cmp::min(sz, h - y - th << 2);
                 let mut i_0 = 0;
                 while i_0 < px_have_0 {
                     *left.offset(-(i_0 + 1) as isize) =
@@ -209,7 +208,7 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
         let sz_0 = tw << 2;
         let top: *mut pixel = &mut *topleft_out.offset(1) as *mut pixel;
         if have_top != 0 {
-            let px_have_1 = imin(sz_0, w - x << 2);
+            let px_have_1 = std::cmp::min(sz_0, w - x << 2);
             memcpy(
                 top as *mut libc::c_void,
                 dst_top as *const libc::c_void,
@@ -240,7 +239,7 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
                 edge_flags as libc::c_uint & EDGE_I444_TOP_HAS_RIGHT as libc::c_int as libc::c_uint
             }) as libc::c_int;
             if have_topright != 0 {
-                let px_have_2 = imin(sz_0, w - x - tw << 2);
+                let px_have_2 = std::cmp::min(sz_0, w - x - tw << 2);
                 memcpy(
                     top.offset(sz_0 as isize) as *mut libc::c_void,
                     &*dst_top.offset(sz_0 as isize) as *const pixel as *const libc::c_void,
