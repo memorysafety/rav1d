@@ -30,10 +30,12 @@ transpile() {
         "-Dbitdepths=['8','16']"
     bear -- ninja -C build tools/dav1d
     "${c2rust}" transpile compile_commands.json --binary dav1d --overwrite-existing
+
+    cargo fmt
+    git add .
 }
 
 stash() {
-    git add .
     git stash push -m 'retranspiled dav1d'
 }
 
