@@ -77,6 +77,7 @@ use crate::src::levels::NEWMV_NEWMV;
 use crate::src::levels::N_BL_LEVELS;
 use crate::src::levels::N_BS_SIZES;
 use crate::src::levels::N_PARTITIONS;
+use crate::src::levels::N_RECT_TX_SIZES;
 use crate::src::levels::N_SUB8X8_PARTITIONS;
 use crate::src::levels::N_UV_INTRA_PRED_MODES;
 use crate::src::levels::PAETH_PRED;
@@ -229,7 +230,7 @@ pub static dav1d_block_dimensions: [[u8; 4]; N_BS_SIZES] = [
     [1, 1, 0, 0],
 ];
 
-pub static dav1d_txfm_dimensions: [TxfmInfo; 19] = [
+pub static dav1d_txfm_dimensions: [TxfmInfo; N_RECT_TX_SIZES] = [
     TxfmInfo {
         w: 1,
         h: 1,
