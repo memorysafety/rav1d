@@ -4,6 +4,7 @@ use crate::include::stddef::*;
 use crate::include::stdint::*;
 use ::c2rust_bitfields;
 use ::libc;
+use c2rust_bitfields::BitfieldStruct;
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
 }
