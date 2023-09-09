@@ -53,6 +53,7 @@ use crate::src::levels::FLIPADST_ADST;
 use crate::src::levels::FLIPADST_DCT;
 use crate::src::levels::FLIPADST_FLIPADST;
 use crate::src::levels::GLOBALMV;
+use crate::src::levels::GLOBALMV_GLOBALMV;
 use crate::src::levels::HOR_DOWN_PRED;
 use crate::src::levels::HOR_PRED;
 use crate::src::levels::H_ADST;
@@ -60,8 +61,15 @@ use crate::src::levels::H_DCT;
 use crate::src::levels::H_FLIPADST;
 use crate::src::levels::IDTX;
 use crate::src::levels::NEARESTMV;
+use crate::src::levels::NEARESTMV_NEARESTMV;
+use crate::src::levels::NEARESTMV_NEWMV;
 use crate::src::levels::NEARMV;
+use crate::src::levels::NEARMV_NEARMV;
+use crate::src::levels::NEARMV_NEWMV;
 use crate::src::levels::NEWMV;
+use crate::src::levels::NEWMV_NEARESTMV;
+use crate::src::levels::NEWMV_NEARMV;
+use crate::src::levels::NEWMV_NEWMV;
 use crate::src::levels::N_PARTITIONS;
 use crate::src::levels::N_SUB8X8_PARTITIONS;
 use crate::src::levels::RTX_16X32;
@@ -483,16 +491,18 @@ pub static dav1d_txtp_from_uvmode: [u8; 14] = [
     0,
 ];
 
-pub static dav1d_comp_inter_pred_modes: [[InterPredMode; 2]; 8] = [
-    [NEARESTMV, NEARESTMV],
-    [NEARMV, NEARMV],
-    [NEARESTMV, NEWMV],
-    [NEWMV, NEARESTMV],
-    [NEARMV, NEWMV],
-    [NEWMV, NEARMV],
-    [GLOBALMV, GLOBALMV],
-    [NEWMV, NEWMV],
-];
+pub static dav1d_comp_inter_pred_modes: [[InterPredMode; 2]; 8] = {
+    let mut tbl = [[0; 2]; 8];
+    tbl[NEARESTMV_NEARESTMV as usize] = [NEARESTMV, NEARESTMV];
+    tbl[NEARMV_NEARMV as usize] = [NEARMV, NEARMV];
+    tbl[NEWMV_NEWMV as usize] = [NEWMV, NEWMV];
+    tbl[GLOBALMV_GLOBALMV as usize] = [GLOBALMV, GLOBALMV];
+    tbl[NEWMV_NEARESTMV as usize] = [NEWMV, NEARESTMV];
+    tbl[NEWMV_NEARMV as usize] = [NEWMV, NEARMV];
+    tbl[NEARESTMV_NEWMV as usize] = [NEARESTMV, NEWMV];
+    tbl[NEARMV_NEWMV as usize] = [NEARMV, NEWMV];
+    tbl
+};
 
 pub static dav1d_partition_type_count: [u8; 5] = [
     N_PARTITIONS as u8 - 3,
