@@ -38,7 +38,7 @@ pub const _N_WEDGE_DIRECTIONS: usize = 6;
 
 #[repr(C)]
 pub struct wedge_code_type {
-    pub direction: uint8_t,
+    pub direction: WedgeDirectionType,
     pub x_offset: uint8_t,
     pub y_offset: uint8_t,
 }
