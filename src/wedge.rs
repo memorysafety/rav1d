@@ -594,18 +594,14 @@ fn build_nondc_ii_masks(
         2, 1, 1, 1, 1, 1,
     ];
 
-    let mut y = 0;
-    while y < h {
+    const_for!(y in 0..h => {
         let off = y * w;
         mask_v[off..][..w].fill(ii_weights_1d[y * step]);
-        let mut x = 0;
-        while x < w {
+        const_for!(x in 0..w => {
             mask_sm[off + x] = ii_weights_1d[cmp::min(x, y) * step];
             mask_h[off + x] = ii_weights_1d[x * step];
-            x += 1;
-        }
-        y += 1;
-    }
+        });
+    });
 }
 
 #[cold]
