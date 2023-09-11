@@ -373,7 +373,7 @@ pub unsafe extern "C" fn dav1d_init_wedge_masks() {
             &mut *(*master.as_mut_ptr().offset(WEDGE_VERTICAL as isize))
                 .as_mut_ptr()
                 .offset(off as isize),
-            (wedge_master_border[WEDGE_MASTER_LINE_VERT as usize]).as_ptr(),
+            wedge_master_border[WEDGE_MASTER_LINE_VERT as usize].as_ptr(),
             32,
         );
         y += 1;
@@ -387,14 +387,14 @@ pub unsafe extern "C" fn dav1d_init_wedge_masks() {
             &mut *(*master.as_mut_ptr().offset(WEDGE_OBLIQUE63 as isize))
                 .as_mut_ptr()
                 .offset(off as isize),
-            (wedge_master_border[WEDGE_MASTER_LINE_EVEN as usize]).as_ptr(),
+            wedge_master_border[WEDGE_MASTER_LINE_EVEN as usize].as_ptr(),
             ctr,
         );
         insert_border(
             &mut *(*master.as_mut_ptr().offset(WEDGE_OBLIQUE63 as isize))
                 .as_mut_ptr()
                 .offset((off + 64) as isize),
-            (wedge_master_border[WEDGE_MASTER_LINE_ODD as usize]).as_ptr(),
+            wedge_master_border[WEDGE_MASTER_LINE_ODD as usize].as_ptr(),
             ctr - 1,
         );
         y += 2;
@@ -402,20 +402,20 @@ pub unsafe extern "C" fn dav1d_init_wedge_masks() {
         ctr -= 1;
     }
     transpose(
-        (master[WEDGE_OBLIQUE27 as usize]).as_mut_ptr(),
-        (master[WEDGE_OBLIQUE63 as usize]).as_mut_ptr(),
+        master[WEDGE_OBLIQUE27 as usize].as_mut_ptr(),
+        master[WEDGE_OBLIQUE63 as usize].as_mut_ptr(),
     );
     transpose(
-        (master[WEDGE_HORIZONTAL as usize]).as_mut_ptr(),
-        (master[WEDGE_VERTICAL as usize]).as_mut_ptr(),
+        master[WEDGE_HORIZONTAL as usize].as_mut_ptr(),
+        master[WEDGE_VERTICAL as usize].as_mut_ptr(),
     );
     hflip(
-        (master[WEDGE_OBLIQUE117 as usize]).as_mut_ptr(),
-        (master[WEDGE_OBLIQUE63 as usize]).as_mut_ptr(),
+        master[WEDGE_OBLIQUE117 as usize].as_mut_ptr(),
+        master[WEDGE_OBLIQUE63 as usize].as_mut_ptr(),
     );
     hflip(
-        (master[WEDGE_OBLIQUE153 as usize]).as_mut_ptr(),
-        (master[WEDGE_OBLIQUE27 as usize]).as_mut_ptr(),
+        master[WEDGE_OBLIQUE153 as usize].as_mut_ptr(),
+        master[WEDGE_OBLIQUE27 as usize].as_mut_ptr(),
     );
     fill2d_16x2(
         wedge_masks_444_32x32.0.as_mut_ptr(),
@@ -579,73 +579,73 @@ unsafe extern "C" fn build_nondc_ii_masks(
 pub unsafe extern "C" fn dav1d_init_interintra_masks() {
     memset(ii_dc_mask.0.as_mut_ptr() as *mut libc::c_void, 32, 32 * 32);
     build_nondc_ii_masks(
-        (ii_nondc_mask_32x32[II_VERT_PRED as usize - 1]).as_mut_ptr(),
-        (ii_nondc_mask_32x32[II_HOR_PRED as usize - 1]).as_mut_ptr(),
-        (ii_nondc_mask_32x32[II_SMOOTH_PRED as usize - 1]).as_mut_ptr(),
+        ii_nondc_mask_32x32[II_VERT_PRED as usize - 1].as_mut_ptr(),
+        ii_nondc_mask_32x32[II_HOR_PRED as usize - 1].as_mut_ptr(),
+        ii_nondc_mask_32x32[II_SMOOTH_PRED as usize - 1].as_mut_ptr(),
         32,
         32,
         1,
     );
     build_nondc_ii_masks(
-        (ii_nondc_mask_16x32[II_VERT_PRED as usize - 1]).as_mut_ptr(),
-        (ii_nondc_mask_16x32[II_HOR_PRED as usize - 1]).as_mut_ptr(),
-        (ii_nondc_mask_16x32[II_SMOOTH_PRED as usize - 1]).as_mut_ptr(),
+        ii_nondc_mask_16x32[II_VERT_PRED as usize - 1].as_mut_ptr(),
+        ii_nondc_mask_16x32[II_HOR_PRED as usize - 1].as_mut_ptr(),
+        ii_nondc_mask_16x32[II_SMOOTH_PRED as usize - 1].as_mut_ptr(),
         16,
         32,
         1,
     );
     build_nondc_ii_masks(
-        (ii_nondc_mask_16x16[II_VERT_PRED as usize - 1]).as_mut_ptr(),
-        (ii_nondc_mask_16x16[II_HOR_PRED as usize - 1]).as_mut_ptr(),
-        (ii_nondc_mask_16x16[II_SMOOTH_PRED as usize - 1]).as_mut_ptr(),
+        ii_nondc_mask_16x16[II_VERT_PRED as usize - 1].as_mut_ptr(),
+        ii_nondc_mask_16x16[II_HOR_PRED as usize - 1].as_mut_ptr(),
+        ii_nondc_mask_16x16[II_SMOOTH_PRED as usize - 1].as_mut_ptr(),
         16,
         16,
         2,
     );
     build_nondc_ii_masks(
-        (ii_nondc_mask_8x32[II_VERT_PRED as usize - 1]).as_mut_ptr(),
-        (ii_nondc_mask_8x32[II_HOR_PRED as usize - 1]).as_mut_ptr(),
-        (ii_nondc_mask_8x32[II_SMOOTH_PRED as usize - 1]).as_mut_ptr(),
+        ii_nondc_mask_8x32[II_VERT_PRED as usize - 1].as_mut_ptr(),
+        ii_nondc_mask_8x32[II_HOR_PRED as usize - 1].as_mut_ptr(),
+        ii_nondc_mask_8x32[II_SMOOTH_PRED as usize - 1].as_mut_ptr(),
         8,
         32,
         1,
     );
     build_nondc_ii_masks(
-        (ii_nondc_mask_8x16[II_VERT_PRED as usize - 1]).as_mut_ptr(),
-        (ii_nondc_mask_8x16[II_HOR_PRED as usize - 1]).as_mut_ptr(),
-        (ii_nondc_mask_8x16[II_SMOOTH_PRED as usize - 1]).as_mut_ptr(),
+        ii_nondc_mask_8x16[II_VERT_PRED as usize - 1].as_mut_ptr(),
+        ii_nondc_mask_8x16[II_HOR_PRED as usize - 1].as_mut_ptr(),
+        ii_nondc_mask_8x16[II_SMOOTH_PRED as usize - 1].as_mut_ptr(),
         8,
         16,
         2,
     );
     build_nondc_ii_masks(
-        (ii_nondc_mask_8x8[II_VERT_PRED as usize - 1]).as_mut_ptr(),
-        (ii_nondc_mask_8x8[II_HOR_PRED as usize - 1]).as_mut_ptr(),
-        (ii_nondc_mask_8x8[II_SMOOTH_PRED as usize - 1]).as_mut_ptr(),
+        ii_nondc_mask_8x8[II_VERT_PRED as usize - 1].as_mut_ptr(),
+        ii_nondc_mask_8x8[II_HOR_PRED as usize - 1].as_mut_ptr(),
+        ii_nondc_mask_8x8[II_SMOOTH_PRED as usize - 1].as_mut_ptr(),
         8,
         8,
         4,
     );
     build_nondc_ii_masks(
-        (ii_nondc_mask_4x16[II_VERT_PRED as usize - 1]).as_mut_ptr(),
-        (ii_nondc_mask_4x16[II_HOR_PRED as usize - 1]).as_mut_ptr(),
-        (ii_nondc_mask_4x16[II_SMOOTH_PRED as usize - 1]).as_mut_ptr(),
+        ii_nondc_mask_4x16[II_VERT_PRED as usize - 1].as_mut_ptr(),
+        ii_nondc_mask_4x16[II_HOR_PRED as usize - 1].as_mut_ptr(),
+        ii_nondc_mask_4x16[II_SMOOTH_PRED as usize - 1].as_mut_ptr(),
         4,
         16,
         2,
     );
     build_nondc_ii_masks(
-        (ii_nondc_mask_4x8[II_VERT_PRED as usize - 1]).as_mut_ptr(),
-        (ii_nondc_mask_4x8[II_HOR_PRED as usize - 1]).as_mut_ptr(),
-        (ii_nondc_mask_4x8[II_SMOOTH_PRED as usize - 1]).as_mut_ptr(),
+        ii_nondc_mask_4x8[II_VERT_PRED as usize - 1].as_mut_ptr(),
+        ii_nondc_mask_4x8[II_HOR_PRED as usize - 1].as_mut_ptr(),
+        ii_nondc_mask_4x8[II_SMOOTH_PRED as usize - 1].as_mut_ptr(),
         4,
         8,
         4,
     );
     build_nondc_ii_masks(
-        (ii_nondc_mask_4x4[II_VERT_PRED as usize - 1]).as_mut_ptr(),
-        (ii_nondc_mask_4x4[II_HOR_PRED as usize - 1]).as_mut_ptr(),
-        (ii_nondc_mask_4x4[II_SMOOTH_PRED as usize - 1]).as_mut_ptr(),
+        ii_nondc_mask_4x4[II_VERT_PRED as usize - 1].as_mut_ptr(),
+        ii_nondc_mask_4x4[II_HOR_PRED as usize - 1].as_mut_ptr(),
+        ii_nondc_mask_4x4[II_SMOOTH_PRED as usize - 1].as_mut_ptr(),
         4,
         4,
         8,
@@ -664,103 +664,41 @@ unsafe extern "C" fn run_static_initializers() {
         [
             [
                 ii_dc_mask.0.as_mut_ptr() as *const u8,
-                (ii_nondc_mask_32x32[II_VERT_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_32x32[II_HOR_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_32x32[II_SMOOTH_PRED as usize - 1]).as_mut_ptr() as *const u8,
+                ii_nondc_mask_32x32[II_VERT_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_32x32[II_HOR_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_32x32[II_SMOOTH_PRED as usize - 1].as_mut_ptr() as *const u8,
             ],
             [
                 ii_dc_mask.0.as_mut_ptr() as *const u8,
-                (ii_nondc_mask_16x32[II_VERT_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_16x32[II_HOR_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_16x32[II_SMOOTH_PRED as usize - 1]).as_mut_ptr() as *const u8,
+                ii_nondc_mask_16x32[II_VERT_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_16x32[II_HOR_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_16x32[II_SMOOTH_PRED as usize - 1].as_mut_ptr() as *const u8,
             ],
             [
                 ii_dc_mask.0.as_mut_ptr() as *const u8,
-                (ii_nondc_mask_16x16[II_VERT_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_16x16[II_HOR_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_16x16[II_SMOOTH_PRED as usize - 1]).as_mut_ptr() as *const u8,
-            ],
-        ],
-        [
-            [
-                ii_dc_mask.0.as_mut_ptr() as *const u8,
-                (ii_nondc_mask_32x32[II_VERT_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_32x32[II_HOR_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_32x32[II_SMOOTH_PRED as usize - 1]).as_mut_ptr() as *const u8,
-            ],
-            [
-                ii_dc_mask.0.as_mut_ptr() as *const u8,
-                (ii_nondc_mask_16x16[II_VERT_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_16x16[II_HOR_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_16x16[II_SMOOTH_PRED as usize - 1]).as_mut_ptr() as *const u8,
-            ],
-            [
-                ii_dc_mask.0.as_mut_ptr() as *const u8,
-                (ii_nondc_mask_16x16[II_VERT_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_16x16[II_HOR_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_16x16[II_SMOOTH_PRED as usize - 1]).as_mut_ptr() as *const u8,
-            ],
-        ],
-        [[0 as *const u8; 4]; 3],
-        [[0 as *const u8; 4]; 3],
-        [
-            [
-                ii_dc_mask.0.as_mut_ptr() as *const u8,
-                (ii_nondc_mask_16x32[II_VERT_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_16x32[II_HOR_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_16x32[II_SMOOTH_PRED as usize - 1]).as_mut_ptr() as *const u8,
-            ],
-            [
-                ii_dc_mask.0.as_mut_ptr() as *const u8,
-                (ii_nondc_mask_8x32[II_VERT_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_8x32[II_HOR_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_8x32[II_SMOOTH_PRED as usize - 1]).as_mut_ptr() as *const u8,
-            ],
-            [
-                ii_dc_mask.0.as_mut_ptr() as *const u8,
-                (ii_nondc_mask_8x16[II_VERT_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_8x16[II_HOR_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_8x16[II_SMOOTH_PRED as usize - 1]).as_mut_ptr() as *const u8,
+                ii_nondc_mask_16x16[II_VERT_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_16x16[II_HOR_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_16x16[II_SMOOTH_PRED as usize - 1].as_mut_ptr() as *const u8,
             ],
         ],
         [
             [
                 ii_dc_mask.0.as_mut_ptr() as *const u8,
-                (ii_nondc_mask_16x16[II_VERT_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_16x16[II_HOR_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_16x16[II_SMOOTH_PRED as usize - 1]).as_mut_ptr() as *const u8,
+                ii_nondc_mask_32x32[II_VERT_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_32x32[II_HOR_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_32x32[II_SMOOTH_PRED as usize - 1].as_mut_ptr() as *const u8,
             ],
             [
                 ii_dc_mask.0.as_mut_ptr() as *const u8,
-                (ii_nondc_mask_8x16[II_VERT_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_8x16[II_HOR_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_8x16[II_SMOOTH_PRED as usize - 1]).as_mut_ptr() as *const u8,
+                ii_nondc_mask_16x16[II_VERT_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_16x16[II_HOR_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_16x16[II_SMOOTH_PRED as usize - 1].as_mut_ptr() as *const u8,
             ],
             [
                 ii_dc_mask.0.as_mut_ptr() as *const u8,
-                (ii_nondc_mask_8x8[II_VERT_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_8x8[II_HOR_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_8x8[II_SMOOTH_PRED as usize - 1]).as_mut_ptr() as *const u8,
-            ],
-        ],
-        [
-            [
-                ii_dc_mask.0.as_mut_ptr() as *const u8,
-                (ii_nondc_mask_16x16[II_VERT_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_16x16[II_HOR_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_16x16[II_SMOOTH_PRED as usize - 1]).as_mut_ptr() as *const u8,
-            ],
-            [
-                ii_dc_mask.0.as_mut_ptr() as *const u8,
-                (ii_nondc_mask_8x8[II_VERT_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_8x8[II_HOR_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_8x8[II_SMOOTH_PRED as usize - 1]).as_mut_ptr() as *const u8,
-            ],
-            [
-                ii_dc_mask.0.as_mut_ptr() as *const u8,
-                (ii_nondc_mask_8x8[II_VERT_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_8x8[II_HOR_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_8x8[II_SMOOTH_PRED as usize - 1]).as_mut_ptr() as *const u8,
+                ii_nondc_mask_16x16[II_VERT_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_16x16[II_HOR_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_16x16[II_SMOOTH_PRED as usize - 1].as_mut_ptr() as *const u8,
             ],
         ],
         [[0 as *const u8; 4]; 3],
@@ -768,41 +706,103 @@ unsafe extern "C" fn run_static_initializers() {
         [
             [
                 ii_dc_mask.0.as_mut_ptr() as *const u8,
-                (ii_nondc_mask_8x16[II_VERT_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_8x16[II_HOR_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_8x16[II_SMOOTH_PRED as usize - 1]).as_mut_ptr() as *const u8,
+                ii_nondc_mask_16x32[II_VERT_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_16x32[II_HOR_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_16x32[II_SMOOTH_PRED as usize - 1].as_mut_ptr() as *const u8,
             ],
             [
                 ii_dc_mask.0.as_mut_ptr() as *const u8,
-                (ii_nondc_mask_4x16[II_VERT_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_4x16[II_HOR_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_4x16[II_SMOOTH_PRED as usize - 1]).as_mut_ptr() as *const u8,
+                ii_nondc_mask_8x32[II_VERT_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_8x32[II_HOR_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_8x32[II_SMOOTH_PRED as usize - 1].as_mut_ptr() as *const u8,
             ],
             [
                 ii_dc_mask.0.as_mut_ptr() as *const u8,
-                (ii_nondc_mask_4x8[II_VERT_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_4x8[II_HOR_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_4x8[II_SMOOTH_PRED as usize - 1]).as_mut_ptr() as *const u8,
+                ii_nondc_mask_8x16[II_VERT_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_8x16[II_HOR_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_8x16[II_SMOOTH_PRED as usize - 1].as_mut_ptr() as *const u8,
             ],
         ],
         [
             [
                 ii_dc_mask.0.as_mut_ptr() as *const u8,
-                (ii_nondc_mask_8x8[II_VERT_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_8x8[II_HOR_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_8x8[II_SMOOTH_PRED as usize - 1]).as_mut_ptr() as *const u8,
+                ii_nondc_mask_16x16[II_VERT_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_16x16[II_HOR_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_16x16[II_SMOOTH_PRED as usize - 1].as_mut_ptr() as *const u8,
             ],
             [
                 ii_dc_mask.0.as_mut_ptr() as *const u8,
-                (ii_nondc_mask_4x8[II_VERT_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_4x8[II_HOR_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_4x8[II_SMOOTH_PRED as usize - 1]).as_mut_ptr() as *const u8,
+                ii_nondc_mask_8x16[II_VERT_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_8x16[II_HOR_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_8x16[II_SMOOTH_PRED as usize - 1].as_mut_ptr() as *const u8,
             ],
             [
                 ii_dc_mask.0.as_mut_ptr() as *const u8,
-                (ii_nondc_mask_4x4[II_VERT_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_4x4[II_HOR_PRED as usize - 1]).as_mut_ptr() as *const u8,
-                (ii_nondc_mask_4x4[II_SMOOTH_PRED as usize - 1]).as_mut_ptr() as *const u8,
+                ii_nondc_mask_8x8[II_VERT_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_8x8[II_HOR_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_8x8[II_SMOOTH_PRED as usize - 1].as_mut_ptr() as *const u8,
+            ],
+        ],
+        [
+            [
+                ii_dc_mask.0.as_mut_ptr() as *const u8,
+                ii_nondc_mask_16x16[II_VERT_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_16x16[II_HOR_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_16x16[II_SMOOTH_PRED as usize - 1].as_mut_ptr() as *const u8,
+            ],
+            [
+                ii_dc_mask.0.as_mut_ptr() as *const u8,
+                ii_nondc_mask_8x8[II_VERT_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_8x8[II_HOR_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_8x8[II_SMOOTH_PRED as usize - 1].as_mut_ptr() as *const u8,
+            ],
+            [
+                ii_dc_mask.0.as_mut_ptr() as *const u8,
+                ii_nondc_mask_8x8[II_VERT_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_8x8[II_HOR_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_8x8[II_SMOOTH_PRED as usize - 1].as_mut_ptr() as *const u8,
+            ],
+        ],
+        [[0 as *const u8; 4]; 3],
+        [[0 as *const u8; 4]; 3],
+        [
+            [
+                ii_dc_mask.0.as_mut_ptr() as *const u8,
+                ii_nondc_mask_8x16[II_VERT_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_8x16[II_HOR_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_8x16[II_SMOOTH_PRED as usize - 1].as_mut_ptr() as *const u8,
+            ],
+            [
+                ii_dc_mask.0.as_mut_ptr() as *const u8,
+                ii_nondc_mask_4x16[II_VERT_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_4x16[II_HOR_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_4x16[II_SMOOTH_PRED as usize - 1].as_mut_ptr() as *const u8,
+            ],
+            [
+                ii_dc_mask.0.as_mut_ptr() as *const u8,
+                ii_nondc_mask_4x8[II_VERT_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_4x8[II_HOR_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_4x8[II_SMOOTH_PRED as usize - 1].as_mut_ptr() as *const u8,
+            ],
+        ],
+        [
+            [
+                ii_dc_mask.0.as_mut_ptr() as *const u8,
+                ii_nondc_mask_8x8[II_VERT_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_8x8[II_HOR_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_8x8[II_SMOOTH_PRED as usize - 1].as_mut_ptr() as *const u8,
+            ],
+            [
+                ii_dc_mask.0.as_mut_ptr() as *const u8,
+                ii_nondc_mask_4x8[II_VERT_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_4x8[II_HOR_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_4x8[II_SMOOTH_PRED as usize - 1].as_mut_ptr() as *const u8,
+            ],
+            [
+                ii_dc_mask.0.as_mut_ptr() as *const u8,
+                ii_nondc_mask_4x4[II_VERT_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_4x4[II_HOR_PRED as usize - 1].as_mut_ptr() as *const u8,
+                ii_nondc_mask_4x4[II_SMOOTH_PRED as usize - 1].as_mut_ptr() as *const u8,
             ],
         ],
         [[0 as *const u8; 4]; 3],
