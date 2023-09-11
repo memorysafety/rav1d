@@ -24,7 +24,6 @@ use paste::paste;
 
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
-    fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
 }
 
 pub type WedgeDirectionType = u8;
@@ -519,7 +518,7 @@ pub unsafe fn dav1d_init_wedge_masks() {
     );
 }
 
-static mut ii_dc_mask: Align64<[u8; 32 * 32]> = Align64([0; 32 * 32]);
+static ii_dc_mask: Align64<[u8; 32 * 32]> = Align64([32; 32 * 32]);
 
 const N_II_PRED_MODES: usize = N_INTER_INTRA_PRED_MODES - 1;
 
@@ -549,9 +548,9 @@ pub static dav1d_ii_masks: [[[Option<&'static [u8]>; N_INTER_INTRA_PRED_MODES]; 
         ($sz:ident) => {{
             let mut a: [Option<&'static [u8]>; N_INTER_INTRA_PRED_MODES] = [None; 4];
             paste! {
+                a[II_DC_PRED as usize] = Some(&ii_dc_mask.0);
                 // Safety: [`dav1d_init_interintra_masks`] is only called once at the beginning.
                 unsafe {
-                    a[II_DC_PRED as usize] = Some(&ii_dc_mask.0);
                     a[II_VERT_PRED as usize] = Some(&[<ii_nondc_mask $sz>].0[II_VERT_PRED as usize - 1]);
                     a[II_HOR_PRED as usize] = Some(&[<ii_nondc_mask $sz>].0[II_HOR_PRED as usize - 1]);
                     a[II_SMOOTH_PRED as usize] = Some(&[<ii_nondc_mask $sz>].0[II_SMOOTH_PRED as usize - 1]);
@@ -608,7 +607,6 @@ const fn build_nondc_ii_masks<const N: usize>(
 pub unsafe fn dav1d_init_interintra_masks() {
     // This function is guaranteed to be called only once
 
-    memset(ii_dc_mask.0.as_mut_ptr() as *mut libc::c_void, 32, 32 * 32);
     ii_nondc_mask_32x32.0 = build_nondc_ii_masks(32, 32, 1);
     ii_nondc_mask_16x32.0 = build_nondc_ii_masks(16, 32, 1);
     ii_nondc_mask_16x16.0 = build_nondc_ii_masks(16, 16, 2);
