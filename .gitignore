@@ -15,3 +15,5 @@ target/
 # Too Large Tests
 /tests/argon
 /tests/large
+
+/retranspile/
