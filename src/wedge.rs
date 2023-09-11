@@ -43,6 +43,16 @@ pub struct wedge_code_type {
     pub y_offset: uint8_t,
 }
 
+impl wedge_code_type {
+    const fn new(x_offset: u8, y_offset: u8, direction: WedgeDirectionType) -> Self {
+        Self {
+            direction,
+            x_offset,
+            y_offset,
+        }
+    }
+}
+
 pub const WEDGE_MASTER_LINE_ODD: WedgeMasterLineType = 0;
 pub const WEDGE_MASTER_LINE_EVEN: WedgeMasterLineType = 1;
 pub const WEDGE_MASTER_LINE_VERT: WedgeMasterLineType = 2;
@@ -50,252 +60,60 @@ pub type WedgeMasterLineType = libc::c_uint;
 pub const N_WEDGE_MASTER_LINES: usize = 3;
 
 static wedge_codebook_16_hgtw: [wedge_code_type; 16] = [
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE27,
-        x_offset: 4,
-        y_offset: 4,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE63,
-        x_offset: 4,
-        y_offset: 4,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE117,
-        x_offset: 4,
-        y_offset: 4,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE153,
-        x_offset: 4,
-        y_offset: 4,
-    },
-    wedge_code_type {
-        direction: WEDGE_HORIZONTAL,
-        x_offset: 4,
-        y_offset: 2,
-    },
-    wedge_code_type {
-        direction: WEDGE_HORIZONTAL,
-        x_offset: 4,
-        y_offset: 4,
-    },
-    wedge_code_type {
-        direction: WEDGE_HORIZONTAL,
-        x_offset: 4,
-        y_offset: 6,
-    },
-    wedge_code_type {
-        direction: WEDGE_VERTICAL,
-        x_offset: 4,
-        y_offset: 4,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE27,
-        x_offset: 4,
-        y_offset: 2,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE27,
-        x_offset: 4,
-        y_offset: 6,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE153,
-        x_offset: 4,
-        y_offset: 2,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE153,
-        x_offset: 4,
-        y_offset: 6,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE63,
-        x_offset: 2,
-        y_offset: 4,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE63,
-        x_offset: 6,
-        y_offset: 4,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE117,
-        x_offset: 2,
-        y_offset: 4,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE117,
-        x_offset: 6,
-        y_offset: 4,
-    },
+    wedge_code_type::new(4, 4, WEDGE_OBLIQUE27),
+    wedge_code_type::new(4, 4, WEDGE_OBLIQUE63),
+    wedge_code_type::new(4, 4, WEDGE_OBLIQUE117),
+    wedge_code_type::new(4, 4, WEDGE_OBLIQUE153),
+    wedge_code_type::new(4, 2, WEDGE_HORIZONTAL),
+    wedge_code_type::new(4, 4, WEDGE_HORIZONTAL),
+    wedge_code_type::new(4, 6, WEDGE_HORIZONTAL),
+    wedge_code_type::new(4, 4, WEDGE_VERTICAL),
+    wedge_code_type::new(4, 2, WEDGE_OBLIQUE27),
+    wedge_code_type::new(4, 6, WEDGE_OBLIQUE27),
+    wedge_code_type::new(4, 2, WEDGE_OBLIQUE153),
+    wedge_code_type::new(4, 6, WEDGE_OBLIQUE153),
+    wedge_code_type::new(2, 4, WEDGE_OBLIQUE63),
+    wedge_code_type::new(6, 4, WEDGE_OBLIQUE63),
+    wedge_code_type::new(2, 4, WEDGE_OBLIQUE117),
+    wedge_code_type::new(6, 4, WEDGE_OBLIQUE117),
 ];
 
 static wedge_codebook_16_hltw: [wedge_code_type; 16] = [
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE27,
-        x_offset: 4,
-        y_offset: 4,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE63,
-        x_offset: 4,
-        y_offset: 4,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE117,
-        x_offset: 4,
-        y_offset: 4,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE153,
-        x_offset: 4,
-        y_offset: 4,
-    },
-    wedge_code_type {
-        direction: WEDGE_VERTICAL,
-        x_offset: 2,
-        y_offset: 4,
-    },
-    wedge_code_type {
-        direction: WEDGE_VERTICAL,
-        x_offset: 4,
-        y_offset: 4,
-    },
-    wedge_code_type {
-        direction: WEDGE_VERTICAL,
-        x_offset: 6,
-        y_offset: 4,
-    },
-    wedge_code_type {
-        direction: WEDGE_HORIZONTAL,
-        x_offset: 4,
-        y_offset: 4,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE27,
-        x_offset: 4,
-        y_offset: 2,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE27,
-        x_offset: 4,
-        y_offset: 6,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE153,
-        x_offset: 4,
-        y_offset: 2,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE153,
-        x_offset: 4,
-        y_offset: 6,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE63,
-        x_offset: 2,
-        y_offset: 4,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE63,
-        x_offset: 6,
-        y_offset: 4,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE117,
-        x_offset: 2,
-        y_offset: 4,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE117,
-        x_offset: 6,
-        y_offset: 4,
-    },
+    wedge_code_type::new(4, 4, WEDGE_OBLIQUE27),
+    wedge_code_type::new(4, 4, WEDGE_OBLIQUE63),
+    wedge_code_type::new(4, 4, WEDGE_OBLIQUE117),
+    wedge_code_type::new(4, 4, WEDGE_OBLIQUE153),
+    wedge_code_type::new(2, 4, WEDGE_VERTICAL),
+    wedge_code_type::new(4, 4, WEDGE_VERTICAL),
+    wedge_code_type::new(6, 4, WEDGE_VERTICAL),
+    wedge_code_type::new(4, 4, WEDGE_HORIZONTAL),
+    wedge_code_type::new(4, 2, WEDGE_OBLIQUE27),
+    wedge_code_type::new(4, 6, WEDGE_OBLIQUE27),
+    wedge_code_type::new(4, 2, WEDGE_OBLIQUE153),
+    wedge_code_type::new(4, 6, WEDGE_OBLIQUE153),
+    wedge_code_type::new(2, 4, WEDGE_OBLIQUE63),
+    wedge_code_type::new(6, 4, WEDGE_OBLIQUE63),
+    wedge_code_type::new(2, 4, WEDGE_OBLIQUE117),
+    wedge_code_type::new(6, 4, WEDGE_OBLIQUE117),
 ];
 
 static wedge_codebook_16_heqw: [wedge_code_type; 16] = [
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE27,
-        x_offset: 4,
-        y_offset: 4,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE63,
-        x_offset: 4,
-        y_offset: 4,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE117,
-        x_offset: 4,
-        y_offset: 4,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE153,
-        x_offset: 4,
-        y_offset: 4,
-    },
-    wedge_code_type {
-        direction: WEDGE_HORIZONTAL,
-        x_offset: 4,
-        y_offset: 2,
-    },
-    wedge_code_type {
-        direction: WEDGE_HORIZONTAL,
-        x_offset: 4,
-        y_offset: 6,
-    },
-    wedge_code_type {
-        direction: WEDGE_VERTICAL,
-        x_offset: 2,
-        y_offset: 4,
-    },
-    wedge_code_type {
-        direction: WEDGE_VERTICAL,
-        x_offset: 6,
-        y_offset: 4,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE27,
-        x_offset: 4,
-        y_offset: 2,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE27,
-        x_offset: 4,
-        y_offset: 6,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE153,
-        x_offset: 4,
-        y_offset: 2,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE153,
-        x_offset: 4,
-        y_offset: 6,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE63,
-        x_offset: 2,
-        y_offset: 4,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE63,
-        x_offset: 6,
-        y_offset: 4,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE117,
-        x_offset: 2,
-        y_offset: 4,
-    },
-    wedge_code_type {
-        direction: WEDGE_OBLIQUE117,
-        x_offset: 6,
-        y_offset: 4,
-    },
+    wedge_code_type::new(4, 4, WEDGE_OBLIQUE27),
+    wedge_code_type::new(4, 4, WEDGE_OBLIQUE63),
+    wedge_code_type::new(4, 4, WEDGE_OBLIQUE117),
+    wedge_code_type::new(4, 4, WEDGE_OBLIQUE153),
+    wedge_code_type::new(4, 2, WEDGE_HORIZONTAL),
+    wedge_code_type::new(4, 6, WEDGE_HORIZONTAL),
+    wedge_code_type::new(2, 4, WEDGE_VERTICAL),
+    wedge_code_type::new(6, 4, WEDGE_VERTICAL),
+    wedge_code_type::new(4, 2, WEDGE_OBLIQUE27),
+    wedge_code_type::new(4, 6, WEDGE_OBLIQUE27),
+    wedge_code_type::new(4, 2, WEDGE_OBLIQUE153),
+    wedge_code_type::new(4, 6, WEDGE_OBLIQUE153),
+    wedge_code_type::new(2, 4, WEDGE_OBLIQUE63),
+    wedge_code_type::new(6, 4, WEDGE_OBLIQUE63),
+    wedge_code_type::new(2, 4, WEDGE_OBLIQUE117),
+    wedge_code_type::new(6, 4, WEDGE_OBLIQUE117),
 ];
 
 static mut wedge_masks_444_32x32: Align64<[uint8_t; 32768]> = Align64([0; 32768]);
