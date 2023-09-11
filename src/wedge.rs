@@ -139,7 +139,7 @@ static mut wedge_masks_420_4x4: Align64<[u8; 512]> = Align64([0; 512]);
 
 #[no_mangle]
 pub static mut dav1d_wedge_masks: [[[[*const u8; 16]; 2]; 3]; N_BS_SIZES] =
-    [[[[0 as *const u8; 16]; 2]; 3]; 22];
+    [[[[0 as *const u8; 16]; 2]; 3]; N_BS_SIZES];
 
 unsafe fn insert_border(dst: *mut u8, src: *const u8, ctr: libc::c_int) {
     if ctr > 4 {
@@ -565,7 +565,7 @@ static mut ii_nondc_mask_4x4: Align16<[[u8; 16]; N_II_PRED_MODES]> =
 
 #[no_mangle]
 pub static mut dav1d_ii_masks: [[[*const u8; N_INTER_INTRA_PRED_MODES]; 3]; N_BS_SIZES] =
-    [[[0 as *const u8; 4]; 3]; 22];
+    [[[0 as *const u8; N_INTER_INTRA_PRED_MODES]; 3]; N_BS_SIZES];
 
 #[cold]
 unsafe fn build_nondc_ii_masks(
