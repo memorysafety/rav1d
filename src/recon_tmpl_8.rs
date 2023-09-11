@@ -52,8 +52,6 @@ extern "C" {
     );
     fn dav1d_copy_lpf_8bpc(f: *mut Dav1dFrameContext, src: *const *mut pixel, sby: libc::c_int);
     fn dav1d_lr_sbrow_8bpc(f: *mut Dav1dFrameContext, dst: *const *mut pixel, sby: libc::c_int);
-    static mut dav1d_wedge_masks: [[[[*const uint8_t; 16]; 2]; 3]; 22];
-    static mut dav1d_ii_masks: [[[*const uint8_t; 4]; 3]; 22];
 }
 
 use crate::src::msac::dav1d_msac_decode_bool_adapt;
@@ -71,6 +69,8 @@ use crate::src::tables::dav1d_tx_type_class;
 use crate::src::tables::dav1d_tx_types_per_set;
 use crate::src::tables::dav1d_txfm_dimensions;
 use crate::src::tables::dav1d_txtp_from_uvmode;
+use crate::src::wedge::dav1d_ii_masks;
+use crate::src::wedge::dav1d_wedge_masks;
 
 pub type pixel = uint8_t;
 pub type coef = int16_t;
