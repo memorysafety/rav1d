@@ -657,162 +657,145 @@ pub unsafe fn dav1d_init_interintra_masks() {
 }
 
 unsafe extern "C" fn run_static_initializers() {
-    dav1d_ii_masks = [
-        [[None; 4]; 3],
-        [[None; 4]; 3],
-        [[None; 4]; 3],
-        [[None; 4]; 3],
-        [[None; 4]; 3],
-        [[None; 4]; 3],
-        [[None; 4]; 3],
+    dav1d_ii_masks[BS_8x8 as usize] = [
         [
-            [
-                Some(&ii_dc_mask.0),
-                Some(&ii_nondc_mask_32x32.0[II_VERT_PRED as usize - 1]),
-                Some(&ii_nondc_mask_32x32.0[II_HOR_PRED as usize - 1]),
-                Some(&ii_nondc_mask_32x32.0[II_SMOOTH_PRED as usize - 1]),
-            ],
-            [
-                Some(&ii_dc_mask.0),
-                Some(&ii_nondc_mask_16x32.0[II_VERT_PRED as usize - 1]),
-                Some(&ii_nondc_mask_16x32.0[II_HOR_PRED as usize - 1]),
-                Some(&ii_nondc_mask_16x32.0[II_SMOOTH_PRED as usize - 1]),
-            ],
-            [
-                Some(&ii_dc_mask.0),
-                Some(&ii_nondc_mask_16x16.0[II_VERT_PRED as usize - 1]),
-                Some(&ii_nondc_mask_16x16.0[II_HOR_PRED as usize - 1]),
-                Some(&ii_nondc_mask_16x16.0[II_SMOOTH_PRED as usize - 1]),
-            ],
+            Some(&ii_dc_mask.0),
+            Some(&ii_nondc_mask_8x8.0[II_VERT_PRED as usize - 1]),
+            Some(&ii_nondc_mask_8x8.0[II_HOR_PRED as usize - 1]),
+            Some(&ii_nondc_mask_8x8.0[II_SMOOTH_PRED as usize - 1]),
         ],
         [
-            [
-                Some(&ii_dc_mask.0),
-                Some(&ii_nondc_mask_32x32.0[II_VERT_PRED as usize - 1]),
-                Some(&ii_nondc_mask_32x32.0[II_HOR_PRED as usize - 1]),
-                Some(&ii_nondc_mask_32x32.0[II_SMOOTH_PRED as usize - 1]),
-            ],
-            [
-                Some(&ii_dc_mask.0),
-                Some(&ii_nondc_mask_16x16.0[II_VERT_PRED as usize - 1]),
-                Some(&ii_nondc_mask_16x16.0[II_HOR_PRED as usize - 1]),
-                Some(&ii_nondc_mask_16x16.0[II_SMOOTH_PRED as usize - 1]),
-            ],
-            [
-                Some(&ii_dc_mask.0),
-                Some(&ii_nondc_mask_16x16.0[II_VERT_PRED as usize - 1]),
-                Some(&ii_nondc_mask_16x16.0[II_HOR_PRED as usize - 1]),
-                Some(&ii_nondc_mask_16x16.0[II_SMOOTH_PRED as usize - 1]),
-            ],
-        ],
-        [[None; 4]; 3],
-        [[None; 4]; 3],
-        [
-            [
-                Some(&ii_dc_mask.0),
-                Some(&ii_nondc_mask_16x32.0[II_VERT_PRED as usize - 1]),
-                Some(&ii_nondc_mask_16x32.0[II_HOR_PRED as usize - 1]),
-                Some(&ii_nondc_mask_16x32.0[II_SMOOTH_PRED as usize - 1]),
-            ],
-            [
-                Some(&ii_dc_mask.0),
-                Some(&ii_nondc_mask_8x32.0[II_VERT_PRED as usize - 1]),
-                Some(&ii_nondc_mask_8x32.0[II_HOR_PRED as usize - 1]),
-                Some(&ii_nondc_mask_8x32.0[II_SMOOTH_PRED as usize - 1]),
-            ],
-            [
-                Some(&ii_dc_mask.0),
-                Some(&ii_nondc_mask_8x16.0[II_VERT_PRED as usize - 1]),
-                Some(&ii_nondc_mask_8x16.0[II_HOR_PRED as usize - 1]),
-                Some(&ii_nondc_mask_8x16.0[II_SMOOTH_PRED as usize - 1]),
-            ],
+            Some(&ii_dc_mask.0),
+            Some(&ii_nondc_mask_4x8.0[II_VERT_PRED as usize - 1]),
+            Some(&ii_nondc_mask_4x8.0[II_HOR_PRED as usize - 1]),
+            Some(&ii_nondc_mask_4x8.0[II_SMOOTH_PRED as usize - 1]),
         ],
         [
-            [
-                Some(&ii_dc_mask.0),
-                Some(&ii_nondc_mask_16x16.0[II_VERT_PRED as usize - 1]),
-                Some(&ii_nondc_mask_16x16.0[II_HOR_PRED as usize - 1]),
-                Some(&ii_nondc_mask_16x16.0[II_SMOOTH_PRED as usize - 1]),
-            ],
-            [
-                Some(&ii_dc_mask.0),
-                Some(&ii_nondc_mask_8x16.0[II_VERT_PRED as usize - 1]),
-                Some(&ii_nondc_mask_8x16.0[II_HOR_PRED as usize - 1]),
-                Some(&ii_nondc_mask_8x16.0[II_SMOOTH_PRED as usize - 1]),
-            ],
-            [
-                Some(&ii_dc_mask.0),
-                Some(&ii_nondc_mask_8x8.0[II_VERT_PRED as usize - 1]),
-                Some(&ii_nondc_mask_8x8.0[II_HOR_PRED as usize - 1]),
-                Some(&ii_nondc_mask_8x8.0[II_SMOOTH_PRED as usize - 1]),
-            ],
+            Some(&ii_dc_mask.0),
+            Some(&ii_nondc_mask_4x4.0[II_VERT_PRED as usize - 1]),
+            Some(&ii_nondc_mask_4x4.0[II_HOR_PRED as usize - 1]),
+            Some(&ii_nondc_mask_4x4.0[II_SMOOTH_PRED as usize - 1]),
+        ],
+    ];
+    dav1d_ii_masks[BS_8x16 as usize] = [
+        [
+            Some(&ii_dc_mask.0),
+            Some(&ii_nondc_mask_8x16.0[II_VERT_PRED as usize - 1]),
+            Some(&ii_nondc_mask_8x16.0[II_HOR_PRED as usize - 1]),
+            Some(&ii_nondc_mask_8x16.0[II_SMOOTH_PRED as usize - 1]),
         ],
         [
-            [
-                Some(&ii_dc_mask.0),
-                Some(&ii_nondc_mask_16x16.0[II_VERT_PRED as usize - 1]),
-                Some(&ii_nondc_mask_16x16.0[II_HOR_PRED as usize - 1]),
-                Some(&ii_nondc_mask_16x16.0[II_SMOOTH_PRED as usize - 1]),
-            ],
-            [
-                Some(&ii_dc_mask.0),
-                Some(&ii_nondc_mask_8x8.0[II_VERT_PRED as usize - 1]),
-                Some(&ii_nondc_mask_8x8.0[II_HOR_PRED as usize - 1]),
-                Some(&ii_nondc_mask_8x8.0[II_SMOOTH_PRED as usize - 1]),
-            ],
-            [
-                Some(&ii_dc_mask.0),
-                Some(&ii_nondc_mask_8x8.0[II_VERT_PRED as usize - 1]),
-                Some(&ii_nondc_mask_8x8.0[II_HOR_PRED as usize - 1]),
-                Some(&ii_nondc_mask_8x8.0[II_SMOOTH_PRED as usize - 1]),
-            ],
-        ],
-        [[None; 4]; 3],
-        [[None; 4]; 3],
-        [
-            [
-                Some(&ii_dc_mask.0),
-                Some(&ii_nondc_mask_8x16.0[II_VERT_PRED as usize - 1]),
-                Some(&ii_nondc_mask_8x16.0[II_HOR_PRED as usize - 1]),
-                Some(&ii_nondc_mask_8x16.0[II_SMOOTH_PRED as usize - 1]),
-            ],
-            [
-                Some(&ii_dc_mask.0),
-                Some(&ii_nondc_mask_4x16.0[II_VERT_PRED as usize - 1]),
-                Some(&ii_nondc_mask_4x16.0[II_HOR_PRED as usize - 1]),
-                Some(&ii_nondc_mask_4x16.0[II_SMOOTH_PRED as usize - 1]),
-            ],
-            [
-                Some(&ii_dc_mask.0),
-                Some(&ii_nondc_mask_4x8.0[II_VERT_PRED as usize - 1]),
-                Some(&ii_nondc_mask_4x8.0[II_HOR_PRED as usize - 1]),
-                Some(&ii_nondc_mask_4x8.0[II_SMOOTH_PRED as usize - 1]),
-            ],
+            Some(&ii_dc_mask.0),
+            Some(&ii_nondc_mask_4x16.0[II_VERT_PRED as usize - 1]),
+            Some(&ii_nondc_mask_4x16.0[II_HOR_PRED as usize - 1]),
+            Some(&ii_nondc_mask_4x16.0[II_SMOOTH_PRED as usize - 1]),
         ],
         [
-            [
-                Some(&ii_dc_mask.0),
-                Some(&ii_nondc_mask_8x8.0[II_VERT_PRED as usize - 1]),
-                Some(&ii_nondc_mask_8x8.0[II_HOR_PRED as usize - 1]),
-                Some(&ii_nondc_mask_8x8.0[II_SMOOTH_PRED as usize - 1]),
-            ],
-            [
-                Some(&ii_dc_mask.0),
-                Some(&ii_nondc_mask_4x8.0[II_VERT_PRED as usize - 1]),
-                Some(&ii_nondc_mask_4x8.0[II_HOR_PRED as usize - 1]),
-                Some(&ii_nondc_mask_4x8.0[II_SMOOTH_PRED as usize - 1]),
-            ],
-            [
-                Some(&ii_dc_mask.0),
-                Some(&ii_nondc_mask_4x4.0[II_VERT_PRED as usize - 1]),
-                Some(&ii_nondc_mask_4x4.0[II_HOR_PRED as usize - 1]),
-                Some(&ii_nondc_mask_4x4.0[II_SMOOTH_PRED as usize - 1]),
-            ],
+            Some(&ii_dc_mask.0),
+            Some(&ii_nondc_mask_4x8.0[II_VERT_PRED as usize - 1]),
+            Some(&ii_nondc_mask_4x8.0[II_HOR_PRED as usize - 1]),
+            Some(&ii_nondc_mask_4x8.0[II_SMOOTH_PRED as usize - 1]),
         ],
-        [[None; 4]; 3],
-        [[None; 4]; 3],
-        [[None; 4]; 3],
-        [[None; 4]; 3],
+    ];
+    dav1d_ii_masks[BS_16x8 as usize] = [
+        [
+            Some(&ii_dc_mask.0),
+            Some(&ii_nondc_mask_16x16.0[II_VERT_PRED as usize - 1]),
+            Some(&ii_nondc_mask_16x16.0[II_HOR_PRED as usize - 1]),
+            Some(&ii_nondc_mask_16x16.0[II_SMOOTH_PRED as usize - 1]),
+        ],
+        [
+            Some(&ii_dc_mask.0),
+            Some(&ii_nondc_mask_8x8.0[II_VERT_PRED as usize - 1]),
+            Some(&ii_nondc_mask_8x8.0[II_HOR_PRED as usize - 1]),
+            Some(&ii_nondc_mask_8x8.0[II_SMOOTH_PRED as usize - 1]),
+        ],
+        [
+            Some(&ii_dc_mask.0),
+            Some(&ii_nondc_mask_8x8.0[II_VERT_PRED as usize - 1]),
+            Some(&ii_nondc_mask_8x8.0[II_HOR_PRED as usize - 1]),
+            Some(&ii_nondc_mask_8x8.0[II_SMOOTH_PRED as usize - 1]),
+        ],
+    ];
+    dav1d_ii_masks[BS_16x16 as usize] = [
+        [
+            Some(&ii_dc_mask.0),
+            Some(&ii_nondc_mask_16x16.0[II_VERT_PRED as usize - 1]),
+            Some(&ii_nondc_mask_16x16.0[II_HOR_PRED as usize - 1]),
+            Some(&ii_nondc_mask_16x16.0[II_SMOOTH_PRED as usize - 1]),
+        ],
+        [
+            Some(&ii_dc_mask.0),
+            Some(&ii_nondc_mask_8x16.0[II_VERT_PRED as usize - 1]),
+            Some(&ii_nondc_mask_8x16.0[II_HOR_PRED as usize - 1]),
+            Some(&ii_nondc_mask_8x16.0[II_SMOOTH_PRED as usize - 1]),
+        ],
+        [
+            Some(&ii_dc_mask.0),
+            Some(&ii_nondc_mask_8x8.0[II_VERT_PRED as usize - 1]),
+            Some(&ii_nondc_mask_8x8.0[II_HOR_PRED as usize - 1]),
+            Some(&ii_nondc_mask_8x8.0[II_SMOOTH_PRED as usize - 1]),
+        ],
+    ];
+    dav1d_ii_masks[BS_16x32 as usize] = [
+        [
+            Some(&ii_dc_mask.0),
+            Some(&ii_nondc_mask_16x32.0[II_VERT_PRED as usize - 1]),
+            Some(&ii_nondc_mask_16x32.0[II_HOR_PRED as usize - 1]),
+            Some(&ii_nondc_mask_16x32.0[II_SMOOTH_PRED as usize - 1]),
+        ],
+        [
+            Some(&ii_dc_mask.0),
+            Some(&ii_nondc_mask_8x32.0[II_VERT_PRED as usize - 1]),
+            Some(&ii_nondc_mask_8x32.0[II_HOR_PRED as usize - 1]),
+            Some(&ii_nondc_mask_8x32.0[II_SMOOTH_PRED as usize - 1]),
+        ],
+        [
+            Some(&ii_dc_mask.0),
+            Some(&ii_nondc_mask_8x16.0[II_VERT_PRED as usize - 1]),
+            Some(&ii_nondc_mask_8x16.0[II_HOR_PRED as usize - 1]),
+            Some(&ii_nondc_mask_8x16.0[II_SMOOTH_PRED as usize - 1]),
+        ],
+    ];
+    dav1d_ii_masks[BS_32x16 as usize] = [
+        [
+            Some(&ii_dc_mask.0),
+            Some(&ii_nondc_mask_32x32.0[II_VERT_PRED as usize - 1]),
+            Some(&ii_nondc_mask_32x32.0[II_HOR_PRED as usize - 1]),
+            Some(&ii_nondc_mask_32x32.0[II_SMOOTH_PRED as usize - 1]),
+        ],
+        [
+            Some(&ii_dc_mask.0),
+            Some(&ii_nondc_mask_16x16.0[II_VERT_PRED as usize - 1]),
+            Some(&ii_nondc_mask_16x16.0[II_HOR_PRED as usize - 1]),
+            Some(&ii_nondc_mask_16x16.0[II_SMOOTH_PRED as usize - 1]),
+        ],
+        [
+            Some(&ii_dc_mask.0),
+            Some(&ii_nondc_mask_16x16.0[II_VERT_PRED as usize - 1]),
+            Some(&ii_nondc_mask_16x16.0[II_HOR_PRED as usize - 1]),
+            Some(&ii_nondc_mask_16x16.0[II_SMOOTH_PRED as usize - 1]),
+        ],
+    ];
+    dav1d_ii_masks[BS_32x32 as usize] = [
+        [
+            Some(&ii_dc_mask.0),
+            Some(&ii_nondc_mask_32x32.0[II_VERT_PRED as usize - 1]),
+            Some(&ii_nondc_mask_32x32.0[II_HOR_PRED as usize - 1]),
+            Some(&ii_nondc_mask_32x32.0[II_SMOOTH_PRED as usize - 1]),
+        ],
+        [
+            Some(&ii_dc_mask.0),
+            Some(&ii_nondc_mask_16x32.0[II_VERT_PRED as usize - 1]),
+            Some(&ii_nondc_mask_16x32.0[II_HOR_PRED as usize - 1]),
+            Some(&ii_nondc_mask_16x32.0[II_SMOOTH_PRED as usize - 1]),
+        ],
+        [
+            Some(&ii_dc_mask.0),
+            Some(&ii_nondc_mask_16x16.0[II_VERT_PRED as usize - 1]),
+            Some(&ii_nondc_mask_16x16.0[II_HOR_PRED as usize - 1]),
+            Some(&ii_nondc_mask_16x16.0[II_SMOOTH_PRED as usize - 1]),
+        ],
     ];
 }
 
