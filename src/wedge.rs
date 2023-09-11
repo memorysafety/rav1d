@@ -579,7 +579,6 @@ pub static dav1d_ii_masks: [[[Option<&'static [u8]>; N_INTER_INTRA_PRED_MODES]; 
 };
 
 const fn build_nondc_ii_masks<const N: usize>(
-    mut masks: [[u8; N]; N_II_PRED_MODES],
     w: usize,
     h: usize,
     step: usize,
@@ -588,6 +587,8 @@ const fn build_nondc_ii_masks<const N: usize>(
         60, 52, 45, 39, 34, 30, 26, 22, 19, 17, 15, 13, 11, 10, 8, 7, 6, 6, 5, 4, 4, 3, 3, 2, 2, 2,
         2, 1, 1, 1, 1, 1,
     ];
+
+    let mut masks = [[0; N]; N_II_PRED_MODES];
 
     const_for!(y in 0..h => {
         let off = y * w;
@@ -608,13 +609,13 @@ pub unsafe fn dav1d_init_interintra_masks() {
     // This function is guaranteed to be called only once
 
     memset(ii_dc_mask.0.as_mut_ptr() as *mut libc::c_void, 32, 32 * 32);
-    ii_nondc_mask_32x32.0 = build_nondc_ii_masks(ii_nondc_mask_32x32.0, 32, 32, 1);
-    ii_nondc_mask_16x32.0 = build_nondc_ii_masks(ii_nondc_mask_16x32.0, 16, 32, 1);
-    ii_nondc_mask_16x16.0 = build_nondc_ii_masks(ii_nondc_mask_16x16.0, 16, 16, 2);
-    ii_nondc_mask_8x32.0 = build_nondc_ii_masks(ii_nondc_mask_8x32.0, 8, 32, 1);
-    ii_nondc_mask_8x16.0 = build_nondc_ii_masks(ii_nondc_mask_8x16.0, 8, 16, 2);
-    ii_nondc_mask_8x8.0 = build_nondc_ii_masks(ii_nondc_mask_8x8.0, 8, 8, 4);
-    ii_nondc_mask_4x16.0 = build_nondc_ii_masks(ii_nondc_mask_4x16.0, 4, 16, 2);
-    ii_nondc_mask_4x8.0 = build_nondc_ii_masks(ii_nondc_mask_4x8.0, 4, 8, 4);
-    ii_nondc_mask_4x4.0 = build_nondc_ii_masks(ii_nondc_mask_4x4.0, 4, 4, 8);
+    ii_nondc_mask_32x32.0 = build_nondc_ii_masks(32, 32, 1);
+    ii_nondc_mask_16x32.0 = build_nondc_ii_masks(16, 32, 1);
+    ii_nondc_mask_16x16.0 = build_nondc_ii_masks(16, 16, 2);
+    ii_nondc_mask_8x32.0 = build_nondc_ii_masks(8, 32, 1);
+    ii_nondc_mask_8x16.0 = build_nondc_ii_masks(8, 16, 2);
+    ii_nondc_mask_8x8.0 = build_nondc_ii_masks(8, 8, 4);
+    ii_nondc_mask_4x16.0 = build_nondc_ii_masks(4, 16, 2);
+    ii_nondc_mask_4x8.0 = build_nondc_ii_masks(4, 8, 4);
+    ii_nondc_mask_4x4.0 = build_nondc_ii_masks(4, 4, 8);
 }
