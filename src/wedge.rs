@@ -282,11 +282,11 @@ unsafe extern "C" fn fill2d_16x2(
         ptr = ptr.offset((w * h) as isize);
         n += 1;
     }
-    let mut n_0 = 0;
+    let mut n = 0;
     let mut off = 0;
-    while n_0 < 16 {
+    while n < 16 {
         invert(ptr.offset(off as isize), dst.offset(off as isize), w, h);
-        n_0 += 1;
+        n += 1;
         off += w * h;
     }
     let n_stride_444 = w * h;
@@ -295,59 +295,59 @@ unsafe extern "C" fn fill2d_16x2(
     let sign_stride_444 = 16 * n_stride_444;
     let sign_stride_422 = 16 * n_stride_422;
     let sign_stride_420 = 16 * n_stride_420;
-    let mut n_1 = 0;
-    while n_1 < 16 {
-        let sign = (signs >> n_1 & 1) as libc::c_int;
-        dav1d_wedge_masks[bs as usize][0][0][n_1 as usize] =
+    let mut n = 0;
+    while n < 16 {
+        let sign = (signs >> n & 1) as libc::c_int;
+        dav1d_wedge_masks[bs as usize][0][0][n as usize] =
             &mut *masks_444.offset((sign * sign_stride_444) as isize) as *mut u8;
-        dav1d_wedge_masks[bs as usize][0][1][n_1 as usize] =
+        dav1d_wedge_masks[bs as usize][0][1][n as usize] =
             &mut *masks_444.offset((sign * sign_stride_444) as isize) as *mut u8;
-        dav1d_wedge_masks[bs as usize][1][0][n_1 as usize] =
+        dav1d_wedge_masks[bs as usize][1][0][n as usize] =
             &mut *masks_422.offset((sign * sign_stride_422) as isize) as *mut u8;
-        dav1d_wedge_masks[bs as usize][1][1][n_1 as usize] = &mut *masks_422
+        dav1d_wedge_masks[bs as usize][1][1][n as usize] = &mut *masks_422
             .offset(((sign == 0) as libc::c_int * sign_stride_422) as isize)
             as *mut u8;
-        dav1d_wedge_masks[bs as usize][2][0][n_1 as usize] =
+        dav1d_wedge_masks[bs as usize][2][0][n as usize] =
             &mut *masks_420.offset((sign * sign_stride_420) as isize) as *mut u8;
-        dav1d_wedge_masks[bs as usize][2][1][n_1 as usize] = &mut *masks_420
+        dav1d_wedge_masks[bs as usize][2][1][n as usize] = &mut *masks_420
             .offset(((sign == 0) as libc::c_int * sign_stride_420) as isize)
             as *mut u8;
         masks_444 = masks_444.offset(n_stride_444 as isize);
         masks_422 = masks_422.offset(n_stride_422 as isize);
         masks_420 = masks_420.offset(n_stride_420 as isize);
         init_chroma(
-            dav1d_wedge_masks[bs as usize][1][0][n_1 as usize] as *mut u8,
-            dav1d_wedge_masks[bs as usize][0][0][n_1 as usize],
+            dav1d_wedge_masks[bs as usize][1][0][n as usize] as *mut u8,
+            dav1d_wedge_masks[bs as usize][0][0][n as usize],
             0,
             w,
             h,
             0,
         );
         init_chroma(
-            dav1d_wedge_masks[bs as usize][1][1][n_1 as usize] as *mut u8,
-            dav1d_wedge_masks[bs as usize][0][0][n_1 as usize],
+            dav1d_wedge_masks[bs as usize][1][1][n as usize] as *mut u8,
+            dav1d_wedge_masks[bs as usize][0][0][n as usize],
             1,
             w,
             h,
             0,
         );
         init_chroma(
-            dav1d_wedge_masks[bs as usize][2][0][n_1 as usize] as *mut u8,
-            dav1d_wedge_masks[bs as usize][0][0][n_1 as usize],
+            dav1d_wedge_masks[bs as usize][2][0][n as usize] as *mut u8,
+            dav1d_wedge_masks[bs as usize][0][0][n as usize],
             0,
             w,
             h,
             1,
         );
         init_chroma(
-            dav1d_wedge_masks[bs as usize][2][1][n_1 as usize] as *mut u8,
-            dav1d_wedge_masks[bs as usize][0][0][n_1 as usize],
+            dav1d_wedge_masks[bs as usize][2][1][n as usize] as *mut u8,
+            dav1d_wedge_masks[bs as usize][0][0][n as usize],
             1,
             w,
             h,
             1,
         );
-        n_1 += 1;
+        n += 1;
     }
 }
 
@@ -379,26 +379,26 @@ pub unsafe extern "C" fn dav1d_init_wedge_masks() {
         y += 1;
         off += 64;
     }
-    let mut y_0 = 0;
-    let mut off_0 = 0;
+    let mut y = 0;
+    let mut off = 0;
     let mut ctr = 48;
-    while y_0 < 64 {
+    while y < 64 {
         insert_border(
             &mut *(*master.as_mut_ptr().offset(WEDGE_OBLIQUE63 as isize))
                 .as_mut_ptr()
-                .offset(off_0 as isize),
+                .offset(off as isize),
             (wedge_master_border[WEDGE_MASTER_LINE_EVEN as usize]).as_ptr(),
             ctr,
         );
         insert_border(
             &mut *(*master.as_mut_ptr().offset(WEDGE_OBLIQUE63 as isize))
                 .as_mut_ptr()
-                .offset((off_0 + 64) as isize),
+                .offset((off + 64) as isize),
             (wedge_master_border[WEDGE_MASTER_LINE_ODD as usize]).as_ptr(),
             ctr - 1,
         );
-        y_0 += 2;
-        off_0 += 128;
+        y += 2;
+        off += 128;
         ctr -= 1;
     }
     transpose(
