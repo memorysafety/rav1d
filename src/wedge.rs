@@ -140,21 +140,14 @@ static mut wedge_masks_420_4x4: Align64<[u8; 2 * 16 * 4 * 4]> = Align64([0; 2 * 
 pub static mut dav1d_wedge_masks: [[[[*const u8; 16]; 2]; 3]; N_BS_SIZES] =
     [[[[0 as *const u8; 16]; 2]; 3]; N_BS_SIZES];
 
-unsafe fn insert_border(dst: *mut u8, src: *const u8, ctr: usize) {
+unsafe fn insert_border(dst: &mut [u8], src: &[u8], ctr: usize) {
     if ctr > 4 {
-        memset(dst as *mut libc::c_void, 0, ctr as libc::c_ulong - 4);
+        dst[..ctr - 4].fill(0);
     }
-    memcpy(
-        dst.offset(cmp::max(ctr, 4) as isize).offset(-4) as *mut libc::c_void,
-        src.offset(cmp::max(4 - ctr as isize, 0)) as *const libc::c_void,
-        cmp::min(64 - ctr as libc::c_ulong, 8),
-    );
+    dst[cmp::max(ctr, 4) - 4..][..cmp::min(64 - ctr, 8)]
+        .copy_from_slice(&src[cmp::max(4 - ctr as isize, 0) as usize..][..cmp::min(64 - ctr, 8)]);
     if ctr < 64 - 4 {
-        memset(
-            dst.offset(ctr as isize).offset(4) as *mut libc::c_void,
-            64,
-            64 - 4 - ctr as libc::c_ulong,
-        );
+        dst[ctr + 4..][..64 - 4 - ctr].fill(64);
     }
 }
 
@@ -378,10 +371,8 @@ pub unsafe fn dav1d_init_wedge_masks() {
     let mut off = 0;
     while y < 64 {
         insert_border(
-            (*master.as_mut_ptr().offset(WEDGE_VERTICAL as isize))
-                .as_mut_ptr()
-                .offset(off as isize),
-            wedge_master_border[WEDGE_MASTER_LINE_VERT as usize].as_ptr(),
+            &mut master[WEDGE_VERTICAL as usize][off..],
+            &wedge_master_border[WEDGE_MASTER_LINE_VERT as usize],
             32,
         );
         y += 1;
@@ -392,17 +383,13 @@ pub unsafe fn dav1d_init_wedge_masks() {
     let mut ctr = 48;
     while y < 64 {
         insert_border(
-            (*master.as_mut_ptr().offset(WEDGE_OBLIQUE63 as isize))
-                .as_mut_ptr()
-                .offset(off as isize),
-            wedge_master_border[WEDGE_MASTER_LINE_EVEN as usize].as_ptr(),
+            &mut master[WEDGE_OBLIQUE63 as usize][off..],
+            &wedge_master_border[WEDGE_MASTER_LINE_EVEN as usize],
             ctr,
         );
         insert_border(
-            (*master.as_mut_ptr().offset(WEDGE_OBLIQUE63 as isize))
-                .as_mut_ptr()
-                .offset((off + 64) as isize),
-            wedge_master_border[WEDGE_MASTER_LINE_ODD as usize].as_ptr(),
+            &mut master[WEDGE_OBLIQUE63 as usize][off + 64..],
+            &wedge_master_border[WEDGE_MASTER_LINE_ODD as usize],
             ctr - 1,
         );
         y += 2;
