@@ -141,7 +141,8 @@ static mut wedge_masks_420_4x4: Align64<[u8; 2 * 16 * 4 * 4]> = Align64([0; 2 * 
 pub static mut dav1d_wedge_masks: [[[[*const u8; 16]; 2]; 3]; N_BS_SIZES] =
     [[[[0 as *const u8; 16]; 2]; 3]; N_BS_SIZES];
 
-fn insert_border(dst: &mut [u8], src: &[u8; 8], ctr: usize) {
+fn insert_border(dst: &mut [u8; 64 * 64], y: usize, src: &[u8; 8], ctr: usize) {
+    let dst = &mut dst[y * 64..];
     if ctr > 4 {
         dst[..ctr - 4].fill(0);
     }
@@ -355,7 +356,8 @@ pub unsafe fn dav1d_init_wedge_masks() {
     let mut y = 0;
     while y < 64 {
         insert_border(
-            &mut master[WEDGE_VERTICAL as usize][y * 64..],
+            &mut master[WEDGE_VERTICAL as usize],
+            y,
             &wedge_master_border[WEDGE_MASTER_LINE_VERT as usize],
             32,
         );
@@ -365,12 +367,14 @@ pub unsafe fn dav1d_init_wedge_masks() {
     let mut ctr = 48;
     while y < 64 {
         insert_border(
-            &mut master[WEDGE_OBLIQUE63 as usize][y * 64..],
+            &mut master[WEDGE_OBLIQUE63 as usize],
+            y,
             &wedge_master_border[WEDGE_MASTER_LINE_EVEN as usize],
             ctr,
         );
         insert_border(
-            &mut master[WEDGE_OBLIQUE63 as usize][(y + 1) * 64..],
+            &mut master[WEDGE_OBLIQUE63 as usize],
+            y + 1,
             &wedge_master_border[WEDGE_MASTER_LINE_ODD as usize],
             ctr - 1,
         );
