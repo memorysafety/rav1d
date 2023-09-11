@@ -141,15 +141,17 @@ static mut wedge_masks_420_4x4: Align64<[u8; 2 * 16 * 4 * 4]> = Align64([0; 2 * 
 pub static mut dav1d_wedge_masks: [[[[*const u8; 16]; 2]; 3]; N_BS_SIZES] =
     [[[[0 as *const u8; 16]; 2]; 3]; N_BS_SIZES];
 
-fn insert_border(dst: &mut [u8; 64 * 64], y: usize, src: &[u8; 8], ctr: usize) {
+fn insert_border(mut dst: [u8; 64 * 64], y: usize, src: &[u8; 8], ctr: usize) -> [u8; 64 * 64] {
     if ctr > 4 {
         dst[y * 64..][..ctr - 4].fill(0);
     }
     let len = cmp::min(64 - ctr, 8);
-    dst[y * 64 + ctr.saturating_sub(4)..][..len].copy_from_slice(&src[4usize.saturating_sub(ctr)..][..len]);
+    dst[y * 64 + ctr.saturating_sub(4)..][..len]
+        .copy_from_slice(&src[4usize.saturating_sub(ctr)..][..len]);
     if ctr < 64 - 4 {
         dst[y * 64 + ctr + 4..][..64 - 4 - ctr].fill(64);
     }
+    dst
 }
 
 const fn hflip(src: &[u8; 64 * 64]) -> [u8; 64 * 64] {
@@ -354,8 +356,8 @@ pub unsafe fn dav1d_init_wedge_masks() {
     // create master templates
     let mut y = 0;
     while y < 64 {
-        insert_border(
-            &mut master[WEDGE_VERTICAL as usize],
+        master[WEDGE_VERTICAL as usize] = insert_border(
+            master[WEDGE_VERTICAL as usize],
             y,
             &wedge_master_border[WEDGE_MASTER_LINE_VERT as usize],
             32,
@@ -365,14 +367,14 @@ pub unsafe fn dav1d_init_wedge_masks() {
     let mut y = 0;
     let mut ctr = 48;
     while y < 64 {
-        insert_border(
-            &mut master[WEDGE_OBLIQUE63 as usize],
+        master[WEDGE_OBLIQUE63 as usize] = insert_border(
+            master[WEDGE_OBLIQUE63 as usize],
             y,
             &wedge_master_border[WEDGE_MASTER_LINE_EVEN as usize],
             ctr,
         );
-        insert_border(
-            &mut master[WEDGE_OBLIQUE63 as usize],
+        master[WEDGE_OBLIQUE63 as usize] = insert_border(
+            master[WEDGE_OBLIQUE63 as usize],
             y + 1,
             &wedge_master_border[WEDGE_MASTER_LINE_ODD as usize],
             ctr - 1,
