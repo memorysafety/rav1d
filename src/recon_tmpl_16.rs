@@ -552,8 +552,8 @@ pub type angular_ipred_fn = Option<
         libc::c_int,
     ) -> (),
 >;
-use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
 use crate::src::cdf::CdfThreadContext;
+use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
 
 use crate::src::internal::Dav1dContext_frame_thread;
 use crate::src::internal::Dav1dContext_refs;

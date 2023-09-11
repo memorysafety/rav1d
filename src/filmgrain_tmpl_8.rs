@@ -1743,7 +1743,7 @@ unsafe extern "C" fn fguv_32x32xn_444_neon_erased(
         luma_row.cast(),
         luma_stride,
         uv,
-        is_id
+        is_id,
     )
 }
 
