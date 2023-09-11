@@ -142,14 +142,13 @@ pub static mut dav1d_wedge_masks: [[[[*const u8; 16]; 2]; 3]; N_BS_SIZES] =
     [[[[0 as *const u8; 16]; 2]; 3]; N_BS_SIZES];
 
 fn insert_border(dst: &mut [u8; 64 * 64], y: usize, src: &[u8; 8], ctr: usize) {
-    let dst = &mut dst[y * 64..];
     if ctr > 4 {
-        dst[..ctr - 4].fill(0);
+        dst[y * 64..][..ctr - 4].fill(0);
     }
     let len = cmp::min(64 - ctr, 8);
-    dst[ctr.saturating_sub(4)..][..len].copy_from_slice(&src[4usize.saturating_sub(ctr)..][..len]);
+    dst[y * 64 + ctr.saturating_sub(4)..][..len].copy_from_slice(&src[4usize.saturating_sub(ctr)..][..len]);
     if ctr < 64 - 4 {
-        dst[ctr + 4..][..64 - 4 - ctr].fill(64);
+        dst[y * 64 + ctr + 4..][..64 - 4 - ctr].fill(64);
     }
 }
 
