@@ -544,8 +544,41 @@ static mut ii_nondc_mask_4x8: Align32<[[u8; 4 * 8]; N_II_PRED_MODES]> =
 static mut ii_nondc_mask_4x4: Align16<[[u8; 4 * 4]; N_II_PRED_MODES]> =
     Align16([[0; 4 * 4]; N_II_PRED_MODES]);
 
-pub static mut dav1d_ii_masks: [[[Option<&'static [u8]>; N_INTER_INTRA_PRED_MODES]; 3];
-    N_BS_SIZES] = [[[None; N_INTER_INTRA_PRED_MODES]; 3]; N_BS_SIZES];
+pub static dav1d_ii_masks: [[[Option<&'static [u8]>; N_INTER_INTRA_PRED_MODES]; 3]; N_BS_SIZES] = {
+    let mut masks = [[[None; N_INTER_INTRA_PRED_MODES]; 3]; N_BS_SIZES];
+
+    macro_rules! set1 {
+        ($sz:ident) => {{
+            let mut a: [Option<&'static [u8]>; N_INTER_INTRA_PRED_MODES] = [None; 4];
+            paste! {
+                // Safety: [`dav1d_init_interintra_masks`] is only called once at the beginning.
+                unsafe {
+                    a[II_DC_PRED as usize] = Some(&ii_dc_mask.0);
+                    a[II_VERT_PRED as usize] = Some(&[<ii_nondc_mask $sz>].0[II_VERT_PRED as usize - 1]);
+                    a[II_HOR_PRED as usize] = Some(&[<ii_nondc_mask $sz>].0[II_HOR_PRED as usize - 1]);
+                    a[II_SMOOTH_PRED as usize] = Some(&[<ii_nondc_mask $sz>].0[II_SMOOTH_PRED as usize - 1]);
+                }
+            }
+            a
+        }};
+    }
+
+    macro_rules! set {
+        ($sz_444:ident, $sz_422:ident, $sz_420:ident) => {
+            [set1!($sz_444), set1!($sz_422), set1!($sz_420)]
+        };
+    }
+
+    masks[BS_8x8 as usize] = set!(_8x8, _4x8, _4x4);
+    masks[BS_8x16 as usize] = set!(_8x16, _4x16, _4x8);
+    masks[BS_16x8 as usize] = set!(_16x16, _8x8, _8x8);
+    masks[BS_16x16 as usize] = set!(_16x16, _8x16, _8x8);
+    masks[BS_16x32 as usize] = set!(_16x32, _8x32, _8x16);
+    masks[BS_32x16 as usize] = set!(_32x32, _16x16, _16x16);
+    masks[BS_32x32 as usize] = set!(_32x32, _16x32, _16x16);
+
+    masks
+};
 
 #[cold]
 unsafe fn build_nondc_ii_masks(
@@ -658,38 +691,3 @@ pub unsafe fn dav1d_init_interintra_masks() {
         8,
     );
 }
-
-unsafe extern "C" fn run_static_initializers() {
-    macro_rules! set1 {
-        ($sz:ident) => {{
-            let mut a: [Option<&'static [u8]>; N_INTER_INTRA_PRED_MODES] = [None; 4];
-            paste! {
-                a[II_DC_PRED as usize] = Some(&ii_dc_mask.0);
-                a[II_VERT_PRED as usize] = Some(&[<ii_nondc_mask $sz>].0[II_VERT_PRED as usize - 1]);
-                a[II_HOR_PRED as usize] = Some(&[<ii_nondc_mask $sz>].0[II_HOR_PRED as usize - 1]);
-                a[II_SMOOTH_PRED as usize] = Some(&[<ii_nondc_mask $sz>].0[II_SMOOTH_PRED as usize - 1]);
-            }
-            a
-        }};
-    }
-
-    macro_rules! set {
-        ($sz_444:ident, $sz_422:ident, $sz_420:ident) => {
-            [set1!($sz_444), set1!($sz_422), set1!($sz_420)]
-        };
-    }
-
-    dav1d_ii_masks[BS_8x8 as usize] = set!(_8x8, _4x8, _4x4);
-    dav1d_ii_masks[BS_8x16 as usize] = set!(_8x16, _4x16, _4x8);
-    dav1d_ii_masks[BS_16x8 as usize] = set!(_16x16, _8x8, _8x8);
-    dav1d_ii_masks[BS_16x16 as usize] = set!(_16x16, _8x16, _8x8);
-    dav1d_ii_masks[BS_16x32 as usize] = set!(_16x32, _8x32, _8x16);
-    dav1d_ii_masks[BS_32x16 as usize] = set!(_32x32, _16x16, _16x16);
-    dav1d_ii_masks[BS_32x32 as usize] = set!(_32x32, _16x32, _16x16);
-}
-
-#[used]
-#[cfg_attr(target_os = "linux", link_section = ".init_array")]
-#[cfg_attr(target_os = "windows", link_section = ".CRT$XIB")]
-#[cfg_attr(target_os = "macos", link_section = "__DATA,__mod_init_func")]
-static INIT_ARRAY: [unsafe extern "C" fn(); 1] = [run_static_initializers];
