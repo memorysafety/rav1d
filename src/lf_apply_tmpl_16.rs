@@ -85,7 +85,6 @@ use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 
-use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 
 use crate::src::internal::Dav1dFrameContext_lf;
@@ -471,58 +470,8 @@ pub type angular_ipred_fn = Option<
         libc::c_int,
     ) -> (),
 >;
-#[repr(C)]
-pub struct Dav1dFilmGrainDSPContext {
-    pub generate_grain_y: generate_grain_y_fn,
-    pub generate_grain_uv: [generate_grain_uv_fn; 3],
-    pub fgy_32x32xn: fgy_32x32xn_fn,
-    pub fguv_32x32xn: [fguv_32x32xn_fn; 3],
-}
-pub type fguv_32x32xn_fn = Option<
-    unsafe extern "C" fn(
-        *mut pixel,
-        *const pixel,
-        ptrdiff_t,
-        *const Dav1dFilmGrainData,
-        size_t,
-        *const uint8_t,
-        *const [entry; 82],
-        libc::c_int,
-        libc::c_int,
-        *const pixel,
-        ptrdiff_t,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
-pub type entry = int16_t;
-pub type fgy_32x32xn_fn = Option<
-    unsafe extern "C" fn(
-        *mut pixel,
-        *const pixel,
-        ptrdiff_t,
-        *const Dav1dFilmGrainData,
-        size_t,
-        *const uint8_t,
-        *const [entry; 82],
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
-pub type generate_grain_uv_fn = Option<
-    unsafe extern "C" fn(
-        *mut [entry; 82],
-        *const [entry; 82],
-        *const Dav1dFilmGrainData,
-        intptr_t,
-        libc::c_int,
-    ) -> (),
->;
-pub type generate_grain_y_fn =
-    Option<unsafe extern "C" fn(*mut [entry; 82], *const Dav1dFilmGrainData, libc::c_int) -> ()>;
 use crate::src::cdf::CdfThreadContext;
+use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
 
 use crate::src::internal::Dav1dContext_frame_thread;
 use crate::src::internal::Dav1dContext_refs;

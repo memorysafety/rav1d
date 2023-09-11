@@ -18,57 +18,8 @@ use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::picture::Dav1dPicture;
 pub type pixel = uint16_t;
 pub type entry = int16_t;
-pub type generate_grain_y_fn =
-    Option<unsafe extern "C" fn(*mut [entry; 82], *const Dav1dFilmGrainData, libc::c_int) -> ()>;
-pub type generate_grain_uv_fn = Option<
-    unsafe extern "C" fn(
-        *mut [entry; 82],
-        *const [entry; 82],
-        *const Dav1dFilmGrainData,
-        intptr_t,
-        libc::c_int,
-    ) -> (),
->;
-pub type fgy_32x32xn_fn = Option<
-    unsafe extern "C" fn(
-        *mut pixel,
-        *const pixel,
-        ptrdiff_t,
-        *const Dav1dFilmGrainData,
-        size_t,
-        *const uint8_t,
-        *const [entry; 82],
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
-pub type fguv_32x32xn_fn = Option<
-    unsafe extern "C" fn(
-        *mut pixel,
-        *const pixel,
-        ptrdiff_t,
-        *const Dav1dFilmGrainData,
-        size_t,
-        *const uint8_t,
-        *const [entry; 82],
-        libc::c_int,
-        libc::c_int,
-        *const pixel,
-        ptrdiff_t,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
-#[repr(C)]
-pub struct Dav1dFilmGrainDSPContext {
-    pub generate_grain_y: generate_grain_y_fn,
-    pub generate_grain_uv: [generate_grain_uv_fn; 3],
-    pub fgy_32x32xn: fgy_32x32xn_fn,
-    pub fguv_32x32xn: [fguv_32x32xn_fn; 3],
-}
 use crate::include::common::intops::imin;
+use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     if x & 1 != 0 {
@@ -163,7 +114,7 @@ pub unsafe extern "C" fn dav1d_prep_grain_16bpc(
     let data: *const Dav1dFilmGrainData = &mut (*(*out).frame_hdr).film_grain.data;
     let bitdepth_max = ((1 as libc::c_int) << (*out).p.bpc) - 1;
     ((*dsp).generate_grain_y).expect("non-null function pointer")(
-        (*grain_lut.offset(0)).as_mut_ptr(),
+        (*grain_lut.offset(0)).as_mut_ptr().cast(),
         data,
         bitdepth_max,
     );
@@ -172,8 +123,8 @@ pub unsafe extern "C" fn dav1d_prep_grain_16bpc(
             .wrapping_sub(1 as libc::c_int as libc::c_uint)
             as usize])
             .expect("non-null function pointer")(
-            (*grain_lut.offset(1)).as_mut_ptr(),
-            (*grain_lut.offset(0)).as_mut_ptr() as *const [entry; 82],
+            (*grain_lut.offset(1)).as_mut_ptr().cast(),
+            (*grain_lut.offset(0)).as_mut_ptr().cast(),
             data,
             0 as libc::c_int as intptr_t,
             bitdepth_max,
@@ -184,8 +135,8 @@ pub unsafe extern "C" fn dav1d_prep_grain_16bpc(
             .wrapping_sub(1 as libc::c_int as libc::c_uint)
             as usize])
             .expect("non-null function pointer")(
-            (*grain_lut.offset(2)).as_mut_ptr(),
-            (*grain_lut.offset(0)).as_mut_ptr() as *const [entry; 82],
+            (*grain_lut.offset(2)).as_mut_ptr().cast(),
+            (*grain_lut.offset(0)).as_mut_ptr().cast(),
             data,
             1 as libc::c_int as intptr_t,
             bitdepth_max,
@@ -303,13 +254,14 @@ pub unsafe extern "C" fn dav1d_apply_grain_row_16bpc(
         let bh = imin((*out).p.h - row * 32, 32 as libc::c_int);
         ((*dsp).fgy_32x32xn).expect("non-null function pointer")(
             ((*out).data[0] as *mut pixel)
-                .offset(((row * 32) as isize * PXSTRIDE((*out).stride[0])) as isize),
-            luma_src,
+                .offset(((row * 32) as isize * PXSTRIDE((*out).stride[0])) as isize)
+                .cast(),
+            luma_src.cast(),
             (*out).stride[0],
             data,
             (*out).p.w as size_t,
             (*scaling.offset(0)).as_ptr(),
-            (*grain_lut.offset(0)).as_ptr(),
+            (*grain_lut.offset(0)).as_ptr().cast(),
             bh,
             row,
             bitdepth_max,
@@ -339,16 +291,20 @@ pub unsafe extern "C" fn dav1d_apply_grain_row_16bpc(
                 .wrapping_sub(1 as libc::c_int as libc::c_uint)
                 as usize])
                 .expect("non-null function pointer")(
-                ((*out).data[(1 + pl) as usize] as *mut pixel).offset(uv_off as isize),
-                ((*in_0).data[(1 + pl) as usize] as *const pixel).offset(uv_off as isize),
+                ((*out).data[(1 + pl) as usize] as *mut pixel)
+                    .offset(uv_off as isize)
+                    .cast(),
+                ((*in_0).data[(1 + pl) as usize] as *const pixel)
+                    .offset(uv_off as isize)
+                    .cast(),
                 (*in_0).stride[1],
                 data,
                 cpw as size_t,
                 (*scaling.offset(0)).as_ptr(),
-                (*grain_lut.offset((1 + pl) as isize)).as_ptr(),
+                (*grain_lut.offset((1 + pl) as isize)).as_ptr().cast(),
                 bh_0,
                 row,
-                luma_src,
+                luma_src.cast(),
                 (*in_0).stride[0],
                 pl,
                 is_id,
@@ -364,16 +320,20 @@ pub unsafe extern "C" fn dav1d_apply_grain_row_16bpc(
                     .wrapping_sub(1 as libc::c_int as libc::c_uint)
                     as usize])
                     .expect("non-null function pointer")(
-                    ((*out).data[(1 + pl_0) as usize] as *mut pixel).offset(uv_off as isize),
-                    ((*in_0).data[(1 + pl_0) as usize] as *const pixel).offset(uv_off as isize),
+                    ((*out).data[(1 + pl_0) as usize] as *mut pixel)
+                        .offset(uv_off as isize)
+                        .cast(),
+                    ((*in_0).data[(1 + pl_0) as usize] as *const pixel)
+                        .offset(uv_off as isize)
+                        .cast(),
                     (*in_0).stride[1],
                     data,
                     cpw as size_t,
                     (*scaling.offset((1 + pl_0) as isize)).as_ptr(),
-                    (*grain_lut.offset((1 + pl_0) as isize)).as_ptr(),
+                    (*grain_lut.offset((1 + pl_0) as isize)).as_ptr().cast(),
                     bh_0,
                     row,
-                    luma_src,
+                    luma_src.cast(),
                     (*in_0).stride[0],
                     pl_0,
                     is_id,
