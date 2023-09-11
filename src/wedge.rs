@@ -141,7 +141,7 @@ static mut wedge_masks_420_4x4: Align64<[u8; 2 * 16 * 4 * 4]> = Align64([0; 2 * 
 pub static mut dav1d_wedge_masks: [[[[*const u8; 16]; 2]; 3]; N_BS_SIZES] =
     [[[[0 as *const u8; 16]; 2]; 3]; N_BS_SIZES];
 
-fn insert_border(dst: &mut [u8], src: &[u8], ctr: usize) {
+fn insert_border(dst: &mut [u8], src: &[u8; 8], ctr: usize) {
     if ctr > 4 {
         dst[..ctr - 4].fill(0);
     }
