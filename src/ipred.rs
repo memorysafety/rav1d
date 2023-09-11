@@ -137,12 +137,12 @@ macro_rules! decl_fns {
         decl_fns!($fn_kind, $name, neon);
     };
 
-    ($fn_kind:ident, $name:ident, $suffix:ident) => {
+    ($fn_kind:ident, $name:ident, $asm:ident) => {
         paste::paste! {
             #[cfg(feature = "bitdepth_8")]
-            decl_fn!($fn_kind, [<dav1d_ $name _8bpc_ $suffix>]);
+            decl_fn!($fn_kind, [<dav1d_ $name _8bpc_ $asm>]);
             #[cfg(feature = "bitdepth_16")]
-            decl_fn!($fn_kind, [<dav1d_ $name _16bpc_ $suffix>]);
+            decl_fn!($fn_kind, [<dav1d_ $name _16bpc_ $asm>]);
         }
     };
 }
