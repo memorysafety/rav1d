@@ -349,9 +349,8 @@ unsafe fn fill2d_16x2(
     }
 }
 
-#[no_mangle]
 #[cold]
-pub unsafe extern "C" fn dav1d_init_wedge_masks() {
+pub unsafe fn dav1d_init_wedge_masks() {
     pub const WEDGE_MASTER_LINE_ODD: WedgeMasterLineType = 0;
     pub const WEDGE_MASTER_LINE_EVEN: WedgeMasterLineType = 1;
     pub const WEDGE_MASTER_LINE_VERT: WedgeMasterLineType = 2;
@@ -572,9 +571,8 @@ unsafe fn build_nondc_ii_masks(
     }
 }
 
-#[no_mangle]
 #[cold]
-pub unsafe extern "C" fn dav1d_init_interintra_masks() {
+pub unsafe fn dav1d_init_interintra_masks() {
     memset(ii_dc_mask.0.as_mut_ptr() as *mut libc::c_void, 32, 32 * 32);
     build_nondc_ii_masks(
         ii_nondc_mask_32x32.0[II_VERT_PRED as usize - 1].as_mut_ptr(),
