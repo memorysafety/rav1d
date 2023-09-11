@@ -3,16 +3,6 @@ use std::cmp;
 use crate::src::align::Align16;
 use crate::src::align::Align32;
 use crate::src::align::Align64;
-use ::libc;
-extern "C" {
-    fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
-    fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
-}
-
-use crate::src::levels::II_HOR_PRED;
-use crate::src::levels::II_SMOOTH_PRED;
-use crate::src::levels::II_VERT_PRED;
-
 use crate::src::levels::BS_16x16;
 use crate::src::levels::BS_16x32;
 use crate::src::levels::BS_16x8;
@@ -23,8 +13,16 @@ use crate::src::levels::BS_8x16;
 use crate::src::levels::BS_8x32;
 use crate::src::levels::BS_8x8;
 use crate::src::levels::BlockSize;
+use crate::src::levels::II_HOR_PRED;
+use crate::src::levels::II_SMOOTH_PRED;
+use crate::src::levels::II_VERT_PRED;
 use crate::src::levels::N_BS_SIZES;
 use crate::src::levels::N_INTER_INTRA_PRED_MODES;
+
+extern "C" {
+    fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
+    fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
+}
 
 pub type WedgeDirectionType = u8;
 pub const WEDGE_HORIZONTAL: WedgeDirectionType = 0;
