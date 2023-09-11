@@ -582,9 +582,7 @@ pub static dav1d_ii_masks: [[[Option<&'static [u8]>; N_INTER_INTRA_PRED_MODES]; 
 
 #[cold]
 fn build_nondc_ii_masks<const N: usize>(
-    mask_v: &mut [u8; N],
-    mask_h: &mut [u8; N],
-    mask_sm: &mut [u8; N],
+    masks: &mut [[u8; N]; N_II_PRED_MODES],
     w: usize,
     h: usize,
     step: usize,
@@ -596,10 +594,10 @@ fn build_nondc_ii_masks<const N: usize>(
 
     const_for!(y in 0..h => {
         let off = y * w;
-        mask_v[off..][..w].fill(ii_weights_1d[y * step]);
+        masks[II_VERT_PRED as usize - 1][off..][..w].fill(ii_weights_1d[y * step]);
         const_for!(x in 0..w => {
-            mask_sm[off + x] = ii_weights_1d[cmp::min(x, y) * step];
-            mask_h[off + x] = ii_weights_1d[x * step];
+            masks[II_SMOOTH_PRED as usize - 1][off + x] = ii_weights_1d[cmp::min(x, y) * step];
+            masks[II_HOR_PRED as usize - 1][off + x] = ii_weights_1d[x * step];
         });
     });
 }
@@ -609,76 +607,13 @@ pub unsafe fn dav1d_init_interintra_masks() {
     // This function is guaranteed to be called only once
 
     memset(ii_dc_mask.0.as_mut_ptr() as *mut libc::c_void, 32, 32 * 32);
-    build_nondc_ii_masks(
-        &mut ii_nondc_mask_32x32.0[II_VERT_PRED as usize - 1],
-        &mut ii_nondc_mask_32x32.0[II_HOR_PRED as usize - 1],
-        &mut ii_nondc_mask_32x32.0[II_SMOOTH_PRED as usize - 1],
-        32,
-        32,
-        1,
-    );
-    build_nondc_ii_masks(
-        &mut ii_nondc_mask_16x32.0[II_VERT_PRED as usize - 1],
-        &mut ii_nondc_mask_16x32.0[II_HOR_PRED as usize - 1],
-        &mut ii_nondc_mask_16x32.0[II_SMOOTH_PRED as usize - 1],
-        16,
-        32,
-        1,
-    );
-    build_nondc_ii_masks(
-        &mut ii_nondc_mask_16x16.0[II_VERT_PRED as usize - 1],
-        &mut ii_nondc_mask_16x16.0[II_HOR_PRED as usize - 1],
-        &mut ii_nondc_mask_16x16.0[II_SMOOTH_PRED as usize - 1],
-        16,
-        16,
-        2,
-    );
-    build_nondc_ii_masks(
-        &mut ii_nondc_mask_8x32.0[II_VERT_PRED as usize - 1],
-        &mut ii_nondc_mask_8x32.0[II_HOR_PRED as usize - 1],
-        &mut ii_nondc_mask_8x32.0[II_SMOOTH_PRED as usize - 1],
-        8,
-        32,
-        1,
-    );
-    build_nondc_ii_masks(
-        &mut ii_nondc_mask_8x16.0[II_VERT_PRED as usize - 1],
-        &mut ii_nondc_mask_8x16.0[II_HOR_PRED as usize - 1],
-        &mut ii_nondc_mask_8x16.0[II_SMOOTH_PRED as usize - 1],
-        8,
-        16,
-        2,
-    );
-    build_nondc_ii_masks(
-        &mut ii_nondc_mask_8x8.0[II_VERT_PRED as usize - 1],
-        &mut ii_nondc_mask_8x8.0[II_HOR_PRED as usize - 1],
-        &mut ii_nondc_mask_8x8.0[II_SMOOTH_PRED as usize - 1],
-        8,
-        8,
-        4,
-    );
-    build_nondc_ii_masks(
-        &mut ii_nondc_mask_4x16.0[II_VERT_PRED as usize - 1],
-        &mut ii_nondc_mask_4x16.0[II_HOR_PRED as usize - 1],
-        &mut ii_nondc_mask_4x16.0[II_SMOOTH_PRED as usize - 1],
-        4,
-        16,
-        2,
-    );
-    build_nondc_ii_masks(
-        &mut ii_nondc_mask_4x8.0[II_VERT_PRED as usize - 1],
-        &mut ii_nondc_mask_4x8.0[II_HOR_PRED as usize - 1],
-        &mut ii_nondc_mask_4x8.0[II_SMOOTH_PRED as usize - 1],
-        4,
-        8,
-        4,
-    );
-    build_nondc_ii_masks(
-        &mut ii_nondc_mask_4x4.0[II_VERT_PRED as usize - 1],
-        &mut ii_nondc_mask_4x4.0[II_HOR_PRED as usize - 1],
-        &mut ii_nondc_mask_4x4.0[II_SMOOTH_PRED as usize - 1],
-        4,
-        4,
-        8,
-    );
+    build_nondc_ii_masks(&mut ii_nondc_mask_32x32.0, 32, 32, 1);
+    build_nondc_ii_masks(&mut ii_nondc_mask_16x32.0, 16, 32, 1);
+    build_nondc_ii_masks(&mut ii_nondc_mask_16x16.0, 16, 16, 2);
+    build_nondc_ii_masks(&mut ii_nondc_mask_8x32.0, 8, 32, 1);
+    build_nondc_ii_masks(&mut ii_nondc_mask_8x16.0, 8, 16, 2);
+    build_nondc_ii_masks(&mut ii_nondc_mask_8x8.0, 8, 8, 4);
+    build_nondc_ii_masks(&mut ii_nondc_mask_4x16.0, 4, 16, 2);
+    build_nondc_ii_masks(&mut ii_nondc_mask_4x8.0, 4, 8, 4);
+    build_nondc_ii_masks(&mut ii_nondc_mask_4x4.0, 4, 4, 8);
 }
