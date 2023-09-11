@@ -289,7 +289,7 @@ unsafe fn fill2d_16x2(
         n += 1;
         off += w * h;
     }
-    
+
     let n_stride_444 = w * h;
     let n_stride_422 = n_stride_444 >> 1;
     let n_stride_420 = n_stride_444 >> 2;
@@ -317,7 +317,7 @@ unsafe fn fill2d_16x2(
         masks_444 = masks_444.offset(n_stride_444 as isize);
         masks_422 = masks_422.offset(n_stride_422 as isize);
         masks_420 = masks_420.offset(n_stride_420 as isize);
-        
+
         // since the pointers come from inside, we know that
         // violation of the const is OK here. Any other approach
         // means we would have to duplicate the sign correction
@@ -362,7 +362,7 @@ unsafe fn fill2d_16x2(
 #[cold]
 pub unsafe fn dav1d_init_wedge_masks() {
     // This function is guaranteed to be called only once
-    
+
     pub const WEDGE_MASTER_LINE_ODD: WedgeMasterLineType = 0;
     pub const WEDGE_MASTER_LINE_EVEN: WedgeMasterLineType = 1;
     pub const WEDGE_MASTER_LINE_VERT: WedgeMasterLineType = 2;
@@ -541,15 +541,27 @@ pub unsafe fn dav1d_init_wedge_masks() {
 }
 
 static mut ii_dc_mask: Align64<[u8; 1024]> = Align64([0; 1024]);
-static mut ii_nondc_mask_32x32: Align64<[[u8; 1024]; 3]> = Align64([[0; 1024]; 3]);
-static mut ii_nondc_mask_16x32: Align64<[[u8; 512]; 3]> = Align64([[0; 512]; 3]);
-static mut ii_nondc_mask_16x16: Align64<[[u8; 256]; 3]> = Align64([[0; 256]; 3]);
-static mut ii_nondc_mask_8x32: Align64<[[u8; 256]; 3]> = Align64([[0; 256]; 3]);
-static mut ii_nondc_mask_8x16: Align64<[[u8; 128]; 3]> = Align64([[0; 128]; 3]);
-static mut ii_nondc_mask_8x8: Align64<[[u8; 64]; 3]> = Align64([[0; 64]; 3]);
-static mut ii_nondc_mask_4x16: Align64<[[u8; 64]; 3]> = Align64([[0; 64]; 3]);
-static mut ii_nondc_mask_4x8: Align32<[[u8; 32]; 3]> = Align32([[0; 32]; 3]);
-static mut ii_nondc_mask_4x4: Align16<[[u8; 16]; 3]> = Align16([[0; 16]; 3]);
+
+const N_II_PRED_MODES: usize = N_INTER_INTRA_PRED_MODES - 1;
+
+static mut ii_nondc_mask_32x32: Align64<[[u8; 1024]; N_II_PRED_MODES]> =
+    Align64([[0; 1024]; N_II_PRED_MODES]);
+static mut ii_nondc_mask_16x32: Align64<[[u8; 512]; N_II_PRED_MODES]> =
+    Align64([[0; 512]; N_II_PRED_MODES]);
+static mut ii_nondc_mask_16x16: Align64<[[u8; 256]; N_II_PRED_MODES]> =
+    Align64([[0; 256]; N_II_PRED_MODES]);
+static mut ii_nondc_mask_8x32: Align64<[[u8; 256]; N_II_PRED_MODES]> =
+    Align64([[0; 256]; N_II_PRED_MODES]);
+static mut ii_nondc_mask_8x16: Align64<[[u8; 128]; N_II_PRED_MODES]> =
+    Align64([[0; 128]; N_II_PRED_MODES]);
+static mut ii_nondc_mask_8x8: Align64<[[u8; 64]; N_II_PRED_MODES]> =
+    Align64([[0; 64]; N_II_PRED_MODES]);
+static mut ii_nondc_mask_4x16: Align64<[[u8; 64]; N_II_PRED_MODES]> =
+    Align64([[0; 64]; N_II_PRED_MODES]);
+static mut ii_nondc_mask_4x8: Align32<[[u8; 32]; N_II_PRED_MODES]> =
+    Align32([[0; 32]; N_II_PRED_MODES]);
+static mut ii_nondc_mask_4x4: Align16<[[u8; 16]; N_II_PRED_MODES]> =
+    Align16([[0; 16]; N_II_PRED_MODES]);
 
 #[no_mangle]
 pub static mut dav1d_ii_masks: [[[*const u8; N_INTER_INTRA_PRED_MODES]; 3]; N_BS_SIZES] =
