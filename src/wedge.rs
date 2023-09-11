@@ -50,395 +50,251 @@ pub type WedgeMasterLineType = libc::c_uint;
 pub const N_WEDGE_MASTER_LINES: usize = 3;
 
 static wedge_codebook_16_hgtw: [wedge_code_type; 16] = [
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE27 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE27,
+        x_offset: 4,
+        y_offset: 4,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE63 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE63,
+        x_offset: 4,
+        y_offset: 4,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE117 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE117,
+        x_offset: 4,
+        y_offset: 4,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE153 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE153,
+        x_offset: 4,
+        y_offset: 4,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_HORIZONTAL as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 2 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_HORIZONTAL,
+        x_offset: 4,
+        y_offset: 2,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_HORIZONTAL as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_HORIZONTAL,
+        x_offset: 4,
+        y_offset: 4,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_HORIZONTAL as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 6 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_HORIZONTAL,
+        x_offset: 4,
+        y_offset: 6,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_VERTICAL as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_VERTICAL,
+        x_offset: 4,
+        y_offset: 4,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE27 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 2 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE27,
+        x_offset: 4,
+        y_offset: 2,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE27 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 6 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE27,
+        x_offset: 4,
+        y_offset: 6,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE153 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 2 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE153,
+        x_offset: 4,
+        y_offset: 2,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE153 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 6 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE153,
+        x_offset: 4,
+        y_offset: 6,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE63 as libc::c_int as uint8_t,
-            x_offset: 2 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE63,
+        x_offset: 2,
+        y_offset: 4,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE63 as libc::c_int as uint8_t,
-            x_offset: 6 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE63,
+        x_offset: 6,
+        y_offset: 4,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE117 as libc::c_int as uint8_t,
-            x_offset: 2 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE117,
+        x_offset: 2,
+        y_offset: 4,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE117 as libc::c_int as uint8_t,
-            x_offset: 6 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE117,
+        x_offset: 6,
+        y_offset: 4,
     },
 ];
 
 static wedge_codebook_16_hltw: [wedge_code_type; 16] = [
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE27 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE27,
+        x_offset: 4,
+        y_offset: 4,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE63 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE63,
+        x_offset: 4,
+        y_offset: 4,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE117 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE117,
+        x_offset: 4,
+        y_offset: 4,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE153 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE153,
+        x_offset: 4,
+        y_offset: 4,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_VERTICAL as libc::c_int as uint8_t,
-            x_offset: 2 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_VERTICAL,
+        x_offset: 2,
+        y_offset: 4,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_VERTICAL as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_VERTICAL,
+        x_offset: 4,
+        y_offset: 4,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_VERTICAL as libc::c_int as uint8_t,
-            x_offset: 6 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_VERTICAL,
+        x_offset: 6,
+        y_offset: 4,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_HORIZONTAL as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_HORIZONTAL,
+        x_offset: 4,
+        y_offset: 4,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE27 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 2 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE27,
+        x_offset: 4,
+        y_offset: 2,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE27 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 6 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE27,
+        x_offset: 4,
+        y_offset: 6,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE153 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 2 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE153,
+        x_offset: 4,
+        y_offset: 2,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE153 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 6 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE153,
+        x_offset: 4,
+        y_offset: 6,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE63 as libc::c_int as uint8_t,
-            x_offset: 2 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE63,
+        x_offset: 2,
+        y_offset: 4,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE63 as libc::c_int as uint8_t,
-            x_offset: 6 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE63,
+        x_offset: 6,
+        y_offset: 4,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE117 as libc::c_int as uint8_t,
-            x_offset: 2 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE117,
+        x_offset: 2,
+        y_offset: 4,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE117 as libc::c_int as uint8_t,
-            x_offset: 6 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE117,
+        x_offset: 6,
+        y_offset: 4,
     },
 ];
 
 static wedge_codebook_16_heqw: [wedge_code_type; 16] = [
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE27 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE27,
+        x_offset: 4,
+        y_offset: 4,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE63 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE63,
+        x_offset: 4,
+        y_offset: 4,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE117 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE117,
+        x_offset: 4,
+        y_offset: 4,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE153 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE153,
+        x_offset: 4,
+        y_offset: 4,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_HORIZONTAL as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 2 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_HORIZONTAL,
+        x_offset: 4,
+        y_offset: 2,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_HORIZONTAL as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 6 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_HORIZONTAL,
+        x_offset: 4,
+        y_offset: 6,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_VERTICAL as libc::c_int as uint8_t,
-            x_offset: 2 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_VERTICAL,
+        x_offset: 2,
+        y_offset: 4,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_VERTICAL as libc::c_int as uint8_t,
-            x_offset: 6 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_VERTICAL,
+        x_offset: 6,
+        y_offset: 4,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE27 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 2 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE27,
+        x_offset: 4,
+        y_offset: 2,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE27 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 6 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE27,
+        x_offset: 4,
+        y_offset: 6,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE153 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 2 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE153,
+        x_offset: 4,
+        y_offset: 2,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE153 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 6 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE153,
+        x_offset: 4,
+        y_offset: 6,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE63 as libc::c_int as uint8_t,
-            x_offset: 2 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE63,
+        x_offset: 2,
+        y_offset: 4,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE63 as libc::c_int as uint8_t,
-            x_offset: 6 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE63,
+        x_offset: 6,
+        y_offset: 4,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE117 as libc::c_int as uint8_t,
-            x_offset: 2 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE117,
+        x_offset: 2,
+        y_offset: 4,
     },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE117 as libc::c_int as uint8_t,
-            x_offset: 6 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
+    wedge_code_type {
+        direction: WEDGE_OBLIQUE117,
+        x_offset: 6,
+        y_offset: 4,
     },
 ];
 
