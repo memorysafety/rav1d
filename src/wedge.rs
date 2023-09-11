@@ -353,32 +353,28 @@ pub unsafe fn dav1d_init_wedge_masks() {
 
     // create master templates
     let mut y = 0;
-    let mut off = 0;
     while y < 64 {
         insert_border(
-            &mut master[WEDGE_VERTICAL as usize][off..],
+            &mut master[WEDGE_VERTICAL as usize][y * 64..],
             &wedge_master_border[WEDGE_MASTER_LINE_VERT as usize],
             32,
         );
         y += 1;
-        off += 64;
     }
     let mut y = 0;
-    let mut off = 0;
     let mut ctr = 48;
     while y < 64 {
         insert_border(
-            &mut master[WEDGE_OBLIQUE63 as usize][off..],
+            &mut master[WEDGE_OBLIQUE63 as usize][y * 64..],
             &wedge_master_border[WEDGE_MASTER_LINE_EVEN as usize],
             ctr,
         );
         insert_border(
-            &mut master[WEDGE_OBLIQUE63 as usize][off + 64..],
+            &mut master[WEDGE_OBLIQUE63 as usize][(y + 1) * 64..],
             &wedge_master_border[WEDGE_MASTER_LINE_ODD as usize],
             ctr - 1,
         );
         y += 2;
-        off += 128;
         ctr -= 1;
     }
 
