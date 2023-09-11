@@ -357,7 +357,7 @@ pub unsafe fn dav1d_init_wedge_masks() {
     pub type WedgeMasterLineType = libc::c_uint;
     pub const N_WEDGE_MASTER_LINES: usize = 3;
 
-    static mut wedge_master_border: [[u8; 8]; N_WEDGE_MASTER_LINES] = [
+    static wedge_master_border: [[u8; 8]; N_WEDGE_MASTER_LINES] = [
         [1, 2, 6, 18, 37, 53, 60, 63],
         [1, 4, 11, 27, 46, 58, 62, 63],
         [0, 2, 7, 21, 43, 57, 62, 64],
@@ -548,7 +548,7 @@ unsafe fn build_nondc_ii_masks(
     h: libc::c_int,
     step: libc::c_int,
 ) {
-    static mut ii_weights_1d: [u8; 32] = [
+    static ii_weights_1d: [u8; 32] = [
         60, 52, 45, 39, 34, 30, 26, 22, 19, 17, 15, 13, 11, 10, 8, 7, 6, 6, 5, 4, 4, 3, 3, 2, 2, 2,
         2, 1, 1, 1, 1, 1,
     ];
