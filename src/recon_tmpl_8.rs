@@ -2633,7 +2633,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                 } else {
                     ((*t).scratch.c2rust_unnamed_0.pal[0]).as_mut_ptr()
                 };
-                ((*(*f).dsp).ipred.pal_pred).expect("non-null function pointer")(
+                ((*(*f).dsp).ipred.pal_pred)(
                     dst.cast(),
                     (*f).cur.stride[0],
                     pal,
@@ -2890,10 +2890,9 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                         & !((*t_dim).w as libc::c_int - 1);
                     let furthest_b = (ch4 << ss_ver) + (*t_dim).h as libc::c_int - 1
                         & !((*t_dim).h as libc::c_int - 1);
-                    ((*dsp).ipred.cfl_ac[((*f).cur.p.layout as libc::c_uint)
+                    (*dsp).ipred.cfl_ac[((*f).cur.p.layout as libc::c_uint)
                         .wrapping_sub(1 as libc::c_int as libc::c_uint)
-                        as usize])
-                        .expect("non-null function pointer")(
+                        as usize](
                         ac.as_mut_ptr(),
                         y_src.cast(),
                         (*f).cur.stride[0],
@@ -2935,8 +2934,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                                 0 as libc::c_int,
                                 edge,
                             );
-                            ((*dsp).ipred.cfl_pred[m_0 as usize])
-                                .expect("non-null function pointer")(
+                            (*dsp).ipred.cfl_pred[m_0 as usize](
                                 uv_dst[pl as usize].cast(),
                                 stride,
                                 edge.cast(),
@@ -2996,7 +2994,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                             .offset((bw4 * bh4 * 16) as isize)
                             as *mut uint8_t;
                     }
-                    ((*(*f).dsp).ipred.pal_pred).expect("non-null function pointer")(
+                    ((*(*f).dsp).ipred.pal_pred)(
                         ((*f).cur.data[1] as *mut pixel)
                             .offset(uv_dstoff as isize)
                             .cast(),
@@ -3006,7 +3004,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                         cbw4 * 4,
                         cbh4 * 4,
                     );
-                    ((*(*f).dsp).ipred.pal_pred).expect("non-null function pointer")(
+                    ((*(*f).dsp).ipred.pal_pred)(
                         ((*f).cur.data[2] as *mut pixel)
                             .offset(uv_dstoff as isize)
                             .cast(),
