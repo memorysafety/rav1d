@@ -299,19 +299,17 @@ unsafe extern "C" fn fill2d_16x2(
     while n < 16 {
         let sign = (signs >> n & 1) as libc::c_int;
         dav1d_wedge_masks[bs as usize][0][0][n as usize] =
-            &mut *masks_444.offset((sign * sign_stride_444) as isize) as *mut u8;
+            masks_444.offset((sign * sign_stride_444) as isize);
         dav1d_wedge_masks[bs as usize][0][1][n as usize] =
-            &mut *masks_444.offset((sign * sign_stride_444) as isize) as *mut u8;
+            masks_444.offset((sign * sign_stride_444) as isize);
         dav1d_wedge_masks[bs as usize][1][0][n as usize] =
-            &mut *masks_422.offset((sign * sign_stride_422) as isize) as *mut u8;
-        dav1d_wedge_masks[bs as usize][1][1][n as usize] = &mut *masks_422
-            .offset(((sign == 0) as libc::c_int * sign_stride_422) as isize)
-            as *mut u8;
+            masks_422.offset((sign * sign_stride_422) as isize);
+        dav1d_wedge_masks[bs as usize][1][1][n as usize] =
+            masks_422.offset(((sign == 0) as libc::c_int * sign_stride_422) as isize);
         dav1d_wedge_masks[bs as usize][2][0][n as usize] =
-            &mut *masks_420.offset((sign * sign_stride_420) as isize) as *mut u8;
-        dav1d_wedge_masks[bs as usize][2][1][n as usize] = &mut *masks_420
-            .offset(((sign == 0) as libc::c_int * sign_stride_420) as isize)
-            as *mut u8;
+            masks_420.offset((sign * sign_stride_420) as isize);
+        dav1d_wedge_masks[bs as usize][2][1][n as usize] =
+            masks_420.offset(((sign == 0) as libc::c_int * sign_stride_420) as isize);
         masks_444 = masks_444.offset(n_stride_444 as isize);
         masks_422 = masks_422.offset(n_stride_422 as isize);
         masks_420 = masks_420.offset(n_stride_420 as isize);
@@ -370,7 +368,7 @@ pub unsafe extern "C" fn dav1d_init_wedge_masks() {
     let mut off = 0;
     while y < 64 {
         insert_border(
-            &mut *(*master.as_mut_ptr().offset(WEDGE_VERTICAL as isize))
+            (*master.as_mut_ptr().offset(WEDGE_VERTICAL as isize))
                 .as_mut_ptr()
                 .offset(off as isize),
             wedge_master_border[WEDGE_MASTER_LINE_VERT as usize].as_ptr(),
@@ -384,14 +382,14 @@ pub unsafe extern "C" fn dav1d_init_wedge_masks() {
     let mut ctr = 48;
     while y < 64 {
         insert_border(
-            &mut *(*master.as_mut_ptr().offset(WEDGE_OBLIQUE63 as isize))
+            (*master.as_mut_ptr().offset(WEDGE_OBLIQUE63 as isize))
                 .as_mut_ptr()
                 .offset(off as isize),
             wedge_master_border[WEDGE_MASTER_LINE_EVEN as usize].as_ptr(),
             ctr,
         );
         insert_border(
-            &mut *(*master.as_mut_ptr().offset(WEDGE_OBLIQUE63 as isize))
+            (*master.as_mut_ptr().offset(WEDGE_OBLIQUE63 as isize))
                 .as_mut_ptr()
                 .offset((off + 64) as isize),
             wedge_master_border[WEDGE_MASTER_LINE_ODD as usize].as_ptr(),
@@ -559,7 +557,7 @@ unsafe extern "C" fn build_nondc_ii_masks(
     let mut off = 0;
     while y < h {
         memset(
-            &mut *mask_v.offset(off as isize) as *mut u8 as *mut libc::c_void,
+            mask_v.offset(off as isize) as *mut libc::c_void,
             ii_weights_1d[(y * step) as usize] as libc::c_int,
             w as libc::c_ulong,
         );
