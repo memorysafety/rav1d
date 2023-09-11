@@ -522,6 +522,32 @@ static ii_dc_mask: Align64<[u8; 32 * 32]> = Align64([32; 32 * 32]);
 
 const N_II_PRED_MODES: usize = N_INTER_INTRA_PRED_MODES - 1;
 
+const fn build_nondc_ii_masks<const N: usize>(
+    w: usize,
+    h: usize,
+    step: usize,
+) -> [[u8; N]; N_II_PRED_MODES] {
+    const ii_weights_1d: [u8; 32] = [
+        60, 52, 45, 39, 34, 30, 26, 22, 19, 17, 15, 13, 11, 10, 8, 7, 6, 6, 5, 4, 4, 3, 3, 2, 2, 2,
+        2, 1, 1, 1, 1, 1,
+    ];
+
+    let mut masks = [[0; N]; N_II_PRED_MODES];
+
+    const_for!(y in 0..h => {
+        let off = y * w;
+        const_for!(i in 0..w => {
+            masks[II_VERT_PRED as usize - 1][off + i] = ii_weights_1d[y * step];
+        });
+        const_for!(x in 0..w => {
+            masks[II_SMOOTH_PRED as usize - 1][off + x] = ii_weights_1d[if x < y { x } else { y } * step];
+            masks[II_HOR_PRED as usize - 1][off + x] = ii_weights_1d[x * step];
+        });
+    });
+
+    masks
+}
+
 static ii_nondc_mask_32x32: Align64<[[u8; 32 * 32]; N_II_PRED_MODES]> =
     Align64(build_nondc_ii_masks(32, 32, 1));
 static ii_nondc_mask_16x32: Align64<[[u8; 16 * 32]; N_II_PRED_MODES]> =
@@ -573,29 +599,3 @@ pub static dav1d_ii_masks: [[[Option<&'static [u8]>; N_INTER_INTRA_PRED_MODES]; 
 
     masks
 };
-
-const fn build_nondc_ii_masks<const N: usize>(
-    w: usize,
-    h: usize,
-    step: usize,
-) -> [[u8; N]; N_II_PRED_MODES] {
-    const ii_weights_1d: [u8; 32] = [
-        60, 52, 45, 39, 34, 30, 26, 22, 19, 17, 15, 13, 11, 10, 8, 7, 6, 6, 5, 4, 4, 3, 3, 2, 2, 2,
-        2, 1, 1, 1, 1, 1,
-    ];
-
-    let mut masks = [[0; N]; N_II_PRED_MODES];
-
-    const_for!(y in 0..h => {
-        let off = y * w;
-        const_for!(i in 0..w => {
-            masks[II_VERT_PRED as usize - 1][off + i] = ii_weights_1d[y * step];
-        });
-        const_for!(x in 0..w => {
-            masks[II_SMOOTH_PRED as usize - 1][off + x] = ii_weights_1d[if x < y { x } else { y } * step];
-            masks[II_HOR_PRED as usize - 1][off + x] = ii_weights_1d[x * step];
-        });
-    });
-
-    masks
-}
