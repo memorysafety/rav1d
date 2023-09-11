@@ -14,12 +14,15 @@ use crate::src::levels::BS_8x16;
 use crate::src::levels::BS_8x32;
 use crate::src::levels::BS_8x8;
 use crate::src::levels::BlockSize;
+use crate::src::levels::II_DC_PRED;
 use crate::src::levels::II_HOR_PRED;
 use crate::src::levels::II_SMOOTH_PRED;
 use crate::src::levels::II_VERT_PRED;
 use crate::src::levels::N_BS_SIZES;
 use crate::src::levels::N_INTER_INTRA_PRED_MODES;
 use crate::src::qm::transposed;
+
+use paste::paste;
 
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
@@ -657,146 +660,26 @@ pub unsafe fn dav1d_init_interintra_masks() {
 }
 
 unsafe extern "C" fn run_static_initializers() {
-    dav1d_ii_masks[BS_8x8 as usize] = [
-        [
-            Some(&ii_dc_mask.0),
-            Some(&ii_nondc_mask_8x8.0[II_VERT_PRED as usize - 1]),
-            Some(&ii_nondc_mask_8x8.0[II_HOR_PRED as usize - 1]),
-            Some(&ii_nondc_mask_8x8.0[II_SMOOTH_PRED as usize - 1]),
-        ],
-        [
-            Some(&ii_dc_mask.0),
-            Some(&ii_nondc_mask_4x8.0[II_VERT_PRED as usize - 1]),
-            Some(&ii_nondc_mask_4x8.0[II_HOR_PRED as usize - 1]),
-            Some(&ii_nondc_mask_4x8.0[II_SMOOTH_PRED as usize - 1]),
-        ],
-        [
-            Some(&ii_dc_mask.0),
-            Some(&ii_nondc_mask_4x4.0[II_VERT_PRED as usize - 1]),
-            Some(&ii_nondc_mask_4x4.0[II_HOR_PRED as usize - 1]),
-            Some(&ii_nondc_mask_4x4.0[II_SMOOTH_PRED as usize - 1]),
-        ],
-    ];
-    dav1d_ii_masks[BS_8x16 as usize] = [
-        [
-            Some(&ii_dc_mask.0),
-            Some(&ii_nondc_mask_8x16.0[II_VERT_PRED as usize - 1]),
-            Some(&ii_nondc_mask_8x16.0[II_HOR_PRED as usize - 1]),
-            Some(&ii_nondc_mask_8x16.0[II_SMOOTH_PRED as usize - 1]),
-        ],
-        [
-            Some(&ii_dc_mask.0),
-            Some(&ii_nondc_mask_4x16.0[II_VERT_PRED as usize - 1]),
-            Some(&ii_nondc_mask_4x16.0[II_HOR_PRED as usize - 1]),
-            Some(&ii_nondc_mask_4x16.0[II_SMOOTH_PRED as usize - 1]),
-        ],
-        [
-            Some(&ii_dc_mask.0),
-            Some(&ii_nondc_mask_4x8.0[II_VERT_PRED as usize - 1]),
-            Some(&ii_nondc_mask_4x8.0[II_HOR_PRED as usize - 1]),
-            Some(&ii_nondc_mask_4x8.0[II_SMOOTH_PRED as usize - 1]),
-        ],
-    ];
-    dav1d_ii_masks[BS_16x8 as usize] = [
-        [
-            Some(&ii_dc_mask.0),
-            Some(&ii_nondc_mask_16x16.0[II_VERT_PRED as usize - 1]),
-            Some(&ii_nondc_mask_16x16.0[II_HOR_PRED as usize - 1]),
-            Some(&ii_nondc_mask_16x16.0[II_SMOOTH_PRED as usize - 1]),
-        ],
-        [
-            Some(&ii_dc_mask.0),
-            Some(&ii_nondc_mask_8x8.0[II_VERT_PRED as usize - 1]),
-            Some(&ii_nondc_mask_8x8.0[II_HOR_PRED as usize - 1]),
-            Some(&ii_nondc_mask_8x8.0[II_SMOOTH_PRED as usize - 1]),
-        ],
-        [
-            Some(&ii_dc_mask.0),
-            Some(&ii_nondc_mask_8x8.0[II_VERT_PRED as usize - 1]),
-            Some(&ii_nondc_mask_8x8.0[II_HOR_PRED as usize - 1]),
-            Some(&ii_nondc_mask_8x8.0[II_SMOOTH_PRED as usize - 1]),
-        ],
-    ];
-    dav1d_ii_masks[BS_16x16 as usize] = [
-        [
-            Some(&ii_dc_mask.0),
-            Some(&ii_nondc_mask_16x16.0[II_VERT_PRED as usize - 1]),
-            Some(&ii_nondc_mask_16x16.0[II_HOR_PRED as usize - 1]),
-            Some(&ii_nondc_mask_16x16.0[II_SMOOTH_PRED as usize - 1]),
-        ],
-        [
-            Some(&ii_dc_mask.0),
-            Some(&ii_nondc_mask_8x16.0[II_VERT_PRED as usize - 1]),
-            Some(&ii_nondc_mask_8x16.0[II_HOR_PRED as usize - 1]),
-            Some(&ii_nondc_mask_8x16.0[II_SMOOTH_PRED as usize - 1]),
-        ],
-        [
-            Some(&ii_dc_mask.0),
-            Some(&ii_nondc_mask_8x8.0[II_VERT_PRED as usize - 1]),
-            Some(&ii_nondc_mask_8x8.0[II_HOR_PRED as usize - 1]),
-            Some(&ii_nondc_mask_8x8.0[II_SMOOTH_PRED as usize - 1]),
-        ],
-    ];
-    dav1d_ii_masks[BS_16x32 as usize] = [
-        [
-            Some(&ii_dc_mask.0),
-            Some(&ii_nondc_mask_16x32.0[II_VERT_PRED as usize - 1]),
-            Some(&ii_nondc_mask_16x32.0[II_HOR_PRED as usize - 1]),
-            Some(&ii_nondc_mask_16x32.0[II_SMOOTH_PRED as usize - 1]),
-        ],
-        [
-            Some(&ii_dc_mask.0),
-            Some(&ii_nondc_mask_8x32.0[II_VERT_PRED as usize - 1]),
-            Some(&ii_nondc_mask_8x32.0[II_HOR_PRED as usize - 1]),
-            Some(&ii_nondc_mask_8x32.0[II_SMOOTH_PRED as usize - 1]),
-        ],
-        [
-            Some(&ii_dc_mask.0),
-            Some(&ii_nondc_mask_8x16.0[II_VERT_PRED as usize - 1]),
-            Some(&ii_nondc_mask_8x16.0[II_HOR_PRED as usize - 1]),
-            Some(&ii_nondc_mask_8x16.0[II_SMOOTH_PRED as usize - 1]),
-        ],
-    ];
-    dav1d_ii_masks[BS_32x16 as usize] = [
-        [
-            Some(&ii_dc_mask.0),
-            Some(&ii_nondc_mask_32x32.0[II_VERT_PRED as usize - 1]),
-            Some(&ii_nondc_mask_32x32.0[II_HOR_PRED as usize - 1]),
-            Some(&ii_nondc_mask_32x32.0[II_SMOOTH_PRED as usize - 1]),
-        ],
-        [
-            Some(&ii_dc_mask.0),
-            Some(&ii_nondc_mask_16x16.0[II_VERT_PRED as usize - 1]),
-            Some(&ii_nondc_mask_16x16.0[II_HOR_PRED as usize - 1]),
-            Some(&ii_nondc_mask_16x16.0[II_SMOOTH_PRED as usize - 1]),
-        ],
-        [
-            Some(&ii_dc_mask.0),
-            Some(&ii_nondc_mask_16x16.0[II_VERT_PRED as usize - 1]),
-            Some(&ii_nondc_mask_16x16.0[II_HOR_PRED as usize - 1]),
-            Some(&ii_nondc_mask_16x16.0[II_SMOOTH_PRED as usize - 1]),
-        ],
-    ];
-    dav1d_ii_masks[BS_32x32 as usize] = [
-        [
-            Some(&ii_dc_mask.0),
-            Some(&ii_nondc_mask_32x32.0[II_VERT_PRED as usize - 1]),
-            Some(&ii_nondc_mask_32x32.0[II_HOR_PRED as usize - 1]),
-            Some(&ii_nondc_mask_32x32.0[II_SMOOTH_PRED as usize - 1]),
-        ],
-        [
-            Some(&ii_dc_mask.0),
-            Some(&ii_nondc_mask_16x32.0[II_VERT_PRED as usize - 1]),
-            Some(&ii_nondc_mask_16x32.0[II_HOR_PRED as usize - 1]),
-            Some(&ii_nondc_mask_16x32.0[II_SMOOTH_PRED as usize - 1]),
-        ],
-        [
-            Some(&ii_dc_mask.0),
-            Some(&ii_nondc_mask_16x16.0[II_VERT_PRED as usize - 1]),
-            Some(&ii_nondc_mask_16x16.0[II_HOR_PRED as usize - 1]),
-            Some(&ii_nondc_mask_16x16.0[II_SMOOTH_PRED as usize - 1]),
-        ],
-    ];
+    macro_rules! set1 {
+        ($sz:ident) => {{
+            let mut a: [Option<&'static [u8]>; N_INTER_INTRA_PRED_MODES] = [None; 4];
+            paste! {
+                a[II_DC_PRED as usize] = Some(&ii_dc_mask.0);
+                a[II_VERT_PRED as usize] = Some(&[<ii_nondc_mask $sz>].0[II_VERT_PRED as usize - 1]);
+                a[II_HOR_PRED as usize] = Some(&[<ii_nondc_mask $sz>].0[II_HOR_PRED as usize - 1]);
+                a[II_SMOOTH_PRED as usize] = Some(&[<ii_nondc_mask $sz>].0[II_SMOOTH_PRED as usize - 1]);
+            }
+            a
+        }};
+    }
+
+    dav1d_ii_masks[BS_8x8 as usize] = [set1!(_8x8), set1!(_4x8), set1!(_4x4)];
+    dav1d_ii_masks[BS_8x16 as usize] = [set1!(_8x16), set1!(_4x16), set1!(_4x8)];
+    dav1d_ii_masks[BS_16x8 as usize] = [set1!(_16x16), set1!(_8x8), set1!(_8x8)];
+    dav1d_ii_masks[BS_16x16 as usize] = [set1!(_16x16), set1!(_8x16), set1!(_8x8)];
+    dav1d_ii_masks[BS_16x32 as usize] = [set1!(_16x32), set1!(_8x32), set1!(_8x16)];
+    dav1d_ii_masks[BS_32x16 as usize] = [set1!(_32x32), set1!(_16x16), set1!(_16x16)];
+    dav1d_ii_masks[BS_32x32 as usize] = [set1!(_32x32), set1!(_16x32), set1!(_16x16)];
 }
 
 #[used]
