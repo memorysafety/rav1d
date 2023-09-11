@@ -5390,9 +5390,9 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
     f.lf.restore_planes = (*f.frame_hdr)
         .restoration
         .type_0
-        .into_iter()
+        .iter()
         .enumerate()
-        .map(|(i, r#type)| ((r#type != DAV1D_RESTORATION_NONE) as u8) << i)
+        .map(|(i, &r#type)| ((r#type != DAV1D_RESTORATION_NONE) as u8) << i)
         .sum::<u8>()
         .into();
     if (*f.frame_hdr).loopfilter.sharpness != f.lf.last_sharpness {
