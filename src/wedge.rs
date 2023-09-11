@@ -149,24 +149,34 @@ const fn insert_border(
 ) -> [u8; 64 * 64] {
     let dst_off = y * 64;
 
-    if ctr > 4 {
+    {
+        if ctr > 4 {
+            let mut i = 0;
+            while i < ctr - 4 {
+                dst[dst_off + i] = 0;
+                i += 1;
+            }
+        }
+    }
+    {
+        let dst_off = dst_off + ctr.saturating_sub(4);
+        let src_off = 4usize.saturating_sub(ctr);
+        let len = if 64 - ctr > 8 { 8 } else { 64 - ctr };
         let mut i = 0;
-        while i < ctr - 4 {
-            dst[dst_off + i] = 0;
+        while i < len {
+            dst[dst_off + i] = src[src_off + i];
             i += 1;
         }
     }
-    let len = if 64 - ctr > 8 { 8 } else { 64 - ctr };
-    let mut i = 0;
-    while i < len {
-        dst[dst_off + ctr.saturating_sub(4) + i] = src[4usize.saturating_sub(ctr) + i];
-        i += 1;
-    }
-    if ctr < 64 - 4 {
-        let mut i = 0;
-        while i < 64 - 4 - ctr {
-            dst[dst_off + ctr + 4 + i] = 64;
-            i += 1;
+    {
+        let ctr = ctr + 4;
+        let dst_off = dst_off + ctr;
+        if ctr < 64 {
+            let mut i = 0;
+            while i < 64 - ctr {
+                dst[dst_off + i] = 64;
+                i += 1;
+            }
         }
     }
 
