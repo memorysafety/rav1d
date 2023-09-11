@@ -2156,24 +2156,24 @@ macro_rules! decl_fn {
 
 #[cfg(feature = "asm")]
 macro_rules! decl_fns {
-    ($mc_kind:ident, $name:ident) => {
-        decl_fns!($mc_kind, $name, sse2);
-        decl_fns!($mc_kind, $name, ssse3);
-
-        #[cfg(target_arch = "x86_64")]
-        decl_fns!($mc_kind, $name, avx2);
-
-        #[cfg(target_arch = "x86_64")]
-        decl_fns!($mc_kind, $name, avx512icl);
-    };
-
-    ($mc_kind:ident, $name:ident, $suffix:ident) => {
+    ($fn_kind:ident, $name:ident, $asm:ident) => {
         paste::paste! {
             #[cfg(feature = "bitdepth_8")]
-            decl_fn!($mc_kind, [<$name _8bpc_ $suffix>]);
+            decl_fn!($fn_kind, [<$name _8bpc_ $asm>]);
             #[cfg(feature = "bitdepth_16")]
-            decl_fn!($mc_kind, [<$name _16bpc_ $suffix>]);
+            decl_fn!($fn_kind, [<$name _16bpc_ $asm>]);
         }
+    };
+
+    ($fn_kind:ident, $name:ident) => {
+        decl_fns!($fn_kind, $name, sse2);
+        decl_fns!($fn_kind, $name, ssse3);
+
+        #[cfg(target_arch = "x86_64")]
+        decl_fns!($fn_kind, $name, avx2);
+
+        #[cfg(target_arch = "x86_64")]
+        decl_fns!($fn_kind, $name, avx512icl);
     };
 }
 
