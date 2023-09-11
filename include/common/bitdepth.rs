@@ -282,7 +282,7 @@ pub type LeftPixelRow2px<Pixel> = [Pixel; 2];
 
 #[cfg(feature = "asm")]
 macro_rules! bd_fn {
-    ($decl_fn:ident, $BD:ty, $name:ident, $asm:ident) => {{
+    ($decl_fn:path, $BD:ty, $name:ident, $asm:ident) => {{
         use paste::paste;
 
         paste! {
@@ -293,17 +293,25 @@ macro_rules! bd_fn {
         }
     }};
 
-    ($BD:ty, $name:ident, $asm:ident) => {{
-        use paste::paste;
+    ($BD:ty, $name:ident, $asm:ident) => {
+        bd_fn!(
+            crate::include::common::bitdepth::fn_identity,
+            $BD,
+            $name,
+            $asm
+        )
+    };
+}
 
-        paste! {
-            match BD::BPC {
-                BPC::BPC8 => [<dav1d_ $name _8bpc_ $asm>],
-                BPC::BPC16 => [<dav1d_ $name _16bpc_ $asm>],
-            }
-        }
-    }};
+#[cfg(feature = "asm")]
+macro_rules! fn_identity {
+    (fn $name:ident) => {
+        $name
+    };
 }
 
 #[cfg(feature = "asm")]
 pub(crate) use bd_fn;
+
+#[cfg(feature = "asm")]
+pub(crate) use fn_identity;
