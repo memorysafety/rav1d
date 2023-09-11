@@ -153,7 +153,7 @@ unsafe extern "C" fn cdef_filter_block_c(
     );
     if pri_strength != 0 {
         let bitdepth_min_8 = 8 - 8;
-        let pri_tap = 4 as libc::c_int - (pri_strength >> bitdepth_min_8 & 1);
+        let pri_tap = 4 - (pri_strength >> bitdepth_min_8 & 1);
         let pri_shift = imax(
             0 as libc::c_int,
             damping - ulog2(pri_strength as libc::c_uint),

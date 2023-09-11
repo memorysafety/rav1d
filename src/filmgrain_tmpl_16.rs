@@ -412,7 +412,7 @@ unsafe extern "C" fn generate_grain_y_c(
     data: *const Dav1dFilmGrainData,
     bitdepth_max: libc::c_int,
 ) {
-    let bitdepth_min_8 = 32 as libc::c_int - clz(bitdepth_max as libc::c_uint) - 8;
+    let bitdepth_min_8 = 32 - clz(bitdepth_max as libc::c_uint) - 8;
     let mut seed: libc::c_uint = (*data).seed;
     let shift = 4 - bitdepth_min_8 + (*data).grain_scale_shift;
     let grain_ctr = (128 as libc::c_int) << bitdepth_min_8;
@@ -472,7 +472,7 @@ unsafe extern "C" fn generate_grain_uv_c(
     suby: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    let bitdepth_min_8 = 32 as libc::c_int - clz(bitdepth_max as libc::c_uint) - 8;
+    let bitdepth_min_8 = 32 - clz(bitdepth_max as libc::c_uint) - 8;
     let mut seed: libc::c_uint = (*data).seed
         ^ (if uv != 0 {
             0x49d8 as libc::c_int
@@ -620,8 +620,8 @@ unsafe extern "C" fn sample_lut(
     y: libc::c_int,
 ) -> entry {
     let randval = (*offsets.offset(bx as isize))[by as usize];
-    let offx = 3 as libc::c_int + (2 >> subx) * (3 + (randval >> 4));
-    let offy = 3 as libc::c_int + (2 >> suby) * (3 + (randval & 0xf as libc::c_int));
+    let offx = 3 + (2 >> subx) * (3 + (randval >> 4));
+    let offy = 3 + (2 >> suby) * (3 + (randval & 0xf as libc::c_int));
     return (*grain_lut.offset((offy + y + (32 >> suby) * by) as isize))
         [(offx + x + (32 >> subx) * bx) as usize];
 }
@@ -637,8 +637,8 @@ unsafe extern "C" fn fgy_32x32xn_c(
     row_num: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    let rows = 1 as libc::c_int + ((*data).overlap_flag != 0 && row_num > 0) as libc::c_int;
-    let bitdepth_min_8 = 32 as libc::c_int - clz(bitdepth_max as libc::c_uint) - 8;
+    let rows = 1 + ((*data).overlap_flag != 0 && row_num > 0) as libc::c_int;
+    let bitdepth_min_8 = 32 - clz(bitdepth_max as libc::c_uint) - 8;
     let grain_ctr = (128 as libc::c_int) << bitdepth_min_8;
     let grain_min = -grain_ctr;
     let grain_max = grain_ctr - 1;
@@ -915,8 +915,8 @@ unsafe extern "C" fn fguv_32x32xn_c(
     sy: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    let rows = 1 as libc::c_int + ((*data).overlap_flag != 0 && row_num > 0) as libc::c_int;
-    let bitdepth_min_8 = 32 as libc::c_int - clz(bitdepth_max as libc::c_uint) - 8;
+    let rows = 1 + ((*data).overlap_flag != 0 && row_num > 0) as libc::c_int;
+    let bitdepth_min_8 = 32 - clz(bitdepth_max as libc::c_uint) - 8;
     let grain_ctr = (128 as libc::c_int) << bitdepth_min_8;
     let grain_min = -grain_ctr;
     let grain_max = grain_ctr - 1;
@@ -1473,7 +1473,7 @@ unsafe extern "C" fn fgy_32x32xn_neon(
     row_num: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    let rows = 1 as libc::c_int + ((*data).overlap_flag != 0 && row_num > 0) as libc::c_int;
+    let rows = 1 + ((*data).overlap_flag != 0 && row_num > 0) as libc::c_int;
     let mut seed: [libc::c_uint; 2] = [0; 2];
     let mut i = 0;
     while i < rows {
@@ -1541,7 +1541,7 @@ unsafe extern "C" fn fguv_32x32xn_420_neon(
     is_id: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    let rows = 1 as libc::c_int + ((*data).overlap_flag != 0 && row_num > 0) as libc::c_int;
+    let rows = 1 + ((*data).overlap_flag != 0 && row_num > 0) as libc::c_int;
     let mut seed: [libc::c_uint; 2] = [0; 2];
     let mut i = 0;
     while i < rows {
@@ -1615,7 +1615,7 @@ unsafe extern "C" fn fguv_32x32xn_422_neon(
     is_id: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    let rows = 1 as libc::c_int + ((*data).overlap_flag != 0 && row_num > 0) as libc::c_int;
+    let rows = 1 + ((*data).overlap_flag != 0 && row_num > 0) as libc::c_int;
     let mut seed: [libc::c_uint; 2] = [0; 2];
     let mut i = 0;
     while i < rows {
@@ -1689,7 +1689,7 @@ unsafe extern "C" fn fguv_32x32xn_444_neon(
     is_id: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
-    let rows = 1 as libc::c_int + ((*data).overlap_flag != 0 && row_num > 0) as libc::c_int;
+    let rows = 1 + ((*data).overlap_flag != 0 && row_num > 0) as libc::c_int;
     let mut seed: [libc::c_uint; 2] = [0; 2];
     let mut i = 0;
     while i < rows {

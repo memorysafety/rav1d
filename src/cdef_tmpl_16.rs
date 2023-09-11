@@ -159,8 +159,8 @@ unsafe extern "C" fn cdef_filter_block_c(
         tmp, tmp_stride, dst, dst_stride, left, top, bottom, w, h, edges,
     );
     if pri_strength != 0 {
-        let bitdepth_min_8 = 32 as libc::c_int - clz(bitdepth_max as libc::c_uint) - 8;
-        let pri_tap = 4 as libc::c_int - (pri_strength >> bitdepth_min_8 & 1);
+        let bitdepth_min_8 = 32 - clz(bitdepth_max as libc::c_uint) - 8;
+        let pri_tap = 4 - (pri_strength >> bitdepth_min_8 & 1);
         let pri_shift = imax(
             0 as libc::c_int,
             damping - ulog2(pri_strength as libc::c_uint),
@@ -393,7 +393,7 @@ unsafe fn cdef_find_dir_rust(
     var: *mut libc::c_uint,
     bitdepth_max: libc::c_int,
 ) -> libc::c_int {
-    let bitdepth_min_8 = 32 as libc::c_int - clz(bitdepth_max as libc::c_uint) - 8;
+    let bitdepth_min_8 = 32 - clz(bitdepth_max as libc::c_uint) - 8;
     let mut partial_sum_hv: [[libc::c_int; 8]; 2] =
         [[0 as libc::c_int, 0, 0, 0, 0, 0, 0, 0], [0; 8]];
     let mut partial_sum_diag: [[libc::c_int; 15]; 2] = [

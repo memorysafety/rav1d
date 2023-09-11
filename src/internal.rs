@@ -24,6 +24,7 @@ use crate::src::thread_data::thread_data;
 use libc::pthread_cond_t;
 use libc::pthread_mutex_t;
 
+#[derive(Clone, Default)]
 #[repr(C)]
 pub struct Dav1dTileGroup {
     pub data: Dav1dData,
@@ -206,7 +207,7 @@ pub struct Dav1dFrameContext_task_thread {
     pub init_done: atomic_int,
     pub done: [atomic_int; 2],
     pub retval: libc::c_int,
-    pub update_set: libc::c_int,
+    pub update_set: bool,
     pub error: atomic_int,
     pub task_counter: atomic_int,
     pub task_head: *mut Dav1dTask,
@@ -350,6 +351,6 @@ pub struct Dav1dTaskContext_task_thread {
     pub td: thread_data,
     pub ttd: *mut TaskThreadData,
     pub fttd: *mut FrameTileThreadData,
-    pub flushed: libc::c_int,
-    pub die: libc::c_int,
+    pub flushed: bool,
+    pub die: bool,
 }

@@ -247,190 +247,11 @@ pub struct Dav1dDSPContext {
     pub lr: Dav1dLoopRestorationDSPContext,
 }
 use crate::src::cdef::Dav1dCdefDSPContext;
+use crate::src::ipred::Dav1dIntraPredDSPContext;
 use crate::src::itx::Dav1dInvTxfmDSPContext;
 use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
 use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
-#[repr(C)]
-pub struct Dav1dMCDSPContext {
-    pub mc: [mc_fn; 10],
-    pub mc_scaled: [mc_scaled_fn; 10],
-    pub mct: [mct_fn; 10],
-    pub mct_scaled: [mct_scaled_fn; 10],
-    pub avg: avg_fn,
-    pub w_avg: w_avg_fn,
-    pub mask: mask_fn,
-    pub w_mask: [w_mask_fn; 3],
-    pub blend: blend_fn,
-    pub blend_v: blend_dir_fn,
-    pub blend_h: blend_dir_fn,
-    pub warp8x8: warp8x8_fn,
-    pub warp8x8t: warp8x8t_fn,
-    pub emu_edge: emu_edge_fn,
-    pub resize: resize_fn,
-}
-pub type resize_fn = Option<
-    unsafe extern "C" fn(
-        *mut libc::c_void,
-        ptrdiff_t,
-        *const libc::c_void,
-        ptrdiff_t,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
-pub type emu_edge_fn = Option<
-    unsafe extern "C" fn(
-        intptr_t,
-        intptr_t,
-        intptr_t,
-        intptr_t,
-        intptr_t,
-        intptr_t,
-        *mut libc::c_void,
-        ptrdiff_t,
-        *const libc::c_void,
-        ptrdiff_t,
-    ) -> (),
->;
-pub type warp8x8t_fn = Option<
-    unsafe extern "C" fn(
-        *mut int16_t,
-        ptrdiff_t,
-        *const libc::c_void,
-        ptrdiff_t,
-        *const int16_t,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
-pub type warp8x8_fn = Option<
-    unsafe extern "C" fn(
-        *mut libc::c_void,
-        ptrdiff_t,
-        *const libc::c_void,
-        ptrdiff_t,
-        *const int16_t,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
-pub type blend_dir_fn = Option<
-    unsafe extern "C" fn(
-        *mut libc::c_void,
-        ptrdiff_t,
-        *const libc::c_void,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
-pub type blend_fn = Option<
-    unsafe extern "C" fn(
-        *mut libc::c_void,
-        ptrdiff_t,
-        *const libc::c_void,
-        libc::c_int,
-        libc::c_int,
-        *const uint8_t,
-    ) -> (),
->;
-pub type w_mask_fn = Option<
-    unsafe extern "C" fn(
-        *mut libc::c_void,
-        ptrdiff_t,
-        *const int16_t,
-        *const int16_t,
-        libc::c_int,
-        libc::c_int,
-        *mut uint8_t,
-        libc::c_int,
-    ) -> (),
->;
-pub type mask_fn = Option<
-    unsafe extern "C" fn(
-        *mut libc::c_void,
-        ptrdiff_t,
-        *const int16_t,
-        *const int16_t,
-        libc::c_int,
-        libc::c_int,
-        *const uint8_t,
-    ) -> (),
->;
-pub type w_avg_fn = Option<
-    unsafe extern "C" fn(
-        *mut libc::c_void,
-        ptrdiff_t,
-        *const int16_t,
-        *const int16_t,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
-pub type avg_fn = Option<
-    unsafe extern "C" fn(
-        *mut libc::c_void,
-        ptrdiff_t,
-        *const int16_t,
-        *const int16_t,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
-pub type mct_scaled_fn = Option<
-    unsafe extern "C" fn(
-        *mut int16_t,
-        *const libc::c_void,
-        ptrdiff_t,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
-pub type mct_fn = Option<
-    unsafe extern "C" fn(
-        *mut int16_t,
-        *const libc::c_void,
-        ptrdiff_t,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
-pub type mc_scaled_fn = Option<
-    unsafe extern "C" fn(
-        *mut libc::c_void,
-        ptrdiff_t,
-        *const libc::c_void,
-        ptrdiff_t,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
-pub type mc_fn = Option<
-    unsafe extern "C" fn(
-        *mut libc::c_void,
-        ptrdiff_t,
-        *const libc::c_void,
-        ptrdiff_t,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
-use crate::src::ipred::Dav1dIntraPredDSPContext;
+use crate::src::mc::Dav1dMCDSPContext;
 #[repr(C)]
 pub struct Dav1dFilmGrainDSPContext {
     pub generate_grain_y: generate_grain_y_fn,
@@ -485,8 +306,8 @@ use crate::src::internal::Dav1dContext_refs;
 #[repr(C)]
 pub struct Dav1dThreadPicture {
     pub p: Dav1dPicture,
-    pub visible: libc::c_int,
-    pub showable: libc::c_int,
+    pub visible: bool,
+    pub showable: bool,
     pub flags: PictureFlags,
     pub progress: *mut atomic_uint,
 }
@@ -732,8 +553,8 @@ pub unsafe extern "C" fn dav1d_thread_picture_alloc(
     (*c).frame_flags = ::core::mem::transmute::<libc::c_uint, PictureFlags>(
         (*c).frame_flags as libc::c_uint & flags_mask as libc::c_uint,
     );
-    (*p).visible = (*(*f).frame_hdr).show_frame;
-    (*p).showable = (*(*f).frame_hdr).showable_frame;
+    (*p).visible = (*(*f).frame_hdr).show_frame != 0;
+    (*p).showable = (*(*f).frame_hdr).showable_frame != 0;
     if have_frame_mt != 0 {
         *(&mut *((*p).progress).offset(0) as *mut atomic_uint) = 0 as libc::c_int as libc::c_uint;
         *(&mut *((*p).progress).offset(1) as *mut atomic_uint) = 0 as libc::c_int as libc::c_uint;

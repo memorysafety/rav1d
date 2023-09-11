@@ -30,6 +30,7 @@ pub struct Av1RestorationUnit {
     pub sgr_weights: [i8; 2],
 }
 
+#[derive(Default)]
 #[repr(C)]
 pub struct Av1Filter {
     pub filter_y: [[[[u16; 2]; 3]; 32]; 2],
