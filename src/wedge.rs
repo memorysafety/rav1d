@@ -673,13 +673,19 @@ unsafe extern "C" fn run_static_initializers() {
         }};
     }
 
-    dav1d_ii_masks[BS_8x8 as usize] = [set1!(_8x8), set1!(_4x8), set1!(_4x4)];
-    dav1d_ii_masks[BS_8x16 as usize] = [set1!(_8x16), set1!(_4x16), set1!(_4x8)];
-    dav1d_ii_masks[BS_16x8 as usize] = [set1!(_16x16), set1!(_8x8), set1!(_8x8)];
-    dav1d_ii_masks[BS_16x16 as usize] = [set1!(_16x16), set1!(_8x16), set1!(_8x8)];
-    dav1d_ii_masks[BS_16x32 as usize] = [set1!(_16x32), set1!(_8x32), set1!(_8x16)];
-    dav1d_ii_masks[BS_32x16 as usize] = [set1!(_32x32), set1!(_16x16), set1!(_16x16)];
-    dav1d_ii_masks[BS_32x32 as usize] = [set1!(_32x32), set1!(_16x32), set1!(_16x16)];
+    macro_rules! set {
+        ($sz_444:ident, $sz_422:ident, $sz_420:ident) => {
+            [set1!($sz_444), set1!($sz_422), set1!($sz_420)]
+        };
+    }
+
+    dav1d_ii_masks[BS_8x8 as usize] = set!(_8x8, _4x8, _4x4);
+    dav1d_ii_masks[BS_8x16 as usize] = set!(_8x16, _4x16, _4x8);
+    dav1d_ii_masks[BS_16x8 as usize] = set!(_16x16, _8x8, _8x8);
+    dav1d_ii_masks[BS_16x16 as usize] = set!(_16x16, _8x16, _8x8);
+    dav1d_ii_masks[BS_16x32 as usize] = set!(_16x32, _8x32, _8x16);
+    dav1d_ii_masks[BS_32x16 as usize] = set!(_32x32, _16x16, _16x16);
+    dav1d_ii_masks[BS_32x32 as usize] = set!(_32x32, _16x32, _16x16);
 }
 
 #[used]
