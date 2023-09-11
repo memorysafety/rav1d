@@ -3573,6 +3573,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                     .c2rust_unnamed
                     .c2rust_unnamed
                     .interintra_mode as usize]
+                    .map_or_else(std::ptr::null, |mask| mask.as_ptr())
             } else {
                 dav1d_wedge_masks[bs as usize][0][0][(*b)
                     .c2rust_unnamed
@@ -3926,6 +3927,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                                 .c2rust_unnamed
                                 .interintra_mode
                                 as usize]
+                                .map_or_else(std::ptr::null, |mask| mask.as_ptr())
                         } else {
                             dav1d_wedge_masks[bs as usize][chr_layout_idx as usize][0][(*b)
                                 .c2rust_unnamed
