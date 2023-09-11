@@ -1,3 +1,4 @@
+use crate::src::const_fn::const_for;
 use crate::src::levels::N_RECT_TX_SIZES;
 use crate::src::levels::RTX_16X32;
 use crate::src::levels::RTX_16X4;
@@ -2982,15 +2983,11 @@ const fn subsampled<const N: usize, const M: usize>(
     assert!(sz * sz == M);
     let mut dst = [0; M];
 
-    let mut y = 0;
-    while y < sz {
-        let mut x = 0;
-        while x < sz {
+    const_for!(y in 0..sz => {
+        const_for!(x in 0..sz => {
             dst[y * sz + x] = src[y * sz * step * step + x * step];
-            x += 1;
-        }
-        y += 1;
-    }
+        });
+    });
 
     dst
 }
@@ -3004,15 +3001,11 @@ pub const fn transposed<const N: usize, const M: usize>(
     assert!(w * h == M);
     let mut dst = [0; M];
 
-    let mut y = 0;
-    while y < h {
-        let mut x = 0;
-        while x < w {
+    const_for!(y in 0..h => {
+        const_for!(x in 0..w => {
             dst[x * h + y] = src[y * w + x];
-            x += 1;
-        }
-        y += 1;
-    }
+        });
+    });
 
     dst
 }
@@ -3024,24 +3017,18 @@ const fn untriangled<const N: usize, const M: usize>(src: &[u8; N], sz: usize) -
 
     let mut dst_offset = 0;
     let mut src_offset = 0;
-    let mut y = 0;
-    while y < sz {
-        let mut x = 0;
-        while x < y + 1 {
+    const_for!(y in 0..sz => {
+        const_for!(x in 0..y + 1 => {
             dst[dst_offset + x] = src[src_offset + x];
-            x += 1;
-        }
+        });
         let mut src_ptr_offset = y;
-        let mut x = y + 1;
-        while x < sz {
+        const_for!(x in y + 1..sz => {
             src_ptr_offset += x;
             dst[dst_offset + x] = src[src_offset + src_ptr_offset];
-            x += 1
-        }
+        });
         dst_offset += sz;
         src_offset += y + 1;
-        y += 1;
-    }
+    });
 
     dst
 }
@@ -3050,16 +3037,12 @@ macro_rules! generate_table {
     ($const_fn:ident, $src:expr, $($arg:expr),*) => {{
         const fn generate<const N: usize, const M: usize>(src: &[[[u8; N]; 2]; 15]) -> [[[u8; M]; 2]; 15] {
             let mut table = [[[0; M]; 2]; 15];
-            let mut i = 0;
-            while i < 15 {
-                let mut j = 0;
-                while j < 2 {
+            const_for!(i in 0..15 => {
+                const_for!(j in 0..2 => {
                     // const closures don't exist yet
                     table[i][j] = $const_fn(&src[i][j], $($arg,)*);
-                    j += 1;
-                }
-                i += 1;
-            }
+                });
+            });
             table
         }
 
@@ -3079,11 +3062,9 @@ static qm_tbl_32x32: [[[u8; 32 * 32]; 2]; 15] = generate_table!(untriangled, qm_
 
 pub static dav1d_qm_tbl: [[[Option<&'static [u8]>; N_RECT_TX_SIZES]; 2]; 16] = {
     let mut table = [[[None; N_RECT_TX_SIZES]; 2]; 16];
-    let mut i = 0;
-    while i < table.len() - 1 {
+    const_for!(i in 0..table.len() - 1 => {
         // last row is empty
-        let mut j = 0;
-        while j < table[j].len() {
+        const_for!(j in 0..table[i].len() => {
             let mut row: [Option<&'static [u8]>; N_RECT_TX_SIZES] = [None; N_RECT_TX_SIZES];
 
             // note that the w/h in the assignment is inverted, this is on purpose
@@ -3111,9 +3092,7 @@ pub static dav1d_qm_tbl: [[[Option<&'static [u8]>; N_RECT_TX_SIZES]; 2]; 16] = {
             row[RTX_16X64 as usize] = row[RTX_16X32 as usize];
 
             table[i][j] = row;
-            j += 1;
-        }
-        i += 1;
-    }
+        });
+    });
     table
 };

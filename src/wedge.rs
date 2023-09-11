@@ -3,6 +3,7 @@ use std::cmp;
 use crate::src::align::Align16;
 use crate::src::align::Align32;
 use crate::src::align::Align64;
+use crate::src::const_fn::const_for;
 use crate::src::levels::BS_16x16;
 use crate::src::levels::BS_16x32;
 use crate::src::levels::BS_16x8;
@@ -151,32 +152,26 @@ const fn insert_border(
 
     {
         if ctr > 4 {
-            let mut i = 0;
-            while i < ctr - 4 {
+            const_for!(i in 0..ctr - 4 => {
                 dst[dst_off + i] = 0;
-                i += 1;
-            }
+            });
         }
     }
     {
         let dst_off = dst_off + ctr.saturating_sub(4);
         let src_off = 4usize.saturating_sub(ctr);
         let len = if 64 - ctr > 8 { 8 } else { 64 - ctr };
-        let mut i = 0;
-        while i < len {
+        const_for!(i in 0..len => {
             dst[dst_off + i] = src[src_off + i];
-            i += 1;
-        }
+        });
     }
     {
         let ctr = ctr + 4;
         let dst_off = dst_off + ctr;
         if ctr < 64 {
-            let mut i = 0;
-            while i < 64 - ctr {
+            const_for!(i in 0..64 - ctr => {
                 dst[dst_off + i] = 64;
-                i += 1;
-            }
+            });
         }
     }
 
@@ -185,15 +180,11 @@ const fn insert_border(
 
 const fn hflip(src: &[u8; 64 * 64]) -> [u8; 64 * 64] {
     let mut dst = [0; 64 * 64];
-    let mut y = 0;
-    while y < 64 {
-        let mut x = 0;
-        while x < 64 {
+    const_for!(y in 0..64 => {
+        const_for!(x in 0..64 => {
             dst[(y * 64) + 64 - 1 - x] = src[(y * 64) + x];
-            x += 1;
-        }
-        y += 1;
-    }
+        });
+    });
     dst
 }
 
