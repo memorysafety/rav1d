@@ -152,18 +152,20 @@ fn insert_border(dst: &mut [u8], src: &[u8], ctr: usize) {
     }
 }
 
-unsafe fn hflip(dst: *mut u8, src: *const u8) {
+const fn hflip(src: &[u8; 64 * 64]) -> [u8; 64 * 64] {
+    let mut dst = [0; 64 * 64];
     let mut y = 0;
     let mut y_off = 0;
     while y < 64 {
         let mut x = 0;
         while x < 64 {
-            *dst.offset((y_off + 64 - 1 - x) as isize) = *src.offset((y_off + x) as isize);
+            dst[y_off + 64 - 1 - x] = src[y_off + x];
             x += 1;
         }
         y += 1;
         y_off += 64;
     }
+    dst
 }
 
 unsafe fn invert(dst: *mut u8, src: *const u8, w: usize, h: usize) {
@@ -384,14 +386,8 @@ pub unsafe fn dav1d_init_wedge_masks() {
 
     master[WEDGE_OBLIQUE27 as usize] = transposed(&master[WEDGE_OBLIQUE63 as usize], 64, 64);
     master[WEDGE_HORIZONTAL as usize] = transposed(&master[WEDGE_VERTICAL as usize], 64, 64);
-    hflip(
-        master[WEDGE_OBLIQUE117 as usize].as_mut_ptr(),
-        master[WEDGE_OBLIQUE63 as usize].as_mut_ptr(),
-    );
-    hflip(
-        master[WEDGE_OBLIQUE153 as usize].as_mut_ptr(),
-        master[WEDGE_OBLIQUE27 as usize].as_mut_ptr(),
-    );
+    master[WEDGE_OBLIQUE117 as usize] = hflip(&master[WEDGE_OBLIQUE63 as usize]);
+    master[WEDGE_OBLIQUE153 as usize] = hflip(&master[WEDGE_OBLIQUE27 as usize]);
 
     fill2d_16x2(
         wedge_masks_444_32x32.0.as_mut_ptr(),
