@@ -599,8 +599,3 @@ const fn build_nondc_ii_masks<const N: usize>(
 
     masks
 }
-
-#[cold]
-pub unsafe fn dav1d_init_interintra_masks() {
-    // This function is guaranteed to be called only once
-}
