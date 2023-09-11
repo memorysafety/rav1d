@@ -141,15 +141,31 @@ static mut wedge_masks_420_4x4: Align64<[u8; 2 * 16 * 4 * 4]> = Align64([0; 2 * 
 pub static mut dav1d_wedge_masks: [[[[*const u8; 16]; 2]; 3]; N_BS_SIZES] =
     [[[[0 as *const u8; 16]; 2]; 3]; N_BS_SIZES];
 
-fn insert_border(mut dst: [u8; 64 * 64], y: usize, src: &[u8; 8], ctr: usize) -> [u8; 64 * 64] {
+const fn insert_border(
+    mut dst: [u8; 64 * 64],
+    y: usize,
+    src: &[u8; 8],
+    ctr: usize,
+) -> [u8; 64 * 64] {
     if ctr > 4 {
-        dst[y * 64..][..ctr - 4].fill(0);
+        let mut i = 0;
+        while i < ctr - 4 {
+            dst[y * 64 + i] = 0;
+            i += 1;
+        }
     }
-    let len = cmp::min(64 - ctr, 8);
-    dst[y * 64 + ctr.saturating_sub(4)..][..len]
-        .copy_from_slice(&src[4usize.saturating_sub(ctr)..][..len]);
+    let len = if 64 - ctr > 8 { 8 } else { 64 - ctr };
+    let mut i = 0;
+    while i < len {
+        dst[y * 64 + ctr.saturating_sub(4) + i] = src[4usize.saturating_sub(ctr) + i];
+        i += 1;
+    }
     if ctr < 64 - 4 {
-        dst[y * 64 + ctr + 4..][..64 - 4 - ctr].fill(64);
+        let mut i = 0;
+        while i < 64 - 4 - ctr {
+            dst[y * 64 + ctr + 4 + i] = 64;
+            i += 1;
+        }
     }
     dst
 }
