@@ -144,8 +144,8 @@ fn insert_border(dst: &mut [u8], src: &[u8], ctr: usize) {
     if ctr > 4 {
         dst[..ctr - 4].fill(0);
     }
-    dst[cmp::max(ctr, 4) - 4..][..cmp::min(64 - ctr, 8)]
-        .copy_from_slice(&src[cmp::max(4 - ctr as isize, 0) as usize..][..cmp::min(64 - ctr, 8)]);
+    dst[ctr.saturating_sub(4)..][..cmp::min(64 - ctr, 8)]
+        .copy_from_slice(&src[4usize.saturating_sub(ctr)..][..cmp::min(64 - ctr, 8)]);
     if ctr < 64 - 4 {
         dst[ctr + 4..][..64 - 4 - ctr].fill(64);
     }
