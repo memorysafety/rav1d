@@ -365,36 +365,9 @@ unsafe extern "C" fn fill2d_16x2(
 #[cold]
 pub unsafe extern "C" fn dav1d_init_wedge_masks() {
     static mut wedge_master_border: [[uint8_t; 8]; N_WEDGE_MASTER_LINES] = [
-        [
-            1 as libc::c_int as uint8_t,
-            2 as libc::c_int as uint8_t,
-            6 as libc::c_int as uint8_t,
-            18 as libc::c_int as uint8_t,
-            37 as libc::c_int as uint8_t,
-            53 as libc::c_int as uint8_t,
-            60 as libc::c_int as uint8_t,
-            63 as libc::c_int as uint8_t,
-        ],
-        [
-            1 as libc::c_int as uint8_t,
-            4 as libc::c_int as uint8_t,
-            11 as libc::c_int as uint8_t,
-            27 as libc::c_int as uint8_t,
-            46 as libc::c_int as uint8_t,
-            58 as libc::c_int as uint8_t,
-            62 as libc::c_int as uint8_t,
-            63 as libc::c_int as uint8_t,
-        ],
-        [
-            0 as libc::c_int as uint8_t,
-            2 as libc::c_int as uint8_t,
-            7 as libc::c_int as uint8_t,
-            21 as libc::c_int as uint8_t,
-            43 as libc::c_int as uint8_t,
-            57 as libc::c_int as uint8_t,
-            62 as libc::c_int as uint8_t,
-            64 as libc::c_int as uint8_t,
-        ],
+        [1, 2, 6, 18, 37, 53, 60, 63],
+        [1, 4, 11, 27, 46, 58, 62, 63],
+        [0, 2, 7, 21, 43, 57, 62, 64],
     ];
     let mut master: [[uint8_t; 4096]; 6] = [[0; 4096]; 6];
     let mut y = 0;
@@ -586,38 +559,8 @@ unsafe extern "C" fn build_nondc_ii_masks(
     step: libc::c_int,
 ) {
     static mut ii_weights_1d: [uint8_t; 32] = [
-        60 as libc::c_int as uint8_t,
-        52 as libc::c_int as uint8_t,
-        45 as libc::c_int as uint8_t,
-        39 as libc::c_int as uint8_t,
-        34 as libc::c_int as uint8_t,
-        30 as libc::c_int as uint8_t,
-        26 as libc::c_int as uint8_t,
-        22 as libc::c_int as uint8_t,
-        19 as libc::c_int as uint8_t,
-        17 as libc::c_int as uint8_t,
-        15 as libc::c_int as uint8_t,
-        13 as libc::c_int as uint8_t,
-        11 as libc::c_int as uint8_t,
-        10 as libc::c_int as uint8_t,
-        8 as libc::c_int as uint8_t,
-        7 as libc::c_int as uint8_t,
-        6 as libc::c_int as uint8_t,
-        6 as libc::c_int as uint8_t,
-        5 as libc::c_int as uint8_t,
-        4 as libc::c_int as uint8_t,
-        4 as libc::c_int as uint8_t,
-        3 as libc::c_int as uint8_t,
-        3 as libc::c_int as uint8_t,
-        2 as libc::c_int as uint8_t,
-        2 as libc::c_int as uint8_t,
-        2 as libc::c_int as uint8_t,
-        2 as libc::c_int as uint8_t,
-        1 as libc::c_int as uint8_t,
-        1 as libc::c_int as uint8_t,
-        1 as libc::c_int as uint8_t,
-        1 as libc::c_int as uint8_t,
-        1 as libc::c_int as uint8_t,
+        60, 52, 45, 39, 34, 30, 26, 22, 19, 17, 15, 13, 11, 10, 8, 7, 6, 6, 5, 4, 4, 3, 3, 2, 2, 2,
+        2, 1, 1, 1, 1, 1,
     ];
     let mut y = 0;
     let mut off = 0;
