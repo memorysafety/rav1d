@@ -595,8 +595,8 @@ fn build_nondc_ii_masks(
     ];
 
     let mut y = 0;
-    let mut off = 0;
     while y < h {
+        let off = y * w;
         mask_v[off..][..w].fill(ii_weights_1d[y * step]);
         let mut x = 0;
         while x < w {
@@ -605,7 +605,6 @@ fn build_nondc_ii_masks(
             x += 1;
         }
         y += 1;
-        off += w;
     }
 }
 
