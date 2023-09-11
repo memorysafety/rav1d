@@ -189,62 +189,11 @@ pub struct Dav1dDSPContext {
     pub lr: Dav1dLoopRestorationDSPContext,
 }
 use crate::src::cdef::Dav1dCdefDSPContext;
+use crate::src::ipred::Dav1dIntraPredDSPContext;
 use crate::src::itx::Dav1dInvTxfmDSPContext;
 use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
 use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
-pub type coef = ();
 use crate::src::mc::Dav1dMCDSPContext;
-#[repr(C)]
-pub struct Dav1dIntraPredDSPContext {
-    pub intra_pred: [angular_ipred_fn; 14],
-    pub cfl_ac: [cfl_ac_fn; 3],
-    pub cfl_pred: [cfl_pred_fn; 6],
-    pub pal_pred: pal_pred_fn,
-}
-pub type pal_pred_fn = Option<
-    unsafe extern "C" fn(
-        *mut libc::c_void,
-        ptrdiff_t,
-        *const uint16_t,
-        *const uint8_t,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
-pub type cfl_pred_fn = Option<
-    unsafe extern "C" fn(
-        *mut libc::c_void,
-        ptrdiff_t,
-        *const libc::c_void,
-        libc::c_int,
-        libc::c_int,
-        *const int16_t,
-        libc::c_int,
-    ) -> (),
->;
-pub type cfl_ac_fn = Option<
-    unsafe extern "C" fn(
-        *mut int16_t,
-        *const libc::c_void,
-        ptrdiff_t,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
-pub type angular_ipred_fn = Option<
-    unsafe extern "C" fn(
-        *mut libc::c_void,
-        ptrdiff_t,
-        *const libc::c_void,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
 #[repr(C)]
 pub struct Dav1dFilmGrainDSPContext {
     pub generate_grain_y: generate_grain_y_fn,

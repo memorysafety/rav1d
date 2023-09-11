@@ -312,63 +312,11 @@ pub struct Dav1dDSPContext {
     pub lr: Dav1dLoopRestorationDSPContext,
 }
 use crate::src::cdef::Dav1dCdefDSPContext;
+use crate::src::ipred::Dav1dIntraPredDSPContext;
 use crate::src::itx::Dav1dInvTxfmDSPContext;
 use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
 use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
 use crate::src::mc::Dav1dMCDSPContext;
-#[repr(C)]
-pub struct Dav1dIntraPredDSPContext {
-    pub intra_pred: [angular_ipred_fn; 14],
-    pub cfl_ac: [cfl_ac_fn; 3],
-    pub cfl_pred: [cfl_pred_fn; 6],
-    pub pal_pred: pal_pred_fn,
-}
-pub type pal_pred_fn = Option<
-    unsafe extern "C" fn(
-        *mut pixel,
-        ptrdiff_t,
-        *const uint16_t,
-        *const uint8_t,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
-pub type cfl_pred_fn = Option<
-    unsafe extern "C" fn(
-        *mut pixel,
-        ptrdiff_t,
-        *const pixel,
-        libc::c_int,
-        libc::c_int,
-        *const int16_t,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
-pub type cfl_ac_fn = Option<
-    unsafe extern "C" fn(
-        *mut int16_t,
-        *const pixel,
-        ptrdiff_t,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
-pub type angular_ipred_fn = Option<
-    unsafe extern "C" fn(
-        *mut pixel,
-        ptrdiff_t,
-        *const pixel,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
-    ) -> (),
->;
 #[repr(C)]
 pub struct Dav1dFilmGrainDSPContext {
     pub generate_grain_y: generate_grain_y_fn,
@@ -2704,7 +2652,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_16bpc(
                     ((*t).scratch.c2rust_unnamed_0.pal[0]).as_mut_ptr()
                 };
                 ((*(*f).dsp).ipred.pal_pred).expect("non-null function pointer")(
-                    dst,
+                    dst.cast(),
                     (*f).cur.stride[0],
                     pal,
                     pal_idx,
@@ -2799,9 +2747,9 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_16bpc(
                             (*f).bitdepth_max,
                         );
                         ((*dsp).ipred.intra_pred[m as usize]).expect("non-null function pointer")(
-                            dst_0,
+                            dst_0.cast(),
                             (*f).cur.stride[0],
-                            edge,
+                            edge.cast(),
                             (*t_dim).w as libc::c_int * 4,
                             (*t_dim).h as libc::c_int * 4,
                             angle | intra_flags,
@@ -2970,7 +2918,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_16bpc(
                         as usize])
                         .expect("non-null function pointer")(
                         ac.as_mut_ptr(),
-                        y_src,
+                        y_src.cast(),
                         (*f).cur.stride[0],
                         cbw4 - (furthest_r >> ss_hor),
                         cbh4 - (furthest_b >> ss_ver),
@@ -3013,9 +2961,9 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_16bpc(
                             );
                             ((*dsp).ipred.cfl_pred[m_0 as usize])
                                 .expect("non-null function pointer")(
-                                uv_dst[pl as usize],
+                                uv_dst[pl as usize].cast(),
                                 stride,
-                                edge,
+                                edge.cast(),
                                 (*uv_t_dim).w as libc::c_int * 4,
                                 (*uv_t_dim).h as libc::c_int * 4,
                                 ac.as_mut_ptr(),
@@ -3073,7 +3021,9 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_16bpc(
                             as *mut uint8_t;
                     }
                     ((*(*f).dsp).ipred.pal_pred).expect("non-null function pointer")(
-                        ((*f).cur.data[1] as *mut pixel).offset(uv_dstoff as isize),
+                        ((*f).cur.data[1] as *mut pixel)
+                            .offset(uv_dstoff as isize)
+                            .cast(),
                         (*f).cur.stride[1],
                         (*pal_0.offset(1)).as_ptr(),
                         pal_idx_0,
@@ -3081,7 +3031,9 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_16bpc(
                         cbh4 * 4,
                     );
                     ((*(*f).dsp).ipred.pal_pred).expect("non-null function pointer")(
-                        ((*f).cur.data[2] as *mut pixel).offset(uv_dstoff as isize),
+                        ((*f).cur.data[2] as *mut pixel)
+                            .offset(uv_dstoff as isize)
+                            .cast(),
                         (*f).cur.stride[1],
                         (*pal_0.offset(2)).as_ptr(),
                         pal_idx_0,
@@ -3217,9 +3169,9 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_16bpc(
                                 angle_1 |= intra_edge_filter_flag;
                                 ((*dsp).ipred.intra_pred[m_1 as usize])
                                     .expect("non-null function pointer")(
-                                    dst_1,
+                                    dst_1.cast(),
                                     stride,
-                                    edge,
+                                    edge.cast(),
                                     (*uv_t_dim).w as libc::c_int * 4,
                                     (*uv_t_dim).h as libc::c_int * 4,
                                     angle_1 | sm_uv_fl,
@@ -3625,11 +3577,11 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_16bpc(
                 (*f).bitdepth_max,
             );
             ((*dsp).ipred.intra_pred[m as usize]).expect("non-null function pointer")(
-                tmp,
+                tmp.cast(),
                 ((4 * bw4) as libc::c_ulong)
                     .wrapping_mul(::core::mem::size_of::<pixel>() as libc::c_ulong)
                     as ptrdiff_t,
-                tl_edge,
+                tl_edge.cast(),
                 bw4 * 4,
                 bh4 * 4,
                 0 as libc::c_int,
@@ -4073,11 +4025,11 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_16bpc(
                             (*f).bitdepth_max,
                         );
                         ((*dsp).ipred.intra_pred[m_0 as usize]).expect("non-null function pointer")(
-                            tmp_0,
+                            tmp_0.cast(),
                             ((cbw4 * 4) as libc::c_ulong)
                                 .wrapping_mul(::core::mem::size_of::<pixel>() as libc::c_ulong)
                                 as ptrdiff_t,
-                            tl_edge_0,
+                            tl_edge_0.cast(),
                             cbw4 * 4,
                             cbh4 * 4,
                             0 as libc::c_int,
