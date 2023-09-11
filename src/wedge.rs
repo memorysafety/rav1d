@@ -289,17 +289,21 @@ unsafe fn fill2d_16x2(
         n += 1;
         off += w * h;
     }
+    
     let n_stride_444 = w * h;
     let n_stride_422 = n_stride_444 >> 1;
     let n_stride_420 = n_stride_444 >> 2;
     let sign_stride_444 = 16 * n_stride_444;
     let sign_stride_422 = 16 * n_stride_422;
     let sign_stride_420 = 16 * n_stride_420;
+    // assign pointers in externally visible array
     let mut n = 0;
     while n < 16 {
         let sign = (signs >> n & 1) as libc::c_int;
         dav1d_wedge_masks[bs as usize][0][0][n as usize] =
             masks_444.offset((sign * sign_stride_444) as isize);
+        // not using !sign is intentional here, since 444 does not require
+        // any rounding since no chroma subsampling is applied.
         dav1d_wedge_masks[bs as usize][0][1][n as usize] =
             masks_444.offset((sign * sign_stride_444) as isize);
         dav1d_wedge_masks[bs as usize][1][0][n as usize] =
@@ -313,6 +317,12 @@ unsafe fn fill2d_16x2(
         masks_444 = masks_444.offset(n_stride_444 as isize);
         masks_422 = masks_422.offset(n_stride_422 as isize);
         masks_420 = masks_420.offset(n_stride_420 as isize);
+        
+        // since the pointers come from inside, we know that
+        // violation of the const is OK here. Any other approach
+        // means we would have to duplicate the sign correction
+        // logic in two places, which isn't very nice, or mark
+        // the table faced externally as non-const, which also sucks
         init_chroma(
             dav1d_wedge_masks[bs as usize][1][0][n as usize] as *mut u8,
             dav1d_wedge_masks[bs as usize][0][0][n as usize],
@@ -351,6 +361,8 @@ unsafe fn fill2d_16x2(
 
 #[cold]
 pub unsafe fn dav1d_init_wedge_masks() {
+    // This function is guaranteed to be called only once
+    
     pub const WEDGE_MASTER_LINE_ODD: WedgeMasterLineType = 0;
     pub const WEDGE_MASTER_LINE_EVEN: WedgeMasterLineType = 1;
     pub const WEDGE_MASTER_LINE_VERT: WedgeMasterLineType = 2;
@@ -363,6 +375,8 @@ pub unsafe fn dav1d_init_wedge_masks() {
         [0, 2, 7, 21, 43, 57, 62, 64],
     ];
     let mut master: [[u8; 4096]; 6] = [[0; 4096]; 6];
+
+    // create master templates
     let mut y = 0;
     let mut off = 0;
     while y < 64 {
@@ -398,6 +412,7 @@ pub unsafe fn dav1d_init_wedge_masks() {
         off += 128;
         ctr -= 1;
     }
+
     transpose(
         master[WEDGE_OBLIQUE27 as usize].as_mut_ptr(),
         master[WEDGE_OBLIQUE63 as usize].as_mut_ptr(),
@@ -414,6 +429,7 @@ pub unsafe fn dav1d_init_wedge_masks() {
         master[WEDGE_OBLIQUE153 as usize].as_mut_ptr(),
         master[WEDGE_OBLIQUE27 as usize].as_mut_ptr(),
     );
+
     fill2d_16x2(
         wedge_masks_444_32x32.0.as_mut_ptr(),
         32,
@@ -552,6 +568,7 @@ unsafe fn build_nondc_ii_masks(
         60, 52, 45, 39, 34, 30, 26, 22, 19, 17, 15, 13, 11, 10, 8, 7, 6, 6, 5, 4, 4, 3, 3, 2, 2, 2,
         2, 1, 1, 1, 1, 1,
     ];
+
     let mut y = 0;
     let mut off = 0;
     while y < h {
@@ -573,6 +590,8 @@ unsafe fn build_nondc_ii_masks(
 
 #[cold]
 pub unsafe fn dav1d_init_interintra_masks() {
+    // This function is guaranteed to be called only once
+
     memset(ii_dc_mask.0.as_mut_ptr() as *mut libc::c_void, 32, 32 * 32);
     build_nondc_ii_masks(
         ii_nondc_mask_32x32.0[II_VERT_PRED as usize - 1].as_mut_ptr(),
