@@ -124,6 +124,7 @@ static mut wedge_masks_444_16x8: Align64<[u8; 4096]> = Align64([0; 4096]);
 static mut wedge_masks_444_8x32: Align64<[u8; 8192]> = Align64([0; 8192]);
 static mut wedge_masks_444_8x16: Align64<[u8; 4096]> = Align64([0; 4096]);
 static mut wedge_masks_444_8x8: Align64<[u8; 2048]> = Align64([0; 2048]);
+
 static mut wedge_masks_422_16x32: Align64<[u8; 16384]> = Align64([0; 16384]);
 static mut wedge_masks_422_16x16: Align64<[u8; 8192]> = Align64([0; 8192]);
 static mut wedge_masks_422_16x8: Align64<[u8; 4096]> = Align64([0; 4096]);
@@ -133,6 +134,7 @@ static mut wedge_masks_422_8x8: Align64<[u8; 2048]> = Align64([0; 2048]);
 static mut wedge_masks_422_4x32: Align64<[u8; 4096]> = Align64([0; 4096]);
 static mut wedge_masks_422_4x16: Align64<[u8; 2048]> = Align64([0; 2048]);
 static mut wedge_masks_422_4x8: Align64<[u8; 1024]> = Align64([0; 1024]);
+
 static mut wedge_masks_420_16x16: Align64<[u8; 8192]> = Align64([0; 8192]);
 static mut wedge_masks_420_16x8: Align64<[u8; 4096]> = Align64([0; 4096]);
 static mut wedge_masks_420_16x4: Align64<[u8; 2048]> = Align64([0; 2048]);
@@ -146,6 +148,7 @@ static mut wedge_masks_420_4x4: Align64<[u8; 512]> = Align64([0; 512]);
 #[no_mangle]
 pub static mut dav1d_wedge_masks: [[[[*const u8; 16]; 2]; 3]; N_BS_SIZES] =
     [[[[0 as *const u8; 16]; 2]; 3]; 22];
+
 unsafe extern "C" fn insert_border(dst: *mut u8, src: *const u8, ctr: libc::c_int) {
     if ctr > 4 {
         memset(dst as *mut libc::c_void, 0, ctr as libc::c_ulong - 4);
@@ -163,6 +166,7 @@ unsafe extern "C" fn insert_border(dst: *mut u8, src: *const u8, ctr: libc::c_in
         );
     }
 }
+
 unsafe extern "C" fn transpose(dst: *mut u8, src: *const u8) {
     let mut y = 0;
     let mut y_off = 0;
@@ -178,6 +182,7 @@ unsafe extern "C" fn transpose(dst: *mut u8, src: *const u8) {
         y_off += 64;
     }
 }
+
 unsafe extern "C" fn hflip(dst: *mut u8, src: *const u8) {
     let mut y = 0;
     let mut y_off = 0;
@@ -191,6 +196,7 @@ unsafe extern "C" fn hflip(dst: *mut u8, src: *const u8) {
         y_off += 64;
     }
 }
+
 unsafe extern "C" fn invert(dst: *mut u8, src: *const u8, w: libc::c_int, h: libc::c_int) {
     let mut y = 0;
     let mut y_off = 0;
@@ -204,6 +210,7 @@ unsafe extern "C" fn invert(dst: *mut u8, src: *const u8, w: libc::c_int, h: lib
         y_off += w;
     }
 }
+
 unsafe extern "C" fn copy2d(
     mut dst: *mut u8,
     mut src: *const u8,
@@ -225,6 +232,7 @@ unsafe extern "C" fn copy2d(
         y += 1;
     }
 }
+
 #[cold]
 unsafe extern "C" fn init_chroma(
     mut chroma: *mut u8,
@@ -254,6 +262,7 @@ unsafe extern "C" fn init_chroma(
         y += 1 + ss_ver;
     }
 }
+
 #[cold]
 unsafe extern "C" fn fill2d_16x2(
     dst: *mut u8,
@@ -349,6 +358,7 @@ unsafe extern "C" fn fill2d_16x2(
         n_1 += 1;
     }
 }
+
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_init_wedge_masks() {
@@ -518,6 +528,7 @@ pub unsafe extern "C" fn dav1d_init_wedge_masks() {
         0x7bfb,
     );
 }
+
 static mut ii_dc_mask: Align64<[u8; 1024]> = Align64([0; 1024]);
 static mut ii_nondc_mask_32x32: Align64<[[u8; 1024]; 3]> = Align64([[0; 1024]; 3]);
 static mut ii_nondc_mask_16x32: Align64<[[u8; 512]; 3]> = Align64([[0; 512]; 3]);
@@ -528,9 +539,11 @@ static mut ii_nondc_mask_8x8: Align64<[[u8; 64]; 3]> = Align64([[0; 64]; 3]);
 static mut ii_nondc_mask_4x16: Align64<[[u8; 64]; 3]> = Align64([[0; 64]; 3]);
 static mut ii_nondc_mask_4x8: Align32<[[u8; 32]; 3]> = Align32([[0; 32]; 3]);
 static mut ii_nondc_mask_4x4: Align16<[[u8; 16]; 3]> = Align16([[0; 16]; 3]);
+
 #[no_mangle]
 pub static mut dav1d_ii_masks: [[[*const u8; N_INTER_INTRA_PRED_MODES]; 3]; N_BS_SIZES] =
     [[[0 as *const u8; 4]; 3]; 22];
+
 #[cold]
 unsafe extern "C" fn build_nondc_ii_masks(
     mask_v: *mut u8,
@@ -562,6 +575,7 @@ unsafe extern "C" fn build_nondc_ii_masks(
         off += w;
     }
 }
+
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_init_interintra_masks() {
@@ -639,6 +653,7 @@ pub unsafe extern "C" fn dav1d_init_interintra_masks() {
         8,
     );
 }
+
 unsafe extern "C" fn run_static_initializers() {
     dav1d_ii_masks = [
         [[0 as *const u8; 4]; 3],
@@ -798,6 +813,7 @@ unsafe extern "C" fn run_static_initializers() {
         [[0 as *const u8; 4]; 3],
     ];
 }
+
 #[used]
 #[cfg_attr(target_os = "linux", link_section = ".init_array")]
 #[cfg_attr(target_os = "windows", link_section = ".CRT$XIB")]
