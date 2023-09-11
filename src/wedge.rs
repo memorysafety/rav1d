@@ -141,7 +141,7 @@ static mut wedge_masks_420_4x4: Align64<[u8; 512]> = Align64([0; 512]);
 pub static mut dav1d_wedge_masks: [[[[*const u8; 16]; 2]; 3]; N_BS_SIZES] =
     [[[[0 as *const u8; 16]; 2]; 3]; 22];
 
-unsafe extern "C" fn insert_border(dst: *mut u8, src: *const u8, ctr: libc::c_int) {
+unsafe fn insert_border(dst: *mut u8, src: *const u8, ctr: libc::c_int) {
     if ctr > 4 {
         memset(dst as *mut libc::c_void, 0, ctr as libc::c_ulong - 4);
     }
@@ -159,7 +159,7 @@ unsafe extern "C" fn insert_border(dst: *mut u8, src: *const u8, ctr: libc::c_in
     }
 }
 
-unsafe extern "C" fn transpose(dst: *mut u8, src: *const u8) {
+unsafe fn transpose(dst: *mut u8, src: *const u8) {
     let mut y = 0;
     let mut y_off = 0;
     while y < 64 {
@@ -175,7 +175,7 @@ unsafe extern "C" fn transpose(dst: *mut u8, src: *const u8) {
     }
 }
 
-unsafe extern "C" fn hflip(dst: *mut u8, src: *const u8) {
+unsafe fn hflip(dst: *mut u8, src: *const u8) {
     let mut y = 0;
     let mut y_off = 0;
     while y < 64 {
@@ -189,7 +189,7 @@ unsafe extern "C" fn hflip(dst: *mut u8, src: *const u8) {
     }
 }
 
-unsafe extern "C" fn invert(dst: *mut u8, src: *const u8, w: libc::c_int, h: libc::c_int) {
+unsafe fn invert(dst: *mut u8, src: *const u8, w: libc::c_int, h: libc::c_int) {
     let mut y = 0;
     let mut y_off = 0;
     while y < h {
@@ -203,7 +203,7 @@ unsafe extern "C" fn invert(dst: *mut u8, src: *const u8, w: libc::c_int, h: lib
     }
 }
 
-unsafe extern "C" fn copy2d(
+unsafe fn copy2d(
     mut dst: *mut u8,
     mut src: *const u8,
     w: libc::c_int,
@@ -226,7 +226,7 @@ unsafe extern "C" fn copy2d(
 }
 
 #[cold]
-unsafe extern "C" fn init_chroma(
+unsafe fn init_chroma(
     mut chroma: *mut u8,
     mut luma: *const u8,
     sign: libc::c_int,
@@ -256,7 +256,7 @@ unsafe extern "C" fn init_chroma(
 }
 
 #[cold]
-unsafe extern "C" fn fill2d_16x2(
+unsafe fn fill2d_16x2(
     dst: *mut u8,
     w: libc::c_int,
     h: libc::c_int,
@@ -541,7 +541,7 @@ pub static mut dav1d_ii_masks: [[[*const u8; N_INTER_INTRA_PRED_MODES]; 3]; N_BS
     [[[0 as *const u8; 4]; 3]; 22];
 
 #[cold]
-unsafe extern "C" fn build_nondc_ii_masks(
+unsafe fn build_nondc_ii_masks(
     mask_v: *mut u8,
     mask_h: *mut u8,
     mask_sm: *mut u8,
