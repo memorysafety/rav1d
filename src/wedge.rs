@@ -46,7 +46,8 @@ pub type WedgeMasterLineType = libc::c_uint;
 pub const N_WEDGE_MASTER_LINES: usize = 3;
 pub type WedgeDirectionType = libc::c_uint;
 pub const _N_WEDGE_DIRECTIONS: usize = 6;
-static mut wedge_codebook_16_hgtw: [wedge_code_type; 16] = [
+
+static wedge_codebook_16_hgtw: [wedge_code_type; 16] = [
     {
         let init = wedge_code_type {
             direction: WEDGE_OBLIQUE27 as libc::c_int as uint8_t,
@@ -176,7 +177,8 @@ static mut wedge_codebook_16_hgtw: [wedge_code_type; 16] = [
         init
     },
 ];
-static mut wedge_codebook_16_hltw: [wedge_code_type; 16] = [
+
+static wedge_codebook_16_hltw: [wedge_code_type; 16] = [
     {
         let init = wedge_code_type {
             direction: WEDGE_OBLIQUE27 as libc::c_int as uint8_t,
@@ -306,7 +308,8 @@ static mut wedge_codebook_16_hltw: [wedge_code_type; 16] = [
         init
     },
 ];
-static mut wedge_codebook_16_heqw: [wedge_code_type; 16] = [
+
+static wedge_codebook_16_heqw: [wedge_code_type; 16] = [
     {
         let init = wedge_code_type {
             direction: WEDGE_OBLIQUE27 as libc::c_int as uint8_t,
@@ -436,6 +439,7 @@ static mut wedge_codebook_16_heqw: [wedge_code_type; 16] = [
         init
     },
 ];
+
 static mut wedge_masks_444_32x32: Align64<[uint8_t; 32768]> = Align64([0; 32768]);
 static mut wedge_masks_444_32x16: Align64<[uint8_t; 16384]> = Align64([0; 16384]);
 static mut wedge_masks_444_32x8: Align64<[uint8_t; 8192]> = Align64([0; 8192]);
@@ -463,6 +467,7 @@ static mut wedge_masks_420_8x4: Align64<[uint8_t; 1024]> = Align64([0; 1024]);
 static mut wedge_masks_420_4x16: Align64<[uint8_t; 2048]> = Align64([0; 2048]);
 static mut wedge_masks_420_4x8: Align64<[uint8_t; 1024]> = Align64([0; 1024]);
 static mut wedge_masks_420_4x4: Align64<[uint8_t; 512]> = Align64([0; 512]);
+
 #[no_mangle]
 pub static mut dav1d_wedge_masks: [[[[*const uint8_t; 16]; 2]; 3]; N_BS_SIZES] =
     [[[[0 as *const uint8_t; 16]; 2]; 3]; 22];
