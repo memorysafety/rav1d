@@ -141,13 +141,13 @@ static mut wedge_masks_420_4x4: Align64<[u8; 2 * 16 * 4 * 4]> = Align64([0; 2 * 
 pub static mut dav1d_wedge_masks: [[[[*const u8; 16]; 2]; 3]; N_BS_SIZES] =
     [[[[0 as *const u8; 16]; 2]; 3]; N_BS_SIZES];
 
-unsafe fn insert_border(dst: *mut u8, src: *const u8, ctr: libc::c_int) {
+unsafe fn insert_border(dst: *mut u8, src: *const u8, ctr: usize) {
     if ctr > 4 {
         memset(dst as *mut libc::c_void, 0, ctr as libc::c_ulong - 4);
     }
     memcpy(
         dst.offset(cmp::max(ctr, 4) as isize).offset(-4) as *mut libc::c_void,
-        src.offset(cmp::max(4 - ctr, 0) as isize) as *const libc::c_void,
+        src.offset(cmp::max(4 - ctr as isize, 0)) as *const libc::c_void,
         cmp::min(64 - ctr as libc::c_ulong, 8),
     );
     if ctr < 64 - 4 {
@@ -189,7 +189,7 @@ unsafe fn hflip(dst: *mut u8, src: *const u8) {
     }
 }
 
-unsafe fn invert(dst: *mut u8, src: *const u8, w: libc::c_int, h: libc::c_int) {
+unsafe fn invert(dst: *mut u8, src: *const u8, w: usize, h: usize) {
     let mut y = 0;
     let mut y_off = 0;
     while y < h {
@@ -206,10 +206,10 @@ unsafe fn invert(dst: *mut u8, src: *const u8, w: libc::c_int, h: libc::c_int) {
 unsafe fn copy2d(
     mut dst: *mut u8,
     mut src: *const u8,
-    w: libc::c_int,
-    h: libc::c_int,
-    x_off: libc::c_int,
-    y_off: libc::c_int,
+    w: usize,
+    h: usize,
+    x_off: usize,
+    y_off: usize,
 ) {
     src = src.offset((y_off * 64 + x_off) as isize);
     let mut y = 0;
@@ -230,9 +230,9 @@ unsafe fn init_chroma(
     mut chroma: *mut u8,
     mut luma: *const u8,
     sign: libc::c_int,
-    w: libc::c_int,
-    h: libc::c_int,
-    ss_ver: libc::c_int,
+    w: usize,
+    h: usize,
+    ss_ver: usize,
 ) {
     let mut y = 0;
     while y < h {
@@ -258,8 +258,8 @@ unsafe fn init_chroma(
 #[cold]
 unsafe fn fill2d_16x2(
     dst: *mut u8,
-    w: libc::c_int,
-    h: libc::c_int,
+    w: usize,
+    h: usize,
     bs: BlockSize,
     master: *const [u8; 64 * 64],
     cb: *const wedge_code_type,
@@ -268,6 +268,8 @@ unsafe fn fill2d_16x2(
     mut masks_420: *mut u8,
     signs: libc::c_uint,
 ) {
+    let bs = bs as usize;
+
     let mut ptr: *mut u8 = dst;
     let mut n = 0;
     while n < 16 {
@@ -276,8 +278,8 @@ unsafe fn fill2d_16x2(
             (*master.offset((*cb.offset(n as isize)).direction as isize)).as_ptr(),
             w,
             h,
-            32 - (w * (*cb.offset(n as isize)).x_offset as libc::c_int >> 3),
-            32 - (h * (*cb.offset(n as isize)).y_offset as libc::c_int >> 3),
+            32 - (w * (*cb.offset(n as isize)).x_offset as usize >> 3),
+            32 - (h * (*cb.offset(n as isize)).y_offset as usize >> 3),
         );
         ptr = ptr.offset((w * h) as isize);
         n += 1;
@@ -299,21 +301,17 @@ unsafe fn fill2d_16x2(
     // assign pointers in externally visible array
     let mut n = 0;
     while n < 16 {
-        let sign = (signs >> n & 1) as libc::c_int;
-        dav1d_wedge_masks[bs as usize][0][0][n as usize] =
-            masks_444.offset((sign * sign_stride_444) as isize);
+        let sign = (signs >> n & 1) as usize;
+        dav1d_wedge_masks[bs][0][0][n] = masks_444.offset((sign * sign_stride_444) as isize);
         // not using !sign is intentional here, since 444 does not require
         // any rounding since no chroma subsampling is applied.
-        dav1d_wedge_masks[bs as usize][0][1][n as usize] =
-            masks_444.offset((sign * sign_stride_444) as isize);
-        dav1d_wedge_masks[bs as usize][1][0][n as usize] =
-            masks_422.offset((sign * sign_stride_422) as isize);
-        dav1d_wedge_masks[bs as usize][1][1][n as usize] =
-            masks_422.offset(((sign == 0) as libc::c_int * sign_stride_422) as isize);
-        dav1d_wedge_masks[bs as usize][2][0][n as usize] =
-            masks_420.offset((sign * sign_stride_420) as isize);
-        dav1d_wedge_masks[bs as usize][2][1][n as usize] =
-            masks_420.offset(((sign == 0) as libc::c_int * sign_stride_420) as isize);
+        dav1d_wedge_masks[bs][0][1][n] = masks_444.offset((sign * sign_stride_444) as isize);
+        dav1d_wedge_masks[bs][1][0][n] = masks_422.offset((sign * sign_stride_422) as isize);
+        dav1d_wedge_masks[bs][1][1][n] =
+            masks_422.offset(((sign == 0) as usize * sign_stride_422) as isize);
+        dav1d_wedge_masks[bs][2][0][n] = masks_420.offset((sign * sign_stride_420) as isize);
+        dav1d_wedge_masks[bs][2][1][n] =
+            masks_420.offset(((sign == 0) as usize * sign_stride_420) as isize);
         masks_444 = masks_444.offset(n_stride_444 as isize);
         masks_422 = masks_422.offset(n_stride_422 as isize);
         masks_420 = masks_420.offset(n_stride_420 as isize);
@@ -324,32 +322,32 @@ unsafe fn fill2d_16x2(
         // logic in two places, which isn't very nice, or mark
         // the table faced externally as non-const, which also sucks
         init_chroma(
-            dav1d_wedge_masks[bs as usize][1][0][n as usize] as *mut u8,
-            dav1d_wedge_masks[bs as usize][0][0][n as usize],
+            dav1d_wedge_masks[bs][1][0][n] as *mut u8,
+            dav1d_wedge_masks[bs][0][0][n],
             0,
             w,
             h,
             0,
         );
         init_chroma(
-            dav1d_wedge_masks[bs as usize][1][1][n as usize] as *mut u8,
-            dav1d_wedge_masks[bs as usize][0][0][n as usize],
+            dav1d_wedge_masks[bs][1][1][n] as *mut u8,
+            dav1d_wedge_masks[bs][0][0][n],
             1,
             w,
             h,
             0,
         );
         init_chroma(
-            dav1d_wedge_masks[bs as usize][2][0][n as usize] as *mut u8,
-            dav1d_wedge_masks[bs as usize][0][0][n as usize],
+            dav1d_wedge_masks[bs][2][0][n] as *mut u8,
+            dav1d_wedge_masks[bs][0][0][n],
             0,
             w,
             h,
             1,
         );
         init_chroma(
-            dav1d_wedge_masks[bs as usize][2][1][n as usize] as *mut u8,
-            dav1d_wedge_masks[bs as usize][0][0][n as usize],
+            dav1d_wedge_masks[bs][2][1][n] as *mut u8,
+            dav1d_wedge_masks[bs][0][0][n],
             1,
             w,
             h,
@@ -572,9 +570,9 @@ unsafe fn build_nondc_ii_masks(
     mask_v: *mut u8,
     mask_h: *mut u8,
     mask_sm: *mut u8,
-    w: libc::c_int,
-    h: libc::c_int,
-    step: libc::c_int,
+    w: usize,
+    h: usize,
+    step: usize,
 ) {
     static ii_weights_1d: [u8; 32] = [
         60, 52, 45, 39, 34, 30, 26, 22, 19, 17, 15, 13, 11, 10, 8, 7, 6, 6, 5, 4, 4, 3, 3, 2, 2, 2,
@@ -586,13 +584,13 @@ unsafe fn build_nondc_ii_masks(
     while y < h {
         memset(
             mask_v.offset(off as isize) as *mut libc::c_void,
-            ii_weights_1d[(y * step) as usize] as libc::c_int,
+            ii_weights_1d[y * step] as libc::c_int,
             w as libc::c_ulong,
         );
         let mut x = 0;
         while x < w {
-            *mask_sm.offset((off + x) as isize) = ii_weights_1d[(cmp::min(x, y) * step) as usize];
-            *mask_h.offset((off + x) as isize) = ii_weights_1d[(x * step) as usize];
+            *mask_sm.offset((off + x) as isize) = ii_weights_1d[cmp::min(x, y) * step];
+            *mask_h.offset((off + x) as isize) = ii_weights_1d[x * step];
             x += 1;
         }
         y += 1;
