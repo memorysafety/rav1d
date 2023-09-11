@@ -581,7 +581,7 @@ pub static dav1d_ii_masks: [[[Option<&'static [u8]>; N_INTER_INTRA_PRED_MODES]; 
 };
 
 #[cold]
-unsafe fn build_nondc_ii_masks(
+fn build_nondc_ii_masks(
     mask_v: &mut [u8],
     mask_h: &mut [u8],
     mask_sm: &mut [u8],
