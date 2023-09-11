@@ -27,25 +27,27 @@ use crate::src::levels::BlockSize;
 use crate::src::levels::N_BS_SIZES;
 use crate::src::levels::N_INTER_INTRA_PRED_MODES;
 
+pub type WedgeDirectionType = u8;
+pub const WEDGE_HORIZONTAL: WedgeDirectionType = 0;
+pub const WEDGE_VERTICAL: WedgeDirectionType = 1;
+pub const WEDGE_OBLIQUE27: WedgeDirectionType = 2;
+pub const WEDGE_OBLIQUE63: WedgeDirectionType = 3;
+pub const WEDGE_OBLIQUE117: WedgeDirectionType = 4;
+pub const WEDGE_OBLIQUE153: WedgeDirectionType = 5;
+pub const _N_WEDGE_DIRECTIONS: usize = 6;
+
 #[repr(C)]
 pub struct wedge_code_type {
     pub direction: uint8_t,
     pub x_offset: uint8_t,
     pub y_offset: uint8_t,
 }
-pub const WEDGE_OBLIQUE117: WedgeDirectionType = 4;
-pub const WEDGE_OBLIQUE63: WedgeDirectionType = 3;
-pub const WEDGE_OBLIQUE153: WedgeDirectionType = 5;
-pub const WEDGE_OBLIQUE27: WedgeDirectionType = 2;
-pub const WEDGE_VERTICAL: WedgeDirectionType = 1;
-pub const WEDGE_HORIZONTAL: WedgeDirectionType = 0;
+
 pub const WEDGE_MASTER_LINE_ODD: WedgeMasterLineType = 0;
 pub const WEDGE_MASTER_LINE_EVEN: WedgeMasterLineType = 1;
 pub const WEDGE_MASTER_LINE_VERT: WedgeMasterLineType = 2;
 pub type WedgeMasterLineType = libc::c_uint;
 pub const N_WEDGE_MASTER_LINES: usize = 3;
-pub type WedgeDirectionType = u8;
-pub const _N_WEDGE_DIRECTIONS: usize = 6;
 
 static wedge_codebook_16_hgtw: [wedge_code_type; 16] = [
     {
