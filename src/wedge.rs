@@ -522,24 +522,24 @@ static ii_dc_mask: Align64<[u8; 32 * 32]> = Align64([32; 32 * 32]);
 
 const N_II_PRED_MODES: usize = N_INTER_INTRA_PRED_MODES - 1;
 
-static mut ii_nondc_mask_32x32: Align64<[[u8; 32 * 32]; N_II_PRED_MODES]> =
-    Align64([[0; 32 * 32]; N_II_PRED_MODES]);
-static mut ii_nondc_mask_16x32: Align64<[[u8; 16 * 32]; N_II_PRED_MODES]> =
-    Align64([[0; 16 * 32]; N_II_PRED_MODES]);
-static mut ii_nondc_mask_16x16: Align64<[[u8; 16 * 16]; N_II_PRED_MODES]> =
-    Align64([[0; 16 * 16]; N_II_PRED_MODES]);
-static mut ii_nondc_mask_8x32: Align64<[[u8; 8 * 32]; N_II_PRED_MODES]> =
-    Align64([[0; 8 * 32]; N_II_PRED_MODES]);
-static mut ii_nondc_mask_8x16: Align64<[[u8; 8 * 16]; N_II_PRED_MODES]> =
-    Align64([[0; 8 * 16]; N_II_PRED_MODES]);
-static mut ii_nondc_mask_8x8: Align64<[[u8; 8 * 8]; N_II_PRED_MODES]> =
-    Align64([[0; 8 * 8]; N_II_PRED_MODES]);
-static mut ii_nondc_mask_4x16: Align64<[[u8; 4 * 16]; N_II_PRED_MODES]> =
-    Align64([[0; 4 * 16]; N_II_PRED_MODES]);
-static mut ii_nondc_mask_4x8: Align32<[[u8; 4 * 8]; N_II_PRED_MODES]> =
-    Align32([[0; 4 * 8]; N_II_PRED_MODES]);
-static mut ii_nondc_mask_4x4: Align16<[[u8; 4 * 4]; N_II_PRED_MODES]> =
-    Align16([[0; 4 * 4]; N_II_PRED_MODES]);
+static ii_nondc_mask_32x32: Align64<[[u8; 32 * 32]; N_II_PRED_MODES]> =
+    Align64(build_nondc_ii_masks(32, 32, 1));
+static ii_nondc_mask_16x32: Align64<[[u8; 16 * 32]; N_II_PRED_MODES]> =
+    Align64(build_nondc_ii_masks(16, 32, 1));
+static ii_nondc_mask_16x16: Align64<[[u8; 16 * 16]; N_II_PRED_MODES]> =
+    Align64(build_nondc_ii_masks(16, 16, 2));
+static ii_nondc_mask_8x32: Align64<[[u8; 8 * 32]; N_II_PRED_MODES]> =
+    Align64(build_nondc_ii_masks(8, 32, 1));
+static ii_nondc_mask_8x16: Align64<[[u8; 8 * 16]; N_II_PRED_MODES]> =
+    Align64(build_nondc_ii_masks(8, 16, 2));
+static ii_nondc_mask_8x8: Align64<[[u8; 8 * 8]; N_II_PRED_MODES]> =
+    Align64(build_nondc_ii_masks(8, 8, 4));
+static ii_nondc_mask_4x16: Align64<[[u8; 4 * 16]; N_II_PRED_MODES]> =
+    Align64(build_nondc_ii_masks(4, 16, 2));
+static ii_nondc_mask_4x8: Align32<[[u8; 4 * 8]; N_II_PRED_MODES]> =
+    Align32(build_nondc_ii_masks(4, 8, 4));
+static ii_nondc_mask_4x4: Align16<[[u8; 4 * 4]; N_II_PRED_MODES]> =
+    Align16(build_nondc_ii_masks(4, 4, 8));
 
 pub static dav1d_ii_masks: [[[Option<&'static [u8]>; N_INTER_INTRA_PRED_MODES]; 3]; N_BS_SIZES] = {
     let mut masks = [[[None; N_INTER_INTRA_PRED_MODES]; 3]; N_BS_SIZES];
@@ -549,12 +549,9 @@ pub static dav1d_ii_masks: [[[Option<&'static [u8]>; N_INTER_INTRA_PRED_MODES]; 
             let mut a: [Option<&'static [u8]>; N_INTER_INTRA_PRED_MODES] = [None; 4];
             paste! {
                 a[II_DC_PRED as usize] = Some(&ii_dc_mask.0);
-                // Safety: [`dav1d_init_interintra_masks`] is only called once at the beginning.
-                unsafe {
-                    a[II_VERT_PRED as usize] = Some(&[<ii_nondc_mask $sz>].0[II_VERT_PRED as usize - 1]);
-                    a[II_HOR_PRED as usize] = Some(&[<ii_nondc_mask $sz>].0[II_HOR_PRED as usize - 1]);
-                    a[II_SMOOTH_PRED as usize] = Some(&[<ii_nondc_mask $sz>].0[II_SMOOTH_PRED as usize - 1]);
-                }
+                a[II_VERT_PRED as usize] = Some(&[<ii_nondc_mask $sz>].0[II_VERT_PRED as usize - 1]);
+                a[II_HOR_PRED as usize] = Some(&[<ii_nondc_mask $sz>].0[II_HOR_PRED as usize - 1]);
+                a[II_SMOOTH_PRED as usize] = Some(&[<ii_nondc_mask $sz>].0[II_SMOOTH_PRED as usize - 1]);
             }
             a
         }};
@@ -606,14 +603,4 @@ const fn build_nondc_ii_masks<const N: usize>(
 #[cold]
 pub unsafe fn dav1d_init_interintra_masks() {
     // This function is guaranteed to be called only once
-
-    ii_nondc_mask_32x32.0 = build_nondc_ii_masks(32, 32, 1);
-    ii_nondc_mask_16x32.0 = build_nondc_ii_masks(16, 32, 1);
-    ii_nondc_mask_16x16.0 = build_nondc_ii_masks(16, 16, 2);
-    ii_nondc_mask_8x32.0 = build_nondc_ii_masks(8, 32, 1);
-    ii_nondc_mask_8x16.0 = build_nondc_ii_masks(8, 16, 2);
-    ii_nondc_mask_8x8.0 = build_nondc_ii_masks(8, 8, 4);
-    ii_nondc_mask_4x16.0 = build_nondc_ii_masks(4, 16, 2);
-    ii_nondc_mask_4x8.0 = build_nondc_ii_masks(4, 8, 4);
-    ii_nondc_mask_4x4.0 = build_nondc_ii_masks(4, 4, 8);
 }
