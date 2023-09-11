@@ -50,12 +50,6 @@ impl wedge_code_type {
     }
 }
 
-pub const WEDGE_MASTER_LINE_ODD: WedgeMasterLineType = 0;
-pub const WEDGE_MASTER_LINE_EVEN: WedgeMasterLineType = 1;
-pub const WEDGE_MASTER_LINE_VERT: WedgeMasterLineType = 2;
-pub type WedgeMasterLineType = libc::c_uint;
-pub const N_WEDGE_MASTER_LINES: usize = 3;
-
 static wedge_codebook_16_hgtw: [wedge_code_type; 16] = [
     wedge_code_type::new(4, 4, WEDGE_OBLIQUE27),
     wedge_code_type::new(4, 4, WEDGE_OBLIQUE63),
@@ -360,6 +354,12 @@ unsafe extern "C" fn fill2d_16x2(
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_init_wedge_masks() {
+    pub const WEDGE_MASTER_LINE_ODD: WedgeMasterLineType = 0;
+    pub const WEDGE_MASTER_LINE_EVEN: WedgeMasterLineType = 1;
+    pub const WEDGE_MASTER_LINE_VERT: WedgeMasterLineType = 2;
+    pub type WedgeMasterLineType = libc::c_uint;
+    pub const N_WEDGE_MASTER_LINES: usize = 3;
+
     static mut wedge_master_border: [[u8; 8]; N_WEDGE_MASTER_LINES] = [
         [1, 2, 6, 18, 37, 53, 60, 63],
         [1, 4, 11, 27, 46, 58, 62, 63],
