@@ -155,15 +155,13 @@ fn insert_border(dst: &mut [u8], src: &[u8], ctr: usize) {
 const fn hflip(src: &[u8; 64 * 64]) -> [u8; 64 * 64] {
     let mut dst = [0; 64 * 64];
     let mut y = 0;
-    let mut y_off = 0;
     while y < 64 {
         let mut x = 0;
         while x < 64 {
-            dst[y_off + 64 - 1 - x] = src[y_off + x];
+            dst[(y * 64) + 64 - 1 - x] = src[(y * 64) + x];
             x += 1;
         }
         y += 1;
-        y_off += 64;
     }
     dst
 }
