@@ -570,7 +570,7 @@ static ii_nondc_mask_4x4: Align16<[[u8; 4 * 4]; N_II_PRED_MODES]> =
 pub static dav1d_ii_masks: [[[Option<&'static [u8]>; N_INTER_INTRA_PRED_MODES]; 3]; N_BS_SIZES] = {
     let mut masks = [[[None; N_INTER_INTRA_PRED_MODES]; 3]; N_BS_SIZES];
 
-    macro_rules! set1 {
+    macro_rules! set {
         ($h:literal x $w:literal) => {{
             let mut a: [Option<&'static [u8]>; N_INTER_INTRA_PRED_MODES] = [None; 4];
             paste! {
@@ -581,25 +581,18 @@ pub static dav1d_ii_masks: [[[Option<&'static [u8]>; N_INTER_INTRA_PRED_MODES]; 
             }
             a
         }};
+        ([$($h:literal x $w:literal),*]) => {
+            [$(set!($h x $w),)*]
+        }
     }
 
-    macro_rules! set {
-        (
-            $h_444:literal x $w_444:literal,
-            $h_422:literal x $w_422:literal,
-            $h_420:literal x $w_420:literal
-        ) => {
-            [set1!($h_444 x $w_444), set1!($h_422 x $w_422), set1!($h_420 x $w_420)]
-        };
-    }
-
-    masks[BS_8x8 as usize] = set!(8 x 8, 4 x 8, 4 x 4);
-    masks[BS_8x16 as usize] = set!(8 x 16, 4 x 16, 4 x 8);
-    masks[BS_16x8 as usize] = set!(16 x 16, 8 x 8, 8 x 8);
-    masks[BS_16x16 as usize] = set!(16 x 16, 8 x 16, 8 x 8);
-    masks[BS_16x32 as usize] = set!(16 x 32, 8 x 32, 8 x 16);
-    masks[BS_32x16 as usize] = set!(32 x 32, 16 x 16, 16 x 16);
-    masks[BS_32x32 as usize] = set!(32 x 32, 16 x 32, 16 x 16);
+    masks[BS_8x8 as usize] = set!([8 x 8, 4 x 8, 4 x 4]);
+    masks[BS_8x16 as usize] = set!([8 x 16, 4 x 16, 4 x 8]);
+    masks[BS_16x8 as usize] = set!([16 x 16, 8 x 8, 8 x 8]);
+    masks[BS_16x16 as usize] = set!([16 x 16, 8 x 16, 8 x 8]);
+    masks[BS_16x32 as usize] = set!([16 x 32, 8 x 32, 8 x 16]);
+    masks[BS_32x16 as usize] = set!([32 x 32, 16 x 16, 16 x 16]);
+    masks[BS_32x32 as usize] = set!([32 x 32, 16 x 32, 16 x 16]);
 
     masks
 };
