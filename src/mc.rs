@@ -1,4 +1,4 @@
-use std::iter;
+use std::{cmp, iter};
 
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::{AsPrimitive, BitDepth};
@@ -856,7 +856,7 @@ unsafe fn w_mask_rust<BD: BitDepth>(
     {
         let mut x = 0;
         while x < w {
-            let m = std::cmp::min(
+            let m = cmp::min(
                 38 + (tmp1[x].abs_diff(tmp2[x]).saturating_add(mask_rnd) >> mask_sh),
                 64,
             ) as u8;
@@ -867,7 +867,7 @@ unsafe fn w_mask_rust<BD: BitDepth>(
             if ss_hor {
                 x += 1;
 
-                let n = std::cmp::min(
+                let n = cmp::min(
                     38 + (tmp1[x].abs_diff(tmp2[x]).saturating_add(mask_rnd) >> mask_sh),
                     64,
                 ) as u8;

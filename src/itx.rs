@@ -1,9 +1,10 @@
+use std::cmp;
+
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::iclip;
-use crate::include::common::intops::imin;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 
@@ -61,8 +62,8 @@ pub unsafe extern "C" fn inv_txfm_add_rust<BD: BitDepth>(
         }
         return;
     }
-    let sh = imin(h, 32 as libc::c_int);
-    let sw = imin(w, 32 as libc::c_int);
+    let sh = cmp::min(h, 32 as libc::c_int);
+    let sw = cmp::min(w, 32 as libc::c_int);
     let row_clip_min;
     let col_clip_min;
     if BD::BITDEPTH == 8 {

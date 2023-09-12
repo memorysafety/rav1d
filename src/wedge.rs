@@ -1,3 +1,5 @@
+use std::cmp;
+
 use crate::include::stdint::*;
 use crate::src::align::Align16;
 use crate::src::align::Align32;
@@ -45,8 +47,6 @@ pub type WedgeMasterLineType = libc::c_uint;
 pub const N_WEDGE_MASTER_LINES: WedgeMasterLineType = 3;
 pub type WedgeDirectionType = libc::c_uint;
 pub const N_WEDGE_DIRECTIONS: WedgeDirectionType = 6;
-use crate::include::common::intops::imax;
-use crate::include::common::intops::imin;
 static mut wedge_codebook_16_hgtw: [wedge_code_type; 16] = [
     {
         let init = wedge_code_type {
@@ -476,10 +476,10 @@ unsafe extern "C" fn insert_border(dst: *mut uint8_t, src: *const uint8_t, ctr: 
         );
     }
     memcpy(
-        dst.offset(imax(ctr, 4 as libc::c_int) as isize)
+        dst.offset(cmp::max(ctr, 4 as libc::c_int) as isize)
             .offset(-(4 as libc::c_int as isize)) as *mut libc::c_void,
-        src.offset(imax(4 - ctr, 0 as libc::c_int) as isize) as *const libc::c_void,
-        imin(64 - ctr, 8 as libc::c_int) as libc::c_ulong,
+        src.offset(cmp::max(4 - ctr, 0 as libc::c_int) as isize) as *const libc::c_void,
+        cmp::min(64 - ctr, 8 as libc::c_int) as libc::c_ulong,
     );
     if ctr < 64 - 4 {
         memset(
@@ -948,7 +948,7 @@ unsafe extern "C" fn build_nondc_ii_masks(
         );
         let mut x = 0;
         while x < w {
-            *mask_sm.offset((off + x) as isize) = ii_weights_1d[(imin(x, y) * step) as usize];
+            *mask_sm.offset((off + x) as isize) = ii_weights_1d[(cmp::min(x, y) * step) as usize];
             *mask_h.offset((off + x) as isize) = ii_weights_1d[(x * step) as usize];
             x += 1;
         }

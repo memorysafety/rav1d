@@ -1,3 +1,5 @@
+use std::cmp;
+
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use crate::src::align::Align16;
@@ -67,7 +69,6 @@ pub struct Dav1dFilmGrainDSPContext {
     pub fgy_32x32xn: fgy_32x32xn_fn,
     pub fguv_32x32xn: [fguv_32x32xn_fn; 3],
 }
-use crate::include::common::intops::imin;
 unsafe extern "C" fn generate_scaling(
     _bitdepth: libc::c_int,
     points: *const [uint8_t; 2],
@@ -260,7 +261,7 @@ pub unsafe extern "C" fn dav1d_apply_grain_row_8bpc(
     let luma_src: *mut pixel =
         ((*in_0).data[0] as *mut pixel).offset(((row * 32) as isize * (*in_0).stride[0]) as isize);
     if (*data).num_y_points != 0 {
-        let bh = imin((*out).p.h - row * 32, 32 as libc::c_int);
+        let bh = cmp::min((*out).p.h - row * 32, 32 as libc::c_int);
         ((*dsp).fgy_32x32xn).expect("non-null function pointer")(
             ((*out).data[0] as *mut pixel)
                 .offset(((row * 32) as isize * (*out).stride[0]) as isize),
@@ -280,7 +281,7 @@ pub unsafe extern "C" fn dav1d_apply_grain_row_8bpc(
     {
         return;
     }
-    let bh_0 = imin((*out).p.h - row * 32, 32 as libc::c_int) + ss_y >> ss_y;
+    let bh_0 = cmp::min((*out).p.h - row * 32, 32 as libc::c_int) + ss_y >> ss_y;
     if (*out).p.w & ss_x != 0 {
         let mut ptr: *mut pixel = luma_src;
         let mut y = 0;

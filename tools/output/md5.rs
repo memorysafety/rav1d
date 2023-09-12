@@ -1,3 +1,5 @@
+use std::cmp;
+
 use crate::errno_location;
 use crate::{stderr, stdout};
 use ::libc;
@@ -55,7 +57,6 @@ pub struct Muxer {
     pub verify: Option<unsafe extern "C" fn(*mut MuxerPriv, *const libc::c_char) -> libc::c_int>,
 }
 pub type MD5Context = MuxerPriv;
-use rav1d::include::common::intops::umin;
 static mut k: [uint32_t; 64] = [
     0xd76aa478 as libc::c_uint,
     0xe8c7b756 as libc::c_uint,
@@ -556,7 +557,7 @@ unsafe extern "C" fn md5_update(
         return;
     }
     if ((*md5).len & 63) != 0 {
-        let tmp: libc::c_uint = umin(len, 64 - ((*md5).len & 63) as libc::c_uint);
+        let tmp: libc::c_uint = cmp::min(len, 64 - ((*md5).len & 63) as libc::c_uint);
         memcpy(
             &mut *((*md5).c2rust_unnamed.data)
                 .as_mut_ptr()

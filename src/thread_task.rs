@@ -1,3 +1,5 @@
+use std::cmp;
+
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use ::libc;
@@ -383,8 +385,6 @@ unsafe extern "C" fn dav1d_set_thread_name(name: *const libc::c_char) {
     }
 }
 use crate::include::common::intops::iclip;
-use crate::include::common::intops::imax;
-use crate::include::common::intops::umin;
 #[inline]
 unsafe extern "C" fn reset_task_cur(
     c: *const Dav1dContext,
@@ -432,7 +432,7 @@ unsafe extern "C" fn reset_task_cur(
             if frame_idx < first {
                 frame_idx = frame_idx.wrapping_add((*c).n_fc);
             }
-            min_frame_idx = umin(reset_frame_idx, frame_idx);
+            min_frame_idx = cmp::min(reset_frame_idx, frame_idx);
             cur_frame_idx = first.wrapping_add((*ttd).cur);
             if (*ttd).cur < (*c).n_fc && cur_frame_idx < min_frame_idx {
                 return 0 as libc::c_int;
@@ -946,7 +946,7 @@ unsafe extern "C" fn check_tile(
                 } else {
                     (*lowest_px.offset(n as isize))[1] * ((1 as libc::c_int) << ss_ver) + 8
                 };
-                let max = imax(y, uv);
+                let max = cmp::max(y, uv);
                 if max == i32::MIN {
                     current_block_14 = 7651349459974463963;
                 } else {
