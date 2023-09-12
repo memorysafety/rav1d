@@ -571,31 +571,35 @@ pub static dav1d_ii_masks: [[[Option<&'static [u8]>; N_INTER_INTRA_PRED_MODES]; 
     let mut masks = [[[None; N_INTER_INTRA_PRED_MODES]; 3]; N_BS_SIZES];
 
     macro_rules! set1 {
-        ($sz:ident) => {{
+        ($h:literal x $w:literal) => {{
             let mut a: [Option<&'static [u8]>; N_INTER_INTRA_PRED_MODES] = [None; 4];
             paste! {
                 a[II_DC_PRED as usize] = Some(&ii_dc_mask.0);
-                a[II_VERT_PRED as usize] = Some(&[<ii_nondc_mask $sz>].0[II_VERT_PRED as usize - 1]);
-                a[II_HOR_PRED as usize] = Some(&[<ii_nondc_mask $sz>].0[II_HOR_PRED as usize - 1]);
-                a[II_SMOOTH_PRED as usize] = Some(&[<ii_nondc_mask $sz>].0[II_SMOOTH_PRED as usize - 1]);
+                a[II_VERT_PRED as usize] = Some(&[<ii_nondc_mask _ $h x $w>].0[II_VERT_PRED as usize - 1]);
+                a[II_HOR_PRED as usize] = Some(&[<ii_nondc_mask _ $h x $w>].0[II_HOR_PRED as usize - 1]);
+                a[II_SMOOTH_PRED as usize] = Some(&[<ii_nondc_mask _ $h x $w>].0[II_SMOOTH_PRED as usize - 1]);
             }
             a
         }};
     }
 
     macro_rules! set {
-        ($sz_444:ident, $sz_422:ident, $sz_420:ident) => {
-            [set1!($sz_444), set1!($sz_422), set1!($sz_420)]
+        (
+            $h_444:literal x $w_444:literal,
+            $h_422:literal x $w_422:literal,
+            $h_420:literal x $w_420:literal
+        ) => {
+            [set1!($h_444 x $w_444), set1!($h_422 x $w_422), set1!($h_420 x $w_420)]
         };
     }
 
-    masks[BS_8x8 as usize] = set!(_8x8, _4x8, _4x4);
-    masks[BS_8x16 as usize] = set!(_8x16, _4x16, _4x8);
-    masks[BS_16x8 as usize] = set!(_16x16, _8x8, _8x8);
-    masks[BS_16x16 as usize] = set!(_16x16, _8x16, _8x8);
-    masks[BS_16x32 as usize] = set!(_16x32, _8x32, _8x16);
-    masks[BS_32x16 as usize] = set!(_32x32, _16x16, _16x16);
-    masks[BS_32x32 as usize] = set!(_32x32, _16x32, _16x16);
+    masks[BS_8x8 as usize] = set!(8 x 8, 4 x 8, 4 x 4);
+    masks[BS_8x16 as usize] = set!(8 x 16, 4 x 16, 4 x 8);
+    masks[BS_16x8 as usize] = set!(16 x 16, 8 x 8, 8 x 8);
+    masks[BS_16x16 as usize] = set!(16 x 16, 8 x 16, 8 x 8);
+    masks[BS_16x32 as usize] = set!(16 x 32, 8 x 32, 8 x 16);
+    masks[BS_32x16 as usize] = set!(32 x 32, 16 x 16, 16 x 16);
+    masks[BS_32x32 as usize] = set!(32 x 32, 16 x 32, 16 x 16);
 
     masks
 };
