@@ -271,8 +271,7 @@ unsafe fn fill2d_16x2(
     let bs = bs as usize;
 
     let mut ptr: *mut u8 = dst.as_mut_ptr();
-    let mut n = 0;
-    while n < 16 {
+    for n in 0..16 {
         copy2d(
             ptr,
             (*master.offset((*cb.offset(n as isize)).direction as isize)).as_ptr(),
@@ -282,13 +281,10 @@ unsafe fn fill2d_16x2(
             32 - (h * (*cb.offset(n as isize)).y_offset as usize >> 3),
         );
         ptr = ptr.offset((w * h) as isize);
-        n += 1;
     }
-    let mut n = 0;
     let mut off = 0;
-    while n < 16 {
+    for _ in 0..16 {
         invert(ptr.offset(off as isize), dst[off..].as_ptr(), w, h);
-        n += 1;
         off += w * h;
     }
 
@@ -299,8 +295,7 @@ unsafe fn fill2d_16x2(
     let sign_stride_422 = 16 * n_stride_422;
     let sign_stride_420 = 16 * n_stride_420;
     // assign pointers in externally visible array
-    let mut n = 0;
-    while n < 16 {
+    for n in 0..16 {
         let sign = (signs >> n & 1) as usize;
         dav1d_wedge_masks[bs][0][0][n] = masks_444.offset((sign * sign_stride_444) as isize);
         // not using !sign is intentional here, since 444 does not require
@@ -353,7 +348,6 @@ unsafe fn fill2d_16x2(
             h,
             1,
         );
-        n += 1;
     }
 }
 
