@@ -298,17 +298,15 @@ unsafe fn fill2d_16x2(
     let sign_stride_420 = 16 * n_stride_420;
     // assign pointers in externally visible array
     for n in 0..16 {
-        let sign = (signs >> n & 1) as usize;
-        dav1d_wedge_masks[bs][0][0][n] = masks_444[sign * sign_stride_444..].as_ptr();
+        let sign = (signs >> n & 1) != 0;
+        dav1d_wedge_masks[bs][0][0][n] = masks_444[sign as usize * sign_stride_444..].as_ptr();
         // not using !sign is intentional here, since 444 does not require
         // any rounding since no chroma subsampling is applied.
-        dav1d_wedge_masks[bs][0][1][n] = masks_444[sign * sign_stride_444..].as_ptr();
-        dav1d_wedge_masks[bs][1][0][n] = masks_422[sign * sign_stride_422..].as_ptr();
-        dav1d_wedge_masks[bs][1][1][n] =
-            masks_422[(sign == 0) as usize * sign_stride_422..].as_ptr();
-        dav1d_wedge_masks[bs][2][0][n] = masks_420[sign * sign_stride_420..].as_ptr();
-        dav1d_wedge_masks[bs][2][1][n] =
-            masks_420[(sign == 0) as usize * sign_stride_420..].as_ptr();
+        dav1d_wedge_masks[bs][0][1][n] = masks_444[sign as usize * sign_stride_444..].as_ptr();
+        dav1d_wedge_masks[bs][1][0][n] = masks_422[sign as usize * sign_stride_422..].as_ptr();
+        dav1d_wedge_masks[bs][1][1][n] = masks_422[!sign as usize * sign_stride_422..].as_ptr();
+        dav1d_wedge_masks[bs][2][0][n] = masks_420[sign as usize * sign_stride_420..].as_ptr();
+        dav1d_wedge_masks[bs][2][1][n] = masks_420[!sign as usize * sign_stride_420..].as_ptr();
         masks_444 = &mut masks_444[n_stride_444..];
         masks_422 = &mut masks_422[n_stride_422..];
         masks_420 = &mut masks_420[n_stride_420..];
