@@ -7,6 +7,8 @@ use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::iclip;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
+use crate::src::levels::N_RECT_TX_SIZES;
+use crate::src::levels::N_TX_TYPES_PLUS_LL;
 
 extern "C" {
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
@@ -146,7 +148,7 @@ pub type itxfm_fn = Option<
 >;
 #[repr(C)]
 pub struct Dav1dInvTxfmDSPContext {
-    pub itxfm_add: [[itxfm_fn; 17]; 19],
+    pub itxfm_add: [[itxfm_fn; N_TX_TYPES_PLUS_LL]; N_RECT_TX_SIZES],
 }
 
 #[cfg(feature = "asm")]

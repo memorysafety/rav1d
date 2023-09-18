@@ -24,6 +24,8 @@ use crate::src::intra_edge::EDGE_I444_LEFT_HAS_BOTTOM;
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 use crate::src::levels::DC_PRED;
 use crate::src::levels::HOR_PRED;
+use crate::src::levels::N_IMPL_INTRA_PRED_MODES;
+use crate::src::levels::N_INTRA_PRED_MODES;
 use crate::src::levels::VERT_PRED;
 #[derive(Copy, Clone, BitfieldStruct)]
 #[repr(C)]
@@ -36,6 +38,7 @@ pub struct av1_intra_prediction_edge {
     pub needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [u8; 1],
 }
 use crate::include::common::attributes::clz;
+
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     if x & 1 != 0 {
@@ -51,7 +54,7 @@ unsafe extern "C" fn pixel_set(dst: *mut pixel, val: libc::c_int, num: libc::c_i
         n += 1;
     }
 }
-static mut av1_mode_conv: [[[uint8_t; 2]; 2]; 13] = [
+static mut av1_mode_conv: [[[uint8_t; 2]; 2]; N_INTRA_PRED_MODES] = [
     [
         [
             DC_128_PRED as libc::c_int as uint8_t,
@@ -97,7 +100,7 @@ static mut av1_mode_to_angle_map: [uint8_t; 8] = [
 static mut av1_intra_prediction_edges: [av1_intra_prediction_edge; 14] =
     [av1_intra_prediction_edge {
         needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-    }; 14];
+    }; N_IMPL_INTRA_PRED_MODES];
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_prepare_intra_edges_16bpc(
     x: libc::c_int,

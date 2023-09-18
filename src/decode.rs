@@ -2643,8 +2643,8 @@ unsafe fn decode_b(
                     case.set(&mut dir.comp_type.0, COMP_INTER_NONE);
                     case.set(&mut dir.r#ref[0], -1);
                     case.set(&mut dir.r#ref[1], -1);
-                    case.set(&mut dir.filter.0[0], DAV1D_N_SWITCHABLE_FILTERS);
-                    case.set(&mut dir.filter.0[1], DAV1D_N_SWITCHABLE_FILTERS);
+                    case.set(&mut dir.filter.0[0], DAV1D_N_SWITCHABLE_FILTERS as u8);
+                    case.set(&mut dir.filter.0[1], DAV1D_N_SWITCHABLE_FILTERS as u8);
                 }
             },
         );
@@ -4304,7 +4304,7 @@ fn reset_context(ctx: &mut BlockContext, keyframe: bool, pass: libc::c_int) {
         ccoef.fill(0x40);
     }
     for filter in &mut ctx.filter.0 {
-        filter.fill(DAV1D_N_SWITCHABLE_FILTERS);
+        filter.fill(DAV1D_N_SWITCHABLE_FILTERS as u8);
     }
     ctx.seg_pred.0.fill(0);
     ctx.pal_sz.0.fill(0);
