@@ -199,12 +199,12 @@ fn invert<const N: usize>(src: &[u8; N], w: usize, h: usize) -> [u8; N] {
     assert!(w * h == N);
     let mut dst = [0; N];
 
-    for y in 0..h {
+    const_for!(y in 0..h => {
         let y_off = y * w;
-        for x in 0..w {
+        const_for!(x in 0..w => {
             dst[y_off + x] = 64 - src[y_off + x];
-        }
-    }
+        });
+    });
 
     dst
 }
