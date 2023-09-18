@@ -246,17 +246,17 @@ fn init_chroma<const LEN_LUMA: usize, const LEN_CHROMA: usize>(
 
     let mut luma_off = 0;
     let mut chroma_off = 0;
-    for _ in (0..h).step_by(1 + ss_ver) {
-        for x in (0..w).step_by(2) {
+    const_for!(_y in 0..h, step_by 1 + ss_ver => {
+        const_for!(x in 0..w, step_by 2 => {
             let mut sum = luma[luma_off + x] as u16 + luma[luma_off + x + 1] as u16 + 1;
             if ss_ver != 0 {
                 sum += luma[luma_off + w + x] as u16 + luma[luma_off + w + x + 1] as u16 + 1;
             }
             chroma[chroma_off + (x >> 1)] = (sum - sign >> 1 + ss_ver) as u8;
-        }
+        });
         luma_off += w << ss_ver;
         chroma_off += w >> 1;
-    }
+    });
 
     chroma
 }
