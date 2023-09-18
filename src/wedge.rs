@@ -232,7 +232,14 @@ unsafe fn copy2d(
 }
 
 #[cold]
-fn init_chroma(chroma: &mut [u8], luma: &[u8], sign: bool, w: usize, h: usize, ss_ver: bool) {
+fn init_chroma<const LEN_LUMA: usize, const LEN_CHROMA: usize>(
+    chroma: &mut [u8; LEN_CHROMA],
+    luma: &[u8; LEN_LUMA],
+    sign: bool,
+    w: usize,
+    h: usize,
+    ss_ver: bool,
+) {
     let sign = sign as u16;
     let ss_ver = ss_ver as usize;
 
