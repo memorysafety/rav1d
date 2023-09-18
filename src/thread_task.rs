@@ -123,16 +123,16 @@ use crate::src::internal::FrameTileThreadData;
 
 use crate::src::internal::Dav1dTask;
 use crate::src::internal::TaskType;
-use crate::src::internal::DAV1D_TASK_TYPE_FG_APPLY;
-use crate::src::internal::DAV1D_TASK_TYPE_FG_PREP;
-use crate::src::internal::DAV1D_TASK_TYPE_RECONSTRUCTION_PROGRESS;
-
 use crate::src::internal::DAV1D_TASK_TYPE_CDEF;
 use crate::src::internal::DAV1D_TASK_TYPE_DEBLOCK_COLS;
 use crate::src::internal::DAV1D_TASK_TYPE_DEBLOCK_ROWS;
 use crate::src::internal::DAV1D_TASK_TYPE_ENTROPY_PROGRESS;
+use crate::src::internal::DAV1D_TASK_TYPE_FG_APPLY;
+use crate::src::internal::DAV1D_TASK_TYPE_FG_PREP;
 use crate::src::internal::DAV1D_TASK_TYPE_INIT;
 use crate::src::internal::DAV1D_TASK_TYPE_INIT_CDF;
+use crate::src::internal::DAV1D_TASK_TYPE_LOOP_RESTORATION;
+use crate::src::internal::DAV1D_TASK_TYPE_RECONSTRUCTION_PROGRESS;
 use crate::src::internal::DAV1D_TASK_TYPE_SUPER_RESOLUTION;
 use crate::src::internal::DAV1D_TASK_TYPE_TILE_ENTROPY;
 use crate::src::internal::DAV1D_TASK_TYPE_TILE_RECONSTRUCTION;
@@ -1524,7 +1524,7 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut libc::c_void) -> *mut libc
                             (*tc).f = f;
                             sby = (*t).sby;
                             match (*t).type_0 as libc::c_uint {
-                                0 => {
+                                DAV1D_TASK_TYPE_INIT => {
                                     if !((*c).n_fc > 1 as libc::c_uint) {
                                         unreachable!();
                                     }
@@ -1553,7 +1553,7 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut libc::c_void) -> *mut libc
                                         continue 's_18;
                                     }
                                 }
-                                1 => {
+                                DAV1D_TASK_TYPE_INIT_CDF => {
                                     if !((*c).n_fc > 1 as libc::c_uint) {
                                         unreachable!();
                                     }
@@ -1652,7 +1652,8 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut libc::c_void) -> *mut libc
                                     }
                                     continue 's_18;
                                 }
-                                2 | 4 => {
+                                DAV1D_TASK_TYPE_TILE_ENTROPY
+                                | DAV1D_TASK_TYPE_TILE_RECONSTRUCTION => {
                                     let p_1 = ((*t).type_0 as libc::c_uint
                                         == DAV1D_TASK_TYPE_TILE_ENTROPY as libc::c_int
                                             as libc::c_uint)
@@ -1802,7 +1803,7 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut libc::c_void) -> *mut libc
                                         continue 's_18;
                                     }
                                 }
-                                5 => {
+                                DAV1D_TASK_TYPE_DEBLOCK_COLS => {
                                     if ::core::intrinsics::atomic_load_seqcst(
                                         &mut (*f).task_thread.error as *mut atomic_int,
                                     ) == 0
@@ -1827,27 +1828,27 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut libc::c_void) -> *mut libc
                                         break;
                                     }
                                 }
-                                6 => {
+                                DAV1D_TASK_TYPE_DEBLOCK_ROWS => {
                                     current_block = 16164772378964453469;
                                     break;
                                 }
-                                7 => {
+                                DAV1D_TASK_TYPE_CDEF => {
                                     current_block = 5292528706010880565;
                                     break;
                                 }
-                                8 => {
+                                DAV1D_TASK_TYPE_SUPER_RESOLUTION => {
                                     current_block = 12196494833634779273;
                                     break;
                                 }
-                                9 => {
+                                DAV1D_TASK_TYPE_LOOP_RESTORATION => {
                                     current_block = 563177965161376451;
                                     break;
                                 }
-                                10 => {
+                                DAV1D_TASK_TYPE_RECONSTRUCTION_PROGRESS => {
                                     current_block = 18238912670629178022;
                                     break;
                                 }
-                                3 => {
+                                DAV1D_TASK_TYPE_ENTROPY_PROGRESS => {
                                     current_block = 7729400755948011248;
                                     break;
                                 }

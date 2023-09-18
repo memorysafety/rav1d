@@ -18,7 +18,11 @@ extern "C" {
 }
 
 use rav1d::include::dav1d::headers::Dav1dObuType;
+use rav1d::include::dav1d::headers::DAV1D_OBU_FRAME;
+use rav1d::include::dav1d::headers::DAV1D_OBU_FRAME_HDR;
+use rav1d::include::dav1d::headers::DAV1D_OBU_SEQ_HDR;
 use rav1d::include::dav1d::headers::DAV1D_OBU_TD;
+use rav1d::include::dav1d::headers::DAV1D_OBU_TILE_GRP;
 
 use rav1d::include::dav1d::data::Dav1dData;
 #[repr(C)]
@@ -210,11 +214,11 @@ unsafe extern "C" fn annexb_probe(data: *const uint8_t) -> libc::c_int {
         }
         cnt += obu_unit_size as libc::c_int;
         match type_0 as libc::c_uint {
-            1 => {
+            DAV1D_OBU_SEQ_HDR => {
                 seq = 1 as libc::c_int;
             }
-            6 | 3 => return seq,
-            2 | 4 => return 0 as libc::c_int,
+            DAV1D_OBU_FRAME | DAV1D_OBU_FRAME_HDR => return seq,
+            DAV1D_OBU_TD | DAV1D_OBU_TILE_GRP => return 0 as libc::c_int,
             _ => {}
         }
         temporal_unit_size = temporal_unit_size.wrapping_sub(obu_unit_size);
