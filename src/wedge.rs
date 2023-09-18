@@ -2,6 +2,7 @@ use crate::src::align::Align16;
 use crate::src::align::Align32;
 use crate::src::align::Align64;
 use crate::src::const_fn::const_for;
+use crate::src::const_fn::const_min;
 use crate::src::levels::BS_16x16;
 use crate::src::levels::BS_16x32;
 use crate::src::levels::BS_16x8;
@@ -160,7 +161,7 @@ const fn insert_border(
     {
         let dst_off = dst_off + ctr.saturating_sub(4);
         let src_off = 4usize.saturating_sub(ctr);
-        let len = if 64 - ctr > 8 { 8 } else { 64 - ctr };
+        let len = const_min!(64 - ctr, 8);
         const_for!(i in 0..len => {
             dst[dst_off + i] = src[src_off + i];
         });
@@ -540,7 +541,7 @@ const fn build_nondc_ii_masks<const N: usize>(
             masks[II_VERT_PRED as usize - 1][off + i] = ii_weights_1d[y * step];
         });
         const_for!(x in 0..w => {
-            masks[II_SMOOTH_PRED as usize - 1][off + x] = ii_weights_1d[if x < y { x } else { y } * step];
+            masks[II_SMOOTH_PRED as usize - 1][off + x] = ii_weights_1d[const_min!(x, y) * step];
             masks[II_HOR_PRED as usize - 1][off + x] = ii_weights_1d[x * step];
         });
     });

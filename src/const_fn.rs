@@ -21,3 +21,19 @@ macro_rules! const_for {
 }
 
 pub(crate) use const_for;
+
+macro_rules! const_min {
+    ($a:expr, $b:expr) => {{
+        let a = $a;
+        let b = $b;
+        if a < b {
+            a
+        } else {
+            b
+        }
+    }};
+}
+
+/// [`std::cmp::min`] is not `const` since it would need `const` `trait` `fn`s,
+/// so this implements it with a macro instead so it can remain `const`.
+pub(crate) use const_min;
