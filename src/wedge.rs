@@ -109,35 +109,42 @@ static wedge_codebook_16_heqw: [wedge_code_type; 16] = [
     wedge_code_type::new(6, 4, WEDGE_OBLIQUE117),
 ];
 
-static mut wedge_masks_444_32x32: Align64<[[u8; 16 * 32 * 32]; 2]> = Align64([[0; 16 * 32 * 32]; 2]);
-static mut wedge_masks_444_32x16: Align64<[[u8; 16 * 32 * 16]; 2]> = Align64([[0; 16 * 32 * 16]; 2]);
-static mut wedge_masks_444_32x8: Align64<[[u8; 16 * 32 * 8]; 2]> = Align64([[0; 16 * 32 * 8]; 2]);
-static mut wedge_masks_444_16x32: Align64<[[u8; 16 * 16 * 32]; 2]> = Align64([[0; 16 * 16 * 32]; 2]);
-static mut wedge_masks_444_16x16: Align64<[[u8; 16 * 16 * 16]; 2]> = Align64([[0; 16 * 16 * 16]; 2]);
-static mut wedge_masks_444_16x8: Align64<[[u8; 16 * 16 * 8]; 2]> = Align64([[0; 16 * 16 * 8]; 2]);
-static mut wedge_masks_444_8x32: Align64<[[u8; 16 * 8 * 32]; 2]> = Align64([[0; 16 * 8 * 32]; 2]);
-static mut wedge_masks_444_8x16: Align64<[[u8; 16 * 8 * 16]; 2]> = Align64([[0; 16 * 8 * 16]; 2]);
-static mut wedge_masks_444_8x8: Align64<[[u8; 16 * 8 * 8]; 2]> = Align64([[0; 16 * 8 * 8]; 2]);
+static mut wedge_masks_444_32x32: Align64<[[[u8; 32 * 32]; 16]; 2]> =
+    Align64([[[0; 32 * 32]; 16]; 2]);
+static mut wedge_masks_444_32x16: Align64<[[[u8; 32 * 16]; 16]; 2]> =
+    Align64([[[0; 32 * 16]; 16]; 2]);
+static mut wedge_masks_444_32x8: Align64<[[[u8; 32 * 8]; 16]; 2]> = Align64([[[0; 32 * 8]; 16]; 2]);
+static mut wedge_masks_444_16x32: Align64<[[[u8; 16 * 32]; 16]; 2]> =
+    Align64([[[0; 16 * 32]; 16]; 2]);
+static mut wedge_masks_444_16x16: Align64<[[[u8; 16 * 16]; 16]; 2]> =
+    Align64([[[0; 16 * 16]; 16]; 2]);
+static mut wedge_masks_444_16x8: Align64<[[[u8; 16 * 8]; 16]; 2]> = Align64([[[0; 16 * 8]; 16]; 2]);
+static mut wedge_masks_444_8x32: Align64<[[[u8; 8 * 32]; 16]; 2]> = Align64([[[0; 8 * 32]; 16]; 2]);
+static mut wedge_masks_444_8x16: Align64<[[[u8; 8 * 16]; 16]; 2]> = Align64([[[0; 8 * 16]; 16]; 2]);
+static mut wedge_masks_444_8x8: Align64<[[[u8; 8 * 8]; 16]; 2]> = Align64([[[0; 8 * 8]; 16]; 2]);
 
-static mut wedge_masks_422_16x32: Align64<[[u8; 16 * 16 * 32]; 2]> = Align64([[0; 16 * 16 * 32]; 2]);
-static mut wedge_masks_422_16x16: Align64<[[u8; 16 * 16 * 16]; 2]> = Align64([[0; 16 * 16 * 16]; 2]);
-static mut wedge_masks_422_16x8: Align64<[[u8; 16 * 16 * 8]; 2]> = Align64([[0; 16 * 16 * 8]; 2]);
-static mut wedge_masks_422_8x32: Align64<[[u8; 16 * 8 * 32]; 2]> = Align64([[0; 16 * 8 * 32]; 2]);
-static mut wedge_masks_422_8x16: Align64<[[u8; 16 * 8 * 16]; 2]> = Align64([[0; 16 * 8 * 16]; 2]);
-static mut wedge_masks_422_8x8: Align64<[[u8; 16 * 8 * 8]; 2]> = Align64([[0; 16 * 8 * 8]; 2]);
-static mut wedge_masks_422_4x32: Align64<[[u8; 16 * 4 * 32]; 2]> = Align64([[0; 16 * 4 * 32]; 2]);
-static mut wedge_masks_422_4x16: Align64<[[u8; 16 * 4 * 16]; 2]> = Align64([[0; 16 * 4 * 16]; 2]);
-static mut wedge_masks_422_4x8: Align64<[[u8; 16 * 4 * 8]; 2]> = Align64([[0; 16 * 4 * 8]; 2]);
+static mut wedge_masks_422_16x32: Align64<[[[u8; 16 * 32]; 16]; 2]> =
+    Align64([[[0; 16 * 32]; 16]; 2]);
+static mut wedge_masks_422_16x16: Align64<[[[u8; 16 * 16]; 16]; 2]> =
+    Align64([[[0; 16 * 16]; 16]; 2]);
+static mut wedge_masks_422_16x8: Align64<[[[u8; 16 * 8]; 16]; 2]> = Align64([[[0; 16 * 8]; 16]; 2]);
+static mut wedge_masks_422_8x32: Align64<[[[u8; 8 * 32]; 16]; 2]> = Align64([[[0; 8 * 32]; 16]; 2]);
+static mut wedge_masks_422_8x16: Align64<[[[u8; 8 * 16]; 16]; 2]> = Align64([[[0; 8 * 16]; 16]; 2]);
+static mut wedge_masks_422_8x8: Align64<[[[u8; 8 * 8]; 16]; 2]> = Align64([[[0; 8 * 8]; 16]; 2]);
+static mut wedge_masks_422_4x32: Align64<[[[u8; 4 * 32]; 16]; 2]> = Align64([[[0; 4 * 32]; 16]; 2]);
+static mut wedge_masks_422_4x16: Align64<[[[u8; 4 * 16]; 16]; 2]> = Align64([[[0; 4 * 16]; 16]; 2]);
+static mut wedge_masks_422_4x8: Align64<[[[u8; 4 * 8]; 16]; 2]> = Align64([[[0; 4 * 8]; 16]; 2]);
 
-static mut wedge_masks_420_16x16: Align64<[[u8; 16 * 16 * 16]; 2]> = Align64([[0; 16 * 16 * 16]; 2]);
-static mut wedge_masks_420_16x8: Align64<[[u8; 16 * 16 * 8]; 2]> = Align64([[0; 16 * 16 * 8]; 2]);
-static mut wedge_masks_420_16x4: Align64<[[u8; 16 * 16 * 4]; 2]> = Align64([[0; 16 * 16 * 4]; 2]);
-static mut wedge_masks_420_8x16: Align64<[[u8; 16 * 8 * 16]; 2]> = Align64([[0; 16 * 8 * 16]; 2]);
-static mut wedge_masks_420_8x8: Align64<[[u8; 16 * 8 * 8]; 2]> = Align64([[0; 16 * 8 * 8]; 2]);
-static mut wedge_masks_420_8x4: Align64<[[u8; 16 * 8 * 4]; 2]> = Align64([[0; 16 * 8 * 4]; 2]);
-static mut wedge_masks_420_4x16: Align64<[[u8; 16 * 4 * 16]; 2]> = Align64([[0; 16 * 4 * 16]; 2]);
-static mut wedge_masks_420_4x8: Align64<[[u8; 16 * 4 * 8]; 2]> = Align64([[0; 16 * 4 * 8]; 2]);
-static mut wedge_masks_420_4x4: Align64<[[u8; 16 * 4 * 4]; 2]> = Align64([[0; 16 * 4 * 4]; 2]);
+static mut wedge_masks_420_16x16: Align64<[[[u8; 16 * 16]; 16]; 2]> =
+    Align64([[[0; 16 * 16]; 16]; 2]);
+static mut wedge_masks_420_16x8: Align64<[[[u8; 16 * 8]; 16]; 2]> = Align64([[[0; 16 * 8]; 16]; 2]);
+static mut wedge_masks_420_16x4: Align64<[[[u8; 16 * 4]; 16]; 2]> = Align64([[[0; 16 * 4]; 16]; 2]);
+static mut wedge_masks_420_8x16: Align64<[[[u8; 8 * 16]; 16]; 2]> = Align64([[[0; 8 * 16]; 16]; 2]);
+static mut wedge_masks_420_8x8: Align64<[[[u8; 8 * 8]; 16]; 2]> = Align64([[[0; 8 * 8]; 16]; 2]);
+static mut wedge_masks_420_8x4: Align64<[[[u8; 8 * 4]; 16]; 2]> = Align64([[[0; 8 * 4]; 16]; 2]);
+static mut wedge_masks_420_4x16: Align64<[[[u8; 4 * 16]; 16]; 2]> = Align64([[[0; 4 * 16]; 16]; 2]);
+static mut wedge_masks_420_4x8: Align64<[[[u8; 4 * 8]; 16]; 2]> = Align64([[[0; 4 * 8]; 16]; 2]);
+static mut wedge_masks_420_4x4: Align64<[[[u8; 4 * 4]; 16]; 2]> = Align64([[[0; 4 * 4]; 16]; 2]);
 
 pub static mut dav1d_wedge_masks: [[[[*const u8; 16]; 2]; 3]; N_BS_SIZES] =
     [[[[0 as *const u8; 16]; 2]; 3]; N_BS_SIZES];
@@ -256,52 +263,47 @@ unsafe fn init_chroma(
 
 #[cold]
 unsafe fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420: usize>(
-    dst: &mut [[u8; LEN_444]; 2],
+    dst: &mut [[[u8; LEN_444]; 16]; 2],
     w: usize,
     h: usize,
     master: &[[u8; 64 * 64]; 6],
     cb: &[wedge_code_type; 16],
-    masks_444: &mut [[u8; LEN_444]; 2],
-    masks_422: &mut [[u8; LEN_422]; 2],
-    masks_420: &mut [[u8; LEN_420]; 2],
+    masks_444: &mut [[[u8; LEN_444]; 16]; 2],
+    masks_422: &mut [[[u8; LEN_422]; 16]; 2],
+    masks_420: &mut [[[u8; LEN_420]; 16]; 2],
     signs: libc::c_uint,
 ) -> [[[*const u8; 16]; 2]; 3] {
-    assert!(LEN_444 == 16 * w * h);
+    assert!(LEN_444 == (w * h) >> 0);
+    assert!(LEN_422 == (w * h) >> 1);
+    assert!(LEN_420 == (w * h) >> 2);
 
-    let mut ptr = &mut dst[0][..];
     for n in 0..16 {
         copy2d(
-            ptr.as_mut_ptr(),
+            dst[0][n].as_mut_ptr(),
             master[cb[n].direction as usize].as_ptr(),
             w,
             h,
             32 - (w * cb[n].x_offset as usize >> 3),
             32 - (h * cb[n].y_offset as usize >> 3),
         );
-        ptr = &mut ptr[w * h..];
     }
-    let mut off = 0;
-    for _ in 0..16 {
-        invert(dst[1][off..].as_mut_ptr(), dst[0][off..].as_ptr(), w, h);
-        off += w * h;
+    for n in 0..16 {
+        invert(dst[1][n].as_mut_ptr(), dst[0][n].as_ptr(), w, h);
     }
 
     let mut masks = [[[0 as *const u8; 16]; 2]; 3];
 
-    let n_stride_444 = w * h;
-    let n_stride_422 = n_stride_444 >> 1;
-    let n_stride_420 = n_stride_444 >> 2;
     // assign pointers in externally visible array
     for n in 0..16 {
         let sign = (signs >> n & 1) != 0;
-        masks[0][0][n] = masks_444[sign as usize][n * n_stride_444..].as_ptr();
+        masks[0][0][n] = masks_444[sign as usize][n].as_ptr();
         // not using !sign is intentional here, since 444 does not require
         // any rounding since no chroma subsampling is applied.
-        masks[0][1][n] = masks_444[sign as usize][n * n_stride_444..].as_ptr();
-        masks[1][0][n] = masks_422[sign as usize][n * n_stride_422..].as_ptr();
-        masks[1][1][n] = masks_422[!sign as usize][n * n_stride_422..].as_ptr();
-        masks[2][0][n] = masks_420[sign as usize][n * n_stride_420..].as_ptr();
-        masks[2][1][n] = masks_420[!sign as usize][n * n_stride_420..].as_ptr();
+        masks[0][1][n] = masks_444[sign as usize][n].as_ptr();
+        masks[1][0][n] = masks_422[sign as usize][n].as_ptr();
+        masks[1][1][n] = masks_422[!sign as usize][n].as_ptr();
+        masks[2][0][n] = masks_420[sign as usize][n].as_ptr();
+        masks[2][1][n] = masks_420[!sign as usize][n].as_ptr();
 
         // since the pointers come from inside, we know that
         // violation of the const is OK here. Any other approach
