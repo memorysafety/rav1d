@@ -195,7 +195,7 @@ const fn hflip(src: &[u8; 64 * 64]) -> [u8; 64 * 64] {
     dst
 }
 
-unsafe fn invert(dst: &mut [u8], src: &[u8], w: usize, h: usize) {
+fn invert(dst: &mut [u8], src: &[u8], w: usize, h: usize) {
     let mut y = 0;
     let mut y_off = 0;
     while y < h {
